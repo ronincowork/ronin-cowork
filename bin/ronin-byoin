@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+# RONIN BYOIN (病院) — the whole health check, in one command.
+#
+#   bin/ronin-byoin           every gate, then every readout, then one verdict
+#   bin/ronin-byoin --gates   the repo only (no readouts, no live machine)
+#
+# BYOKI (病気) is the condition — what is running is not what is written. BYOIN is where
+# you go to have it looked for, and it looks for more than that one illness: the gates ask
+# whether the REPO is honest with itself, the readouts ask what this MACHINE actually is.
+#
+# WHY NOT JUST `npm run verify`. Two reasons, and both matter when you are pointing an
+# agent at this rather than reading it yourself:
+#
+#   1. verify is a `&&` chain: the FIRST failure hides every check after it. Here every
+#      gate runs and every result is reported, so one broken thing does not disguise
+#      itself as one broken thing when it is three.
+#   2. verify ends in the render gate, which needs a headless browser. On a machine with
+#      none it always dies at the last step — so on such a box `npm run verify` can never
+#      pass and stops being run at all. Here that is a SKIP with its reason, never a pass
+#      and never a silent omission.
+#
+# THE GATE LIST IS NOT KEPT HERE. It is read out of package.json's `verify` script, so a
+# gate added there is covered by this the same day. A second hand-maintained list of
+# checks would be exactly the defect the checks exist to catch.
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+GATES_ONLY=0
+[ "${1:-}" = "--gates" ] && GATES_ONLY=1
+
+PASS=0; FAIL=0; SKIP=0
+failed_names=""
+
+ok_()   { echo "  ok    $1"; PASS=$((PASS + 1)); }
+bad_()  { echo "  FAIL  $1"; FAIL=$((FAIL + 1)); failed_names="$failed_names $2"; }
+skip_() { echo "  SKIP  $1"; SKIP=$((SKIP + 1)); }
+
+# One check: run it, keep the output only if it failed. The point of the summary is that
+# a passing run is short enough to read.
+run_gate() {  # run_gate <label> <cmd...>
+  local label="$1"; shift
+  local out rc
+  out="$("$@" 2>&1)"; rc=$?
+  if [ $rc -eq 0 ]; then
+    ok_ "$label"
+  else
+    bad_ "$label" "$label"
+    printf '%s\n' "$out" | sed 's/^/          /' | tail -12
+  fi
+}
+
+echo ""
+echo "RONIN BYOIN — $ROOT"
+echo ""
+echo "→ the repo: is the tree honest with itself?"
+
+# Client modules must parse before anything else looks at them.
+parse_bad=""
+for f in public/js/*.js; do node --check "$f" >/dev/null 2>&1 || parse_bad="$parse_bad $(basename "$f")"; done
+[ -z "$parse_bad" ] && ok_ "parse — every client module" || bad_ "parse —$parse_bad" "parse"
+
+# THE GATES, read out of package.json's verify chain rather than listed again here.
+for g in $(sed -n 's/.*"verify": "\(.*\)".*/\1/p' package.json | grep -o 'scripts/[a-z-]*\.mjs' | sort -u); do
+  name="$(basename "$g" .mjs)"
+  # The render gate is the one that needs a browser; it gets the honest-skip treatment.
+  #
+  # THE GATE DECIDES, BY ITS EXIT CODE — 2 means "I could not find a browser to run", any
+  # other non-zero means it ran and the page is wrong. BYOIN used to re-answer that question
+  # itself with a bare `require.resolve('playwright')`, which is a FOURTH opinion on where a
+  # host tool lives, beside smoke-ui's, doctor's and the document's. Three of them disagreed
+  # within an hour of the browser being installed. One resolver, one answer, and the skip
+  # line can only ever say what the gate itself reported.
+  if [ "$name" = "smoke-ui" ]; then
+    out="$(node "$g" 2>&1)"; rc=$?
+    if [ $rc -eq 0 ]; then
+      ok_ "$name — the page was rendered and looked at"
+    elif [ $rc -eq 2 ]; then
+      skip_ "$name — NO HEADLESS BROWSER on this machine, so the page has NOT been looked at (docs/host-tools.md)"
+    else
+      bad_ "$name" "$name"
+      printf '%s\n' "$out" | sed 's/^/          /' | tail -12
+    fi
+    continue
+  fi
+  run_gate "$name" node "$g"
+done
+
+run_gate "tsc" npx tsc --noEmit
+
+if [ "$GATES_ONLY" = 1 ]; then
+  echo ""
+  [ "$FAIL" -eq 0 ] && { echo "BYOIN: the repo is clean ($PASS ok, $SKIP skipped)."; exit 0; }
+  echo "BYOIN: $FAIL gate(s) failed —$failed_names"
+  exit 1
+fi
+
+echo ""
+echo "→ this machine: is what is running what is written?"
+
+if [ -x "$ROOT/bin/ronin-doctor" ]; then
+  doc_out="$("$ROOT/bin/ronin-doctor" 2>&1)"; doc_rc=$?
+  # Doctor speaks English and names its own remedies; carry its findings through verbatim
+  # rather than restating them, and never translate them into a count alone.
+  if [ $doc_rc -eq 0 ]; then
+    ok_ "ronin-doctor — nothing outstanding"
+  else
+    bad_ "ronin-doctor" "ronin-doctor"
+    printf '%s\n' "$doc_out" | grep -E '^  (FIND|note)' | sed 's/^/        /'
+  fi
+else
+  skip_ "ronin-doctor — not executable"
+fi
+
+if [ -x "$ROOT/bin/ronin-store" ]; then
+  echo "  ——    stores on this machine:"
+  "$ROOT/bin/ronin-store" --all | sed 's/^/          /'
+fi
+
+echo ""
+if [ "$FAIL" -eq 0 ]; then
+  echo "BYOIN: nothing outstanding — $PASS ok, $SKIP skipped."
+  [ "$SKIP" -gt 0 ] && echo "        A SKIP is not a pass. Read the line: something was not checked at all."
+  exit 0
+fi
+echo "BYOIN: $FAIL outstanding —$failed_names"
+echo "        Each names its own remedy above. docs/byoin.md is the roster."
+exit 1

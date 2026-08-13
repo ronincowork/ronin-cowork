@@ -1,0 +1,3871 @@
+:root {
+  --bg: #0b0e14;
+  --bg-2: #0f131c;
+  --panel: #131826;
+  --line: #1f2738;
+  --fg: #c5c8c6;
+  --muted: #6b7488;
+  --accent: #e0af68;
+  --accent-2: #81a2be;
+  --ok: #b5bd68;
+  --warn: #f0c674;
+  --bad: #cc6666;
+  /* ---- Kojin house colours (karate/SYSTEM.md — the palette there is FIXED, six
+     values, and these are two of them by name). Ronin borrows them for the two bar
+     openers so メ and ニ read as a matched pair rather than two grey glyphs.
+     Kaki  (persimmon) — agent action. THIS SESSION. The one saturated mark.
+     Aiiro (indigo)    — selection and navigation. RONIN itself.
+     Kojin's dark theme lifts the indigo "to carry"; #274A78 on this near-black
+     ground is a bruise, so -lift is that lift and the two hexes stay untouched as
+     the record of what they are. */
+  --kaki: #c46243;
+  --kaki-lift: #e08163;
+  --aiiro: #274a78;
+  --aiiro-lift: #6f95cc;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Dark scrollbars everywhere the browser draws one (home pane, macro/pad/copy
+   sheets, DVR strip). Same root cause as the terminal white bars: attaching a
+   pointing device — a Work Louder pad's joystick counts — makes macOS switch
+   from fading overlay scrollbars to always-on legacy ones, and unstyled they
+   are drawn light-mode over this dark theme. Scoped to scrollbars only, so
+   native form controls are left alone. The terminal viewport opts out below
+   (width 0) — there the bar covered code rather than sitting in a margin. */
+* {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: var(--line) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 6px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-text-size-adjust: 100%;
+  overflow: hidden; /* never let the page scroll behind the keyboard */
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* ---- top bar ---- */
+#bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  padding-top: max(8px, env(safe-area-inset-top));
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--line);
+  user-select: none;
+  flex: 0 0 auto;
+}
+/* The mark is the way home. It was a <span> — decoration — and the roster sat three
+   taps down (ニ sheet → Commons → ⌂ Roster on a phone, a menu hop on the Mac), which
+   is too far from the one screen you keep coming back to. Clicking the logo to get
+   to the front page is the oldest convention on the web; this just honours it.
+   Still LOOKS like the wordmark: no button chrome until you point at it. */
+#bar .brand {
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  /* a <button> brings its own everything — strip it back to the wordmark */
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 0 4px;
+  margin: 0;
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--fg);
+  line-height: 1;
+  cursor: pointer;
+}
+#bar .brand:active {
+  color: var(--accent);
+}
+@media (hover: hover) and (pointer: fine) {
+  #bar .brand:hover {
+    color: var(--accent);
+  }
+}
+/* Keyboard users get a visible ring; pointer users never see one. */
+#bar .brand:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+#bar .grow {
+  flex: 1;
+}
+/* Top-bar verbs — BOTH surfaces (owner override of the touch/desktop split) */
+/* The three top-bar verbs. One rule, one size — the old list named #homebtn and
+   #macrobtn, which no longer exist, so Commons and Keypad were falling back to the
+   browser default and looked like a different family of control. */
+#newbtn,
+#commonsbtn,
+#padbtn,
+#bar .layouts {
+  display: inline-flex;
+  align-items: center;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  height: 30px;
+  padding: 0 10px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+@media (max-width: 680px) {
+  #newbtn .txt,
+  #padbtn .txt {
+    display: none; /* icon-only on phones — bar space is tight */
+  }
+}
+/* Copy panel — real selectable text, native copy on any device */
+/* Per-session note (post-it) — centered modal on desktop, full-bleed on phones */
+#notesheet {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(0, 0, 0, 0.5);
+  align-items: center;
+  justify-content: center;
+}
+#notesheet.open {
+  display: flex;
+}
+#notesheet .ns-card {
+  display: flex;
+  flex-direction: column;
+  width: min(560px, 92vw);
+  height: min(440px, 80vh);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+#notesheet .ns-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  padding-top: max(10px, env(safe-area-inset-top));
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--line);
+}
+#notesheet .ns-title {
+  flex: 1;
+  color: var(--fg);
+  font-size: 14px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#notesheet .ns-bar button {
+  background: var(--panel);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  height: 34px;
+  padding: 0 14px;
+  font-size: 14px;
+  cursor: pointer;
+}
+#notesheet textarea {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  resize: none;
+  padding: 12px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  background: var(--bg);
+  color: var(--fg);
+  font: 14px/1.5 Menlo, "DejaVu Sans Mono", Consolas, monospace;
+  -webkit-user-select: text;
+  user-select: text;
+}
+.tile-head button.note.has-note {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.tile-head button.note:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+@media (max-width: 680px) {
+  #notesheet .ns-card {
+    width: 100vw;
+    height: 100%;
+    border: 0;
+    border-radius: 0;
+  }
+}
+/* Tile ⚡ macros — the fast path: a small dropdown that PREFILLS the session's input.
+   Anchored to the tile header (which is position:relative), not a full-screen modal:
+   the reference lives in the commons's macros tab, this is meant to be one tap and gone. */
+.tmac {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 6px;
+  z-index: 12;
+  width: min(340px, calc(100% - 12px));
+  max-height: 60vh;
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 4px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+.tmac.open {
+  display: block;
+}
+.tmac .tmac-row {
+  display: block;
+  width: 100%;
+  height: auto;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  padding: 7px 9px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+.tmac .tmac-row:hover,
+.tmac .tmac-row:active {
+  background: var(--line);
+}
+/* A macro Ronin types and submits for you. Marked, because pressing Enter into a
+   working session is not the same act as dropping text in the box. */
+.tmac .tmac-row.sends b {
+  color: var(--fg);
+}
+.tmac .tmac-row:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.tmac .tmac-row:disabled:hover {
+  background: transparent;
+}
+.tmac .tmac-row b {
+  display: block;
+  color: var(--accent);
+  font: 12px/1.6 Menlo, "DejaVu Sans Mono", Consolas, monospace;
+  font-weight: 500;
+}
+/* Two lines, then ellipsis. The dropdown is the FAST PATH — a macro's full
+   instruction belongs in the reference, not here, and some blurbs are a paragraph. */
+.tmac .tmac-row span {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Work Louder pad — same modal pattern; the board is a picture of the Creator Micro 2 */
+#padsheet {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(0, 0, 0, 0.5);
+  align-items: center;
+  justify-content: center;
+}
+#padsheet.open {
+  display: flex;
+}
+#padsheet .pad-card {
+  display: flex;
+  flex-direction: column;
+  width: min(420px, 92vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+#padsheet .pad-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  padding-top: max(10px, env(safe-area-inset-top));
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--line);
+}
+#padsheet .pad-title {
+  color: var(--fg);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+#padsheet .pad-last {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+  color: var(--muted);
+  font: 12px/1.4 Menlo, "DejaVu Sans Mono", Consolas, monospace;
+}
+#padsheet .pad-bar button {
+  background: var(--panel);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  height: 34px;
+  padding: 0 14px;
+  font-size: 14px;
+  cursor: pointer;
+}
+#padsheet .pad-bar button.armed {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+}
+#padsheet .pad-board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  padding: 14px;
+}
+/* Captured off-layout chords (e.g. ⌥⌘1 dummies) — same key look, own row */
+#padsheet .pad-extras {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  padding: 0 14px 14px;
+}
+#padsheet .pad-extras:empty {
+  display: none;
+}
+#padsheet .pad-key {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: var(--panel);
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  overflow: hidden;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+}
+/* A key is a square, so a caption like "⌸ Session switcher" cannot fit on one line.
+   It WRAPS (up to three lines, then clamps) rather than being cut off with an
+   ellipsis: a truncated binding name is unreadable on the one surface whose whole
+   job is telling you what a key does. */
+#padsheet .pad-key b {
+  max-width: 92%;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+  line-height: 1.2;
+  color: var(--fg);
+  font-size: 12px;
+  font-weight: 600;
+}
+#padsheet .pad-key small {
+  font: 10px/1 Menlo, "DejaVu Sans Mono", Consolas, monospace;
+  color: var(--muted);
+}
+#padsheet .pad-key.bound {
+  border-color: var(--accent);
+}
+#padsheet .pad-key.bound b {
+  color: var(--accent);
+}
+#padsheet .pad-key.editing {
+  border-color: var(--fg);
+}
+#padsheet .pad-key.hit {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+#padsheet .pad-key.hit b,
+#padsheet .pad-key.hit small {
+  color: #000;
+}
+#padsheet .pad-widget {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--muted);
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  font-size: 18px;
+}
+/* Universal-key widgets carry symbol + name — smaller type so it fits */
+#padsheet .pad-kesc,
+#padsheet .pad-ktab,
+#padsheet .pad-ent,
+#padsheet .pad-adel,
+#padsheet .pad-aent {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fg);
+  padding: 0 4px;
+  line-height: 1.3;
+}
+#padsheet .pad-enc,
+#padsheet .pad-joy {
+  border-radius: 50%;
+}
+/* the encoder / joystick flash too, so you can see what a turn or flick emits */
+#padsheet .pad-widget.hit {
+  background: var(--accent);
+  border-style: solid;
+  border-color: var(--accent);
+  color: #000;
+}
+#padsheet .pad-edit {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 14px max(14px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  color: var(--fg);
+  font-size: 13px;
+}
+#padsheet .pad-edit.open {
+  display: flex;
+}
+#padsheet .pad-erow {
+  display: flex;
+  gap: 8px;
+}
+#padsheet .pad-erow select,
+#padsheet .pad-erow input {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  background: var(--panel);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 8px;
+  font-size: 13px;
+}
+#padsheet .pad-erow button {
+  background: var(--panel);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  height: 34px;
+  padding: 0 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+#padsheet .pad-asklbl {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+/* Ask-on-press prompt: the popped window IS the macro's args field */
+#padask {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  background: rgba(0, 0, 0, 0.5);
+  align-items: center;
+  justify-content: center;
+}
+#padask.open {
+  display: flex;
+}
+#padask .pa-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(520px, 92vw);
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+#padask .pa-card code {
+  color: var(--accent);
+  font: 14px/1.4 Menlo, "DejaVu Sans Mono", Consolas, monospace;
+  white-space: nowrap;
+}
+#padask .pa-card input {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  background: var(--panel);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  font-size: 14px;
+}
+/* ⚙ program-the-pad row (WebHID) */
+#padsheet .pad-prog {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px max(14px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+}
+#padsheet .pad-prog button,
+#padsheet .pad-prog select {
+  background: var(--panel);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  height: 34px;
+  padding: 0 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+#padsheet .pad-prog button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+#padsheet .pad-progmsg {
+  flex-basis: 100%;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+/* Outcome chip for pad-fired macros (results must be visible, not just performed) */
+#padtoast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  max-width: 92vw;
+  z-index: 40;
+  background: var(--bg-2);
+  color: var(--fg);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+#padtoast.show {
+  opacity: 1;
+}
+#padtoast.err {
+  border-color: #cc6666;
+}
+
+.layouts {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.layouts button {
+  background: transparent;
+  color: var(--muted);
+  border: 0;
+  width: 34px;
+  height: 30px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.layouts button.active {
+  background: var(--panel);
+  color: var(--accent);
+}
+
+/* ---- grid ---- */
+#grid {
+  flex: 1 1 auto;
+  display: grid;
+  gap: 6px;
+  padding: 6px;
+  min-height: 0;
+}
+#grid.layout-1 {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+}
+#grid.layout-2 {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr;
+}
+#grid.layout-4 {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+
+/* ---- tile ---- */
+.tile {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.tile.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent) inset;
+}
+/*
+ * TYPED INPUT WAS DROPPED — the socket was not open when a key was pressed.
+ *
+ * Keystrokes into a locked tile used to vanish in silence while the socket was down,
+ * which on a phone is most of the time a reconnect is in flight. They are still
+ * dropped (queued keystrokes replayed into a live shell later is worse), but never
+ * silently: the tile flashes its edge so you know to type it again. The unlocked box
+ * has its own `.composer.noconn` mark, which sits closer to what you were typing.
+ */
+.tile.dropped {
+  border-color: #a33c33;
+}
+.tile-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--line);
+  flex: 0 0 auto;
+}
+.tile-head .grow {
+  flex: 1;
+}
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex: 0 0 auto;
+}
+.dot.on {
+  background: var(--ok);
+  box-shadow: 0 0 6px var(--ok);
+}
+.dot.wait {
+  background: var(--warn);
+}
+.dot.off {
+  background: var(--bad);
+}
+/* The select yields; the controls don't. Without this every button in the row is
+   shrinkable (they carry a fixed width but the default flex-shrink: 1), so one more
+   control squashes them all to slivers on a narrow tile instead of narrowing the
+   session name. Whatever gets added to this header later, the buttons stay 26px. */
+.tile-head select {
+  flex: 0 1 auto;
+  min-width: 0;
+  background: var(--panel);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-size: 12px;
+  max-width: 60%;
+}
+.tile-head button {
+  flex: 0 0 auto;
+  background: var(--bg);
+  border: 1px solid var(--muted);
+  color: var(--fg);
+  border-radius: 6px;
+  width: 26px;
+  height: 24px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.tile-head button:hover {
+  border-color: var(--accent);
+}
+/* メ — the way into commons. Wider, because katakana is not an icon glyph and gets
+   clipped in a 26px square. */
+.tile-head button.menu {
+  width: 28px;
+  font-size: 13px;
+}
+.tile-head button:active {
+  color: var(--accent);
+}
+.tile-head button.kill:hover,
+.tile-head button.kill:active {
+  color: var(--bad);
+  border-color: var(--bad);
+}
+
+/* ---- cockpit dial (house motif for discrete multi-position controls) ----
+   A rotary knob: tick marks = detents, pointer = current position, tap = next.
+   Debut use: the per-session control dial 👤 user / 👁 read / 🤖 write. */
+.tile-head {
+  position: relative; /* anchors .dial-badge just below the header */
+}
+.tile-head button.dial {
+  padding: 0;
+}
+.dial-face {
+  position: relative;
+  display: block;
+  width: 18px;
+  height: 18px;
+  margin: 0 auto;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--bg);
+}
+.dial-tick {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2px;
+  height: 2px;
+  margin: -1px 0 0 -1px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.dial-ptr {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2px;
+  height: 7px;
+  margin: -7px 0 0 -1px;
+  border-radius: 1px;
+  background: currentColor;
+  transform-origin: 50% 100%;
+  transition: transform 0.15s ease;
+}
+.dial.pos-user {
+  color: var(--fg);
+}
+.dial.pos-read {
+  color: var(--warn);
+  border-color: var(--warn);
+}
+.dial.pos-write {
+  color: var(--ok);
+  border-color: var(--ok);
+}
+.dial:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.dial-badge {
+  position: absolute;
+  top: calc(100% + 3px);
+  right: 6px;
+  z-index: 7;
+  display: none;
+  padding: 2px 8px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--fg);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.dial-badge.show {
+  display: block;
+}
+/* Desktop: hovering the dial reveals the badge as its help text — our own element,
+   instant and reliable (native title tooltips proved flaky here). */
+@media (hover: hover) and (pointer: fine) {
+  .dial:hover:not(:disabled) .dial-badge {
+    display: block;
+  }
+}
+/* ---- cockpit gauge (readout counterpart to the dial: dials input, gauges read) ----
+   Debut use: the context gauge ⛽ — needle 0→100, green/amber/red by fullness.
+   Hidden entirely (attribute) when the pane has no context reading. */
+.tile-head button.gauge {
+  position: relative; /* anchors .gauge-badge right under the gauge itself */
+  padding: 0;
+}
+.gauge[hidden] {
+  display: none;
+}
+.gauge-face {
+  position: relative;
+  display: block;
+  width: 18px;
+  height: 18px;
+  margin: 0 auto;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  /* Revealed tachometer fill: the arc from 6:00 to the needle, coloured by the
+     zones it has reached — green to 9:00, amber to 12:00, red beyond. --g1/--g2/--g3
+     are the zone cut-points already clipped to the sweep (set in js/widgets.js makeGauge;
+     mapping 0%→6:00, 15%→9:00, 50%→12:00, ~80%→3:00). Unswept face stays dark. */
+  background: conic-gradient(
+    from 180deg,
+    var(--ok) 0 var(--g1, 0deg),
+    var(--warn) var(--g1, 0deg) var(--g2, 0deg),
+    var(--bad) var(--g2, 0deg) var(--g3, 0deg),
+    var(--bg) 0
+  );
+}
+.gauge-ptr {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2px;
+  height: 7px;
+  margin: -7px 0 0 -1px;
+  border-radius: 1px;
+  background: var(--fg); /* contrasts with the fill so the edge stays a clock hand */
+  transform-origin: 50% 100%;
+  transition: transform 0.3s ease;
+}
+/* The gauge's readout badge: same look as the dial's, but anchored to the gauge
+   button so the number pops up directly beneath it, not off at the header edge. */
+.gauge-badge {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 7;
+  display: none;
+  padding: 2px 8px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--fg);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.gauge-badge.show {
+  display: block;
+}
+/* Desktop: hover reveals the badge (the number), same pattern as the dial. */
+@media (hover: hover) and (pointer: fine) {
+  .gauge:hover .gauge-badge {
+    display: block;
+  }
+}
+.tile-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 4px 2px 2px 6px;
+  background: var(--bg);
+  overflow: hidden;
+  position: relative; /* the tape view fills this box */
+}
+.tile-body .xterm {
+  height: 100%;
+}
+/* Kill xterm's own viewport scrollbar. xterm.css sets `overflow-y: scroll` on
+   .xterm-viewport, so macOS draws a scrollbar there — invisible while it's an
+   overlay bar, but a permanent light-grey band the moment a pointing device is
+   attached (a Work Louder pad's joystick counts) and macOS flips to legacy
+   always-on scrollbars. Worse, FitAddon reserves `scrollBarWidth` measured ONCE
+   at attach: measured 0, then 15px appears, and the bar sits on top of the last
+   column until something forces a refit. Width 0 keeps that measurement honest
+   on every platform. Nothing is lost — tmux owns scrollback when 🔒 Locked, and
+   wheel/drag/keys still scroll the local buffer when 🔓 Unlocked. */
+.xterm .xterm-viewport {
+  scrollbar-width: none; /* Firefox */
+}
+/* Touch: a tape-fed tile's history is already in this element, so let the OS scroll it
+   — momentum and rubber-banding included — instead of us translating the gesture.
+   Locked still hijacks the gesture in JS, because there the history is on the server. */
+@media (pointer: coarse) {
+  .xterm .xterm-viewport {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+}
+.xterm .xterm-viewport::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* Unlocked (DVR) chrome: the strip showing locally-parked text (Enter sends it). */
+.tile-body {
+  position: relative;
+}
+/* honest-mode chip: unlocked tile over an alternate-screen app — no tape exists */
+.alt-note {
+  display: none;
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  z-index: 5;
+  padding: 3px 8px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 11px;
+  pointer-events: none;
+}
+.alt-note.show {
+  display: block;
+}
+.dvr-strip {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  padding: 5px 8px;
+  background: var(--bg-2);
+  border-top: 2px solid var(--accent);
+  color: var(--fg);
+  font: 13px/1.3 Menlo, "DejaVu Sans Mono", Consolas, monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 40%;
+  overflow-y: auto;
+}
+.dvr-strip.show {
+  display: block;
+}
+
+/* ---- touch: control keys + the keypad (hidden on desktop) ----
+   The floating ⌨ (#fab), the floating 🎤 (#mic) and the compose overlay (#compose)
+   are GONE, rules and all. They were a second text entry: you typed in the tile's
+   composer and spoke into the overlay's textarea, and the words never met. The mic
+   is now .cmic, a button on the one box. */
+.ctrls,
+#keypad {
+  display: none;
+}
+@media (pointer: coarse) {
+  .tile-head button {
+    width: 34px;
+    height: 32px;
+    font-size: 14px;
+  }
+  .tile-head select {
+    max-width: 50%;
+  }
+  /* top-bar control keys */
+  .ctrls {
+    display: inline-flex;
+    gap: 5px;
+  }
+  .ctrls button {
+    background: var(--panel);
+    color: var(--fg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    height: 30px;
+    min-width: 34px;
+    padding: 0 8px;
+    font-size: 13px;
+  }
+  #k-more.armed {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+  }
+  /* expandable keypad: extra keys the iOS keyboard can't send (Tab/⇧Tab + arrows) */
+  #keypad {
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 12px;
+    background: var(--bg-2);
+    border-bottom: 1px solid var(--line);
+  }
+  #keypad.open {
+    display: flex;
+  }
+  #keypad button {
+    background: var(--panel);
+    color: var(--fg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    height: 38px;
+    min-width: 46px;
+    padding: 0 12px;
+    font-size: 15px;
+  }
+  #keypad button:active {
+    background: var(--accent);
+    color: #000;
+  }
+  /* hide grid layout buttons on a phone — single terminal is the norm */
+  .layouts {
+    display: none;
+  }
+}
+
+/* ---- mobile: single terminal fills the screen; 2/4 stack in a scroll column ---- */
+@media (max-width: 680px) {
+  #grid.layout-2,
+  #grid.layout-4 {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  #grid.layout-2 .tile,
+  #grid.layout-4 .tile {
+    flex: 0 0 auto;
+    height: 82dvh;
+  }
+  /* single terminal: drop the panel chrome and use the whole screen */
+  #grid.layout-1 {
+    padding: 0;
+    gap: 0;
+  }
+  #grid.layout-1 .tile {
+    border: none;
+    border-radius: 0;
+  }
+  #grid.layout-1 .tile.active {
+    box-shadow: none;
+  }
+  #grid.layout-1 .tile-body {
+    padding: 2px 0 0 4px;
+  }
+}
+
+/* ---- home panel: the default state of a sessionless tile (and where a tile
+   lands when its session dies). Overlays the terminal; lean, phone-first. ---- */
+.home {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: none;
+  /* The pane is a plain column holding TWO views (the null board and the home list).
+     The two-column split lives on .home-main, sized by auto-fit rather than a media
+     query: a home panel is sized by its TILE, so a 2x2 grid on a big desktop still
+     gets narrow panels that must collapse to one column. */
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  background: var(--bg);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.home.show {
+  display: flex;
+}
+.home-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.home-sec {
+  flex: 0 0 auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+}
+.home-h {
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.home-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+/* ---- the session max: the roster's top line, above the list it describes ---- */
+.home-maxrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.home-maxrow label {
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.home-max {
+  width: 4.5em;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 6px;
+  font: inherit;
+  font-size: 13px;
+}
+.home-maxnow {
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: auto;
+}
+/* At the limit the count is the warning — no banner, no extra row: the line that
+   states the rule is the line that says you have hit it. */
+.home-maxnow.full {
+  color: var(--warn, #e0a030);
+}
+/* ---- KOSHIDASHI: the null pane — buttons that put a session out to work ---- */
+.home-null {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.home-main {
+  display: none;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  align-content: start;
+  gap: 10px;
+  min-height: 0;
+}
+/* Eight admin panes, one at a time, named by [data-pane] on .home. (Was a single
+   `.browsing` toggle while there were only two — see buildHome.) */
+.home-null,
+.home-wipe,
+.home-docs,
+.home-proj,
+.home-hotwords,
+.home-stats,
+.home-koshi {
+  display: none;
+}
+.home[data-pane='new'] .home-null {
+  display: flex;
+}
+.home[data-pane='sessions'] .home-main {
+  display: grid;
+}
+.home[data-pane='wipe'] .home-wipe {
+  display: flex;
+}
+.home[data-pane='docs'] .home-docs {
+  display: flex;
+}
+.home[data-pane='proj'] .home-proj {
+  display: flex;
+}
+.home[data-pane='hotwords'] .home-hotwords {
+  display: flex;
+}
+.home[data-pane='stats'] .home-stats {
+  display: flex;
+}
+.home[data-pane='koshi'] .home-koshi {
+  display: flex;
+}
+
+/* ---- 目 KOSHI: which outlet each incarnation asks.
+   One column at every width, like the wipeboard and the project list: a home panel is
+   sized by its TILE, so a viewport media query would be the wrong instrument. ---- */
+.home-koshi {
+  flex-direction: column;
+  min-height: 0;
+  padding: 10px;
+  gap: 8px;
+  overflow: auto;
+}
+.ko-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.ko-blurb {
+  opacity: 0.75;
+  font-size: 12px;
+}
+.ko-blurb.bad {
+  color: var(--bad, #e06c6c);
+  opacity: 1;
+  font-weight: 600;
+}
+.ko-restart {
+  flex: none;
+}
+.ko-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ko-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: 'name pick' 'what pick' 'pace pace' 'pacelabel pacelabel' 'note note';
+  gap: 2px 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid var(--line, #2a2a2a);
+  border-radius: 6px;
+}
+.ko-row.off {
+  opacity: 0.5;
+}
+.ko-name {
+  grid-area: name;
+  font-weight: 600;
+}
+.ko-what {
+  grid-area: what;
+  font-size: 12px;
+  opacity: 0.7;
+}
+.ko-pick {
+  grid-area: pick;
+  min-width: 150px;
+}
+.ko-pace {
+  grid-area: pace;
+  width: 100%;
+  margin: 6px 0 0;
+}
+.ko-pacelabel {
+  grid-area: pacelabel;
+  font-size: 12px;
+  opacity: 0.7;
+}
+.ko-note {
+  grid-area: note;
+  font-size: 12px;
+  opacity: 0.7;
+  margin-top: 4px;
+}
+.ko-note.bad,
+.ko-empty.bad {
+  color: var(--bad, #e06c6c);
+  opacity: 1;
+}
+.ko-empty {
+  opacity: 0.7;
+  font-size: 12px;
+}
+
+/* ---- ▥ HOTWORDS: the words dictation keeps getting wrong (tejun_catalogs/HOTWORDS.md).
+   One column at every width, like the wipeboard and the project list: a home panel is
+   sized by its TILE, so a viewport media query would be the wrong instrument. ---- */
+.home-hotwords {
+  flex-direction: column;
+  min-height: 0;
+  padding: 10px;
+  gap: 8px;
+}
+.hot {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 8px;
+}
+/* Add sits at the TOP: it is the thing you came here to do, and on a phone the top is
+   the half of the panel the keyboard does not cover. */
+.hot-add {
+  display: flex;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+.hot-add input {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  font-size: 14px;
+}
+.hot-addbtn {
+  flex: 0 0 auto;
+  height: 38px;
+  padding: 0 16px;
+  background: var(--panel);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.hot-addbtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.hot-count {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 12px;
+}
+.hot-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.hot-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* 44px: the row carries a delete, and a mis-tapped delete is the one mistake here
+     that costs anything. Apple's minimum, and worth the vertical space. */
+  min-height: 44px;
+  padding: 0 4px 0 10px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.hot-row > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--fg);
+  font: 14px/1.4 Menlo, "DejaVu Sans Mono", Consolas, monospace;
+}
+.hot-x {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  color: var(--muted);
+  border: 0;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.hot-x:active {
+  color: var(--bad);
+}
+@media (hover: hover) and (pointer: fine) {
+  .hot-x:hover {
+    color: var(--bad);
+  }
+}
+/* Only ever an error or nothing: a list that re-renders from the server IS the
+   confirmation, so "saved" would be noise on every tap. */
+.hot-msg {
+  display: none;
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: var(--muted);
+}
+.hot-msg.show {
+  display: block;
+}
+.hot-msg.bad {
+  color: var(--bad);
+}
+@media (pointer: coarse) {
+  /* 16px stops iOS Safari zooming the page when the field takes focus. */
+  .hot-add input {
+    font-size: 16px;
+    height: 44px;
+  }
+  .hot-addbtn {
+    height: 44px;
+  }
+}
+
+/* ---- PROJECT ROOT: the inclusion_list — which directories are part of your Ronin.
+   One column at every width, like the wipeboard: a home panel is sized by its TILE,
+   so a viewport media query would be the wrong instrument. ---- */
+.home-proj {
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  flex: 1;
+}
+.pr-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pr-count {
+  color: #7f8ca6;
+  font-size: 12px;
+  flex: 1;
+}
+.pr-list {
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pr-block {
+  border: 1px solid #2a3346;
+  border-radius: 6px;
+  padding: 7px 9px;
+  background: #141a26;
+}
+.pr-block.gone {
+  border-color: #5a3535;
+}
+.pr-top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.pr-top b {
+  color: #d7e3f7;
+}
+.pr-dir {
+  color: #7f8ca6;
+  font-size: 12px;
+  font-family: ui-monospace, monospace;
+  word-break: break-all;
+}
+.pr-remit {
+  color: #9aa8bf;
+  font-size: 12px;
+  margin: 3px 0 0;
+}
+.pr-facts {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 5px;
+}
+.pr-chip {
+  font-size: 11px;
+  border: 1px solid #2f3a4f;
+  border-radius: 999px;
+  padding: 1px 7px;
+  color: #9aa8bf;
+}
+.pr-chip.muted {
+  color: #6c7a91;
+}
+.pr-chip.bad {
+  color: #e6a1a1;
+  border-color: #5a3535;
+}
+.pr-acts {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+.pr-form {
+  margin-top: 8px;
+  border-top: 1px solid #2a3346;
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.pr-f {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pr-f span {
+  width: 74px;
+  flex: none;
+  color: #7f8ca6;
+  font-size: 12px;
+}
+.pr-f input {
+  flex: 1;
+  min-width: 0;
+}
+.pr-frow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pr-err {
+  color: #e6a1a1;
+  font-size: 12px;
+}
+.pr-empty {
+  color: #6c7a91;
+  font-size: 12px;
+  padding: 8px 2px;
+}
+.pr-empty.bad {
+  color: #e6a1a1;
+}
+.pr-ghost {
+  opacity: 0.8;
+}
+
+/* ---- MDEDIT (▧ Docs): the docs each session listed, and a plain editor for one.
+   Two views in one pane, switched by [data-view] — never two elements fighting over
+   `display` from JS. Single column at every width: a home panel is sized by its TILE,
+   so a viewport media query would be the wrong instrument here as everywhere else. ---- */
+.home-docs {
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  flex: 1;
+}
+.home-docs .dc-list,
+.home-docs .dc-ed {
+  display: none;
+  min-height: 0;
+  flex: 1;
+}
+.home-docs[data-view='list'] .dc-list {
+  display: block;
+  overflow: auto;
+}
+.home-docs[data-view='edit'] .dc-ed {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dc-who {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 2px 4px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 4px;
+}
+.dc-who b {
+  color: #cfe0ff;
+  font-size: 13px;
+}
+.dc-who span {
+  color: var(--muted);
+  font-size: 11px;
+}
+.dc-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin: 0 0 4px;
+  color: var(--fg);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.dc-row:hover {
+  border-color: #2f4368;
+}
+.dc-row b {
+  font-weight: 600;
+}
+.dc-row span {
+  color: var(--muted);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dc-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.dc-bar b {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dc-back,
+.dc-save {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #1a2233;
+  color: #cfe0ff;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.dc-save {
+  margin-left: auto;
+}
+.dc-save:disabled {
+  opacity: 0.5;
+}
+.dc-note {
+  color: var(--muted);
+  font-size: 11px;
+}
+.dc-note.bad {
+  color: #ffb4a2;
+}
+/* The editor fills the tile: a document is the whole point of the pane, and a short box
+   with the rest of the tile empty is the shape of a comment field, not an editor. */
+.dc-text {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  box-sizing: border-box;
+  background: #0d1220;
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.45;
+  resize: none;
+}
+.dc-empty {
+  color: var(--muted);
+  font-size: 12px;
+  padding: 10px 2px;
+}
+
+/* ---- WIPEBOARD: one surface a set of agents all read and write. A file and a tmux
+   option, rendered. Single column on every width — a thread wants one column, and a
+   home panel is sized by its TILE, so a media query would be the wrong instrument. ---- */
+.home-wipe {
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  flex: 1;
+}
+.wb-head {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex: 0 0 auto;
+}
+.wb-head select {
+  flex: 1;
+  min-width: 0;
+}
+.wb-head button {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #1a2233;
+  color: #cfe0ff;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.wb-brief {
+  flex: 0 0 auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px;
+}
+.wb-brief-h {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  padding: 0 0 6px;
+  cursor: pointer;
+}
+.wb-brief-h::after {
+  content: ' ▾';
+}
+.wb-brief.shut .wb-brief-h::after {
+  content: ' ▸';
+}
+.wb-brief.shut textarea {
+  display: none;
+}
+.wb-brief textarea,
+.wb-compose textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: #0d1220;
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 9px;
+  font: inherit;
+  font-size: 13px;
+  resize: vertical;
+}
+.wb-mem {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+  flex: 0 0 auto;
+}
+.wb-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #182033;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 4px 3px 10px;
+  font-size: 12px;
+  color: #cfe0ff;
+}
+.wb-chip i {
+  font-style: normal;
+  font-size: 11px;
+}
+.wb-chip button {
+  border: 0;
+  background: none;
+  color: #7d8ba8;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 4px;
+}
+.wb-chip button:hover {
+  color: #ff9c9c;
+}
+.wb-plus {
+  font-size: 12px;
+}
+.wb-thread {
+  flex: 1 1 auto;
+  min-height: 80px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+}
+.wb-post {
+  border-left: 2px solid #2b3550;
+  padding-left: 8px;
+}
+.wb-who {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 11px;
+  color: var(--muted);
+}
+.wb-who b {
+  color: #9db4dd;
+}
+.wb-text {
+  font-size: 13px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--fg);
+}
+/* The owner's steer must never read as an agent's post. */
+.wb-post.owner {
+  border-left-color: #d8a13a;
+}
+.wb-post.owner .wb-who b {
+  color: #e8b757;
+}
+.wb-post.sys {
+  border-left-color: #2b3550;
+  opacity: 0.62;
+}
+.wb-post.sys .wb-text {
+  font-size: 12px;
+  font-style: italic;
+}
+.wb-compose {
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+  flex: 0 0 auto;
+}
+.wb-compose button {
+  border: 1px solid #2f6b3f;
+  border-radius: 8px;
+  background: #1d3a27;
+  color: #d6f5df;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.wb-compose button:disabled {
+  opacity: 0.5;
+}
+.wb-empty {
+  color: var(--muted);
+  font-size: 12px;
+  margin: auto;
+}
+/* Touch only: keep the compose line reachable above the keyboard, and give the
+   thread room by letting the brief stay collapsed (buildWipeboard sets .shut). */
+@media (pointer: coarse) {
+  .wb-compose {
+    position: sticky;
+    bottom: 0;
+    background: var(--bg);
+    padding-top: 6px;
+  }
+  .wb-thread {
+    min-height: 140px;
+  }
+}
+.ks-board {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+.ks-head {
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+.ks-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 14px 12px;
+  min-height: 84px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--fg);
+  text-align: left;
+  cursor: pointer;
+}
+.ks-btn i {
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+}
+.ks-btn b {
+  font-size: 14px;
+  font-weight: 600;
+}
+.ks-btn small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.3;
+}
+.ks-btn.on {
+  border-color: var(--accent);
+}
+.ks-btn.on b {
+  color: var(--accent);
+}
+@media (hover: hover) and (pointer: fine) {
+  .ks-btn:hover {
+    border-color: var(--accent);
+  }
+}
+.ks-form {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+}
+.ks-form.open {
+  display: flex;
+}
+.ks-form-h {
+  color: var(--accent);
+  font-size: 12px;
+}
+.ks-form input[type='text'] {
+  height: 34px;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  font-size: 14px;
+}
+.ks-form select {
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 13px;
+}
+.ks-form .home-ctl button {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--fg);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.ks-link {
+  align-self: flex-end;
+  margin-top: auto;
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.ks-link.back {
+  align-self: flex-start;
+  margin-top: 0;
+  grid-column: 1 / -1;
+  order: -1;
+}
+@media (hover: hover) and (pointer: fine) {
+  .ks-link:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+}
+
+/* per-row group control: shows the session's groups, opens the tag editor */
+/* 人 — the leader mark (the *nin* of 浪人). Sits before the name on a coordinating
+   session. Accent-coloured so it reads at a glance in a long list, but no box: it is a
+   fact about the session, not a button. */
+.home-lead {
+  flex: 0 0 auto;
+  margin-right: 5px;
+  color: var(--accent);
+  font-size: 13px;
+  line-height: 1;
+}
+/* Inside a group's list the glyph is the switch: lit = leads this group, dim = tap to
+   promote. Sized for a fingertip on touch without moving anything on desktop. */
+.home-lead.btn {
+  cursor: pointer;
+  padding: 2px 4px;
+  margin-right: 3px;
+  border-radius: 6px;
+}
+.home-lead.off {
+  color: var(--line);
+}
+@media (hover: hover) and (pointer: fine) {
+  .home-lead.btn:hover {
+    color: var(--accent);
+    background: var(--panel);
+  }
+}
+@media (pointer: coarse) {
+  .home-lead.btn {
+    padding: 6px 8px;
+    margin-right: 1px;
+  }
+  /* TOUCH: the 人 is not drawn at all (js/commons.js) — the leader is the accent-coloured
+     name. Same fact, no column. */
+  .home-row.leads b {
+    color: var(--accent);
+    font-weight: 600;
+  }
+}
+.home-tag {
+  flex: 0 0 auto;
+  padding: 2px 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.home-tag.on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+@media (hover: hover) and (pointer: fine) {
+  .home-tag:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+}
+
+/* group heading in the session list — the tag, and how many are in it */
+.home-grp {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 2px;
+  padding: 0 8px;
+  color: var(--accent);
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.home-grp:first-child {
+  margin-top: 0;
+}
+.home-grp b {
+  font-weight: 600;
+}
+.home-grp span {
+  color: var(--muted);
+  font-weight: 400;
+}
+.home-grp::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.home-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--fg);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.home-row:hover,
+.home-row:active {
+  background: var(--bg-2);
+  border-color: var(--line);
+}
+.home-row b {
+  font-weight: 500;
+}
+.home-row .grow {
+  flex: 1;
+}
+.home-status {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.home-status.st-ready {
+  color: var(--ok);
+}
+.home-status.st-thinking {
+  color: var(--warn);
+}
+.home-status.st-awaiting-input {
+  color: var(--bad);
+}
+.home-ctx {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.home-empty {
+  font-size: 12px;
+  color: var(--muted);
+}
+.home input[type='text'],
+.home select {
+  background: var(--bg-2);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 13px;
+  min-width: 0;
+}
+.home input[type='text'] {
+  width: 100%;
+}
+.home select:disabled {
+  opacity: 0.45;
+}
+.home-ctl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.home-lbl {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.home button.home-go {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--fg);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.home button.home-go {
+  border-color: var(--accent);
+  color: var(--accent);
+  margin-left: auto;
+}
+.home button.home-go:disabled {
+  opacity: 0.5;
+}
+/* ---- birth chip: "a session appeared" — slides in under the top bar ---- */
+#chip {
+  position: fixed;
+  top: calc(max(8px, env(safe-area-inset-top)) + 42px);
+  left: 50%;
+  transform: translate(-50%, -200%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  font-size: 13px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+  transition: transform 0.25s ease;
+}
+#chip.show {
+  transform: translate(-50%, 0);
+}
+#chip button {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+#chip button.chip-x {
+  border-color: var(--line);
+  color: var(--muted);
+  padding: 4px 8px;
+}
+
+/* ---- session switcher: one pad key opens it, arrows walk it, same key lands it ---- */
+#sesspick {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(0, 0, 0, 0.55);
+  align-items: center;
+  justify-content: center;
+}
+#sesspick.open {
+  display: flex;
+}
+#sesspick .sp-card {
+  display: flex;
+  flex-direction: column;
+  width: min(420px, 92vw);
+  max-height: 70vh;
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  overflow: hidden;
+}
+#sesspick .sp-title {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  color: var(--accent);
+  font-size: 13px;
+}
+#sesspick .sp-list {
+  overflow: auto;
+  padding: 6px;
+}
+#sesspick .sp-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--fg);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+#sesspick .sp-row b {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+#sesspick .sp-row .sp-meta {
+  color: var(--muted);
+  font-size: 12px;
+}
+#sesspick .sp-row.cur b::after {
+  content: " ·  in this tile";
+  color: var(--muted);
+  font-size: 11px;
+}
+#sesspick .sp-row.on {
+  background: var(--panel);
+  border-color: var(--accent);
+}
+#sesspick .sp-hint {
+  padding: 8px 14px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 11px;
+}
+
+/* ---- group tags (🏷): a session's memberships, the address agents resolve ---- */
+.tile-head button.tags.has-tags {
+  opacity: 1;
+  border-color: var(--accent);
+}
+.tile-head button.tags:disabled {
+  opacity: 0.3;
+}
+#tagsheet {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(0, 0, 0, 0.55);
+  align-items: center;
+  justify-content: center;
+}
+#tagsheet.open {
+  display: flex;
+}
+#tagsheet .tg-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(460px, 92vw);
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  padding: 12px 14px 14px;
+}
+#tagsheet .tg-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#tagsheet .tg-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--accent);
+  font-size: 13px;
+}
+#tagsheet .tg-bar button {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--fg);
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+#tagsheet .tg-bar button.tg-save {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+#tagsheet .tg-chips,
+#tagsheet .tg-known {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+}
+#tagsheet .tg-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+#tagsheet .tg-chip.on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+#tagsheet .tg-chip i {
+  font-style: normal;
+  opacity: 0.6;
+}
+#tagsheet .tg-empty,
+#tagsheet .tg-known-lbl {
+  color: var(--muted);
+  font-size: 12px;
+}
+#tagsheet .tg-input {
+  height: 34px;
+  background: var(--panel);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  font-size: 14px;
+}
+#tagsheet .tg-hint {
+  color: var(--muted);
+  font-size: 11px;
+}
+#tagsheet .tg-hint code {
+  color: var(--accent);
+}
+
+
+/* ＋ New in the top bar — same weight as the other verbs, accented because it is
+   the one that creates something. */
+#newbtn.armed,
+#newbtn:hover {
+  color: var(--fg);
+  border-color: var(--accent);
+}
+
+/* ---------- KOSHI_DASHI receipt + launcher extras ---------- */
+/* The receipt is the price of launching without a confirm screen: it says what the
+   session was born with and lets you undo it in one tap. */
+#kdashi {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(92vw, 640px);
+  padding: 8px 10px;
+  border: 1px solid #2c3550;
+  border-radius: 10px;
+  background: #141a29;
+  box-shadow: 0 8px 24px #0009;
+  font-size: 12px;
+  transition: opacity 0.6s;
+}
+#kdashi.fade { opacity: 0; }
+#kdashi b { color: #cfe3ff; }
+#kdashi small { color: #8fa3c8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#kdashi button {
+  border: 1px solid #3a4560;
+  border-radius: 7px;
+  background: #1d2434;
+  color: #d7e3f7;
+  padding: 4px 9px;
+  font-size: 12px;
+  cursor: pointer;
+}
+#kdashi button:hover { background: #263047; }
+#kdashi .kd-x { border-color: transparent; background: transparent; color: #6f80a0; padding: 4px 6px; }
+
+/* Mode toggle: manual (your words, verbatim) vs assisted (composed brief). */
+.ks-mode { display: flex; align-items: center; gap: 6px; margin: 2px 0 6px; }
+.ks-mode button {
+  border: 1px solid #2a3247;
+  border-radius: 7px;
+  background: #10141f;
+  color: #8fa3c8;
+  padding: 3px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.ks-mode button.on { background: #1d2434; color: #d7e3f7; border-color: #3a4560; }
+.ks-mode small { color: #6f80a0; font-size: 11px; }
+/* Say plainly what happens to the words you type — in the panel, not a tooltip. */
+.ks-say {
+  margin: 0 0 7px;
+  color: #8fa3c8;
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+.ks-extras-h { display: none; }
+.ks-form.assisted .ks-extras-h {
+  display: block;
+  margin-top: 8px;
+  color: #6f80a0;
+  font-size: 11px;
+}
+
+/* The optional picks belong to assisted only — in manual they would be our wording. */
+.ks-form .ks-extras { display: none; }
+.ks-form.assisted .ks-extras { display: flex; }
+.ks-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  border: 1px solid #2a3247;
+  border-radius: 8px;
+  background: #10141f;
+  color: #d7e3f7;
+  padding: 7px 9px;
+  font: inherit;
+  font-size: 13px;
+}
+.ks-form.assisted textarea { min-height: 92px; }
+
+/* The name block sits above the prompt block: called-what, then told-what. Monospace
+   because what you type IS the session name — the same string you address later. */
+.ks-form input.ks-name {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  letter-spacing: 0.2px;
+}
+.ks-form input.ks-name.req:placeholder-shown { border-color: #3a4560; }
+.ks-form input.ks-name:focus { outline: none; border-color: var(--accent); }
+.ks-extras { display: flex; gap: 6px; margin-top: 6px; }
+.ks-extras input {
+  flex: 1 1 0;
+  min-width: 0;
+  border: 1px solid #2a3247;
+  border-radius: 8px;
+  background: #10141f;
+  color: #d7e3f7;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+@media (max-width: 680px) {
+  .ks-extras { flex-direction: column; }
+}
+
+/* A session_job with `agent: none` — a plain terminal (tejun_catalogs/SESSION_JOBS.md).
+   Everything that only makes sense when an agent is being briefed goes away: the
+   mode toggle, the prompt box, the optional wording, and the brain picker. What is
+   left is the name, where it opens, and which group it joins. Placed after the
+   .assisted rules deliberately — same specificity, so this one wins. */
+.ks-form.noagent .ks-mode,
+.ks-form.noagent .ks-say,
+.ks-form.noagent textarea,
+.ks-form.noagent .ks-extras-h,
+.ks-form.noagent .ks-extras,
+.ks-form.noagent .ks-model { display: none; }
+
+
+/* Admin panes behind one tab strip: ＋ new · ▤ sessions. Before this, spawning a
+   session replaced the panel and there was no way back to it. */
+.home-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px 0;
+}
+.home-tabs button {
+  border: 1px solid #2a3247;
+  border-radius: 8px 8px 0 0;
+  border-bottom-color: transparent;
+  background: #10141f;
+  color: #8fa3c8;
+  padding: 5px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.home-tabs button.on { background: #1d2434; color: #d7e3f7; border-color: #3a4560; }
+.home-tabs .home-x {
+  margin-left: auto;
+  border-radius: 8px;
+  border-color: transparent;
+  background: transparent;
+  color: #6f80a0;
+}
+/* ---- touch: THE STRIP SCROLLS, THE PAGE DOES NOT ----
+   Seven rooms plus the ✕ measure 549px against a 402px phone. I wrapped them onto two
+   rows first; the owner looked at it and asked for a scrolling strip instead, so the
+   strip is the one thing that moves sideways and the page underneath is nailed down.
+
+   `overscroll-behavior-x: contain` is what makes that true rather than aspirational:
+   without it, flicking the strip past its end hands the gesture to the page and the
+   whole roster slides — which is the behaviour being fixed, arriving by another door. */
+@media (max-width: 680px) {
+  .home {
+    overflow-x: hidden; /* nothing added later reintroduces the sideways slide */
+  }
+  .home-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    gap: 4px;
+    padding: 8px 8px 0;
+    /* The strip is the affordance; a scrollbar over it is noise on a touch screen. */
+    scrollbar-width: none;
+  }
+  .home-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .home-tabs button {
+    flex: 0 0 auto; /* never squeeze a label to fit — that is what scrolling is for */
+    min-height: 32px;
+    padding: 5px 10px;
+  }
+  /* ✕ rides the right edge instead of scrolling out of reach: it is the way back to
+     the terminal and must not be a thing you go looking for. The background is what
+     stops tabs showing through underneath it as they pass. */
+  .home-tabs .home-x {
+    position: sticky;
+    right: 0;
+    margin-left: auto;
+    flex: 0 0 auto;
+    background: var(--bg);
+    border-color: #2a3247;
+  }
+}
+
+/* ---- touch: category keypads ---------------------------------------------
+   The phone top bar is brand + four category toggles; each opens ONE drawer of
+   related controls (open it, use it, close it, open another). The controls are
+   the same nodes as the desktop bar, moved here by buildDrawers() — which only
+   runs on touch, so every rule below is inside the coarse-pointer block and
+   desktop is untouched. */
+#drawers {
+  display: none;
+}
+@media (pointer: coarse) {
+  #bar {
+    gap: 6px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  /* 44px, not 32: Apple's HIG minimum tap target is 44x44pt and the bar is the most
+     mis-tapped thing on the phone. The floor we design to is the iPhone 16/17 Pro
+     (402 CSS px wide — the Pro Max is 440, so 402 binds); three toggles at this size
+     leave well over 100px of slack, so the height costs nothing. */
+  #bar button.cat {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    height: 44px;
+    padding: 0 14px;
+    font-size: 14px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  #bar button.cat.armed {
+    background: var(--panel);
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  #drawers {
+    display: block;
+    flex: 0 0 auto;
+  }
+  #drawers .drawer {
+    display: none;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 12px;
+    background: var(--bg-2);
+    border-bottom: 1px solid var(--line);
+  }
+  #drawers .drawer.open {
+    display: flex;
+  }
+  /* one touch target for everything in a drawer, whatever it looked like in the bar,
+     and 44x44 minimum like the toggles above — a keypad is for fast repeat taps */
+  #drawers .drawer button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 44px;
+    min-width: 44px;
+    padding: 0 12px;
+    background: var(--panel);
+    color: var(--fg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  #drawers .drawer button:active {
+    background: var(--accent);
+    color: #000;
+  }
+  /* there is room in a drawer — beats the ≤680px icon-only rule on the bar verbs */
+  #drawers .drawer button .txt {
+    display: inline;
+  }
+
+  /* ---- touch: ONE header row ---------------------------------------------------
+     ⛩ ronin │ [ session ▾ ] │ ⋯ │ ☰ — and nothing else above the terminal. The
+     tile's own header is hoisted in here (js/tiledrop.js) and the emptied element
+     stays put, hidden: the ladder still inserts itself after it. */
+  #bar {
+    position: relative; /* the anchor both sheets drop from */
+  }
+  .tile-head.hoisted {
+    display: none;
+  }
+  /* メ and ニ — the two openers, side by side at the end of the row.
+     They were ⋯ and ☰: grey marks in furniture-coloured boxes, in a bar with
+     nothing else coloured, and they could not be found. Kana carry stroke weight
+     that punctuation does not, and each takes a Kojin house colour so the pair
+     reads as two DIFFERENT things rather than two buttons — kaki for the session,
+     aiiro for Ronin. Filled, not outlined: an outline at this size is a hint. */
+  #bar .tdrop-btn {
+    flex: 0 0 auto;
+    height: 40px;
+    min-width: 44px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    /* The kana want a face that actually draws them; the mono stack falls back to
+       something spindly on iOS. Sized up because a 2-stroke glyph at 18px is a smudge. */
+    font-size: 21px;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+  }
+  #bar .tdrop-btn.me {
+    background: color-mix(in srgb, var(--kaki) 22%, transparent);
+    border-color: color-mix(in srgb, var(--kaki) 55%, transparent);
+    color: var(--kaki-lift);
+  }
+  #bar .tdrop-btn.ni {
+    background: color-mix(in srgb, var(--aiiro) 34%, transparent);
+    border-color: color-mix(in srgb, var(--aiiro-lift) 50%, transparent);
+    color: var(--aiiro-lift);
+  }
+  #bar .tdrop-btn.me:active {
+    background: var(--kaki);
+    border-color: var(--kaki);
+    color: #fff;
+  }
+  #bar .tdrop-btn.ni:active {
+    background: var(--aiiro-lift);
+    border-color: var(--aiiro-lift);
+    color: #0b0e14;
+  }
+  /* The row is the session: the picker takes every pixel the two openers do not.
+     The 50% cap was there to stop it crowding out nine buttons; the buttons are
+     gone and the picker is the reason the row exists. */
+  #bar select.sess {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
+    height: 40px;
+    background: var(--panel);
+    color: var(--fg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 0 8px;
+    font-size: 14px;
+  }
+  #bar .dot {
+    flex: 0 0 auto;
+  }
+  /* The brand yields first — the session name matters more than the word "ronin". */
+  #bar .brand {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* Anchored to #bar (position:relative), like .tmac — a panel would be the wrong
+     weight for what is one tap and gone. Translucent so the pane still reads
+     underneath: this is a sheet over the terminal, not a new screen. */
+  .tdrop {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 6px;
+    z-index: 14;
+    min-width: 200px;
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 6px;
+    background: color-mix(in srgb, var(--panel) 88%, transparent);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5);
+  }
+  .tdrop.open {
+    display: block;
+  }
+  .tdrop-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    /* 44px: the row is the tap target, not the 34px control sitting in it. */
+    min-height: 44px;
+    padding: 0 6px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .tdrop-row:active {
+    background: var(--line);
+  }
+  /* The Status row is a READING, not a door: no tap, no press state, no pointer.
+     It is first in the sheet and it is the only row that does nothing. */
+  .tdrop-row.inert {
+    cursor: default;
+    padding-bottom: 4px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+  }
+  .tdrop-row.inert:active {
+    background: transparent;
+  }
+  .tdrop-row > span {
+    flex: 1;
+    color: var(--fg);
+    font-size: 15px;
+    white-space: nowrap;
+  }
+  /* The Status row's word is a live reading (ctx % · model), not a label — set
+     apart so it doesn't read as another thing you can tap into. */
+  .tdrop-row > span.tdrop-status {
+    color: var(--muted);
+    font-size: 13px;
+  }
+  /* A control that hides itself (no ladder up, no context reading) takes its word
+     with it — tiledrop.js syncs this too, for engines without :has(). */
+  .tdrop-row:has(> [hidden]) {
+    display: none;
+  }
+}
+
+
+/* ── The tape view ────────────────────────────────────────────────────────────
+   A tape-fed tile renders plain text, so it is a scrollable element, not a
+   terminal. That is the entire reason scrolling feels like a page here: the OS
+   scrolls it, with momentum and rubber-banding, and nothing re-renders per tick.
+   🔒 Locked keeps xterm, where a live positioned screen genuinely needs one. */
+.tile .tape {
+  display: none;
+}
+.tile.tape-on .tape {
+  display: block;
+  position: absolute;
+  /* Cancel .tile-body padding so the text owns the tile. The negative inset makes the
+     tape WIDER THAN ITS TILE by design — measured 410px inside a 402px phone, starting
+     at -6 — which is fine only because .tile-body clips it. Without that clip it is an
+     element hanging past the right edge of the screen, and iOS Safari lets you pan a
+     page to reach anything that does: the roster slid left and right and nothing in
+     the roster was the cause. */
+  inset: -4px -2px -2px -6px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* NO -webkit-overflow-scrolling: touch — modern iOS momentum-scrolls any overflow
+     container by default, and the legacy property resurrects a classic WebKit bug:
+     the scrollable EXTENT is cached, so content appended later sits below a floor
+     the gesture cannot cross. That was "the render gets stopped up above" on the
+     phone: the text was all there, the scroll refused to reach it. */
+  overscroll-behavior: contain;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font: 13px/1.35 Menlo, "DejaVu Sans Mono", Consolas, monospace;
+  color: #d6dae0;
+  background: #0f1216;
+  padding: 6px 8px 12px;
+  margin: 0;
+  -webkit-text-size-adjust: 100%;
+}
+/* The emulator is not in the picture at all while the tape view is up — leaving it
+   rendering underneath would cost work every frame for something nobody can see. */
+.tile.tape-on .xterm {
+  display: none;
+}
+
+/* The live frame — the pane's current screen under the transcript, replaced wholesale.
+   Visually a footer: the seam says "below this line is NOW, above it is history". */
+.tile.tape-on .tape .tframe {
+  border-top: 1px dashed #3a4450;
+  margin-top: 8px;
+  padding-top: 6px;
+}
+/* Tool-output folds — ⎿ blocks collapsed the way the CLI collapses them.
+   Native <details>: tap opens, tap closes, default closed. */
+.tile.tape-on .tape details.fold {
+  margin: 1px 0;
+}
+.tile.tape-on .tape details.fold summary {
+  cursor: pointer;
+  color: #8b98a5;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.tile.tape-on .tape details.fold[open] summary {
+  color: #b7c2cc;
+}
+
+/* ↓ latest — the deterministic way back to the live end of the transcript. Exists
+   only on tape tiles, shows only while scrolled up. */
+.tile .tapejump {
+  display: none;
+}
+.tile.tape-on .tapejump.show {
+  display: block;
+  position: absolute;
+  right: 14px;
+  bottom: 58px; /* clear the docked composer, which owns the bottom edge */
+  z-index: 3;
+  font: 12px Menlo, "DejaVu Sans Mono", Consolas, monospace;
+  color: #d6dae0;
+  background: rgba(30, 36, 44, 0.92);
+  border: 1px solid #4a5561;
+  border-radius: 14px;
+  padding: 5px 12px;
+  cursor: pointer;
+}
+.tile.tape-on .tapejump.show:hover {
+  background: rgba(44, 52, 62, 0.95);
+}
+@media (pointer: coarse) {
+  .tile.tape-on .tapejump.show {
+    padding: 8px 16px;
+    font-size: 14px;
+    bottom: 76px;
+  }
+}
+@media (pointer: coarse) {
+  .tile.tape-on .tape {
+    font-size: 14px;
+    line-height: 1.4;
+  }
+}
+
+/* ---------- failure containment (see js/errors.js, the containment layer) ----------
+   A blank page that looks fine and does nothing is the worst failure this app has
+   (2026-08-08). Anything that throws now says so here, on top of everything. */
+/* In NORMAL FLOW, not fixed: it pushes the page down instead of covering the top bar.
+   Covering the header would hide the controls that still work, which is the opposite
+   of the point. */
+#failbar {
+  position: relative;
+  z-index: 9999;
+  max-height: 40vh;
+  overflow-y: auto;
+  padding: 8px 34px 8px 12px;
+  background: #3a1416;
+  border-bottom: 1px solid #cc6666;
+  color: #f2d6d6;
+  font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+#failbar .failbar-title {
+  display: block;
+  font-weight: 600;
+  color: #ff9b9b;
+  margin-bottom: 4px;
+}
+#failbar .failbar-line {
+  white-space: pre-wrap;
+  word-break: break-word;
+  opacity: 0.9;
+}
+#failbar .failbar-x {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  background: none;
+  border: 0;
+  color: #f2d6d6;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+}
+#failbar .failbar-x:hover {
+  color: #fff;
+}
+/* A tile that failed to build keeps the grid's shape instead of collapsing it. */
+.tile.tile-dead {
+  border-color: #cc6666;
+}
+.tile.tile-dead .dead-note {
+  padding: 16px;
+  color: #cc6666;
+  font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-align: center;
+}
+.tile.tile-dead .dead-why {
+  color: #a08080;
+  word-break: break-word;
+}
+
+/* ── The composer: the unlocked tile's text entry ──────────────────────────────────
+   Unlocked input used to ride xterm's onData, but a tape-fed tile hides xterm, so the
+   surface had nowhere to type. Docked at the bottom, growing with the text. Locked
+   tiles never show it; desktop unlocked had no input at all before, so this is purely
+   additive and changes nothing that already worked. */
+.tile .composer {
+  display: none;
+}
+.tile.tape-on .composer.show {
+  display: flex;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  gap: 6px;
+  padding: 5px 6px;
+  background: #11151b;
+  border-top: 1px solid #26303c;
+  align-items: flex-end;
+}
+.tile.tape-on .composer textarea {
+  flex: 1;
+  resize: none;
+  min-height: 30px;
+  max-height: 160px;
+  padding: 6px 8px;
+  border: 1px solid #2b3644;
+  border-radius: 8px;
+  background: #0d1116;
+  color: #e6eaf0;
+  font: 13px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  outline: none;
+}
+/* Send refused because the socket is down: keep the text, say so, retry lands it. */
+.tile.tape-on .composer.noconn textarea {
+  border-color: #a33c33;
+}
+/* Enter arrived while the clip was still transcribing: queued, sends on landing. */
+.tile.tape-on .composer.queued .csend {
+  opacity: 0.4;
+}
+.tile.tape-on .composer textarea:focus {
+  border-color: #4f9bff;
+}
+.tile.tape-on .composer .csend {
+  height: 30px;
+  min-width: 38px;
+  border: 0;
+  border-radius: 8px;
+  background: #2f6fd0;
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+}
+/* 🎤 on the box, between the text and ↵ — the mic used to be a floating circle over
+   the terminal that opened a SECOND textarea and dictated into that. It belongs on the
+   one entry, beside the key that sends what it wrote. Quieter than ↵: dictating is a
+   way of typing, not a second way of sending. */
+.tile.tape-on .composer .cmic {
+  height: 30px;
+  min-width: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--fg);
+  font-size: 15px;
+  cursor: pointer;
+}
+/* Listening is the one state worth shouting: it means the microphone is live. */
+.tile.tape-on .composer .cmic.listening {
+  background: #c0392b;
+  border-color: #c0392b;
+  color: #fff;
+}
+/* … while the clip is on its way to the host and back. Whisper gives nothing until the
+   recording stops, so this wait is the whole cost of not sending your voice to Apple —
+   it has to be visible rather than look like a dead button. */
+.tile.tape-on .composer .cmic.busy {
+  opacity: 0.6;
+  cursor: default;
+}
+/* Room for it, so the last line of the transcript is never hidden behind the box. */
+.tile.tape-on .tape {
+  padding-bottom: 52px;
+}
+@media (pointer: coarse) {
+  /* 16px stops iOS Safari zooming the page when the field takes focus. */
+  .tile.tape-on .composer textarea { font-size: 16px; }
+}
+
+/* The per-tile lock, in the tile head with the other per-tile controls. */
+.tile-head .lock.armed { color: #7fd4a8; }
+
+/* Each tile's own 🔒/🔓 — the switch lives with the pane it acts on, never in the
+   window chrome, which cannot say which pane it means. */
+.tile-head .lock {
+  font-size: 12px;
+  opacity: 0.75;
+}
+.tile-head .lock.armed {
+  opacity: 1;
+  color: #7fd4a8;
+}
+/* Where it happened — the top stack frames, under the message. A message with no
+   location sends the reader hunting; that was a real complaint (2026-08-08). */
+#failbar .failbar-at {
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: #d9a0a0;
+  opacity: 0.75;
+  margin: 2px 0 6px 10px;
+  font-size: 11px;
+}
+
+/* ================= SHINGO (信号) — the ladder, made visible =================
+   Three surfaces, one payload: the chip in the tile header, the ladder it unrolls,
+   and the same fields as a column on the commons board. Read-only throughout — nothing
+   in here can touch a session. Sized to sit in a header row that already carries ten
+   controls, which is why the chip is fixed-width and the ladder is a drop, not a pane. */
+
+/* NOTE THE SELECTOR. `.tile-head button` sets width:26px for the control buttons, and
+   it outranks a bare `.shingo-chip` — a chip styled without the `button` in its selector
+   silently renders as a 26px square with its label clipped to nothing. The header has
+   room (~185px of slack at a 2x2 tile); it was never a space problem. Still allowed to
+   yield first if a long phase name ever does run the row out. */
+.tile-head button.shingo-chip {
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: Menlo, "DejaVu Sans Mono", Consolas, monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 3px 7px;
+  height: 24px;
+  color: var(--accent);
+  background: rgba(224, 175, 104, 0.07);
+  white-space: nowrap;
+  cursor: pointer;
+}
+/* The age rides inside the chip, quieter than the position it follows — a second read,
+   not a competing one. */
+.shingo-chip .age {
+  color: var(--muted);
+}
+.shingo-chip .age:not(:empty)::before {
+  content: " · ";
+}
+.shingo-chip.gate .age {
+  color: rgba(240, 198, 116, 0.75);
+}
+.shingo-chip.open {
+  border-color: var(--accent);
+}
+/* A gate is the one state the owner has to act on, so it takes the same slot and
+   simply goes amber. No second widget, no badge, no bell. */
+.shingo-chip.gate {
+  color: var(--warn);
+  border-color: rgba(240, 198, 116, 0.55);
+  background: rgba(240, 198, 116, 0.12);
+}
+
+.shingo-ladder {
+  flex: 0 0 auto;
+  font-family: Menlo, "DejaVu Sans Mono", Consolas, monospace;
+  font-size: 11.5px;
+  line-height: 1.85;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  padding: 8px 12px;
+  max-height: 45%;
+  overflow-y: auto;
+}
+.shingo-ladder .sl-job {
+  display: inline-block;
+  margin-right: 7px;
+  padding: 0 5px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--accent-2);
+}
+/* A side road is not an alarm — the session meant to step off, and nothing here wants
+   the owner. Blue rather than the gate's amber, which is reserved for "you are needed". */
+.shingo-ladder .sl-side {
+  color: var(--accent-2);
+  padding-bottom: 5px;
+  margin-bottom: 5px;
+  border-bottom: 1px solid var(--line);
+}
+.shingo-chip.side {
+  color: var(--accent-2);
+  border-color: var(--line);
+  background: rgba(129, 162, 190, 0.1);
+}
+.shingo-ladder .sl-obj {
+  color: var(--fg);
+  padding-bottom: 5px;
+  margin-bottom: 5px;
+  border-bottom: 1px solid var(--line);
+}
+.shingo-ladder .sl-row {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  white-space: nowrap;
+}
+/* THE THREE FIXED COLUMNS — torii · mark · number — all one width, all centred, one gap
+   between each. Reserved on every row, so the ladder never shuffles sideways as the
+   torii moves down it and the three read as an even gutter rather than three sizes.
+   (They were 14/14/12 with the number right-aligned, which is why the spacing looked
+   wrong between the mark and the number but right between the torii and the mark.) */
+.shingo-ladder .sl-here,
+.shingo-ladder .sl-m,
+.shingo-ladder .sl-n {
+  flex: 0 0 auto;
+  width: 14px;
+  text-align: center;
+}
+.shingo-ladder .sl-here {
+  color: var(--accent);
+}
+.shingo-ladder .sl-n {
+  color: #4a5265;
+  font-variant-numeric: tabular-nums;
+}
+/* The mark carries the single most-read fact on the ladder, so it is set heavier and a
+   size up from the text around it — at body weight both glyphs render hairline and the
+   done/not-done split stops being legible at a glance, which is the whole job. */
+.shingo-ladder .sl-m {
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1;
+  color: #8a93a6;
+}
+.shingo-ladder .sl-t {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--muted);
+  flex: 0 1 auto;
+}
+.shingo-ladder .sl-phase {
+  margin-top: 4px;
+}
+.shingo-ladder .sl-phase .sl-t {
+  color: #dfe2e4;
+  font-weight: 600;
+}
+.shingo-ladder .sl-frac {
+  margin-left: auto;
+  padding-left: 10px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.shingo-ladder .st-DONE .sl-m {
+  color: var(--ok);
+  text-shadow: 0 0 6px rgba(181, 189, 104, 0.35);
+}
+
+/* ONE LIVE ROW. You are waiting at the gate or you are doing leg four — never both — so
+   amber belongs to exactly one row and every other rung stays quiet. A gate further down
+   the ladder is a PLAN: it is drawn as plainly as a planned leg, because painting it
+   amber is what made two rows look live at once. */
+.shingo-ladder .sl-row.now {
+  background: rgba(224, 175, 104, 0.13);
+  box-shadow: inset 2px 0 0 var(--accent);
+  margin: 0 -12px;
+  padding: 0 12px;
+}
+.shingo-ladder .sl-row.now .sl-t,
+.shingo-ladder .sl-row.now .sl-n,
+.shingo-ladder .sl-row.now .sl-m {
+  color: var(--accent);
+}
+.shingo-ladder .sl-row.now .sl-tag {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* The gate's label — the only word on the ladder, because a gate is the only rung that
+   stops the work and wants the owner. It must READ AS A BOX at a glance even when the
+   gate is not the live rung: legible border, filled ground, real weight. Amber is still
+   reserved for the one live row (below), so a gate you have passed or not yet reached is
+   plainly a gate without pretending to be where the session is. */
+.shingo-ladder .sl-tag {
+  flex: 0 0 auto;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  border: 1px solid #454d61;
+  background: rgba(255, 255, 255, 0.055);
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: #aab2c2;
+}
+
+/* The honesty rule, rendered: a phase whose legs are undetermined shows nothing under
+   it rather than a guess. */
+.shingo-ladder .sl-und {
+  color: #4a5265;
+  font-style: italic;
+  font-weight: 400;
+}
+.shingo-ladder .sl-empty,
+.shingo-ladder .sl-quiet {
+  color: var(--muted);
+  font-style: italic;
+}
+.shingo-ladder .sl-quiet {
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid var(--line);
+}
+
+/* The board column. Same three fields as the chip, one row per session. */
+.home-shingo {
+  flex: 0 0 auto;
+  font-family: Menlo, "DejaVu Sans Mono", Consolas, monospace;
+  font-size: 10.5px;
+  color: var(--accent);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+.home-shingo.gate {
+  color: var(--warn);
+  border-color: rgba(240, 198, 116, 0.55);
+  background: rgba(240, 198, 116, 0.12);
+}
+
+/* ---- the letter: the TEGAMI file itself, opened from the ⛩ in any tile header ---- */
+.tile-head button.torii {
+  color: var(--accent);
+}
+.tile-head button.torii.open {
+  border-color: var(--accent);
+}
+.shingo-letter {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+.sletter-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--line);
+  flex: 0 0 auto;
+}
+.sletter-path {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: Menlo, "DejaVu Sans Mono", Consolas, monospace;
+  font-size: 10.5px;
+  color: var(--muted);
+}
+.sletter-x {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 24px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--muted);
+  cursor: pointer;
+}
+/* wrap="off" in spirit: the json block is laid out in columns and soft-wrapping mangles
+   it, so the block scrolls sideways instead. */
+.sletter-body {
+  flex: 1 1 auto;
+  margin: 0;
+  padding: 10px 12px;
+  overflow: auto;
+  font-family: Menlo, "DejaVu Sans Mono", Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--fg);
+  white-space: pre;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* ---- ▤ Commons (top bar) — one button, the five rooms of commons ----
+   Rows mirror the commons' tab strip in order and glyph, so a pick lands where the label
+   said and the strip then shows you where you are. Anchored to the bar, not the
+   viewport: the button is the thing it belongs to. */
+#bar { position: relative; } /* kept: the drop menus on touch still hang off it */
+.commons-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  min-width: 168px;
+  padding: 4px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 10px 28px -12px rgba(0, 0, 0, 0.6);
+}
+.commons-menu[hidden] { display: none; }
+.commons-row {
+  text-align: left;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.commons-row:hover,
+.commons-row:focus-visible { background: var(--line); color: var(--accent); }
+
+.commons-wrap { position: relative; display: inline-flex; }
+.commons-menu { left: 0; }
+
+
+/* ---- ▦ STATS: TOMODACHI's readout — how this install actually gets used ----
+   Counts and charts only, no generated prose. Everything is CSS plus one inline SVG
+   sparkline: no chart library, no dependency. One column at every width for the same
+   reason as the wipeboard — a home panel is sized by its TILE, so a viewport media
+   query would be the wrong instrument. Desktop behaviour is untouched by this file;
+   nothing here is gated on pointer type because nothing here needs to be.
+   Plan: co-working/user_repo/wip/buildouts/TOMODACHI.md · contract: docs/soroban.md */
+.home-stats {
+  flex-direction: column;
+  min-height: 0;
+  padding: 10px;
+  gap: 10px;
+  overflow: auto;
+  font-variant-numeric: tabular-nums;
+}
+/* The seven session_jobs get a stable colour each, so the same job is the same colour
+   in every chart. Base16 siblings of the app's own accents; --bad is never used
+   categorically, so red keeps meaning "wrong". */
+.home-stats {
+  --k-RiffOnIt: #b294bb;
+  --k-DraftPlan: #81a2be;
+  --k-CutCode: #e0af68;
+  --k-ChaseBug: #8abeb7;
+  --k-CheckWork: #b5bd68;
+  --k-WatchCrew: #de935f;
+  --k-OddJob: #707a91;
+  --k-other: #5a6376;
+}
+.td-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.td-wins {
+  display: flex;
+}
+.td-win {
+  font: inherit;
+  font-size: 11px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-right: 0;
+  padding: 4px 11px;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.td-win:last-child {
+  border-right: 1px solid var(--line);
+}
+.td-win:hover {
+  color: var(--fg);
+  background: var(--panel);
+}
+.td-win.on {
+  color: var(--accent);
+  border-color: var(--accent);
+  position: relative;
+  z-index: 1;
+}
+.td-range {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+/* The fault banner. Mechanical: the caught error verbatim, select-all, paste to fix. */
+.td-fault {
+  border: 1px solid var(--bad);
+  background: rgba(204, 102, 102, 0.06);
+}
+.td-fhead {
+  padding: 8px 11px;
+  color: var(--bad);
+  font-size: 11px;
+  border-bottom: 1px solid rgba(204, 102, 102, 0.35);
+}
+.td-fbody {
+  margin: 0;
+  padding: 9px 11px;
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.6;
+  white-space: pre;
+  overflow-x: auto;
+  user-select: all;
+}
+
+.td-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.td-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+.td-card {
+  background: var(--panel);
+  padding: 10px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.td-lbl {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.td-big {
+  font-size: 26px;
+  line-height: 1;
+  color: var(--fg);
+}
+.td-sub {
+  font-size: 11px;
+  color: var(--muted);
+}
+.td-spark {
+  display: block;
+  width: 100%;
+  height: 22px;
+}
+
+.td-sec {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.td-sechead {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+}
+.td-sechead h2 {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg);
+}
+.td-secn {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+.td-rule {
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.td-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+.td-panel {
+  background: var(--panel);
+  padding: 11px 12px;
+  min-width: 0;
+}
+.td-panel.wide {
+  grid-column: 1/-1;
+}
+.td-panel h3 {
+  margin: 0 0 9px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.td-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.td-bar {
+  display: grid;
+  grid-template-columns: 76px 1fr 28px;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.td-nm {
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.td-track {
+  height: 9px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+}
+.td-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent-2);
+}
+.td-fill.top {
+  background: var(--accent);
+}
+.td-n {
+  text-align: right;
+  color: var(--muted);
+}
+.td-bar.zero .td-nm,
+.td-bar.zero .td-n {
+  color: #454d61;
+}
+
+.td-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+}
+.td-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.td-k {
+  color: var(--muted);
+}
+.td-v {
+  color: var(--fg);
+  text-align: right;
+}
+.td-row.zero .td-k,
+.td-row.zero .td-v {
+  color: #454d61;
+}
+
+.td-mek {
+  display: flex;
+  gap: 2px;
+  height: 110px;
+  align-items: stretch;
+}
+.td-mekcol {
+  display: flex;
+  flex-direction: column;
+  min-width: 3px;
+}
+.td-seg {
+  position: relative;
+}
+.td-seg span {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(11, 14, 20, 0.82);
+}
+.td-mekaxis {
+  display: flex;
+  gap: 2px;
+  margin-top: 5px;
+}
+.td-mekaxis div {
+  font-size: 10px;
+  color: var(--muted);
+  overflow: hidden;
+  white-space: nowrap;
+  border-top: 1px solid var(--line);
+  padding-top: 4px;
+  min-width: 3px;
+}
+.td-legend {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.td-legend i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 4px;
+}
+
+.td-hist {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 6px;
+  align-items: end;
+}
+.td-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.td-stack {
+  width: 100%;
+  min-height: 2px;
+  background: var(--accent-2);
+}
+.td-cnt {
+  font-size: 11px;
+  color: var(--fg);
+}
+.td-cap {
+  font-size: 10px;
+  color: var(--muted);
+}
+.td-mean {
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* A zero here is not a gap in the data — it is a feature nobody has found yet, which
+   makes this grid the cheapest feature-discovery surface in the product. */
+.td-caps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+.td-capcell {
+  background: var(--panel);
+  padding: 9px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.td-capcell.off {
+  background: var(--bg-2);
+}
+.td-capn {
+  font-size: 18px;
+  line-height: 1.1;
+  color: var(--fg);
+}
+.td-capt {
+  font-size: 10px;
+  color: var(--muted);
+}
+.td-capcell.off .td-capn {
+  color: #3a4152;
+}
+.td-capcell.off .td-capt {
+  color: #454d61;
+}
+
+.td-foot {
+  color: var(--muted);
+  font-size: 11px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+/* The layout trio is the FOURTH button: one box the same size as the other three,
+   with 1 / 2 / 4 as segments inside it rather than three loose controls. */
+#bar .layouts { padding: 0 2px; gap: 0; }
+#bar .layouts button {
+  height: 26px;
+  min-width: 24px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+#bar .layouts button.active { background: var(--line); color: var(--fg); }
+#bar .layouts button:hover { color: var(--fg); }
+/* The menu wears the bar's own surface, not the panel's darker one — it drops out
+   of the bar and should read as part of it. */
+.commons-menu { background: var(--bg-2); }
+
+/* ---- PROVENANCE: a catalog entry that is the user's own (js/provenance.js).
+   Stock gets NOTHING — silence is the right rendering for "as shipped", and the
+   common case must not be decorated to serve the rare one. Two glyphs, because
+   "I added this" and "this stands in Ronin's place" are different facts. ---- */
+.prov {
+  margin-left: 0.35em;
+  font-size: 0.85em;
+  color: #6ea8fe;
+  opacity: 0.85;
+  cursor: help;
+}
+/* Changed, not added — the one that can silently stop tracking an upgrade. */
+.prov-shad {
+  color: #e0a34a;
+}
+.prov-add {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 7px 10px;
+  background: transparent;
+  border: 1px dashed #3a4152;
+  border-radius: 6px;
+  color: #8b93a7;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.prov-add:hover {
+  border-color: #6ea8fe;
+  color: #cfd6e4;
+}
+.prov-said {
+  margin-top: 5px;
+  color: #8b93a7;
+  font-size: 11px;
+  word-break: break-all;
+}
+.prov-said.bad {
+  color: #e06c75;
+}
+
+/* ---- SAVED LAUNCHES: the launcher form, filled in ahead of time and named.
+   Sits above the kind board because it is the shortcut past it. ---- */
+.ks-saved {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.ks-saved-h {
+  width: 100%;
+  color: #8b93a7;
+  font-size: 11px;
+  text-transform: lowercase;
+}
+.ks-saved-btn {
+  padding: 6px 10px;
+  background: #1c2130;
+  border: 1px solid #3a4152;
+  border-radius: 999px;
+  color: #cfd6e4;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.ks-saved-btn:hover {
+  border-color: #6ea8fe;
+}
+.ks-save {
+  font-size: 12px;
+}
+
+/* ---- ▥ Hotwords: whose list is showing (copy-on-write, not a merge) ---- */
+.hot-whose {
+  margin: 2px 0 6px;
+  color: #8b93a7;
+  font-size: 11px;
+}
+.hot-whose.own {
+  color: #6ea8fe;
+}

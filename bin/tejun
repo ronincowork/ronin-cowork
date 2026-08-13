@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+# tejun — compile a macro into one self-contained blob: the recipe, every action it
+# names (full text), and any tool that implements those actions.
+# Usage: tejun <macro>         e.g. tejun land
+#        tejun                 list available macros
+# Exits non-zero if a macro names an action that does not exist — a macro that
+# references an undefined action simply does not compile. No lint required.
+set -u
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# The user's own catalogs — NEVER a hand-spelled path (JUSHO, docs/stores.md). Absent
+# store = no user catalogs, which is the ordinary fresh-install case.
+USERCAT="$(ronin-store catalogs 2>/dev/null || true)"
+exec python3 - "$ROOT" "${1:-}" "$USERCAT" <<'PY'
+import re,sys,subprocess
+root,name,usercat=sys.argv[1],sys.argv[2],sys.argv[3]
+
+def parse(path):
+    """{name: (heading, body)} for every '## ' section, stopping at a '---' footer."""
+    out,cur,buf,head={},None,[],None
+    try: fh=open(path)
+    except OSError: return out          # no user file is the ordinary path, never an error
+    for line in fh:
+        if line.startswith('---') and cur: break
+        if line.startswith('## '):
+            if cur: out[cur]=(head,''.join(buf))
+            head=line.rstrip(); cur=line[3:].strip().split()[0].strip('`'); buf=[]
+        elif cur is not None: buf.append(line)
+    if cur: out[cur]=(head,''.join(buf))
+    return out
+
+def sections(fname):
+    """The shadowing rule, in Python — the same STATEMENT src/catalog.ts implements in
+    TypeScript (docs/shadowing.md), not the same code: stock first, then the user's file
+    of the same name; a user section replaces its stock namesake in place, new names
+    append after the stock ones, and '- **hidden:** yes' removes one."""
+    stock=parse(f'{root}/tejun_catalogs/{fname}')
+    user=parse(f'{usercat}/{fname}') if usercat else {}
+    hidden=lambda b: re.search(r'^-\s*\*\*hidden:\*\*\s*yes\b', b, re.M|re.I)
+    out={}
+    for n,(h,b) in stock.items():
+        if n in user:
+            if not hidden(user[n][1]): out[n]=user[n]
+        else: out[n]=(h,b)
+    for n,(h,b) in user.items():
+        if n not in stock and not hidden(b): out[n]=(h,b)
+    return out
+
+macros=sections('MACROS.md')
+actions=sections('ACTIONS.md')
+
+if not name:
+    print("macros:", ", ".join(macros))
+    print("tejun <macro>  compile it · tejun tools  list tools · tejun actions  list actions")
+    sys.exit(0)
+if name in ('tools','actions'):
+    fname='TOOLS.md' if name=='tools' else 'ACTIONS.md'
+    sys.stdout.write(open(f'{root}/tejun_catalogs/{fname}').read())
+    # The user's own file is shown BELOW the stock one rather than merged into it: this
+    # is a document for a person to read, and a merged document would hide which half
+    # they wrote. What COMPILES is the merge above; this is the reading copy.
+    try:
+        own=open(f'{usercat}/{fname}').read() if usercat else ''
+    except OSError: own=''
+    if own.strip(): sys.stdout.write(f"\n\n=== YOUR OWN {fname} ({usercat}) ===\n\n"+own)
+    sys.exit(0)
+name=name.lstrip('+ろ/').rstrip(':')
+# A macro may declare `Aliases: x, y` on its own line — the same recipe under another
+# name, so the owner isn't made to remember which of two obvious words we picked.
+aliases={}
+for m,(h,b) in macros.items():
+    for a in re.findall(r'^Aliases?:\s*(.+)$', b, re.M):
+        for alias in re.split(r'[,\s]+', a.strip()):
+            alias=alias.strip('`')
+            if alias and alias not in macros: aliases[alias]=macros[m]
+macros.update(aliases)
+if name not in macros:
+    print(f"UNKNOWN MACRO '{name}'. Available: {', '.join(macros)}", file=sys.stderr); sys.exit(2)
+
+head,body=macros[name]
+# step names live in column 2 of the recipe table; a cell may name two actions ("a + b")
+steps=[]
+for row in re.findall(r'^\|\s*\d+\s*\|([^|]+)\|', body, re.M):
+    for a in re.split(r'\+|,', row):
+        a=a.strip().strip('`')
+        if a: steps.append(a)
+
+missing=[a for a in steps if a not in actions]
+if missing:
+    print(f"CANNOT COMPILE '{name}': undefined action(s): {', '.join(sorted(set(missing)))}\n"
+          f"Define them in tejun_catalogs/ACTIONS.md first (see tejun_catalogs/README.md).", file=sys.stderr)
+    sys.exit(3)
+
+# TOOLS.md is a TABLE, not `## name` blocks, so the same rule keys on the tool name in
+# column 1: a user row replaces the stock row of that name, new rows append after.
+tools_by_name={}
+for scope in (f'{root}/tejun_catalogs/TOOLS.md', f'{usercat}/TOOLS.md' if usercat else None):
+    if not scope: continue
+    try: fh=open(scope)
+    except OSError: continue
+    for line in fh:
+        m=re.match(r'\|\s*`([^`]+)`\s*\|\s*([a-z-]+)\s*\|\s*(.+?)\s*\|', line)
+        if m: tools_by_name[m.group(1)]=(m.group(2),m.group(3))
+tools={}
+for tname,(act,usage) in tools_by_name.items():
+    tools.setdefault(act,[]).append((tname,usage))
+
+print(f"=== MACRO: {name} ===\n{head}\n{body.rstrip()}\n")
+print("=== ACTIONS (in order) ===")
+seen=set()
+for a in steps:
+    if a in seen: continue
+    seen.add(a)
+    h,b=actions[a]
+    print(f"\n{h}\n{b.rstrip()}")
+    for tname,usage in tools.get(a,[]):
+        print(f"  ↳ TOOL: {tname} — {usage}")
+# Compiling a macro ARMS THE RATCHET on this session: drafting the run and preparing
+# to walk it are one motion, so nobody ends up running a macro untracked.
+sess=subprocess.run(['tmux','display-message','-p','#S'],capture_output=True,text=True).stdout.strip()
+if sess and not sess.startswith('grid_'):
+    subprocess.run(['tmux','set-option','-t',sess,'@tejun-step',f'{name}:1'],capture_output=True)
+    first=steps[0] if steps else None
+    print(f"\n=== RATCHET ARMED on '{sess}' — {len(steps)} steps ===")
+    print(f"Step 1/{len(steps)} is: {first}")
+    print("Do it, then `tejun-step done` to check it in and get the next. Not COMPLETE")
+    print("until every step is checked in — including the last one.")
+else:
+    print("\n(not in a session — step tracking not started; run `tejun-step start` where you work)")
+print("\n=== RUN IT, DON'T NARRATE IT. Report the outcome, not the recipe. ===")
+PY

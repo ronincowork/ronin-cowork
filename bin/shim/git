@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# git shim — record what THIS session staged, so the pre-commit guard has something to
+# judge against. Vendor-neutral, like bin/shim/tmux beside it: any agent, any CLI, a human
+# typing at a pane — if bin/shim is on the PATH, the claim gets recorded.
+#
+# IT CHANGES NO HABITS. `git add x` and `git commit -m '...'` keep working exactly as they
+# always have. The only thing that happens differently is that an `add` also writes down
+# what it staged, and the pre-commit hook uses that to refuse a commit carrying files this
+# session never touched. Everything else is passed straight through, untouched.
+#
+# Speed bump, not physics: /usr/bin/git still exists. Going around this is a deliberate,
+# visible act rather than an accident — the same posture as the tmux shim.
+set -u
+SELF_DIR=$(cd "$(dirname "$0")" && pwd)
+REAL=$(PATH=$(printf '%s' "$PATH" | tr ':' '\n' | grep -vxF "$SELF_DIR" | paste -sd:) command -v git)
+[ -n "${REAL:-}" ] || REAL=/usr/bin/git
+
+# Only `add` is intercepted, and only to record. Note the subcommand is the first argument
+# that is not a global option, so `git -C dir add …` is still an add.
+sub=""
+for a in "$@"; do
+  case "$a" in
+    -C|-c|--git-dir|--work-tree|--namespace|--exec-path) skip=1 ;;
+    -*) : ;;
+    *) if [ "${skip:-0}" = 1 ]; then skip=0; else sub="$a"; break; fi ;;
+  esac
+done
+
+if [ "$sub" = "add" ] && [ "${RONIN_CLAIM_OFF:-0}" != 1 ]; then
+  CLAIM="$SELF_DIR/../ronin-claim"
+  if [ -x "$CLAIM" ]; then
+    # ronin-claim runs the real add itself (it snapshots the index either side of it), so
+    # this branch does not fall through. Its exit code is git's.
+    args=()
+    seen=0
+    for a in "$@"; do
+      if [ "$seen" = 0 ] && [ "$a" = "add" ]; then seen=1; continue; fi
+      [ "$seen" = 1 ] && args+=("$a")
+    done
+    PATH="$(printf '%s' "$PATH" | tr ':' '\n' | grep -vxF "$SELF_DIR" | paste -sd:)" \
+      "$CLAIM" add ${args[@]+"${args[@]}"}
+    exit $?
+  fi
+fi
+
+exec "$REAL" "$@"

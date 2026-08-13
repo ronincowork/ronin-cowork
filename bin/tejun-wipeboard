@@ -1,0 +1,235 @@
+#!/usr/bin/env bash
+# tejun-wipeboard — a shared text surface a set of sessions can all read and write.
+# Usage: tejun-wipeboard                          every board in play, with member counts
+#        tejun-wipeboard <board>                  the roster (member + dial) and the file path
+#        tejun-wipeboard <board> add <target>…    tag sessions onto the board + notify them
+#        tejun-wipeboard <board> remove <target>… untag + notify
+#        tejun-wipeboard <board> post <text…>     append one watermarked entry
+#        tejun-wipeboard <board> read [n]         the last n posts (default 20)
+#
+# A <target> is a session (`name` or `@name`) or a whole group (`+group`, `+tag:group`).
+#
+# A wipeboard is TWO things and nothing else: a markdown file, and a tmux user option
+# (@ronin-wipeboards) naming who is on it. No database, no daemon, no locking — posts
+# are appended with >> and that IS the concurrency story. Membership lives on the
+# session so it dies with the session and can never drift from reality.
+#
+# Vendor-neutral by construction: agents interact with a FILE. Nothing here reaches
+# into any agent CLI's internals.
+set -u
+
+BOARDS_OPT='@ronin-wipeboards'
+VIEWER_PREFIX='grid_'   # browser viewer sessions — never a member
+HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+DIR="$HERE/co-working/ronin/wipeboards"
+SEND="$HERE/bin/tejun-send"
+NAME_RE='^[a-z0-9][a-z0-9_-]*$'
+
+# The owner's watermark. Was `user: glen` — a literal, so every install signed the owner's
+# posts with OUR owner's name. JUSHO: nothing shipped names a person. The name arrives on
+# the tmux SERVER option @ronin-owner, published by Ronin from the owner's config, for the
+# same reason @ronin-session-max does — a Node server and a zero-dependency bash tool can
+# both read it without two JSON parsers. No server, or a Ronin that has not published yet:
+# this machine's own user, which is the same default the server falls back to.
+OWNER_NAME="$(tmux show-option -s -qv @ronin-owner 2>/dev/null || true)"
+[ -n "$OWNER_NAME" ] || OWNER_NAME="$(id -un 2>/dev/null || echo owner)"
+OWNER="user: $OWNER_NAME"
+
+usage() { echo "usage: tejun-wipeboard [board [add|remove|post|read] …]" >&2; exit 2; }
+
+# name<TAB>boards<TAB>dial<TAB>leads for every real session, viewers dropped.
+roster() {
+  tmux list-sessions -F '#{session_name}	#{'"$BOARDS_OPT"'}	#{@ronin-control}	#{@ronin-lead}' 2>/dev/null \
+    | grep -v "^${VIEWER_PREFIX}"
+}
+
+# Boards a session carries, comma-separated and cleaned.
+boards_of() { tmux show-options -t "$1" -qv "$BOARDS_OPT" 2>/dev/null | tr -d '\n'; }
+
+# Is $1 a member of board $2? Exact match, so 'plan' never matches 'planning'.
+has_board() { case ",$(boards_of "$1" | tr -d ' ')," in *",$2,"*) return 0 ;; *) return 1 ;; esac; }
+
+# Join stdin lines into "a, b, c".
+commas() { tr '\n' ',' | sed 's/,$//; s/,/, /g'; }
+
+path_of() { printf '%s/%s.md\n' "$DIR" "$1"; }
+
+# The session this tool is running in — the post's author. A tile watching the session
+# shares its pane through a grouped viewer, so resolve the pane to its NON-viewer owner
+# (the same reason src/tmux.ts:sessionOfPane exists). Empty outside tmux.
+whoami_session() {
+  [ -n "${TMUX_PANE:-}" ] || return 0
+  tmux list-panes -a -F '#{pane_id}	#{session_name}' 2>/dev/null \
+    | awk -F'\t' -v p="$TMUX_PANE" '$1 == p { print $2 }' \
+    | grep -v "^${VIEWER_PREFIX}" | head -1
+}
+
+# Create the file with its Brief stub if this board has never been written to.
+ensure_file() {
+  local f; f=$(path_of "$1")
+  [ -e "$f" ] && return 0
+  mkdir -p "$DIR" || return 1
+  {
+    printf '# wipeboard: %s\n\n' "$1"
+    printf '## Brief\n\n'
+    printf '_(the owner writes what this board is for here)_\n'
+  } > "$f"
+}
+
+# One watermarked entry. `>>` is the whole concurrency story: O_APPEND writes from
+# several agents interleave as whole posts and nothing is lost or overwritten.
+append_post() {
+  local board="$1" author="$2" text="$3" f
+  ensure_file "$board" || { echo "NO-DIR: cannot create $DIR"; return 1; }
+  f=$(path_of "$board")
+  printf '\n### %s · %s\n%s\n' "$author" "$(date +%H:%M)" "$text" >> "$f"
+}
+
+# ---- no args: every board in play -------------------------------------------------
+if [ $# -eq 0 ]; then
+  counts=$(roster | awk -F'\t' '
+    { n = split($2, b, ",")
+      for (i = 1; i <= n; i++) { gsub(/^[ \t]+|[ \t]+$/, "", b[i]); if (b[i] != "") c[b[i]]++ } }
+    END { for (k in c) printf "%s\t%d\n", k, c[k] }' | sort)
+  # A board with a file but no live members still exists — it just has nobody on it.
+  files=$(ls "$DIR" 2>/dev/null | sed -n 's/\.md$//p' | sort)
+  all=$(printf '%s\n%s\n' "$(printf '%s\n' "$counts" | cut -f1)" "$files" | grep -v '^$' | sort -u)
+  [ -n "$all" ] || { echo "NO-BOARDS: no wipeboard exists yet — 'tejun-wipeboard <name> add <session>' starts one"; exit 3; }
+  while read -r b; do
+    n=$(printf '%s\n' "$counts" | awk -F'\t' -v b="$b" '$1 == b { print $2 }')
+    printf '%-24s %s member(s)\n' "$b" "${n:-0}"
+  done <<< "$all"
+  exit 0
+fi
+
+BOARD=$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]'); shift
+[[ "$BOARD" =~ $NAME_RE ]] && [ ${#BOARD} -le 32 ] \
+  || { echo "BAD-NAME: '$BOARD' — lowercase letters, digits, - and _ only (max 32)"; exit 2; }
+
+# Members of this board, one 'name<TAB>dial' per line.
+# Members of $BOARD, leaders first. A session that LEADS any group is marked 人 — on a
+# shared surface the other agents need to know which voice is coordinating them.
+members() {
+  while IFS=$'\t' read -r name boards dial leads; do
+    case ",${boards// /}," in *",${BOARD},"*) ;; *) continue ;; esac
+    [ -n "${leads:-}" ] && printf '人 %s\t%s\n' "$name" "${dial:-write}"
+  done < <(roster)
+  while IFS=$'\t' read -r name boards dial leads; do
+    case ",${boards// /}," in *",${BOARD},"*) ;; *) continue ;; esac
+    [ -n "${leads:-}" ] || printf '  %s\t%s\n' "$name" "${dial:-write}"
+  done < <(roster)
+}
+
+# Expand one target into session names: '+g' / '+tag:g' / '+group:g' = a group.
+expand_target() {
+  local t="$1"
+  case "$t" in
+    +*)
+      local g="${t#+}"; g="${g#tag:}"; g="${g#group:}"; g=$(printf '%s' "$g" | tr '[:upper:]' '[:lower:]')
+      local found=0
+      while IFS=$'\t' read -r name tags _; do
+        case ",${tags// /}," in *",${g},"*) printf '%s\n' "$name"; found=1 ;; esac
+      done < <(tmux list-sessions -F '#{session_name}	#{@ronin-tags}	x' 2>/dev/null | grep -v "^${VIEWER_PREFIX}")
+      [ "$found" = 1 ] || echo "NO-GROUP:$g" >&2
+      ;;
+    *) printf '%s\n' "${t#@}" ;;
+  esac
+}
+
+case "${1:-}" in
+  # ---- roster ---------------------------------------------------------------------
+  '')
+    ensure_file "$BOARD" >/dev/null 2>&1
+    rows=$(members)
+    printf 'file: %s\n' "$(path_of "$BOARD")"
+    if [ -z "$rows" ]; then
+      echo "members: none — nobody is on '$BOARD' yet"
+    else
+      printf '%s\n' "$rows" | while IFS=$'\t' read -r n d; do printf '%-24s %s\n' "$n" "$d"; done
+    fi
+    exit 0
+    ;;
+
+  # ---- add / remove ---------------------------------------------------------------
+  add|remove)
+    verb="$1"; shift
+    [ $# -ge 1 ] || usage
+    ensure_file "$BOARD" || { echo "NO-DIR: cannot create $DIR"; exit 1; }
+    targets=$(for t in "$@"; do expand_target "$t"; done | awk 'NF && !seen[$0]++')
+    [ -n "$targets" ] || { echo "NO-TARGETS: nothing matched — 'tejun-group' lists the groups that exist"; exit 3; }
+    past=$([ "$verb" = add ] && echo added || echo removed)
+    # Who is doing the enrolling. Membership is the owner's hand by design, but the
+    # tool can be run from a pane — say which it was rather than assume.
+    actor=$(whoami_session); actor=${actor:+@$actor}; actor=${actor:-$OWNER}
+    rc=0
+    while read -r s; do
+      if ! tmux has-session -t "=$s" 2>/dev/null; then
+        echo "NO-SESSION: '$s' does not exist"; rc=3; continue
+      fi
+      cur=$(boards_of "$s" | tr -d ' ')
+      if [ "$verb" = add ]; then
+        if has_board "$s" "$BOARD"; then echo "ALREADY: '$s' is on '$BOARD'"; continue; fi
+        new=$(printf '%s,%s' "$cur" "$BOARD" | sed 's/^,//')
+      else
+        if ! has_board "$s" "$BOARD"; then echo "NOT-MEMBER: '$s' is not on '$BOARD'"; continue; fi
+        new=$(printf '%s' "$cur" | tr ',' '\n' | grep -vx "$BOARD" | paste -sd, -)
+      fi
+      if [ -n "$new" ]; then
+        tmux set-option -t "$s" "$BOARDS_OPT" "$new"
+      else
+        tmux set-option -t "$s" -u "$BOARDS_OPT" 2>/dev/null
+      fi
+      # The board hears about every roster change, so a member who was already
+      # reading learns who joined without anyone being messaged twice.
+      append_post "$BOARD" 'system' "$actor $past @$s"
+      # …and the affected session is told directly. tejun-send enforces the dial, so a
+      # 👤/👁 session is tagged but never typed into — that refusal is the correct
+      # outcome, not a failure of the add. Never flip a dial to get past it.
+      if [ "$verb" = add ]; then
+        roll=$(members | cut -f1 | commas)
+        msg="You've been added to wipeboard \"$BOARD\" — $(path_of "$BOARD"). Read it, and append your own posts as \"### @<your session> · HH:MM\" (>> append, never rewrite another agent's post, never edit the Brief). Members: ${roll:-none}."
+      else
+        msg="You've been removed from wipeboard \"$BOARD\" — stop posting to $(path_of "$BOARD")."
+      fi
+      verdict=$("$SEND" "$s" "$msg" 2>&1)
+      case "$verdict" in
+        DELIVERED*) printf '%-24s %s, notified\n' "$s" "$past" ;;
+        *)          printf '%-24s %s, NOT notified — %s\n' "$s" "$past" "$verdict" ;;
+      esac
+    done <<< "$targets"
+    exit $rc
+    ;;
+
+  # ---- post -----------------------------------------------------------------------
+  post)
+    shift
+    [ $# -ge 1 ] || usage
+    who=$(whoami_session)
+    author=${who:+@$who}
+    append_post "$BOARD" "${author:-shell}" "$*" || exit 1
+    echo "POSTED to '$BOARD' as ${author:-shell}."
+    exit 0
+    ;;
+
+  # ---- read -----------------------------------------------------------------------
+  read)
+    shift
+    n=${1:-20}
+    f=$(path_of "$BOARD")
+    [ -e "$f" ] || { echo "NO-BOARD: '$BOARD' has never been written to ($f)"; exit 3; }
+    # Everything down to the last n post headers — the Brief always comes with it, since
+    # a thread read without the brief is a conversation with no subject.
+    awk -v n="$n" '
+      /^### / { k++ }
+      { line[NR] = $0; hdr[k] = (hdr[k] ? hdr[k] : NR) }
+      END {
+        start = (k > n) ? hdr[k - n + 1] : 1
+        for (i = 1; i < start && line[i] !~ /^### /; i++) print line[i]
+        if (start > 1) print "…"
+        for (i = start; i <= NR; i++) print line[i]
+      }' "$f"
+    exit 0
+    ;;
+
+  *) usage ;;
+esac

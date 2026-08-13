@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# RONIN GATE — wait for the server, then check that the PAGE ACTUALLY WORKS.
+#
+# Wired to ExecStartPost in the systemd unit, so every start/restart is checked
+# whether or not anybody remembered to. The verdict lands in the journal:
+#
+#   journalctl --user -u tmux-ronin -f | grep 'RONIN GATE'
+#
+# It is a REPORTER, not a killer: it never fails the unit (the unit is prefixed with
+# `-` and this runs detached). A broken UI that is up and complaining loudly beats a
+# restart loop that takes the box down. `bin/ronin-deploy` is the version whose exit
+# code you should care about.
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PORT="${PORT:-3006}"
+if [ -n "${BIND:-}" ]; then
+  HOSTIP="$BIND"
+elif command -v tailscale >/dev/null 2>&1 && tailscale ip -4 >/dev/null 2>&1; then
+  HOSTIP="$(tailscale ip -4 | head -1)"
+else
+  HOSTIP="127.0.0.1"
+fi
+URL="${RONIN_GATE_URL:-http://${HOSTIP}:${PORT}/}"
+
+# Wait for the server to answer at all (up to ~40s).
+for _ in $(seq 1 40); do
+  if curl -fsS -m 2 -o /dev/null "${URL}api/health" 2>/dev/null; then ready=1; break; fi
+  sleep 1
+done
+if [ -z "${ready:-}" ]; then
+  echo "RONIN GATE: FAIL — server never answered ${URL}api/health"
+  exit 0
+fi
+
+out="$(cd "$ROOT" && node scripts/smoke-ui.mjs "$URL" 2>&1)"
+rc=$?
+# Carry the verdict line through verbatim — it names which engine ran the phone pass, so
+# the journal can never claim Safari when it was really Chromium emulation.
+verdict="$(printf '%s\n' "$out" | grep -E '^(PASSED|FAILED)' | head -1)"
+if [ "$rc" -eq 0 ]; then
+  echo "RONIN GATE: PASS — $URL — ${verdict:-rendered}"
+else
+  echo "RONIN GATE: FAIL — $URL is serving a broken UI"
+  printf '%s\n' "$out" | sed 's/^/RONIN GATE: /'
+fi
+exit 0

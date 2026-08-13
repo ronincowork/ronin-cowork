@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# ronin-may-spawn — may another session start on this box right now?
+#
+# Exit 0  = go. Silent.
+# Exit 4  = refused, and the reason is on stderr. (Same code the tmux shim uses to deny.)
+#
+# THE OTHER DOOR. A session is created one of two ways: Ronin makes it, or an agent runs
+# `tmux new-session` itself (which is what the `session-create` action in ACTIONS.md tells
+# it to do, so every macro comes this way too). Ronin's own unit has a PATH without
+# bin/shim, so it never reaches this script — it asks assertUnderMax() in src/user-config.ts
+# instead. Same number, same answer, two doors, because no single process sees both.
+#
+# THE NUMBER IS NOT PARSED HERE. It arrives on the tmux SERVER option @ronin-session-max,
+# published by Ronin at boot and on every save. That is deliberate: this script stays
+# zero-dependency (no node, no jq), and a second JSON parser written in sed is exactly the
+# two-sources-of-truth defect that src/stores.ts exists to end. `@ronin-url` already works
+# this way — see bin/tejun-harakiri.
+#
+# A MISSING OPTION MEANS NO LIMIT, never zero. Ronin may not have started yet, or the tmux
+# server may have been restarted without it. Failing open is right here: the cost of a
+# missed refusal is one session too many, and the cost of failing closed is a box where
+# nothing can start and the reason is invisible.
+set -uo pipefail
+
+# Never let this script itself be the thing that forks a tmux server.
+command -v tmux >/dev/null 2>&1 || exit 0
+
+max="$(tmux show-option -s -qv @ronin-session-max 2>/dev/null || true)"
+case "$max" in
+  ''|0|*[!0-9]*) exit 0 ;;   # unset, no limit, or not a number -> no limit
+esac
+
+# Real sessions only. `grid_*` viewers are one-per-browser-tile and are Ronin's plumbing,
+# not anyone's work; counting them would make opening tiles shrink your session budget.
+live="$(tmux list-sessions -F '#{session_name}' 2>/dev/null | grep -vc '^grid_' || true)"
+[ -n "$live" ] || live=0
+
+[ "$live" -lt "$max" ] && exit 0
+
+cat >&2 <<EOF
+REFUSED: at the session max — $live of $max sessions are running.
+
+This is not a dial and it is not a fault: the owner set this number at the top of the
+⌂ Roster tab in Ronin. Past it the kernel decides which session dies instead, and it picks
+the largest, which is usually the lead coordinating the others.
+
+Report this to the owner rather than working around it. They can raise the max, or end a
+session to make room. Retrying will not help, and neither will /usr/bin/tmux.
+EOF
+exit 4

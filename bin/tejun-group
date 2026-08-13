@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# tejun-group — resolve a group name to its sessions (TEJUN group-roster).
+# Usage: tejun-group [group]        no arg = list every group in play
+#
+# A "group" is just the sessions carrying the same tag in @ronin-tags — there is no
+# group object to create or clean up, and a tag dies with its session. This reads tmux
+# directly (not the Ronin HTTP API) so it still answers when Ronin isn't running.
+# Read-only: it reports each member's dial but changes nothing, and never tags anything.
+set -u
+
+VIEWER_PREFIX="grid_"   # browser viewer sessions — never part of a group
+
+# name<TAB>tags<TAB>dial<TAB>leads for every real session, viewers dropped.
+roster() {
+  tmux list-sessions -F '#{session_name}	#{@ronin-tags}	#{@ronin-control}	#{@ronin-lead}' 2>/dev/null \
+    | grep -v "^${VIEWER_PREFIX}"
+}
+
+# Does $1 (a comma list) contain the exact group $2?
+has_group() { case ",${1// /}," in *",${2},"*) return 0 ;; *) return 1 ;; esac; }
+
+if [ $# -eq 0 ]; then
+  # Every group in play + its size. Sessions with no tags are reported as loose, so
+  # "not in the list" never silently means "I forgot to tag it".
+  out=$(roster | awk -F'\t' '
+    { if ($4 != "") {   # groups this session LEADS — named, so the roster says who runs what
+        m = split($4, L, ",")
+        for (j = 1; j <= m; j++) { gsub(/^[ \t]+|[ \t]+$/, "", L[j])
+          if (L[j] != "") { lead[L[j]] = (lead[L[j]] == "" ? $1 : lead[L[j]] " + " $1); seen[L[j]] = 1 } }
+      }
+      if ($2 == "") { if ($4 == "") loose++; next }
+      n = split($2, t, ",")
+      for (i = 1; i <= n; i++) { gsub(/^[ \t]+|[ \t]+$/, "", t[i]); if (t[i] != "") { c[t[i]]++; seen[t[i]] = 1 } }
+    }
+    END { for (g in seen) printf "%s\t%d\t%s\n", g, c[g], lead[g]; if (loose) printf "\001untagged\t%d\t\n", loose }' \
+    | sort)
+  [ -n "$out" ] || { echo "NO-GROUPS: no session carries a tag yet (owner tags them in the Ronin UI)"; exit 3; }
+  printf '%s\n' "$out" | while IFS=$'\t' read -r g n lead; do
+    case "$g" in
+      $'\001untagged') printf '%-24s %s session(s), in no group\n' '(untagged)' "$n" ;;
+      *) if [ -n "${lead:-}" ]; then
+           printf '%-24s %s session(s), led by 人 %s\n' "$g" "$n" "$lead"
+         else
+           printf '%-24s %s session(s)\n' "$g" "$n"
+         fi ;;
+    esac
+  done
+  exit 0
+fi
+
+G=$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')
+found=0
+# 人 (the *nin* of 浪人) marks the session that COORDINATES this group. It leads first,
+# then the members — the same order the owner sees in the Ronin session list. Leading is
+# a label, not a permission: the dial still decides who may drive whom.
+while IFS=$'\t' read -r name tags dial leads; do
+  has_group "${leads:-}" "$G" || continue
+  found=1
+  printf '人 %s\t%s\tleads\n' "$name" "${dial:-write}"
+done < <(roster)
+
+while IFS=$'\t' read -r name tags dial leads; do
+  # exact tag match, not substring: 'kojin' must not match 'kojinsa'
+  has_group "${tags:-}" "$G" || continue
+  has_group "${leads:-}" "$G" && continue   # already printed as the leader
+  found=1
+  printf '  %s\t%s\n' "$name" "${dial:-write}"
+done < <(roster)
+
+[ "$found" = 1 ] || { echo "NO-GROUP: nothing is tagged '$G' — run 'tejun-group' to see the groups that exist"; exit 3; }

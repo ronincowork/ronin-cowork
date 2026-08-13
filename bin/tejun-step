@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+# tejun-step — run a macro one step at a time, checking each one in (the step tracker).
+#   tejun-step start <macro>   begin: records position on this session, prints step 1
+#   tejun-step done            check in the current step, get the next one
+#   tejun-step where           where am I
+#   tejun-step stop            abandon the run
+# Position lives in the tmux option @tejun-step (macro:index) on YOUR session, so it
+# dies with the session and needs no store. You do the work and decide; the tracker
+# remembers where you are and hands you the next lever — so no step gets skipped
+# because you forgot you hadn't done it.
+set -u
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+S=$(tmux display-message -p '#S' 2>/dev/null || true)
+[ -n "$S" ] || { echo "NOT-IN-TMUX: tejun-step tracks position on a tmux session." >&2; exit 2; }
+cmd="${1:-where}"; arg="${2:-}"
+# The user's own catalogs — NEVER a hand-spelled path (JUSHO, docs/stores.md).
+USERCAT="$(ronin-store catalogs 2>/dev/null || true)"
+
+get() { tmux show-option -t "$S" -qv @tejun-step; }
+set_() { tmux set-option -t "$S" @tejun-step "$1" >/dev/null 2>&1 || true; }
+
+exec python3 - "$ROOT" "$S" "$cmd" "$arg" "$(get)" "$USERCAT" <<'PY'
+import re,sys,subprocess
+root,S,cmd,arg,state,usercat=sys.argv[1:7]
+
+def parse(path):
+    out,cur,buf,head={},None,[],None
+    try: fh=open(path)
+    except OSError: return out          # no user file is the ordinary path, never an error
+    for line in fh:
+        if line.startswith('---') and cur: break
+        if line.startswith('## '):
+            if cur: out[cur]=(head,''.join(buf))
+            head=line.rstrip(); cur=line[3:].strip().split()[0].strip('`'); buf=[]
+        elif cur is not None: buf.append(line)
+    if cur: out[cur]=(head,''.join(buf))
+    return out
+
+def sections(fname):
+    """The shadowing rule (docs/shadowing.md), identical in statement to bin/tejun and
+    src/catalog.ts: stock, then the user's file of the same name replacing by heading
+    name, new names appended, '- **hidden:** yes' removing one."""
+    stock=parse(f'{root}/tejun_catalogs/{fname}')
+    user=parse(f'{usercat}/{fname}') if usercat else {}
+    hidden=lambda b: re.search(r'^-\s*\*\*hidden:\*\*\s*yes\b', b, re.M|re.I)
+    out={}
+    for n,(h,b) in stock.items():
+        if n in user:
+            if not hidden(user[n][1]): out[n]=user[n]
+        else: out[n]=(h,b)
+    for n,(h,b) in user.items():
+        if n not in stock and not hidden(b): out[n]=(h,b)
+    return out
+
+macros=sections('MACROS.md'); actions=sections('ACTIONS.md')
+# TOOLS.md is a TABLE: the same rule keys on the tool name in column 1.
+tools_by_name={}
+for scope in (f'{root}/tejun_catalogs/TOOLS.md', f'{usercat}/TOOLS.md' if usercat else None):
+    if not scope: continue
+    try: fh=open(scope)
+    except OSError: continue
+    for line in fh:
+        m=re.match(r'\|\s*`([^`]+)`\s*\|\s*([a-z-]+)\s*\|\s*(.+?)\s*\|',line)
+        if m: tools_by_name[m.group(1)]=m.group(2)
+tools={}
+for tname,act in tools_by_name.items(): tools.setdefault(act,[]).append(tname)
+
+def steps_of(name):
+    out=[]
+    for n,cell,note in re.findall(r'^\|\s*(\d+)\s*\|([^|]+)\|([^|]*)\|', macros[name][1], re.M):
+        for a in re.split(r'\+|,', cell):
+            a=a.strip().strip('`')
+            if a: out.append((a, note.strip()))
+    return out
+
+def save(v): subprocess.run(['tmux','set-option','-t',S,'@tejun-step',v],capture_output=True)
+
+def show(name,i,total,action,note):
+    print(f"■ {name}: STEP {i}/{total} — {action}")
+    if note: print(f"  ({note})")
+    if action in actions:
+        body=actions[action][1]
+        kind='⚙ MECHANICAL' if 'kind: mechanical' in body else ('🧠 JUDGEMENT' if 'kind: judgement' in body else '')
+        if kind: print(f"  [{kind}]")
+        print(actions[action][0]); print(body.rstrip())
+    for t in tools.get(action,[]): print(f"  ↳ TOOL: {t}")
+    print(f"\n→ When this step is DONE, run: tejun-step done   ({total-i} step(s) left)")
+
+if cmd=='start':
+    name=arg.lstrip('+ろ/').rstrip(':')
+    if name not in macros:
+        print(f"UNKNOWN MACRO '{name}'. Available: {', '.join(macros)}",file=sys.stderr); sys.exit(2)
+    st=steps_of(name); save(f"{name}:1")
+    print(f"▶ {name} — {len(st)} steps. Do them in order; check each in.\n")
+    show(name,1,len(st),*st[0]); sys.exit(0)
+
+if cmd=='stop': save(''); print("run abandoned"); sys.exit(0)
+
+if not state or ':' not in state:
+    print("no run in progress — start one: tejun-step start <macro>"); sys.exit(0)
+name,i=state.split(':'); i=int(i); st=steps_of(name)
+
+if cmd=='where':
+    show(name,i,len(st),*st[i-1]); sys.exit(0)
+
+if cmd=='done':
+    print(f"✓ checked in: {st[i-1][0]}")
+    if i>=len(st):
+        save(''); print(f"\n★ {name} COMPLETE — every step checked in. Report the outcome; nothing else is owed."); sys.exit(0)
+    save(f"{name}:{i+1}"); print()
+    show(name,i+1,len(st),*st[i]); sys.exit(0)
+
+print(f"usage: tejun-step start <macro> | done | where | stop",file=sys.stderr); sys.exit(2)
+PY

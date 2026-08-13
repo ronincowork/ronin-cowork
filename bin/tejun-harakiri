@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# tejun-harakiri — end YOUR OWN session. The last act of `land` / `delete`.
+#
+# Usage: tejun-harakiri        — no arguments. You do not name a session.
+#
+# This is a HANDOFF, not a procedure. It tells Ronin which pane it is standing in and
+# stops there. Ronin resolves that pane to its real session, checks the dial and ends it
+# with the same code path the UI's delete button uses. Nothing here knows how a session
+# is killed, and it must stay that way: one implementation of the dangerous thing, in
+# Ronin, not a second copy in bash that drifts from it. (An earlier version of this file
+# held that copy, and a `kill-session -a` in it once ended every session on the box.)
+#
+# There is no output on success: the session — and this process with it — is gone.
+# That silence IS the proof. Never report "session ended" without running this.
+set -u
+
+case "${1:-}" in
+  '') ;;
+  *) cat >&2 <<EOF
+REFUSED: harakiri takes no session name — it ends the session you are in.
+Ending a DIFFERENT session is a separate, deliberate act (see tejun_catalogs/ACTIONS.md,
+"ending someone else's session"): ask the owner, or use the trash button in Ronin.
+EOF
+      exit 4 ;;
+esac
+
+# The one fact we contribute. $TMUX_PANE is set by tmux inside every pane; asking tmux
+# is the fallback for a subshell that lost it. We deliberately do NOT ask for '#S' — a
+# browser viewer would answer with itself. Resolving pane -> session is Ronin's job.
+pane="${TMUX_PANE:-$(tmux display-message -p '#{pane_id}' 2>/dev/null || true)}"
+[ -n "$pane" ] || { echo "NOT-IN-TMUX: no session to end (are you inside a tmux pane?)" >&2; exit 2; }
+
+url="${RONIN_URL:-$(tmux show-option -s -qv @ronin-url 2>/dev/null || true)}"
+[ -n "$url" ] || url="http://127.0.0.1:3006"
+
+AUTH=()
+[ -n "${RONIN_AUTH:-}" ] && AUTH=(-u "$RONIN_AUTH")
+
+body=$(curl -sS -m 10 -o /dev/null -w '%{http_code}' "${AUTH[@]+"${AUTH[@]}"}" \
+  -X POST "$url/api/harakiri" \
+  -H 'content-type: application/json' \
+  -d "{\"pane\":\"$pane\"}" 2>&1) || {
+  echo "STUCK: could not reach Ronin at $url — your session is still here." >&2
+  echo "STUCK: report to the owner; do not hand-roll a kill." >&2
+  exit 5
+}
+
+case "$body" in
+  200) ;;
+  401) echo "STUCK: Ronin rejected the request (auth on). Set RONIN_AUTH=user:pass." >&2; exit 5 ;;
+  403) echo "DENIED: owner-controlled session (dial 👤); ask the owner to end it." >&2; exit 4 ;;
+  404) echo "STUCK: Ronin does not see pane $pane in any session." >&2; exit 5 ;;
+  *)   echo "STUCK: Ronin answered $body — your session is still here." >&2; exit 5 ;;
+esac
+
+# Accepted. Now wait to die: the kill lands a moment after the reply. Returning here
+# would let a caller carry on and announce an ending that has not happened yet — the
+# exact failure this action warns about. If we are still breathing after 15s, say so.
+sleep 15
+echo "STUCK: Ronin accepted the request but this session is still alive after 15s." >&2
+exit 5

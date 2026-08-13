@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# pre-commit — a commit may only carry what this session staged.
+#
+# WHY THIS EXISTS, in one sentence: every session on this box shares one working tree and
+# one git index, and `git commit` with no pathspec commits the whole index — so another
+# session's staged work rides along under your message.
+#
+# It happened on 2026-08-13 and cost a force-push to unpick: one commit carried ten-odd
+# files belonging to three other sessions, including a legacy rip-out and a dead-code
+# sweep. It is invisible without this hook — the working tree stays correct and every
+# other gate passes, so only the COMMITS are wrong, which is the worst shape a fault can
+# take on a box where nobody re-reads history.
+#
+# FAILS OPEN, deliberately. No tmux session, no claim recorded, no ronin-claim on disk —
+# all mean "no basis to judge", and a guard that blocks the owner at a plain terminal for
+# a race between agents would be worse than the race. It only ever speaks when it can
+# prove the index holds something this session did not stage.
+#
+# Override: RONIN_COMMIT_ALL=1 git commit …   (landing another session's orphaned work is
+# a real and legitimate act — it just should be a deliberate one.)
+[ "${RONIN_COMMIT_ALL:-0}" = 1 ] && exit 0
+
+CLAIM="$(git rev-parse --show-toplevel 2>/dev/null)/bin/ronin-claim"
+[ -x "$CLAIM" ] || exit 0
+
+"$CLAIM" check

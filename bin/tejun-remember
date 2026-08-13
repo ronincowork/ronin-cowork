@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+# tejun-remember — write one memory to the OBOERU store (TEJUN memory-write).
+# Usage: tejun-remember "<the thing to remember>" [--tags a,b] [--kind rule|fact|pointer]
+#                       [--project_root X] [--session_job X] [--any AXIS]
+#
+# One command, or nobody writes one. Axes you don't name are INHERITED from this
+# session (never widened): the memory claims the scope you actually learned it in.
+# `--any <axis>` widens deliberately. All two axes wildcard = the system prompt,
+# which is the owner's hand in the Ronin UI — refused here, by design, for the same
+# reason an agent may not flip a dial.
+set -u
+
+# Where Ronin keeps things on THIS machine — asked, never spelled. See docs/stores.md.
+RSTORE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ronin-store"
+[ -x "$RSTORE" ] || RSTORE=ronin-store
+STORE="$("$RSTORE" memory)"
+# USER SCOPE — the owner's own directory list, outside every repo (DAIKUSAN.md).
+# The shipped tejun_catalogs/PROJECT_ROOTS.md holds only the stock launch table, no roots.
+# Absent is normal on a fresh install: every read below is guarded with [ -r ].
+ROOTS_MD="$("$RSTORE" catalogs)/PROJECT_ROOTS.md"
+
+TEXT=""; TAGS=""; KIND="rule"; SUMMARY=""
+P_ROOT=""; S_JOB=""
+ANY_ROOT=0; ANY_JOB=0
+
+die() { echo "$1"; exit "$2"; }
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --project_root|--project-root) P_ROOT="${2:-}"; shift 2 ;;
+    --session_job|--session-job)   S_JOB="${2:-}"; shift 2 ;;
+    --tags)    TAGS="${2:-}"; shift 2 ;;
+    --kind)    KIND="${2:-}"; shift 2 ;;
+    --summary) SUMMARY="${2:-}"; shift 2 ;;
+    --any)
+      case "${2:-}" in
+        project_root|project-root) ANY_ROOT=1 ;;
+        session_job|session-job)   ANY_JOB=1 ;;
+        *) die "BAD-AXIS: --any takes project_root or session_job" 2 ;;
+      esac; shift 2 ;;
+    -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
+    --*) die "BAD-FLAG: $1 (see --help)" 2 ;;
+    *) [ -n "$TEXT" ] && TEXT="$TEXT $1" || TEXT="$1"; shift ;;
+  esac
+done
+
+[ -n "$TEXT" ] || die "NO-TEXT: say what to remember — tejun-remember \"...\" [--tags x]" 2
+case "$KIND" in rule|fact|pointer) ;; *) die "BAD-KIND: --kind is rule, fact or pointer" 2 ;; esac
+
+# --- what this session is: the two axes, stamped at spawn (see src/spawn.ts) ---
+opt() { tmux show-options -qv -t "$1" "$2" 2>/dev/null; }
+
+# A pane viewed in a Ronin tile reports the GROUPED VIEWER session (grid_*), which
+# carries none of the axes and is not what wrote the memory. #{session_group} is the
+# real session behind the viewer.
+me=$(tmux display-message -p '#{session_name}' 2>/dev/null || true)
+case "$me" in
+  grid_*) grp=$(tmux display-message -p '#{session_group}' 2>/dev/null || true)
+          [ -n "$grp" ] && me="$grp" ;;
+esac
+if [ -n "$me" ]; then
+  [ -n "$P_ROOT" ] || P_ROOT=$(opt "$me" @ronin-project_root)
+  [ -n "$S_JOB" ]  || S_JOB=$(opt "$me" @ronin-session_job)
+fi
+
+# Sessions born before the launcher stamped axes (and plain shells) still get the
+# project right: match $PWD against the catalog's dir: lines, longest first.
+if [ -z "$P_ROOT" ] && [ -r "$ROOTS_MD" ]; then
+  P_ROOT=$(awk -v pwd="$PWD" -v home="$HOME" '
+    /^## /   { name = $2 }
+    /^- \*\*dir:\*\*/ {
+      d = $0; sub(/^- \*\*dir:\*\* */, "", d); gsub(/[ \t]+$/, "", d)
+      sub(/^~/, home, d)
+      if (index(pwd "/", d "/") == 1 && length(d) > best) { best = length(d); hit = name }
+    }
+    END { print hit }' "$ROOTS_MD")
+fi
+
+[ "$ANY_ROOT" = 1 ] && P_ROOT='*'
+[ "$ANY_JOB" = 1 ] && S_JOB='*'
+
+# An axis we still can't name is written as "*" — but only after the checks below,
+# so an unstamped session can't accidentally author the system prompt.
+[ -n "$P_ROOT$S_JOB" ] || die \
+  "NO-SCOPE: cannot tell what this session is — name an axis (--project_root / --session_job)" 3
+
+if [ "${P_ROOT:-*}" = '*' ] && [ "${S_JOB:-*}" = '*' ]; then
+  die "DENIED: a memory matching every session IS the system prompt — owner-only (Ronin UI: UCHI → ✎ Memory)" 4
+fi
+P_ROOT="${P_ROOT:-*}"; S_JOB="${S_JOB:-*}"
+
+# --- summary + filename ---
+[ -n "$SUMMARY" ] || SUMMARY=$(printf '%s' "$TEXT" | awk '
+  { gsub(/[\r\n]+/, " "); s = $0
+    sub(/ *Why:.*$/, "", s)                     # the why belongs in the body, not the label
+    if (length(s) > 78) s = substr(s, 1, 75) "…"
+    print s; exit }')
+
+slug=$(printf '%s' "$SUMMARY" | tr '[:upper:]' '[:lower:]' \
+  | sed -e 's/[^a-z0-9]\+/-/g' -e 's/^-*//' -e 's/-*$//' | cut -c1-48)
+[ -n "$slug" ] || slug="memory"
+mkdir -p "$STORE" || die "STUCK: cannot create $STORE" 1
+file="$STORE/$slug.md"
+n=2; while [ -e "$file" ]; do file="$STORE/$slug-$n.md"; n=$((n + 1)); done
+
+# tags: comma or space separated in, YAML list out
+taglist=$(printf '%s' "$TAGS" | tr ',' ' ' | tr -s ' ' | sed -e 's/^ //' -e 's/ $//' \
+  | awk '{ for (i = 1; i <= NF; i++) printf "%s%s", (i > 1 ? ", " : ""), $i }')
+
+q() { case "$1" in '*') printf '"*"' ;; *) printf '%s' "$1" ;; esac; }
+
+{
+  echo '---'
+  echo "summary: $SUMMARY"
+  echo "memory_kind: $KIND"
+  echo "project_root: $(q "$P_ROOT")"
+  echo "session_job: $(q "$S_JOB")"
+  echo "tags: [$taglist]"
+  echo "added: $(date +%F)"
+  echo "by: ${me:-$(whoami)}"
+  echo '---'
+  echo
+  printf '%s\n' "$TEXT"
+} > "$file" || die "STUCK: cannot write $file" 1
+
+echo "REMEMBERED $file"
+echo "  scope: project_root=$P_ROOT · session_job=$S_JOB"

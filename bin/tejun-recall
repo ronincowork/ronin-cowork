@@ -1,0 +1,170 @@
+#!/usr/bin/env bash
+# tejun-recall — the memories a session should be handed (TEJUN memory-recall).
+# Usage: tejun-recall [--project_root X] [--session_job X]
+#                     [--inline] [--budget N] [--list]
+#
+#   (default)  matching file paths, one per line, ordered and deduped
+#   --inline   the composed text Ronin pastes into a boot brief, budget-guarded
+#   --list     summary + scope per match, for a human or the UI
+#
+# A memory matches when all two axes match (equal, or "*"), where the project axis
+# also accepts a project root's `memory:` keys as aliases. Missing axis key = the
+# memory is malformed: reported on stderr, never silently matched.
+set -u
+
+# Where Ronin keeps things on THIS machine — asked, never spelled. See docs/stores.md.
+RSTORE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ronin-store"
+[ -x "$RSTORE" ] || RSTORE=ronin-store
+STORE="$("$RSTORE" memory)"
+# USER SCOPE — the owner's own directory list, outside every repo (DAIKUSAN.md).
+# The shipped tejun_catalogs/PROJECT_ROOTS.md holds only the stock launch table, no roots.
+# Absent is normal on a fresh install: every read below is guarded with [ -r ].
+ROOTS_MD="$("$RSTORE" catalogs)/PROJECT_ROOTS.md"
+# The brief is pasted into a pane as one message, so this bounds the memory section
+# only — posture, reading list and the opening ride on top. Measured against the real
+# store: a ronin cutcode session inlines ~2.1k. Over budget is a signal a memory has
+# grown into a doc, not a reason to grow the number.
+BUDGET=2600
+MODE=paths
+P_ROOT=""; S_JOB=""
+
+die() { echo "$1"; exit "$2"; }
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --project_root|--project-root) P_ROOT="${2:-}"; shift 2 ;;
+    --session_job|--session-job)   S_JOB="${2:-}"; shift 2 ;;
+    --budget) BUDGET="${2:-2000}"; shift 2 ;;
+    --inline) MODE=inline; shift ;;
+    --list)   MODE=list; shift ;;
+    -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
+    *) die "BAD-FLAG: $1 (see --help)" 2 ;;
+  esac
+done
+
+[ -d "$STORE" ] || exit 0        # no store yet is silence, never an error
+set -- "$STORE"/*.md
+[ -e "$1" ] || exit 0
+
+# Axes of the asking session, when not stated (same inference as tejun-remember):
+# resolve the grouped viewer (grid_*) back to the real session it mirrors.
+opt() { tmux show-options -qv -t "$1" "$2" 2>/dev/null; }
+me=$(tmux display-message -p '#{session_name}' 2>/dev/null || true)
+case "$me" in
+  grid_*) grp=$(tmux display-message -p '#{session_group}' 2>/dev/null || true)
+          [ -n "$grp" ] && me="$grp" ;;
+esac
+if [ -n "$me" ]; then
+  [ -n "$P_ROOT" ] || P_ROOT=$(opt "$me" @ronin-project_root)
+  [ -n "$S_JOB" ]  || S_JOB=$(opt "$me" @ronin-session_job)
+fi
+if [ -z "$P_ROOT" ] && [ -r "$ROOTS_MD" ]; then
+  P_ROOT=$(awk -v pwd="$PWD" -v home="$HOME" '
+    /^## / { name = $2 }
+    /^- \*\*dir:\*\*/ {
+      d = $0; sub(/^- \*\*dir:\*\* */, "", d); gsub(/[ \t]+$/, "", d); sub(/^~/, home, d)
+      if (index(pwd "/", d "/") == 1 && length(d) > best) { best = length(d); hit = name }
+    }
+    END { print hit }' "$ROOTS_MD")
+fi
+
+# The project axis accepts the root's own name plus its `memory:` keys, so a memory
+# keyed `kojinsa` reaches both kojinsa-be and kojinsa-fe sessions.
+KEYS="$P_ROOT"
+if [ -n "$P_ROOT" ] && [ -r "$ROOTS_MD" ]; then
+  extra=$(awk -v want="$P_ROOT" '
+    /^## / { inroot = ($2 == want) }
+    inroot && /^- \*\*memory:\*\*/ {
+      m = $0; sub(/^- \*\*memory:\*\* */, "", m); gsub(/,/, " ", m); print m; exit }' "$ROOTS_MD")
+  KEYS="$KEYS $extra"
+fi
+
+awk -v mode="$MODE" -v budget="$BUDGET" -v want_root="${P_ROOT:-}" -v want_job="${S_JOB:-}" -v keys=" $KEYS " '
+  function val(line,   v) { v = line; sub(/^[a-z_]+:[ \t]*/, "", v); gsub(/^"|"$/, "", v)
+                            gsub(/^[ \t]+|[ \t]+$/, "", v); return v }
+  # An axis matches on equality or a wildcard on either side (an unknown asking value
+  # is not a licence to hide a memory — better shown than silently dropped).
+  function axis_ok(mem, want) { return (mem == "*" || want == "" || mem == want) }
+  # The project axis accepts the root name or one of that root'"'"'s `memory:` keys, so a
+  # memory keyed `kojinsa` reaches both kojinsa-be and kojinsa-fe. TAGS ARE NOT
+  # MATCHED: a stated project_root is authoritative. (Measured why: tagging Ronin'"'"'s
+  # pty-bridge rule `bridge` made it match the async-bridge project, which shares the
+  # word and nothing else. Tags are for filtering; the axes decide reach.)
+  function project_ok(mem) {
+    if (mem == "*" || want_root == "") return 1
+    return index(keys, " " mem " ") ? 1 : 0
+  }
+  function flush(   rank) {
+    # A file with no frontmatter at all is not a memory (the store keeps its own
+    # README) — skip it. Frontmatter that is MISSING an axis is a different thing:
+    # a broken memory, and silence there would hide a rule from every session.
+    if (!fmdone) return
+    if (!have_root || !have_job) {
+      printf "MALFORMED %s: missing an axis key (project_root/session_job)\n", cur > "/dev/stderr"
+      return
+    }
+    if (!project_ok(m_root) || !axis_ok(m_job, want_job)) return
+    rank = (m_root == "*" && m_job == "*") ? 0 : (m_root != "*" ? 1 : 2)
+    n_hit++
+    hit_rank[n_hit] = rank; hit_file[n_hit] = cur; hit_sum[n_hit] = m_sum
+    hit_kind[n_hit] = m_kind_of; hit_body[n_hit] = m_body
+    hit_scope[n_hit] = m_root " · " m_job
+  }
+  FNR == 1 {
+    if (NR > 1) flush()
+    cur = FILENAME          # flush() runs while FILENAME is already the NEXT file
+    infm = 0; fmdone = 0; m_body = ""; m_sum = ""; m_root = ""; m_job = ""
+    m_tags = ""; m_kind_of = ""; have_root = have_job = 0
+  }
+  FNR == 1 && /^---[ \t]*$/ { infm = 1; next }
+  infm && /^---[ \t]*$/     { infm = 0; fmdone = 1; next }
+  infm {
+    if (/^summary:/)      m_sum = val($0)
+    else if (/^memory_kind:/) m_kind_of = val($0)
+    else if (/^project_root:/) { m_root = val($0); have_root = 1 }
+    else if (/^session_job:/)   { m_job = val($0); have_job = 1 }
+    else if (/^tags:/)         { m_tags = val($0); gsub(/[][]/, "", m_tags) }
+    next
+  }
+  fmdone {
+    line = $0; gsub(/^[ \t]+|[ \t]+$/, "", line)
+    if (line != "") m_body = m_body (m_body == "" ? "" : " ") line
+  }
+  END {
+    flush()
+    # universal first (the law), then this project, then cross-project; filename
+    # breaks ties so the same session always gets the same order. Sort the index
+    # list, never the parallel arrays — swapping five arrays by hand is how one row
+    # ends up wearing the scope of another.
+    for (i = 1; i <= n_hit; i++) ord[++n_ord] = i
+    for (i = 2; i <= n_ord; i++) {
+      v = ord[i]; j = i - 1
+      while (j >= 1 && (hit_rank[ord[j]] > hit_rank[v] ||
+                        (hit_rank[ord[j]] == hit_rank[v] && hit_file[ord[j]] > hit_file[v]))) {
+        ord[j + 1] = ord[j]; j--
+      }
+      ord[j + 1] = v
+    }
+
+    if (mode == "paths") { for (i = 1; i <= n_ord; i++) print hit_file[ord[i]]; exit }
+    if (mode == "list") {
+      for (i = 1; i <= n_ord; i++)
+        printf "%s\t%s\t%s\t%s\n", hit_kind[ord[i]], hit_scope[ord[i]], hit_sum[ord[i]], hit_file[ord[i]]
+      exit
+    }
+
+    # inline: what Ronin pastes into a boot brief. The guard omits LOUDLY — a silent
+    # truncation reads as "you were told" when the agent never was.
+    if (n_ord == 0) exit
+    head = "Memories for this session (obey rules, know facts, read pointers if relevant; they were true when written — verify anything that names a file or flag):"
+    out = head; used = length(head); nom = 0
+    for (i = 1; i <= n_ord; i++) {
+      x = ord[i]
+      piece = " • [" hit_kind[x] "] " hit_body[x]
+      if (used + length(piece) > budget && i > 1) { nom++; omit = omit (omit == "" ? "" : ", ") hit_sum[x]; continue }
+      out = out piece; used += length(piece)
+    }
+    print out
+    if (nom > 0) printf "⚠ %d memor%s omitted (over %d-char budget): %s\n", nom, (nom == 1 ? "y" : "ies"), budget, omit
+  }
+' "$@"

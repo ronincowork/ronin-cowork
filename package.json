@@ -1,0 +1,44 @@
+{
+  "name": "tmux-ronin",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "description": "View and operate your tmux sessions from a browser grid \u2014 xterm.js + node-pty + tmux, secure over Tailscale.",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "smoke": "node scripts/smoke-test.mjs",
+    "smoke:ui": "node scripts/smoke-ui.mjs",
+    "stage": "node scripts/stage.mjs",
+    "check:modules": "node scripts/check-modules.mjs",
+    "check:src": "node scripts/check-src.mjs",
+    "check:kyokai": "node scripts/check-kyokai.mjs",
+    "check:tests": "node scripts/check-tests.mjs",
+    "check:dead": "node scripts/check-dead.mjs",
+    "check:stores": "node scripts/check-stores.mjs",
+    "check:place": "node scripts/check-place.mjs",
+    "stores:map": "node scripts/stores-map.mjs --write",
+    "byoin": "bin/ronin-byoin",
+    "verify": "for f in public/js/*.js; do node --check \"$f\" || exit 1; done && node scripts/check-modules.mjs && node scripts/check-src.mjs && node scripts/check-kyokai.mjs && node scripts/check-tomodachi.mjs && node scripts/check-docs.mjs && node scripts/check-kotoba.mjs && node scripts/check-dead.mjs && node scripts/check-stores.mjs && node scripts/check-place.mjs && node scripts/stores-map.mjs && node scripts/check-tests.mjs && tsc --noEmit && node scripts/smoke-ui.mjs",
+    "verify:staging": "node scripts/smoke-ui.mjs --staging"
+  },
+  "dependencies": {
+    "@lydell/node-pty": "1.2.0-beta.12",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/headless": "^6.0.0",
+    "@xterm/xterm": "^5.5.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "openai": "^7.4.0",
+    "ws": "^8.18.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.0",
+    "@types/ws": "^8.5.13",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

@@ -1,0 +1,560 @@
+#!/usr/bin/env bash
+# write_tegami — replace your ladder, or point another session's marker.
+# Usage: write_tegami < ladder.json                      your own, whole block on stdin
+#        write_tegami --session <name> --at 2.3         rung 2, leg 3
+#        write_tegami --session <name> --at 4            rung 4 (a gate)
+#        write_tegami --session <name> --at none         nothing to point at
+#        write_tegami --on_tangent                       stepped off your ladder
+#        write_tegami --on_track                         back on it
+#        write_tegami --doc <path>                       list a doc you are working on
+#        write_tegami --undoc <path>                     take it off the list
+#
+# THE MARKER FORM TAKES ONE POSITION AND NEVER JSON, and it writes exactly ONE KEY:
+# "at" -> {"rung":2,"leg":3}, or {"rung":4} for a gate, or null. It touches nothing
+# else — not a status, not a title, not even to tidy.
+#
+# The position is where the rung SITS IN THE LETTER, so anyone reading the file can check
+# it by eye. Not an index into a flattened list: that number appears nowhere in the file
+# and cannot be verified by looking.
+#
+# Why a dedicated key and not status:ACTIVE. A pointer expressed as a status cannot MOVE
+# without asserting what it left behind: the vacated rung must become DONE (a completion
+# claim a monitor has no business making) or PLANNED (false — it was worked on). "at"
+# has no such shadow. It also matches a split the display already has: the torii means
+# YOU ARE HERE, the checkmarks mean DONE. Koshi owns the torii, the agent owns the
+# marks, and the two writers never touch the same key — so there is no semantic conflict
+# to lock against.
+#
+# The read-modify-write happens HERE, in one atomic temp+rename, and the caller never
+# holds the block. That is what makes the absence of locking safe: a marker move carries
+# nothing that must survive — a monitor recomputes it next turn — so an agent writing its
+# whole block may clobber it freely and the author always wins. A caller that read a
+# block, thought for two seconds and wrote it back would instead revert the agent's own
+# authoring, which is the one outcome worth preventing.
+#        cat <<'EOF' | write_tegami
+#        { "objective": "…", "ladder": [ … ] }
+#        EOF
+#
+# NO SESSION ARGUMENT, BY DESIGN — yours is the only letter you can write, the tool
+# knows which pane it is running in, and you never learn the path. A session writes its own letter
+# and no one else's — same asymmetry as the dials (write own, read any at dial ≥ read).
+#
+# What you send is the block: { "objective": "…", "ladder": [ … ] }. The teaching lines
+# are Ronin's and are rewritten every time, so you cannot lose them and need not preserve
+# them by hand.
+#
+# THE LADDER
+#   a rung is a GATE          { "gate": "go / no-go — …", "status": "ACTIVE" }
+#   or a PHASE holding legs   { "phase": "find the cause",
+#                               "legs": [ { "title": "…", "status": "DONE" } ] }
+#   statuses                  PLANNED · ACTIVE · DONE   (a gate you are AT is ACTIVE —
+#                             GATE is the rung kind, not a status)
+#
+# Rung one is always a gate. Exactly one ACTIVE at a time — you are waiting at a gate or
+# doing a leg, never both. A phase whose legs you cannot see yet carries no "legs" at
+# all; that is normal and renders as undetermined. Leave out what you do not know.
+#
+# There is NO verification of what you claim. Mark a rung DONE and it is DONE — the
+# ladder is an outline of where you are, not evidence. What IS checked is the shape,
+# because a key nothing reads is effort thrown away: five sessions were maintaining
+# "asks" and "blocked" long after both were removed, and nobody told them.
+set -u
+
+die() { printf '%s\n' "$*" >&2; exit 3; }
+
+# WHICH SESSION AM I — and it must NEVER guess.
+#
+# This function had a fallback that silently wrote one session's ladder into another's
+# letter, destroying it. `tmux display-message -p -t "$TMUX_PANE"` looks safe until
+# TMUX_PANE is EMPTY — which it is in some agents' tool shells — because `-t ""` does not
+# fail. It answers for the ATTACHED CLIENT: whichever tile the owner happens to have
+# focused in the browser at that instant. Writes followed the owner's mouse. The only
+# symptom was one line of output nobody reads, and a letter was lost.
+#
+# Two sources, both authoritative, neither the attached client:
+#   TMUX_PANE  the pane this shell runs in -> its window -> the non-viewer session holding it
+#   $TMUX      socket,pid,SESSION_ID — set for any process started inside a session
+# If neither answers, DIE. A tool that cannot tell whose letter it is has exactly one
+# correct behaviour, and it is not "pick the one on screen".
+me() {
+  local win s sid
+  if [ -n "${TMUX_PANE:-}" ]; then
+    win=$(tmux display-message -p -t "$TMUX_PANE" '#{window_id}' 2>/dev/null) || win=""
+    if [ -n "$win" ]; then
+      s=$(tmux list-windows -a -F '#{session_name}	#{window_id}' 2>/dev/null \
+          | awk -F'	' -v w="$win" '$2==w && $1 !~ /^grid_/ {print $1; exit}')
+      [ -n "$s" ] && { printf '%s
+' "$s"; return 0; }
+    fi
+  fi
+  if [ -n "${TMUX:-}" ]; then
+    sid=${TMUX##*,}
+    s=$(tmux list-sessions -F '#{session_id}	#{session_name}' 2>/dev/null \
+        | awk -F'	' -v i="\$$sid" '$1==i && $2 !~ /^grid_/ {print $2; exit}')
+    [ -n "$s" ] && { printf '%s
+' "$s"; return 0; }
+  fi
+  die "write_tegami: cannot tell which session this is — TMUX_PANE and \$TMUX are both unset.
+  Refusing rather than guessing: this used to fall back to the focused tile and wrote one
+  session's ladder into another's letter. Pin the pane and retry:
+    TMUX_PANE=\$(tmux list-panes -t <your-session> -F '#{pane_id}' | head -1) write_tegami ..."
+}
+
+# <name> -> the session KEY, by EXACT name.
+#
+# Not `display-message -t <name>`: that prefix-matches (so `tegami` could answer for
+# `tegami_probe`), and the `=name` exact-match form returns EMPTY on this tmux — which
+# does not fail, it just yields a wrong path. One list, one exact match, no guessing.
+#
+# Prefers the stamped @ronin-key so a rename cannot change the answer; falls back to
+# <name>-<created>, which the recorder derives identically with no Ronin involved.
+key_of() {
+  local row stamped created
+  row=$(tmux list-sessions -F '#{session_name}	#{@ronin-key}	#{session_created}' 2>/dev/null \
+        | awk -F'	' -v n="$1" '$1==n {print; exit}')
+  [ -n "$row" ] || die "write_tegami: no such session: $1"
+  stamped=$(printf '%s' "$row" | cut -f2)
+  created=$(printf '%s' "$row" | cut -f3)
+  if   [ -n "${stamped// /}" ]; then printf '%s\n' "$stamped"
+  elif [ -n "${created// /}" ]; then printf '%s\n' "$1-$created"
+  else printf '%s\n' "$1"; fi
+}
+
+# Where the session record lives on THIS machine. Asked, never spelled: this file used to
+# hardcode the path while the rest of Ronin resolved it, so moving the store sent the
+# letters one way and the tape the other. See docs/stores.md.
+STORE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ronin-store"
+[ -x "$STORE" ] || STORE=ronin-store
+SESSION_STORE="$("$STORE" session)"
+
+TARGET=""; ACTIVE=""; STATE=""; DOCADD=""; DOCDEL=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --session)    shift; TARGET=${1-} ;;
+    --at)         shift; ACTIVE=${1-} ;;
+    --on_track)   STATE=on_track ;;
+    --on_tangent) STATE=on_tangent ;;
+    # --doc, not --track: --on_track already exists and means something else entirely,
+    # and two flags a keystroke apart with unrelated meanings is a trap.
+    --doc)        shift; DOCADD=${1-} ;;
+    --undoc)      shift; DOCDEL=${1-} ;;
+    *) die "write_tegami: unknown argument: $1" ;;
+  esac
+  shift
+done
+
+# THE STATE SWITCH — one word, your own session, no block.
+#
+# write_tegami otherwise takes the whole letter on stdin, and a session mid-riff will not
+# re-emit its entire block to say "back in ten minutes". A switch that costs a rewrite is
+# decoration; this one costs a word, which is the difference between a key that gets used
+# and a key that gets documented.
+if [ -n "$STATE" ]; then
+  [ -z "$TARGET" ] || die "write_tegami: --on_track / --on_tangent are your OWN session only."
+  NAME=$(me)
+  SFILE="$SESSION_STORE/$(key_of "$NAME")/tegami.md"
+  [ -f "$SFILE" ] || die "write_tegami: you have no letter yet."
+  python3 - "$SFILE" "$STATE" "$NAME" <<'STATEMARK' || exit 3
+import json, os, re, sys
+src, want = sys.argv[1], sys.argv[2]
+text = open(src).read()
+m = re.search(r"```(?:json)?\s*\n([\s\S]*?)\n```", text)
+if not m:
+    sys.exit("write_tegami: no json block in your letter")
+d = json.loads(m.group(1))
+# on_track is the ABSENCE of the key, not a value written into it: the normal case should
+# leave no trace, and a letter that never mentions it is on track by definition.
+if want == "on_track":
+    d.pop("ladder_state", None)
+else:
+    d["ladder_state"] = want
+# "docs" is in this list for the same reason "at" is: this path rebuilds the whole block
+# from a fixed set of keys, so a key missing from it is a key this switch DELETES. A
+# session saying "back in ten minutes" must not lose its doc list to say it.
+block = json.dumps({k: d[k] for k in ("objective", "session_job", "ladder_state", "ladder", "docs", "at") if k in d},
+                   indent=2, ensure_ascii=False)
+tmp = src + ".sw"
+open(tmp, "w").write(text[:m.start(1)] + block + text[m.end(1):])
+os.replace(tmp, src)
+print("write_tegami: @%s %s" % (sys.argv[3], want.replace("_", " ")))
+STATEMARK
+  exit 0
+fi
+
+# MDEDIT — YOUR DOC LIST. One path, your own session, no block.
+#
+# What it is for: the owner opens a buildout or a handoff from the ▧ Docs tab in commons
+# without hunting for a path, and this list is the only thing that puts it there. A doc
+# nobody listed is a doc nobody can reach without asking. See docs/mdedit.md.
+#
+# Same bargain as the state switch: a session that has just written a plan will not re-emit
+# its entire ladder to say "and this file is mine". A verb that costs a rewrite is a verb
+# that gets documented instead of used.
+#
+# THESE TWO ARE THE ONLY DOOR IN, and that is the design, not an inconvenience. "docs" is
+# refused in the whole-block form and carried through it untouched, so a careless rewrite
+# cannot drop the list by forgetting to include it — the same protection "at" has, for the
+# same reason.
+if [ -n "$DOCADD" ] || [ -n "$DOCDEL" ]; then
+  [ -z "$TARGET" ] || die "write_tegami: --doc / --undoc are your OWN session only."
+  [ -z "$DOCADD" ] || [ -z "$DOCDEL" ] \
+    || die "write_tegami: --doc and --undoc are separate calls — one path at a time."
+  NAME=$(me)
+  DFILE="$SESSION_STORE/$(key_of "$NAME")/tegami.md"
+  [ -f "$DFILE" ] || die "write_tegami: you have no letter yet."
+  python3 - "$DFILE" "${DOCADD:-}" "${DOCDEL:-}" "$NAME" <<'DOCMARK' || exit 3
+import json, os, re, sys
+src, add, drop, name = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+text = open(src).read()
+m = re.search(r"```(?:json)?\s*\n([\s\S]*?)\n```", text)
+if not m:
+    sys.exit("write_tegami: no json block in your letter")
+d = json.loads(m.group(1))
+docs = [p for p in (d.get("docs") or []) if isinstance(p, str)]
+
+# Resolved HERE, against the AGENT'S cwd, because that is the only place a relative path
+# means what it says. What lands in the letter is always absolute, so the tab — which runs
+# nowhere near this directory — can open it without knowing anything about who wrote it.
+def fix(p):
+    return os.path.abspath(os.path.expanduser(p))
+
+# PRUNE ON THE WAY THROUGH. Nothing watches the filesystem and nothing sweeps: a doc that
+# has been deleted, renamed or moved falls off the next time this list is touched at all.
+# That is the entire staleness story and it is allowed to be approximate — the owner asks
+# for a missing doc by name and the agent lists it again, which is cheaper than being right.
+docs = [p for p in docs if os.path.exists(p)]
+
+if drop:
+    t = fix(drop)
+    keep = [p for p in docs if p != t]
+    if len(keep) == len(docs):
+        print("write_tegami: note — %s was not on the list." % t, file=sys.stderr)
+    docs = keep
+if add:
+    t = fix(add)
+    if not os.path.exists(t):
+        sys.exit("write_tegami: no such file: %s\n"
+                 "  List a doc that exists — the tab shows only files it can open, so an\n"
+                 "  entry it cannot read would be a row that does nothing." % t)
+    if os.path.isdir(t):
+        sys.exit("write_tegami: %s is a directory.\n"
+                 "  The list holds documents, one at a time. Listing a directory would be a\n"
+                 "  file explorer, which is the thing this exists instead of." % t)
+    docs = [t] + [p for p in docs if p != t]   # newest first, and adding twice is a no-op
+
+if docs:
+    d["docs"] = docs
+else:
+    d.pop("docs", None)   # absent means empty; an empty list is a key that says nothing
+
+block = json.dumps({k: d[k] for k in ("objective", "session_job", "ladder_state", "ladder", "docs", "at") if k in d},
+                   indent=2, ensure_ascii=False)
+# Beside, then rename: the tab may read this file at any moment and a half-written block
+# reads as "no ladder" for exactly as long as the write takes.
+tmp = src + ".doc"
+open(tmp, "w").write(text[:m.start(1)] + block + text[m.end(1):])
+os.replace(tmp, src)
+if add:
+    print("write_tegami: @%s listed %s (%d doc%s)." % (name, fix(add), len(docs), "" if len(docs) == 1 else "s"))
+else:
+    print("write_tegami: @%s unlisted %s (%d doc%s)." % (name, fix(drop), len(docs), "" if len(docs) == 1 else "s"))
+DOCMARK
+  exit 0
+fi
+
+if [ -n "$TARGET" ] || [ -n "$ACTIVE" ]; then
+  [ -n "$TARGET" ] && [ -n "$ACTIVE" ] \
+    || die "write_tegami: --session and --at go together: write_tegami --session <name> --at <n>"
+  case "$ACTIVE" in
+    none) ;;
+    *[!0-9.]*|.*|*.|*.*.*) die "write_tegami: --at takes a position from 'read_tegami --rungs' — N or N.M — or 'none'." ;;
+    '') die "write_tegami: --at takes a position from 'read_tegami --rungs' — N or N.M — or 'none'." ;;
+  esac
+  # NO DIAL CHECK ON THIS PATH, deliberately — owner law, and it took me a wrong turn to
+  # see why. The dial governs who may DRIVE a session: type into it, change what it does.
+  # Pointing "at" does none of that. It writes one derived key that the session own next
+  # save clobbers freely, carrying nothing that must survive.
+  #
+  # Gating it would break the case that matters most: a session on 👁 read is watch-only,
+  # and watching is precisely when you want to see where it is. A dial that hid the
+  # readout for the sessions you are watching would be backwards.
+  #
+  # Every other cross-session action stays dial-gated. This one is not an action on the
+  # session at all — it is an annotation on a file about it.
+  MFILE="$SESSION_STORE/$(key_of "$TARGET")/tegami.md"
+  [ -f "$MFILE" ] || die "write_tegami: @$TARGET has no letter yet."
+  MTMP="$(dirname "$MFILE")/.tegami.$$"
+  # One process, one pass: read, move the marker, rename over. Nothing is held open.
+  python3 - "$MFILE" "$MTMP" "$ACTIVE" "$TARGET" <<'MARK' || exit 3
+import json, os, re, sys
+src, tmp, want = sys.argv[1], sys.argv[2], sys.argv[3]
+text = open(src).read()
+m = re.search(r"```(?:json)?\s*\n([\s\S]*?)\n```", text)
+if not m:
+    sys.exit("write_tegami: no json block in that letter")
+d = json.loads(m.group(1))
+ladder = d.get("ladder") or []
+if want == "none":
+    d["at"] = None
+else:
+    parts = want.split(".")
+    ri = int(parts[0])
+    li = int(parts[1]) if len(parts) > 1 else None
+    if not 1 <= ri <= len(ladder):
+        sys.exit("write_tegami: rung %d is out of range (1..%d)" % (ri, len(ladder)))
+    rung = ladder[ri - 1]
+    if "gate" in rung:
+        if li is not None:
+            sys.exit("write_tegami: rung %d is a gate — it has no legs, use --at %d" % (ri, ri))
+        d["at"] = {"rung": ri}
+    else:
+        legs = rung.get("legs") or []
+        if li is None:
+            sys.exit("write_tegami: rung %d is a phase — point at one of its legs, e.g. --at %d.1" % (ri, ri))
+        if not 1 <= li <= len(legs):
+            sys.exit("write_tegami: rung %d has %d leg(s); %d is out of range" % (ri, len(legs), li))
+        d["at"] = {"rung": ri, "leg": li}
+# THE MARKER CARRIES THE LADDER WITH IT.
+#
+# A ladder is walked in order, so a session working leg 3.2 has been through 3.1 and every
+# rung before it. Moving the marker without saying so left the letter contradicting itself:
+# the torii on phase 3 leg 2 and the chip beside it reading "phase 3 · 0/3", one session
+# giving two answers out of one file.
+#
+# This is written INTO the letter rather than derived when the letter is read. There is one
+# source of truth and it is this file: SHINGO renders the letter, the letter is the only
+# thing it renders, and a monitor's observation is a change to the letter like any other.
+# A reader that recomputed position would be a second place where "where is this session"
+# is decided, and the two would disagree the first time one of them changed.
+#
+# IT NEVER DOWNGRADES. A rung the agent marked DONE ahead of the marker stays DONE: the
+# agent's word about its own work outranks a position inferred from a pane. This only ever
+# fills in the silence the agent left, which is the entire reason a monitor exists.
+if d.get("at"):
+    ar = d["at"]["rung"]
+    al = d["at"].get("leg")
+    for i, rung in enumerate(ladder, start=1):
+        if "gate" in rung:
+            if i < ar:
+                rung["status"] = "DONE"
+            continue
+        for j, leg in enumerate(rung.get("legs") or [], start=1):
+            # THE MARKER ITSELF IS ALWAYS ACTIVE — even over a DONE the agent wrote. That
+            # is not a downgrade, it is the position: the torii has to sit on a leg that
+            # reads as the one being worked, or the panel shows a torii on a finished leg
+            # and means nothing by it. Never-downgrade protects rungs AHEAD of the marker,
+            # where the agent knows something the pane cannot show.
+            if i == ar and al is not None and j == al:
+                leg["status"] = "ACTIVE"
+            elif leg.get("status") == "DONE":
+                continue
+            elif i < ar or (i == ar and al is not None and j < al):
+                leg["status"] = "DONE"
+
+# Titles, objective and role are copied through exactly as the agent left it — a monitor
+# that tidied a title would be authoring, which is not its job.
+block = json.dumps({k: d[k] for k in ("objective", "session_job", "side_road", "ladder", "docs", "at") if k in d},
+                   indent=2, ensure_ascii=False)
+open(tmp, "w").write(text[:m.start(1)] + block + text[m.end(1):])
+os.replace(tmp, src)
+print("write_tegami: @%s at -> %s" % (sys.argv[4], d["at"]))
+MARK
+  exit 0
+fi
+
+NAME=$(me)
+DIR="$SESSION_STORE/$(key_of "$NAME")"
+FILE="$DIR/tegami.md"
+
+BODY=$(cat)
+[ -n "${BODY// /}" ] || die "write_tegami: nothing on stdin. Send the json block."
+
+# Validate the shape and normalise the spacing, so what lands on disk is what the tile
+# will read. Rejects rather than silently dropping: an unknown key is either a typo or a
+# word we retired, and both are worth being told about.
+# The validator is handed the CURRENT block too, so it can carry "at" through without
+# the agent ever seeing it.
+PREV=$(awk '/^```/{f=!f; if(f) next; else exit} f' "$FILE" 2>/dev/null)
+PREVF=$(mktemp); printf '%s' "${PREV:-{\}}" > "$PREVF"
+BLOCK=$(printf '%s' "$BODY" | python3 -c '
+import json, sys
+ALLOWED   = {"objective", "session_job", "ladder_state", "ladder"}
+# What is happening to the ladder AS A WHOLE — not a rung. Absent means "on_track", so
+# nothing has to be migrated and the normal case costs nobody a keystroke.
+#
+# There is no "on hold": waiting on a person is a GATE, and a second way to say the same
+# thing is how a format rots. Owner, ruling it out himself: "not on hold, because that is
+# a gate."
+LADDER_STATES = {"on_track", "on_tangent"}   # "at" is NOT yours — see below
+STATUSES  = {"PLANNED", "ACTIVE", "DONE"}
+try:
+    d = json.load(sys.stdin)
+except Exception as e:
+    sys.exit(f"write_tegami: that is not valid json — {e}")
+if not isinstance(d, dict):
+    sys.exit("write_tegami: the block must be an object: { \"objective\": …, \"ladder\": [ … ] }")
+
+# REFUSED HERE, CARRIED THROUGH BELOW. Neither of these has the block as its door, and
+# both are named individually because the fix differs: nobody writes "at" at all, and
+# "docs" has two verbs of its own.
+NOT_YOURS = {
+    "at": "\"at\" is not yours to write.\n"
+          "  It is the pointer a monitor keeps at whichever rung is being worked on now.\n"
+          "  You own objective, session_job and ladder, including every status. Drop \"at\"\n"
+          "  and save again; whatever it holds is carried through for you.",
+    "docs": "\"docs\" is not written in the block.\n"
+            "  Your doc list has two verbs of its own, so that rewriting your ladder can\n"
+            "  never drop it by forgetting to include it:\n"
+            "    write_tegami --doc <path>      list a doc you are working on\n"
+            "    write_tegami --undoc <path>    take it off the list\n"
+            "  Drop \"docs\" from the block and save again; the list is carried through.",
+}
+extra = sorted(set(d) - ALLOWED)
+if extra:
+    blocked = [k for k in extra if k in NOT_YOURS]
+    if blocked and len(blocked) == len(extra):
+        sys.exit("write_tegami: " + "\n\nwrite_tegami: ".join(NOT_YOURS[k] for k in blocked))
+    sys.exit("write_tegami: unknown key(s): " + ", ".join(extra) +
+             "\n  A TEGAMI holds: objective, session_job, ladder, and ladder_state when you are off it."
+             "\n  asks / blocked / decided / handoff / plan / side_ladder / v were removed —"
+             "\n  nothing reads them. Questions for the owner are a GATE rung; everything else"
+             "\n  belongs in your plan doc or on a wipeboard.")
+
+st_ = (d.get("ladder_state") or "").strip().lower()
+if st_ and st_ not in LADDER_STATES:
+    if st_ in ("on_hold", "on hold"):
+        sys.exit("write_tegami: ladder_state \"on hold\" — waiting on someone is a GATE rung,\n"
+                 "  which already says it and says WHAT you are waiting for. Use a gate.")
+    sys.exit("write_tegami: ladder_state %r — use \"on_track\" (or leave it out) or \"on_tangent\"." % st_)
+
+ladder = d.get("ladder", [])
+if not isinstance(ladder, list):
+    sys.exit("write_tegami: \"ladder\" must be a list of rungs.")
+
+active = 0
+for i, r in enumerate(ladder, 1):
+    if not isinstance(r, dict):
+        sys.exit(f"write_tegami: rung {i} is not an object.")
+    if ("gate" in r) == ("phase" in r):
+        sys.exit(f"write_tegami: rung {i} must be a gate OR a phase — exactly one of them.")
+    st = r.get("status")
+    if st == "GATE":
+        sys.exit(f"write_tegami: rung {i} — GATE is a rung KIND, not a status. A gate you are\n"
+                 "  sitting at is ACTIVE, like anything else you are on; the tile works out the\n"
+                 "  torii from the fact that the active rung is a gate.")
+    if st is not None and st not in STATUSES:
+        sys.exit(f"write_tegami: rung {i} status {st!r} — use one of: " + " · ".join(sorted(STATUSES)))
+    if "gate" in r and st == "ACTIVE":
+        active += 1
+    for j, leg in enumerate(r.get("legs") or [], 1):
+        if not isinstance(leg, dict) or "title" not in leg:
+            sys.exit(f"write_tegami: rung {i} leg {j} needs a \"title\".")
+        ls = leg.get("status", "PLANNED")
+        if ls not in STATUSES:
+            sys.exit(f"write_tegami: rung {i} leg {j} status {ls!r} — use one of: " + " · ".join(sorted(STATUSES)))
+        if ls == "ACTIVE":
+            active += 1
+
+# One ACTIVE is the rule the whole readout rests on: the tile lights exactly one rung,
+# so two is a question the display cannot answer. A warning, not a refusal — a session
+# mid-edit is not doing anything wrong.
+if active > 1:
+    print(f"write_tegami: note — {active} rungs are ACTIVE. Only one can be where you are;"
+          " the tile will light the first.", file=sys.stderr)
+if ladder and "gate" not in ladder[0]:
+    print("write_tegami: note — rung one is usually a GATE (the go / no-go).", file=sys.stderr)
+
+# Hand the normalised block back on STDOUT. Not via a temp file: $$ is not expanded
+# inside this single-quoted block, so the two halves would name different files — which
+# is how an empty ladder once got written over a real one. Notes go to stderr, so stdout
+# stays exactly the payload.
+# CARRY "at" THROUGH. It belongs to the monitor, so an agent save must neither write it
+# nor wipe it — a save that silently dropped the pointer would make the monitor look
+# broken every single turn, and that failure mode is one nobody would think to look for.
+#
+# But an index is only meaningful against the ladder it was computed for. If this save
+# changes the SHAPE of the sequence — a rung added, removed or reordered — the pointer
+# is reset to null, because a stale index silently points at the wrong work and null is
+# honest. Editing a title or flipping a status leaves the shape alone and keeps it.
+prev = json.loads(open(sys.argv[1]).read()) if len(sys.argv) > 1 else {}
+def shape(l):
+    return [("gate", r.get("gate", "")) if "gate" in r
+            else ("phase", r.get("phase", ""), tuple(x.get("title", "") for x in (r.get("legs") or [])))
+            for r in (l or [])]
+at = prev.get("at")
+if not isinstance(at, dict):
+    at = None
+if at is not None and shape(prev.get("ladder")) != shape(ladder):
+    at = None
+    print("write_tegami: note — the ladder shape changed, so the pointer was cleared.",
+          file=sys.stderr)
+out = {"objective": d.get("objective", ""), "session_job": d.get("session_job", "")}
+ls_ = (d.get("ladder_state") or "").strip().lower()
+if ls_ and ls_ != "on_track":
+    out["ladder_state"] = ls_
+out["ladder"] = ladder
+# CARRY "docs" THROUGH — same contract as "at", different reason. "at" belongs to a
+# monitor; "docs" belongs to the agent but is written by verbs, so a whole-block save must
+# put it back exactly as it found it. This one line is what makes the doc list durable:
+# there is no way to lose it by writing a ladder that does not mention it.
+#
+# Unlike "at" it is never reset. A pointer is an index into the ladder and goes stale when
+# the shape of that ladder changes; a doc list has nothing to do with the ladder.
+#
+# NOTE FOR ANYONE EDITING THIS BLOCK: it is inside a single-quoted bash string, so an
+# apostrophe anywhere in here — even in a comment — ends the string and breaks the script.
+docs_ = [p for p in (prev.get("docs") or []) if isinstance(p, str)]
+if docs_:
+    out["docs"] = docs_
+if at is not None:
+    out["at"] = at
+print(json.dumps(out, indent=2, ensure_ascii=False))
+' "$PREVF") || { rm -f "$PREVF"; exit 3; }
+rm -f "$PREVF"
+
+[ -n "${BLOCK// /}" ] || die "write_tegami: internal — validator produced nothing; letter untouched."
+
+# KEEP THE TEACHING LINES THAT ARE ALREADY THERE.
+#
+# The `>` block is wording the OWNER edits — he softened it once already — so this tool
+# carries forward whatever the file says rather than stamping its own copy back over
+# his. Only a letter with no teaching lines at all gets the stock ones, and the stock
+# text lives in ONE place (src/tegami.ts, the seeder) so there is nothing to drift.
+KEEP=$(awk '/^```/{exit} {print}' "$FILE" 2>/dev/null)
+case "$KEEP" in *'>'*) ;; *) KEEP="" ;; esac
+
+mkdir -p "$DIR"
+# Write beside, then rename: the tile may read this file at any moment, and a half-written
+# block would read as "no ladder" for exactly as long as the write took.
+TMP="$DIR/.tegami.$$"
+{
+  if [ -n "$KEEP" ]; then
+    printf '%s\n' "$KEEP"
+  else
+    printf '# TEGAMI — %s\n' "$NAME"
+    cat <<'TEACH'
+> **This file is your ladder, and it is the only thing anyone watching can see.** Keep it
+> true and save it whenever it changes — a stale ladder is worse than none.
+>
+> RUNG ONE IS ALWAYS A GATE — Ronin's gate ⛩. Before phase 1, before anything: you draw
+> the ladder up and it waits there. Nothing below it moves until the owner says go.
+>
+> Then: phases hold legs. Name a phase before you know its legs — a phase with nothing
+> under it yet is normal and is drawn as "undetermined". Leave out what you cannot see;
+> a short ladder is a true ladder, and a guessed one is a lie.
+>
+> Statuses are `PLANNED` · `ACTIVE` · `DONE`. **One ACTIVE at a time** — you are
+> waiting at a gate or you are doing a leg, never both. Add a gate wherever the work
+> genuinely stops and needs someone: that is how the owner knows you want them.
+>
+> Your own words go in "objective" and "title". Nothing else is read, so nothing else
+> belongs here — findings go in your plan doc, cross-session findings on a wipeboard.
+> Edit it with `read_tegami` and `write_tegami`; the location is Ronin's business.
+TEACH
+  fi
+  printf '\n```json\n%s\n```\n' "$BLOCK"
+} > "$TMP"
+mv -f "$TMP" "$FILE"
+
+printf 'write_tegami: @%s ladder saved (%s rungs).\n' "$NAME" \
+  "$(printf '%s' "$BLOCK" | python3 -c 'import json,sys; print(len(json.load(sys.stdin).get("ladder") or []))')"

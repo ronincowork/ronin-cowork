@@ -1,0 +1,133 @@
+#!/usr/bin/env bash
+# tejun-rireki — read a session's tape from a shell. The lens, minus the emulator.
+# Usage: tejun-rireki                       every session with a tape, and its size
+#        tejun-rireki <session>             what the tape holds: segments, marks, dial
+#        tejun-rireki <session> text [n]    last n KB of readable text (default 32)
+#        tejun-rireki <session> since       everything since the owner's last message
+#        tejun-rireki <session> raw         the raw bytes, concatenated, to stdout
+#        tejun-rireki <session> scroll [n] [before]  the settled transcript
+#        tejun-rireki <session> voice      the settled transcript as a plain text blob
+#
+# RIREKI is the record of what a session's panes emitted. The recorder is a tmux applet
+# (bin/rireki/) holding FAUCET B — tmux's one pipe-pane per pane — so the tape fills
+# whether or not Ronin is up and whether or not anyone is watching.
+#
+# This is the shell twin of src/lens.ts, the same way tejun-wipeboard twins
+# src/wipeboards.ts. Neither is the "real" one. The strip here is deliberately dumb:
+# escape codes out, repeats left in. Ronin's lens collapses repaints properly and
+# labels the result as reconstruction — this does not pretend to.
+set -u
+
+HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+: "${RIREKI_DIR:=$("$HERE/bin/ronin-store" session)}"
+VIEWER_PREFIX='grid_'
+
+usage() { echo "usage: tejun-rireki [session [text|since|raw] [n]]" >&2; exit 2; }
+
+# Strip what is PROVABLY not content: CSI/OSC sequences, carriage returns. Never strip
+# by screen position — a permission prompt lives in the same rows as the input box.
+strip() {
+  sed -e 's/\x1b\][^\x07\x1b]*\(\x07\|\x1b\\\)//g' \
+      -e 's/\x1b[][()#;?]*[0-9;]*[A-Za-z]//g' \
+      -e 's/\x1b[=><]//g' \
+      -e 's/\r$//' | cat -s
+}
+
+# A session's KEY — its identity. Names are mutable and reusable; the key is not.
+session_key() {
+  local k
+  k=$(tmux display-message -p -t "$1" '#{@ronin-key}' 2>/dev/null | tr -d '\n')
+  [ -n "$k" ] || k=$(tmux display-message -p -t "$1" '#{session_name}-#{session_created}' 2>/dev/null | tr -d '\n')
+  echo "$k"
+}
+
+# The pane dir Ronin would render: the session's active pane if taped, else the fattest.
+pane_dir() {
+  local name="$1" s active want best bestsz sz d
+  s=$(session_key "$name"); [ -n "$s" ] || s="$name"
+  [ -d "$RIREKI_DIR/$s/tape" ] || return 1
+  # tmux is asked by NAME; the filesystem is addressed by KEY. Never mix them.
+  active=$(tmux display-message -p -t "$name" '#{pane_id}' 2>/dev/null | tr -d '\n')
+  if [ -n "$active" ]; then
+    want="$RIREKI_DIR/$s/tape/${active/\%/p}"
+    [ -d "$want" ] && { echo "$want"; return 0; }
+  fi
+  best=''; bestsz=-1
+  for d in "$RIREKI_DIR/$s/tape"/*/; do
+    [ -d "$d" ] || continue
+    sz=$(cat "$d"/*.tape 2>/dev/null | wc -c)
+    [ "$sz" -gt "$bestsz" ] && { best="${d%/}"; bestsz=$sz; }
+  done
+  [ -n "$best" ] && { echo "$best"; return 0; }
+  return 1
+}
+
+human() { numfmt --to=iec --suffix=B "${1:-0}" 2>/dev/null || echo "${1:-0}B"; }
+
+# --- no args: every tape in play -------------------------------------------------
+if [ $# -eq 0 ]; then
+  [ -d "$RIREKI_DIR" ] || { echo "no tapes yet — is the recorder installed? (bin/rireki/rireki-install)"; exit 0; }
+  printf '%-24s %10s %8s %6s\n' SESSION TAPE SEGS DIAL
+  for d in "$RIREKI_DIR"/*/; do
+    [ -d "$d" ] || continue
+    s=$(basename "$d")
+    case "$s" in "$VIEWER_PREFIX"*) continue ;; esac
+    sz=$(cat "$d"/tape/*/*.tape 2>/dev/null | wc -c)
+    mk=$(ls "$d"/tape/*/*.tape 2>/dev/null | wc -l)
+    name="${s%-*}"   # <name>-<created-epoch>
+    dial=$(tmux show-options -qv -t "$name" @ronin-rireki 2>/dev/null)
+    [ -n "$dial" ] || dial=on
+    tmux has-session -t "=$name" 2>/dev/null || dial="$dial(dead)"
+    printf '%-24s %10s %8s %6s\n' "$name" "$(human "$sz")" "$mk" "$dial"
+  done
+  exit 0
+fi
+
+SESSION="$1"; shift
+DIR=$(pane_dir "$SESSION") || { echo "no tape for \"$SESSION\"." >&2; exit 1; }
+CMD="${1:-info}"; [ $# -gt 0 ] && shift
+
+case "$CMD" in
+  info)
+    dial=$(tmux show-options -qv -t "$SESSION" @ronin-rireki 2>/dev/null); [ -n "$dial" ] || dial=on
+    echo "session : $SESSION   (dial @ronin-rireki: $dial)"
+    echo "tape    : $DIR"
+    total=0
+    for f in "$DIR"/*.tape; do
+      [ -f "$f" ] || continue
+      sz=$(wc -c <"$f"); total=$((total + sz))
+      printf '  %s  %s\n' "$(basename "$f")" "$(human "$sz")"
+    done
+    echo "total   : $(human "$total")"
+    first=$(ls "$DIR"/*.tape 2>/dev/null | head -1 | xargs -r basename | sed 's/\.tape//;s/^0*//')
+    [ -n "$first" ] && [ "$first" -gt 1 ] 2>/dev/null && echo "dropped : ring dropped segments before $first — history begins mid-session"
+    ;;
+  raw)
+    cat "$DIR"/*.tape 2>/dev/null
+    ;;
+  scroll)
+    # The SETTLED transcript, not the raw tape: repaints collapsed, the owner's messages
+    # interleaved as marks, each line classified by the pane's own decoder. This is the
+    # same product a tile reads — see wip/buildouts/RIREKI.md. Unlike `text` above it
+    # is not a dumb strip, and it says so in its header line.
+    ( cd "$HERE" && npx tsx src/services/rireki/scroll-cli.ts "$SESSION" "${1:-120}" "${2:-}" )
+    ;;
+  voice)
+    # The same settled scroll as a PLAIN BLOB — no line numbers, no glyphs, no chrome.
+    # What a speech agent wants, for the only two things it does: read it all back, or
+    # summarise it. Chrome goes only where a decoder positively identified it; a
+    # permission prompt is never dropped.
+    ( cd "$HERE" && npx tsx src/services/rireki/scroll-cli.ts "$SESSION" voice )
+    ;;
+  text)
+    kb="${1:-32}"
+    cat "$DIR"/*.tape 2>/dev/null | tail -c $((kb * 1024)) | strip
+    ;;
+  since)
+    # "Everything since the last time the owner spoke" — the boundary is the pane's own
+    # ECHO of the message (`> …` / `› …`), classified `user` in the settled scroll. It is
+    # output like everything else, so it covers every input path, SSH included.
+    ( cd "$HERE" && npx tsx src/services/rireki/scroll-cli.ts "$SESSION" since )
+    ;;
+  *) usage ;;
+esac

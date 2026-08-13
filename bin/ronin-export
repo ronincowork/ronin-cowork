@@ -1,0 +1,132 @@
+#!/usr/bin/env bash
+# ronin-export — everything Ronin keeps outside the repo, in one tarball. And back.
+#
+#   ronin-export                     # every store on this box -> ./ronin-export-<box>-<stamp>.tar.gz
+#   ronin-export --user-only        # only the user root's stores (catalogs, memory, config)
+#   ronin-export --out <path>       # name the tarball yourself
+#   ronin-export --restore <tar>    # unpack each store into where THIS box keeps it
+#
+# The requirement is the dohyo migration, stated as history: the repo survived the box's
+# death and NOTHING else did — memories, catalogs, config, tapes, letters. The repo has
+# git; everything else has this.
+#
+# Both roots by default (owner's ruling, 2026-08-13): the data root is "ours, can
+# regenerate or lose", but a tape is not regenerable and the migration is proof someone
+# wanted it back. --user-only is the narrow export.
+#
+# The tarball is keyed by STORE ID, never by path: ids are the same on every machine,
+# paths are not. Restore resolves each id through ronin-store ON THE DESTINATION, so the
+# new box's layout — env overrides included — decides where things land. A store that
+# already has files is SKIPPED loudly, never merged and never clobbered: restore is for
+# a fresh box, and anything cleverer is a decision a person should make.
+#
+# What is deliberately absent: the units, the statusLine registration, node_modules —
+# setup.sh regenerates all three on the new box (docs/repo-to-operator.md).
+set -euo pipefail
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+STORE="$HERE/ronin-store"
+[ -x "$STORE" ] || { echo "ronin-export: $STORE not found — this tool asks, it never spells paths" >&2; exit 2; }
+
+MODE=export; OUT=""; TAR=""; USER_ONLY=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --user-only) USER_ONLY=1 ;;
+    --out) OUT="${2:?--out needs a path}"; shift ;;
+    --restore) MODE=restore; TAR="${2:?--restore needs a tarball}"; shift ;;
+    -h|--help) sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) echo "ronin-export: unknown argument '$1' (try --help)" >&2; exit 2 ;;
+  esac
+  shift
+done
+
+# Store ids come from the table's own binding, never a second list here — a
+# hand-maintained copy of the store list is the drift this tool exists to survive.
+store_ids() {
+  "$STORE" --all | tail -n +2 | while read -r id root _rest; do
+    [ "$USER_ONLY" = 1 ] && [ "$root" != "user" ] && continue
+    printf '%s\n' "$id"
+  done
+}
+
+if [ "$MODE" = "export" ]; then
+  BOX="$(hostname -s 2>/dev/null || hostname)"
+  STAMP="$(date +%Y%m%d-%H%M%S)"
+  OUT="${OUT:-./ronin-export-${BOX}-${STAMP}.tar.gz}"
+
+  WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
+  mkdir -p "$WORK/RONIN-EXPORT/stores"
+
+  TAKEN=0
+  {
+    echo "ronin export"
+    echo "box: $BOX"
+    echo "date: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    echo "commit: $(git -C "$HERE/.." rev-parse --short HEAD 2>/dev/null || echo unknown)"
+    [ "$USER_ONLY" = 1 ] && echo "scope: user root only" || echo "scope: both roots"
+    echo "stores:"
+  } > "$WORK/RONIN-EXPORT/MANIFEST"
+
+  while IFS= read -r id; do
+    dir="$("$STORE" "$id")"
+    if [ ! -d "$dir" ]; then
+      echo "  skip  $id — nothing at $dir yet"
+      echo "  $id: (empty, not in this export)" >> "$WORK/RONIN-EXPORT/MANIFEST"
+      continue
+    fi
+    # A symlink per store, dereferenced by tar -h below: id-keyed layout with no
+    # staging copy of what can be gigabytes of tape.
+    ln -s "$dir" "$WORK/RONIN-EXPORT/stores/$id"
+    n="$(find "$dir" -type f | wc -l | tr -d ' ')"
+    echo "  take  $id — $n file(s) from $dir"
+    echo "  $id: $n file(s)" >> "$WORK/RONIN-EXPORT/MANIFEST"
+    TAKEN=$((TAKEN + 1))
+  done <<< "$(store_ids)"
+
+  [ "$TAKEN" -gt 0 ] || { echo "ronin-export: no store has any files — nothing to export"; exit 1; }
+  # Live sessions are being taped WHILE tar reads them (RIREKI never stops), so on any
+  # box in use GNU tar exits 1: "file changed as we read it". A tape read mid-append is
+  # a valid prefix of itself, not a corruption — say so and keep the export. Anything
+  # past exit 1 is a real failure and stays one.
+  rc=0; tar -C "$WORK" -chzf "$OUT" RONIN-EXPORT 2> >(grep -v 'file changed as we read it' >&2) || rc=$?
+  if [ "$rc" -eq 1 ]; then
+    echo "  note  live tape(s) grew while being read — each is a clean prefix; for a"
+    echo "        byte-exact session store, export while the sessions are quiet"
+  elif [ "$rc" -ne 0 ]; then
+    echo "ronin-export: tar failed (exit $rc)" >&2; exit "$rc"
+  fi
+  echo
+  echo "ronin-export: $TAKEN store(s) -> $OUT"
+  echo "  restore on the new box:  bin/ronin-export --restore $(basename "$OUT")"
+  exit 0
+fi
+
+# ---- restore -----------------------------------------------------------------------
+[ -f "$TAR" ] || { echo "ronin-export: $TAR not found" >&2; exit 2; }
+WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
+tar -C "$WORK" -xzf "$TAR"
+[ -d "$WORK/RONIN-EXPORT/stores" ] || { echo "ronin-export: $TAR is not a ronin export (no RONIN-EXPORT/stores inside)" >&2; exit 2; }
+
+RESTORED=0; SKIPPED=0
+for src in "$WORK/RONIN-EXPORT/stores"/*/; do
+  [ -d "$src" ] || continue
+  id="$(basename "$src")"
+  # An id this box's table does not know (an export from a newer Ronin) is skipped,
+  # named, and costs nothing else.
+  if ! dest="$("$STORE" "$id" 2>/dev/null)"; then
+    echo "  skip  $id — this Ronin has no such store (newer export?)"; SKIPPED=$((SKIPPED + 1)); continue
+  fi
+  if [ -d "$dest" ] && [ -n "$(ls -A "$dest" 2>/dev/null)" ]; then
+    echo "  skip  $id — $dest already has files; not merging, not overwriting."
+    echo "        Move it aside first if this restore should win."
+    SKIPPED=$((SKIPPED + 1)); continue
+  fi
+  mkdir -p "$dest"
+  cp -a "$src". "$dest"/
+  echo "  ok    $id -> $dest"
+  RESTORED=$((RESTORED + 1))
+done
+echo
+echo "ronin-export: restored $RESTORED store(s), skipped $SKIPPED."
+[ "$SKIPPED" -gt 0 ] && echo "  A skip is not a restore. Read the lines: something was not brought back."
+exit 0

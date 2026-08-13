@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+# tmux shim — VENDOR-NEUTRAL dial enforcement.
+# Any agent (claude, codex, pi, a shell script, a human) whose PATH includes this
+# directory is checked against @ronin-control before a tmux write lands. Nothing here
+# knows or cares which CLI is calling: the rule lives at the tmux layer, not inside
+# one vendor's hook system.
+#   user -> no reads, no writes   ·   read -> reads only   ·   write/empty -> all
+# Dial flips are owner-only, by any path.
+# Speed bump, not physics: /usr/bin/tmux still exists — but going around this is a
+# deliberate, visible act rather than an accident.
+set -u
+SELF_DIR=$(cd "$(dirname "$0")" && pwd)
+REAL=$(PATH=$(printf '%s' "$PATH" | tr ':' '\n' | grep -vxF "$SELF_DIR" | paste -sd:) command -v tmux)
+[ -n "${REAL:-}" ] || REAL=/usr/bin/tmux
+args="$*"
+
+deny() { echo "ronin-dial: $1" >&2; exit 4; }
+
+# $TMUX (set inside every pane) OVERRIDES $TMUX_TMPDIR: a command aimed at a test
+# server silently lands on the live one instead. That exact slip once ran
+# kill-server on the production socket and ended every session on the box.
+# An explicit -S/-L names a socket unambiguously, so those pass.
+if [ -n "${TMUX_TMPDIR:-}" ] && [ -n "${TMUX:-}" ]; then
+  case " $args " in
+    *" -S "*|*" -L "*|*" -S"[!\ ]*|*" -L"[!\ ]*) : ;;
+    *) deny "TMUX and TMUX_TMPDIR are both set — \$TMUX wins, so this would hit the LIVE server, not your test rig. Run it as 'env -u TMUX tmux …' (or unset TMUX first)." ;;
+  esac
+fi
+
+# kill-server is not a dial question — it ends EVERY session on the socket at
+# once, and it can never be scoped to the caller's own session. Refused while
+# any session is alive; RONIN_KILL_TMUX=1 overrides (same override as the
+# systemctl shim's tmux-server guard). The probe honours -S/-L so a private
+# test socket is judged by its own sessions, not the live server's.
+if printf '%s' "$args" | grep -q 'kill-server' && [ "${RONIN_KILL_TMUX:-0}" != 1 ]; then
+  sock=(); prev=
+  for a in "$@"; do
+    case "$prev" in -S|-L) sock=("$prev" "$a"); prev=; continue ;; esac
+    case "$a" in -S|-L) prev=$a ;; -S?*|-L?*) sock=("$a") ;; esac
+  done
+  n=$("$REAL" ${sock[@]+"${sock[@]}"} list-sessions 2>/dev/null | wc -l)
+  [ "$n" -gt 0 ] && deny "kill-server would end all $n live session(s) on this socket at once. To end one session: kill-session -t <name> (dial-checked). To really kill the server: RONIN_KILL_TMUX=1 tmux kill-server."
+fi
+
+# new-session is capped, not dial-checked — there is no session yet to have a dial. This
+# is its own guard rather than an entry in WRITE below, for two reasons: `new-session` is
+# genuinely absent from that list, and the dial loop only inspects `-t <target>` arguments,
+# while `tmux new-session -d -s foo -c /dir` has no `-t` at all — so adding it there would
+# have looked right and done nothing.
+#
+# `-t` MEANS GROUPED: `new-session -s viewer -t target` attaches a second view onto an
+# existing session's windows. That is what a browser tile does, it creates no new work, and
+# it must never be refused. Ronin's own server does not reach this shim (its unit sets a
+# PATH without bin/shim), but a dev running Ronin with the shim first would otherwise lose
+# every tile.
+if printf '%s' "$args" | grep -q 'new-session' && [ "${RONIN_MAX_OK:-0}" != 1 ]; then
+  case " $args " in
+    *" -t "*|*" -t"[!\ ]*) : ;;                      # grouped viewer — never capped
+    *) "$SELF_DIR/../ronin-may-spawn" || exit 4 ;;
+  esac
+fi
+
+if printf '%s' "$args" | grep -qE '(set-option|set)[^|;&]*@ronin-control'; then
+  deny "dial flips are owner-only — ask the owner to turn the dial in the Ronin UI."
+fi
+
+WRITE='send-keys|kill-session|kill-window|kill-pane|respawn-|pipe-pane|paste-buffer|load-buffer|set-buffer|rename-session|rename-window|split-window|new-window|select-window|select-pane|run-shell|source-file|resize-'
+READ='capture-pane|display-message|list-panes|list-windows|show-environment'
+w=0; r=0
+printf '%s' "$args" | grep -qE "$WRITE" && w=1
+printf '%s' "$args" | grep -qE "$READ" && r=1
+
+if [ "$w" = 1 ] || [ "$r" = 1 ]; then
+  for t in $(printf '%s' "$args" | grep -oE '\-t[ =]+[A-Za-z0-9_./-]+' | sed -E 's/^-t[ =]+//; s/:.*$//' | sort -u); do
+    dial=$("$REAL" show-option -t "$t" -qv @ronin-control 2>/dev/null || true)
+    case "$dial" in
+      user)
+        deny "'$t' is owner-only (dial 👤): outside agents may not read or write it. Report back and ask the owner to turn the dial." ;;
+      read)
+        [ "$w" = 1 ] && deny "'$t' is watch-only (dial 👁): observing is fine, writing needs the owner to turn the dial to 🤖." ;;
+    esac
+  done
+fi
+
+exec "$REAL" "$@"

@@ -1,0 +1,39 @@
+# systemd --user unit for the TMUX SERVER ITSELF — not for tmux-ronin.
+#
+# Why this unit exists (read before deleting it):
+#   A tmux server belongs to the systemd cgroup of whichever process first started
+#   it. If tmux-ronin is that process — it runs `tmux new-session` whenever a tile
+#   or the commons launcher asks for a session — the server lands inside
+#   tmux-ronin.service. systemd's default KillMode=control-group then SIGTERMs
+#   *every process in that cgroup* on stop, so a routine
+#   `systemctl --user restart tmux-ronin` kills the tmux server and every session,
+#   agent and shell on the box. Nobody typed `tmux kill-anything`.
+#   This unit starts the server first, in its own cgroup, so restarting the app is
+#   just restarting the app.
+#
+# THIS FILE IS THE UNIT — edit it here. `./setup.sh` copies it to
+# ~/.config/systemd/user/tmux-server.service, filling in the repo-directory
+# placeholder token as it goes (see render_unit() in setup.sh). setup.sh holds no
+# unit text of its own, so there is nothing for this file to drift away from.
+#
+# STOPPING THIS UNIT KILLS EVERY TMUX SESSION. That is what it owns. There is no
+# reason to restart it while a server is running; tmux-ronin restarts on its own.
+
+[Unit]
+Description=tmux server (owns every session; kept out of the app's cgroup)
+Documentation=file://__REPO_DIR__/docs/tmux-server-cgroup.md
+
+[Service]
+# oneshot + RemainAfterExit: the client exits immediately, the forked server keeps
+# running in this unit's cgroup. Nothing here is the "main process" to track.
+Type=oneshot
+RemainAfterExit=yes
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+# Starts the server if there isn't one; a no-op if there already is.
+ExecStart=/usr/bin/tmux -f __REPO_DIR__/deploy/tmux-server.conf start-server
+# Apply exit-empty to a server that was already running (the -f config only ran for
+# a server this unit started). Leading '-' so a missing server is not a failure.
+ExecStartPost=-/usr/bin/tmux set-option -s exit-empty off
+
+[Install]
+WantedBy=default.target

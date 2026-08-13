@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+# ronin-store — where does Ronin keep <thing> on THIS machine?
+#
+# The bash binding of the store table. `src/stores.ts` is the same table for the server;
+# this exists because bin/ tooling stays zero-dependency (no node, no tsx, no jq) and
+# because a shell tool that spells `$HOME/.ronin_session` by hand is exactly the habit
+# that split the letters from the tape.
+#
+#   ronin-store session          -> /home/<user>/.ronin/sessions
+#   ronin-store --all            -> id  root  source  dir      (every store, resolved)
+#   ronin-store --root data      -> the root itself
+#
+# NEVER write a Ronin path by hand in a script. Call this.
+#
+# Two bindings of one table is a drift risk, so it is gated rather than trusted:
+# scripts/check-stores.mjs resolves every store both ways under several environments
+# and fails `npm run verify` on any disagreement. Change the table here, change it
+# there, in the same commit — the gate will tell you if you did not.
+#
+# ONE LAYOUT, NO FALLBACKS. No legacy path, no legacy variable, no migration branch.
+set -euo pipefail
+
+# id | root | rel
+TABLE="\
+session|data|sessions
+bench|data|bench
+telemetry|data|telemetry
+ledger|data|ledger
+catalogs|user|catalogs
+memory|user|memory
+config|user|config"
+
+root_dir() {
+  case "$1" in
+    user) printf '%s' "${RONIN_USER_ROOT:-$HOME/ronin}" ;;
+    data) printf '%s' "${RONIN_DATA_ROOT:-$HOME/.ronin}" ;;
+    *) echo "ronin-store: unknown root '$1'" >&2; exit 2 ;;
+  esac
+}
+
+# Resolve one store. Prints "<source>|<dir>" — same order as resolveStore() in stores.ts:
+# the canonical env override, else the root.
+resolve() {
+  local want="$1" id root rel
+  while IFS='|' read -r id root rel; do
+    [ "$id" = "$want" ] || continue
+
+    local canonical="RONIN_$(printf '%s' "$id" | tr '[:lower:]' '[:upper:]')_DIR"
+    if [ -n "${!canonical:-}" ]; then printf 'env|%s' "${!canonical}"; return 0; fi
+
+    printf 'default|%s/%s' "$(root_dir "$root")" "$rel"
+    return 0
+  done <<< "$TABLE"
+
+  echo "ronin-store: unknown store '$want' — the table is src/stores.ts" >&2
+  exit 2
+}
+
+case "${1:-}" in
+  --all)
+    printf '%-10s %-5s %-12s %-7s %s\n' id root source exists dir
+    while IFS='|' read -r id root _; do
+      out="$(resolve "$id")"
+      dir="${out#*|}"
+      [ -e "$dir" ] && ex=yes || ex=no
+      printf '%-10s %-5s %-12s %-7s %s\n' "$id" "$root" "${out%%|*}" "$ex" "$dir"
+    done <<< "$TABLE"
+    ;;
+  --root)
+    [ $# -ge 2 ] || { echo "usage: ronin-store --root user|data" >&2; exit 2; }
+    root_dir "$2"; echo
+    ;;
+  ''|-h|--help)
+    sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'
+    exit 0
+    ;;
+  *)
+    out="$(resolve "$1")"
+    printf '%s\n' "${out#*|}"
+    ;;
+esac

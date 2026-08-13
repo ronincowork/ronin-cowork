@@ -1,0 +1,223 @@
+#!/usr/bin/env bash
+# ronin-uninstall — reverse everything setup.sh did. What remains is the work.
+#
+#   ronin-uninstall           # READOUT: what would be removed, item by item. Touches nothing.
+#   ronin-uninstall --go      # do it
+#
+# The promise this keeps is docs/stores.md's: "uninstall Ronin and what remains is the
+# work, with no trace of the tool that helped write it." Concretely:
+#
+#   REMOVED   the two units (guarded — see below), the statusLine registration IF it is
+#             ours, the marked PATH blocks in the rc files, core.hooksPath, and the data
+#             root (ours: tapes, ledger, telemetry, bench).
+#   KEPT      the user root (their catalogs, memories, config — the whole point), every
+#             live tmux session, and this checkout itself — deleting the repo directory
+#             is the user's own last step, and takes node_modules and .env with it.
+#   PRINTED   the two sudo steps setup.sh only ever printed (tailscale serve, linger) —
+#             they were the user's hand going in and they are the user's hand going out.
+#
+# Guards, in the order they bite:
+#   - tmux-server.service OWNS every session on the box (docs/tmux-server-cgroup.md).
+#     While any session is live it is LEFT ALONE — running, enabled, installed — and
+#     this script says what to run once the sessions are done. RONIN_KILL_TMUX=1
+#     overrides, exactly as it does for the shim.
+#   - the statusLine is removed only if it points at our script; one the user set
+#     themselves is not ours to take (same ownership test setup.sh applies going in).
+#   - want the data first? bin/ronin-export — the readout reminds you.
+set -uo pipefail
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$HERE/.." && pwd)"
+OS="$(uname -s)"
+GO=0
+case "${1:-}" in
+  --go) GO=1 ;;
+  '') ;;
+  -h|--help) sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  *) echo "ronin-uninstall: unknown argument '$1' (try --help)" >&2; exit 2 ;;
+esac
+
+say()  { echo "  $1"; }
+act()  { [ "$GO" = 1 ] && echo "  done  $1" || echo "  would $1"; }
+
+echo ""
+[ "$GO" = 1 ] && echo "RONIN UNINSTALL — $ROOT" || echo "RONIN UNINSTALL (readout — nothing is touched; --go executes) — $ROOT"
+echo ""
+
+# ---- 1. the recorders ---------------------------------------------------------------
+echo "→ RIREKI recorders"
+if [ -x "$HERE/rireki/rireki-uninstall" ]; then
+  if [ "$GO" = 1 ]; then
+    "$HERE/rireki/rireki-uninstall" || true
+  else
+    say "would run bin/rireki/rireki-uninstall — hooks off, recorders stopped, tapes left on disk"
+  fi
+else
+  say "bin/rireki/rireki-uninstall not found — nothing to disarm"
+fi
+
+# ---- 2. the units --------------------------------------------------------------------
+echo "→ installed units"
+if [ "$OS" = "Linux" ] && command -v systemctl >/dev/null 2>&1; then
+  UNIT_DIR="$HOME/.config/systemd/user"
+
+  if [ -f "$UNIT_DIR/tmux-ronin.service" ]; then
+    act "stop, disable and remove tmux-ronin.service"
+    if [ "$GO" = 1 ]; then
+      systemctl --user disable --now tmux-ronin 2>/dev/null || true
+      rm -f "$UNIT_DIR/tmux-ronin.service"
+    fi
+  else
+    say "tmux-ronin.service is not installed"
+  fi
+
+  if [ -f "$UNIT_DIR/tmux-server.service" ]; then
+    live=$(tmux list-sessions -F '#{session_name}' 2>/dev/null | wc -l | tr -d ' ')
+    if [ "$live" != "0" ] && [ "${RONIN_KILL_TMUX:-}" != "1" ]; then
+      say "LEFT ALONE: tmux-server.service — $live live session(s) would die with it."
+      say "  When the sessions are done:  systemctl --user disable --now tmux-server &&"
+      say "  rm $UNIT_DIR/tmux-server.service  (or re-run with RONIN_KILL_TMUX=1)"
+    else
+      act "stop, disable and remove tmux-server.service ($live live session(s))"
+      if [ "$GO" = 1 ]; then
+        RONIN_KILL_TMUX=1 systemctl --user disable --now tmux-server 2>/dev/null || true
+        rm -f "$UNIT_DIR/tmux-server.service"
+      fi
+    fi
+  else
+    say "tmux-server.service is not installed"
+  fi
+  [ "$GO" = 1 ] && systemctl --user daemon-reload 2>/dev/null || true
+elif [ "$OS" = "Darwin" ]; then
+  PLIST="$HOME/Library/LaunchAgents/com.tmux-ronin.plist"
+  if [ -f "$PLIST" ]; then
+    act "unload and remove $PLIST"
+    if [ "$GO" = 1 ]; then
+      launchctl unload -w "$PLIST" 2>/dev/null || true
+      rm -f "$PLIST"
+    fi
+  else
+    say "launchd agent is not installed"
+  fi
+else
+  say "no systemd/launchd here — no units to remove"
+fi
+
+# ---- 3. the statusLine registration ---------------------------------------------------
+# Removed only if it is OURS — the same realpath ownership test setup.sh applies before
+# writing it. A statusLine the user set themselves is not ours to take.
+echo "→ statusLine (~/.claude/settings.json)"
+STATUSLINE_SH="$ROOT/hostside/statusline-ronin.sh"
+CLAUDE_SETTINGS="$HOME/.claude/settings.json"
+if [ ! -f "$CLAUDE_SETTINGS" ]; then
+  say "no settings file — nothing registered"
+elif ! command -v python3 >/dev/null 2>&1; then
+  say "python3 not found, cannot edit JSON safely — if statusLine points at"
+  say "  $STATUSLINE_SH, remove that key from $CLAUDE_SETTINGS by hand"
+else
+  GO="$GO" python3 - "$STATUSLINE_SH" "$CLAUDE_SETTINGS" <<'PYEOF'
+import json, os, sys, tempfile
+
+script, settings = sys.argv[1], sys.argv[2]
+go = os.environ.get("GO") == "1"
+
+def say(msg): print("  " + msg)
+
+try:
+    with open(settings, encoding="utf-8") as fh:
+        data = json.load(fh)
+except Exception as err:
+    say("could not read %s (%s) — left untouched" % (settings, err)); raise SystemExit(0)
+if not isinstance(data, dict) or data.get("statusLine") is None:
+    say("no statusLine registered"); raise SystemExit(0)
+
+current = data["statusLine"]
+cmd = current.get("command") if isinstance(current, dict) else current
+mine = isinstance(cmd, str) and \
+    os.path.realpath(os.path.expanduser(cmd.strip())) == os.path.realpath(script)
+if not mine:
+    say("LEFT ALONE: statusLine is not ours — " + json.dumps(current)); raise SystemExit(0)
+if not go:
+    say("would remove our statusLine from %s (other settings preserved)" % settings); raise SystemExit(0)
+
+del data["statusLine"]
+directory = os.path.dirname(settings) or "."
+mode = os.stat(settings).st_mode & 0o777
+fd, tmp = tempfile.mkstemp(dir=directory, prefix=".settings.json.ronin.")
+try:
+    with os.fdopen(fd, "w", encoding="utf-8") as fh:
+        json.dump(data, fh, indent=2, ensure_ascii=False); fh.write("\n")
+    os.chmod(tmp, mode); os.replace(tmp, settings); tmp = None
+finally:
+    if tmp and os.path.exists(tmp):
+        os.unlink(tmp)
+say("done  removed our statusLine (%d other setting(s) preserved)" % len(data))
+PYEOF
+fi
+
+# ---- 4. the PATH blocks ---------------------------------------------------------------
+# setup.sh appended ONE fenced block per rc file it touched; the fence names itself and
+# says "Safe to delete this block". This deletes exactly the fence and what it holds —
+# nothing else in anyone's rc file moves.
+echo "→ PATH blocks in rc files"
+SHIM_BEGIN="# >>> tmux-ronin PATH (added by setup.sh) >>>"
+SHIM_END="# <<< tmux-ronin PATH <<<"
+FOUND_RC=0
+for rc in "$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.bash_login" "$HOME/.profile" \
+          "$HOME/.zshrc" "$HOME/.zprofile" "$HOME/.zshenv" "$HOME/.zlogin"; do
+  [ -f "$rc" ] || continue
+  grep -qF "$SHIM_BEGIN" "$rc" || continue
+  FOUND_RC=$((FOUND_RC + 1))
+  act "remove the marked block from $rc"
+  if [ "$GO" = 1 ]; then
+    tmp="$(mktemp)"
+    awk -v b="$SHIM_BEGIN" -v e="$SHIM_END" \
+      '$0 == b {drop = 1} drop != 1 {print} $0 == e {drop = 0}' "$rc" > "$tmp" &&
+      cat "$tmp" > "$rc"   # cat-over, not mv: keeps the rc file's inode, mode and owner
+    rm -f "$tmp"
+  fi
+done
+[ "$FOUND_RC" = 0 ] && say "no marked blocks anywhere — nothing to remove"
+say "note: shells already open keep their PATH until they restart"
+
+# ---- 5. the commit guard ---------------------------------------------------------------
+echo "→ git hooks (core.hooksPath)"
+if [ "$(git -C "$ROOT" config core.hooksPath 2>/dev/null)" = ".githooks" ]; then
+  act "unset core.hooksPath in this checkout"
+  [ "$GO" = 1 ] && git -C "$ROOT" config --unset core.hooksPath
+else
+  say "not set — nothing to unset"
+fi
+
+# ---- 6. the data root -------------------------------------------------------------------
+# Ours, deleted; the user root stays. That single sentence is the two-root contract
+# (docs/stores.md), and both directories come from the table, never from this file.
+echo "→ the two roots"
+DATA_ROOT="$("$HERE/ronin-store" --root data)"
+USER_ROOT="$("$HERE/ronin-store" --root user)"
+if [ -d "$DATA_ROOT" ]; then
+  n="$(find "$DATA_ROOT" -type f 2>/dev/null | wc -l | tr -d ' ')"
+  if [ "$GO" = 1 ]; then
+    rm -rf "$DATA_ROOT"
+    echo "  done  deleted $DATA_ROOT ($n file(s) — ours: tapes, ledger, telemetry, bench)"
+  else
+    say "would delete $DATA_ROOT — $n file(s), ours (tapes, ledger, telemetry, bench)."
+    say "  Want any of it first?  bin/ronin-export"
+  fi
+else
+  say "$DATA_ROOT does not exist — nothing to delete"
+fi
+say "KEPT: $USER_ROOT — the user's catalogs, memories, config. Uninstall never touches it."
+
+# ---- 7. what only your hand can undo ------------------------------------------------------
+echo "→ the two sudo steps (setup.sh only ever printed these; so does this)"
+say "sudo tailscale serve --https=8443 off      # if you set up the HTTPS serve"
+say "sudo loginctl disable-linger $USER         # if you enabled linger"
+
+echo ""
+if [ "$GO" = 1 ]; then
+  echo "ronin-uninstall: done. The last step is yours:  rm -rf $ROOT"
+  echo "  (takes node_modules and .env with it; the user root above stays.)"
+else
+  echo "ronin-uninstall: readout only — nothing was touched. Run with --go to execute."
+fi

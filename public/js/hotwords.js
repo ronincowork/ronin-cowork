@@ -1,0 +1,143 @@
+/* part of the tmux-ronin client — see js/README.md */
+
+/**
+ * the commons' ▥ Hotwords pane — the words dictation keeps getting wrong.
+ *
+ * Terms a general speech model has never heard, sent with your voice so the
+ * transcriber writes them instead of writing something that sounds like them. Ronin's
+ * own nouns are Japanese and invented, so an English engine renders `ctx` as CHIZU and
+ * TEGAMI as "the gummy", and whoever reads the transcript has to guess.
+ *
+ * A LIST, NOT A FILE. This started as a textarea over `tejun_catalogs/HOTWORDS.md` on the
+ * argument that a list of words does not need a row editor. That was wrong on the
+ * surface that matters most: adding one word meant finding your place in markdown with
+ * an iOS keyboard over the top of it. A row per term with an ✕, and one field to add,
+ * is fewer taps AND less to look at — the file is still there for rearranging the
+ * groups by hand.
+ *
+ * Every write returns the resulting list and the server re-renders from THAT, never
+ * from what the client hoped it did. One parser, on the server, always.
+ */
+export function buildHotwords(pane, isShowing) {
+  const wrap = document.createElement('div');
+  wrap.className = 'hot';
+
+  // -- add --
+  const addRow = document.createElement('div');
+  addRow.className = 'hot-add';
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.placeholder = 'a word it keeps getting wrong';
+  input.autocapitalize = 'off';
+  input.autocomplete = 'off';
+  input.spellcheck = false;
+  input.setAttribute('autocorrect', 'off');
+  const addBtn = document.createElement('button');
+  addBtn.type = 'button';
+  addBtn.className = 'hot-addbtn';
+  addBtn.textContent = 'Add';
+  addRow.append(input, addBtn);
+
+  const count = document.createElement('div');
+  count.className = 'hot-count';
+  count.textContent = 'loading…';
+
+  // WHOSE LIST IS THIS. Hotwords is the one catalog that is copy-on-write rather than
+  // an entry-merge (docs/shadowing.md): until your first edit you are reading Ronin's
+  // shipped list; after it, your file IS the list and new stock words will not reach
+  // you. That is worth one line, because nothing else on this tab would ever say it.
+  const whose = document.createElement('div');
+  whose.className = 'hot-whose';
+
+  const list = document.createElement('div');
+  list.className = 'hot-list';
+
+  const msg = document.createElement('div');
+  msg.className = 'hot-msg';
+
+  wrap.append(addRow, msg, count, whose, list);
+  pane.appendChild(wrap);
+
+  const setMsg = (text, bad) => {
+    msg.textContent = text || '';
+    msg.classList.toggle('bad', !!bad);
+    msg.classList.toggle('show', !!text);
+  };
+
+  const render = (terms) => {
+    list.innerHTML = '';
+    count.textContent = terms.length
+      ? `${terms.length} word${terms.length === 1 ? '' : 's'} sent with your voice`
+      : 'no words yet — dictation runs unbiased';
+    for (const t of terms) {
+      const row = document.createElement('div');
+      row.className = 'hot-row';
+      const w = document.createElement('span');
+      w.textContent = t;
+      const x = document.createElement('button');
+      x.type = 'button';
+      x.className = 'hot-x';
+      x.textContent = '✕';
+      x.title = `Remove ${t}`;
+      x.addEventListener('click', () => post('/api/hotwords/remove', t, x));
+      row.append(w, x);
+      list.appendChild(row);
+    }
+  };
+
+  /** Every mutation goes through here: disable, call, re-render from the response. */
+  const post = async (url, term, btn) => {
+    if (btn) btn.disabled = true;
+    setMsg('');
+    try {
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ term }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+      render(d.terms || []);
+    } catch (e) {
+      setMsg(e.message, true);
+      if (btn) btn.disabled = false;
+    }
+  };
+
+  const add = () => {
+    const t = input.value.trim();
+    if (!t) return;
+    input.value = '';
+    post('/api/hotwords/add', t, addBtn).then(() => {
+      addBtn.disabled = false;
+      // Stay in the field: adding words is something you do several of at a time.
+      input.focus();
+    });
+  };
+  addBtn.addEventListener('click', add);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      add();
+    }
+  });
+
+  const enter = async () => {
+    try {
+      const r = await fetch('/api/hotwords');
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+      render(d.terms || []);
+      whose.textContent = d.own
+        ? '◆ your list — an upgrade cannot touch it, and will not add to it either'
+        : 'Ronin\'s stock list — your first edit makes a copy that is yours';
+      whose.classList.toggle('own', !!d.own);
+      setMsg('');
+    } catch (e) {
+      count.textContent = 'could not load';
+      setMsg(e.message, true);
+    }
+  };
+
+  return { enter, isShowing };
+}

@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# rireki-uninstall — remove the hooks and stop every recorder. Tapes are left on disk.
+set -euo pipefail
+
+# All tmux calls go through here so a test rig (or a second server) can be addressed
+# without touching the live socket: RIREKI_TMUX="tmux -L myrig".
+# shellcheck disable=SC2206
+RIREKI_TMUX_CMD=(${RIREKI_TMUX:-tmux})
+tmux_() { "${RIREKI_TMUX_CMD[@]}" "$@"; }
+
+for ev in session-created after-new-window after-split-window; do
+  # Drop only our own hook lines; anyone else's on the same event survive.
+  idx=0
+  tmux_ show-hooks -g 2>/dev/null | grep -n "^${ev}\[" | grep 'rireki-sweep' | while IFS= read -r line; do
+    n="${line%%:*}"
+    entry="${line#*:}"
+    slot="${entry#${ev}[}"; slot="${slot%%]*}"
+    tmux_ set-hook -gu "${ev}[${slot}]" 2>/dev/null || true
+    idx=$((idx + 1))
+  done
+done
+
+tmux_ list-panes -a -F '#{pane_id}	#{pane_pipe}' 2>/dev/null |
+while IFS=$'\t' read -r pane piped; do
+  [ "$piped" = "1" ] && tmux_ pipe-pane -t "$pane" 2>/dev/null   # bare = close the pipe
+done
+
+echo "rireki: hooks removed, recorders stopped. Tapes left on disk."

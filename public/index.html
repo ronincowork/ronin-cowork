@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0e14" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>tmux ronin</title>
+    <link rel="stylesheet" href="/vendor/xterm.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header id="bar">
+      <button id="brandbtn" class="brand" title="⛩ ronin — the session roster">⛩ ronin</button>
+      <span class="grow"></span>
+      <button id="newbtn" title="⌃⇧N — start a new session: pick what it is for, where it works and who it is">か<span class="txt"> New</span></button>
+      <button id="commonsbtn" title="⌃⇧C — the CoWorking Commons: the session roster, a new session, the wipeboard, your project roots, hotwords. (⌃⌥C on Linux/Windows.)" aria-haspopup="true" aria-expanded="false">き<span class="txt"> Commons</span></button>
+      <button id="padbtn" title="Keypad — the Work Louder pad: physical keys fire macros">く<span class="txt"> Keypad</span></button>
+      <div class="ctrls" role="group" aria-label="Keys">
+        <button id="k-esc" title="Esc">Esc</button>
+        <button id="k-int" title="Ctrl-C (interrupt)">^C</button>
+        <button id="k-bottom" title="Jump to latest output">⤓</button>
+        <button id="k-more" title="More keys" aria-expanded="false">⋯</button>
+      </div>
+      <div class="layouts" role="group" aria-label="Grid layout">
+        <button data-layout="1" title="Single terminal">1</button>
+        <button data-layout="2" title="Two terminals">2</button>
+        <button data-layout="4" class="active" title="Four terminals">4</button>
+      </div>
+    </header>
+    <div id="keypad" role="group" aria-label="More keys">
+      <button data-key="cr" title="Enter">↵</button>
+      <button data-key="tab" title="Tab">Tab</button>
+      <button data-key="stab" title="Shift-Tab">⇧Tab</button>
+      <button data-key="up" title="Up">↑</button>
+      <button data-key="down" title="Down">↓</button>
+      <button data-key="left" title="Left">←</button>
+      <button data-key="right" title="Right">→</button>
+    </div>
+    <main id="grid" class="layout-4" data-layout="4"></main>
+
+    <!-- /vendor stays absolute: served from node_modules, shared by live and staging.
+         Everything else is RELATIVE so this exact file also works under /staging/. -->
+    <script src="/vendor/xterm.js"></script>
+    <script src="/vendor/addon-fit.js"></script>
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>

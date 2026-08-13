@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# koshi — the watcher that keeps every session's ladder marker current.
+# Usage: koshi                  run forever; this is the process a Koshi tile runs
+#        koshi --dry-run        decide and print, but never call a model or write
+#        koshi --once           one pass over every live session, then exit
+#        koshi --stats          what she has cost so far — calls, tokens, dollars
+#        koshi start [--dry-run]  spawn the watchable tile (tmux session "koshi", tagged koshi)
+#
+# LAW 1: Koshi CHANGES the TEGAMI. Her observation is written into the letter, never
+# derived when the letter is read. The letter is the one source of truth; SHINGO renders
+# the letter and nothing else.
+#
+# LAW 2: Koshi IGNORES the dial. She reads and writes whatever she wants. The dial
+# governs agents reaching INTO a session — driving it, typing at it. Koshi is house
+# machinery, the same category as the recorder, which already tapes every pane whatever
+# the dial says. Nothing here consults @ronin-control and nothing added later may.
+#
+# WHAT IT DOES: follows every session's tape (RIREKI is the wake — nothing polls tmux),
+# decodes the arriving lines, notices when a turn ended, and for the sessions that pass
+# the wake table asks one cheap model ONE question: which rung of your own ladder are you
+# working on right now? It answers with a position or "I don't know". A position moves
+# the marker; "I don't know" nudges the agent, because the hard case belongs to the only
+# party that knows.
+#
+# IT NEVER AUTHORS. The agent owns every word of its letter. Koshi owns one key — "at" —
+# and writes it through `write_tegami --session --at`, which cannot express anything else.
+#
+# Needs whatever key its outlet needs — the default (`koshi_external`, OpenAI) wants
+# OPENAI_API_KEY; `koshi_hosted_weights` wants none. No key, no Koshi — it says so and
+# does nothing, rather than pretending to watch. One model call per observation;
+# `koshi --stats` for the bill.
+#
+# See docs/koshi.md.
+set -u
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+exec npx --prefix "$HERE" tsx "$HERE/src/services/koshi/koshi.ts" "$@"

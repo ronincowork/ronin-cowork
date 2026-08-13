@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# bench — ask several models the same FROZEN question and compare.
+#
+#   bench capture [name]              freeze every live session that has a ladder
+#   bench run <dataset> <target...>   ask each target; writes a result file
+#   bench table <dataset>             compare everything ever run against it
+#   bench ls                          what is captured, what has been run
+#
+# A target is outlet:model — koshi_hosted_weights:qwen3-4b, gpt-5.6-luna — using the
+# same outlets Koshi itself asks through (src/koshi-model.ts). Anything Koshi can be
+# pointed at, this can bench, because it is the same code path and not a copy.
+#
+# CAPTURE ONCE, REPLAY FOREVER. A number from a live bench cannot be compared with any
+# other number — including itself an hour later — because the sessions moved in
+# between. See README.md.
+set -u
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+exec npx --prefix "$HERE" tsx "$HERE/src/bench.ts" "$@"

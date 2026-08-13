@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# rireki-install — hook the recorder into tmux, then arm what is already running.
+#
+# tmux installs its own eavesdropper: hooks fire on session/window/pane birth and run
+# the sweep. Recording therefore survives Ronin being stopped, restarted or crashed,
+# and records sessions made by hand over SSH too.
+#
+# Hooks INSTALL; they never heal. A pane whose recorder dies is picked up by the next
+# sweep — from the next hook, from cron, or from Ronin's reconciler.
+set -euo pipefail
+
+# All tmux calls go through here so a test rig (or a second server) can be addressed
+# without touching the live socket: RIREKI_TMUX="tmux -L myrig".
+# shellcheck disable=SC2206
+RIREKI_TMUX_CMD=(${RIREKI_TMUX:-tmux})
+tmux_() { "${RIREKI_TMUX_CMD[@]}" "$@"; }
+
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+sweep="$here/rireki-sweep"
+[ -x "$sweep" ] || chmod +x "$sweep"
+
+if ! tmux_ list-sessions >/dev/null 2>&1; then
+  echo "rireki: no tmux server running — start one, then re-run this." >&2
+  exit 1
+fi
+
+# -a appends, so we never clobber a hook someone else set on the same event.
+for ev in session-created after-new-window after-split-window; do
+  tmux_ set-hook -ga "$ev" "run-shell -b '$sweep'"
+done
+
+"$sweep"
+
+n="$(tmux_ list-panes -a -F '#{pane_pipe}' 2>/dev/null | grep -c '^1$' || true)"
+echo "rireki: hooks installed (session-created, after-new-window, after-split-window)"
+echo "rireki: $n pane(s) recording → ${RIREKI_DIR:-$(cd "$here/../.." && pwd)/wip/rireki}"

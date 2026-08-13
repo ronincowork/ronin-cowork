@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# systemctl shim — guards the one command that can still wipe the box.
+#
+# tmux-server.service OWNS every tmux session on the machine (see
+# docs/tmux-server-cgroup.md). Stopping it SIGTERMs the server, and tmux answers
+# SIGTERM by ending every session — agents mid-task, shells, everything. There is no
+# `--force` to regret afterwards and no undo. `restart tmux-ronin` is safe; this is the
+# one that isn't.
+#
+# systemd itself cannot express "refuse conditionally": RefuseManualStop=yes refuses
+# ALWAYS, which would also block the one legitimate case — reviving a server that died,
+# which both tmux-ronin.service's ExecStartPre and ensureTmuxServer() do by restarting
+# this unit. So the guard lives here, at the invocation layer, next to the tmux shim.
+#
+# The condition splits the two apart exactly: a restart with sessions live is the
+# accident, a restart with none is the repair. Both legitimate callers only ever fire
+# at zero sessions, so this never stands in their way.
+#
+# Escape hatch, when killing them all is genuinely what you mean:
+#   RONIN_KILL_TMUX=1 systemctl --user restart tmux-server
+#
+# Speed bump, not physics: /usr/bin/systemctl still exists — but going around this is a
+# deliberate, visible act rather than a reflex.
+set -u
+SELF_DIR=$(cd "$(dirname "$0")" && pwd)
+REAL=$(PATH=$(printf '%s' "$PATH" | tr ':' '\n' | grep -vxF "$SELF_DIR" | paste -sd:) command -v systemctl)
+[ -n "${REAL:-}" ] || REAL=/usr/bin/systemctl
+
+# First non-flag argument is the verb; the rest are units.
+verb=""; units=""
+for a in "$@"; do
+  case "$a" in
+    -*) continue ;;
+    *) if [ -z "$verb" ]; then verb=$a; else units="$units $a"; fi ;;
+  esac
+done
+
+destructive=0
+case "$verb" in
+  stop|restart|try-restart|reload-or-restart|try-reload-or-restart|kill) destructive=1 ;;
+esac
+
+hits_server=0
+for u in $units; do
+  case "$u" in
+    tmux-server|tmux-server.service) hits_server=1 ;;
+  esac
+done
+
+if [ "$destructive" = 1 ] && [ "$hits_server" = 1 ] && [ "${RONIN_KILL_TMUX:-}" != "1" ]; then
+  # Ask the REAL tmux — the shim beside us would only add dial checks we don't want here.
+  TMUX_BIN=$(PATH=$(printf '%s' "$PATH" | tr ':' '\n' | grep -vxF "$SELF_DIR" | paste -sd:) command -v tmux)
+  [ -n "${TMUX_BIN:-}" ] || TMUX_BIN=/usr/bin/tmux
+  all=$("$TMUX_BIN" list-sessions -F '#{session_name}' 2>/dev/null || true)
+  real=$(printf '%s\n' "$all" | grep -v '^$' | grep -cv '^grid_' || true)
+  if [ "${real:-0}" -gt 0 ]; then
+    {
+      echo "ronin-guard: refusing \`systemctl $verb$units\` — $real tmux session(s) are live."
+      echo "ronin-guard:"
+      printf '%s\n' "$all" | grep -v '^$' | grep -v '^grid_' | sed 's/^/ronin-guard:   /'
+      echo "ronin-guard:"
+      echo "ronin-guard: This unit OWNS those sessions. Stopping it ends every one of them —"
+      echo "ronin-guard: agents mid-task included. It is not a way to 'refresh' the server."
+      echo "ronin-guard:"
+      echo "ronin-guard: If Ronin is what you meant:  systemctl --user restart tmux-ronin  (safe)"
+      echo "ronin-guard: If you truly mean to kill every session:"
+      echo "ronin-guard:   RONIN_KILL_TMUX=1 systemctl $verb$units"
+      echo "ronin-guard: Why: docs/tmux-server-cgroup.md"
+    } >&2
+    exit 4
+  fi
+fi
+
+exec "$REAL" "$@"

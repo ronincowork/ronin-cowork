@@ -1,0 +1,399 @@
+#!/usr/bin/env bash
+# RONIN DOCTOR — what is actually running, vs what is written.
+#
+#   bin/ronin-doctor          # readout; exit 0 = nothing outstanding, 1 = findings
+#
+# The install is invisible: `setup.sh` copies three things OUT of the repo (the unit
+# files, the statusLine registration, node_modules) and nothing tells you a copy has
+# drifted. The operator is a memory copy taken at start, so `src/` edits are not live
+# until a restart. That condition — what is running is not what is written — went
+# unseen for months at a time (the render-gate hook sat only in deploy/ while every
+# installed start ran without it). Doctor asks the install and the operator directly
+# instead of inferring from the tree. Chain and remedies: docs/repo-to-operator.md.
+#
+# Doctor REPORTS, it never repairs: no restart, no daemon-reload, no file written.
+# Half its remedies touch the live service, and those are the owner's hand — a
+# reporter that "helpfully" restarts things is how every session on a box dies.
+# The one nuance: the git-credentials probe dials the remote (a --dry-run push,
+# prompts off). Nothing is sent; it is still the one check that needs the network.
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+OS="$(uname -s)"
+
+FINDINGS=0
+sect() { echo "→ $1"; }
+ok()   { echo "  ok   — $1"; }
+note() { echo "  note — $1"; }
+find_() { echo "  FIND — $1"; FINDINGS=$((FINDINGS + 1)); }
+
+# Literal find/replace, exactly as setup.sh renders the unit templates (see
+# subst_literal there for why not sed and not ${var//…}). Doctor must render the
+# same bytes the installer would, or the comparison lies.
+subst_literal() {
+  local text="$1" needle="$2" value="$3" out=""
+  while [ -n "$text" ]; do
+    case "$text" in
+      *"$needle"*)
+        out="$out${text%%"$needle"*}$value"
+        text="${text#*"$needle"}"
+        ;;
+      *) out="$out$text"; text="" ;;
+    esac
+  done
+  printf '%s' "$out"
+}
+
+NODE_BIN="$(readlink -f "$(command -v node)" 2>/dev/null || command -v node || true)"
+NODE_DIR="${NODE_BIN:+$(dirname "$NODE_BIN")}"
+
+render_template() {  # render_template <template> — rendered text on stdout
+  local text
+  text="$(<"$1")"
+  text="$(subst_literal "$text" '__REPO_DIR__' "$ROOT")"
+  text="$(subst_literal "$text" '__NODE_DIR__' "$NODE_DIR")"
+  printf '%s\n' "$text"
+}
+
+# A value from .env, uncommented lines only — the same file the unit points the
+# server at. Never source it: it holds secrets that must not enter the environment.
+env_get() { sed -n "s/^[[:space:]]*$1=//p" "$ROOT/.env" 2>/dev/null | tail -1; }
+
+echo ""
+echo "RONIN DOCTOR — $ROOT"
+echo ""
+
+# ---- 1. the copied-out unit files -------------------------------------------------
+# setup.sh renders deploy/*.service into ~/.config/systemd/user/ (launchd plist on
+# macOS) and the copy stops tracking the repo the moment it lands.
+sect "installed units vs deploy/"
+if [ "$OS" = "Linux" ] && command -v systemctl >/dev/null 2>&1; then
+  UNIT_DIR="$HOME/.config/systemd/user"
+  for unit in tmux-server.service tmux-ronin.service; do
+    tpl="$ROOT/deploy/$unit"
+    inst="$UNIT_DIR/$unit"
+    if [ ! -f "$tpl" ]; then
+      find_ "deploy/$unit is missing from the repo — the unit has no source of truth"
+    elif [ ! -f "$inst" ]; then
+      find_ "$unit was never installed — run ./setup.sh"
+    elif ! diff -q <(render_template "$tpl") "$inst" >/dev/null 2>&1; then
+      find_ "installed $unit is not the one in deploy/ — run ./setup.sh, then systemctl --user daemon-reload"
+    else
+      ok "$unit matches deploy/"
+    fi
+    # The file can match while systemd still holds an older parse in memory.
+    if [ -f "$inst" ]; then
+      stale="$(systemctl --user show "$unit" -p NeedDaemonReload --value 2>/dev/null)"
+      [ "$stale" = "yes" ] &&
+        find_ "$unit changed on disk since systemd read it — run systemctl --user daemon-reload"
+    fi
+  done
+elif [ "$OS" = "Darwin" ]; then
+  tpl="$ROOT/deploy/com.tmux-ronin.plist"
+  inst="$HOME/Library/LaunchAgents/com.tmux-ronin.plist"
+  if [ ! -f "$inst" ]; then
+    find_ "com.tmux-ronin.plist was never installed — run ./setup.sh, then launchctl load -w $inst"
+  elif ! diff -q <(render_template "$tpl") "$inst" >/dev/null 2>&1; then
+    find_ "installed com.tmux-ronin.plist is not the one in deploy/ — run ./setup.sh, then launchctl unload/load -w $inst"
+  else
+    ok "com.tmux-ronin.plist matches deploy/"
+  fi
+else
+  note "no systemd or launchd here — nothing installed to compare"
+fi
+
+# ---- 2. the statusLine registration ----------------------------------------------
+# The ⛽ context gauge only works if Claude Code's own settings name our script.
+sect "statusLine registration (~/.claude/settings.json)"
+sl_state="$(node -e '
+  const fs = require("fs"), path = require("path");
+  const [settings, script, local] = process.argv.slice(1);
+  const real = (p) => { try { return fs.realpathSync(p.replace(/^~\//, process.env.HOME + "/")); } catch { return p; } };
+  const read = (f) => { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch { return null; } };
+  const cmdOf = (d) => {
+    const s = d && d.statusLine;
+    return typeof s === "string" ? s : (s && typeof s.command === "string" ? s.command : null);
+  };
+  const localCmd = cmdOf(read(local));
+  if (localCmd !== null) { console.log(real(localCmd.trim()) === real(script) ? "MINE" : "LOCAL"); process.exit(0); }
+  const d = read(settings);
+  if (d === null) { console.log(fs.existsSync(settings) ? "INVALID" : "NONE"); process.exit(0); }
+  const cmd = cmdOf(d);
+  if (cmd === null) { console.log("NONE"); process.exit(0); }
+  if (real(cmd.trim()) === real(script)) { console.log("MINE"); process.exit(0); }
+  const target = cmd.trim().split(/\s/)[0].replace(/^~\//, process.env.HOME + "/");
+  console.log(fs.existsSync(target) ? "OTHER" : "GONE");
+' "$HOME/.claude/settings.json" "$ROOT/hostside/statusline-ronin.sh" "$HOME/.claude/settings.local.json" 2>/dev/null)"
+case "$sl_state" in
+  MINE)    ok "registered → hostside/statusline-ronin.sh" ;;
+  NONE)    find_ "no statusLine registered — the ⛽ gauge is dark; run ./setup.sh (it merges the key, never clobbers)" ;;
+  GONE)    find_ "the registered statusLine points at a script that no longer exists — the ⛽ gauge is dark; run ./setup.sh to re-register" ;;
+  OTHER)   note "settings.json sets a statusLine that is not ours — deliberately left alone (setup.sh does the same); the ⛽ gauge stays dark unless it points at hostside/statusline-ronin.sh" ;;
+  LOCAL)   note "settings.local.json overrides statusLine with something that is not ours — the ⛽ gauge stays dark" ;;
+  INVALID) find_ "~/.claude/settings.json is not valid JSON — nothing registered until that is fixed by hand" ;;
+  *)       find_ "could not read the statusLine registration (node failed)" ;;
+esac
+
+# ---- 3. node_modules vs package.json ---------------------------------------------
+sect "node_modules vs package.json"
+if [ ! -d "$ROOT/node_modules" ]; then
+  find_ "node_modules/ does not exist — run npm install (then a restart is the owner's hand)"
+elif [ -n "$NODE_DIR" ] && "$NODE_DIR/npm" ls --omit=dev --depth=0 >/dev/null 2>&1; then
+  ok "installed dependencies satisfy package.json"
+else
+  find_ "installed dependencies do not satisfy package.json — run npm install, then a restart (owner's hand)"
+fi
+
+# ---- 4. the operator: alive, and serving -----------------------------------------
+# The bind ladder is the server's own (src/config.ts) and ronin-gate's: BIND from the
+# environment, else .env, else the tailnet IP, else loopback. Never a hardcoded host.
+sect "operator"
+PORT="${PORT:-$(env_get PORT)}"; PORT="${PORT:-3006}"
+HOSTIP="${BIND:-$(env_get BIND)}"
+if [ -z "$HOSTIP" ] && command -v tailscale >/dev/null 2>&1; then
+  HOSTIP="$(tailscale ip -4 2>/dev/null | head -1)"
+fi
+HOSTIP="${HOSTIP:-127.0.0.1}"
+URL="http://${HOSTIP}:${PORT}/"
+if command -v systemctl >/dev/null 2>&1; then
+  state="$(systemctl --user show tmux-ronin -p ActiveState --value 2>/dev/null)"
+  [ "$state" = "active" ] || find_ "tmux-ronin unit is $state — starting it is the owner's hand (systemctl --user start tmux-ronin)"
+fi
+HEALTH_UP=0
+if curl -fsS -m 4 -o /dev/null "${URL}api/health" 2>/dev/null; then
+  ok "serving at $URL"; HEALTH_UP=1
+else
+  find_ "nothing answers ${URL}api/health — the grid is down; journalctl --user -u tmux-ronin -n 50, restart is the owner's hand"
+fi
+
+# ---- 4b. the perimeter: is the front door shut? -----------------------------------
+# Two facts about THIS BOX, which is why they live here and not in a repo gate: a
+# checked-in file cannot know a machine's file modes or what it ended up bound to.
+# The pair of them are the states that made the door dangerous (buildouts/FRONTDOOR.md),
+# so each one now trips a check instead of waiting to be noticed.
+sect "perimeter"
+
+# The mode only — never the contents. env_get above reads individual non-secret values
+# by name for the same reason: doctor must be safe to run and safe to paste.
+if [ -f "$ROOT/.env" ]; then
+  if [ "$OS" = "Darwin" ]; then
+    ENV_MODE="$(stat -f '%Lp' "$ROOT/.env" 2>/dev/null)"
+  else
+    ENV_MODE="$(stat -c '%a' "$ROOT/.env" 2>/dev/null)"
+  fi
+  # Anything readable by group or other. The file holds GRID_PASS and provider keys on
+  # a box whose premise is many concurrent agent sessions under one Unix user.
+  if [ -n "$ENV_MODE" ] && [ "$(( 8#$ENV_MODE & 8#077 ))" -ne 0 ]; then
+    find_ ".env is mode $ENV_MODE — readable beyond its owner, and it holds GRID_PASS and provider keys; chmod 600 .env"
+  else
+    ok ".env is owner-only (mode ${ENV_MODE:-?})"
+  fi
+fi
+
+# The same condition src/config.ts refuses at startup, asked of the RUNNING box — so a
+# hand-edited .env is caught before the next restart rather than by it.
+D_USER="${GRID_USER:-$(env_get GRID_USER)}"
+D_PASS="${GRID_PASS:-$(env_get GRID_PASS)}"
+if [ -n "$D_USER" ] && [ -n "$D_PASS" ]; then
+  ok "HTTP auth is ON"
+else
+  TSIP="$(command -v tailscale >/dev/null 2>&1 && tailscale ip -4 2>/dev/null | head -1)"
+  case "$HOSTIP" in
+    127.*|::1|localhost) ok "auth is off, but the bind is loopback-only ($HOSTIP)" ;;
+    *)
+      if [ -n "$TSIP" ] && [ "$HOSTIP" = "$TSIP" ]; then
+        ok "auth is off, but the bind is this machine's tailnet address ($HOSTIP)"
+      else
+        find_ "auth is OFF and the bind is $HOSTIP — neither loopback nor this machine's tailnet address, which serves live shells to anything that can reach the port; set GRID_USER + GRID_PASS in .env, or bind 127.0.0.1 or the tailnet IP"
+      fi
+      ;;
+  esac
+fi
+
+# ---- 5. src/ staleness ------------------------------------------------------------
+# The operator is a memory copy taken at start; src/ and package.json edits are not
+# real until a restart (docs/repo-to-operator.md). ASK the operator what it is running
+# (/api/version — the commit its process started from) and compare strings. The
+# timestamp inference below survives only as the fallback for an operator that
+# predates the stamp; the stamp is the better answer whenever it exists.
+sect "operator vs src/"
+ver="$([ "$HEALTH_UP" = 1 ] && curl -fsS -m 4 "${URL}api/version" 2>/dev/null || true)"
+op_commit="$(printf '%s' "$ver" | sed -n 's/.*"commit":"\([^"]*\)".*/\1/p')"
+if [ -n "$op_commit" ] && [ "$op_commit" != "unknown" ]; then
+  tree_commit="$(git rev-parse --short HEAD 2>/dev/null)"
+  if [ -z "$tree_commit" ]; then
+    note "operator says it runs $op_commit; the tree has no git to compare against"
+  elif [ "$op_commit" = "$tree_commit" ]; then
+    ok "operator runs $op_commit — the tree's HEAD (asked, not inferred)"
+  elif ! git cat-file -e "$op_commit" 2>/dev/null; then
+    note "operator runs $op_commit — a commit this tree does not have; cannot compare"
+  elif git diff --quiet "$op_commit" HEAD -- src/ package.json 2>/dev/null; then
+    # The tree moved, but not in anything the operator bakes in — a docs or bin/
+    # commit is not staleness, and a FIND here would teach people to ignore FINDs.
+    ok "operator runs $op_commit; the tree is at $tree_commit with no src/ change between them"
+  else
+    find_ "operator runs $op_commit, the tree is at $tree_commit and src/ differs — old code until a restart (owner's hand)"
+  fi
+  case "$ver" in *'"dirty":true'*)
+    note "operator started from a DIRTY src/ — its memory copy may match no commit at all" ;;
+  esac
+else
+  [ "$HEALTH_UP" = 1 ] &&
+    note "operator answers /api/health but not /api/version — it predates the stamp; its next restart carries it"
+  pid="$(systemctl --user show tmux-ronin -p MainPID --value 2>/dev/null)"
+  if [ -n "${pid:-}" ] && [ "$pid" != "0" ] && [ -d "/proc/$pid" ]; then
+    etimes="$(ps -o etimes= -p "$pid" 2>/dev/null | tr -d ' ')"
+    started=$(( $(date +%s) - ${etimes:-0} ))
+    last_commit="$(git log -1 --format=%ct -- src/ package.json 2>/dev/null)"
+    if [ -n "$last_commit" ] && [ "$last_commit" -gt "$started" ]; then
+      sha="$(git log -1 --format=%h -- src/ package.json)"
+      find_ "operator predates the latest src/ commit ($sha) — it is running old code until a restart (owner's hand)"
+    else
+      ok "operator is newer than the last committed src/ change (inferred from timestamps)"
+    fi
+  else
+    note "no running operator to compare (covered above)"
+  fi
+fi
+dirty="$(git status --porcelain -- src/ package.json 2>/dev/null | wc -l | tr -d ' ')"
+[ "$dirty" != "0" ] &&
+  note "src/ has $dirty uncommitted edit(s) the operator is not running — live on the next restart"
+
+# ---- 6. this machine ---------------------------------------------------------------
+# Provisioning gaps are machine facts, not repo faults: doctor is where they surface.
+sect "machine provisioning"
+
+# Playwright — resolved the way scripts/smoke-ui.mjs resolves it. Without a browser
+# the render gate does not exist on this box: ExecStartPost, bin/ronin-gate and
+# npm run verify all end at a binary that is not there.
+# THE BROWSER MUST BE LAUNCHED, NOT RESOLVED. Asking whether the module imports is asking
+# a configuration question, and this file exists to ask behavioural ones. The three pieces
+# come apart (docs/host-tools.md): on 2026-08-13 the module and the Chromium binary were
+# both installed here and the browser still died at `exit 127` on a missing libnspr4 —
+# resolution said yes while the gate could not run at all. A doctor that says "the render
+# gate can run" on the strength of an import is precisely the false all-clear it is here
+# to prevent.
+pw="$(node -e '
+  const { createRequire } = require("module"); const { homedir } = require("os");
+  // The same three steps, in the same order, as scripts/smoke-ui.mjs — doctor must answer
+  // for the resolution the GATE will do, not a simpler one of its own.
+  const LOADERS = [
+    () => (process.env.RONIN_PLAYWRIGHT_PATH ? import(process.env.RONIN_PLAYWRIGHT_PATH) : null),
+    () => createRequire(process.argv[1] + "/scripts/")("playwright"),
+    () => createRequire(homedir() + "/.cache/ronin-host-tools/")("playwright"),
+  ];
+  (async () => {
+    let pw;
+    for (const load of LOADERS) {
+      try { const m = await load(); if (m?.chromium) { pw = m; break; } } catch {}
+    }
+    if (!pw?.chromium) { console.log("nomodule"); return; }
+    let b;
+    try {
+      b = await pw.chromium.launch({ timeout: 20000 });
+      console.log("yes");
+    } catch (e) {
+      // The first "libfoo.so: cannot open shared object file" is the whole diagnosis; the
+      // rest of a Playwright launch error is a screenful of chrome flags.
+      const m = /([\w.+-]+\.so[\w.]*): cannot open shared object file/.exec(String(e?.message ?? e));
+      console.log("nolaunch\t" + (m ? m[1] : String(e?.message ?? e).split("\n")[0].slice(0, 120)));
+    } finally {
+      try { await b?.close(); } catch {}
+    }
+  })();
+' "$ROOT" 2>/dev/null)"
+case "${pw%%$'\t'*}" in
+  yes)
+    ok "Playwright launches — the render gate can run" ;;
+  nolaunch)
+    find_ "the browser is installed but CANNOT LAUNCH (${pw#*$'\t'}) — its system libraries are missing, so the render gate still does not exist here and a client change reaches the owner unlooked-at. Root fixes it: sudo npx playwright install-deps chromium" ;;
+  *)
+    find_ "no headless browser — the render gate does not exist on this machine; a client change reaches the owner unlooked-at. Provision: mkdir -p \$HOME/.cache/ronin-host-tools && cd \$HOME/.cache/ronin-host-tools && npm i playwright && npx playwright install chromium (docs/host-tools.md)" ;;
+esac
+
+# git push credentials — a --dry-run push with prompts off. Sends nothing.
+if GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND='ssh -oBatchMode=yes' \
+   timeout 10 git push --dry-run origin HEAD >/dev/null 2>&1; then
+  ok "git push credentials work — commits can leave the box"
+else
+  find_ "cannot push to origin — commits stay local until credentials are provisioned (gh auth login, or an SSH deploy key)"
+fi
+
+# The guards and Ronin's tools on PATH (setup.sh appends the block; a shell must have
+# re-read its rc since). Inert guards are invisible — that is why doctor asks.
+shim_want="$ROOT/bin/shim/tmux"
+shim_have="$(command -v tmux || true)"
+if [ "$(readlink -f "$shim_have" 2>/dev/null)" = "$(readlink -f "$shim_want")" ]; then
+  ok "tmux resolves to the guard shim"
+elif [ "$(env -i HOME="$HOME" TERM="${TERM:-dumb}" bash -lc 'readlink -f "$(command -v tmux)"' 2>/dev/null)" = "$(readlink -f "$shim_want")" ]; then
+  note "tmux resolves to ${shim_have:-nothing} in THIS shell, but a fresh login shell gets the guard shim — this pane predates the last ./setup.sh. New sessions are guarded"
+else
+  find_ "tmux resolves to ${shim_have:-nothing}, not bin/shim/tmux, and a fresh login shell does not get it either — the dial guard is inert; re-run ./setup.sh"
+fi
+# TWO DIFFERENT FAULTS WEAR ONE SYMPTOM, and only one of them is anybody's to fix.
+# "Not on PATH here" can mean the rc files never got the block — a real finding — or that
+# THIS shell simply started before they did, which every pane on the box does after an
+# install and which no action can retroactively change. Reporting both as a finding gives
+# doctor a permanent nag, and a checker that always complains is one people stop reading.
+#
+# So ask a shell that has no history: a clean login shell, which is also the kind whose
+# answer the rc fix of 2026-08-13 was actually about (~/.bashrc returns early when
+# non-interactive, so the block also lives in ~/.profile — see setup.sh).
+if command -v write_tegami >/dev/null 2>&1; then
+  ok "bin/ tools reachable by bare name"
+elif env -i HOME="$HOME" TERM="${TERM:-dumb}" bash -lc 'command -v write_tegami' >/dev/null 2>&1; then
+  note "bin/ is not on THIS shell's PATH, but a fresh login shell has it — this pane started before ./setup.sh last ran. New sessions are fine; nothing to fix"
+else
+  find_ "bin/ is not on PATH, and a fresh login shell does not get it either — write_tegami, tejun* and koshi only work from the repo root; re-run ./setup.sh"
+fi
+
+# tmux server ownership — the single most expensive thing to get wrong: a server in
+# the wrong cgroup dies with its parent, taking every session on the box with it.
+if [ "$OS" = "Linux" ] && command -v systemctl >/dev/null 2>&1; then
+  ts_state="$(systemctl --user show tmux-server -p ActiveState --value 2>/dev/null)"
+  [ "$ts_state" = "active" ] || find_ "tmux-server unit is $ts_state — the next tmux server will land in whatever cgroup starts it; see docs/tmux-server-cgroup.md (owner's hand)"
+  first="$(tmux list-sessions -F '#S' 2>/dev/null | head -1)"
+  if [ -z "$first" ]; then
+    note "no tmux server running — cgroup ownership not checkable until one exists"
+  else
+    spid="$(tmux display-message -pt "$first" '#{pid}' 2>/dev/null)"
+    cg="$(cat "/proc/${spid:-0}/cgroup" 2>/dev/null)"
+    case "$cg" in
+      *tmux-server.service*) ok "tmux server lives in tmux-server.service's cgroup" ;;
+      *tmux-ronin.service*)  find_ "the tmux server is inside tmux-ronin's cgroup — restarting tmux-ronin WILL kill every session on this box; see docs/tmux-server-cgroup.md (owner's hand)" ;;
+      '')                    note "could not read the tmux server's cgroup" ;;
+      *)                     find_ "the tmux server is outside tmux-server.service (started by hand?) — sessions die with whatever started it; see docs/tmux-server-cgroup.md (owner's hand)" ;;
+    esac
+  fi
+fi
+
+# ---- 7. where this machine keeps things ---------------------------------------------
+# A fungible ronin_machine resolves every location at runtime, so "where does this box keep
+# X" must be answerable BY the box rather than by reading a doc written about another one.
+# See docs/stores.md.
+echo ""
+sect "stores (docs/stores.md)"
+if [ -x "$ROOT/bin/ronin-store" ]; then
+  "$ROOT/bin/ronin-store" --all | sed 's/^/  /'
+  # Every store resolves through the table or an explicit override — there is no third
+  # possibility to report, by design. What is worth naming is a store pointed somewhere
+  # by an env var, because that is the one answer that differs from every other box.
+  pinned="$("$ROOT/bin/ronin-store" --all | awk 'NR>1 && $3=="env" {print $1}' | tr '\n' ' ')"
+  if [ -n "${pinned// /}" ]; then
+    note "pinned by environment: ${pinned% } — this box answers differently from a stock install"
+  else
+    ok "every store resolves under the two roots, unpinned"
+  fi
+else
+  find_ "bin/ronin-store is missing or not executable — no tool can resolve a Ronin path on this box"
+fi
+
+# ---- verdict -----------------------------------------------------------------------
+echo ""
+if [ "$FINDINGS" -eq 0 ]; then
+  echo "RONIN DOCTOR: nothing is outstanding — what is running is what is written."
+  exit 0
+fi
+echo "RONIN DOCTOR: $FINDINGS finding(s) — each line above names its remedy."
+exit 1

@@ -1,0 +1,143 @@
+#!/usr/bin/env bash
+# read_tegami — show a ladder.
+# Usage: read_tegami                      your letter, teaching lines and all
+#        read_tegami --json               just the block, for a machine
+#        read_tegami --rungs              the markable positions, numbered
+#        read_tegami --session <name> …   another session (dial 👁 read or 🤖 write)
+#
+# --rungs prints the positions a marker can point at, AS THEY SIT IN THE LETTER: a gate
+# is rung N, a leg is N.M. Deliberately not an index into a flattened list — that number
+# is invisible to a human reading the file, and `at` has to be checkable by eye.
+# `write_tegami --at` takes exactly one of these.
+#
+# NO ARGUMENTS, BY DESIGN. You do not name a session and you do not learn a path: the
+# tool knows which pane it is running in, and where the file lives is Ronin's business.
+# Both facts have already moved once. An agent that memorised either would keep using it
+# afterwards, which is how a wrong path becomes a wrong ladder becomes a tile that lies —
+# and coordinators had begun pasting shell incantations to derive session keys by hand.
+#
+# Read-only. `write_tegami` is the other half, and there is no third tool.
+set -u
+
+die() { printf '%s\n' "$*" >&2; exit 3; }
+
+# WHICH SESSION AM I — and it must NEVER guess.
+#
+# This function had a fallback that silently wrote one session's ladder into another's
+# letter, destroying it. `tmux display-message -p -t "$TMUX_PANE"` looks safe until
+# TMUX_PANE is EMPTY — which it is in some agents' tool shells — because `-t ""` does not
+# fail. It answers for the ATTACHED CLIENT: whichever tile the owner happens to have
+# focused in the browser at that instant. Writes followed the owner's mouse. The only
+# symptom was one line of output nobody reads, and a letter was lost.
+#
+# Two sources, both authoritative, neither the attached client:
+#   TMUX_PANE  the pane this shell runs in -> its window -> the non-viewer session holding it
+#   $TMUX      socket,pid,SESSION_ID — set for any process started inside a session
+# If neither answers, DIE. A tool that cannot tell whose letter it is has exactly one
+# correct behaviour, and it is not "pick the one on screen".
+me() {
+  local win s sid
+  if [ -n "${TMUX_PANE:-}" ]; then
+    win=$(tmux display-message -p -t "$TMUX_PANE" '#{window_id}' 2>/dev/null) || win=""
+    if [ -n "$win" ]; then
+      s=$(tmux list-windows -a -F '#{session_name}	#{window_id}' 2>/dev/null \
+          | awk -F'	' -v w="$win" '$2==w && $1 !~ /^grid_/ {print $1; exit}')
+      [ -n "$s" ] && { printf '%s
+' "$s"; return 0; }
+    fi
+  fi
+  if [ -n "${TMUX:-}" ]; then
+    sid=${TMUX##*,}
+    s=$(tmux list-sessions -F '#{session_id}	#{session_name}' 2>/dev/null \
+        | awk -F'	' -v i="\$$sid" '$1==i && $2 !~ /^grid_/ {print $2; exit}')
+    [ -n "$s" ] && { printf '%s
+' "$s"; return 0; }
+  fi
+  die "read_tegami: cannot tell which session this is — TMUX_PANE and \$TMUX are both unset.
+  Refusing rather than guessing: this used to fall back to the focused tile and wrote one
+  session's ladder into another's letter. Pin the pane and retry:
+    TMUX_PANE=\$(tmux list-panes -t <your-session> -F '#{pane_id}' | head -1) read_tegami ..."
+}
+
+# <name> -> the session KEY, by EXACT name.
+#
+# Not `display-message -t <name>`: that prefix-matches (so `tegami` could answer for
+# `tegami_probe`), and the `=name` exact-match form returns EMPTY on this tmux — which
+# does not fail, it just yields a wrong path. One list, one exact match, no guessing.
+#
+# Prefers the stamped @ronin-key so a rename cannot change the answer; falls back to
+# <name>-<created>, which the recorder derives identically with no Ronin involved.
+key_of() {
+  local row stamped created
+  row=$(tmux list-sessions -F '#{session_name}	#{@ronin-key}	#{session_created}' 2>/dev/null \
+        | awk -F'	' -v n="$1" '$1==n {print; exit}')
+  [ -n "$row" ] || die "read_tegami: no such session: $1"
+  stamped=$(printf '%s' "$row" | cut -f2)
+  created=$(printf '%s' "$row" | cut -f3)
+  if   [ -n "${stamped// /}" ]; then printf '%s\n' "$stamped"
+  elif [ -n "${created// /}" ]; then printf '%s\n' "$1-$created"
+  else printf '%s\n' "$1"; fi
+}
+
+MODE=block
+TARGET=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --json)    MODE=json ;;
+    --rungs)   MODE=rungs ;;
+    --session) shift; TARGET=${1-} ;;
+    *) die "read_tegami: unknown argument: $1" ;;
+  esac
+  shift
+done
+
+if [ -n "$TARGET" ]; then
+  # CONTROL-CHECK, same rule as tejun-peek: reading a 👤 user session is the owner's
+  # business, not an agent's. 👁 read and 🤖 write both allow a read.
+  case "$(tmux show-option -t "$TARGET" -qv @ronin-control 2>/dev/null || true)" in
+    user) die "DENIED: '$TARGET' is user-controlled (dial 👤). Ask the owner." ;;
+  esac
+  NAME=$TARGET
+else
+  NAME=$(me)
+fi
+# Where the session record lives on THIS machine — asked, never spelled. See docs/stores.md.
+STORE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ronin-store"
+[ -x "$STORE" ] || STORE=ronin-store
+FILE="$("$STORE" session)/$(key_of "$NAME")/tegami.md"
+[ -f "$FILE" ] || die "read_tegami: @$NAME has no letter yet — Ronin seeds one within a minute."
+
+if [ "$MODE" = rungs ]; then
+  # The flat, numbered list of markable positions. A phase is a grouping, not a place to
+  # stand, so it is shown for context but never numbered.
+  awk '/^```/{f=!f; if(f) next; else exit} f' "$FILE" | python3 -c '
+import json, sys
+try: d = json.load(sys.stdin)
+except Exception: sys.exit("read_tegami: block does not parse")
+at = d.get("at")
+at = at if isinstance(at, dict) else {}   # any other shape is not a pointer
+ar, al = at.get("rung"), at.get("leg")
+n = 0
+for ri, r in enumerate(d.get("ladder") or [], 1):
+    if "gate" in r:
+        here = "<-- at" if ar == ri and al is None else ""
+        print("%-7s GATE  %s   [%s] %s" % (ri, r.get("gate", ""), r.get("status", ""), here))
+        n += 1
+    else:
+        print("%-7s phase %s" % (ri, r.get("phase", "")))
+        for li, leg in enumerate(r.get("legs") or [], 1):
+            here = "<-- at" if ar == ri and al == li else ""
+            print("%-7s leg   %s   [%s] %s"
+                  % ("%d.%d" % (ri, li), leg.get("title", ""), leg.get("status", "PLANNED"), here))
+            n += 1
+if not n:
+    print("(no markable rungs)")
+'
+elif [ "$MODE" = json ]; then
+  # The one fenced block and nothing else: the markdown teaches a human, the json is the
+  # payload. If the fence was dropped, hand back the whole file rather than nothing.
+  BLOCK=$(awk '/^```/{f=!f; if(f) next; else exit} f' "$FILE")
+  [ -n "${BLOCK// /}" ] && printf '%s\n' "$BLOCK" || cat "$FILE"
+else
+  cat "$FILE"
+fi

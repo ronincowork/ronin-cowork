@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# rireki-sweep — arm the recorder on every pane that isn't already recording.
+#
+# This is the whole applet. It is idempotent by design: run it from a tmux hook, from
+# cron, from a shell, as often as you like. Panes already piped are left alone; panes
+# that lost their recorder (tmux restart, someone else's pipe-pane, a crash) get it back.
+#
+# Faucet B: `tmux pipe-pane` copies a pane's raw output to one command. There is exactly
+# ONE per pane — so the recorder owns it, and everything else reads the tape file.
+#
+# No Node, no Ronin, no browser. See README.md in this directory.
+set -uo pipefail
+
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+: "${RIREKI_DIR:=$("$here/../ronin-store" session)}"
+: "${RIREKI_VIEWER_PREFIX:=grid_}"
+: "${RIREKI_DIAL:=@ronin-rireki}"
+
+# All tmux calls go through here so a test rig (or a second server) can be addressed
+# without touching the live socket: RIREKI_TMUX="tmux -L myrig".
+# shellcheck disable=SC2206
+RIREKI_TMUX_CMD=(${RIREKI_TMUX:-tmux})
+tmux_() { "${RIREKI_TMUX_CMD[@]}" "$@"; }
+
+command -v "${RIREKI_TMUX_CMD[0]}" >/dev/null 2>&1 || exit 0
+tmux_ list-panes -a >/dev/null 2>&1 || exit 0   # no server — nothing to arm
+
+# pane_id, session, already-piped, birth time, and Ronin's key if it stamped one
+tmux_ list-panes -a -F '#{pane_id}	#{session_name}	#{pane_pipe}	#{session_created}	#{@ronin-key}' 2>/dev/null |
+while IFS=$'\t' read -r pane session piped created key; do
+  [ -n "$pane" ] || continue
+  [ "$piped" = "1" ] && continue                       # Faucet B already taken — leave it
+  case "$session" in "$RIREKI_VIEWER_PREFIX"*) continue ;; esac  # viewers are a view of a taped pane
+  case "$session" in *[!A-Za-z0-9_-]*|'') continue ;; esac       # keep paths boring
+
+  # The dial. Owner's hand only; empty means on.
+  dial="$(tmux_ show-options -qv -t "$session" "$RIREKI_DIAL" 2>/dev/null || true)"
+  [ "$dial" = "off" ] && continue
+
+  # The session KEY, not its name. Names are mutable and reusable: a rename would
+  # orphan a tape, and a recreated "trends" would inherit the dead one's. Prefer the
+  # key Ronin stamps at birth (survives a rename); derive the same value when there is
+  # none, so a session made by hand over SSH is still recorded with no Ronin involved.
+  [ -n "$key" ] || key="$session-$created"
+  case "$key" in *[!A-Za-z0-9_-]*|'') continue ;; esac
+
+  # One directory per session, shared with whatever else is per-session and mortal
+  # (the letter, lifecycle state). The tape is one tenant of it.
+  dir="$RIREKI_DIR/$key/tape/${pane/\%/p}"
+  mkdir -p "$dir" || continue
+
+  # Current segment = highest-numbered .tape, else the first one.
+  seg="$(ls -1 "$dir"/*.tape 2>/dev/null | sort | tail -1)"
+  [ -n "$seg" ] || seg="$dir/000001.tape"
+  : >>"$seg"
+
+  # `cat >>` — ~1MB RSS, uncrashable, writes nothing while the pane is idle.
+  tmux_ pipe-pane -t "$pane" "cat >> '$seg'" 2>/dev/null
+done
+
+exit 0

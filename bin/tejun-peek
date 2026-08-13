@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# tejun-peek — read a session's recent output in one call (TEJUN session-catchup).
+# Usage: tejun-peek <session> [lines=60]
+# Respects the dial: user -> denied. read/write -> allowed (watching is not writing).
+set -u
+[ $# -ge 1 ] || { echo "usage: tejun-peek <session> [lines]" >&2; exit 2; }
+S="$1"; N="${2:-60}"
+
+tmux has-session -t "$S" 2>/dev/null || { echo "NO-SESSION: '$S' does not exist"; exit 3; }
+dial=$(tmux show-option -t "$S" -qv @ronin-control 2>/dev/null || true)
+[ "$dial" = "user" ] && { echo "DENIED: '$S' is user-controlled (dial 👤). Report back and ask the owner to flip the dial in the Ronin UI."; exit 4; }
+
+tmux capture-pane -p -e -t "$S" -S -"$N" | sed 's/\x1b\[[0-9;]*m//g' | grep -v '^[[:space:]]*$'

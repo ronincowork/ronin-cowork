@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# RONIN DEPLOY — the restart you should use. Checks before, restarts, checks after.
+#
+#   bin/ronin-deploy            # verify, restart, gate; non-zero if the UI is broken
+#   bin/ronin-deploy --no-restart   # just gate what is already running
+#
+# Why this exists: on 2026-08-08 a client change reached Glen's browser twice without
+# anyone having looked at the rendered page, because "the websocket messages are
+# correct" was mistaken for "it works". The gate here drives a real browser.
+#
+# For a CLIENT change you do not even need this — `npm run stage` + /staging/ lets you
+# look at a candidate while the working UI stays up. Use that first.
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+restart=1
+[ "${1:-}" = "--no-restart" ] && restart=0
+
+fail() { echo ""; echo "✗ $1"; exit 1; }
+
+if [ "$restart" = 1 ]; then
+  echo "→ preflight"
+  npx tsc --noEmit || fail "TypeScript does not compile — nothing was restarted."
+  for f in public/js/*.js; do
+    node --check "$f" || fail "$f is not valid JavaScript — nothing was restarted."
+  done
+  echo "  ok — server typechecks, client parses"
+
+  echo "→ restarting tmux-ronin"
+  systemctl --user restart tmux-ronin || fail "restart failed"
+fi
+
+echo "→ gating the rendered page"
+if bin/ronin-gate | tee /dev/stderr | grep -q 'RONIN GATE: PASS'; then
+  echo ""
+  echo "✓ live and verified — the page renders and a pane paints."
+  exit 0
+fi
+
+cat <<'EOS'
+
+✗ THE UI IS BROKEN. Do not walk away from this.
+
+  What is running right now is what Glen would open. Options, in order:
+
+    1. git diff / git log -1     — see what just changed
+    2. git revert <sha> && bin/ronin-deploy
+    3. journalctl --user -u tmux-ronin -n 50
+
+  A client-only change can be tried safely instead:
+    npm run stage && npm run verify:staging     # candidate at /staging/, live untouched
+EOS
+exit 1
