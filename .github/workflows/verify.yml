@@ -1,0 +1,32 @@
+# CI tier 1 — the byoin_checks, on every pull request and every push to master.
+#
+# WHY --gates AND NOT `npm run verify`: verify ends in the render check, which needs a
+# live server and a real browser. A runner has neither, so `ronin-byoin --gates` SKIPs
+# that one check WITH ITS REASON and passes the rest. A skip that says why is the design
+# working; a chain that always fails on a runner is a check nobody runs.
+#
+# Tier 2 — a real render check on a runner (tmux + Playwright + a started server + a
+# seeded session) — is a separate, later piece of work. Not this file.
+name: verify
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+jobs:
+  byoin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      # tmux is a host tool, not a dependency — several checks shell out to it.
+      - name: install tmux
+        run: sudo apt-get update && sudo apt-get install -y tmux
+      - run: npm ci
+      - name: BYOIN — every check, then one verdict
+        run: bin/ronin-byoin --gates
