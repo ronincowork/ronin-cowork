@@ -4,7 +4,7 @@ Entry point for the whole system: `../reading-list/TEJUN.md`. This file: the cho
 extending the two catalogs that live here.
 
 > **Everything in this directory is SYSTEM SCOPE — an upgrade replaces it wholesale**
-> (`../DAIKUSAN.md`). Nothing here may list the user's own things.
+> (`../DAIKUSAN.md`). Nothing here may list the_owner's own things.
 >
 > That is why `PROJECT_ROOTS.md` here holds **only the stock provider·model launch
 > table**. The directories a box actually works in are user scope and live outside every
@@ -31,10 +31,10 @@ extending the two catalogs that live here.
 1. A macro is an ordered table of CATALOGED actions — action 1, action 2, action 3.
    **No side jobs, no inline cleverness, no step that isn't in ACTIONS.md.** If a
    step doesn't exist as an action, STOP and add the action first (above).
-2. Add a section to MACROS.md: name (short, sayable — users will type
+2. Add a section to MACROS.md: name (short, sayable — the_owner will type
    `<name>: <args>`), one-line description (the panel shows it), params, the action
    table, and what to report when done — results must be SHOWN, not just performed.
-3. Litmus: if your "macro" is one action a user would never say aloud, it's an
+3. Litmus: if your "macro" is one action the_owner would never say aloud, it's an
    action, not a macro.
 4. The TEJUN panel and /api/macros parse MACROS.md live — adding the section IS
    shipping the macro. Test the pasteable form once for real before calling it done.

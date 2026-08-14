@@ -132,7 +132,10 @@ const IGNORE = {
   'README.md': ['connector-contract.md'],
   'public/js/README.md': ['app.js', 'co-working/user_repo/wip/buildouts/', 'CLAUDE.md', 'docs/commons.md', 'src/services/rireki/', 'co-working/user_repo/README/KEYPAD_README.md', '../../co-working/user_repo/README/KEYPAD_README.md'],
   // (The house-dir literals that lived in ACTIONS/MACROS collapsed into the documents
-  // SOP on the owner's ruling — actions defer to the SOP, which compile inlines.)
+  // SOP on the_owner's ruling — actions defer to the SOP, which compile inlines.)
+  // What remains names the house dirs of a PROJECT_REPO — a location in whatever repo a
+  // session works in, never a claim about this tree.
+  'ronin_catalogs/ACTIONS.md': ['wip/', 'docs/', 'manifest/'],
   'ronin_catalogs/PROJECT_ROOTS.md': ['DAIKUSAN.md', 'src/services/rireki/decode.ts:219'],
   'ronin_catalogs/TOOLS.md': ['docs/oboeru.md', 'docs/koshi.md'],
 };

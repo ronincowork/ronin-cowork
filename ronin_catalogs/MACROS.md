@@ -283,4 +283,4 @@ adopt the session's assumptions uncritically; check them against the docs.
 
 *(Add macros sparingly. Every macro must decompose into listed actions; if a step has
 no action, add the action to ACTIONS.md first — separately, so other macros can
-reuse it. If a "macro" is a single action a user would never say, it's an action.)*
+reuse it. If a "macro" is a single action the_owner would never say, it's an action.)*

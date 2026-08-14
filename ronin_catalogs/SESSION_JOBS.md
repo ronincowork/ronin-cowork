@@ -24,7 +24,7 @@ eventually fill from one long-form text. Adding "just one helpful line" to manua
 would make the mode a lie.
 
 **Format:** one `##` heading per session_job, `- **key:** value` lines under it.
-`opening:` is the first message template; `{prompt}` is replaced by what the user typed.
+`opening:` is the first message template; `{prompt}` is replaced by what the_owner typed.
 `ack: yes` appends the read-and-report-first rule (state the job, state what you will
 not do, flag anything unclear, then wait) — everything whose work is judgement
 acknowledges first; only work with an already-approved plan builds straight away.

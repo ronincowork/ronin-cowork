@@ -75,7 +75,7 @@ written about.
 
 ## Japanese names, and where they stop
 
-**Ronin is the product name and goes everywhere** — the site, the docs, the UI, a user's
+**Ronin is the product name and goes everywhere** — the site, the docs, the UI, the_owner's
 own vocabulary. So does anything built on it: `ronin_machine`, `@ronin-control`. It is the
 brand, and the brand is the one Japanese word everyone learns on purpose.
 
@@ -91,7 +91,7 @@ Useful shorthand between us; a translation tax on anyone else.
 that list: **BYOKI** (a condition, § THE GROUND), **BUNKAI** (a closed refactor, `dev_scope`),
 **dohyo** and **ATARASHI** (proper names), **harakiri** (kept — a word people already know).
 
-**Words a user or their agent works with are plain English.** A ladder is a ladder. Nothing
+**Words the_owner or their agent works with are plain English.** A ladder is a ladder. Nothing
 a third party must learn in order to use Ronin should cost them a second language first.
 
 ---
@@ -159,7 +159,7 @@ holds many **project_roots**; each of those usually sits in a **project_repo**.
 | Term | Scope | Means | Record |
 |---|---|---|---|
 | **ronin_machine** | system_scope | **the outer limit of what an install can reach** — every session, file and project_root available to it, and nothing beyond. A server, VM or container. Holds many project_roots, which is why it is not named after one | `DAIKUSAN.md` |
-| **project_root** | system_scope | the *directory* a session is born into, plus the brain it gets — an entry in the inclusion_list. **Memories are keyed by it**; customizations are not, they belong to the user. The term is `system_scope`; **the entries are `user_scope`** — they live in the catalogs store's `PROJECT_ROOTS.md`, and the shipped `ronin_catalogs/PROJECT_ROOTS.md` keeps only the stock launch table | `docs/project-roots.md` |
+| **project_root** | system_scope | the *directory* a session is born into, plus the brain it gets — an entry in the inclusion_list. **Memories are keyed by it**; customizations are not, they belong to the_owner. The term is `system_scope`; **the entries are `user_scope`** — they live in the catalogs store's `PROJECT_ROOTS.md`, and the shipped `ronin_catalogs/PROJECT_ROOTS.md` keeps only the stock launch table | `docs/project-roots.md` |
 | **project_repo** | system_scope | the *git repo* a project_root sits in. Usually the same directory; a project_root need not be a repo at all | `docs/project-roots.md` |
 | **inclusion_list** | system_scope | which directories on a ronin_machine are part of your Ronin — an inclusion_list, not a layout. Ships empty | `docs/project-roots.md` |
 
@@ -181,12 +181,15 @@ RIREKI's tape off disk. A file is the connection.
 
 | Term | Scope | Means | Record |
 |---|---|---|---|
-| **the owner** | system_scope | the person whose install it is. The only one who flips a dial, tags a session, edits a Brief, or writes a universal memory. **Agents propose; the owner decides** | `docs/session-control-dials.md` |
-| **user** | system_scope | the person operating an install — the owner, in practice. ⚠R16 — also the name of a scope | `DAIKUSAN.md` |
-| **agent** | system_scope | the CLI running in a tile — claude, codex, a shell script. Ronin never reaches inside one; **vendor neutrality is the thesis** | `reading-list/TEJUN.md` |
+| **the_owner** | system_scope | **the person whose install it is** — the only one who flips a dial, tags a session, edits a Brief, or writes a universal memory. **Agents propose; the_owner decides.** The one word for a person in this house: `user` is a scope and never a human (R16) | `docs/session-control-dials.md` |
+| **owner_agent** | system_scope | an agent the_owner launched to do **their own work** — in a tile, on one of their project_roots. The ordinary case, and what every catalog, SOP and library page is written for | `ronin_catalogs/SESSION_JOBS.md` |
+| **ronin_developer** | system_scope | **the person building Ronin itself** — the cowork and services repos, not the work Ronin is used for. A ROLE, not a person: the same human is usually both, often within the hour, and the hat that is on decides which rules apply (`dev_scope` docs and the byoin_checks are theirs; the catalogs are the_owner's) | `CLAUDE.md` |
+| **developer_agent** | system_scope | an agent working on **Ronin's own code**, wearing the ronin_developer's hat. Reads `CLAUDE.md` and this file; obeys the byoin_checks; its output is a PR, never a change to a tenant's install | `CLAUDE.md` |
+| **user** | system_scope | **A SCOPE, NEVER A PERSON** (R16, closed 2026-08-14) — `user_scope`, `ronin_user_root`, "the user's own catalogs" meaning *that scope's*. For a human, say **the_owner** | `DAIKUSAN.md` |
+| **agent** | system_scope | the genus: the CLI running in a tile — claude, codex, a shell script. Ronin never reaches inside one; **vendor neutrality is the thesis**. Three roles wear it: **owner_agent** (their work), **developer_agent** (Ronin's own code), **koshi** (the house's internal jobs) | `reading-list/TEJUN.md` |
 | **session** | system_scope | a tmux session: **the unit of work and the unit of addressing.** One agent, one job, one name. Mortal — nothing of value may live only in a tile | `docs/architecture.md` |
 | **pane** | system_scope | the tmux terminal a tile shows. **Machinery only** — legal where tmux's own meaning is what is being described, and nowhere else. The word a person reads is **tile**, § COWORKSPACE | `docs/rireki.md` |
-| **system** | system_scope | the installed Ronin — code and stock catalogs. Not a loose adjective for "Ronin-ish"; if you mean the running copy, say **the operator** | `DAIKUSAN.md` |
+| **system** | system_scope | the installed Ronin — code and stock catalogs, i.e. the **ronin_install**. Not a loose adjective for "Ronin-ish"; the running copy is the **ronin_operator**, and the product in the abstract is **Ronin** | `DAIKUSAN.md` |
 
 **tile and pane are one thing from two sides, and only one of them is the word.** A pane is
 the tmux terminal the agent's process actually runs in; a tile is that pane rendered in the
@@ -210,7 +213,7 @@ is a gap in the machinery, not a reason to reach for the word. See § NUANCE.
 | Term | Scope | Means | Record |
 |---|---|---|---|
 | **TEJUN** | system_scope | the procedure system: macro → action → tool | `reading-list/TEJUN.md` |
-| **macro** | system_scope | a recipe a USER invokes; nothing but an ordered list of actions. Stock: `forkit`, `draftplan`, `cutcode`, `land`, `delete`, `tag`, `wipeboard`, `read`, `readwrite`, `evaluate` | `ronin_catalogs/MACROS.md` |
+| **macro** | system_scope | a recipe the_owner invokes; nothing but an ordered list of actions. Stock: `forkit`, `draftplan`, `cutcode`, `land`, `delete`, `tag`, `wipeboard`, `read`, `readwrite`, `evaluate` | `ronin_catalogs/MACROS.md` |
 | **session_macro** | system_scope | a macro **the agent executes**: an invocation dropped into a session's own input (`+forkit: build the login page`), which the agent reads and acts on. Ronin only helps you type it — it never runs one. Every catalogd macro today is one. **Two classes, and every entry's `class:` line says which: `session_macro.lookup` · `session_macro.workflow`** | `ronin_catalogs/MACROS.md` |
 | **workspace_macro** | system_scope | a macro **Ronin executes**, mechanically, above any one session. Stock and so far only: new session (the ＋ tab). No agent involved | `docs/commons.md` |
 | **action** | system_scope | a procedure an AGENT follows; macros may cite only cataloged actions (TEJUN's law) | `ronin_catalogs/ACTIONS.md` |
@@ -338,11 +341,11 @@ only, since no code hardcodes a session_job.
 
 ## § LADDER — the window onto what a session is doing
 
-**A ladder is a view**, not a file. It shows a user what an agent has done, what it is doing
+**A ladder is a view**, not a file. It shows the_owner what an agent has done, what it is doing
 now, and what it will do next. It is the readout; the session's TEGAMI holds the record.
 
 **Work goes better with a ladder up first.** Research, cut and verify are much easier to
-follow — for the user and for the agent — when there is something to hang them on, even a
+follow — for the_owner and for the agent — when there is something to hang them on, even a
 one-rung ladder. A session still talking has none, and that is fine: its readout is its role.
 
 ```
@@ -362,7 +365,7 @@ waits on approval, and the go-ahead releases it.
 
 **The honesty rule: an undetermined rung is not rendered.** The ladder does not pad itself
 with guesses. A short ladder means the future genuinely is not known yet, which is more
-useful to a user than an invented one.
+useful to the_owner than an invented one.
 
 | Term | Scope | Means | Record |
 |---|---|---|---|
@@ -437,14 +440,14 @@ egress surface, and `egress_log` is what makes the claim checkable rather than a
 | **AGERU** (上げる) | system_scope | the one outbound door: compose → review → send, and the log of every attempt **[planned]** | `co-working/user_repo/wip/buildouts/AGERU.md` |
 | **ageru_packet** | system_scope | one thing that leaves: five-key envelope + a `packet_kind`-specific body against a closed schema. Composed to disk, reviewed on disk, sent from those exact bytes — **never composed at send time** | `co-working/user_repo/wip/buildouts/AGERU.md` |
 | **packet_kind** | system_scope | which of the three: `tomodachi` (counts) · `kansou` (feedback) · `tejun` (a submitted macro). A fourth is a cowork change somebody has to argue for | `co-working/user_repo/wip/buildouts/AGERU.md` |
-| **kansou** (感想) | system_scope | the feedback packet — a user telling us something in their own words. ⚠R28 **[proposed]** | `co-working/user_repo/wip/buildouts/AGERU.md` § OPEN 1 |
+| **kansou** (感想) | system_scope | the feedback packet — the_owner telling us something in their own words. ⚠R28 **[proposed]** | `co-working/user_repo/wip/buildouts/AGERU.md` § OPEN 1 |
 | **ageru_outbox** | user_scope | the `ageru` store's outbox — a store row it must add when it is built (`docs/stores.md`), never a path of its own. Validated packets waiting on a human. Anyone who can write a file can queue one; **that is the socket**, per `RONIN_SERVICES.md` §3 | `co-working/user_repo/wip/buildouts/AGERU.md` |
 | **egress_log** | user_scope | every outbound attempt Ronin ever made, **model-provider calls included**. The ZDR evidence: two hostnames, greppable | `co-working/user_repo/wip/buildouts/AGERU.md` |
 | **ageru_receipt** | user_scope | what the collector said back, stored beside the sent bytes. Dedup for us, proof for them | `co-working/user_repo/wip/buildouts/AGERU.md` |
 | **pulse** | system_scope | the read-back on a shared macro or SOP: downloads, votes, rating — pulled by receipt-keyed artifact id, never joined to install id or handle, rendered on the sharer's own catalog entry **[planned]** (v3) | `co-working/user_repo/wip/buildouts/AGERU.md` § THE READ-BACK |
 | **scrub_diff** | system_scope | what the `tejun` review shows: the submitted macro against its scrubbed self. **A diff, never a claim that it is clean** | `co-working/user_repo/wip/buildouts/AGERU.md` |
 | **license_grant** | system_scope | the tick on a `tejun` packet: an irrevocable MIT grant, no exclusivity, no payment, copyright kept by the submitter — *the same deal a PR author gets*. Renders literally beside the tick, never as a link to terms | `co-working/user_repo/wip/buildouts/AGERU.md` § THE GRANT |
-| **ageru_export** | system_scope | the same bytes written to a file the user carries out by hand, for an install whose egress is pinned to the model provider. Not a downgrade path — the same path, last hop by hand | `co-working/user_repo/wip/buildouts/AGERU.md` |
+| **ageru_export** | system_scope | the same bytes written to a file the_owner carries out by hand, for an install whose egress is pinned to the model provider. Not a downgrade path — the same path, last hop by hand | `co-working/user_repo/wip/buildouts/AGERU.md` |
 
 **The consent rule is one line, and it is load-bearing: only the machine-written packet gets a
 standing switch.** `tomodachi` is house nouns and counts, so it can be weekly and unattended.
@@ -467,7 +470,7 @@ that install ever sent. This binds the collector, not just the client.
 | **the store** | user_scope | where memories live — one store, outside every repo; the axes do the partitioning | `co-working/user_repo/wip/buildouts/MEMORY.md` D1 |
 | **the match** | system_scope | a memory reaches a session when both of **the two axes** (§ LAUNCHER) agree: `project_root` **and** `session_job` | `co-working/user_repo/README/OBOERU.md` |
 | **universal memory** | system_scope | both axes `"*"` — matches every session. `tejun-remember` refuses to write one by design; only the owner can, from the commons | `co-working/user_repo/wip/buildouts/MEMORY.md` D4 |
-| **remember / recall** | system_scope | `tejun-remember` writes one, `tejun-recall` returns the ~20 lines a session gets at birth **[planned]** | `co-working/user_repo/wip/buildouts/MEMORY.md` D4–D5 |
+| **remember / recall** | system_scope | `tejun-remember` writes one, `tejun-recall` returns the ~20 lines a session gets at birth. Cataloged as `remember-lesson` / `recall-memories` (2026-08-14) **[planned]** | `co-working/user_repo/wip/buildouts/MEMORY.md` D4–D5 |
 
 ---
 
@@ -533,7 +536,7 @@ one never has. Not invented here; see § OPEN R23.
 
 **KOE is the noun for the whole surface** — the owner's question, answered: not just
 dictation in, not just speech out, but both and the machinery under them. Dictation already
-reaches a user's face through the ▥ Hotwords tab, so the English word is **Hotwords** for
+reaches the_owner's face through the ▥ Hotwords tab, so the English word is **Hotwords** for
 that tab and the name KOE stays ours.
 
 **Unbuilt, and the weights are unaccounted for.** Whisper weights existed on old dohyo; whether
@@ -612,7 +615,7 @@ at are the owner's and are none of SETTEI's business.**
 Both are `ronin_user_root`. A macro the owner authored must survive as surely as a setting —
 it is their work. The rule is `docs/stores.md`'s one sentence, and it covers both:
 
-> **If deleting it would lose the user's own work or their choices, it is `user`.**
+> **If deleting it would lose the_owner's own work or their choices, it is `user` scope.**
 
 SETTEI is *choices*, `user_customization` is *work*. The split decides what the word covers
 and what the Setup commons_tab shows — never what survives.
@@ -840,9 +843,19 @@ common words — the exact failure this file records for *project*, *user*, *boa
 **R15 · CLOSED by R20.** `project_root` and `project_repo` are separate nouns, and a
 project_root is not required to be a repo — `co-working/user_repo/README/internal` stays legal.
 
-**R16 · "user" names a person and a scope.** In `DAIKUSAN.md` it means "this install's own
-directory"; in conversation it means the human. Renaming the scope to **machine** or
-**install** would settle it — and the two genuinely diverge the moment a box is shared.
+**R16 · CLOSED — `user` is a scope and never a person.** Owner, 2026-08-14. The human is
+**the_owner**, always; `user` survives only in `user_scope`, `ronin_user_root` and "the
+user's own catalogs", where it means *that scope's*, not *that person's*. Renaming the
+scope instead would have touched two store tables, every path and every doc for the same
+result. The word that was doing two jobs now does one, and which job is on the page is
+answerable by which word is there.
+
+**Ruled with it: the_owner is not the ronin_developer.** Two roles, one human most days —
+the_owner runs an install and decides what happens on it; the ronin_developer builds Ronin
+itself. Their agents differ too (**owner_agent** vs **developer_agent**), and so do the
+rules that bind them: the catalogs, SOPs and library are written for the first; `CLAUDE.md`,
+the byoin_checks and every `dev_scope` row are the second's. The hat that is on decides which
+applies, and a tenant only ever has the first.
 
 **R17 · CLOSED — it did not.** The role catalog is deleted and its remits were
 carried into the seven `session_job`s; the `session_job` *is* the role. The two axes are now two:
@@ -895,7 +908,7 @@ believing something of the running thing because it was true of the source.
 reassurance. True of `public/` alone.
 
 **BYOKI is ours; the readout speaks English.** Same split as TEJUN, whose name never reaches
-the ⚡ dropdown. A user is told *"3 changes not yet running — restart needed"*, never
+the ⚡ dropdown. The_owner is told *"3 changes not yet running — restart needed"*, never
 *"BYOKI detected"*.
 
 **Detection is `ronin doctor`** (`docs/atarashi/README.md`, unbuilt) — ask the operator what
@@ -929,7 +942,7 @@ rename. elevate the mechanical/judgement as we can."* Every `ACTIONS.md` entry c
 reasoning is the work); `ronin_bin/tejun-step` shows the tag, and MACROS.md's header now
 tells the agent to read it as the pace to take a step at. Bare *kind* stays retired.
 
-**R27 · TOOLS.md's law overreaches, and it is the reason "scripts" felt unsettled.**
+**R27 · CLOSED 2026-08-14 (all three items). The law's overreach, and the reason "scripts" felt unsettled.**
 *"A tool must implement a documented action — no orphan scripts"* reads as though every
 script in the house owes an action. **It only governs tools** — see § SCRIPTS. Thirty
 scripts, four tools; `setup.sh` will never have an action and is not deficient for it.
@@ -937,9 +950,10 @@ Recommend the rule be narrowed to say so in `TOOLS.md` itself.
 
 **Three things it does catch, and they are real:**
 
-1. **`tejun-recall` and `tejun-remember` are genuinely missing from the catalog** — still
-   open, and now the LAST two `—` rows in TOOLS.md. They are OBOERU's, so the actions want
-   the owner's screen before they are written.
+1. **CLOSED 2026-08-14** — `recall-memories` and `remember-lesson` are in ACTIONS.md and
+   TOOLS.md names them. **No `—` row is left**: every tool in the house implements a
+   cataloged action, so TEJUN's law now holds without exception, which is the first time
+   it has been true since the law was written.
 2. **CLOSED 2026-08-14.** `read_tegami`/`write_tegami` got the actions they always
    deserved (`read-letter`, `write-letter`) and moved to `ronin_bin/`: MICHI owns the
    letter, but an agent types the tool, and the shelf goes by audience. `koshi` left
