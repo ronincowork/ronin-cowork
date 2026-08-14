@@ -169,6 +169,7 @@ holds many **project_roots**; each of those usually sits in a **project_repo**.
 |---|---|---|---|
 | **RONIN_COWORK** | system_scope | the free, open install. **All frontend lives here** — a service ships no HTML, JS or CSS | `co-working/user_repo/wip/RONIN_SERVICES.md` |
 | **RONIN_SERVICES** | system_scope | the paid layer. **Not a public repo** | `co-working/user_repo/wip/RONIN_SERVICES.md` |
+| **Ronin The Works** | system_scope | the name for **cowork + services running together** — an edition, not a third repo and not a third install: services register into a cowork that is already there. Ruled 2026-08-14 to keep clear of `ronin_legacy`, whose word is *unified* and always will be. Two packages ship (`ronin-cowork`, `ronin-services`); "The Works" is what you call having both. A reading-face name, so plain English (§ Japanese names) — token form `ronin_the_works` if one is ever needed | `README.md` |
 | **ronin_service** | system_scope | one service in that layer. Alias: **Services**, prose only — the term is `ronin_service` | `co-working/user_repo/wip/RONIN_SERVICES.md` |
 | **socket** | system_scope | how a ronin_service plugs into cowork. Four of them; three are server-side, the fourth is a boolean | `co-working/user_repo/wip/RONIN_SERVICES.md` |
 | **SWITCH** | system_scope | the fourth socket: **on or off**. On → cowork renders the subset of *its own* UI the service fills. Off → that subset does not render | `co-working/user_repo/wip/RONIN_SERVICES.md` |
