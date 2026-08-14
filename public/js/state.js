@@ -48,6 +48,15 @@ export const S = {
   tagPanel: null, // session-groups editor { open(session), close } — all devices
   sessPicker: null, // pad-key session switcher { open, close, isOpen, move, commit }
 };
+
+// Which service owns which optional commons pane. A pane not listed is core and always
+// on. Both the tab strip and the Commons menus consult this, same as the lock button
+// consults streamOff: absent service = the surface is visible but opaque-and-inert.
+const PANE_SERVICE = { hotwords: 'koe', stats: 'counting', koshi: 'koshi' };
+export const serviceOff = (pane) => {
+  const svc = PANE_SERVICE[pane];
+  return !!svc && Array.isArray(S.services) && !S.services.includes(svc);
+};
 export const tiles = [];
 // The 🔒/🔓 switch (changed ONLY by the button):
 // LOCKED  = the original lock-step mirror, wired to NOTHING new. Scroll and every

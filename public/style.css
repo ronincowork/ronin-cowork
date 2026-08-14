@@ -3063,8 +3063,11 @@ body {
   color: #7fd4a8;
 }
 /* No record service installed (the free build): the 🔓 view is off, so the switch is
-   visible but inert — opaque says "not plugged in", not "missing". */
-.tile-head .lock.off {
+   visible but inert — opaque says "not plugged in", not "missing". The commons tabs
+   and menu rows of an absent service get the same treatment. */
+.tile-head .lock.off,
+.home-tabs button.off,
+.commons-row.off {
   opacity: 0.3;
   pointer-events: none;
 }
