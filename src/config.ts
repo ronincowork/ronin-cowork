@@ -5,7 +5,7 @@ import path from 'node:path';
 /**
  * THE ONE REPO-ROOT ANCHOR. A module that computes a repo path from its own location
  * breaks the day the module moves — the KYOKAI mv proved it four times over
- * (`hotwords.ts` opened `src/services/tejun_catalogs/`, koshi and the bench shelled
+ * (`hotwords.ts` opened `src/services/ronin_catalogs/`, koshi and the bench shelled
  * `src/services/bin/`, counting wrote stats into `src/`). tsc cannot see the class;
  * only a request can. So: every file that needs the install tree resolves it from
  * HERE, and only this file — which does not move — may look at its own location.

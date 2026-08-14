@@ -1,7 +1,7 @@
 /**
  * CATALOG ROUTES — the markdown-backed lists the commons reads and edits: macros,
  * hotwords, project roots, brains, session jobs. Catalogs are parsed at request time
- * (tejun_catalogs/ for stock, the catalogs store for the user's own), so the UI always
+ * (ronin_catalogs/ for stock, the catalogs store for the user's own), so the UI always
  * matches the doc. See docs/project-roots.md.
  */
 import { stat } from 'node:fs/promises';

@@ -36,7 +36,7 @@ export async function loadProjects() {
 /* ---------- the launcher board: session_job x project_root ----------
  * The three universal axes — the same keys that scope a memory. The session_jobs
  * you can start (buildout / cutcode / review / audit / manage / fork / other) are
- * read live from tejun_catalogs/SESSION_JOBS.md, never hardcoded here. The session_job
+ * read live from ronin_catalogs/SESSION_JOBS.md, never hardcoded here. The session_job
  * fixes what a launch must not leave to chance (the dial the session is born on,
  * its lifecycle, whether it acknowledges before acting); the user picks
  * project_root, brain and group; the server assembles the brief and
@@ -80,7 +80,7 @@ export const STATUS_LABEL = { ready: 'ready', thinking: 'thinking…', 'awaiting
 /**
  * Build one tile's home panel: the session list (status + gauge reading, tap =
  * open here), the new-session launcher, and fill-in forms for the macros —
- * parsed live from tejun_catalogs/MACROS.md via /api/macros, nothing hardcoded.
+ * parsed live from ronin_catalogs/MACROS.md via /api/macros, nothing hardcoded.
  */
 export function showReceipt(name, receipt) {
   if (!receipt) return;

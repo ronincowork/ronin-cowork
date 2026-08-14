@@ -442,7 +442,7 @@ export async function projectRootsOfSessions(): Promise<Record<string, string>> 
   }
 }
 
-/** tmux user option holding a session's control dial (see tejun_catalogs/ACTIONS.md control-check). */
+/** tmux user option holding a session's control dial (see ronin_catalogs/ACTIONS.md control-check). */
 const CONTROL_OPT = '@ronin-control';
 
 export type Control = 'user' | 'read' | 'write';

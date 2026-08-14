@@ -8,7 +8,7 @@
 ## The rule
 
 ```
-resolve(<NAME>.md) = entries(tejun_catalogs/<NAME>.md)     ← stock, in file order
+resolve(<NAME>.md) = entries(ronin_catalogs/<NAME>.md)     ← stock, in file order
                    ⊕ entries(<catalogs store>/<NAME>.md)   ← yours
 ```
 
@@ -63,7 +63,7 @@ edit, new stock terms are not added for you. `src/services/koe/hotwords.ts` carr
 
 ## Two scopes, and which is which
 
-The shipped copies live in the install (`tejun_catalogs/`) and an **upgrade replaces them
+The shipped copies live in the install (`ronin_catalogs/`) and an **upgrade replaces them
 wholesale** — that is what they are for. Yours live in the **catalogs store**, outside
 every repo, where an upgrade cannot reach and an uninstall leaves them.
 
@@ -84,7 +84,7 @@ running operator only when the owner restarts (`docs/repo-to-operator.md`). Chan
 
 ## What an upgrade can and cannot touch
 
-- **Can:** everything in `tejun_catalogs/`. Assume it is replaced.
+- **Can:** everything in `ronin_catalogs/`. Assume it is replaced.
 - **Cannot:** anything in the catalogs store. That is the promise, and it is why a
   customisation belongs there and never in an edited shipped file.
 - **A stock entry you shadowed stays shadowed** — an upgrade improving that entry does not

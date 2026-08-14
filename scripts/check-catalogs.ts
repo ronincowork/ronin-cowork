@@ -61,7 +61,7 @@ async function surfacing(file: string, served: () => Promise<{ name: string }[]>
 /** Repo paths a catalog names. An agent reads these as errands, so they must resolve. */
 async function deadLinks(file: string): Promise<void> {
   const raw = await readFile(path.join(STOCK_DIR, file), 'utf8');
-  const re = /(?:^|[\s(`])((?:docs|reading-list|co-working|tejun_catalogs|ronin_library|hostside|scripts|bin)\/[A-Za-z0-9_./-]*[A-Za-z0-9_-])/gm;
+  const re = /(?:^|[\s(`])((?:docs|reading-list|co-working|ronin_catalogs|ronin_library|hostside|scripts|bin)\/[A-Za-z0-9_./-]*[A-Za-z0-9_-])/gm;
   const seen = new Set<string>();
   for (const m of raw.matchAll(re)) {
     const p = m[1];

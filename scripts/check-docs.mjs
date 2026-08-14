@@ -81,16 +81,23 @@ const codeHaystack = files
 /* ------------------------------------------------------------ what is scanned */
 
 const md = (f) => f.endsWith('.md');
+// THE FREE BUILD CAVEATS. (1) A named source absent from this tree is skipped, not a
+// crash — the list is shared with the house tree, which carries docs cowork does not.
+// (2) KOTOBA.md is deliberately NOT scanned for path claims here: its Record columns
+// cite the whole product — the house tree, RONIN_SERVICES, the private working notes —
+// and this check can only see one repo. check-kotoba still holds KOTOBA to the code.
 const SOURCES = [
   ...files.filter((f) => f.startsWith('docs/') && md(f)),
-  'KOTOBA.md',
   'CLAUDE.md',
   'CLAUDE.local.md',
   'README.md',
+  'ronin_library/README.md',
   'public/js/README.md',
-  ...files.filter((f) => f.startsWith('tejun_catalogs/') && md(f)),
+  ...files.filter((f) => f.startsWith('ronin_catalogs/') && md(f)),
   'co-working/user_repo/BROKEN.md',
-].filter((f, i, a) => a.indexOf(f) === i);
+]
+  .filter((f, i, a) => a.indexOf(f) === i)
+  .filter((f) => files.includes(f));
 
 // Legal mentions of things that do not exist — keyed by source path, each entry with
 // its reason. This list is the negation convention's escape hatch (owner's ruling
@@ -99,8 +106,8 @@ const IGNORE = {
   // "that file is gone as of 2026-08-08" — BUNKAI's whole point is that it is absent.
   'CLAUDE.md': ['public/app.js'],
   'CLAUDE.local.md': ['public/app.js'],
-  // BUNKAI row and the split's history both name the file they dismantled.
-  'public/js/README.md': ['app.js'],
+  // (public/js/README.md's `app.js` — BUNKAI's dismantled file — rides in the split
+  // block below: one key per source, or the later key silently wins.)
   // A host file in ~/.claude, named bare — not a claim about this tree.
   'docs/doctor.md': ['settings.local.json'],
   // The owner's settings file, created at runtime in the `config` store. Same shape as the
@@ -113,6 +120,19 @@ const IGNORE = {
   // created at runtime in a store, real on the box, never in this repo — and the second is
   // cited there precisely to say it is in the WRONG store.
   'KOTOBA.md': ['app.js', 'ronin.json', 'koshi-outlets.json'],
+
+  // ── THE SPLIT'S KNOWN PLACEHOLDERS (MIGRATION_MANIFEST §12, in the house tree) ──
+  // Every entry below is a reference to something the free build does not carry YET:
+  // a doc to ship or trim, service code that lives in RONIN_SERVICES, or a working
+  // directory that needs a store home. Each is removed as its gap is filled — this
+  // block shrinking to nothing is the split finishing.
+  'docs/shadowing.md': ['HOTWORDS.md', 'src/services/koe/hotwords.ts', 'docs/stores.md', 'docs/repo-to-operator.md', 'DAIKUSAN.md'],
+  'README.md': ['connector-contract.md'],
+  'public/js/README.md': ['app.js', 'co-working/user_repo/wip/buildouts/', 'CLAUDE.md', 'docs/commons.md', 'src/services/rireki/', 'co-working/user_repo/README/KEYPAD_README.md', '../../co-working/user_repo/README/KEYPAD_README.md'],
+  'ronin_catalogs/ACTIONS.md': ['landed/MANIFEST.md', 'co-working/user_repo/wip/buildouts/', 'co-working/user_repo/wip/handoffs/'],
+  'ronin_catalogs/MACROS.md': ['co-working/user_repo/wip/buildouts/', 'landed/MANIFEST.md'],
+  'ronin_catalogs/PROJECT_ROOTS.md': ['DAIKUSAN.md', 'src/services/rireki/decode.ts:219'],
+  'ronin_catalogs/TOOLS.md': ['docs/oboeru.md', 'docs/koshi.md'],
 };
 
 /* ------------------------------------------------------------- classification */

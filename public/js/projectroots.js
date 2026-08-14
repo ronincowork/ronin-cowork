@@ -7,7 +7,7 @@ import { loadProjects } from './home.js';
  * with a block per project_root. Two verbs and nothing clever: INCLUDE a directory,
  * EXCLUDE one. See docs/project-roots.md.
  *
- * The catalog (tejun_catalogs/PROJECT_ROOTS.md) stays the source of truth and stays
+ * The catalog (ronin_catalogs/PROJECT_ROOTS.md) stays the source of truth and stays
  * hand-editable — this pane is a co-editor, not an owner. It writes only the owner's
  * INTENT (which directories, what they are called); everything volatile beside it —
  * does the directory still exist, is it a project_repo, how many sessions serve it —

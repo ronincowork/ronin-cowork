@@ -33,7 +33,7 @@ def sections(fname):
     TypeScript (docs/shadowing.md), not the same code: stock first, then the user's file
     of the same name; a user section replaces its stock namesake in place, new names
     append after the stock ones, and '- **hidden:** yes' removes one."""
-    stock=parse(f'{root}/tejun_catalogs/{fname}')
+    stock=parse(f'{root}/ronin_catalogs/{fname}')
     user=parse(f'{usercat}/{fname}') if usercat else {}
     hidden=lambda b: re.search(r'^-\s*\*\*hidden:\*\*\s*yes\b', b, re.M|re.I)
     out={}
@@ -54,7 +54,7 @@ if not name:
     sys.exit(0)
 if name in ('tools','actions'):
     fname='TOOLS.md' if name=='tools' else 'ACTIONS.md'
-    sys.stdout.write(open(f'{root}/tejun_catalogs/{fname}').read())
+    sys.stdout.write(open(f'{root}/ronin_catalogs/{fname}').read())
     # The user's own file is shown BELOW the stock one rather than merged into it: this
     # is a document for a person to read, and a merged document would hide which half
     # they wrote. What COMPILES is the merge above; this is the reading copy.
@@ -87,13 +87,13 @@ for row in re.findall(r'^\|\s*\d+\s*\|([^|]+)\|', body, re.M):
 missing=[a for a in steps if a not in actions]
 if missing:
     print(f"CANNOT COMPILE '{name}': undefined action(s): {', '.join(sorted(set(missing)))}\n"
-          f"Define them in tejun_catalogs/ACTIONS.md first (see tejun_catalogs/README.md).", file=sys.stderr)
+          f"Define them in ronin_catalogs/ACTIONS.md first (see ronin_catalogs/README.md).", file=sys.stderr)
     sys.exit(3)
 
 # TOOLS.md is a TABLE, not `## name` blocks, so the same rule keys on the tool name in
 # column 1: a user row replaces the stock row of that name, new rows append after.
 tools_by_name={}
-for scope in (f'{root}/tejun_catalogs/TOOLS.md', f'{usercat}/TOOLS.md' if usercat else None):
+for scope in (f'{root}/ronin_catalogs/TOOLS.md', f'{usercat}/TOOLS.md' if usercat else None):
     if not scope: continue
     try: fh=open(scope)
     except OSError: continue

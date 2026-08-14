@@ -120,7 +120,7 @@ const CODE = [
 const PROSE = [
   ...walk('docs', []),
   ...walk('reading-list', []),
-  ...walk('tejun_catalogs', []),
+  ...walk('ronin_catalogs', []),
   'KOTOBA.md',
   'KOTOBA_GLOSSARY.md',
   'CLAUDE.md',

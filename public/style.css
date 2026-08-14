@@ -1293,7 +1293,7 @@ body {
   font-size: 12px;
 }
 
-/* ---- ▥ HOTWORDS: the words dictation keeps getting wrong (tejun_catalogs/HOTWORDS.md).
+/* ---- ▥ HOTWORDS: the words dictation keeps getting wrong (ronin_catalogs/HOTWORDS.md).
    One column at every width, like the wipeboard and the project list: a home panel is
    sized by its TILE, so a viewport media query would be the wrong instrument. ---- */
 .home-hotwords {
@@ -2503,7 +2503,7 @@ body {
   .ks-extras { flex-direction: column; }
 }
 
-/* A session_job with `agent: none` — a plain terminal (tejun_catalogs/SESSION_JOBS.md).
+/* A session_job with `agent: none` — a plain terminal (ronin_catalogs/SESSION_JOBS.md).
    Everything that only makes sense when an agent is being briefed goes away: the
    mode toggle, the prompt box, the optional wording, and the brain picker. What is
    left is the name, where it opens, and which group it joins. Placed after the

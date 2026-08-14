@@ -40,7 +40,7 @@ def sections(fname):
     """The shadowing rule (docs/shadowing.md), identical in statement to bin/tejun and
     src/catalog.ts: stock, then the user's file of the same name replacing by heading
     name, new names appended, '- **hidden:** yes' removing one."""
-    stock=parse(f'{root}/tejun_catalogs/{fname}')
+    stock=parse(f'{root}/ronin_catalogs/{fname}')
     user=parse(f'{usercat}/{fname}') if usercat else {}
     hidden=lambda b: re.search(r'^-\s*\*\*hidden:\*\*\s*yes\b', b, re.M|re.I)
     out={}
@@ -55,7 +55,7 @@ def sections(fname):
 macros=sections('MACROS.md'); actions=sections('ACTIONS.md')
 # TOOLS.md is a TABLE: the same rule keys on the tool name in column 1.
 tools_by_name={}
-for scope in (f'{root}/tejun_catalogs/TOOLS.md', f'{usercat}/TOOLS.md' if usercat else None):
+for scope in (f'{root}/ronin_catalogs/TOOLS.md', f'{usercat}/TOOLS.md' if usercat else None):
     if not scope: continue
     try: fh=open(scope)
     except OSError: continue

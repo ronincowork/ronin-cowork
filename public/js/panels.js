@@ -246,7 +246,7 @@ export async function toClipboard(text) {
 }
 
 /**
- * Macro panel: what macros exist, live from tejun_catalogs/MACROS.md, each with a copyable
+ * Macro panel: what macros exist, live from ronin_catalogs/MACROS.md, each with a copyable
  * `name: <args>` invocation — the pasteable form sessions execute (see CLAUDE.md).
  * List + copy only; no execution from here (that's the future engine's job). Shown on
  * BOTH desktop and touch (owner override of the touch/desktop split). On touch, "→ ⌨"

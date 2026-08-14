@@ -84,7 +84,7 @@ ok('unknown → custom / other; null → null');
 
 /* ---- 2. KOTOBA is the authority ---- */
 const kotoba = readFileSync(path.join(REPO, 'KOTOBA.md'), 'utf8');
-const jobs = readFileSync(path.join(REPO, 'tejun_catalogs', 'SESSION_JOBS.md'), 'utf8');
+const jobs = readFileSync(path.join(REPO, 'ronin_catalogs', 'SESSION_JOBS.md'), 'utf8');
 const haystack = kotoba + jobs;
 
 // Two categories are deliberately NOT house vocabulary, so KOTOBA does not index them

@@ -437,7 +437,7 @@ export function buildHome(tile) {
       );
       b.addEventListener('click', () => {
         kind = k;
-        // `agent: none` (tejun_catalogs/SESSION_JOBS.md) — a plain terminal. No brain to pick,
+        // `agent: none` (ronin_catalogs/SESSION_JOBS.md) — a plain terminal. No brain to pick,
         // no brief to compose, so the form drops to the two things that still mean
         // something: what it is called and where it opens. Manual is not a "mode" here,
         // it is the only truth available: nothing is sent at all.
@@ -460,7 +460,7 @@ export function buildHome(tile) {
       });
       grid2.appendChild(b);
     }
-    if (!(presetData || []).length) grid2.textContent = 'no kinds in tejun_catalogs/SESSION_JOBS.md';
+    if (!(presetData || []).length) grid2.textContent = 'no kinds in ronin_catalogs/SESSION_JOBS.md';
     grid2.dataset.n = String((presetData || []).length);
     // The end of the list is where you find out the list is yours to extend.
     grid2.appendChild(addYourOwn('SESSION_JOBS.md', 'kind'));

@@ -34,7 +34,7 @@ export function buildComposer(body, hooks) {
   ta.spellcheck = false;
   // 🎤 sits ON the box, not floating over the terminal, and records to the host
   // rather than to Apple — same engine the Mac's ⌥ mic uses, so it knows the words
-  // in tejun_catalogs/HOTWORDS.md. Built only where the browser can actually record; a
+  // in ronin_catalogs/HOTWORDS.md. Built only where the browser can actually record; a
   // dead button is worse than none. (Recording needs a secure context, so over the
   // tailnet that means the https URL, not the bare IP.)
   const mic = CAN_RECORD && IS_TOUCH ? document.createElement('button') : null;

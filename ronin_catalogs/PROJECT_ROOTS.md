@@ -13,7 +13,7 @@ here would put your directories in a file the next upgrade overwrites.
 
 A **`project_root`** is *where* the work happens — one of the two universal axes
 (`project_root` · `session_job`) used everywhere: spawn forms, memory frontmatter,
-macros. See `tejun_catalogs/SESSION_JOBS.md` for what a session is for and therefore who
+macros. See `ronin_catalogs/SESSION_JOBS.md` for what a session is for and therefore who
 it is. One lookup fixes: where to work (`dir`), what a cold agent reads first (`read`),
 which memories it recalls (`memory`), and the default brain (`provider` + `model`) —
 resolved through the table below.

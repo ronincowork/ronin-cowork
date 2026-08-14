@@ -22,7 +22,7 @@ export interface MacroInfo {
 
 /**
  * Parse MACROS.md at request time (no cache — the doc IS the registry), resolved
- * through both scopes by readCatalogSections: the shipped tejun_catalogs/ copy, then
+ * through both scopes by readCatalogSections: the shipped ronin_catalogs/ copy, then
  * the user's own file of the same name in the catalogs store, entry-merged by name
  * (docs/shadowing.md). Each `## name` heading is a macro; its first paragraph is the
  * description; an optional `Params:` paragraph lists its parameters as `name` (hint), … .
