@@ -19,7 +19,7 @@
  *   - host paths (`~/...`, `/tmp/...`), URLs, npm scopes and tmux options (`@...`),
  *     css selectors and dotfiles (`#fab`, `.ttext`, `.env`) — check-dead's territory
  *   - extensionless slashed spans whose first segment is not a real top-level dir
- *     (`cowork/services` is prose, `bin/tejun` is a claim)
+ *     (`cowork/services` is prose, `ronin_bin/tejun` is a claim)
  * Residual LEGAL mentions of absent things ("deleted, verified absent") go in IGNORE
  * below with the reason beside them — no new markup in the documents themselves.
  */
@@ -65,7 +65,7 @@ const basenames = new Set(files.map((f) => path.basename(f)));
 const topDirs = new Set([...dirs].filter((d) => !d.includes('/')));
 
 // Where a `symbol()` claim must be defined or used.
-const CODE_DIRS = ['src', 'public/js', 'public', 'scripts', 'bin', 'deploy'];
+const CODE_DIRS = ['src', 'public/js', 'public', 'scripts', 'bin', 'ronin_bin', 'deploy'];
 const CODE_EXTRA = ['setup.sh', 'package.json'];
 const codeHaystack = files
   .filter((f) => CODE_DIRS.some((d) => f.startsWith(d + '/')) || CODE_EXTRA.includes(f))
@@ -92,6 +92,8 @@ const SOURCES = [
   'CLAUDE.local.md',
   'README.md',
   'ronin_library/README.md',
+  'ronin_sops/README.md',
+  'ronin_bin/README.md',
   'public/js/README.md',
   ...files.filter((f) => f.startsWith('ronin_catalogs/') && md(f)),
   'co-working/user_repo/BROKEN.md',

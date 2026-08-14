@@ -37,7 +37,7 @@ def parse(path):
     return out
 
 def sections(fname):
-    """The shadowing rule (docs/shadowing.md), identical in statement to bin/tejun and
+    """The shadowing rule (docs/shadowing.md), identical in statement to ronin_bin/tejun and
     src/catalog.ts: stock, then the user's file of the same name replacing by heading
     name, new names appended, '- **hidden:** yes' removing one."""
     stock=parse(f'{root}/ronin_catalogs/{fname}')
@@ -80,7 +80,7 @@ def show(name,i,total,action,note):
     if note: print(f"  ({note})")
     if action in actions:
         body=actions[action][1]
-        kind='⚙ MECHANICAL' if 'kind: mechanical' in body else ('🧠 JUDGEMENT' if 'kind: judgement' in body else '')
+        kind='⚙ MECHANICAL' if 'action_kind: mechanical' in body else ('🧠 JUDGEMENT' if 'action_kind: judgement' in body else '')
         if kind: print(f"  [{kind}]")
         print(actions[action][0]); print(body.rstrip())
     for t in tools.get(action,[]): print(f"  ↳ TOOL: {t}")

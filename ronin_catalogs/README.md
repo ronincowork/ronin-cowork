@@ -15,8 +15,8 @@ extending the two catalogs that live here.
 ## Adding an ACTION (do this first — actions are the vocabulary)
 
 1. Check ACTIONS.md — does an existing action (or composition) already cover it?
-2. Tag it `kind: mechanical` (run it, no deliberation — usually has a tool) or
-   `kind: judgement` (needs reasoning; no tool can do it). The step tracker shows the tag
+2. Tag it `action_kind: mechanical` (run it, no deliberation — usually has a tool) or
+   `action_kind: judgement` (needs reasoning; no tool can do it). The step tracker shows the tag
    so an agent knows whether to think or just pull the lever.
 3. Add a section to ACTIONS.md: name, one-line purpose, exact steps/commands, the
    failure modes you learned (this is where hard-won rules live — ghost-text, dial

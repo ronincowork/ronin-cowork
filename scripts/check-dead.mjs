@@ -52,7 +52,7 @@ const problems = [];
 
 /* ---------------- ignore lists — every entry must carry its argument ---------------- */
 
-// src/ files executed directly (npm start, bin/koshi, bin/bench, bin/tejun-rireki run
+// src/ files executed directly (npm start, bin/koshi, bin/bench, ronin_bin/tejun-rireki run
 // them via tsx). Their exports are entry points, not API — nobody imports an entry.
 const SRC_ENTRY_FILES = new Set(['index.ts', 'koshi.ts', 'bench.ts', 'scroll-cli.ts']);
 

@@ -393,7 +393,7 @@ export async function setLeads(name: string, groups: string[]): Promise<string[]
  *
  * Deliberately its own option rather than a reserved `@ronin-tags` value: a session
  * serves one project_root and belongs to any number of groups, so the cardinality
- * differs. `bin/tejun-recall` and `bin/tejun-remember` already read this exact string
+ * differs. `ronin_bin/tejun-recall` and `ronin_bin/tejun-remember` already read this exact string
  * to scope a memory; until 2026-08-09 nothing wrote it, so every session on the box
  * answered "which project_root?" with silence and recall could not self-scope.
  *

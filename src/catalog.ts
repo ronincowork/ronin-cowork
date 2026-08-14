@@ -30,12 +30,12 @@ export const STOCK_DIR = path.join(__dirname, '..', 'ronin_catalogs');
  *
  * The docs ARE the catalogs — parsed at request time, no cache, no generated file, same
  * contract as listMacros/listProjects, so a shadow takes effect on the next request. The
- * two Python readers (bin/tejun, bin/tejun-step) implement the same rule, not the same
+ * two Python readers (ronin_bin/tejun, ronin_bin/tejun-step) implement the same rule, not the same
  * code; docs/shadowing.md is the single statement both sides implement.
  *
  * An entry is a `## name` heading followed by `- **key:** value` lines. Headings
  * containing a space are prose (the launch table, the format notes) and are never
- * entries — but their first word is still the merge key for readers like bin/tejun that
+ * entries — but their first word is still the merge key for readers like ronin_bin/tejun that
  * key sections that way. Everything after a `---` footer line is notes, not catalog.
  */
 export type Origin = 'stock' | 'user';

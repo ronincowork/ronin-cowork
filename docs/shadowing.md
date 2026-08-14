@@ -2,7 +2,7 @@
 
 > **The law is `DAIKUSAN.md`**: *edit nothing shipped — put a file with the same name in
 > your catalog directory and it wins.* This is that law, built. One statement, three
-> implementations (`src/catalog.ts`, `bin/tejun`, `bin/tejun-step`), and this page is the
+> implementations (`src/catalog.ts`, `ronin_bin/tejun`, `ronin_bin/tejun-step`), and this page is the
 > statement all three obey.
 
 ## The rule
@@ -93,7 +93,7 @@ running operator only when the owner restarts (`docs/repo-to-operator.md`). Chan
 
 ## Three implementations, one statement
 
-`src/catalog.ts` holds the rule for the server; `bin/tejun` and `bin/tejun-step` are
+`src/catalog.ts` holds the rule for the server; `ronin_bin/tejun` and `ronin_bin/tejun-step` are
 Python and cannot import it, so they implement the same statement — this page — rather
 than sharing the code. If the two ever disagree, this page is what they are both wrong
 about, and it is the thing to fix first.

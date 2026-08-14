@@ -13,7 +13,7 @@
 > (what for, and therefore who — this file).
 >
 > **Why not in `MACROS.md`:** entries there are agent-executed recipes with an action
-> table, compiled by `bin/tejun`. A kind is *mechanical* — Ronin's own code performs
+> table, compiled by `ronin_bin/tejun`. A kind is *mechanical* — Ronin's own code performs
 > it, there is no action list to follow — so it would break the compiler's contract.
 
 **Two launch modes.** In **manual** mode none of this file's wording is used at all:

@@ -215,19 +215,21 @@ is a gap in the machinery, not a reason to reach for the word. See § NUANCE.
 | **action** | system_scope | a procedure an AGENT follows; macros may cite only cataloged actions (TEJUN's law) | `ronin_catalogs/ACTIONS.md` |
 | **tool** | system_scope | a script that implements a cataloged action (`tejun-send`, `tejun-peek`, `tejun-group`, `tejun-wipeboard`, `tejun-harakiri`, …). **Every tool is a script; the action is what makes it a tool** | `ronin_catalogs/TOOLS.md` |
 | **script** | system_scope | **the genus: any executable in the repo, wherever it lives** — `bin/`, `scripts/`, `hostside/`, `setup.sh` at the root. Most scripts are not tools, and that is normal, not a defect | § SCRIPTS |
-| **compile** | system_scope | `bin/tejun <macro>` → recipe + actions + tools as one blob; undefined action = exit 3 | `reading-list/TEJUN.md` |
-| **step tracker** | system_scope | `bin/tejun-step` — position in a macro run, held in `@tejun-step` | `docs/tejun-macro-system.md` |
+| **compile** | system_scope | `ronin_bin/tejun <macro>` → recipe + actions + tools as one blob; undefined action = exit 3 | `reading-list/TEJUN.md` |
+| **step tracker** | system_scope | `ronin_bin/tejun-step` — position in a macro run, held in `@tejun-step` | `docs/tejun-macro-system.md` |
 | **session_macro.lookup** | system_scope | a read-only question Ronin already holds the answer to: `+tag:`/`+group:`, `+wipeboard:`. One command, no compile, no step tracking; sent through Ronin it arrives already resolved. Alias: **lookup macro**, prose only | `ronin_catalogs/MACROS.md` |
-| **session_macro.workflow** | system_scope | a recipe of cataloged actions the agent performs: compile (`bin/tejun`) or step through (`bin/tejun-step`), execute in order, report the outcome | `ronin_catalogs/MACROS.md` |
+| **session_macro.workflow** | system_scope | a recipe of cataloged actions the agent performs: compile (`ronin_bin/tejun`) or step through (`ronin_bin/tejun-step`), execute in order, report the outcome | `ronin_catalogs/MACROS.md` |
 | **invocation** | system_scope | `+<name>: <args>` — the `+` marks a macro line; bare `<name>:` also works; never *required* to recognize one | `reading-list/TEJUN.md` |
 | **harakiri** | system_scope | a session ends itself; refuses to end another | `ronin_catalogs/ACTIONS.md` |
 | **forkit** | system_scope | spin the current topic into its own session; the work leaves with it | `ronin_catalogs/MACROS.md` |
 
 ### § SCRIPTS — the genus, and why most of them are not tools
 
-**`script` is the wide word and `tool` is one species of it.** Twenty-one scripts sit in
-`bin/`, seven in `scripts/`, one in `hostside/`, one at the root. **Four of them are tools.**
-That ratio is not sprawl by itself — it is what the vocabulary failed to describe.
+**`script` is the wide word and `tool` is one species of it.** The agent-typed tools
+(`tejun*`) live in `ronin_bin/` as of 2026-08-14; `bin/`, `scripts/`, `hostside/` and the
+root hold the house's — owner scripts, operator scripts, byoin_checks. Most scripts are
+not tools, and that ratio is not sprawl by itself — it is what the vocabulary failed to
+describe.
 
 **The axis is who runs it** — the same axis that splits `session_macro` from
 `workspace_macro`, and it answers this question just as cleanly:
@@ -679,6 +681,8 @@ somewhere else. Ronin has no address of its own; it asks. Record: `docs/stores.m
 | **ronin_data_root** | system_scope | the hidden root: working state that is ours, regenerable, losable. **Uninstall deletes it**, and nothing of theirs goes too. `RONIN_DATA_ROOT` moves it; `bin/ronin-store --root data` prints it | `docs/stores.md` |
 | **ronin_store** | system_scope | one declared location under one of the two roots — a row in the store table, resolved at runtime. **Never a path spelled by hand.** `bin/ronin-store <id>` prints one, `--all` prints the table | `docs/stores.md` |
 | **ronin_library** | system_scope | the shipped reference shelf — the longer reading the catalogs point an agent at. Ships in cowork, starts near-empty and grows one screened piece at a time; the owner's own library (the `library` store, user scope) shadows it file-for-file, so the shipped way of working is a default, never a prescription | `ronin_library/README.md` |
+| **ronin_sops** | system_scope | the shipped standard operating procedures — how a house plans, builds out, deploys; the process choices the macros defer to, one SOP per file. Starts near-empty like the library; the owner's own `sops` store shadows it file-for-file — a `user_customization` you author, like a macro | `ronin_sops/README.md` |
+| **ronin_bin** | system_scope | the agent-facing executables — the tools the catalogs name, typed bare (`tejun`, `tejun-send`, …). On PATH via setup.sh, behind `bin/shim` and ahead of `bin/`; the house's own scripts stay in `bin/` and `scripts/`. The fourth shelf: ronin_catalogs · ronin_library · ronin_sops · ronin_bin | `ronin_bin/README.md` |
 | **the session directory** | session_scope | the `session` store, `<store>/<key>/` — one session's own record: TEGAMI, RIREKI's tape, the scroll. R5 closed: the store resolves it, and there is no second answer | `src/stores.ts` |
 | **the working directory** | user_scope | where in-flight planning lives — build-outs, handoffs, the near-term list. Ours is `co-working/user_repo/wip/`. ⚠R11 | `co-working/user_repo/wip/HOW_TO.md` |
 | **build-out doc** | user_scope | the plan; **shrinks toward empty** — a leg completes by being DELETED | `co-working/user_repo/wip/HOW_TO.md` |
@@ -760,8 +764,8 @@ result** · **fast or mechanical — never slow and clever**
 **R1 · CLOSED — there is no "macro launcher".** It was one name reaching for three
 things. They are now named separately: **`session_launch`** (the ＋ New tab, where a
 session is born), **`session_macro`** (an invocation the agent executes) and
-**`workspace_macro`** (one Ronin executes above any session). `bin/tejun` and
-`bin/tejun-step` are tools serving the second, not a surface.
+**`workspace_macro`** (one Ronin executes above any session). `ronin_bin/tejun` and
+`ronin_bin/tejun-step` are tools serving the second, not a surface.
 
 **R2 · DISSOLVED.** A michi is the session's plan, not a named shape a kind maps to, so
 the `lifecycle:` key has nothing to point at.
@@ -914,14 +918,11 @@ house reads them today. **The word is settled; the thing is not** — which is e
 may be a feature rather than a collision; noting it because *project*, *user* and *board*
 all looked harmless at this stage too.
 
-**R26 · `kind:` is a live catalog key, and *kind* was retired as a term.** Every action in
-`ACTIONS.md` carries one — 17 `kind: mechanical`, 8 `kind: judgement` — while § RULED
-(2026-08-10) retired *kind* on the spelling law, being a single common word. So the house
-has *kind* meaning nothing and `kind:` meaning something precise, in files agents read
-daily. **The distinction it draws is worth keeping and has no other name:** `mechanical` =
-run it, don't deliberate; `judgement` = your reasoning is the work. Recommend renaming the
-key to **`action_kind:`** — compound, greppable, and the values stay as they are. A catalog
-sweep, so not done unilaterally.
+**R26 · CLOSED — the key is `action_kind:`.** Owner, 2026-08-14: *"do the action_kind
+rename. elevate the mechanical/judgement as we can."* Every `ACTIONS.md` entry carries
+`action_kind: mechanical` (run it, don't deliberate) or `action_kind: judgement` (your
+reasoning is the work); `ronin_bin/tejun-step` shows the tag, and MACROS.md's header now
+tells the agent to read it as the pace to take a step at. Bare *kind* stays retired.
 
 **R27 · TOOLS.md's law overreaches, and it is the reason "scripts" felt unsettled.**
 *"A tool must implement a documented action — no orphan scripts"* reads as though every

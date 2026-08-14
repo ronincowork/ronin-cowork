@@ -20,14 +20,17 @@ the <name> macro", "/<name>". **Never require a marker** to recognise a macro.
   One command (`tejun-group`, `tejun-wipeboard`), no compile, no step tracking; sent
   through Ronin it arrives already resolved, so never re-run one to confirm.
 - **`session_macro.workflow`** — a recipe of cataloged actions you perform: compile it
-  (`bin/tejun <name>`) or step through it (`tejun-step start <name>`), execute in
+  (`ronin_bin/tejun <name>`) or step through it (`tejun-step start <name>`), execute in
   order, report the outcome.
 
-**To run a macro: `tejun-step start <name>`** (bin/ is on PATH) — it hands you one step
-at a time; do it, then `tejun-step done` to check it in and receive the next. Keep
-going until it says COMPLETE. (`bin/tejun <name>` compiles the whole recipe in one
-blob instead, when you want to read it all at once.) Never mark a run complete with
-steps unchecked — especially the last one.
+**To run a macro: `tejun <name>`** (ronin_bin/ is on PATH) — the whole recipe, every
+action it names and the tools that implement them, compiled as one blob. Read it, run
+it, report the outcome. The recipe is the channel; how you move through it is yours.
+Each action carries an `action_kind:` — **mechanical** (run it, don't deliberate) or
+**judgement** (your reasoning is the work) — read it as the pace to take that step at.
+(`tejun-step start <name>` instead hands you one step at a time with a check-in after
+each — for a long or risky run, or when the owner asks to watch progress.)
+**Never report a run complete with steps undone — especially the last one.**
 
 **RUN IT — DON'T NARRATE IT.** A macro invocation is a button press, not a
 conversation. Do not announce what a macro is, that you are about to read TEJUN docs,

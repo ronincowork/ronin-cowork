@@ -28,7 +28,7 @@
  *
  * The bus is a tmux server option because it is the one place a Node server and a
  * zero-dependency bash shim can both read without two JSON parsers. `@ronin-url` already
- * works exactly this way (`publishRoninUrl`, and `bin/tejun-harakiri` reading it back).
+ * works exactly this way (`publishRoninUrl`, and `ronin_bin/tejun-harakiri` reading it back).
  */
 import path from 'node:path';
 import os from 'node:os';
@@ -153,7 +153,7 @@ export async function publishMax(max?: number): Promise<void> {
 /**
  * THE OWNER'S NAME — JUSHO's third clause, the one about people.
  *
- * `user: glen` was a literal in `src/wipeboards.ts` and `bin/tejun-wipeboard`, so every
+ * `user: glen` was a literal in `src/wipeboards.ts` and `ronin_bin/tejun-wipeboard`, so every
  * post any owner wrote on any install was signed with OUR owner's first name. Nothing
  * shipped may name a person; this is where the name comes from instead.
  *

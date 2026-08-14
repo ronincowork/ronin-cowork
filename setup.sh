@@ -155,17 +155,19 @@ fi
 
 OS="$(uname -s)"   # also used by the autostart section below
 
-# --- PATH: bin/shim (the guards) and bin (Ronin's tools) ---
-# TWO directories, and the order between them is deliberate.
+# --- PATH: bin/shim (the guards), ronin_bin (the agent tools), bin (house scripts) ---
+# THREE directories, and the order between them is deliberate.
 #   <repo>/bin/shim  bin/shim/tmux enforces the @ronin-control dial before any tmux write
 #                    lands and refuses kill-server while sessions are alive; bin/shim/systemctl
 #                    refuses a destructive verb aimed at tmux-server.service, the unit that owns
 #                    every tmux session on the box. BOTH ARE INERT unless this directory precedes
 #                    /usr/bin, and until 2026-08-12 nothing in this installer put it there — so on
 #                    the box Ronin was built on, neither guard had ever run.
-#   <repo>/bin       write_tegami, read_tegami, tejun*, koshi — the tools reading-list/TEGAMI.md
-#                    and TEJUN.md tell agents to type by bare name ("No arguments, no paths…").
-#                    Off PATH they only work from the repo root, which no agent can rely on.
+#   <repo>/ronin_bin the agent-facing tools (tejun*) — what the catalogs tell agents to
+#                    type by bare name. Off PATH they only work from the repo root, which
+#                    no agent can rely on.
+#   <repo>/bin       the house's own scripts (ronin-*) plus write_tegami, read_tegami,
+#                    koshi — same bare-name reasoning, different audience.
 # The shim dir stays FIRST — ahead of bin/ as well as /usr/bin. bin/ holds no tmux and no
 # systemctl today, and the guard's position must not depend on that staying true.
 # A guard whose absence is invisible must not depend on someone remembering. Appends ONE
@@ -181,16 +183,21 @@ if [ -d "$REPO_DIR/.githooks" ]; then
 fi
 
 BIN_DIR="$REPO_DIR/bin"
+RBIN_DIR="$REPO_DIR/ronin_bin"
 # %q so a repo path with a space or a metacharacter still yields a line bash/zsh read back as
 # one word; for an ordinary path it prints the path unchanged. It is also a valid literal
 # pattern for the ${PATH#…} form below.
 SHIM_Q="$(printf '%q' "$SHIM_DIR")"
 BIN_Q="$(printf '%q' "$BIN_DIR")"
-PATH_LINE_BOTH="export PATH=$SHIM_Q:$BIN_Q:\"\$PATH\""
-# Only bin/ is missing: an earlier line (often a hand-added one) already prepends the shim, so
-# a plain prepend here would land bin/ IN FRONT of it. Re-stating the shim and stripping the
-# copy that line just put at the head keeps the order shim → bin → rest with ONE shim entry.
-PATH_LINE_BIN="export PATH=$SHIM_Q:$BIN_Q:\"\${PATH#$SHIM_Q:}\""
+RBIN_Q="$(printf '%q' "$RBIN_DIR")"
+# The tool directories travel as ONE unit in every line: shim first, then ronin_bin, then bin.
+TOOLS_Q="$RBIN_Q:$BIN_Q"
+PATH_LINE_BOTH="export PATH=$SHIM_Q:$TOOLS_Q:\"\$PATH\""
+# Only the tools are missing: an earlier line (often a hand-added one) already prepends the
+# shim, so a plain prepend here would land the tools IN FRONT of it. Re-stating the shim and
+# stripping the copy that line just put at the head keeps the order shim → tools → rest with
+# ONE shim entry.
+PATH_LINE_BIN="export PATH=$SHIM_Q:$TOOLS_Q:\"\${PATH#$SHIM_Q:}\""
 # Only the shim is missing: prepending puts it ahead of everything, bin/ included.
 PATH_LINE_SHIM="export PATH=$SHIM_Q:\"\$PATH\""
 SHIM_BEGIN="# >>> tmux-ronin PATH (added by setup.sh) >>>"
@@ -198,6 +205,7 @@ SHIM_END="# <<< tmux-ronin PATH <<<"
 real_of() { (cd "$1" 2>/dev/null && pwd -P) || printf '%s' "$1"; }
 SHIM_REAL="$(real_of "$SHIM_DIR")"
 BIN_REAL="$(real_of "$BIN_DIR")"
+RBIN_REAL="$(real_of "$RBIN_DIR")"
 echo "==> PATH: guard shims + Ronin's tools"
 
 # Does <file> already put <dir> on PATH? Purely textual — an rc file is code and this must
@@ -291,30 +299,36 @@ if [ ! -d "$SHIM_DIR" ]; then
 elif [ -z "$RC" ]; then
   manual_shim "SKIPPED: $RC_WHY."
 else
-  # Each directory is looked for on its own, so a box that already has one gets only the other.
-  SHIM_AT=""; SHIM_HIT=""; BIN_AT=""; BIN_HIT=""
+  # Each directory is looked for on its own, so a box that already has some gets only the rest.
+  # The two tool dirs count as ONE unit: a box carrying bin/ but not ronin_bin/ (a block from
+  # before the split of the two) is treated as tools-missing and gets the full tools line —
+  # the old block's bin/ entry stays behind it, a harmless duplicate PATH entry.
+  SHIM_AT=""; SHIM_HIT=""; BIN_AT=""; BIN_HIT=""; RBIN_AT=""
   for f in "$RC" ${RC_PEERS[@]+"${RC_PEERS[@]}"}; do
     if [ -z "$SHIM_AT" ] && rc_has_dir "$f" "$SHIM_DIR" "$SHIM_REAL"; then SHIM_AT="$f"; SHIM_HIT="$RC_HIT"; fi
     if [ -z "$BIN_AT" ]  && rc_has_dir "$f" "$BIN_DIR"  "$BIN_REAL";  then BIN_AT="$f";  BIN_HIT="$RC_HIT";  fi
+    if [ -z "$RBIN_AT" ] && rc_has_dir "$f" "$RBIN_DIR" "$RBIN_REAL"; then RBIN_AT="$f"; fi
   done
+  TOOLS_AT=""
+  [ -n "$BIN_AT" ] && [ -n "$RBIN_AT" ] && TOOLS_AT="$BIN_AT"
 
   PATH_LINE=""; PATH_ADDS=""; BLOCK_NOTE=""
-  if [ -n "$SHIM_AT" ] && [ -n "$BIN_AT" ]; then
+  if [ -n "$SHIM_AT" ] && [ -n "$TOOLS_AT" ]; then
     echo "    already on PATH:"
     echo "      $SHIM_DIR  <-  $SHIM_AT"
-    echo "      $BIN_DIR  <-  $BIN_AT"
+    echo "      $RBIN_DIR + $BIN_DIR  <-  $TOOLS_AT"
   elif [ -n "$SHIM_AT" ]; then
-    PATH_LINE="$PATH_LINE_BIN"; PATH_ADDS="$BIN_DIR"
-    BLOCK_NOTE="# bin/shim is already prepended earlier in this file (or in a sibling rc); the"$'\n'"# \${PATH#…} strip keeps ONE shim entry and puts bin/ directly behind it."
+    PATH_LINE="$PATH_LINE_BIN"; PATH_ADDS="$RBIN_DIR and $BIN_DIR"
+    BLOCK_NOTE="# bin/shim is already prepended earlier in this file (or in a sibling rc); the"$'\n'"# \${PATH#…} strip keeps ONE shim entry and puts the tool dirs directly behind it."
     echo "    bin/shim already on PATH via $SHIM_AT:"
     echo "      $SHIM_HIT"
-    echo "    adding $BIN_DIR (write_tegami, read_tegami, tejun*, koshi) behind it."
-  elif [ -n "$BIN_AT" ]; then
+    echo "    adding $RBIN_DIR (tejun*) and $BIN_DIR (write_tegami, read_tegami, koshi) behind it."
+  elif [ -n "$TOOLS_AT" ]; then
     PATH_LINE="$PATH_LINE_SHIM"; PATH_ADDS="$SHIM_DIR"
-    BLOCK_NOTE="# $BIN_DIR is already on PATH via $BIN_AT; prepending the shim puts it ahead of that too."
-    echo "    $BIN_DIR already on PATH via $BIN_AT; adding the shim ahead of it."
+    BLOCK_NOTE="# the tool dirs are already on PATH via $TOOLS_AT; prepending the shim puts it ahead of them too."
+    echo "    the tool dirs already on PATH via $TOOLS_AT; adding the shim ahead of them."
   else
-    PATH_LINE="$PATH_LINE_BOTH"; PATH_ADDS="$SHIM_DIR and $BIN_DIR"
+    PATH_LINE="$PATH_LINE_BOTH"; PATH_ADDS="$SHIM_DIR, $RBIN_DIR and $BIN_DIR"
   fi
   # An entry that lands after $PATH is on PATH and still inert — the guards only bite ahead
   # of /usr/bin. Checked for the shim, where position is the whole point.
@@ -336,8 +350,8 @@ else
       printf '%s\n' "# while sessions are live; bin/shim/systemctl refuses stopping tmux-server.service,"
       printf '%s\n' "# the unit that owns every tmux session on this box. Both are INERT unless that"
       printf '%s\n' "# directory comes before /usr/bin, which is why it is PREPENDED and stays FIRST."
-      printf '%s\n' "# The second directory holds Ronin's own tools — write_tegami, read_tegami, tejun*,"
-      printf '%s\n' "# koshi — which reading-list/TEGAMI.md and TEJUN.md tell agents to type by bare name."
+      printf '%s\n' "# ronin_bin holds the agent-facing tools (tejun*) and bin the house's own scripts"
+      printf '%s\n' "# (write_tegami, read_tegami, koshi) — all typed by bare name, so both stay on PATH."
       printf '%s\n' "# Speed bump, not physics: the real binaries are still there, but reaching them"
       printf '%s\n' "# becomes a deliberate, visible act. Why: $REPO_DIR/docs/session-control-dials.md"
       printf '%s\n' "# and $REPO_DIR/docs/tmux-server-cgroup.md.  Safe to delete this block."

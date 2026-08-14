@@ -115,6 +115,14 @@ export const STORES: readonly Store[] = [
     when: 'first session launched',
   },
   {
+    id: 'sops',
+    root: 'user',
+    rel: 'sops',
+    what: "the user's own standard operating procedures — files here shadow ronin_sops/ file-for-file",
+    createdBy: 'the owner defining a procedure',
+    when: 'first SOP written',
+  },
+  {
     id: 'library',
     root: 'user',
     rel: 'library',

@@ -82,7 +82,7 @@ export function buildNotePanel() {
 // sessions, so an agent can be pointed at the set instead of members named one by one,
 // and picks up a member born after it was briefed. Stored on the tmux session itself
 // (@ronin-tags), like the note and the dial — no registry, dies with the session.
-// Agents read the same truth with `bin/tejun-group`; this panel is how the OWNER
+// Agents read the same truth with `ronin_bin/tejun-group`; this panel is how the OWNER
 // maintains it. Tagging stays the owner's job — agents address groups, they don't edit them.
 export function buildTagPanel() {
   const sheet = document.createElement('div');

@@ -14,7 +14,7 @@ import { storeDir } from './stores.js';
  *
  * Vendor neutrality holds by construction: "agents can read and write it" is ordinary
  * file I/O every CLI already has. Ronin announces a path and renders a file; it never
- * reaches into an agent. `bin/tejun-wipeboard` is the same surface from a shell, and
+ * reaches into an agent. `ronin_bin/tejun-wipeboard` is the same surface from a shell, and
  * the two are interchangeable by design — neither is the "real" one.
  */
 
@@ -30,7 +30,7 @@ export const WIPEBOARD_DIR = storeDir('wipeboards');
  * exists". The profile exists now (`src/user-config.ts`), so this is that one line
  * changing: the name comes from the owner's config, defaulting to this machine's own
  * user, and no install signs its posts with somebody else's name. JUSHO — nothing shipped
- * names a person. `bin/tejun-wipeboard` reads the same value off the tmux bus.
+ * names a person. `ronin_bin/tejun-wipeboard` reads the same value off the tmux bus.
  */
 export const ownerAuthor = async (): Promise<string> => `user: ${await readOwner()}`;
 

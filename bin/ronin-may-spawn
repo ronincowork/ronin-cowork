@@ -14,7 +14,7 @@
 # published by Ronin at boot and on every save. That is deliberate: this script stays
 # zero-dependency (no node, no jq), and a second JSON parser written in sed is exactly the
 # two-sources-of-truth defect that src/stores.ts exists to end. `@ronin-url` already works
-# this way — see bin/tejun-harakiri.
+# this way — see ronin_bin/tejun-harakiri.
 #
 # A MISSING OPTION MEANS NO LIMIT, never zero. Ronin may not have started yet, or the tmux
 # server may have been restarted without it. Failing open is right here: the cost of a
