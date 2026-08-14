@@ -1,7 +1,7 @@
 # KOTOBA (言葉) — every noun in the house, in one place
 
 > **This is the public copy** — the house KOTOBA minus every `dev_scope` row,
-> per its own Scope rule. Regenerated from the private ronin-house repo; edit it
+> per its own Scope rule. Regenerated from the private ronin-lab repo; edit it
 > there, never here.
 
 
