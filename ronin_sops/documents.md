@@ -21,9 +21,11 @@ three directories of the project_repo:**
   and dies there. If an entry needs a second line, it wants to be a commit message
   or a doc.
 
+Example entries — one past, one standing intention:
+
 ```
-2026-08-14 · render check FAIL→PASS; catalogs ship · a35c0e1..81cb3b5
-2026-08-14 · next: wire the SOPs into the stock actions
+2026-05-01 · login flow shipped; sessions carry tokens · 41c9f2b
+2026-05-02 · next: rate limiting on the login route
 ```
 
 **Landing work ends with three questions:** which wip documents does this delete?

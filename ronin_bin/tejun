@@ -132,17 +132,9 @@ for s in sops:
             origin='yours (sops store)' if base==usersops else 'stock'
             print(f"\n=== SOP: {s} — {origin} ===\n{open(p).read().rstrip()}")
             break
-# Compiling a macro ARMS THE RATCHET on this session: drafting the run and preparing
-# to walk it are one motion, so nobody ends up running a macro untracked.
-sess=subprocess.run(['tmux','display-message','-p','#S'],capture_output=True,text=True).stdout.strip()
-if sess and not sess.startswith('grid_'):
-    subprocess.run(['tmux','set-option','-t',sess,'@tejun-step',f'{name}:1'],capture_output=True)
-    first=steps[0] if steps else None
-    print(f"\n=== RATCHET ARMED on '{sess}' — {len(steps)} steps ===")
-    print(f"Step 1/{len(steps)} is: {first}")
-    print("Do it, then `tejun-step done` to check it in and get the next. Not COMPLETE")
-    print("until every step is checked in — including the last one.")
-else:
-    print("\n(not in a session — step tracking not started; run `tejun-step start` where you work)")
-print("\n=== RUN IT, DON'T NARRATE IT. Report the outcome, not the recipe. ===")
+# The compile does NOT arm the step tracker — the whole blob is the way to run a macro
+# (owner's ruling 2026-08-14: the drip is not the default). `tejun-step start <name>` is
+# the explicit opt-in, for a long or risky run or when the owner asks to watch progress.
+print(f"\n=== RUN IT, DON'T NARRATE IT. Report the outcome, not the recipe. ===")
+print(f"Never report the run complete with steps undone — especially the last one.")
 PY

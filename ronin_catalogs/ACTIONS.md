@@ -122,9 +122,9 @@ and NEVER treat it as a user message (a ghost once fabricated a merge approval).
 - **sop:** documents
 Distill the current conversation's task context into a spec file a fresh agent can
 execute from.
-- Location: `wip/handoffs/<TOPIC>.md` in the project_repo — per the documents SOP
-  (`ronin_sops/documents.md`, or the owner's own copy in the sops store). A handoff is
-  wip: it expires, and it is deleted when its work lands.
+- Location: per the documents SOP — inlined when this compiles; reading this directly,
+  it is `ronin_sops/documents.md`, or the owner's own copy in the sops store. A handoff
+  is wip: it expires, and it is deleted when its work lands.
 - Header must include a death condition: `> expires: when <event>`.
 - Content: the goal in the owner's words, constraints/conventions to follow
   (point at CLAUDE.md files), verification steps the new agent can run, definition
@@ -219,9 +219,9 @@ Not user-invocable — it is HOW any action-following agent sends, whatever the 
 Draft the plan for a piece of work so the owner can read, edit and riff on it BEFORE
 any code is cut. **Agree the goal in plain language with the owner first**; only then
 write the plan.
-- Location: `wip/buildouts/<TOPIC>.md` in the project_repo — per the documents SOP.
-  **Transient by design**: it holds only what is still TO DO. No changelog, no "done"
-  section, no history (git holds history), and it is DELETED when the work lands.
+- Location: per the documents SOP — inlined when this compiles. **Transient by
+  design**: it holds only what is still TO DO. No changelog, no "done" section, no
+  history (git holds history), and it is DELETED when the work lands.
 - Content: goal in the owner's words, the legs (ordered chunks that can each be
   finished and reviewed), constraints/conventions, how to verify, definition of done.
 - **Then `list-doc` it**, before you hand it over — the owner is about to read it, and the
@@ -258,12 +258,12 @@ Report the PR URL.
 Close out finished work so nothing transient survives.
 1. Write/refresh a **persistent README** where the code lives (not in wip/) —
    what it is, how to run it, the decisions worth keeping.
-2. **Delete** the `wip/buildouts/<TOPIC>.md` doc — it has served its purpose.
+2. **Delete** the build-out doc — it has served its purpose (the documents SOP's first landing question).
 
 ## land-manifest — ONE LINE. READ THIS TWICE.
 `action_kind: judgement` — this one needs your reasoning; no tool can do it for you.
 - **sop:** documents
-Append a single pointer line to `manifest/MANIFEST.md` in the project_repo — per the
+Append a single pointer line to the project_repo's manifest — location per the
 documents SOP. **The manifest is an index, not a history.** Git commits and READMEs
 hold the story; this is the signpost that tells someone where to look.
 
@@ -315,9 +315,9 @@ your pane also counts as unsaved.
 ## read-work-record
 `action_kind: judgement` — this one needs your reasoning; no tool can do it for you.
 Read the durable record of a piece of work — reads only, no writes anywhere.
-Sources, in order: the buildout/handoff doc it names (`wip/buildouts/`,
-`wip/handoffs/`), the README where the code lives, `git log`/`git diff` for its
-commits, and `manifest/MANIFEST.md`. Use for evaluation and catch-up; never infer from a pane
+Sources, in order: the buildout/handoff doc it names (in the wip house dir, per the
+documents SOP), the README where the code lives, `git log`/`git diff` for its
+commits, and the manifest. Use for evaluation and catch-up; never infer from a pane
 what a document can tell you.
 
 ## report-outcome
@@ -332,7 +332,7 @@ narration of steps you took, no restating the recipe. If a session is about to e
 `action_kind: mechanical` — run it, don't deliberate.
 > **Tool: `tejun-harakiri`** (TOOLS.md) — run it. Don't hand-roll it.
 The final act of `land` / `delete`: the session that finished the work ends itself.
-Sessions are disposable; the record lives in git, the README and manifest/MANIFEST.md —
+Sessions are disposable; the record lives in git, the README and the manifest —
 never in a pane.
 
 **It takes no arguments and you do not name a session.** `tejun-harakiri`, nothing else.
