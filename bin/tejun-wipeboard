@@ -21,7 +21,8 @@ set -u
 BOARDS_OPT='@ronin-wipeboards'
 VIEWER_PREFIX='grid_'   # browser viewer sessions — never a member
 HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-DIR="$HERE/co-working/ronin/wipeboards"
+# The wipeboards STORE (user root) — never a hand-spelled path (JUSHO, docs/stores.md).
+DIR="$("$HERE/bin/ronin-store" wipeboards)"
 SEND="$HERE/bin/tejun-send"
 NAME_RE='^[a-z0-9][a-z0-9_-]*$'
 

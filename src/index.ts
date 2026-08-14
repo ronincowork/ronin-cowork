@@ -14,6 +14,7 @@ import { registerLaunch } from './routes/launch.js';
 import { registerSessions } from './routes/sessions-api.js';
 import { registerVersion } from './routes/version.js';
 import { registerWipeboards } from './routes/wipeboards-api.js';
+import { seedHouseBoard } from './wipeboards.js';
 import { handleEvents, startSessionsBroadcast } from './ws/events.js';
 import { handlePty } from './ws/pty.js';
 import { originAllowed, allowedOrigins } from './ws/origin.js';
@@ -274,6 +275,8 @@ if (removed) console.log(`[tmux-ronin] cleaned up ${removed} stale viewer sessio
 // service's own business; a hook that throws is logged and costs only its service.
 await startBootHooks();
 startSessionsBroadcast(); // the /events membership poll, on the same boot clock as before
+// The house board — the one board every install has, seeded once and then the user's.
+void seedHouseBoard().catch((e) => console.error('[tmux-ronin] house board seed failed:', e));
 
 // Tools inside a pane (tejun-harakiri) find the API here instead of re-deriving the bind.
 void publishRoninUrl(`http://${config.bind}:${config.port}`);

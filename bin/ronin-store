@@ -26,6 +26,7 @@ session|data|sessions
 bench|data|bench
 telemetry|data|telemetry
 ledger|data|ledger
+wipeboards|user|wipeboards
 catalogs|user|catalogs
 memory|user|memory
 config|user|config"

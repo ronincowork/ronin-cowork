@@ -115,6 +115,14 @@ export const STORES: readonly Store[] = [
     when: 'first session launched',
   },
   {
+    id: 'wipeboards',
+    root: 'user',
+    rel: 'wipeboards',
+    what: 'the shared boards a set of sessions read and write — one .md per board',
+    createdBy: "cowork's `src/wipeboards.ts`",
+    when: 'first boot (the house board) or first board made',
+  },
+  {
     id: 'catalogs',
     root: 'user',
     rel: 'catalogs',

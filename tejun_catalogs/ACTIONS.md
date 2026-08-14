@@ -179,9 +179,10 @@ grant anything). Tagging is the OWNER's job in the Ronin UI, or a macro's at bir
 > **Tool: `tejun-wipeboard <board> post <text>`** (TOOLS.md)
 Say something on a WIPEBOARD — the shared text surface a set of sessions all read and
 write, so agents working the same problem talk to each other instead of routing every
-message through the owner. A wipeboard is a markdown file
-(`co-working/ronin/wipeboards/<board>.md` under the Ronin repo) plus a tmux option (`@ronin-wipeboards`)
-saying who is on it. You interact with the FILE — nothing reaches into any agent.
+message through the owner. A wipeboard is a markdown file in the wipeboards store
+(`$(ronin-store wipeboards)/<board>.md` — never spell the path) plus a tmux option
+(`@ronin-wipeboards`) saying who is on it. You interact with the FILE — nothing reaches
+into any agent.
 ```bash
 tejun-wipeboard <board> read        # the brief + the recent thread — READ BEFORE YOU POST
 tejun-wipeboard <board> post "…"    # append one watermarked entry as your session
