@@ -440,7 +440,17 @@ if [ "$OS" = "Linux" ] && command -v systemctl >/dev/null; then
   render_unit "$REPO_DIR/deploy/tmux-ronin.service"  "$UNIT_DIR/tmux-ronin.service"
   systemctl --user daemon-reload
   systemctl --user enable --now tmux-server
-  systemctl --user enable --now tmux-ronin
+  # `enable --now` is a no-op on a unit that is already running — but the unit file was
+  # just re-rendered, so a live tmux-ronin must be RESTARTED or the box keeps running
+  # the old tree while the unit points at the new one (BYOKI). tmux-server is never
+  # restarted here: that unit owns every live session on the box.
+  if systemctl --user is-active --quiet tmux-ronin; then
+    systemctl --user enable tmux-ronin
+    systemctl --user restart tmux-ronin
+    echo "==> tmux-ronin was already running: restarted onto the freshly rendered unit"
+  else
+    systemctl --user enable --now tmux-ronin
+  fi
   echo "==> systemd --user services 'tmux-server' + 'tmux-ronin' installed and started"
   echo "    logs:   journalctl --user -u tmux-ronin -f"
   echo "    status: systemctl --user status tmux-ronin"

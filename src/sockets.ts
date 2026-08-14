@@ -79,6 +79,16 @@ export function emitSessionEnd(name: string, key: string): void {
 export function getStreamHandler(): ((...args: unknown[]) => void) | undefined {
   return streamHandler;
 }
+/** Which services registered, by name (michi | koshi | rireki | counting | koe).
+ * Reported on /api/version so the client can draw an absent service's surfaces
+ * opaque-and-inert instead of fetching into a 404 (the SWITCH, service half). */
+const serviceNames: string[] = [];
+export function noteService(name: string): void {
+  serviceNames.push(name);
+}
+export function listServices(): string[] {
+  return [...serviceNames];
+}
 export async function collectRowFields(session: string): Promise<RowFields> {
   const out: RowFields = {};
   for (const cb of rowContribs) {

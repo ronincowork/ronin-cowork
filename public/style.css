@@ -3062,6 +3062,12 @@ body {
   opacity: 1;
   color: #7fd4a8;
 }
+/* No record service installed (the free build): the 🔓 view is off, so the switch is
+   visible but inert — opaque says "not plugged in", not "missing". */
+.tile-head .lock.off {
+  opacity: 0.3;
+  pointer-events: none;
+}
 /* Where it happened — the top stack frames, under the message. A message with no
    location sends the reader hunting; that was a real complaint (2026-08-08). */
 #failbar .failbar-at {

@@ -135,7 +135,13 @@ export class Tile {
     this.select.addEventListener('pointerdown', () => this.activate());
     this.select.addEventListener('change', () => this.onSelect());
     // The lock sits on the TILE, because a tile is what it acts on.
-    if (IS_TOUCH) this.lockEl.style.display = 'none'; // phone is fixed-unlocked
+    if (S.streamOff) {
+      // No record service on this install: the 🔓 view is off and the switch is
+      // inert — visible but opaque, on every device, so it reads as "not plugged
+      // in" rather than missing. Touch keeps the button (there is nothing to hide
+      // it FOR: fixed-unlocked needs the tape, and there is no tape).
+      this.lockEl.classList.add('off');
+    } else if (IS_TOUCH) this.lockEl.style.display = 'none'; // phone is fixed-unlocked
     // Wrapped: a throw from an event callback lands on the window handler, which can
     // REPORT it but cannot repair anything — the guards around construction and init
     // never see it. Without this, a bug in the flip costs the pane it was flipping.
@@ -231,7 +237,9 @@ export class Tile {
    */
   async refreshTegami() {
     const session = this.session;
-    if (!session) {
+    // The letter is MICHI's. No michi = no /tegami routes at all, so don't fetch into
+    // a 404 — the chip simply never shows, same as a session with no letter.
+    if (!session || (S.services && !S.services.includes('michi'))) {
       this.chip.set(null);
       this.closeLadder();
       return;
@@ -499,7 +507,9 @@ export class Tile {
    * touch.
    */
   setLocked(on) {
-    this.locked = !!on;
+    // With no record service there is nothing behind 🔓 — the tile stays locked no
+    // matter who asks (the inert button, a saved default, a future caller).
+    this.locked = S.streamOff ? true : !!on;
     S.locked = this.locked;
     this.pending = '';
     this.renderPending();
@@ -530,6 +540,7 @@ export class Tile {
     this.lockEl.title = this.locked
       ? LOCKED_TITLE
       : '🔓 UNLOCKED — the session is still running in tmux; this view is not attached to it. You are reading what that terminal painted, captured byte by byte as it went, so the text can lag the live pane. Scrolling is instant and stays in your browser, typing still goes to the real terminal, and the text SELECTS AND COPIES like any web page.';
+    if (S.streamOff) this.lockEl.title = 'The unlocked view is off — no record service is installed.';
   }
 
   /**

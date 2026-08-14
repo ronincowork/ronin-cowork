@@ -21,7 +21,7 @@ import { checkTmuxServerCgroup } from './host-guard.js';
 // THE ASSEMBLER BLOCK — the one place in core a service is named (check-kyokai's
 // exception, and on split day this block becomes discovery over the installed-services
 // store; docs/connector-contract.md is the contract, sockets-contract.ts its shape).
-import { sockets, startBootHooks, stopBootHooks, mountServiceRoutes } from './sockets.js';
+import { sockets, startBootHooks, stopBootHooks, mountServiceRoutes, noteService } from './sockets.js';
 import type { ServiceRegistration } from './sockets-contract.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -136,7 +136,10 @@ registerVersion(app); // /api/version — the commit this process started from �
 // every service path (/api/tomodachi/*, /api/transcribe, /api/koshi*) is disjoint
 // from every core path; nothing shadows, nothing falls through differently.
 const services: ServiceRegistration[] = []; // the free build: no services, every socket empty
-for (const s of services) s.register(sockets);
+for (const s of services) {
+  noteService(s.name); // the roster /api/version reports, so the client's SWITCH knows
+  s.register(sockets);
+}
 mountServiceRoutes(app);
 
 

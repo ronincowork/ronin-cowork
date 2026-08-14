@@ -40,7 +40,7 @@ export async function handlePty(ws: WebSocket, url: URL): Promise<void> {
     // service = the unlocked view is off; say so and let the client fall back to 🔒.
     const h = getStreamHandler();
     if (!h) {
-      ws.send(JSON.stringify({ t: 'error', message: 'The unlocked view is off — no record service is installed.' }));
+      ws.send(JSON.stringify({ t: 'error', m: 'The unlocked view is off — no record service is installed.' }));
       ws.close();
       return;
     }

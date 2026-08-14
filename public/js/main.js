@@ -4,10 +4,25 @@ import { guard, showFailure } from './errors.js';
 import { connectEvents } from './events.js';
 import { loadMacros, loadPresets, loadProjects, loadSavedLaunches, refreshHome } from './home.js';
 import { build } from './layout.js';
-import { TILE_COUNT, loadState, tiles } from './state.js';
+import { S, TILE_COUNT, loadState, tiles } from './state.js';
 import { setLayout } from './viewport.js';
 
 export async function init() {
+  // Ask the operator which optional surfaces are plugged in BEFORE the grid is built,
+  // so a tile is born knowing. `stream:false` = the 🔓 tape view is off (no record
+  // service — the free build); every tile is 🔒 and the switch is inert. An operator
+  // that predates the field, or a failed fetch, reads as "on": unchanged behavior,
+  // and an unreachable server is reported by the session-list step below.
+  try {
+    const v = await (await fetch('/api/version')).json();
+    if (v.stream === false) {
+      S.streamOff = true;
+      S.locked = true;
+    }
+    if (Array.isArray(v.services)) S.services = v.services;
+  } catch (_) {
+    /* answered by fetchSessions below */
+  }
   guard('build the grid', build);
   const saved = guard('read saved state', loadState, { map: [], layout: TILE_COUNT });
   // A phone shows ONE terminal, always — not just on first run. A 2x2 grid of tiny
