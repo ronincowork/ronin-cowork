@@ -1,7 +1,8 @@
 # KOTOBA (言葉) — every noun in the house, in one place
 
 > **This is the public copy** — the house KOTOBA minus every `dev_scope` row,
-> per its own Scope rule. Regenerated from the tmux-ronin tree; edit it there.
+> per its own Scope rule. Regenerated from the private ronin-house repo; edit it
+> there, never here.
 
 
 > **The source of truth for Ronin vocabulary.** If a term is used in code, a catalog, a
