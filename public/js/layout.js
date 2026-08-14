@@ -5,6 +5,7 @@ import { refreshHome } from './home.js';
 import { buildSessionPicker } from './macros.js';
 import { PAD_CODE, firePadBinding, padBinds, padChord } from './pad.js';
 import { buildPadAsk, buildPadPanel } from './padpanel.js';
+import { askMika } from './mika.js';
 import { buildNotePanel, buildTagPanel } from './panels.js';
 import { IS_TOUCH, S, TILE_COUNT, WHEEL_DOWN, grid, serviceOff, tiles } from './state.js';
 
@@ -187,6 +188,20 @@ export function build() {
   key('newbtn', () => {
     const t = S.active || tiles[0];
     if (t) t.showHome('new');
+  });
+  // ミ Mika Assist — the house assistant, and the one button whose whole job is "get me
+  // to somebody". It is not a room in the Commons: every room there is a surface the
+  // owner operates, and this is a session they talk to. It sits beside か New for the
+  // same reason か is out of the menu — starting a session and asking for help are the
+  // two things you should never have to go three taps deep to find.
+  //
+  // ミ is her own mark, the same katakana the MikaAssist entry carries, so the button
+  // and the session she opens read as one thing. It is NOT メ, which is a tile's own
+  // header opener meaning "this session" — near neighbours in the kana, and the reason
+  // the label spells out "Mika Assist" rather than leaving the glyph to carry it.
+  key('mikabtn', () => {
+    const t = S.active || tiles[0];
+    if (t) void askMika(t);
   });
   // ⛩ ronin — the mark is the way to the roster, and the way back. Not a new room, a
   // shortcut to the one you return to most: it was reachable only through the Commons
@@ -403,6 +418,7 @@ export function buildDrawers() {
   // a different action. Two dead round arrows, both gone.
   const APP = [
     ['newbtn', 'New'],
+    ['mikabtn', 'Mika Assist'],
     ['commonsbtn', 'Commons'],
     ['padbtn', 'Keypad'],
   ];

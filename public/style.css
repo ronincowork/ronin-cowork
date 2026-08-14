@@ -126,6 +126,7 @@ body {
    #macrobtn, which no longer exist, so Commons and Keypad were falling back to the
    browser default and looked like a different family of control. */
 #newbtn,
+#mikabtn,
 #commonsbtn,
 #padbtn,
 #bar .layouts {
@@ -143,6 +144,7 @@ body {
 }
 @media (max-width: 680px) {
   #newbtn .txt,
+  #mikabtn .txt,
   #padbtn .txt {
     display: none; /* icon-only on phones — bar space is tight */
   }
@@ -217,6 +219,30 @@ body {
   border-color: var(--accent);
 }
 .tile-head button.note:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+/* The MARK — what this session is doing, beside the name rather than out among the
+   controls on the right. Sits with the picker and the ladder chip: "who is this, and
+   where are they". */
+.tile-head button.job {
+  margin-left: 4px;
+  font-size: 13px;
+}
+/* Not marked: a `?` on a dashed edge (js/tile.js). It was drawn EMPTY first, and an empty
+   button among six others is invisible — the owner could not find the control at all. The
+   glyph is dimmed so it reads as a question rather than as a mark in its own right, and
+   brightens on hover like the answer it is asking for. */
+.tile-head button.job.unset {
+  border-style: dashed;
+  border-color: var(--line);
+  color: var(--muted);
+}
+.tile-head button.job.unset:hover {
+  border-color: var(--accent);
+  color: var(--fg);
+}
+.tile-head button.job:disabled {
   opacity: 0.4;
   cursor: default;
 }
@@ -1986,44 +2012,88 @@ body {
   }
 }
 
-/* per-row group control: shows the session's groups, opens the tag editor */
-/* 人 — the leader mark (the *nin* of 浪人). Sits before the name on a coordinating
-   session. Accent-coloured so it reads at a glance in a long list, but no box: it is a
-   fact about the session, not a button. */
-.home-lead {
+/* The session's MARK: the icon of its session_job, before the name on every row. It
+   replaced the 人 leader mark, which sat here and named only who was in charge. Fixed
+   width so the names stay in a column whether or not a row is marked — an unmarked
+   session is a real state and must not shove the list sideways. */
+.home-job {
   flex: 0 0 auto;
+  width: 1.35em;
   margin-right: 5px;
-  color: var(--accent);
   font-size: 13px;
   line-height: 1;
+  text-align: center;
 }
-/* Inside a group's list the glyph is the switch: lit = leads this group, dim = tap to
-   promote. Sized for a fingertip on touch without moving anything on desktop. */
-.home-lead.btn {
+/* Also the switch: click to re-mark what the session is doing (js/commons.js). */
+.home-job.btn {
   cursor: pointer;
-  padding: 2px 4px;
-  margin-right: 3px;
+  padding: 2px 3px;
   border-radius: 6px;
 }
-.home-lead.off {
-  color: var(--line);
+/* Not marked — nothing drawn, but the column is still held open, so the gap is legible
+   as "nobody has said" rather than as a rendering fault. */
+.home-job.off {
+  opacity: 0.35;
 }
 @media (hover: hover) and (pointer: fine) {
-  .home-lead.btn:hover {
-    color: var(--accent);
+  .home-job.btn:hover {
     background: var(--panel);
+    outline: 1px solid var(--line);
   }
 }
 @media (pointer: coarse) {
-  .home-lead.btn {
-    padding: 6px 8px;
-    margin-right: 1px;
+  /* TOUCH: drawn, never a button — it is the tap padding a phone-width row cannot
+     spare, not the glyph. Re-marking is a desktop verb (js/commons.js). */
+  .home-job {
+    margin-right: 4px;
   }
-  /* TOUCH: the 人 is not drawn at all (js/commons.js) — the leader is the accent-coloured
-     name. Same fact, no column. */
-  .home-row.leads b {
-    color: var(--accent);
-    font-weight: 600;
+}
+
+/* The re-mark menu: pick one of the catalog's jobs. A popover, not a sheet — the 🏷
+   editor is a sheet because it edits a list; this picks one of eight and dies. */
+.job-menu {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  min-width: 190px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
+}
+.job-opt {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.job-opt i {
+  width: 1.35em;
+  font-style: normal;
+  text-align: center;
+}
+.job-opt.on {
+  color: var(--accent);
+}
+.job-opt.none {
+  margin-top: 2px;
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 6px 6px;
+  color: var(--muted);
+}
+@media (hover: hover) and (pointer: fine) {
+  .job-opt:hover {
+    background: var(--bg);
   }
 }
 .home-tag {
@@ -3424,7 +3494,7 @@ body {
   --k-CutCode: #e0af68;
   --k-ChaseBug: #8abeb7;
   --k-CheckWork: #b5bd68;
-  --k-WatchCrew: #de935f;
+  --k-QuarterBack: #de935f;
   --k-OddJob: #707a91;
   --k-other: #5a6376;
 }

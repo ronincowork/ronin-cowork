@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# mika — hand a request to the house assistant. Spawn her if she is not up.
+#
+# Usage: mika <job> [request...]     job = system_help | project_root | new_session | system_config
+#        mika "<request...>"         no job named -> system_help, which is her default
+#        mika                        just get her up (or tell you she already is)
+#
+# THE ONE ROUTING PATH, and deliberately the only one. An invocation from this file's
+# catalog (ronin_catalogs/MIKA_MACROS.md) may be typed anywhere — the phone compose bar,
+# a pad key, or straight into a pane on a Mac where Ronin cannot see it. Rather than one
+# mechanism for the paths Ronin watches and a fallback for the ones it does not, there is
+# this: correct everywhere, including in a pane. Interception at send time would be pure
+# speed and can be added later without changing anything here.
+#
+# IF YOU ARE AN AGENT AND A `+project_root:` LANDS IN YOUR PANE: you do not perform it.
+# Run this, say where it went, and get on with your own work. That is what stops one
+# catalog being edited by nine agents with nine ideas about it.
+#
+# SHE IS A SINGLETON. One session named `mika`; the second request finds the first. Two
+# of her editing PROJECT_ROOTS.md is a real bug, and unlike a ladder marker a catalog
+# write is not recomputed next turn.
+#
+# Nothing here knows how a session is made or how text reaches a pane — Ronin does both,
+# through the same endpoints the UI uses. Same rule as tejun-harakiri: one implementation
+# of the dangerous thing, never a second copy in bash that drifts from it.
+set -u
+
+JOBS="system_help project_root new_session system_config"
+
+job="${1:-system_help}"
+case " $JOBS " in
+  *" $job "*) shift || true ;;
+  # No job named: the whole line is a question, and questions are system_help. Her
+  # default is help, not a refusal — see MIKA_MACROS.md.
+  *) job="system_help" ;;
+esac
+request="$*"
+
+url="${RONIN_URL:-$(tmux show-option -s -qv @ronin-url 2>/dev/null || true)}"
+[ -n "$url" ] || url="http://127.0.0.1:3006"
+
+AUTH=()
+[ -n "${RONIN_AUTH:-}" ] && AUTH=(-u "$RONIN_AUTH")
+
+api() { curl -sS -m 20 "${AUTH[@]+"${AUTH[@]}"}" "$@" 2>/dev/null; }
+
+# JSON string escaping, for a request that will contain quotes and newlines.
+esc() { printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/\t/\\t/g' | awk '{printf "%s%s", sep, $0; sep="\\n"}'; }
+
+# What she is being asked, as she will read it. The job name is carried in the text
+# rather than as a field: her catalog is what turns it into work, so the invocation IS
+# the message, and it reads the same whether she was just born or has been up an hour.
+msg="+${job}: ${request}"
+[ -n "$request" ] || msg="+${job}:"
+
+# Is she up? Ask tmux, not Ronin — she is reachable whether or not Ronin is running, and
+# the send below goes to the pane either way.
+if tmux has-session -t mika 2>/dev/null; then
+  # tejun-send, NOT /api/sessions/mika/send, and the difference is the whole reason:
+  # the endpoint checks the dial but NOT the prompt, so it will type over a half-written
+  # draft the owner is still looking at. tejun-send does the ghost-aware pre-send check
+  # and answers BLOCKED instead. Mika is the assistant you are mid-conversation with —
+  # she is the session most likely to have a draft sitting in her, which makes her the
+  # last one that should be written to blind. (Measured, not theorised: the first live
+  # test of this tool landed a message on top of the owner's unsubmitted "yes, make the
+  # edit".) Reusing the tool also means one implementation of the send discipline.
+  exec tejun-send mika "$msg"
+fi
+
+# Not up. Born through /api/launch like every other session — the session_job carries her
+# dial, her posture and her opening, and `cap: exempt` is why this works at a full box.
+out=$(api -X POST "$url/api/launch" -H 'content-type: application/json' \
+  -d "{\"session_job\":\"MikaAssist\",\"name\":\"mika\",\"mode\":\"assisted\",\"tags\":[\"mika\"],\"prompt\":\"$(esc "$msg")\"}")
+
+case "$out" in
+  '') echo "STUCK: could not reach Ronin at $url." >&2; exit 5 ;;
+  *'"ok":true'*) echo "STARTED mika, and asked: $msg"; exit 0 ;;
+  *) echo "STUCK: Ronin refused to start mika — $out" >&2; exit 5 ;;
+esac

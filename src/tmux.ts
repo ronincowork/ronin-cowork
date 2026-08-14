@@ -16,8 +16,6 @@ export interface SessionInfo {
   hasNote: boolean;
   /** Groups this session belongs to (see TAGS_OPT). Empty = ungrouped. */
   tags: string[];
-  /** Groups this session LEADS (see LEAD_OPT). Empty = not a leader. */
-  leads: string[];
 }
 
 /** tmux user option holding a session's post-it note. Lives and dies with the session. */
@@ -109,13 +107,13 @@ export async function listSessions(): Promise<SessionInfo[]> {
     const { stdout } = await pexec('tmux', [
       'list-sessions',
       '-F',
-      `#{session_name}\t#{session_windows}\t#{?session_attached,1,0}\t#{session_created}\t#{?${NOTE_OPT},1,0}\t#{${TAGS_OPT}}\t#{${LEAD_OPT}}`,
+      `#{session_name}\t#{session_windows}\t#{?session_attached,1,0}\t#{session_created}\t#{?${NOTE_OPT},1,0}\t#{${TAGS_OPT}}`,
     ]);
     return stdout
       .split('\n')
       .filter(Boolean)
       .map((line) => {
-        const [name, windows, attached, created, hasNote, tags, leads] = line.split('\t');
+        const [name, windows, attached, created, hasNote, tags] = line.split('\t');
         return {
           name,
           windows: Number(windows) || 0,
@@ -123,13 +121,10 @@ export async function listSessions(): Promise<SessionInfo[]> {
           created: Number(created) || 0,
           hasNote: hasNote === '1',
           tags: parseTags(tags),
-          leads: parseTags(leads),
         };
       })
       .filter((s) => !s.name.startsWith(config.viewerPrefix))
-      // Leaders first (人), then alphabetical — the coordinator of a set should be the
-      // first thing the owner sees, not buried among the sessions it manages.
-      .sort((a, b) => (b.leads.length ? 1 : 0) - (a.leads.length ? 1 : 0) || a.name.localeCompare(b.name));
+      .sort((a, b) => a.name.localeCompare(b.name));
   } catch (err) {
     if (noServer(err)) return [];
     throw err;
@@ -157,6 +152,17 @@ export async function sessionExists(name: string): Promise<boolean> {
  */
 export interface CreateOpts {
   agent?: boolean;
+  /**
+   * `cap: exempt` in SESSION_JOBS.md — create it even at the max. It still COUNTS
+   * afterwards, so the NEXT spawn is the one refused; this exempts the spawn, never the
+   * census. Nothing is evicted to make room.
+   *
+   * Distinct from `agent: false`, which happens to skip the check too: that one says
+   * "a shell is not what fills a box". This one says "refusing this would be wrong even
+   * though the box is full", and the only kind carrying it is the assistant you ask for
+   * help. Two reasons, two flags — one flag would make the comment on either a lie.
+   */
+  exempt?: boolean;
 }
 
 export async function createSession(name: string, dir?: string, opts: CreateOpts = {}): Promise<void> {
@@ -168,7 +174,7 @@ export async function createSession(name: string, dir?: string, opts: CreateOpts
   //
   // Browser tiles are unaffected: they are made by createViewer(), a different function,
   // so grouped `grid_*` viewers are never counted and never refused.
-  if (opts.agent !== false) await assertUnderMax();
+  if (opts.agent !== false && !opts.exempt) await assertUnderMax();
   // Never be the process that forks the tmux server — it would land in our systemd
   // cgroup and our next restart would kill every session. See docs/tmux-server-cgroup.md.
   await ensureTmuxServer();
@@ -355,38 +361,19 @@ export async function setWipeboards(name: string, boards: string[]): Promise<str
 }
 
 /**
- * tmux user option holding the groups a session LEADS — comma-separated, same shape and
- * same reasoning as TAGS_OPT: leadership lives on the session, so it dies with the
- * session and there is no registry to drift. Per-group on purpose — several leaders can
- * run on one box, each owning their own set, and a roster can name THIS group's leader
- * rather than a vague "someone is in charge".
+ * NO OPTION HOLDS `session_job`, deliberately — and `@ronin-lead` (the 人) is retired
+ * without one taking its place here.
  *
- * A leader is marked 人 (the *nin* of 浪人) everywhere sessions are listed, and sorts to
- * the top. Leading a group does NOT imply membership in it and grants no extra power:
- * the control dial is still the only thing that decides who may drive a session.
+ * What a session is DOING lives in its LETTER: `Tegami.session_job`, which the session
+ * itself keeps current with `write_tegami` as it migrates. That is michi's field, michi
+ * puts the whole letter on every roster row through the ROW socket, and the client reads
+ * the mark off `tegami.session_job`. A tmux option beside it would be a second copy of
+ * one fact, drifting the moment an agent re-marked itself in the file — and cowork
+ * storing a service's data is exactly the seam KYOKAI exists to hold.
+ *
+ * The launcher's job still travels: `emitSessionBorn({ job })` hands it to whoever is
+ * listening at birth, which is how the letter gets seeded knowing what it is for.
  */
-const LEAD_OPT = '@ronin-lead';
-
-/** Read the groups a session leads (empty array if it leads none). */
-export async function getLeads(name: string): Promise<string[]> {
-  try {
-    const { stdout } = await pexec('tmux', ['show-options', '-t', exactPane(name), '-qv', LEAD_OPT]);
-    return parseTags(stdout);
-  } catch {
-    return [];
-  }
-}
-
-/** Set (or, when empty, clear) the groups a session leads. Returns what was stored. */
-export async function setLeads(name: string, groups: string[]): Promise<string[]> {
-  const clean = parseTags(groups.join(','));
-  if (clean.length) {
-    await pexec('tmux', ['set-option', '-t', exactPane(name), LEAD_OPT, clean.join(',')]);
-  } else {
-    await pexec('tmux', ['set-option', '-t', exactPane(name), '-u', LEAD_OPT]).catch(() => {});
-  }
-  return clean;
-}
 
 /**
  * The project_root a session serves — ONE value, not many.

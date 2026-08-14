@@ -40,12 +40,36 @@ opens, what it is called, which group it joins, and its `dial`. Ronin's launcher
 thing that reads this flag; it is what stops the spawn path typing a command into a pane the
 owner wanted left alone.
 
+**The `icon:` is the session's mark, not just the button's.** It is drawn on the ＋ New
+session tile you press, and then on every surface that lists sessions — the ⌂ Roster and
+the tile header — so "what is that session doing?" is answered by looking rather than by
+asking. It replaced the old 人 leader mark, which said only *who was in charge* and had to
+be set by hand; the job is already known at birth and moves when the session's work moves.
+
 **Fields:** `icon` · `label` · `blurb` (what the button does) · `ask` (the form's
 prompt) · `remit` (one line: what this session is, for humans and Koshi) · `posture`
 (how it behaves — inlined into the boot brief) · `model` (bias: which brain this way of
 working usually deserves; the project or the launch may override) · `match` (intent
 words) · `dial` · `permissions` · `lifecycle` (the michi it starts in) · `ack` ·
-`opening` · `agent` (omit it for an agent job; `none` means no CLI is launched at all).
+`opening` · `agent` (omit it for an agent job; `none` means no CLI is launched at all) ·
+`cap` (omit it, or `exempt` — see below) · `dir` (omit it, or the sentinel `{install}`).
+
+**`dir: {install}` — a kind that always works in Ronin's own directory.** Omit it and the
+directory is the `project_root`'s to supply, which is right for every kind that does the
+owner's work. `MikaAssist` is the exception: she works on RONIN's business, so she must
+start where Ronin's documents and catalogs are, whatever root was picked. Without it she
+was born in the service user's home with nothing to read.
+
+**The sentinel is the whole vocabulary — a literal path here would be a shipped file
+naming a machine**, which JUSHO forbids. Anything else in this field is ignored.
+
+**`cap: exempt` — born even when the box is full.** One kind carries it, `MikaAssist`,
+and the reason is a rule rather than a convenience: **blocking somebody who is asking for
+help is rude.** At a max of ten with ten running, she is the eleventh.
+
+It exempts the *spawn*, never the *census*: she counts the moment she exists, so the
+NEXT session is the one refused. Nothing is evicted to make room and no session is ever
+chosen to die.
 
 ## RiffOnIt
 - **icon:** 💭
@@ -122,15 +146,15 @@ words) · `dial` · `permissions` · `lifecycle` (the michi it starts in) · `ac
 - **ack:** yes
 - **opening:** Check this and report: {prompt}. Read-only — control-check before touching anything, never write into what you are checking, and bring findings to the owner rather than fixing them yourself. Whether the target is a session's work or a body of code is the prompt's business, not a different kind of session.
 
-## WatchCrew
-- **icon:** 👥
-- **label:** watch crew
+## QuarterBack
+- **icon:** 🏈
+- **label:** quarter back
 - **blurb:** coordinate other sessions — dispatch, unblock, report upward
 - **ask:** which group or sessions?
 - **remit:** Coordinates other sessions — dispatch, unblock, report upward
 - **posture:** Dispatch, unblock, report upward — you coordinate the work rather than doing it yourself. Address sessions via groups (`+tag:`), control-check before touching any of them, and escalate to the owner what is his to decide rather than sitting on it.
 - **model:** sonnet
-- **match:** manage, coordinate, dispatch, lead, unblock, watch over
+- **match:** quarterback, qb, manage, coordinate, dispatch, lead, unblock, watch over
 - **dial:** read
 - **permissions:** default
 - **lifecycle:** orchestrating
@@ -163,9 +187,25 @@ words) · `dial` · `permissions` · `lifecycle` (the michi it starts in) · `ac
 - **dial:** user
 - **lifecycle:** none
 
+## MikaAssist
+- **icon:** ミ
+- **label:** ask Mika
+- **blurb:** get help with Ronin itself — sessions, project roots, settings, how any of it works
+- **ask:** what do you need?
+- **remit:** Ronin's own helpful assistant — answers questions about the house and does its four jobs
+- **posture:** You are a helpful assistant, helping with RONIN itself, never with the owner's own code. Be plain, be short, and answer what was asked. Answer from the house's documents and name the one you used; say you do not know rather than reasoning it out from the shape of the thing. Propose, never write — show every catalog or setting change as what it will become and wait for a yes. Anything that is not one of your four jobs, treat as a question and help with it.
+- **model:** sonnet
+- **match:** help, how do i, mika, add a repo, project root, new session, settings, my name is, what is
+- **dial:** write
+- **permissions:** default
+- **ack:** no
+- **cap:** exempt
+- **dir:** {install}
+- **opening:** Someone needs help with Ronin itself: {prompt}. Read ronin_catalogs/MIKA_MACROS.md first — it is your job list, and it is short. Then answer plainly and briefly, from the house's own documents, naming the document you used. If you do not know, say so. If what they want is one of your four jobs, propose the change as what it will become and wait for a yes before writing anything.
+
 ---
 
-*Eight entries: seven agent jobs, and one that is the absence of an agent. A kind earns
+*Nine entries: eight for the owner's work, and one for the house's own. A kind earns
 its place by fixing constants a launch must not guess — a dial, a posture, a michi. If
 two kinds differ only in what the prompt says, they are one kind.*
 
@@ -183,3 +223,8 @@ what it is for, not three sessions. The kind is what it is doing now.*
 *Forking is not a kind. Where a session came from is its **origin**, not its purpose —
 a fork is a `DraftPlan` (or any other kind) that happened to be seeded from another
 session's work. The `forkit` macro carries that context in the handoff doc it writes.*
+
+*`MikaAssist` is the ninth by the same test, and what it fixes is who the session is
+working for. Every other kind does the owner's work; this one does the house's — so it
+is the one entry a session never **migrates** into or out of, and the one that is
+`cap: exempt`. There is only ever one of her, and `ronin_bin/mika` is what finds her.*

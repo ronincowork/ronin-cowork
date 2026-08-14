@@ -216,8 +216,8 @@ is a gap in the machinery, not a reason to reach for the word. See § NUANCE.
 | **TEJUN** | system_scope | the procedure system: macro → action → tool | `reading-list/TEJUN.md` |
 | **macro** | system_scope | a recipe the_owner invokes; nothing but an ordered list of actions. Stock: `forkit`, `draftplan`, `cutcode`, `land`, `delete`, `tag`, `wipeboard`, `read`, `readwrite`, `evaluate` | `ronin_catalogs/MACROS.md` |
 | **session_macro** | system_scope | a macro **the agent executes**: an invocation dropped into a session's own input (`+forkit: build the login page`), which the agent reads and acts on. Ronin only helps you type it — it never runs one. Every catalogd macro today is one. **Two classes, and every entry's `class:` line says which: `session_macro.lookup` · `session_macro.workflow`** | `ronin_catalogs/MACROS.md` |
-| **workspace_macro** | system_scope | a macro **Ronin executes**, mechanically, above any one session. No agent involved *in performing it* — the launcher is machinery, the session it births is an agent. Stock: `session_launch` (the ＋ tab), and Mika's spawn-or-inject **[planned]** | `docs/commons.md` |
-| **mika_macro** | system_scope | a session_macro that is **re-addressed**: executed by an agent, but by MIKA's agent rather than the session it was typed into. `+project_root:` · `+system_help:` · `+new_session:` · `+system_config:`. Catalogued in their OWN file so no surface listing `MACROS.md` can show them. **[planned]** | § MIKA |
+| **workspace_macro** | system_scope | a macro **Ronin executes**, mechanically, above any one session. No agent involved *in performing it* — the launcher is machinery, the session it births is an agent. Stock: `session_launch` (the ＋ tab), and Mika's spawn-or-inject | `docs/commons.md` |
+| **mika_macro** | system_scope | a session_macro that is **re-addressed**: executed by an agent, but by MIKA's agent rather than the session it was typed into. `+project_root:` · `+system_help:` · `+new_session:` · `+system_config:`. Catalogued in their OWN file so no surface listing `MACROS.md` can show them. | § MIKA |
 | **action** | system_scope | a procedure an AGENT follows; macros may cite only cataloged actions (TEJUN's law) | `ronin_catalogs/ACTIONS.md` |
 | **tool** | system_scope | a script that implements a cataloged action (`tejun-send`, `tejun-peek`, `tejun-group`, `tejun-wipeboard`, `tejun-harakiri`, …). **Every tool is a script; the action is what makes it a tool** | `ronin_catalogs/TOOLS.md` |
 | **script** | system_scope | **the genus: any executable in the repo, wherever it lives** — `bin/`, `scripts/`, `hostside/`, `setup.sh` at the root. Most scripts are not tools, and that is normal, not a defect | § SCRIPTS |
@@ -284,7 +284,7 @@ it mean anything is the document behind it, plus a tool where the work needs one
 
 | Term | Scope | Means | Record |
 |---|---|---|---|
-| **session_job** | system_scope | what a session is doing right now; fixes icon, dial, permissions and opening prompt: `RiffOnIt`, `DraftPlan`, `CutCode`, `ChaseBug`, `CheckWork`, `WatchCrew`, `OddJob`, `OpenShell`, and `MikaAssist` **[planned]** — see § SESSION JOBS | `ronin_catalogs/SESSION_JOBS.md` |
+| **session_job** | system_scope | what a session is doing right now; fixes icon, dial, permissions and opening prompt: `RiffOnIt`, `DraftPlan`, `CutCode`, `ChaseBug`, `CheckWork`, `QuarterBack`, `OddJob`, `OpenShell`, and `MikaAssist` — see § SESSION JOBS | `ronin_catalogs/SESSION_JOBS.md` |
 | **the two axes** | system_scope | `project_root` (where) · `session_job` (what it is doing) — **one token, every surface**: the launcher sets them, OBOERU matches on them, TOMODACHI counts by them. Defined here once; § OBOERU uses it, and does not redefine it | `co-working/user_repo/README/OBOERU.md` |
 | **opening prompt / ack rule** | system_scope | the birth instruction; "report back in your own words what you understand this job to be" | `src/spawn.ts` |
 | **`lifecycle:`** | system_scope | the catalog key mapping an session_job to its michi name. ⚠R2 | `ronin_catalogs/SESSION_JOBS.md` |
@@ -304,23 +304,29 @@ gerunds, so no string appears in both catalogs — see § OVERLAP item 1.
 | **CutCode** | system_scope | build from an approved plan doc | `ronin_catalogs/SESSION_JOBS.md` |
 | **ChaseBug** | system_scope | chase a fault to its cause and fix the cause | `ronin_catalogs/SESSION_JOBS.md` |
 | **CheckWork** | system_scope | read-only findings work — a session's output or a sweep of the code; the target is the prompt's job, not the `session_job`'s | `ronin_catalogs/SESSION_JOBS.md` |
-| **WatchCrew** | system_scope | coordinates other sessions — dispatch, unblock, report upward. The orchestrator, and **still bound by every dial**: a 👤 session is invisible to it | `ronin_catalogs/SESSION_JOBS.md` |
+| **QuarterBack** | system_scope | coordinates other sessions — dispatch, unblock, report upward. The orchestrator, and **still bound by every dial**: a 👤 session is invisible to it | `ronin_catalogs/SESSION_JOBS.md` |
 | **OddJob** | system_scope | does the one task asked and nothing around it — the escape hatch, for work that fits no other kind. No plan, no sweep, no tidying on the way past | `ronin_catalogs/SESSION_JOBS.md` |
 | **OpenShell** | system_scope | **`agent: none`** — opens a session and launches nothing, leaving the pane at a shell prompt. Every field describing an agent is *absent* rather than blanked: no model, no posture, no opening, no ack, no permissions. (Row added 2026-08-14 — the heading counted it as the eighth while the table had never listed it) | `ronin_catalogs/SESSION_JOBS.md` |
-| **MikaAssist** | system_scope | icon **ミ**. RONIN's own business, not the owner's work — a helpful assistant, defaulting to help, plus the four mika_macros. See § MIKA. **[planned]** | `ronin-lab/wip/MIKA.md` |
+| **MikaAssist** | system_scope | icon **ミ**. RONIN's own business, not the owner's work — a helpful assistant, defaulting to help, plus the four mika_macros. See § MIKA. | `docs/mika.md` |
 
 **The grammar: verb + object.** A bare `plan` or `review` is ambiguous because it is a noun
 as often as a verb; a compound reads as a command. **Display** in CamelCase, **token** is
 the lowercase run-on — `+riffonit:`, `+draftplan:`, `+cutcode:`, `+chasebug:`, `+checkwork:`,
-`+watchcrew:`, `+oddjob:`. No separator to mistype, and it survives being typed into a pane.
+`+quarterback:`, `+oddjob:`. No separator to mistype, and it survives being typed into a pane.
 
-**Three of them sit outside the grammar, for stated reasons:**
+**Four of them sit outside the grammar, for stated reasons:**
 
 - **`RiffOnIt`** — riff takes a preposition, so verb+object fights the word. It keeps the
   exception because it still reads as a command. The unnamed `It` is exact: this is the one
   kind where the object has no name yet, and finding out what "it" is *is* the session.
 - **`OddJob`** — a noun compound, because the escape hatch is the one slot that must **not**
   read as a command. It is the absence of a specific instruction, not one of them.
+- **`QuarterBack`** — a noun, and the owner's own word: *"I want to call this my quarter
+  back."* It was `WatchCrew`, which obeyed the grammar and was still wrong — "watch" reads as
+  *observe* on a list where `CheckWork` is the one that observes, and the job is the opposite
+  of watching. A quarterback reads the field, calls the play and does not run it, which is the
+  posture exactly. **The one name here that is a role rather than an act**, and it earns that:
+  it is the only kind defined by its relation to other sessions rather than by its own output.
 - **`MikaAssist`** — `OddJob`'s reason, pointed the other way: she is the one session doing
   **the house's** business rather than the owner's, so a command-shaped name would misfile
   her among the eight that take instructions. **She also has no invocation token** — you do
@@ -330,6 +336,15 @@ the lowercase run-on — `+riffonit:`, `+draftplan:`, `+cutcode:`, `+chasebug:`,
 **A kind is the session's current role, not a birth mark.** A session is launched as one
 and **migrates** — `RiffOnIt` → `DraftPlan` → `CutCode` is one session changing what it is
 doing, not three sessions. Nothing about a kind is fixed at birth except where it started.
+
+**A kind is also a MARK, and it lives in the LETTER.** `session_job` is a field of TEGAMI:
+seeded at birth with the button the owner pressed (`src/tegami.ts` — mechanical, because
+the launcher already knows), and changed by the session itself with `write_tegami` as the
+work changes. Its catalog `icon:` is then drawn on every surface that lists sessions — the
+⌂ Roster, the tile header, the ⚡ targets. **This is the half of the letter that is
+COWORK's**, not michi's: a session has a role whether or not it ever puts a ladder up, so
+the mark works on a build with no michi, where the ladder and the SHINGO chip are absent.
+It replaced the hand-set 人 leader mark — see § THE GROUND.
 
 **A kind and a michi are different questions.** The kind is *what the session is doing*;
 the michi is *the plan it is working* — phases and legs. A `RiffOnIt` session may have no
@@ -536,7 +551,7 @@ by that rule and are deleted rather than annotated, per this file's housekeeping
 **KOSHI is `system_scope`, and R10 is closed by it.** The two old uses — an in-process
 form-fill helper, and "a tile running `orchestrating`" — are gone. The second was never a
 koshi at all: a tile running work is a session with a `session_job`, which is
-`WatchCrew`. ⚠ **The kanji is unruled** — every other name on the list carries one and this
+`QuarterBack`. ⚠ **The kanji is unruled** — every other name on the list carries one and this
 one never has. Not invented here; see § OPEN R23.
 
 ---
@@ -550,10 +565,10 @@ machinery, which is why she is not filed under KOSHI. **[planned]**
 
 | Term | Scope | Means | Record |
 |---|---|---|---|
-| **MIKA** | system_scope | the house's **helpful assistant** — help first, and Ronin's own admin. Four requests and no more: `system_help` (the default), `new_session`, `project_root`, `system_config`. **[planned]** | `ronin-lab/wip/MIKA.md` |
-| **`MikaAssist`** | system_scope | her `session_job` — the ninth, icon **ミ**. Outside the verb+object grammar for `OddJob`'s reason: she is the one session not doing the owner's work at all. **[planned]** | § SESSION JOBS |
-| **mika_macro** | system_scope | one of her four, re-addressed to her tile from wherever it was typed. Defined in § TEJUN. **[planned]** | `ronin_catalogs/MIKA_MACROS.md` |
-| **spawn-or-inject** | system_scope | her workspace_macro: a live `mika` session takes the request, else one is born and takes it. **She is a singleton** — two Mikas would both write the catalog. **[planned]** | `ronin-lab/wip/MIKA.md` |
+| **MIKA** | system_scope | the house's **helpful assistant** — help first, and Ronin's own admin. Four requests and no more: `system_help` (the default), `new_session`, `project_root`, `system_config`. | `docs/mika.md` |
+| **`MikaAssist`** | system_scope | her `session_job` — the ninth, icon **ミ**. Outside the verb+object grammar for `OddJob`'s reason: she is the one session not doing the owner's work at all. | § SESSION JOBS |
+| **mika_macro** | system_scope | one of her four, re-addressed to her tile from wherever it was typed. Defined in § TEJUN. | `ronin_catalogs/MIKA_MACROS.md` |
+| **spawn-or-inject** | system_scope | her workspace_macro: a live `mika` session takes the request, else one is born and takes it. **She is a singleton** — two Mikas would both write the catalog. | `docs/mika.md` |
 
 **The law: PROPOSE, NEVER WRITE.** Every catalog entry and every setting Mika touches is
 shown as what it will become and waits for a yes; the confirm then goes through the write
@@ -628,12 +643,12 @@ word may be used for the other.
 | **▧ Docs** | user_scope | the commons tab where the owner opens a session's documents. **The tab is cowork; the list behind it is TEGAMI's — see § TEGAMI, MDEDIT.** There is deliberately **no file browser**: a document is reachable because a session listed it, and the way to reach an unlisted one is to ask the session for it (`+show_file`) | `docs/mdedit.md` |
 | **Brief** | system_scope | the owner's statement of what a wipeboard is for. **Agents never edit it** | `docs/wipeboards.md` |
 | **membership** (`@ronin-wipeboards`) | system_scope | lives on the *session*, not in the file, so a roster can never drift from reality | `src/tmux.ts` |
-| **dial** (`@ronin-control`) | system_scope | 👤 user / 👁 read / 🤖 write; owner-only to flip; enforced by the shim. Defaults to write, so it rarely bites — but **no role is exempt**, `WatchCrew` included. A dial with an exception is not a dial | `docs/session-control-dials.md` |
+| **dial** (`@ronin-control`) | system_scope | 👤 user / 👁 read / 🤖 write; owner-only to flip; enforced by the shim. Defaults to write, so it rarely bites — but **no role is exempt**, `QuarterBack` included. A dial with an exception is not a dial | `docs/session-control-dials.md` |
 | **shim** | system_scope | `bin/shim/tmux`, `bin/shim/systemctl` on PATH — vendor-neutral enforcement of dials and host guards | `docs/session-control-dials.md` |
 | **control-check** | system_scope | read the dial before touching a session — every session, every role, reading as well as writing | `ronin_catalogs/ACTIONS.md` |
 | **tag / group** (`@ronin-tags`) | system_scope | owner-set, multi-valued; addressing, not decoration (`+tag:`) | `CLAUDE.local.md` |
 | **note** (`@ronin_note`) | system_scope | the owner's one line about a session | `src/status.ts` |
-| **leader 人** (`@ronin-lead`) | system_scope | a session that coordinates a group; sorts to the top | `docs/session-leadership.md` |
+| **session_job**, the mark | system_scope | what a session is DOING, held in its **letter** (`Tegami.session_job`) — seeded at birth with the job it was launched as, changed by the session with `write_tegami`. The catalog's `icon:` is drawn wherever sessions are listed. **The letter's role half is cowork's; the ladder half is michi's.** **⚠ RETIRED: the leader 人 (`@ronin-lead`)** — it named only who coordinated a group, had to be hand-set, and was a second thing to maintain that the job already implied. The coordinator is the session whose job is `QuarterBack` 🏈 | `src/tegami.ts` · `ronin_catalogs/SESSION_JOBS.md` |
 | **▥ Hotwords** | system_scope | the commons tab. The dictation glossary itself belongs to KOE — see § KOE | `ronin_catalogs/HOTWORDS.md` |
 | **ghost text** | system_scope | text typed into a tile's prompt but not submitted; never type over it | `ronin_catalogs/ACTIONS.md` |
 
@@ -873,7 +888,7 @@ projection" describes the settler better.
 The umbrella over `koshi_monitor`, `koshi_reaper` and whatever follows.
 Narrowed by R31 — a koshi is one model call over a closed question, and never authors. The two old uses are retired: the form-fill helper is not
 a koshi, and "a tile running `orchestrating`" was a session with a `session_job` all along —
-`WatchCrew`. `system_scope`, not `dev_scope`; it ships. See § KOSHI.
+`QuarterBack`. `system_scope`, not `dev_scope`; it ships. See § KOSHI.
 
 **R11 · "the hopper" is not the word you use.** You called it "the WIP directory" and
 weren't sure that was its name. If the owner doesn't reach for the house word, the house

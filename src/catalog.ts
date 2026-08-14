@@ -189,6 +189,30 @@ export interface SessionJobInfo {
    * lets an agentless entry through without an `opening`.
    */
   agent: boolean;
+  /**
+   * Is this kind refused when the box is at its session max? `- **cap:** exempt` means
+   * NO — it is created anyway, and it still COUNTS, so the next spawn is the one that is
+   * refused. One kind carries this today (`MikaAssist`): blocking somebody who is asking
+   * for help is rude, and the roster must still show one honest figure.
+   *
+   * It lives in the catalog rather than in code for the reason every other constant does:
+   * nothing in `src/` may name a session_job, or the catalog stops being the answer.
+   */
+  capExempt: boolean;
+  /**
+   * Where this kind ALWAYS works, whatever project_root is picked — `- **dir:**` in the
+   * catalog. Empty for every ordinary kind, because the directory is the project_root's
+   * to supply and a kind that named one would be naming a machine.
+   *
+   * The one legal value is the sentinel **`{install}`**, resolved to this Ronin's own
+   * directory at launch (`REPO_ROOT`). `MikaAssist` carries it: she works on Ronin's own
+   * business, so she must start where Ronin's documents and catalogs are. Without it she
+   * was born in the service user's home with nothing to read.
+   *
+   * A literal path here would be a machine named in a shipped file, which JUSHO forbids.
+   * The sentinel is the whole vocabulary, and it stays that way.
+   */
+  dir: string;
 }
 
 export async function listSessionJobs(): Promise<SessionJobInfo[]> {
@@ -213,6 +237,8 @@ export async function listSessionJobs(): Promise<SessionJobInfo[]> {
         ack: /^y/i.test(e.get('ack')),
         opening: e.get('opening'),
         agent: e.get('agent').toLowerCase() !== 'none',
+        capExempt: e.get('cap').toLowerCase() === 'exempt',
+        dir: e.get('dir'),
       };
     })
     // An agent job with no opening template is a half-written entry and is dropped.
@@ -296,7 +322,9 @@ async function writeCatalogFile(file: string, text: string): Promise<void> {
  * `session_job` × `project_root` × group × mode, as a pressable tile.
  *
  * The owner's words are what this is: *"organize these tiles under new sessions to be
- * like, okay, I have ronin and watch crew."* It is deliberately NOT a macro — a macro is
+ * like, okay, I have ronin and watch crew."* (Quoted as said; `watch crew` has since been
+ * renamed `QuarterBack` — the quote is the record and is not edited to match.)
+ * It is deliberately NOT a macro — a macro is
  * a program an agent executes; this is a form filled in ahead of time. Calling both
  * "macro" puts a preset and a program in one bucket and leaves no word for the second.
  *

@@ -1,5 +1,6 @@
 import { appendFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
+import { REPO_ROOT } from './config.js';
 import { listProjectRoots, type ProjectRootInfo } from './project-roots.js';
 import { storeDir } from './stores.js';
 import {
@@ -78,6 +79,8 @@ export interface Resolved {
    * says so out loud rather than leaving the caller to infer it from an empty string.
    */
   agent: boolean;
+  /** `cap: exempt` — born even at the session max. It still counts once it is. */
+  capExempt: boolean;
 }
 
 const ACK_RULE =
@@ -147,6 +150,19 @@ export function slugName(intentKind: string, prompt: string, taken: Set<string>)
  * the session_job supplies its constants (dial, ladder, posture), the
  * project_root supplies the directory and the CLI, and nothing is invented.
  */
+/**
+ * A session_job's own working directory, if it has one. `{install}` — the only value the
+ * catalog may carry — is this Ronin's own directory, resolved here at launch.
+ *
+ * A sentinel rather than a path, because a shipped catalog naming a directory would be a
+ * shipped file naming a machine (JUSHO). Anything else is ignored rather than trusted:
+ * a catalog is data, and data that turned into an arbitrary filesystem path would be a
+ * quiet way to start a session anywhere.
+ */
+function kindDir(kind: SessionJobInfo): string {
+  return kind.dir.trim() === '{install}' ? REPO_ROOT : '';
+}
+
 export async function resolveForm(
   form: SpawnForm,
   taken: Set<string>,
@@ -176,7 +192,11 @@ export async function resolveForm(
 
   return {
     name: wanted || slugName(kind.name, form.prompt, taken),
-    dir: root?.dir ?? '',
+    // A kind's own `dir:` WINS over the project_root's, because it is a constant of the
+    // kind — the same category as its dial, and a launch must not be able to leave it to
+    // chance. Exactly one kind has one (`MikaAssist`, `{install}`): she works on Ronin's
+    // own business, so she starts where Ronin's documents are whatever root was picked.
+    dir: kindDir(kind) || root?.dir || '',
     cmd: agent ? form.cmd || root?.cmd || 'claude' : '',
     tags: (form.tags ?? []).filter(Boolean).slice(0, 16),
     dial: kind.dial,
@@ -186,6 +206,7 @@ export async function resolveForm(
     mode: form.mode === 'manual' ? 'manual' : 'assisted',
     brief: agent ? buildBrief(kind, root, form, referenceDir) : '',
     agent,
+    capExempt: kind.capExempt,
   };
 }
 

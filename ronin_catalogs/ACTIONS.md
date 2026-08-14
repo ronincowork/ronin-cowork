@@ -382,6 +382,29 @@ documents SOP). One lesson per memory, in the fewest words that survive without 
   alone** — the tool REFUSES both axes wildcard (exit 4). Propose it and let them write it.
 - Exit 3 = the tool cannot tell what this session is; name an axis rather than guessing.
 
+## propose-and-confirm — show the change, wait for the yes
+`action_kind: judgement` — this one needs your reasoning; no tool can do it for you.
+**The whole of MIKA's licence to touch the owner's catalogs and settings** (see
+`MIKA_MACROS.md`), and available to any macro that changes something the owner did not
+spell out themselves.
+
+1. **Show it as what it will become** — the markdown block, the filled form, `old → new`.
+   Not a description of the change: the change.
+2. **Say what you inferred and from where.** "`remit` is the README's first line" lets a
+   wrong guess be corrected in one word instead of discovered next week.
+3. **Wait.** A yes is a yes; silence is not, and neither is "sounds good" to a different
+   question.
+4. **Then perform it through the machinery that already exists** — the endpoint, the
+   catalog write, the launch route. Never a second write path of your own, and never a
+   file edited by hand where an endpoint exists.
+
+**A refusal from that machinery is an ANSWER, not a fault.** `POST /api/project-roots`
+leaves the file exactly as it was when the result would not parse back. Report it and
+stop; do not retry with the block reshaped until something sticks.
+
+**Do not batch.** One change, one confirmation. Three proposals in one message get one
+"yes" that meant the first of them.
+
 ## report-outcome
 `action_kind: judgement` — this one needs your reasoning; no tool can do it for you.
 Close every macro by telling the owner what happened — outcome first, in plain

@@ -29,6 +29,7 @@ import { classifyStatus, waitReady, type SessionStatus } from '../status.js';
 import { scanContext } from '../ctx.js';
 
 import { count } from '../counts.js';
+import { seedTegami, withRoles } from '../tegami.js';
 import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFields } from '../sockets.js';
 
 /* ---------- ONE door to a new session: POST /api/launch ----------
@@ -92,12 +93,18 @@ export function registerLaunch(app: express.Express): void {
 
     try {
       await emitSessionWillBorn(resolved.name); // rireki resets a reused name's stale tape here
-      await createSession(resolved.name, resolved.dir, { agent: resolved.agent });
+      await createSession(resolved.name, resolved.dir, { agent: resolved.agent, exempt: resolved.capExempt });
       if (resolved.tags.length) await setTags(resolved.name, resolved.tags);
       // The project_root the session serves, written at birth — the one moment tagging
       // reliably happens. Two shipped tools (tejun-recall, tejun-remember) read this to
       // scope a memory and nothing used to set it.
       if (resolved.project_root) await setProjectRoot(resolved.name, resolved.project_root);
+      // THE ROLE, SET MECHANICALLY. The button the owner pressed IS what this session is
+      // for, so the letter is written with `session_job` already filled rather than left
+      // for the agent to guess at a fact that was never in doubt. The session owns it
+      // from here — `write_tegami` is how it says the work has changed — and we never
+      // overwrite a letter that exists. See src/tegami.ts.
+      await seedTegami(resolved.name, resolved.session_job);
       await setControl(resolved.name, resolved.dial);
     } catch (e) {
       void appendLedger(form, resolved, false);
@@ -153,7 +160,7 @@ export function registerLaunch(app: express.Express): void {
 
   app.get('/api/sessions', async (_req, res) => {
     try {
-      res.json(await listSessions());
+      res.json(await withRoles(await listSessions()));
     } catch (e) {
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }
@@ -164,7 +171,7 @@ export function registerLaunch(app: express.Express): void {
   // gauge reading — one capture-pane per session, shared by both scrapes.
   app.get('/api/home', async (_req, res) => {
     try {
-      const list = await listSessions();
+      const list = await withRoles(await listSessions());
       const out = await Promise.all(
         list.map(async (s) => {
           let status: SessionStatus | null = null;
