@@ -131,8 +131,11 @@ const IGNORE = {
   'docs/shadowing.md': ['HOTWORDS.md', 'src/services/koe/hotwords.ts', 'docs/stores.md', 'docs/repo-to-operator.md', 'DAIKUSAN.md'],
   'README.md': ['connector-contract.md'],
   'public/js/README.md': ['app.js', 'co-working/user_repo/wip/buildouts/', 'CLAUDE.md', 'docs/commons.md', 'src/services/rireki/', 'co-working/user_repo/README/KEYPAD_README.md', '../../co-working/user_repo/README/KEYPAD_README.md'],
-  'ronin_catalogs/ACTIONS.md': ['landed/MANIFEST.md', 'co-working/user_repo/wip/buildouts/', 'co-working/user_repo/wip/handoffs/'],
-  'ronin_catalogs/MACROS.md': ['co-working/user_repo/wip/buildouts/', 'landed/MANIFEST.md'],
+  // The house dirs of a PROJECT_REPO (the documents SOP): wip/, docs/, manifest/ are
+  // locations in the repo a session works in, never claims about this tree. Legal by
+  // definition, not placeholders — they stay here for good.
+  'ronin_catalogs/ACTIONS.md': ['manifest/MANIFEST.md', 'wip/buildouts/', 'wip/handoffs/'],
+  'ronin_catalogs/MACROS.md': ['manifest/MANIFEST.md', 'wip/buildouts/', 'wip/handoffs/'],
   'ronin_catalogs/PROJECT_ROOTS.md': ['DAIKUSAN.md', 'src/services/rireki/decode.ts:219'],
   'ronin_catalogs/TOOLS.md': ['docs/oboeru.md', 'docs/koshi.md'],
 };

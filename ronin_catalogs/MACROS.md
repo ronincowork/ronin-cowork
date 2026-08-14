@@ -86,8 +86,7 @@ is this session working on" and one that answers "what did it remember to mentio
 PROPOSE it ("I'd like to fork X into its own session") and wait for the go-ahead.
 Unannounced sessions are untrackable for the human until the UI reveals them
 (NOW.md 3b). Spin the current conversation's active topic out into its own agent
-session, so the origin session stays on its track. (The breakout pattern — first performed manually
-2026-08-05, logged as co-working/user_repo/wip/RECIPES.md R1.)
+session, so the origin session stays on its track. (The breakout pattern, first performed manually 2026-08-05.)
 
 Params: `topic` (short slug), `dir` (working directory for the new session; default:
 current repo root), `group` (which group the new session joins; default: the origin
@@ -96,11 +95,11 @@ what exists. Ask the owner if the origin has none).
 
 | # | Action | With |
 |---|---|---|
-| 1 | write-handoff-doc | `co-working/user_repo/wip/handoffs/<TOPIC>.md` — distill THIS conversation's context on the topic: goal in the owner's words, constraints, verification, definition of done |
+| 1 | write-handoff-doc | `wip/handoffs/<TOPIC>.md` — distill THIS conversation's context on the topic: goal in the owner's words, constraints, verification, definition of done |
 | 2 | session-create | name `<topic>`, cwd `<dir>`, tags `<group>` |
 | 3 | run-command | `claude` |
 | 4 | wait-ready | claude pattern |
-| 5 | send-prompt | **READ AND REPORT UNDERSTANDING FIRST — never "read this and execute it".** A fork starts by proving it understood, not by working: "Read <handoff path>. Then report back, in your own words: what the job is, what you will NOT do (in particular: NO code, NO builds, NO commits until the owner says go), and anything in the brief that is unclear or looks wrong. Do not act on it yet — wait for the owner. Follow CLAUDE.md and CLAUDE.local.md conventions strictly." Add, for planning topics, what the eventual deliverable is: "when the owner gives the go-ahead, the output is the build-out plan `co-working/user_repo/wip/buildouts/<TOPIC>.md` — a plan, not code." |
+| 5 | send-prompt | **READ AND REPORT UNDERSTANDING FIRST — never "read this and execute it".** A fork starts by proving it understood, not by working: "Read <handoff path>. Then report back, in your own words: what the job is, what you will NOT do (in particular: NO code, NO builds, NO commits until the owner says go), and anything in the brief that is unclear or looks wrong. Do not act on it yet — wait for the owner. Follow CLAUDE.md and CLAUDE.local.md conventions strictly." Add, for planning topics, what the eventual deliverable is: "when the owner gives the go-ahead, the output is the build-out plan `wip/buildouts/<TOPIC>.md` — a plan, not code." |
 | 6 | confirm-started | the fork has ACKNOWLEDGED — it reported its understanding and is waiting, not working |
 | 7 | report-outcome | session name, topic, handoff doc path, how to open it |
 
@@ -117,7 +116,7 @@ Plan a piece of work as a document the owner can read, edit and riff on — no c
 
 | # | Action | With |
 |---|---|---|
-| 1 | write-buildout-doc | `co-working/user_repo/wip/buildouts/<TOPIC>.md` — goal, legs, constraints, verification, done |
+| 1 | write-buildout-doc | `wip/buildouts/<TOPIC>.md` — goal, legs, constraints, verification, done |
 | 2 | report-outcome | where the doc is and the legs proposed — then WAIT for the owner |
 
 Report: where the doc is, and the legs proposed. Then WAIT — the owner reviews and
@@ -139,7 +138,7 @@ Report: what got cut, what remains in the doc, the PR link. On `leg`, stop and w
 ## land
 - **class:** session_macro.workflow
 **Land YOURSELF.** No args: finish the work of THIS session, leave the record, end
-this session. The buildout doc you were working from is your own (`co-working/user_repo/wip/buildouts/`);
+this session. The buildout doc you were working from is your own (`wip/buildouts/`);
 if you truly can't tell what you were building, ask — don't guess.
 (Landing someone else's session would be a different macro — "land your neighbour" —
 which does not exist yet. Don't improvise it.)
@@ -148,7 +147,7 @@ which does not exist yet. Don't improvise it.)
 |---|---|---|
 | 1 | land-work | persistent README where the code lives; DELETE the wip buildout doc |
 | 2 | open-pr | if anything is uncommitted |
-| 3 | land-manifest | ONE line appended to `landed/MANIFEST.md` — an index entry, not history |
+| 3 | land-manifest | ONE line appended to `manifest/MANIFEST.md` — an index entry, not history |
 | 4 | report-outcome | README path, PR link, manifest line — BEFORE you end |
 | 5 | harakiri | end this session — last act, after everything is pushed and reported |
 
@@ -159,7 +158,7 @@ Sessions are disposable: nothing of value may live only in a pane.
 - **class:** session_macro.workflow
 **End THIS session quietly — nothing recorded.** For sessions that produced no
 artifact worth keeping: evaluations, catch-ups, questions, scratch work. No README,
-no landed/MANIFEST.md line, no PR. It just goes away.
+no manifest/MANIFEST.md line, no PR. It just goes away.
 
 | # | Action | With |
 |---|---|---|

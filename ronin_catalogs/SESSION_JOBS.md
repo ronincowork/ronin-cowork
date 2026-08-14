@@ -75,7 +75,7 @@ words) · `dial` · `permissions` · `lifecycle` (the michi it starts in) · `ac
 - **permissions:** default
 - **lifecycle:** designing
 - **ack:** yes
-- **opening:** Plan this: {prompt}. Write the plan to co-working/user_repo/wip/buildouts/<TOPIC>.md — goal in the owner's words, legs, constraints, verification, definition of done. A plan, not code.
+- **opening:** Plan this: {prompt}. Write the plan to wip/buildouts/<TOPIC>.md — goal in the owner's words, legs, constraints, verification, definition of done. A plan, not code.
 
 ## CutCode
 - **icon:** ✂
