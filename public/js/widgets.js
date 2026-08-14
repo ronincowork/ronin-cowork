@@ -113,6 +113,67 @@ export function makeGauge(label) {
   return { el: btn, set };
 }
 
+/**
+ * THE JOB MENU — pick what a session is doing, from the mark that shows it.
+ *
+ * A popover that dies on the next click, deliberately not a sheet like 🏷 Groups: that
+ * one is an EDITOR (several values, typing, a Save), this picks one item off a list the
+ * catalog already handed us. `jobs` is that catalog, `current` is the name to tick, and
+ * `onPick` receives the chosen name — or '' for "not marked", which is a real state and
+ * has to stay reachable once you have set one by hand.
+ *
+ * It knows nothing about sessions or fetching. The caller owns what a pick MEANS, which
+ * is what lets the same menu hang off a tile header and a roster row.
+ */
+export function openJobMenu(anchor, jobs, current, onPick) {
+  document.querySelector('.job-menu')?.remove();
+  const m = document.createElement('div');
+  m.className = 'job-menu';
+  const opt = (cls, on, build, pick) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'job-opt' + cls + (on ? ' on' : '');
+    build(b);
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      m.remove();
+      onPick(pick);
+    });
+    m.appendChild(b);
+  };
+  for (const k of jobs || []) {
+    opt('', k.name === current, (b) => {
+      b.append(
+        Object.assign(document.createElement('i'), { textContent: k.icon }),
+        Object.assign(document.createElement('span'), { textContent: k.label }),
+      );
+      b.title = k.remit || k.blurb || '';
+    }, k.name);
+  }
+  opt(' none', !current, (b) => {
+    b.textContent = 'not marked';
+    b.title = 'Clear the mark — this session has not said what it is doing';
+  }, '');
+
+  // Anchored to the glyph, then pulled back inside the viewport: a tile on the right of
+  // a four-up grid would otherwise open its menu off the edge of the screen.
+  document.body.appendChild(m);
+  const a = anchor.getBoundingClientRect();
+  const w = m.offsetWidth;
+  const h = m.offsetHeight;
+  m.style.left = Math.round(Math.max(4, Math.min(a.left, window.innerWidth - w - 4))) + 'px';
+  m.style.top = Math.round(a.bottom + 4 + h > window.innerHeight ? Math.max(4, a.top - h - 4) : a.bottom + 4) + 'px';
+  // Closes on the next click anywhere — including the glyph that opened it, which is why
+  // the listener is armed a tick late rather than on this same event.
+  setTimeout(() => {
+    const away = () => {
+      m.remove();
+      document.removeEventListener('click', away);
+    };
+    document.addEventListener('click', away);
+  }, 0);
+}
+
 // The control dial's three detents (@ronin-control on the tmux session). "Outside
 // agents" = other agents reaching into the session (via /send or tmux) — never the
 // agent already running inside it, and never the owner's own typing.

@@ -10,10 +10,60 @@ set -u
 
 VIEWER_PREFIX="grid_"   # browser viewer sessions — never part of a group
 
-# name<TAB>tags<TAB>dial<TAB>leads for every real session, viewers dropped.
+# Where the session record lives on THIS machine. Asked, never spelled — same resolver
+# read_tegami and write_tegami use, so a moved store moves all three together.
+STORE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../bin" && pwd)/ronin-store"
+[ -x "$STORE" ] || STORE=ronin-store
+SESSION_STORE="$("$STORE" session 2>/dev/null)"
+
+# A session's session_job, out of its own letter — '' when it has no letter or has not
+# said. The role lives in TEGAMI because the session may change it as the work changes
+# (`write_tegami`); it is seeded at birth with the job the owner launched it as.
+#
+# This used to be a fourth tmux column, @ronin-lead — the groups a session was hand-marked
+# as leading. That is retired: the coordinator of a group is the member whose job is
+# QuarterBack, so "who runs this?" is answered by the same field that answers "what is
+# everyone doing?", and there is no second thing to set.
+job_of() {
+  local key row stamped created
+  [ -n "${SESSION_STORE:-}" ] || return 0
+  row=$(tmux list-sessions -F '#{session_name}	#{@ronin-key}	#{session_created}' 2>/dev/null \
+        | awk -F'\t' -v n="$1" '$1==n {print; exit}')
+  [ -n "$row" ] || return 0
+  stamped=$(printf '%s' "$row" | cut -f2); created=$(printf '%s' "$row" | cut -f3)
+  if [ -n "${stamped// /}" ]; then key="$stamped"
+  elif [ -n "${created// /}" ]; then key="$1-$created"
+  else key="$1"; fi
+  python3 - "$SESSION_STORE/$key/tegami.md" <<'PY' 2>/dev/null
+import json, re, sys
+try:
+    t = open(sys.argv[1]).read()
+except OSError:
+    raise SystemExit
+m = re.search(r"```(?:json)?\s*\n(.*?)\n```", t, re.S)
+raw = m.group(1) if m else t[t.find("{"):t.rfind("}") + 1]
+try:
+    j = json.loads(raw).get("session_job", "")
+except Exception:
+    raise SystemExit
+if isinstance(j, str):
+    print(j.strip())
+PY
+}
+
+# name·tags·dial·session_job for every real session, viewers dropped.
+#
+# SEP is \x1f (unit separator), NOT a tab. Tab is an IFS *whitespace* character, so bash
+# collapses a RUN of them into one delimiter: an untagged session emitted as
+# `name<TAB><TAB>write` read back as tags="write", and every such session then matched a
+# group called "write". \x1f is not whitespace, so an empty field stays an empty field.
+# Nothing in a name, tag, dial or job can contain it.
+SEP=$'\x1f'
 roster() {
-  tmux list-sessions -F '#{session_name}	#{@ronin-tags}	#{@ronin-control}	#{@ronin-lead}' 2>/dev/null \
-    | grep -v "^${VIEWER_PREFIX}"
+  while IFS=$SEP read -r name tags dial; do
+    printf '%s%s%s%s%s%s%s\n' "$name" "$SEP" "$tags" "$SEP" "$dial" "$SEP" "$(job_of "$name")"
+  done < <(tmux list-sessions -F "#{session_name}${SEP}#{@ronin-tags}${SEP}#{@ronin-control}" 2>/dev/null \
+    | grep -v "^${VIEWER_PREFIX}")
 }
 
 # Does $1 (a comma list) contain the exact group $2?
@@ -22,24 +72,25 @@ has_group() { case ",${1// /}," in *",${2},"*) return 0 ;; *) return 1 ;; esac; 
 if [ $# -eq 0 ]; then
   # Every group in play + its size. Sessions with no tags are reported as loose, so
   # "not in the list" never silently means "I forgot to tag it".
-  out=$(roster | awk -F'\t' '
-    { if ($4 != "") {   # groups this session LEADS — named, so the roster says who runs what
-        m = split($4, L, ",")
-        for (j = 1; j <= m; j++) { gsub(/^[ \t]+|[ \t]+$/, "", L[j])
-          if (L[j] != "") { lead[L[j]] = (lead[L[j]] == "" ? $1 : lead[L[j]] " + " $1); seen[L[j]] = 1 } }
-      }
-      if ($2 == "") { if ($4 == "") loose++; next }
+  #
+  # A group's QuarterBack is named beside it. Unlike the old lead, coordinating implies
+  # MEMBERSHIP: a QuarterBack is tagged into the group it runs like anyone else, so a
+  # group can no longer exist by virtue of somebody leading an empty one.
+  out=$(roster | awk -F'\037' '
+    { if ($2 == "") { loose++; next }
       n = split($2, t, ",")
-      for (i = 1; i <= n; i++) { gsub(/^[ \t]+|[ \t]+$/, "", t[i]); if (t[i] != "") { c[t[i]]++; seen[t[i]] = 1 } }
+      for (i = 1; i <= n; i++) { gsub(/^[ \t]+|[ \t]+$/, "", t[i])
+        if (t[i] != "") { c[t[i]]++; seen[t[i]] = 1
+          if ($4 == "QuarterBack") qb[t[i]] = (qb[t[i]] == "" ? $1 : qb[t[i]] " + " $1) } }
     }
-    END { for (g in seen) printf "%s\t%d\t%s\n", g, c[g], lead[g]; if (loose) printf "\001untagged\t%d\t\n", loose }' \
+    END { for (g in seen) printf "%s\037%d\037%s\n", g, c[g], qb[g]; if (loose) printf "\001untagged\037%d\037\n", loose }' \
     | sort)
   [ -n "$out" ] || { echo "NO-GROUPS: no session carries a tag yet (owner tags them in the Ronin UI)"; exit 3; }
-  printf '%s\n' "$out" | while IFS=$'\t' read -r g n lead; do
+  printf '%s\n' "$out" | while IFS=$SEP read -r g n qb; do
     case "$g" in
       $'\001untagged') printf '%-24s %s session(s), in no group\n' '(untagged)' "$n" ;;
-      *) if [ -n "${lead:-}" ]; then
-           printf '%-24s %s session(s), led by 人 %s\n' "$g" "$n" "$lead"
+      *) if [ -n "${qb:-}" ]; then
+           printf '%-24s %s session(s), quarterbacked by %s\n' "$g" "$n" "$qb"
          else
            printf '%-24s %s session(s)\n' "$g" "$n"
          fi ;;
@@ -50,21 +101,23 @@ fi
 
 G=$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')
 found=0
-# 人 (the *nin* of 浪人) marks the session that COORDINATES this group. It leads first,
-# then the members — the same order the owner sees in the Ronin session list. Leading is
-# a label, not a permission: the dial still decides who may drive whom.
-while IFS=$'\t' read -r name tags dial leads; do
-  has_group "${leads:-}" "$G" || continue
+# The QuarterBack goes first, then the rest — the same order the owner sees in the Ronin
+# session list. Every member's job is printed ('-' where nobody has said), because on a
+# group roster "what is each of these doing?" is the question being asked. The job is a
+# label, not a permission: the dial still decides who may drive whom.
+while IFS=$SEP read -r name tags dial job; do
+  has_group "${tags:-}" "$G" || continue
+  [ "${job:-}" = QuarterBack ] || continue
   found=1
-  printf '人 %s\t%s\tleads\n' "$name" "${dial:-write}"
+  printf '%-24s %-8s %s\n' "$name" "${dial:-write}" "$job"
 done < <(roster)
 
-while IFS=$'\t' read -r name tags dial leads; do
+while IFS=$SEP read -r name tags dial job; do
   # exact tag match, not substring: 'kojin' must not match 'kojinsa'
   has_group "${tags:-}" "$G" || continue
-  has_group "${leads:-}" "$G" && continue   # already printed as the leader
+  [ "${job:-}" = QuarterBack ] && continue   # already printed, at the head
   found=1
-  printf '  %s\t%s\n' "$name" "${dial:-write}"
+  printf '%-24s %-8s %s\n' "$name" "${dial:-write}" "${job:--}"
 done < <(roster)
 
 [ "$found" = 1 ] || { echo "NO-GROUP: nothing is tagged '$G' — run 'tejun-group' to see the groups that exist"; exit 3; }

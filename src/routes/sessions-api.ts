@@ -9,7 +9,6 @@ import type express from 'express';
 import {
   type Control,
   getControl,
-  getLeads,
   getNote,
   getProjectRoot,
   getTags,
@@ -20,7 +19,6 @@ import {
   sessionExists,
   sessionOfPane,
   setControl,
-  setLeads,
   setNote,
   setProjectRoot,
   setTags,
@@ -30,6 +28,7 @@ import { isValidRootName, listProjectRoots } from '../project-roots.js';
 import { expandLookup } from '../lookup.js';
 import { readCtxLine } from '../ctx.js';
 import { count } from '../counts.js';
+import { readRole, writeRole } from '../tegami.js';
 import { emitSessionEnd } from '../sockets.js';
 
 export function registerSessions(app: express.Express): void {
@@ -157,46 +156,62 @@ export function registerSessions(app: express.Express): void {
     }
   });
 
-  // Leadership (@ronin-lead): the groups a session COORDINATES. Same shape as tags, and
-  // owner-set for the same reason the dial is — an agent must never promote itself.
-  app.get('/api/sessions/:name/leads', async (req, res) => {
+  /**
+   * `session_job` — what this session is DOING, read from and written to its LETTER.
+   *
+   * The session keeps this current itself (`write_tegami`) and usually should. This is
+   * the OWNER's hand on the same field, from the tile: you can see the agent is not doing
+   * what its mark says, so you say so. It is a re-LABEL and nothing else — no brief is
+   * re-sent, and the dial and permissions the launch fixed are untouched. A session that
+   * is re-marked must not thereby acquire a different dial.
+   *
+   * Not validated against the catalog on purpose: `SESSION_JOBS.md` is the owner's to
+   * extend or shadow, and a name with no icon still draws as its own text. '' clears the
+   * mark back to "has not said", which is a real state and must stay reachable.
+   *
+   * 409, not 500, when the letter cannot be written: it means the file is malformed or
+   * the edit would not re-parse, and the caller wants to know its change did not land
+   * rather than that the server broke.
+   */
+  app.get('/api/sessions/:name/session_job', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
     if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
-    res.json({ leads: await getLeads(name) });
+    res.json({ session_job: await readRole(name) });
   });
 
-  app.post('/api/sessions/:name/leads', async (req, res) => {
+  app.post('/api/sessions/:name/session_job', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
     if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
-    const body = req.body?.leads;
-    const list = Array.isArray(body) ? body.map(String) : String(body ?? '').split(',');
+    const job = String(req.body?.session_job ?? '').trim().slice(0, 64);
     try {
-      count('lead.set');
-      res.json({ ok: true, leads: await setLeads(name, list.slice(0, 16)) });
+      const saved = await writeRole(name, job);
+      if (saved === null) {
+        return res.status(409).json({ error: "This session's letter could not be written — it has no readable json block." });
+      }
+      count('session_job.set', { job: saved || null });
+      res.json({ ok: true, session_job: saved });
     } catch (e) {
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }
   });
 
   /**
-   * Every group in play, with its members and its leader(s): a coordinator asking "who is
-   * in this group" gets "and who runs it" in the same answer. Derived from the sessions
-   * each call — there is no group registry to drift out of date.
+   * Every group in play, with its members. Derived from the sessions each call — there
+   * is no group registry to drift out of date.
+   *
+   * It used to answer with a `leaders` map too, off `@ronin-lead` — who coordinates each
+   * group, hand-set by the owner. That option is retired: coordinating is a `session_job`
+   * (`QuarterBack`), and the session says so in its own letter.
    */
   app.get('/api/groups', async (_req, res) => {
     try {
       const groups: Record<string, string[]> = {};
-      const leaders: Record<string, string[]> = {};
       for (const s of await listSessions()) {
         for (const t of s.tags) (groups[t] ||= []).push(s.name);
-        for (const g of s.leads) {
-          (leaders[g] ||= []).push(s.name);
-          groups[g] ||= []; // a led group exists even before anyone joins it
-        }
       }
-      res.json({ groups, leaders });
+      res.json({ groups });
     } catch (e) {
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }

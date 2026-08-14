@@ -53,6 +53,30 @@ export async function loadPresets() {
   tiles.forEach((t) => t.renderHome());
 }
 
+/**
+ * The mark a session wears wherever sessions are listed — the ⌂ Roster, the tile header's
+ * picker, the ⚡ macro targets. This is what replaced the hand-set 人: it says what the
+ * session IS rather than who outranks whom, and the coordinator is simply the session
+ * whose job is `QuarterBack` 🏈.
+ *
+ * **It comes off the LETTER, and it is on every session list.** `session_job` is a field
+ * of the session's own TEGAMI, filled mechanically at birth with the button the owner
+ * pressed and changed by the session itself with `write_tegami` — "a session that
+ * finishes planning and starts building has changed job, not become a new session". The
+ * server reads it back onto every list it serves (`src/tegami.ts`, `withRoles`), so the
+ * roster, the tile header and the ⚡ targets cannot disagree, and no second copy exists
+ * anywhere to drift from the file.
+ *
+ * The role half of the letter is COWORK's — a session has a role whether or not it ever
+ * puts a ladder up — so this works on a build with no michi, where `s.tegami` and the
+ * SHINGO chip are absent entirely.
+ *
+ * '' whenever nobody has said, and callers draw nothing rather than guessing: a session
+ * Ronin never launched has no letter, and the gap is the honest answer.
+ */
+export const jobIcon = (s) =>
+  (s?.session_job && (presetData || []).find((k) => k.name === s.session_job)?.icon) || '';
+
 export async function loadMacros() {
   try {
     const r = await fetch('/api/macros');

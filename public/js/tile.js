@@ -21,12 +21,13 @@
  * 2026-08-08. Views mount in DOM order: tape, then the commons panel, then xterm.
  */
 import { createSession, deleteSession, fetchSessions } from './api.js';
-import { refreshHome } from './home.js';
+import { jobIcon, presetData, refreshHome } from './home.js';
 import { IS_TOUCH, NEW, S, saveState, tiles } from './state.js';
 import { buildHome } from './commons.js';
 import { guard } from './errors.js';
 import { buildLadder, buildLetter } from './shingo.js';
 import { LOCKED_TITLE, buildTileHead } from './tilehead.js';
+import { openJobMenu } from './widgets.js';
 import { dvrStep } from './dvr.js';
 import { TapeView } from './tapeview.js';
 import { TermView } from './termview.js';
@@ -58,6 +59,7 @@ export class Tile {
     this.lockEl = head.lockEl;
     this.noteBtn = head.noteBtn;
     this.tagBtn = head.tagBtn;
+    this.jobBtn = head.jobBtn;
 
     // 🔓 THE UNLOCKED VIEW — mounted first, so the tape sits under the panel and the
     // terminal in the stack, exactly as before.
@@ -199,7 +201,13 @@ export class Tile {
     this.select.innerHTML = '';
     this.select.add(new Option('— pick session —', ''));
     for (const s of S.sessions) {
-      const label = `${(s.leads || []).length ? '人 ' : ''}${s.name}${s.attached ? ' •' : ''}`;
+      // NO MARK IN THE PICKER. It was prefixed here too, and the collapsed <select> then
+      // showed the current session's icon immediately beside the job button showing the
+      // same icon — the same fact twice, an inch apart. The button is the one that keeps
+      // it: it is pressable, it carries the name in its tooltip, and it says `?` when
+      // nobody has said. Surveying every session's job is the ⌂ Roster's work, and the
+      // roster draws them all.
+      const label = `${s.name}${s.attached ? ' •' : ''}`;
       this.select.add(new Option(label, s.name));
     }
     // keep a stale-but-connected session visible even if it left the list
@@ -210,6 +218,7 @@ export class Tile {
     this.select.value = cur || '';
     this.updateNoteBtn();
     this.updateTagBtn();
+    this.updateJobBtn();
     this.refreshControl();
     this.refreshCtx();
     this.refreshTegami();
@@ -384,6 +393,72 @@ export class Tile {
   }
 
   /** 🏷 shows how many groups this session is in — the label an agent can address it by. */
+  /**
+   * The job button: what this session is doing, on the tile that is showing it.
+   *
+   * **`?` when nothing has been said, not blank.** It was blank first, on the argument
+   * that a made-up mark is worse than an empty square. That was wrong in the only way
+   * that counts: an empty button is INVISIBLE among six others, so nobody learns there
+   * is a question to answer — the owner reported not being able to find the control at
+   * all. `?` is not a guessed mark, it is the honest reading (*nobody has said*) drawn so
+   * it can be seen and pressed. An affordance nobody can find is not restraint.
+   *
+   * Reads off the session list, which carries the role for every session
+   * (`src/tegami.ts`), so it is right for a session the agent re-marked itself as much as
+   * for one the owner set here.
+   */
+  updateJobBtn() {
+    const btn = this.jobBtn;
+    if (!btn) return;
+    const s = S.sessions.find((x) => x.name === this.session);
+    const job = (s && s.session_job) || '';
+    btn.textContent = jobIcon(s) || '?';
+    btn.classList.toggle('unset', !job);
+    btn.disabled = !this.session;
+    btn.title = !this.session
+      ? 'What this session is doing'
+      : job
+        ? `${job} — click to change what this session is doing`
+        : 'Not marked — click to say what this session is doing';
+  }
+
+  /**
+   * Set what this session is doing, by hand.
+   *
+   * Writes the session's own letter (`session_job` in its TEGAMI), which is the same
+   * field the agent maintains with `write_tegami` — the owner is simply the other writer,
+   * for when an agent has not re-marked itself or was redirected mid-flight. A re-label
+   * only: no brief is re-sent and the dial is untouched.
+   *
+   * The list is updated locally before the ws poll gets there, so the mark moves under
+   * your finger; the poll then confirms it, and would correct it if the write lost a race.
+   */
+  async pickJob(anchor) {
+    if (!this.session) return;
+    const session = this.session;
+    const cur = S.sessions.find((x) => x.name === session);
+    openJobMenu(anchor, presetData || [], (cur && cur.session_job) || '', async (job) => {
+      try {
+        const r = await fetch('/api/sessions/' + encodeURIComponent(session) + '/session_job', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ session_job: job }),
+        });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+        const live = S.sessions.find((x) => x.name === session);
+        if (live) live.session_job = d.session_job ?? job;
+        tiles.forEach((t) => {
+          t.updateJobBtn();
+          t.refreshOptions();
+        });
+        refreshHome();
+      } catch (e) {
+        alert(String(e.message || e));
+      }
+    });
+  }
+
   updateTagBtn() {
     const btn = this.tagBtn;
     if (!btn) return;
@@ -604,6 +679,7 @@ export class Tile {
     this.select.value = '';
     this.updateNoteBtn();
     this.updateTagBtn();
+    this.updateJobBtn();
     this.refreshControl();
     this.gauge.set(null);
     this.tegami = null;
@@ -640,6 +716,7 @@ export class Tile {
     this.select.value = session;
     this.updateNoteBtn();
     this.updateTagBtn();
+    this.updateJobBtn();
     this.refreshControl();
     this.refreshCtx();
     this.refreshTegami();

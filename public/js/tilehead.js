@@ -21,7 +21,7 @@ export const LOCKED_TITLE =
 
 /**
  * @param {object} tile  the cell this header belongs to — its methods are the callbacks
- * @returns {{el, select, body, dot, dial, gauge, torii, chip, lockEl, noteBtn, tagBtn}}
+ * @returns {{el, select, jobBtn, body, dot, dial, gauge, torii, chip, lockEl, noteBtn, tagBtn}}
  */
 export function buildTileHead(tile) {
   const el = document.createElement('section');
@@ -30,6 +30,7 @@ export function buildTileHead(tile) {
       <div class="tile-head">
         <span class="dot off" title="Connection: green = attached, grey = disconnected"></span>
         <select class="sess" title="Pick / switch the session shown in this tile"></select>
+        <button class="job" title="What this session is doing"></button>
         <span class="grow"></span>
         <button class="menu" title="⌃⇧C — the CoWorking Commons: the session roster, a new session, the wipeboard, project roots, hotwords. Opens over this tile; the session keeps streaming behind it and ✕ on the tab strip comes back. (⌃⌥C on Linux/Windows.)">メ</button>
         <button class="lock" title="${LOCKED_TITLE}">🔒</button>
@@ -81,9 +82,18 @@ export function buildTileHead(tile) {
   const chip = makeChip(() => tile.toggleLadder());
   select.after(chip.el);
 
+  // THE MARK: what this session is doing, beside the name it belongs to and before the
+  // ladder chip — "who is this" then "where are they", never among the controls on the
+  // right. Blank when the session has not said, which is why it carries no fallback
+  // glyph: an empty button is the honest reading and it is still clickable, so a blank
+  // is an invitation rather than a dead end.
+  const jobBtn = el.querySelector('.job');
+  jobBtn.addEventListener('click', () => tile.pickJob(jobBtn));
+
   return {
     el,
     select,
+    jobBtn,
     body: el.querySelector('.tile-body'),
     dot: el.querySelector('.dot'),
     dial,
