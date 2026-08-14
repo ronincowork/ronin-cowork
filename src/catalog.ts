@@ -69,8 +69,8 @@ async function readUserCatalog(file: string): Promise<string> {
   }
 }
 
-/** Exported for `scripts/check-catalogs.ts`, which lints the STOCK files with the same
- * split the runtime uses — a lint with its own parser would drift, silently. */
+/** Exported for `scripts/check-catalogs.ts`, the byoin_check that reads the STOCK files
+ * with the same split the runtime uses — a check with its own parser would drift, silently. */
 export function splitSections(raw: string, origin: Origin): CatalogSection[] {
   // Everything after a `---` footer rule is prose for the reader, not catalog.
   const body = raw.split(/^---\s*$/m)[0];

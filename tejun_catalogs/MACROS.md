@@ -14,6 +14,15 @@ typeable on every keyboard (including a phone) — buttons emit it and people ca
 it. Also accepted: a bare `<name>: <args>`, a `ろ` prefix (legacy decoration), "run
 the <name> macro", "/<name>". **Never require a marker** to recognise a macro.
 
+**Every macro here is one of two classes, and its `class:` line says which** (KOTOBA):
+
+- **`session_macro.lookup`** — a read-only question Ronin already holds the answer to.
+  One command (`tejun-group`, `tejun-wipeboard`), no compile, no step tracking; sent
+  through Ronin it arrives already resolved, so never re-run one to confirm.
+- **`session_macro.workflow`** — a recipe of cataloged actions you perform: compile it
+  (`bin/tejun <name>`) or step through it (`tejun-step start <name>`), execute in
+  order, report the outcome.
+
 **To run a macro: `tejun-step start <name>`** (bin/ is on PATH) — it hands you one step
 at a time; do it, then `tejun-step done` to check it in and receive the next. Keep
 going until it says COMPLETE. (`bin/tejun <name>` compiles the whole recipe in one
@@ -32,6 +41,7 @@ or directory in the cwd the CLI's file-completion popup may appear; pick the ses
 from Ronin's target picker in that case, or pass it as a macro arg.
 
 ## updateplan
+- **class:** session_macro.workflow
 Ask this session to bring its TEGAMI up to date. **Ronin sends this one for you** —
 the button does not prefill it, it types the line below and presses Enter, so the
 session updates its ladder without you writing anything. Nothing else happens: the
@@ -44,6 +54,7 @@ Send: Update your TEGAMI now — read it, bring the ladder in line with what you
 | 1 | report-outcome | nothing to report — the letter IS the outcome; do not narrate the update |
 
 ## show_file
+- **class:** session_macro.workflow
 Owner wants to READ what you are working on: `+show_file`, or `+show_file: MDEDIT.md`.
 Bring your document list up to date, then tell them where to look. **Do not paste the
 document into the pane and do not summarise it** — the point is that they open the real
@@ -67,6 +78,7 @@ generous here costs one line each and is the difference between a tab that answe
 is this session working on" and one that answers "what did it remember to mention".
 
 ## forkit
+- **class:** session_macro.workflow
 **Owner-invoked only — never fork on your own initiative.** If a fork seems right,
 PROPOSE it ("I'd like to fork X into its own session") and wait for the go-ahead.
 Unannounced sessions are untrackable for the human until the UI reveals them
@@ -96,6 +108,7 @@ how to open it in the grid. The owner talks to the new session DIRECTLY in its t
 from here on — the origin session must not relay.
 
 ## buildout
+- **class:** session_macro.workflow
 Plan a piece of work as a document the owner can read, edit and riff on — no code yet.
 "buildout: <what to build>".
 
@@ -108,6 +121,7 @@ Report: where the doc is, and the legs proposed. Then WAIT — the owner reviews
 edits the doc before any cutting starts.
 
 ## cutcode
+- **class:** session_macro.workflow
 Build from a buildout doc. "cutcode: <doc> leg" / "cutcode: <doc> finish"
 (add `live` if sequencing matters; default is `dev`).
 
@@ -120,6 +134,7 @@ Build from a buildout doc. "cutcode: <doc> leg" / "cutcode: <doc> finish"
 Report: what got cut, what remains in the doc, the PR link. On `leg`, stop and wait.
 
 ## land
+- **class:** session_macro.workflow
 **Land YOURSELF.** No args: finish the work of THIS session, leave the record, end
 this session. The buildout doc you were working from is your own (`co-working/user_repo/wip/buildouts/`);
 if you truly can't tell what you were building, ask — don't guess.
@@ -138,6 +153,7 @@ Report to the owner (before step 4): the README path, the PR link, the manifest 
 Sessions are disposable: nothing of value may live only in a pane.
 
 ## delete
+- **class:** session_macro.workflow
 **End THIS session quietly — nothing recorded.** For sessions that produced no
 artifact worth keeping: evaluations, catch-ups, questions, scratch work. No README,
 no landed/MANIFEST.md line, no PR. It just goes away.
@@ -151,6 +167,7 @@ no landed/MANIFEST.md line, no PR. It just goes away.
 Contrast with `land`: land RECORDS (README + manifest + PR) then dies; delete just dies.
 
 ## tag
+- **class:** session_macro.lookup
 Aliases: group
 Owner names a GROUP and expects you to know who is in it: `+tag: ronin` — "the ronin
 group" is now the set we are talking about. **Read-only: this NEVER tags anything.**
@@ -186,6 +203,7 @@ If the name matches nothing, say so and show what groups DO exist (`tejun-group`
 never guess at a near-match, `kojin` and `kojinsa` are different groups.
 
 ## wipeboard
+- **class:** session_macro.lookup
 Owner names a WIPEBOARD and expects you to know what it is and who is on it:
 `+wipeboard: parserwork`. A wipeboard is a shared text surface — one markdown file
 several sessions all read and append to — so agents on the same problem talk to each
@@ -212,6 +230,7 @@ the owner wants said. When you DO post, the rules are in the wipeboard-post acti
 append only, never rewrite another agent's post, never edit the Brief.
 
 ## read
+- **class:** session_macro.workflow
 Owner asks for a catch-up on a session: "read <session>".
 
 | # | Action | With |
@@ -224,6 +243,7 @@ Report: what the session is doing, its state, anything needing the owner. Agent 
 keep watching but MUST NOT write until the owner changes the dial.
 
 ## readwrite
+- **class:** session_macro.workflow
 Owner wants an agent acting in a session: "read-write <session>" / "check <session>
 and fix …".
 
@@ -237,6 +257,7 @@ Report state; then act per the owner's instruction (sends go via the send-to-ses
 action).
 
 ## evaluate
+- **class:** session_macro.workflow
 Owner asks for an independent read-only assessment of another session's work:
 "evaluate <session>'s plan".
 

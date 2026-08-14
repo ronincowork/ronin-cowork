@@ -115,6 +115,14 @@ export const STORES: readonly Store[] = [
     when: 'first session launched',
   },
   {
+    id: 'library',
+    root: 'user',
+    rel: 'library',
+    what: "the user's own reference shelf — files here shadow ronin_library/ file-for-file",
+    createdBy: 'the owner adding a reference',
+    when: 'first file added',
+  },
+  {
     id: 'wipeboards',
     root: 'user',
     rel: 'wipeboards',

@@ -1,6 +1,6 @@
 /**
- * CHECK-CATALOGS — the stock catalogs, held to their own rules. Part of the BYOIN
- * family via `npm run verify` (byoin reads the gate list from there).
+ * CHECK-CATALOGS — a byoin_check: the stock catalogs, held to their own rules. Lives
+ * in `npm run verify`, which is where BYOIN reads its byoin_check list.
  *
  * Two questions, both asked from the running code's point of view:
  *
@@ -12,11 +12,11 @@
  *
  *   2. DEAD LINKS. Does every repo file a stock catalog points an agent at exist in
  *      this install? A catalog is agent instructions, so a dead link is an errand that
- *      cannot be run. Reported and counted, but a WARN until the ronin_library
- *      decision lands — the owner is choosing where reference material lives.
+ *      cannot be run. Counted as warns while ronin_library/ is built up one screened
+ *      piece at a time; they harden to failures when the owner rules the shelf ready.
  *
  * Uses the SAME parser and readers as the server (src/catalog.ts, src/macros.ts,
- * src/project-roots.ts) — a lint with its own parser would drift, silently.
+ * src/project-roots.ts) — a check with its own parser would drift, silently.
  */
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
@@ -61,7 +61,7 @@ async function surfacing(file: string, served: () => Promise<{ name: string }[]>
 /** Repo paths a catalog names. An agent reads these as errands, so they must resolve. */
 async function deadLinks(file: string): Promise<void> {
   const raw = await readFile(path.join(STOCK_DIR, file), 'utf8');
-  const re = /(?:^|[\s(`])((?:docs|reading-list|co-working|tejun_catalogs|hostside|scripts|bin)\/[A-Za-z0-9_./-]*[A-Za-z0-9_-])/gm;
+  const re = /(?:^|[\s(`])((?:docs|reading-list|co-working|tejun_catalogs|ronin_library|hostside|scripts|bin)\/[A-Za-z0-9_./-]*[A-Za-z0-9_-])/gm;
   const seen = new Set<string>();
   for (const m of raw.matchAll(re)) {
     const p = m[1];
@@ -91,4 +91,4 @@ if (fails) {
   console.error(`check-catalogs: ${fails} failure(s), ${warns} dead link(s)`);
   process.exit(1);
 }
-console.log(`check-catalogs: ok — every stock entry surfaces${warns ? `; ${warns} dead link(s) pending the ronin_library decision` : ''}`);
+console.log(`check-catalogs: ok — every stock entry surfaces${warns ? `; ${warns} dead link(s) awaiting ronin_library material` : ''}`);
