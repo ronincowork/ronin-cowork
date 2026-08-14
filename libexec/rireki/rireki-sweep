@@ -12,7 +12,7 @@
 set -uo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-: "${RIREKI_DIR:=$("$here/../ronin-store" session)}"
+: "${RIREKI_DIR:=$("$here/../../bin/ronin-store" session)}"
 : "${RIREKI_VIEWER_PREFIX:=grid_}"
 : "${RIREKI_DIAL:=@ronin-rireki}"
 

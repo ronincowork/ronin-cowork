@@ -9,7 +9,7 @@
 #        tejun-rireki <session> voice      the settled transcript as a plain text blob
 #
 # RIREKI is the record of what a session's panes emitted. The recorder is a tmux applet
-# (bin/rireki/) holding FAUCET B — tmux's one pipe-pane per pane — so the tape fills
+# (libexec/rireki/) holding FAUCET B — tmux's one pipe-pane per pane — so the tape fills
 # whether or not Ronin is up and whether or not anyone is watching.
 #
 # This is the shell twin of src/lens.ts, the same way tejun-wipeboard twins
@@ -66,7 +66,7 @@ human() { numfmt --to=iec --suffix=B "${1:-0}" 2>/dev/null || echo "${1:-0}B"; }
 
 # --- no args: every tape in play -------------------------------------------------
 if [ $# -eq 0 ]; then
-  [ -d "$RIREKI_DIR" ] || { echo "no tapes yet — is the recorder installed? (bin/rireki/rireki-install)"; exit 0; }
+  [ -d "$RIREKI_DIR" ] || { echo "no tapes yet — is the recorder installed? (libexec/rireki/rireki-install)"; exit 0; }
   printf '%-24s %10s %8s %6s\n' SESSION TAPE SEGS DIAL
   for d in "$RIREKI_DIR"/*/; do
     [ -d "$d" ] || continue

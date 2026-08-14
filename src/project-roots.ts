@@ -12,7 +12,7 @@ const execFileP = promisify(execFile);
  * TWO FILES, TWO SCOPES — and the split is the point (DAIKUSAN.md, the test:
  * "if Ronin is upgraded, is this file replaced?").
  *
- *   SYSTEM — tejun_catalogs/PROJECT_ROOTS.md, inside the install. Holds the
+ *   SYSTEM — ronin_catalogs/PROJECT_ROOTS.md, inside the install. Holds the
  *   provider·model LAUNCH TABLE only: every install needs brains, and the table is
  *   stock. Replaced wholesale by an upgrade, which is exactly right for it. It ships
  *   with NO roots — there is no such thing as a stock project root.
@@ -29,7 +29,7 @@ const execFileP = promisify(execFile);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** System scope: the shipped catalog. The launch table is read from here, and only here. */
-const LAUNCH_TABLE_MD = path.join(__dirname, '..', 'tejun_catalogs', 'PROJECT_ROOTS.md');
+const LAUNCH_TABLE_MD = path.join(__dirname, '..', 'ronin_catalogs', 'PROJECT_ROOTS.md');
 
 /** User scope: Ronin's own directory, outside every repo. Survives upgrade and uninstall. */
 export const USER_CATALOGS_DIR = storeDir('catalogs');

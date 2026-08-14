@@ -38,12 +38,12 @@ const SRC = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'src')
  * (RONIN_SERVICES.md §1); the whole list dies with the split.
  */
 const SOCKET_FILES = {
-  // THE CONNECTOR LANDED (docs/connector-contract.md): every former entry here now
-  // reaches its service through src/sockets.ts. What remains is the assembler — the
-  // one static import block that becomes runtime discovery on split day. This list
-  // only shrinks; when discovery lands it is empty, and a second entry is a thing
+  // THE CONNECTOR LANDED (docs/connector-contract.md): every former entry here reaches
+  // its service through src/sockets.ts. THE SPLIT THEN LANDED TOO — cowork ships no
+  // src/services/ at all, so even the assembler imports nothing from it: its
+  // `services` array is empty and a registration arrives from the services install.
+  // The list is empty, which is where it was always headed; a new entry is a thing
   // somebody has to argue for.
-  'index.ts': 'the assembler — imports each service register.ts and calls register(sockets)',
 };
 
 /**

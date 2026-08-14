@@ -6,7 +6,7 @@ import { buildSessionPicker } from './macros.js';
 import { PAD_CODE, firePadBinding, padBinds, padChord } from './pad.js';
 import { buildPadAsk, buildPadPanel } from './padpanel.js';
 import { buildNotePanel, buildTagPanel } from './panels.js';
-import { IS_TOUCH, S, TILE_COUNT, WHEEL_DOWN, grid, tiles } from './state.js';
+import { IS_TOUCH, S, TILE_COUNT, WHEEL_DOWN, grid, serviceOff, tiles } from './state.js';
 
 import { Tile } from './tile.js';
 import { collapseTileHead, isCoarse, makeDrop } from './tiledrop.js';
@@ -224,7 +224,12 @@ export function build() {
       row.className = 'commons-row';
       row.textContent = label;
       row.title = label;
-      row.addEventListener('click', () => go(pane));
+      // Same rule as the tab strip: an absent service's room is shown opaque-and-inert.
+      if (serviceOff(pane)) {
+        row.classList.add('off');
+        row.disabled = true;
+        row.title = 'Off — this service is not installed.';
+      } else row.addEventListener('click', () => go(pane));
       menu.appendChild(row);
     }
     const close = () => {

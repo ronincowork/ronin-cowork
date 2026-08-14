@@ -10,9 +10,11 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # The user's own catalogs — NEVER a hand-spelled path (JUSHO, docs/stores.md). Absent
 # store = no user catalogs, which is the ordinary fresh-install case.
 USERCAT="$(ronin-store catalogs 2>/dev/null || true)"
-exec python3 - "$ROOT" "${1:-}" "$USERCAT" <<'PY'
-import re,sys,subprocess
-root,name,usercat=sys.argv[1],sys.argv[2],sys.argv[3]
+# The user's own SOPs — same store discipline. Absent = stock SOPs only.
+USERSOPS="$(ronin-store sops 2>/dev/null || true)"
+exec python3 - "$ROOT" "${1:-}" "$USERCAT" "$USERSOPS" <<'PY'
+import re,sys,os,subprocess
+root,name,usercat,usersops=sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4]
 
 def parse(path):
     """{name: (heading, body)} for every '## ' section, stopping at a '---' footer."""
@@ -33,7 +35,7 @@ def sections(fname):
     TypeScript (docs/shadowing.md), not the same code: stock first, then the user's file
     of the same name; a user section replaces its stock namesake in place, new names
     append after the stock ones, and '- **hidden:** yes' removes one."""
-    stock=parse(f'{root}/tejun_catalogs/{fname}')
+    stock=parse(f'{root}/ronin_catalogs/{fname}')
     user=parse(f'{usercat}/{fname}') if usercat else {}
     hidden=lambda b: re.search(r'^-\s*\*\*hidden:\*\*\s*yes\b', b, re.M|re.I)
     out={}
@@ -54,7 +56,7 @@ if not name:
     sys.exit(0)
 if name in ('tools','actions'):
     fname='TOOLS.md' if name=='tools' else 'ACTIONS.md'
-    sys.stdout.write(open(f'{root}/tejun_catalogs/{fname}').read())
+    sys.stdout.write(open(f'{root}/ronin_catalogs/{fname}').read())
     # The user's own file is shown BELOW the stock one rather than merged into it: this
     # is a document for a person to read, and a merged document would hide which half
     # they wrote. What COMPILES is the merge above; this is the reading copy.
@@ -87,13 +89,13 @@ for row in re.findall(r'^\|\s*\d+\s*\|([^|]+)\|', body, re.M):
 missing=[a for a in steps if a not in actions]
 if missing:
     print(f"CANNOT COMPILE '{name}': undefined action(s): {', '.join(sorted(set(missing)))}\n"
-          f"Define them in tejun_catalogs/ACTIONS.md first (see tejun_catalogs/README.md).", file=sys.stderr)
+          f"Define them in ronin_catalogs/ACTIONS.md first (see ronin_catalogs/README.md).", file=sys.stderr)
     sys.exit(3)
 
 # TOOLS.md is a TABLE, not `## name` blocks, so the same rule keys on the tool name in
 # column 1: a user row replaces the stock row of that name, new rows append after.
 tools_by_name={}
-for scope in (f'{root}/tejun_catalogs/TOOLS.md', f'{usercat}/TOOLS.md' if usercat else None):
+for scope in (f'{root}/ronin_catalogs/TOOLS.md', f'{usercat}/TOOLS.md' if usercat else None):
     if not scope: continue
     try: fh=open(scope)
     except OSError: continue
@@ -114,17 +116,37 @@ for a in steps:
     print(f"\n{h}\n{b.rstrip()}")
     for tname,usage in tools.get(a,[]):
         print(f"  ↳ TOOL: {tname} — {usage}")
-# Compiling a macro ARMS THE RATCHET on this session: drafting the run and preparing
-# to walk it are one motion, so nobody ends up running a macro untracked.
-sess=subprocess.run(['tmux','display-message','-p','#S'],capture_output=True,text=True).stdout.strip()
-if sess and not sess.startswith('grid_'):
-    subprocess.run(['tmux','set-option','-t',sess,'@tejun-step',f'{name}:1'],capture_output=True)
-    first=steps[0] if steps else None
-    print(f"\n=== RATCHET ARMED on '{sess}' — {len(steps)} steps ===")
-    print(f"Step 1/{len(steps)} is: {first}")
-    print("Do it, then `tejun-step done` to check it in and get the next. Not COMPLETE")
-    print("until every step is checked in — including the last one.")
-else:
-    print("\n(not in a session — step tracking not started; run `tejun-step start` where you work)")
-print("\n=== RUN IT, DON'T NARRATE IT. Report the outcome, not the recipe. ===")
+# SOPs — the process an action defers to. `- **sop:** <name>` in an action inlines
+# ronin_sops/<name>.md here, the user's own copy (sops store) winning whole-file — so a
+# redefined SOP takes effect on the very next compile, and nobody goes looking for it.
+sops=[]
+for a in steps:
+    if a not in actions: continue
+    for line in actions[a][1].splitlines():
+        m2=re.match(r'-\s*\*\*sop:\*\*\s*(\S+)', line.strip())
+        if m2 and m2.group(1) not in sops: sops.append(m2.group(1))
+for s in sops:
+    for base in ([usersops] if usersops else [])+[os.path.join(root,'ronin_sops')]:
+        p=os.path.join(base,s+'.md')
+        if os.path.exists(p):
+            origin='yours (sops store)' if base==usersops else 'stock'
+            print(f"\n=== SOP: {s} — {origin} ===\n{open(p).read().rstrip()}")
+            break
+# Delivery is the MACRO'S choice (owner's ruling 2026-08-14): `- **run:** stepped` in
+# the entry arms the step tracker at compile; absent (or `whole`) = the full blob at
+# once, which is the default. `tejun-step start <name>` steps ANY macro on demand.
+run_mode = 'whole'
+m3 = re.search(r'-\s*\*\*run:\*\*\s*(\S+)', body)
+if m3: run_mode = m3.group(1).lower()
+if run_mode == 'stepped':
+    sess=subprocess.run(['tmux','display-message','-p','#S'],capture_output=True,text=True).stdout.strip()
+    if sess and not sess.startswith('grid_'):
+        subprocess.run(['tmux','set-option','-t',sess,'@tejun-step',f'{name}:1'],capture_output=True)
+        print(f"\n=== STEPPED MACRO — tracker armed on '{sess}', {len(steps)} steps ===")
+        print(f"Step 1/{len(steps)} is: {steps[0] if steps else None}")
+        print("Do it, then `tejun-step done` to check it in and get the next.")
+    else:
+        print("\n(stepped macro, but not in a session — run `tejun-step start` where you work)")
+print(f"\n=== RUN IT, DON'T NARRATE IT. Report the outcome, not the recipe. ===")
+print(f"Never report the run complete with steps undone — especially the last one.")
 PY

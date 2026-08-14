@@ -11,6 +11,7 @@
  */
 import type express from 'express';
 import { CONTRACT_V } from '../sockets-contract.js';
+import { getStreamHandler, listServices } from '../sockets.js';
 import { execFileSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -38,6 +39,19 @@ const startedAt = new Date().toISOString();
 
 export function registerVersion(app: express.Express): void {
   app.get('/api/version', (_req, res) => {
-    res.json({ commit: commit ?? 'unknown', dirty, startedAt, contract: CONTRACT_V });
+    // `stream`: is the 🔓 tape view plugged in? The stream handler is rireki's, set
+    // through the connector (sockets-contract.ts) — absent means the free build, and
+    // the client locks every tile and greys the switch. Read per request, so the
+    // answer is the process's, whenever services registered.
+    // `services`: who registered, by name — the client draws an absent service's
+    // surfaces opaque-and-inert instead of fetching into a 404 (sockets.ts).
+    res.json({
+      commit: commit ?? 'unknown',
+      dirty,
+      startedAt,
+      contract: CONTRACT_V,
+      stream: getStreamHandler() !== undefined,
+      services: listServices(),
+    });
   });
 }

@@ -28,7 +28,7 @@ export LC_ALL=C
 
 die() { printf '%s\n' "$*" >&2; exit 3; }
 
-# WHICH SESSION AM I — taken exactly the way bin/write_tegami takes it, and for the reason
+# WHICH SESSION AM I — taken exactly the way ronin_bin/write_tegami takes it, and for the reason
 # written there: `display-message` with an empty -t answers for the ATTACHED CLIENT, i.e.
 # whichever tile the owner has focused right now. That fallback once wrote one session's
 # ladder into another's letter. TMUX_PANE, then $TMUX, then die. Never the focused tile.

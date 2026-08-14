@@ -8,7 +8,7 @@
  * own nouns are Japanese and invented, so an English engine renders `ctx` as CHIZU and
  * TEGAMI as "the gummy", and whoever reads the transcript has to guess.
  *
- * A LIST, NOT A FILE. This started as a textarea over `tejun_catalogs/HOTWORDS.md` on the
+ * A LIST, NOT A FILE. This started as a textarea over `ronin_catalogs/HOTWORDS.md` on the
  * argument that a list of words does not need a row editor. That was wrong on the
  * surface that matters most: adding one word meant finding your place in markdown with
  * an iOS keyboard over the top of it. A row per term with an ✕, and one field to add,

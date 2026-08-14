@@ -97,8 +97,14 @@ const claimed = new Set();
     for (const m of line.matchAll(/koshi_[a-z_]+/g)) claimed.add(m[0]);
   }
 }
+// THE FREE BUILD CAVEAT: the koshi jobs are service code and ship in RONIN_SERVICES;
+// the words ship here — KOTOBA's own rule ("the word ships, the thing never does").
+// A tree with no src/services/ cannot be asked to carry the jobs, so the named→code
+// direction is vacuous there, not failed. code→named still holds (the 目 Koshi tab's
+// own tokens must be in KOTOBA).
+const servicesShip = existsSync(path.join(REPO, 'src', 'services'));
 for (const t of claimed) {
-  if (!token(t).test(code)) fail(`KOTOBA names \`${t}\` as existing, and no code has it`);
+  if (servicesShip && !token(t).test(code)) fail(`KOTOBA names \`${t}\` as existing, and no code has it`);
 }
 
 const inCode = new Set([...code.matchAll(/koshi_[a-z_]+/g)].map((m) => m[0]));

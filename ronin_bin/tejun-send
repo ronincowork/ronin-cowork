@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # tejun-send — deliver a message into a tmux session, safely, in one call.
 # Usage: tejun-send <session> <message...>
-# Implements the TEJUN send-to-session action (tejun_catalogs/ACTIONS.md): dial check,
+# Implements the TEJUN send-to-session action (ronin_catalogs/ACTIONS.md): dial check,
 # ghost-aware pre-send check, literal text + separate Enter, confirm-started with
 # one retry. Prints a one-line verdict; exit 0 = delivered, non-zero = not.
 set -u

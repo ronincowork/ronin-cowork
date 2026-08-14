@@ -19,7 +19,7 @@
  *         v  Ronin, on boot and on every save
  *     @ronin-session-max            a tmux SERVER option — the bus
  *        /                \
- *   createSession()     bin/ronin-may-spawn
+ *   createSession()     libexec/ronin-may-spawn
  *   (Ronin's own door)  (the shim's door, for agents driving tmux themselves)
  *
  * A spawn either goes through Ronin or it does not, and no single process sees both:
@@ -28,7 +28,7 @@
  *
  * The bus is a tmux server option because it is the one place a Node server and a
  * zero-dependency bash shim can both read without two JSON parsers. `@ronin-url` already
- * works exactly this way (`publishRoninUrl`, and `bin/tejun-harakiri` reading it back).
+ * works exactly this way (`publishRoninUrl`, and `ronin_bin/tejun-harakiri` reading it back).
  */
 import path from 'node:path';
 import os from 'node:os';
@@ -153,7 +153,7 @@ export async function publishMax(max?: number): Promise<void> {
 /**
  * THE OWNER'S NAME — JUSHO's third clause, the one about people.
  *
- * `user: glen` was a literal in `src/wipeboards.ts` and `bin/tejun-wipeboard`, so every
+ * `user: glen` was a literal in `src/wipeboards.ts` and `ronin_bin/tejun-wipeboard`, so every
  * post any owner wrote on any install was signed with OUR owner's first name. Nothing
  * shipped may name a person; this is where the name comes from instead.
  *
@@ -203,9 +203,11 @@ export async function writeOwner(name: string): Promise<string> {
  * choice. `docs/user-config.md`'s rule is *if a bash tool needs a setting, publish it* — so
  * a `@ronin-koshi` option would be a bus entry with no reader, which is worse than none.
  */
+/** @service — KOSHI reads its own SETTEI section through this. */
 export const readKoshiSection = (): Promise<Record<string, unknown>> =>
   readSection<Record<string, unknown>>('koshi', {});
 
+/** @service — the 目 Koshi tab writes it back through KOSHI. */
 export const writeKoshiSection = (value: Record<string, unknown>): Promise<void> =>
   updateConfig((doc) => {
     doc.koshi = value;

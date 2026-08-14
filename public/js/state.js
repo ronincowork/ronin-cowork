@@ -35,9 +35,27 @@ export const S = {
   padPanel: null, // Work Louder pad panel { open, close, isOpen, hit } — all devices (owner override)
   padAsk: null, // ask-on-press prompt for pad macros { open(bind), isOpen }
   locked: !IS_TOUCH, // DEFAULT for a NEW tile only — the switch itself is per-tile now
+  // THE SWITCH, service half: true when the operator reports no 🔓 stream handler
+  // (cowork alone — no record service). Every tile is then born 🔒, stays 🔒, and the
+  // lock button is inert and opaque: the surface says "not plugged in", not "broken".
+  // Set once at boot from /api/version (main.js); false is the full install's answer.
+  streamOff: false,
+  // Registered service names from the same answer (michi | koshi | rireki | counting |
+  // koe), or null when the operator predates the field. A surface owned by a service
+  // not on the roster is drawn opaque-and-inert and never fetched (sockets.ts's rule).
+  services: null,
   lastSelection: '', // last non-empty terminal selection (see below)
   tagPanel: null, // session-groups editor { open(session), close } — all devices
   sessPicker: null, // pad-key session switcher { open, close, isOpen, move, commit }
+};
+
+// Which service owns which optional commons pane. A pane not listed is core and always
+// on. Both the tab strip and the Commons menus consult this, same as the lock button
+// consults streamOff: absent service = the surface is visible but opaque-and-inert.
+const PANE_SERVICE = { hotwords: 'koe', stats: 'counting', koshi: 'koshi' };
+export const serviceOff = (pane) => {
+  const svc = PANE_SERVICE[pane];
+  return !!svc && Array.isArray(S.services) && !S.services.includes(svc);
 };
 export const tiles = [];
 // The 🔒/🔓 switch (changed ONLY by the button):

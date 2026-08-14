@@ -32,7 +32,7 @@ if [ "$restart" = 1 ]; then
 fi
 
 echo "→ gating the rendered page"
-if bin/ronin-gate | tee /dev/stderr | grep -q 'RONIN GATE: PASS'; then
+if libexec/ronin-gate | tee /dev/stderr | grep -q 'RONIN GATE: PASS'; then
   echo ""
   echo "✓ live and verified — the page renders and a pane paints."
   exit 0

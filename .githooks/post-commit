@@ -3,6 +3,6 @@
 #
 # Without this, a session's second commit would be judged against everything it had ever
 # staged, and the guard would wave through work it had already committed once.
-CLAIM="$(git rev-parse --show-toplevel 2>/dev/null)/bin/ronin-claim"
+CLAIM="$(git rev-parse --show-toplevel 2>/dev/null)/libexec/ronin-claim"
 [ -x "$CLAIM" ] && "$CLAIM" clear
 exit 0

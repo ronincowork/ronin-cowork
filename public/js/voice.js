@@ -17,7 +17,7 @@ import { S } from './state.js';
  *   own 🎤 is the same engine, streams the same way, and cannot be taken away.
  *
  * Recording to the host loses the live transcript and buys the glossary
- * (tejun_catalogs/HOTWORDS.md, edited in the commons's ▥ Hotwords) and audio that never leaves the
+ * (ronin_catalogs/HOTWORDS.md, edited in the commons's ▥ Hotwords) and audio that never leaves the
  * building. Keeping both means the two dictations on a phone now differ in something
  * other than which button you press — which is the comparison worth having.
  * See co-working/user_repo/README/DICTATION.md.

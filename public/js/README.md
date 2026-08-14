@@ -65,7 +65,7 @@ point — that composes one of two views, with the socket beside both.
 That split was not about the line count. The tape half of `tile.js` was **RIREKI's
 client-side render squatting in the coworkspace**: KOTOBA has RIREKI covering "capture,
 storage, render and the consumers", the server half honours it (`src/services/rireki/`,
-`bin/rireki/`), and the client half did not. `tapeview.js` is that half, in its own module
+`libexec/rireki/`), and the client half did not. `tapeview.js` is that half, in its own module
 at last; `termview.js` is the locked mirror; `tilewire.js` is the socket that feeds
 whichever view is showing. Read `tile.js` and you should see composition, not machinery.
 

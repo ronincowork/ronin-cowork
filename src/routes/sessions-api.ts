@@ -135,7 +135,7 @@ export function registerSessions(app: express.Express): void {
   // Group tags (@ronin-tags): a session's memberships, stored on the session itself.
   // The point of these is ADDRESSING, not decoration — "the kojinsa group" resolves to a
   // session list, so a coordinator can be pointed at a set instead of named members one
-  // by one. Agents get the same answer from `bin/tejun-group` without going through HTTP.
+  // by one. Agents get the same answer from `ronin_bin/tejun-group` without going through HTTP.
   app.get('/api/sessions/:name/tags', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });

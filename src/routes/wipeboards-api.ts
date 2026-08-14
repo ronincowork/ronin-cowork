@@ -4,7 +4,7 @@
  * the owner. The file half is src/wipeboards.ts, the membership half is the
  * @ronin-wipeboards tmux option (tmux.ts) — this is just the thin REST over both.
  *
- * Touches no pty and no pipe: `bin/tejun-wipeboard` is the same surface from a shell,
+ * Touches no pty and no pipe: `ronin_bin/tejun-wipeboard` is the same surface from a shell,
  * and the two are interchangeable. See docs/wipeboards.md.
  */
 import type express from 'express';

@@ -14,6 +14,7 @@ import { registerLaunch } from './routes/launch.js';
 import { registerSessions } from './routes/sessions-api.js';
 import { registerVersion } from './routes/version.js';
 import { registerWipeboards } from './routes/wipeboards-api.js';
+import { seedHouseBoard } from './wipeboards.js';
 import { handleEvents, startSessionsBroadcast } from './ws/events.js';
 import { handlePty } from './ws/pty.js';
 import { originAllowed, allowedOrigins } from './ws/origin.js';
@@ -21,7 +22,7 @@ import { checkTmuxServerCgroup } from './host-guard.js';
 // THE ASSEMBLER BLOCK — the one place in core a service is named (check-kyokai's
 // exception, and on split day this block becomes discovery over the installed-services
 // store; docs/connector-contract.md is the contract, sockets-contract.ts its shape).
-import { sockets, startBootHooks, stopBootHooks, mountServiceRoutes } from './sockets.js';
+import { sockets, startBootHooks, stopBootHooks, mountServiceRoutes, noteService } from './sockets.js';
 import type { ServiceRegistration } from './sockets-contract.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -136,7 +137,10 @@ registerVersion(app); // /api/version — the commit this process started from �
 // every service path (/api/tomodachi/*, /api/transcribe, /api/koshi*) is disjoint
 // from every core path; nothing shadows, nothing falls through differently.
 const services: ServiceRegistration[] = []; // the free build: no services, every socket empty
-for (const s of services) s.register(sockets);
+for (const s of services) {
+  noteService(s.name); // the roster /api/version reports, so the client's SWITCH knows
+  s.register(sockets);
+}
 mountServiceRoutes(app);
 
 
@@ -271,12 +275,14 @@ if (removed) console.log(`[tmux-ronin] cleaned up ${removed} stale viewer sessio
 // service's own business; a hook that throws is logged and costs only its service.
 await startBootHooks();
 startSessionsBroadcast(); // the /events membership poll, on the same boot clock as before
+// The house board — the one board every install has, seeded once and then the user's.
+void seedHouseBoard().catch((e) => console.error('[tmux-ronin] house board seed failed:', e));
 
 // Tools inside a pane (tejun-harakiri) find the API here instead of re-deriving the bind.
 void publishRoninUrl(`http://${config.bind}:${config.port}`);
 // The session max onto the same bus. The tmux server outlives Ronin, but a tmux server
 // restarted without us would lose the option — so it is republished on every boot, and
-// `bin/ronin-may-spawn` reads a missing option as "no limit" rather than as zero.
+// `libexec/ronin-may-spawn` reads a missing option as "no limit" rather than as zero.
 void publishMax();
 void publishOwner();
 

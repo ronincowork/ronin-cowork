@@ -9,7 +9,7 @@
  *      KOTOBA.md. The list is code (see record.ts on why), and this is what keeps
  *      the code honest to the house vocabulary.
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
@@ -21,6 +21,19 @@ const fail = (msg) => {
   failed++;
 };
 const ok = (msg) => console.log(`  ok    ${msg}`);
+
+// A CROSS-REPO CHECK, and this half is the other repo's. The sanitiser it exercises is
+// TOMODACHI's — `src/services/counting/record.ts`, which ships in RONIN_SERVICES; the
+// vocabulary it checks against is KOTOBA, which ships here. On a cowork-alone tree the
+// subject simply is not present, so this SKIPS with its reason out loud rather than
+// crashing the verify chain (BYOIN's rule: never a silent omission, never a false pass).
+const RECORD = path.join(REPO, 'src/services/counting/record.ts');
+if (!existsSync(RECORD)) {
+  console.log('TOMODACHI — sanitiser and vocabulary');
+  console.log('  SKIP  src/services/counting/record.ts is not in this tree — the free build');
+  console.log('        ships no services. This check belongs to RONIN_SERVICES; run it there.');
+  process.exit(0);
+}
 
 // tsx runs the TS directly — the same way the server does, no build step.
 const mod = await import('tsx/esm/api').then(({ tsImport }) =>
@@ -84,7 +97,7 @@ ok('unknown → custom / other; null → null');
 
 /* ---- 2. KOTOBA is the authority ---- */
 const kotoba = readFileSync(path.join(REPO, 'KOTOBA.md'), 'utf8');
-const jobs = readFileSync(path.join(REPO, 'tejun_catalogs', 'SESSION_JOBS.md'), 'utf8');
+const jobs = readFileSync(path.join(REPO, 'ronin_catalogs', 'SESSION_JOBS.md'), 'utf8');
 const haystack = kotoba + jobs;
 
 // Two categories are deliberately NOT house vocabulary, so KOTOBA does not index them

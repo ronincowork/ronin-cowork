@@ -157,7 +157,7 @@ export async function resolveForm(
     listProjectRoots(),
   ]);
   const kind = kinds.find((k) => k.name === form.session_job);
-  if (!kind) throw new Error(`Unknown session_job "${form.session_job}" (see tejun_catalogs/SESSION_JOBS.md).`);
+  if (!kind) throw new Error(`Unknown session_job "${form.session_job}" (see ronin_catalogs/SESSION_JOBS.md).`);
 
   const root = roots.find((r) => r.name === form.project_root);
 

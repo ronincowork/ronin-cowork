@@ -224,7 +224,7 @@ export function registerLaunch(app: express.Express): void {
     const raw = String(req.body?.name ?? '').trim();
     // A blank name is how you ask for the default back, not an error.
     try {
-      // writeOwner republishes to the tmux option, so `bin/tejun-wipeboard` agrees with
+      // writeOwner republishes to the tmux option, so `ronin_bin/tejun-wipeboard` agrees with
       // this from the moment it is saved rather than from the next restart.
       res.json({ name: await writeOwner(raw) });
     } catch (e) {

@@ -43,7 +43,7 @@ ExecStart=__NODE_DIR__/npm start
 # For a deploy whose exit code you want to act on, use bin/ronin-deploy.
 # Needs a headless browser (Playwright Chromium — see docs/host-tools.md); absent, the
 # gate says so and the service is unaffected.
-ExecStartPost=-/bin/sh -c '__REPO_DIR__/bin/ronin-gate &'
+ExecStartPost=-/bin/sh -c '__REPO_DIR__/libexec/ronin-gate &'
 Restart=always
 RestartSec=3
 

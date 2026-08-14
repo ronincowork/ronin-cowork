@@ -1,10 +1,11 @@
 /**
  * CATALOG ROUTES — the markdown-backed lists the commons reads and edits: macros,
  * hotwords, project roots, brains, session jobs. Catalogs are parsed at request time
- * (tejun_catalogs/ for stock, the catalogs store for the user's own), so the UI always
+ * (ronin_catalogs/ for stock, the catalogs store for the user's own), so the UI always
  * matches the doc. See docs/project-roots.md.
  */
 import { stat } from 'node:fs/promises';
+import { homedir } from 'node:os';
 import type express from 'express';
 import { projectRootsOfSessions } from '../tmux.js';
 import { listMacros } from '../macros.js';
@@ -28,6 +29,10 @@ import {
   type LaunchField,
 } from '../catalog.js';
 
+// fs errors carry absolute paths (`ENOENT: open '/home/…'`); the browser gets the
+// fault, never the box's layout.
+const errMsg = (e: unknown) => String((e as Error)?.message ?? e).replaceAll(homedir(), '~');
+
 /** The fields commons may write. Anything else in a block is the owner's and is preserved. */
 const ROOT_FIELDS: RootField[] = ['dir', 'read', 'memory', 'provider', 'model', 'match', 'remit'];
 const bodyFields = (body: unknown) => {
@@ -44,7 +49,7 @@ export function registerCatalogs(app: express.Express): void {
     try {
       res.json(await listMacros());
     } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
+      res.status(500).json({ error: errMsg(e) });
     }
   });
 
@@ -58,7 +63,7 @@ export function registerCatalogs(app: express.Express): void {
     try {
       res.json(await listProjectRoots());
     } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
+      res.status(500).json({ error: errMsg(e) });
     }
   });
 
@@ -85,7 +90,7 @@ export function registerCatalogs(app: express.Express): void {
         untagged,
       });
     } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
+      res.status(500).json({ error: errMsg(e) });
     }
   });
 
@@ -103,7 +108,7 @@ export function registerCatalogs(app: express.Express): void {
       await upsertProjectRoot(name, fields);
       res.json({ ok: true });
     } catch (e) {
-      res.status(400).json({ error: String((e as Error)?.message ?? e) });
+      res.status(400).json({ error: errMsg(e) });
     }
   });
 
@@ -115,7 +120,7 @@ export function registerCatalogs(app: express.Express): void {
       await upsertProjectRoot(name, bodyFields(req.body));
       res.json({ ok: true });
     } catch (e) {
-      res.status(400).json({ error: String((e as Error)?.message ?? e) });
+      res.status(400).json({ error: errMsg(e) });
     }
   });
 
@@ -127,7 +132,7 @@ export function registerCatalogs(app: express.Express): void {
       await removeProjectRoot(name);
       res.json({ ok: true });
     } catch (e) {
-      res.status(400).json({ error: String((e as Error)?.message ?? e) });
+      res.status(400).json({ error: errMsg(e) });
     }
   });
 
@@ -138,7 +143,7 @@ export function registerCatalogs(app: express.Express): void {
     try {
       res.json(await listBrains());
     } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
+      res.status(500).json({ error: errMsg(e) });
     }
   });
 
@@ -148,7 +153,7 @@ export function registerCatalogs(app: express.Express): void {
     try {
       res.json(await listSessionJobs());
     } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
+      res.status(500).json({ error: errMsg(e) });
     }
   });
 
@@ -160,7 +165,7 @@ export function registerCatalogs(app: express.Express): void {
     try {
       res.json(await listSavedLaunches());
     } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
+      res.status(500).json({ error: errMsg(e) });
     }
   });
 
@@ -176,7 +181,7 @@ export function registerCatalogs(app: express.Express): void {
       await saveLaunch(name, fields);
       res.json({ ok: true });
     } catch (e) {
-      res.status(400).json({ error: String((e as Error)?.message ?? e) });
+      res.status(400).json({ error: errMsg(e) });
     }
   });
 
@@ -185,7 +190,7 @@ export function registerCatalogs(app: express.Express): void {
       await removeLaunch(req.params.name);
       res.json({ ok: true });
     } catch (e) {
-      res.status(400).json({ error: String((e as Error)?.message ?? e) });
+      res.status(400).json({ error: errMsg(e) });
     }
   });
 
@@ -201,7 +206,7 @@ export function registerCatalogs(app: express.Express): void {
     try {
       res.json(await seedUserCatalog(file));
     } catch (e) {
-      res.status(400).json({ error: String((e as Error)?.message ?? e) });
+      res.status(400).json({ error: errMsg(e) });
     }
   });
 }

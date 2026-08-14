@@ -2,7 +2,7 @@ import { capturePane } from './tmux.js';
 
 /**
  * Status probe (terminal view only): classify a session's state from its visible
- * pane text — the same patterns the status-probe action (tejun_catalogs/ACTIONS.md) reads
+ * pane text — the same patterns the status-probe action (ronin_catalogs/ACTIONS.md) reads
  * by eye. Never agent internals — pane text is the whole truth.
  *
  * The pattern list is THE extension point (same contract as ctx.ts): tried in

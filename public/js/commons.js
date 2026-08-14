@@ -11,7 +11,7 @@ import {
   savedLaunchData,
   showReceipt,
 } from './home.js';
-import { IS_TOUCH, S } from './state.js';
+import { IS_TOUCH, S, serviceOff } from './state.js';
 import { buildHotwords } from './hotwords.js';
 import { buildKoshi } from './koshi.js';
 import { buildProjectRoots } from './projectroots.js';
@@ -67,6 +67,15 @@ export function buildHome(tile) {
   mkTab('hotwords', '▥ Hotwords', 'Words dictation keeps getting wrong — the glossary sent with your voice');
   mkTab('stats', '▦ Stats', 'How this install actually gets used — TOMODACHI');
   mkTab('koshi', '目 Koshi', 'Which model each Koshi job asks');
+  // A tab owned by a service that is not registered is visible but opaque-and-inert —
+  // the same treatment as the lock button on a build with no record service.
+  tabs.querySelectorAll('button[data-pane]').forEach((b) => {
+    if (serviceOff(b.dataset.pane)) {
+      b.classList.add('off');
+      b.disabled = true;
+      b.title = 'Off — this service is not installed.';
+    }
+  });
   homeTab.classList.add('on'); // matches the panel's default pane (see el.dataset.pane)
   const closeTab = document.createElement('button');
   closeTab.className = 'home-x';
@@ -91,6 +100,7 @@ export function buildHome(tile) {
   koshiPane.className = 'home-koshi';
   el.append(tabs, nullPane, mainPane, wipePane, docsPane, projPane, hotwordsPane, statsPane, koshiPane);
   const showPane = (which) => {
+    if (serviceOff(which)) return; // an inert tab's pane, asked for by any other route
     el.dataset.pane = which;
     tabs.querySelectorAll('button[data-pane]').forEach((b) => b.classList.toggle('on', b.dataset.pane === which));
     if (which === 'sessions') render();
@@ -427,7 +437,7 @@ export function buildHome(tile) {
       );
       b.addEventListener('click', () => {
         kind = k;
-        // `agent: none` (tejun_catalogs/SESSION_JOBS.md) — a plain terminal. No brain to pick,
+        // `agent: none` (ronin_catalogs/SESSION_JOBS.md) — a plain terminal. No brain to pick,
         // no brief to compose, so the form drops to the two things that still mean
         // something: what it is called and where it opens. Manual is not a "mode" here,
         // it is the only truth available: nothing is sent at all.
@@ -450,7 +460,7 @@ export function buildHome(tile) {
       });
       grid2.appendChild(b);
     }
-    if (!(presetData || []).length) grid2.textContent = 'no kinds in tejun_catalogs/SESSION_JOBS.md';
+    if (!(presetData || []).length) grid2.textContent = 'no kinds in ronin_catalogs/SESSION_JOBS.md';
     grid2.dataset.n = String((presetData || []).length);
     // The end of the list is where you find out the list is yours to extend.
     grid2.appendChild(addYourOwn('SESSION_JOBS.md', 'kind'));

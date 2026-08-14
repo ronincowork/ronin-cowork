@@ -18,7 +18,7 @@ case "${1:-}" in
   '') ;;
   *) cat >&2 <<EOF
 REFUSED: harakiri takes no session name — it ends the session you are in.
-Ending a DIFFERENT session is a separate, deliberate act (see tejun_catalogs/ACTIONS.md,
+Ending a DIFFERENT session is a separate, deliberate act (see ronin_catalogs/ACTIONS.md,
 "ending someone else's session"): ask the owner, or use the trash button in Ronin.
 EOF
       exit 4 ;;

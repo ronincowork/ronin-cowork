@@ -22,7 +22,7 @@
  * The blocks are delimited by HTML comments in DAIKUSAN.md. Prose outside them is written
  * by hand and never touched: the generator owns the list, a person owns the argument.
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tsImport } from 'tsx/esm/api';
@@ -99,6 +99,14 @@ const BLOCKS = {
   'stores:data': dataBlock,
   'stores:created': createdBlock,
 };
+
+// DAIKUSAN.md is the document this generates INTO, and it has not been screened into
+// the free build yet (MIGRATION_MANIFEST §12, the docs/ row). No document, nothing to
+// generate or check — SKIP with the reason, never a crash and never a silent pass.
+if (!existsSync(DOC)) {
+  console.log('stores-map: SKIP — DAIKUSAN.md is not in this tree (the map has no page here yet).');
+  process.exit(0);
+}
 
 let doc = readFileSync(DOC, 'utf8');
 const stale = [];

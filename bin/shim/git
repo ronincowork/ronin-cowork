@@ -27,7 +27,7 @@ for a in "$@"; do
 done
 
 if [ "$sub" = "add" ] && [ "${RONIN_CLAIM_OFF:-0}" != 1 ]; then
-  CLAIM="$SELF_DIR/../ronin-claim"
+  CLAIM="$SELF_DIR/../../libexec/ronin-claim"
   if [ -x "$CLAIM" ]; then
     # ronin-claim runs the real add itself (it snapshots the index either side of it), so
     # this branch does not fall through. Its exit code is git's.

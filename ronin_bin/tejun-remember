@@ -15,7 +15,7 @@ RSTORE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ronin-store"
 [ -x "$RSTORE" ] || RSTORE=ronin-store
 STORE="$("$RSTORE" memory)"
 # USER SCOPE — the owner's own directory list, outside every repo (DAIKUSAN.md).
-# The shipped tejun_catalogs/PROJECT_ROOTS.md holds only the stock launch table, no roots.
+# The shipped ronin_catalogs/PROJECT_ROOTS.md holds only the stock launch table, no roots.
 # Absent is normal on a fresh install: every read below is guarded with [ -r ].
 ROOTS_MD="$("$RSTORE" catalogs)/PROJECT_ROOTS.md"
 

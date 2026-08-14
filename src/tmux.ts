@@ -393,7 +393,7 @@ export async function setLeads(name: string, groups: string[]): Promise<string[]
  *
  * Deliberately its own option rather than a reserved `@ronin-tags` value: a session
  * serves one project_root and belongs to any number of groups, so the cardinality
- * differs. `bin/tejun-recall` and `bin/tejun-remember` already read this exact string
+ * differs. `ronin_bin/tejun-recall` and `ronin_bin/tejun-remember` already read this exact string
  * to scope a memory; until 2026-08-09 nothing wrote it, so every session on the box
  * answered "which project_root?" with silence and recall could not self-scope.
  *
@@ -442,7 +442,7 @@ export async function projectRootsOfSessions(): Promise<Record<string, string>> 
   }
 }
 
-/** tmux user option holding a session's control dial (see tejun_catalogs/ACTIONS.md control-check). */
+/** tmux user option holding a session's control dial (see ronin_catalogs/ACTIONS.md control-check). */
 const CONTROL_OPT = '@ronin-control';
 
 export type Control = 'user' | 'read' | 'write';
@@ -489,6 +489,8 @@ export async function capturePane(name: string, lines: number, esc = false): Pro
 }
 
 /**
+ * @service — RIREKI's stream handler types through this; nothing in cowork calls it.
+ *
  * Type raw bytes into a session's active pane — the input path for a tape-fed tile.
  *
  * A tape-fed tile holds NO tmux connection: it renders from the tape and types through

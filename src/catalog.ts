@@ -6,16 +6,17 @@ import { storeDir } from './stores.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** System scope: the shipped catalogs. Replaced wholesale by an upgrade — never written. */
-/** The shipped catalogs. Exported so a service reading stock (KOE's hotwords) shares
+/** @service — KOE reads the stock hotwords list through this.
+ * The shipped catalogs. Exported so a service reading stock (KOE's hotwords) shares
  * the one resolution instead of computing its own — see `config.ts` REPO_ROOT. */
-export const STOCK_DIR = path.join(__dirname, '..', 'tejun_catalogs');
+export const STOCK_DIR = path.join(__dirname, '..', 'ronin_catalogs');
 
 /**
  * Shared reader for the `## name` catalogs (SESSION_JOBS.md here; MACROS.md through
  * macros.ts), and the resolution rule every reader shares (DAIKUSAN's stock/custom law,
  * generalized — see docs/shadowing.md):
  *
- *   resolve(<NAME>.md) = entries(tejun_catalogs/<NAME>.md)          ← stock, file order
+ *   resolve(<NAME>.md) = entries(ronin_catalogs/<NAME>.md)          ← stock, file order
  *                      ⊕ entries(<catalogs store>/<NAME>.md)        ← the user's own
  *
  * ENTRY-MERGE, keyed by the heading's first word: a user entry of the same name replaces
@@ -30,12 +31,12 @@ export const STOCK_DIR = path.join(__dirname, '..', 'tejun_catalogs');
  *
  * The docs ARE the catalogs — parsed at request time, no cache, no generated file, same
  * contract as listMacros/listProjects, so a shadow takes effect on the next request. The
- * two Python readers (bin/tejun, bin/tejun-step) implement the same rule, not the same
+ * two Python readers (ronin_bin/tejun, ronin_bin/tejun-step) implement the same rule, not the same
  * code; docs/shadowing.md is the single statement both sides implement.
  *
  * An entry is a `## name` heading followed by `- **key:** value` lines. Headings
  * containing a space are prose (the launch table, the format notes) and are never
- * entries — but their first word is still the merge key for readers like bin/tejun that
+ * entries — but their first word is still the merge key for readers like ronin_bin/tejun that
  * key sections that way. Everything after a `---` footer line is notes, not catalog.
  */
 export type Origin = 'stock' | 'user';
@@ -69,7 +70,9 @@ async function readUserCatalog(file: string): Promise<string> {
   }
 }
 
-function splitSections(raw: string, origin: Origin): CatalogSection[] {
+/** Exported for `scripts/check-catalogs.ts`, the byoin_check that reads the STOCK files
+ * with the same split the runtime uses — a check with its own parser would drift, silently. */
+export function splitSections(raw: string, origin: Origin): CatalogSection[] {
   // Everything after a `---` footer rule is prose for the reader, not catalog.
   const body = raw.split(/^---\s*$/m)[0];
   const out: CatalogSection[] = [];
@@ -241,7 +244,7 @@ export const isShadowable = (file: string): boolean => Object.hasOwn(SHADOWABLE,
 function newFileHeader(file: string): string {
   const what = SHADOWABLE[file] ?? 'your own entries';
   const stock = file === 'SAVED_LAUNCHES.md' ? '' :
-    `>\n> The shipped copy is \`tejun_catalogs/${file}\` — read it for the format and copy a\n` +
+    `>\n> The shipped copy is \`ronin_catalogs/${file}\` — read it for the format and copy a\n` +
     `> block out of it to start from. An entry here with the SAME \`## name\` REPLACES that\n` +
     `> one whole; a new name is added after them; \`- **hidden:** yes\` deletes one.\n`;
   return `# ${file.replace(/\.md$/, '')} — yours (user scope)

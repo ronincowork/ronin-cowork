@@ -123,7 +123,7 @@ key_of() {
 # Where the session record lives on THIS machine. Asked, never spelled: this file used to
 # hardcode the path while the rest of Ronin resolved it, so moving the store sent the
 # letters one way and the tape the other. See docs/stores.md.
-STORE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ronin-store"
+STORE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../bin" && pwd)/ronin-store"
 [ -x "$STORE" ] || STORE=ronin-store
 SESSION_STORE="$("$STORE" session)"
 
@@ -201,7 +201,15 @@ if [ -n "$DOCADD" ] || [ -n "$DOCDEL" ]; then
     || die "write_tegami: --doc and --undoc are separate calls — one path at a time."
   NAME=$(me)
   DFILE="$SESSION_STORE/$(key_of "$NAME")/tegami.md"
-  [ -f "$DFILE" ] || die "write_tegami: you have no letter yet."
+  # No letter yet is the free build's ordinary state — the birth letter is MICHI's, and
+  # cowork alone never seeds one. Listing your first doc creates a minimal shell (made on
+  # first use, never replaced — the user-catalog contract), so list-doc works everywhere.
+  # --undoc with no letter is a no-op, not a fault: there is nothing to take off.
+  if [ ! -f "$DFILE" ]; then
+    [ -n "$DOCDEL" ] && { echo "write_tegami: no letter, nothing listed."; exit 0; }
+    mkdir -p "$(dirname "$DFILE")"
+    printf '# TEGAMI — %s\n\n```json\n{"v": 1}\n```\n' "$NAME" > "$DFILE"
+  fi
   python3 - "$DFILE" "${DOCADD:-}" "${DOCDEL:-}" "$NAME" <<'DOCMARK' || exit 3
 import json, os, re, sys
 src, add, drop, name = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]

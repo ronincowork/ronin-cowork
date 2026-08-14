@@ -1,7 +1,7 @@
 import { readFile, writeFile, appendFile, mkdir, readdir, stat } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { readOwner } from './user-config.js';
+import { storeDir } from './stores.js';
 
 /**
  * WIPEBOARDS — a shared text surface a set of sessions can all read and write.
@@ -14,15 +14,14 @@ import { readOwner } from './user-config.js';
  *
  * Vendor neutrality holds by construction: "agents can read and write it" is ordinary
  * file I/O every CLI already has. Ronin announces a path and renders a file; it never
- * reaches into an agent. `bin/tejun-wipeboard` is the same surface from a shell, and
+ * reaches into an agent. `ronin_bin/tejun-wipeboard` is the same surface from a shell, and
  * the two are interchangeable by design — neither is the "real" one.
  */
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-/** Boards live in the co-working space, beside (not inside) wip/ — Ronin maintains them,
- * so they are not the user's churn. A thread is transient by design, like the sessions on it. */
-export const WIPEBOARD_DIR = path.join(__dirname, '..', 'co-working', 'ronin', 'wipeboards');
+/** Boards are the user's own work, so they live in the wipeboards STORE (user root) —
+ * a board must survive an uninstall, and `rm -rf <repo>` must not be able to take it.
+ * They lived inside the repo tree until 2026-08-14; that was the owner's ruling to end. */
+export const WIPEBOARD_DIR = storeDir('wipeboards');
 
 /**
  * The owner's watermark, so a steer from the owner is never mistaken for an agent's post.
@@ -31,7 +30,7 @@ export const WIPEBOARD_DIR = path.join(__dirname, '..', 'co-working', 'ronin', '
  * exists". The profile exists now (`src/user-config.ts`), so this is that one line
  * changing: the name comes from the owner's config, defaulting to this machine's own
  * user, and no install signs its posts with somebody else's name. JUSHO — nothing shipped
- * names a person. `bin/tejun-wipeboard` reads the same value off the tmux bus.
+ * names a person. `ronin_bin/tejun-wipeboard` reads the same value off the tmux bus.
  */
 export const ownerAuthor = async (): Promise<string> => `user: ${await readOwner()}`;
 
@@ -72,6 +71,22 @@ export async function ensureBoard(name: string): Promise<void> {
   } catch {
     await writeFile(boardPath(name), STUB(name), 'utf8');
   }
+}
+
+/**
+ * The HOUSE board — the one board every install has, seeded at boot if missing and
+ * never replaced after (same contract as the user catalogs: Ronin made this file,
+ * Ronin never overwrites it). Every session may read and post; the owner adds the
+ * rest of the boards, which are theirs from the first byte.
+ */
+export async function seedHouseBoard(): Promise<void> {
+  if (await boardExists('house')) return;
+  await mkdir(WIPEBOARD_DIR, { recursive: true });
+  await writeFile(
+    boardPath('house'),
+    `# wipeboard: house\n\n## Brief\n\nThe house board — every session on this install may read and post here.\nStart a board of your own in the ▤ Wipeboard tab; this one is for whatever concerns the house.\n`,
+    'utf8',
+  );
 }
 
 export async function boardExists(name: string): Promise<boolean> {

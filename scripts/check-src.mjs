@@ -32,11 +32,13 @@ import { fileURLToPath } from 'node:url';
 const SRC = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'src');
 const CEILING = 700;
 
-/** Grandfathered breaches, frozen at their worst. Keys are paths relative to src/. */
-const GRANDFATHERED = {
-  'services/koshi/koshi.ts': 1333,
-  'services/rireki/scroll.ts': 958,
-};
+/** Grandfathered breaches, frozen at their worst. Keys are paths relative to src/.
+ *
+ * EMPTY, and it got there the honest way: both entries were service files, and the
+ * split moved src/services/ out of this repo on 2026-08-14 — they are RONIN_SERVICES'
+ * ceiling to keep now. Nothing in cowork's src/ breaches 700 lines. An entry added
+ * here is a debt with a number on it; the list only shrinks. */
+const GRANDFATHERED = {};
 
 const files = [];
 (function walk(dir) {
