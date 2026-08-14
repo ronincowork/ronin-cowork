@@ -1,16 +1,26 @@
 # ronin_bin — the agent-facing tools
 
-The executables the catalogs tell an agent to type, by bare name — `tejun`,
-`tejun-step`, `tejun-send`, `tejun-peek`, `tejun-group`, `tejun-wipeboard`,
-`tejun-harakiri`, `tejun-recall`, `tejun-remember`, `tejun-rireki`. `setup.sh` puts
-this directory on PATH, after `bin/shim` (the guards) and ahead of `bin/`.
+**Everything an agent types, and nothing else** — `tejun`, `tejun-step`, `tejun-send`,
+`tejun-peek`, `tejun-group`, `tejun-wipeboard`, `tejun-harakiri`, `tejun-recall`,
+`tejun-remember`, `tejun-rireki`, `write_tegami`, `read_tegami`. `setup.sh` puts this
+directory on PATH, after `bin/shim` (the guards) and ahead of `bin/`.
 
-**What belongs here and what does not.** A tool — a script a cataloged action names
-(`ronin_catalogs/TOOLS.md`) — lives here. The house's own scripts (`ronin-*`,
-`setup.sh`, the shim, the byoin_checks) stay where they are: they have callers, not
-actions, and an agent never types them. One shelf per audience:
-**ronin_catalogs** (what you can do) · **ronin_library** (the reading) ·
-**ronin_sops** (how this house works) · **ronin_bin** (what you run).
+**The shelf is defined by its audience, the catalog by its rule.** Anything an agent
+types by bare name belongs here — the letter tools included, which is why they moved
+out of `bin/` on 2026-08-14. A **TEJUN tool** is the subset that additionally
+implements a cataloged action (`ronin_catalogs/TOOLS.md`), and that rule still binds
+every `tejun-*`.
+
+**Where the rest lives**, by who runs it: **`bin/`** — the owner's own commands
+(`ronin-byoin`, `ronin-doctor`, `ronin-deploy`, `ronin-store`, `ronin-uninstall`,
+`ronin-export`, `bench`), typed by a person. **`libexec/`** — invoked by the machine
+and typed by nobody (`ronin-gate` from ExecStartPost, `rireki/` the tmux applet,
+`koshi` the job process, `ronin-may-spawn`, `ronin-claim` from the git hooks).
+**`scripts/`** — the repo's own tooling, run by npm and by BYOIN. `bin/shim/` stays
+where it is: it is PATH interception, so you type `tmux` and the guard answers.
+
+One shelf per audience: **ronin_catalogs** (what you can do) · **ronin_library** (the
+reading) · **ronin_sops** (how this house works) · **ronin_bin** (what you run).
 
 ## Adding a tool
 

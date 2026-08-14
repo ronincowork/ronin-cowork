@@ -28,7 +28,8 @@ export function count(event: string, fields: CountFields = {}): void {
   }
 }
 
-/** Boot wiring, called once by the assembler when the counting service is present. */
+/** @service — the counting service's sink, wired once by the assembler.
+ * Boot wiring, called once by the assembler when the counting service is present. */
 export function setCountSink(fn: CountSink): void {
   sink = fn;
 }

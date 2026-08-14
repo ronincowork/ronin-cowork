@@ -6,7 +6,8 @@ import { storeDir } from './stores.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** System scope: the shipped catalogs. Replaced wholesale by an upgrade — never written. */
-/** The shipped catalogs. Exported so a service reading stock (KOE's hotwords) shares
+/** @service — KOE reads the stock hotwords list through this.
+ * The shipped catalogs. Exported so a service reading stock (KOE's hotwords) shares
  * the one resolution instead of computing its own — see `config.ts` REPO_ROOT. */
 export const STOCK_DIR = path.join(__dirname, '..', 'ronin_catalogs');
 

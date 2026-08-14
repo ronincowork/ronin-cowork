@@ -19,7 +19,7 @@
  *         v  Ronin, on boot and on every save
  *     @ronin-session-max            a tmux SERVER option — the bus
  *        /                \
- *   createSession()     bin/ronin-may-spawn
+ *   createSession()     libexec/ronin-may-spawn
  *   (Ronin's own door)  (the shim's door, for agents driving tmux themselves)
  *
  * A spawn either goes through Ronin or it does not, and no single process sees both:
@@ -203,9 +203,11 @@ export async function writeOwner(name: string): Promise<string> {
  * choice. `docs/user-config.md`'s rule is *if a bash tool needs a setting, publish it* — so
  * a `@ronin-koshi` option would be a bus entry with no reader, which is worse than none.
  */
+/** @service — KOSHI reads its own SETTEI section through this. */
 export const readKoshiSection = (): Promise<Record<string, unknown>> =>
   readSection<Record<string, unknown>>('koshi', {});
 
+/** @service — the 目 Koshi tab writes it back through KOSHI. */
 export const writeKoshiSection = (value: Record<string, unknown>): Promise<void> =>
   updateConfig((doc) => {
     doc.koshi = value;

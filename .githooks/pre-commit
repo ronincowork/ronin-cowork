@@ -20,7 +20,7 @@
 # a real and legitimate act — it just should be a deliberate one.)
 [ "${RONIN_COMMIT_ALL:-0}" = 1 ] && exit 0
 
-CLAIM="$(git rev-parse --show-toplevel 2>/dev/null)/bin/ronin-claim"
+CLAIM="$(git rev-parse --show-toplevel 2>/dev/null)/libexec/ronin-claim"
 [ -x "$CLAIM" ] || exit 0
 
 "$CLAIM" check

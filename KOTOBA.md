@@ -143,7 +143,7 @@ copy and a source tree at once. It now names one thing.
 | **ronin_operator** | system_scope | the processes actually serving the grid — memory copies taken at start. A restart replaces the operator and touches the install not at all | `docs/repo-to-operator.md` |
 | **BYOKI** (病気) | system_scope | the operator differing from the repo. A condition to detect, never an event that announces itself | `docs/repo-to-operator.md` · § OPEN R22 |
 | **BYOIN** (病院) | system_scope | **the whole health check** — every `byoin_check` over the repo plus every readout over the machine, behind one command (`bin/ronin-byoin`). BYOKI is the condition; BYOIN is where you go to have it looked for, and it looks for more than that one illness | `docs/byoin.md` |
-| **byoin_check** | system_scope | **one repo-side test inside BYOIN**: reads the tree, fails the build, same answer on every machine, lives in `package.json`'s `verify` chain (parse, check-modules, check-docs, check-kotoba, check-kyokai, check-dead, check-stores, check-place, check-tomodachi, check-src, check-tests, stores-map, tsc, smoke-ui). **Never "gate"** — a gate is a ladder rung (§ LADDER) and nothing else; ruled R30. `bin/ronin-gate` and the `--gates` flag keep their pre-ruling filenames | `docs/byoin.md` |
+| **byoin_check** | system_scope | **one repo-side test inside BYOIN**: reads the tree, fails the build, same answer on every machine, lives in `package.json`'s `verify` chain (parse, check-modules, check-docs, check-kotoba, check-kyokai, check-dead, check-stores, check-place, check-tomodachi, check-src, check-tests, stores-map, tsc, smoke-ui). **Never "gate"** — a gate is a ladder rung (§ LADDER) and nothing else; ruled R30. `libexec/ronin-gate` and the `--gates` flag keep their pre-ruling filenames | `docs/byoin.md` |
 
 Two of those hops are skipped today. **The steps, and what to do to make a change real, are in
 `docs/repo-to-operator.md`** — not here.
@@ -221,6 +221,7 @@ is a gap in the machinery, not a reason to reach for the word. See § NUANCE.
 | **step tracker** | system_scope | `ronin_bin/tejun-step` — position in a macro run, held in `@tejun-step` | `docs/tejun-macro-system.md` |
 | **session_macro.lookup** | system_scope | a read-only question Ronin already holds the answer to: `+tag:`/`+group:`, `+wipeboard:`. One command, no compile, no step tracking; sent through Ronin it arrives already resolved. Alias: **lookup macro**, prose only | `ronin_catalogs/MACROS.md` |
 | **session_macro.workflow** | system_scope | a recipe of cataloged actions the agent performs: compile (`ronin_bin/tejun`) or step through (`ronin_bin/tejun-step`), execute in order, report the outcome | `ronin_catalogs/MACROS.md` |
+| **read-letter · write-letter** | system_scope | the two actions over a session's own TEGAMI: read the ladder as written (`read_tegami`), or set it / point at the rung being worked (`write_tegami`). Cataloged 2026-08-14 — the tools had implemented no action since MICHI shipped, which is why they sat outside TEJUN | `ronin_catalogs/ACTIONS.md` |
 | **`run:`** | system_scope | the macro key choosing delivery (owner, 2026-08-14): absent or `whole` = the full blob at once, the default; `stepped` = compile arms the step tracker and hands one step at a time. Any macro can be stepped on demand via `tejun-step start` | `ronin_catalogs/MACROS.md` |
 | **invocation** | system_scope | `+<name>: <args>` — the `+` marks a macro line; bare `<name>:` also works; never *required* to recognize one | `reading-list/TEJUN.md` |
 | **harakiri** | system_scope | a session ends itself; refuses to end another | `ronin_catalogs/ACTIONS.md` |
@@ -239,9 +240,9 @@ describe.
 
 | Who runs it | What that makes it | Examples |
 |---|---|---|
-| **an agent**, because a cataloged action names it | a **tool** — the only class TEJUN catalogs | `tejun-send` · `tejun-peek` · `tejun-group` · `shim/tmux` |
-| **the owner**, by hand | a script. No catalog, and it needs none | `ronin-deploy` · `setup.sh` · `bench/bench` · `rireki-install` |
-| **the operator**, mechanically | a script. `ExecStartPost`, a unit, a watcher | `ronin-gate` · `koshi` · `rireki-sweep` |
+| **an agent**, by bare name | lives in `ronin_bin/` — a **tool** if a cataloged action names it | `tejun-send` · `tejun-peek` · `write_tegami` · `shim/tmux` (on PATH, never typed) |
+| **the owner**, by hand | lives in `bin/`. No catalog, and it needs none | `ronin-byoin` · `ronin-doctor` · `ronin-deploy` · `setup.sh` · `bench` |
+| **the operator**, mechanically | lives in `libexec/`. `ExecStartPost`, a unit, a watcher, a git hook | `ronin-gate` · `koshi` · `rireki-sweep` · `ronin-claim` |
 | **npm**, in the `verify` chain | a script — the `byoin_check`s live here | `scripts/smoke-ui.mjs` · `check-modules.mjs` · `stage.mjs` |
 | **nothing at all** | an **`orphan_script`** — the one case that is always a defect. None today: the two DVR prototypes were deleted 2026-08-14 | — |
 
@@ -377,7 +378,7 @@ useful to a user than an invented one.
 | **plan** | system_scope | the phases and legs of a ladder, however far ahead they are determined | `docs/plan-format.md` |
 | **side_ladder** | system_scope | work in nobody's plan — a ladder off the main one. **MICHI vocabulary, not TEGAMI: it is not a key in the letter and nothing reads one** **[planned]** | `co-working/user_repo/wip/buildouts/MICHI.md` |
 | **SHINGO** (信号) | system_scope | the ladder made visible: the chip in the tile header, the ladder unrolled over the pane, and the same fields per session on the ⌂ Roster. An indicator, never a channel | `public/js/shingo.js` |
-| **MICHI** (道) | system_scope | the **umbrella** over `ladder` + `TEGAMI` + `SHINGO`. Not a service of its own and **not unbuilt** — `src/services/michi/tegami.ts`, `public/js/shingo.js` and `bin/read_tegami`/`write_tegami` are live. Not user-facing — say **ladder** | `src/services/michi/tegami.ts` |
+| **MICHI** (道) | system_scope | the **umbrella** over `ladder` + `TEGAMI` + `SHINGO`. Not a service of its own and **not unbuilt** — `src/services/michi/tegami.ts`, `public/js/shingo.js` and `ronin_bin/read_tegami`/`write_tegami` are live. Not user-facing — say **ladder** | `src/services/michi/tegami.ts` |
 
 ---
 
@@ -476,7 +477,7 @@ that install ever sent. This binds the collector, not just the client.
 |---|---|---|---|
 | **RIREKI** | system_scope | the umbrella for the whole record: capture, storage, render and the consumers | `docs/rireki.md` |
 | **tape** | session_scope | **every byte a pane emitted, never interpreted.** Per-pane | `docs/rireki.md` |
-| **recorder** | system_scope | the standalone tmux applet that writes the tape, with or without Ronin running | `bin/rireki/` |
+| **recorder** | system_scope | the standalone tmux applet that writes the tape, with or without Ronin running | `libexec/rireki/` |
 | **ring** | system_scope | the 64MB per-pane ceiling: oldest whole segments drop as new ones arrive | `src/services/rireki/rireki.ts` |
 | **scroll** | session_scope | **what those bytes settled into** — a pane's settled transcript on disk, line-numbered. Derived from the tape, disposable, rebuildable from it | `src/services/rireki/scroll.ts` |
 | **settle / the settler** | system_scope | turning tape bytes into scroll lines, **once per pane** on the janitor's clock, never per client | `src/services/rireki/scroll.ts` |
@@ -686,7 +687,8 @@ somewhere else. Ronin has no address of its own; it asks. Record: `docs/stores.m
 | **ronin_store** | system_scope | one declared location under one of the two roots — a row in the store table, resolved at runtime. **Never a path spelled by hand.** `bin/ronin-store <id>` prints one, `--all` prints the table | `docs/stores.md` |
 | **ronin_library** | system_scope | the shipped reference shelf — the longer reading the catalogs point an agent at. Ships in cowork, starts near-empty and grows one screened piece at a time; the owner's own library (the `library` store, user scope) shadows it file-for-file, so the shipped way of working is a default, never a prescription | `ronin_library/README.md` |
 | **ronin_sops** | system_scope | the shipped standard operating procedures — how a house plans, builds out, deploys; the process choices the macros defer to, one SOP per file. Starts near-empty like the library; the owner's own `sops` store shadows it file-for-file — a `user_customization` you author, like a macro | `ronin_sops/README.md` |
-| **ronin_bin** | system_scope | the agent-facing executables — the tools the catalogs name, typed bare (`tejun`, `tejun-send`, …). On PATH via setup.sh, behind `bin/shim` and ahead of `bin/`; the house's own scripts stay in `bin/` and `scripts/`. The fourth shelf: ronin_catalogs · ronin_library · ronin_sops · ronin_bin | `ronin_bin/README.md` |
+| **ronin_bin** | system_scope | **everything an agent types, and nothing else** — every `tejun*` plus `write_tegami`/`read_tegami` (moved out of `bin/` 2026-08-14). On PATH via setup.sh, behind `bin/shim` and ahead of `bin/`. A **tool** is the subset that also implements a cataloged action. The fourth shelf: ronin_catalogs · ronin_library · ronin_sops · ronin_bin | `ronin_bin/README.md` |
+| **libexec** | system_scope | executables **the machine invokes and nobody types** — `ronin-gate` (ExecStartPost), `rireki/` (the tmux applet), `koshi` (the job process), `ronin-may-spawn`, `ronin-claim` (the git hooks). The Unix split `bin` (a person types it) vs `libexec` (a program invokes it), adopted 2026-08-14. NOT on PATH | § SCRIPTS |
 | **the session directory** | session_scope | the `session` store, `<store>/<key>/` — one session's own record: TEGAMI, RIREKI's tape, the scroll. R5 closed: the store resolves it, and there is no second answer | `src/stores.ts` |
 | **house_dirs** | system_scope | the three directories of a project_repo the documents SOP writes into (owner, 2026-08-14): **`wip/`** — what might be, mutable and mortal, deleted when the work lands; **`docs/`** — what is, state-of-fact only (a project_repo's docs/; the Ronin repo's own docs/ stays the system-docs tier); **`manifest/`** — the drawer: one terse line per entry, date · what · pointer, past/present/future all welcome, prose never | `ronin_sops/documents.md` |
 | **build-out doc** | user_scope | the plan, in `wip/buildouts/`; **shrinks toward empty** — a leg completes by being DELETED, the file by landing | `ronin_sops/documents.md` |
@@ -935,12 +937,13 @@ Recommend the rule be narrowed to say so in `TOOLS.md` itself.
 
 **Three things it does catch, and they are real:**
 
-1. **`tejun-recall` and `tejun-remember` are genuinely missing from the catalog.** KOTOBA
-   names both in § OBOERU, they carry the `tejun-` prefix that means agent-facing, and no
-   action names either. These two are tools with no entry.
-2. **Three `TOOLS.md` rows have `—` in the action column** — `koshi`, `read_tegami`,
-   `write_tegami`. `read_tegami`/`write_tegami` are MICHI's, not TEJUN's; `koshi` is a koshi
-   job, a process, not a tool. TOOLS.md is holding three things belonging to other surfaces.
+1. **`tejun-recall` and `tejun-remember` are genuinely missing from the catalog** — still
+   open, and now the LAST two `—` rows in TOOLS.md. They are OBOERU's, so the actions want
+   the owner's screen before they are written.
+2. **CLOSED 2026-08-14.** `read_tegami`/`write_tegami` got the actions they always
+   deserved (`read-letter`, `write-letter`) and moved to `ronin_bin/`: MICHI owns the
+   letter, but an agent types the tool, and the shelf goes by audience. `koshi` left
+   TOOLS.md entirely — it is a process, not a tool, and it lives in `libexec/` now.
 3. **CLOSED — the two `orphan_script`s are gone.** `scripts/proto-recorder.mjs` and
    `scripts/proto-v2.mjs`, the DVR prototypes from the parked time-scrub work, were deleted
    2026-08-14 (owner's call; git holds them).
@@ -967,7 +970,7 @@ caught early**, and resolved the cheap way it proposed: the directory was rename
 *"Gate is already on the user interface. It's a part of the tegami. We're not changing
 that."* The repo-side sense — a check that reads the tree and fails the build — is now
 **`byoin_check`** (§ THE GROUND, beside BYOIN): the owner's own frame, "the sub tests
-within BYOIN". `docs/byoin.md` carries the term; `bin/ronin-gate` and `--gates` keep
+within BYOIN". `docs/byoin.md` carries the term; `libexec/ronin-gate` and `--gates` keep
 their pre-ruling filenames (an installed unit names the first). Line 61's preamble was
 right that *gate* had escaped; this closes it.
 

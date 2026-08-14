@@ -50,10 +50,10 @@ if [ -x "$HERE/rireki/rireki-uninstall" ]; then
   if [ "$GO" = 1 ]; then
     "$HERE/rireki/rireki-uninstall" || true
   else
-    say "would run bin/rireki/rireki-uninstall — hooks off, recorders stopped, tapes left on disk"
+    say "would run libexec/rireki/rireki-uninstall — hooks off, recorders stopped, tapes left on disk"
   fi
 else
-  say "bin/rireki/rireki-uninstall not found — nothing to disarm"
+  say "libexec/rireki/rireki-uninstall not found — nothing to disarm"
 fi
 
 # ---- 2. the units --------------------------------------------------------------------

@@ -131,6 +131,36 @@ execute from.
   of done. Write for an agent with ZERO shared context.
 - **Then `list-doc` it.** A handoff nobody can find is a handoff nobody reads.
 
+## read-letter — read the ladder a session is keeping
+`action_kind: mechanical` — run it, don't deliberate.
+> **Tool: `read_tegami`** (TOOLS.md)
+Your own letter — objective, session_job, the ladder, and where on it you are.
+```bash
+read_tegami                     # your letter, as written
+read_tegami --json              # just the block, for a machine
+read_tegami --rungs             # the positions a marker can point at, current one flagged
+read_tegami --session <name>    # another session's — DENIED at dial 👤
+```
+**No paths, ever** — it resolves the pane's own session and is viewer-safe. Exit 3 =
+no letter yet, which is the ordinary state of a session that has not written one.
+
+## write-letter — set your ladder, or point at the rung being worked
+`action_kind: judgement` — this one needs your reasoning; no tool can do it for you.
+> **Tool: `write_tegami`** (TOOLS.md)
+Your letter is the one file that outlives your pane, so it is written for whoever
+reads it next — the owner in the tile, or the session that inherits the work.
+```bash
+write_tegami <<'JSON'           # replaces YOUR ladder; the block and nothing else
+{ "objective": "...", "session_job": "...", "ladder": [ … ] }
+JSON
+write_tegami --session <name> --at 2.3    # another session's position, ONLY the position
+```
+- **Bring it in line with what you have actually done** — a ladder that flatters is
+  worse than none, because the owner steers by it.
+- **An undetermined rung is not rendered.** A short honest ladder beats an invented one.
+- The tool validates the SHAPE, never your claims; exit 3 = bad block, letter untouched.
+- `--at` carries no dial check by owner law: pointing at a rung is not driving a session.
+
 ## list-doc — put a document on your session's list so the owner can open it
 `action_kind: mechanical` — run it, don't deliberate.
 ```bash

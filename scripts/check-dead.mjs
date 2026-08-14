@@ -52,7 +52,7 @@ const problems = [];
 
 /* ---------------- ignore lists — every entry must carry its argument ---------------- */
 
-// src/ files executed directly (npm start, bin/koshi, bin/bench, ronin_bin/tejun-rireki run
+// src/ files executed directly (npm start, libexec/koshi, bin/bench, ronin_bin/tejun-rireki run
 // them via tsx). Their exports are entry points, not API — nobody imports an entry.
 const SRC_ENTRY_FILES = new Set(['index.ts', 'koshi.ts', 'bench.ts', 'scroll-cli.ts']);
 
@@ -69,6 +69,20 @@ const SRC_ENTRY_FILES = new Set(['index.ts', 'koshi.ts', 'bench.ts', 'scroll-cli
 // MUST ONLY EVER SHRINK. Parked code is not kept alive by an exemption: the tape is in
 // git, and reviving a plan means writing it against the tree that exists then.
 const SRC_EXPORT_IGNORE = new Set([]);
+
+// THE CONNECTOR SURFACE — and why it is a marker, not a list.
+//
+// cowork exports things only RONIN_SERVICES imports: the stock-catalog dir KOE reads,
+// the counting sink the assembler wires, the raw-keys path a tape-fed tile types
+// through. This repo cannot see those callers, so every one of them reads as dead here
+// — six of them did, and a byoin_check that always fails is a byoin_check nobody runs.
+//
+// The fix is NOT another ignore list (this file's own argument: a list goes stale in a
+// day and holds faults open). It is a marker in the doc block, `@service`, which says
+// out loud what the export is FOR and travels with the code when it moves. An export
+// nothing here imports and nothing there needs simply has no marker, and still dies.
+// KYOKAI is the umbrella over this boundary; docs/connector-contract.md is the contract.
+const SERVICE_MARK = /@service\b/;
 
 // public/js/ exports allowed to have no importer. Empty today; a name added here
 // needs a reason on its line, e.g. kept for the devtools console.
@@ -124,12 +138,26 @@ const srcCode = srcFiles.map((p) => ({
   rel: path.relative(ROOT, p),
   base: path.basename(p),
   code: codeOnly(fs.readFileSync(p, 'utf8')),
+  // Comments and all — the @service marker lives in the doc block, which codeOnly strips.
+  raw: fs.readFileSync(p, 'utf8'),
 }));
+
+/** Is this export marked @service — part of the connector surface RONIN_SERVICES imports?
+ * The marker must sit in the doc block immediately above the export, so it names ONE
+ * export rather than blessing a whole file. */
+const isServiceExport = (raw, name) => {
+  const at = raw.search(new RegExp(`^export\\s+(?:const|let|var|function|async function|class)\\s+${name}\\b`, 'm'));
+  if (at < 0) return false;
+  const before = raw.slice(0, at);
+  const doc = before.slice(before.lastIndexOf('/**'));
+  return before.lastIndexOf('/**') >= 0 && SERVICE_MARK.test(doc);
+};
 for (const f of srcCode) {
   if (SRC_ENTRY_FILES.has(f.base)) continue;
   const exports = [...f.code.matchAll(/^export\s+(?:const|let|var|function|async function|class)\s+([\w$]+)/gm)].map((m) => m[1]);
   for (const ex of exports) {
     if (SRC_EXPORT_IGNORE.has(ex)) continue;
+    if (isServiceExport(f.raw, ex)) continue; // the connector surface — see SERVICE_MARK
     const used = srcCode.some((g) => g !== f && new RegExp(`\\b${ex}\\b`).test(g.code));
     if (used || usedInOwnFile(f.code, ex)) continue;
     problems.push(`${f.rel} exports '${ex}' — no src/ file references it, its own included`);

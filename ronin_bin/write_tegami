@@ -123,7 +123,7 @@ key_of() {
 # Where the session record lives on THIS machine. Asked, never spelled: this file used to
 # hardcode the path while the rest of Ronin resolved it, so moving the store sent the
 # letters one way and the tape the other. See docs/stores.md.
-STORE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ronin-store"
+STORE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../bin" && pwd)/ronin-store"
 [ -x "$STORE" ] || STORE=ronin-store
 SESSION_STORE="$("$STORE" session)"
 

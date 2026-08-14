@@ -3,7 +3,7 @@
  * TAPEVIEW — RIREKI's client-side render. The 🔓 unlocked view.
  *
  * KOTOBA has RIREKI covering "capture, storage, render and the consumers". The server
- * half honours that (`src/services/rireki/`, `bin/rireki/`); this is the client half,
+ * half honours that (`src/services/rireki/`, `libexec/rireki/`); this is the client half,
  * and it lived inside `class Tile` until 2026-08-13 — the fold machine, the tape
  * append/prepend and the scroll anchoring, all squatting in the coworkspace. A tile is
  * one cell of the coworkspace; the render of a tape is RIREKI's. Now it is its own

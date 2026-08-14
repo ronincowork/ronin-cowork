@@ -489,6 +489,8 @@ export async function capturePane(name: string, lines: number, esc = false): Pro
 }
 
 /**
+ * @service — RIREKI's stream handler types through this; nothing in cowork calls it.
+ *
  * Type raw bytes into a session's active pane — the input path for a tape-fed tile.
  *
  * A tape-fed tile holds NO tmux connection: it renders from the tape and types through

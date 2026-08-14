@@ -166,8 +166,9 @@ OS="$(uname -s)"   # also used by the autostart section below
 #   <repo>/ronin_bin the agent-facing tools (tejun*) — what the catalogs tell agents to
 #                    type by bare name. Off PATH they only work from the repo root, which
 #                    no agent can rely on.
-#   <repo>/bin       the house's own scripts (ronin-*) plus write_tegami, read_tegami,
-#                    koshi — same bare-name reasoning, different audience.
+#   <repo>/bin       the owner's own commands (ronin-byoin, ronin-doctor, ronin-deploy,
+#                    ronin-store, ronin-uninstall, ronin-export, bench) — typed by a
+#                    person, so they are on PATH too. Not libexec/: nobody types those.
 # The shim dir stays FIRST — ahead of bin/ as well as /usr/bin. bin/ holds no tmux and no
 # systemctl today, and the guard's position must not depend on that staying true.
 # A guard whose absence is invisible must not depend on someone remembering. Appends ONE
@@ -406,7 +407,7 @@ fi
 # ONE SOURCE OF TRUTH PER UNIT. The unit files live in deploy/*.service with
 # __REPO_DIR__ / __NODE_DIR__ placeholders; setup.sh only fills those in. It used to
 # keep its own inline copy instead, and the copy silently drifted: the render gate
-# (ExecStartPost=-… bin/ronin-gate &, added after the 2026-08-08 outage) existed only
+# (ExecStartPost=-… libexec/ronin-gate &, added after the 2026-08-08 outage) existed only
 # in deploy/tmux-ronin.service, so no box installed by setup.sh ever ran it.
 # Read deploy/tmux-server.service before touching it — that unit owns the tmux server,
 # and every session on the box lives in its cgroup.

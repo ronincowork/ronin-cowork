@@ -265,7 +265,7 @@ dirty="$(git status --porcelain -- src/ package.json 2>/dev/null | wc -l | tr -d
 sect "machine provisioning"
 
 # Playwright — resolved the way scripts/smoke-ui.mjs resolves it. Without a browser
-# the render gate does not exist on this box: ExecStartPost, bin/ronin-gate and
+# the render gate does not exist on this box: ExecStartPost, libexec/ronin-gate and
 # npm run verify all end at a binary that is not there.
 # THE BROWSER MUST BE LAUNCHED, NOT RESOLVED. Asking whether the module imports is asking
 # a configuration question, and this file exists to ask behavioural ones. The three pieces

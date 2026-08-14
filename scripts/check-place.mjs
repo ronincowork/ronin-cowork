@@ -154,7 +154,7 @@ console.log('check-place — nothing names a machine, a person, or a place\n');
 
 scan(CODE, [
   [ABS_HOME, 'an absolute home directory — delete it, it resolves on no machine'],
-  [HOSTNAME, 'a hostname — resolve it at runtime, the way bin/ronin-gate does'],
+  [HOSTNAME, 'a hostname — resolve it at runtime, the way libexec/ronin-gate does'],
   [IPV4, 'a machine address — resolve it at runtime'],
   [HOME_RONIN, "a Ronin location — ask for it: storeDir('<id>') or \"$(ronin-store <id>)\""],
 ]);

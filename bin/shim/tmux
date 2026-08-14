@@ -56,7 +56,7 @@ fi
 if printf '%s' "$args" | grep -q 'new-session' && [ "${RONIN_MAX_OK:-0}" != 1 ]; then
   case " $args " in
     *" -t "*|*" -t"[!\ ]*) : ;;                      # grouped viewer — never capped
-    *) "$SELF_DIR/../ronin-may-spawn" || exit 4 ;;
+    *) "$SELF_DIR/../../libexec/ronin-may-spawn" || exit 4 ;;
   esac
 fi
 

@@ -10,6 +10,7 @@ import path from 'node:path';
  * only a request can. So: every file that needs the install tree resolves it from
  * HERE, and only this file — which does not move — may look at its own location.
  */
+/** @service — services resolve the install root through cowork's one answer. */
 export const REPO_ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 /** First IPv4 address Tailscale reports for this node, or 127.0.0.1 as a fallback. */

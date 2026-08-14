@@ -14,7 +14,7 @@
  * the value stays in the repo's .env and never crosses this boundary.
  *
  * Koshi reads its outlet when it starts, so a change here lands on the next
- * `bin/koshi start` — said on screen rather than left for someone to discover.
+ * `libexec/koshi start` — said on screen rather than left for someone to discover.
  */
 export function buildKoshi(root, isShowing) {
   let data = null;
