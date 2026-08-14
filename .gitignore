@@ -4,3 +4,12 @@ dist/
 *.log
 .DS_Store
 public-staging/
+
+# Syncthing's own bookkeeping, on any box that syncs this tree. Not the project's
+# files and not the owner's — the folder marker, the per-folder ignore list, and the
+# transient files a transfer leaves behind mid-flight. They turned up as untracked
+# noise on every `git status`, which is how a real stray file gets missed.
+.stfolder/
+.stignore
+.stversions/
+~syncthing~*.tmp
