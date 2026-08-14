@@ -15,7 +15,6 @@ import {
   isValidName,
   killSessionTree,
   listSessions,
-  sendText,
   sessionExists,
   sessionOfPane,
   setControl,
@@ -23,6 +22,7 @@ import {
   setProjectRoot,
   setTags,
 } from '../tmux.js';
+import { sendText } from '../send.js';
 import { sessionKey } from '../session-dir.js';
 import { isValidRootName, listProjectRoots } from '../project-roots.js';
 import { expandLookup } from '../lookup.js';

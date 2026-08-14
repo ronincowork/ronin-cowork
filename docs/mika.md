@@ -63,12 +63,18 @@ other session's. At 👤 the request is refused and says so.
 
 A house agent that cannot be silenced by the dial is a house agent that cannot be silenced.
 
-**And it will not type over your draft.** `tejun-send` does the ghost-aware pre-send check
-and answers `BLOCKED` when there is real unsubmitted text at her prompt;
-`POST /api/sessions/:name/send` checks the dial but not the prompt, which is why the tool
-does not use it. Mika is the session you are most likely to be mid-sentence in, which makes
-her the last one that should ever be written to blind — found the hard way, on this tool's
-first live test, which landed a message on top of the owner's half-typed reply.
+**And it will not type over your draft.** `tejun-send` does the pre-send check and answers
+`BLOCKED` when there is real unsubmitted text at her prompt; `POST /api/sessions/:name/send`
+checks the dial but not the prompt, which is why the tool does not use it. Mika is the
+session you are most likely to be mid-sentence in, which makes her the last one that should
+ever be written to blind.
+
+**The check is ghost-aware, and that half is what makes it usable.** Claude renders a
+suggested reply at the prompt — the kind you press Tab to accept — in dim text, and there is
+almost always one there. Dim is the CLI talking, not you: read as a draft it would block
+every send forever, read as an empty prompt it is exactly right. `capture-pane` without
+`-e` strips the colour and loses the distinction entirely, which is how a reader (this one)
+mistook a suggestion for a draft.
 
 ## The session max — counted, never blocked
 
@@ -105,13 +111,14 @@ Six things, and five of them are data:
 | `ronin_catalogs/ACTIONS.md` | `propose-and-confirm` |
 | `ronin_catalogs/TOOLS.md` | the `mika` row |
 | `ronin_bin/mika` | the tool: send to her, or start her and then send |
-| `public/js/mika.js` | the め button: bring her tile forward, starting her if needed |
+| `public/js/mika.js` | the ミ button: bring her tile forward, starting her if needed |
 
 Plus four one-line edits on the launch path so `cap:` is read, carried and honoured
 (`catalog.ts`, `spawn.ts`, `routes/launch.ts`, `tmux.ts`).
 
 **No new endpoint, and no new kind of thing.** She is born through `/api/launch` like every
-session and reached through `/api/sessions/:name/send` like every session.
+session, and reached with `tejun-send`, the tool every agent already uses to reach any
+session.
 
 ## Not built, deliberately
 
@@ -123,7 +130,7 @@ Listed so nobody re-derives one by accident and so re-adding it is a decision:
   including a pane Ronin cannot see; a second path for the ones it can watch would be pure
   speed. Addable later, changing nothing here.
 - **A general settings locator.** `system_config` handles the two settings that exist.
-- **A question box on the め button.** Making someone phrase the question before Mika has
+- **A question box on the ミ button.** Making someone phrase the question before Mika has
   said hello is the form problem again, one surface further out.
 
 ## Where the reasoning lives

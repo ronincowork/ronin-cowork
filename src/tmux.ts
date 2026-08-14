@@ -489,50 +489,6 @@ export async function sendRawKeys(session: string, data: string): Promise<void> 
   await pexec('tmux', ['send-keys', '-t', exactPane(session), '-l', '--', data]);
 }
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-/** Visible pane text only (no history) — cheap state probe for sendText. */
-async function paneScreen(name: string): Promise<string> {
-  const { stdout } = await pexec('tmux', ['capture-pane', '-p', '-t', exactPane(name)], {
-    maxBuffer: 4 * 1024 * 1024,
-  });
-  return stdout;
-}
-
-/**
- * Compose "send to session": type `text` into a session's active pane and submit it.
- * Built from the R1/R2 actions (co-working/user_repo/wip/RECIPES.md): literal text and Enter as SEPARATE
- * send-keys calls (TUIs treat the Enter as a real submit); if the pane looks identical
- * after Enter, the Enter was lost (observed in the wild) — re-send it once; report
- * whether the pane reacted at all (confirm-started). Pre-send policy for a prompt that
- * already holds text is append-and-submit (what R2 did deliberately — both messages
- * deliver as one).
- */
-export async function sendText(
-  name: string,
-  text: string,
-): Promise<{ resent: boolean; started: boolean }> {
-  await pexec('tmux', ['send-keys', '-t', exactPane(name), '-l', '--', text]);
-  await sleep(200);
-  const beforeEnter = await paneScreen(name);
-  await pexec('tmux', ['send-keys', '-t', exactPane(name), 'Enter']);
-  await sleep(600);
-  let after = await paneScreen(name);
-  let resent = false;
-  if (after === beforeEnter) {
-    await pexec('tmux', ['send-keys', '-t', exactPane(name), 'Enter']);
-    resent = true;
-    await sleep(600);
-    after = await paneScreen(name);
-  }
-  return { resent, started: after !== beforeEnter };
-}
-
-/** Run a shell command in a session's active pane (the home-panel launcher's boot step). */
-export async function runCommand(name: string, cmd: string): Promise<void> {
-  await pexec('tmux', ['send-keys', '-t', exactPane(name), '-l', '--', cmd]);
-  await pexec('tmux', ['send-keys', '-t', exactPane(name), 'Enter']);
-}
 
 let viewerCounter = 0;
 

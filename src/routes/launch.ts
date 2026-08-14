@@ -15,14 +15,13 @@ import {
   createSession,
   isValidName,
   listSessions,
-  runCommand,
-  sendText,
   sessionDir,
   sessionExists,
   setControl,
   setProjectRoot,
   setTags,
 } from '../tmux.js';
+import { runCommand, sendText } from '../send.js';
 import { AtSessionMax, liveCount, readMax, readOwner, writeMax, writeOwner } from '../user-config.js';
 import { resolveForm, appendLedger, type SpawnForm } from '../spawn.js';
 import { classifyStatus, waitReady, type SessionStatus } from '../status.js';
@@ -153,8 +152,33 @@ export function registerLaunch(app: express.Express): void {
       // and finally type the letter's brief into bash.
       if (!resolved.agent) return;
       await runCommand(resolved.name, resolved.cmd);
-      await waitReady(resolved.name);
-      await sendText(resolved.name, resolved.brief + birthLines);
+      // WAIT FOR READY, AND BELIEVE THE ANSWER. waitReady's 20s default is shorter than a
+      // cold CLI start, and its `false` used to be discarded — the brief was typed anyway,
+      // into whatever happened to be on screen. Twice that was a trust-folder dialog,
+      // whose rows are drawn with the same `❯` as a prompt: the text went nowhere and the
+      // Enter answered the dialog. Nothing about the session looked wrong afterwards.
+      const ready = await waitReady(resolved.name, 90000);
+      if (!ready) {
+        // Do NOT send. A CLI that is not ready is usually waiting on the owner (trust this
+        // folder? pick a model?), and typing a brief into that is at best lost and at worst
+        // an answer given on their behalf.
+        console.error(
+          `[tmux-ronin] ${resolved.name}: not ready after 90s — brief NOT sent. ` +
+            `The pane is probably asking something; answer it in the tile and re-send.`,
+        );
+        return;
+      }
+      const sent = await sendText(resolved.name, resolved.brief + birthLines);
+      // SAY SO WHEN THE BRIEF DID NOT GO IN. A session whose brief never landed looks
+      // completely alive from the roster — a name, a dial, a running CLI — and is doing
+      // nothing, because it was never told anything. The one birth failure with no visible
+      // symptom, so it gets a line in the log.
+      if (!sent.started) {
+        console.error(
+          `[tmux-ronin] ${resolved.name}: the brief did not submit. ` +
+            `Check the tile — it may be sitting at the prompt, or a dialog may be open.`,
+        );
+      }
     })().catch((e) => console.error(`[tmux-ronin] spawn ${resolved.name}:`, e));
   });
 
