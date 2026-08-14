@@ -132,9 +132,21 @@ for s in sops:
             origin='yours (sops store)' if base==usersops else 'stock'
             print(f"\n=== SOP: {s} — {origin} ===\n{open(p).read().rstrip()}")
             break
-# The compile does NOT arm the step tracker — the whole blob is the way to run a macro
-# (owner's ruling 2026-08-14: the drip is not the default). `tejun-step start <name>` is
-# the explicit opt-in, for a long or risky run or when the owner asks to watch progress.
+# Delivery is the MACRO'S choice (owner's ruling 2026-08-14): `- **run:** stepped` in
+# the entry arms the step tracker at compile; absent (or `whole`) = the full blob at
+# once, which is the default. `tejun-step start <name>` steps ANY macro on demand.
+run_mode = 'whole'
+m3 = re.search(r'-\s*\*\*run:\*\*\s*(\S+)', body)
+if m3: run_mode = m3.group(1).lower()
+if run_mode == 'stepped':
+    sess=subprocess.run(['tmux','display-message','-p','#S'],capture_output=True,text=True).stdout.strip()
+    if sess and not sess.startswith('grid_'):
+        subprocess.run(['tmux','set-option','-t',sess,'@tejun-step',f'{name}:1'],capture_output=True)
+        print(f"\n=== STEPPED MACRO — tracker armed on '{sess}', {len(steps)} steps ===")
+        print(f"Step 1/{len(steps)} is: {steps[0] if steps else None}")
+        print("Do it, then `tejun-step done` to check it in and get the next.")
+    else:
+        print("\n(stepped macro, but not in a session — run `tejun-step start` where you work)")
 print(f"\n=== RUN IT, DON'T NARRATE IT. Report the outcome, not the recipe. ===")
 print(f"Never report the run complete with steps undone — especially the last one.")
 PY

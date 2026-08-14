@@ -28,8 +28,12 @@ action it names and the tools that implement them, compiled as one blob. Read it
 it, report the outcome. The recipe is the channel; how you move through it is yours.
 Each action carries an `action_kind:` — **mechanical** (run it, don't deliberate) or
 **judgement** (your reasoning is the work) — read it as the pace to take that step at.
-(`tejun-step start <name>` instead hands you one step at a time with a check-in after
-each — for a long or risky run, or when the owner asks to watch progress.)
+
+**Delivery is the macro's own toggle: `- **run:** stepped` in an entry** makes the
+compile arm the step tracker and hand you one step at a time (`tejun-step done` checks
+each in). **No marking = the whole blob at once — the default.** A macro's author (or
+your own shadow of it) picks; `tejun-step start <name>` steps ANY macro on demand when
+you or the owner wants the check-ins.
 **Never report a run complete with steps undone — especially the last one.**
 
 **RUN IT — DON'T NARRATE IT.** A macro invocation is a button press, not a
@@ -84,8 +88,7 @@ is this session working on" and one that answers "what did it remember to mentio
 - **class:** session_macro.workflow
 **Owner-invoked only — never fork on your own initiative.** If a fork seems right,
 PROPOSE it ("I'd like to fork X into its own session") and wait for the go-ahead.
-Unannounced sessions are untrackable for the human until the UI reveals them
-(NOW.md 3b). Spin the current conversation's active topic out into its own agent
+Unannounced sessions are untrackable for the human until the UI reveals them. Spin the current conversation's active topic out into its own agent
 session, so the origin session stays on its track. (The breakout pattern, first performed manually 2026-08-05.)
 
 Params: `topic` (short slug), `dir` (working directory for the new session; default:
