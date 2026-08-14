@@ -22,7 +22,7 @@ extending the two catalogs that live here.
    failure modes you learned (this is where hard-won rules live — ghost-text, dial
    checks, separate-Enter).
 4. Actions never reference macros. Compound actions may reference other actions.
-5. If the action gets performed often, give it a tool (`../bin/README.md`) and add a
+5. If the action gets performed often, give it a tool (`../ronin_bin/README.md`) and add a
    `> Tool:` pointer at the top of its section.
 6. Record the first real run in `../co-working/user_repo/wip/RECIPES.md` — evidence, not hypothesis.
 

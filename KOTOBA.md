@@ -243,7 +243,7 @@ describe.
 | **the owner**, by hand | a script. No catalog, and it needs none | `ronin-deploy` · `setup.sh` · `bench/bench` · `rireki-install` |
 | **the operator**, mechanically | a script. `ExecStartPost`, a unit, a watcher | `ronin-gate` · `koshi` · `rireki-sweep` |
 | **npm**, in the `verify` chain | a script — the `byoin_check`s live here | `scripts/smoke-ui.mjs` · `check-modules.mjs` · `stage.mjs` |
-| **nothing at all** | an **`orphan_script`** — the one case that is always a defect | `scripts/proto-recorder.mjs` · `scripts/proto-v2.mjs` |
+| **nothing at all** | an **`orphan_script`** — the one case that is always a defect. None today: the two DVR prototypes were deleted 2026-08-14 | — |
 
 **Only the first row is a tool, and the catalog only governs that row.** `TOOLS.md`'s rule —
 *"a tool must implement a documented action — no orphan scripts"* — reads today as though
@@ -252,8 +252,8 @@ and is not deficient for it. **The rule is right about tools and wrong about scr
 that overreach is what made the set feel unsettled.
 
 **What a script owes is a caller, not an action.** That is the honest test, it applies to all
-of them, and it is the one `proto-recorder.mjs` and `proto-v2.mjs` fail — referenced by
-nothing but themselves.
+of them, and it is the one `proto-recorder.mjs` and `proto-v2.mjs` failed — referenced by
+nothing but themselves, and deleted 2026-08-14 (git holds them).
 
 ---
 
@@ -941,10 +941,9 @@ Recommend the rule be narrowed to say so in `TOOLS.md` itself.
 2. **Three `TOOLS.md` rows have `—` in the action column** — `koshi`, `read_tegami`,
    `write_tegami`. `read_tegami`/`write_tegami` are MICHI's, not TEJUN's; `koshi` is a koshi
    job, a process, not a tool. TOOLS.md is holding three things belonging to other surfaces.
-3. **Two true `orphan_script`s** — `scripts/proto-recorder.mjs` and `scripts/proto-v2.mjs`,
-   referenced by nothing but themselves. The DVR prototypes from the parked time-scrub work
-   (`co-working/user_repo/wip/buildouts/UNLOCKED.md`). Delete or adopt; git holds them either
-   way.
+3. **CLOSED — the two `orphan_script`s are gone.** `scripts/proto-recorder.mjs` and
+   `scripts/proto-v2.mjs`, the DVR prototypes from the parked time-scrub work, were deleted
+   2026-08-14 (owner's call; git holds them).
 
 **R28 · `kansou` (感想) or plain `feedback`?** The three `packet_kind`s want to be house
 nouns, and two already are (`tomodachi`, `tejun`), which is the case for `kansou`. Against it:
