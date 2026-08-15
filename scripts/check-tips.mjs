@@ -28,34 +28,20 @@
  * long one is usually the other. So it collects with nothing connected, connects a
  * session, and collects again.
  */
-import { createRequire } from 'node:module';
-import { homedir } from 'node:os';
+import { defaultUrl, loadPlaywright } from './lib/ui-host.mjs';
 
-const require_ = createRequire(import.meta.url);
-const HOST_TOOLS = `${homedir()}/.cache/ronin-host-tools`;
-
-const CANDIDATES = [
-  () => (process.env.RONIN_PLAYWRIGHT_PATH ? import(process.env.RONIN_PLAYWRIGHT_PATH) : null),
-  () => require_('playwright'),
-  () => createRequire(`${HOST_TOOLS}/`)('playwright'),
-];
-
-let pw;
-for (const load of CANDIDATES) {
-  try {
-    const m = await load();
-    if (m?.chromium) { pw = m; break; }
-  } catch { /* try the next */ }
-}
-if (!pw?.chromium) {
+const pw = await loadPlaywright();
+if (!pw) {
   // Same posture as smoke-ui: a missing host tool is a SKIP, not a failure. The free
   // build must verify on a box that never installed a browser.
   console.log('check-tips: SKIPPED — playwright not installed (see docs/host-tools.md)');
   process.exit(0);
 }
 
-const host = process.env.BIND || process.env.HOST || '127.0.0.1';
-const url = process.argv[2] || `http://${host}:${process.env.PORT || 3006}/`;
+// The URL is derived exactly as the server binds (scripts/lib/ui-host.mjs). It used to be
+// worked out here instead, assumed loopback, and failed against a server that was up and
+// answering — which is why that derivation now lives in one place.
+const url = process.argv[2] || defaultUrl();
 
 const browser = await pw.chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });

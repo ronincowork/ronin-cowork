@@ -22,7 +22,7 @@
  */
 import { createSession, deleteSession, fetchSessions } from './api.js';
 import { jobIcon, presetData, refreshHome } from './home.js';
-import { IS_TOUCH, NEW, S, saveState, tiles } from './state.js';
+import { IS_TOUCH, NEW, S, saveState, serviceMissing, tiles } from './state.js';
 import { buildHome } from './commons.js';
 import { guard } from './errors.js';
 import { buildLadder, buildLetter } from './shingo.js';
@@ -60,6 +60,8 @@ export class Tile {
     this.noteBtn = head.noteBtn;
     this.tagBtn = head.tagBtn;
     this.jobBtn = head.jobBtn;
+    this.tmacBtn = head.tmacBtn;
+    this.killBtn = head.killBtn;
 
     // 🔓 THE UNLOCKED VIEW — mounted first, so the tape sits under the panel and the
     // terminal in the stack, exactly as before.
@@ -175,7 +177,12 @@ export class Tile {
     // streaming behind the panel and the ✕ on the tab strip brings you back to it.
     // (Stopping viewing is still the blank option in the session picker; killing is 🗑.)
     this.el.querySelector('.menu').addEventListener('click', () => this.showHome('sessions'));
-    this.el.querySelector('.kill').addEventListener('click', () => this.kill());
+    // Guarded here, not by `disabled` or `pointer-events` — an inert control on this
+    // header stays hoverable so it can say WHY it is inert, which means the refusal has
+    // to be stated in the handler. Same rule as 🔒, 🏷, 📝 and the mark.
+    this.killBtn.addEventListener('click', () => {
+      if (this.session) this.kill();
+    });
 
     this.ro = new ResizeObserver(() => this.doFit());
     this.ro.observe(this.body);
@@ -227,10 +234,7 @@ export class Tile {
     }
     this.select.add(new Option('➕ new session…', NEW));
     this.select.value = cur || '';
-    this.updateNoteBtn();
-    this.updateTagBtn();
-    this.updateJobBtn();
-    this.refreshControl();
+    this.syncHeader();
     this.refreshCtx();
     this.refreshTegami();
   }
@@ -259,7 +263,7 @@ export class Tile {
     const session = this.session;
     // The letter is MICHI's. No michi = no /tegami routes at all, so don't fetch into
     // a 404 — the chip simply never shows, same as a session with no letter.
-    if (!session || (S.services && !S.services.includes('michi'))) {
+    if (!session || serviceMissing('michi')) {
       this.chip.set(null);
       this.closeLadder();
       return;
@@ -286,7 +290,10 @@ export class Tile {
   async toggleLetter() {
     if (this.el.querySelector('.shingo-letter')) return this.closeLetter();
     const name = this.session;
-    if (!name) return;
+    // No session, or no michi: `/tegami/raw` is the service's route and answering a 404
+    // by drawing an empty "no letter yet" panel told the owner the session had no letter
+    // when the truth was that nothing here could ever have one.
+    if (!name || serviceMissing('michi')) return;
     this.closeLadder();
     let d = { file: '', text: null };
     try {
@@ -470,6 +477,41 @@ export class Tile {
         alert(String(e.message || e));
       }
     });
+  }
+
+  /**
+   * THE HEADER'S STATE, in one pass.
+   *
+   * Every control on the header that depends on a session is decided HERE, together.
+   * They were decided in four places before, which is how three of them ended up never
+   * being decided at all: 🏷 📝 the mark and the dial went inert with no session while ⛩
+   * ⚡ 🗑 stayed lit, though a letter, a macro drop and a kill are every bit as
+   * meaningless without one. The rule is now visible in one list instead of implied by
+   * which functions happened to exist.
+   *
+   * `setInert` is the only way any of them is dimmed — never `disabled`, which would take
+   * the hover help with it (see widgets.js), and never a bare class, which would leave
+   * the reason unsaid.
+   */
+  syncHeader() {
+    const none = !this.session;
+    this.updateNoteBtn();
+    this.updateTagBtn();
+    this.updateJobBtn();
+    this.refreshControl();
+    // ⛩ is MICHI's: the letter's ladder half, and the `/tegami/raw` route behind this
+    // button, ship with the service. On a cowork-only install it used to open a panel
+    // reading "no letter on disk yet" — a fetch into a 404 dressed as an empty state,
+    // and the opposite of the opaque-and-inert rule the rest of the header follows.
+    // (Recorded as known drift in docs/tile.md; this is the fix.)
+    const noMichi = serviceMissing('michi');
+    setInert(this.torii, none || noMichi,
+      noMichi ? 'The session letter — no ladder service is installed' : 'The session letter — no session in this tile yet',
+      "Read this session's TEGAMI — the letter as the agent left it");
+    setInert(this.tmacBtn, none, 'Macros — no session in this tile yet',
+      "Macros — drop one into this session's input");
+    setInert(this.killBtn, none, 'Kill session — no session in this tile yet',
+      'Kill session (ends it + its viewers)');
   }
 
   updateTagBtn() {
@@ -686,10 +728,7 @@ export class Tile {
     this.wire.close();
     this.session = null;
     this.select.value = '';
-    this.updateNoteBtn();
-    this.updateTagBtn();
-    this.updateJobBtn();
-    this.refreshControl();
+    this.syncHeader();
     this.gauge.set(null);
     this.tegami = null;
     this.chip.set(null);
@@ -723,10 +762,7 @@ export class Tile {
       this.select.add(new Option(session, session), this.select.options.length - 1);
     }
     this.select.value = session;
-    this.updateNoteBtn();
-    this.updateTagBtn();
-    this.updateJobBtn();
-    this.refreshControl();
+    this.syncHeader();
     this.refreshCtx();
     this.refreshTegami();
 

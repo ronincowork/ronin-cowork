@@ -79,10 +79,24 @@ export const S = {
 // on. Both the tab strip and the Commons menus consult this, same as the lock button
 // consults streamOff: absent service = the surface is visible but opaque-and-inert.
 const PANE_SERVICE = { hotwords: 'koe', stats: 'counting', koshi: 'koshi' };
-export const serviceOff = (pane) => {
-  const svc = PANE_SERVICE[pane];
-  return !!svc && Array.isArray(S.services) && !S.services.includes(svc);
-};
+/**
+ * Is a SERVICE absent from this install? The one way to ask.
+ *
+ * `null` services means the operator predates the roster field, and that reads as
+ * PRESENT — an old operator must not have its surfaces greyed out by a question it
+ * cannot answer.
+ *
+ * This is the primitive; `serviceOff` below is the pane-shaped question asked in terms
+ * of it. They were separate, and the difference bit: `serviceOff` takes a PANE name, so
+ * `serviceOff('michi')` looked exactly like a service check, found no pane by that name,
+ * and quietly answered "present" — leaving a michi-only button lit on a build with no
+ * michi. A third spelling of the same test lived inline in tile.js. One question, one
+ * function, and the pane map is now only a lookup table.
+ */
+export const serviceMissing = (svc) => !!svc && Array.isArray(S.services) && !S.services.includes(svc);
+
+/** Is the service that owns this commons PANE absent? A pane not listed is core. */
+export const serviceOff = (pane) => serviceMissing(PANE_SERVICE[pane]);
 export const tiles = [];
 // The 🔒/🔓 switch (changed ONLY by the button):
 // LOCKED  = the original lock-step mirror, wired to NOTHING new. Scroll and every

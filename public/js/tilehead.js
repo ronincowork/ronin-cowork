@@ -89,6 +89,7 @@ export function buildTileHead(tile) {
   // the torii. The reference (browse everything, read the instructions) is the commons'
   // macros tab, deliberately elsewhere.
   const tmac = buildTileMacros(tile);
+  tmac.btn.title = 'Macros — drop one into this session\'s input';
   el.querySelector('.lock').before(tmac.btn);
   el.querySelector('.tile-head').appendChild(tmac.menu);
 
@@ -97,6 +98,9 @@ export function buildTileHead(tile) {
   // the spacer still pushes every button to the far edge.
   const select = el.querySelector('.sess');
   const chip = makeChip(() => tile.toggleLadder());
+  // The one control that explained nothing on hover. It is a READING (position on the
+  // ladder, and how long it has sat there), so what it needs to say is what it is.
+  chip.el.title = "Where this session is on its ladder, and how long it has been there. Opens the ladder.";
   select.after(chip.el);
 
   // THE MARK: what this session is doing, beside the name it belongs to and before the
@@ -123,5 +127,7 @@ export function buildTileHead(tile) {
     // that silently stops reflecting whether the session has a note.
     noteBtn: el.querySelector('.note'),
     tagBtn: el.querySelector('.tags'),
+    tmacBtn: tmac.btn,
+    killBtn: el.querySelector('.kill'),
   };
 }
