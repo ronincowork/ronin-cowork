@@ -509,6 +509,18 @@ export async function createViewer(target: string, tag: string): Promise<string>
   // Mouse on => the browser's trackpad/wheel scrolls tmux scrollback instead of
   // being translated into Up/Down arrows (history recall). Scoped to this viewer.
   await pexec('tmux', ['set-option', '-t', exactPane(viewer), 'mouse', config.mouse]).catch(() => {});
+  // NO STATUS LINE IN A TILE. tmux draws one by default — a coloured bar carrying the
+  // session name and a clock — and in a tile it is worse than redundant: the name it
+  // shows is THIS VIEWER's (`grid_<session>_<tag>_<n>`), a throwaway of ours, not the
+  // session the owner is looking at. So the one row it costs is spent telling them a
+  // name that means nothing, next to a clock their OS already has, while Ronin's own
+  // header carries the real name, the dial, the gauge and the ladder.
+  //
+  // Scoped to the viewer, which is the whole reason this is safe: `status` is a SESSION
+  // option and a viewer is its own session (grouped sessions share windows, not
+  // options). The owner's real session keeps its bar for anyone attaching from a
+  // terminal, and their ~/.tmux.conf is not touched. The tile gains the row.
+  await pexec('tmux', ['set-option', '-t', exactPane(viewer), 'status', 'off']).catch(() => {});
   return viewer;
 }
 
