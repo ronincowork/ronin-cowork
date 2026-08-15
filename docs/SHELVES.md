@@ -1,8 +1,8 @@
-# HOW TO — where everything is
+# SHELVES — where everything is
 
 You are an agent working in a Ronin tile. This is the map: what shelves exist, what each
-one answers, and how to list it. It names **no individual entry**, so it does not go
-stale when one is added — go to the shelf and look.
+one answers, and where to look. It names **no individual entry**, so it does not go stale
+when one is added — go to the shelf and read it.
 
 Read the shelf you need. Do not read them all.
 
@@ -31,8 +31,8 @@ Every session is fixed by two things, and the rest is looked up from them:
 `+<name>: <args>`, typed anywhere. Compile it with `ronin_bin/tejun <name>` and you get
 the recipe, every action it names, their tools, and the SOPs those actions cite, as one
 blob — execute in order, then report what happened. Extending any of it starts at
-`ronin_catalogs/README.md`: the action exists before the macro, and the tool exists
-after the action.
+`ronin_catalogs/README.md`: the action exists before the macro, and the tool exists after
+the action.
 
 ## Before you touch another session
 

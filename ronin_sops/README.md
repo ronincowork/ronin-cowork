@@ -40,7 +40,9 @@ Two routes, and neither pastes an SOP at a session that did not ask:
 - an action cites one with `- **sop:** <name>`, and `ronin_bin/tejun` inlines it at
   compile — the_owner's copy winning whole-file, so a redefined SOP takes effect on the
   very next run and nobody goes looking for it;
-- otherwise it is **found by name**, because `HOW_TO.md` says the shelf is there.
+- otherwise it is **found by name**, because `docs/SHELVES.md` says the shelf is there.
+  (Nothing points a session at that map yet — the brief wiring is R32 in `KOTOBA.md`,
+  held until the session boot is reworked.)
 
 **Yours beats ours, file for file.** Your own SOPs live in the `sops` store
 (`ronin-store sops` — never spell the path): a file there with the same name as a shipped

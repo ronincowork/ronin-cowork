@@ -761,7 +761,7 @@ somewhere else. Ronin has no address of its own; it asks. Record: `docs/stores.m
 | **ronin_library** | system_scope | the shipped reference shelf — the longer reading the catalogs point an agent at. Ships in cowork, starts near-empty and grows one screened piece at a time; the owner's own library (the `library` store, user scope) shadows it file-for-file, so the shipped way of working is a default, never a prescription | `ronin_library/README.md` |
 | **ronin_sops** | system_scope | the shipped standard operating procedures — how a house plans, builds out, deploys; the process choices the macros defer to, one SOP per file. Starts near-empty like the library; the owner's own `sops` store shadows it file-for-file — a `user_customization` you author, like a macro | `ronin_sops/README.md` |
 | **ronin_bin** | system_scope | **everything an agent types, and nothing else** — every `tejun*` plus `write_tegami`/`read_tegami` (moved out of `bin/` 2026-08-14). On PATH via setup.sh, behind `bin/shim` and ahead of `bin/`. A **tool** is the subset that also implements a cataloged action. The fourth shelf: ronin_catalogs · ronin_library · ronin_sops · ronin_bin | `ronin_bin/README.md` |
-| **the shelf map** | system_scope | the one page that says the four shelves exist and what each answers, so an agent can *find* a catalog, a library page or an SOP without any of them being pasted at it. Names **no individual entry**, so adding one never dates it. Today `HOW_TO.md` at the root — a name carried in from the frozen tree, where it meant something else, and one `public/js/docs.js` already tells two files of that name apart. **⚠ Nothing reads it**: it is cited by `ronin_sops/README.md` and gated by `scripts/check-docs.mjs`, and no brief points a session at it. Rename and wire, or delete — § OPEN | `HOW_TO.md` |
+| **SHELVES** | system_scope | the one page that says the four shelves exist and what each answers, so an agent can *find* a catalog, a library page or an SOP without any of them being pasted at it. Names **no individual entry**, so adding one never dates it. Owner, 2026-08-15: the name is `SHELVES`, it lives in `docs/`, and it is a file rather than lines in a brief. **⚠ Nothing points a session at it yet** — the brief wiring is deliberately held (R32), so today it is cited only by `ronin_sops/README.md` | `docs/SHELVES.md` |
 | **libexec** | system_scope | executables **the machine invokes and nobody types** — `ronin-gate` (ExecStartPost), `rireki/` (the tmux applet), `koshi` (the job process), `ronin-may-spawn`, `ronin-claim` (the git hooks). The Unix split `bin` (a person types it) vs `libexec` (a program invokes it), adopted 2026-08-14. NOT on PATH | § SCRIPTS |
 | **the session directory** | session_scope | the `session` store, `<store>/<key>/` — one session's own record: TEGAMI, RIREKI's tape, the scroll. R5 closed: the store resolves it, and there is no second answer | `src/stores.ts` |
 | **house_dirs** | system_scope | the three directories of a project_repo the documents SOP writes into (owner, 2026-08-14): **`wip/`** — what might be, mutable and mortal, deleted when the work lands; **`docs/`** — what is, state-of-fact only (a project_repo's docs/; the Ronin repo's own docs/ stays the system-docs tier); **`manifest/`** — the drawer: one terse line per entry, date · what · pointer, past/present/future all welcome, prose never | `ronin_sops/documents.md` |
@@ -1084,20 +1084,18 @@ machinery and cowork must run alone.
 4. **She is a helpful assistant, and that goes in her `session_job`** — the posture, where
    an agent's manner is already specified, rather than a new field or a doc nobody reads.
 
-**R32 · What is the shelf map called, and does it survive?** The four shelves have no
-"you are here" page, so an agent that was never handed a catalog cannot discover an SOP
-exists. `HOW_TO.md` was written as that page, and two things are wrong with it. **The
-name** is carried in from the frozen tree, where it meant a different document
-(`public/js/docs.js` already disambiguates two files of that name) — `ANNAI` (案内, the
-board that shows a visitor around) or plain `SHELVES.md` both say what it is. **The
-reach** is nothing: no brief, no catalog and no tool points a session at it, so today it
-is a page that exists and is never read — the failure mode it was written to fix.
+**R32 · RULED on the name and the home; the reach is deliberately still open.** Owner,
+2026-08-15. The four shelves had no "you are here" page, so an agent never handed a
+catalog could not discover that an SOP exists. It is **`docs/SHELVES.md`** — the borrowed
+`HOW_TO.md` is deleted, a name carried in from the frozen tree where it meant a different
+document (`public/js/docs.js` still has to tell two files of that name apart).
 
-Three ways out, and it needs one: **wire it** (a pointer line in `buildBrief`, alongside
-the posture — one filename, the CLI pulls it only if it needs it), **fold it** (delete the
-file; put the four-shelf line in the brief directly, since it is four rows), or **drop it**
-(the shelves stay discoverable only to an agent already holding a catalog). Until then the
-SOP shelf's second reach route — *found by name* — is a claim with nothing behind it.
+**What is still open is the reach, and it is held on purpose:** how a session boots and
+where briefs come from is being reworked, so nothing points a session at the map yet. One
+pointer line beside the posture is the intended shape — a filename, which the CLI pulls
+only if it needs it — and it lands with the boot work, not before. Until it does, the SOP
+shelf's second reach route (*found by name*) is a claim with nothing behind it, and the
+README says so rather than pretending otherwise.
 
 ---
 
