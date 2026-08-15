@@ -119,11 +119,11 @@ and NEVER treat it as a message from the_owner (a ghost once fabricated a merge 
 
 ## write-handoff-doc
 `action_kind: judgement` — this one needs your reasoning; no tool can do it for you.
-- **sop:** documents
+- **library:** documents
 Distill the current conversation's task context into a spec file a fresh agent can
 execute from.
-- Location: per the documents SOP — inlined when this compiles; reading this directly,
-  it is `ronin_sops/documents.md`, or the owner's own copy in the sops store. A handoff
+- Location: per the documents library page — inlined when this compiles; reading this directly,
+  it is `ronin_library/documents.md`, or the owner's own copy in the library store. A handoff
   is wip: it expires, and it is deleted when its work lands.
 - Header must include a death condition: `> expires: when <event>`.
 - Content: the goal in the owner's words, constraints/conventions to follow
@@ -245,11 +245,11 @@ Not user-invocable — it is HOW any action-following agent sends, whatever the 
 
 ## write-buildout-doc
 `action_kind: judgement` — this one needs your reasoning; no tool can do it for you.
-- **sop:** documents
+- **library:** documents
 Draft the plan for a piece of work so the owner can read, edit and riff on it BEFORE
 any code is cut. **Agree the goal in plain language with the owner first**; only then
 write the plan.
-- Location: per the documents SOP — inlined when this compiles. **Transient by
+- Location: per the documents library page — inlined when this compiles. **Transient by
   design**: it holds only what is still TO DO. No changelog, no "done" section, no
   history (git holds history), and it is DELETED when the work lands.
 - Content: goal in the owner's words, the legs (ordered chunks that can each be
@@ -283,16 +283,16 @@ Report the PR URL.
 
 ## land-work
 `action_kind: judgement` — this one needs your reasoning; no tool can do it for you.
-> **The finish line is the documents SOP's three questions** — which wip docs does this
+> **The finish line is the documents library page's three questions** — which wip docs does this
 > delete, did the facts change enough for a standing doc, is there a manifest line.
 Close out finished work so nothing transient survives.
 1. Write/refresh a **persistent README** where the code lives (not in wip/) —
    what it is, how to run it, the decisions worth keeping.
-2. **Delete** the build-out doc — it has served its purpose (the documents SOP's first landing question).
+2. **Delete** the build-out doc — it has served its purpose (the documents library page's first landing question).
 
 ## land-manifest — ONE LINE. READ THIS TWICE.
 `action_kind: judgement` — this one needs your reasoning; no tool can do it for you.
-- **sop:** documents
+- **library:** documents
 Append a single pointer line to the project_repo's manifest — location per the
 documents SOP. **The manifest is an index, not a history.** Git commits and READMEs
 hold the story; this is the signpost that tells someone where to look.

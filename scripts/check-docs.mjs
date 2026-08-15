@@ -146,10 +146,10 @@ const IGNORE = {
   // What remains names the house dirs of a PROJECT_REPO — a location in whatever repo a
   // session works in, never a claim about this tree.
   'ronin_catalogs/ACTIONS.md': ['wip/', 'docs/', 'manifest/'],
-  // The documents SOP *defines* those house dirs, so it names them most of all. Same
+  // The documents page *defines* those house dirs, so it names them most of all. Same
   // reason as the line above: they are a PROJECT_REPO's directories — a location in
   // whatever repo a session works in — and never a claim about this tree.
-  'ronin_sops/documents.md': ['wip/', 'wip/handoffs/', 'wip/buildouts/', 'manifest/', 'manifest/MANIFEST.md'],
+  'ronin_library/documents.md': ['wip/', 'wip/handoffs/', 'wip/buildouts/', 'manifest/', 'manifest/MANIFEST.md'],
   'ronin_catalogs/PROJECT_ROOTS.md': ['DAIKUSAN.md', 'src/services/rireki/decode.ts:219'],
   // Koshi is a SERVICE, so the outlet table it names ships in RONIN_SERVICES, not here.
   'bin/bench/README.md': ['src/koshi-model.ts'],

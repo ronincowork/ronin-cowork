@@ -10,11 +10,11 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # The user's own catalogs — NEVER a hand-spelled path (JUSHO, docs/stores.md). Absent
 # store = no user catalogs, which is the ordinary fresh-install case.
 USERCAT="$(ronin-store catalogs 2>/dev/null || true)"
-# The user's own SOPs — same store discipline. Absent = stock SOPs only.
-USERSOPS="$(ronin-store sops 2>/dev/null || true)"
-exec python3 - "$ROOT" "${1:-}" "$USERCAT" "$USERSOPS" <<'PY'
+# The user's own library — same store discipline. Absent = the stock shelf only.
+USERLIB="$(ronin-store library 2>/dev/null || true)"
+exec python3 - "$ROOT" "${1:-}" "$USERCAT" "$USERLIB" <<'PY'
 import re,sys,os,subprocess
-root,name,usercat,usersops=sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4]
+root,name,usercat,userlib=sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4]
 
 def parse(path):
     """{name: (heading, body)} for every '## ' section, stopping at a '---' footer."""
@@ -116,21 +116,26 @@ for a in steps:
     print(f"\n{h}\n{b.rstrip()}")
     for tname,usage in tools.get(a,[]):
         print(f"  ↳ TOOL: {tname} — {usage}")
-# SOPs — the process an action defers to. `- **sop:** <name>` in an action inlines
-# ronin_sops/<name>.md here, the user's own copy (sops store) winning whole-file — so a
-# redefined SOP takes effect on the very next compile, and nobody goes looking for it.
-sops=[]
+# THE LIBRARY — the reference an action defers to. `- **library:** <name>` in an action
+# inlines ronin_library/<name>.md here, the user's own copy (library store) winning
+# whole-file, so a redefined page takes effect on the very next compile.
+#
+# This key used to read `sop:` and resolve against ronin_sops/. Owner's ruling
+# 2026-08-15: an action leads to a LIBRARY page, never to an SOP. An SOP is a stance
+# over a domain, reached by name and handed to a session at birth; it may point AT an
+# action (its `> Tool:` header does), but nothing in a macro compile pulls one in.
+refs=[]
 for a in steps:
     if a not in actions: continue
     for line in actions[a][1].splitlines():
-        m2=re.match(r'-\s*\*\*sop:\*\*\s*(\S+)', line.strip())
-        if m2 and m2.group(1) not in sops: sops.append(m2.group(1))
-for s in sops:
-    for base in ([usersops] if usersops else [])+[os.path.join(root,'ronin_sops')]:
+        m2=re.match(r'-\s*\*\*library:\*\*\s*(\S+)', line.strip())
+        if m2 and m2.group(1) not in refs: refs.append(m2.group(1))
+for s in refs:
+    for base in ([userlib] if userlib else [])+[os.path.join(root,'ronin_library')]:
         p=os.path.join(base,s+'.md')
         if os.path.exists(p):
-            origin='yours (sops store)' if base==usersops else 'stock'
-            print(f"\n=== SOP: {s} — {origin} ===\n{open(p).read().rstrip()}")
+            origin='yours (library store)' if base==userlib else 'stock'
+            print(f"\n=== LIBRARY: {s} — {origin} ===\n{open(p).read().rstrip()}")
             break
 # Delivery is the MACRO'S choice (owner's ruling 2026-08-14): `- **run:** stepped` in
 # the entry arms the step tracker at compile; absent (or `whole`) = the full blob at

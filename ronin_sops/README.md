@@ -5,10 +5,20 @@ data, getting a thing deployed. **Not the only way and not the right way** — t
 every session goes about it the same, and the_owner has one file to change when they want
 it done differently.
 
-**The shelf is defined by reach, not by length or audience.** If a catalog entry can
-point at it, it belongs in `ronin_library/` — that shelf answers *how do I do this step*,
-and is reached from the action or macro that needs it. An SOP is reached by **name**,
-because no single action owns it.
+## SOP or library — the one question
+
+Both shelves are markdown, both are shadowed file-for-file by a store, and neither is
+prescriptive. **The difference is who fetches it:**
+
+| | fetched by | arrives | written for |
+|---|---|---|---|
+| **`ronin_sops/`** | the **situation** — nothing names it until one arises | when someone goes looking | a person, relayed by the agent |
+| **`ronin_library/`** | the **machinery** — an action names it, `ronin_bin/tejun` inlines it at compile | mid-task, unasked | the agent, mid-step |
+
+**An action never leads to an SOP.** An SOP may point at an action — its `> Tool:` header
+does — and the arrow runs that way only (owner, 2026-08-15). The test when you are
+unsure: **if you can name the action that would cite it, it is library.** If the only
+answer is "someone would look it up when the topic came up", it is an SOP.
 
 **Short.** An SOP is a stance and an order of operations, not a manual. If it runs past a
 screen it has stopped being a standard and become a how-to — and a how-to is either
@@ -32,14 +42,18 @@ because the advice sounds right either way. The `> Tool:` line puts information-
 before the conversation instead of after it, and it costs one run. The numbers stay in a
 terminal, where they are true, and never in the file, where they would rot.
 
-## The two voices
+## One voice: relay
 
-- **Written at the agent** — a house rule the agent applies itself. `documents.md`.
-- **Written for the agent to relay** — a walkthrough for a person who does not know the
-  domain, delivered by the agent. `github.md`, `data.md`, `deploy.md`.
+An SOP is **written for the agent to relay** — a walkthrough for a person who does not
+know the domain, delivered by the agent, and each one says so in its header. Getting this
+wrong means the agent silently follows a walkthrough itself instead of walking the_owner
+through it.
 
-Each SOP declares which it is in its header. Getting it wrong means the agent silently
-follows a walkthrough itself instead of walking the_owner through it.
+There used to be a second voice, *written at the agent*, and it had exactly one file:
+`documents.md`. That file is now `ronin_library/documents.md`, because a rule the agent
+applies itself is fetched by the machinery, not by a situation. The voice split and the
+shelf split turned out to be the same split — which is the best evidence the boundary is
+real.
 
 **Who they are for.** The_owner may know an area cold or may never have had a repo.
 Nothing here is pushed at either of them — an SOP costs nothing until a situation calls
@@ -48,13 +62,13 @@ is no other.
 
 ## How one reaches a session
 
-Two routes, and neither pastes an SOP at a session that did not ask:
+**One route, and it never pastes an SOP at a session that did not ask.** An SOP is
+**found by name**: `docs/SHELVES.md` says the shelf is there, and every session is handed
+that map at birth through `ronin_session_boot/all/`. Nothing else fetches one — no macro
+compile, no action, no boot paste of the SOPs themselves.
 
-- an action cites one with `- **sop:** <name>`, and `ronin_bin/tejun` inlines it at
-  compile — the_owner's copy winning whole-file, so a redefined SOP takes effect on the
-  very next run and nobody goes looking for it;
-- otherwise it is **found by name**, because `docs/SHELVES.md` says the shelf is there —
-  and every session is handed that map at birth, through `ronin_session_boot/all/`.
+That is the point, not a gap. A shelf that arrived unasked would be pushing a GitHub
+walkthrough at someone who has used git for fifteen years, every session, forever.
 
 **Yours beats ours, file for file.** Your own SOPs live in the `sops` store
 (`ronin-store sops` — never spell the path): a file there with the same name as a shipped

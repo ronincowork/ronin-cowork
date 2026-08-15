@@ -12,8 +12,8 @@ Read the shelf you need. Do not read them all.
 |---|---|---|
 | `ronin_session_boot/` | **what you read first** — handed to you at birth, so you have already met it | `docs/session-boot.md` |
 | `ronin_catalogs/` | **what you can do** — macros, actions, tools, session jobs, project roots | `ronin_catalogs/README.md` |
-| `ronin_library/` | **how a step is done** — the reference an action or macro points you at | `ronin_library/README.md` |
-| `ronin_sops/` | **how this house goes about a domain** — the standard process, adjustable | `ronin_sops/README.md` |
+| `ronin_library/` | **how a step is done** — reference an action names; a compile inlines it, so it arrives without you fetching it | `ronin_library/README.md` |
+| `ronin_sops/` | **how this house goes about a domain** — source control, data, deploying, secrets. Nothing fetches one; you go and look when a situation calls for it | `ronin_sops/README.md` |
 | `ronin_bin/` | **what you run** — the tools you type by bare name | `ronin_bin/README.md` |
 
 Stock lives in this repo; the_owner's own copies live in a store and shadow stock
