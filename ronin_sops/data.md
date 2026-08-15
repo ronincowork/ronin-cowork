@@ -1,4 +1,4 @@
-# data — where data lives, and how to decide
+# data — connecting to a data source, and choosing which one
 
 > Stock SOP. Your own copy in the sops store (`ronin-store sops` → `data.md`) replaces
 > this file whole — a default, not law.
@@ -6,8 +6,10 @@
 > **Tool: `tejun-survey [path]`** — cores, RAM, disk free where the work is, and every
 > store with its size. Run it before advising; the numbers are never in this file.
 
-It arrives as "where should I put this?", and size alone never answers it. Establish what
-the data *is*, measure what the box has, and the home follows.
+This covers **how a project connects to its data** — what the options are, how to choose
+between them, and how the machine you are on constrains the choice. It arrives as "where
+should I put this?" or "how do I get at that?", and size alone answers neither. Establish
+what the data *is*, measure what the box has, and both answers follow.
 
 ## Three questions, in this order
 
@@ -29,20 +31,16 @@ on it? A working box also carries the session tapes, every checkout and every
 
 ## Three homes
 
-- **Records** — anything queried, joined, counted, or written by two things at once. A
-  database, and **Postgres unless you can say why not**: SQLite when it is one process
-  with no network, and then stop shopping; a document store when the shape genuinely
-  varies per record and you read and write whole documents. Reaching for one *because
-  the shape is not settled yet* is not a data decision, it is deferring one, and it is
-  paid for later. Managed beats self-hosted for anything you would miss — running your
-  own is a job, not a checkbox.
-- **Files** — anything read whole: media, documents, exports, archives. Object storage,
-  or a synced folder (Syncthing, Dropbox) when a person works across machines. **A synced
-  folder is a replica, not a backup** — deletion propagates, and that is the whole risk in
-  one sentence. Never sync a directory a process is actively writing to: half-written
-  files replicate and conflict copies breed.
-- **Scratch** — working copies, intermediate output, anything reproducible. A working
-  disk, and it may vanish.
+- **Records** — a database, and **Postgres unless you can say why not**: SQLite when it is
+  one process with no network, and then stop shopping; a document store when the shape
+  genuinely varies per record. Reaching for one *because the shape is not settled yet* is
+  not a data decision, it is deferring one. Managed beats self-hosted for anything you
+  would miss — running your own is a job, not a checkbox.
+- **Files** — object storage, or a synced folder (Syncthing, Dropbox) when a person works
+  across machines. **A synced folder is a replica, not a backup** — deletion propagates,
+  and that is the whole risk in one sentence. Never sync a directory a process is writing
+  to.
+- **Scratch** — anything reproducible. A working disk, and it may vanish.
 
 ## The machine is not a home
 
@@ -50,6 +48,14 @@ A working directory is where data passes through, not where it lives. The reason
 capacity — it is that a machine holds **one** copy, and the copy dies with the box. Tens
 of gigabytes sitting on a working disk is a signal to ask question 1 again, not a storage
 decision that has already been made.
+
+## Connecting to it
+
+- **A connection string is a secret even when it looks like a URL.** It lives in the
+  environment, never in the code (`secrets.md`).
+- **Prove the connection from the machine that will actually make it**, not from your
+  laptop — one row, one object, one file. A managed database usually has to be told which
+  addresses may reach it, and that is the step people discover last.
 
 ## Before moving anything
 

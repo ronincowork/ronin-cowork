@@ -1,0 +1,44 @@
+# THE RELEASE — a tag becomes the ronin_artifact, built once for every box.
+#
+# Pushing a tag vX.Y.Z runs the byoin_checks (--gates: the render check SKIPs with its
+# reason — a runner has no live server or browser), builds the tarball with
+# bin/ronin-build, and attaches it to a GitHub Release together with its checksum.
+#
+# Cutting a release is therefore two deliberate acts by a person, never automation:
+# merging to master does NOT release, and a release does NOT update any box — a box
+# moves only when bin/ronin-update (or the ⚙ gear) is run on it. docs/release.md is
+# the whole procedure.
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write   # gh release create needs to write the Release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      # tmux is a host tool, not a dependency — several checks shell out to it.
+      - name: install tmux
+        run: sudo apt-get update && sudo apt-get install -y tmux
+      - run: npm ci
+      - name: BYOIN — no unchecked bytes get published
+        run: bin/ronin-byoin --gates
+      - name: build the artifact
+        run: bin/ronin-build "$GITHUB_REF_NAME"
+      - name: publish the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            release/ronin-cowork-"$GITHUB_REF_NAME".tar.gz \
+            release/SHA256SUMS \
+            --verify-tag --generate-notes

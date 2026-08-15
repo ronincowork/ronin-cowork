@@ -1,5 +1,7 @@
 node_modules/
 dist/
+# bin/ronin-build's output — tarballs are published to GitHub Releases, never committed.
+release/
 .env
 *.log
 .DS_Store

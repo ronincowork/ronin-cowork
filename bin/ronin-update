@@ -1,0 +1,283 @@
+#!/usr/bin/env bash
+# RONIN UPDATE — install a released ronin_artifact, or move an install to a newer one.
+#
+#   bin/ronin-update                     # fetch the latest release and install it
+#   bin/ronin-update --check [--json]    # report installed vs latest, change nothing
+#   bin/ronin-update --version v1.2.0    # install that release
+#   bin/ronin-update --file <tarball>    # install a tarball already on disk
+#   bin/ronin-update --rollback          # point current back at the previous release
+#   bin/ronin-update --home <dir>        # the install home (needed from a checkout)
+#
+# THE LAYOUT it manages — every release unpacked whole, one symlink saying which serves:
+#
+#   <home>/releases/v1.0.0/     <home>/current -> releases/v1.1.0
+#   <home>/releases/v1.1.0/     <home>/previous -> releases/v1.0.0   (rollback target)
+#   <home>/.env                 (lives in the home, linked into each release)
+#
+# THE FLOW: fetch → verify the checksum → unpack BESIDE current → npm install → boot
+# the CANDIDATE on a loopback scratch port and gate its rendered page → only then swap
+# `current` and restart → gate the live page. A failed gate swaps nothing: the serving
+# release never moved. The candidate boot is a preflight measured in seconds, killed
+# after the gate — not a second serving copy.
+#
+# WHAT AN UPDATE CANNOT DO: kill your sessions. They live in tmux-server.service, a
+# unit this script never touches; only tmux-ronin (the operator) restarts, and the
+# browser reconnects. The systemd unit points at <home>/current, so a swap never edits
+# the unit file — the one route a restart cannot carry (docs/repo-to-operator.md).
+# If a release changes deploy/*.service, this script says so loudly: that needs
+# ./setup.sh from <home>/current, which re-copies units.
+#
+# WHERE THE HOME IS is never spelled in code (scripts/check-place.mjs): an installed
+# copy of this script sits at <home>/releases/<v>/bin/ronin-update and derives the
+# home from its own location. Run from a checkout there is no home to derive, so
+# --home is required — the first install (cutover) names it once, explicitly.
+#
+# Outbound: this asks github.com for the release feed and the tarball — on the
+# owner's press only, never on a timer (the ⚙ gear calls --check when clicked).
+# When AGERU's egress_log lands, these fetches are entries in it.
+set -euo pipefail
+
+SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # the tree this script is in
+SLUG="${RONIN_RELEASE_REPO:-ronincowork/ronin-cowork}"    # the release feed
+
+fail() { echo "✗ $1" >&2; exit 1; }
+say()  { echo "→ $1"; }
+
+# --- arguments ---
+MODE="install"; WANT=""; FILE=""; HOME_DIR=""; JSON=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --check)    MODE="check" ;;
+    --rollback) MODE="rollback" ;;
+    --json)     JSON=1 ;;
+    --version)  shift; WANT="${1:-}"; [ -n "$WANT" ] || fail "--version needs vX.Y.Z" ;;
+    --file)     shift; FILE="${1:-}"; [ -n "$FILE" ] || fail "--file needs a path" ;;
+    --home)     shift; HOME_DIR="${1:-}"; [ -n "$HOME_DIR" ] || fail "--home needs a directory" ;;
+    *) fail "unrecognised argument: $1 (see the header of this script)" ;;
+  esac
+  shift
+done
+
+# --- where is the install home? ---
+# An installed copy lives at <home>/releases/<v>/ — VERSION present, parent named
+# `releases`. A checkout has neither, and must be told.
+if [ -z "$HOME_DIR" ]; then
+  if [ -f "$SELF/VERSION" ] && [ "$(basename "$(dirname "$SELF")")" = "releases" ]; then
+    HOME_DIR="$(cd "$SELF/../.." && pwd)"
+  elif [ "$MODE" = "check" ] && [ -z "$FILE" ]; then
+    : # a bare --check from a checkout still works: installed=none, latest from the feed
+  else
+    fail "run from a checkout: pass --home <dir> (the install home; docs/release.md)"
+  fi
+fi
+
+installed_release() {
+  [ -n "$HOME_DIR" ] && sed -n 's/^release=//p' "$HOME_DIR/current/VERSION" 2>/dev/null || true
+}
+
+# --- the release feed (gh when it is there, curl once the repo is public) ---
+have_gh() { command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; }
+
+latest_release() {
+  # No answer is an ANSWER (installed stays, latest reads unknown), never an exit:
+  # under `set -e` a bare failing pipeline here would kill --check mid-JSON.
+  if have_gh; then
+    gh release view --repo "$SLUG" --json tagName -q .tagName 2>/dev/null || true
+  else
+    curl -fsS -m 10 "https://api.github.com/repos/$SLUG/releases/latest" 2>/dev/null |
+      sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -1 || true
+  fi
+}
+
+fetch_release() { # $1=version $2=workdir
+  if have_gh; then
+    gh release download "$1" --repo "$SLUG" \
+      --pattern "ronin-cowork-$1.tar.gz" --pattern SHA256SUMS --dir "$2" ||
+      fail "could not download release $1 from $SLUG"
+  else
+    curl -fsSL -o "$2/ronin-cowork-$1.tar.gz" \
+      "https://github.com/$SLUG/releases/download/$1/ronin-cowork-$1.tar.gz" &&
+    curl -fsSL -o "$2/SHA256SUMS" \
+      "https://github.com/$SLUG/releases/download/$1/SHA256SUMS" ||
+      fail "could not download release $1 (private repo? install gh, or use --file)"
+  fi
+}
+
+# --- check: report and stop ---
+if [ "$MODE" = "check" ]; then
+  inst="$(installed_release)"
+  latest="$(latest_release)"
+  if [ "$JSON" = 1 ]; then
+    printf '{"installed":%s,"latest":%s,"upToDate":%s}\n' \
+      "$([ -n "$inst" ] && printf '"%s"' "$inst" || echo null)" \
+      "$([ -n "$latest" ] && printf '"%s"' "$latest" || echo null)" \
+      "$([ -n "$inst" ] && [ "$inst" = "$latest" ] && echo true || echo false)"
+  else
+    echo "installed : ${inst:-none (no release at ${HOME_DIR:-<no home>}/current)}"
+    echo "latest    : ${latest:-unknown (no feed answer — private repo needs gh auth)}"
+    if [ -n "$inst" ] && [ "$inst" = "$latest" ]; then echo "✓ up to date"; fi
+    if [ -n "$latest" ] && [ "$inst" != "$latest" ]; then echo "→ bin/ronin-update to install ${latest}"; fi
+  fi
+  exit 0
+fi
+
+# --- the serving question: does THIS home's current serve the unit? ---
+unit_serves_home() {
+  local wd
+  wd="$(systemctl --user show tmux-ronin -p WorkingDirectory --value 2>/dev/null || true)"
+  [ -n "$wd" ] && [ -e "$HOME_DIR/current" ] &&
+    [ "$(readlink -f "$wd" 2>/dev/null)" = "$(readlink -f "$HOME_DIR/current")" ]
+}
+
+restart_and_gate() {
+  say "restarting tmux-ronin (sessions live in tmux-server.service — untouched)"
+  systemctl --user restart tmux-ronin || fail "restart failed — systemctl --user status tmux-ronin"
+  # Gate the live page with the install's own gate, at the install's own address.
+  local port bind out
+  port="$(sed -n 's/^PORT=//p' "$HOME_DIR/.env" 2>/dev/null | head -1)"
+  bind="$(sed -n 's/^BIND=//p' "$HOME_DIR/.env" 2>/dev/null | head -1)"
+  out="$(cd "$HOME_DIR/current" && PORT="${port:-3006}" BIND="${bind:-}" libexec/ronin-gate)"
+  echo "$out"
+  echo "$out" | grep -q 'RONIN GATE: PASS' ||
+    fail "the LIVE page failed its gate after the swap — roll back: bin/ronin-update --rollback"
+}
+
+# --- rollback: the previous unpacked release, by symlink ---
+if [ "$MODE" = "rollback" ]; then
+  prev="$(readlink "$HOME_DIR/previous" 2>/dev/null || true)"
+  [ -n "$prev" ] && [ -d "$HOME_DIR/$prev" ] ||
+    fail "no previous release recorded at $HOME_DIR/previous — nothing to roll back to"
+  cur="$(readlink "$HOME_DIR/current" 2>/dev/null || true)"
+  say "rolling back: current -> $prev (was $cur)"
+  ln -sfn "$prev" "$HOME_DIR/current"
+  ln -sfn "$cur"  "$HOME_DIR/previous"   # roll forward is another --rollback
+  if unit_serves_home; then restart_and_gate; else
+    say "swapped; this home is not what the unit serves, so nothing was restarted"
+  fi
+  echo "✓ current is $(installed_release)"
+  exit 0
+fi
+
+# --- install ---
+WORK="$(mktemp -d)"
+CANDIDATE_PID=""
+# npm start is a tree (npm → sh → tsx); killing the top leaves the server running.
+kill_tree() {
+  local p
+  for p in $(pgrep -P "$1" 2>/dev/null); do kill_tree "$p"; done
+  kill "$1" 2>/dev/null || true
+}
+cleanup() {
+  [ -n "$CANDIDATE_PID" ] && kill_tree "$CANDIDATE_PID"
+  rm -rf "$WORK"
+}
+trap cleanup EXIT
+
+if [ -n "$FILE" ]; then
+  [ -f "$FILE" ] || fail "no such file: $FILE"
+  cp "$FILE" "$WORK/"
+  sums="$(dirname "$FILE")/SHA256SUMS"
+  if [ -f "$sums" ]; then cp "$sums" "$WORK/"; else
+    say "⚠ no SHA256SUMS beside $FILE — installing UNVERIFIED bytes (fine for a --dirty trial, never for a release)"
+  fi
+  TARBALL="$(basename "$FILE")"
+  VER="$(echo "$TARBALL" | sed -n 's/^ronin-cowork-\(v[0-9][^ ]*\)\.tar\.gz$/\1/p')"
+  [ -n "$VER" ] || fail "cannot read a version out of '$TARBALL' (expected ronin-cowork-vX.Y.Z.tar.gz)"
+else
+  VER="${WANT:-$(latest_release)}"
+  [ -n "$VER" ] || fail "could not learn the latest release (private repo needs gh auth; or pass --version / --file)"
+  inst="$(installed_release)"
+  if [ "$VER" = "$inst" ]; then echo "✓ already on $VER — nothing to do"; exit 0; fi
+  say "fetching $VER from $SLUG"
+  fetch_release "$VER" "$WORK"
+  TARBALL="ronin-cowork-$VER.tar.gz"
+fi
+
+# --- verify ---
+if [ -f "$WORK/SHA256SUMS" ]; then
+  (cd "$WORK" && grep "$TARBALL" SHA256SUMS | sha256sum -c -) >/dev/null ||
+    fail "CHECKSUM MISMATCH on $TARBALL — refusing to install; the download is not the release"
+  say "checksum verified"
+fi
+
+# --- unpack BESIDE current ---
+TARGET="$HOME_DIR/releases/$VER"
+if [ -e "$TARGET" ]; then
+  [ "$(readlink "$HOME_DIR/current" 2>/dev/null)" = "releases/$VER" ] &&
+    fail "$VER is already the serving release"
+  say "replacing the previously unpacked (not serving) $TARGET"
+  rm -rf "$TARGET"
+fi
+mkdir -p "$HOME_DIR/releases"
+mkdir -p "$TARGET.partial"
+tar -xzf "$WORK/$TARBALL" --strip-components=1 -C "$TARGET.partial"
+mv "$TARGET.partial" "$TARGET"
+say "unpacked to releases/$VER"
+
+# --- complete it: dependencies and the .env link ---
+# npm install, not --production: tsx sits in devDependencies and IS the runtime — a
+# repo fact this script records rather than routes around.
+say "npm install in the candidate (node_modules do not travel in the tarball)"
+(cd "$TARGET" && npm install --no-fund --no-audit --loglevel=error >/dev/null) ||
+  fail "npm install failed in $TARGET — the release does not complete on this machine"
+if [ ! -f "$HOME_DIR/.env" ]; then
+  cp "$TARGET/.env.example" "$HOME_DIR/.env" && chmod 600 "$HOME_DIR/.env"
+  say "created $HOME_DIR/.env from .env.example (edit for auth / port; it survives every update)"
+fi
+ln -sfn "$HOME_DIR/.env" "$TARGET/.env"
+
+# --- gate the CANDIDATE before anything swaps ---
+# Loopback scratch port: the candidate is reachable only from this machine, for the
+# seconds the gate needs, then killed. PORT/BIND as environment beat the linked .env
+# (dotenv never overrides real env). It watches the same tmux server as the live
+# operator — sessions are shared state and that is the design being tested.
+SCRATCH=""
+for p in 3979 3980 3981 3982 3983; do
+  curl -fsS -m 1 -o /dev/null "http://127.0.0.1:$p/api/health" 2>/dev/null || { SCRATCH="$p"; break; }
+done
+[ -n "$SCRATCH" ] || fail "no free scratch port in 3979-3983"
+say "booting the candidate on loopback:$SCRATCH for its gate"
+(cd "$TARGET" && PORT="$SCRATCH" BIND=127.0.0.1 npm start >"$WORK/candidate.log" 2>&1) &
+CANDIDATE_PID=$!
+for _ in $(seq 1 30); do
+  curl -fsS -m 1 -o /dev/null "http://127.0.0.1:$SCRATCH/api/health" 2>/dev/null && break
+  kill -0 "$CANDIDATE_PID" 2>/dev/null || { sed 's/^/  candidate: /' "$WORK/candidate.log" | tail -20; fail "the candidate died at boot — nothing was swapped"; }
+  sleep 1
+done
+ANSWER="$(curl -fsS -m 3 "http://127.0.0.1:$SCRATCH/api/version" 2>/dev/null || true)"
+echo "$ANSWER" | grep -q "\"release\":\"$VER\"" ||
+  fail "the candidate does not answer release $VER (got: ${ANSWER:-nothing}) — nothing was swapped"
+GATE_OUT="$(cd "$TARGET" && RONIN_GATE_URL="http://127.0.0.1:$SCRATCH/" libexec/ronin-gate)"
+echo "$GATE_OUT" | sed 's/^/  /'
+echo "$GATE_OUT" | grep -q 'RONIN GATE: PASS' ||
+  fail "the CANDIDATE failed its render gate — nothing was swapped; the serving release never moved"
+kill_tree "$CANDIDATE_PID"
+wait "$CANDIDATE_PID" 2>/dev/null || true
+CANDIDATE_PID=""
+say "candidate gated: $VER renders"
+
+# --- swap ---
+CUR="$(readlink "$HOME_DIR/current" 2>/dev/null || true)"
+[ -n "$CUR" ] && ln -sfn "$CUR" "$HOME_DIR/previous"
+ln -sfn "releases/$VER" "$HOME_DIR/current"
+say "swapped: current -> releases/$VER${CUR:+ (previous -> $CUR)}"
+
+# --- the unit route, the one a restart cannot carry ---
+if [ -n "$CUR" ] && ! diff -rq "$HOME_DIR/$CUR/deploy" "$TARGET/deploy" >/dev/null 2>&1; then
+  echo "⚠ deploy/ changed between $CUR and $VER — the unit files are COPIES in systemd;"
+  echo "  run: (cd $HOME_DIR/current && ./setup.sh) to re-render them. A restart alone cannot."
+fi
+
+# --- restart what serves, or say why not ---
+if unit_serves_home; then
+  restart_and_gate
+  echo "✓ $VER is live — /api/version answers it"
+elif [ -z "$CUR" ]; then
+  echo "✓ $VER is installed at $HOME_DIR/current — FIRST install on this home."
+  echo "  To make it serve: (cd $HOME_DIR/current && ./setup.sh)   # units, PATH, start"
+  echo "  Cutover from a checkout-serving box is a deliberate act: docs/release.md."
+else
+  echo "✓ $VER is installed and current — but the unit serves elsewhere, so nothing restarted."
+  echo "  This box's operator is not this home's (cutover pending? docs/release.md)."
+fi
+exit 0

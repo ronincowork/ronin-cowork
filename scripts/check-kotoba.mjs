@@ -162,8 +162,13 @@ ok(`internal-names list agrees across both files (${ours.size} names)`);
 /* ---- 4. load-bearing nouns have rows ---- */
 
 // Maintained, not derived: nouns a subsystem's code leans on hard enough that a
-// missing row means agents argue about them. src/koshi-model.ts today.
-const LOAD_BEARING = ['outlet', 'incarnation', 'pace'];
+// missing row means agents argue about them. src/koshi-model.ts, plus the launch table.
+//
+// `session_launch_spec` is on this list because its predecessor proved why the list
+// exists: `brain` was used in src/, two catalogs, this check's sibling and KOTOBA's own
+// prose, and was never once DEFINED — so nobody could say whether it meant the CLI, the
+// model, or this run of it. Owner, 2026-08-15: not in KOTOBA, not house vocabulary.
+const LOAD_BEARING = ['outlet', 'incarnation', 'pace', 'session_launch_spec'];
 const termCells = kotoba
   .split('\n')
   .filter((l) => l.startsWith('|'))

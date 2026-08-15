@@ -1,9 +1,13 @@
 # documents — where a development document lives, and for how long
 
-> Stock SOP. Your own copy in the sops store (`$(ronin-store sops)/documents.md`)
-> replaces this file whole — these are defaults, not law. Actions that carry
-> `- **sop:** documents` resolve their locations from here.
-> **Voice: at the agent.** A house rule the agent applies itself.
+> Stock library page. Your own copy in the library store (`ronin-store library` →
+> `documents.md`) replaces this file whole — these are defaults, not law. Actions that
+> carry `- **library:** documents` resolve their locations from here, and a compile
+> inlines it.
+>
+> **It moved off the SOP shelf on 2026-08-15**, when the owner ruled that an action leads
+> to a library page and never to an SOP. The content did not change: it is reached from an
+> action, and that is what the library is.
 
 **Every document produced in development is one of three things, and lives in one of
 three directories of the project_repo:**

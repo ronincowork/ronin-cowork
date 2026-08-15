@@ -28,13 +28,18 @@ The client asks once, at boot, before the grid is built: `GET /api/version`
 The house rule for an absent service: **draw the surface opaque-and-inert, never fetch into
 a 404.** "Not plugged in", not "broken", not missing.
 
-| Control | Needs | When it is not there |
+This table is about **services** only — which control goes dark because something is not
+installed. The other half of "is this reachable", whether a control needs a *session*, is
+the `needs` column of the header table itself (`public/js/tilehead.js`); both end up in the
+same `needs` string, and both dim the control the same way.
+
+| Control | Needs (service) | When it is not there |
 |---|---|---|
 | ● connection dot | — | always |
 | session picker | — | always |
 | the mark (job) | — | always — see the note below |
 | SHINGO chip + ladder | `michi` | chip hidden, ladder unreachable, never fetched |
-| ⛩ torii (the letter) | `michi`'s route | **not gated** — see *Known drift* |
+| ⛩ torii (the letter) | `michi` | inert, with the reason on hover; never fetched |
 | ⛽ context gauge | — | always (hides when there is no reading) |
 | 🎛 control dial | — | always |
 | メ commons | — | always (individual tabs gate: `koe` · `counting` · `koshi`) |
@@ -85,10 +90,29 @@ Built order (`public/js/tilehead.js`):
 ● │ [ session ▾ ] │ chip │ mark │ ←spacer→ │ メ ⛩ ⚡ 🔒 🏷 ⛽ 🎛 📝 🗑
 ```
 
-Every control in this header says what it is on hover — **including while it is greyed out,
-which is when you are most likely to be asking.** That is why the inert ones dim with a
-class rather than with `disabled`: a disabled element fires no hover events, so its `title`
-never appears (`setInert`, `public/js/widgets.js:134`).
+**One table, and a loop.** Every control above is one row of `HEADER` in
+`public/js/tilehead.js`, and everything about it is on that row: where it sits, its class,
+its glyph, its hover text, its click, what it needs to be live, what it says while it is
+not, and — for the three whose help is a reading rather than a sentence — how to read it.
+The order of the rows is the order on screen. `buildTileHead` loops the table to build;
+`syncTileHead` loops the same table to bring it up to date. Adding a control is adding a
+row, and it cannot be half-wired because there is no second place to forget.
+
+That structure is not decoration. A control used to be spread over up to five places —
+markup in an HTML string, hover text beside it, click in the tile constructor, inert rule
+in a fourth spot, live reading in a fifth — and the set drifted: **three controls had no
+inert rule at all**, because nobody had written them a line.
+
+**`needs` is the whole rule for whether a control is reachable.** `session` for the ones
+that act on a session; a service name for the ones whose route ships with a service. A row
+with no `needs` is claiming to work always — a claim, not an oversight.
+
+Every control says what it is on hover — **including while it is greyed out, which is when
+you are most likely to be asking.** That is why the inert ones dim with a class rather than
+with `disabled`: a disabled element fires no hover events, so its help never appears
+(`setInert`, `public/js/widgets.js`). The refusal therefore lives in the handler, never in
+the stylesheet. The help itself is drawn by the house help box, not by the browser —
+`public/js/tips.js`, one panel, fixed size, docked to the control's own side of the header.
 
 ### ● The connection dot
 
@@ -122,8 +146,8 @@ Exactly one rung is live: you are at the gate or you are doing leg four, never b
 scrolled to the rung you are standing on. `[GATE]` rows are a rung **kind**, never a status;
 statuses are `PLANNED` · `ACTIVE` · `DONE`.
 
-Needs `michi`. `refreshTegami` (`public/js/tile.js:253`) checks `S.services` and simply does
-not fetch when michi is absent.
+Needs `michi`. `refreshTegami` asks `serviceMissing('michi')` and simply does not fetch when
+michi is absent — the one way that question is asked anywhere in the client.
 
 ### The mark — what this session is doing
 
@@ -160,6 +184,12 @@ looks wrong.
 On **every** session, ladder or not. Read-only; the only thing that changes a letter is the
 agent that owns it. Never both panels at once — opening the letter closes the ladder.
 
+**Inert without a session, and without michi** (`needs: 'session michi'`). Its route,
+`/api/sessions/:name/tegami/raw`, ships with the service. Until 2026-08-15 it was gated by
+neither: on a cowork-only install it opened a panel reading *"no letter on disk for this
+session yet"* — a fetch into a 404 dressed as an empty state, telling the owner the session
+had no letter when the truth was that nothing there could ever have one.
+
 ### ⚡ Macros
 
 The fast path for `session_macros`. **It prefills and stops** — `+forkit: ` lands in the input
@@ -177,6 +207,8 @@ A macro marked `send:` is the exception — it fires and presses Enter for you, 
 
 The reference — browse everything, read the instruction — is the commons' macros tab,
 deliberately a different surface.
+
+Inert without a session: there is nothing to prefill.
 
 ### 🔒 / 🔓 The lock
 
@@ -245,7 +277,8 @@ storage, gone when the session dies. The button lights when there is one.
 ### 🗑 Kill
 
 Destroys the tmux session on the host, root plus its `grid_*` viewers. Confirms first, then
-the tile detaches and returns to the commons.
+the tile detaches and returns to the commons. Inert without a session — there is nothing to
+kill, and it used to stay lit and say nothing about why pressing it did nothing.
 
 ---
 
@@ -357,6 +390,7 @@ still hoverable, guarded in its handler). On the connection `.dot` it is one of 
 indicator's three states — `on` / `wait` / `off` — and means DISCONNECTED. No selector
 crosses the two (`.tile-head button.off` cannot match a span), so this costs nothing
 today; it would cost something the day the dot becomes a button.
+
 ---
 
 ## Where the code is
@@ -364,13 +398,14 @@ today; it would cost something the day the dot becomes a button.
 | Piece | File |
 |---|---|
 | the cell | `public/js/tile.js` |
-| the header, built | `public/js/tilehead.js` |
+| the header — the table, and the loops that build and sync it | `public/js/tilehead.js` |
 | 🔒 the mirror | `public/js/termview.js` |
 | 🔓 the tape render | `public/js/tapeview.js` |
 | the socket | `public/js/tilewire.js` |
 | the text entry | `public/js/composer.js` |
 | the parked-parcel rule | `public/js/dvr.js` |
 | dial, gauge, job menu, `setInert` | `public/js/widgets.js` |
+| the hover help box | `public/js/tips.js` |
 | chip, ladder, letter | `public/js/shingo.js` |
 | ⚡ | `public/js/tilemacros.js` |
 | 📝 and 🏷 | `public/js/panels.js` |

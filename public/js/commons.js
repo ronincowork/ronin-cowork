@@ -2,7 +2,7 @@
 import { humanAge } from './shingo.js';
 import {
   STATUS_LABEL,
-  brainData,
+  launchSpecData,
   homeData,
   jobIcon,
   loadSavedLaunches,
@@ -19,6 +19,7 @@ import { buildProjectRoots } from './projectroots.js';
 import { buildStats } from './stats.js';
 import { buildWipeboard } from './wipeboard.js';
 import { buildDocs } from './docs.js';
+import { buildSystem } from './system.js';
 import { addProvMark, addYourOwn } from './provenance.js';
 
 export function buildHome(tile) {
@@ -68,6 +69,8 @@ export function buildHome(tile) {
   mkTab('hotwords', '▥ Hotwords', 'Words dictation keeps getting wrong — the glossary sent with your voice');
   mkTab('stats', '▦ Stats', 'How this install actually gets used — TOMODACHI');
   mkTab('koshi', '目 Koshi', 'Which model each Koshi job asks');
+  // Core, never dimmed: version and updates are the install's own business, no service.
+  mkTab('system', '⚙ System', 'What this install is running — check for updates, run one');
   // A tab owned by a service that is not registered is visible but opaque-and-inert —
   // the same treatment as the lock button on a build with no record service.
   tabs.querySelectorAll('button[data-pane]').forEach((b) => {
@@ -99,7 +102,9 @@ export function buildHome(tile) {
   statsPane.className = 'home-stats';
   const koshiPane = document.createElement('div');
   koshiPane.className = 'home-koshi';
-  el.append(tabs, nullPane, mainPane, wipePane, docsPane, projPane, hotwordsPane, statsPane, koshiPane);
+  const systemPane = document.createElement('div');
+  systemPane.className = 'home-system';
+  el.append(tabs, nullPane, mainPane, wipePane, docsPane, projPane, hotwordsPane, statsPane, koshiPane, systemPane);
   const showPane = (which) => {
     if (serviceOff(which)) return; // an inert tab's pane, asked for by any other route
     el.dataset.pane = which;
@@ -111,6 +116,7 @@ export function buildHome(tile) {
     if (which === 'hotwords') words.enter();
     if (which === 'koshi') koshi.enter();
     if (which === 'stats') stats.enter();
+    if (which === 'system') system.enter();
   };
   // ✕ only makes sense once a session is showing behind the panel.
   closeTab.addEventListener('click', () => tile.hideHome());
@@ -277,8 +283,8 @@ export function buildHome(tile) {
   const whereSel = document.createElement('select');
   whereSel.title = 'project_root — where the work happens (sets the directory + reading list)';
   const modelSel = document.createElement('select');
-  modelSel.className = 'ks-model'; // hidden for an agentless kind — there is no brain to pick
-  modelSel.title = 'Which brain to launch';
+  modelSel.className = 'ks-model'; // hidden for an agentless kind — there is no session_launch_spec to pick
+  modelSel.title = 'Which session_launch_spec to launch';
   const groupSel = document.createElement('select');
   groupSel.title = 'Group the new session joins (tag)';
   const startBtn = document.createElement('button');
@@ -438,7 +444,7 @@ export function buildHome(tile) {
       );
       b.addEventListener('click', () => {
         kind = k;
-        // `agent: none` (ronin_catalogs/SESSION_JOBS.md) — a plain terminal. No brain to pick,
+        // `agent: none` (ronin_catalogs/SESSION_JOBS.md) — a plain terminal. No session_launch_spec to pick,
         // no brief to compose, so the form drops to the two things that still mean
         // something: what it is called and where it opens. Manual is not a "mode" here,
         // it is the only truth available: nothing is sent at all.
@@ -521,7 +527,7 @@ export function buildHome(tile) {
     }
     whereSel.value = [...whereSel.options].some((o) => o.value === cur) ? cur : projectData[0].name;
   };
-  // Every launchable brain in the launch table, by its REAL model name
+  // Every session_launch_spec in the launch table, by its REAL model name
   // ("anthropic · opus") — never a cheap/mid/heavy euphemism. Table order, so the
   // first option is the provider's default (anthropic → opus) and that is what a
   // fresh form starts on.
@@ -529,7 +535,7 @@ export function buildHome(tile) {
     const cur = modelSel.value;
     modelSel.innerHTML = '';
     const seen = new Set();
-    for (const b of brainData || []) {
+    for (const b of launchSpecData || []) {
       if (!b.cmd || seen.has(b.cmd)) continue;
       seen.add(b.cmd);
       modelSel.add(new Option(`${b.provider} · ${b.model}`, b.cmd));
@@ -537,7 +543,7 @@ export function buildHome(tile) {
     if (!seen.size) modelSel.add(new Option('claude', 'claude'));
     modelSel.value = [...modelSel.options].some((o) => o.value === cur) ? cur : modelSel.options[0].value;
   };
-  // Keep the brain in step with the project unless you have chosen one yourself.
+  // Keep the session_launch_spec in step with the project unless you have chosen one yourself.
   let modelTouched = false;
   modelSel.addEventListener('change', () => {
     modelTouched = true;
@@ -629,6 +635,7 @@ export function buildHome(tile) {
   const words = buildHotwords(hotwordsPane, () => tile.homeVisible() && el.dataset.pane === 'hotwords');
   const koshi = buildKoshi(koshiPane, () => tile.homeVisible() && el.dataset.pane === 'koshi');
   const stats = buildStats(statsPane);
+  const system = buildSystem(systemPane);
 
   // Re-render the LIVE parts (session list, target options); forms keep their state.
   const render = () => {
@@ -769,6 +776,6 @@ export function buildHome(tile) {
 /* ---------- KOSHI_DASHI — the receipt for a spawn ----------
  * A launch goes straight through with no confirm screen, which is only honest if
  * the result is visible and undoable at the same speed it fired. So the receipt
- * names what the session was actually born with — role, project, brain, dial —
+ * names what the session was actually born with — role, project, session_launch_spec, dial —
  * and carries a kill next to it. Wrong fill: one tap, gone.
  */

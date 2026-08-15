@@ -220,7 +220,21 @@ fi
 sect "operator vs src/"
 ver="$([ "$HEALTH_UP" = 1 ] && curl -fsS -m 4 "${URL}api/version" 2>/dev/null || true)"
 op_commit="$(printf '%s' "$ver" | sed -n 's/.*"commit":"\([^"]*\)".*/\1/p')"
-if [ -n "$op_commit" ] && [ "$op_commit" != "unknown" ]; then
+op_release="$(printf '%s' "$ver" | sed -n 's/.*"release":"\([^"]*\)".*/\1/p')"
+# A RELEASE INSTALL compares release strings — the whole point of the artifact
+# (docs/release.md). The operator answers the release it started from; this tree's
+# VERSION file says what is unpacked here. Equal = current. Different = an update was
+# unpacked or swapped since the operator started, and a restart carries it.
+if [ -n "$op_release" ]; then
+  tree_release="$(sed -n 's/^release=//p' "$ROOT/VERSION" 2>/dev/null)"
+  if [ -z "$tree_release" ]; then
+    note "operator runs release $op_release; this tree carries no VERSION file — asked from a checkout, nothing to compare"
+  elif [ "$op_release" = "$tree_release" ]; then
+    ok "operator runs $op_release — this install's own release (a string match, not an inference)"
+  else
+    find_ "operator runs $op_release but this install is $tree_release — old code until a restart (owner's hand, or bin/ronin-update finishing)"
+  fi
+elif [ -n "$op_commit" ] && [ "$op_commit" != "unknown" ]; then
   tree_commit="$(git rev-parse --short HEAD 2>/dev/null)"
   if [ -z "$tree_commit" ]; then
     note "operator says it runs $op_commit; the tree has no git to compare against"

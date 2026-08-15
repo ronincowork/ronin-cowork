@@ -86,7 +86,7 @@ One sentence in, a filled form out. Match it against the `match:` words in
 
 | # | Action | With |
 |---|---|---|
-| 1 | propose-and-confirm | `session_job`, `project_root`, brain, the name you would give it. As a form, not prose |
+| 1 | propose-and-confirm | `session_job`, `project_root`, session_launch_spec, the name you would give it. As a form, not prose |
 | 2 | session-create | On a yes: `POST /api/launch` does create, tag, dial, CLI and brief in one call |
 | 3 | report-outcome | The name, and that it is in the grid |
 

@@ -4,28 +4,48 @@
 > this file whole — a default, not law.
 > **Voice: relay.** Written for the agent to walk a person through, not to follow itself.
 > **Tool: `tejun-secrets [path]`** — which env files exist, the key NAMES in each, whether
-> git tracks them, and whether `.gitignore` covers them. Run it before the conversation,
-> not after. It never prints a value; exit 4 means something is already public.
+> git tracks them, whether `.gitignore` covers them, and which provider credential a
+> launched agent would actually use. Run it before the conversation, not after. It never
+> prints a value; exit 4 means something is already public.
 
 A secret is **configuration, not code**. It differs per machine, it changes without the
 program changing, and it is the one kind of mistake that a later commit cannot take back.
 
 ## The approach
 
-1. **The ignore rule comes before the file.** `.env` in `.gitignore` on the first day,
-   while the repo is empty and nobody is under pressure. Adding it after the file exists
-   is a race you sometimes lose.
-2. **Keep a tracked template.** `.env.example` with the key *names* and no values — it is
-   how the next person (or the deploy) learns what to set, and it is meant to be
-   committed. A template holding a real value is the quiet version of this whole problem.
-3. **Local runs read `.env`; everything else reads the environment.** A deployed thing
-   takes its keys from the host's own configuration, never from a file in the image
-   (`deploy.md`).
-4. **One key per purpose, and per place.** The same key in local, staging and production
-   means rotating it breaks all three at once, which is why nobody rotates it.
-5. **Ask who else needs it.** That question decides where a key lives — a key one person
-   uses belongs in their environment; a key three people need belongs in whatever the
-   house already uses to share them, and *never* in a message that stays scrolled back.
+1. **The ignore rule comes before the file.** `.env` in `.gitignore` on day one, while
+   the repo is empty and nobody is in a hurry. Adding it after the file exists is a race
+   you sometimes lose.
+2. **Keep a tracked template.** `.env.example` carries the key *names* and no values — it
+   is how the next person and the deploy both learn what to set. A template holding a
+   real value is the quiet version of this whole problem.
+3. **One key per purpose, and per place.** The same key across local, staging and
+   production means rotating it breaks all three at once, which is why nobody rotates it.
+4. **Ask who else needs it.** That decides where it lives: a key one person uses belongs
+   in their environment; a key three people need belongs in whatever the house already
+   uses to share them, and *never* in a message that stays scrolled back.
+
+## Which account pays for the agent
+
+The one credential decision every install makes, and the one that costs money when it is
+made by accident. (Who the install belongs to is `accounts.md`; this is what pays.)
+
+- **A subscription** (Claude Pro/Max and the like) — you log the CLI in once on this box
+  and sessions use it. Flat monthly cost, nothing to rotate, nothing in any file.
+- **An API key** — billed per token, set in the environment. Right when you need
+  programmatic access, separate billing, or per-project separation.
+
+**The order they resolve in is fixed, and it is where people get hurt:**
+`ANTHROPIC_API_KEY` → `ANTHROPIC_AUTH_TOKEN` → an OAuth profile → the default profile on
+disk. **A set `ANTHROPIC_API_KEY` silently outranks a subscription login — and an empty
+one still wins its slot.** So a stale export in a shell profile can quietly move every
+session onto per-token billing, and the only symptom is the invoice. Pick one, and check
+which one is actually winning (`tejun-secrets`) rather than assuming.
+
+Two follow-ons worth knowing: if you log in *both* ways the CLI may warn about the
+conflict — resolve it, don't dismiss it. And what a Ronin pane inherits is the **service's**
+environment, not the shell you are typing in; when those disagree, the pane is the one
+that counts.
 
 ## When one leaks
 

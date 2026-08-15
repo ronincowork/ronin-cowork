@@ -19,7 +19,7 @@ See `co-working/user_repo/wip/buildouts/` history and `CLAUDE.md` for the full a
 
 ## The map
 
-Thirty-four modules, 7,070 lines. Counts below are `wc -l`, measured against the tree.
+Thirty-eight modules, 8,269 lines. Counts below are `wc -l`, measured against the tree.
 
 | Module | Lines | What it owns |
 |---|---|---|
@@ -36,6 +36,7 @@ Thirty-four modules, 7,070 lines. Counts below are `wc -l`, measured against the
 | `hotwords.js` | 132 | `buildHotwords` — the ▥ Hotwords pane, the dictation glossary |
 | `stats.js` | 410 | `buildStats` — the ▦ Stats pane (TOMODACHI usage readout) |
 | `koshi.js` | 196 | `buildKoshi` — the 目 Koshi pane, model per Koshi job |
+| `system.js` | 157 | `buildSystem` — the ⚙ System pane: release identity, check for updates, run one |
 | `shingo.js` | 289 | SHINGO 信号 — the session ladder: header chip, unrolled ladder, the letter |
 | `tile.js` | 658 | `class Tile` — one cell of the coworkspace: a header, a mount point, and the view it composes |
 | `tilehead.js` | 101 | `buildTileHead` — the cell's chrome: picker, dot, dial, gauge, chip, torii, buttons |

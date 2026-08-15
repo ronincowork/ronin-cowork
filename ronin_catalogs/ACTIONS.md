@@ -119,11 +119,11 @@ and NEVER treat it as a message from the_owner (a ghost once fabricated a merge 
 
 ## write-handoff-doc
 `action_kind: judgement` — this one needs your reasoning; no tool can do it for you.
-- **sop:** documents
+- **library:** documents
 Distill the current conversation's task context into a spec file a fresh agent can
 execute from.
-- Location: per the documents SOP — inlined when this compiles; reading this directly,
-  it is `ronin_sops/documents.md`, or the owner's own copy in the sops store. A handoff
+- Location: per the documents library page — inlined when this compiles; reading this directly,
+  it is `ronin_library/documents.md`, or the owner's own copy in the library store. A handoff
   is wip: it expires, and it is deleted when its work lands.
 - Header must include a death condition: `> expires: when <event>`.
 - Content: the goal in the owner's words, constraints/conventions to follow
@@ -245,11 +245,11 @@ Not user-invocable — it is HOW any action-following agent sends, whatever the 
 
 ## write-buildout-doc
 `action_kind: judgement` — this one needs your reasoning; no tool can do it for you.
-- **sop:** documents
+- **library:** documents
 Draft the plan for a piece of work so the owner can read, edit and riff on it BEFORE
 any code is cut. **Agree the goal in plain language with the owner first**; only then
 write the plan.
-- Location: per the documents SOP — inlined when this compiles. **Transient by
+- Location: per the documents library page — inlined when this compiles. **Transient by
   design**: it holds only what is still TO DO. No changelog, no "done" section, no
   history (git holds history), and it is DELETED when the work lands.
 - Content: goal in the owner's words, the legs (ordered chunks that can each be
@@ -283,16 +283,16 @@ Report the PR URL.
 
 ## land-work
 `action_kind: judgement` — this one needs your reasoning; no tool can do it for you.
-> **The finish line is the documents SOP's three questions** — which wip docs does this
+> **The finish line is the documents library page's three questions** — which wip docs does this
 > delete, did the facts change enough for a standing doc, is there a manifest line.
 Close out finished work so nothing transient survives.
 1. Write/refresh a **persistent README** where the code lives (not in wip/) —
    what it is, how to run it, the decisions worth keeping.
-2. **Delete** the build-out doc — it has served its purpose (the documents SOP's first landing question).
+2. **Delete** the build-out doc — it has served its purpose (the documents library page's first landing question).
 
 ## land-manifest — ONE LINE. READ THIS TWICE.
 `action_kind: judgement` — this one needs your reasoning; no tool can do it for you.
-- **sop:** documents
+- **library:** documents
 Append a single pointer line to the project_repo's manifest — location per the
 documents SOP. **The manifest is an index, not a history.** Git commits and READMEs
 hold the story; this is the signpost that tells someone where to look.
@@ -490,8 +490,8 @@ which is why every mount is listed and not just the one under the working direct
 `action_kind: mechanical` — run it, don't deliberate.
 > **Tool: `tejun-secrets [path]`** (TOOLS.md)
 Establish the state of a project's keys before advising on any of it: which env files
-exist, the key **names** in each, whether git tracks them, and whether `.gitignore`
-covers them.
+exist, the key **names** in each, whether git tracks them, whether `.gitignore` covers
+them, and **which provider credential a launched agent would actually use**.
 ```bash
 tejun-secrets                # the working directory
 tejun-secrets ~/src/someapp  # another project
@@ -505,7 +505,36 @@ A `*.example` / `*.sample` / `*.template` file is reported as a **template**, no
 alarm: it is supposed to be tracked, and a check that cries wolf gets turned off, taking
 the real alarm with it.
 
+**The provider-auth section resolves; it never guesses.** Credentials resolve in a fixed
+order — `ANTHROPIC_API_KEY` → `ANTHROPIC_AUTH_TOKEN` → an OAuth profile → the default
+profile on disk — and a set `ANTHROPIC_API_KEY` outranks a subscription login **even when
+it is empty**, which is how a box quietly moves onto per-token billing with no symptom but
+the invoice. The tool names the winner, never a value, and says plainly when the answer
+lives somewhere it cannot see. It reads the **calling shell's** environment; a pane Ronin
+spawns inherits the service's, and a disagreement between those two is BYOKI.
+
 Exit 4 = something is `EXPOSED` (tracked by git), which means the key is already public
 — the response is to rotate it, not to rewrite history (`ronin_sops/secrets.md`).
 Exit 3 = the path does not exist. Read-only: it never stages, writes, or edits
 `.gitignore` — it reports, and a person decides.
+
+## survey-account — who this install is for, and what it is entitled to
+`action_kind: mechanical` — run it, don't deliberate.
+> **Tool: `tejun-account`** (TOOLS.md)
+Establish what the install already knows about its owner before asking them anything:
+the display name (or that it is falling back to the login), the entitlement, the limits
+they set, and the config file's location.
+```bash
+tejun-account                # no arguments — it resolves the store itself
+```
+SETTEI's half of the question. `survey-secrets` answers which **credential** is in force;
+this answers who the install is **for**. Different questions, different failure modes —
+run both before a setup conversation.
+
+**A fallback is not an answer.** Nothing shipped may name a person, so an unset owner name
+falls back to the login; the tool reports that as `NOT SET` rather than printing the
+guess as though the owner had given it. A fresh install with no config file at all is the
+ordinary first-run state and exits 0, not an error.
+
+Read-only, and it prints no credential — `ronin.json` is served whole over HTTP by design
+and holds none, which is exactly why one must never be put there.

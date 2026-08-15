@@ -4,7 +4,7 @@
 dial work, add this repo, start me a session for the flaky render test, call me Glen.
 
 She is **a session**, not a service and not a model call the house makes on your behalf.
-She runs on your own brain from the launch table, in a tile you can watch, with a dial you
+She runs on your own session_launch_spec from the launch table, in a tile you can watch, with a dial you
 can turn. That is the whole of what makes her different from a koshi, and the difference is
 mechanical rather than a matter of taste:
 
@@ -12,7 +12,7 @@ mechanical rather than a matter of taste:
 |---|---|---|
 | what it is | one stateless API call | a seated agent in a tile |
 | its law | *never authors — it marks* | authoring is the job |
-| who pays | the house, metered, needs a key | you, on your own brain |
+| who pays | the house, metered, needs a key | you, on your own session_launch_spec |
 | lives in | `ronin-services` | **cowork** — she works, alone, in the free build |
 
 ## Getting to her

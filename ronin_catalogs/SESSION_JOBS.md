@@ -32,7 +32,7 @@ acknowledges first; only work with an already-approved plan builds straight away
 **`agent: none` — the seat with nobody in it.** One entry is not an agent job at all:
 `OpenShell` opens a session and launches *nothing*, leaving the pane at a shell prompt with
 nothing typed into it. So every field that describes an agent is **absent** from that entry
-rather than filled with a polite blank — no `model` (no brain is launched), no `posture`, no
+rather than filled with a polite blank — no `model` (no session_launch_spec is resolved), no `posture`, no
 `opening`, no `ack` (there is nobody to brief, to acknowledge, or to template a first message
 at), and no `permissions` (that is a CLI's permission mode, and there is no CLI). What it
 does carry is the mechanical constants that still mean something for a terminal: where it
@@ -48,7 +48,7 @@ be set by hand; the job is already known at birth and moves when the session's w
 
 **Fields:** `icon` · `label` · `blurb` (what the button does) · `ask` (the form's
 prompt) · `remit` (one line: what this session is, for humans and Koshi) · `posture`
-(how it behaves — inlined into the boot brief) · `model` (bias: which brain this way of
+(how it behaves — inlined into the boot brief) · `model` (bias: which model this way of
 working usually deserves; the project or the launch may override) · `match` (intent
 words) · `dial` · `permissions` · `lifecycle` (the michi it starts in) · `ack` ·
 `opening` · `agent` (omit it for an agent job; `none` means no CLI is launched at all) ·

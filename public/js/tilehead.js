@@ -25,6 +25,11 @@
  *   needs    what must be true for it to be live: 'session', or a service name. Absent
  *            means always live, which is a claim about the control, not an oversight.
  *   quiet    what to say while it is not. The reason, never the label repeated.
+ *   holds    keep the help box open when this control is clicked. For the two INSTRUMENTS
+ *            whose value changes in place (the dial, the gauge): you turn the dial by
+ *            clicking the thing you are hovering, so dismissing would destroy the reading
+ *            at the moment it changed. Everything else OPENS something, and a help box
+ *            left up would sit on top of the menu it just opened.
  *   read     for a control whose help is a READING rather than a fixed sentence — the
  *            groups it is in, whether it has a note, what job it is doing. Returns the
  *            live help and may paint the element; called on every refresh.
@@ -137,13 +142,13 @@ const HEADER = () => (rows ??= [
     } },
 
   // Hidden until there is a reading — a plain shell pane has no context, and that is fine.
-  { key: 'gauge',
+  { key: 'gauge', holds: true,
     widget: () => makeGauge('ctx'),
     help: "Context gauge — how full this session's context window is, read off the pane's own status line. Hidden until there is a reading." },
 
   // On BOTH surfaces — cockpit dials are the motif everywhere (an explicit override of
   // the desktop-freeze rule for this control).
-  { key: 'dial', needs: 'session',
+  { key: 'dial', needs: 'session', holds: true,
     widget: (t) => makeDial(CONTROL_POSITIONS, (v) => t.pickControl(v)),
     help: DIAL_TITLE, quiet: 'Control dial — no session in this tile yet' },
 
@@ -221,6 +226,7 @@ export function buildTileHead(tile) {
       if (node.tagName === 'BUTTON') node.type = 'button';
       if (row.text) node.textContent = row.text;
     }
+    if (row.holds) node.dataset.holdsHelp = '1';
     const help = typeof row.help === 'function' ? row.help() : row.help;
     if (help) node.title = help;
     out.headHelp[row.key] = help;

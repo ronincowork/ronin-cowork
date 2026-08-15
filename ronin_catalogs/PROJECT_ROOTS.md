@@ -1,7 +1,7 @@
 # PROJECT_ROOTS — the launch table (system scope, ships with NO roots)
 
 > **This file is stock, and an upgrade replaces it.** It holds one thing: the
-> **provider · model launch table**, the brains every install needs. It is DATA the
+> **provider · model launch table**, the session_launch_specs every install needs. It is DATA the
 > TEJUN recipes look things up in — not a fourth member of the macro/action/tool triad.
 > Nothing in here executes.
 
@@ -15,13 +15,13 @@ A **`project_root`** is *where* the work happens — one of the two universal ax
 (`project_root` · `session_job`) used everywhere: spawn forms, memory frontmatter,
 macros. See `ronin_catalogs/SESSION_JOBS.md` for what a session is for and therefore who
 it is. One lookup fixes: where to work (`dir`), what a cold agent reads first (`read`),
-which memories it recalls (`memory`), and the default brain (`provider` + `model`) —
+which memories it recalls (`memory`), and the default session_launch_spec (`provider` + `model`) —
 resolved through the table below.
 
 ## Providers and models — the launch table
 
-The brain is chosen in two steps: **provider** (whose CLI) then **model** (which
-brain, by its real name — no cheap/mid/heavy euphemisms). A `project_root` names a
+A session_launch_spec is chosen in two steps: **provider** (whose CLI) then **model** (which
+model, by its real name — no cheap/mid/heavy euphemisms). A `project_root` names a
 default for both; the role or the launch may override. Adding a provider is a row
 in this table, and adding a model is a column — never a code path; that is the
 whole of what vendor-neutrality requires.
