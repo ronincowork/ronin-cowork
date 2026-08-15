@@ -114,6 +114,31 @@ export function makeGauge(label) {
 }
 
 /**
+ * DIM A CONTROL WITHOUT SILENCING IT.
+ *
+ * `disabled` is the obvious way to grey a button out, and it costs you the tooltip:
+ * browsers do not fire hover events on a disabled element, so `title` never shows. On
+ * the tile header that inverted the point — a control you cannot use is exactly the one
+ * whose label you want to read, because the question it raises is *why not*. Four of
+ * them (the mark, 🏷, 📝, the dial) went silent whenever no session was connected, while
+ * 🔒 stayed readable purely because it dims with a class instead.
+ *
+ * So: a class for the look, `aria-disabled` for assistive tech, the title always set,
+ * and the CALLER guards its own click. The button stays hoverable and stays focusable,
+ * which is also the accessible behaviour — a disabled control drops out of tab order and
+ * announces nothing.
+ *
+ * `why` replaces the title while inert. It should say what is missing, not repeat the
+ * label: "No session in this tile" beats a greyed-out "Groups".
+ */
+export function setInert(el, inert, why, title) {
+  if (!el) return;
+  el.classList.toggle('off', !!inert);
+  el.setAttribute('aria-disabled', inert ? 'true' : 'false');
+  el.title = inert ? why : title;
+}
+
+/**
  * THE JOB MENU — pick what a session is doing, from the mark that shows it.
  *
  * A popover that dies on the next click, deliberately not a sheet like 🏷 Groups: that
@@ -143,10 +168,10 @@ export function openJobMenu(anchor, jobs, current, onPick) {
   };
   for (const k of jobs || []) {
     opt('', k.name === current, (b) => {
-      b.append(
-        Object.assign(document.createElement('i'), { textContent: k.icon }),
-        Object.assign(document.createElement('span'), { textContent: k.label }),
-      );
+      const glyph = document.createElement('i');
+      glyph.textContent = k.icon;
+      glyph.dataset.job = k.name; // so style can reach one mark — see style.css
+      b.append(glyph, Object.assign(document.createElement('span'), { textContent: k.label }));
       b.title = k.remit || k.blurb || '';
     }, k.name);
   }

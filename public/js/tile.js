@@ -26,8 +26,8 @@ import { IS_TOUCH, NEW, S, saveState, tiles } from './state.js';
 import { buildHome } from './commons.js';
 import { guard } from './errors.js';
 import { buildLadder, buildLetter } from './shingo.js';
-import { LOCKED_TITLE, buildTileHead } from './tilehead.js';
-import { openJobMenu } from './widgets.js';
+import { DIAL_TITLE, LOCKED_TITLE, buildTileHead } from './tilehead.js';
+import { openJobMenu, setInert } from './widgets.js';
 import { dvrStep } from './dvr.js';
 import { TapeView } from './tapeview.js';
 import { TermView } from './termview.js';
@@ -149,6 +149,12 @@ export class Tile {
     // never see it. Without this, a bug in the flip costs the pane it was flipping.
     this.lockEl.addEventListener('click', () =>
       guard('lock flip', () => {
+        // The guard moved here from the stylesheet. `.lock.off` used to carry
+        // `pointer-events: none`, which blocked the click — and blocked the hover that
+        // delivers the tooltip with it, so the one control that most needed to explain
+        // itself said nothing. The dim is now cosmetic and the refusal is stated here,
+        // where a refusal belongs.
+        if (S.streamOff) return;
         this.activate();
         this.setLocked(!this.locked);
       }),
@@ -347,7 +353,7 @@ export class Tile {
   async refreshControl(announce = false) {
     const session = this.session;
     if (!session) {
-      this.dial.el.disabled = true;
+      setInert(this.dial.el, true, 'Control dial — no session in this tile yet');
       this.dial.set('write');
       return;
     }
@@ -355,7 +361,7 @@ export class Tile {
       const r = await fetch('/api/sessions/' + encodeURIComponent(session) + '/control', { cache: 'no-store' });
       const d = await r.json().catch(() => ({}));
       if (r.ok && this.session === session) {
-        this.dial.el.disabled = false;
+        setInert(this.dial.el, false, '', DIAL_TITLE);
         this.dial.set(d.control || 'write', announce);
       }
     } catch (_) {}
@@ -388,8 +394,8 @@ export class Tile {
     const s = S.sessions.find((x) => x.name === this.session);
     const has = !!(s && s.hasNote);
     btn.classList.toggle('has-note', has);
-    btn.disabled = !this.session;
-    btn.title = !this.session ? 'Session note' : has ? 'Session note (has notes)' : 'Session note (empty)';
+    setInert(btn, !this.session, 'Session note — no session in this tile yet',
+      has ? 'Session note (has notes)' : 'Session note (empty)');
   }
 
   /** 🏷 shows how many groups this session is in — the label an agent can address it by. */
@@ -412,14 +418,16 @@ export class Tile {
     if (!btn) return;
     const s = S.sessions.find((x) => x.name === this.session);
     const job = (s && s.session_job) || '';
+    // The job NAME on the element, so style can reach one mark without reaching them
+    // all: glyphs differ in how heavily their font draws them, and the odd one needs
+    // taking down a size on its own (style.css, `[data-job=...]`).
+    btn.dataset.job = job;
     btn.textContent = jobIcon(s) || '?';
     btn.classList.toggle('unset', !job);
-    btn.disabled = !this.session;
-    btn.title = !this.session
-      ? 'What this session is doing'
-      : job
+    setInert(btn, !this.session, 'What a session is doing — no session in this tile yet',
+      job
         ? `${job} — click to change what this session is doing`
-        : 'Not marked — click to say what this session is doing';
+        : 'Not marked — click to say what this session is doing');
   }
 
   /**
@@ -465,12 +473,8 @@ export class Tile {
     const s = S.sessions.find((x) => x.name === this.session);
     const tags = (s && s.tags) || [];
     btn.classList.toggle('has-tags', !!tags.length);
-    btn.disabled = !this.session;
-    btn.title = !this.session
-      ? 'Groups'
-      : tags.length
-        ? 'Groups: ' + tags.join(', ')
-        : 'Groups (none yet)';
+    setInert(btn, !this.session, 'Groups — no session in this tile yet',
+      tags.length ? 'Groups: ' + tags.join(', ') : 'Groups (none yet)');
   }
 
   async onSelect() {

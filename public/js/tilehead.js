@@ -12,9 +12,12 @@
  * element must exist before anything mounts into it, which is why this returns the
  * pieces rather than mounting views itself.
  */
-import { CONTROL_POSITIONS, makeDial, makeGauge } from './widgets.js';
+import { CONTROL_POSITIONS, makeDial, makeGauge, setInert } from './widgets.js';
 import { makeChip } from './shingo.js';
 import { buildTileMacros } from './tilemacros.js';
+
+export const DIAL_TITLE =
+  'Control dial (@ronin-control) — who may touch this session: 👤 owner only · 👁 outside agents may watch · 🤖 outside agents may type. Yours to turn; agents never flip it.';
 
 export const LOCKED_TITLE =
   '🔒 LOCKED — this view is attached to the live tmux session. You see the terminal painting in lockstep, so scrolling has to go back to the server and back.  ⚠ TO COPY TEXT, SWITCH TO UNLOCKED — this is a drawn screen, not selectable text. (On a Mac, Option+drag then ⌘C also works here.)';
@@ -44,11 +47,12 @@ export function buildTileHead(tile) {
   // 🤖 outside agents type. On BOTH surfaces — Glen wants cockpit dials as the motif
   // everywhere (explicit override of the desktop-freeze rule for this control).
   const dial = makeDial(CONTROL_POSITIONS, (v) => tile.pickControl(v));
-  // Every control in this header says what it is on hover. The dial and gauge show
-  // their VALUE in their own badge; the title says what the thing is for.
-  dial.el.title =
-    'Control dial (@ronin-control) — who may touch this session: 👤 owner only · 👁 outside agents may watch · 🤖 outside agents may type. Yours to turn; agents never flip it.';
-  dial.el.disabled = true;
+  // EVERY control in this header says what it is on hover — including while it is
+  // greyed out, which is when you are most likely to be asking. That is why the inert
+  // ones dim with a class rather than with `disabled`: a disabled element fires no
+  // hover events, so its `title` never appears. See `setInert` in js/widgets.js.
+  dial.el.title = DIAL_TITLE;
+  setInert(dial.el, true, 'Control dial — no session in this tile yet');
   el.querySelector('.note').before(dial.el);
 
   // Context gauge ⛽: how full the session's context window is (scraped from the
@@ -84,9 +88,8 @@ export function buildTileHead(tile) {
 
   // THE MARK: what this session is doing, beside the name it belongs to and before the
   // ladder chip — "who is this" then "where are they", never among the controls on the
-  // right. Blank when the session has not said, which is why it carries no fallback
-  // glyph: an empty button is the honest reading and it is still clickable, so a blank
-  // is an invitation rather than a dead end.
+  // right. `?` when the session has not said (js/tile.js): it was drawn blank first, and
+  // an empty button among six others is invisible.
   const jobBtn = el.querySelector('.job');
   jobBtn.addEventListener('click', () => tile.pickJob(jobBtn));
 

@@ -218,10 +218,6 @@ body {
   color: var(--accent);
   border-color: var(--accent);
 }
-.tile-head button.note:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
 /* The MARK — what this session is doing, beside the name rather than out among the
    controls on the right. Sits with the picker and the ladder chip: "who is this, and
    where are they". */
@@ -252,9 +248,26 @@ body {
   border-color: var(--accent);
   color: var(--fg);
 }
-.tile-head button.job:disabled {
-  opacity: 0.4;
-  cursor: default;
+
+/* 🏈 ON ITS OWN — the one glyph in the set the font draws as a big filled ellipse where
+   the rest are strokes or small shapes, so at the size that suits them it reads as
+   massive. The owner's call, looking at all nine: "they're all fine, except for the
+   football". One more step down for this mark only.
+
+   Keyed on the session_job NAME rather than the character, because the character is the
+   catalog's to change and a rule matching on 🏈 would go stale the moment it did. The
+   coupling is real either way: rename `QuarterBack` in SESSION_JOBS.md and this stops
+   applying — the mark simply returns to the common size, which is a visible nudge rather
+   than a broken layout. Everything the mark IS still comes from the catalog; this tunes
+   only how big one of them is drawn. */
+.tile-head button.job[data-job='QuarterBack'] {
+  font-size: 9px;
+}
+.home-job[data-job='QuarterBack'] {
+  font-size: 9px;
+}
+.job-opt i[data-job='QuarterBack'] {
+  font-size: 11px;
 }
 @media (max-width: 680px) {
   #notesheet .ns-card {
@@ -835,7 +848,11 @@ body {
   color: var(--ok);
   border-color: var(--ok);
 }
-.dial:disabled {
+/* Inert either way: `.off` is the tile header's inert state (dimmed but still hoverable,
+   so the title reaches you — see `.tile-head button.off`), `:disabled` covers any other
+   dial. Both look the same; only one of them can still speak. */
+.dial:disabled,
+.dial.off {
   opacity: 0.4;
   cursor: default;
 }
@@ -860,7 +877,9 @@ body {
 /* Desktop: hovering the dial reveals the badge as its help text — our own element,
    instant and reliable (native title tooltips proved flaky here). */
 @media (hover: hover) and (pointer: fine) {
-  .dial:hover:not(:disabled) .dial-badge {
+  /* Not while inert: the badge shows the dial's VALUE, and there is no session for it to
+     be the value OF. The native title takes over there and says why it is greyed. */
+  .dial:hover:not(:disabled):not(.off) .dial-badge {
     display: block;
   }
 }
@@ -3153,11 +3172,33 @@ body {
 /* No record service installed (the free build): the 🔓 view is off, so the switch is
    visible but inert — opaque says "not plugged in", not "missing". The commons tabs
    and menu rows of an absent service get the same treatment. */
-.tile-head .lock.off,
 .home-tabs button.off,
 .commons-row.off {
   opacity: 0.3;
   pointer-events: none;
+}
+
+/* THE TILE HEADER'S INERT CONTROLS STAY HOVERABLE — every one of them, and this is the
+   whole reason they are a separate rule.
+
+   `pointer-events: none` and `disabled` both stop hover events reaching an element, and
+   a `title` is delivered BY a hover event. So either one greys a control out and takes
+   its tooltip with it — which is backwards: the control you cannot use is the one whose
+   label you most want to read, because what you are actually asking is *why not*. Every
+   dimmed control in this header was silent, 🔒 included.
+
+   The dim is opacity and a cursor, nothing more. Nothing here needs pointer-events to
+   stay safe: each handler already guards on what it needs (`if (!this.session) return`,
+   `if (S.streamOff) return`), which is the honest place for the check anyway — a rule in
+   a stylesheet is not what should be enforcing whether an action may happen. */
+.tile-head .lock.off {
+  opacity: 0.3;
+  cursor: default;
+}
+.tile-head button.off,
+.tile-head .dial.off {
+  opacity: 0.4;
+  cursor: default;
 }
 /* Where it happened — the top stack frames, under the message. A message with no
    location sends the reader hunting; that was a real complaint (2026-08-08). */
