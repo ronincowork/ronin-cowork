@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+# RONIN BUILD — turn a tagged tree into the ronin_artifact.
+#
+#   bin/ronin-build v1.0.0            # build the tarball for that version, from HEAD
+#   bin/ronin-build                   # version read from the tag at HEAD (CI's call)
+#   bin/ronin-build v1.0.0 --dirty    # local trial on a dirty tree; NEVER publish it
+#
+# There is no compiler in this stack (tsx runs the TypeScript, the client is native ES
+# modules), so the build is a STAMP, a PRUNE and a TARBALL:
+#
+#   stamp  — the version into package.json, and a VERSION file at the root that the
+#            install and the doctor read (release, commit, built, contract)
+#   prune  — .github/ (the repo's CI, not the install's). Everything else ships,
+#            scripts/ and tests/ deliberately: an install can run its own byoin_checks
+#   pack   — release/ronin-cowork-vX.Y.Z.tar.gz + SHA256SUMS
+#
+# Built from `git archive`, so only TRACKED files can ever land in a tarball — .env,
+# node_modules/ and any untracked scratch are excluded by construction, not by list.
+# node_modules do not travel (~74 MB, and the pty module is a per-platform native
+# binary); `npm install` stays in setup, which is what happens today.
+#
+# The real build runs ONCE, in CI, at tag time (.github/workflows/release.yml). A box
+# only ever downloads and verifies a checksum — an artifact built on the machine that
+# runs it is a build, not an artifact.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+
+fail() { echo "✗ $1" >&2; exit 1; }
+
+# --- arguments ---
+VERSION=""
+ALLOW_DIRTY=0
+for a in "$@"; do
+  case "$a" in
+    --dirty) ALLOW_DIRTY=1 ;;
+    v[0-9]*) VERSION="$a" ;;
+    *) fail "unrecognised argument: $a (usage: bin/ronin-build [vX.Y.Z] [--dirty])" ;;
+  esac
+done
+
+# No version argument: the tag at HEAD is the version. This is how CI calls it.
+if [ -z "$VERSION" ]; then
+  VERSION="$(git describe --exact-match --tags HEAD 2>/dev/null || true)"
+  [ -n "$VERSION" ] || fail "no version: pass vX.Y.Z, or run at a commit that carries a tag"
+fi
+case "$VERSION" in
+  v[0-9]*.[0-9]*.[0-9]*) : ;;
+  *) fail "version must look like vX.Y.Z, got: $VERSION" ;;
+esac
+
+# --- the tree must be honest ---
+if [ -n "$(git status --porcelain 2>/dev/null)" ] && [ "$ALLOW_DIRTY" = 0 ]; then
+  fail "the tree is dirty — a release is built from a commit, not a working tree (--dirty for a local trial)"
+fi
+
+COMMIT="$(git rev-parse --short HEAD)"
+# The commit's own date, not the clock's (SOURCE_DATE_EPOCH convention): the artifact's
+# identity is the commit, so the same commit must produce byte-identical tarballs —
+# a wall-clock stamp here is what would break that.
+BUILT="$(date -u -d "@$(git log -1 --format=%ct HEAD)" +%Y-%m-%dT%H:%M:%SZ)"
+CONTRACT="$(sed -n 's/^export const CONTRACT_V = \([0-9][0-9]*\);.*/\1/p' src/sockets-contract.ts)"
+[ -n "$CONTRACT" ] || fail "could not read CONTRACT_V from src/sockets-contract.ts"
+
+NAME="ronin-cowork-$VERSION"
+STAGE="$(mktemp -d)"
+trap 'rm -rf "$STAGE"' EXIT
+
+echo "→ staging $NAME from $COMMIT (git archive — tracked files only)"
+git archive --format=tar --prefix="$NAME/" HEAD | tar -x -C "$STAGE"
+
+# --- stamp ---
+node -e '
+  const fs = require("fs");
+  const p = process.argv[1] + "/package.json";
+  const j = JSON.parse(fs.readFileSync(p, "utf8"));
+  j.version = process.argv[2].replace(/^v/, "");
+  fs.writeFileSync(p, JSON.stringify(j, null, 2) + "\n");
+' "$STAGE/$NAME" "$VERSION"
+{
+  echo "release=$VERSION"
+  echo "commit=$COMMIT"
+  echo "built=$BUILT"
+  echo "contract=$CONTRACT"
+} > "$STAGE/$NAME/VERSION"
+echo "→ stamped: release=$VERSION commit=$COMMIT contract=$CONTRACT"
+
+# --- prune ---
+rm -rf "$STAGE/$NAME/.github"
+echo "→ pruned: .github/"
+
+# --- pack ---
+mkdir -p release
+TARBALL="release/$NAME.tar.gz"
+# Deterministic where GNU tar allows it: same commit in, same bytes out.
+if tar --version 2>/dev/null | grep -q GNU; then
+  tar -C "$STAGE" --sort=name --owner=0 --group=0 --numeric-owner \
+    --mtime="@$(git log -1 --format=%ct HEAD)" -czf "$TARBALL" "$NAME"
+else
+  tar -C "$STAGE" -czf "$TARBALL" "$NAME"
+fi
+(cd release && sha256sum "$NAME.tar.gz" > SHA256SUMS)
+
+SIZE="$(du -h "$TARBALL" | cut -f1)"
+echo ""
+echo "✓ $TARBALL ($SIZE)"
+echo "  $(cat release/SHA256SUMS)"
+[ "$ALLOW_DIRTY" = 1 ] && echo "  ⚠ built --dirty — a trial, not a release; do not publish this file"
+exit 0
