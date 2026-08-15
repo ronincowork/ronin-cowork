@@ -321,7 +321,8 @@ export function build() {
     // CANVAS, which cannot be touch-selected — so the visible text was copied into a
     // <textarea> panel to select out of. The unlocked tile renders a real div of text
     // and touch is always unlocked, so long-press → Copy works on the transcript
-    // itself. On desktop the mirror still answers to Option+drag + ⌘C.
+    // itself. On desktop the mirror still answers to modifier+drag + ⌘C (Option on a Mac,
+    // Shift elsewhere — SELECT_MOD in js/state.js).
 
     // Touch-only keypad: the keys the iOS keyboard can't send (Tab/⇧Tab + arrows)
     // so you can drive TUIs like Claude Code. Stays open so you can fire several
@@ -339,9 +340,13 @@ export function build() {
     guard('hoist the tile header', () => collapseTileHead(tiles[0]));
     guard('drawers', buildDrawers);
   } else {
-    // Copy on Mac = Option+drag to select (forces a native selection even over a
-    // mouse-grabbing app or tmux mouse mode), then ⌘C. The old Copy Mode toggle is
-    // retired — one way to copy, works in any pane, locked or unlocked.
+    // Copy = hold the force-selection modifier and drag, then ⌘C / Ctrl-C. The modifier
+    // is Option on a Mac and SHIFT everywhere else — xterm's own rule, mirrored in
+    // `forcesSelection` (js/state.js); this comment used to say Option flatly and left
+    // Windows and Linux with nothing. Either way it forces a native selection over a
+    // mouse-grabbing app or tmux mouse mode. The old Copy Mode toggle is retired — one
+    // way to copy, works in any pane, locked or unlocked. A drag that produces no
+    // selection is caught and explained by `wireCopyHint` (js/termview.js).
     // xterm draws to a canvas, so the browser's native copy can't see the selection —
     // feed it the captured terminal selection on ⌘C/Ctrl-C. Works on http and https.
     document.addEventListener('copy', (e) => {
@@ -349,7 +354,7 @@ export function build() {
       const sel = live || S.lastSelection;
       // Only hijack ⌘C when the terminal actually has a selection; otherwise let the
       // browser copy normally. Works whether the selection came from Copy Mode (mouse
-      // off) or an Option+drag over a mouse-grabbing app.
+      // off) or a modifier+drag over a mouse-grabbing app.
       if (sel && e.clipboardData) {
         e.clipboardData.setData('text/plain', sel);
         e.preventDefault();

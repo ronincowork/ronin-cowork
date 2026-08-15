@@ -276,15 +276,41 @@ text and flashes rather than vanishing.
 native find-in-page. This is the answer to "how do I copy from a tile", and it is why the
 lock tooltip says so in capitals.
 
-**Locked — Option+drag, then ⌘C** (Mac). xterm draws to a canvas, so the browser's native
-copy cannot see the selection; a `copy` listener (`public/js/layout.js:347`) feeds it the
-captured terminal text instead. `macOptionClickForcesSelection` forces a native selection even
-when the running app (Claude Code, say) holds mouse-reporting on and would otherwise eat the
-drag — so you can copy in place out of a live TUI without a panel.
+**Locked — hold the modifier, drag, then ⌘C / Ctrl-C.** And **the modifier is not the same
+key everywhere**:
 
-The selection is **stashed the moment it is made** (`S.lastSelection`): a streaming TUI
-repaint can clear the visible highlight before ⌘C fires, and the copy hijack only engages
-when there is a selection, so an ordinary page copy still works.
+| Platform | Key |
+|---|---|
+| macOS | **⌥ Option** |
+| Windows · Linux · everything else | **⇧ Shift** |
+
+That is xterm's own rule, not ours (`SelectionService.shouldForceSelection`, 5.5.0):
+`isMac ? altKey && macOptionClickForcesSelection : shiftKey`. Ronin mirrors it in one place —
+`IS_MAC` / `SELECT_MOD` / `forcesSelection` in `public/js/state.js` — deliberately copied
+rather than improved, because a test that disagrees with xterm names the wrong key.
+
+**Why a plain drag looks like it worked and did not.** Every viewer session is created with
+tmux `mouse on` (`src/tmux.ts:511`). Without the modifier, the drag is forwarded as mouse
+escapes: tmux enters copy-mode, highlights under your cursor, and copies to the **paste
+buffer on the host**. The browser never saw a selection and your clipboard is untouched. You
+watched text highlight, so you press ⌘C and get whatever was there before.
+
+**The hint.** A real drag (>8px) in a locked tile that leaves `getSelection()` empty raises a
+one-line prompt naming the key — `wireCopyHint`, `public/js/termview.js`. Once per tile,
+re-arming after ten minutes. The test is *"they tried and got nothing"* rather than *"is
+mouse reporting on"*: it is the honest condition, and it catches causes we have not met yet.
+
+**The ⌘C itself.** xterm draws to a canvas, so the browser's native copy cannot see the
+selection; a `copy` listener (`public/js/layout.js`) feeds it the captured terminal text. The
+selection is **stashed the moment it is made** (`S.lastSelection`), because a streaming TUI
+repaint can clear the visible highlight before ⌘C fires. The hijack only engages when there
+is a selection, so an ordinary page copy still works.
+
+**HTTPS is not required for any of this**, and never was. The copy path is the `copy` event
+plus `clipboardData.setData()`, which is not secure-context gated. What does need a secure
+context: the 🎤 (`getUserMedia`), and `navigator.clipboard.writeText` in the keypad panel —
+which falls back to `execCommand` anyway. `setup.sh` used to say "HTTPS needed for clipboard";
+it was wrong, and it sent people looking for a certificate when the answer was a modifier key.
 
 The old Copy Mode toggle is retired. One way to copy, any pane, locked or unlocked.
 

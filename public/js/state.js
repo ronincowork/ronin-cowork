@@ -10,6 +10,32 @@ export const LS_LAYOUT = 'tmuxgrid.layout';
 // Touch device (iPhone/iPad): a tap must NOT auto-focus the terminal (which pops
 // the keyboard); scrolling is driven by drag + buttons that inject wheel events.
 export const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+
+/**
+ * WHICH KEY FORCES A SELECTION IN A LOCKED TILE — and it is not the same key everywhere.
+ *
+ * A locked tile is a live TUI with tmux `mouse on` (src/tmux.ts), so a plain drag becomes
+ * mouse escapes: tmux enters copy-mode and copies to the PASTE BUFFER ON THE HOST. Nothing
+ * reaches the laptop's clipboard, and it looks like it worked, which is the trap.
+ *
+ * xterm decides whether to select locally instead, and its rule (5.5.0,
+ * `SelectionService.shouldForceSelection`) is:
+ *
+ *     isMac ? altKey && macOptionClickForcesSelection : shiftKey
+ *
+ * So Mac is Option and EVERYTHING ELSE IS SHIFT. Ronin said "Option" everywhere and never
+ * said "Shift" once, which left a Windows or Linux laptop with no path at all.
+ *
+ * The platform test is xterm's own list against `navigator.platform`, deliberately copied
+ * rather than improved: if this ever disagrees with xterm we name the wrong key, which is
+ * worse than the silence it replaces. `navigator.platform` is deprecated and is still what
+ * xterm reads — the day it changes, this changes with it.
+ */
+export const IS_MAC = ['Macintosh', 'MacIntel', 'MacPPC', 'Mac68K'].includes(navigator.platform);
+/** The modifier's name, for anything that has to SAY it. */
+export const SELECT_MOD = IS_MAC ? '⌥ Option' : '⇧ Shift';
+/** Did this mouse event carry it? Mirrors xterm's rule above. */
+export const forcesSelection = (e) => (IS_MAC ? e.altKey : e.shiftKey);
 // SGR mouse-wheel sequences. With tmux `mouse on`, injecting these scrolls the
 // scrollback (verified: enters copy-mode, scroll_position advances).
 export const WHEEL_UP = '\x1b[<64;1;1M';

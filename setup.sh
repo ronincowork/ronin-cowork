@@ -24,7 +24,7 @@ echo "    node : $NODE_BIN ($(node -v))"
 if command -v tailscale >/dev/null; then
   echo "    tailscale: $(command -v tailscale)"
 else
-  echo "    tailscale: not found (optional — needed for tailnet HTTPS + clipboard)"
+  echo "    tailscale: not found (optional — needed for tailnet HTTPS + the microphone)"
 fi
 
 # --- install deps ---
@@ -491,7 +491,7 @@ echo
 echo "Next steps:"
 echo "  1) Keep it running without an active login (Linux):"
 echo "       sudo loginctl enable-linger $USER"
-echo "  2) (Recommended) tailnet HTTPS for remote access + clipboard:"
+echo "  2) (Recommended) tailnet HTTPS for remote access + the microphone:"
 if command -v tailscale >/dev/null; then
   echo "       sudo tailscale serve --bg --https=8443 http://${IP:-<tailnet-ip>}:3006"
 else
@@ -499,7 +499,12 @@ else
   echo "       sudo tailscale serve --bg --https=8443 http://<tailnet-ip>:3006"
 fi
 echo
-echo "==> done. Open one of these in a browser (HTTPS needed for clipboard):"
+# NOT "HTTPS needed for clipboard" — it never was, and saying so sent people looking for a
+# certificate when the answer was a modifier key. Copying out of a tile is the `copy` event
+# plus `clipboardData.setData` (js/layout.js), which works fine on http. What actually needs
+# a secure context is getUserMedia — the 🎤 — and `navigator.clipboard.writeText` in the
+# keypad panel, which falls back to execCommand anyway.
+echo "==> done. Open one of these in a browser (HTTPS needed for the 🎤 microphone):"
 if [ -n "$FQDN" ]; then
   echo "      HTTP  (now)          : http://$FQDN:3006   (or http://$IP:3006)"
   echo "      HTTPS (after step 2) : https://$FQDN:8443"

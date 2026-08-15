@@ -15,12 +15,25 @@
 import { CONTROL_POSITIONS, makeDial, makeGauge, setInert } from './widgets.js';
 import { makeChip } from './shingo.js';
 import { buildTileMacros } from './tilemacros.js';
+import { SELECT_MOD } from './state.js';
 
 export const DIAL_TITLE =
   'Who may touch this session: 👤 owner only · 👁 outside agents watch · 🤖 outside agents type. Yours to turn; agents never flip it.';
 
-export const LOCKED_TITLE =
-  '🔒 LOCKED — this view is attached to the live tmux session. You see the terminal painting in lockstep, so scrolling has to go back to the server and back.  ⚠ TO COPY TEXT, SWITCH TO UNLOCKED — this is a drawn screen, not selectable text. (On a Mac, Option+drag then ⌘C also works here.)';
+/**
+ * A FUNCTION, not a const — rule 3 in js/README.md: never reference an imported binding at
+ * module top level. It also HAS to be one now: the sentence names a key, and the key is not
+ * the same on every machine. This said "On a Mac, Option+drag" and said nothing at all to a
+ * Windows or Linux laptop, where the key is Shift (see SELECT_MOD in state.js).
+ *
+ * It also used to send people to 🔓 as the way to copy. That is still true and still the
+ * nicest answer, but it is not the FIRST one: holding the modifier copies in place out of a
+ * live TUI, and a reader who does not know the key is exactly who is reading this tooltip.
+ */
+export const lockedTitle = () =>
+  '🔒 LOCKED — this view is attached to the live tmux session. You see the terminal painting in lockstep, so scrolling has to go back to the server and back.  ⚠ TO COPY TEXT: hold ' +
+  SELECT_MOD +
+  ' while you drag, then ⌘C / Ctrl-C — a plain drag goes to tmux, not to your clipboard. (Switching to 🔓 unlocked also works: there the text selects like any web page.)';
 
 /**
  * @param {object} tile  the cell this header belongs to — its methods are the callbacks
@@ -36,7 +49,7 @@ export function buildTileHead(tile) {
         <button class="job" title="What this session is doing"></button>
         <span class="grow"></span>
         <button class="menu" title="⌃⇧C — the CoWorking Commons: roster, new session, wipeboard, docs, roots, hotwords. Opens over this tile; ✕ comes back.">メ</button>
-        <button class="lock" title="${LOCKED_TITLE}">🔒</button>
+        <button class="lock" title="${lockedTitle()}">🔒</button>
         <button class="tags" title="Groups this session belongs to">🏷</button>
         <button class="note" title="Session note (post-it)">📝</button>
         <button class="kill" title="Kill session (ends it + its viewers)">🗑</button>

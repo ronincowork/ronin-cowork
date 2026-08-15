@@ -13,7 +13,7 @@
  * xterm itself stays a classic script (`window.Terminal`, `window.FitAddon`) — the
  * vendor files load before the module graph runs, so it is referenced, never imported.
  */
-import { IS_TOUCH, THEME, WHEEL_DOWN, WHEEL_UP } from './state.js';
+import { IS_TOUCH, SELECT_MOD, THEME, WHEEL_DOWN, WHEEL_UP, forcesSelection } from './state.js';
 
 export class TermView {
   /**
@@ -34,6 +34,10 @@ export class TermView {
       // Option+drag forces a native selection even when the running app (e.g. Claude
       // Code) holds mouse-reporting on and would otherwise eat the drag. Lets you copy
       // in-place out of a live TUI without a panel.
+      //
+      // MAC ONLY, and that is xterm's option, not a choice of ours: its rule is
+      // `isMac ? altKey && macOptionClickForcesSelection : shiftKey`, so off-Mac the key
+      // is Shift and no flag gates it. `wireCopyHint` below names whichever applies.
       macOptionClickForcesSelection: true,
     });
     this.fitAddon = new FitAddon.FitAddon();
@@ -91,6 +95,68 @@ export class TermView {
     try {
       this.fitAddon.fit();
     } catch (_) {}
+  }
+
+  /**
+   * DESKTOP ONLY: catch the drag that was meant to be a copy, and say the key.
+   *
+   * The failure this exists for is silent and looks like success. A locked tile is a live
+   * TUI with tmux `mouse on`, so a plain drag is forwarded as mouse escapes: tmux enters
+   * copy-mode, highlights, and copies to the paste buffer ON THE HOST. The browser never
+   * saw a selection and the laptop's clipboard is untouched, but the user watched text
+   * highlight under their cursor, so they press ⌘C, get whatever was there before, and
+   * conclude that copying is broken. Nothing on screen ever mentions the modifier.
+   *
+   * THE TEST IS "THEY TRIED AND GOT NOTHING", not "is mouse reporting on". A real drag
+   * that leaves `getSelection()` empty is the honest condition: it fires for tmux mouse
+   * mode, for an app holding the mouse itself, and for whatever the next cause turns out
+   * to be. Asking xterm about its modes would be narrower AND more brittle.
+   *
+   * Held to ONCE PER TILE, re-arming after ten minutes (the owner's call, 2026-08-15). A
+   * hint on every drag is a nag, and the second one teaches nothing the first did not.
+   *
+   * Locked only — the unlocked transcript is a plain div where selection already works —
+   * and desktop only, because touch has no drag-to-select to rescue.
+   *
+   * @param {{isLocked: () => boolean, overHome: (el: EventTarget) => boolean}} hooks
+   */
+  wireCopyHint(hooks) {
+    if (IS_TOUCH) return;
+    const REARM_MS = 10 * 60 * 1000;
+    const MOVED_PX = 8; // below this it is a click, not an attempt to select
+
+    const hint = document.createElement('div');
+    hint.className = 'copyhint';
+    hint.textContent = `Trying to copy? Hold ${SELECT_MOD} while you drag, then ⌘C.`;
+    this.body.appendChild(hint);
+
+    let from = null;
+    let shownAt = -Infinity;
+    let timer = null;
+
+    this.body.addEventListener('mousedown', (e) => {
+      from = null;
+      // Left button only, on the terminal, in a locked tile, WITHOUT the modifier —
+      // someone already holding it knows the trick and must never be told.
+      if (e.button !== 0 || !hooks.isLocked() || hooks.overHome(e.target)) return;
+      if (forcesSelection(e)) return;
+      from = { x: e.clientX, y: e.clientY };
+    });
+
+    // On WINDOW, not on the body: a drag routinely ends outside the tile it started in,
+    // and a mouseup we never hear is an attempt we never counted.
+    window.addEventListener('mouseup', (e) => {
+      const start = from;
+      from = null;
+      if (!start) return;
+      if (Math.abs(e.clientX - start.x) < MOVED_PX && Math.abs(e.clientY - start.y) < MOVED_PX) return;
+      if (this.getSelection()) return; // they got a selection — nothing went wrong
+      if (Date.now() - shownAt < REARM_MS) return;
+      shownAt = Date.now();
+      hint.classList.add('show');
+      clearTimeout(timer);
+      timer = setTimeout(() => hint.classList.remove('show'), 5000);
+    });
   }
 
   /**

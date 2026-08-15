@@ -26,7 +26,7 @@ import { IS_TOUCH, NEW, S, saveState, tiles } from './state.js';
 import { buildHome } from './commons.js';
 import { guard } from './errors.js';
 import { buildLadder, buildLetter } from './shingo.js';
-import { DIAL_TITLE, LOCKED_TITLE, buildTileHead } from './tilehead.js';
+import { DIAL_TITLE, buildTileHead, lockedTitle } from './tilehead.js';
 import { openJobMenu, setInert } from './widgets.js';
 import { dvrStep } from './dvr.js';
 import { TapeView } from './tapeview.js';
@@ -121,6 +121,11 @@ export class Tile {
           return;
         }
         this.focusTerminal();
+      });
+      // A drag that was meant to be a copy and silently was not — say the key.
+      this.term.wireCopyHint({
+        isLocked: () => this.locked,
+        overHome: (el) => this.home.contains(el),
       });
     }
     // The wheel is xterm's business in BOTH modes now.
@@ -617,7 +622,7 @@ export class Tile {
      * to lock" — the button is a button, and they can try it.
      */
     this.lockEl.title = this.locked
-      ? LOCKED_TITLE
+      ? lockedTitle()
       : '🔓 UNLOCKED — the session is still running in tmux; this view is not attached to it. You are reading what that terminal painted, captured byte by byte as it went, so the text can lag the live pane. Scrolling is instant and stays in your browser, typing still goes to the real terminal, and the text SELECTS AND COPIES like any web page.';
     if (S.streamOff) this.lockEl.title = 'The unlocked view is off — no record service is installed.';
   }

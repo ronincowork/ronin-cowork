@@ -1032,6 +1032,32 @@ body {
   display: block;
 }
 
+/* The copy hint: a drag in a locked tile that produced no selection (js/termview.js).
+   Sits TOP-right, not bottom — the bottom of a tile is the dvr strip and the composer,
+   and the two must never stack on top of each other. Not a tap target: it says a key and
+   goes away, and anything clickable here would be in the way of the next drag. */
+.copyhint {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  z-index: 6;
+  max-width: calc(100% - 20px);
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--bg-2);
+  border: 1px solid var(--accent);
+  color: var(--fg);
+  font: 12px/1.35 system-ui, -apple-system, "Segoe UI", sans-serif;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.copyhint.show {
+  opacity: 1;
+  transform: none;
+}
+
 /* ---- touch: control keys + the keypad (hidden on desktop) ----
    The floating ⌨ (#fab), the floating 🎤 (#mic) and the compose overlay (#compose)
    are GONE, rules and all. They were a second text entry: you typed in the tile's
