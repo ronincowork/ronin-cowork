@@ -32,8 +32,8 @@ program changing, and it is the one kind of mistake that a later commit cannot t
 
 Two kinds, and they are not the same conversation.
 
-**1. The brain each session launches with.** Two ways to pay for it, and it is a real
-choice, not a formality:
+**1. What pays for the agent each session runs.** Two ways, and it is a real choice, not
+a formality:
 
 - **A subscription** (Claude Pro/Max and the like) — you log the CLI in once on this box
   and sessions use it. Flat monthly cost, nothing to rotate, nothing in any file.
