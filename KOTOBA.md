@@ -762,7 +762,7 @@ somewhere else. Ronin has no address of its own; it asks. Record: `docs/stores.m
 | **ronin_sops** | system_scope | the shipped standard operating procedures — how a house plans, builds out, deploys; the process choices the macros defer to, one SOP per file. Starts near-empty like the library; the owner's own `sops` store shadows it file-for-file — a `user_customization` you author, like a macro | `ronin_sops/README.md` |
 | **ronin_session_boot** | system_scope | the shipped **session boot shelf** — what a NEW SESSION reads before anything else. Named for booting a *session*, never the application. Three levels that ADD UP rather than override: `all/` (every session) · `root/<project_root>/` · `job/<session_job>/`; the owner's `session_boot` store shadows it file-for-file. Stock may ship `job/` but never `root/` — the jobs ship, the owner's directories do not. Replaced the project_root's `read:` field, which stored literal paths and went stale in silence | `docs/session-boot.md` |
 | **ronin_bin** | system_scope | **everything an agent types, and nothing else** — every `tejun*` plus `write_tegami`/`read_tegami` (moved out of `bin/` 2026-08-14). On PATH via setup.sh, behind `bin/shim` and ahead of `bin/`. A **tool** is the subset that also implements a cataloged action. The fifth shelf: ronin_session_boot · ronin_catalogs · ronin_library · ronin_sops · ronin_bin | `ronin_bin/README.md` |
-| **SHELVES** | system_scope | the one page that says the four shelves exist and what each answers, so an agent can *find* a catalog, a library page or an SOP without any of them being pasted at it. Names **no individual entry**, so adding one never dates it. Owner, 2026-08-15: the name is `SHELVES`, it lives in `docs/`, and it is a file rather than lines in a brief. **⚠ Nothing points a session at it yet** — the brief wiring is deliberately held (R32), so today it is cited only by `ronin_sops/README.md` | `docs/SHELVES.md` |
+| **SHELVES** | system_scope | the one page that says the four shelves exist and what each answers, so an agent can *find* a catalog, a library page or an SOP without any of them being pasted at it. Names **no individual entry**, so adding one never dates it. Owner, 2026-08-15: the name is `SHELVES`, it lives in `docs/`, and it is a file rather than lines in a brief. It reaches a session through the **boot shelf** — `ronin_session_boot/all/` symlinks it, and `buildBrief` lists that level at spawn — so every session is handed it, and no pointer is written down anywhere to go stale | `docs/SHELVES.md` |
 | **libexec** | system_scope | executables **the machine invokes and nobody types** — `ronin-gate` (ExecStartPost), `rireki/` (the tmux applet), `koshi` (the job process), `ronin-may-spawn`, `ronin-claim` (the git hooks). The Unix split `bin` (a person types it) vs `libexec` (a program invokes it), adopted 2026-08-14. NOT on PATH | § SCRIPTS |
 | **the session directory** | session_scope | the `session` store, `<store>/<key>/` — one session's own record: TEGAMI, RIREKI's tape, the scroll. R5 closed: the store resolves it, and there is no second answer | `src/stores.ts` |
 | **house_dirs** | system_scope | the three directories of a project_repo the documents SOP writes into (owner, 2026-08-14): **`wip/`** — what might be, mutable and mortal, deleted when the work lands; **`docs/`** — what is, state-of-fact only (a project_repo's docs/; the Ronin repo's own docs/ stays the system-docs tier); **`manifest/`** — the drawer: one terse line per entry, date · what · pointer, past/present/future all welcome, prose never | `ronin_sops/documents.md` |
@@ -1085,18 +1085,19 @@ machinery and cowork must run alone.
 4. **She is a helpful assistant, and that goes in her `session_job`** — the posture, where
    an agent's manner is already specified, rather than a new field or a doc nobody reads.
 
-**R32 · RULED on the name and the home; the reach is deliberately still open.** Owner,
+**R32 · CLOSED — the map is `docs/SHELVES.md`, and the boot shelf delivers it.** Owner,
 2026-08-15. The four shelves had no "you are here" page, so an agent never handed a
 catalog could not discover that an SOP exists. It is **`docs/SHELVES.md`** — the borrowed
 `HOW_TO.md` is deleted, a name carried in from the frozen tree where it meant a different
 document (`public/js/docs.js` still has to tell two files of that name apart).
 
-**What is still open is the reach, and it is held on purpose:** how a session boots and
-where briefs come from is being reworked, so nothing points a session at the map yet. One
-pointer line beside the posture is the intended shape — a filename, which the CLI pulls
-only if it needs it — and it lands with the boot work, not before. Until it does, the SOP
-shelf's second reach route (*found by name*) is a claim with nothing behind it, and the
-README says so rather than pretending otherwise.
+**CLOSED on the reach too, by the boot shelf rather than by a pointer.** `ronin_session_boot/all/`
+symlinks `docs/SHELVES.md`, and `buildBrief` lists that level **at spawn**, so every
+session is handed the map without anything being written down. That is a better answer
+than the pointer line proposed here: a stored path — the `read:` key it replaced — goes
+stale in silence the moment a file moves, while a level listed at the instant of use
+cannot, because a file that is gone simply is not named. The SOP shelf's second reach
+route (*found by name*) now has something behind it.
 
 ---
 
