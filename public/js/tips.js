@@ -48,6 +48,8 @@ let statusEl = null;
 let whatEl = null;
 let timer = null;
 let showing = null;
+// A control whose help has been dismissed by clicking it, until the pointer leaves.
+let muted = null;
 
 function ensureBox() {
   if (box) return box;
@@ -184,7 +186,12 @@ export function refreshTipStatus(el) {
 }
 
 function arm(el) {
-  if (!el || el === showing) return;
+  // Muted: you clicked this control, so its help got out of the way — and must STAY out
+  // of the way. Opening a menu re-fires `pointerover` on the button underneath it (the
+  // DOM changed under a resting pointer), so without this the box hid on the click and
+  // came straight back a moment later, on top of the menu it had just opened. Measured:
+  // show=0 at 200ms, show=1 at 1.1s.
+  if (!el || el === showing || el === muted) return;
   clearTimeout(timer);
   // Already open means you are moving ALONG a row: swap the words with no second wait,
   // which is what makes the row read as one panel rather than a series of pop-ups.
@@ -244,6 +251,8 @@ export function installTips() {
     else if (showing && !showing.contains(e.target)) hide();
   });
   document.addEventListener('pointerout', (e) => {
+    // Leaving the control un-mutes it: come back to ⚡ later and it explains itself again.
+    if (muted && !muted.contains(e.relatedTarget)) muted = null;
     if (showing && !e.relatedTarget) hide();
   });
   // Keyboard reaches the same help: tab to a control and it explains itself.
@@ -255,12 +264,17 @@ export function installTips() {
   document.addEventListener(
     'pointerdown',
     (e) => {
-      // A click on the control the box is DESCRIBING is not a dismissal — it is you
+      // A click on an INSTRUMENT the box is describing is not a dismissal — it is you
       // operating it. The dial is turned by clicking the very thing you are hovering, so
       // a blanket hide destroyed the readout at the moment it changed, which is the hole
-      // the old 1400ms flash was plugging. Keep the box; `refreshTipStatus` rewrites its
-      // status line in place. A click anywhere else still dismisses.
-      if (showing && showing.contains(e.target)) return;
+      // the old 1400ms flash was plugging. Those controls mark themselves `holdsHelp`
+      // (the `holds` column in tilehead.js's table); the box stays and
+      // `refreshTipStatus` rewrites its status line in place.
+      //
+      // Everything else OPENS something, and there the opposite is true: a box left up
+      // sits on top of the menu it just opened — measured, with ⚡'s macro list behind it.
+      if (showing?.dataset.holdsHelp && showing.contains(e.target)) return;
+      muted = e.target?.closest?.('[title], [data-tip]') || null;
       hide();
     },
     true,
