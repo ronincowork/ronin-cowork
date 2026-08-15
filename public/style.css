@@ -856,6 +856,9 @@ body {
   opacity: 0.4;
   cursor: default;
 }
+/* NEVER SHOWN. The badge is where the dial's position sentence is KEPT; the help box
+   reads it and displays it (js/tips.js). Both its hover reveal and its 1400ms flash on
+   turn are gone — each was a second bubble competing with the one box. */
 .dial-badge {
   position: absolute;
   top: calc(100% + 3px);
@@ -870,9 +873,6 @@ body {
   color: var(--fg);
   white-space: nowrap;
   pointer-events: none;
-}
-.dial-badge.show {
-  display: block;
 }
 /* Desktop: hovering the dial reveals the badge as its help text — our own element,
    instant and reliable (native title tooltips proved flaky here). */
@@ -925,6 +925,7 @@ body {
 }
 /* The gauge's readout badge: same look as the dial's, but anchored to the gauge
    button so the number pops up directly beneath it, not off at the header edge. */
+/* NEVER SHOWN — same as .dial-badge. Text carrier for the help box's status line. */
 .gauge-badge {
   position: absolute;
   top: calc(100% + 6px);
@@ -940,9 +941,6 @@ body {
   color: var(--fg);
   white-space: nowrap;
   pointer-events: none;
-}
-.gauge-badge.show {
-  display: block;
 }
 /* Desktop: hover reveals the badge (the number), same pattern as the dial. */
 @media (hover: hover) and (pointer: fine) {

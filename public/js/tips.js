@@ -166,6 +166,23 @@ function show(el) {
   showing = el;
 }
 
+/**
+ * Re-read the status line of the box that is already open.
+ *
+ * For an instrument whose value changes while you are looking at it — turning the dial
+ * is the case that matters, because you turn it by clicking the thing you are hovering.
+ * Both the dial and the gauge used to flash a bubble of their own at that moment, which
+ * put a second panel on top of the one already reading their value. Now the reading
+ * simply changes where it is being read.
+ *
+ * A no-op unless the box is open for that very control, so a background refresh cannot
+ * make a panel appear that nobody asked for.
+ */
+export function refreshTipStatus(el) {
+  if (!box || !showing || !el || (showing !== el && !el.contains(showing))) return;
+  statusEl.textContent = statusOf(showing);
+}
+
 function arm(el) {
   if (!el || el === showing) return;
   clearTimeout(timer);
@@ -235,7 +252,19 @@ export function installTips() {
     if (el) arm(el);
   });
   document.addEventListener('focusout', hide);
-  document.addEventListener('pointerdown', hide, true);
+  document.addEventListener(
+    'pointerdown',
+    (e) => {
+      // A click on the control the box is DESCRIBING is not a dismissal — it is you
+      // operating it. The dial is turned by clicking the very thing you are hovering, so
+      // a blanket hide destroyed the readout at the moment it changed, which is the hole
+      // the old 1400ms flash was plugging. Keep the box; `refreshTipStatus` rewrites its
+      // status line in place. A click anywhere else still dismisses.
+      if (showing && showing.contains(e.target)) return;
+      hide();
+    },
+    true,
+  );
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') hide();
   });

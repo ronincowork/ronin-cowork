@@ -1,4 +1,5 @@
 /* part of the tmux-ronin client — see js/README.md */
+import { refreshTipStatus } from './tips.js';
 
 
 export function makeDial(positions, onPick) {
@@ -21,10 +22,14 @@ export function makeDial(positions, onPick) {
   btn.append(face, badge);
 
   let cur = positions[0].v;
-  let badgeTimer = null;
-  // set(v) points the dial. The badge holds the position's help sentence: shown on
-  // hover (CSS, desktop — our own element, not a native title tooltip) and flashed
-  // briefly after a tap (announce=true, the touch stand-in for hover).
+  // set(v) points the dial. The badge is no longer SHOWN by anything — it is where the
+  // position's sentence is kept, and the help box reads it from here as its status line
+  // (js/tips.js, `statusOf`). It used to reveal itself on hover and flash for 1400ms
+  // after a turn; both are gone. The flash was kept once on the argument that it is
+  // feedback about an action rather than hover help, which was a distinction the eye
+  // does not make: turning the dial while the help box was open put a second bubble on
+  // top of it, which is the pile-up the box exists to end. `announce` now refreshes the
+  // box in place, so the new position appears where the old one was being read.
   const set = (v, announce = false) => {
     const i = Math.max(0, positions.findIndex((p) => p.v === v));
     const p = positions[i];
@@ -32,11 +37,7 @@ export function makeDial(positions, onPick) {
     ptr.style.transform = `rotate(${p.angle}deg)`;
     positions.forEach((q, j) => btn.classList.toggle('pos-' + q.v, j === i));
     badge.textContent = `${p.icon} ${p.help || p.label}`;
-    if (announce) {
-      badge.classList.add('show');
-      clearTimeout(badgeTimer);
-      badgeTimer = setTimeout(() => badge.classList.remove('show'), 1400);
-    }
+    if (announce) refreshTipStatus(btn);
   };
   btn.addEventListener('click', () => {
     const i = positions.findIndex((p) => p.v === cur);
@@ -85,7 +86,6 @@ export function makeGauge(label) {
   btn.append(face, badge);
   btn.hidden = true;
 
-  let badgeTimer = null;
   const set = (v) => {
     if (v == null || !Number.isFinite(v)) {
       btn.hidden = true;
@@ -105,11 +105,9 @@ export function makeGauge(label) {
     ptr.style.transform = `rotate(${deg}deg)`;
     badge.textContent = `⛽ ${label} ${pct}% used`;
   };
-  btn.addEventListener('click', () => {
-    badge.classList.add('show');
-    clearTimeout(badgeTimer);
-    badgeTimer = setTimeout(() => badge.classList.remove('show'), 1400);
-  });
+  // No flash here either — same reason as the dial. The reading lives in the badge for
+  // the help box to read; clicking the gauge no longer raises a bubble of its own.
+  btn.addEventListener('click', () => refreshTipStatus(btn));
   return { el: btn, set };
 }
 
