@@ -2966,6 +2966,30 @@ body {
     border-color: var(--aiiro-lift);
     color: #0b0e14;
   }
+  /* The grid count, sitting between メ and ニ. Deliberately NOT a house colour: the
+     two kana are doors that open a sheet, this one changes the screen under them, and
+     three coloured boxes in a row would read as three of a kind. Furniture instead —
+     panel and line, like the picker beside it — at the same 40px so the row stays even.
+     The face is a digit, so it takes the bar's own font rather than the kana size. */
+  #bar .layout-cycle {
+    flex: 0 0 auto;
+    height: 40px;
+    min-width: 44px;
+    background: var(--panel);
+    color: var(--fg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font: inherit;
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+  }
+  #bar .layout-cycle:active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+  }
   /* The row is the session: the picker takes every pixel the two openers do not.
      The 50% cap was there to stop it crowding out nine buttons; the buttons are
      gone and the picker is the reason the row exists. */

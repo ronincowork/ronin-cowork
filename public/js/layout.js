@@ -433,11 +433,31 @@ export function buildDrawers() {
     el.querySelector('.txt')?.remove(); // the word is the row's now
     drop.addRow(el, label);
   }
+  // The grid count, between メ and ニ — this session, how many of them, the app.
+  //
+  // Touch used to have no way to ask for a second terminal at all: the desktop trio
+  // was three loose controls that did not fit a phone bar, so it was deleted here and
+  // hidden by the stylesheet. That is right for a 402px phone and wrong for an iPad,
+  // which is a coarse pointer with room for four — the owner could land on a saved 4
+  // and not get back, or sit on 1 and not get out. One button instead of three: it
+  // SHOWS the count it is on and cycles 1 → 2 → 4 → 1, the same three values and the
+  // same order as the pad's layout key (js/pad.js). setLayout writes its face.
+  const cyc = document.createElement('button');
+  cyc.id = 'layoutcycle';
+  cyc.type = 'button';
+  cyc.className = 'layout-cycle';
+  cyc.textContent = String(Number(grid.dataset.layout) || 1);
+  cyc.addEventListener('click', () => {
+    const n = Number(grid.dataset.layout) || 1;
+    setLayout(n === 1 ? 2 : n === 2 ? 4 : 1);
+  });
+  bar.append(cyc);
+
   bar.append(drop.btn, drop.menu);
 
   // Desktop bar scaffolding, now emptied out on touch.
   document.querySelector('#bar .ctrls')?.remove(); // took #k-more (⋯) with it
-  document.querySelector('#bar .layouts')?.remove(); // a phone shows one tile
+  document.querySelector('#bar .layouts')?.remove(); // the cycle button above replaces the trio
   document.querySelector('#bar .grow')?.remove();
   keypad?.remove();
 }

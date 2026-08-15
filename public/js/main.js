@@ -26,12 +26,12 @@ export async function init() {
   }
   guard('build the grid', build);
   const saved = guard('read saved state', loadState, { map: [], layout: TILE_COUNT });
-  // A phone shows ONE terminal, always — not just on first run. A 2x2 grid of tiny
-  // terminals was never usable at 402px and the layout buttons are hidden there, so
-  // a saved 2 or 4 was a state you could land in and not get out of. It is also what
-  // makes the merged header honest: the tile's controls are hoisted into the app bar
-  // (js/tiledrop.js), and a bar cannot say WHICH of two tiles it means.
-  // iPad and desktop keep the saved/4 default.
+  // A phone OPENS on one terminal, always — not just on first run. A 2x2 grid of tiny
+  // terminals is not usable at 402px, and it is what makes the merged header honest:
+  // the tile's controls are hoisted into the app bar (js/tiledrop.js), and a bar cannot
+  // say WHICH of two tiles it means. It is a starting point, not a cage — the bar's
+  // layout button (js/layout.js) cycles 1 / 2 / 4 on touch too, and at this width 2 and
+  // 4 stack into a scroll column rather than shrinking. iPad and desktop keep saved/4.
   const phone = window.matchMedia('(max-width: 680px)').matches;
   guard('set layout', () => setLayout(phone ? 1 : saved.layout));
   // The session list is the one step worth reporting loudly: without it every tile
