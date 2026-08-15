@@ -13,27 +13,22 @@ program changing, and it is the one kind of mistake that a later commit cannot t
 
 ## The approach
 
-1. **The ignore rule comes before the file.** `.env` in `.gitignore` on the first day,
-   while the repo is empty and nobody is under pressure. Adding it after the file exists
-   is a race you sometimes lose.
-2. **Keep a tracked template.** `.env.example` with the key *names* and no values — it is
-   how the next person (or the deploy) learns what to set, and it is meant to be
-   committed. A template holding a real value is the quiet version of this whole problem.
-3. **Local runs read `.env`; everything else reads the environment.** A deployed thing
-   takes its keys from the host's own configuration, never from a file in the image
-   (`deploy.md`).
-4. **One key per purpose, and per place.** The same key in local, staging and production
-   means rotating it breaks all three at once, which is why nobody rotates it.
-5. **Ask who else needs it.** That question decides where a key lives — a key one person
-   uses belongs in their environment; a key three people need belongs in whatever the
-   house already uses to share them, and *never* in a message that stays scrolled back.
+1. **The ignore rule comes before the file.** `.env` in `.gitignore` on day one, while
+   the repo is empty and nobody is in a hurry. Adding it after the file exists is a race
+   you sometimes lose.
+2. **Keep a tracked template.** `.env.example` carries the key *names* and no values — it
+   is how the next person and the deploy both learn what to set. A template holding a
+   real value is the quiet version of this whole problem.
+3. **One key per purpose, and per place.** The same key across local, staging and
+   production means rotating it breaks all three at once, which is why nobody rotates it.
+4. **Ask who else needs it.** That decides where it lives: a key one person uses belongs
+   in their environment; a key three people need belongs in whatever the house already
+   uses to share them, and *never* in a message that stays scrolled back.
 
-## Setting up: which credentials this box needs
+## Which account pays for the agent
 
-Two kinds, and they are not the same conversation.
-
-**1. What pays for the agent each session runs.** Two ways, and it is a real choice, not
-a formality:
+The one credential decision every install makes, and the one that costs money when it is
+made by accident. (Who the install belongs to is `accounts.md`; this is what pays.)
 
 - **A subscription** (Claude Pro/Max and the like) — you log the CLI in once on this box
   and sessions use it. Flat monthly cost, nothing to rotate, nothing in any file.
@@ -51,11 +46,6 @@ Two follow-ons worth knowing: if you log in *both* ways the CLI may warn about t
 conflict — resolve it, don't dismiss it. And what a Ronin pane inherits is the **service's**
 environment, not the shell you are typing in; when those disagree, the pane is the one
 that counts.
-
-**2. Everything else this install talks to** — a database, object storage, a deploy host,
-whatever the project calls. Same rules as any secret below. Worth listing them once, by
-name, when you set the box up: a credential nobody has written down is one nobody can
-rotate.
 
 ## When one leaks
 

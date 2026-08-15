@@ -145,7 +145,10 @@ const IGNORE = {
   // SOP on the_owner's ruling — actions defer to the SOP, which compile inlines.)
   // What remains names the house dirs of a PROJECT_REPO — a location in whatever repo a
   // session works in, never a claim about this tree.
-  'ronin_catalogs/ACTIONS.md': ['wip/', 'docs/', 'manifest/'],
+  // `wip/`/`docs/`/`manifest/` are a PROJECT_REPO's dirs. `ronin.json` is SETTEI's file,
+  // created at runtime in the config store — real on the box, never in this repo, the
+  // same reason docs/user-config.md and docs/README.md carry it below.
+  'ronin_catalogs/ACTIONS.md': ['wip/', 'docs/', 'manifest/', 'ronin.json'],
   // The documents page *defines* those house dirs, so it names them most of all. Same
   // reason as the line above: they are a PROJECT_REPO's directories — a location in
   // whatever repo a session works in — and never a claim about this tree.

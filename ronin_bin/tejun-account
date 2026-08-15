@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# tejun-account — who this install belongs to, and what it is entitled to
+# (TEJUN survey-account).
+# Usage: tejun-account          no arguments
+#
+# SETTEI's side of the story. `tejun-secrets` answers which CREDENTIAL is in force;
+# this answers who the install is FOR — the owner's name, the entitlement, the limits
+# they set. Both are facts about a box on a day, so both are measured here and written
+# down nowhere (`ronin_sops/accounts.md` cites this tool and carries no values).
+#
+# Read-only, and it never prints a credential: `ronin.json` is served whole over HTTP by
+# design and holds no secret, which is exactly why a secret must never be put in it.
+set -u
+
+STORE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../bin" && pwd)/ronin-store"
+[ -x "$STORE" ] || STORE=ronin-store
+CONFIG_DIR="$("$STORE" config 2>/dev/null)"
+CONFIG="${CONFIG_DIR:+$CONFIG_DIR/ronin.json}"
+
+echo "ACCOUNT — who this install belongs to"
+
+if [ -z "$CONFIG" ] || [ ! -f "$CONFIG" ]; then
+  printf '  %-16s %s\n' "config file" "not created yet — nothing has been set"
+  echo
+  echo "  A fresh install: no owner name, no entitlement, no limits of their own."
+  echo "  That is the ordinary first-run state, not a fault."
+  exit 0
+fi
+
+# One python3 pass — the house allows it where JSON is unavoidable, and hand-parsing
+# nested JSON in bash is how a config file starts lying to you.
+python3 - "$CONFIG" <<'PY'
+import json, os, sys
+try:
+    cfg = json.load(open(sys.argv[1]))
+except Exception as e:
+    print(f"  config file       UNREADABLE ({e.__class__.__name__}) — the owner's editor won")
+    raise SystemExit(0)
+
+def row(k, v):
+    print(f"  {k:<16} {v}")
+
+owner = (cfg.get("owner") or {}).get("name")
+if isinstance(owner, str) and owner.strip():
+    row("owner name", f"{owner.strip()}  (set)")
+else:
+    # user-config.ts falls back to the OS username so nothing shipped ever names a
+    # person. A fallback is not an answer — it is the absence of one, wearing a name.
+    row("owner name", f"NOT SET — falling back to the OS username ({os.environ.get('USER','?')})")
+
+ent = cfg.get("entitlement") or cfg.get("entitlement_id")
+row("entitlement", f"{ent}  (services install)" if ent else "none recorded — a free cowork install")
+
+mx = (cfg.get("sessions") or {}).get("max")
+row("session max", mx if mx is not None else "not set — the built-in default applies")
+
+row("config file", sys.argv[1])
+
+missing = []
+if not (isinstance(owner, str) and owner.strip()):
+    missing.append("owner name")
+print()
+if missing:
+    print("  Not yet answered: " + ", ".join(missing) + ".")
+    print("  Ask before assuming — a name Ronin guessed from the login is not one the")
+    print("  owner gave, and nothing shipped may name a person (ronin_sops/accounts.md).")
+else:
+    print("  Everything this tool asks about has an answer.")
+PY
+
+echo
+echo "This is SETTEI — what the owner SET. For which credential is actually in force,"
+echo "run tejun-secrets; that is a different question with a different failure mode."

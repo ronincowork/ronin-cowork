@@ -517,3 +517,24 @@ Exit 4 = something is `EXPOSED` (tracked by git), which means the key is already
 — the response is to rotate it, not to rewrite history (`ronin_sops/secrets.md`).
 Exit 3 = the path does not exist. Read-only: it never stages, writes, or edits
 `.gitignore` — it reports, and a person decides.
+
+## survey-account — who this install is for, and what it is entitled to
+`action_kind: mechanical` — run it, don't deliberate.
+> **Tool: `tejun-account`** (TOOLS.md)
+Establish what the install already knows about its owner before asking them anything:
+the display name (or that it is falling back to the login), the entitlement, the limits
+they set, and the config file's location.
+```bash
+tejun-account                # no arguments — it resolves the store itself
+```
+SETTEI's half of the question. `survey-secrets` answers which **credential** is in force;
+this answers who the install is **for**. Different questions, different failure modes —
+run both before a setup conversation.
+
+**A fallback is not an answer.** Nothing shipped may name a person, so an unset owner name
+falls back to the login; the tool reports that as `NOT SET` rather than printing the
+guess as though the owner had given it. A fresh install with no config file at all is the
+ordinary first-run state and exits 0, not an error.
+
+Read-only, and it prints no credential — `ronin.json` is served whole over HTTP by design
+and holds none, which is exactly why one must never be put there.
