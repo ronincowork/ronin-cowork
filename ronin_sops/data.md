@@ -3,28 +3,44 @@
 > Stock SOP. Your own copy in the sops store (`ronin-store sops` → `data.md`) replaces
 > this file whole — a default, not law.
 > **Voice: relay.** Written for the agent to walk a person through, not to follow itself.
+> **Tool: `tejun-survey [path]`** — cores, RAM, disk free where the work is, and every
+> store with its size. Run it before advising; the numbers are never in this file.
 
-It arrives as "where should I put this?", and size never answers it. Establish what the
-data *is*, and the home follows.
+It arrives as "where should I put this?", and size alone never answers it. Establish what
+the data *is*, measure what the box has, and the home follows.
 
 ## Three questions, in this order
 
 1. **What breaks if it disappears tonight?** Nothing → it is scratch; put it anywhere.
    Something → it needs a home with a copy somewhere else. This one decides, and it goes
-   first because the other two do not matter when the answer is "nothing".
+   first because the other two stop mattering when the answer is "nothing".
 2. **Does the running app read it, or does a person?** An app reading it at runtime pulls
    it toward the app's own host. A person working on it pulls it toward wherever they
    already keep files.
 3. **Does it change?** Rarely-changing bulk and constantly-changing records want
    different homes, and mixing them is what makes both awkward.
 
+## Then measure
+
+`tejun-survey` on the directory the data would land in. What matters is not the free
+figure but the **ratio** — what fraction of that disk is this, and what is already living
+on it? A working box also carries the session tapes, every checkout and every
+`node_modules`, and those grow without anyone deciding they should.
+
 ## Three homes
 
 - **Records** — anything queried, joined, counted, or written by two things at once. A
-  database. Managed beats self-hosted for anything you would miss: running your own is a
-  job, not a checkbox.
-- **Files** — anything read whole. Media, documents, exports, archives. Object storage or
-  a synced folder; cheap, and it does not care how big it gets.
+  database, and **Postgres unless you can say why not**: SQLite when it is one process
+  with no network, and then stop shopping; a document store when the shape genuinely
+  varies per record and you read and write whole documents. Reaching for one *because
+  the shape is not settled yet* is not a data decision, it is deferring one, and it is
+  paid for later. Managed beats self-hosted for anything you would miss — running your
+  own is a job, not a checkbox.
+- **Files** — anything read whole: media, documents, exports, archives. Object storage,
+  or a synced folder (Syncthing, Dropbox) when a person works across machines. **A synced
+  folder is a replica, not a backup** — deletion propagates, and that is the whole risk in
+  one sentence. Never sync a directory a process is actively writing to: half-written
+  files replicate and conflict copies breed.
 - **Scratch** — working copies, intermediate output, anything reproducible. A working
   disk, and it may vanish.
 
@@ -37,6 +53,6 @@ decision that has already been made.
 
 ## Before moving anything
 
-Say out loud what should be true afterwards: where it will be, who can read it, what the
-app's path to it becomes. Copy first, read it from the new home, and only then let go of
-the old one. **Nothing is deleted in the same step as it is moved.**
+Say what should be true afterwards: where it will be, who can read it, what the app's path
+to it becomes. Copy first, read it from the new home, and only then let go of the old one.
+**Nothing is deleted in the same step as it is moved.**

@@ -458,3 +458,26 @@ The owner's own path for this is the trash button in the Ronin UI.
 Classify a session's state from pane text (for pickers, dashboards, notifications).
 ready (`❯` + empty input) / thinking (spinner line) / awaiting-input (question or
 pending dialog) / gone (`tmux has-session` fails).
+
+## survey-machine — what this box has, measured now
+`action_kind: mechanical` — run it, don't deliberate.
+> **Tool: `tejun-survey [path]`** (TOOLS.md)
+Measure the machine before advising on anything its capacity decides — where a pile of
+data should live, whether a database belongs on this box, whether a checkout will fit.
+Reports cores, RAM, the disk **on the filesystem holding the path you name** (not `/`,
+which on many hosts is a different device from the home tree), and every Ronin store
+with its size.
+```bash
+tejun-survey                 # the working directory's filesystem
+tejun-survey /srv/incoming   # the filesystem a proposed home is actually on
+```
+Read-only; it touches no session, so no control-check applies.
+
+**Its output is never copied into a document.** A machine's capacity is a fact about a
+box on a day — true when written, false after a resize or a move, and dangerous in both
+directions, because a written number reads as authority long after it stopped being
+true. Documents cite this action; the numbers live in a terminal.
+`ronin_sops/data.md` names the tool for exactly this reason and carries no figures.
+
+Exit 3 = the path does not exist. A store that has never been used prints `not yet`
+rather than a zero — "empty" and "never created" are different answers.

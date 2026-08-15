@@ -92,7 +92,9 @@ const SOURCES = [
   'CLAUDE.local.md',
   'README.md',
   'ronin_library/README.md',
-  'ronin_sops/README.md',
+  // Every SOP, not just the shelf's README: an SOP names a `> Tool:` pointer, and a
+  // pointer at a renamed tool is exactly the silent rot this check exists to catch.
+  ...files.filter((f) => f.startsWith('ronin_sops/') && md(f)),
   'ronin_bin/README.md',
   'public/js/README.md',
   ...files.filter((f) => f.startsWith('ronin_catalogs/') && md(f)),
@@ -136,6 +138,10 @@ const IGNORE = {
   // What remains names the house dirs of a PROJECT_REPO — a location in whatever repo a
   // session works in, never a claim about this tree.
   'ronin_catalogs/ACTIONS.md': ['wip/', 'docs/', 'manifest/'],
+  // The documents SOP *defines* those house dirs, so it names them most of all. Same
+  // reason as the line above: they are a PROJECT_REPO's directories — a location in
+  // whatever repo a session works in — and never a claim about this tree.
+  'ronin_sops/documents.md': ['wip/', 'wip/handoffs/', 'wip/buildouts/', 'manifest/', 'manifest/MANIFEST.md'],
   'ronin_catalogs/PROJECT_ROOTS.md': ['DAIKUSAN.md', 'src/services/rireki/decode.ts:219'],
   'ronin_catalogs/TOOLS.md': ['docs/oboeru.md', 'docs/koshi.md'],
 };

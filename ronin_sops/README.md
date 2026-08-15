@@ -19,6 +19,14 @@ never says what is installed, what is running, or where anything currently sits 
 are resolved (`bin/ronin-doctor`, `bin/ronin-store --all`), never written down. A written
 fact about a box is wrong the day the box changes, and nobody notices.
 
+**Where a domain has a measurable, name the tool.** An SOP carries a `> Tool:` line in its
+header — the same form `ronin_catalogs/ACTIONS.md` uses, so the eye finds it in the same
+place everywhere. That line is the discovery mechanism: reading the SOP is how an agent
+learns the measurement exists, and running it is how the numbers stay true, since they
+live in a terminal and never in a file. `data.md` names `tejun-survey`; `github.md` names
+nothing, because git is git. The pointer is always to a **cataloged action's tool**, never
+a loose script.
+
 ## The two voices
 
 - **Written at the agent** — a house rule the agent applies itself. `documents.md`.

@@ -32,5 +32,5 @@ drastic, commit it first even badly — a bad commit is recoverable, a lost chan
 
 ## Ronin's own repos are not this
 
-They run a release branch and a review gate of their own. That is `CLAUDE.md` in those
-repos. This SOP is for the_owner's projects.
+They run a release branch and a review gate of their own, written down in those repos.
+This SOP is for the_owner's projects.
