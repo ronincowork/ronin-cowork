@@ -159,9 +159,10 @@ holds many **project_roots**; each of those usually sits in a **project_repo**.
 | Term | Scope | Means | Record |
 |---|---|---|---|
 | **ronin_machine** | system_scope | **the outer limit of what an install can reach** — every session, file and project_root available to it, and nothing beyond. A server, VM or container. Holds many project_roots, which is why it is not named after one | `DAIKUSAN.md` |
-| **project_root** | system_scope | the *directory* a session is born into, plus the brain it gets — an entry in the inclusion_list. **Memories are keyed by it**; customizations are not, they belong to the_owner. The term is `system_scope`; **the entries are `user_scope`** — they live in the catalogs store's `PROJECT_ROOTS.md`, and the shipped `ronin_catalogs/PROJECT_ROOTS.md` keeps only the stock launch table | `docs/project-roots.md` |
+| **project_root** | system_scope | the *directory* a session is born into, plus the session_launch_spec it gets — an entry in the inclusion_list. **Memories are keyed by it**; customizations are not, they belong to the_owner. The term is `system_scope`; **the entries are `user_scope`** — they live in the catalogs store's `PROJECT_ROOTS.md`, and the shipped `ronin_catalogs/PROJECT_ROOTS.md` keeps only the stock launch table | `docs/project-roots.md` |
 | **project_repo** | system_scope | the *git repo* a project_root sits in. Usually the same directory; a project_root need not be a repo at all | `docs/project-roots.md` |
 | **inclusion_list** | system_scope | which directories on a ronin_machine are part of your Ronin — an inclusion_list, not a layout. Ships empty | `docs/project-roots.md` |
+| **session_launch_spec** | system_scope | one runnable **provider · model** pairing resolved to the exact command that starts it — `{provider, model, cmd}`, one CELL of the shipped launch table. Adding a provider is a ROW and adding a model a COLUMN, **never a code path**: that property is the whole of vendor neutrality. A `project_root` names a default and the launch may override; an install whose table yields none cannot spawn a configured session. **Named 2026-08-15, replacing `brain`** — which claimed cognition for two labels and a command string, and blurred the three things § NUANCE keeps apart (the CLI vs the model vs this run of it) | `ronin_catalogs/PROJECT_ROOTS.md` |
 
 ### The two repos, and how a service plugs in
 
@@ -582,11 +583,11 @@ reaching her tile is an ordinary send. A house agent that cannot be silenced by 
 house agent that cannot be silenced.
 
 **MIKA is cowork.** All four of her macros operate on cowork's own machinery — the catalog,
-the launcher, SETTEI, the documents — and cowork must run alone. Her brain comes from the
+the launcher, SETTEI, the documents — and cowork must run alone. Her session_launch_spec comes from the
 launch table like any session's, so the owner pays for her the way they pay for their own
 work.
 
-**Counted, never blocked** (owner, 2026-08-14). Mika occupies a tile and a brain like
+**Counted, never blocked** (owner, 2026-08-14). Mika occupies a tile and a session_launch_spec like
 anything else on the roster, so the census counts her — but the cap never refuses *her*:
 **blocking someone who is asking for help is rude.** She can be the eleventh of ten. What
 that costs is the next spawn, which the ordinary guard refuses; nothing is evicted to make
@@ -1076,7 +1077,7 @@ machinery and cowork must run alone.
 
 1. **Her mark is the katakana ミ**, not a kanji. She is a name, not a system noun, so the
    thing R23 will not invent for KOSHI does not arise for her.
-2. **The session cap: counted, never blocked.** She takes a tile and a brain like anything
+2. **The session cap: counted, never blocked.** She takes a tile and a session_launch_spec like anything
    else, so the census counts her — but she is never the spawn the cap refuses, because
    blocking someone asking for help is rude. Eleventh of ten is legal; the cost lands on the
    *next* spawn. Nothing is evicted, and no session is chosen to die.

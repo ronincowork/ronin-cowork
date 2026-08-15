@@ -3,7 +3,7 @@
  *
  * The session_job fixes the constants: the dial the session is born on, its
  * lifecycle, whether it acknowledges before acting. The user picks
- * project_root / brain / tags. Nothing here calls a model — the smart fill populates this form,
+ * project_root / session_launch_spec / tags. Nothing here calls a model — the smart fill populates this form,
  * it does not perform it. Order matters: create -> tag -> DIAL -> reply, so the
  * session is addressable and correctly locked from its first breath; the CLI
  * launch and the brief happen after the reply so the receipt is instant and a

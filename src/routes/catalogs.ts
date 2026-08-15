@@ -1,6 +1,6 @@
 /**
  * CATALOG ROUTES — the markdown-backed lists the commons reads and edits: macros,
- * hotwords, project roots, brains, session jobs. Catalogs are parsed at request time
+ * hotwords, project roots, session_launch_specs, session jobs. Catalogs are parsed at request time
  * (ronin_catalogs/ for stock, the catalogs store for the user's own), so the UI always
  * matches the doc. See docs/project-roots.md.
  */
@@ -11,7 +11,7 @@ import { projectRootsOfSessions } from '../tmux.js';
 import { listMacros } from '../macros.js';
 import {
   listProjectRoots,
-  listBrains,
+  listSessionLaunchSpecs,
   upsertProjectRoot,
   removeProjectRoot,
   repoFacts,
@@ -54,10 +54,10 @@ export function registerCatalogs(app: express.Express): void {
   });
 
   // The project_root list: parsed live from the USER catalog (catalogs store, PROJECT_ROOTS.md)
-  // so the launcher always matches the doc — where to work, what to read first, which brain.
+  // so the launcher always matches the doc — where to work, what to read first, which session_launch_spec.
   // Same contract as /api/macros. No user file yet = an empty list, not an error: that is a
-  // fresh install. The brain each root resolves to comes from the SHIPPED launch table
-  // (/api/brains below) — system scope, because brains are stock and the roots are not.
+  // fresh install. The session_launch_spec each root resolves to comes from the SHIPPED launch table
+  // (/api/session-launch-specs below) — system scope, because they are stock and the roots are not.
   // The hotwords routes are KOE's, mounted through the ROUTES socket (koe/hotwords-api.ts).
   app.get('/api/project-roots', async (_req, res) => {
     try {
@@ -139,9 +139,9 @@ export function registerCatalogs(app: express.Express): void {
   // The launch table itself: every `provider · model` a session can be born on,
   // in table order (first column = that provider's default). The launcher's model
   // picker lists these, so a model is a column in the markdown, never a code path.
-  app.get('/api/brains', async (_req, res) => {
+  app.get('/api/session-launch-specs', async (_req, res) => {
     try {
-      res.json(await listBrains());
+      res.json(await listSessionLaunchSpecs());
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }

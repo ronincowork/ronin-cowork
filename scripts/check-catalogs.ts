@@ -23,7 +23,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { STOCK_DIR, splitSections, readEntries, listSessionJobs } from '../src/catalog.js';
 import { listMacros } from '../src/macros.js';
-import { listBrains } from '../src/project-roots.js';
+import { listSessionLaunchSpecs } from '../src/project-roots.js';
 
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 let fails = 0;
@@ -82,8 +82,8 @@ await surfacing('MACROS.md', listMacros);
 await surfacing('ACTIONS.md', () => readEntries('ACTIONS.md'));
 await surfacing('TOOLS.md', () => readEntries('TOOLS.md'));
 
-// The launch table: an install with no brains cannot spawn a configured session.
-if ((await listBrains()).length === 0) fail('PROJECT_ROOTS.md: the launch table yields no brains');
+// The launch table: an install with no session_launch_specs cannot spawn a configured session.
+if ((await listSessionLaunchSpecs()).length === 0) fail('PROJECT_ROOTS.md: the launch table yields no session_launch_specs');
 
 for (const f of FILES) await deadLinks(f);
 

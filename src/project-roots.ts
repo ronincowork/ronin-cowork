@@ -13,7 +13,7 @@ const execFileP = promisify(execFile);
  * "if Ronin is upgraded, is this file replaced?").
  *
  *   SYSTEM — ronin_catalogs/PROJECT_ROOTS.md, inside the install. Holds the
- *   provider·model LAUNCH TABLE only: every install needs brains, and the table is
+ *   provider·model LAUNCH TABLE only: every install needs session_launch_specs, and the table is
  *   stock. Replaced wholesale by an upgrade, which is exactly right for it. It ships
  *   with NO roots — there is no such thing as a stock project root.
  *
@@ -60,7 +60,7 @@ export interface ProjectRootInfo {
 }
 
 /** Every launchable `provider · model` the table knows, in table order. */
-export interface BrainInfo {
+export interface SessionLaunchSpec {
   provider: string;
   model: string;
   cmd: string;
@@ -71,7 +71,7 @@ const expand = (p: string) => (p.startsWith('~') ? path.join(os.homedir(), p.sli
 /**
  * The owner's roots, parsed at request time from the catalogs store —
  * the doc IS the catalog (same contract as listMacros). A project_root is a `## name`
- * heading with `- **key:** value` lines. The brain comes from the SHIPPED launch table,
+ * heading with `- **key:** value` lines. The session_launch_spec comes from the SHIPPED launch table,
  * which is a different file in a different scope: adding a provider stays a row and
  * adding a model a column — never a code path. That is the whole of vendor neutrality.
  *
@@ -82,14 +82,14 @@ const expand = (p: string) => (p.startsWith('~') ? path.join(os.homedir(), p.sli
  * and therefore who), in src/catalog.ts. The same two keys scope a memory.
  */
 export async function listProjectRoots(): Promise<ProjectRootInfo[]> {
-  const [raw, launch] = await Promise.all([readUserRoots(), listBrains()]);
+  const [raw, launch] = await Promise.all([readUserRoots(), listSessionLaunchSpecs()]);
   return parseRoots(raw, launch);
 }
 
 /** The parse itself, over text rather than the file — so a WRITE can re-read its own
  * result before committing it (see writeCatalog). The launch table is passed IN because
  * it lives in the other scope's file; a root block never carries its own. */
-function parseRoots(raw: string, launch: BrainInfo[]): ProjectRootInfo[] {
+function parseRoots(raw: string, launch: SessionLaunchSpec[]): ProjectRootInfo[] {
   const roots: ProjectRootInfo[] = [];
   for (const chunk of raw.split(/^## +/m).slice(1)) {
     const lines = chunk.split('\n');
@@ -128,13 +128,13 @@ function parseRoots(raw: string, launch: BrainInfo[]): ProjectRootInfo[] {
  * dropdown says "anthropic · opus", and a new model is a new column, no code.
  * Each provider's FIRST column is its default.
  */
-function parseLaunchTable(raw: string): BrainInfo[] {
+function parseLaunchTable(raw: string): SessionLaunchSpec[] {
   const cellsOf = (line: string) => {
     const c = line.split('|').map((s) => s.trim());
     return c[0] === '' && c[c.length - 1] === '' ? c.slice(1, -1) : c;
   };
   let models: string[] = [];
-  const out: BrainInfo[] = [];
+  const out: SessionLaunchSpec[] = [];
   for (const line of raw.split('\n')) {
     if (!line.includes('|')) continue;
     const cells = cellsOf(line);
@@ -155,11 +155,11 @@ function parseLaunchTable(raw: string): BrainInfo[] {
 }
 
 /**
- * Every launchable brain in the table — what the launcher's model picker lists.
- * SYSTEM SCOPE: read from the install, never from the user's file. Brains are stock;
+ * Every session_launch_spec in the table — what the launcher's model picker lists.
+ * SYSTEM SCOPE: read from the install, never from the user's file. session_launch_specs are stock;
  * an upgrade adding a model must reach a box that already has its own root list.
  */
-export async function listBrains(): Promise<BrainInfo[]> {
+export async function listSessionLaunchSpecs(): Promise<SessionLaunchSpec[]> {
   return parseLaunchTable(await readFile(LAUNCH_TABLE_MD, 'utf8'));
 }
 
@@ -237,7 +237,7 @@ const isFieldLine = (line: string, key: string) => new RegExp(`^\\s*-\\s*\\*\\*$
 async function writeCatalog(text: string, verify: (roots: ProjectRootInfo[]) => string | null): Promise<void> {
   let roots: ProjectRootInfo[];
   try {
-    roots = parseRoots(text, await listBrains());
+    roots = parseRoots(text, await listSessionLaunchSpecs());
   } catch (e) {
     throw new Error(`Refused: the edited catalog does not parse (${String((e as Error)?.message ?? e)}).`);
   }

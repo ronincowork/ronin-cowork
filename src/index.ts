@@ -130,7 +130,7 @@ app.get('/api/health', (_req, res) =>
 );
 
 registerLaunch(app); // /api/launch (both variants), /api/sessions, /api/home, session-max, owner — src/routes/launch.ts
-registerCatalogs(app); // /api/macros, /api/hotwords*, /api/project-roots*, /api/brains, /api/session-jobs — src/routes/catalogs.ts
+registerCatalogs(app); // /api/macros, /api/hotwords*, /api/project-roots*, /api/session-launch-specs, /api/session-jobs — src/routes/catalogs.ts
 registerVersion(app); // /api/version — the commit this process started from — src/routes/version.ts
 
 // Services register, then their routes mount — AFTER core's, which is safe because

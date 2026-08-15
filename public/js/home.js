@@ -21,14 +21,14 @@ export async function refreshHome() {
 }
 
 export let projectData = null; // /api/project-roots: [{name, dir, read[], provider, model, match[], remit, cmd}]
-export let brainData = null; // /api/brains: [{provider, model, cmd}] — the launch table, in table order
+export let launchSpecData = null; // /api/session-launch-specs: [{provider, model, cmd}] — the launch table, in table order
 
 export async function loadProjects() {
   try {
-    const [pr, br] = await Promise.all([fetch('/api/project-roots'), fetch('/api/brains')]);
+    const [pr, br] = await Promise.all([fetch('/api/project-roots'), fetch('/api/session-launch-specs')]);
     const [pd, bd] = await Promise.all([pr.json(), br.json()]);
     if (pr.ok && Array.isArray(pd)) projectData = pd;
-    if (br.ok && Array.isArray(bd)) brainData = bd;
+    if (br.ok && Array.isArray(bd)) launchSpecData = bd;
   } catch (_) {}
   tiles.forEach((t) => t.renderHome());
 }
@@ -39,7 +39,7 @@ export async function loadProjects() {
  * read live from ronin_catalogs/SESSION_JOBS.md, never hardcoded here. The session_job
  * fixes what a launch must not leave to chance (the dial the session is born on,
  * its lifecycle, whether it acknowledges before acting); the user picks
- * project_root, brain and group; the server assembles the brief and
+ * project_root, session_launch_spec and group; the server assembles the brief and
  * performs the spawn. Spec: co-working/user_repo/wip/buildouts/MACRO_LAUNCHER.md.
  */
 export let presetData = null; // /api/session-jobs
@@ -117,7 +117,7 @@ export function showReceipt(name, receipt) {
     receipt.session_job,
     receipt.project_root,
     // No cmd = an `agent: none` kind: say so, rather than leaving a gap the reader
-    // has to interpret as "the brain field failed to fill".
+    // has to interpret as "the session_launch_spec field failed to fill".
     receipt.cmd ? receipt.cmd.replace(/^claude --model /, '') : 'no agent',
     `${dialIcon} ${receipt.dial}`,
     receipt.lifecycle ? `⟳ ${receipt.lifecycle}` : '',
