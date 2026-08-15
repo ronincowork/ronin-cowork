@@ -1,4 +1,4 @@
-# data — where data lives, and how to decide
+# data — connecting to a data source, and choosing which one
 
 > Stock SOP. Your own copy in the sops store (`ronin-store sops` → `data.md`) replaces
 > this file whole — a default, not law.
@@ -6,8 +6,10 @@
 > **Tool: `tejun-survey [path]`** — cores, RAM, disk free where the work is, and every
 > store with its size. Run it before advising; the numbers are never in this file.
 
-It arrives as "where should I put this?", and size alone never answers it. Establish what
-the data *is*, measure what the box has, and the home follows.
+This covers **how a project connects to its data** — what the options are, how to choose
+between them, and how the machine you are on constrains the choice. It arrives as "where
+should I put this?" or "how do I get at that?", and size alone answers neither. Establish
+what the data *is*, measure what the box has, and both answers follow.
 
 ## Three questions, in this order
 
@@ -50,6 +52,20 @@ A working directory is where data passes through, not where it lives. The reason
 capacity — it is that a machine holds **one** copy, and the copy dies with the box. Tens
 of gigabytes sitting on a working disk is a signal to ask question 1 again, not a storage
 decision that has already been made.
+
+## Connecting to it
+
+Wherever it lands, the connection itself follows three rules:
+
+- **The address and the credential are configuration, never code** — a connection string
+  lives in the environment, and it is a secret even when it looks like a URL
+  (`secrets.md`).
+- **Connect from one place in the code.** One module owns the client; everything else asks
+  it. Moving the data later is then an edit in one file rather than a hunt.
+- **Prove the connection before building on it.** Read one row, list one object, fetch one
+  file — from the machine that will actually do it, not from your laptop. A managed
+  database usually has to be told which addresses may reach it, and that is the step
+  people discover last.
 
 ## Before moving anything
 

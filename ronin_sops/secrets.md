@@ -4,8 +4,9 @@
 > this file whole — a default, not law.
 > **Voice: relay.** Written for the agent to walk a person through, not to follow itself.
 > **Tool: `tejun-secrets [path]`** — which env files exist, the key NAMES in each, whether
-> git tracks them, and whether `.gitignore` covers them. Run it before the conversation,
-> not after. It never prints a value; exit 4 means something is already public.
+> git tracks them, whether `.gitignore` covers them, and which provider credential a
+> launched agent would actually use. Run it before the conversation, not after. It never
+> prints a value; exit 4 means something is already public.
 
 A secret is **configuration, not code**. It differs per machine, it changes without the
 program changing, and it is the one kind of mistake that a later commit cannot take back.
@@ -26,6 +27,35 @@ program changing, and it is the one kind of mistake that a later commit cannot t
 5. **Ask who else needs it.** That question decides where a key lives — a key one person
    uses belongs in their environment; a key three people need belongs in whatever the
    house already uses to share them, and *never* in a message that stays scrolled back.
+
+## Setting up: which credentials this box needs
+
+Two kinds, and they are not the same conversation.
+
+**1. The brain each session launches with.** Two ways to pay for it, and it is a real
+choice, not a formality:
+
+- **A subscription** (Claude Pro/Max and the like) — you log the CLI in once on this box
+  and sessions use it. Flat monthly cost, nothing to rotate, nothing in any file.
+- **An API key** — billed per token, set in the environment. Right when you need
+  programmatic access, separate billing, or per-project separation.
+
+**The order they resolve in is fixed, and it is where people get hurt:**
+`ANTHROPIC_API_KEY` → `ANTHROPIC_AUTH_TOKEN` → an OAuth profile → the default profile on
+disk. **A set `ANTHROPIC_API_KEY` silently outranks a subscription login — and an empty
+one still wins its slot.** So a stale export in a shell profile can quietly move every
+session onto per-token billing, and the only symptom is the invoice. Pick one, and check
+which one is actually winning (`tejun-secrets`) rather than assuming.
+
+Two follow-ons worth knowing: if you log in *both* ways the CLI may warn about the
+conflict — resolve it, don't dismiss it. And what a Ronin pane inherits is the **service's**
+environment, not the shell you are typing in; when those disagree, the pane is the one
+that counts.
+
+**2. Everything else this install talks to** — a database, object storage, a deploy host,
+whatever the project calls. Same rules as any secret below. Worth listing them once, by
+name, when you set the box up: a credential nobody has written down is one nobody can
+rotate.
 
 ## When one leaks
 

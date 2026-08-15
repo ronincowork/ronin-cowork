@@ -490,8 +490,8 @@ which is why every mount is listed and not just the one under the working direct
 `action_kind: mechanical` — run it, don't deliberate.
 > **Tool: `tejun-secrets [path]`** (TOOLS.md)
 Establish the state of a project's keys before advising on any of it: which env files
-exist, the key **names** in each, whether git tracks them, and whether `.gitignore`
-covers them.
+exist, the key **names** in each, whether git tracks them, whether `.gitignore` covers
+them, and **which provider credential a launched agent would actually use**.
 ```bash
 tejun-secrets                # the working directory
 tejun-secrets ~/src/someapp  # another project
@@ -504,6 +504,14 @@ rule binds you: never paste a key into a session to check it.
 A `*.example` / `*.sample` / `*.template` file is reported as a **template**, not an
 alarm: it is supposed to be tracked, and a check that cries wolf gets turned off, taking
 the real alarm with it.
+
+**The provider-auth section resolves; it never guesses.** Credentials resolve in a fixed
+order — `ANTHROPIC_API_KEY` → `ANTHROPIC_AUTH_TOKEN` → an OAuth profile → the default
+profile on disk — and a set `ANTHROPIC_API_KEY` outranks a subscription login **even when
+it is empty**, which is how a box quietly moves onto per-token billing with no symptom but
+the invoice. The tool names the winner, never a value, and says plainly when the answer
+lives somewhere it cannot see. It reads the **calling shell's** environment; a pane Ronin
+spawns inherits the service's, and a disagreement between those two is BYOKI.
 
 Exit 4 = something is `EXPOSED` (tracked by git), which means the key is already public
 — the response is to rotate it, not to rewrite history (`ronin_sops/secrets.md`).
