@@ -1,19 +1,51 @@
-# ronin_sops — how this house works
+# ronin_sops — how this house goes about things
 
-Standard operating procedures: the owner's way of planning, building out, deploying —
-the process choices the macros defer to, one SOP per file. The catalogs say *what you
-can do*; an SOP says *how, and where, this install does it*.
+An **SOP** is the standard way this install approaches an area of work: source control,
+data, getting a thing deployed. **Not the only way and not the right way** — the way, so
+every session goes about it the same, and the_owner has one file to change when they want
+it done differently.
 
-**Deliberately near-empty.** Stock SOPs are screened in one at a time, exactly like
-the library. The one principle the stock set will preach: **a document produced in
-development is either WIP or persisted** — WIP is temporary by definition, deleted
-when its work lands, never amended into a log (git is the history; this is not the
-Library of Congress); a persisted document describes what is built and how it works,
-so the next agent can read it. Finishing a build-out means deleting its WIP document
-and, when the facts changed, persisting a state-of-fact document.
+**The shelf is defined by reach, not by length or audience.** If a catalog entry can
+point at it, it belongs in `ronin_library/` — that shelf answers *how do I do this step*,
+and is reached from the action or macro that needs it. An SOP is reached by **name**,
+because no single action owns it.
+
+**Short.** An SOP is a stance and an order of operations, not a manual. If it runs past a
+screen it has stopped being a standard and become a how-to — and a how-to is either
+library or nothing, because the agent reading it already knows the domain.
+
+**No facts about a machine.** An SOP says where to look and what to establish first. It
+never says what is installed, what is running, or where anything currently sits — those
+are resolved (`bin/ronin-doctor`, `bin/ronin-store --all`), never written down. A written
+fact about a box is wrong the day the box changes, and nobody notices.
+
+## The two voices
+
+- **Written at the agent** — a house rule the agent applies itself. `documents.md`.
+- **Written for the agent to relay** — a walkthrough for a person who does not know the
+  domain, delivered by the agent. `github.md`, `data.md`, `deploy.md`.
+
+Each SOP declares which it is in its header. Getting it wrong means the agent silently
+follows a walkthrough itself instead of walking the_owner through it.
+
+**Who they are for.** The_owner may know an area cold or may never have had a repo.
+Nothing here is pushed at either of them — an SOP costs nothing until a situation calls
+for it, and the situation is what selects the reader. That is the whole skill gate; there
+is no other.
+
+## How one reaches a session
+
+Two routes, and neither pastes an SOP at a session that did not ask:
+
+- an action cites one with `- **sop:** <name>`, and `ronin_bin/tejun` inlines it at
+  compile — the_owner's copy winning whole-file, so a redefined SOP takes effect on the
+  very next run and nobody goes looking for it;
+- otherwise it is **found by name**, because `HOW_TO.md` says the shelf is there.
 
 **Yours beats ours, file for file.** Your own SOPs live in the `sops` store
-(`$(ronin-store sops)` — never spell the path): a file there with the same name as a
-shipped one replaces it whole; a new name sits beside stock. Nothing here is
-prescriptive — the shipped SOPs are a default way of working, and redefining yours is
-how your sessions inherit *your* process instead of ours.
+(`ronin-store sops` — never spell the path): a file there with the same name as a shipped
+one replaces it whole, a new name sits beside stock, and an upgrade never touches your
+store. Redefining one is how your sessions inherit *your* process instead of ours.
+
+**Deliberately near-empty.** Stock SOPs are screened in one at a time, exactly like the
+library.

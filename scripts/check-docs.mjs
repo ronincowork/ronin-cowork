@@ -91,6 +91,7 @@ const SOURCES = [
   'CLAUDE.md',
   'CLAUDE.local.md',
   'README.md',
+  'HOW_TO.md',
   'ronin_library/README.md',
   'ronin_sops/README.md',
   'ronin_bin/README.md',
