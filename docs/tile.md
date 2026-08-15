@@ -346,24 +346,17 @@ Desktop never calls any of this.
 
 ## Known drift
 
-Recorded so nobody re-discovers it. **Neither is fixed by this document.**
+Recorded so nobody re-discovers it.
 
-1. **The ⛩ torii is not service-gated.** The chip checks `S.services` before fetching
-   (`tile.js:257`); the torii does not (`tile.js:288`) and its route,
-   `/api/sessions/:name/tegami/raw`, lives in **michi** (michi-api.ts, in the services
-   repo). On a
-   cowork-only install the button is present and opens a panel reading *"No letter on disk
-   for this session yet"* — which is a fetch into a 404 dressed as an empty state, and the
-   opposite of the opaque-and-inert rule.
+*Both entries that stood here are now fixed and have been removed — the un-gated ⛩
+torii and the dead `.dc` row in the phone sheet. Nothing is outstanding.*
 
-2. **A dead row in the phone sheet.** `tiledrop.js:54` lists `['.dc', 'Detach']`, and no
-   `.dc` button exists in the header any more. The loop skips what it cannot find, so the
-   effect is silence, not a break — detaching on a phone is the blank option in the picker.
-
-3. **A comment disagrees with the build order.** `tilehead.js:89-90` says the mark sits
-   "before the ladder chip"; `select.after(chip.el)` puts the chip first. The chip is what
-   you see beside the name.
-
+**The one thing worth knowing, because it is not drift but a deliberate overload:**
+`.off` means two things by position. On a button or the dial it means INERT (dimmed,
+still hoverable, guarded in its handler). On the connection `.dot` it is one of that
+indicator's three states — `on` / `wait` / `off` — and means DISCONNECTED. No selector
+crosses the two (`.tile-head button.off` cannot match a span), so this costs nothing
+today; it would cost something the day the dot becomes a button.
 ---
 
 ## Where the code is

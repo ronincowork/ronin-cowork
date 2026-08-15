@@ -51,7 +51,6 @@ const ITEMS = [
   ['.tags', 'Groups'],
   ['.note', 'Note'],
   ['.dial', 'Control'],
-  ['.dc', 'Detach'],
   ['.kill', 'Kill session'],
 ];
 
