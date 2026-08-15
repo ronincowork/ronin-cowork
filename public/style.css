@@ -877,11 +877,9 @@ body {
 /* Desktop: hovering the dial reveals the badge as its help text — our own element,
    instant and reliable (native title tooltips proved flaky here). */
 @media (hover: hover) and (pointer: fine) {
-  /* Not while inert: the badge shows the dial's VALUE, and there is no session for it to
-     be the value OF. The native title takes over there and says why it is greyed. */
-  .dial:hover:not(:disabled):not(.off) .dial-badge {
-    display: block;
-  }
+  /* NO HOVER REVEAL — same reason as .gauge-badge. The dial's position now reads on
+     the help box's status line, so one hover produces one panel. Hovering the dial used
+     to raise this badge AND the box, 297x18 in one place and 280x86 in another. */
 }
 /* ---- cockpit gauge (readout counterpart to the dial: dials input, gauges read) ----
    Debut use: the context gauge ⛽ — needle 0→100, green/amber/red by fullness.
@@ -948,9 +946,10 @@ body {
 }
 /* Desktop: hover reveals the badge (the number), same pattern as the dial. */
 @media (hover: hover) and (pointer: fine) {
-  .gauge:hover .gauge-badge {
-    display: block;
-  }
+  /* NO HOVER REVEAL. The gauge's reading is hover help, and hover help is the help
+     box's job now (js/tips.js) — this badge opening under the gauge at the same moment
+     as the box put two panels on screen for one control. The badge stays for the
+     .show flash on click, which is feedback about an action, not hover. */
 }
 .tile-body {
   flex: 1 1 auto;
@@ -4008,37 +4007,65 @@ body {
   color: #6ea8fe;
 }
 
-/* ---- THE HOUSE TOOLTIP (js/tips.js) --------------------------------------------
-   One box for every `title` in the client. A native tooltip is drawn by the OS and
-   takes no CSS at all — it sizes itself to its text and places itself where it likes,
-   so ninety-odd labels meant ninety-odd differently-shaped boxes appearing in
-   different spots. Moving along one row of buttons made it jump and change shape.
+/* ---- THE HELP BOX (js/tips.js) --------------------------------------------------
+   One panel, one size, one place. It replaced FOUR overlapping ways the header had of
+   explaining itself — the native `title`, the dial's badge, the gauge's badge, and a
+   tooltip added on top of those — which between them put two boxes on screen at once
+   for a single hover, at different sizes in different spots.
 
-   FIXED WIDTH is the whole point: the box is the same 280px whatever is in it, so
-   crossing the header row changes the words and nothing else. Long help wraps to more
-   lines rather than stretching sideways, and `min-height` holds two lines' worth so
-   the short labels do not collapse to a sliver. Height is the one dimension allowed
-   to grow — pinning it too would clip the long ones (🔒 LOCKED, メ commons), and
-   silently losing half a sentence is worse than a taller box. */
-.tip {
+   FIXED WIDTH AND FIXED HEIGHT, both. Growing to fit was the previous attempt and it is
+   what made the thing restless: crossing a row of buttons resized the panel under the
+   pointer. Here the geometry is a constant and the CONTENT is the only variable. Labels
+   are written to fit; `scripts/check-tips.mjs` fails the build if one does not, so a
+   too-long label is caught at build time instead of being silently clipped at 2am.
+
+   TWO ZONES, and the status line holds its height when empty — otherwise the box would
+   still reflow between a control that has a reading and one that does not, which is the
+   same restlessness by a smaller amount. */
+.helpbox {
   position: fixed;
   z-index: 90;
   left: 0;
   top: 0;
   display: none;
   box-sizing: border-box;
-  width: 280px;
-  min-height: 2.9em;
-  padding: 7px 10px;
+  width: 300px;
+  height: 92px;
+  padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: var(--panel);
-  color: var(--fg);
-  font: 12px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
+  font: 12px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  /* THE BACKSTOP, not the mechanism. `check-tips` is what guarantees labels fit; this is
+     what happens if one ever slips past it. Without it the overflow rendered OUTSIDE the
+     border, spraying a stray line across the terminal underneath — measured, on the dial.
+     A clip is contained and looks like a bug; loose text over the pane looks like a
+     corrupted screen. */
+  overflow: hidden;
   /* It explains what is under the pointer; it must never become what is under it. */
   pointer-events: none;
 }
-.tip.show {
+.helpbox.show {
   display: block;
+}
+/* THE STATUS LINE — what this control reads right now (the dial's position, the gauge's
+   percentage). One line, clipped rather than wrapped: a reading that grew to two lines
+   would push the explanation down and break the fixed geometry. `min-height` is what
+   keeps the box identical for the controls that have no reading at all. */
+.helpbox-status {
+  min-height: 1.45em;
+  margin-bottom: 4px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+  color: var(--accent);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* WHAT IS THIS — three lines at this width and font. The build check is calibrated to
+   exactly this box, so changing either dimension means re-running it. */
+.helpbox-what {
+  color: var(--fg);
 }

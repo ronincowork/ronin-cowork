@@ -17,7 +17,7 @@ import { makeChip } from './shingo.js';
 import { buildTileMacros } from './tilemacros.js';
 
 export const DIAL_TITLE =
-  'Control dial (@ronin-control) — who may touch this session: 👤 owner only · 👁 outside agents may watch · 🤖 outside agents may type. Yours to turn; agents never flip it.';
+  'Who may touch this session: 👤 owner only · 👁 outside agents watch · 🤖 outside agents type. Yours to turn; agents never flip it.';
 
 export const LOCKED_TITLE =
   '🔒 LOCKED — this view is attached to the live tmux session. You see the terminal painting in lockstep, so scrolling has to go back to the server and back.  ⚠ TO COPY TEXT, SWITCH TO UNLOCKED — this is a drawn screen, not selectable text. (On a Mac, Option+drag then ⌘C also works here.)';
@@ -35,7 +35,7 @@ export function buildTileHead(tile) {
         <select class="sess" title="Pick / switch the session shown in this tile"></select>
         <button class="job" title="What this session is doing"></button>
         <span class="grow"></span>
-        <button class="menu" title="⌃⇧C — the CoWorking Commons: the session roster, a new session, the wipeboard, project roots, hotwords. Opens over this tile; the session keeps streaming behind it and ✕ on the tab strip comes back. (⌃⌥C on Linux/Windows.)">メ</button>
+        <button class="menu" title="⌃⇧C — the CoWorking Commons: roster, new session, wipeboard, docs, roots, hotwords. Opens over this tile; ✕ comes back.">メ</button>
         <button class="lock" title="${LOCKED_TITLE}">🔒</button>
         <button class="tags" title="Groups this session belongs to">🏷</button>
         <button class="note" title="Session note (post-it)">📝</button>
