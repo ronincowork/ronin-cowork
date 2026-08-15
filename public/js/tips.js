@@ -19,10 +19,13 @@
  *   ONE SIZE         fixed width AND height. It does not grow for long text and does
  *                    not shrink for short — every label is written to fit, and the
  *                    check that they do is `scripts/check-tips.mjs`.
- *   ONE PLACE        docked under the header of the tile that owns the control. The
- *                    SAME coordinates for every control in that tile, so crossing the
- *                    button row changes the words and moves nothing. Never anchored to
- *                    the cursor, never flipped above, never nudged off an edge.
+ *   TWO PLACES       docked under the header of the tile that owns the control, on the
+ *                    control's OWN SIDE of it — the header is two groups either side of
+ *                    a spacer, and throwing the right-hand cluster's box across to the
+ *                    left edge put the answer nowhere near the question. Within a side
+ *                    the rectangle is a constant, so crossing the eight right-hand
+ *                    buttons changes the words and moves nothing. Never anchored to the
+ *                    cursor, never flipped above, never nudged off an edge.
  *   TWO ZONES        a STATUS line — what this control currently reads, for the ones
  *                    that have a value — and WHAT IS THIS underneath. The status line
  *                    holds its height even when empty, so the box does not reflow
@@ -61,20 +64,34 @@ function ensureBox() {
 }
 
 /**
- * The explanation, taking over the element's `title` the first time we see it.
+ * Move a `title` to `data-tip` — the takeover, and it has to be TOTAL.
  *
- * Re-reads `title` every time: a live one means the value changed since we last looked
- * (the tile rewrites 🏷 and 📝 on every session refresh), and the fresh one wins. The
- * attribute is MOVED, not copied — leaving it would let the OS draw its box too, which
- * is exactly the pile-up this file exists to end. `aria-label` takes over the accessible
- * name so an icon-only button does not go silent to a screen reader.
+ * The attribute is moved rather than copied because leaving it lets the OS draw its own
+ * box as well, which is the pile-up this file exists to end. `aria-label` takes over the
+ * accessible name so an icon-only button does not go silent to a screen reader.
+ *
+ * DOING THIS LAZILY ON HOVER WAS A BUG, and a nasty one to chase because it needed the
+ * pointer to be standing still. Several controls REWRITE their title on every refresh —
+ * `updateNoteBtn`, `updateTagBtn`, `updateJobBtn`, `setInert` — and the roster pushes a
+ * refresh every couple of seconds. Rest the pointer on 🏷 and the sequence is: we cleared
+ * the title on the way in, the refresh put a fresh one back, no new `pointerover` fires
+ * because nothing moved, nobody clears it, and a second later the OS draws the old-style
+ * tooltip on top of our box. The owner saw it as a flash of the old dialog on some
+ * buttons and could not reproduce it on demand. That is why.
+ *
+ * So the takeover is not a hover-time job. It is a sweep at install plus an observer,
+ * below, and a title cannot survive being set no matter who sets it or when.
  */
+function takeOver(el) {
+  const t = el.getAttribute('title');
+  if (!t) return;
+  el.dataset.tip = t;
+  if (!el.getAttribute('aria-label')) el.setAttribute('aria-label', t);
+  el.removeAttribute('title');
+}
+
 function whatIsThis(el) {
-  if (el.title) {
-    el.dataset.tip = el.title;
-    if (!el.getAttribute('aria-label')) el.setAttribute('aria-label', el.title);
-    el.title = '';
-  }
+  takeOver(el); // belt and braces; the observer has almost certainly beaten us here
   return el.dataset.tip || '';
 }
 
@@ -94,19 +111,35 @@ function statusOf(el) {
 }
 
 /**
- * WHERE THE BOX GOES — from the owning TILE, never from the control.
+ * WHERE THE BOX GOES — from the owning TILE and the control's SIDE, never from the
+ * control's own position.
  *
- * This is the rule the owner asked for, and the reason the box no longer wanders: every
- * control in a tile produces the identical rectangle, so moving along the header row
- * cannot move or resize it. Controls in the top bar dock under the top bar.
+ * TWO COORDINATES, not one. The header is two groups either side of a `.grow` spacer:
+ * the session picker and the mark sit left, the eight controls sit right. Docking
+ * everything left meant the whole right-hand cluster threw its box across to the far
+ * side of the tile, so the answer appeared nowhere near the question. Each side now
+ * docks to its own edge.
+ *
+ * Within a side the rectangle is still a CONSTANT — that is the property worth keeping.
+ * Crossing the eight right-hand buttons cannot move or resize the box; only stepping
+ * between the two groups does, and those are two different places on the header.
+ *
+ * The side is read from DOM ORDER against the spacer rather than from coordinates:
+ * position depends on how wide the tile is and which buttons are hidden, whereas the
+ * order in the markup is what actually defines the two groups.
  */
-function dockFor(el) {
+function dockFor(el, boxWidth) {
   const tile = el.closest('.tile');
   const anchor = tile ? tile.querySelector('.tile-head') : document.getElementById('bar');
   if (!anchor) return null;
+  const grow = anchor.querySelector('.grow');
+  const onLeft = grow ? !!(grow.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_PRECEDING) : true;
   const a = anchor.getBoundingClientRect();
   const host = (tile || anchor).getBoundingClientRect();
-  return { left: Math.round(host.left + 8), top: Math.round(a.bottom + 6) };
+  return {
+    left: Math.round(onLeft ? host.left + 8 : host.right - boxWidth - 8),
+    top: Math.round(a.bottom + 6),
+  };
 }
 
 function hide() {
@@ -119,14 +152,17 @@ function hide() {
 function show(el) {
   const what = whatIsThis(el);
   if (!what) return;
-  const at = dockFor(el);
-  if (!at) return;
   ensureBox();
   statusEl.textContent = statusOf(el);
   whatEl.textContent = what;
+  // Shown BEFORE it is measured: a hidden element has no width, and the right-hand dock
+  // is `tile.right - width`. All of this runs in one turn, so nothing paints at the old
+  // position on the way past.
+  box.classList.add('show');
+  const at = dockFor(el, box.offsetWidth);
+  if (!at) return hide();
   box.style.left = `${at.left}px`;
   box.style.top = `${at.top}px`;
-  box.classList.add('show');
   showing = el;
 }
 
@@ -141,8 +177,45 @@ function arm(el) {
   timer = setTimeout(() => show(el), wait);
 }
 
+/**
+ * Take every title in the document, now and forever after.
+ *
+ * The sweep catches what is already on the page (index.html's own, and anything built
+ * before this ran). The observer catches the rest: a title set by ANY code at ANY time —
+ * a refresh rewriting 🏷, a tile built later, a panel opened for the first time — is
+ * moved before the OS gets a chance to draw it. Cheap: one attribute filter, and the
+ * callback does nothing at all unless a title actually appeared.
+ */
+function seizeTitles() {
+  const sweep = (node) => {
+    if (node.nodeType !== 1) return;
+    takeOver(node);
+    for (const el of node.querySelectorAll('[title]')) takeOver(el);
+  };
+  sweep(document.documentElement);
+  new MutationObserver((records) => {
+    for (const r of records) {
+      // Two ways a title arrives, and watching only the first missed 44 of them.
+      // ATTRIBUTES covers a title set on an element already in the page — a refresh
+      // rewriting 🏷. But the roster and the launcher board BUILD their rows detached,
+      // set the title, and append afterwards: the attribute changed while the element
+      // was outside the observed tree, so no attribute record is ever emitted, and the
+      // childList record that follows names the PARENT rather than the new node. Those
+      // rows kept their native tooltips. So added subtrees are swept too.
+      if (r.type === 'attributes') takeOver(r.target);
+      else for (const n of r.addedNodes) sweep(n);
+    }
+  }).observe(document.documentElement, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    attributeFilter: ['title'],
+  });
+}
+
 /** Wire the document once. Safe to call before the grid exists. */
 export function installTips() {
+  seizeTitles();
   const target = (e) => {
     const el = e.target?.closest?.('[title], [data-tip]');
     return el && (el.title || el.dataset.tip) ? el : null;
