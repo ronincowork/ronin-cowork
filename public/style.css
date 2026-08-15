@@ -225,9 +225,19 @@ body {
 /* The MARK — what this session is doing, beside the name rather than out among the
    controls on the right. Sits with the picker and the ladder chip: "who is this, and
    where are they". */
+/* THE MARK'S WEIGHT. Half the catalog's icons are TEXT glyphs (✂ ❯ • ミ) and half are
+   colour emoji (🏈 💭 🗺 🐞 🔎). The two do not sit at the same visual weight: a text
+   glyph is thin strokes in the foreground colour, an emoji is a filled colour blob the
+   font draws at whatever size it likes. At 13px the football read as massive next to the
+   scissors, which is the look worth keeping.
+   Two turns of the dial, and both are needed — size alone leaves a small blob:
+     · smaller than the label beside it. The mark identifies, it does not announce.
+     · `saturate()` to calm the colour ones. Greys have no saturation to lose, so this
+       lands ONLY on the emoji and leaves ✂ ❯ • ミ and the button's own border untouched. */
 .tile-head button.job {
   margin-left: 4px;
-  font-size: 13px;
+  font-size: 11px;
+  filter: saturate(0.72);
 }
 /* Not marked: a `?` on a dashed edge (js/tile.js). It was drawn EMPTY first, and an empty
    button among six others is invisible — the owner could not find the control at all. The
@@ -2016,13 +2026,17 @@ body {
    replaced the 人 leader mark, which sat here and named only who was in charge. Fixed
    width so the names stay in a column whether or not a row is marked — an unmarked
    session is a real state and must not shove the list sideways. */
+/* Same two turns as the tile's button — see `.tile-head button.job`. A roster row is a
+   READ, so the mark sits quieter here than anywhere: it is scanned down a column, not
+   pressed. */
 .home-job {
   flex: 0 0 auto;
   width: 1.35em;
   margin-right: 5px;
-  font-size: 13px;
+  font-size: 11px;
   line-height: 1;
   text-align: center;
+  filter: saturate(0.72);
 }
 /* Also the switch: click to re-mark what the session is doing (js/commons.js). */
 .home-job.btn {
@@ -2077,10 +2091,14 @@ body {
   text-align: left;
   cursor: pointer;
 }
+/* In the menu the icons are calmed the same way but NOT shrunk as far: this is the one
+   place you are reading them to choose between them, so they carry the label rather than
+   sit beside a name that already says it. */
 .job-opt i {
   width: 1.35em;
   font-style: normal;
   text-align: center;
+  filter: saturate(0.72);
 }
 .job-opt.on {
   color: var(--accent);
