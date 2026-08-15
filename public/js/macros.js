@@ -1,5 +1,6 @@
 /* part of the tmux-ronin client — see js/README.md */
 import { openSessionSomewhere } from './events.js';
+import { jobIcon } from './home.js';
 import { padToast } from './pad.js';
 import { IS_TOUCH, S, tiles } from './state.js';
 
@@ -30,7 +31,8 @@ export function buildSessionPicker() {
       const row = document.createElement('button');
       row.className = 'sp-row' + (i === idx ? ' on' : '') + (S.active && S.active.session === name ? ' cur' : '');
       const b = document.createElement('b');
-      b.textContent = ((s.leads || []).length ? '人 ' : '') + name;
+      const mark = jobIcon(s);
+      b.textContent = (mark ? mark + ' ' : '') + name;
       // Groups, not window counts: when you're choosing what to pull into a tile, what
       // you want to know is which piece of work this belongs to.
       const meta = document.createElement('span');

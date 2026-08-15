@@ -14,10 +14,10 @@ import {
   getWipeboards,
   isValidName,
   listSessions,
-  sendText,
   sessionExists,
   setWipeboards,
 } from '../tmux.js';
+import { sendText } from '../send.js';
 import {
   appendPost,
   boardExists,

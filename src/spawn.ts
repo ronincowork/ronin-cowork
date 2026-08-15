@@ -1,5 +1,7 @@
 import { appendFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
+import { REPO_ROOT } from './config.js';
+import { bootFiles, ensureShelf } from './session-boot.js';
 import { listProjectRoots, type ProjectRootInfo } from './project-roots.js';
 import { storeDir } from './stores.js';
 import {
@@ -78,6 +80,8 @@ export interface Resolved {
    * says so out loud rather than leaving the caller to infer it from an empty string.
    */
   agent: boolean;
+  /** `cap: exempt` — born even at the session max. It still counts once it is. */
+  capExempt: boolean;
 }
 
 const ACK_RULE =
@@ -97,6 +101,7 @@ export function buildBrief(
   root: ProjectRootInfo | undefined,
   form: SpawnForm,
   referenceDir?: string,
+  boot: string[] = [],
 ): string {
   // MANUAL: what the owner typed, byte for byte. No posture, no reading list, no
   // opening template, no ack rule. If this ever grows a "just one helpful line",
@@ -105,7 +110,11 @@ export function buildBrief(
 
   const parts: string[] = [];
   if (kind.posture) parts.push(`You are the ${kind.label || kind.name}. ${kind.posture}`);
-  const reading = [...(root?.read ?? []), ...(form.seed ?? [])].filter(Boolean);
+  // THE SESSION BOOT SHELF, listed at this instant rather than remembered. This replaced
+  // the project_root's `read:` — a stored list of literal paths that went stale in silence
+  // the moment a file moved. Nothing is written down now, so nothing can be wrong: a file
+  // that is gone simply is not named. See src/session-boot.ts.
+  const reading = [...boot, ...(form.seed ?? [])].filter(Boolean);
   if (reading.length) parts.push(`Read first: ${reading.join(', ')}.`);
   parts.push(kind.opening.replace(/\{prompt\}/g, form.prompt));
   if (form.reference) {
@@ -147,6 +156,19 @@ export function slugName(intentKind: string, prompt: string, taken: Set<string>)
  * the session_job supplies its constants (dial, ladder, posture), the
  * project_root supplies the directory and the CLI, and nothing is invented.
  */
+/**
+ * A session_job's own working directory, if it has one. `{install}` — the only value the
+ * catalog may carry — is this Ronin's own directory, resolved here at launch.
+ *
+ * A sentinel rather than a path, because a shipped catalog naming a directory would be a
+ * shipped file naming a machine (JUSHO). Anything else is ignored rather than trusted:
+ * a catalog is data, and data that turned into an arbitrary filesystem path would be a
+ * quiet way to start a session anywhere.
+ */
+function kindDir(kind: SessionJobInfo): string {
+  return kind.dir.trim() === '{install}' ? REPO_ROOT : '';
+}
+
 export async function resolveForm(
   form: SpawnForm,
   taken: Set<string>,
@@ -160,6 +182,9 @@ export async function resolveForm(
   if (!kind) throw new Error(`Unknown session_job "${form.session_job}" (see ronin_catalogs/SESSION_JOBS.md).`);
 
   const root = roots.find((r) => r.name === form.project_root);
+  // Made here, on the way past, because this is the one place that knows every root by
+  // name — so a shelf folder exists for each of them without anything having to remember.
+  await ensureShelf(roots.map((r) => r.name));
 
   // A name you typed is used as typed (sanitized, never de-duplicated): if it is
   // taken you get told, rather than quietly ending up in `foo-2` and sending your
@@ -176,7 +201,11 @@ export async function resolveForm(
 
   return {
     name: wanted || slugName(kind.name, form.prompt, taken),
-    dir: root?.dir ?? '',
+    // A kind's own `dir:` WINS over the project_root's, because it is a constant of the
+    // kind — the same category as its dial, and a launch must not be able to leave it to
+    // chance. Exactly one kind has one (`MikaAssist`, `{install}`): she works on Ronin's
+    // own business, so she starts where Ronin's documents are whatever root was picked.
+    dir: kindDir(kind) || root?.dir || '',
     cmd: agent ? form.cmd || root?.cmd || 'claude' : '',
     tags: (form.tags ?? []).filter(Boolean).slice(0, 16),
     dial: kind.dial,
@@ -184,8 +213,9 @@ export async function resolveForm(
     session_job: kind.name,
     project_root: root?.name ?? '',
     mode: form.mode === 'manual' ? 'manual' : 'assisted',
-    brief: agent ? buildBrief(kind, root, form, referenceDir) : '',
+    brief: agent ? buildBrief(kind, root, form, referenceDir, await bootFiles(root?.name ?? '', kind.name)) : '',
     agent,
+    capExempt: kind.capExempt,
   };
 }
 

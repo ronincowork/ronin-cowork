@@ -3,6 +3,7 @@
 > Stock SOP. Your own copy in the sops store (`$(ronin-store sops)/documents.md`)
 > replaces this file whole — these are defaults, not law. Actions that carry
 > `- **sop:** documents` resolve their locations from here.
+> **Voice: at the agent.** A house rule the agent applies itself.
 
 **Every document produced in development is one of three things, and lives in one of
 three directories of the project_repo:**

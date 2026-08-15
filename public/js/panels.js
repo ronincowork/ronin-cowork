@@ -61,7 +61,7 @@ export function buildNotePanel() {
       });
       const s = S.sessions.find((x) => x.name === session);
       if (s) s.hasNote = !!ta.value.trim();
-      tiles.forEach((t) => t.updateNoteBtn());
+      tiles.forEach((t) => t.syncHeader());
     } catch (_) {}
     saveBtn.textContent = 'Save';
     close();
@@ -208,7 +208,7 @@ export function buildTagPanel() {
       const d = await r.json().catch(() => ({}));
       const s = S.sessions.find((x) => x.name === session);
       if (s) s.tags = Array.isArray(d.tags) ? d.tags : list;
-      tiles.forEach((t) => t.updateTagBtn());
+      tiles.forEach((t) => t.syncHeader());
       refreshHome(); // home rows + group headings reflect it immediately
     } catch (_) {}
     close();

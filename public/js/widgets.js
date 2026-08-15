@@ -1,4 +1,5 @@
 /* part of the tmux-ronin client — see js/README.md */
+import { refreshTipStatus } from './tips.js';
 
 
 export function makeDial(positions, onPick) {
@@ -21,10 +22,14 @@ export function makeDial(positions, onPick) {
   btn.append(face, badge);
 
   let cur = positions[0].v;
-  let badgeTimer = null;
-  // set(v) points the dial. The badge holds the position's help sentence: shown on
-  // hover (CSS, desktop — our own element, not a native title tooltip) and flashed
-  // briefly after a tap (announce=true, the touch stand-in for hover).
+  // set(v) points the dial. The badge is no longer SHOWN by anything — it is where the
+  // position's sentence is kept, and the help box reads it from here as its status line
+  // (js/tips.js, `statusOf`). It used to reveal itself on hover and flash for 1400ms
+  // after a turn; both are gone. The flash was kept once on the argument that it is
+  // feedback about an action rather than hover help, which was a distinction the eye
+  // does not make: turning the dial while the help box was open put a second bubble on
+  // top of it, which is the pile-up the box exists to end. `announce` now refreshes the
+  // box in place, so the new position appears where the old one was being read.
   const set = (v, announce = false) => {
     const i = Math.max(0, positions.findIndex((p) => p.v === v));
     const p = positions[i];
@@ -32,11 +37,7 @@ export function makeDial(positions, onPick) {
     ptr.style.transform = `rotate(${p.angle}deg)`;
     positions.forEach((q, j) => btn.classList.toggle('pos-' + q.v, j === i));
     badge.textContent = `${p.icon} ${p.help || p.label}`;
-    if (announce) {
-      badge.classList.add('show');
-      clearTimeout(badgeTimer);
-      badgeTimer = setTimeout(() => badge.classList.remove('show'), 1400);
-    }
+    if (announce) refreshTipStatus(btn);
   };
   btn.addEventListener('click', () => {
     const i = positions.findIndex((p) => p.v === cur);
@@ -85,7 +86,6 @@ export function makeGauge(label) {
   btn.append(face, badge);
   btn.hidden = true;
 
-  let badgeTimer = null;
   const set = (v) => {
     if (v == null || !Number.isFinite(v)) {
       btn.hidden = true;
@@ -105,12 +105,96 @@ export function makeGauge(label) {
     ptr.style.transform = `rotate(${deg}deg)`;
     badge.textContent = `⛽ ${label} ${pct}% used`;
   };
-  btn.addEventListener('click', () => {
-    badge.classList.add('show');
-    clearTimeout(badgeTimer);
-    badgeTimer = setTimeout(() => badge.classList.remove('show'), 1400);
-  });
+  // No flash here either — same reason as the dial. The reading lives in the badge for
+  // the help box to read; clicking the gauge no longer raises a bubble of its own.
+  btn.addEventListener('click', () => refreshTipStatus(btn));
   return { el: btn, set };
+}
+
+/**
+ * DIM A CONTROL WITHOUT SILENCING IT.
+ *
+ * `disabled` is the obvious way to grey a button out, and it costs you the tooltip:
+ * browsers do not fire hover events on a disabled element, so `title` never shows. On
+ * the tile header that inverted the point — a control you cannot use is exactly the one
+ * whose label you want to read, because the question it raises is *why not*. Four of
+ * them (the mark, 🏷, 📝, the dial) went silent whenever no session was connected, while
+ * 🔒 stayed readable purely because it dims with a class instead.
+ *
+ * So: a class for the look, `aria-disabled` for assistive tech, the title always set,
+ * and the CALLER guards its own click. The button stays hoverable and stays focusable,
+ * which is also the accessible behaviour — a disabled control drops out of tab order and
+ * announces nothing.
+ *
+ * `why` replaces the title while inert. It should say what is missing, not repeat the
+ * label: "No session in this tile" beats a greyed-out "Groups".
+ */
+export function setInert(el, inert, why, title) {
+  if (!el) return;
+  el.classList.toggle('off', !!inert);
+  el.setAttribute('aria-disabled', inert ? 'true' : 'false');
+  el.title = inert ? why : title;
+}
+
+/**
+ * THE JOB MENU — pick what a session is doing, from the mark that shows it.
+ *
+ * A popover that dies on the next click, deliberately not a sheet like 🏷 Groups: that
+ * one is an EDITOR (several values, typing, a Save), this picks one item off a list the
+ * catalog already handed us. `jobs` is that catalog, `current` is the name to tick, and
+ * `onPick` receives the chosen name — or '' for "not marked", which is a real state and
+ * has to stay reachable once you have set one by hand.
+ *
+ * It knows nothing about sessions or fetching. The caller owns what a pick MEANS, which
+ * is what lets the same menu hang off a tile header and a roster row.
+ */
+export function openJobMenu(anchor, jobs, current, onPick) {
+  document.querySelector('.job-menu')?.remove();
+  const m = document.createElement('div');
+  m.className = 'job-menu';
+  const opt = (cls, on, build, pick) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'job-opt' + cls + (on ? ' on' : '');
+    build(b);
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      m.remove();
+      onPick(pick);
+    });
+    m.appendChild(b);
+  };
+  for (const k of jobs || []) {
+    opt('', k.name === current, (b) => {
+      const glyph = document.createElement('i');
+      glyph.textContent = k.icon;
+      glyph.dataset.job = k.name; // so style can reach one mark — see style.css
+      b.append(glyph, Object.assign(document.createElement('span'), { textContent: k.label }));
+      b.title = k.remit || k.blurb || '';
+    }, k.name);
+  }
+  opt(' none', !current, (b) => {
+    b.textContent = 'not marked';
+    b.title = 'Clear the mark — this session has not said what it is doing';
+  }, '');
+
+  // Anchored to the glyph, then pulled back inside the viewport: a tile on the right of
+  // a four-up grid would otherwise open its menu off the edge of the screen.
+  document.body.appendChild(m);
+  const a = anchor.getBoundingClientRect();
+  const w = m.offsetWidth;
+  const h = m.offsetHeight;
+  m.style.left = Math.round(Math.max(4, Math.min(a.left, window.innerWidth - w - 4))) + 'px';
+  m.style.top = Math.round(a.bottom + 4 + h > window.innerHeight ? Math.max(4, a.top - h - 4) : a.bottom + 4) + 'px';
+  // Closes on the next click anywhere — including the glyph that opened it, which is why
+  // the listener is armed a tick late rather than on this same event.
+  setTimeout(() => {
+    const away = () => {
+      m.remove();
+      document.removeEventListener('click', away);
+    };
+    document.addEventListener('click', away);
+  }, 0);
 }
 
 // The control dial's three detents (@ronin-control on the tmux session). "Outside

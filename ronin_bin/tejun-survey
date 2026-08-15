@@ -1,0 +1,129 @@
+#!/usr/bin/env bash
+# tejun-survey — what this machine has, measured now (TEJUN survey-machine).
+# Usage: tejun-survey [path]     path = the directory whose filesystem to measure
+#                                (default: the working directory)
+#
+# A machine's capacity is a FACT ABOUT A BOX ON A DAY. It is never written into a
+# document — it is measured when someone asks, which is why `ronin_sops/data.md` names
+# this tool instead of carrying numbers that a resize or a move would silently falsify.
+# Read-only: it measures and prints, and changes nothing.
+#
+# Portable across the hosts Ronin supports (Linux, macOS, WSL): `df -Pk` and `du -sk` are
+# POSIX, and the two places they are not — core count and RAM — are asked per platform.
+set -u
+
+TARGET="${1:-$PWD}"
+[ -d "$TARGET" ] || { echo "NO-PATH $TARGET" >&2; exit 3; }
+
+# KiB -> the largest unit that leaves a number a person can hold in their head.
+human_k() {
+  awk -v k="${1:-0}" 'BEGIN{
+    split("KiB MiB GiB TiB", u, " "); i = 1
+    while (k >= 1024 && i < 4) { k /= 1024; i++ }
+    printf (k < 10 && i > 1) ? "%.1f %s\n" : "%.0f %s\n", k, u[i]
+  }'
+}
+
+cores() {
+  if command -v nproc >/dev/null 2>&1; then nproc
+  elif command -v sysctl >/dev/null 2>&1; then sysctl -n hw.ncpu 2>/dev/null
+  fi
+}
+
+ram_k() {
+  if [ -r /proc/meminfo ]; then
+    awk '/^MemTotal:/ {print $2; exit}' /proc/meminfo
+  elif command -v sysctl >/dev/null 2>&1; then
+    awk -v b="$(sysctl -n hw.memsize 2>/dev/null)" 'BEGIN{ if (b > 0) printf "%d\n", b / 1024 }'
+  fi
+}
+
+# WHAT KIND OF BOX — the question that frames every other number here. On a virtual
+# machine the survey below IS the whole picture: one rented volume, and no cupboard
+# anyone forgot about. On a physical box (a home server, a laptop) it is not — there may
+# be disks nobody mentioned, which is why FILESYSTEMS lists every mount rather than one.
+kind() {
+  if command -v systemd-detect-virt >/dev/null 2>&1; then
+    local v; v="$(systemd-detect-virt 2>/dev/null || true)"
+    case "$v" in
+      none|'') echo "physical" ;;
+      lxc*|docker|podman|rkt|wsl|systemd-nspawn|container-other) echo "container ($v)" ;;
+      *) echo "virtual machine ($v)" ;;
+    esac
+  elif [ -f /.dockerenv ]; then echo "container (docker)"
+  elif [ -r /proc/1/cgroup ] && grep -qE '(docker|lxc|kubepods)' /proc/1/cgroup 2>/dev/null; then
+    echo "container"
+  elif [ "$(sysctl -n kern.hv_vmm_present 2>/dev/null || echo 0)" = 1 ]; then
+    echo "virtual machine"
+  else echo "physical (or undetectable)"
+  fi
+}
+
+# Who the box is FROM. On a rented VM this is the provider, and knowing it is often the
+# difference between "resize the volume" and "there is nothing to resize".
+vendor() {
+  local v p
+  v="$(cat /sys/class/dmi/id/sys_vendor 2>/dev/null || true)"
+  p="$(cat /sys/class/dmi/id/product_name 2>/dev/null || true)"
+  [ -z "$v$p" ] && { sysctl -n hw.model 2>/dev/null; return; }
+  printf '%s\n' "$(echo "$v $p" | sed 's/  */ /g; s/^ //; s/ $//')"
+}
+
+echo "MACHINE — measured $(date '+%Y-%m-%d %H:%M %Z')"
+printf '  %-14s %s\n' "host" "$(hostname 2>/dev/null || echo '?')"
+printf '  %-14s %s\n' "kind" "$(kind)"
+printf '  %-14s %s\n' "vendor" "$(vendor || echo '?')"
+printf '  %-14s %s\n' "cores" "$(cores || echo '?')"
+printf '  %-14s %s\n' "RAM" "$(human_k "$(ram_k)")"
+
+# The filesystem the WORK is on — not "/", which on many hosts is a different device
+# from the home tree, and would answer a question nobody asked.
+echo
+echo "DISK — the filesystem holding $TARGET"
+df -Pk "$TARGET" 2>/dev/null | awk 'NR==2 {
+  split("KiB MiB GiB TiB", u, " ")
+  for (f = 2; f <= 4; f++) { k = $f; i = 1
+    while (k >= 1024 && i < 4) { k /= 1024; i++ }
+    v[f] = sprintf((k < 10 && i > 1) ? "%.1f %s" : "%.0f %s", k, u[i]) }
+  printf "  %-14s %s\n", "mounted on", $6
+  printf "  %-14s %s\n", "size", v[2]
+  printf "  %-14s %s (%s)\n", "used", v[3], $5
+  printf "  %-14s %s\n", "free", v[4]
+}'
+
+# EVERY real filesystem, not just the one above — because "how much room is there?" is
+# answered by the whole box, and an attached volume or a network share is exactly what a
+# single `df .` hides. Pseudo filesystems (tmpfs, proc, overlay) are dropped: a source
+# that is neither a device, a `host:/export` nor a `//server/share` is not storage.
+echo
+echo "FILESYSTEMS — every real mount on this box"
+df -Pk 2>/dev/null | awk 'NR > 1 && ($1 ~ /^\// || $1 ~ /:/ || $1 ~ /^\/\//) && $1 !~ /^\/dev\/loop/ {
+  if (seen[$6]++) next
+  split("KiB MiB GiB TiB", u, " ")
+  for (f = 2; f <= 4; f++) { k = $f; i = 1
+    while (k >= 1024 && i < 4) { k /= 1024; i++ }
+    v[f] = sprintf((k < 10 && i > 1) ? "%.1f %s" : "%.0f %s", k, u[i]) }
+  printf "  %-22s %-10s used %-10s free %-10s %s\n", $6, v[2], v[3] " (" $5 ")", v[4], $1
+}'
+
+# What Ronin itself is holding. `ronin-store --all` says WHERE each store is; nothing
+# until now said how big one had grown, and the tapes are what quietly eat a disk.
+STORE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../bin" && pwd)/ronin-store"
+[ -x "$STORE" ] || STORE=ronin-store
+echo
+echo "STORES — what Ronin is holding on this machine"
+if ! "$STORE" --all >/dev/null 2>&1; then
+  echo "  (ronin-store unavailable — stores not measured)"
+else
+  "$STORE" --all 2>/dev/null | awk 'NR > 1 {print $1, $4, $NF}' | while read -r id exists dir; do
+    if [ "$exists" = yes ]; then
+      printf '  %-12s %-10s %s\n' "$id" "$(human_k "$(du -sk "$dir" 2>/dev/null | cut -f1)")" "$dir"
+    else
+      printf '  %-12s %-10s %s\n' "$id" "not yet" "$dir"
+    fi
+  done
+fi
+
+echo
+echo "These numbers are true as of the moment above and nowhere else. Do not copy them"
+echo "into a document — cite this tool instead (ronin_sops/data.md)."

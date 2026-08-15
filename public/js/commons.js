@@ -4,6 +4,7 @@ import {
   STATUS_LABEL,
   brainData,
   homeData,
+  jobIcon,
   loadSavedLaunches,
   presetData,
   projectData,
@@ -620,7 +621,7 @@ export function buildHome(tile) {
   const wipe = buildWipeboard(tile, wipePane, () => tile.homeVisible() && el.dataset.pane === 'wipe');
   const docs = buildDocs(tile, docsPane, () => tile.homeVisible() && el.dataset.pane === 'docs');
   // The Project Root pane: the inclusion_list, and the two verbs that maintain it.
-  const proj = buildProjectRoots(projPane, () => tile.homeVisible() && el.dataset.pane === 'proj');
+  const proj = buildProjectRoots(projPane, () => tile.homeVisible() && el.dataset.pane === 'proj', tile);
   // The dictation glossary. Built last with the other panes, same contract.
   // 'hotwords', not 'words' — the pane key was renamed with the feature and this
   // predicate was missed, so it answered false forever and the pane never counted
@@ -644,56 +645,27 @@ export function buildHome(tile) {
     if (savedRow.dataset.n !== String((savedLaunchData || []).length)) buildSaved();
     const data = homeData || S.sessions.map((s) => ({ ...s, status: null, ctx: null }));
     list.innerHTML = '';
-    const rowFor = (s, g) => {
+    const rowFor = (s) => {
       const r = document.createElement('button');
       r.type = 'button';
       r.className = 'home-row';
-      // 人 (the *nin* of 浪人) = this session COORDINATES a group. Inside a group's list
-      // the glyph is the SWITCH — tap it to make this session that group's leader, tap
-      // again to stand it down (lit = leads, dim = doesn't). Outside a group listing it
-      // is just the mark. Owner-set by construction: this is the only way to set it in
-      // the UI, and no agent-facing tool writes @ronin-lead.
-      const leadsThis = g && (s.leads || []).includes(g);
-      // TOUCH: the mark becomes a COLOUR, not a character. 人 plus its tap padding is
-      // ~30px on every row of a phone-width list, spent saying a thing one accent on
-      // the name says as well. The leader's name is simply accent-coloured instead.
+      // The session's MARK: the icon of the session_job in its LETTER, on every row. It
+      // replaced the 人, which named only who was in charge, had to be set by hand, and
+      // left every other row blank — the job is what actually differs between two
+      // sessions on this board, and the coordinator is the one whose job is QuarterBack.
       //
-      // The cost is real and deliberate: inside a group's list the glyph is also the
-      // SWITCH (tap to promote / stand down), so on a phone there is now no way to
-      // appoint a leader. Making the name itself the switch would fight the row, whose
-      // whole job is to open the session. Appointing is a desktop verb for now.
-      if (IS_TOUCH) {
-        if (leadsThis || (!g && (s.leads || []).length)) r.classList.add('leads');
-      } else if (g || (s.leads || []).length) {
-        const ld = document.createElement('span');
-        ld.className = 'home-lead' + (g ? ' btn' : '') + (g && !leadsThis ? ' off' : '');
-        ld.textContent = '人';
-        ld.title = g
-          ? (leadsThis ? 'Leads ' + g + ' — tap to stand down' : 'Make ' + s.name + ' the leader of ' + g)
-          : 'Leads: ' + (s.leads || []).join(' · ');
-        if (g) {
-          ld.addEventListener('click', async (e) => {
-            e.stopPropagation(); // the glyph is the switch, the row is still the door
-            const next = leadsThis
-              ? (s.leads || []).filter((x) => x !== g)
-              : [...(s.leads || []), g];
-            try {
-              const res = await fetch('/api/sessions/' + encodeURIComponent(s.name) + '/leads', {
-                method: 'POST',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({ leads: next }),
-              });
-              const d = await res.json().catch(() => ({}));
-              const live = S.sessions.find((x) => x.name === s.name);
-              const saved = Array.isArray(d.leads) ? d.leads : next;
-              s.leads = saved;
-              if (live) live.leads = saved;
-              refreshHome(); // re-sorts: the leader jumps to the head of its group
-            } catch (_) {}
-          });
-        }
-        r.appendChild(ld);
-      }
+      // READ-ONLY here, and that is the point: the session writes its own session_job
+      // with write_tegami as it migrates, so the roster shows what the session says it is
+      // doing. A click-to-change on this glyph would put the owner's hand on a field the
+      // letter hands to the agent — and then two writers would race over one line.
+      // Blank until the session has written its letter; nothing is guessed on its behalf.
+      const jb = document.createElement('span');
+      const mark = jobIcon(s);
+      jb.className = 'home-job' + (mark ? '' : ' off');
+      jb.dataset.job = s.session_job || ''; // so style can reach one mark — see style.css
+      jb.textContent = mark;
+      jb.title = mark ? s.session_job : 'has not said what it is doing yet';
+      r.appendChild(jb);
       const nm = document.createElement('b');
       nm.textContent = s.name;
       const grow = document.createElement('span');
@@ -751,11 +723,13 @@ export function buildHome(tile) {
     // session. Untagged sessions fall to the bottom under "no group". When nothing is
     // tagged at all the headings are skipped entirely, so an untagged setup looks
     // exactly as it did before.
-    // A group exists if anyone is tagged into it OR leads it — a leader with an empty
-    // group is still a group, and hiding it would hide the person running it.
-    const groups = [...new Set(data.flatMap((s) => [...(s.tags || []), ...(s.leads || [])]))].sort();
+    // A group exists if anyone is tagged into it. (It used to also exist if anyone LED
+    // it — an empty led group was still a group. With @ronin-lead retired there is no
+    // such thing as leading a group you are not in: a QuarterBack is tagged into the
+    // group it runs, like every other member.)
+    const groups = [...new Set(data.flatMap((s) => s.tags || []))].sort();
     if (!groups.length) {
-      for (const s of data) list.appendChild(rowFor(s, null));
+      for (const s of data) list.appendChild(rowFor(s));
     } else {
       const heading = (text, n) => {
         const h = document.createElement('div');
@@ -765,17 +739,14 @@ export function buildHome(tile) {
         list.appendChild(h);
       };
       for (const g of groups) {
-        // 人 first: the session coordinating this group heads its own list, whether or
-        // not it is also tagged into it (leading is not membership).
-        const leads = data.filter((s) => (s.leads || []).includes(g));
-        const rest = data.filter((s) => (s.tags || []).includes(g) && !leads.includes(s));
-        heading(g, leads.length + rest.length);
-        for (const s of [...leads, ...rest]) list.appendChild(rowFor(s, g));
+        const mem = data.filter((s) => (s.tags || []).includes(g));
+        heading(g, mem.length);
+        for (const s of mem) list.appendChild(rowFor(s));
       }
-      const loose = data.filter((s) => !(s.tags || []).length && !(s.leads || []).length);
+      const loose = data.filter((s) => !(s.tags || []).length);
       if (loose.length) {
         heading('no group', loose.length);
-        for (const s of loose) list.appendChild(rowFor(s, null));
+        for (const s of loose) list.appendChild(rowFor(s));
       }
     }
     if (!data.length) {

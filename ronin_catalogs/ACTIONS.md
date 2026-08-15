@@ -382,6 +382,29 @@ documents SOP). One lesson per memory, in the fewest words that survive without 
   alone** — the tool REFUSES both axes wildcard (exit 4). Propose it and let them write it.
 - Exit 3 = the tool cannot tell what this session is; name an axis rather than guessing.
 
+## propose-and-confirm — show the change, wait for the yes
+`action_kind: judgement` — this one needs your reasoning; no tool can do it for you.
+**The whole of MIKA's licence to touch the owner's catalogs and settings** (see
+`MIKA_MACROS.md`), and available to any macro that changes something the owner did not
+spell out themselves.
+
+1. **Show it as what it will become** — the markdown block, the filled form, `old → new`.
+   Not a description of the change: the change.
+2. **Say what you inferred and from where.** "`remit` is the README's first line" lets a
+   wrong guess be corrected in one word instead of discovered next week.
+3. **Wait.** A yes is a yes; silence is not, and neither is "sounds good" to a different
+   question.
+4. **Then perform it through the machinery that already exists** — the endpoint, the
+   catalog write, the launch route. Never a second write path of your own, and never a
+   file edited by hand where an endpoint exists.
+
+**A refusal from that machinery is an ANSWER, not a fault.** `POST /api/project-roots`
+leaves the file exactly as it was when the result would not parse back. Report it and
+stop; do not retry with the block reshaped until something sticks.
+
+**Do not batch.** One change, one confirmation. Three proposals in one message get one
+"yes" that meant the first of them.
+
 ## report-outcome
 `action_kind: judgement` — this one needs your reasoning; no tool can do it for you.
 Close every macro by telling the owner what happened — outcome first, in plain
@@ -435,3 +458,54 @@ The owner's own path for this is the trash button in the Ronin UI.
 Classify a session's state from pane text (for pickers, dashboards, notifications).
 ready (`❯` + empty input) / thinking (spinner line) / awaiting-input (question or
 pending dialog) / gone (`tmux has-session` fails).
+
+## survey-machine — what this box has, measured now
+`action_kind: mechanical` — run it, don't deliberate.
+> **Tool: `tejun-survey [path]`** (TOOLS.md)
+Measure the machine before advising on anything its capacity decides — where a pile of
+data should live, whether a database belongs on this box, whether a checkout will fit.
+Reports cores, RAM, the disk **on the filesystem holding the path you name** (not `/`,
+which on many hosts is a different device from the home tree), and every Ronin store
+with its size.
+```bash
+tejun-survey                 # the working directory's filesystem
+tejun-survey /srv/incoming   # the filesystem a proposed home is actually on
+```
+Read-only; it touches no session, so no control-check applies.
+
+**Its output is never copied into a document.** A machine's capacity is a fact about a
+box on a day — true when written, false after a resize or a move, and dangerous in both
+directions, because a written number reads as authority long after it stopped being
+true. Documents cite this action; the numbers live in a terminal.
+`ronin_sops/data.md` names the tool for exactly this reason and carries no figures.
+
+Exit 3 = the path does not exist. A store that has never been used prints `not yet`
+rather than a zero — "empty" and "never created" are different answers.
+
+**Report the KIND before the numbers.** On a virtual machine the survey is the whole
+picture — one rented volume, nothing anyone forgot about. On a physical box it is not,
+which is why every mount is listed and not just the one under the working directory.
+
+## survey-secrets — what keys a project holds, and whether git can see them
+`action_kind: mechanical` — run it, don't deliberate.
+> **Tool: `tejun-secrets [path]`** (TOOLS.md)
+Establish the state of a project's keys before advising on any of it: which env files
+exist, the key **names** in each, whether git tracks them, and whether `.gitignore`
+covers them.
+```bash
+tejun-secrets                # the working directory
+tejun-secrets ~/src/someapp  # another project
+```
+**Names, never values.** A name (`STRIPE_SECRET_KEY`) is what the conversation needs; a
+value is the thing itself, and echoing one puts it in a pane, a tape, a scrollback and a
+log in a single breath. There is no flag to print values, deliberately — and the same
+rule binds you: never paste a key into a session to check it.
+
+A `*.example` / `*.sample` / `*.template` file is reported as a **template**, not an
+alarm: it is supposed to be tracked, and a check that cries wolf gets turned off, taking
+the real alarm with it.
+
+Exit 4 = something is `EXPOSED` (tracked by git), which means the key is already public
+— the response is to rotate it, not to rewrite history (`ronin_sops/secrets.md`).
+Exit 3 = the path does not exist. Read-only: it never stages, writes, or edits
+`.gitignore` — it reports, and a person decides.

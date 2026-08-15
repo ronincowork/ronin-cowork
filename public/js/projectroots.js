@@ -1,19 +1,33 @@
 /* part of the tmux-ronin client — see js/README.md */
 import { loadProjects } from './home.js';
+import { askMika } from './mika.js';
 
 /* ---------- PROJECT ROOT — the fourth commons pane (tab: ▣ Project root) ----------
  *
  * "Which directories on this machine are part of my Ronin?" — the inclusion_list,
- * with a block per project_root. Two verbs and nothing clever: INCLUDE a directory,
- * EXCLUDE one. See docs/project-roots.md.
+ * with a block per project_root.
+ *
+ * ＋ INCLUDE IS NOT A FORM ANY MORE — IT HANDS THE JOB TO MIKA (owner, 2026-08-15).
+ * It used to open five text fields, and only ONE of them was genuinely the owner's: the
+ * handle. `dir`, `read`, `match` and `remit` are facts the machine already holds, and the
+ * form asked the owner to go and look them up — on a phone, with autocapitalize off. The
+ * real intent is one bit: *this directory, yes.*
+ *
+ * So the button opens Mika with the include job instead. She reads the directory, proposes
+ * the whole block, and writes it through this same API on a yes. Making the form nicer was
+ * the alternative and it was the wrong repair: the fastest form is still a form.
+ *
+ * The EDIT form stays. Editing a block that exists is a different, much cheaper act —
+ * the fields are already filled and you are changing one of them.
  *
  * The catalog (ronin_catalogs/PROJECT_ROOTS.md) stays the source of truth and stays
  * hand-editable — this pane is a co-editor, not an owner. It writes only the owner's
- * INTENT (which directories, what they are called); everything volatile beside it —
+ * INTENT (which directories, what they are called). What a session in this root READS at
+ * birth is no longer a field here — it is the files on the root's session-boot shelf; everything volatile beside it —
  * does the directory still exist, is it a project_repo, how many sessions serve it —
  * is read live from /api/project-roots/detail and stored nowhere.
  */
-export function buildProjectRoots(root, isShowing) {
+export function buildProjectRoots(root, isShowing, tile) {
   let data = null; // { roots: [...], untagged: n }
   let editing = null; // handle of the block whose form is open
 
@@ -23,7 +37,7 @@ export function buildProjectRoots(root, isShowing) {
   count.className = 'pr-count';
   const addBtn = document.createElement('button');
   addBtn.textContent = '＋ include';
-  addBtn.title = 'Add a directory to your Ronin';
+  addBtn.title = 'Ask Mika to include a directory — she reads it and proposes the entry';
   head.append(count, addBtn);
 
   const list = document.createElement('div');
@@ -55,8 +69,8 @@ export function buildProjectRoots(root, isShowing) {
     render();
   }
 
-  /* -- the include / edit form. Same shape for both: a new block is an edit of one
-   * that does not exist yet, so there is one form to get right, not two. -- */
+  /* -- the EDIT form. Only ever opened on a block that exists; including is Mika's job
+   * now (see the header). -- */
   function form(existing) {
     const f = document.createElement('div');
     f.className = 'pr-form';
@@ -78,17 +92,17 @@ export function buildProjectRoots(root, isShowing) {
       f.appendChild(wrap);
       return i;
     };
-    const handle = mk('handle', 'name', existing?.name, 'The short name — this IS the shortcut', 'ronin');
-    if (existing) handle.disabled = true; // renaming is a catalog edit, not a form field
-    mk('directory', 'dir', existing?.dir, 'Any absolute path, at any depth', '~/work/api');
-    mk('remit', 'remit', existing?.remit, 'The one line you pick it from in a list', 'what this is');
-    mk('read first', 'read', (existing?.read || []).join(', '), 'What a fresh agent reads before anything else', 'comma separated');
-    mk('match', 'match', (existing?.match || []).join(', '), 'Words that suggest this project_root from free-form intent', 'comma separated');
+    // The handle is shown, never edited: renaming is a catalog edit by hand, not a form
+    // field. It is here because a block with no name on it is unreadable.
+    mk('handle', 'name', existing.name, 'The short name — this IS the shortcut', 'ronin').disabled = true;
+    mk('directory', 'dir', existing.dir, 'Any absolute path, at any depth', '~/work/api');
+    mk('remit', 'remit', existing.remit, 'The one line you pick it from in a list', 'what this is');
+    mk('match', 'match', (existing.match || []).join(', '), 'Words that suggest this project_root from free-form intent', 'comma separated');
 
     const row = document.createElement('div');
     row.className = 'pr-frow';
     const save = document.createElement('button');
-    save.textContent = existing ? 'save' : 'include';
+    save.textContent = 'save';
     const cancel = document.createElement('button');
     cancel.className = 'pr-ghost';
     cancel.textContent = 'cancel';
@@ -106,24 +120,15 @@ export function buildProjectRoots(root, isShowing) {
       f.querySelectorAll('input[data-key]').forEach((i) => {
         body[i.dataset.key] = i.value.trim();
       });
-      const name = existing ? existing.name : (body.name || '').toLowerCase();
-      delete body.name;
+      delete body.name; // shown, never sent — the heading IS the handle
       save.disabled = true;
       err.textContent = '';
       try {
-        if (existing) {
-          await call('/api/project-roots/' + encodeURIComponent(name), {
-            method: 'PUT',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify(body),
-          });
-        } else {
-          await call('/api/project-roots', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ name, ...body }),
-          });
-        }
+        await call('/api/project-roots/' + encodeURIComponent(existing.name), {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(body),
+        });
         editing = null;
         await loadProjects(); // the launcher's picker reads the same catalog
         await refresh();
@@ -217,17 +222,17 @@ export function buildProjectRoots(root, isShowing) {
     count.textContent =
       data.roots.length + (data.roots.length === 1 ? ' project_root' : ' project_roots') +
       (data.untagged ? ` · ${data.untagged} untagged session${data.untagged === 1 ? '' : 's'}` : '');
-    if (editing === '\x00new') list.appendChild(form(null));
-    if (!data.roots.length && editing !== '\x00new') {
-      say('nothing included yet — ＋ include points Ronin at a directory');
+    if (!data.roots.length) {
+      say('nothing included yet — ＋ include asks Mika to point Ronin at a directory');
       return;
     }
     for (const r of data.roots) list.appendChild(block(r));
   }
 
   addBtn.addEventListener('click', () => {
-    editing = editing === '\x00new' ? null : '\x00new';
-    render();
+    // Her tile replaces this pane in the same tile, which is the point: you asked to add
+    // a directory and you are now talking to somebody who does that.
+    if (tile) void askMika(tile, '+project_root: I want to include a directory. Ask me which one.');
   });
 
   // Only while the pane is actually on screen — a tile on another tab costs nothing.

@@ -15,20 +15,20 @@ import {
   createSession,
   isValidName,
   listSessions,
-  runCommand,
-  sendText,
   sessionDir,
   sessionExists,
   setControl,
   setProjectRoot,
   setTags,
 } from '../tmux.js';
+import { runCommand, sendText } from '../send.js';
 import { AtSessionMax, liveCount, readMax, readOwner, writeMax, writeOwner } from '../user-config.js';
 import { resolveForm, appendLedger, type SpawnForm } from '../spawn.js';
-import { classifyStatus, waitReady, type SessionStatus } from '../status.js';
+import { classifyStatus, waitReadyForBrief, type SessionStatus } from '../status.js';
 import { scanContext } from '../ctx.js';
 
 import { count } from '../counts.js';
+import { seedTegami, withRoles } from '../tegami.js';
 import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFields } from '../sockets.js';
 
 /* ---------- ONE door to a new session: POST /api/launch ----------
@@ -92,12 +92,18 @@ export function registerLaunch(app: express.Express): void {
 
     try {
       await emitSessionWillBorn(resolved.name); // rireki resets a reused name's stale tape here
-      await createSession(resolved.name, resolved.dir, { agent: resolved.agent });
+      await createSession(resolved.name, resolved.dir, { agent: resolved.agent, exempt: resolved.capExempt });
       if (resolved.tags.length) await setTags(resolved.name, resolved.tags);
       // The project_root the session serves, written at birth — the one moment tagging
       // reliably happens. Two shipped tools (tejun-recall, tejun-remember) read this to
       // scope a memory and nothing used to set it.
       if (resolved.project_root) await setProjectRoot(resolved.name, resolved.project_root);
+      // THE ROLE, SET MECHANICALLY. The button the owner pressed IS what this session is
+      // for, so the letter is written with `session_job` already filled rather than left
+      // for the agent to guess at a fact that was never in doubt. The session owns it
+      // from here — `write_tegami` is how it says the work has changed — and we never
+      // overwrite a letter that exists. See src/tegami.ts.
+      await seedTegami(resolved.name, resolved.session_job);
       await setControl(resolved.name, resolved.dial);
     } catch (e) {
       void appendLedger(form, resolved, false);
@@ -142,18 +148,50 @@ export function registerLaunch(app: express.Express): void {
       const birthLines = await collectBirthLines(resolved.name, !!resolved.agent);
       // `agent: none`: nothing is launched and nothing is said. Falling through would
       // press Enter in the pane (runCommand sends the literal string, then Enter), then
-      // burn waitReady's full 20s timeout waiting for a CLI prompt that will never come,
+      // burn the readiness wait waiting for a CLI prompt that will never come,
       // and finally type the letter's brief into bash.
       if (!resolved.agent) return;
       await runCommand(resolved.name, resolved.cmd);
-      await waitReady(resolved.name);
-      await sendText(resolved.name, resolved.brief + birthLines);
+      // WAIT FOR READY, AND BELIEVE THE ANSWER — and wait far longer when what is
+      // blocking is a DIALOG, because then the thing being waited for is a person.
+      // The old wait gave up after 20s — shorter than a cold CLI start — and its `false` used to
+      // be discarded: the brief was typed anyway, into whatever was on screen. Twice that
+      // was a trust-folder dialog, whose rows are drawn with the same `❯` as a prompt, so
+      // the text went nowhere and the Enter answered the dialog.
+      const { ready, held } = await waitReadyForBrief(resolved.name);
+      if (held) {
+        console.error(
+          `[tmux-ronin] ${resolved.name}: the CLI is asking something (trust this folder?) — ` +
+            `waiting to deliver the brief until it is answered.`,
+        );
+      }
+      if (!ready) {
+        // Do NOT send. A CLI that is not ready is either broken or still asking, and
+        // typing a brief into that is at best lost and at worst an answer given on the
+        // owner's behalf.
+        console.error(
+          `[tmux-ronin] ${resolved.name}: never became ready — brief NOT sent. ` +
+            `Answer whatever the pane is asking, then re-send it.`,
+        );
+        return;
+      }
+      const sent = await sendText(resolved.name, resolved.brief + birthLines);
+      // SAY SO WHEN THE BRIEF DID NOT GO IN. A session whose brief never landed looks
+      // completely alive from the roster — a name, a dial, a running CLI — and is doing
+      // nothing, because it was never told anything. The one birth failure with no visible
+      // symptom, so it gets a line in the log.
+      if (!sent.started) {
+        console.error(
+          `[tmux-ronin] ${resolved.name}: the brief did not submit. ` +
+            `Check the tile — it may be sitting at the prompt, or a dialog may be open.`,
+        );
+      }
     })().catch((e) => console.error(`[tmux-ronin] spawn ${resolved.name}:`, e));
   });
 
   app.get('/api/sessions', async (_req, res) => {
     try {
-      res.json(await listSessions());
+      res.json(await withRoles(await listSessions()));
     } catch (e) {
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }
@@ -164,7 +202,7 @@ export function registerLaunch(app: express.Express): void {
   // gauge reading — one capture-pane per session, shared by both scrapes.
   app.get('/api/home', async (_req, res) => {
     try {
-      const list = await listSessions();
+      const list = await withRoles(await listSessions());
       const out = await Promise.all(
         list.map(async (s) => {
           let status: SessionStatus | null = null;

@@ -1,9 +1,9 @@
 {
-  "name": "tmux-ronin",
+  "name": "ronin-cowork",
   "version": "1.0.0",
   "license": "MIT",
   "type": "module",
-  "description": "View and operate your tmux sessions from a browser grid \u2014 xterm.js + node-pty + tmux, secure over Tailscale.",
+  "description": "View and operate your tmux sessions from a browser grid — xterm.js + node-pty + tmux, secure over Tailscale.",
   "scripts": {
     "build": "tsc",
     "dev": "tsx watch src/index.ts",
@@ -21,8 +21,9 @@
     "check:place": "node scripts/check-place.mjs",
     "stores:map": "node scripts/stores-map.mjs --write",
     "byoin": "bin/ronin-byoin",
-    "verify": "for f in public/js/*.js; do node --check \"$f\" || exit 1; done && node scripts/check-modules.mjs && node scripts/check-src.mjs && node scripts/check-kyokai.mjs && node scripts/check-tomodachi.mjs && node scripts/check-docs.mjs && node scripts/check-kotoba.mjs && node scripts/check-dead.mjs && node scripts/check-stores.mjs && tsx scripts/check-catalogs.ts && node scripts/check-place.mjs && node scripts/stores-map.mjs && node scripts/check-tests.mjs && tsc --noEmit && node scripts/smoke-ui.mjs",
-    "verify:staging": "node scripts/smoke-ui.mjs --staging"
+    "verify": "for f in public/js/*.js; do node --check \"$f\" || exit 1; done && node scripts/check-modules.mjs && node scripts/check-src.mjs && node scripts/check-kyokai.mjs && node scripts/check-tomodachi.mjs && node scripts/check-docs.mjs && node scripts/check-kotoba.mjs && node scripts/check-dead.mjs && node scripts/check-stores.mjs && tsx scripts/check-catalogs.ts && node scripts/check-place.mjs && node scripts/stores-map.mjs && node scripts/check-tests.mjs && tsc --noEmit && node scripts/smoke-ui.mjs && node scripts/check-tips.mjs",
+    "verify:staging": "node scripts/smoke-ui.mjs --staging",
+    "check:tips": "node scripts/check-tips.mjs"
   },
   "dependencies": {
     "@lydell/node-pty": "1.2.0-beta.12",

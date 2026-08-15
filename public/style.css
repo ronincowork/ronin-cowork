@@ -17,7 +17,12 @@
      Aiiro (indigo)    — selection and navigation. RONIN itself.
      Kojin's dark theme lifts the indigo "to carry"; #274A78 on this near-black
      ground is a bruise, so -lift is that lift and the two hexes stay untouched as
-     the record of what they are. */
+     the record of what they are.
+
+     KAKI HAS A SECOND USE from 2026-08-15: the copy hint (js/termview.js) flashes
+     kaki-lift, on the owner's word, because it is the one saturated mark and the
+     hint's whole job is to not be missed. The two never share a screen — メ is
+     touch-only, the hint is desktop-only. See the .copyhint block below. */
   --kaki: #c46243;
   --kaki-lift: #e08163;
   --aiiro: #274a78;
@@ -126,6 +131,7 @@ body {
    #macrobtn, which no longer exist, so Commons and Keypad were falling back to the
    browser default and looked like a different family of control. */
 #newbtn,
+#mikabtn,
 #commonsbtn,
 #padbtn,
 #bar .layouts {
@@ -143,6 +149,7 @@ body {
 }
 @media (max-width: 680px) {
   #newbtn .txt,
+  #mikabtn .txt,
   #padbtn .txt {
     display: none; /* icon-only on phones — bar space is tight */
   }
@@ -216,9 +223,56 @@ body {
   color: var(--accent);
   border-color: var(--accent);
 }
-.tile-head button.note:disabled {
-  opacity: 0.4;
-  cursor: default;
+/* The MARK — what this session is doing, beside the name rather than out among the
+   controls on the right. Sits with the picker and the ladder chip: "who is this, and
+   where are they". */
+/* THE MARK'S WEIGHT. Half the catalog's icons are TEXT glyphs (✂ ❯ • ミ) and half are
+   colour emoji (🏈 💭 🗺 🐞 🔎). The two do not sit at the same visual weight: a text
+   glyph is thin strokes in the foreground colour, an emoji is a filled colour blob the
+   font draws at whatever size it likes. At 13px the football read as massive next to the
+   scissors, which is the look worth keeping.
+   Two turns of the dial, and both are needed — size alone leaves a small blob:
+     · smaller than the label beside it. The mark identifies, it does not announce.
+     · `saturate()` to calm the colour ones. Greys have no saturation to lose, so this
+       lands ONLY on the emoji and leaves ✂ ❯ • ミ and the button's own border untouched. */
+.tile-head button.job {
+  margin-left: 4px;
+  font-size: 11px;
+  filter: saturate(0.72);
+}
+/* Not marked: a `?` on a dashed edge (js/tile.js). It was drawn EMPTY first, and an empty
+   button among six others is invisible — the owner could not find the control at all. The
+   glyph is dimmed so it reads as a question rather than as a mark in its own right, and
+   brightens on hover like the answer it is asking for. */
+.tile-head button.job.unset {
+  border-style: dashed;
+  border-color: var(--line);
+  color: var(--muted);
+}
+.tile-head button.job.unset:hover {
+  border-color: var(--accent);
+  color: var(--fg);
+}
+
+/* 🏈 ON ITS OWN — the one glyph in the set the font draws as a big filled ellipse where
+   the rest are strokes or small shapes, so at the size that suits them it reads as
+   massive. The owner's call, looking at all nine: "they're all fine, except for the
+   football". One more step down for this mark only.
+
+   Keyed on the session_job NAME rather than the character, because the character is the
+   catalog's to change and a rule matching on 🏈 would go stale the moment it did. The
+   coupling is real either way: rename `QuarterBack` in SESSION_JOBS.md and this stops
+   applying — the mark simply returns to the common size, which is a visible nudge rather
+   than a broken layout. Everything the mark IS still comes from the catalog; this tunes
+   only how big one of them is drawn. */
+.tile-head button.job[data-job='QuarterBack'] {
+  font-size: 9px;
+}
+.home-job[data-job='QuarterBack'] {
+  font-size: 9px;
+}
+.job-opt i[data-job='QuarterBack'] {
+  font-size: 11px;
 }
 @media (max-width: 680px) {
   #notesheet .ns-card {
@@ -799,10 +853,17 @@ body {
   color: var(--ok);
   border-color: var(--ok);
 }
-.dial:disabled {
+/* Inert either way: `.off` is the tile header's inert state (dimmed but still hoverable,
+   so the title reaches you — see `.tile-head button.off`), `:disabled` covers any other
+   dial. Both look the same; only one of them can still speak. */
+.dial:disabled,
+.dial.off {
   opacity: 0.4;
   cursor: default;
 }
+/* NEVER SHOWN. The badge is where the dial's position sentence is KEPT; the help box
+   reads it and displays it (js/tips.js). Both its hover reveal and its 1400ms flash on
+   turn are gone — each was a second bubble competing with the one box. */
 .dial-badge {
   position: absolute;
   top: calc(100% + 3px);
@@ -818,15 +879,12 @@ body {
   white-space: nowrap;
   pointer-events: none;
 }
-.dial-badge.show {
-  display: block;
-}
 /* Desktop: hovering the dial reveals the badge as its help text — our own element,
    instant and reliable (native title tooltips proved flaky here). */
 @media (hover: hover) and (pointer: fine) {
-  .dial:hover:not(:disabled) .dial-badge {
-    display: block;
-  }
+  /* NO HOVER REVEAL — same reason as .gauge-badge. The dial's position now reads on
+     the help box's status line, so one hover produces one panel. Hovering the dial used
+     to raise this badge AND the box, 297x18 in one place and 280x86 in another. */
 }
 /* ---- cockpit gauge (readout counterpart to the dial: dials input, gauges read) ----
    Debut use: the context gauge ⛽ — needle 0→100, green/amber/red by fullness.
@@ -872,6 +930,7 @@ body {
 }
 /* The gauge's readout badge: same look as the dial's, but anchored to the gauge
    button so the number pops up directly beneath it, not off at the header edge. */
+/* NEVER SHOWN — same as .dial-badge. Text carrier for the help box's status line. */
 .gauge-badge {
   position: absolute;
   top: calc(100% + 6px);
@@ -888,14 +947,12 @@ body {
   white-space: nowrap;
   pointer-events: none;
 }
-.gauge-badge.show {
-  display: block;
-}
 /* Desktop: hover reveals the badge (the number), same pattern as the dial. */
 @media (hover: hover) and (pointer: fine) {
-  .gauge:hover .gauge-badge {
-    display: block;
-  }
+  /* NO HOVER REVEAL. The gauge's reading is hover help, and hover help is the help
+     box's job now (js/tips.js) — this badge opening under the gauge at the same moment
+     as the box put two panels on screen for one control. The badge stays for the
+     .show flash on click, which is feedback about an action, not hover. */
 }
 .tile-body {
   flex: 1 1 auto;
@@ -976,6 +1033,111 @@ body {
 }
 .dvr-strip.show {
   display: block;
+}
+
+/* THE COPY HINT — a drag in a locked tile that produced no selection (js/termview.js).
+   In KAKI, and loud on purpose.
+
+   The first cut was a quiet grey pill in a corner, and the owner's objection was the
+   right one: on a screen where four terminals are always painting, a soft fade in the
+   furniture colour is exactly the thing the eye has learned to ignore. So it takes the
+   one saturated mark in the house palette and it MOVES differently from the terminal
+   text behind it — text scrolls vertically, this pulses in place.
+
+   KAKI IS ALREADY DOING A JOB (agent action / THIS SESSION, on the phone's メ opener),
+   and this gives it a second. Accepted deliberately: the two never share a screen —
+   メ is touch-only and this is desktop-only — and what both uses have in common is
+   "the thing you are meant to look at right now".
+
+   Sits TOP-right: the bottom of a tile is the dvr strip and the composer. Not a tap
+   target — it says a key and goes away, and anything clickable here would be in the
+   way of the next drag. */
+.copyhint {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  z-index: 6;
+  max-width: calc(100% - 20px);
+  padding: 7px 12px;
+  border-radius: 6px;
+  background: var(--kaki-lift);
+  border: 1px solid var(--kaki);
+  color: var(--bg); /* near-black on the lift — 6.9:1 */
+  font: 600 12.5px/1.35 system-ui, -apple-system, "Segoe UI", sans-serif;
+  pointer-events: none;
+  opacity: 0;
+}
+.copyhint.show {
+  animation: copyhint-in 0.9s ease-out forwards;
+}
+/* Snap in, beat twice, hold. The ring is what carries at the edge of vision; the
+   scale is small on purpose, because a pill that jumps far reads as a bug. */
+@keyframes copyhint-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.94);
+    box-shadow: 0 0 0 0 rgba(224, 129, 99, 0.7);
+  }
+  18% {
+    opacity: 1;
+    transform: none;
+  }
+  40% {
+    box-shadow: 0 0 0 9px rgba(224, 129, 99, 0);
+  }
+  55% {
+    box-shadow: 0 0 0 0 rgba(224, 129, 99, 0.55);
+  }
+  85%,
+  100% {
+    opacity: 1;
+    transform: none;
+    box-shadow: 0 0 0 9px rgba(224, 129, 99, 0);
+  }
+}
+
+/* The tile's own edge, flashed kaki behind the pill — the half that works while you
+   are looking at a DIFFERENT tile.
+
+   An ::after overlay, not an inset box-shadow on .tile-body itself: an inset shadow
+   paints above the background and BELOW the children, and the child here is a canvas
+   filling the whole box, so the ring would have been invisible in exactly the view it
+   exists for. z-index 5 puts it over the terminal and under the pill (6). */
+.tile-body.hinting::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  border: 2px solid transparent;
+  animation: copyhint-edge 0.9s ease-out;
+}
+@keyframes copyhint-edge {
+  0%,
+  100% {
+    border-color: transparent;
+  }
+  18%,
+  55% {
+    border-color: var(--kaki-lift);
+  }
+  40% {
+    border-color: rgba(224, 129, 99, 0.25);
+  }
+}
+
+/* DESIGN_TOKENS.md §7: "every animation ships a prefers-reduced-motion fallback that
+   resolves to the FINISHED state — copy that discipline, don't just copy the keyframes."
+   The finished state here is the pill, plainly visible. It still leaves after 5s,
+   because the timeout is JS and does not care about motion preferences. */
+@media (prefers-reduced-motion: reduce) {
+  .copyhint.show {
+    animation: none;
+    opacity: 1;
+  }
+  .tile-body.hinting::after {
+    animation: none;
+  }
 }
 
 /* ---- touch: control keys + the keypad (hidden on desktop) ----
@@ -1986,44 +2148,96 @@ body {
   }
 }
 
-/* per-row group control: shows the session's groups, opens the tag editor */
-/* 人 — the leader mark (the *nin* of 浪人). Sits before the name on a coordinating
-   session. Accent-coloured so it reads at a glance in a long list, but no box: it is a
-   fact about the session, not a button. */
-.home-lead {
+/* The session's MARK: the icon of its session_job, before the name on every row. It
+   replaced the 人 leader mark, which sat here and named only who was in charge. Fixed
+   width so the names stay in a column whether or not a row is marked — an unmarked
+   session is a real state and must not shove the list sideways. */
+/* Same two turns as the tile's button — see `.tile-head button.job`. A roster row is a
+   READ, so the mark sits quieter here than anywhere: it is scanned down a column, not
+   pressed. */
+.home-job {
   flex: 0 0 auto;
+  width: 1.35em;
   margin-right: 5px;
-  color: var(--accent);
-  font-size: 13px;
+  font-size: 11px;
   line-height: 1;
+  text-align: center;
+  filter: saturate(0.72);
 }
-/* Inside a group's list the glyph is the switch: lit = leads this group, dim = tap to
-   promote. Sized for a fingertip on touch without moving anything on desktop. */
-.home-lead.btn {
+/* Also the switch: click to re-mark what the session is doing (js/commons.js). */
+.home-job.btn {
   cursor: pointer;
-  padding: 2px 4px;
-  margin-right: 3px;
+  padding: 2px 3px;
   border-radius: 6px;
 }
-.home-lead.off {
-  color: var(--line);
+/* Not marked — nothing drawn, but the column is still held open, so the gap is legible
+   as "nobody has said" rather than as a rendering fault. */
+.home-job.off {
+  opacity: 0.35;
 }
 @media (hover: hover) and (pointer: fine) {
-  .home-lead.btn:hover {
-    color: var(--accent);
+  .home-job.btn:hover {
     background: var(--panel);
+    outline: 1px solid var(--line);
   }
 }
 @media (pointer: coarse) {
-  .home-lead.btn {
-    padding: 6px 8px;
-    margin-right: 1px;
+  /* TOUCH: drawn, never a button — it is the tap padding a phone-width row cannot
+     spare, not the glyph. Re-marking is a desktop verb (js/commons.js). */
+  .home-job {
+    margin-right: 4px;
   }
-  /* TOUCH: the 人 is not drawn at all (js/commons.js) — the leader is the accent-coloured
-     name. Same fact, no column. */
-  .home-row.leads b {
-    color: var(--accent);
-    font-weight: 600;
+}
+
+/* The re-mark menu: pick one of the catalog's jobs. A popover, not a sheet — the 🏷
+   editor is a sheet because it edits a list; this picks one of eight and dies. */
+.job-menu {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  min-width: 190px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
+}
+.job-opt {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+/* In the menu the icons are calmed the same way but NOT shrunk as far: this is the one
+   place you are reading them to choose between them, so they carry the label rather than
+   sit beside a name that already says it. */
+.job-opt i {
+  width: 1.35em;
+  font-style: normal;
+  text-align: center;
+  filter: saturate(0.72);
+}
+.job-opt.on {
+  color: var(--accent);
+}
+.job-opt.none {
+  margin-top: 2px;
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 6px 6px;
+  color: var(--muted);
+}
+@media (hover: hover) and (pointer: fine) {
+  .job-opt:hover {
+    background: var(--bg);
   }
 }
 .home-tag {
@@ -3065,11 +3279,33 @@ body {
 /* No record service installed (the free build): the 🔓 view is off, so the switch is
    visible but inert — opaque says "not plugged in", not "missing". The commons tabs
    and menu rows of an absent service get the same treatment. */
-.tile-head .lock.off,
 .home-tabs button.off,
 .commons-row.off {
   opacity: 0.3;
   pointer-events: none;
+}
+
+/* THE TILE HEADER'S INERT CONTROLS STAY HOVERABLE — every one of them, and this is the
+   whole reason they are a separate rule.
+
+   `pointer-events: none` and `disabled` both stop hover events reaching an element, and
+   a `title` is delivered BY a hover event. So either one greys a control out and takes
+   its tooltip with it — which is backwards: the control you cannot use is the one whose
+   label you most want to read, because what you are actually asking is *why not*. Every
+   dimmed control in this header was silent, 🔒 included.
+
+   The dim is opacity and a cursor, nothing more. Nothing here needs pointer-events to
+   stay safe: each handler already guards on what it needs (`if (!this.session) return`,
+   `if (S.streamOff) return`), which is the honest place for the check anyway — a rule in
+   a stylesheet is not what should be enforcing whether an action may happen. */
+.tile-head .lock.off {
+  opacity: 0.3;
+  cursor: default;
+}
+.tile-head button.off,
+.tile-head .dial.off {
+  opacity: 0.4;
+  cursor: default;
 }
 /* Where it happened — the top stack frames, under the message. A message with no
    location sends the reader hunting; that was a real complaint (2026-08-08). */
@@ -3424,7 +3660,7 @@ body {
   --k-CutCode: #e0af68;
   --k-ChaseBug: #8abeb7;
   --k-CheckWork: #b5bd68;
-  --k-WatchCrew: #de935f;
+  --k-QuarterBack: #de935f;
   --k-OddJob: #707a91;
   --k-other: #5a6376;
 }
@@ -3877,4 +4113,67 @@ body {
 }
 .hot-whose.own {
   color: #6ea8fe;
+}
+
+/* ---- THE HELP BOX (js/tips.js) --------------------------------------------------
+   One panel, one size, one place. It replaced FOUR overlapping ways the header had of
+   explaining itself — the native `title`, the dial's badge, the gauge's badge, and a
+   tooltip added on top of those — which between them put two boxes on screen at once
+   for a single hover, at different sizes in different spots.
+
+   FIXED WIDTH AND FIXED HEIGHT, both. Growing to fit was the previous attempt and it is
+   what made the thing restless: crossing a row of buttons resized the panel under the
+   pointer. Here the geometry is a constant and the CONTENT is the only variable. Labels
+   are written to fit; `scripts/check-tips.mjs` fails the build if one does not, so a
+   too-long label is caught at build time instead of being silently clipped at 2am.
+
+   TWO ZONES, and the status line holds its height when empty — otherwise the box would
+   still reflow between a control that has a reading and one that does not, which is the
+   same restlessness by a smaller amount. */
+.helpbox {
+  position: fixed;
+  z-index: 90;
+  left: 0;
+  top: 0;
+  display: none;
+  box-sizing: border-box;
+  width: 300px;
+  height: 92px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
+  font: 12px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  /* THE BACKSTOP, not the mechanism. `check-tips` is what guarantees labels fit; this is
+     what happens if one ever slips past it. Without it the overflow rendered OUTSIDE the
+     border, spraying a stray line across the terminal underneath — measured, on the dial.
+     A clip is contained and looks like a bug; loose text over the pane looks like a
+     corrupted screen. */
+  overflow: hidden;
+  /* It explains what is under the pointer; it must never become what is under it. */
+  pointer-events: none;
+}
+.helpbox.show {
+  display: block;
+}
+/* THE STATUS LINE — what this control reads right now (the dial's position, the gauge's
+   percentage). One line, clipped rather than wrapped: a reading that grew to two lines
+   would push the explanation down and break the fixed geometry. `min-height` is what
+   keeps the box identical for the controls that have no reading at all. */
+.helpbox-status {
+  min-height: 1.45em;
+  margin-bottom: 4px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+  color: var(--accent);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* WHAT IS THIS — three lines at this width and font. The build check is calibrated to
+   exactly this box, so changing either dimension means re-running it. */
+.helpbox-what {
+  color: var(--fg);
 }

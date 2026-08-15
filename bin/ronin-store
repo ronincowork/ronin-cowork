@@ -28,6 +28,7 @@ telemetry|data|telemetry
 ledger|data|ledger
 sops|user|sops
 library|user|library
+session_boot|user|session_boot
 wipeboards|user|wipeboards
 catalogs|user|catalogs
 memory|user|memory

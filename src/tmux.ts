@@ -16,8 +16,6 @@ export interface SessionInfo {
   hasNote: boolean;
   /** Groups this session belongs to (see TAGS_OPT). Empty = ungrouped. */
   tags: string[];
-  /** Groups this session LEADS (see LEAD_OPT). Empty = not a leader. */
-  leads: string[];
 }
 
 /** tmux user option holding a session's post-it note. Lives and dies with the session. */
@@ -109,13 +107,13 @@ export async function listSessions(): Promise<SessionInfo[]> {
     const { stdout } = await pexec('tmux', [
       'list-sessions',
       '-F',
-      `#{session_name}\t#{session_windows}\t#{?session_attached,1,0}\t#{session_created}\t#{?${NOTE_OPT},1,0}\t#{${TAGS_OPT}}\t#{${LEAD_OPT}}`,
+      `#{session_name}\t#{session_windows}\t#{?session_attached,1,0}\t#{session_created}\t#{?${NOTE_OPT},1,0}\t#{${TAGS_OPT}}`,
     ]);
     return stdout
       .split('\n')
       .filter(Boolean)
       .map((line) => {
-        const [name, windows, attached, created, hasNote, tags, leads] = line.split('\t');
+        const [name, windows, attached, created, hasNote, tags] = line.split('\t');
         return {
           name,
           windows: Number(windows) || 0,
@@ -123,13 +121,10 @@ export async function listSessions(): Promise<SessionInfo[]> {
           created: Number(created) || 0,
           hasNote: hasNote === '1',
           tags: parseTags(tags),
-          leads: parseTags(leads),
         };
       })
       .filter((s) => !s.name.startsWith(config.viewerPrefix))
-      // Leaders first (人), then alphabetical — the coordinator of a set should be the
-      // first thing the owner sees, not buried among the sessions it manages.
-      .sort((a, b) => (b.leads.length ? 1 : 0) - (a.leads.length ? 1 : 0) || a.name.localeCompare(b.name));
+      .sort((a, b) => a.name.localeCompare(b.name));
   } catch (err) {
     if (noServer(err)) return [];
     throw err;
@@ -157,6 +152,17 @@ export async function sessionExists(name: string): Promise<boolean> {
  */
 export interface CreateOpts {
   agent?: boolean;
+  /**
+   * `cap: exempt` in SESSION_JOBS.md — create it even at the max. It still COUNTS
+   * afterwards, so the NEXT spawn is the one refused; this exempts the spawn, never the
+   * census. Nothing is evicted to make room.
+   *
+   * Distinct from `agent: false`, which happens to skip the check too: that one says
+   * "a shell is not what fills a box". This one says "refusing this would be wrong even
+   * though the box is full", and the only kind carrying it is the assistant you ask for
+   * help. Two reasons, two flags — one flag would make the comment on either a lie.
+   */
+  exempt?: boolean;
 }
 
 export async function createSession(name: string, dir?: string, opts: CreateOpts = {}): Promise<void> {
@@ -168,7 +174,7 @@ export async function createSession(name: string, dir?: string, opts: CreateOpts
   //
   // Browser tiles are unaffected: they are made by createViewer(), a different function,
   // so grouped `grid_*` viewers are never counted and never refused.
-  if (opts.agent !== false) await assertUnderMax();
+  if (opts.agent !== false && !opts.exempt) await assertUnderMax();
   // Never be the process that forks the tmux server — it would land in our systemd
   // cgroup and our next restart would kill every session. See docs/tmux-server-cgroup.md.
   await ensureTmuxServer();
@@ -355,38 +361,19 @@ export async function setWipeboards(name: string, boards: string[]): Promise<str
 }
 
 /**
- * tmux user option holding the groups a session LEADS — comma-separated, same shape and
- * same reasoning as TAGS_OPT: leadership lives on the session, so it dies with the
- * session and there is no registry to drift. Per-group on purpose — several leaders can
- * run on one box, each owning their own set, and a roster can name THIS group's leader
- * rather than a vague "someone is in charge".
+ * NO OPTION HOLDS `session_job`, deliberately — and `@ronin-lead` (the 人) is retired
+ * without one taking its place here.
  *
- * A leader is marked 人 (the *nin* of 浪人) everywhere sessions are listed, and sorts to
- * the top. Leading a group does NOT imply membership in it and grants no extra power:
- * the control dial is still the only thing that decides who may drive a session.
+ * What a session is DOING lives in its LETTER: `Tegami.session_job`, which the session
+ * itself keeps current with `write_tegami` as it migrates. That is michi's field, michi
+ * puts the whole letter on every roster row through the ROW socket, and the client reads
+ * the mark off `tegami.session_job`. A tmux option beside it would be a second copy of
+ * one fact, drifting the moment an agent re-marked itself in the file — and cowork
+ * storing a service's data is exactly the seam KYOKAI exists to hold.
+ *
+ * The launcher's job still travels: `emitSessionBorn({ job })` hands it to whoever is
+ * listening at birth, which is how the letter gets seeded knowing what it is for.
  */
-const LEAD_OPT = '@ronin-lead';
-
-/** Read the groups a session leads (empty array if it leads none). */
-export async function getLeads(name: string): Promise<string[]> {
-  try {
-    const { stdout } = await pexec('tmux', ['show-options', '-t', exactPane(name), '-qv', LEAD_OPT]);
-    return parseTags(stdout);
-  } catch {
-    return [];
-  }
-}
-
-/** Set (or, when empty, clear) the groups a session leads. Returns what was stored. */
-export async function setLeads(name: string, groups: string[]): Promise<string[]> {
-  const clean = parseTags(groups.join(','));
-  if (clean.length) {
-    await pexec('tmux', ['set-option', '-t', exactPane(name), LEAD_OPT, clean.join(',')]);
-  } else {
-    await pexec('tmux', ['set-option', '-t', exactPane(name), '-u', LEAD_OPT]).catch(() => {});
-  }
-  return clean;
-}
 
 /**
  * The project_root a session serves — ONE value, not many.
@@ -502,50 +489,6 @@ export async function sendRawKeys(session: string, data: string): Promise<void> 
   await pexec('tmux', ['send-keys', '-t', exactPane(session), '-l', '--', data]);
 }
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-/** Visible pane text only (no history) — cheap state probe for sendText. */
-async function paneScreen(name: string): Promise<string> {
-  const { stdout } = await pexec('tmux', ['capture-pane', '-p', '-t', exactPane(name)], {
-    maxBuffer: 4 * 1024 * 1024,
-  });
-  return stdout;
-}
-
-/**
- * Compose "send to session": type `text` into a session's active pane and submit it.
- * Built from the R1/R2 actions (co-working/user_repo/wip/RECIPES.md): literal text and Enter as SEPARATE
- * send-keys calls (TUIs treat the Enter as a real submit); if the pane looks identical
- * after Enter, the Enter was lost (observed in the wild) — re-send it once; report
- * whether the pane reacted at all (confirm-started). Pre-send policy for a prompt that
- * already holds text is append-and-submit (what R2 did deliberately — both messages
- * deliver as one).
- */
-export async function sendText(
-  name: string,
-  text: string,
-): Promise<{ resent: boolean; started: boolean }> {
-  await pexec('tmux', ['send-keys', '-t', exactPane(name), '-l', '--', text]);
-  await sleep(200);
-  const beforeEnter = await paneScreen(name);
-  await pexec('tmux', ['send-keys', '-t', exactPane(name), 'Enter']);
-  await sleep(600);
-  let after = await paneScreen(name);
-  let resent = false;
-  if (after === beforeEnter) {
-    await pexec('tmux', ['send-keys', '-t', exactPane(name), 'Enter']);
-    resent = true;
-    await sleep(600);
-    after = await paneScreen(name);
-  }
-  return { resent, started: after !== beforeEnter };
-}
-
-/** Run a shell command in a session's active pane (the home-panel launcher's boot step). */
-export async function runCommand(name: string, cmd: string): Promise<void> {
-  await pexec('tmux', ['send-keys', '-t', exactPane(name), '-l', '--', cmd]);
-  await pexec('tmux', ['send-keys', '-t', exactPane(name), 'Enter']);
-}
 
 let viewerCounter = 0;
 
@@ -566,6 +509,18 @@ export async function createViewer(target: string, tag: string): Promise<string>
   // Mouse on => the browser's trackpad/wheel scrolls tmux scrollback instead of
   // being translated into Up/Down arrows (history recall). Scoped to this viewer.
   await pexec('tmux', ['set-option', '-t', exactPane(viewer), 'mouse', config.mouse]).catch(() => {});
+  // NO STATUS LINE IN A TILE. tmux draws one by default — a coloured bar carrying the
+  // session name and a clock — and in a tile it is worse than redundant: the name it
+  // shows is THIS VIEWER's (`grid_<session>_<tag>_<n>`), a throwaway of ours, not the
+  // session the owner is looking at. So the one row it costs is spent telling them a
+  // name that means nothing, next to a clock their OS already has, while Ronin's own
+  // header carries the real name, the dial, the gauge and the ladder.
+  //
+  // Scoped to the viewer, which is the whole reason this is safe: `status` is a SESSION
+  // option and a viewer is its own session (grouped sessions share windows, not
+  // options). The owner's real session keeps its bar for anyone attaching from a
+  // terminal, and their ~/.tmux.conf is not touched. The tile gains the row.
+  await pexec('tmux', ['set-option', '-t', exactPane(viewer), 'status', 'off']).catch(() => {});
   return viewer;
 }
 

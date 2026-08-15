@@ -90,7 +90,7 @@ The stock services, from POSITIONING §5:
 | dial (`@ronin-control`) | **Control** | Per session: you-only 👤, read 👁, read-and-write 🤖. Only the owner flips it. |
 | tag / group (`@ronin-tags`) | **Groups** | Labels used to address a set of sessions at once. |
 | note (`@ronin_note`) | **Note** | The owner's one line about a session. |
-| leader 人 (`@ronin-lead`) | **leader** | The session coordinating a group. Sorts to the top. |
+| `session_job` (in the letter) | **what it's doing** | The job's icon, drawn beside every session in the roster and the tile picker. Set when you start the session; the session changes it itself as its work changes. Replaced the old **leader** 人, which only ever said who was in charge — that is the 🏈 quarter back. |
 | — | **Status · Ladder · Macros · Detach · Kill session** | The rest of the per-session menu. Already plain. |
 
 ## § PROGRESS AND HISTORY
@@ -114,7 +114,7 @@ The stock services, from POSITIONING §5:
 | TEJUN (手順) | **macros** | The UI says Macros. A user never needs the word TEJUN. |
 | macro | **macro** | A saved instruction you would otherwise have typed to your agent. |
 | invocation | **typing a macro** | `+name: what you want`. That is the whole syntax. |
-| `session_job` | ⚠ **none settled — see § OPEN** | What a session is doing now: RiffOnIt · DraftPlan · CutCode · ChaseBug · CheckWork · WatchCrew · OddJob. The seven are already plain compounds; the *category* has no user word. |
+| `session_job` | ⚠ **none settled — see § OPEN** | What a session is doing now: RiffOnIt · DraftPlan · CutCode · ChaseBug · CheckWork · QuarterBack · OddJob. The seven read plainly on their own; the *category* has no user word. |
 | forkit | **fork** | Split the current topic into its own session. |
 | harakiri | **harakiri** | A session ends itself. Kept — it is a word people know. |
 

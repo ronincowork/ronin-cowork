@@ -5,6 +5,7 @@ import { refreshHome } from './home.js';
 import { buildSessionPicker } from './macros.js';
 import { PAD_CODE, firePadBinding, padBinds, padChord } from './pad.js';
 import { buildPadAsk, buildPadPanel } from './padpanel.js';
+import { askMika } from './mika.js';
 import { buildNotePanel, buildTagPanel } from './panels.js';
 import { IS_TOUCH, S, TILE_COUNT, WHEEL_DOWN, grid, serviceOff, tiles } from './state.js';
 
@@ -188,6 +189,20 @@ export function build() {
     const t = S.active || tiles[0];
     if (t) t.showHome('new');
   });
+  // ミ Mika Assist — the house assistant, and the one button whose whole job is "get me
+  // to somebody". It is not a room in the Commons: every room there is a surface the
+  // owner operates, and this is a session they talk to. It sits beside か New for the
+  // same reason か is out of the menu — starting a session and asking for help are the
+  // two things you should never have to go three taps deep to find.
+  //
+  // ミ is her own mark, the same katakana the MikaAssist entry carries, so the button
+  // and the session she opens read as one thing. It is NOT メ, which is a tile's own
+  // header opener meaning "this session" — near neighbours in the kana, and the reason
+  // the label spells out "Mika Assist" rather than leaving the glyph to carry it.
+  key('mikabtn', () => {
+    const t = S.active || tiles[0];
+    if (t) void askMika(t);
+  });
   // ⛩ ronin — the mark is the way to the roster, and the way back. Not a new room, a
   // shortcut to the one you return to most: it was reachable only through the Commons
   // menu, three taps deep on a phone. Both surfaces, by request.
@@ -306,7 +321,8 @@ export function build() {
     // CANVAS, which cannot be touch-selected — so the visible text was copied into a
     // <textarea> panel to select out of. The unlocked tile renders a real div of text
     // and touch is always unlocked, so long-press → Copy works on the transcript
-    // itself. On desktop the mirror still answers to Option+drag + ⌘C.
+    // itself. On desktop the mirror still answers to modifier+drag + ⌘C (Option on a Mac,
+    // Shift elsewhere — SELECT_MOD in js/state.js).
 
     // Touch-only keypad: the keys the iOS keyboard can't send (Tab/⇧Tab + arrows)
     // so you can drive TUIs like Claude Code. Stays open so you can fire several
@@ -324,9 +340,13 @@ export function build() {
     guard('hoist the tile header', () => collapseTileHead(tiles[0]));
     guard('drawers', buildDrawers);
   } else {
-    // Copy on Mac = Option+drag to select (forces a native selection even over a
-    // mouse-grabbing app or tmux mouse mode), then ⌘C. The old Copy Mode toggle is
-    // retired — one way to copy, works in any pane, locked or unlocked.
+    // Copy = hold the force-selection modifier and drag, then ⌘C / Ctrl-C. The modifier
+    // is Option on a Mac and SHIFT everywhere else — xterm's own rule, mirrored in
+    // `forcesSelection` (js/state.js); this comment used to say Option flatly and left
+    // Windows and Linux with nothing. Either way it forces a native selection over a
+    // mouse-grabbing app or tmux mouse mode. The old Copy Mode toggle is retired — one
+    // way to copy, works in any pane, locked or unlocked. A drag that produces no
+    // selection is caught and explained by `wireCopyHint` (js/termview.js).
     // xterm draws to a canvas, so the browser's native copy can't see the selection —
     // feed it the captured terminal selection on ⌘C/Ctrl-C. Works on http and https.
     document.addEventListener('copy', (e) => {
@@ -334,7 +354,7 @@ export function build() {
       const sel = live || S.lastSelection;
       // Only hijack ⌘C when the terminal actually has a selection; otherwise let the
       // browser copy normally. Works whether the selection came from Copy Mode (mouse
-      // off) or an Option+drag over a mouse-grabbing app.
+      // off) or a modifier+drag over a mouse-grabbing app.
       if (sel && e.clipboardData) {
         e.clipboardData.setData('text/plain', sel);
         e.preventDefault();
@@ -403,6 +423,7 @@ export function buildDrawers() {
   // a different action. Two dead round arrows, both gone.
   const APP = [
     ['newbtn', 'New'],
+    ['mikabtn', 'Mika Assist'],
     ['commonsbtn', 'Commons'],
     ['padbtn', 'Keypad'],
   ];

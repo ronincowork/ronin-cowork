@@ -22,7 +22,7 @@
 
 // `other` is a real bucket, not a gap: a session whose letter names no job still has
 // to be drawable, or it silently vanishes from a chart that claims to show everything.
-const JOBS = ['RiffOnIt', 'DraftPlan', 'CutCode', 'ChaseBug', 'CheckWork', 'WatchCrew', 'OddJob', 'other'];
+const JOBS = ['RiffOnIt', 'DraftPlan', 'CutCode', 'ChaseBug', 'CheckWork', 'QuarterBack', 'OddJob', 'other'];
 const WINDOWS = [
   ['today', 'Today'],
   ['week', 'This week'],
@@ -33,7 +33,9 @@ const WINDOWS = [
 const CAPS = [
   ['forks', 'forks'],
   ['groups', 'groups'],
-  ['led', '人 led'],
+  // `led` (@ronin-lead) was here until the 人 was retired. A cap is "the thing you would
+  // go and try", and there is nothing to go and try any more — a session's coordinator is
+  // its session_job now, which the job chart above already counts.
   ['board_posts', 'board posts'],
   ['board_reads', 'board reads'],
   ['voice', 'voice'],

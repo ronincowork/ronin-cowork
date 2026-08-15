@@ -21,12 +21,13 @@
  * 2026-08-08. Views mount in DOM order: tape, then the commons panel, then xterm.
  */
 import { createSession, deleteSession, fetchSessions } from './api.js';
-import { refreshHome } from './home.js';
-import { IS_TOUCH, NEW, S, saveState, tiles } from './state.js';
+import { presetData, refreshHome } from './home.js';
+import { IS_TOUCH, NEW, S, saveState, serviceMissing, tiles } from './state.js';
 import { buildHome } from './commons.js';
 import { guard } from './errors.js';
 import { buildLadder, buildLetter } from './shingo.js';
-import { LOCKED_TITLE, buildTileHead } from './tilehead.js';
+import { buildTileHead, lockedTitle, syncTileHead } from './tilehead.js';
+import { openJobMenu } from './widgets.js';
 import { dvrStep } from './dvr.js';
 import { TapeView } from './tapeview.js';
 import { TermView } from './termview.js';
@@ -46,18 +47,10 @@ export class Tile {
 
     // The header — the picker, the dials, the chip, the buttons. Construction only;
     // every callback in it lands back here.
-    const head = buildTileHead(this);
-    this.el = head.el;
-    this.select = head.select;
-    this.body = head.body;
-    this.dot = head.dot;
-    this.dial = head.dial;
-    this.gauge = head.gauge;
-    this.torii = head.torii;
-    this.chip = head.chip;
-    this.lockEl = head.lockEl;
-    this.noteBtn = head.noteBtn;
-    this.tagBtn = head.tagBtn;
+    // Every control the table declared, under the name the table gave it. Held as
+    // references rather than re-queried: on touch these nodes are RELOCATED into the app
+    // bar (js/tiledrop.js), and a later `querySelector` on the tile would find nothing.
+    Object.assign(this, buildTileHead(this));
 
     // 🔓 THE UNLOCKED VIEW — mounted first, so the tape sits under the panel and the
     // terminal in the stack, exactly as before.
@@ -120,6 +113,11 @@ export class Tile {
         }
         this.focusTerminal();
       });
+      // A drag that was meant to be a copy and silently was not — say the key.
+      this.term.wireCopyHint({
+        isLocked: () => this.locked,
+        overHome: (el) => this.home.contains(el),
+      });
     }
     // The wheel is xterm's business in BOTH modes now.
     //
@@ -142,27 +140,7 @@ export class Tile {
       // it FOR: fixed-unlocked needs the tape, and there is no tape).
       this.lockEl.classList.add('off');
     } else if (IS_TOUCH) this.lockEl.style.display = 'none'; // phone is fixed-unlocked
-    // Wrapped: a throw from an event callback lands on the window handler, which can
-    // REPORT it but cannot repair anything — the guards around construction and init
-    // never see it. Without this, a bug in the flip costs the pane it was flipping.
-    this.lockEl.addEventListener('click', () =>
-      guard('lock flip', () => {
-        this.activate();
-        this.setLocked(!this.locked);
-      }),
-    );
     this.syncLock();
-    this.noteBtn.addEventListener('click', () => {
-      if (this.session && S.notePanel) S.notePanel.open(this.session);
-    });
-    this.tagBtn.addEventListener('click', () => {
-      if (this.session && S.tagPanel) S.tagPanel.open(this.session);
-    });
-    // メ goes to commons — it is a way IN to the menu, not a close. The session keeps
-    // streaming behind the panel and the ✕ on the tab strip brings you back to it.
-    // (Stopping viewing is still the blank option in the session picker; killing is 🗑.)
-    this.el.querySelector('.menu').addEventListener('click', () => this.showHome('sessions'));
-    this.el.querySelector('.kill').addEventListener('click', () => this.kill());
 
     this.ro = new ResizeObserver(() => this.doFit());
     this.ro.observe(this.body);
@@ -199,7 +177,13 @@ export class Tile {
     this.select.innerHTML = '';
     this.select.add(new Option('— pick session —', ''));
     for (const s of S.sessions) {
-      const label = `${(s.leads || []).length ? '人 ' : ''}${s.name}${s.attached ? ' •' : ''}`;
+      // NO MARK IN THE PICKER. It was prefixed here too, and the collapsed <select> then
+      // showed the current session's icon immediately beside the job button showing the
+      // same icon — the same fact twice, an inch apart. The button is the one that keeps
+      // it: it is pressable, it carries the name in its tooltip, and it says `?` when
+      // nobody has said. Surveying every session's job is the ⌂ Roster's work, and the
+      // roster draws them all.
+      const label = `${s.name}${s.attached ? ' •' : ''}`;
       this.select.add(new Option(label, s.name));
     }
     // keep a stale-but-connected session visible even if it left the list
@@ -208,9 +192,7 @@ export class Tile {
     }
     this.select.add(new Option('➕ new session…', NEW));
     this.select.value = cur || '';
-    this.updateNoteBtn();
-    this.updateTagBtn();
-    this.refreshControl();
+    this.syncHeader();
     this.refreshCtx();
     this.refreshTegami();
   }
@@ -239,7 +221,7 @@ export class Tile {
     const session = this.session;
     // The letter is MICHI's. No michi = no /tegami routes at all, so don't fetch into
     // a 404 — the chip simply never shows, same as a session with no letter.
-    if (!session || (S.services && !S.services.includes('michi'))) {
+    if (!session || serviceMissing('michi')) {
       this.chip.set(null);
       this.closeLadder();
       return;
@@ -266,7 +248,10 @@ export class Tile {
   async toggleLetter() {
     if (this.el.querySelector('.shingo-letter')) return this.closeLetter();
     const name = this.session;
-    if (!name) return;
+    // No session, or no michi: `/tegami/raw` is the service's route and answering a 404
+    // by drawing an empty "no letter yet" panel told the owner the session had no letter
+    // when the truth was that nothing here could ever have one.
+    if (!name || serviceMissing('michi')) return;
     this.closeLadder();
     let d = { file: '', text: null };
     try {
@@ -337,18 +322,11 @@ export class Tile {
   /** Point the dial at the session's current @ronin-control (truth lives on tmux). */
   async refreshControl(announce = false) {
     const session = this.session;
-    if (!session) {
-      this.dial.el.disabled = true;
-      this.dial.set('write');
-      return;
-    }
+    if (!session) return this.dial.set('write');
     try {
       const r = await fetch('/api/sessions/' + encodeURIComponent(session) + '/control', { cache: 'no-store' });
       const d = await r.json().catch(() => ({}));
-      if (r.ok && this.session === session) {
-        this.dial.el.disabled = false;
-        this.dial.set(d.control || 'write', announce);
-      }
+      if (r.ok && this.session === session) this.dial.set(d.control || 'write', announce);
     } catch (_) {}
   }
 
@@ -372,30 +350,80 @@ export class Tile {
     this.refreshControl(true);
   }
 
-  /** Reflect on the 📝 button whether this tile's session has a note (and disable when none). */
-  updateNoteBtn() {
-    const btn = this.noteBtn;
-    if (!btn) return;
-    const s = S.sessions.find((x) => x.name === this.session);
-    const has = !!(s && s.hasNote);
-    btn.classList.toggle('has-note', has);
-    btn.disabled = !this.session;
-    btn.title = !this.session ? 'Session note' : has ? 'Session note (has notes)' : 'Session note (empty)';
+  /** 🏷 shows how many groups this session is in — the label an agent can address it by. */
+
+  /**
+   * Set what this session is doing, by hand.
+   *
+   * Writes the session's own letter (`session_job` in its TEGAMI), which is the same
+   * field the agent maintains with `write_tegami` — the owner is simply the other writer,
+   * for when an agent has not re-marked itself or was redirected mid-flight. A re-label
+   * only: no brief is re-sent and the dial is untouched.
+   *
+   * The list is updated locally before the ws poll gets there, so the mark moves under
+   * your finger; the poll then confirms it, and would correct it if the write lost a race.
+   */
+  async pickJob(anchor) {
+    if (!this.session) return;
+    const session = this.session;
+    const cur = S.sessions.find((x) => x.name === session);
+    openJobMenu(anchor, presetData || [], (cur && cur.session_job) || '', async (job) => {
+      try {
+        const r = await fetch('/api/sessions/' + encodeURIComponent(session) + '/session_job', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ session_job: job }),
+        });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+        const live = S.sessions.find((x) => x.name === session);
+        if (live) live.session_job = d.session_job ?? job;
+        tiles.forEach((t) => {
+          t.syncHeader();
+          t.refreshOptions();
+        });
+        refreshHome();
+      } catch (e) {
+        alert(String(e.message || e));
+      }
+    });
   }
 
-  /** 🏷 shows how many groups this session is in — the label an agent can address it by. */
-  updateTagBtn() {
-    const btn = this.tagBtn;
-    if (!btn) return;
-    const s = S.sessions.find((x) => x.name === this.session);
-    const tags = (s && s.tags) || [];
-    btn.classList.toggle('has-tags', !!tags.length);
-    btn.disabled = !this.session;
-    btn.title = !this.session
-      ? 'Groups'
-      : tags.length
-        ? 'Groups: ' + tags.join(', ')
-        : 'Groups (none yet)';
+  /** 🔒 — wrapped, because a throw from a click lands on the window handler, which can
+   *  REPORT it but not repair anything; a bug in the flip would cost the pane it flips. */
+  flipLock() {
+    guard('lock flip', () => {
+      if (S.streamOff) return; // no record service: the switch is decoration
+      this.activate();
+      this.setLocked(!this.locked);
+    });
+  }
+
+  openNote() {
+    if (S.notePanel) S.notePanel.open(this.session);
+  }
+
+  openTags() {
+    if (S.tagPanel) S.tagPanel.open(this.session);
+  }
+
+  /**
+   * THE HEADER'S STATE, in one pass.
+   *
+   * Every control on the header that depends on a session is decided HERE, together.
+   * They were decided in four places before, which is how three of them ended up never
+   * being decided at all: 🏷 📝 the mark and the dial went inert with no session while ⛩
+   * ⚡ 🗑 stayed lit, though a letter, a macro drop and a kill are every bit as
+   * meaningless without one. The rule is now visible in one list instead of implied by
+   * which functions happened to exist.
+   *
+   * `setInert` is the only way any of them is dimmed — never `disabled`, which would take
+   * the hover help with it (see widgets.js), and never a bare class, which would leave
+   * the reason unsaid.
+   */
+  syncHeader() {
+    this.refreshControl(); // async: the dial's position is the server's truth
+    syncTileHead(this);
   }
 
   async onSelect() {
@@ -538,7 +566,7 @@ export class Tile {
      * to lock" — the button is a button, and they can try it.
      */
     this.lockEl.title = this.locked
-      ? LOCKED_TITLE
+      ? lockedTitle()
       : '🔓 UNLOCKED — the session is still running in tmux; this view is not attached to it. You are reading what that terminal painted, captured byte by byte as it went, so the text can lag the live pane. Scrolling is instant and stays in your browser, typing still goes to the real terminal, and the text SELECTS AND COPIES like any web page.';
     if (S.streamOff) this.lockEl.title = 'The unlocked view is off — no record service is installed.';
   }
@@ -602,9 +630,7 @@ export class Tile {
     this.wire.close();
     this.session = null;
     this.select.value = '';
-    this.updateNoteBtn();
-    this.updateTagBtn();
-    this.refreshControl();
+    this.syncHeader();
     this.gauge.set(null);
     this.tegami = null;
     this.chip.set(null);
@@ -638,9 +664,7 @@ export class Tile {
       this.select.add(new Option(session, session), this.select.options.length - 1);
     }
     this.select.value = session;
-    this.updateNoteBtn();
-    this.updateTagBtn();
-    this.refreshControl();
+    this.syncHeader();
     this.refreshCtx();
     this.refreshTegami();
 

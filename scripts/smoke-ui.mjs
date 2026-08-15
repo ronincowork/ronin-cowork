@@ -25,61 +25,19 @@
  * Exits non-zero on failure, so it works as a gate.
  */
 
-import { createRequire } from 'node:module';
-import { homedir } from 'node:os';
 import { execFileSync } from 'node:child_process';
+import { HOST_TOOLS, defaultUrl, loadPlaywright } from './lib/ui-host.mjs';
 
-// No hardcoded host: the default derives the same ladder the server itself binds with
-// (src/config.ts) — BIND env, else the tailnet IP, else loopback. `--staging` points the
-// derived URL at the /staging/ copy; an explicit URL argument always wins.
-function defaultUrl(staging) {
-  let host = process.env.BIND?.trim();
-  if (!host) {
-    try {
-      host = execFileSync('tailscale', ['ip', '-4'], { encoding: 'utf8' }).trim().split('\n')[0];
-    } catch { /* tailscale not installed / not up */ }
-  }
-  return `http://${host || '127.0.0.1'}:${process.env.PORT || 3006}/${staging ? 'staging/' : ''}`;
-}
+// Host derivation and the playwright hunt both live in scripts/lib/ui-host.mjs — this
+// script and check-tips need the same two answers, and when each had its own copy they
+// disagreed about the host.
 const args = process.argv.slice(2);
 const URL_ = args.find((a) => !a.startsWith('--')) || defaultUrl(args.includes('--staging'));
-const require_ = createRequire(import.meta.url);
 
-// Playwright is a HOST TOOL, not a dependency (docs/host-tools.md), so the public install
-// never carries a browser. Resolution is that document's three steps, in its order — env
-// override, normal resolution, then ONE documented machine-local location — and never a
-// guess. The guess this replaced pointed into a home directory belonging to a username that
-// has never existed on any machine we run, so it resolved nowhere for months and nobody
-// noticed, which is why that document has a rule about it.
-//
-// The third step is not decoration. `npm i --no-save playwright` puts it in step two's
-// reach, and then the next `npm install` — setup.sh runs one — PRUNES it as extraneous.
-// Measured, by losing it that way. A host tool has to live outside the tree it serves.
-export const HOST_TOOLS = `${homedir()}/.cache/ronin-host-tools`;
-
-// Each step is a RESOLVER, not a path string: step 3 resolves `playwright` the way node
-// would if it were run from the host-tools directory. Pointing `import()` straight at a
-// package directory does not work — ESM has no directory resolution, so it needs the
-// package's own entry file, and hardcoding `index.js` is a guess about somebody else's
-// package layout. `createRequire` asks node instead.
-const CANDIDATES = [
-  ['RONIN_PLAYWRIGHT_PATH', () => (process.env.RONIN_PLAYWRIGHT_PATH ? import(process.env.RONIN_PLAYWRIGHT_PATH) : null)],
-  ['node resolution from the repo', () => require_('playwright')],
-  [`${HOST_TOOLS}/node_modules`, () => createRequire(`${HOST_TOOLS}/`)('playwright')],
-];
-
-let pw;
-for (const [, load] of CANDIDATES) {
-  try {
-    const m = await load();
-    if (m?.chromium) { pw = m; break; }
-  } catch {
-    /* try the next one */
-  }
-}
-if (!pw?.chromium) {
+const pw = await loadPlaywright();
+if (!pw) {
   console.error(
-    'FAIL: could not find playwright. Tried:\n  ' + CANDIDATES.map(([n]) => n).join('\n  ') +
+    'FAIL: could not find playwright.' +
     `\nInstall it for this machine:\n  mkdir -p ${HOST_TOOLS} && cd ${HOST_TOOLS} && npm i playwright && npx playwright install chromium` +
     '\nOr point RONIN_PLAYWRIGHT_PATH at an existing install. See docs/host-tools.md.',
   );

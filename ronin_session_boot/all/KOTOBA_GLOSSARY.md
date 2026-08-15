@@ -1,0 +1,1 @@
+../../KOTOBA_GLOSSARY.md
