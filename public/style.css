@@ -1334,7 +1334,7 @@ body {
   gap: 10px;
   min-height: 0;
 }
-/* Eight admin panes, one at a time, named by [data-pane] on .home. (Was a single
+/* Nine admin panes, one at a time, named by [data-pane] on .home. (Was a single
    `.browsing` toggle while there were only two — see buildHome.) */
 .home-null,
 .home-wipe,
@@ -1342,7 +1342,8 @@ body {
 .home-proj,
 .home-hotwords,
 .home-stats,
-.home-koshi {
+.home-koshi,
+.home-system {
   display: none;
 }
 .home[data-pane='new'] .home-null {
@@ -1368,6 +1369,49 @@ body {
 }
 .home[data-pane='koshi'] .home-koshi {
   display: flex;
+}
+.home[data-pane='system'] .home-system {
+  display: flex;
+}
+
+/* ---- ⚙ SYSTEM: what this install runs, and the two update buttons.
+   One column like the other admin panes — sized by the TILE, never the viewport. ---- */
+.home-system {
+  flex-direction: column;
+  min-height: 0;
+  padding: 10px;
+}
+.sys {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 520px;
+}
+.sys-id {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.sys-release {
+  font-size: 1.25em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.sys-id small {
+  opacity: 0.7;
+}
+.sys-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.sys-msg {
+  min-height: 1.2em;
+  opacity: 0.85;
+}
+.sys-msg.bad {
+  color: var(--bad);
+  opacity: 1;
 }
 
 /* ---- 目 KOSHI: which outlet each incarnation asks.

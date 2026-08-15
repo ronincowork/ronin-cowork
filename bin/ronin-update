@@ -79,11 +79,13 @@ installed_release() {
 have_gh() { command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; }
 
 latest_release() {
+  # No answer is an ANSWER (installed stays, latest reads unknown), never an exit:
+  # under `set -e` a bare failing pipeline here would kill --check mid-JSON.
   if have_gh; then
     gh release view --repo "$SLUG" --json tagName -q .tagName 2>/dev/null || true
   else
     curl -fsS -m 10 "https://api.github.com/repos/$SLUG/releases/latest" 2>/dev/null |
-      sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -1
+      sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -1 || true
   fi
 }
 

@@ -19,6 +19,7 @@ import { buildProjectRoots } from './projectroots.js';
 import { buildStats } from './stats.js';
 import { buildWipeboard } from './wipeboard.js';
 import { buildDocs } from './docs.js';
+import { buildSystem } from './system.js';
 import { addProvMark, addYourOwn } from './provenance.js';
 
 export function buildHome(tile) {
@@ -68,6 +69,8 @@ export function buildHome(tile) {
   mkTab('hotwords', '▥ Hotwords', 'Words dictation keeps getting wrong — the glossary sent with your voice');
   mkTab('stats', '▦ Stats', 'How this install actually gets used — TOMODACHI');
   mkTab('koshi', '目 Koshi', 'Which model each Koshi job asks');
+  // Core, never dimmed: version and updates are the install's own business, no service.
+  mkTab('system', '⚙ System', 'What this install is running — check for updates, run one');
   // A tab owned by a service that is not registered is visible but opaque-and-inert —
   // the same treatment as the lock button on a build with no record service.
   tabs.querySelectorAll('button[data-pane]').forEach((b) => {
@@ -99,7 +102,9 @@ export function buildHome(tile) {
   statsPane.className = 'home-stats';
   const koshiPane = document.createElement('div');
   koshiPane.className = 'home-koshi';
-  el.append(tabs, nullPane, mainPane, wipePane, docsPane, projPane, hotwordsPane, statsPane, koshiPane);
+  const systemPane = document.createElement('div');
+  systemPane.className = 'home-system';
+  el.append(tabs, nullPane, mainPane, wipePane, docsPane, projPane, hotwordsPane, statsPane, koshiPane, systemPane);
   const showPane = (which) => {
     if (serviceOff(which)) return; // an inert tab's pane, asked for by any other route
     el.dataset.pane = which;
@@ -111,6 +116,7 @@ export function buildHome(tile) {
     if (which === 'hotwords') words.enter();
     if (which === 'koshi') koshi.enter();
     if (which === 'stats') stats.enter();
+    if (which === 'system') system.enter();
   };
   // ✕ only makes sense once a session is showing behind the panel.
   closeTab.addEventListener('click', () => tile.hideHome());
@@ -629,6 +635,7 @@ export function buildHome(tile) {
   const words = buildHotwords(hotwordsPane, () => tile.homeVisible() && el.dataset.pane === 'hotwords');
   const koshi = buildKoshi(koshiPane, () => tile.homeVisible() && el.dataset.pane === 'koshi');
   const stats = buildStats(statsPane);
+  const system = buildSystem(systemPane);
 
   // Re-render the LIVE parts (session list, target options); forms keep their state.
   const render = () => {

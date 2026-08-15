@@ -12,6 +12,7 @@ import { publishMax, publishOwner } from './user-config.js';
 import { registerCatalogs } from './routes/catalogs.js';
 import { registerLaunch } from './routes/launch.js';
 import { registerSessions } from './routes/sessions-api.js';
+import { registerUpdate } from './routes/update-api.js';
 import { registerVersion } from './routes/version.js';
 import { registerWipeboards } from './routes/wipeboards-api.js';
 import { seedHouseBoard } from './wipeboards.js';
@@ -131,7 +132,8 @@ app.get('/api/health', (_req, res) =>
 
 registerLaunch(app); // /api/launch (both variants), /api/sessions, /api/home, session-max, owner — src/routes/launch.ts
 registerCatalogs(app); // /api/macros, /api/hotwords*, /api/project-roots*, /api/session-launch-specs, /api/session-jobs — src/routes/catalogs.ts
-registerVersion(app); // /api/version — the commit this process started from — src/routes/version.ts
+registerVersion(app); // /api/version — release string, or the commit this process started from — src/routes/version.ts
+registerUpdate(app); // /api/update/* — the ⚙ gear's check + run, press-only — src/routes/update-api.ts
 
 // Services register, then their routes mount — AFTER core's, which is safe because
 // every service path (/api/tomodachi/*, /api/transcribe, /api/koshi*) is disjoint
