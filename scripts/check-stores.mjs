@@ -104,7 +104,12 @@ else ok('both tables carry the same rows');
 
 // The convention itself — one spelling, derivable, never remembered.
 for (const s of STORES) {
-  if (!/^[a-z][a-z0-9-]*$/.test(s.id)) fail(`store id '${s.id}' is not a lowercase slug`);
+  // UNDERSCORES, NOT HYPHENS — and the reason is the very next line. The override is
+  // derived as RONIN_<ID>_DIR, so a hyphenated id yields `RONIN_SESSION-BOOT_DIR`, which
+  // is not a legal environment variable name in any shell: the store would simply have no
+  // working override. The rule used to permit exactly that and forbid the safe spelling.
+  // No id has ever had a separator, so nothing is grandfathered by this.
+  if (!/^[a-z][a-z0-9_]*$/.test(s.id)) fail(`store id '${s.id}' is not a lowercase slug (letters, digits, underscore)`);
   if (envName(s.id) !== `RONIN_${s.id.toUpperCase()}_DIR`) fail(`${s.id}: override is not RONIN_<ID>_DIR`);
   if (!['user', 'data'].includes(s.root)) fail(`${s.id}: root '${s.root}' is neither user nor data`);
 }

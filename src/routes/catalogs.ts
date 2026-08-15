@@ -34,7 +34,7 @@ import {
 const errMsg = (e: unknown) => String((e as Error)?.message ?? e).replaceAll(homedir(), '~');
 
 /** The fields commons may write. Anything else in a block is the owner's and is preserved. */
-const ROOT_FIELDS: RootField[] = ['dir', 'read', 'memory', 'provider', 'model', 'match', 'remit'];
+const ROOT_FIELDS: RootField[] = ['dir', 'memory', 'provider', 'model', 'match', 'remit'];
 const bodyFields = (body: unknown) => {
   const out: Partial<Record<RootField, string>> = {};
   for (const k of ROOT_FIELDS) {

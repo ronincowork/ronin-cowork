@@ -131,6 +131,14 @@ export const STORES: readonly Store[] = [
     when: 'first file added',
   },
   {
+    id: 'session_boot',
+    root: 'user',
+    rel: 'session_boot',
+    what: "what a NEW SESSION reads before anything else — all/, root/<name>/, job/<name>/; files here shadow ronin_session_boot/ file-for-file",
+    createdBy: "cowork's `src/session-boot.ts`",
+    when: 'the first session launched after this shipped, and again whenever a project_root is included',
+  },
+  {
     id: 'wipeboards',
     root: 'user',
     rel: 'wipeboards',

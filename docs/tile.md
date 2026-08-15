@@ -324,7 +324,7 @@ Recorded so nobody re-discovers it. **Neither is fixed by this document.**
 
 1. **The ⛩ torii is not service-gated.** The chip checks `S.services` before fetching
    (`tile.js:257`); the torii does not (`tile.js:288`) and its route,
-   `/api/sessions/:name/tegami/raw`, lives in **michi** (`michi/michi-api.ts:25`, services
+   `/api/sessions/:name/tegami/raw`, lives in **michi** (michi-api.ts, in the services
    repo). On a
    cowork-only install the button is present and opens a panel reading *"No letter on disk
    for this session yet"* — which is a fetch into a 404 dressed as an empty state, and the

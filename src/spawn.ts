@@ -1,6 +1,7 @@
 import { appendFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { REPO_ROOT } from './config.js';
+import { bootFiles, ensureShelf } from './session-boot.js';
 import { listProjectRoots, type ProjectRootInfo } from './project-roots.js';
 import { storeDir } from './stores.js';
 import {
@@ -100,6 +101,7 @@ export function buildBrief(
   root: ProjectRootInfo | undefined,
   form: SpawnForm,
   referenceDir?: string,
+  boot: string[] = [],
 ): string {
   // MANUAL: what the owner typed, byte for byte. No posture, no reading list, no
   // opening template, no ack rule. If this ever grows a "just one helpful line",
@@ -108,7 +110,11 @@ export function buildBrief(
 
   const parts: string[] = [];
   if (kind.posture) parts.push(`You are the ${kind.label || kind.name}. ${kind.posture}`);
-  const reading = [...(root?.read ?? []), ...(form.seed ?? [])].filter(Boolean);
+  // THE SESSION BOOT SHELF, listed at this instant rather than remembered. This replaced
+  // the project_root's `read:` — a stored list of literal paths that went stale in silence
+  // the moment a file moved. Nothing is written down now, so nothing can be wrong: a file
+  // that is gone simply is not named. See src/session-boot.ts.
+  const reading = [...boot, ...(form.seed ?? [])].filter(Boolean);
   if (reading.length) parts.push(`Read first: ${reading.join(', ')}.`);
   parts.push(kind.opening.replace(/\{prompt\}/g, form.prompt));
   if (form.reference) {
@@ -176,6 +182,9 @@ export async function resolveForm(
   if (!kind) throw new Error(`Unknown session_job "${form.session_job}" (see ronin_catalogs/SESSION_JOBS.md).`);
 
   const root = roots.find((r) => r.name === form.project_root);
+  // Made here, on the way past, because this is the one place that knows every root by
+  // name — so a shelf folder exists for each of them without anything having to remember.
+  await ensureShelf(roots.map((r) => r.name));
 
   // A name you typed is used as typed (sanitized, never de-duplicated): if it is
   // taken you get told, rather than quietly ending up in `foo-2` and sending your
@@ -204,7 +213,7 @@ export async function resolveForm(
     session_job: kind.name,
     project_root: root?.name ?? '',
     mode: form.mode === 'manual' ? 'manual' : 'assisted',
-    brief: agent ? buildBrief(kind, root, form, referenceDir) : '',
+    brief: agent ? buildBrief(kind, root, form, referenceDir, await bootFiles(root?.name ?? '', kind.name)) : '',
     agent,
     capExempt: kind.capExempt,
   };

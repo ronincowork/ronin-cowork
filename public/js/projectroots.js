@@ -22,7 +22,8 @@ import { askMika } from './mika.js';
  *
  * The catalog (ronin_catalogs/PROJECT_ROOTS.md) stays the source of truth and stays
  * hand-editable — this pane is a co-editor, not an owner. It writes only the owner's
- * INTENT (which directories, what they are called); everything volatile beside it —
+ * INTENT (which directories, what they are called). What a session in this root READS at
+ * birth is no longer a field here — it is the files on the root's session-boot shelf; everything volatile beside it —
  * does the directory still exist, is it a project_repo, how many sessions serve it —
  * is read live from /api/project-roots/detail and stored nowhere.
  */
@@ -96,7 +97,6 @@ export function buildProjectRoots(root, isShowing, tile) {
     mk('handle', 'name', existing.name, 'The short name — this IS the shortcut', 'ronin').disabled = true;
     mk('directory', 'dir', existing.dir, 'Any absolute path, at any depth', '~/work/api');
     mk('remit', 'remit', existing.remit, 'The one line you pick it from in a list', 'what this is');
-    mk('read first', 'read', (existing.read || []).join(', '), 'What a fresh agent reads before anything else', 'comma separated');
     mk('match', 'match', (existing.match || []).join(', '), 'Words that suggest this project_root from free-form intent', 'comma separated');
 
     const row = document.createElement('div');

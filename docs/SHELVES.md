@@ -6,10 +6,11 @@ when one is added — go to the shelf and read it.
 
 Read the shelf you need. Do not read them all.
 
-## The four shelves
+## The five shelves
 
 | Shelf | Answers | Where |
 |---|---|---|
+| `ronin_session_boot/` | **what you read first** — handed to you at birth, so you have already met it | `docs/session-boot.md` |
 | `ronin_catalogs/` | **what you can do** — macros, actions, tools, session jobs, project roots | `ronin_catalogs/README.md` |
 | `ronin_library/` | **how a step is done** — the reference an action or macro points you at | `ronin_library/README.md` |
 | `ronin_sops/` | **how this house goes about a domain** — the standard process, adjustable | `ronin_sops/README.md` |

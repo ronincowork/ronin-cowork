@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # mika — hand a request to the house assistant. Spawn her if she is not up.
 #
-# Usage: mika <job> [request...]     job = system_help | project_root | new_session | system_config
+# Usage: mika <job> [request...]     job = system_help | project_root | new_session |
+#                                          system_config | session_boot
 #        mika "<request...>"         no job named -> system_help, which is her default
 #        mika                        just get her up (or tell you she already is)
 #
@@ -29,12 +30,13 @@
 # of the dangerous thing, never a second copy in bash that drifts from it.
 set -u
 
-JOBS="system_help project_root new_session system_config"
+JOBS="system_help project_root new_session system_config session_boot"
 
 job="${1:-system_help}"
 # The words the owner uses for the project_root job, mapped before the lookup.
 case "$job" in
   include|exclude|include:|exclude:) job=project_root ;;
+  shelve|shelf|boot)                 job=session_boot ;;
 esac
 case " $JOBS " in
   *" $job "*) shift || true ;;

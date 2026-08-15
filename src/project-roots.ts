@@ -50,8 +50,6 @@ export interface ProjectRootInfo {
   name: string;
   /** Working directory, ~ already expanded. */
   dir: string;
-  /** What a cold agent reads first. */
-  read: string[];
   provider: string;
   /** The model by name — `opus`, `sonnet`, `haiku`, … never a tier euphemism. */
   model: string;
@@ -111,10 +109,6 @@ function parseRoots(raw: string, launch: BrainInfo[]): ProjectRootInfo[] {
     roots.push({
       name,
       dir: expand(dir),
-      read: field('read')
-        .split(',')
-        .map((p) => expand(p.trim()))
-        .filter(Boolean),
       provider,
       model,
       match: field('match')
@@ -202,12 +196,15 @@ const NEW_USER_FILE = `# PROJECT_ROOTS — your directories (user scope)
 > co-editor, not an owner.
 >
 > One \`## <handle>\` block per directory, with \`- **key:** value\` lines under it
-> (\`dir\`, \`read\`, \`memory\`, \`provider\`, \`model\`, \`match\`, \`remit\`).
+> (\`dir\`, \`memory\`, \`provider\`, \`model\`, \`match\`, \`remit\`).
+>
+> What a session here READS at birth is not a field — it is the files on this root's
+> shelf. Ask \`ronin-store session_boot\` for it, and see docs/session-boot.md.
 > The provider/model launch table is stock and lives in the install, not here.
 `;
 
 /** Field order for a block this code creates. Hand-written blocks keep their own. */
-const FIELD_ORDER = ['dir', 'read', 'memory', 'provider', 'model', 'match', 'remit'] as const;
+const FIELD_ORDER = ['dir', 'memory', 'provider', 'model', 'match', 'remit'] as const;
 export type RootField = (typeof FIELD_ORDER)[number];
 
 /** A project_root handle: one lowercase word, the `##` heading, the whole shortcut. */

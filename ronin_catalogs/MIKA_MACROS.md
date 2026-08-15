@@ -57,6 +57,28 @@ origin`, `branch --show-current`. Not there? Say so and stop.
 say so when you propose it. Absolute paths at any depth are all first-class; Ronin does
 not manage anybody's filesystem.
 
+## session_boot
+- **class:** mika_macro
+> **Also `+shelve:`.** Put a file on the shelf a new session reads.
+
+Params: what to shelve, and who should get it.
+
+The shelf is `ronin-store session_boot` — **never spell that path**. Three folders, and
+they add up rather than override: `all/` reaches every session, `root/<name>/` only
+sessions in that directory, `job/<name>/` only sessions doing that kind of work.
+
+| # | Action | With |
+|---|---|---|
+| 1 | propose-and-confirm | Which folder, and **link or copy**. A link is the default when the file already lives in a repo — one file, no drift. Say which you are doing and why |
+| 2 | report-outcome | Where it landed, and which sessions will now read it |
+
+**Ask which level if it is not obvious.** "Everyone", "only work in this repo" and "only
+when chasing bugs" are three different answers and the owner knows which they meant.
+
+**Name collisions are real.** A file replaces one of the same name at the same level, and
+across levels the same name collapses to one. Two files both called `README.md` cannot
+both be shelved — rename one on the way in (plans-README.md), and say that you did.
+
 ## new_session
 - **class:** mika_macro
 One sentence in, a filled form out. Match it against the `match:` words in
