@@ -23,7 +23,7 @@
  * Residual LEGAL mentions of absent things ("deleted, verified absent") go in IGNORE
  * below with the reason beside them — no new markup in the documents themselves.
  */
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { lstatSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -42,19 +42,26 @@ const ok = (msg) => console.log(`  ok    ${msg}`);
 const SKIP_DIRS = new Set(['.git', 'node_modules', 'dist', 'public-staging']);
 const files = []; // repo-relative file paths
 const dirs = new Set(); // repo-relative dir paths
+// A SYMLINK is a real path and a false document. `ronin_session_boot/all/SHELVES.md` ->
+// `docs/SHELVES.md` is the boot shelf handing a session a document that lives elsewhere,
+// so a claim naming either path is TRUE (it stays in `files`) while scanning both would
+// check one document twice and demand an exemption per link as the shelf grows. Kept for
+// resolution, skipped as a source.
+const links = new Set();
 (function walk(rel) {
   for (const name of readdirSync(path.join(REPO, rel))) {
     if (SKIP_DIRS.has(name)) continue;
     const r = rel ? `${rel}/${name}` : name;
     let st;
     try {
+      if (lstatSync(path.join(REPO, r)).isSymbolicLink()) links.add(r);
       st = statSync(path.join(REPO, r));
     } catch {
       continue; // dangling symlink
     }
     if (st.isDirectory()) {
       dirs.add(r);
-      walk(r);
+      if (!links.has(r)) walk(r); // never follow a linked directory — same document twice
     } else files.push(r);
   }
 })('');
@@ -98,12 +105,11 @@ const EXEMPT = new Map([
   // claims this check can rule on. check-kotoba still holds KOTOBA to the code.
   ['KOTOBA.md', 'Record column cites repos this check cannot see (check-kotoba covers it)'],
   // The glossary calls itself "companion to KOTOBA.md" and cites the same span of repos,
-  // so it inherits the exemption rather than earning a second reason. Twice, because the
-  // boot shelf ships a copy to every session.
+  // so it inherits the exemption rather than earning a second reason. One entry, not two:
+  // the boot shelf's copy is a symlink, and symlinks are not sources.
   ['KOTOBA_GLOSSARY.md', 'companion to KOTOBA.md — same cross-repo citations'],
-  ['ronin_session_boot/all/KOTOBA_GLOSSARY.md', 'the boot shelf copy of the above'],
 ]);
-const SOURCES = files.filter((f) => md(f) && !EXEMPT.has(f));
+const SOURCES = files.filter((f) => md(f) && !EXEMPT.has(f) && !links.has(f));
 
 // Legal mentions of things that do not exist — keyed by source path, each entry with
 // its reason. This list is the negation convention's escape hatch (owner's ruling
