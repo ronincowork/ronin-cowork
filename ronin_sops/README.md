@@ -19,13 +19,18 @@ never says what is installed, what is running, or where anything currently sits 
 are resolved (`bin/ronin-doctor`, `bin/ronin-store --all`), never written down. A written
 fact about a box is wrong the day the box changes, and nobody notices.
 
-**Where a domain has a measurable, name the tool.** An SOP carries a `> Tool:` line in its
-header — the same form `ronin_catalogs/ACTIONS.md` uses, so the eye finds it in the same
-place everywhere. That line is the discovery mechanism: reading the SOP is how an agent
-learns the measurement exists, and running it is how the numbers stay true, since they
-live in a terminal and never in a file. `data.md` names `tejun-survey`; `github.md` names
-nothing, because git is git. The pointer is always to a **cataloged action's tool**, never
-a loose script.
+**Where a domain has a measurable, name the tool — at the top.** An SOP carries a
+`> Tool:` line in its header, the same form `ronin_catalogs/ACTIONS.md` uses, so the eye
+finds it in the same place everywhere. `data.md` names `tejun-survey`; `secrets.md` names
+`tejun-secrets`; `github.md` names nothing, because git is git. The pointer is always to a
+**cataloged action's tool**, never a loose script.
+
+This is the shelf's sharpest edge, and it is not really about discovery. **A capable agent
+will reason well about a domain and skip the step of finding out what is actually true
+here** — it will advise on where 30GB should go without ever asking how big the disk is,
+because the advice sounds right either way. The `> Tool:` line puts information-gathering
+before the conversation instead of after it, and it costs one run. The numbers stay in a
+terminal, where they are true, and never in the file, where they would rot.
 
 ## The two voices
 

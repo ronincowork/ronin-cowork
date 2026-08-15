@@ -38,8 +38,41 @@ ram_k() {
   fi
 }
 
+# WHAT KIND OF BOX — the question that frames every other number here. On a virtual
+# machine the survey below IS the whole picture: one rented volume, and no cupboard
+# anyone forgot about. On a physical box (a home server, a laptop) it is not — there may
+# be disks nobody mentioned, which is why FILESYSTEMS lists every mount rather than one.
+kind() {
+  if command -v systemd-detect-virt >/dev/null 2>&1; then
+    local v; v="$(systemd-detect-virt 2>/dev/null || true)"
+    case "$v" in
+      none|'') echo "physical" ;;
+      lxc*|docker|podman|rkt|wsl|systemd-nspawn|container-other) echo "container ($v)" ;;
+      *) echo "virtual machine ($v)" ;;
+    esac
+  elif [ -f /.dockerenv ]; then echo "container (docker)"
+  elif [ -r /proc/1/cgroup ] && grep -qE '(docker|lxc|kubepods)' /proc/1/cgroup 2>/dev/null; then
+    echo "container"
+  elif [ "$(sysctl -n kern.hv_vmm_present 2>/dev/null || echo 0)" = 1 ]; then
+    echo "virtual machine"
+  else echo "physical (or undetectable)"
+  fi
+}
+
+# Who the box is FROM. On a rented VM this is the provider, and knowing it is often the
+# difference between "resize the volume" and "there is nothing to resize".
+vendor() {
+  local v p
+  v="$(cat /sys/class/dmi/id/sys_vendor 2>/dev/null || true)"
+  p="$(cat /sys/class/dmi/id/product_name 2>/dev/null || true)"
+  [ -z "$v$p" ] && { sysctl -n hw.model 2>/dev/null; return; }
+  printf '%s\n' "$(echo "$v $p" | sed 's/  */ /g; s/^ //; s/ $//')"
+}
+
 echo "MACHINE — measured $(date '+%Y-%m-%d %H:%M %Z')"
 printf '  %-14s %s\n' "host" "$(hostname 2>/dev/null || echo '?')"
+printf '  %-14s %s\n' "kind" "$(kind)"
+printf '  %-14s %s\n' "vendor" "$(vendor || echo '?')"
 printf '  %-14s %s\n' "cores" "$(cores || echo '?')"
 printf '  %-14s %s\n' "RAM" "$(human_k "$(ram_k)")"
 
@@ -56,6 +89,21 @@ df -Pk "$TARGET" 2>/dev/null | awk 'NR==2 {
   printf "  %-14s %s\n", "size", v[2]
   printf "  %-14s %s (%s)\n", "used", v[3], $5
   printf "  %-14s %s\n", "free", v[4]
+}'
+
+# EVERY real filesystem, not just the one above — because "how much room is there?" is
+# answered by the whole box, and an attached volume or a network share is exactly what a
+# single `df .` hides. Pseudo filesystems (tmpfs, proc, overlay) are dropped: a source
+# that is neither a device, a `host:/export` nor a `//server/share` is not storage.
+echo
+echo "FILESYSTEMS — every real mount on this box"
+df -Pk 2>/dev/null | awk 'NR > 1 && ($1 ~ /^\// || $1 ~ /:/ || $1 ~ /^\/\//) && $1 !~ /^\/dev\/loop/ {
+  if (seen[$6]++) next
+  split("KiB MiB GiB TiB", u, " ")
+  for (f = 2; f <= 4; f++) { k = $f; i = 1
+    while (k >= 1024 && i < 4) { k /= 1024; i++ }
+    v[f] = sprintf((k < 10 && i > 1) ? "%.1f %s" : "%.0f %s", k, u[i]) }
+  printf "  %-22s %-10s used %-10s free %-10s %s\n", $6, v[2], v[3] " (" $5 ")", v[4], $1
 }'
 
 # What Ronin itself is holding. `ronin-store --all` says WHERE each store is; nothing

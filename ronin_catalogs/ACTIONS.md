@@ -481,3 +481,31 @@ true. Documents cite this action; the numbers live in a terminal.
 
 Exit 3 = the path does not exist. A store that has never been used prints `not yet`
 rather than a zero — "empty" and "never created" are different answers.
+
+**Report the KIND before the numbers.** On a virtual machine the survey is the whole
+picture — one rented volume, nothing anyone forgot about. On a physical box it is not,
+which is why every mount is listed and not just the one under the working directory.
+
+## survey-secrets — what keys a project holds, and whether git can see them
+`action_kind: mechanical` — run it, don't deliberate.
+> **Tool: `tejun-secrets [path]`** (TOOLS.md)
+Establish the state of a project's keys before advising on any of it: which env files
+exist, the key **names** in each, whether git tracks them, and whether `.gitignore`
+covers them.
+```bash
+tejun-secrets                # the working directory
+tejun-secrets ~/src/someapp  # another project
+```
+**Names, never values.** A name (`STRIPE_SECRET_KEY`) is what the conversation needs; a
+value is the thing itself, and echoing one puts it in a pane, a tape, a scrollback and a
+log in a single breath. There is no flag to print values, deliberately — and the same
+rule binds you: never paste a key into a session to check it.
+
+A `*.example` / `*.sample` / `*.template` file is reported as a **template**, not an
+alarm: it is supposed to be tracked, and a check that cries wolf gets turned off, taking
+the real alarm with it.
+
+Exit 4 = something is `EXPOSED` (tracked by git), which means the key is already public
+— the response is to rotate it, not to rewrite history (`ronin_sops/secrets.md`).
+Exit 3 = the path does not exist. Read-only: it never stages, writes, or edits
+`.gitignore` — it reports, and a person decides.

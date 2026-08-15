@@ -81,27 +81,29 @@ const codeHaystack = files
 /* ------------------------------------------------------------ what is scanned */
 
 const md = (f) => f.endsWith('.md');
-// THE FREE BUILD CAVEATS. (1) A named source absent from this tree is skipped, not a
-// crash — the list is shared with the house tree, which carries docs cowork does not.
-// (2) KOTOBA.md is deliberately NOT scanned for path claims here: its Record columns
-// cite the whole product — the house tree, RONIN_SERVICES, the private working notes —
-// and this check can only see one repo. check-kotoba still holds KOTOBA to the code.
-const SOURCES = [
-  ...files.filter((f) => f.startsWith('docs/') && md(f)),
-  'CLAUDE.md',
-  'CLAUDE.local.md',
-  'README.md',
-  'ronin_library/README.md',
-  // Every SOP, not just the shelf's README: an SOP names a `> Tool:` pointer, and a
-  // pointer at a renamed tool is exactly the silent rot this check exists to catch.
-  ...files.filter((f) => f.startsWith('ronin_sops/') && md(f)),
-  'ronin_bin/README.md',
-  'public/js/README.md',
-  ...files.filter((f) => f.startsWith('ronin_catalogs/') && md(f)),
-  'co-working/user_repo/BROKEN.md',
-]
-  .filter((f, i, a) => a.indexOf(f) === i)
-  .filter((f) => files.includes(f));
+
+// EVERY markdown document in the tree is scanned. This used to be a hand-kept list of
+// sources, and a hand-kept list is a promise someone has to remember: a new SOP, a new
+// library page, a new boot document all arrived UNGATED, and the check reported "all
+// claims hold" while saying nothing about them. That is the same failure the check
+// exists to prevent, one level up — a document quietly disagreeing with the tree — so
+// the set is a rule now and a new document is gated by existing.
+//
+// The walk already skips .git, node_modules, dist and public-staging. EXEMPT is the only
+// other way out, it is per-file, and every entry says why. Prefer an IGNORE entry (a
+// named thing legally absent) over an exemption (a whole document unchecked).
+const EXEMPT = new Map([
+  // KOTOBA's Record column cites the WHOLE product — the house tree, RONIN_SERVICES, the
+  // private working notes — and this check can only see one repo, so its paths are not
+  // claims this check can rule on. check-kotoba still holds KOTOBA to the code.
+  ['KOTOBA.md', 'Record column cites repos this check cannot see (check-kotoba covers it)'],
+  // The glossary calls itself "companion to KOTOBA.md" and cites the same span of repos,
+  // so it inherits the exemption rather than earning a second reason. Twice, because the
+  // boot shelf ships a copy to every session.
+  ['KOTOBA_GLOSSARY.md', 'companion to KOTOBA.md — same cross-repo citations'],
+  ['ronin_session_boot/all/KOTOBA_GLOSSARY.md', 'the boot shelf copy of the above'],
+]);
+const SOURCES = files.filter((f) => md(f) && !EXEMPT.has(f));
 
 // Legal mentions of things that do not exist — keyed by source path, each entry with
 // its reason. This list is the negation convention's escape hatch (owner's ruling
@@ -143,6 +145,14 @@ const IGNORE = {
   // whatever repo a session works in — and never a claim about this tree.
   'ronin_sops/documents.md': ['wip/', 'wip/handoffs/', 'wip/buildouts/', 'manifest/', 'manifest/MANIFEST.md'],
   'ronin_catalogs/PROJECT_ROOTS.md': ['DAIKUSAN.md', 'src/services/rireki/decode.ts:219'],
+  // Koshi is a SERVICE, so the outlet table it names ships in RONIN_SERVICES, not here.
+  'bin/bench/README.md': ['src/koshi-model.ts'],
+  // Named with its repo in the prose — "src/lens.ts in the tmux-ronin repo" — so it is a
+  // claim about another tree by construction, not a gap in this one.
+  'libexec/rireki/README.md': ['src/lens.ts'],
+  // The boot shelf documents three levels; only `all/` is populated so far. A level that
+  // exists as a documented address before it holds a file is the design, not a defect.
+  'ronin_session_boot/README.md': ['root/'],
   'ronin_catalogs/TOOLS.md': ['docs/oboeru.md', 'docs/koshi.md'],
 };
 

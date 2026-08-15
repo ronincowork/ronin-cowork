@@ -22,7 +22,8 @@ behind.
    Not ceremony, and not required when nobody is reviewing.
 6. **Nothing secret goes in.** Keys, tokens, credentials. A secret committed is a secret
    published, and deleting the file later does not take it out of the history — so this
-   is a question to ask before the first push, not after.
+   is a question to ask before the first push, not after (`secrets.md`, and
+   `tejun-secrets` answers it in one run).
 
 ## When it goes sideways
 
