@@ -11,7 +11,7 @@ import { IS_TOUCH, S, TILE_COUNT, WHEEL_DOWN, grid, serviceOff, tiles } from './
 
 import { Tile } from './tile.js';
 import { collapseTileHead, isCoarse, makeDrop } from './tiledrop.js';
-import { setLayout } from './viewport.js';
+import { curLayout, nextLayout, setLayout } from './viewport.js';
 
 // The rooms inside the Commons, in tab order. One list: the ▤ Commons menu on desktop
 // and the ⋯ drop on touch both read it, so a new room is added in one place.
@@ -43,10 +43,10 @@ export function build() {
   }
   // Each wiring block is guarded separately: losing one control must not cost the
   // rest of the header, which is exactly what happened on 2026-08-08.
-  guard('layout buttons', () => {
-    document.querySelectorAll('.layouts button').forEach((b) => {
-      b.addEventListener('click', () => setLayout(Number(b.dataset.layout)));
-    });
+  guard('layout button', () => {
+    // Wired ONCE, here, for both surfaces: the touch bar relocates this very node
+    // rather than building its own (buildDrawers), so the handler comes with it.
+    document.getElementById('layoutcycle')?.addEventListener('click', () => setLayout(nextLayout(curLayout())));
   });
   // Resumed tab (esp. mobile — a backgrounded page can live for days): re-fetch the list.
   document.addEventListener('visibilitychange', () => {
@@ -433,31 +433,22 @@ export function buildDrawers() {
     el.querySelector('.txt')?.remove(); // the word is the row's now
     drop.addRow(el, label);
   }
-  // The grid count, between メ and ニ — this session, how many of them, the app.
+  // The grid count comes up between メ and ニ — this session, how many of them, the app.
+  // RELOCATED, not rebuilt, like everything else in this row: it is the desktop bar's
+  // own button, so its click handler and the face setLayout writes come with it.
   //
-  // Touch used to have no way to ask for a second terminal at all: the desktop trio
-  // was three loose controls that did not fit a phone bar, so it was deleted here and
-  // hidden by the stylesheet. That is right for a 402px phone and wrong for an iPad,
-  // which is a coarse pointer with room for four — the owner could land on a saved 4
-  // and not get back, or sit on 1 and not get out. One button instead of three: it
-  // SHOWS the count it is on and cycles 1 → 2 → 4 → 1, the same three values and the
-  // same order as the pad's layout key (js/pad.js). setLayout writes its face.
-  const cyc = document.createElement('button');
-  cyc.id = 'layoutcycle';
-  cyc.type = 'button';
-  cyc.className = 'layout-cycle';
-  cyc.textContent = String(Number(grid.dataset.layout) || 1);
-  cyc.addEventListener('click', () => {
-    const n = Number(grid.dataset.layout) || 1;
-    setLayout(n === 1 ? 2 : n === 2 ? 4 : 1);
-  });
-  bar.append(cyc);
+  // Touch used to have no way to ask for a second terminal at all. The count was a
+  // segmented 1|2|4 whose 24px cells no finger could pick apart, so it was deleted here
+  // and hidden by the stylesheet — right for a 402px phone, wrong for an iPad, which is
+  // a coarse pointer with room for four. The owner opened one and found メ and ニ and no
+  // way to change the grid. One button that cycles is a control a finger can hit.
+  const cyc = document.getElementById('layoutcycle');
+  if (cyc) bar.append(cyc); // append MOVES the node — the listener comes along
 
   bar.append(drop.btn, drop.menu);
 
   // Desktop bar scaffolding, now emptied out on touch.
   document.querySelector('#bar .ctrls')?.remove(); // took #k-more (⋯) with it
-  document.querySelector('#bar .layouts')?.remove(); // the cycle button above replaces the trio
   document.querySelector('#bar .grow')?.remove();
   keypad?.remove();
 }

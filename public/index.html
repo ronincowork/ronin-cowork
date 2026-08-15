@@ -24,11 +24,11 @@
         <button id="k-bottom" title="Jump to latest output">⤓</button>
         <button id="k-more" title="More keys" aria-expanded="false">⋯</button>
       </div>
-      <div class="layouts" role="group" aria-label="Grid layout">
-        <button data-layout="1" title="Single terminal">1</button>
-        <button data-layout="2" title="Two terminals">2</button>
-        <button data-layout="4" class="active" title="Four terminals">4</button>
-      </div>
+      <!-- The grid count: ONE button wearing the number it is on, tapped to cycle
+           1 → 2 → 4 → 1. It was a segmented trio, which spent three boxes saying what
+           one says and left two of them permanently dark. js/viewport.js writes the
+           face; the same node is relocated into the touch bar by js/layout.js. -->
+      <button id="layoutcycle" class="layout-cycle" title="Four terminals — click for 1">4</button>
     </header>
     <div id="keypad" role="group" aria-label="More keys">
       <button data-key="cr" title="Enter">↵</button>

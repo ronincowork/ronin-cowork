@@ -134,7 +134,7 @@ body {
 #mikabtn,
 #commonsbtn,
 #padbtn,
-#bar .layouts {
+#bar .layout-cycle {
   display: inline-flex;
   align-items: center;
   background: transparent;
@@ -660,26 +660,6 @@ body {
   border-color: #cc6666;
 }
 
-.layouts {
-  display: inline-flex;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  overflow: hidden;
-}
-.layouts button {
-  background: transparent;
-  color: var(--muted);
-  border: 0;
-  width: 34px;
-  height: 30px;
-  font-size: 13px;
-  cursor: pointer;
-}
-.layouts button.active {
-  background: var(--panel);
-  color: var(--accent);
-}
-
 /* ---- grid ---- */
 #grid {
   flex: 1 1 auto;
@@ -1203,10 +1183,6 @@ body {
   #keypad button:active {
     background: var(--accent);
     color: #000;
-  }
-  /* hide grid layout buttons on a phone — single terminal is the norm */
-  .layouts {
-    display: none;
   }
 }
 
@@ -2973,6 +2949,10 @@ body {
      The face is a digit, so it takes the bar's own font rather than the kana size. */
   #bar .layout-cycle {
     flex: 0 0 auto;
+    /* Holds the count and ニ against the right edge when there is no picker up here to
+       fill the row — i.e. at 2 or 4, where each tile wears its own header again. A
+       no-op at 1: the picker is flex:1 and leaves no free space for a margin to take. */
+    margin-left: auto;
     height: 40px;
     min-width: 44px;
     background: var(--panel);
@@ -4077,23 +4057,33 @@ body {
   border-top: 1px solid var(--line);
 }
 
-/* The layout trio is the FOURTH button: one box the same size as the other three,
-   with 1 / 2 / 4 as segments inside it rather than three loose controls. */
-#bar .layouts { padding: 0 2px; gap: 0; }
-#bar .layouts button {
-  height: 26px;
-  min-width: 24px;
-  padding: 0 6px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--muted);
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
+/* The grid count is the FIFTH button, one box the same size as the four verbs beside it
+   (it joins their rule above). It was a segmented 1|2|4 inside that box: three cells to
+   say what one says, two of them dark at any moment, and 24px each — too narrow to hit
+   with a finger, which is why touch deleted the whole thing rather than inherit it.
+   One button wearing the number it is on, clicked to cycle, is the same control on both
+   surfaces. Centred, and monospaced digits so 1 / 2 / 4 do not shift the box. */
+#bar .layout-cycle {
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
 }
-#bar .layouts button.active { background: var(--line); color: var(--fg); }
-#bar .layouts button:hover { color: var(--fg); }
+/* Sizing is per-surface and must not cross: the touch block earlier in this file gives
+   it a 44px finger target, and an unscoped min-width down here would quietly undo it. */
+@media (hover: hover) and (pointer: fine) {
+  #bar .layout-cycle {
+    min-width: 34px;
+    padding: 0 8px;
+  }
+  #bar .layout-cycle:hover {
+    color: var(--fg);
+    border-color: var(--muted);
+  }
+  #bar .layout-cycle:active {
+    background: var(--line);
+    color: var(--fg);
+  }
+}
 /* The menu wears the bar's own surface, not the panel's darker one — it drops out
    of the bar and should read as part of it. */
 .commons-menu { background: var(--bg-2); }

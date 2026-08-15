@@ -1,6 +1,6 @@
 /* part of the tmux-ronin client — see js/README.md */
 import { IS_TOUCH, S, WHEEL_DOWN, WHEEL_UP, grid, tiles } from './state.js';
-import { setLayout } from './viewport.js';
+import { curLayout, nextLayout, setLayout } from './viewport.js';
 
 export const LS_PAD = 'tmuxgrid.worklouder';
 export const PAD_CODE = /^F1[3-9]$|^F2[0-4]$/; // the ONLY codes the pad logic touches
@@ -189,8 +189,7 @@ export function firePadBinding(bind) {
       return;
     }
     if (bind.key === 'layoutcycle') {
-      const n = Number(grid.dataset.layout) || 4;
-      setLayout(n === 1 ? 2 : n === 2 ? 4 : 1);
+      setLayout(nextLayout(curLayout())); // same ring as the bar button — one statement of it
       return;
     }
     if (k.dir) {

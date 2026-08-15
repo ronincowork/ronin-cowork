@@ -29,9 +29,12 @@
  * no second copy to keep in sync.
  *
  * WHY THIS NEEDS ONE TILE: a tile header is per-tile and the app bar is per-page, so
- * hoisting one into the other is only honest when there is exactly one tile. On a
- * phone there is — `main.js` pins the ≤680px layout to a single terminal, which was
- * already the first-run default and the only usable one at that width.
+ * hoisting one into the other is only honest when there is exactly one tile. That used
+ * to be a standing fact on touch — there was no way to ask for a second terminal. Now
+ * the bar's grid count cycles here too, so it is a CONDITION instead: `setLayout` calls
+ * `collapseTileHead` at one tile and `expandTileHead` at two or four, and the merge
+ * lasts exactly as long as it is true. A phone still opens on one terminal, which is
+ * both the first-run default and the only usable count at 402px.
  *
  * Desktop never calls any of this: it has room, and per the cardinal rule it does
  * not change.
@@ -146,7 +149,15 @@ export function collapseTileHead(tile) {
   // arrow read as the top bar's ⟳ Refresh, which is a different action entirely.
   head.querySelector('.rc')?.remove();
 
+  if (tile.headKids) return; // already up there
+  // Everything that is about to leave, in the order it sits in now. `expandTileHead`
+  // puts the list back with one `append`, so the head is restored exactly — no second
+  // list of what goes where, which is the copy that would rot. Snapshotted AFTER ⟳ is
+  // removed, because ⟳ does not come back.
+  tile.headKids = [...head.children];
+
   const drop = makeDrop('メ', 'This session — status, ladder, TEGAMI, macros, groups, note, control', 'me');
+  tile.headDrop = drop;
   for (const [sel, label] of ITEMS) {
     const ctl = head.querySelector(sel);
     if (!ctl) continue;
@@ -164,10 +175,17 @@ export function collapseTileHead(tile) {
   // to push a row of buttons to the far edge, and the picker wants that room.
   const dot = head.querySelector('.dot');
   const sel = head.querySelector('select.sess');
-  bar.append(...[dot, sel, drop.btn, drop.menu].filter(Boolean));
-  // ⚡'s menu is anchored to whatever it sits in; it followed its button up here.
+  // BEFORE the grid count, which is the row's right-hand end along with ニ. On first
+  // build the count is the last thing in the bar and appending would land after it;
+  // when the head comes back UP (the count went 2 → 1) the count is already sitting
+  // between メ and ニ. Inserting against it reads left-to-right either way round —
+  // appending was right exactly once, on the first pass.
+  const anchor = bar.querySelector('#layoutcycle');
+  // ⚡'s menu is anchored to whatever it sits in; it follows its button up here.
   const tmac = head.querySelector('.tmac');
-  if (tmac) bar.append(tmac);
+  for (const n of [dot, sel, drop.btn, drop.menu, tmac]) {
+    if (n) anchor ? bar.insertBefore(n, anchor) : bar.append(n);
+  }
   // The emptied head STAYS in the tile, hidden by the stylesheet. It is still the
   // anchor the ladder inserts itself after (`toggleLadder`), and removing it would
   // make that a null dereference — the cheapest possible way to blank a tile.
@@ -176,4 +194,40 @@ export function collapseTileHead(tile) {
   // The reading may already have arrived before the drop existed — repaint it into
   // the row we just built rather than waiting 30s for the next poll.
   tile.setFooter(tile.ctxPct ?? null, tile.ctxModel ?? null);
+}
+
+/**
+ * TOUCH: give the tile its head back — the merge undone, because it stopped being true.
+ *
+ * The merge rests on ONE claim: a tile header is per-tile and the app bar is per-page, so
+ * hoisting one into the other is only honest when there is exactly one tile. It used to be
+ * a standing fact — the phone was pinned to a single terminal and had no way to ask for
+ * more. Now the bar's grid count cycles on touch as well, and an iPad has room for four:
+ * ask for two and tile 1 was left with no header at all, its picker stranded in the app
+ * bar controlling a tile you could no longer tell apart, while tile 2 wore its own. A tile
+ * inside a tile, as the owner put it.
+ *
+ * So the merge follows the count instead of the device. One tile: hoisted. Two or four:
+ * every tile keeps its own header and the bar goes back to being about the page.
+ *
+ * The head is restored from the snapshot `collapseTileHead` took, in one `append` — nodes
+ * MOVE, so this reverses the hoist exactly and every live widget (needle, pointer, chip)
+ * keeps the owner it always had. Idempotent: no snapshot means nothing was hoisted.
+ */
+export function expandTileHead(tile) {
+  const kids = tile?.headKids;
+  if (!kids) return;
+  const head = tile.el.querySelector('.tile-head');
+  if (!head) return;
+
+  head.append(...kids); // append MOVES each node back, in the order it was taken
+  // メ is the bar's half of the merge and has no meaning beside a header that is back in
+  // its tile. Dropped rather than hidden, so the next collapse builds a fresh one against
+  // whatever the header holds by then.
+  tile.headDrop?.btn.remove();
+  tile.headDrop?.menu.remove();
+  head.classList.remove('hoisted');
+  tile.headDrop = null;
+  tile.headKids = null;
+  tile.dropStatus = null; // the status row went with the sheet; setFooter checks for it
 }
