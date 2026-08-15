@@ -621,7 +621,7 @@ export function buildHome(tile) {
   const wipe = buildWipeboard(tile, wipePane, () => tile.homeVisible() && el.dataset.pane === 'wipe');
   const docs = buildDocs(tile, docsPane, () => tile.homeVisible() && el.dataset.pane === 'docs');
   // The Project Root pane: the inclusion_list, and the two verbs that maintain it.
-  const proj = buildProjectRoots(projPane, () => tile.homeVisible() && el.dataset.pane === 'proj');
+  const proj = buildProjectRoots(projPane, () => tile.homeVisible() && el.dataset.pane === 'proj', tile);
   // The dictation glossary. Built last with the other panes, same contract.
   // 'hotwords', not 'words' — the pane key was renamed with the feature and this
   // predicate was missed, so it answered false forever and the pane never counted
@@ -662,6 +662,7 @@ export function buildHome(tile) {
       const jb = document.createElement('span');
       const mark = jobIcon(s);
       jb.className = 'home-job' + (mark ? '' : ' off');
+      jb.dataset.job = s.session_job || ''; // so style can reach one mark — see style.css
       jb.textContent = mark;
       jb.title = mark ? s.session_job : 'has not said what it is doing yet';
       r.appendChild(jb);

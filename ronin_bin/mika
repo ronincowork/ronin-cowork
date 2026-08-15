@@ -5,6 +5,10 @@
 #        mika "<request...>"         no job named -> system_help, which is her default
 #        mika                        just get her up (or tell you she already is)
 #
+# ALIASES: `include` and `exclude` both mean `project_root`. They are what the owner
+# actually says and what the ▣ tab's button is labelled, and a router that only answers
+# to the catalog's own spelling makes the owner learn a second name for one act.
+#
 # THE ONE ROUTING PATH, and deliberately the only one. An invocation from this file's
 # catalog (ronin_catalogs/MIKA_MACROS.md) may be typed anywhere — the phone compose bar,
 # a pad key, or straight into a pane on a Mac where Ronin cannot see it. Rather than one
@@ -28,6 +32,10 @@ set -u
 JOBS="system_help project_root new_session system_config"
 
 job="${1:-system_help}"
+# The words the owner uses for the project_root job, mapped before the lookup.
+case "$job" in
+  include|exclude|include:|exclude:) job=project_root ;;
+esac
 case " $JOBS " in
   *" $job "*) shift || true ;;
   # No job named: the whole line is a question, and questions are system_help. Her

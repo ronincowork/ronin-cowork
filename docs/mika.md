@@ -20,8 +20,18 @@ mechanical rather than a matter of taste:
 | | |
 |---|---|
 | **ミ Mika Assist** in the header | brings her tile forward, starting her if she is not up. Then you just talk to her |
+| **＋ include** on the ▣ Roots tab | hands her the include job in the same tile. It is no longer a form |
 | `+system_help: how do dials work?` typed anywhere | `ronin_bin/mika` routes it to her, wherever you typed it |
+| `+include: the cowork repo` | the same — `include` and `exclude` are aliases for `project_root` |
 | `mika "<question>"` in any pane | the same, by hand |
+
+**＋ include stopped being a form on 2026-08-15.** It opened five text fields, and only one
+of them — the handle — was genuinely the owner's. `dir`, `read`, `match` and `remit` are
+facts the machine already holds, and the form asked the owner to go and look them up, on a
+phone, with autocapitalize off. The real intent is one bit: *this directory, yes.* Making
+the form nicer was the alternative and it was the wrong repair, because the fastest form is
+still a form. **The per-root edit form stays** — changing one field of a block that already
+exists is a different and much cheaper act.
 
 **Her four jobs** are catalogued in `ronin_catalogs/MIKA_MACROS.md`:
 `system_help` (the default) · `project_root` · `new_session` · `system_config`.

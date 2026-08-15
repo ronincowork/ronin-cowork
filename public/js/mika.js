@@ -33,15 +33,23 @@ const OPENED_FROM_BAR =
   'Say hello in one line, say what you can do, and wait.';
 
 /**
- * Bring Mika up in `tile`, starting her if she is not running.
- * Returns true if she was started by this call — the caller says so, not us.
+ * Bring Mika up in `tile`, starting her if she is not running, and optionally hand her a
+ * request on the way in.
+ *
+ * TWO DELIVERY PATHS, for the same reason `ronin_bin/mika` has two: a session that does
+ * not exist yet is TOLD its request as the launch brief, which the boot path guarantees
+ * (it waits out a trust dialog and re-types until the text is visibly there). A session
+ * already up is sent to. Same request either way — she cannot tell how she got it.
+ *
+ * Returns true if she was started by this call; the caller says so, not us.
  */
-export async function askMika(tile) {
+export async function askMika(tile, request) {
   if (!tile) return false;
   let born = false;
   try {
     const live = await fetch('/api/sessions', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : []));
-    if (!Array.isArray(live) || !live.some((s) => s && s.name === MIKA)) {
+    const up = Array.isArray(live) && live.some((s) => s && s.name === MIKA);
+    if (!up) {
       const r = await fetch('/api/launch', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -50,15 +58,21 @@ export async function askMika(tile) {
           name: MIKA,
           mode: 'assisted',
           tags: [MIKA],
-          prompt: OPENED_FROM_BAR,
+          prompt: request || OPENED_FROM_BAR,
         }),
       });
       const d = await r.json().catch(() => ({}));
-      // 409 = she appeared between the list and the launch (two taps, two tabs). That is
-      // not a failure: what was wanted was her tile, and there it is.
+      // 409 = she appeared between the list and the launch (two taps, two tabs). Not a
+      // failure: what was wanted was her tile, and there it is.
       if (!r.ok && r.status !== 409) throw new Error(d.error || r.statusText);
       born = r.ok;
-      if (born) void fetchSessions(); // the roster should show her without waiting for a poll
+      if (born) void fetchSessions(); // the roster shows her without waiting for a poll
+    } else if (request) {
+      await fetch('/api/sessions/' + encodeURIComponent(MIKA) + '/send', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ text: request }),
+      });
     }
     tile.connect(MIKA);
     return born;

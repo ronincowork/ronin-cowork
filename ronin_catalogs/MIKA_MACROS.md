@@ -39,6 +39,9 @@ That is the difference between an assistant and a search box.
 
 ## project_root
 - **class:** mika_macro
+> **Also `+include:` and `+exclude:`** — the same job under the words the owner actually
+> says, and the words the ▣ tab's own button is labelled with. `mika include "<dir>"`
+> maps here before anything else happens.
 Include a directory, or edit / exclude one. The catalog is `PROJECT_ROOTS.md` in the
 catalogs store — the owner's file, outside every repo.
 
