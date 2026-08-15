@@ -24,7 +24,7 @@ import {
 import { runCommand, sendText } from '../send.js';
 import { AtSessionMax, liveCount, readMax, readOwner, writeMax, writeOwner } from '../user-config.js';
 import { resolveForm, appendLedger, type SpawnForm } from '../spawn.js';
-import { classifyStatus, waitReady, type SessionStatus } from '../status.js';
+import { classifyStatus, waitReadyForBrief, type SessionStatus } from '../status.js';
 import { scanContext } from '../ctx.js';
 
 import { count } from '../counts.js';
@@ -148,23 +148,30 @@ export function registerLaunch(app: express.Express): void {
       const birthLines = await collectBirthLines(resolved.name, !!resolved.agent);
       // `agent: none`: nothing is launched and nothing is said. Falling through would
       // press Enter in the pane (runCommand sends the literal string, then Enter), then
-      // burn waitReady's full 20s timeout waiting for a CLI prompt that will never come,
+      // burn the readiness wait waiting for a CLI prompt that will never come,
       // and finally type the letter's brief into bash.
       if (!resolved.agent) return;
       await runCommand(resolved.name, resolved.cmd);
-      // WAIT FOR READY, AND BELIEVE THE ANSWER. waitReady's 20s default is shorter than a
-      // cold CLI start, and its `false` used to be discarded — the brief was typed anyway,
-      // into whatever happened to be on screen. Twice that was a trust-folder dialog,
-      // whose rows are drawn with the same `❯` as a prompt: the text went nowhere and the
-      // Enter answered the dialog. Nothing about the session looked wrong afterwards.
-      const ready = await waitReady(resolved.name, 90000);
-      if (!ready) {
-        // Do NOT send. A CLI that is not ready is usually waiting on the owner (trust this
-        // folder? pick a model?), and typing a brief into that is at best lost and at worst
-        // an answer given on their behalf.
+      // WAIT FOR READY, AND BELIEVE THE ANSWER — and wait far longer when what is
+      // blocking is a DIALOG, because then the thing being waited for is a person.
+      // The old wait gave up after 20s — shorter than a cold CLI start — and its `false` used to
+      // be discarded: the brief was typed anyway, into whatever was on screen. Twice that
+      // was a trust-folder dialog, whose rows are drawn with the same `❯` as a prompt, so
+      // the text went nowhere and the Enter answered the dialog.
+      const { ready, held } = await waitReadyForBrief(resolved.name);
+      if (held) {
         console.error(
-          `[tmux-ronin] ${resolved.name}: not ready after 90s — brief NOT sent. ` +
-            `The pane is probably asking something; answer it in the tile and re-send.`,
+          `[tmux-ronin] ${resolved.name}: the CLI is asking something (trust this folder?) — ` +
+            `waiting to deliver the brief until it is answered.`,
+        );
+      }
+      if (!ready) {
+        // Do NOT send. A CLI that is not ready is either broken or still asking, and
+        // typing a brief into that is at best lost and at worst an answer given on the
+        // owner's behalf.
+        console.error(
+          `[tmux-ronin] ${resolved.name}: never became ready — brief NOT sent. ` +
+            `Answer whatever the pane is asking, then re-send it.`,
         );
         return;
       }

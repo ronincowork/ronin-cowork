@@ -23,7 +23,7 @@ export const STATUS_PATTERNS: { status: SessionStatus; re: RegExp }[] = [
   // Ready: an agent prompt row. Claude Code draws "❯ " and then fills the rest of
   // the line with its own placeholder hint (`❯ Try "create a util…"`), so an
   // "empty to end of line" test never fires and a fresh session looked unready
-  // until waitReady timed out. Match the prompt row itself, hint or no hint.
+  // until the readiness wait timed out. Match the prompt row itself, hint or no hint.
   { status: 'ready', re: /^\s*[│┃]?\s*❯/m },
   // Ready: the boxed "│ > " prompt row some CLIs draw instead of ❯.
   { status: 'ready', re: /^\s*[│┃]\s*>\s/m },
@@ -50,18 +50,42 @@ export async function probeStatus(session: string): Promise<SessionStatus | null
   }
 }
 
+
 /**
- * Wait for a freshly-launched CLI to reach its ready prompt (used by the home-panel
- * launcher before delivering the first prompt). Resolves false on timeout — the
- * caller sends anyway and the pane shows what happened.
+ * Wait for a CLI that is about to be handed its first message — and WAIT LONGER WHEN A
+ * PERSON IS THE THING BEING WAITED FOR.
+ *
+ * A freshly-launched CLI in an unfamiliar directory opens a dialog: *do you trust this
+ * folder?* It will sit there forever, because it is waiting for a human. Two states that
+ * look the same to a stopwatch, and want opposite patience:
+ *
+ *   - not ready, nothing asked   a slow start. Give it ~90s, then something is wrong.
+ *   - not ready, DIALOG open     a person has to answer. Waiting is the correct
+ *                                behaviour, and it is not a fault at any duration.
+ *
+ * So the deadline is chosen by WHAT is blocking, not by how long it has taken. Once a
+ * dialog has been seen the window opens to a quarter of an hour, because "launch a
+ * session, get distracted, come back and answer it" is completely ordinary — and under
+ * the old flat 90s the brief was silently dropped in exactly that case, leaving a session
+ * that looked alive and had been told nothing.
+ *
+ * `held` reports whether a dialog was ever seen, so the caller can say so rather than
+ * leaving the delay unexplained.
  */
-export async function waitReady(session: string, timeoutMs = 20000): Promise<boolean> {
-  const until = Date.now() + timeoutMs;
-  while (Date.now() < until) {
-    if ((await probeStatus(session)) === 'ready') return true;
-    // Tight poll: a CLI reaches its prompt in ~1s and the first prompt should land
-    // the moment it does — this interval IS the perceived lag of a new session.
-    await new Promise((r) => setTimeout(r, 150));
+export async function waitReadyForBrief(
+  session: string,
+  { quietMs = 90000, heldMs = 900000 } = {},
+): Promise<{ ready: boolean; held: boolean }> {
+  const start = Date.now();
+  let held = false;
+  for (;;) {
+    const status = await probeStatus(session);
+    if (status === 'ready') return { ready: true, held };
+    // A dialog is on screen. Note it once; from here the long window applies.
+    if (status === 'awaiting-input') held = true;
+    if (Date.now() - start > (held ? heldMs : quietMs)) return { ready: false, held };
+    // Deliberately unhurried: this one may run for a quarter of an hour,
+    // and nobody is watching the first second of it.
+    await new Promise((r) => setTimeout(r, 500));
   }
-  return false;
 }
