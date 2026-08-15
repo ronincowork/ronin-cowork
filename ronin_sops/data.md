@@ -31,20 +31,16 @@ on it? A working box also carries the session tapes, every checkout and every
 
 ## Three homes
 
-- **Records** — anything queried, joined, counted, or written by two things at once. A
-  database, and **Postgres unless you can say why not**: SQLite when it is one process
-  with no network, and then stop shopping; a document store when the shape genuinely
-  varies per record and you read and write whole documents. Reaching for one *because
-  the shape is not settled yet* is not a data decision, it is deferring one, and it is
-  paid for later. Managed beats self-hosted for anything you would miss — running your
-  own is a job, not a checkbox.
-- **Files** — anything read whole: media, documents, exports, archives. Object storage,
-  or a synced folder (Syncthing, Dropbox) when a person works across machines. **A synced
-  folder is a replica, not a backup** — deletion propagates, and that is the whole risk in
-  one sentence. Never sync a directory a process is actively writing to: half-written
-  files replicate and conflict copies breed.
-- **Scratch** — working copies, intermediate output, anything reproducible. A working
-  disk, and it may vanish.
+- **Records** — a database, and **Postgres unless you can say why not**: SQLite when it is
+  one process with no network, and then stop shopping; a document store when the shape
+  genuinely varies per record. Reaching for one *because the shape is not settled yet* is
+  not a data decision, it is deferring one. Managed beats self-hosted for anything you
+  would miss — running your own is a job, not a checkbox.
+- **Files** — object storage, or a synced folder (Syncthing, Dropbox) when a person works
+  across machines. **A synced folder is a replica, not a backup** — deletion propagates,
+  and that is the whole risk in one sentence. Never sync a directory a process is writing
+  to.
+- **Scratch** — anything reproducible. A working disk, and it may vanish.
 
 ## The machine is not a home
 
@@ -55,17 +51,11 @@ decision that has already been made.
 
 ## Connecting to it
 
-Wherever it lands, the connection itself follows three rules:
-
-- **The address and the credential are configuration, never code** — a connection string
-  lives in the environment, and it is a secret even when it looks like a URL
-  (`secrets.md`).
-- **Connect from one place in the code.** One module owns the client; everything else asks
-  it. Moving the data later is then an edit in one file rather than a hunt.
-- **Prove the connection before building on it.** Read one row, list one object, fetch one
-  file — from the machine that will actually do it, not from your laptop. A managed
-  database usually has to be told which addresses may reach it, and that is the step
-  people discover last.
+- **A connection string is a secret even when it looks like a URL.** It lives in the
+  environment, never in the code (`secrets.md`).
+- **Prove the connection from the machine that will actually make it**, not from your
+  laptop — one row, one object, one file. A managed database usually has to be told which
+  addresses may reach it, and that is the step people discover last.
 
 ## Before moving anything
 

@@ -20,9 +20,17 @@ does — and the arrow runs that way only (owner, 2026-08-15). The test when you
 unsure: **if you can name the action that would cite it, it is library.** If the only
 answer is "someone would look it up when the topic came up", it is an SOP.
 
-**Short.** An SOP is a stance and an order of operations, not a manual. If it runs past a
-screen it has stopped being a standard and become a how-to — and a how-to is either
-library or nothing, because the agent reading it already knows the domain.
+**Cut what is blindingly obvious.** The test is not length — it is whether a competent
+agent already knows the step. If a procedure has ten steps and eight of them are obvious,
+write the two. An SOP is not there to replace the agent's judgment with a checklist; it is
+there to say **which of several workable ways this house picks**, and to point at the
+actions that do the work. Length is a symptom: a file that keeps growing is usually one
+that has started explaining rather than deciding.
+
+The obvious step and the house preference can look alike, so the discriminator is: could
+somebody competent land somewhere else and still be right? If yes it is a preference and
+it belongs here (where a document lives, which database by default, what counts as done).
+If no, it is instruction and the agent already has it.
 
 **No facts about a machine.** An SOP says where to look and what to establish first. It
 never says what is installed, what is running, or where anything currently sits — those
