@@ -153,9 +153,16 @@ export class TermView {
       if (this.getSelection()) return; // they got a selection — nothing went wrong
       if (Date.now() - shownAt < REARM_MS) return;
       shownAt = Date.now();
+      // TWO marks, because one in a corner is missable on a screen where something is
+      // always moving: the pill says the words, and the tile's own edge flashes kaki
+      // behind it so peripheral vision catches it even while you are reading elsewhere.
       hint.classList.add('show');
+      this.body.classList.add('hinting');
       clearTimeout(timer);
-      timer = setTimeout(() => hint.classList.remove('show'), 5000);
+      timer = setTimeout(() => {
+        hint.classList.remove('show');
+        this.body.classList.remove('hinting');
+      }, 5000);
     });
   }
 

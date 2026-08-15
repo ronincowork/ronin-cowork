@@ -17,7 +17,12 @@
      Aiiro (indigo)    — selection and navigation. RONIN itself.
      Kojin's dark theme lifts the indigo "to carry"; #274A78 on this near-black
      ground is a bruise, so -lift is that lift and the two hexes stay untouched as
-     the record of what they are. */
+     the record of what they are.
+
+     KAKI HAS A SECOND USE from 2026-08-15: the copy hint (js/termview.js) flashes
+     kaki-lift, on the owner's word, because it is the one saturated mark and the
+     hint's whole job is to not be missed. The two never share a screen — メ is
+     touch-only, the hint is desktop-only. See the .copyhint block below. */
   --kaki: #c46243;
   --kaki-lift: #e08163;
   --aiiro: #274a78;
@@ -1030,30 +1035,109 @@ body {
   display: block;
 }
 
-/* The copy hint: a drag in a locked tile that produced no selection (js/termview.js).
-   Sits TOP-right, not bottom — the bottom of a tile is the dvr strip and the composer,
-   and the two must never stack on top of each other. Not a tap target: it says a key and
-   goes away, and anything clickable here would be in the way of the next drag. */
+/* THE COPY HINT — a drag in a locked tile that produced no selection (js/termview.js).
+   In KAKI, and loud on purpose.
+
+   The first cut was a quiet grey pill in a corner, and the owner's objection was the
+   right one: on a screen where four terminals are always painting, a soft fade in the
+   furniture colour is exactly the thing the eye has learned to ignore. So it takes the
+   one saturated mark in the house palette and it MOVES differently from the terminal
+   text behind it — text scrolls vertically, this pulses in place.
+
+   KAKI IS ALREADY DOING A JOB (agent action / THIS SESSION, on the phone's メ opener),
+   and this gives it a second. Accepted deliberately: the two never share a screen —
+   メ is touch-only and this is desktop-only — and what both uses have in common is
+   "the thing you are meant to look at right now".
+
+   Sits TOP-right: the bottom of a tile is the dvr strip and the composer. Not a tap
+   target — it says a key and goes away, and anything clickable here would be in the
+   way of the next drag. */
 .copyhint {
   position: absolute;
   top: 8px;
   right: 10px;
   z-index: 6;
   max-width: calc(100% - 20px);
-  padding: 6px 10px;
+  padding: 7px 12px;
   border-radius: 6px;
-  background: var(--bg-2);
-  border: 1px solid var(--accent);
-  color: var(--fg);
-  font: 12px/1.35 system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--kaki-lift);
+  border: 1px solid var(--kaki);
+  color: var(--bg); /* near-black on the lift — 6.9:1 */
+  font: 600 12.5px/1.35 system-ui, -apple-system, "Segoe UI", sans-serif;
   pointer-events: none;
   opacity: 0;
-  transform: translateY(-4px);
-  transition: opacity 0.18s ease, transform 0.18s ease;
 }
 .copyhint.show {
-  opacity: 1;
-  transform: none;
+  animation: copyhint-in 0.9s ease-out forwards;
+}
+/* Snap in, beat twice, hold. The ring is what carries at the edge of vision; the
+   scale is small on purpose, because a pill that jumps far reads as a bug. */
+@keyframes copyhint-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.94);
+    box-shadow: 0 0 0 0 rgba(224, 129, 99, 0.7);
+  }
+  18% {
+    opacity: 1;
+    transform: none;
+  }
+  40% {
+    box-shadow: 0 0 0 9px rgba(224, 129, 99, 0);
+  }
+  55% {
+    box-shadow: 0 0 0 0 rgba(224, 129, 99, 0.55);
+  }
+  85%,
+  100% {
+    opacity: 1;
+    transform: none;
+    box-shadow: 0 0 0 9px rgba(224, 129, 99, 0);
+  }
+}
+
+/* The tile's own edge, flashed kaki behind the pill — the half that works while you
+   are looking at a DIFFERENT tile.
+
+   An ::after overlay, not an inset box-shadow on .tile-body itself: an inset shadow
+   paints above the background and BELOW the children, and the child here is a canvas
+   filling the whole box, so the ring would have been invisible in exactly the view it
+   exists for. z-index 5 puts it over the terminal and under the pill (6). */
+.tile-body.hinting::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  border: 2px solid transparent;
+  animation: copyhint-edge 0.9s ease-out;
+}
+@keyframes copyhint-edge {
+  0%,
+  100% {
+    border-color: transparent;
+  }
+  18%,
+  55% {
+    border-color: var(--kaki-lift);
+  }
+  40% {
+    border-color: rgba(224, 129, 99, 0.25);
+  }
+}
+
+/* DESIGN_TOKENS.md §7: "every animation ships a prefers-reduced-motion fallback that
+   resolves to the FINISHED state — copy that discipline, don't just copy the keyframes."
+   The finished state here is the pill, plainly visible. It still leaves after 5s,
+   because the timeout is JS and does not care about motion preferences. */
+@media (prefers-reduced-motion: reduce) {
+  .copyhint.show {
+    animation: none;
+    opacity: 1;
+  }
+  .tile-body.hinting::after {
+    animation: none;
+  }
 }
 
 /* ---- touch: control keys + the keypad (hidden on desktop) ----
