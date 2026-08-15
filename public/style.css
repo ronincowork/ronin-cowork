@@ -4007,3 +4007,38 @@ body {
 .hot-whose.own {
   color: #6ea8fe;
 }
+
+/* ---- THE HOUSE TOOLTIP (js/tips.js) --------------------------------------------
+   One box for every `title` in the client. A native tooltip is drawn by the OS and
+   takes no CSS at all — it sizes itself to its text and places itself where it likes,
+   so ninety-odd labels meant ninety-odd differently-shaped boxes appearing in
+   different spots. Moving along one row of buttons made it jump and change shape.
+
+   FIXED WIDTH is the whole point: the box is the same 280px whatever is in it, so
+   crossing the header row changes the words and nothing else. Long help wraps to more
+   lines rather than stretching sideways, and `min-height` holds two lines' worth so
+   the short labels do not collapse to a sliver. Height is the one dimension allowed
+   to grow — pinning it too would clip the long ones (🔒 LOCKED, メ commons), and
+   silently losing half a sentence is worse than a taller box. */
+.tip {
+  position: fixed;
+  z-index: 90;
+  left: 0;
+  top: 0;
+  display: none;
+  box-sizing: border-box;
+  width: 280px;
+  min-height: 2.9em;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--fg);
+  font: 12px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
+  /* It explains what is under the pointer; it must never become what is under it. */
+  pointer-events: none;
+}
+.tip.show {
+  display: block;
+}

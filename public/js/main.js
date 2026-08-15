@@ -6,6 +6,7 @@ import { loadMacros, loadPresets, loadProjects, loadSavedLaunches, refreshHome }
 import { build } from './layout.js';
 import { S, TILE_COUNT, loadState, tiles } from './state.js';
 import { setLayout } from './viewport.js';
+import { installTips } from './tips.js';
 
 export async function init() {
   // Ask the operator which optional surfaces are plugged in BEFORE the grid is built,
@@ -56,6 +57,10 @@ export async function init() {
   guard('activate first tile', () => {
     if (tiles[0]) tiles[0].activate();
   });
+  // One box for every `title` in the client, styled and placed by us. Wired last and
+  // wired ONCE, on the document: nothing that sets a title has to know it exists, so
+  // this covers the whole app including the static titles in index.html.
+  guard('house tooltips', installTips);
 }
 
 // Boot inside a guard too: if init throws before its own guards are reached, the
