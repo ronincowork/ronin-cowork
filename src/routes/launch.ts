@@ -54,6 +54,8 @@ export function registerLaunch(app: express.Express): void {
       mode: req.body?.mode === 'manual' ? 'manual' : 'assisted',
       project_root: String(req.body?.project_root ?? '').trim() || undefined,
       cmd: String(req.body?.cmd ?? '').trim() || undefined,
+      // Only an explicit false turns MCP off — absent means the CLI's own config applies.
+      mcp: req.body?.mcp !== false,
       tags: Array.isArray(req.body?.tags) ? req.body.tags.map(String) : [],
       seed: Array.isArray(req.body?.seed) ? req.body.seed.map(String) : [],
       inject: String(req.body?.inject ?? '').trim() || undefined,
@@ -136,6 +138,7 @@ export function registerLaunch(app: express.Express): void {
         dial: resolved.dial,
         lifecycle: resolved.lifecycle,
         tags: resolved.tags,
+        mcp: resolved.mcp,
       },
     });
     void appendLedger(form, resolved, true);

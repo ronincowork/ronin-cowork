@@ -16,8 +16,8 @@ export const STATUS_PATTERNS: { status: SessionStatus; re: RegExp }[] = [
   { status: 'thinking', re: /esc to interrupt/i },
   // Busy: a spinner glyph opening a line ("✻ Cerebrating…").
   { status: 'thinking', re: /^\s*[✻✳✢✶✽·∗]\s+\S+…/m },
-  // Pending dialog: a selection list with a pointer ("❯ 1. Yes").
-  { status: 'awaiting-input', re: /❯\s*\d+\.\s/ },
+  // Pending dialog: Claude uses ❯ and Codex uses › for the selected row.
+  { status: 'awaiting-input', re: /[❯›]\s*\d+\.\s/ },
   // Pending question: an explicit ask or y/n.
   { status: 'awaiting-input', re: /\(y\/n\)|\[y\/n\]|do you want/i },
   // Ready: an agent prompt row. Claude Code draws "❯ " and then fills the rest of
@@ -25,6 +25,8 @@ export const STATUS_PATTERNS: { status: SessionStatus; re: RegExp }[] = [
   // "empty to end of line" test never fires and a fresh session looked unready
   // until the readiness wait timed out. Match the prompt row itself, hint or no hint.
   { status: 'ready', re: /^\s*[│┃]?\s*❯/m },
+  // Ready: Codex's input row. A numbered › row was classified as a dialog above.
+  { status: 'ready', re: /^\s*›(?:\s|$)/m },
   // Ready: the boxed "│ > " prompt row some CLIs draw instead of ❯.
   { status: 'ready', re: /^\s*[│┃]\s*>\s/m },
   // Ready: a plain shell prompt as the last thing on a line.

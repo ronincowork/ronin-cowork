@@ -16,7 +16,6 @@
 import { request } from './request.js';
 import {
   launchSpecData,
-  loadSavedLaunches,
   presetData,
   projectData,
   savedLaunchData,
@@ -66,6 +65,15 @@ export function buildLauncher(tile, host) {
   form.className = 'ks-form';
   const formHead = document.createElement('div');
   formHead.className = 'ks-form-h';
+  // Credit, when the kind runs on somebody else's work (`credit:` in the catalog): a REAL
+  // anchor on the opened form — never inside the kind button, where an anchor nested in a
+  // button is invalid HTML, an axe violation the smoke gate fails on, and a stolen tap on
+  // the phone. Here it is its own line with its own tap target.
+  const creditEl = document.createElement('a');
+  creditEl.className = 'ks-credit';
+  creditEl.target = '_blank';
+  creditEl.rel = 'noopener noreferrer';
+  creditEl.hidden = true;
   // Two text blocks, in the order you answer them: what it's CALLED, then what it's
   // TOLD. The name is how you address the session afterwards (`+tag:`, tejun-send,
   // the tile header), so with a dozen of these running it is not a detail — in
@@ -109,6 +117,29 @@ export function buildLauncher(tile, host) {
   modelSel.title = 'Which session_launch_spec to launch';
   const groupSel = document.createElement('select');
   groupSel.title = 'Group the new session joins (tag)';
+  // MCP on/off for THIS session — a mechanical pick like the model, live in both
+  // modes. On (default): the CLI's own config applies, untouched. Off: the session
+  // launches with no MCP servers at all — no shared memory, no connectors — via the
+  // provider's own declared flags (`mcp_off:` in the launch table). Ronin neither
+  // knows nor cares what was disconnected; a provider declaring no flags is refused
+  // at launch rather than launched connected.
+  let mcpOn = true;
+  // The label says gbrain — the owner's ruling: "MCP" means nothing to a person, the
+  // brain is the thing being switched. The tooltip tells the whole truth: off means NO
+  // MCP servers at all, so any other connector the CLI is wired with goes with it.
+  const mcpBtn = button('gbrain on', { cls: 'ks-mcp' });
+  const applyMcp = () => {
+    mcpBtn.textContent = mcpOn ? 'gbrain on' : 'gbrain off';
+    mcpBtn.classList.toggle('off', !mcpOn);
+    mcpBtn.title = mcpOn
+      ? 'This session can reach gbrain — and any other MCP servers the CLI is wired with. Click to launch it with none.'
+      : 'This session launches with NO MCP servers — gbrain and every other connector off. Click to launch connected.';
+  };
+  mcpBtn.addEventListener('click', () => {
+    mcpOn = !mcpOn;
+    applyMcp();
+  });
+  applyMcp();
   const startBtn = button('Start', { cls: 'home-go' });
   const cancelBtn = button('Cancel');
   // WHERE A FAILURE LANDS: the form's own status line, under the controls it refers
@@ -116,37 +147,11 @@ export function buildLauncher(tile, host) {
   // brief. ui.status: announced, hidden while empty.
   const err = status();
   const sayErr = (msg) => err.say(msg, msg ? 'bad' : '');
-  // Keep this form as a named tile. The other half of saved launches: without it the
-  // catalog could only ever be written by hand, and a preset you cannot make from the
-  // thing you are already looking at is a preset nobody makes.
-  const saveBtn = button('＋ save', {
-    cls: 'ks-save',
-    title: 'Save these choices as a named launch, in your own catalogs store',
-  });
-  saveBtn.addEventListener('click', async () => {
-    if (!kind) return;
-    const raw = prompt('Name this launch (letters, digits, - _):', kind.name.toLowerCase());
-    const name = (raw || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
-    if (!name) return;
-    saveBtn.disabled = true;
-    sayErr('');
-    const r = await request('/api/saved-launches', {
-      method: 'POST',
-      json: {
-        name,
-        label: raw.trim(),
-        session_job: kind.name,
-        project_root: whereSel.value,
-        group: groupSel.value === NEWGRP ? '' : groupSel.value,
-        mode,
-        prompt: what.value.trim(),
-      },
-    });
-    if (!r.ok) sayErr('could not save it — ' + r.message);
-    else await loadSavedLaunches();
-    saveBtn.disabled = false;
-  });
-  formRow.append(whereSel, modelSel, groupSel, saveBtn, cancelBtn, startBtn);
+  // ＋save was removed from this row (owner, 2026-08-16): a form should offer cancel and
+  // start, and the button's meaning was opaque. Saved launches still exist — the catalog
+  // is hand-editable and existing presets still render below; only the write-from-the-form
+  // door is gone.
+  formRow.append(whereSel, modelSel, groupSel, mcpBtn, cancelBtn, startBtn);
   // Two ways to start a session, toggled here.
   //  manual   — your text IS the prompt, sent byte for byte. Ronin does only the
   //             mechanical part (directory, CLI, dial, tags). No wording of ours.
@@ -226,7 +231,7 @@ export function buildLauncher(tile, host) {
     for (const s of S.sessions) refSel.add(new Option('@' + s.name, s.name));
     refSel.value = [...refSel.options].some((o) => o.value === cur) ? cur : '';
   };
-  form.append(formHead, modeRow, modeSay, nameField.el, whatField.el, formRow, err.el, extrasHead, extras);
+  form.append(formHead, creditEl, modeRow, modeSay, nameField.el, whatField.el, formRow, err.el, extrasHead, extras);
   const grid2 = document.createElement('div');
   grid2.className = 'ks-grid';
   /* ---- saved launches: this form, filled in ahead of time and named ---- */
@@ -271,6 +276,19 @@ export function buildLauncher(tile, host) {
         if (k.agent === false) mode = 'manual';
         form.classList.toggle('noagent', k.agent === false);
         formHead.textContent = `${k.icon} ${k.label} — ${k.ask}`;
+        // textContent + server-vetted http(s) URL only — a catalog line must never
+        // become markup here.
+        creditEl.hidden = !k.credit;
+        if (k.credit) {
+          creditEl.textContent = `powered by ${k.credit.text} ↗`;
+          creditEl.href = k.credit.url;
+          creditEl.title = k.credit.url;
+        } else {
+          // Belt and braces with the [hidden] CSS: a kind with no credit must never
+          // wear the previous kind's.
+          creditEl.textContent = '';
+          creditEl.removeAttribute('href');
+        }
         nameInp.value = '';
         what.value = '';
         seedInp.value = '';
@@ -419,6 +437,9 @@ export function buildLauncher(tile, host) {
         // An agentless kind sends no command at all; the server refuses to
         // substitute one for it (src/spawn.ts resolveForm).
         cmd: bare ? '' : modelSel.value,
+        // Mechanical like the cmd, so it rides in BOTH modes; meaningless without an
+        // agent, so a bare kind sends nothing and the server default (on) applies.
+        mcp: bare ? undefined : mcpOn,
         tags: groupSel.value && groupSel.value !== NEWGRP ? [groupSel.value] : [],
         seed:
           mode === 'manual'

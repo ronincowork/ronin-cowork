@@ -154,6 +154,13 @@ export const splitList = (v: string): string[] =>
     .map((s) => s.trim())
     .filter(Boolean);
 
+/** `[text](https://url)` → {text, url}, or undefined. http(s) only — a catalog is data,
+ * and data must not be able to mint a `javascript:` link into the launcher. */
+function parseCredit(v: string): { text: string; url: string } | undefined {
+  const m = /^\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)$/.exec(v.trim());
+  return m ? { text: m[1], url: m[2] } : undefined;
+}
+
 /* ---------- session_job: what this session is for ---------- */
 
 export interface SessionJobInfo {
@@ -200,6 +207,14 @@ export interface SessionJobInfo {
    */
   capExempt: boolean;
   /**
+   * Whose work powers this kind, when it is somebody else's — `- **credit:** [text](url)`,
+   * one markdown link. Rendered by the launcher as a real anchor on the OPENED FORM, never
+   * inside the kind button (an anchor in a button is nested-interactive: invalid HTML, an
+   * axe violation our own smoke gate fails on, and a stolen tap on the phone). Absent for
+   * kinds that are wholly ours, which is most of them.
+   */
+  credit?: { text: string; url: string };
+  /**
    * Where this kind ALWAYS works, whatever project_root is picked — `- **dir:**` in the
    * catalog. Empty for every ordinary kind, because the directory is the project_root's
    * to supply and a kind that named one would be naming a machine.
@@ -239,6 +254,7 @@ export async function listSessionJobs(): Promise<SessionJobInfo[]> {
         agent: e.get('agent').toLowerCase() !== 'none',
         capExempt: e.get('cap').toLowerCase() === 'exempt',
         dir: e.get('dir'),
+        credit: parseCredit(e.get('credit')),
       };
     })
     // An agent job with no opening template is a half-written entry and is dropped.

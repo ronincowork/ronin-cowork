@@ -75,22 +75,13 @@ export interface PromptRead {
  *   3. FOUND AND EMPTY IS NOT THE SAME AS NOT FOUND. Found-and-empty means a send went
  *      missing and may be retried; not-found means we cannot tell and must not act.
  */
-export async function readPrompt(name: string): Promise<PromptRead> {
+export function parsePrompt(raw: string): PromptRead {
   const cannotTell: PromptRead = { found: false, text: null, menu: false };
-  let raw: string;
-  try {
-    const { stdout } = await pexec('tmux', ['capture-pane', '-p', '-e', '-t', exactPane(name)], {
-      maxBuffer: 4 * 1024 * 1024,
-    });
-    raw = stdout;
-  } catch {
-    return cannotTell; // pane gone mid-send; not this function's business why
-  }
   const lines = raw.split('\n');
   while (lines.length && lines[lines.length - 1].trim() === '') lines.pop();
   const line = lines
     .slice(-6)
-    .filter((l) => l.includes('❯'))
+    .filter((l) => /[❯›]/.test(l))
     .pop();
   if (line === undefined) return cannotTell;
   // A numbered row is a menu, not a prompt. Same test the status classifier uses
@@ -99,16 +90,27 @@ export async function readPrompt(name: string): Promise<PromptRead> {
     // eslint-disable-next-line no-control-regex
     .replace(/\x1b\[[0-9;]*m/g, '')
     .replace(/ /g, ' ');
-  if (/❯\s*\d+\.\s/.test(bare)) return { found: true, text: null, menu: true };
+  if (/[❯›]\s*\d+\.\s/.test(bare)) return { found: true, text: null, menu: true };
   // eslint-disable-next-line no-control-regex
   if (/\x1b\[2m/.test(line)) return { found: true, text: null, menu: false };
   const text = line
     // eslint-disable-next-line no-control-regex
     .replace(/\x1b\[[0-9;]*m/g, '')
     .replace(/ /g, ' ')
-    .replace(/^.*❯ */, '')
+    .replace(/^.*[❯›] */, '')
     .trim();
   return { found: true, text: text || null, menu: false };
+}
+
+export async function readPrompt(name: string): Promise<PromptRead> {
+  try {
+    const { stdout } = await pexec('tmux', ['capture-pane', '-p', '-e', '-t', exactPane(name)], {
+      maxBuffer: 4 * 1024 * 1024,
+    });
+    return parsePrompt(stdout);
+  } catch {
+    return { found: false, text: null, menu: false }; // pane gone mid-send; not this function's business why
+  }
 }
 
 

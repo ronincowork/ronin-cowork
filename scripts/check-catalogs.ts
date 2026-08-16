@@ -83,7 +83,21 @@ await surfacing('ACTIONS.md', () => readEntries('ACTIONS.md'));
 await surfacing('TOOLS.md', () => readEntries('TOOLS.md'));
 
 // The launch table: an install with no session_launch_specs cannot spawn a configured session.
-if ((await listSessionLaunchSpecs()).length === 0) fail('PROJECT_ROOTS.md: the launch table yields no session_launch_specs');
+// Provider cells are exact launch contracts, not display-only labels. OpenAI must expose
+// real model choices, and every choice must pass its heading unchanged to Codex. This
+// catches the old `openai · default -> codex` placeholder without freezing today's model
+// family into code: adding or retiring a catalog column needs no parser/test code path.
+const launchSpecs = await listSessionLaunchSpecs();
+if (launchSpecs.length === 0) fail('PROJECT_ROOTS.md: the launch table yields no session_launch_specs');
+const openaiSpecs = launchSpecs.filter((s) => s.provider === 'openai');
+if (openaiSpecs.length < 2) fail('PROJECT_ROOTS.md: OpenAI must offer more than one real model choice');
+for (const spec of openaiSpecs) {
+  if (spec.model === 'default') fail('PROJECT_ROOTS.md: OpenAI model heading "default" hides the model being launched');
+  const expected = `codex --model ${spec.model} --dangerously-bypass-approvals-and-sandbox`;
+  if (spec.cmd !== expected) {
+    fail(`PROJECT_ROOTS.md: openai · ${spec.model} must launch "${expected}", got "${spec.cmd}"`);
+  }
+}
 
 for (const f of FILES) await deadLinks(f);
 

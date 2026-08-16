@@ -1,8 +1,9 @@
 # 04 · CHRISTMAS MORNING 1 — personal computer to a Rogue on the VM
 
-> SOP for `rogue_1`: Claude or Codex already running on the owner's personal
-> computer. Finish when `rogue_2` is running on the new VM and has received
-> `05_CHRISTMAS_MORNING_2.md`.
+> SOP for `rogue_1`: Claude or Codex beside the owner — a CLI in their terminal, or a
+> cloud agent in their browser (then the owner runs each proposed command and pastes
+> the output back; the checkpoints are verified from the paste). Finish when
+> `rogue_2` is running on the new VM and has received `05_CHRISTMAS_MORNING_2.md`.
 
 ## Objective
 
