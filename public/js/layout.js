@@ -7,6 +7,7 @@ import { PAD_CODE, firePadBinding, padBinds, padChord } from './pad.js';
 import { buildPadAsk, buildPadPanel } from './padpanel.js';
 import { askMika } from './mika.js';
 import { buildNotePanel, buildTagPanel } from './panels.js';
+import { buildSystemSheet } from './system.js';
 import { IS_TOUCH, S, TILE_COUNT, WHEEL_DOWN, grid, serviceOff, tiles } from './state.js';
 import { PANES } from './panes.js';
 import { popover } from './ui.js';
@@ -161,6 +162,9 @@ export function build() {
   // Per-session note editor (📝 on each tile head) — works the same on desktop and touch.
   guard('note panel', buildNotePanel);
   guard('tag panel', buildTagPanel);
+  // ⚙ System — ONE sheet at page level (js/system.js); the bar's gear opens it.
+  guard('system sheet', buildSystemSheet);
+  key('sysbtn', () => S.sysPanel && S.sysPanel.open());
 
   // Session macros (⚡ on each tile head) are the tile's own — built in
   // tilemacros.js by Tile itself; nothing to wire here.
@@ -405,6 +409,7 @@ export function buildDrawers() {
     ['mikabtn', 'Mika Assist'],
     ['commonsbtn', 'Commons'],
     ['padbtn', 'Keypad'],
+    ['sysbtn', 'System'],
   ];
   for (const [id, label] of APP) {
     const el = document.getElementById(id);

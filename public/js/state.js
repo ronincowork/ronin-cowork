@@ -73,6 +73,7 @@ export const S = {
   lastSelection: '', // last non-empty terminal selection (see below)
   tagPanel: null, // session-groups editor { open(session), close } — all devices
   sessPicker: null, // pad-key session switcher { open, close, isOpen, move, commit }
+  sysPanel: null, // ⚙ System sheet { open, close } — appearance, updates, log out. ONE, page-level: install-level facts do not belong in a tile (all devices)
 };
 
 // Which service owns which optional commons pane. A pane not listed is core and always

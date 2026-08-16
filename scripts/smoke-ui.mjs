@@ -68,7 +68,10 @@ const bad = (msg) => {
 
 /** Open a page, collect JS errors and failed requests. */
 async function openPage(browser, contextOpts) {
-  const ctx = await browser.newContext({ ignoreHTTPSErrors: true, ...contextOpts });
+  // colorScheme pinned: the shell follows the device (prefers-color-scheme) by
+  // default now, and headless engines report LIGHT — the gate's assertions and the
+  // visual baseline are written against the dark shell, so the pin is the honesty.
+  const ctx = await browser.newContext({ ignoreHTTPSErrors: true, colorScheme: 'dark', ...contextOpts });
   const page = await ctx.newPage();
   const jsErrors = [];
   const netFails = [];
@@ -184,36 +187,53 @@ async function checkJourneys(page, label, jsErrors) {
     rows: document.querySelectorAll('.commons-menu .commons-row').length,
     expanded: document.getElementById('commonsbtn')?.getAttribute('aria-expanded'),
   }));
-  if (menu.rows === 9 && menu.expanded === 'true') ok(`${label}: Commons menu opens with all 9 rooms (registry-fed)`);
+  if (menu.rows === 8 && menu.expanded === 'true') ok(`${label}: Commons menu opens with all 8 rooms (registry-fed; ⚙ lives in the bar)`);
   else bad(`${label}: Commons menu wrong — ${menu.rows} rows, aria-expanded=${menu.expanded}`);
   await page.keyboard.press('Escape');
   const shut = await page.evaluate(() => document.querySelector('.commons-menu')?.hidden === true);
   if (shut) ok(`${label}: Escape closes the Commons menu`);
   else bad(`${label}: Escape did not close the Commons menu`);
 
-  // 2 — the menu and the tab strip reach the same room: ⚙ System from the menu.
+  // 2 — a menu row lands its room: ▤ Wipeboard (a core room on every build).
   await page.locator('#commonsbtn').click();
-  await page.locator('.commons-menu .commons-row', { hasText: 'System' }).first().click();
+  await page.locator('.commons-menu .commons-row', { hasText: 'Wipeboard' }).first().click();
   await page.waitForTimeout(300);
   const pane = await page.evaluate(() => document.querySelector('.home.show')?.dataset.pane);
-  if (pane === 'system') ok(`${label}: menu row lands on the ⚙ System pane`);
-  else bad(`${label}: menu row landed on pane "${pane}", wanted "system"`);
+  if (pane === 'wipe') ok(`${label}: menu row lands on the ▤ Wipeboard pane`);
+  else bad(`${label}: menu row landed on pane "${pane}", wanted "wipe"`);
+  await page.evaluate(() => document.querySelector('.home.show .home-x')?.click());
 
-  // 3 — the theme flips and flips back: same page, two shells, no failbar.
+  // 3 — the ONE gear: ⚙ in the bar opens the System sheet, and the appearance flip
+  // button flips the shell and flips it back (auto-follow re-arms on the way back —
+  // the colorScheme pin above makes dark the device mode here).
+  await page.locator('#sysbtn').click();
+  try {
+    await page.waitForSelector('#syssheet.open', { timeout: 3000 });
+    ok(`${label}: the bar's ⚙ opens the one System sheet`);
+  } catch {
+    bad(`${label}: the bar's ⚙ did not open the System sheet`);
+  }
   const darkBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-  await page.locator('.sys-theme button[data-theme="light"]').first().click(); // four tiles, four System panes — one flip is global
+  await page.locator('#syssheet .sys-flip').click();
   await page.waitForTimeout(200);
   const lightBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-  await page.locator('.sys-theme button[data-theme="dark"]').first().click();
+  await page.locator('#syssheet .sys-flip').click();
   await page.waitForTimeout(200);
   const backBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-  if (lightBg !== darkBg && backBg === darkBg) ok(`${label}: light theme applies and reverts (${darkBg} ⇄ ${lightBg})`);
+  if (lightBg !== darkBg && backBg === darkBg) ok(`${label}: the flip button flips the shell and back (${darkBg} ⇄ ${lightBg})`);
   else bad(`${label}: theme flip broken — dark=${darkBg} light=${lightBg} back=${backBg}`);
   const failAfterTheme = await page.evaluate(() => !!document.getElementById('failbar'));
   if (failAfterTheme) bad(`${label}: the theme flip raised the failure banner`);
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(200);
 
   // 4 — the Commons strip is a real tablist: arrows move focus along it, Enter lands
   // the focused room. (Activation stays deliberate — focus alone must not open a room.)
+  await page.evaluate(() => {
+    const t = document.querySelector('.tile.active .tile-head button.menu');
+    t?.click(); // メ — bring the Commons up so the strip is on screen
+  });
+  await page.waitForTimeout(200);
   await page.evaluate(() => document.querySelector('.tile.active .home-tabrow [aria-selected="true"]')?.focus());
   await page.keyboard.press('ArrowRight');
   const arrowed = await page.evaluate(() => document.activeElement?.dataset?.pane);

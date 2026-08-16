@@ -11,7 +11,9 @@
          touches both, and this comment is the pointer that keeps them honest. -->
     <script>
       try {
-        if (localStorage.getItem('tmuxgrid.theme') === 'light') document.documentElement.dataset.theme = 'light';
+        var t = localStorage.getItem('tmuxgrid.theme');
+        if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        if (t === 'light') document.documentElement.dataset.theme = 'light';
       } catch (e) {}
     </script>
     <style>

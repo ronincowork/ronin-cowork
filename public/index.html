@@ -11,7 +11,9 @@
          must not flash dark. Inline and tiny on purpose; js/theme.js owns the rest. -->
     <script>
       try {
-        if (localStorage.getItem('tmuxgrid.theme') === 'light') document.documentElement.dataset.theme = 'light';
+        var t = localStorage.getItem('tmuxgrid.theme');
+        if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        if (t === 'light') document.documentElement.dataset.theme = 'light';
       } catch (e) {}
     </script>
     <!-- xterm.css rides inside style.css now (@import into the lowest cascade layer,
@@ -27,6 +29,9 @@
       <button id="commonsbtn" title="⌃⇧C — the CoWorking Commons: the session roster, a new session, the wipeboard, your project roots, hotwords. (⌃⌥C on Linux/Windows.)" aria-haspopup="true" aria-expanded="false">き<span class="txt"> Commons</span></button>
       <button id="padbtn" title="Keypad — the Work Louder pad: physical keys fire macros">く<span class="txt"> Keypad</span></button>
       <button id="mikabtn" title="Mika Assist — ask about Ronin itself: how it works, project roots, starting a session, changing a setting. Starts her if she is not up.">ミ<span class="txt"> Mika Assist</span></button>
+      <!-- ⚙ is install-level, so it lives at page level: ONE gear in the bar opening one
+           sheet, never a room duplicated into every tile's Commons (owner, 2026-08-16). -->
+      <button id="sysbtn" title="System — what this install runs: appearance, check for updates, log out">⚙</button>
       <div class="ctrls" role="group" aria-label="Keys">
         <button id="k-esc" title="Esc">Esc</button>
         <button id="k-int" title="Ctrl-C (interrupt)">^C</button>

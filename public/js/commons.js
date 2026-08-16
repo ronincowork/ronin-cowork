@@ -25,7 +25,6 @@ import { buildProjectRoots } from './projectroots.js';
 import { buildStats } from './stats.js';
 import { buildWipeboard } from './wipeboard.js';
 import { buildDocs } from './docs.js';
-import { buildSystem } from './system.js';
 
 export function buildHome(tile) {
   const el = document.createElement('div');
@@ -85,15 +84,13 @@ export function buildHome(tile) {
   statsPane.className = 'home-stats';
   const koshiPane = document.createElement('div');
   koshiPane.className = 'home-koshi';
-  const systemPane = document.createElement('div');
-  systemPane.className = 'home-system';
-  el.append(tabs, nullPane, mainPane, wipePane, docsPane, projPane, hotwordsPane, statsPane, koshiPane, systemPane);
+  el.append(tabs, nullPane, mainPane, wipePane, docsPane, projPane, hotwordsPane, statsPane, koshiPane);
   // Real tab semantics over the strip that already exists (ui.tabs): tablist/tab roles,
   // aria-selected, roving tabindex, arrow keys. Activation stays a click — entering a
   // room starts its fetches, and focus must not do that on its own.
   const paneEl = {
     sessions: mainPane, new: nullPane, wipe: wipePane, docs: docsPane, proj: projPane,
-    hotwords: hotwordsPane, stats: statsPane, koshi: koshiPane, system: systemPane,
+    hotwords: hotwordsPane, stats: statsPane, koshi: koshiPane,
   };
   const tabBtns = [...tabs.querySelectorAll('button[data-pane]')];
   const strip = makeTabs(tabRow, tabBtns, (b) => paneEl[b.dataset.pane]);
@@ -110,7 +107,6 @@ export function buildHome(tile) {
     if (which === 'hotwords') words.enter();
     if (which === 'koshi') koshi.enter();
     if (which === 'stats') stats.enter();
-    if (which === 'system') system.enter();
   };
   // ✕ only makes sense once a session is showing behind the panel.
   closeTab.addEventListener('click', () => tile.hideHome());
@@ -143,7 +139,6 @@ export function buildHome(tile) {
   const words = buildHotwords(hotwordsPane, () => tile.homeVisible() && el.dataset.pane === 'hotwords');
   const koshi = buildKoshi(koshiPane, () => tile.homeVisible() && el.dataset.pane === 'koshi');
   const stats = buildStats(statsPane);
-  const system = buildSystem(systemPane);
 
   // Re-render the LIVE parts (roster, launcher board); open forms keep their state.
   const render = () => {

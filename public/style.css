@@ -445,6 +445,7 @@ body {
 #mikabtn,
 #commonsbtn,
 #padbtn,
+#sysbtn,
 #bar .layout-cycle {
   display: inline-flex;
   align-items: center;
@@ -1582,16 +1583,16 @@ body {
   gap: 10px;
   min-height: 0;
 }
-/* Nine admin panes, one at a time, named by [data-pane] on .home. (Was a single
-   `.browsing` toggle while there were only two — see buildHome.) */
+/* Eight admin panes, one at a time, named by [data-pane] on .home. (Was a single
+   `.browsing` toggle while there were only two — see buildHome. ⚙ System left the
+   panes for the bar's one sheet, 2026-08-16.) */
 .home-null,
 .home-wipe,
 .home-docs,
 .home-proj,
 .home-hotwords,
 .home-stats,
-.home-koshi,
-.home-system {
+.home-koshi {
   display: none;
 }
 .home[data-pane='new'] .home-null {
@@ -1618,16 +1619,11 @@ body {
 .home[data-pane='koshi'] .home-koshi {
   display: flex;
 }
-.home[data-pane='system'] .home-system {
-  display: flex;
-}
 
-/* ---- ⚙ SYSTEM: what this install runs, and the two update buttons.
-   One column like the other admin panes — sized by the TILE, never the viewport. ---- */
-.home-system {
-  flex-direction: column;
-  min-height: 0;
-  padding: 10px;
+/* ---- ⚙ SYSTEM: the one sheet off the bar's gear (js/system.js). ---- */
+#syssheet .sys-card {
+  width: min(520px, 92vw);
+  padding: 14px 16px;
 }
 .sys {
   display: flex;
@@ -2988,9 +2984,27 @@ body {
    session replaced the panel and there was no way back to it. */
 .home-tabs {
   display: flex;
+  /* 0 0 auto: the strip is CHROME and holds its height. Without it the flex column
+     let a long roster compress the strip (flex-shrink default 1) — its measured
+     height tracked the LIVE session count, which is also why visual-ui saw it flap. */
+  flex: 0 0 auto;
   align-items: center;
   gap: 6px;
   padding: 8px 10px 0;
+  /* The strip SCROLLS everywhere, not only on phones: a 4-up desktop tile is
+     narrower than the row of rooms, and flex overflow was silently clipping the
+     last tabs there — found on the owner's Mac, 2026-08-16. */
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  /* The gutter is RESERVED, not conditional: the row's width sits within a glyph's
+     render-width of the boundary, so a conditional scrollbar flapped the strip's
+     height between runs (26/28/30px — caught by visual-ui). Constant beats pretty. */
+  scrollbar-gutter: stable;
+}
+.home-tabs button {
+  flex: 0 0 auto; /* never squeeze a label to fit — that is what scrolling is for */
 }
 /* the tablist inside the strip — semantics only, no box (see commons.js) */
 .home-tabrow {
@@ -3008,10 +3022,15 @@ body {
 }
 .home-tabs button.on { background: var(--raise); color: var(--fg-strong); border-color: var(--line-3); }
 .home-tabs .home-x {
+  /* ✕ rides the right edge instead of scrolling out of reach — every width, same
+     reason as the phone rule below: it is the way back to the terminal. */
+  position: sticky;
+  right: 0;
   margin-left: auto;
+  flex: 0 0 auto;
   border-radius: 8px;
   border-color: transparent;
-  background: transparent;
+  background: var(--bg);
   color: var(--muted-3);
 }
 /* ---- touch: THE STRIP SCROLLS, THE PAGE DOES NOT ----
@@ -4400,7 +4419,6 @@ body {
 .ks-save {
   font-size: 12px;
 }
-
 /* ---- ▥ Hotwords: whose list is showing (copy-on-write, not a merge) ---- */
 .hot-whose {
   margin: 2px 0 6px;
@@ -4454,18 +4472,17 @@ body {
   text-transform: uppercase;
   color: var(--muted);
 }
-.sys-theme button {
+.sys-flip {
   background: transparent;
   border: 1px solid var(--line);
-  color: var(--muted);
+  color: var(--fg);
   border-radius: 8px;
-  padding: 5px 12px;
+  padding: 5px 14px;
   font-size: 12px;
   cursor: pointer;
 }
-.sys-theme button.on {
-  background: var(--panel);
-  color: var(--accent);
+.sys-flip:hover {
   border-color: var(--accent);
+  color: var(--accent);
 }
 }
