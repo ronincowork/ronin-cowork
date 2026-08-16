@@ -52,3 +52,22 @@ export async function loadPlaywright() {
   }
   return null;
 }
+
+/**
+ * axe-core rides the same host-tools rule as playwright: a machine-local accessibility
+ * engine, never a shipped dependency. Returns the injectable source, or null — and null
+ * is a SKIP with a note, not a failure, for the same reason as loadPlaywright.
+ */
+export async function loadAxeSource() {
+  const { readFileSync } = await import('node:fs');
+  const candidates = [
+    process.env.RONIN_AXE_PATH,
+    `${HOST_TOOLS}/node_modules/axe-core/axe.min.js`,
+  ];
+  for (const p of candidates) {
+    try {
+      if (p) return readFileSync(p, 'utf8');
+    } catch { /* try the next */ }
+  }
+  return null;
+}

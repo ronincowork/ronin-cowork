@@ -15,6 +15,7 @@
  */
 import { refreshHome } from './home.js';
 import { serviceOff } from './state.js';
+import { tabs as makeTabs } from './ui.js';
 import { PANES } from './panes.js';
 import { buildRoster } from './roster.js';
 import { buildLauncher } from './launcher.js';
@@ -37,6 +38,12 @@ export function buildHome(tile) {
   // session replaced the home panel and there was no way back to it.
   const tabs = document.createElement('div');
   tabs.className = 'home-tabs';
+  // The tablist proper — display:contents, so the strip's flex layout is untouched.
+  // It exists because ✕ lives in the strip but is NOT a tab, and a tablist may hold
+  // only tabs (axe: aria-required-children).
+  const tabRow = document.createElement('div');
+  tabRow.className = 'home-tabrow';
+  tabs.appendChild(tabRow);
   // One tab per registry row, in registry order. The 402px phone strip takes the
   // compact label where a row carries one; the hint rides as hover help either way.
   for (const p of PANES) {
@@ -51,7 +58,7 @@ export function buildHome(tile) {
       b.disabled = true;
       b.title = 'Off — this service is not installed.';
     } else b.addEventListener('click', () => showPane(p.id));
-    tabs.appendChild(b);
+    tabRow.appendChild(b);
   }
   const homeTab = tabs.querySelector('button[data-pane="sessions"]');
   homeTab.classList.add('on'); // matches the panel's default pane (see el.dataset.pane)
@@ -81,10 +88,21 @@ export function buildHome(tile) {
   const systemPane = document.createElement('div');
   systemPane.className = 'home-system';
   el.append(tabs, nullPane, mainPane, wipePane, docsPane, projPane, hotwordsPane, statsPane, koshiPane, systemPane);
+  // Real tab semantics over the strip that already exists (ui.tabs): tablist/tab roles,
+  // aria-selected, roving tabindex, arrow keys. Activation stays a click — entering a
+  // room starts its fetches, and focus must not do that on its own.
+  const paneEl = {
+    sessions: mainPane, new: nullPane, wipe: wipePane, docs: docsPane, proj: projPane,
+    hotwords: hotwordsPane, stats: statsPane, koshi: koshiPane, system: systemPane,
+  };
+  const tabBtns = [...tabs.querySelectorAll('button[data-pane]')];
+  const strip = makeTabs(tabRow, tabBtns, (b) => paneEl[b.dataset.pane]);
+  strip.select(homeTab); // matches the default pane
   const showPane = (which) => {
     if (serviceOff(which)) return; // an inert tab's pane, asked for by any other route
     el.dataset.pane = which;
     tabs.querySelectorAll('button[data-pane]').forEach((b) => b.classList.toggle('on', b.dataset.pane === which));
+    strip.select(tabs.querySelector(`button[data-pane="${which}"]`));
     if (which === 'sessions') render();
     if (which === 'wipe') wipe.enter();
     if (which === 'docs') docs.enter();

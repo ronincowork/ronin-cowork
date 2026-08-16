@@ -1,5 +1,6 @@
 /* part of the tmux-ronin client — see js/README.md */
 import { request } from './request.js';
+import { status } from './ui.js';
 import { currentTheme, setTheme } from './theme.js';
 
 /**
@@ -41,8 +42,7 @@ export function buildSystem(pane) {
   runBtn.hidden = true;
   row.append(checkBtn, runBtn);
 
-  const msg = document.createElement('div');
-  msg.className = 'sys-msg';
+  const msg = status('sys-msg');
 
   // LOG OUT — only drawn when a login exists (/api/health `login`), because a button
   // that answers "you were never logged in" is furniture. Clearing the cookie sends
@@ -86,16 +86,13 @@ export function buildSystem(pane) {
   (currentTheme() === 'light' ? lightBtn : darkBtn).classList.add('on');
   appRow.append(appLab, darkBtn, lightBtn);
 
-  wrap.append(idBlock, appRow, row, msg);
+  wrap.append(idBlock, appRow, row, msg.el);
   pane.appendChild(wrap);
 
   let version = null; // the operator's /api/version answer, fetched on enter
   let latest = null;
 
-  const say = (text, bad) => {
-    msg.textContent = text || '';
-    msg.classList.toggle('bad', !!bad);
-  };
+  const say = (text, bad) => msg.say(text, bad ? 'bad' : '');
 
   const renderId = () => {
     idBlock.innerHTML = '';

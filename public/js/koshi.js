@@ -1,5 +1,6 @@
 /* part of the tmux-ronin client — see js/README.md */
 import { request } from './request.js';
+import { status } from './ui.js';
 
 /* ---------- KOSHI — the seventh commons pane (tab: 目 Koshi) ----------
  *
@@ -119,13 +120,9 @@ export function buildKoshi(root, isShowing) {
     const paceLabel = document.createElement('div');
     paceLabel.className = 'ko-pacelabel';
 
-    const note = document.createElement('div');
-    note.className = 'ko-note';
+    const note = status('ko-note');
     const chosen = () => data.outlets.find((o) => o.id === pick.value);
-    const describe = () => {
-      note.classList.remove('bad');
-      note.textContent = inc.built ? (chosen()?.what ?? '') : 'Not built yet — nothing asks anything.';
-    };
+    const describe = () => note.say(inc.built ? (chosen()?.what ?? '') : 'Not built yet — nothing asks anything.');
     describe();
 
     const currentPace = () => (data.paces || [])[Number(pace.value)];
@@ -136,8 +133,7 @@ export function buildKoshi(root, isShowing) {
     describePace();
 
     const save = async (msg) => {
-      note.classList.remove('bad');
-      note.textContent = 'saving…';
+      note.say('saving…', 'busy');
       const r = await request(`/api/koshi/${inc.id}`, {
         method: 'POST',
         json: {
@@ -147,15 +143,14 @@ export function buildKoshi(root, isShowing) {
         },
       });
       if (!r.ok) {
-        note.classList.add('bad');
-        note.textContent = r.message;
+        note.say(r.message, 'bad');
         pick.value = data.choices[inc.id]?.outlet || 'koshi_external';
         pace.value = String(paceIdx());
         describePace();
         return;
       }
       data.choices = r.data.choices;
-      note.textContent = msg();
+      note.say(msg());
     };
 
     // The slider redraws its label as it moves and only saves when it is let go —
@@ -164,8 +159,8 @@ export function buildKoshi(root, isShowing) {
     pace.addEventListener('change', () => save(() => `${currentPace()?.label} — live within a minute.`));
     pick.addEventListener('change', () => save(() => `${chosen()?.label} — live within a minute.`));
 
-    row.append(name, what, pick, note);
-    if (paced) row.insertBefore(paceLabel, note), row.insertBefore(pace, paceLabel);
+    row.append(name, what, pick, note.el);
+    if (paced) row.insertBefore(paceLabel, note.el), row.insertBefore(pace, paceLabel);
     return row;
   };
 

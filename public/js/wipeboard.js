@@ -1,5 +1,6 @@
 /* part of the tmux-ronin client — see js/README.md */
 import { request } from './request.js';
+import { field } from './ui.js';
 import { IS_TOUCH, S } from './state.js';
 
 export function buildWipeboard(tile, root, isShowing) {
@@ -28,7 +29,8 @@ export function buildWipeboard(tile, root, isShowing) {
   brief.rows = 3;
   brief.placeholder = 'what this board is for, and what is to be discussed';
   brief.spellcheck = false;
-  briefWrap.append(briefH, brief);
+  const briefField = field(brief, { label: 'board brief' });
+  briefWrap.append(briefH, briefField.el);
   // On a phone the brief starts collapsed — the thread is what you came for, and the
   // keyboard eats half the screen. Desktop keeps it open, exactly as before.
   if (IS_TOUCH) briefWrap.classList.add('shut');
@@ -69,9 +71,10 @@ export function buildWipeboard(tile, root, isShowing) {
   say.rows = 1;
   say.placeholder = 'say something to everyone on this board';
   say.spellcheck = false;
+  const sayField = field(say, { label: 'post to this board' });
   const post = document.createElement('button');
   post.textContent = 'Post';
-  composeRow.append(say, post);
+  composeRow.append(sayField.el, post);
   root.append(head, briefWrap, memRow, thread, composeRow);
 
   const empty = (msg) => {

@@ -12,7 +12,7 @@ Japanese marks as identity. This page is about how that style is CARRIED, not wh
 ## The cascade
 
 `public/style.css` is one file in four `@layer`s — `vendor, foundations, ui, app` —
-declared first, so the order is enforced by the cascade itself:
+declared first:
 
 - **vendor** — xterm.css, imported into the lowest layer.
 - **foundations** — the design tokens (both themes), reset, page chrome, and the one
@@ -20,15 +20,20 @@ declared first, so the order is enforced by the cascade itself:
 - **ui** — the shared primitives: `.ui-sheet`/`.ui-card`, `#toast`, the help box.
 - **app** — every composition and feature rule, in source order.
 
-An app rule cannot out-cascade a primitive and nothing out-cascades the tokens. A
-feature may size and accent ITS OWN card (`.ns-card`, `.sp-card`); it may not restyle
-the primitive's chrome or behaviour classes. Splitting layers into files is a
-mechanical move for the day a layer earns one.
+Later layers win, so the cascade guarantees exactly one direction: every Ronin rule
+beats xterm.css by construction. `app` being strongest is what lets a feature size and
+accent ITS OWN card (`.ns-card`, `.sp-card`) — and it means the rule "app does not
+restyle a primitive's hooks (`.ui-*`, `#toast`, `.helpbox`) or shadow a foundation
+token" is `check-css`'s to enforce (checks 4–5), not the cascade's. Splitting layers
+into files is a mechanical move for the day a layer earns one.
 
 ## Colour
 
 Colour is spelled once, in tokens, and `scripts/check-css.mjs` fails the build on a raw
 colour anywhere but a `--token:` definition (the allowlist is empty and stays empty).
+The same gate holds a **contrast floor** for the named role pairs in both themes —
+floors set from the measured palette, so a token edit that dims text fails the build.
+`--dim` is excluded by design: it is the zero-state colour, decorative by definition.
 The roles, defined in `public/style.css`:
 
 - surfaces: `--bg` (canvas) · `--bg-2` (bar) · `--panel` · `--raise` · `--well` (inputs)
@@ -79,6 +84,27 @@ Native dialogs: `confirm()` is the destructive-confirm primitive (kill session, 
 edits) — it is modal, keyboard-correct and honest. `prompt()` is tolerated for one-line
 name entry only. `alert()` is not used.
 
+## Update paths — what causes a surface to change
+
+The one-answer table. `S.sessions` has ONE writer (`reconcileSessions`, `api.js`);
+`homeData` and the catalogs have one owner (`home.js`); every timer below is written
+next to a predicate that stops it costing anything while its surface is hidden.
+
+| Fact | Written by | Arrives via |
+|---|---|---|
+| session set (`S.sessions`) | `reconcileSessions` (`api.js`) — the only writer | boot fetch (`main.js`) · `/events` push (`events.js`, which also owns births/deaths/chips) · visibilitychange + bfcache `pageshow` (`layout.js`) · post-mutation `fetchSessions()` calls |
+| roster/status data (`homeData`) | `refreshHome` (`home.js`) — inflight-guarded, fault-keeping | 8s poll while a home pane is visible (`layout.js`) · visibilitychange · every `showHome` · post-mutation refreshes |
+| catalogs (macros, projects, presets, saved launches) | their `load*` in `home.js` | boot, and the two panes that edit them re-load after a write |
+| per-tile readings (ctx, tegami, control) | the tile's own `refresh*` | 30s poll for visible connected tiles (`layout.js`) · connect · post-write re-read |
+| pane data (wipeboard, docs list, roots, koshi, stats) | the pane module | its own gated poll (2s/2s/15s) or `enter()` — each owner is the file the surface lives in |
+| tile bytes | `TileWire` (`tilewire.js`) | the socket; reconnect/backoff lives there and nowhere else |
+
+Lifecycle is deliberately simple: the page is the unit. Tiles, rooms and sheets are
+built once at boot and live for the page — nothing unmounts, so there is no disposal
+contract to forget; hidden surfaces cost nothing because their polls are gated on
+visibility predicates, not torn down. If a surface ever becomes destroyable, it takes
+a `destroy()` owner at that moment, not speculatively.
+
 ## Transient surfaces
 
 - **Sheet/dialog** — `ui.sheet` (`public/js/ui.js`): scrim + card, `role=dialog`,
@@ -91,6 +117,19 @@ name entry only. `alert()` is not used.
   touch drops (`tiledrop.js`) carry the same dismissal rules in their own code, which
   their comments justify.
 - **Toast** — `ui.toast`: one chip, `role=status`, errors hold longer than successes.
+- **Field** — `ui.field`: a real accessible name and a message line for a control,
+  `display: contents` so the layout it sits in does not move. Labels are
+  screen-reader-only by default (the cockpit's density keeps placeholders as the
+  visual); the message doubles as `aria-describedby`/`aria-invalid`. Consumers:
+  launcher, hotwords, tags, notes, wipeboard.
+- **Async status** — `ui.status`: the one spelling of loading…/saved/not-saved-and-why,
+  `role=status`, hidden when empty, kinds `busy/ok/bad`. Consumers: launcher, hotwords,
+  notes, tags, docs, koshi, roots, system.
+- **Tabs** — `ui.tabs`: tablist/tab roles, `aria-selected`, roving tabindex, arrow keys
+  over a strip that already exists; activation stays a click, because entering a room
+  starts its fetches. Consumers: the Commons strip, the Stats windows.
+- **Button** — `ui.button`: `type=button` + label + help in one call; sugar with a
+  guarantee.
 
 ## Navigation
 
@@ -115,10 +154,16 @@ plus one feature module; service gating stays `serviceOff()` in `state.js`.
 ## Structure gates
 
 `check-modules` (cycles across the whole graph, orphans, resolution, top-level import
-use, the 700-line ceiling) · `check-css` (colour, layer order, terminal tokens) ·
-`check-dead` (deletions leave no corpses) · `check-tips` (labels fit) · `smoke-ui`
-(desktop + phone render) · `tests/` (the pure contracts: `request-shape.test.js`,
-`auth.test.ts`, `dvr.test.js`, `tape-fold.test.js`).
+use, the 700-line ceiling) · `check-css` (colour spelled once; app patches no
+primitive and shadows no token; the contrast floor, both themes) · `check-dead`
+(deletions leave no corpses) · `check-tips` (labels fit) · `smoke-ui` (desktop +
+phone render, the journey probes, and an axe scan at three states — serious/critical
+fail; color-contrast is excluded there because contrast policy is check-css's tiered
+floor, including the documented sub-AA `--muted` secondary tier the density ruling
+keeps until H2) · `visual-ui` (the composition fingerprint: chrome geometry and
+resolved colours against a checked-in baseline, both themes; `--update` is the
+reviewed way to accept an intended change) · `tests/` (the pure contracts:
+`request-shape.test.js`, `auth.test.ts`, `dvr.test.js`, `tape-fold.test.js`).
 
 ## Agents are data, not branches
 

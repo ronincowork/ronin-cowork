@@ -1,5 +1,6 @@
 /* part of the tmux-ronin client — see js/README.md */
 import { request } from './request.js';
+import { tabs as makeTabs } from './ui.js';
 
 /* ---------- STATS — the sixth commons pane (tab: ▦ Stats) ----------
  *
@@ -67,10 +68,14 @@ export function buildStats(root) {
     b.addEventListener('click', () => {
       win = id;
       tabs.querySelectorAll('.td-win').forEach((x) => x.classList.toggle('on', x.dataset.win === id));
+      strip.select(b);
       load();
     });
     tabs.appendChild(b);
   }
+  // The window strip is a tablist too — same primitive, same keyboard (ui.tabs).
+  const strip = makeTabs(tabs, [...tabs.querySelectorAll('.td-win')]);
+  strip.select(tabs.querySelector('.td-win.on'));
   head.append(tabs, range);
 
   const faultBox = el('div', 'td-fault');

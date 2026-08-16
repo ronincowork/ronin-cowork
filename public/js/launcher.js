@@ -23,6 +23,7 @@ import {
   showReceipt,
 } from './home.js';
 import { IS_TOUCH, S } from './state.js';
+import { button, field, status } from './ui.js';
 import { addProvMark, addYourOwn } from './provenance.js';
 
 /**
@@ -78,6 +79,9 @@ export function buildLauncher(tile, host) {
   nameInp.spellcheck = false;
   nameInp.maxLength = 40;
   nameInp.title = 'session name — how you address this session afterwards';
+  // Real accessible names, zero visual change (ui.field is display:contents; the
+  // labels are screen-reader-only — placeholders keep carrying the visual).
+  const nameField = field(nameInp, { label: 'session name' });
   // Show the REAL name as it is typed. The transform is character-for-character
   // (lowercase, anything else -> '_'), so the length never changes and the caret
   // stays where it was — safe to run on every keystroke, mid-string edits included.
@@ -92,6 +96,7 @@ export function buildLauncher(tile, host) {
   what.rows = 2;
   what.autocapitalize = 'off';
   what.spellcheck = false;
+  const whatField = field(what, { label: 'what this session is told' });
   const formRow = document.createElement('div');
   formRow.className = 'home-ctl';
   // The two universal axes, chosen independently: project_root (where) and
@@ -104,28 +109,20 @@ export function buildLauncher(tile, host) {
   modelSel.title = 'Which session_launch_spec to launch';
   const groupSel = document.createElement('select');
   groupSel.title = 'Group the new session joins (tag)';
-  const startBtn = document.createElement('button');
-  startBtn.className = 'home-go';
-  startBtn.textContent = 'Start';
-  const cancelBtn = document.createElement('button');
-  cancelBtn.textContent = 'Cancel';
-  // WHERE A FAILURE LANDS: the form's own line, under the controls it refers to.
-  // The text you typed stays in the boxes — a failed launch must never cost the brief.
-  const err = document.createElement('div');
-  err.className = 'ks-err';
-  err.hidden = true;
-  const sayErr = (msg) => {
-    err.hidden = !msg;
-    err.textContent = msg || '';
-  };
+  const startBtn = button('Start', { cls: 'home-go' });
+  const cancelBtn = button('Cancel');
+  // WHERE A FAILURE LANDS: the form's own status line, under the controls it refers
+  // to. The text you typed stays in the boxes — a failed launch must never cost the
+  // brief. ui.status: announced, hidden while empty.
+  const err = status();
+  const sayErr = (msg) => err.say(msg, msg ? 'bad' : '');
   // Keep this form as a named tile. The other half of saved launches: without it the
   // catalog could only ever be written by hand, and a preset you cannot make from the
   // thing you are already looking at is a preset nobody makes.
-  const saveBtn = document.createElement('button');
-  saveBtn.type = 'button';
-  saveBtn.className = 'ks-save';
-  saveBtn.textContent = '＋ save';
-  saveBtn.title = 'Save these choices as a named launch, in your own catalogs store';
+  const saveBtn = button('＋ save', {
+    cls: 'ks-save',
+    title: 'Save these choices as a named launch, in your own catalogs store',
+  });
   saveBtn.addEventListener('click', async () => {
     if (!kind) return;
     const raw = prompt('Name this launch (letters, digits, - _):', kind.name.toLowerCase());
@@ -211,15 +208,17 @@ export function buildLauncher(tile, host) {
   seedInp.placeholder = 'read first (optional): paths, comma-separated';
   seedInp.autocapitalize = 'off';
   seedInp.spellcheck = false;
+  const seedField = field(seedInp, { label: 'read first — paths, comma-separated' });
   const injectInp = document.createElement('input');
   injectInp.type = 'text';
   injectInp.placeholder = 'extra instruction (optional)';
   injectInp.autocapitalize = 'off';
+  const injectField = field(injectInp, { label: 'extra instruction' });
   // A group says "these people"; this says "that one". Reviewing or forking is
   // usually about ONE session, so pointing at it should not require typing a name.
   const refSel = document.createElement('select');
   refSel.title = 'Point this session at ONE existing session (review it, fork from it, watch it)';
-  extras.append(seedInp, injectInp, refSel);
+  extras.append(seedField.el, injectField.el, refSel);
   const fillRef = () => {
     const cur = refSel.value;
     refSel.innerHTML = '';
@@ -227,7 +226,7 @@ export function buildLauncher(tile, host) {
     for (const s of S.sessions) refSel.add(new Option('@' + s.name, s.name));
     refSel.value = [...refSel.options].some((o) => o.value === cur) ? cur : '';
   };
-  form.append(formHead, modeRow, modeSay, nameInp, what, formRow, err, extrasHead, extras);
+  form.append(formHead, modeRow, modeSay, nameField.el, whatField.el, formRow, err.el, extrasHead, extras);
   const grid2 = document.createElement('div');
   grid2.className = 'ks-grid';
   /* ---- saved launches: this form, filled in ahead of time and named ---- */

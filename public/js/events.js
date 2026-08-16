@@ -1,4 +1,5 @@
 /* part of the tmux-ronin client — see js/README.md */
+import { reconcileSessions } from './api.js';
 import { refreshHome } from './home.js';
 import { IS_TOUCH, S, TILE_COUNT, grid, tiles } from './state.js';
 import { setLayout } from './viewport.js';
@@ -21,8 +22,7 @@ export function connectEvents() {
 export function onSessionsEvent(list) {
   const before = new Set(S.sessions.map((s) => s.name));
   const now = new Set(list.map((s) => s.name));
-  S.sessions = list;
-  tiles.forEach((t) => t.refreshOptions()); // pickers current everywhere
+  reconcileSessions(list); // the one writer (api.js); pickers current everywhere
   // Death: the tile refreshes and returns to the home panel.
   tiles.forEach((t) => {
     if (t.session && !now.has(t.session)) t.detach();

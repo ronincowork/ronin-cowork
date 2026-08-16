@@ -1,5 +1,6 @@
 /* part of the tmux-ronin client — see js/README.md */
 import { request } from './request.js';
+import { button, field, status } from './ui.js';
 
 /**
  * the commons' ▥ Hotwords pane — the words dictation keeps getting wrong.
@@ -33,11 +34,9 @@ export function buildHotwords(pane, isShowing) {
   input.autocomplete = 'off';
   input.spellcheck = false;
   input.setAttribute('autocorrect', 'off');
-  const addBtn = document.createElement('button');
-  addBtn.type = 'button';
-  addBtn.className = 'hot-addbtn';
-  addBtn.textContent = 'Add';
-  addRow.append(input, addBtn);
+  const inputField = field(input, { label: 'a word dictation keeps getting wrong' });
+  const addBtn = button('Add', { cls: 'hot-addbtn' });
+  addRow.append(inputField.el, addBtn);
 
   const count = document.createElement('div');
   count.className = 'hot-count';
@@ -53,17 +52,14 @@ export function buildHotwords(pane, isShowing) {
   const list = document.createElement('div');
   list.className = 'hot-list';
 
-  const msg = document.createElement('div');
-  msg.className = 'hot-msg';
+  // Only ever an error or nothing: a list that re-renders from the server IS the
+  // confirmation, so "saved" would be noise on every tap.
+  const msg = status();
 
-  wrap.append(addRow, msg, count, whose, list);
+  wrap.append(addRow, msg.el, count, whose, list);
   pane.appendChild(wrap);
 
-  const setMsg = (text, bad) => {
-    msg.textContent = text || '';
-    msg.classList.toggle('bad', !!bad);
-    msg.classList.toggle('show', !!text);
-  };
+  const setMsg = (text, bad) => msg.say(text, bad ? 'bad' : '');
 
   const render = (terms) => {
     list.innerHTML = '';

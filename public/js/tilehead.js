@@ -224,6 +224,9 @@ export function buildTileHead(tile) {
     if (!made) {
       node.className = row.cls;
       if (node.tagName === 'BUTTON') node.type = 'button';
+      // A non-interactive indicator (the dot) carries an accessible name via its
+      // help text, and a bare <span> may not hold one — role=img is the lamp's role.
+      if (node.tagName === 'SPAN') node.setAttribute('role', 'img');
       if (row.text) node.textContent = row.text;
     }
     if (row.holds) node.dataset.holdsHelp = '1';

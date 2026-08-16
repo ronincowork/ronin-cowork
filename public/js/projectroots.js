@@ -1,5 +1,6 @@
 /* part of the tmux-ronin client — see js/README.md */
 import { request } from './request.js';
+import { status } from './ui.js';
 import { loadProjects } from './home.js';
 import { askMika } from './mika.js';
 
@@ -100,9 +101,8 @@ export function buildProjectRoots(root, isShowing, tile) {
     const cancel = document.createElement('button');
     cancel.className = 'pr-ghost';
     cancel.textContent = 'cancel';
-    const err = document.createElement('span');
-    err.className = 'pr-err';
-    row.append(save, cancel, err);
+    const err = status('pr-err');
+    row.append(save, cancel, err.el);
     f.appendChild(row);
 
     cancel.addEventListener('click', () => {
@@ -116,13 +116,13 @@ export function buildProjectRoots(root, isShowing, tile) {
       });
       delete body.name; // shown, never sent — the heading IS the handle
       save.disabled = true;
-      err.textContent = '';
+      err.say('');
       const r = await request('/api/project-roots/' + encodeURIComponent(existing.name), {
         method: 'PUT',
         json: body,
       });
       if (!r.ok) {
-        err.textContent = r.message;
+        err.say(r.message, 'bad');
         save.disabled = false;
         return;
       }

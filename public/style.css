@@ -1,9 +1,14 @@
 /* tmux-ronin — the one stylesheet, in four cascade layers.
  *
- * @layer IS THE ENFORCEMENT, not a convention: vendor < foundations < ui < app, so a
- * feature rule cannot patch a primitive's internals and nothing patches the tokens —
- * the cascade refuses, no reviewer required. Splitting into files stays a mechanical
- * move for the day a layer earns its own; docs/ui.md carries the contract.
+ * WHAT @layer ENFORCES, honestly: later layers WIN, so the one direction the cascade
+ * guarantees is vendor-lowest — every Ronin rule beats xterm.css by construction, not
+ * by load-order accident. app being the STRONGEST layer is what lets a consumer size
+ * its own dialog card; it also means the cascade cannot stop app from patching a
+ * primitive or shadowing a token. That rule is real and it is scripts/check-css.mjs's
+ * to enforce (its checks 4 and 5) — a gate, not the cascade. The first cut of this
+ * header claimed the reverse; corrected 2026-08-16, the gate landed the same day.
+ * Splitting into files stays a mechanical move for the day a layer earns its own;
+ * docs/ui.md carries the contract.
  *
  *   vendor       xterm.css, imported into the lowest layer
  *   foundations  the design tokens (dark + light), reset, page chrome, focus
@@ -282,6 +287,40 @@ body {
 }
 #toast.err {
   border-color: var(--bad);
+}
+
+/* ---- field / status — the labelled-control and async-outcome primitives (js/ui.js) ----
+   .ui-field is display:contents ON PURPOSE: it exists to add a real accessible name
+   and a message line to a control already sitting in someone's flex/grid, without
+   adding a box that layout would have to accommodate. */
+.ui-field {
+  display: contents;
+}
+/* Visually hidden, present to assistive tech — the standard clip recipe. */
+.ui-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.ui-status {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.ui-status:empty {
+  display: none;
+}
+.ui-status[data-kind='bad'] {
+  color: var(--bad-soft);
+}
+.ui-status[data-kind='ok'] {
+  color: var(--ok);
 }
 
 /* ---- THE HELP BOX (js/tips.js) --------------------------------------------------
@@ -1810,20 +1849,6 @@ body {
     color: var(--bad);
   }
 }
-/* Only ever an error or nothing: a list that re-renders from the server IS the
-   confirmation, so "saved" would be noise on every tap. */
-.hot-msg {
-  display: none;
-  flex: 0 0 auto;
-  font-size: 12px;
-  color: var(--muted);
-}
-.hot-msg.show {
-  display: block;
-}
-.hot-msg.bad {
-  color: var(--bad);
-}
 @media (pointer: coarse) {
   /* 16px stops iOS Safari zooming the page when the field takes focus. */
   .hot-add input {
@@ -2966,6 +2991,10 @@ body {
   align-items: center;
   gap: 6px;
   padding: 8px 10px 0;
+}
+/* the tablist inside the strip — semantics only, no box (see commons.js) */
+.home-tabrow {
+  display: contents;
 }
 .home-tabs button {
   border: 1px solid var(--line-2);

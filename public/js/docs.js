@@ -1,5 +1,6 @@
 /* part of the tmux-ronin client — see js/README.md */
 import { request } from './request.js';
+import { status } from './ui.js';
 import { homeData } from './home.js';
 
 /**
@@ -33,12 +34,11 @@ export function buildDocs(tile, root, isShowing) {
   back.textContent = '←';
   back.title = 'Back to the list';
   const title = document.createElement('b');
-  const note = document.createElement('span');
-  note.className = 'dc-note';
+  const note = status('dc-note');
   const save = document.createElement('button');
   save.className = 'dc-save';
   save.textContent = 'Save';
-  bar.append(back, title, note, save);
+  bar.append(back, title, note.el, save);
   const area = document.createElement('textarea');
   area.className = 'dc-text';
   area.spellcheck = false;
@@ -55,10 +55,7 @@ export function buildDocs(tile, root, isShowing) {
   };
   show('list');
 
-  const say = (text, bad) => {
-    note.textContent = text;
-    note.classList.toggle('bad', !!bad);
-  };
+  const say = (text, bad) => note.say(text, bad ? 'bad' : '');
 
   /* ---------- opening and saving ---------- */
 

@@ -99,7 +99,9 @@ for (const [name, m] of Object.entries(mod)) {
   // root of an acyclic graph its imports are fully evaluated by the time it runs.
   // Every other module must confine cross-module use to function bodies.
   if (name === 'main') continue;
-  const imported = new Set(m.imports.flatMap((i) => i.names));
+  // LOCAL names: rule 4 is about what this file's code touches, and an `as` rename
+  // means the touchable binding is the alias, not the source name.
+  const imported = new Set(m.imports.flatMap((i) => i.locals));
   if (!imported.size) continue;
   let depth = 0;
   const lines = m.code.split('\n');

@@ -26,7 +26,7 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { HOST_TOOLS, defaultUrl, loadPlaywright } from './lib/ui-host.mjs';
+import { HOST_TOOLS, defaultUrl, loadPlaywright, loadAxeSource } from './lib/ui-host.mjs';
 
 // Host derivation and the playwright hunt both live in scripts/lib/ui-host.mjs — this
 // script and check-tips need the same two answers, and when each had its own copy they
@@ -212,7 +212,22 @@ async function checkJourneys(page, label) {
   const failAfterTheme = await page.evaluate(() => !!document.getElementById('failbar'));
   if (failAfterTheme) bad(`${label}: the theme flip raised the failure banner`);
 
-  // 4 — the note sheet keeps the ui.sheet contract: opens from the tile head, focus
+  // 4 — the Commons strip is a real tablist: arrows move focus along it, Enter lands
+  // the focused room. (Activation stays deliberate — focus alone must not open a room.)
+  await page.evaluate(() => document.querySelector('.tile.active .home-tabrow [aria-selected="true"]')?.focus());
+  await page.keyboard.press('ArrowRight');
+  const arrowed = await page.evaluate(() => document.activeElement?.dataset?.pane);
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(200);
+  const landed = await page.evaluate(() => document.querySelector('.home.show')?.dataset.pane);
+  if (arrowed && landed === arrowed) ok(`${label}: tab strip: ArrowRight moves focus, Enter lands the room (${landed})`);
+  else bad(`${label}: tab strip keyboard broken — focus on "${arrowed}", landed "${landed}"`);
+  await page.evaluate(() => {
+    const t = document.querySelector('.tile.active .home-tabrow [data-pane="sessions"]');
+    t?.click();
+  });
+
+  // 5 — the note sheet keeps the ui.sheet contract: opens from the tile head, focus
   // enters, Escape closes and gives focus back to the opener.
   await page.evaluate(() => document.querySelector('.home.show .home-x')?.click());
   await page.waitForTimeout(200);
@@ -233,6 +248,74 @@ async function checkJourneys(page, label) {
   else bad(`${label}: sheet close broken — open=${noteAfter.open} focusReturned=${noteAfter.focusBack}`);
 }
 
+/**
+ * PHONE JOURNEYS — the touch grammar's own probes, run in the phone pass: the ニ sheet
+ * opens and dismisses, the Commons is reachable through it, and the tab strip lands a
+ * room by tap. Few and unbrittle, same policy as the desktop set.
+ */
+async function checkPhoneJourneys(page, label) {
+  await page.tap('#bar .tdrop-btn.ni');
+  await page.waitForTimeout(200);
+  const niOpen = await page.evaluate(() => !!document.querySelector('.tdrop.open'));
+  if (niOpen) ok(`${label}: ニ opens the app sheet`);
+  else return bad(`${label}: ニ did not open its sheet`);
+  // A row is a door: Commons opens the rooms menu, a room row lands its pane.
+  await page.tap('#commonsbtn');
+  await page.waitForTimeout(200);
+  await page.tap('.commons-menu .commons-row:nth-child(4)'); // ▧ Docs
+  await page.waitForTimeout(300);
+  const pane = await page.evaluate(() => document.querySelector('.home.show')?.dataset.pane);
+  if (pane === 'docs') ok(`${label}: ニ → Commons → row lands on ▧ Docs`);
+  else bad(`${label}: Commons row landed on "${pane}", wanted "docs"`);
+  const sheetGone = await page.evaluate(() => !document.querySelector('.tdrop.open'));
+  if (sheetGone) ok(`${label}: the sheet closed behind the door it opened`);
+  else bad(`${label}: the ニ sheet stayed open over the pane`);
+  // The strip: tap back to the roster.
+  await page.tap('.tile .home-tabrow [data-pane="sessions"]');
+  await page.waitForTimeout(200);
+  const back = await page.evaluate(() => document.querySelector('.home.show')?.dataset.pane);
+  if (back === 'sessions') ok(`${label}: the tab strip lands ⌂ Roster by tap`);
+  else bad(`${label}: strip tap landed "${back}", wanted "sessions"`);
+}
+
+/**
+ * THE AXE SCAN — serious/critical violations at three representative states. axe-core
+ * is a host tool (ui-host.mjs loadAxeSource); absent = a SKIP that says so, the same
+ * bargain as the browser itself. color-contrast is EXCLUDED here on purpose: contrast
+ * policy is check-css's contrast floor, which holds the measured tiers both themes —
+ * including the documented sub-AA `--muted` secondary tier the owner's density ruling
+ * keeps (docs/ui.md). Everything else at serious+critical fails the gate.
+ */
+async function checkA11y(page, label, axeSrc) {
+  if (!axeSrc) {
+    console.log(`  note — axe-core not installed (cd ~/.cache/ronin-host-tools && npm i axe-core); a11y scan skipped`);
+    return;
+  }
+  await page.addScriptTag({ content: axeSrc });
+  const scan = async (state) => {
+    const bad2 = await page.evaluate(async () => {
+      const r = await axe.run(document, {
+        resultTypes: ['violations'],
+        rules: { 'color-contrast': { enabled: false } },
+      });
+      return r.violations
+        .filter((v) => v.impact === 'serious' || v.impact === 'critical')
+        .map((v) => `${v.id} (${v.impact}) ×${v.nodes.length} e.g. ${v.nodes[0]?.target?.join(' ')}`);
+    });
+    if (bad2.length) bad(`${label}: axe ${state}:\n         ` + bad2.join('\n         '));
+    else ok(`${label}: axe ${state} — no serious/critical violations`);
+  };
+  await scan('at rest');
+  await page.locator('#commonsbtn').click();
+  await page.waitForTimeout(150);
+  await scan('with the Commons menu open');
+  await page.keyboard.press('Escape');
+  await page.locator('.tile .tile-head button.note').first().click();
+  await page.waitForTimeout(400);
+  await scan('with the note sheet open');
+  await page.keyboard.press('Escape');
+}
+
 async function runPass({ label, browser, contextOpts }) {
   const { page, jsErrors, netFails } = await openPage(browser, contextOpts);
   try {
@@ -250,7 +333,12 @@ async function runPass({ label, browser, contextOpts }) {
 
   await checkDom(page, label);
   await attachProbe(page, label);
-  if (label === 'desktop') await checkJourneys(page, label);
+  if (label === 'desktop') {
+    await checkJourneys(page, label);
+    await checkA11y(page, label, await loadAxeSource());
+  } else {
+    await checkPhoneJourneys(page, label);
+  }
 
   const after = jsErrors.length;
   if (after && !fails.some((f) => f.includes('uncaught JS errors'))) {
