@@ -118,29 +118,10 @@ export const tiles = [];
 // lastSelection: kept so a live-TUI redraw that clears the on-screen highlight
 // can't lose the text before ⌘C reads it.
 
-export const THEME = {
-  background: '#0b0e14',
-  foreground: '#c5c8c6',
-  cursor: '#e0af68',
-  cursorAccent: '#0b0e14',
-  selectionBackground: '#2a3145',
-  black: '#1d1f21',
-  red: '#cc6666',
-  green: '#b5bd68',
-  yellow: '#f0c674',
-  blue: '#81a2be',
-  magenta: '#b294bb',
-  cyan: '#8abeb7',
-  white: '#c5c8c6',
-  brightBlack: '#6b7488',
-  brightRed: '#d54e53',
-  brightGreen: '#b9ca4a',
-  brightYellow: '#e7c547',
-  brightBlue: '#7aa6da',
-  brightMagenta: '#c397d8',
-  brightCyan: '#70c0b1',
-  brightWhite: '#eaeaea',
-};
+// THE TERMINAL PALETTE LIVED HERE as a THEME literal — the same sixteen colours the
+// stylesheet also spelled, in a second language, and the two drifted (TOKENS' D2).
+// It is now `--term-*` tokens in style.css, read back by js/theme.js `termTheme()`:
+// one spelling, and xterm derives from it.
 
 /* ---------- failure containment ----------
  * On 2026-08-08 one bad line in Tile's constructor took the ENTIRE UI down: the

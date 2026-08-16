@@ -1,4 +1,6 @@
 /* part of the tmux-ronin client — see js/README.md */
+import { request } from './request.js';
+import { field } from './ui.js';
 import { IS_TOUCH, S } from './state.js';
 
 export function buildWipeboard(tile, root, isShowing) {
@@ -27,7 +29,8 @@ export function buildWipeboard(tile, root, isShowing) {
   brief.rows = 3;
   brief.placeholder = 'what this board is for, and what is to be discussed';
   brief.spellcheck = false;
-  briefWrap.append(briefH, brief);
+  const briefField = field(brief, { label: 'board brief' });
+  briefWrap.append(briefH, briefField.el);
   // On a phone the brief starts collapsed — the thread is what you came for, and the
   // keyboard eats half the screen. Desktop keeps it open, exactly as before.
   if (IS_TOUCH) briefWrap.classList.add('shut');
@@ -37,15 +40,19 @@ export function buildWipeboard(tile, root, isShowing) {
   });
   brief.addEventListener('blur', async () => {
     if (!name || !briefDirty) return;
+    const r = await request('/api/wipeboards/' + encodeURIComponent(name) + '/brief', {
+      method: 'PUT',
+      json: { brief: brief.value },
+    });
+    if (!r.ok) {
+      // The text stays, the flag stays dirty, and the failure is IN the thread area:
+      // a brief that silently never landed is the board lying to its members.
+      briefDirty = true;
+      empty('brief not saved — ' + r.message + ' (your text is still in the box)');
+      return;
+    }
     briefDirty = false;
-    try {
-      await fetch('/api/wipeboards/' + encodeURIComponent(name) + '/brief', {
-        method: 'PUT',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ brief: brief.value }),
-      });
-      mtime = 0; // force a re-read so the pane shows what actually landed
-    } catch (_) {}
+    mtime = 0; // force a re-read so the pane shows what actually landed
   });
 
   // -- members: chips with ×, and a picker offering groups AND individual sessions.
@@ -64,9 +71,10 @@ export function buildWipeboard(tile, root, isShowing) {
   say.rows = 1;
   say.placeholder = 'say something to everyone on this board';
   say.spellcheck = false;
+  const sayField = field(say, { label: 'post to this board' });
   const post = document.createElement('button');
   post.textContent = 'Post';
-  composeRow.append(say, post);
+  composeRow.append(sayField.el, post);
   root.append(head, briefWrap, memRow, thread, composeRow);
 
   const empty = (msg) => {
@@ -86,14 +94,10 @@ export function buildWipeboard(tile, root, isShowing) {
   };
 
   const loadBoards = async () => {
-    try {
-      const r = await fetch('/api/wipeboards', { cache: 'no-store' });
-      const d = await r.json();
-      if (r.ok) fillPicker(d.boards || []);
-      return d.boards || [];
-    } catch (_) {
-      return [];
-    }
+    const r = await request('/api/wipeboards', { cache: 'no-store' });
+    if (!r.ok) return [];
+    fillPicker(r.data.boards || []);
+    return r.data.boards || [];
   };
 
   const renderMembers = (members) => {
@@ -124,16 +128,17 @@ export function buildWipeboard(tile, root, isShowing) {
       x.title = 'Remove ' + m.name + ' from this board';
       x.addEventListener('click', async () => {
         x.disabled = true;
-        try {
-          await fetch(
-            '/api/wipeboards/' + encodeURIComponent(name) + '/members/' + encodeURIComponent(m.name),
-            { method: 'DELETE' },
-          );
-          mtime = 0;
-          await refresh();
-        } catch (e) {
-          alert('Could not remove:\n' + e.message);
+        const r = await request(
+          '/api/wipeboards/' + encodeURIComponent(name) + '/members/' + encodeURIComponent(m.name),
+          { method: 'DELETE' },
+        );
+        if (!r.ok) {
+          empty('could not remove ' + m.name + ' — ' + r.message);
+          x.disabled = false;
+          return;
         }
+        mtime = 0;
+        await refresh();
       });
       chip.appendChild(x);
       memRow.appendChild(chip);
@@ -150,22 +155,20 @@ export function buildWipeboard(tile, root, isShowing) {
       const v = plus.value;
       if (!v || !name) return;
       plus.disabled = true;
-      try {
-        const r = await fetch('/api/wipeboards/' + encodeURIComponent(name) + '/members', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(v.startsWith('g:') ? { group: v.slice(2) } : { session: v.slice(2) }),
-        });
-        const d = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+      const r = await request('/api/wipeboards/' + encodeURIComponent(name) + '/members', {
+        method: 'POST',
+        json: v.startsWith('g:') ? { group: v.slice(2) } : { session: v.slice(2) },
+      });
+      if (!r.ok) {
+        empty('could not add — ' + r.message);
+      } else {
         // Say plainly who was told and who wasn't — a silently-unnotified member is
-        // exactly the confusion this board exists to remove.
-        const quiet = Object.entries(d.results || {}).filter(([, v2]) => !/^notified$/.test(v2));
-        if (quiet.length) alert(quiet.map(([k, v2]) => `${k}: ${v2}`).join('\n'));
+        // exactly the confusion this board exists to remove. The thread area carries
+        // it; the next refresh replaces it with the thread.
+        const quiet = Object.entries(r.data.results || {}).filter(([, v2]) => !/^notified$/.test(v2));
+        if (quiet.length) empty(quiet.map(([k, v2]) => `${k}: ${v2}`).join(' · '));
         mtime = 0;
         await refresh();
-      } catch (e) {
-        alert('Could not add:\n' + e.message);
       }
       plus.disabled = false;
     });
@@ -201,19 +204,18 @@ export function buildWipeboard(tile, root, isShowing) {
 
   const refresh = async () => {
     if (!name) return;
-    try {
-      const r = await fetch('/api/wipeboards/' + encodeURIComponent(name), { cache: 'no-store' });
-      const d = await r.json();
-      if (!r.ok) {
-        empty(d.error || 'could not read this board');
-        return;
-      }
-      renderMembers(d.members || []);
-      if (d.mtime === mtime) return; // file hasn't moved — leave the DOM (and any selection) alone
-      mtime = d.mtime;
-      if (!briefDirty) brief.value = d.brief || '';
-      renderThread(d.posts || []);
-    } catch (_) {}
+    const r = await request('/api/wipeboards/' + encodeURIComponent(name), { cache: 'no-store' });
+    if (!r.ok) {
+      // Network blips ride the 2s poll — the thread stays; a real answer that says
+      // "no" replaces it, exactly as before.
+      if (r.kind !== 'network') empty(r.message || 'could not read this board');
+      return;
+    }
+    renderMembers(r.data.members || []);
+    if (r.data.mtime === mtime) return; // file hasn't moved — leave the DOM (and any selection) alone
+    mtime = r.data.mtime;
+    if (!briefDirty) brief.value = r.data.brief || '';
+    renderThread(r.data.posts || []);
   };
 
   pick.addEventListener('change', async () => {
@@ -235,39 +237,31 @@ export function buildWipeboard(tile, root, isShowing) {
     if (raw == null) return;
     const n = raw.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
     if (!n) return;
-    try {
-      const r = await fetch('/api/wipeboards', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ name: n }),
-      });
-      const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
-      await loadBoards();
-      pick.value = n;
-      pick.dispatchEvent(new Event('change'));
-    } catch (e) {
-      alert('Could not start a wipeboard:\n' + e.message);
+    const r = await request('/api/wipeboards', { method: 'POST', json: { name: n } });
+    if (!r.ok) {
+      empty('could not start a wipeboard — ' + r.message);
+      return;
     }
+    await loadBoards();
+    pick.value = n;
+    pick.dispatchEvent(new Event('change'));
   });
 
   const sendPost = async () => {
     const text = say.value.trim();
     if (!text || !name) return;
     post.disabled = true;
-    try {
-      const r = await fetch('/api/wipeboards/' + encodeURIComponent(name) + '/post', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ text }),
-      });
-      const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+    const r = await request('/api/wipeboards/' + encodeURIComponent(name) + '/post', {
+      method: 'POST',
+      json: { text },
+    });
+    if (!r.ok) {
+      // The words stay in the box — a failed post must never cost the post.
+      empty('could not post — ' + r.message + ' (your text is still in the box)');
+    } else {
       say.value = '';
       mtime = 0;
       await refresh();
-    } catch (e) {
-      alert('Could not post:\n' + e.message);
     }
     post.disabled = false;
   };

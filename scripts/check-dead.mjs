@@ -171,6 +171,9 @@ const liveIds = new Set([...html.matchAll(/\bid="([\w-]+)"/g)].map((m) => m[1]))
 for (const m of Object.values(mod)) {
   // `.id = 'x'` assignment (not `.id ===` comparison, which is data, not DOM)
   for (const a of m.raw.matchAll(/\.id\s*=(?!=)\s*['"]([\w-]+)['"]/g)) liveIds.add(a[1]);
+  // the ui.sheet primitive takes its element id as `sheet({ id: 'x', … })` — the one
+  // object-literal spelling that creates a DOM id (js/ui.js sets el.id from it)
+  for (const a of m.raw.matchAll(/sheet\(\{\s*id:\s*['"]([\w-]+)['"]/g)) liveIds.add(a[1]);
   // id="x" inside an HTML template string
   for (const a of m.raw.matchAll(/\bid\s*=\s*\\?["']([\w-]+)\\?["']/g)) liveIds.add(a[1]);
 }

@@ -1,6 +1,8 @@
 /* part of the tmux-ronin client — see js/README.md */
 import { IS_TOUCH, S, WHEEL_DOWN, WHEEL_UP, grid, tiles } from './state.js';
-import { setLayout } from './viewport.js';
+import { request } from './request.js';
+import { toast } from './ui.js';
+import { curLayout, nextLayout, setLayout } from './viewport.js';
 
 export const LS_PAD = 'tmuxgrid.worklouder';
 export const PAD_CODE = /^F1[3-9]$|^F2[0-4]$/; // the ONLY codes the pad logic touches
@@ -126,21 +128,8 @@ export function padChord(e) {
   return (e.ctrlKey ? 'C-' : '') + (e.altKey ? 'A-' : '') + (e.metaKey ? 'M-' : '') + (e.shiftKey ? 'S-' : '') + e.code;
 }
 
-/** Outcome chip for pad fires — macros must SHOW their result, not just perform. */
-export let padToastEl = null;
-export let padToastTimer = null;
-export function padToast(msg, ok = true) {
-  if (!padToastEl) {
-    padToastEl = document.createElement('div');
-    padToastEl.id = 'padtoast';
-    document.body.appendChild(padToastEl);
-  }
-  padToastEl.textContent = msg;
-  padToastEl.classList.toggle('err', !ok);
-  padToastEl.classList.add('show');
-  clearTimeout(padToastTimer);
-  padToastTimer = setTimeout(() => padToastEl.classList.remove('show'), 2200);
-}
+// The outcome chip (macros must SHOW their result, not just perform) grew up into
+// the house toast — js/ui.js — because tile-scoped errors needed the same surface.
 
 /** Route a pad press: terminal key, next-tile, ask-for-args popup, or macro send. */
 export function firePadBinding(bind) {
@@ -189,8 +178,7 @@ export function firePadBinding(bind) {
       return;
     }
     if (bind.key === 'layoutcycle') {
-      const n = Number(grid.dataset.layout) || 4;
-      setLayout(n === 1 ? 2 : n === 2 ? 4 : 1);
+      setLayout(nextLayout(curLayout())); // same ring as the bar button — one statement of it
       return;
     }
     if (k.dir) {
@@ -223,7 +211,7 @@ export function firePadBinding(bind) {
       return;
     }
     if (!S.active) {
-      padToast(k.label + ' — no active tile', false);
+      toast(k.label + ' — no active tile', false);
       return;
     }
     S.active.sendRaw(k.seq); // deliberately no toast: these fire often and show in the pane
@@ -241,21 +229,15 @@ export async function firePadSend(macro, args, session) {
   const dest = session || (S.active && S.active.session) || '';
   const inv = '+' + (args ? `${macro}: ${args}` : macro);
   if (!dest) {
-    padToast(`${inv} — no target: bind a session, or open one in the active tile`, false);
+    toast(`${inv} — no target: bind a session, or open one in the active tile`, false);
     return;
   }
-  try {
-    const r = await fetch('/api/sessions/' + encodeURIComponent(dest) + '/send', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ text: inv }),
-    });
-    const d = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
-    padToast(`⚡ ${inv} → ${dest} ${d.started ? '✓' : "— pane didn't react, check it"}`, !!d.started);
-  } catch (e) {
-    padToast(`⚡ ${inv} → ${dest} ✗ ${e.message}`, false);
-  }
+  const r = await request('/api/sessions/' + encodeURIComponent(dest) + '/send', {
+    method: 'POST',
+    json: { text: inv },
+  });
+  if (!r.ok) toast(`⚡ ${inv} → ${dest} ✗ ${r.message}`, false);
+  else toast(`⚡ ${inv} → ${dest} ${r.data.started ? '✓' : "— pane didn't react, check it"}`, !!r.data.started);
 }
 
 // Codes emitted by the encoder and joystick rather than by a key. They ARE

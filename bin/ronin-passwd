@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# RONIN PASSWD — the owner's login password, set from the host.
+#
+#   bin/ronin-passwd            set (or change) the password — prompts twice, no echo
+#   bin/ronin-passwd clear      remove the login: back to tailnet/Basic only
+#   bin/ronin-passwd status     is a password set?
+#
+# The password gates the WHOLE web surface (pages, API, both websockets) via an
+# HttpOnly session cookie; Basic auth (GRID_USER/GRID_PASS in .env) keeps working
+# beside it for scripts. Changing the password logs every device out at once.
+# Storage: an scrypt record in the user config store's ronin.json — see src/auth.ts.
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+exec npx tsx src/auth-cli.ts "${1:-set}"

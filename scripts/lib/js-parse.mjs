@@ -40,12 +40,19 @@ export function codeOnly(src) {
   return out;
 }
 
-/** `import { a, b } from './mod.js'` occurrences in comment-stripped source. */
+/** `import { a, b, c as d } from './mod.js'` occurrences in comment-stripped source.
+ *  `names` are the SOURCE names (what the module must export); `locals` are the
+ *  bindings in the importing file (what its code refers to) — the two differ exactly
+ *  when `as` renames, which `ui.js`'s `tabs as makeTabs` made real. */
 export function parseImports(src) {
-  return [...src.matchAll(/import\s*\{([^}]*)\}\s*from\s*'\.\/([\w-]+)\.js'/g)].map((m) => ({
-    names: m[1].split(',').map((s) => s.trim()).filter(Boolean),
-    from: m[2],
-  }));
+  return [...src.matchAll(/import\s*\{([^}]*)\}\s*from\s*'\.\/([\w-]+)\.js'/g)].map((m) => {
+    const parts = m[1].split(',').map((s) => s.trim()).filter(Boolean);
+    return {
+      names: parts.map((s) => s.split(/\s+as\s+/)[0]),
+      locals: parts.map((s) => s.split(/\s+as\s+/).pop()),
+      from: m[2],
+    };
+  });
 }
 
 /** Top-level `export const|let|var|function|class NAME` names in comment-stripped source. */

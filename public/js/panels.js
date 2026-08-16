@@ -1,5 +1,7 @@
 /* part of the tmux-ronin client — see js/README.md */
+import { request } from './request.js';
 import { refreshHome } from './home.js';
+import { field, sheet, status } from './ui.js';
 import { IS_TOUCH, S, tiles } from './state.js';
 
 /**
@@ -7,74 +9,80 @@ import { IS_TOUCH, S, tiles } from './state.js';
  * full-bleed on phones) that loads/saves the active tile's session note. The note lives
  * on the tmux session itself (a user option) — no separate storage, gone when the session
  * dies. Additive: it never touches terminal/copy behavior on any device.
+ *
+ * Built on the ui.sheet primitive: dialog semantics, focus entry and restoration,
+ * Escape/backdrop dismissal — the behaviours every sheet shares. What is THIS sheet's:
+ * a failed save keeps the sheet open with the text intact (closing on failure made a
+ * lost note look saved, which is the failure mode that costs trust), and a failed load
+ * keeps Save off so an empty box cannot overwrite a note that merely failed to arrive.
  */
 export function buildNotePanel() {
-  const sheet = document.createElement('div');
-  sheet.id = 'notesheet';
-  const card = document.createElement('div');
-  card.className = 'ns-card';
+  let current = null; // session whose note is loaded
+  const dlg = sheet({ id: 'notesheet', cls: 'ns-card', label: 'Session note', onClose: () => (current = null) });
   const bar = document.createElement('div');
   bar.className = 'ns-bar';
   const title = document.createElement('span');
   title.className = 'ns-title';
+  const msg = status('ns-msg');
   const saveBtn = document.createElement('button');
   saveBtn.textContent = 'Save';
   const closeBtn = document.createElement('button');
   closeBtn.textContent = 'Close';
-  bar.append(title, saveBtn, closeBtn);
+  bar.append(title, msg.el, saveBtn, closeBtn);
   const ta = document.createElement('textarea');
   ta.placeholder = "What's this session working on?";
   ta.spellcheck = false;
-  card.append(bar, ta);
-  sheet.appendChild(card);
-  document.body.appendChild(sheet);
+  const taField = field(ta, { label: 'session note' });
+  dlg.card.append(bar, taField.el);
 
-  let current = null; // session whose note is loaded
-  const close = () => {
-    sheet.classList.remove('open');
-    current = null;
-  };
+  const say = (text, bad) => msg.say(text, bad ? 'bad' : '');
+
   const open = async (session) => {
     if (!session) return;
     current = session;
     title.textContent = '📝 ' + session;
     ta.value = '';
     ta.disabled = true;
-    sheet.classList.add('open');
-    try {
-      const r = await fetch('/api/sessions/' + encodeURIComponent(session) + '/note');
-      const d = await r.json().catch(() => ({}));
-      if (current === session) ta.value = d.note || '';
-    } catch (_) {}
+    saveBtn.disabled = true;
+    say('loading…');
+    dlg.open();
+    const r = await request('/api/sessions/' + encodeURIComponent(session) + '/note');
+    if (current !== session) return; // the sheet moved on while this was in flight
+    if (!r.ok) {
+      // Save stays off: an empty box over a note that failed to LOAD would save
+      // emptiness over it, which is worse than the failure it hides.
+      say('could not load — ' + r.message, true);
+      return;
+    }
+    ta.value = r.data.note || '';
     ta.disabled = false;
-    ta.focus();
+    saveBtn.disabled = false;
+    say('');
+    if (!IS_TOUCH) ta.focus();
   };
   saveBtn.addEventListener('click', async () => {
-    if (!current) return;
+    if (!current || saveBtn.disabled) return;
     const session = current;
-    saveBtn.textContent = 'Saving…';
-    try {
-      await fetch('/api/sessions/' + encodeURIComponent(session) + '/note', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ note: ta.value }),
-      });
-      const s = S.sessions.find((x) => x.name === session);
-      if (s) s.hasNote = !!ta.value.trim();
-      tiles.forEach((t) => t.syncHeader());
-    } catch (_) {}
-    saveBtn.textContent = 'Save';
-    close();
+    saveBtn.disabled = true;
+    say('saving…');
+    const r = await request('/api/sessions/' + encodeURIComponent(session) + '/note', {
+      method: 'POST',
+      json: { note: ta.value },
+    });
+    saveBtn.disabled = false;
+    if (!r.ok) {
+      // The text stays in the box and the sheet stays up — a failed save must never
+      // close the editor and look successful.
+      say('not saved — ' + r.message, true);
+      return;
+    }
+    const s = S.sessions.find((x) => x.name === session);
+    if (s) s.hasNote = !!ta.value.trim();
+    tiles.forEach((t) => t.syncHeader());
+    dlg.close();
   });
-  closeBtn.addEventListener('click', close);
-  // Click the backdrop (outside the card) or press Esc to dismiss.
-  sheet.addEventListener('pointerdown', (e) => {
-    if (e.target === sheet) close();
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && sheet.classList.contains('open')) close();
-  });
-  S.notePanel = { open, close };
+  closeBtn.addEventListener('click', dlg.close);
+  S.notePanel = { open, close: dlg.close };
 }
 
 /* ---------- group tags (🏷) — the session's memberships ---------- */
@@ -85,24 +93,26 @@ export function buildNotePanel() {
 // Agents read the same truth with `ronin_bin/tejun-group`; this panel is how the OWNER
 // maintains it. Tagging stays the owner's job — agents address groups, they don't edit them.
 export function buildTagPanel() {
-  const sheet = document.createElement('div');
-  sheet.id = 'tagsheet';
-  sheet.innerHTML = `<div class="tg-card">
-      <div class="tg-bar"><span class="tg-title"></span>
+  let current = null;
+  let list = [];
+  const dlg = sheet({ id: 'tagsheet', cls: 'tg-card', label: 'Session groups', onClose: () => (current = null) });
+  dlg.card.innerHTML = `<div class="tg-bar"><span class="tg-title"></span>
         <button class="tg-save">Save</button><button class="tg-close">Close</button></div>
       <div class="tg-chips"></div>
       <input class="tg-input" type="text" placeholder="add a group (letters, digits, - _)" autocapitalize="off" autocorrect="off" spellcheck="false">
       <div class="tg-known"></div>
-      <div class="tg-hint">Agents resolve these with <code>tejun-group &lt;name&gt;</code>.</div>
-    </div>`;
-  document.body.appendChild(sheet);
-  const title = sheet.querySelector('.tg-title');
-  const chips = sheet.querySelector('.tg-chips');
-  const known = sheet.querySelector('.tg-known');
-  const inp = sheet.querySelector('.tg-input');
+      <div class="tg-hint">Agents resolve these with <code>tejun-group &lt;name&gt;</code>.</div>`;
+  const title = dlg.card.querySelector('.tg-title');
+  const msg = status('tg-msg');
+  title.after(msg.el);
+  const chips = dlg.card.querySelector('.tg-chips');
+  const known = dlg.card.querySelector('.tg-known');
+  const inp = dlg.card.querySelector('.tg-input');
+  const inpField = field(inp, { label: 'add a group' });
+  // field() wraps in place: put the wrapper where the input was.
+  dlg.card.insertBefore(inpField.el, known);
 
-  let current = null;
-  let list = [];
+  const say = (text, bad) => msg.say(text, bad ? 'bad' : '');
   const clean = (t) =>
     String(t || '')
       .trim()
@@ -121,7 +131,6 @@ export function buildTagPanel() {
     list.forEach((t, i) => {
       const c = document.createElement('button');
       c.className = 'tg-chip on';
-      c.innerHTML = '';
       c.append(document.createTextNode(t), Object.assign(document.createElement('i'), { textContent: '✕' }));
       c.title = 'remove';
       c.addEventListener('click', () => {
@@ -165,10 +174,6 @@ export function buildTagPanel() {
     renderKnown();
   };
 
-  const close = () => {
-    sheet.classList.remove('open');
-    current = null;
-  };
   const open = async (session) => {
     if (!session) return;
     current = session;
@@ -176,16 +181,17 @@ export function buildTagPanel() {
     list = [];
     renderChips();
     renderKnown();
-    sheet.classList.add('open');
-    try {
-      const r = await fetch('/api/sessions/' + encodeURIComponent(session) + '/tags');
-      const d = await r.json().catch(() => ({}));
-      if (current === session) {
-        list = Array.isArray(d.tags) ? d.tags : [];
-        renderChips();
-        renderKnown();
-      }
-    } catch (_) {}
+    say('');
+    dlg.open();
+    const r = await request('/api/sessions/' + encodeURIComponent(session) + '/tags');
+    if (current !== session) return;
+    if (!r.ok) {
+      say('could not load — ' + r.message, true);
+      return;
+    }
+    list = Array.isArray(r.data.tags) ? r.data.tags : [];
+    renderChips();
+    renderKnown();
     if (!IS_TOUCH) inp.focus(); // don't summon the iOS keyboard on open
   };
 
@@ -195,32 +201,28 @@ export function buildTagPanel() {
       add();
     }
   });
-  sheet.querySelector('.tg-save').addEventListener('click', async () => {
+  dlg.card.querySelector('.tg-save').addEventListener('click', async () => {
     if (!current) return;
     add(); // don't silently drop a tag left sitting in the box
     const session = current;
-    try {
-      const r = await fetch('/api/sessions/' + encodeURIComponent(session) + '/tags', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ tags: list }),
-      });
-      const d = await r.json().catch(() => ({}));
-      const s = S.sessions.find((x) => x.name === session);
-      if (s) s.tags = Array.isArray(d.tags) ? d.tags : list;
-      tiles.forEach((t) => t.syncHeader());
-      refreshHome(); // home rows + group headings reflect it immediately
-    } catch (_) {}
-    close();
+    say('saving…');
+    const r = await request('/api/sessions/' + encodeURIComponent(session) + '/tags', {
+      method: 'POST',
+      json: { tags: list },
+    });
+    if (!r.ok) {
+      // The membership you assembled stays on screen; the failure says why.
+      say('not saved — ' + r.message, true);
+      return;
+    }
+    const s = S.sessions.find((x) => x.name === session);
+    if (s) s.tags = Array.isArray(r.data.tags) ? r.data.tags : list;
+    tiles.forEach((t) => t.syncHeader());
+    refreshHome(); // home rows + group headings reflect it immediately
+    dlg.close();
   });
-  sheet.querySelector('.tg-close').addEventListener('click', close);
-  sheet.addEventListener('pointerdown', (e) => {
-    if (e.target === sheet) close();
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && sheet.classList.contains('open')) close();
-  });
-  S.tagPanel = { open, close };
+  dlg.card.querySelector('.tg-close').addEventListener('click', dlg.close);
+  S.tagPanel = { open, close: dlg.close };
 }
 
 /** Clipboard write with http fallback (the copy-sheet textarea trick). */
@@ -244,11 +246,3 @@ export async function toClipboard(text) {
     return ok;
   }
 }
-
-/**
- * Macro panel: what macros exist, live from ronin_catalogs/MACROS.md, each with a copyable
- * `name: <args>` invocation — the pasteable form sessions execute (see CLAUDE.md).
- * List + copy only; no execution from here (that's the future engine's job). Shown on
- * BOTH desktop and touch (owner override of the touch/desktop split). On touch, "→ ⌨"
- * drops `name: ` into the compose overlay so you type the args and send.
- */

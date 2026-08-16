@@ -13,7 +13,8 @@
  * xterm itself stays a classic script (`window.Terminal`, `window.FitAddon`) — the
  * vendor files load before the module graph runs, so it is referenced, never imported.
  */
-import { IS_TOUCH, SELECT_MOD, THEME, WHEEL_DOWN, WHEEL_UP, forcesSelection } from './state.js';
+import { IS_TOUCH, SELECT_MOD, WHEEL_DOWN, WHEEL_UP, forcesSelection } from './state.js';
+import { termTheme } from './theme.js';
 
 export class TermView {
   /**
@@ -26,7 +27,9 @@ export class TermView {
     this.term = new Terminal({
       fontSize: 13,
       fontFamily: 'Menlo, "DejaVu Sans Mono", Consolas, monospace',
-      theme: THEME,
+      // Resolved from the stylesheet's --term-* tokens (js/theme.js) — the palette is
+      // spelled once, in CSS, and xterm reads that spelling.
+      theme: termTheme(),
       cursorBlink: true,
       scrollback: 30000,
       allowProposedApi: true,
@@ -71,6 +74,11 @@ export class TermView {
 
   reset() {
     this.term.reset();
+  }
+
+  /** A theme flip re-reads the tokens; xterm applies a theme object live. */
+  setTheme(theme) {
+    this.term.options.theme = theme;
   }
 
   focus() {

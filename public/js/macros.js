@@ -1,7 +1,7 @@
 /* part of the tmux-ronin client — see js/README.md */
 import { openSessionSomewhere } from './events.js';
 import { jobIcon } from './home.js';
-import { padToast } from './pad.js';
+import { sheet, toast } from './ui.js';
 import { IS_TOUCH, S, tiles } from './state.js';
 
 /* ---------- session switcher (one pad key: open → arrow → same key lands it) ---------- */
@@ -11,16 +11,14 @@ import { IS_TOUCH, S, tiles } from './state.js';
 // list, which means one physical key can own the whole gesture. It changes
 // nothing about the <select>; that's still the mouse way in.
 export function buildSessionPicker() {
-  const sheet = document.createElement('div');
-  sheet.id = 'sesspick';
-  sheet.innerHTML = `<div class="sp-card">
-      <div class="sp-title"></div>
+  // The ui.sheet primitive carries the dialog mechanics (backdrop, Escape, focus in
+  // and back out); the picker keeps what is its own — the one-key gesture below.
+  const dlg = sheet({ id: 'sesspick', cls: 'sp-card', label: 'Session switcher' });
+  dlg.card.innerHTML = `<div class="sp-title"></div>
       <div class="sp-list"></div>
-      <div class="sp-hint">↑↓ move · same key (or ↵) opens it · Esc cancels</div>
-    </div>`;
-  document.body.appendChild(sheet);
-  const title = sheet.querySelector('.sp-title');
-  const list = sheet.querySelector('.sp-list');
+      <div class="sp-hint">↑↓ move · same key (or ↵) opens it · Esc cancels</div>`;
+  const title = dlg.card.querySelector('.sp-title');
+  const list = dlg.card.querySelector('.sp-list');
   let names = [];
   let idx = 0;
 
@@ -49,12 +47,12 @@ export function buildSessionPicker() {
     if (on) on.scrollIntoView({ block: 'nearest' });
   };
 
-  const isOpen = () => sheet.classList.contains('open');
-  const close = () => sheet.classList.remove('open');
+  const isOpen = dlg.isOpen;
+  const close = dlg.close;
   const open = () => {
     names = S.sessions.map((s) => s.name);
     if (!names.length) {
-      padToast('⌸ no sessions to switch to', false);
+      toast('⌸ no sessions to switch to', false);
       return;
     }
     const t = S.active || tiles[0];
@@ -62,7 +60,7 @@ export function buildSessionPicker() {
     title.textContent = `Switch tile ${n || 1}` + (t && t.session ? ` — now: ${t.session}` : '');
     idx = Math.max(0, names.indexOf(t && t.session));
     render();
-    sheet.classList.add('open');
+    dlg.open();
   };
   const move = (d) => {
     if (!isOpen()) return;
@@ -83,9 +81,6 @@ export function buildSessionPicker() {
     if (!IS_TOUCH) t.focusTerminal();
   };
 
-  sheet.addEventListener('pointerdown', (e) => {
-    if (e.target === sheet) close();
-  });
   // Keyboard fallback (and what makes ↑↓ work while the list is up): capture-phase
   // so the arrows steer the list instead of reaching xterm/tmux. Only ever active
   // while the list is open — every other key on every device is untouched.

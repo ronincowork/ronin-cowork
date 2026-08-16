@@ -1,4 +1,5 @@
 /* part of the tmux-ronin client — see js/README.md */
+import { request } from './request.js';
 
 /**
  * PROVENANCE — the mark that says a catalog entry is yours.
@@ -55,28 +56,19 @@ export function addYourOwn(file, what, onDone) {
   btn.title = `Create your own ${file} in the catalogs store — yours, outside every repo, untouched by upgrades`;
   btn.addEventListener('click', async () => {
     btn.disabled = true;
-    try {
-      const r = await fetch('/api/catalogs/seed', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ file }),
-      });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || 'could not create it');
-      // The PATH is the answer — it is what you hand your agent, or open yourself.
-      const say = document.createElement('div');
-      say.className = 'prov-said';
-      say.textContent = d.created ? `made ${d.path} — edit it, or tell an agent to` : `yours is at ${d.path}`;
-      btn.after(say);
-      if (onDone) onDone(d);
-    } catch (e) {
-      const say = document.createElement('div');
+    const r = await request('/api/catalogs/seed', { method: 'POST', json: { file } });
+    const say = document.createElement('div');
+    if (!r.ok) {
       say.className = 'prov-said bad';
-      say.textContent = String(e.message || e);
-      btn.after(say);
-    } finally {
-      btn.disabled = false;
+      say.textContent = 'could not create it — ' + r.message;
+    } else {
+      // The PATH is the answer — it is what you hand your agent, or open yourself.
+      say.className = 'prov-said';
+      say.textContent = r.data.created ? `made ${r.data.path} — edit it, or tell an agent to` : `yours is at ${r.data.path}`;
+      if (onDone) onDone(r.data);
     }
+    btn.after(say);
+    btn.disabled = false;
   });
   return btn;
 }

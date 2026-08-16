@@ -1,4 +1,6 @@
 /* part of the tmux-ronin client — see js/README.md */
+import { request } from './request.js';
+import { button, field, status } from './ui.js';
 
 /**
  * the commons' ▥ Hotwords pane — the words dictation keeps getting wrong.
@@ -32,11 +34,9 @@ export function buildHotwords(pane, isShowing) {
   input.autocomplete = 'off';
   input.spellcheck = false;
   input.setAttribute('autocorrect', 'off');
-  const addBtn = document.createElement('button');
-  addBtn.type = 'button';
-  addBtn.className = 'hot-addbtn';
-  addBtn.textContent = 'Add';
-  addRow.append(input, addBtn);
+  const inputField = field(input, { label: 'a word dictation keeps getting wrong' });
+  const addBtn = button('Add', { cls: 'hot-addbtn' });
+  addRow.append(inputField.el, addBtn);
 
   const count = document.createElement('div');
   count.className = 'hot-count';
@@ -52,17 +52,14 @@ export function buildHotwords(pane, isShowing) {
   const list = document.createElement('div');
   list.className = 'hot-list';
 
-  const msg = document.createElement('div');
-  msg.className = 'hot-msg';
+  // Only ever an error or nothing: a list that re-renders from the server IS the
+  // confirmation, so "saved" would be noise on every tap.
+  const msg = status();
 
-  wrap.append(addRow, msg, count, whose, list);
+  wrap.append(addRow, msg.el, count, whose, list);
   pane.appendChild(wrap);
 
-  const setMsg = (text, bad) => {
-    msg.textContent = text || '';
-    msg.classList.toggle('bad', !!bad);
-    msg.classList.toggle('show', !!text);
-  };
+  const setMsg = (text, bad) => msg.say(text, bad ? 'bad' : '');
 
   const render = (terms) => {
     list.innerHTML = '';
@@ -89,19 +86,13 @@ export function buildHotwords(pane, isShowing) {
   const post = async (url, term, btn) => {
     if (btn) btn.disabled = true;
     setMsg('');
-    try {
-      const r = await fetch(url, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ term }),
-      });
-      const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
-      render(d.terms || []);
-    } catch (e) {
-      setMsg(e.message, true);
+    const r = await request(url, { method: 'POST', json: { term } });
+    if (!r.ok) {
+      setMsg(r.message, true);
       if (btn) btn.disabled = false;
+      return;
     }
+    render(r.data.terms || []);
   };
 
   const add = () => {
@@ -123,20 +114,18 @@ export function buildHotwords(pane, isShowing) {
   });
 
   const enter = async () => {
-    try {
-      const r = await fetch('/api/hotwords');
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
-      render(d.terms || []);
-      whose.textContent = d.own
-        ? '◆ your list — an upgrade cannot touch it, and will not add to it either'
-        : 'Ronin\'s stock list — your first edit makes a copy that is yours';
-      whose.classList.toggle('own', !!d.own);
-      setMsg('');
-    } catch (e) {
+    const r = await request('/api/hotwords');
+    if (!r.ok) {
       count.textContent = 'could not load';
-      setMsg(e.message, true);
+      setMsg(r.message, true);
+      return;
     }
+    render(r.data.terms || []);
+    whose.textContent = r.data.own
+      ? '◆ your list — an upgrade cannot touch it, and will not add to it either'
+      : 'Ronin\'s stock list — your first edit makes a copy that is yours';
+    whose.classList.toggle('own', !!r.data.own);
+    setMsg('');
   };
 
   return { enter, isShowing };

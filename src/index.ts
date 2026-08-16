@@ -7,6 +7,19 @@ import fs from 'node:fs';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { WebSocketServer } from 'ws';
 import { config, authEnabled, assertBindIsSafe } from './config.js';
+import {
+  COOKIE,
+  SESSION_TTL_MS,
+  authRecord,
+  checkToken,
+  cookieToken,
+  loginAllowed,
+  loginFailed,
+  loginSucceeded,
+  makeToken,
+  passwordAuthEnabled,
+  verifyRecord,
+} from './auth.js';
 import { cleanupViewers, listSessions, publishRoninUrl } from './tmux.js';
 import { publishMax, publishOwner } from './user-config.js';
 import { registerCatalogs } from './routes/catalogs.js';
@@ -49,8 +62,8 @@ function sameSecret(a: string, b: string): boolean {
   return timingSafeEqual(ha, hb);
 }
 
-function checkAuth(header?: string): boolean {
-  if (!authEnabled) return true;
+function checkBasic(header?: string): boolean {
+  if (!authEnabled) return false;
   if (!header?.startsWith('Basic ')) return false;
   const decoded = Buffer.from(header.slice(6), 'base64').toString('utf8');
   const i = decoded.indexOf(':');
@@ -63,9 +76,58 @@ function checkAuth(header?: string): boolean {
   return okUser && okPass;
 }
 
+/**
+ * The one authorization question, for HTTP and the websocket upgrade alike.
+ *
+ * Either door satisfies it: Basic (GRID_USER/GRID_PASS — scripts, tools, the old way)
+ * or the login cookie (`ronin-passwd` + /login — the owner's browser). With NEITHER
+ * configured everything is open, exactly as before, and `assertBindIsSafe` is what
+ * keeps that state loopback/tailnet-only.
+ */
+function checkAuth(headers: { authorization?: string; cookie?: string }): boolean {
+  if (!authEnabled && !passwordAuthEnabled()) return true;
+  if (checkBasic(headers.authorization)) return true;
+  const rec = authRecord();
+  return !!rec && checkToken(rec.secret, cookieToken(headers.cookie));
+}
+
+// --- the login door (the only routes ahead of the gate) ---
+app.get('/login', (_req, res) => res.sendFile(path.join(PUBLIC, 'login.html')));
+app.post('/api/login', async (req, res) => {
+  const rec = authRecord();
+  if (!rec) return res.status(404).json({ error: 'No password is set on this install — see bin/ronin-passwd.' });
+  const addr = req.socket.remoteAddress ?? '?';
+  // Five failures a minute, then a minute in the corner: scrypt is the wall, this
+  // keeps the log legible and a guessing loop pointless.
+  if (!loginAllowed(addr)) return res.status(429).json({ error: 'Too many attempts — wait a minute.' });
+  const pw = typeof req.body?.password === 'string' ? req.body.password : '';
+  if (!(await verifyRecord(rec, pw))) {
+    loginFailed(addr);
+    return res.status(401).json({ error: 'Wrong password.' });
+  }
+  loginSucceeded(addr);
+  res.cookie(COOKIE, makeToken(rec.secret, SESSION_TTL_MS), {
+    httpOnly: true,
+    sameSite: 'lax',
+    maxAge: SESSION_TTL_MS,
+    path: '/',
+  });
+  res.json({ ok: true });
+});
+app.post('/api/logout', (_req, res) => {
+  res.clearCookie(COOKIE, { path: '/' });
+  res.json({ ok: true });
+});
+
 app.use((req, res, next) => {
-  if (checkAuth(req.headers.authorization)) return next();
-  res.set('WWW-Authenticate', 'Basic realm="tmux-ronin"').status(401).send('Authentication required.');
+  if (checkAuth(req.headers)) return next();
+  // A person in a browser gets the login page, not a bare 401 — but only when there
+  // IS a login page to give (a Basic-only install keeps the challenge it always had).
+  if (passwordAuthEnabled() && req.method === 'GET' && req.accepts(['json', 'html']) === 'html') {
+    return res.redirect('/login');
+  }
+  if (authEnabled) res.set('WWW-Authenticate', 'Basic realm="tmux-ronin"');
+  res.status(401).send('Authentication required.');
 });
 
 // --- vendored browser assets (served straight from node_modules, no build step) ---
@@ -127,7 +189,13 @@ app.use('/api', (_req, res, next) => {
 });
 
 app.get('/api/health', (_req, res) =>
-  res.json({ ok: true, auth: authEnabled, transcribe: Boolean(config.scribeUrl) }),
+  res.json({
+    ok: true,
+    auth: authEnabled,
+    // The client's ⚙ System pane shows Log out only when a login actually exists.
+    login: passwordAuthEnabled(),
+    transcribe: Boolean(config.scribeUrl),
+  }),
 );
 
 registerLaunch(app); // /api/launch (both variants), /api/sessions, /api/home, session-max, owner — src/routes/launch.ts
@@ -223,7 +291,8 @@ const wss = new WebSocketServer({
 });
 
 server.on('upgrade', (req, socket, head) => {
-  if (!checkAuth(req.headers.authorization)) {
+  // Same one question as HTTP — the browser's socket carries the login cookie.
+  if (!checkAuth(req.headers)) {
     socket.write('HTTP/1.1 401 Unauthorized\r\nWWW-Authenticate: Basic realm="tmux-ronin"\r\n\r\n');
     socket.destroy();
     return;
@@ -262,7 +331,7 @@ server.on('upgrade', (req, socket, head) => {
 // This runs ahead of cleanupViewers() deliberately — a refused boot must not have
 // killed anyone's viewer sessions on its way out.
 try {
-  assertBindIsSafe();
+  assertBindIsSafe(passwordAuthEnabled());
 } catch (e) {
   console.error(`[tmux-ronin] ${(e as Error).message}`);
   process.exit(1);
@@ -290,7 +359,7 @@ void publishOwner();
 
 server.listen(config.port, config.bind, () => {
   console.log(
-    `[tmux-ronin] listening on http://${config.bind}:${config.port}  (auth: ${authEnabled ? 'ON' : 'off'}, window-size: ${config.windowSize})`,
+    `[tmux-ronin] listening on http://${config.bind}:${config.port}  (basic auth: ${authEnabled ? 'ON' : 'off'}, login: ${passwordAuthEnabled() ? 'ON' : 'off'}, window-size: ${config.windowSize})`,
   );
   // Printed because a refused socket is otherwise a mystery from the browser end:
   // the page simply does not connect, and this line is what the log can be read against.

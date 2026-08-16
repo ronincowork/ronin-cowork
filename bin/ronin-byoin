@@ -71,12 +71,14 @@ for g in $(sed -n 's/.*"verify": "\(.*\)".*/\1/p' package.json | grep -o 'script
   # host tool lives, beside smoke-ui's, doctor's and the document's. Three of them disagreed
   # within an hour of the browser being installed. One resolver, one answer, and the skip
   # line can only ever say what the gate itself reported.
-  if [ "$name" = "smoke-ui" ]; then
+  # visual-ui speaks the same contract: it needs the same browser, and its baseline
+  # additionally belongs to ONE machine — elsewhere it exits 0 with its own skip note.
+  if [ "$name" = "smoke-ui" ] || [ "$name" = "visual-ui" ]; then
     out="$(node "$g" 2>&1)"; rc=$?
     if [ $rc -eq 0 ]; then
-      ok_ "$name — the page was rendered and looked at"
+      ok_ "$name — $( [ "$name" = "smoke-ui" ] && echo 'the page was rendered and looked at' || echo 'the compositions were measured (or honestly skipped — its output says which)' )"
     elif [ $rc -eq 2 ]; then
-      skip_ "$name — NO HEADLESS BROWSER on this machine, so the page has NOT been looked at (docs/host-tools.md)"
+      skip_ "$name — NO HEADLESS BROWSER on this machine, so it has NOT been looked at (docs/host-tools.md)"
     else
       bad_ "$name" "$name"
       printf '%s\n' "$out" | sed 's/^/          /' | tail -12

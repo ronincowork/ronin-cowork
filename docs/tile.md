@@ -359,7 +359,7 @@ else printable, and sends it on Enter. The composer takes a native paste.
 Touch collapses the whole header into **one row** (`public/js/tiledrop.js`):
 
 ```
-⛩ ronin │ [ session ▾ ] │ メ │ ニ
+⛩ ronin │ [ session ▾ ] │ メ │ 4 │ ニ
 ```
 
 **メ is this session** — Status, Ladder, TEGAMI, Macros, Groups, Note, Control, Kill.
@@ -370,10 +370,21 @@ already bound keeps working and the live widgets keep updating from their existi
 There is no second copy to keep in sync. The Status row is the only one that is not a door:
 it is a reading, so it does not take a tap.
 
-This needs exactly one tile to be honest — a tile header is per-tile and the app bar is
-per-page — and `main.js` pins the ≤680px layout to a single terminal.
+**The number between them is the grid count** — one button wearing the layout it is on,
+tapped to cycle 1 → 2 → 4 → 1. Desktop has the same one button, in the same ring; it
+replaced a segmented `1|2|4`, whose 24px cells no finger could pick apart, which is why
+touch used to delete the control outright and have no way to change the grid at all.
 
-Desktop never calls any of this.
+The merge needs exactly one tile to be honest — a tile header is per-tile and the app bar
+is per-page, and a per-page bar cannot say WHICH of two tiles it means. So it follows the
+count, not the device: `setLayout` calls `collapseTileHead` at one tile and
+`expandTileHead` at two or four, where every tile goes back to wearing its own header.
+`expandTileHead` restores the head from a snapshot taken at collapse, so the reversal is
+exact and the relocated nodes keep their handlers and their owners. A phone still *opens*
+on one terminal (`main.js`), but that is a starting point, not a pin — at ≤680px 2 and 4
+stack into a scroll column.
+
+Desktop never calls any of this — except the grid count, which is its button too.
 
 ---
 

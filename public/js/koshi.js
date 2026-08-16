@@ -1,4 +1,6 @@
 /* part of the tmux-ronin client — see js/README.md */
+import { request } from './request.js';
+import { status } from './ui.js';
 
 /* ---------- KOSHI — the seventh commons pane (tab: 目 Koshi) ----------
  *
@@ -35,19 +37,16 @@ export function buildKoshi(root, isShowing) {
     const was = restart.textContent;
     restart.disabled = true;
     restart.textContent = 'restarting…';
-    try {
-      const r = await fetch('/api/koshi/restart', { method: 'POST' });
-      const j = await r.json();
-      if (!r.ok || !j.ok) throw new Error(j?.error || 'it did not come back up');
-      data.running = j.running;
-      say2();
-    } catch (e) {
+    const r = await request('/api/koshi/restart', { method: 'POST' });
+    if (!r.ok || !r.data.ok) {
       blurb.classList.add('bad');
-      blurb.textContent = String(e?.message || e);
-    } finally {
-      restart.disabled = false;
-      restart.textContent = was;
+      blurb.textContent = r.ok ? 'it did not come back up' : r.message;
+    } else {
+      data.running = r.data.running;
+      say2();
     }
+    restart.disabled = false;
+    restart.textContent = was;
   });
   head.append(blurb, restart);
 
@@ -121,13 +120,9 @@ export function buildKoshi(root, isShowing) {
     const paceLabel = document.createElement('div');
     paceLabel.className = 'ko-pacelabel';
 
-    const note = document.createElement('div');
-    note.className = 'ko-note';
+    const note = status('ko-note');
     const chosen = () => data.outlets.find((o) => o.id === pick.value);
-    const describe = () => {
-      note.classList.remove('bad');
-      note.textContent = inc.built ? (chosen()?.what ?? '') : 'Not built yet — nothing asks anything.';
-    };
+    const describe = () => note.say(inc.built ? (chosen()?.what ?? '') : 'Not built yet — nothing asks anything.');
     describe();
 
     const currentPace = () => (data.paces || [])[Number(pace.value)];
@@ -138,29 +133,24 @@ export function buildKoshi(root, isShowing) {
     describePace();
 
     const save = async (msg) => {
-      note.classList.remove('bad');
-      note.textContent = 'saving…';
-      try {
-        const r = await fetch(`/api/koshi/${inc.id}`, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            outlet: pick.value,
-            model: data.choices[inc.id]?.model,
-            pace: currentPace()?.id,
-          }),
-        });
-        const j = await r.json();
-        if (!r.ok) throw new Error(j?.error || `HTTP ${r.status}`);
-        data.choices = j.choices;
-        note.textContent = msg();
-      } catch (e) {
-        note.classList.add('bad');
-        note.textContent = String(e?.message || e);
+      note.say('saving…', 'busy');
+      const r = await request(`/api/koshi/${inc.id}`, {
+        method: 'POST',
+        json: {
+          outlet: pick.value,
+          model: data.choices[inc.id]?.model,
+          pace: currentPace()?.id,
+        },
+      });
+      if (!r.ok) {
+        note.say(r.message, 'bad');
         pick.value = data.choices[inc.id]?.outlet || 'koshi_external';
         pace.value = String(paceIdx());
         describePace();
+        return;
       }
+      data.choices = r.data.choices;
+      note.say(msg());
     };
 
     // The slider redraws its label as it moves and only saves when it is let go —
@@ -169,8 +159,8 @@ export function buildKoshi(root, isShowing) {
     pace.addEventListener('change', () => save(() => `${currentPace()?.label} — live within a minute.`));
     pick.addEventListener('change', () => save(() => `${chosen()?.label} — live within a minute.`));
 
-    row.append(name, what, pick, note);
-    if (paced) row.insertBefore(paceLabel, note), row.insertBefore(pace, paceLabel);
+    row.append(name, what, pick, note.el);
+    if (paced) row.insertBefore(paceLabel, note.el), row.insertBefore(pace, paceLabel);
     return row;
   };
 
@@ -181,14 +171,13 @@ export function buildKoshi(root, isShowing) {
   };
 
   const load = async () => {
-    try {
-      const r = await fetch('/api/koshi');
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      data = await r.json();
-      render();
-    } catch (e) {
-      say(String(e?.message || e), true);
+    const r = await request('/api/koshi');
+    if (!r.ok) {
+      say(r.message, true);
+      return;
     }
+    data = r.data;
+    render();
   };
 
   // Loaded when the tab is opened, not on a timer: nothing here changes on its own.

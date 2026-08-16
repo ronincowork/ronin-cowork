@@ -1,4 +1,7 @@
 /* part of the tmux-ronin client — see js/README.md */
+import { request } from './request.js';
+import { status } from './ui.js';
+import { currentTheme, setTheme } from './theme.js';
 
 /**
  * the commons' ⚙ System pane — what this install is, and the update buttons.
@@ -39,19 +42,57 @@ export function buildSystem(pane) {
   runBtn.hidden = true;
   row.append(checkBtn, runBtn);
 
-  const msg = document.createElement('div');
-  msg.className = 'sys-msg';
+  const msg = status('sys-msg');
 
-  wrap.append(idBlock, row, msg);
+  // LOG OUT — only drawn when a login exists (/api/health `login`), because a button
+  // that answers "you were never logged in" is furniture. Clearing the cookie sends
+  // the next navigation through /login; the reload makes that immediate and visible.
+  const outBtn = document.createElement('button');
+  outBtn.type = 'button';
+  outBtn.className = 'sys-logout';
+  outBtn.textContent = 'Log out';
+  outBtn.title = 'End this device\u2019s session — the next visit asks for the password';
+  outBtn.hidden = true;
+  outBtn.addEventListener('click', async () => {
+    outBtn.disabled = true;
+    await request('/api/logout', { method: 'POST' });
+    location.reload();
+  });
+  row.append(outBtn);
+
+  // APPEARANCE — dark or light, this device's own choice (js/theme.js). It sits in
+  // ⚙ System because it is a fact about the install as YOU see it, beside the release
+  // identity. Two buttons, one lit: a dropdown for a two-value choice is ceremony.
+  // Terminal panes stay dark either way — the light theme is the shell's, on purpose.
+  const appRow = document.createElement('div');
+  appRow.className = 'sys-theme';
+  const appLab = document.createElement('span');
+  appLab.className = 'sys-theme-lbl';
+  appLab.textContent = 'appearance';
+  const mkTheme = (v, label, hint) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.dataset.theme = v;
+    b.textContent = label;
+    b.title = hint;
+    b.addEventListener('click', () => {
+      setTheme(v);
+      appRow.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x.dataset.theme === v));
+    });
+    return b;
+  };
+  const darkBtn = mkTheme('dark', '● dark', 'The dark shell — the default');
+  const lightBtn = mkTheme('light', '○ light', 'A light shell. Terminal panes stay dark — that is the design, not a gap.');
+  (currentTheme() === 'light' ? lightBtn : darkBtn).classList.add('on');
+  appRow.append(appLab, darkBtn, lightBtn);
+
+  wrap.append(idBlock, appRow, row, msg.el);
   pane.appendChild(wrap);
 
   let version = null; // the operator's /api/version answer, fetched on enter
   let latest = null;
 
-  const say = (text, bad) => {
-    msg.textContent = text || '';
-    msg.classList.toggle('bad', !!bad);
-  };
+  const say = (text, bad) => msg.say(text, bad ? 'bad' : '');
 
   const renderId = () => {
     idBlock.innerHTML = '';
@@ -74,11 +115,14 @@ export function buildSystem(pane) {
   const check = async () => {
     checkBtn.disabled = true;
     say('asking the release feed…');
-    try {
-      const r = await fetch('/api/update/check');
-      if (r.status === 404) throw new Error('this operator predates the updater — its next restart carries the routes');
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+    const res = await request('/api/update/check');
+    if (!res.ok) {
+      say(res.status === 404 ? 'this operator predates the updater — its next restart carries the routes' : res.message, true);
+      checkBtn.disabled = false;
+      return;
+    }
+    {
+      const d = res.data;
       latest = d.latest;
       if (!d.latest) {
         say('the feed named no release yet (a private repo needs gh auth on the host)');
@@ -92,8 +136,6 @@ export function buildSystem(pane) {
         runBtn.disabled = false;
         say(`${d.latest} is available (installed: ${d.installed || 'none'})`);
       }
-    } catch (e) {
-      say(e.message, true);
     }
     checkBtn.disabled = false;
   };
@@ -103,15 +145,12 @@ export function buildSystem(pane) {
     const was = version?.release;
     for (let i = 0; i < 100; i++) {
       await new Promise((ok) => setTimeout(ok, 3000));
-      try {
-        const v = await (await fetch('/api/version', { cache: 'no-store' })).json();
-        if (v.release && v.release !== was) {
-          say(`✓ updated to ${v.release} — reloading`);
-          setTimeout(() => location.reload(), 1200);
-          return;
-        }
-      } catch (_) {
-        /* the restart itself — keep polling */
+      const rv = await request('/api/version', { cache: 'no-store' });
+      // A failed read is the restart itself — keep polling.
+      if (rv.ok && rv.data.release && rv.data.release !== was) {
+        say(`✓ updated to ${rv.data.release} — reloading`);
+        setTimeout(() => location.reload(), 1200);
+        return;
       }
     }
     say('no new version answered after 5 minutes — journalctl --user -u "ronin-update-*" has the transcript', true);
@@ -122,15 +161,11 @@ export function buildSystem(pane) {
     runBtn.disabled = true;
     checkBtn.disabled = true;
     say(`updating to ${latest} — fetch, verify, gate the candidate, swap. The page blinks at the swap; sessions are untouched…`);
-    try {
-      const r = await fetch('/api/update/run', { method: 'POST' });
-      const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
-      watch();
-    } catch (e) {
-      say(e.message, true);
+    const r = await request('/api/update/run', { method: 'POST' });
+    if (!r.ok) {
+      say(r.message, true);
       runBtn.disabled = false;
-    }
+    } else watch();
     checkBtn.disabled = false;
   };
 
@@ -138,12 +173,11 @@ export function buildSystem(pane) {
   runBtn.addEventListener('click', run);
 
   const enter = async () => {
-    try {
-      version = await (await fetch('/api/version', { cache: 'no-store' })).json();
-    } catch (_) {
-      version = null;
-    }
+    const r = await request('/api/version', { cache: 'no-store' });
+    version = r.ok ? r.data : null;
     renderId();
+    const h = await request('/api/health', { cache: 'no-store' });
+    outBtn.hidden = !(h.ok && h.data.login);
   };
 
   return { enter };

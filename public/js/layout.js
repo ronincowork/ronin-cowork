@@ -8,23 +8,12 @@ import { buildPadAsk, buildPadPanel } from './padpanel.js';
 import { askMika } from './mika.js';
 import { buildNotePanel, buildTagPanel } from './panels.js';
 import { IS_TOUCH, S, TILE_COUNT, WHEEL_DOWN, grid, serviceOff, tiles } from './state.js';
+import { PANES } from './panes.js';
+import { popover } from './ui.js';
 
 import { Tile } from './tile.js';
 import { collapseTileHead, isCoarse, makeDrop } from './tiledrop.js';
-import { setLayout } from './viewport.js';
-
-// The rooms inside the Commons, in tab order. One list: the ▤ Commons menu on desktop
-// and the ⋯ drop on touch both read it, so a new room is added in one place.
-const COMMONS_PANES = [
-  ['sessions', '⌂ Roster'],
-  ['new', '＋ New session'],
-  ['wipe', '▤ Wipeboard'],
-  ['docs', '▧ Docs'],
-  ['proj', '▣ Project root'],
-  ['hotwords', '▥ Hotwords'],
-  ['stats', '▦ Stats'],
-  ['koshi', '目 Koshi'],
-];
+import { curLayout, nextLayout, setLayout } from './viewport.js';
 
 export function build() {
   // Per-tile guard: a constructor that throws costs ONE tile, not the grid. The
@@ -43,10 +32,10 @@ export function build() {
   }
   // Each wiring block is guarded separately: losing one control must not cost the
   // rest of the header, which is exactly what happened on 2026-08-08.
-  guard('layout buttons', () => {
-    document.querySelectorAll('.layouts button').forEach((b) => {
-      b.addEventListener('click', () => setLayout(Number(b.dataset.layout)));
-    });
+  guard('layout button', () => {
+    // Wired ONCE, here, for both surfaces: the touch bar relocates this very node
+    // rather than building its own (buildDrawers), so the handler comes with it.
+    document.getElementById('layoutcycle')?.addEventListener('click', () => setLayout(nextLayout(curLayout())));
   });
   // Resumed tab (esp. mobile — a backgrounded page can live for days): re-fetch the list.
   document.addEventListener('visibilitychange', () => {
@@ -228,40 +217,30 @@ export function build() {
     const menu = document.createElement('div');
     menu.className = 'commons-menu';
     menu.hidden = true;
+    // Open/close truth (outside click, Escape, aria-expanded, focus return) is the
+    // popover primitive's; this block owns only the rows.
+    const pop = popover(btn, menu);
     const go = (pane) => {
       const t = S.active || tiles.find((x) => x.el.style.display !== 'none') || tiles[0];
       if (t) t.showHome(pane);
-      close();
+      pop.close();
     };
-    for (const [pane, label] of COMMONS_PANES) {
+    // One list for every surface: the pane registry (js/panes.js). The menu takes the
+    // FULL labels — it has the room the 402px tab strip does not.
+    for (const p of PANES) {
       const row = document.createElement('button');
       row.type = 'button';
       row.className = 'commons-row';
-      row.textContent = label;
-      row.title = label;
+      row.textContent = p.label;
+      row.title = p.hint;
       // Same rule as the tab strip: an absent service's room is shown opaque-and-inert.
-      if (serviceOff(pane)) {
+      if (serviceOff(p.id)) {
         row.classList.add('off');
         row.disabled = true;
         row.title = 'Off — this service is not installed.';
-      } else row.addEventListener('click', () => go(pane));
+      } else row.addEventListener('click', () => go(p.id));
       menu.appendChild(row);
     }
-    const close = () => {
-      menu.hidden = true;
-      btn.setAttribute('aria-expanded', 'false');
-    };
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      menu.hidden = !menu.hidden;
-      btn.setAttribute('aria-expanded', String(!menu.hidden));
-    });
-    document.addEventListener('click', (e) => {
-      if (!menu.hidden && !menu.contains(e.target)) close();
-    });
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !menu.hidden) close();
-    });
     // Anchor to the button, not the bar: absolute positioning resolves against the
     // nearest positioned ancestor, and with #bar as that ancestor the menu opened at
     // the bar's left edge — the whole width of the header away from what was clicked.
@@ -433,11 +412,22 @@ export function buildDrawers() {
     el.querySelector('.txt')?.remove(); // the word is the row's now
     drop.addRow(el, label);
   }
+  // The grid count comes up between メ and ニ — this session, how many of them, the app.
+  // RELOCATED, not rebuilt, like everything else in this row: it is the desktop bar's
+  // own button, so its click handler and the face setLayout writes come with it.
+  //
+  // Touch used to have no way to ask for a second terminal at all. The count was a
+  // segmented 1|2|4 whose 24px cells no finger could pick apart, so it was deleted here
+  // and hidden by the stylesheet — right for a 402px phone, wrong for an iPad, which is
+  // a coarse pointer with room for four. The owner opened one and found メ and ニ and no
+  // way to change the grid. One button that cycles is a control a finger can hit.
+  const cyc = document.getElementById('layoutcycle');
+  if (cyc) bar.append(cyc); // append MOVES the node — the listener comes along
+
   bar.append(drop.btn, drop.menu);
 
   // Desktop bar scaffolding, now emptied out on touch.
   document.querySelector('#bar .ctrls')?.remove(); // took #k-more (⋯) with it
-  document.querySelector('#bar .layouts')?.remove(); // a phone shows one tile
   document.querySelector('#bar .grow')?.remove();
   keypad?.remove();
 }

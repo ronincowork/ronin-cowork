@@ -26,7 +26,7 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { HOST_TOOLS, defaultUrl, loadPlaywright } from './lib/ui-host.mjs';
+import { HOST_TOOLS, defaultUrl, loadPlaywright, loadAxeSource } from './lib/ui-host.mjs';
 
 // Host derivation and the playwright hunt both live in scripts/lib/ui-host.mjs — this
 // script and check-tips need the same two answers, and when each had its own copy they
@@ -167,6 +167,231 @@ async function checkDom(page, label) {
   else ok(`${label}: no failure banner`);
 }
 
+/**
+ * FIRST JOURNEYS — behaviour, not just paint. Desktop pass only for now: these drive
+ * the pointer/keyboard surface, and the touch grammar (drops, hoisted header) deserves
+ * probes written for it rather than these re-aimed. Each journey asserts a CONTRACT
+ * from docs/ui.md: the popover's open/close truth, the one pane registry, the theme
+ * flip, and the sheet's focus round-trip. Kept few and unbrittle on purpose — this is
+ * the seed of the journey layer, not a snapshot suite.
+ */
+async function checkJourneys(page, label, jsErrors) {
+  // 1 — the き Commons menu speaks the popover contract: rows from the registry,
+  // aria-expanded truth, Escape closes.
+  await page.locator('#commonsbtn').click();
+  await page.waitForTimeout(200);
+  const menu = await page.evaluate(() => ({
+    rows: document.querySelectorAll('.commons-menu .commons-row').length,
+    expanded: document.getElementById('commonsbtn')?.getAttribute('aria-expanded'),
+  }));
+  if (menu.rows === 9 && menu.expanded === 'true') ok(`${label}: Commons menu opens with all 9 rooms (registry-fed)`);
+  else bad(`${label}: Commons menu wrong — ${menu.rows} rows, aria-expanded=${menu.expanded}`);
+  await page.keyboard.press('Escape');
+  const shut = await page.evaluate(() => document.querySelector('.commons-menu')?.hidden === true);
+  if (shut) ok(`${label}: Escape closes the Commons menu`);
+  else bad(`${label}: Escape did not close the Commons menu`);
+
+  // 2 — the menu and the tab strip reach the same room: ⚙ System from the menu.
+  await page.locator('#commonsbtn').click();
+  await page.locator('.commons-menu .commons-row', { hasText: 'System' }).first().click();
+  await page.waitForTimeout(300);
+  const pane = await page.evaluate(() => document.querySelector('.home.show')?.dataset.pane);
+  if (pane === 'system') ok(`${label}: menu row lands on the ⚙ System pane`);
+  else bad(`${label}: menu row landed on pane "${pane}", wanted "system"`);
+
+  // 3 — the theme flips and flips back: same page, two shells, no failbar.
+  const darkBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  await page.locator('.sys-theme button[data-theme="light"]').first().click(); // four tiles, four System panes — one flip is global
+  await page.waitForTimeout(200);
+  const lightBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  await page.locator('.sys-theme button[data-theme="dark"]').first().click();
+  await page.waitForTimeout(200);
+  const backBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  if (lightBg !== darkBg && backBg === darkBg) ok(`${label}: light theme applies and reverts (${darkBg} ⇄ ${lightBg})`);
+  else bad(`${label}: theme flip broken — dark=${darkBg} light=${lightBg} back=${backBg}`);
+  const failAfterTheme = await page.evaluate(() => !!document.getElementById('failbar'));
+  if (failAfterTheme) bad(`${label}: the theme flip raised the failure banner`);
+
+  // 4 — the Commons strip is a real tablist: arrows move focus along it, Enter lands
+  // the focused room. (Activation stays deliberate — focus alone must not open a room.)
+  await page.evaluate(() => document.querySelector('.tile.active .home-tabrow [aria-selected="true"]')?.focus());
+  await page.keyboard.press('ArrowRight');
+  const arrowed = await page.evaluate(() => document.activeElement?.dataset?.pane);
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(200);
+  const landed = await page.evaluate(() => document.querySelector('.home.show')?.dataset.pane);
+  if (arrowed && landed === arrowed) ok(`${label}: tab strip: ArrowRight moves focus, Enter lands the room (${landed})`);
+  else bad(`${label}: tab strip keyboard broken — focus on "${arrowed}", landed "${landed}"`);
+  await page.evaluate(() => {
+    const t = document.querySelector('.tile.active .home-tabrow [data-pane="sessions"]');
+    t?.click();
+  });
+
+  // 5 — the note sheet keeps the ui.sheet contract: opens from the tile head, focus
+  // enters, Escape closes and gives focus back to the opener.
+  await page.evaluate(() => document.querySelector('.home.show .home-x')?.click());
+  await page.waitForTimeout(200);
+  await page.locator('.tile .tile-head button.note').first().click();
+  try {
+    await page.waitForSelector('#notesheet.open textarea:not([disabled])', { timeout: 4000 });
+    ok(`${label}: 📝 opens the note sheet and the editor is live`);
+  } catch {
+    bad(`${label}: the note sheet did not open (or never enabled its editor)`);
+  }
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(200);
+  const noteAfter = await page.evaluate(() => ({
+    open: document.getElementById('notesheet')?.classList.contains('open'),
+    focusBack: document.activeElement?.classList?.contains('note'),
+  }));
+  if (!noteAfter.open && noteAfter.focusBack) ok(`${label}: Escape closes the sheet and returns focus to 📝`);
+  else bad(`${label}: sheet close broken — open=${noteAfter.open} focusReturned=${noteAfter.focusBack}`);
+
+  // 6 — the launch journey, VALIDATION half. Deliberately not a real spawn: a gate
+  // that launches sessions on every verify is a gate spawning work, so what is proven
+  // is the refusal contract — manual mode with no name must refuse LOCALLY: focus
+  // lands on the name field and no /api/launch request leaves the page.
+  await page.locator('#newbtn').click(); // the real route in: か New opens the launcher
+  await page.waitForTimeout(300);
+  const kindBtn = page.locator('.tile.active .ks-btn').first();
+  if ((await kindBtn.count()) === 0) {
+    console.log('  note — no session_jobs in the catalog; the launch-validation journey skipped');
+  } else {
+    let launched = false;
+    const sniff = (req) => {
+      if (req.url().includes('/api/launch')) launched = true;
+    };
+    page.on('request', sniff);
+    await kindBtn.click();
+    await page.waitForTimeout(200);
+    await page.evaluate(() => {
+      const name = document.querySelector('.tile.active .ks-name');
+      if (name) name.value = ''; // manual mode requires it — the refusal under test
+    });
+    await page.locator('.tile.active .home-go').click();
+    await page.waitForTimeout(300);
+    page.off('request', sniff);
+    const focusOnName = await page.evaluate(() => document.activeElement?.classList?.contains('ks-name'));
+    if (!launched && focusOnName) ok(`${label}: launch with no name refuses locally — focus lands on the name, nothing sent`);
+    else bad(`${label}: launch validation broken — sent=${launched} focusOnName=${focusOnName}`);
+    // Put the form and the panel away so later probes meet the terminal again.
+    await page.evaluate(() => {
+      [...document.querySelectorAll('.tile.active .ks-form button')].find((b) => b.textContent === 'Cancel')?.click();
+      document.querySelector('.home.show .home-x')?.click();
+    });
+    await page.waitForTimeout(200);
+  }
+
+  // 7 — the FAILED-SAVE journey: the note sheet's save fails (injected at the route,
+  // so the server never sees it) and the contract must hold — the sheet stays open,
+  // the typed text survives, and the line says why. This is the "failures stop
+  // impersonating success" rule, proven rather than promised.
+  const TYPED = 'typed by the gate — must survive the failure';
+  // The 500 below is OURS: the browser logs every failed resource, and the collector
+  // must not report the gate's own injection as a page fault. Errors present before
+  // the injection stay; the injected one is removed after, by its exact shape.
+  const errsBefore = jsErrors.length;
+  await page.route('**/note', (route) =>
+    route.request().method() === 'POST'
+      ? route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'gate-injected failure' }) })
+      : route.continue(),
+  );
+  await page.locator('.tile .tile-head button.note').first().click();
+  try {
+    await page.waitForSelector('#notesheet.open textarea:not([disabled])', { timeout: 4000 });
+    await page.locator('#notesheet textarea').fill(TYPED);
+    await page.evaluate(() => {
+      [...document.querySelectorAll('#notesheet .ns-bar button')].find((b) => b.textContent === 'Save')?.click();
+    });
+    await page.waitForTimeout(400);
+    const after = await page.evaluate(() => ({
+      open: document.getElementById('notesheet')?.classList.contains('open'),
+      text: document.querySelector('#notesheet textarea')?.value,
+      said: document.querySelector('#notesheet .ns-msg')?.textContent || '',
+    }));
+    if (after.open && after.text === TYPED && /not saved/.test(after.said)) {
+      ok(`${label}: a failed save keeps the sheet open, keeps the text, and says why`);
+    } else {
+      bad(`${label}: failed-save contract broken — open=${after.open} textKept=${after.text === TYPED} said="${after.said}"`);
+    }
+  } catch {
+    bad(`${label}: the note sheet did not open for the failed-save journey`);
+  }
+  await page.unroute('**/note');
+  for (let i = jsErrors.length - 1; i >= errsBefore; i--) {
+    if (/Failed to load resource.*500/.test(jsErrors[i])) jsErrors.splice(i, 1);
+  }
+  await page.keyboard.press('Escape');
+}
+
+/**
+ * PHONE JOURNEYS — the touch grammar's own probes, run in the phone pass: the ニ sheet
+ * opens and dismisses, the Commons is reachable through it, and the tab strip lands a
+ * room by tap. Few and unbrittle, same policy as the desktop set.
+ */
+async function checkPhoneJourneys(page, label) {
+  await page.tap('#bar .tdrop-btn.ni');
+  await page.waitForTimeout(200);
+  const niOpen = await page.evaluate(() => !!document.querySelector('.tdrop.open'));
+  if (niOpen) ok(`${label}: ニ opens the app sheet`);
+  else return bad(`${label}: ニ did not open its sheet`);
+  // A row is a door: Commons opens the rooms menu, a room row lands its pane.
+  await page.tap('#commonsbtn');
+  await page.waitForTimeout(200);
+  await page.tap('.commons-menu .commons-row:nth-child(4)'); // ▧ Docs
+  await page.waitForTimeout(300);
+  const pane = await page.evaluate(() => document.querySelector('.home.show')?.dataset.pane);
+  if (pane === 'docs') ok(`${label}: ニ → Commons → row lands on ▧ Docs`);
+  else bad(`${label}: Commons row landed on "${pane}", wanted "docs"`);
+  const sheetGone = await page.evaluate(() => !document.querySelector('.tdrop.open'));
+  if (sheetGone) ok(`${label}: the sheet closed behind the door it opened`);
+  else bad(`${label}: the ニ sheet stayed open over the pane`);
+  // The strip: tap back to the roster.
+  await page.tap('.tile .home-tabrow [data-pane="sessions"]');
+  await page.waitForTimeout(200);
+  const back = await page.evaluate(() => document.querySelector('.home.show')?.dataset.pane);
+  if (back === 'sessions') ok(`${label}: the tab strip lands ⌂ Roster by tap`);
+  else bad(`${label}: strip tap landed "${back}", wanted "sessions"`);
+}
+
+/**
+ * THE AXE SCAN — serious/critical violations at three representative states. axe-core
+ * is a host tool (ui-host.mjs loadAxeSource); absent = a SKIP that says so, the same
+ * bargain as the browser itself. color-contrast is EXCLUDED here on purpose: contrast
+ * policy is check-css's contrast floor, which holds the measured tiers both themes —
+ * including the documented sub-AA `--muted` secondary tier the owner's density ruling
+ * keeps (docs/ui.md). Everything else at serious+critical fails the gate.
+ */
+async function checkA11y(page, label, axeSrc) {
+  if (!axeSrc) {
+    console.log(`  note — axe-core not installed (cd ~/.cache/ronin-host-tools && npm i axe-core); a11y scan skipped`);
+    return;
+  }
+  await page.addScriptTag({ content: axeSrc });
+  const scan = async (state) => {
+    const bad2 = await page.evaluate(async () => {
+      const r = await axe.run(document, {
+        resultTypes: ['violations'],
+        rules: { 'color-contrast': { enabled: false } },
+      });
+      return r.violations
+        .filter((v) => v.impact === 'serious' || v.impact === 'critical')
+        .map((v) => `${v.id} (${v.impact}) ×${v.nodes.length} e.g. ${v.nodes[0]?.target?.join(' ')}`);
+    });
+    if (bad2.length) bad(`${label}: axe ${state}:\n         ` + bad2.join('\n         '));
+    else ok(`${label}: axe ${state} — no serious/critical violations`);
+  };
+  await scan('at rest');
+  await page.locator('#commonsbtn').click();
+  await page.waitForTimeout(150);
+  await scan('with the Commons menu open');
+  await page.keyboard.press('Escape');
+  await page.locator('.tile .tile-head button.note').first().click();
+  await page.waitForTimeout(400);
+  await scan('with the note sheet open');
+  await page.keyboard.press('Escape');
+}
+
 async function runPass({ label, browser, contextOpts }) {
   const { page, jsErrors, netFails } = await openPage(browser, contextOpts);
   try {
@@ -184,6 +409,12 @@ async function runPass({ label, browser, contextOpts }) {
 
   await checkDom(page, label);
   await attachProbe(page, label);
+  if (label === 'desktop') {
+    await checkJourneys(page, label, jsErrors);
+    await checkA11y(page, label, await loadAxeSource());
+  } else {
+    await checkPhoneJourneys(page, label);
+  }
 
   const after = jsErrors.length;
   if (after && !fails.some((f) => f.includes('uncaught JS errors'))) {

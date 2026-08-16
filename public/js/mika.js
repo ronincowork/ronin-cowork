@@ -1,5 +1,6 @@
 /* part of the tmux-ronin client — see js/README.md */
 import { fetchSessions } from './api.js';
+import { request } from './request.js';
 import { showFailure } from './errors.js';
 
 /* ---------- ミ Mika Assist — the way to the house assistant ----------
@@ -43,35 +44,32 @@ const OPENED_FROM_BAR =
  *
  * Returns true if she was started by this call; the caller says so, not us.
  */
-export async function askMika(tile, request) {
+export async function askMika(tile, ask) {
   if (!tile) return false;
   let born = false;
   try {
-    const live = await fetch('/api/sessions', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : []));
-    const up = Array.isArray(live) && live.some((s) => s && s.name === MIKA);
+    const live = await request('/api/sessions', { cache: 'no-store' });
+    const up = live.ok && Array.isArray(live.data) && live.data.some((s) => s && s.name === MIKA);
     if (!up) {
-      const r = await fetch('/api/launch', {
+      const r = await request('/api/launch', {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
+        json: {
           session_job: 'MikaAssist',
           name: MIKA,
           mode: 'assisted',
           tags: [MIKA],
-          prompt: request || OPENED_FROM_BAR,
-        }),
+          prompt: ask || OPENED_FROM_BAR,
+        },
       });
-      const d = await r.json().catch(() => ({}));
       // 409 = she appeared between the list and the launch (two taps, two tabs). Not a
       // failure: what was wanted was her tile, and there it is.
-      if (!r.ok && r.status !== 409) throw new Error(d.error || r.statusText);
+      if (!r.ok && r.status !== 409) throw new Error(r.message);
       born = r.ok;
       if (born) void fetchSessions(); // the roster shows her without waiting for a poll
-    } else if (request) {
-      await fetch('/api/sessions/' + encodeURIComponent(MIKA) + '/send', {
+    } else if (ask) {
+      await request('/api/sessions/' + encodeURIComponent(MIKA) + '/send', {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ text: request }),
+        json: { text: ask },
       });
     }
     tile.connect(MIKA);

@@ -7,7 +7,16 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>tmux ronin</title>
-    <link rel="stylesheet" href="/vendor/xterm.css" />
+    <!-- The saved theme, applied BEFORE the stylesheet paints — a light-theme reload
+         must not flash dark. Inline and tiny on purpose; js/theme.js owns the rest. -->
+    <script>
+      try {
+        if (localStorage.getItem('tmuxgrid.theme') === 'light') document.documentElement.dataset.theme = 'light';
+      } catch (e) {}
+    </script>
+    <!-- xterm.css rides inside style.css now (@import into the lowest cascade layer,
+         still the absolute /vendor path shared by live and staging) so every app rule
+         outranks vendor rules by layer order rather than by accident of load order. -->
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -24,11 +33,11 @@
         <button id="k-bottom" title="Jump to latest output">⤓</button>
         <button id="k-more" title="More keys" aria-expanded="false">⋯</button>
       </div>
-      <div class="layouts" role="group" aria-label="Grid layout">
-        <button data-layout="1" title="Single terminal">1</button>
-        <button data-layout="2" title="Two terminals">2</button>
-        <button data-layout="4" class="active" title="Four terminals">4</button>
-      </div>
+      <!-- The grid count: ONE button wearing the number it is on, tapped to cycle
+           1 → 2 → 4 → 1. It was a segmented trio, which spent three boxes saying what
+           one says and left two of them permanently dark. js/viewport.js writes the
+           face; the same node is relocated into the touch bar by js/layout.js. -->
+      <button id="layoutcycle" class="layout-cycle" title="Four terminals — click for 1">4</button>
     </header>
     <div id="keypad" role="group" aria-label="More keys">
       <button data-key="cr" title="Enter">↵</button>

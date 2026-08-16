@@ -1,4 +1,6 @@
 /* part of the tmux-ronin client — see js/README.md */
+import { request } from './request.js';
+import { tabs as makeTabs } from './ui.js';
 
 /* ---------- STATS — the sixth commons pane (tab: ▦ Stats) ----------
  *
@@ -66,10 +68,14 @@ export function buildStats(root) {
     b.addEventListener('click', () => {
       win = id;
       tabs.querySelectorAll('.td-win').forEach((x) => x.classList.toggle('on', x.dataset.win === id));
+      strip.select(b);
       load();
     });
     tabs.appendChild(b);
   }
+  // The window strip is a tablist too — same primitive, same keyboard (ui.tabs).
+  const strip = makeTabs(tabs, [...tabs.querySelectorAll('.td-win')]);
+  strip.select(tabs.querySelector('.td-win.on'));
   head.append(tabs, range);
 
   const faultBox = el('div', 'td-fault');
@@ -385,16 +391,11 @@ export function buildStats(root) {
   async function load() {
     if (loading) return;
     loading = true;
-    try {
-      const r = await fetch(`/api/tomodachi/stats?window=${win}`, { cache: 'no-store' });
-      const d = await r.json();
-      if (d && !d.error) render(d);
-      else body.textContent = 'Stats are not available on this install yet.';
-    } catch (_) {
-      body.textContent = 'Stats could not be read.';
-    } finally {
-      loading = false;
-    }
+    const r = await request(`/api/tomodachi/stats?window=${win}`, { cache: 'no-store' });
+    if (r.ok && !r.data.error) render(r.data);
+    else if (r.kind === 'network') body.textContent = 'Stats could not be read.';
+    else body.textContent = 'Stats are not available on this install yet.';
+    loading = false;
   }
 
   /** Called when the tab is opened — and it counts itself, like every other surface. */

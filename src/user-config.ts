@@ -213,6 +213,18 @@ export const writeKoshiSection = (value: Record<string, unknown>): Promise<void>
     doc.koshi = value;
   });
 
+/**
+ * AUTH's section — the owner's login record. The SHAPE is src/auth.ts's (scrypt
+ * params + signing secret); this module owns only the file, same bargain as koshi's
+ * section above. `null` removes it — that is `ronin-passwd --clear`, back to
+ * tailnet/Basic only. No bus publish: nothing in bash logs anyone in.
+ */
+export const updateAuthSection = (value: Record<string, unknown> | null): Promise<void> =>
+  updateConfig((doc) => {
+    if (value === null) delete doc.auth;
+    else doc.auth = value;
+  });
+
 /** Put the name on the bus for the bash half. Best-effort, exactly like publishMax. */
 export async function publishOwner(name?: string): Promise<void> {
   const value = name ?? (await readOwner());
