@@ -10,7 +10,7 @@
  *
  *   node scripts/check-kotoba.mjs        # standalone; also runs in `npm run verify`
  *
- * Four checks, all high-precision by design (a gate that cries wolf gets disabled):
+ * Five checks, all high-precision by design (a gate that cries wolf gets disabled):
  *
  *   1. KOSHI GHOSTS, both directions — every `koshi_<job>` KOTOBA names must exist in
  *      code, and every koshi_* token in code must appear in KOTOBA. This is the class
@@ -26,6 +26,7 @@
  *   4. LOAD-BEARING NOUNS HAVE ROWS — nouns that carry weight in code must be indexed.
  *      "Load-bearing" is not a mechanical property, so this is a maintained list (the
  *      koshi-model nouns today); extend it when a new subsystem coins its vocabulary.
+ *   5. ONE AUTHORITY — sibling house repos must not carry another KOTOBA or glossary.
  *
  * Exemptions mirror check-docs (owner's rulings, 2026-08-13): `>` blockquotes are
  * history; [planned] rows are exempt from existence (check 2 asserts the marker
@@ -179,6 +180,17 @@ for (const noun of LOAD_BEARING) {
   }
 }
 ok('load-bearing nouns are indexed');
+
+/* ---- 5. one vocabulary authority across the house ---- */
+
+const siblingRepos = ['ronin-lab', 'ronin-services'];
+for (const repo of siblingRepos) {
+  for (const file of ['KOTOBA.md', 'KOTOBA_GLOSSARY.md']) {
+    const duplicate = path.resolve(REPO, '..', repo, file);
+    if (existsSync(duplicate)) fail(`${repo}/${file} duplicates the authority in ronin-cowork`);
+  }
+}
+ok('ronin-cowork holds the house\'s only KOTOBA and glossary');
 
 console.log(failed ? `\ncheck-kotoba: ${failed} failure(s)\n` : '\ncheck-kotoba: all checks passed\n');
 process.exit(failed ? 1 : 0);

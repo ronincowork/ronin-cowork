@@ -8,6 +8,9 @@
 > credential is actually in force. Run both before asking the owner anything; half these
 > questions are already answered on disk.
 
+Model/provider wiring is documented in `docs/model-providers.md`; the credentials that
+make those providers usable follow `secrets.md`. This SOP records neither.
+
 A fresh box knows nothing about the person using it, and **nothing shipped may name a
 person** — so Ronin falls back to the login name rather than inventing one. A fallback is
 not an answer; it is the absence of one wearing a name. Establishing the real answers is
