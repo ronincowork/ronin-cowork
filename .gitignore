@@ -2,6 +2,10 @@ node_modules/
 dist/
 # bin/ronin-build's output — tarballs are published to GitHub Releases, never committed.
 release/
+# The paid layer, INSTALLED here but never cowork's code: the assembler discovers
+# src/services/ at boot (docs/connector-contract.md). This repo flips public; the
+# ignore is what makes "services can never enter cowork's history" structural.
+src/services/
 .env
 *.log
 .DS_Store

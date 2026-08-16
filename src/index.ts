@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import { createServer } from 'node:http';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 import fs from 'node:fs';
 import { createHash, timingSafeEqual } from 'node:crypto';
@@ -206,7 +206,30 @@ registerUpdate(app); // /api/update/* — the ⚙ gear's check + run, press-only
 // Services register, then their routes mount — AFTER core's, which is safe because
 // every service path (/api/tomodachi/*, /api/transcribe, /api/koshi*) is disjoint
 // from every core path; nothing shadows, nothing falls through differently.
-const services: ServiceRegistration[] = []; // the free build: no services, every socket empty
+/**
+ * THE ASSEMBLER IS DISCOVERY (the connector's last leg, per docs/connector-contract.md
+ * § Wiring): scan src/services/ at boot, import each service's register entry, call
+ * it. An empty or absent directory IS the free build — absence is never an error.
+ * Installing services is putting them there and restarting (docs/release.md); no
+ * service is ever named in core, so check-kyokai's line holds with nothing to except.
+ * A service that fails to LOAD is logged and skipped, per the contract's boot rule
+ * (a throw is logged, never fatal) — a broken add-on must not take down the grid.
+ */
+const services: ServiceRegistration[] = [];
+const SERVICES_DIR = path.join(__dirname, 'services');
+if (fs.existsSync(SERVICES_DIR)) {
+  for (const dir of fs.readdirSync(SERVICES_DIR).sort()) {
+    const entry = path.join(SERVICES_DIR, dir, 'register.ts');
+    if (!fs.existsSync(entry)) continue; // not a service (a stray file, a README)
+    try {
+      const mod = await import(pathToFileURL(entry).href);
+      if (typeof mod.register !== 'function') throw new Error('no register() export');
+      services.push({ name: typeof mod.name === 'string' ? mod.name : dir, register: mod.register });
+    } catch (e) {
+      console.error(`[services] ${dir} failed to load and is OFF: ${(e as Error).message}`);
+    }
+  }
+}
 for (const s of services) {
   noteService(s.name); // the roster /api/version reports, so the client's SWITCH knows
   s.register(sockets);
