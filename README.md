@@ -41,7 +41,13 @@ The one place cowork names a service is a single assembler block in `src/index.t
 empty in this repo. Installing services fills it; a gate (`scripts/check-kyokai.mjs`)
 enforces that no other core file ever reaches across the line.
 
-## Running it
+## Installing it
+
+**Hand `docs/install.md` to Claude or Codex on the target machine and say go** — it
+walks every scenario (new VM, existing server, laptop) from nothing to a coworkspace
+in the browser, installing the released cowork and the services layer on the way.
+
+## Running it (contributors, from a checkout)
 
 ```bash
 ./setup.sh     # installs deps, the tmux server unit, the cowork unit; the service
