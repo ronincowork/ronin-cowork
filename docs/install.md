@@ -65,6 +65,13 @@ verify the VM's address and form the SSH command.
 The local agent may run ordinary read-only checks and propose commands. The_owner handles
 provider login, billing, credential prompts, host-key approval and any destructive choice.
 
+**A cloud agent qualifies as `rogue_1`.** An agent in the browser (claude.ai and kin)
+cannot touch the laptop's terminal, and does not need to: `rogue_1`'s role is advisory
+by design. It reads these instructions, proposes each command, and the owner runs it
+and pastes the output back. Every checkpoint ("stop here unless `whoami` runs on the
+intended box") is verified from the pasted output. The first agent that must be a CLI
+in a terminal is the one on the destination box (`rogue_2`, or the laptop's own).
+
 ### 2. Open a terminal on the intended box
 
 - Laptop: open its terminal application.
