@@ -1,4 +1,5 @@
 /* part of the tmux-ronin client — see js/README.md */
+import { request } from './request.js';
 import { homeData } from './home.js';
 
 /**
@@ -70,39 +71,33 @@ export function buildDocs(tile, root, isShowing) {
     dirty = false;
     say('loading…');
     show('edit');
-    try {
-      const r = await fetch('/api/file?path=' + encodeURIComponent(path), { cache: 'no-store' });
-      const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
-      area.value = d.text ?? '';
-      area.disabled = false;
-      dirty = false;
-      say('');
-    } catch (e) {
+    const r = await request('/api/file?path=' + encodeURIComponent(path), { cache: 'no-store' });
+    if (!r.ok) {
       // Never leave an enabled, empty box over a path that failed to load: a Save from
       // there would write emptiness over the file.
-      say(e.message, true);
+      say(r.message, true);
+      return;
     }
+    area.value = r.data.text ?? '';
+    area.disabled = false;
+    dirty = false;
+    say('');
   };
 
   const doSave = async () => {
     if (!openPath || area.disabled) return;
     save.disabled = true;
     say('saving…');
-    try {
-      const r = await fetch('/api/file?path=' + encodeURIComponent(openPath), {
-        method: 'PUT',
-        // text/plain on purpose — see the route in src/index.ts. The global json parser
-        // has a 100kb limit and would refuse a large document before it ever arrived.
-        headers: { 'content-type': 'text/plain; charset=utf-8' },
-        body: area.value,
-      });
-      const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+    // text/plain on purpose — see the route in src/index.ts. The global json parser
+    // has a 100kb limit and would refuse a large document before it ever arrived.
+    const r = await request('/api/file?path=' + encodeURIComponent(openPath), {
+      method: 'PUT',
+      text: area.value,
+    });
+    if (!r.ok) say(r.message, true);
+    else {
       dirty = false;
       say('saved');
-    } catch (e) {
-      say(e.message, true);
     }
     save.disabled = false;
   };

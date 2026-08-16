@@ -1,4 +1,5 @@
 /* part of the tmux-ronin client — see js/README.md */
+import { request } from './request.js';
 
 /* ---------- STATS — the sixth commons pane (tab: ▦ Stats) ----------
  *
@@ -385,16 +386,11 @@ export function buildStats(root) {
   async function load() {
     if (loading) return;
     loading = true;
-    try {
-      const r = await fetch(`/api/tomodachi/stats?window=${win}`, { cache: 'no-store' });
-      const d = await r.json();
-      if (d && !d.error) render(d);
-      else body.textContent = 'Stats are not available on this install yet.';
-    } catch (_) {
-      body.textContent = 'Stats could not be read.';
-    } finally {
-      loading = false;
-    }
+    const r = await request(`/api/tomodachi/stats?window=${win}`, { cache: 'no-store' });
+    if (r.ok && !r.data.error) render(r.data);
+    else if (r.kind === 'network') body.textContent = 'Stats could not be read.';
+    else body.textContent = 'Stats are not available on this install yet.';
+    loading = false;
   }
 
   /** Called when the tab is opened — and it counts itself, like every other surface. */

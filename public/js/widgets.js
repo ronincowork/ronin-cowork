@@ -159,6 +159,9 @@ export function openJobMenu(anchor, jobs, current, onPick) {
     build(b);
     b.addEventListener('click', (e) => {
       e.stopPropagation();
+      // Keyboard users arrived from the anchor; give focus back rather than dropping
+      // it on <body>, where the next Tab starts the page over.
+      if (m.contains(document.activeElement)) anchor.focus();
       m.remove();
       onPick(pick);
     });
@@ -190,10 +193,20 @@ export function openJobMenu(anchor, jobs, current, onPick) {
   // the listener is armed a tick late rather than on this same event.
   setTimeout(() => {
     const away = () => {
+      if (m.contains(document.activeElement)) anchor.focus();
       m.remove();
       document.removeEventListener('click', away);
+      document.removeEventListener('keydown', esc, true);
+    };
+    // Escape dismisses like every other transient surface; capture-phase so a live
+    // terminal underneath never sees the keystroke.
+    const esc = (e) => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      away();
     };
     document.addEventListener('click', away);
+    document.addEventListener('keydown', esc, true);
   }, 0);
 }
 

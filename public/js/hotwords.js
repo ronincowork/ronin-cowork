@@ -1,4 +1,5 @@
 /* part of the tmux-ronin client — see js/README.md */
+import { request } from './request.js';
 
 /**
  * the commons' ▥ Hotwords pane — the words dictation keeps getting wrong.
@@ -89,19 +90,13 @@ export function buildHotwords(pane, isShowing) {
   const post = async (url, term, btn) => {
     if (btn) btn.disabled = true;
     setMsg('');
-    try {
-      const r = await fetch(url, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ term }),
-      });
-      const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
-      render(d.terms || []);
-    } catch (e) {
-      setMsg(e.message, true);
+    const r = await request(url, { method: 'POST', json: { term } });
+    if (!r.ok) {
+      setMsg(r.message, true);
       if (btn) btn.disabled = false;
+      return;
     }
+    render(r.data.terms || []);
   };
 
   const add = () => {
@@ -123,20 +118,18 @@ export function buildHotwords(pane, isShowing) {
   });
 
   const enter = async () => {
-    try {
-      const r = await fetch('/api/hotwords');
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
-      render(d.terms || []);
-      whose.textContent = d.own
-        ? '◆ your list — an upgrade cannot touch it, and will not add to it either'
-        : 'Ronin\'s stock list — your first edit makes a copy that is yours';
-      whose.classList.toggle('own', !!d.own);
-      setMsg('');
-    } catch (e) {
+    const r = await request('/api/hotwords');
+    if (!r.ok) {
       count.textContent = 'could not load';
-      setMsg(e.message, true);
+      setMsg(r.message, true);
+      return;
     }
+    render(r.data.terms || []);
+    whose.textContent = r.data.own
+      ? '◆ your list — an upgrade cannot touch it, and will not add to it either'
+      : 'Ronin\'s stock list — your first edit makes a copy that is yours';
+    whose.classList.toggle('own', !!r.data.own);
+    setMsg('');
   };
 
   return { enter, isShowing };

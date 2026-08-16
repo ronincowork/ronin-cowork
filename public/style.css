@@ -1,15 +1,71 @@
+/* tmux-ronin — the one stylesheet, in four cascade layers.
+ *
+ * @layer IS THE ENFORCEMENT, not a convention: vendor < foundations < ui < app, so a
+ * feature rule cannot patch a primitive's internals and nothing patches the tokens —
+ * the cascade refuses, no reviewer required. Splitting into files stays a mechanical
+ * move for the day a layer earns its own; docs/ui.md carries the contract.
+ *
+ *   vendor       xterm.css, imported into the lowest layer
+ *   foundations  the design tokens (dark + light), reset, page chrome, focus
+ *   ui           the shared primitives: sheet/card, toast, help box
+ *   app          everything Ronin — compositions and feature rules, order preserved
+ *
+ * COLOUR IS SPELLED ONCE. Every colour in this file is a token definition (a
+ * `--name:` line) or a var()/color-mix() over one — scripts/check-css.mjs fails the
+ * build on a raw colour anywhere else. That gate is what killed the 87-hex drift.
+ */
+@layer vendor, foundations, ui, app;
+@import url('/vendor/xterm.css') layer(vendor);
+
+@layer foundations {
 :root {
+  /* ---- surfaces, dark (the default): canvas, bar, panel, raised control, input well */
   --bg: #0b0e14;
   --bg-2: #0f131c;
   --panel: #131826;
+  --raise: #1a2233;
+  --raise-2: #263047;
+  --well: #0d1220;
+  /* ---- edges, three weights: hairline furniture, control edge, emphasized edge */
   --line: #1f2738;
+  --line-2: #2a3247;
+  --line-3: #3a4560;
+  /* ---- text, five weights: strong, body, muted, quiet, zero-state */
+  --fg-strong: #d7e3f7;
   --fg: #c5c8c6;
   --muted: #6b7488;
+  --muted-2: #8fa3c8;
+  --muted-3: #6f80a0;
+  --dim: #454d61;
+  /* ---- meaning: amber = attention/identity, blue = reference, green = healthy,
+     warn/bad = the two grades of wrong. --on-accent/--on-strong are the text colours
+     that sit ON a filled accent/action surface. */
   --accent: #e0af68;
   --accent-2: #81a2be;
+  --accent-deep: #d8a13a;
   --ok: #b5bd68;
+  --ok-2: #7fd4a8;
   --warn: #f0c674;
   --bad: #cc6666;
+  --bad-soft: #e6a1a1;
+  --bad-deep: #a33c33;
+  --bad-line: #5a3535;
+  --bad-ground: #3a1416;
+  --bad-fg: #f2d6d6;
+  --info: #6ea8fe;
+  --action: #2f6fd0;
+  --action-2: #4f9bff;
+  --rec: #c0392b;
+  --affirm-bg: #1d3a27;
+  --affirm-border: #2f6b3f;
+  --affirm-fg: #d6f5df;
+  --on-accent: #000;
+  --on-strong: #fff;
+  --chart-ink: rgb(11 14 20 / 82%);
+  /* ---- elevation: one scrim, two shadows. That is the whole vocabulary. */
+  --scrim: rgb(0 0 0 / 50%);
+  --shadow-menu: 0 8px 24px rgb(0 0 0 / 45%);
+  --shadow-sheet: 0 12px 34px rgb(0 0 0 / 50%);
   /* ---- Kojin house colours (karate/SYSTEM.md — the palette there is FIXED, six
      values, and these are two of them by name). Ronin borrows them for the two bar
      openers so メ and ニ read as a matched pair rather than two grey glyphs.
@@ -27,7 +83,102 @@
   --kaki-lift: #e08163;
   --aiiro: #274a78;
   --aiiro-lift: #6f95cc;
+
+  /* ---- THE TERMINAL PALETTE — the tokens js/theme.js reads back into xterm's theme
+     object (`termTheme()`), plus the tape/composer surfaces that sit over the pane.
+     Spelled HERE and nowhere else: the THEME literal that used to shadow these in
+     state.js is gone (TOKENS' D2 defect — one palette, two spellings).
+     DELIBERATELY NOT REMAPPED BY THE LIGHT THEME: a terminal reads dark, every TUI
+     palette assumes it, and a light shell around a dark pane is the design. */
+  --term-bg: #0b0e14;
+  --term-fg: #c5c8c6;
+  --term-cursor: #e0af68;
+  --term-selection: #2a3145;
+  --term-ansi-black: #1d1f21;
+  --term-ansi-red: #cc6666;
+  --term-ansi-green: #b5bd68;
+  --term-ansi-yellow: #f0c674;
+  --term-ansi-blue: #81a2be;
+  --term-ansi-magenta: #b294bb;
+  --term-ansi-cyan: #8abeb7;
+  --term-ansi-white: #c5c8c6;
+  --term-ansi-br-black: #6b7488;
+  --term-ansi-br-red: #d54e53;
+  --term-ansi-br-green: #b9ca4a;
+  --term-ansi-br-yellow: #e7c547;
+  --term-ansi-br-blue: #7aa6da;
+  --term-ansi-br-magenta: #c397d8;
+  --term-ansi-br-cyan: #70c0b1;
+  --term-ansi-br-white: #eaeaea;
+  --term-tape-bg: #0f1216;
+  --term-tape-fg: #d6dae0;
+  --term-tape-line: #3a4450;
+  --term-tape-line-2: #4a5561;
+  --term-tape-muted: #8b98a5;
+  --term-tape-muted-2: #b7c2cc;
+  --term-jump-bg: rgb(30 36 44 / 92%);
+  --term-jump-bg-2: rgb(44 52 62 / 95%);
+  --term-panel: #11151b;
+  --term-panel-line: #26303c;
+  --term-well: #0d1116;
+  --term-input-line: #2b3644;
+  --term-input-fg: #e6eaf0;
 }
+
+/* ---- THE LIGHT THEME — the same roles, resolved for a light shell. js/theme.js sets
+   `data-theme` from the owner's ⚙ System choice (per device, localStorage), and
+   index.html applies the saved value inline before first paint. The --term-* tokens
+   are absent here ON PURPOSE: terminal surfaces stay dark under the light shell. */
+:root[data-theme='light'] {
+  --bg: #f4f2ec;
+  --bg-2: #eae7df;
+  --panel: #ffffff;
+  --raise: #f1efe8;
+  --raise-2: #e6e2d8;
+  --well: #f7f5ef;
+  --line: #d9d4c8;
+  --line-2: #c8c2b2;
+  --line-3: #a9a191;
+  --fg-strong: #14161c;
+  --fg: #2c2e36;
+  --muted: #6d7284;
+  --muted-2: #5a617a;
+  --muted-3: #6d7284;
+  --dim: #b0aca0;
+  --accent: #a06b1a;
+  --accent-2: #3f6a95;
+  --accent-deep: #8a5a10;
+  --ok: #5c7a1d;
+  --ok-2: #1e7a4c;
+  --warn: #9a7b00;
+  --bad: #b04343;
+  --bad-soft: #8f3a3a;
+  --bad-deep: #a33c33;
+  --bad-line: #d8b0b0;
+  --bad-ground: #f7e2e2;
+  --bad-fg: #6a1f1f;
+  --info: #1f5fc9;
+  --action: #1f5fc9;
+  --action-2: #174a9e;
+  --affirm-bg: #e3f2e6;
+  --affirm-border: #4f9762;
+  --affirm-fg: #1b4a2a;
+  --on-accent: #fff;
+  --scrim: rgb(0 0 0 / 35%);
+  --shadow-menu: 0 8px 24px rgb(30 30 30 / 18%);
+  --shadow-sheet: 0 12px 34px rgb(30 30 30 / 22%);
+  --kaki-lift: #a34e2f;
+  --aiiro-lift: #3d6394;
+}
+
+/* Keyboard focus is visible EVERYWHERE, one rule: the amber ring. Pointer users never
+   see it (:focus-visible), and a control wanting a tighter ring may add radius, not
+   remove the outline. This used to exist for exactly one control (the brand). */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 
 * {
   box-sizing: border-box;
@@ -76,7 +227,128 @@ body {
   height: 100dvh;
   overflow: hidden;
 }
+}
 
+@layer ui {
+/* ---- ui-sheet / ui-card — the modal primitive (js/ui.js `sheet`) ----
+   Dialog semantics, focus entry/trap/return and dismissal live in JS; this is the
+   look: a scrim, a centered card. Consumers size their card and may accent its
+   border via their own class (app layer) — they do not restyle the primitive. */
+.ui-sheet {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: var(--scrim);
+  align-items: center;
+  justify-content: center;
+}
+.ui-sheet.open {
+  display: flex;
+}
+.ui-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border: 1px solid var(--line-3);
+  border-radius: 12px;
+}
+
+/* ---- the toast — one transient outcome chip (js/ui.js `toast`) ----
+   Grew out of the pad's #padtoast; tile-scoped errors that were alert() land here
+   now. role=status, so it is announced without stealing focus. */
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  max-width: 92vw;
+  z-index: 40;
+  background: var(--bg-2);
+  color: var(--fg);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+#toast.show {
+  opacity: 1;
+}
+#toast.err {
+  border-color: var(--bad);
+}
+
+/* ---- THE HELP BOX (js/tips.js) --------------------------------------------------
+   One panel, one size, one place. It replaced FOUR overlapping ways the header had of
+   explaining itself — the native `title`, the dial's badge, the gauge's badge, and a
+   tooltip added on top of those — which between them put two boxes on screen at once
+   for a single hover, at different sizes in different spots.
+
+   FIXED WIDTH AND FIXED HEIGHT, both. Growing to fit was the previous attempt and it is
+   what made the thing restless: crossing a row of buttons resized the panel under the
+   pointer. Here the geometry is a constant and the CONTENT is the only variable. Labels
+   are written to fit; `scripts/check-tips.mjs` fails the build if one does not, so a
+   too-long label is caught at build time instead of being silently clipped at 2am.
+
+   TWO ZONES, and the status line holds its height when empty — otherwise the box would
+   still reflow between a control that has a reading and one that does not, which is the
+   same restlessness by a smaller amount. */
+.helpbox {
+  position: fixed;
+  z-index: 90;
+  left: 0;
+  top: 0;
+  display: none;
+  box-sizing: border-box;
+  width: 300px;
+  height: 92px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  box-shadow: var(--shadow-menu);
+  font: 12px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  /* THE BACKSTOP, not the mechanism. `check-tips` is what guarantees labels fit; this is
+     what happens if one ever slips past it. Without it the overflow rendered OUTSIDE the
+     border, spraying a stray line across the terminal underneath — measured, on the dial.
+     A clip is contained and looks like a bug; loose text over the pane looks like a
+     corrupted screen. */
+  overflow: hidden;
+  /* It explains what is under the pointer; it must never become what is under it. */
+  pointer-events: none;
+}
+.helpbox.show {
+  display: block;
+}
+/* THE STATUS LINE — what this control reads right now (the dial's position, the gauge's
+   percentage). One line, clipped rather than wrapped: a reading that grew to two lines
+   would push the explanation down and break the fixed geometry. `min-height` is what
+   keeps the box identical for the controls that have no reading at all. */
+.helpbox-status {
+  min-height: 1.45em;
+  margin-bottom: 4px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+  color: var(--accent);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* WHAT IS THIS — three lines at this width and font. The build check is calibrated to
+   exactly this box, so changing either dimension means re-running it. */
+.helpbox-what {
+  color: var(--fg);
+}
+}
+
+@layer app {
 /* ---- top bar ---- */
 #bar {
   display: flex;
@@ -156,18 +428,6 @@ body {
 }
 /* Copy panel — real selectable text, native copy on any device */
 /* Per-session note (post-it) — centered modal on desktop, full-bleed on phones */
-#notesheet {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 30;
-  background: rgba(0, 0, 0, 0.5);
-  align-items: center;
-  justify-content: center;
-}
-#notesheet.open {
-  display: flex;
-}
 #notesheet .ns-card {
   display: flex;
   flex-direction: column;
@@ -298,7 +558,7 @@ body {
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 4px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--shadow-sheet);
 }
 .tmac.open {
   display: block;
@@ -354,7 +614,7 @@ body {
   position: fixed;
   inset: 0;
   z-index: 30;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--scrim);
   align-items: center;
   justify-content: center;
 }
@@ -407,7 +667,7 @@ body {
 }
 #padsheet .pad-bar button.armed {
   background: var(--accent);
-  color: #000;
+  color: var(--on-accent);
   border-color: var(--accent);
 }
 #padsheet .pad-board {
@@ -480,7 +740,7 @@ body {
 }
 #padsheet .pad-key.hit b,
 #padsheet .pad-key.hit small {
-  color: #000;
+  color: var(--on-accent);
 }
 #padsheet .pad-widget {
   aspect-ratio: 1;
@@ -514,7 +774,7 @@ body {
   background: var(--accent);
   border-style: solid;
   border-color: var(--accent);
-  color: #000;
+  color: var(--on-accent);
 }
 #padsheet .pad-edit {
   display: none;
@@ -569,7 +829,7 @@ body {
   position: fixed;
   inset: 0;
   z-index: 35;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--scrim);
   align-items: center;
   justify-content: center;
 }
@@ -632,33 +892,6 @@ body {
   font-size: 12px;
   line-height: 1.4;
 }
-/* Outcome chip for pad-fired macros (results must be visible, not just performed) */
-#padtoast {
-  position: fixed;
-  left: 50%;
-  bottom: 24px;
-  transform: translateX(-50%);
-  max-width: 92vw;
-  z-index: 40;
-  background: var(--bg-2);
-  color: var(--fg);
-  border: 1px solid var(--accent);
-  border-radius: 10px;
-  padding: 8px 14px;
-  font-size: 13px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.15s;
-}
-#padtoast.show {
-  opacity: 1;
-}
-#padtoast.err {
-  border-color: #cc6666;
-}
 
 /* ---- grid ---- */
 #grid {
@@ -706,7 +939,7 @@ body {
  * has its own `.composer.noconn` mark, which sits closer to what you were typing.
  */
 .tile.dropped {
-  border-color: #a33c33;
+  border-color: var(--bad-deep);
 }
 .tile-head {
   display: flex;
@@ -1056,23 +1289,23 @@ body {
   0% {
     opacity: 0;
     transform: translateY(-6px) scale(0.94);
-    box-shadow: 0 0 0 0 rgba(224, 129, 99, 0.7);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--kaki-lift) 70%, transparent);
   }
   18% {
     opacity: 1;
     transform: none;
   }
   40% {
-    box-shadow: 0 0 0 9px rgba(224, 129, 99, 0);
+    box-shadow: 0 0 0 9px transparent;
   }
   55% {
-    box-shadow: 0 0 0 0 rgba(224, 129, 99, 0.55);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--kaki-lift) 55%, transparent);
   }
   85%,
   100% {
     opacity: 1;
     transform: none;
-    box-shadow: 0 0 0 9px rgba(224, 129, 99, 0);
+    box-shadow: 0 0 0 9px transparent;
   }
 }
 
@@ -1102,7 +1335,7 @@ body {
     border-color: var(--kaki-lift);
   }
   40% {
-    border-color: rgba(224, 129, 99, 0.25);
+    border-color: color-mix(in srgb, var(--kaki-lift) 25%, transparent);
   }
 }
 
@@ -1155,7 +1388,7 @@ body {
   }
   #k-more.armed {
     background: var(--accent);
-    color: #000;
+    color: var(--on-accent);
     border-color: var(--accent);
   }
   /* expandable keypad: extra keys the iOS keyboard can't send (Tab/⇧Tab + arrows) */
@@ -1182,7 +1415,7 @@ body {
   }
   #keypad button:active {
     background: var(--accent);
-    color: #000;
+    color: var(--on-accent);
   }
 }
 
@@ -1295,7 +1528,7 @@ body {
 /* At the limit the count is the warning — no banner, no extra row: the line that
    states the rule is the line that says you have hit it. */
 .home-maxnow.full {
-  color: var(--warn, #e0a030);
+  color: var(--warn);
 }
 /* ---- KOSHIDASHI: the null pane — buttons that put a session out to work ---- */
 .home-null {
@@ -1411,7 +1644,7 @@ body {
   font-size: 12px;
 }
 .ko-blurb.bad {
-  color: var(--bad, #e06c6c);
+  color: var(--bad);
   opacity: 1;
   font-weight: 600;
 }
@@ -1430,7 +1663,7 @@ body {
   gap: 2px 10px;
   align-items: center;
   padding: 8px 10px;
-  border: 1px solid var(--line, #2a2a2a);
+  border: 1px solid var(--line);
   border-radius: 6px;
 }
 .ko-row.off {
@@ -1467,7 +1700,7 @@ body {
 }
 .ko-note.bad,
 .ko-empty.bad {
-  color: var(--bad, #e06c6c);
+  color: var(--bad);
   opacity: 1;
 }
 .ko-empty {
@@ -1617,7 +1850,7 @@ body {
   gap: 8px;
 }
 .pr-count {
-  color: #7f8ca6;
+  color: var(--muted-2);
   font-size: 12px;
   flex: 1;
 }
@@ -1630,13 +1863,13 @@ body {
   gap: 6px;
 }
 .pr-block {
-  border: 1px solid #2a3346;
+  border: 1px solid var(--line-2);
   border-radius: 6px;
   padding: 7px 9px;
-  background: #141a26;
+  background: var(--panel);
 }
 .pr-block.gone {
-  border-color: #5a3535;
+  border-color: var(--bad-line);
 }
 .pr-top {
   display: flex;
@@ -1645,16 +1878,16 @@ body {
   flex-wrap: wrap;
 }
 .pr-top b {
-  color: #d7e3f7;
+  color: var(--fg-strong);
 }
 .pr-dir {
-  color: #7f8ca6;
+  color: var(--muted-2);
   font-size: 12px;
   font-family: ui-monospace, monospace;
   word-break: break-all;
 }
 .pr-remit {
-  color: #9aa8bf;
+  color: var(--muted-2);
   font-size: 12px;
   margin: 3px 0 0;
 }
@@ -1666,17 +1899,17 @@ body {
 }
 .pr-chip {
   font-size: 11px;
-  border: 1px solid #2f3a4f;
+  border: 1px solid var(--line-2);
   border-radius: 999px;
   padding: 1px 7px;
-  color: #9aa8bf;
+  color: var(--muted-2);
 }
 .pr-chip.muted {
-  color: #6c7a91;
+  color: var(--muted-3);
 }
 .pr-chip.bad {
-  color: #e6a1a1;
-  border-color: #5a3535;
+  color: var(--bad-soft);
+  border-color: var(--bad-line);
 }
 .pr-acts {
   display: flex;
@@ -1685,7 +1918,7 @@ body {
 }
 .pr-form {
   margin-top: 8px;
-  border-top: 1px solid #2a3346;
+  border-top: 1px solid var(--line-2);
   padding-top: 8px;
   display: flex;
   flex-direction: column;
@@ -1699,7 +1932,7 @@ body {
 .pr-f span {
   width: 74px;
   flex: none;
-  color: #7f8ca6;
+  color: var(--muted-2);
   font-size: 12px;
 }
 .pr-f input {
@@ -1712,16 +1945,16 @@ body {
   gap: 6px;
 }
 .pr-err {
-  color: #e6a1a1;
+  color: var(--bad-soft);
   font-size: 12px;
 }
 .pr-empty {
-  color: #6c7a91;
+  color: var(--muted-3);
   font-size: 12px;
   padding: 8px 2px;
 }
 .pr-empty.bad {
-  color: #e6a1a1;
+  color: var(--bad-soft);
 }
 .pr-ghost {
   opacity: 0.8;
@@ -1761,7 +1994,7 @@ body {
   margin-bottom: 4px;
 }
 .dc-who b {
-  color: #cfe0ff;
+  color: var(--fg-strong);
   font-size: 13px;
 }
 .dc-who span {
@@ -1785,7 +2018,7 @@ body {
   cursor: pointer;
 }
 .dc-row:hover {
-  border-color: #2f4368;
+  border-color: var(--line-3);
 }
 .dc-row b {
   font-weight: 600;
@@ -1813,8 +2046,8 @@ body {
 .dc-save {
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #1a2233;
-  color: #cfe0ff;
+  background: var(--raise);
+  color: var(--fg-strong);
   padding: 6px 10px;
   font-size: 12px;
   cursor: pointer;
@@ -1830,7 +2063,7 @@ body {
   font-size: 11px;
 }
 .dc-note.bad {
-  color: #ffb4a2;
+  color: var(--bad-soft);
 }
 /* The editor fills the tile: a document is the whole point of the pane, and a short box
    with the rest of the tile empty is the shape of a comment field, not an editor. */
@@ -1839,7 +2072,7 @@ body {
   min-height: 0;
   width: 100%;
   box-sizing: border-box;
-  background: #0d1220;
+  background: var(--well);
   color: var(--fg);
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -1877,8 +2110,8 @@ body {
 .wb-head button {
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #1a2233;
-  color: #cfe0ff;
+  background: var(--raise);
+  color: var(--fg-strong);
   padding: 6px 10px;
   font-size: 12px;
   cursor: pointer;
@@ -1916,7 +2149,7 @@ body {
 .wb-compose textarea {
   width: 100%;
   box-sizing: border-box;
-  background: #0d1220;
+  background: var(--well);
   color: var(--fg);
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -1936,12 +2169,12 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: #182033;
+  background: var(--raise);
   border: 1px solid var(--line);
   border-radius: 999px;
   padding: 3px 4px 3px 10px;
   font-size: 12px;
-  color: #cfe0ff;
+  color: var(--fg-strong);
 }
 .wb-chip i {
   font-style: normal;
@@ -1950,14 +2183,14 @@ body {
 .wb-chip button {
   border: 0;
   background: none;
-  color: #7d8ba8;
+  color: var(--muted-2);
   cursor: pointer;
   font-size: 14px;
   line-height: 1;
   padding: 0 4px;
 }
 .wb-chip button:hover {
-  color: #ff9c9c;
+  color: var(--bad-soft);
 }
 .wb-plus {
   font-size: 12px;
@@ -1976,7 +2209,7 @@ body {
   padding: 10px;
 }
 .wb-post {
-  border-left: 2px solid #2b3550;
+  border-left: 2px solid var(--line-2);
   padding-left: 8px;
 }
 .wb-who {
@@ -1987,7 +2220,7 @@ body {
   color: var(--muted);
 }
 .wb-who b {
-  color: #9db4dd;
+  color: var(--muted-2);
 }
 .wb-text {
   font-size: 13px;
@@ -1997,13 +2230,13 @@ body {
 }
 /* The owner's steer must never read as an agent's post. */
 .wb-post.owner {
-  border-left-color: #d8a13a;
+  border-left-color: var(--accent-deep);
 }
 .wb-post.owner .wb-who b {
-  color: #e8b757;
+  color: var(--accent);
 }
 .wb-post.sys {
-  border-left-color: #2b3550;
+  border-left-color: var(--line-2);
   opacity: 0.62;
 }
 .wb-post.sys .wb-text {
@@ -2017,10 +2250,10 @@ body {
   flex: 0 0 auto;
 }
 .wb-compose button {
-  border: 1px solid #2f6b3f;
+  border: 1px solid var(--affirm-border);
   border-radius: 8px;
-  background: #1d3a27;
-  color: #d6f5df;
+  background: var(--affirm-bg);
+  color: var(--affirm-fg);
   padding: 8px 14px;
   font-size: 13px;
   cursor: pointer;
@@ -2221,7 +2454,7 @@ body {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
+  box-shadow: var(--shadow-menu);
 }
 .job-opt {
   display: flex;
@@ -2420,7 +2653,7 @@ body {
   border: 1px solid var(--accent);
   border-radius: 10px;
   font-size: 13px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-sheet);
   transition: transform 0.25s ease;
 }
 #chip.show {
@@ -2442,18 +2675,6 @@ body {
 }
 
 /* ---- session switcher: one pad key opens it, arrows walk it, same key lands it ---- */
-#sesspick {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  background: rgba(0, 0, 0, 0.55);
-  align-items: center;
-  justify-content: center;
-}
-#sesspick.open {
-  display: flex;
-}
 #sesspick .sp-card {
   display: flex;
   flex-direction: column;
@@ -2523,18 +2744,6 @@ body {
 }
 .tile-head button.tags:disabled {
   opacity: 0.3;
-}
-#tagsheet {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  background: rgba(0, 0, 0, 0.55);
-  align-items: center;
-  justify-content: center;
-}
-#tagsheet.open {
-  display: flex;
 }
 #tagsheet .tg-card {
   display: flex;
@@ -2646,45 +2855,45 @@ body {
   gap: 10px;
   max-width: min(92vw, 640px);
   padding: 8px 10px;
-  border: 1px solid #2c3550;
+  border: 1px solid var(--line-2);
   border-radius: 10px;
-  background: #141a29;
-  box-shadow: 0 8px 24px #0009;
+  background: var(--panel);
+  box-shadow: var(--shadow-menu);
   font-size: 12px;
   transition: opacity 0.6s;
 }
 #kdashi.fade { opacity: 0; }
-#kdashi b { color: #cfe3ff; }
-#kdashi small { color: #8fa3c8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#kdashi b { color: var(--fg-strong); }
+#kdashi small { color: var(--muted-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #kdashi button {
-  border: 1px solid #3a4560;
+  border: 1px solid var(--line-3);
   border-radius: 7px;
-  background: #1d2434;
-  color: #d7e3f7;
+  background: var(--raise);
+  color: var(--fg-strong);
   padding: 4px 9px;
   font-size: 12px;
   cursor: pointer;
 }
-#kdashi button:hover { background: #263047; }
-#kdashi .kd-x { border-color: transparent; background: transparent; color: #6f80a0; padding: 4px 6px; }
+#kdashi button:hover { background: var(--raise-2); }
+#kdashi .kd-x { border-color: transparent; background: transparent; color: var(--muted-3); padding: 4px 6px; }
 
 /* Mode toggle: manual (your words, verbatim) vs assisted (composed brief). */
 .ks-mode { display: flex; align-items: center; gap: 6px; margin: 2px 0 6px; }
 .ks-mode button {
-  border: 1px solid #2a3247;
+  border: 1px solid var(--line-2);
   border-radius: 7px;
-  background: #10141f;
-  color: #8fa3c8;
+  background: var(--well);
+  color: var(--muted-2);
   padding: 3px 10px;
   font-size: 12px;
   cursor: pointer;
 }
-.ks-mode button.on { background: #1d2434; color: #d7e3f7; border-color: #3a4560; }
-.ks-mode small { color: #6f80a0; font-size: 11px; }
+.ks-mode button.on { background: var(--raise); color: var(--fg-strong); border-color: var(--line-3); }
+.ks-mode small { color: var(--muted-3); font-size: 11px; }
 /* Say plainly what happens to the words you type — in the panel, not a tooltip. */
 .ks-say {
   margin: 0 0 7px;
-  color: #8fa3c8;
+  color: var(--muted-2);
   font-size: 11.5px;
   line-height: 1.45;
 }
@@ -2692,7 +2901,7 @@ body {
 .ks-form.assisted .ks-extras-h {
   display: block;
   margin-top: 8px;
-  color: #6f80a0;
+  color: var(--muted-3);
   font-size: 11px;
 }
 
@@ -2703,10 +2912,10 @@ body {
   width: 100%;
   box-sizing: border-box;
   resize: vertical;
-  border: 1px solid #2a3247;
+  border: 1px solid var(--line-2);
   border-radius: 8px;
-  background: #10141f;
-  color: #d7e3f7;
+  background: var(--well);
+  color: var(--fg-strong);
   padding: 7px 9px;
   font: inherit;
   font-size: 13px;
@@ -2720,16 +2929,16 @@ body {
   font-size: 13px;
   letter-spacing: 0.2px;
 }
-.ks-form input.ks-name.req:placeholder-shown { border-color: #3a4560; }
+.ks-form input.ks-name.req:placeholder-shown { border-color: var(--line-3); }
 .ks-form input.ks-name:focus { outline: none; border-color: var(--accent); }
 .ks-extras { display: flex; gap: 6px; margin-top: 6px; }
 .ks-extras input {
   flex: 1 1 0;
   min-width: 0;
-  border: 1px solid #2a3247;
+  border: 1px solid var(--line-2);
   border-radius: 8px;
-  background: #10141f;
-  color: #d7e3f7;
+  background: var(--well);
+  color: var(--fg-strong);
   padding: 6px 8px;
   font-size: 12px;
 }
@@ -2759,22 +2968,22 @@ body {
   padding: 8px 10px 0;
 }
 .home-tabs button {
-  border: 1px solid #2a3247;
+  border: 1px solid var(--line-2);
   border-radius: 8px 8px 0 0;
   border-bottom-color: transparent;
-  background: #10141f;
-  color: #8fa3c8;
+  background: var(--well);
+  color: var(--muted-2);
   padding: 5px 12px;
   font-size: 12px;
   cursor: pointer;
 }
-.home-tabs button.on { background: #1d2434; color: #d7e3f7; border-color: #3a4560; }
+.home-tabs button.on { background: var(--raise); color: var(--fg-strong); border-color: var(--line-3); }
 .home-tabs .home-x {
   margin-left: auto;
   border-radius: 8px;
   border-color: transparent;
   background: transparent;
-  color: #6f80a0;
+  color: var(--muted-3);
 }
 /* ---- touch: THE STRIP SCROLLS, THE PAGE DOES NOT ----
    Seven rooms plus the ✕ measure 549px against a 402px phone. I wrapped them onto two
@@ -2814,7 +3023,7 @@ body {
     margin-left: auto;
     flex: 0 0 auto;
     background: var(--bg);
-    border-color: #2a3247;
+    border-color: var(--line-2);
   }
 }
 
@@ -2886,7 +3095,7 @@ body {
   }
   #drawers .drawer button:active {
     background: var(--accent);
-    color: #000;
+    color: var(--on-accent);
   }
   /* there is room in a drawer — beats the ≤680px icon-only rule on the bar verbs */
   #drawers .drawer button .txt {
@@ -2935,12 +3144,12 @@ body {
   #bar .tdrop-btn.me:active {
     background: var(--kaki);
     border-color: var(--kaki);
-    color: #fff;
+    color: var(--on-strong);
   }
   #bar .tdrop-btn.ni:active {
     background: var(--aiiro-lift);
     border-color: var(--aiiro-lift);
-    color: #0b0e14;
+    color: var(--bg);
   }
   /* The grid count, sitting between メ and ニ. Deliberately NOT a house colour: the
      two kana are doors that open a sheet, this one changes the screen under them, and
@@ -2968,7 +3177,7 @@ body {
   #bar .layout-cycle:active {
     background: var(--accent);
     border-color: var(--accent);
-    color: #000;
+    color: var(--on-accent);
   }
   /* The row is the session: the picker takes every pixel the two openers do not.
      The 50% cap was there to stop it crowding out nine buttons; the buttons are
@@ -3014,7 +3223,7 @@ body {
     backdrop-filter: blur(10px);
     border: 1px solid var(--line);
     border-radius: 12px;
-    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-sheet);
   }
   .tdrop.open {
     display: block;
@@ -3093,8 +3302,8 @@ body {
   white-space: pre-wrap;
   word-break: break-word;
   font: 13px/1.35 Menlo, "DejaVu Sans Mono", Consolas, monospace;
-  color: #d6dae0;
-  background: #0f1216;
+  color: var(--term-tape-fg);
+  background: var(--term-tape-bg);
   padding: 6px 8px 12px;
   margin: 0;
   -webkit-text-size-adjust: 100%;
@@ -3108,7 +3317,7 @@ body {
 /* The live frame — the pane's current screen under the transcript, replaced wholesale.
    Visually a footer: the seam says "below this line is NOW, above it is history". */
 .tile.tape-on .tape .tframe {
-  border-top: 1px dashed #3a4450;
+  border-top: 1px dashed var(--term-tape-line);
   margin-top: 8px;
   padding-top: 6px;
 }
@@ -3119,12 +3328,12 @@ body {
 }
 .tile.tape-on .tape details.fold summary {
   cursor: pointer;
-  color: #8b98a5;
+  color: var(--term-tape-muted);
   user-select: none;
   -webkit-user-select: none;
 }
 .tile.tape-on .tape details.fold[open] summary {
-  color: #b7c2cc;
+  color: var(--term-tape-muted-2);
 }
 
 /* ↓ latest — the deterministic way back to the live end of the transcript. Exists
@@ -3139,15 +3348,15 @@ body {
   bottom: 58px; /* clear the docked composer, which owns the bottom edge */
   z-index: 3;
   font: 12px Menlo, "DejaVu Sans Mono", Consolas, monospace;
-  color: #d6dae0;
-  background: rgba(30, 36, 44, 0.92);
-  border: 1px solid #4a5561;
+  color: var(--term-tape-fg);
+  background: var(--term-jump-bg);
+  border: 1px solid var(--term-tape-line-2);
   border-radius: 14px;
   padding: 5px 12px;
   cursor: pointer;
 }
 .tile.tape-on .tapejump.show:hover {
-  background: rgba(44, 52, 62, 0.95);
+  background: var(--term-jump-bg-2);
 }
 @media (pointer: coarse) {
   .tile.tape-on .tapejump.show {
@@ -3175,15 +3384,15 @@ body {
   max-height: 40vh;
   overflow-y: auto;
   padding: 8px 34px 8px 12px;
-  background: #3a1416;
-  border-bottom: 1px solid #cc6666;
-  color: #f2d6d6;
+  background: var(--bad-ground);
+  border-bottom: 1px solid var(--bad);
+  color: var(--bad-fg);
   font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 #failbar .failbar-title {
   display: block;
   font-weight: 600;
-  color: #ff9b9b;
+  color: var(--bad-soft);
   margin-bottom: 4px;
 }
 #failbar .failbar-line {
@@ -3197,26 +3406,26 @@ body {
   right: 8px;
   background: none;
   border: 0;
-  color: #f2d6d6;
+  color: var(--bad-fg);
   cursor: pointer;
   font-size: 14px;
   padding: 2px 6px;
 }
 #failbar .failbar-x:hover {
-  color: #fff;
+  color: var(--fg-strong);
 }
 /* A tile that failed to build keeps the grid's shape instead of collapsing it. */
 .tile.tile-dead {
-  border-color: #cc6666;
+  border-color: var(--bad);
 }
 .tile.tile-dead .dead-note {
   padding: 16px;
-  color: #cc6666;
+  color: var(--bad);
   font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
   text-align: center;
 }
 .tile.tile-dead .dead-why {
-  color: #a08080;
+  color: var(--bad-soft);
   word-break: break-word;
 }
 
@@ -3237,8 +3446,8 @@ body {
   z-index: 4;
   gap: 6px;
   padding: 5px 6px;
-  background: #11151b;
-  border-top: 1px solid #26303c;
+  background: var(--term-panel);
+  border-top: 1px solid var(--term-panel-line);
   align-items: flex-end;
 }
 .tile.tape-on .composer textarea {
@@ -3247,31 +3456,31 @@ body {
   min-height: 30px;
   max-height: 160px;
   padding: 6px 8px;
-  border: 1px solid #2b3644;
+  border: 1px solid var(--term-input-line);
   border-radius: 8px;
-  background: #0d1116;
-  color: #e6eaf0;
+  background: var(--term-well);
+  color: var(--term-input-fg);
   font: 13px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   outline: none;
 }
 /* Send refused because the socket is down: keep the text, say so, retry lands it. */
 .tile.tape-on .composer.noconn textarea {
-  border-color: #a33c33;
+  border-color: var(--bad-deep);
 }
 /* Enter arrived while the clip was still transcribing: queued, sends on landing. */
 .tile.tape-on .composer.queued .csend {
   opacity: 0.4;
 }
 .tile.tape-on .composer textarea:focus {
-  border-color: #4f9bff;
+  border-color: var(--action-2);
 }
 .tile.tape-on .composer .csend {
   height: 30px;
   min-width: 38px;
   border: 0;
   border-radius: 8px;
-  background: #2f6fd0;
-  color: #fff;
+  background: var(--action);
+  color: var(--on-strong);
   font-size: 15px;
   cursor: pointer;
 }
@@ -3291,9 +3500,9 @@ body {
 }
 /* Listening is the one state worth shouting: it means the microphone is live. */
 .tile.tape-on .composer .cmic.listening {
-  background: #c0392b;
-  border-color: #c0392b;
-  color: #fff;
+  background: var(--rec);
+  border-color: var(--rec);
+  color: var(--on-strong);
 }
 /* … while the clip is on its way to the host and back. Whisper gives nothing until the
    recording stops, so this wait is the whole cost of not sending your voice to Apple —
@@ -3312,7 +3521,7 @@ body {
 }
 
 /* The per-tile lock, in the tile head with the other per-tile controls. */
-.tile-head .lock.armed { color: #7fd4a8; }
+.tile-head .lock.armed { color: var(--ok-2); }
 
 /* Each tile's own 🔒/🔓 — the switch lives with the pane it acts on, never in the
    window chrome, which cannot say which pane it means. */
@@ -3322,7 +3531,7 @@ body {
 }
 .tile-head .lock.armed {
   opacity: 1;
-  color: #7fd4a8;
+  color: var(--ok-2);
 }
 /* No record service installed (the free build): the 🔓 view is off, so the switch is
    visible but inert — opaque says "not plugged in", not "missing". The commons tabs
@@ -3360,7 +3569,7 @@ body {
 #failbar .failbar-at {
   white-space: pre-wrap;
   word-break: break-all;
-  color: #d9a0a0;
+  color: var(--bad-soft);
   opacity: 0.75;
   margin: 2px 0 6px 10px;
   font-size: 11px;
@@ -3391,7 +3600,7 @@ body {
   padding: 3px 7px;
   height: 24px;
   color: var(--accent);
-  background: rgba(224, 175, 104, 0.07);
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -3404,7 +3613,7 @@ body {
   content: " · ";
 }
 .shingo-chip.gate .age {
-  color: rgba(240, 198, 116, 0.75);
+  color: color-mix(in srgb, var(--warn) 75%, transparent);
 }
 .shingo-chip.open {
   border-color: var(--accent);
@@ -3413,8 +3622,8 @@ body {
    simply goes amber. No second widget, no badge, no bell. */
 .shingo-chip.gate {
   color: var(--warn);
-  border-color: rgba(240, 198, 116, 0.55);
-  background: rgba(240, 198, 116, 0.12);
+  border-color: color-mix(in srgb, var(--warn) 55%, transparent);
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
 }
 
 .shingo-ladder {
@@ -3449,7 +3658,7 @@ body {
 .shingo-chip.side {
   color: var(--accent-2);
   border-color: var(--line);
-  background: rgba(129, 162, 190, 0.1);
+  background: color-mix(in srgb, var(--accent-2) 10%, transparent);
 }
 .shingo-ladder .sl-obj {
   color: var(--fg);
@@ -3479,7 +3688,7 @@ body {
   color: var(--accent);
 }
 .shingo-ladder .sl-n {
-  color: #4a5265;
+  color: var(--dim);
   font-variant-numeric: tabular-nums;
 }
 /* The mark carries the single most-read fact on the ladder, so it is set heavier and a
@@ -3489,7 +3698,7 @@ body {
   font-size: 13.5px;
   font-weight: 700;
   line-height: 1;
-  color: #8a93a6;
+  color: var(--muted-2);
 }
 .shingo-ladder .sl-t {
   overflow: hidden;
@@ -3501,7 +3710,7 @@ body {
   margin-top: 4px;
 }
 .shingo-ladder .sl-phase .sl-t {
-  color: #dfe2e4;
+  color: var(--fg-strong);
   font-weight: 600;
 }
 .shingo-ladder .sl-frac {
@@ -3512,7 +3721,7 @@ body {
 }
 .shingo-ladder .st-DONE .sl-m {
   color: var(--ok);
-  text-shadow: 0 0 6px rgba(181, 189, 104, 0.35);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--ok) 35%, transparent);
 }
 
 /* ONE LIVE ROW. You are waiting at the gate or you are doing leg four — never both — so
@@ -3520,7 +3729,7 @@ body {
    the ladder is a PLAN: it is drawn as plainly as a planned leg, because painting it
    amber is what made two rows look live at once. */
 .shingo-ladder .sl-row.now {
-  background: rgba(224, 175, 104, 0.13);
+  background: color-mix(in srgb, var(--accent) 13%, transparent);
   box-shadow: inset 2px 0 0 var(--accent);
   margin: 0 -12px;
   padding: 0 12px;
@@ -3545,17 +3754,17 @@ body {
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.14em;
-  border: 1px solid #454d61;
-  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid var(--line-3);
+  background: color-mix(in srgb, var(--fg) 8%, transparent);
   border-radius: 3px;
   padding: 1px 5px;
-  color: #aab2c2;
+  color: var(--muted-2);
 }
 
 /* The honesty rule, rendered: a phase whose legs are undetermined shows nothing under
    it rather than a guess. */
 .shingo-ladder .sl-und {
-  color: #4a5265;
+  color: var(--dim);
   font-style: italic;
   font-weight: 400;
 }
@@ -3583,8 +3792,8 @@ body {
 }
 .home-shingo.gate {
   color: var(--warn);
-  border-color: rgba(240, 198, 116, 0.55);
-  background: rgba(240, 198, 116, 0.12);
+  border-color: color-mix(in srgb, var(--warn) 55%, transparent);
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
 }
 
 /* ---- the letter: the TEGAMI file itself, opened from the ⛩ in any tile header ---- */
@@ -3663,7 +3872,7 @@ body {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 8px;
-  box-shadow: 0 10px 28px -12px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-menu);
 }
 .commons-menu[hidden] { display: none; }
 .commons-row {
@@ -3705,9 +3914,9 @@ body {
 .home-stats {
   --k-RiffOnIt: #b294bb;
   --k-DraftPlan: #81a2be;
-  --k-CutCode: #e0af68;
+  --k-CutCode: var(--accent);
   --k-ChaseBug: #8abeb7;
-  --k-CheckWork: #b5bd68;
+  --k-CheckWork: var(--ok);
   --k-QuarterBack: #de935f;
   --k-OddJob: #707a91;
   --k-other: #5a6376;
@@ -3754,13 +3963,13 @@ body {
 /* The fault banner. Mechanical: the caught error verbatim, select-all, paste to fix. */
 .td-fault {
   border: 1px solid var(--bad);
-  background: rgba(204, 102, 102, 0.06);
+  background: color-mix(in srgb, var(--bad) 6%, transparent);
 }
 .td-fhead {
   padding: 8px 11px;
   color: var(--bad);
   font-size: 11px;
-  border-bottom: 1px solid rgba(204, 102, 102, 0.35);
+  border-bottom: 1px solid color-mix(in srgb, var(--bad) 35%, transparent);
 }
 .td-fbody {
   margin: 0;
@@ -3902,7 +4111,7 @@ body {
 }
 .td-bar.zero .td-nm,
 .td-bar.zero .td-n {
-  color: #454d61;
+  color: var(--dim);
 }
 
 .td-rows {
@@ -3925,7 +4134,7 @@ body {
 }
 .td-row.zero .td-k,
 .td-row.zero .td-v {
-  color: #454d61;
+  color: var(--dim);
 }
 
 .td-mek {
@@ -3950,7 +4159,7 @@ body {
   justify-content: center;
   font-size: 10px;
   font-weight: 600;
-  color: rgba(11, 14, 20, 0.82);
+  color: var(--chart-ink);
 }
 .td-mekaxis {
   display: flex;
@@ -4044,10 +4253,10 @@ body {
   color: var(--muted);
 }
 .td-capcell.off .td-capn {
-  color: #3a4152;
+  color: var(--dim);
 }
 .td-capcell.off .td-capt {
-  color: #454d61;
+  color: var(--dim);
 }
 
 .td-foot {
@@ -4095,13 +4304,13 @@ body {
 .prov {
   margin-left: 0.35em;
   font-size: 0.85em;
-  color: #6ea8fe;
+  color: var(--info);
   opacity: 0.85;
   cursor: help;
 }
 /* Changed, not added — the one that can silently stop tracking an upgrade. */
 .prov-shad {
-  color: #e0a34a;
+  color: var(--accent-deep);
 }
 .prov-add {
   display: block;
@@ -4109,26 +4318,26 @@ body {
   margin-top: 8px;
   padding: 7px 10px;
   background: transparent;
-  border: 1px dashed #3a4152;
+  border: 1px dashed var(--line-3);
   border-radius: 6px;
-  color: #8b93a7;
+  color: var(--muted-2);
   font: inherit;
   font-size: 12px;
   text-align: left;
   cursor: pointer;
 }
 .prov-add:hover {
-  border-color: #6ea8fe;
-  color: #cfd6e4;
+  border-color: var(--info);
+  color: var(--fg-strong);
 }
 .prov-said {
   margin-top: 5px;
-  color: #8b93a7;
+  color: var(--muted-2);
   font-size: 11px;
   word-break: break-all;
 }
 .prov-said.bad {
-  color: #e06c75;
+  color: var(--bad-soft);
 }
 
 /* ---- SAVED LAUNCHES: the launcher form, filled in ahead of time and named.
@@ -4142,22 +4351,22 @@ body {
 }
 .ks-saved-h {
   width: 100%;
-  color: #8b93a7;
+  color: var(--muted-2);
   font-size: 11px;
   text-transform: lowercase;
 }
 .ks-saved-btn {
   padding: 6px 10px;
-  background: #1c2130;
-  border: 1px solid #3a4152;
+  background: var(--raise);
+  border: 1px solid var(--line-3);
   border-radius: 999px;
-  color: #cfd6e4;
+  color: var(--fg-strong);
   font: inherit;
   font-size: 12px;
   cursor: pointer;
 }
 .ks-saved-btn:hover {
-  border-color: #6ea8fe;
+  border-color: var(--info);
 }
 .ks-save {
   font-size: 12px;
@@ -4166,72 +4375,68 @@ body {
 /* ---- ▥ Hotwords: whose list is showing (copy-on-write, not a merge) ---- */
 .hot-whose {
   margin: 2px 0 6px;
-  color: #8b93a7;
+  color: var(--muted-2);
   font-size: 11px;
 }
 .hot-whose.own {
-  color: #6ea8fe;
+  color: var(--info);
 }
 
-/* ---- THE HELP BOX (js/tips.js) --------------------------------------------------
-   One panel, one size, one place. It replaced FOUR overlapping ways the header had of
-   explaining itself — the native `title`, the dial's badge, the gauge's badge, and a
-   tooltip added on top of those — which between them put two boxes on screen at once
-   for a single hover, at different sizes in different spots.
-
-   FIXED WIDTH AND FIXED HEIGHT, both. Growing to fit was the previous attempt and it is
-   what made the thing restless: crossing a row of buttons resized the panel under the
-   pointer. Here the geometry is a constant and the CONTENT is the only variable. Labels
-   are written to fit; `scripts/check-tips.mjs` fails the build if one does not, so a
-   too-long label is caught at build time instead of being silently clipped at 2am.
-
-   TWO ZONES, and the status line holds its height when empty — otherwise the box would
-   still reflow between a control that has a reading and one that does not, which is the
-   same restlessness by a smaller amount. */
-.helpbox {
-  position: fixed;
-  z-index: 90;
-  left: 0;
-  top: 0;
-  display: none;
-  box-sizing: border-box;
-  width: 300px;
-  height: 92px;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--panel);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
-  font: 12px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  /* THE BACKSTOP, not the mechanism. `check-tips` is what guarantees labels fit; this is
-     what happens if one ever slips past it. Without it the overflow rendered OUTSIDE the
-     border, spraying a stray line across the terminal underneath — measured, on the dial.
-     A clip is contained and looks like a bug; loose text over the pane looks like a
-     corrupted screen. */
-  overflow: hidden;
-  /* It explains what is under the pointer; it must never become what is under it. */
-  pointer-events: none;
-}
-.helpbox.show {
-  display: block;
-}
-/* THE STATUS LINE — what this control reads right now (the dial's position, the gauge's
-   percentage). One line, clipped rather than wrapped: a reading that grew to two lines
-   would push the explanation down and break the fixed geometry. `min-height` is what
-   keeps the box identical for the controls that have no reading at all. */
-.helpbox-status {
-  min-height: 1.45em;
+/* ---- the roster's stale line (js/roster.js): a failed /api/home refresh keeps the
+   last good list and says so here, instead of a quiet board lying about freshness. */
+.home-stale {
+  padding: 4px 8px;
   margin-bottom: 4px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid var(--line);
-  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--warn) 55%, transparent);
+  border-radius: 6px;
+  color: var(--warn);
+  font-size: 11px;
+}
+
+/* The launcher form's own failure line (js/launcher.js) — the brief stays in the
+   boxes, the reason lands under the controls it refers to. */
+.ks-err {
+  color: var(--bad-soft);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* Inline result lines on the note and tag sheets: saving…, not saved — why. */
+#notesheet .ns-msg,
+#tagsheet .tg-msg {
+  color: var(--muted);
   font-size: 11px;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
-/* WHAT IS THIS — three lines at this width and font. The build check is calibrated to
-   exactly this box, so changing either dimension means re-running it. */
-.helpbox-what {
-  color: var(--fg);
+#notesheet .ns-msg.bad,
+#tagsheet .tg-msg.bad {
+  color: var(--bad-soft);
+}
+
+/* ⚙ System — appearance: two buttons, one lit (js/system.js, js/theme.js). */
+.sys-theme {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sys-theme-lbl {
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.sys-theme button {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.sys-theme button.on {
+  background: var(--panel);
+  color: var(--accent);
+  border-color: var(--accent);
+}
 }

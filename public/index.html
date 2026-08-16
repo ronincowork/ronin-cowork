@@ -7,7 +7,16 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>tmux ronin</title>
-    <link rel="stylesheet" href="/vendor/xterm.css" />
+    <!-- The saved theme, applied BEFORE the stylesheet paints — a light-theme reload
+         must not flash dark. Inline and tiny on purpose; js/theme.js owns the rest. -->
+    <script>
+      try {
+        if (localStorage.getItem('tmuxgrid.theme') === 'light') document.documentElement.dataset.theme = 'light';
+      } catch (e) {}
+    </script>
+    <!-- xterm.css rides inside style.css now (@import into the lowest cascade layer,
+         still the absolute /vendor path shared by live and staging) so every app rule
+         outranks vendor rules by layer order rather than by accident of load order. -->
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>

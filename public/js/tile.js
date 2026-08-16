@@ -21,6 +21,8 @@
  * 2026-08-08. Views mount in DOM order: tape, then the commons panel, then xterm.
  */
 import { createSession, deleteSession, fetchSessions } from './api.js';
+import { request } from './request.js';
+import { toast } from './ui.js';
 import { presetData, refreshHome } from './home.js';
 import { IS_TOUCH, NEW, S, saveState, serviceMissing, tiles } from './state.js';
 import { buildHome } from './commons.js';
@@ -204,13 +206,10 @@ export class Tile {
       this.gauge.set(null);
       return;
     }
-    try {
-      const r = await fetch('/api/sessions/' + encodeURIComponent(session) + '/ctx', { cache: 'no-store' });
-      const d = await r.json().catch(() => ({}));
-      if (this.session !== session) return;
-      this.gauge.set(r.ok ? d.ctx : null);
-      this.setFooter(r.ok ? d.ctx : null, r.ok ? d.model : null);
-    } catch (_) {}
+    const r = await request('/api/sessions/' + encodeURIComponent(session) + '/ctx', { cache: 'no-store' });
+    if (this.session !== session) return;
+    this.gauge.set(r.ok ? r.data.ctx : null);
+    this.setFooter(r.ok ? r.data.ctx : null, r.ok ? r.data.model : null);
   }
 
   /**
@@ -226,15 +225,14 @@ export class Tile {
       this.closeLadder();
       return;
     }
-    try {
-      const r = await fetch('/api/sessions/' + encodeURIComponent(session) + '/tegami', { cache: 'no-store' });
-      const d = await r.json().catch(() => null);
-      if (this.session !== session) return;
-      this.tegami = r.ok ? d : null;
-      this.chip.set(this.tegami);
-      if (this.ladderOpen) this.drawLadder();
-      if (!this.tegami) this.closeLadder();
-    } catch (_) {}
+    const r = await request('/api/sessions/' + encodeURIComponent(session) + '/tegami', { cache: 'no-store' });
+    if (this.session !== session) return;
+    // A failed read keeps the last chip rather than blanking it — the poll heals it.
+    if (r.kind === 'network') return;
+    this.tegami = r.ok ? r.data : null;
+    this.chip.set(this.tegami);
+    if (this.ladderOpen) this.drawLadder();
+    if (!this.tegami) this.closeLadder();
   }
 
   /**
@@ -254,12 +252,8 @@ export class Tile {
     if (!name || serviceMissing('michi')) return;
     this.closeLadder();
     let d = { file: '', text: null };
-    try {
-      const r = await fetch('/api/sessions/' + encodeURIComponent(name) + '/tegami/raw', {
-        cache: 'no-store',
-      });
-      if (r.ok) d = await r.json();
-    } catch (_) {}
+    const r = await request('/api/sessions/' + encodeURIComponent(name) + '/tegami/raw', { cache: 'no-store' });
+    if (r.ok) d = r.data;
     this.closeLetter();
     this.body.appendChild(buildLetter(d, () => this.closeLetter()));
     this.torii.classList.add('open');
@@ -323,30 +317,21 @@ export class Tile {
   async refreshControl(announce = false) {
     const session = this.session;
     if (!session) return this.dial.set('write');
-    try {
-      const r = await fetch('/api/sessions/' + encodeURIComponent(session) + '/control', { cache: 'no-store' });
-      const d = await r.json().catch(() => ({}));
-      if (r.ok && this.session === session) this.dial.set(d.control || 'write', announce);
-    } catch (_) {}
+    const r = await request('/api/sessions/' + encodeURIComponent(session) + '/control', { cache: 'no-store' });
+    if (r.ok && this.session === session) this.dial.set(r.data.control || 'write', announce);
   }
 
   /** Dial tapped: set the new position on the server, then re-read to reflect truth. */
   async pickControl(v) {
     const session = this.session;
     if (!session) return;
-    try {
-      const r = await fetch('/api/sessions/' + encodeURIComponent(session) + '/control', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ control: v }),
-      });
-      if (!r.ok) {
-        const d = await r.json().catch(() => ({}));
-        alert('Could not set control:\n' + (d.error || `HTTP ${r.status}`));
-      }
-    } catch (_) {
-      alert('Could not set control (network).');
-    }
+    const r = await request('/api/sessions/' + encodeURIComponent(session) + '/control', {
+      method: 'POST',
+      json: { control: v },
+    });
+    // The toast, not an alert: a browser alert over a live terminal steals the
+    // keyboard, and the dial's own re-read below already shows the true position.
+    if (!r.ok) toast(`could not set control — ${r.message}`, false);
     this.refreshControl(true);
   }
 
@@ -368,24 +353,21 @@ export class Tile {
     const session = this.session;
     const cur = S.sessions.find((x) => x.name === session);
     openJobMenu(anchor, presetData || [], (cur && cur.session_job) || '', async (job) => {
-      try {
-        const r = await fetch('/api/sessions/' + encodeURIComponent(session) + '/session_job', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ session_job: job }),
-        });
-        const d = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
-        const live = S.sessions.find((x) => x.name === session);
-        if (live) live.session_job = d.session_job ?? job;
-        tiles.forEach((t) => {
-          t.syncHeader();
-          t.refreshOptions();
-        });
-        refreshHome();
-      } catch (e) {
-        alert(String(e.message || e));
+      const r = await request('/api/sessions/' + encodeURIComponent(session) + '/session_job', {
+        method: 'POST',
+        json: { session_job: job },
+      });
+      if (!r.ok) {
+        toast(`could not set the job — ${r.message}`, false);
+        return;
       }
+      const live = S.sessions.find((x) => x.name === session);
+      if (live) live.session_job = r.data.session_job ?? job;
+      tiles.forEach((t) => {
+        t.syncHeader();
+        t.refreshOptions();
+      });
+      refreshHome();
     });
   }
 
@@ -437,7 +419,7 @@ export class Tile {
         await fetchSessions();
         this.connect(name);
       } catch (e) {
-        alert('Could not create session:\n' + e.message);
+        toast('could not create the session — ' + e.message, false);
       }
       return;
     }
@@ -649,7 +631,7 @@ export class Tile {
     try {
       await deleteSession(name);
     } catch (e) {
-      alert('Could not kill session:\n' + e.message);
+      toast('could not kill it — ' + e.message, false);
       return;
     }
     this.detach();

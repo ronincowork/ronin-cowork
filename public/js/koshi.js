@@ -1,4 +1,5 @@
 /* part of the tmux-ronin client — see js/README.md */
+import { request } from './request.js';
 
 /* ---------- KOSHI — the seventh commons pane (tab: 目 Koshi) ----------
  *
@@ -35,19 +36,16 @@ export function buildKoshi(root, isShowing) {
     const was = restart.textContent;
     restart.disabled = true;
     restart.textContent = 'restarting…';
-    try {
-      const r = await fetch('/api/koshi/restart', { method: 'POST' });
-      const j = await r.json();
-      if (!r.ok || !j.ok) throw new Error(j?.error || 'it did not come back up');
-      data.running = j.running;
-      say2();
-    } catch (e) {
+    const r = await request('/api/koshi/restart', { method: 'POST' });
+    if (!r.ok || !r.data.ok) {
       blurb.classList.add('bad');
-      blurb.textContent = String(e?.message || e);
-    } finally {
-      restart.disabled = false;
-      restart.textContent = was;
+      blurb.textContent = r.ok ? 'it did not come back up' : r.message;
+    } else {
+      data.running = r.data.running;
+      say2();
     }
+    restart.disabled = false;
+    restart.textContent = was;
   });
   head.append(blurb, restart);
 
@@ -140,27 +138,24 @@ export function buildKoshi(root, isShowing) {
     const save = async (msg) => {
       note.classList.remove('bad');
       note.textContent = 'saving…';
-      try {
-        const r = await fetch(`/api/koshi/${inc.id}`, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            outlet: pick.value,
-            model: data.choices[inc.id]?.model,
-            pace: currentPace()?.id,
-          }),
-        });
-        const j = await r.json();
-        if (!r.ok) throw new Error(j?.error || `HTTP ${r.status}`);
-        data.choices = j.choices;
-        note.textContent = msg();
-      } catch (e) {
+      const r = await request(`/api/koshi/${inc.id}`, {
+        method: 'POST',
+        json: {
+          outlet: pick.value,
+          model: data.choices[inc.id]?.model,
+          pace: currentPace()?.id,
+        },
+      });
+      if (!r.ok) {
         note.classList.add('bad');
-        note.textContent = String(e?.message || e);
+        note.textContent = r.message;
         pick.value = data.choices[inc.id]?.outlet || 'koshi_external';
         pace.value = String(paceIdx());
         describePace();
+        return;
       }
+      data.choices = r.data.choices;
+      note.textContent = msg();
     };
 
     // The slider redraws its label as it moves and only saves when it is let go —
@@ -181,14 +176,13 @@ export function buildKoshi(root, isShowing) {
   };
 
   const load = async () => {
-    try {
-      const r = await fetch('/api/koshi');
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      data = await r.json();
-      render();
-    } catch (e) {
-      say(String(e?.message || e), true);
+    const r = await request('/api/koshi');
+    if (!r.ok) {
+      say(r.message, true);
+      return;
     }
+    data = r.data;
+    render();
   };
 
   // Loaded when the tab is opened, not on a timer: nothing here changes on its own.

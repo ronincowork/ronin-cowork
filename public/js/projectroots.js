@@ -1,4 +1,5 @@
 /* part of the tmux-ronin client — see js/README.md */
+import { request } from './request.js';
 import { loadProjects } from './home.js';
 import { askMika } from './mika.js';
 
@@ -52,20 +53,13 @@ export function buildProjectRoots(root, isShowing, tile) {
     list.appendChild(p);
   };
 
-  const call = async (url, opts) => {
-    const r = await fetch(url, opts);
-    const d = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(d.error || r.statusText);
-    return d;
-  };
-
   async function refresh() {
-    try {
-      data = await call('/api/project-roots/detail', { cache: 'no-store' });
-    } catch (e) {
-      say('could not read the catalog — ' + e.message, true);
+    const r = await request('/api/project-roots/detail', { cache: 'no-store' });
+    if (!r.ok) {
+      say('could not read the catalog — ' + r.message, true);
       return;
     }
+    data = r.data;
     render();
   }
 
@@ -123,19 +117,18 @@ export function buildProjectRoots(root, isShowing, tile) {
       delete body.name; // shown, never sent — the heading IS the handle
       save.disabled = true;
       err.textContent = '';
-      try {
-        await call('/api/project-roots/' + encodeURIComponent(existing.name), {
-          method: 'PUT',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-        editing = null;
-        await loadProjects(); // the launcher's picker reads the same catalog
-        await refresh();
-      } catch (e) {
-        err.textContent = e.message;
+      const r = await request('/api/project-roots/' + encodeURIComponent(existing.name), {
+        method: 'PUT',
+        json: body,
+      });
+      if (!r.ok) {
+        err.textContent = r.message;
         save.disabled = false;
+        return;
       }
+      editing = null;
+      await loadProjects(); // the launcher's picker reads the same catalog
+      await refresh();
     });
     return f;
   }
@@ -199,14 +192,15 @@ export function buildProjectRoots(root, isShowing, tile) {
     drop.addEventListener('click', async () => {
       if (!confirm(`Exclude "${r.name}" from your Ronin?\n\nThe catalog entry goes. ${r.dir} is not touched.`)) return;
       drop.disabled = true;
-      try {
-        await call('/api/project-roots/' + encodeURIComponent(r.name), { method: 'DELETE' });
-        await loadProjects();
-        await refresh();
-      } catch (e) {
-        alert('Could not exclude it:\n' + e.message);
+      const res = await request('/api/project-roots/' + encodeURIComponent(r.name), { method: 'DELETE' });
+      if (!res.ok) {
+        // On the pane's own empty/error line, not a browser alert.
+        say('could not exclude it — ' + res.message, true);
         drop.disabled = false;
+        return;
       }
+      await loadProjects();
+      await refresh();
     });
     acts.append(edit, drop);
 

@@ -1,6 +1,8 @@
 /* part of the tmux-ronin client — see js/README.md */
 import { fetchSessions } from './api.js';
+import { request } from './request.js';
 import { guard, showFailure } from './errors.js';
+import { applyTheme } from './theme.js';
 import { connectEvents } from './events.js';
 import { loadMacros, loadPresets, loadProjects, loadSavedLaunches, refreshHome } from './home.js';
 import { build } from './layout.js';
@@ -14,16 +16,18 @@ export async function init() {
   // service — the free build); every tile is 🔒 and the switch is inert. An operator
   // that predates the field, or a failed fetch, reads as "on": unchanged behavior,
   // and an unreachable server is reported by the session-list step below.
-  try {
-    const v = await (await fetch('/api/version')).json();
-    if (v.stream === false) {
+  {
+    const v = await request('/api/version');
+    if (v.ok && v.data.stream === false) {
       S.streamOff = true;
       S.locked = true;
     }
-    if (Array.isArray(v.services)) S.services = v.services;
-  } catch (_) {
-    /* answered by fetchSessions below */
+    if (v.ok && Array.isArray(v.data.services)) S.services = v.data.services;
+    // A failed read means an old operator or an unreachable server — the first reads
+    // as "everything on", the second is reported by the session-list step below.
   }
+  // The theme before the grid: tiles are born reading the resolved terminal palette.
+  guard('apply theme', applyTheme);
   guard('build the grid', build);
   const saved = guard('read saved state', loadState, { map: [], layout: TILE_COUNT });
   // A phone OPENS on one terminal, always — not just on first run. A 2x2 grid of tiny
@@ -36,10 +40,9 @@ export async function init() {
   guard('set layout', () => setLayout(phone ? 1 : saved.layout));
   // The session list is the one step worth reporting loudly: without it every tile
   // is an empty picker, which reads as "broken" rather than "server unreachable".
-  try {
-    await fetchSessions();
-  } catch (e) {
-    showFailure('could not load the session list', e);
+  {
+    const r = await fetchSessions();
+    if (!r.ok) showFailure('could not load the session list', new Error(r.message));
   }
   guard('reattach saved sessions', () => {
     saved.map.forEach((s, i) => {

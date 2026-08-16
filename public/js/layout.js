@@ -8,23 +8,12 @@ import { buildPadAsk, buildPadPanel } from './padpanel.js';
 import { askMika } from './mika.js';
 import { buildNotePanel, buildTagPanel } from './panels.js';
 import { IS_TOUCH, S, TILE_COUNT, WHEEL_DOWN, grid, serviceOff, tiles } from './state.js';
+import { PANES } from './panes.js';
+import { popover } from './ui.js';
 
 import { Tile } from './tile.js';
 import { collapseTileHead, isCoarse, makeDrop } from './tiledrop.js';
 import { curLayout, nextLayout, setLayout } from './viewport.js';
-
-// The rooms inside the Commons, in tab order. One list: the ▤ Commons menu on desktop
-// and the ⋯ drop on touch both read it, so a new room is added in one place.
-const COMMONS_PANES = [
-  ['sessions', '⌂ Roster'],
-  ['new', '＋ New session'],
-  ['wipe', '▤ Wipeboard'],
-  ['docs', '▧ Docs'],
-  ['proj', '▣ Project root'],
-  ['hotwords', '▥ Hotwords'],
-  ['stats', '▦ Stats'],
-  ['koshi', '目 Koshi'],
-];
 
 export function build() {
   // Per-tile guard: a constructor that throws costs ONE tile, not the grid. The
@@ -228,40 +217,30 @@ export function build() {
     const menu = document.createElement('div');
     menu.className = 'commons-menu';
     menu.hidden = true;
+    // Open/close truth (outside click, Escape, aria-expanded, focus return) is the
+    // popover primitive's; this block owns only the rows.
+    const pop = popover(btn, menu);
     const go = (pane) => {
       const t = S.active || tiles.find((x) => x.el.style.display !== 'none') || tiles[0];
       if (t) t.showHome(pane);
-      close();
+      pop.close();
     };
-    for (const [pane, label] of COMMONS_PANES) {
+    // One list for every surface: the pane registry (js/panes.js). The menu takes the
+    // FULL labels — it has the room the 402px tab strip does not.
+    for (const p of PANES) {
       const row = document.createElement('button');
       row.type = 'button';
       row.className = 'commons-row';
-      row.textContent = label;
-      row.title = label;
+      row.textContent = p.label;
+      row.title = p.hint;
       // Same rule as the tab strip: an absent service's room is shown opaque-and-inert.
-      if (serviceOff(pane)) {
+      if (serviceOff(p.id)) {
         row.classList.add('off');
         row.disabled = true;
         row.title = 'Off — this service is not installed.';
-      } else row.addEventListener('click', () => go(pane));
+      } else row.addEventListener('click', () => go(p.id));
       menu.appendChild(row);
     }
-    const close = () => {
-      menu.hidden = true;
-      btn.setAttribute('aria-expanded', 'false');
-    };
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      menu.hidden = !menu.hidden;
-      btn.setAttribute('aria-expanded', String(!menu.hidden));
-    });
-    document.addEventListener('click', (e) => {
-      if (!menu.hidden && !menu.contains(e.target)) close();
-    });
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !menu.hidden) close();
-    });
     // Anchor to the button, not the bar: absolute positioning resolves against the
     // nearest positioned ancestor, and with #bar as that ancestor the menu opened at
     // the bar's left edge — the whole width of the header away from what was clicked.

@@ -1,22 +1,41 @@
 /* part of the tmux-ronin client — see js/README.md */
+/**
+ * HOME DATA — the client's one cache of what the server knows about sessions and
+ * catalogs, and the one place that refreshes it.
+ *
+ * This module was always the de-facto repository (`homeData`, `projectData`,
+ * `launchSpecData`, an inflight guard); it is now the declared one. Every reader —
+ * the roster, the launcher, the tile pickers, the ⚡ menus — renders from these
+ * caches, and every refresh path (boot, visibility, bfcache, the 8s poll, a
+ * mutation's follow-up) lands here rather than fetching its own copy.
+ *
+ * A failed refresh keeps the LAST GOOD data and records the fault (`homeFault`)
+ * instead of swallowing it: stale-and-labelled beats empty-and-silent, and the
+ * roster draws the label (js/roster.js). The catalogs (macros, projects, presets,
+ * saved launches) stay best-effort — they change when the owner changes them, and
+ * the next successful load heals them without a banner.
+ */
+import { request } from './request.js';
 import { fetchSessions } from './api.js';
 import { tiles } from './state.js';
 
 export let homeData = null; // session list enriched with status + ctx
 export let macroData = null; // [{name, description, params:[{name, hint}]}]
 export let homeInflight = false;
+/** Why the roster might be stale: the last /api/home failure's message, or null. */
+export let homeFault = null;
 
 export async function refreshHome() {
   if (homeInflight || !tiles.some((t) => t.homeVisible())) return;
   homeInflight = true;
-  try {
-    const r = await fetch('/api/home', { cache: 'no-store' });
-    const d = await r.json();
-    if (r.ok && Array.isArray(d)) homeData = d;
-  } catch (_) {
-  } finally {
-    homeInflight = false;
+  const r = await request('/api/home', { cache: 'no-store' });
+  if (r.ok && Array.isArray(r.data)) {
+    homeData = r.data;
+    homeFault = null;
+  } else if (!r.ok) {
+    homeFault = r.message; // keep the last good list; say why it may be stale
   }
+  homeInflight = false;
   tiles.forEach((t) => t.renderHome());
 }
 
@@ -24,12 +43,12 @@ export let projectData = null; // /api/project-roots: [{name, dir, read[], provi
 export let launchSpecData = null; // /api/session-launch-specs: [{provider, model, cmd}] — the launch table, in table order
 
 export async function loadProjects() {
-  try {
-    const [pr, br] = await Promise.all([fetch('/api/project-roots'), fetch('/api/session-launch-specs')]);
-    const [pd, bd] = await Promise.all([pr.json(), br.json()]);
-    if (pr.ok && Array.isArray(pd)) projectData = pd;
-    if (br.ok && Array.isArray(bd)) launchSpecData = bd;
-  } catch (_) {}
+  const [pr, br] = await Promise.all([
+    request('/api/project-roots'),
+    request('/api/session-launch-specs'),
+  ]);
+  if (pr.ok && Array.isArray(pr.data)) projectData = pr.data;
+  if (br.ok && Array.isArray(br.data)) launchSpecData = br.data;
   tiles.forEach((t) => t.renderHome());
 }
 
@@ -45,11 +64,8 @@ export async function loadProjects() {
 export let presetData = null; // /api/session-jobs
 
 export async function loadPresets() {
-  try {
-    const pr = await fetch('/api/session-jobs');
-    const pd = await pr.json();
-    if (pr.ok && Array.isArray(pd)) presetData = pd;
-  } catch (_) {}
+  const r = await request('/api/session-jobs');
+  if (r.ok && Array.isArray(r.data)) presetData = r.data;
   tiles.forEach((t) => t.renderHome());
 }
 
@@ -78,11 +94,8 @@ export const jobIcon = (s) =>
   (s?.session_job && (presetData || []).find((k) => k.name === s.session_job)?.icon) || '';
 
 export async function loadMacros() {
-  try {
-    const r = await fetch('/api/macros');
-    const d = await r.json();
-    if (r.ok && Array.isArray(d)) macroData = d;
-  } catch (_) {}
+  const r = await request('/api/macros');
+  if (r.ok && Array.isArray(r.data)) macroData = r.data;
   tiles.forEach((t) => t.renderHome());
 }
 
@@ -91,20 +104,17 @@ export async function loadMacros() {
 export let savedLaunchData = null;
 
 export async function loadSavedLaunches() {
-  try {
-    const r = await fetch('/api/saved-launches');
-    const d = await r.json();
-    if (r.ok && Array.isArray(d)) savedLaunchData = d;
-  } catch (_) {}
+  const r = await request('/api/saved-launches');
+  if (r.ok && Array.isArray(r.data)) savedLaunchData = r.data;
   tiles.forEach((t) => t.renderHome());
 }
 
 export const STATUS_LABEL = { ready: 'ready', thinking: 'thinking…', 'awaiting-input': 'awaiting input' };
 
 /**
- * Build one tile's home panel: the session list (status + gauge reading, tap =
- * open here), the new-session launcher, and fill-in forms for the macros —
- * parsed live from ronin_catalogs/MACROS.md via /api/macros, nothing hardcoded.
+ * KOSHI_DASHI — the receipt for a spawn. It says what the session was actually born
+ * with (mode, job, root, spec, dial, groups) and carries a kill next to it: wrong
+ * fill, one tap, gone. The price of launching with no confirm screen.
  */
 export function showReceipt(name, receipt) {
   if (!receipt) return;
@@ -132,9 +142,7 @@ export function showReceipt(name, receipt) {
   kill.title = 'Wrong? Remove the session now.';
   kill.addEventListener('click', async () => {
     kill.disabled = true;
-    try {
-      await fetch('/api/sessions/' + encodeURIComponent(name), { method: 'DELETE' });
-    } catch (_) {}
+    await request('/api/sessions/' + encodeURIComponent(name), { method: 'DELETE' });
     el.remove();
     fetchSessions();
     refreshHome();
@@ -148,4 +156,3 @@ export function showReceipt(name, receipt) {
   setTimeout(() => el.classList.add('fade'), 12000);
   setTimeout(() => el.remove(), 15000);
 }
-

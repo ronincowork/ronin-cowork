@@ -1,6 +1,7 @@
 /* part of the tmux-ronin client — see js/README.md */
 import { macroData } from './home.js';
-import { PAD_CONTROLS, PAD_KEYS, PAD_LAYOUT, PAD_WIDGETS, firePadSend, padBinds, padToast, savePadBinds } from './pad.js';
+import { PAD_CONTROLS, PAD_KEYS, PAD_LAYOUT, PAD_WIDGETS, firePadSend, padBinds, savePadBinds } from './pad.js';
+import { toast } from './ui.js';
 import { toClipboard } from './panels.js';
 import { S } from './state.js';
 import { WL_COMBOS, WL_ENCODER, WL_JOYSTICK, WL_RONIN_KEYMAP, wlConnect, wlDownload, wlWriteFile } from './weblink.js';
@@ -274,7 +275,7 @@ export function buildPadPanel() {
     stopCapture();
     last.textContent = pretty(chord);
     if (!usable) {
-      padToast(`${pretty(chord)} — too plain to take over; use F13–F24 or a ⌃⌥⌘ chord`, false);
+      toast(`${pretty(chord)} — too plain to take over; use F13–F24 or a ⌃⌥⌘ chord`, false);
       return;
     }
     openEditor(chord);
@@ -429,7 +430,7 @@ export function buildPadPanel() {
       progMsg.textContent = !bad.length
         ? `✓ "${lname}" is now the Ronin layer — switch the pad to it and press a key. Knob unchanged? Replug the pad: the firmware applies keys and joystick live but caches the encoder from boot.`
         : `write finished but the pad did not store: ${bad.join(', ')} — the backup file has the original`;
-      padToast(!bad.length ? '▦ pad programmed with the Ronin layout ✓' : `▦ pad rejected: ${bad.join(', ')}`, !bad.length);
+      toast(!bad.length ? '▦ pad programmed with the Ronin layout ✓' : `▦ pad rejected: ${bad.join(', ')}`, !bad.length);
     } catch (e) {
       progMsg.textContent = 'write failed: ' + e.message + ' — the backup file has the original';
     }

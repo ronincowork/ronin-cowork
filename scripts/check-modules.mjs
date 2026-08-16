@@ -49,11 +49,37 @@ for (const [name, m] of Object.entries(mod)) {
     for (const n of imp.names) {
       if (!target.exports.includes(n)) problems.push(`${name}.js imports { ${n} } from ${imp.from}.js, which does not export it`);
     }
-    if (target.imports.some((i) => i.from === name)) {
-      const pair = [name, imp.from].sort().join(' <-> ');
-      if (!problems.some((p) => p.includes(pair))) problems.push(`import cycle: ${pair}`);
-    }
   }
+}
+
+// --- rule 1, the whole graph: DFS colouring finds ANY cycle, not only a reciprocal
+// pair. a->b->c->a used to pass the old two-node test and is exactly as fatal. ---
+{
+  const state = {}; // undefined = white, 1 = on the stack, 2 = done
+  const stack = [];
+  const dfs = (n) => {
+    if (!mod[n] || state[n] === 2) return;
+    if (state[n] === 1) {
+      const cyc = stack.slice(stack.indexOf(n)).concat(n).join(' -> ');
+      if (!problems.some((p) => p.includes('import cycle'))) problems.push(`import cycle: ${cyc}`);
+      return;
+    }
+    state[n] = 1;
+    stack.push(n);
+    for (const i of mod[n].imports) dfs(i.from);
+    stack.pop();
+    state[n] = 2;
+  };
+  for (const name of Object.keys(mod)) dfs(name);
+}
+
+// --- rule 5: the ~700-line ceiling, MECHANICAL now. The README stated the rule and
+// commons.js crossed it anyway (781 on 2026-08-16) — a written convention with no
+// gate is a suggestion. Same number as the server's check-src ceiling. ---
+const CEILING = 700;
+for (const [name, m] of Object.entries(mod)) {
+  const lines = m.raw.split('\n').length;
+  if (lines > CEILING) problems.push(`${name}.js is ${lines} lines (ceiling ${CEILING}) — split it; see js/README.md`);
 }
 
 // --- rule 3: reachability from main.js ---
@@ -101,4 +127,4 @@ if (problems.length) {
   console.log(`\nFAILED — ${problems.length} structural problem(s). See public/js/README.md.`);
   process.exit(1);
 }
-console.log('  ok — no cycles, all imports resolve, nothing orphaned, no top-level use of an import');
+console.log('  ok — no cycles (full graph), all imports resolve, nothing orphaned, no top-level use of an import, every module under 700 lines');

@@ -167,6 +167,72 @@ async function checkDom(page, label) {
   else ok(`${label}: no failure banner`);
 }
 
+/**
+ * FIRST JOURNEYS — behaviour, not just paint. Desktop pass only for now: these drive
+ * the pointer/keyboard surface, and the touch grammar (drops, hoisted header) deserves
+ * probes written for it rather than these re-aimed. Each journey asserts a CONTRACT
+ * from docs/ui.md: the popover's open/close truth, the one pane registry, the theme
+ * flip, and the sheet's focus round-trip. Kept few and unbrittle on purpose — this is
+ * the seed of the journey layer, not a snapshot suite.
+ */
+async function checkJourneys(page, label) {
+  // 1 — the き Commons menu speaks the popover contract: rows from the registry,
+  // aria-expanded truth, Escape closes.
+  await page.locator('#commonsbtn').click();
+  await page.waitForTimeout(200);
+  const menu = await page.evaluate(() => ({
+    rows: document.querySelectorAll('.commons-menu .commons-row').length,
+    expanded: document.getElementById('commonsbtn')?.getAttribute('aria-expanded'),
+  }));
+  if (menu.rows === 9 && menu.expanded === 'true') ok(`${label}: Commons menu opens with all 9 rooms (registry-fed)`);
+  else bad(`${label}: Commons menu wrong — ${menu.rows} rows, aria-expanded=${menu.expanded}`);
+  await page.keyboard.press('Escape');
+  const shut = await page.evaluate(() => document.querySelector('.commons-menu')?.hidden === true);
+  if (shut) ok(`${label}: Escape closes the Commons menu`);
+  else bad(`${label}: Escape did not close the Commons menu`);
+
+  // 2 — the menu and the tab strip reach the same room: ⚙ System from the menu.
+  await page.locator('#commonsbtn').click();
+  await page.locator('.commons-menu .commons-row', { hasText: 'System' }).first().click();
+  await page.waitForTimeout(300);
+  const pane = await page.evaluate(() => document.querySelector('.home.show')?.dataset.pane);
+  if (pane === 'system') ok(`${label}: menu row lands on the ⚙ System pane`);
+  else bad(`${label}: menu row landed on pane "${pane}", wanted "system"`);
+
+  // 3 — the theme flips and flips back: same page, two shells, no failbar.
+  const darkBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  await page.locator('.sys-theme button[data-theme="light"]').first().click(); // four tiles, four System panes — one flip is global
+  await page.waitForTimeout(200);
+  const lightBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  await page.locator('.sys-theme button[data-theme="dark"]').first().click();
+  await page.waitForTimeout(200);
+  const backBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  if (lightBg !== darkBg && backBg === darkBg) ok(`${label}: light theme applies and reverts (${darkBg} ⇄ ${lightBg})`);
+  else bad(`${label}: theme flip broken — dark=${darkBg} light=${lightBg} back=${backBg}`);
+  const failAfterTheme = await page.evaluate(() => !!document.getElementById('failbar'));
+  if (failAfterTheme) bad(`${label}: the theme flip raised the failure banner`);
+
+  // 4 — the note sheet keeps the ui.sheet contract: opens from the tile head, focus
+  // enters, Escape closes and gives focus back to the opener.
+  await page.evaluate(() => document.querySelector('.home.show .home-x')?.click());
+  await page.waitForTimeout(200);
+  await page.locator('.tile .tile-head button.note').first().click();
+  try {
+    await page.waitForSelector('#notesheet.open textarea:not([disabled])', { timeout: 4000 });
+    ok(`${label}: 📝 opens the note sheet and the editor is live`);
+  } catch {
+    bad(`${label}: the note sheet did not open (or never enabled its editor)`);
+  }
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(200);
+  const noteAfter = await page.evaluate(() => ({
+    open: document.getElementById('notesheet')?.classList.contains('open'),
+    focusBack: document.activeElement?.classList?.contains('note'),
+  }));
+  if (!noteAfter.open && noteAfter.focusBack) ok(`${label}: Escape closes the sheet and returns focus to 📝`);
+  else bad(`${label}: sheet close broken — open=${noteAfter.open} focusReturned=${noteAfter.focusBack}`);
+}
+
 async function runPass({ label, browser, contextOpts }) {
   const { page, jsErrors, netFails } = await openPage(browser, contextOpts);
   try {
@@ -184,6 +250,7 @@ async function runPass({ label, browser, contextOpts }) {
 
   await checkDom(page, label);
   await attachProbe(page, label);
+  if (label === 'desktop') await checkJourneys(page, label);
 
   const after = jsErrors.length;
   if (after && !fails.some((f) => f.includes('uncaught JS errors'))) {
