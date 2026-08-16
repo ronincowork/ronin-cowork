@@ -39,11 +39,20 @@ export function registerUpdate(app: express.Express): void {
     });
   });
 
-  app.post('/api/update/run', (_req, res) => {
+  app.post('/api/update/run', (req, res) => {
+    // TWO PACKAGES, one implementation: {package:'services'} runs the same updater
+    // with --services (fetch → verify → contract check → store → place → restart).
+    // Anything other than the two known names is refused, not guessed.
+    const pkg = (req.body as { package?: string } | undefined)?.package ?? 'cowork';
+    if (pkg !== 'cowork' && pkg !== 'services') {
+      res.status(400).json({ error: `unknown package "${pkg}" — cowork or services` });
+      return;
+    }
+    const args = pkg === 'services' ? [UPDATER, '--services'] : [UPDATER];
     execFile('systemd-run', [
       '--user', '--collect', `--unit=ronin-update-${Date.now()}`,
       // The journal keeps the transcript: journalctl --user -u 'ronin-update-*'
-      UPDATER,
+      ...args,
     ], { timeout: 10000 }, (err) => {
       if (!err) {
         res.json({ started: true, via: 'systemd-run' });
@@ -53,7 +62,7 @@ export function registerUpdate(app: express.Express): void {
       // shares no controlling terminal, but a launchd-style supervisor could still
       // reap it with us. Said in the answer rather than hidden.
       try {
-        const child = spawn(UPDATER, [], { detached: true, stdio: 'ignore' });
+        const child = spawn(args[0], args.slice(1), { detached: true, stdio: 'ignore' });
         child.unref();
         res.json({ started: true, via: 'detached' });
       } catch (e) {

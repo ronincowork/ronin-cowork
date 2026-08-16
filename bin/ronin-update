@@ -1,12 +1,19 @@
 #!/usr/bin/env bash
 # RONIN UPDATE — install a released ronin_artifact, or move an install to a newer one.
 #
-#   bin/ronin-update                     # fetch the latest release and install it
-#   bin/ronin-update --check [--json]    # report installed vs latest, change nothing
+#   bin/ronin-update                     # fetch the latest cowork release, install it
+#   bin/ronin-update --services          # same verbs for the SERVICES package
+#   bin/ronin-update --check [--json]    # report BOTH packages vs latest, change nothing
 #   bin/ronin-update --version v1.2.0    # install that release
 #   bin/ronin-update --file <tarball>    # install a tarball already on disk
 #   bin/ronin-update --rollback          # point current back at the previous release
 #   bin/ronin-update --home <dir>        # the install home (needed from a checkout)
+#
+# TWO PACKAGES, ONE FLOW. Cowork swaps a release symlink; services land in the
+# <home>/services store and are copied into the serving tree, where the assembler
+# discovers them at boot. A services release installs only if its contract number
+# matches the running cowork's (connector-contract.md); cowork updates carry the
+# installed services into each new candidate, so the candidate gates as The Works.
 #
 # THE LAYOUT it manages — every release unpacked whole, one symlink saying which serves:
 #
@@ -38,18 +45,24 @@
 set -euo pipefail
 
 SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # the tree this script is in
-SLUG="${RONIN_RELEASE_REPO:-ronincowork/ronin-cowork}"    # the release feed
+SLUG="${RONIN_RELEASE_REPO:-ronincowork/ronin-cowork}"    # the cowork release feed
+# The services feed: the PUBLIC assets-only releases repo — tarballs, never source
+# (the paid layer's code stays private; the owner ruled the download ungated). A
+# stranger's curl reaches it with no auth, which is what makes the ⚙ gear's install
+# one press. Override for a fork or a private trial: RONIN_SERVICES_REPO.
+SVC_SLUG="${RONIN_SERVICES_REPO:-ronincowork/ronin-releases}"
 
 fail() { echo "✗ $1" >&2; exit 1; }
 say()  { echo "→ $1"; }
 
 # --- arguments ---
-MODE="install"; WANT=""; FILE=""; HOME_DIR=""; JSON=0
+MODE="install"; WANT=""; FILE=""; HOME_DIR=""; JSON=0; PACKAGE="cowork"
 while [ $# -gt 0 ]; do
   case "$1" in
     --check)    MODE="check" ;;
     --rollback) MODE="rollback" ;;
     --json)     JSON=1 ;;
+    --services) PACKAGE="services" ;;
     --version)  shift; WANT="${1:-}"; [ -n "$WANT" ] || fail "--version needs vX.Y.Z" ;;
     --file)     shift; FILE="${1:-}"; [ -n "$FILE" ] || fail "--file needs a path" ;;
     --home)     shift; HOME_DIR="${1:-}"; [ -n "$HOME_DIR" ] || fail "--home needs a directory" ;;
@@ -59,12 +72,22 @@ while [ $# -gt 0 ]; do
 done
 
 # --- where is the install home? ---
-# An installed copy lives at <home>/releases/<v>/ — VERSION present, parent named
-# `releases`. A checkout has neither, and must be told.
-if [ -z "$HOME_DIR" ]; then
-  if [ -f "$SELF/VERSION" ] && [ "$(basename "$(dirname "$SELF")")" = "releases" ]; then
+# An installed copy carries VERSION and sits either at <home>/releases/<v>/ or is
+# reached through <home>/current (the ⚙ gear runs it that way — bash keeps the
+# logical path, so the parent reads "current", not "releases"; the physical-path
+# check covers any other symlinked route). A checkout has none of this: --home.
+if [ -z "$HOME_DIR" ] && [ -f "$SELF/VERSION" ]; then
+  if [ "$(basename "$SELF")" = "current" ]; then
+    HOME_DIR="$(cd "$SELF/.." && pwd)"
+  elif [ "$(basename "$(dirname "$SELF")")" = "releases" ]; then
     HOME_DIR="$(cd "$SELF/../.." && pwd)"
-  elif [ "$MODE" = "check" ] && [ -z "$FILE" ]; then
+  else
+    P="$(readlink -f "$SELF" 2>/dev/null)"
+    [ "$(basename "$(dirname "$P")")" = "releases" ] && HOME_DIR="$(dirname "$(dirname "$P")")"
+  fi
+fi
+if [ -z "$HOME_DIR" ]; then
+  if [ "$MODE" = "check" ] && [ -z "$FILE" ]; then
     : # a bare --check from a checkout still works: installed=none, latest from the feed
   else
     fail "run from a checkout: pass --home <dir> (the install home; docs/release.md)"
@@ -74,49 +97,57 @@ fi
 installed_release() {
   [ -n "$HOME_DIR" ] && sed -n 's/^release=//p' "$HOME_DIR/current/VERSION" 2>/dev/null || true
 }
+services_installed_release() {
+  [ -n "$HOME_DIR" ] && sed -n 's/^release=//p' "$HOME_DIR/services/VERSION" 2>/dev/null || true
+}
 
-# --- the release feed (gh when it is there, curl once the repo is public) ---
+# --- the release feeds (gh when it is there, curl for a public repo) ---
 have_gh() { command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; }
 
-latest_release() {
+latest_release() { # $1=repo slug
   # No answer is an ANSWER (installed stays, latest reads unknown), never an exit:
   # under `set -e` a bare failing pipeline here would kill --check mid-JSON.
   if have_gh; then
-    gh release view --repo "$SLUG" --json tagName -q .tagName 2>/dev/null || true
+    gh release view --repo "$1" --json tagName -q .tagName 2>/dev/null || true
   else
-    curl -fsS -m 10 "https://api.github.com/repos/$SLUG/releases/latest" 2>/dev/null |
+    curl -fsS -m 10 "https://api.github.com/repos/$1/releases/latest" 2>/dev/null |
       sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -1 || true
   fi
 }
 
-fetch_release() { # $1=version $2=workdir
+fetch_release() { # $1=repo slug $2=package name $3=version $4=workdir
   if have_gh; then
-    gh release download "$1" --repo "$SLUG" \
-      --pattern "ronin-cowork-$1.tar.gz" --pattern SHA256SUMS --dir "$2" ||
-      fail "could not download release $1 from $SLUG"
+    gh release download "$3" --repo "$1" \
+      --pattern "$2-$3.tar.gz" --pattern SHA256SUMS --dir "$4" ||
+      fail "could not download release $3 from $1"
   else
-    curl -fsSL -o "$2/ronin-cowork-$1.tar.gz" \
-      "https://github.com/$SLUG/releases/download/$1/ronin-cowork-$1.tar.gz" &&
-    curl -fsSL -o "$2/SHA256SUMS" \
-      "https://github.com/$SLUG/releases/download/$1/SHA256SUMS" ||
-      fail "could not download release $1 (private repo? install gh, or use --file)"
+    curl -fsSL -o "$4/$2-$3.tar.gz" \
+      "https://github.com/$1/releases/download/$3/$2-$3.tar.gz" &&
+    curl -fsSL -o "$4/SHA256SUMS" \
+      "https://github.com/$1/releases/download/$3/SHA256SUMS" ||
+      fail "could not download release $3 (private repo? install gh, or use --file)"
   fi
 }
 
-# --- check: report and stop ---
+# --- check: report BOTH packages and stop ---
 if [ "$MODE" = "check" ]; then
   inst="$(installed_release)"
-  latest="$(latest_release)"
+  latest="$(latest_release "$SLUG")"
+  svc_inst="$(services_installed_release)"
+  svc_latest="$(latest_release "$SVC_SLUG")"
   if [ "$JSON" = 1 ]; then
-    printf '{"installed":%s,"latest":%s,"upToDate":%s}\n' \
+    printf '{"installed":%s,"latest":%s,"upToDate":%s,"services":{"installed":%s,"latest":%s,"upToDate":%s}}\n' \
       "$([ -n "$inst" ] && printf '"%s"' "$inst" || echo null)" \
       "$([ -n "$latest" ] && printf '"%s"' "$latest" || echo null)" \
-      "$([ -n "$inst" ] && [ "$inst" = "$latest" ] && echo true || echo false)"
+      "$([ -n "$inst" ] && [ "$inst" = "$latest" ] && echo true || echo false)" \
+      "$([ -n "$svc_inst" ] && printf '"%s"' "$svc_inst" || echo null)" \
+      "$([ -n "$svc_latest" ] && printf '"%s"' "$svc_latest" || echo null)" \
+      "$([ -n "$svc_inst" ] && [ "$svc_inst" = "$svc_latest" ] && echo true || echo false)"
   else
-    echo "installed : ${inst:-none (no release at ${HOME_DIR:-<no home>}/current)}"
-    echo "latest    : ${latest:-unknown (no feed answer — private repo needs gh auth)}"
-    if [ -n "$inst" ] && [ "$inst" = "$latest" ]; then echo "✓ up to date"; fi
-    if [ -n "$latest" ] && [ "$inst" != "$latest" ]; then echo "→ bin/ronin-update to install ${latest}"; fi
+    echo "cowork    : ${inst:-none (no release at ${HOME_DIR:-<no home>}/current)} · latest ${latest:-unknown}"
+    echo "services  : ${svc_inst:-none} · latest ${svc_latest:-unknown}"
+    [ -n "$latest" ] && [ "$inst" != "$latest" ] && echo "→ bin/ronin-update to install cowork ${latest}"
+    [ -n "$svc_latest" ] && [ "$svc_inst" != "$svc_latest" ] && echo "→ bin/ronin-update --services to install services ${svc_latest}"
   fi
   exit 0
 fi
@@ -144,6 +175,8 @@ restart_and_gate() {
 
 # --- rollback: the previous unpacked release, by symlink ---
 if [ "$MODE" = "rollback" ]; then
+  [ "$PACKAGE" = "services" ] &&
+    fail "services keep no previous copy — roll back by installing the prior release: bin/ronin-update --services --version vX.Y.Z"
   prev="$(readlink "$HOME_DIR/previous" 2>/dev/null || true)"
   [ -n "$prev" ] && [ -d "$HOME_DIR/$prev" ] ||
     fail "no previous release recorded at $HOME_DIR/previous — nothing to roll back to"
@@ -173,6 +206,10 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# Which package this run moves: name, feed, and what counts as already-installed.
+if [ "$PACKAGE" = "services" ]; then PKG="ronin-services"; FEED="$SVC_SLUG"; INST="$(services_installed_release)"
+else PKG="ronin-cowork"; FEED="$SLUG"; INST="$(installed_release)"; fi
+
 if [ -n "$FILE" ]; then
   [ -f "$FILE" ] || fail "no such file: $FILE"
   cp "$FILE" "$WORK/"
@@ -181,16 +218,15 @@ if [ -n "$FILE" ]; then
     say "⚠ no SHA256SUMS beside $FILE — installing UNVERIFIED bytes (fine for a --dirty trial, never for a release)"
   fi
   TARBALL="$(basename "$FILE")"
-  VER="$(echo "$TARBALL" | sed -n 's/^ronin-cowork-\(v[0-9][^ ]*\)\.tar\.gz$/\1/p')"
-  [ -n "$VER" ] || fail "cannot read a version out of '$TARBALL' (expected ronin-cowork-vX.Y.Z.tar.gz)"
+  VER="$(echo "$TARBALL" | sed -n "s/^$PKG-\(v[0-9][^ ]*\)\.tar\.gz$/\1/p")"
+  [ -n "$VER" ] || fail "cannot read a version out of '$TARBALL' (expected $PKG-vX.Y.Z.tar.gz)"
 else
-  VER="${WANT:-$(latest_release)}"
+  VER="${WANT:-$(latest_release "$FEED")}"
   [ -n "$VER" ] || fail "could not learn the latest release (private repo needs gh auth; or pass --version / --file)"
-  inst="$(installed_release)"
-  if [ "$VER" = "$inst" ]; then echo "✓ already on $VER — nothing to do"; exit 0; fi
-  say "fetching $VER from $SLUG"
-  fetch_release "$VER" "$WORK"
-  TARBALL="ronin-cowork-$VER.tar.gz"
+  if [ "$VER" = "$INST" ]; then echo "✓ already on $PKG $VER — nothing to do"; exit 0; fi
+  say "fetching $VER from $FEED"
+  fetch_release "$FEED" "$PKG" "$VER" "$WORK"
+  TARBALL="$PKG-$VER.tar.gz"
 fi
 
 # --- verify ---
@@ -198,6 +234,47 @@ if [ -f "$WORK/SHA256SUMS" ]; then
   (cd "$WORK" && grep "$TARBALL" SHA256SUMS | sha256sum -c -) >/dev/null ||
     fail "CHECKSUM MISMATCH on $TARBALL — refusing to install; the download is not the release"
   say "checksum verified"
+fi
+
+# =====================================================================
+# SERVICES: contract check → store → copy into the serving tree → restart.
+# The store (<home>/services/) survives every cowork update; the cowork flow below
+# carries it into each new release candidate. No candidate boot here: services are
+# discovered by the operator at start, so the restart's own gate is the proof.
+# =====================================================================
+if [ "$PACKAGE" = "services" ]; then
+  [ -e "$HOME_DIR/current" ] || fail "no cowork install at $HOME_DIR/current — services install into a cowork that is already there"
+  # The load-bearing line: built-for contract vs the contract this cowork answers.
+  svc_contract="$(tar -xzf "$WORK/$TARBALL" -O "$PKG-$VER/VERSION" 2>/dev/null | sed -n 's/^contract=//p')"
+  cow_contract="$(sed -n 's/^export const CONTRACT_V = \([0-9][0-9]*\);.*/\1/p' "$HOME_DIR/current/src/sockets-contract.ts" 2>/dev/null)"
+  [ -n "$svc_contract" ] && [ -n "$cow_contract" ] || fail "could not read a contract number from both sides — refusing to guess"
+  [ "$svc_contract" = "$cow_contract" ] ||
+    fail "contract mismatch: services $VER is built for contract $svc_contract, this cowork answers $cow_contract — update cowork first (or install an older services release)"
+  say "contract check: both sides answer $svc_contract"
+  # Into the store, atomically enough: unpack fresh, then swap the directory.
+  rm -rf "$HOME_DIR/services.partial"
+  mkdir -p "$HOME_DIR/services.partial"
+  tar -xzf "$WORK/$TARBALL" --strip-components=1 -C "$HOME_DIR/services.partial"
+  if [ -d "$HOME_DIR/services" ]; then mv "$HOME_DIR/services" "$HOME_DIR/services.old"; fi
+  mv "$HOME_DIR/services.partial" "$HOME_DIR/services"
+  rm -rf "$HOME_DIR/services.old"
+  say "stored: $HOME_DIR/services ($VER)"
+  # Into the serving tree, where the assembler discovers them at boot.
+  mkdir -p "$HOME_DIR/current/src/services"
+  for d in "$HOME_DIR/services"/*/; do
+    { [ -f "$d/register.js" ] || [ -f "$d/register.ts" ]; } || continue
+    name="$(basename "$d")"
+    rm -rf "${HOME_DIR:?}/current/src/services/$name"
+    cp -r "$d" "$HOME_DIR/current/src/services/$name"
+  done
+  say "placed into current/src/services/ — discovery finds them at the next start"
+  if unit_serves_home; then
+    restart_and_gate
+    echo "✓ services $VER is live — /api/version lists the roster"
+  else
+    echo "✓ services $VER installed — this home is not what the unit serves; restart the operator that is (docs/release.md)"
+  fi
+  exit 0
 fi
 
 # --- unpack BESIDE current ---
@@ -225,6 +302,17 @@ if [ ! -f "$HOME_DIR/.env" ]; then
   say "created $HOME_DIR/.env from .env.example (edit for auth / port; it survives every update)"
 fi
 ln -sfn "$HOME_DIR/.env" "$TARGET/.env"
+# Installed services survive a cowork update BECAUSE of this copy: the store is the
+# home's, the release dir is disposable, and the candidate gates as The Works —
+# a cowork release that breaks the installed services never becomes the serving one.
+if [ -d "$HOME_DIR/services" ]; then
+  mkdir -p "$TARGET/src/services"
+  for d in "$HOME_DIR/services"/*/; do
+    { [ -f "$d/register.js" ] || [ -f "$d/register.ts" ]; } || continue
+    cp -r "$d" "$TARGET/src/services/$(basename "$d")"
+  done
+  say "carried services forward ($(services_installed_release)) — the candidate gates as The Works"
+fi
 
 # --- gate the CANDIDATE before anything swaps ---
 # Loopback scratch port: the candidate is reachable only from this machine, for the

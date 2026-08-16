@@ -41,7 +41,13 @@ The one place cowork names a service is a single assembler block in `src/index.t
 empty in this repo. Installing services fills it; a gate (`scripts/check-kyokai.mjs`)
 enforces that no other core file ever reaches across the line.
 
-## Running it
+## Installing it
+
+**Hand `docs/install.md` to Claude or Codex on the target machine and say go** — it
+walks every scenario (new VM, existing server, laptop) from nothing to a coworkspace
+in the browser, installing the released cowork and the services layer on the way.
+
+## Running it (contributors, from a checkout)
 
 ```bash
 ./setup.sh     # installs deps, the tmux server unit, the cowork unit; the service
@@ -52,3 +58,11 @@ Requires a Unix-like host (Linux, macOS, WSL) with tmux; the browser client is a
 The tmux server runs in its own unit and owns the sessions — restarting or replacing
 Ronin never touches running work. `bin/ronin-byoin` runs every check and gives one
 verdict; `bin/ronin-uninstall` reverses the install and leaves your own files behind.
+
+## License
+
+Ronin Cowork is **Apache-2.0** (see `LICENSE` and `NOTICE`) — use it, fork it, ship
+it, commercially or not, with Apache's patent grant behind it. **Ronin services are
+licensed differently**: source-available, free to download and use, but not to
+redistribute or commercialise — each services archive carries its own LICENSE, and
+those terms are the archive's, not this repo's.

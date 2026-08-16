@@ -64,11 +64,18 @@ export function buildSystemSheet() {
   const row = document.createElement('div');
   row.className = 'sys-actions';
   const checkBtn = button('Check for updates', {
-    title: 'Ask the release feed what the latest version is (only when pressed)',
+    title: 'Ask the release feeds what the latest versions are — both packages, only when pressed',
   });
   const runBtn = button('Update', { cls: 'sys-run' });
   runBtn.disabled = true;
   runBtn.hidden = true;
+  // THE SERVICES BUTTON — the owner's ruling (2026-08-16): ungated, click it and it
+  // does it. Same updater underneath (--services): fetch, verify, CONTRACT CHECK
+  // against the running cowork, into the store, into the tree, restart. It appears
+  // only when the check names an installable services release.
+  const svcBtn = button('Install services', { cls: 'sys-run' });
+  svcBtn.disabled = true;
+  svcBtn.hidden = true;
   // LOG OUT — only drawn when a login exists (/api/health `login`), because a button
   // that answers "you were never logged in" is furniture. Clearing the cookie sends
   // the next navigation through /login; the reload makes that immediate and visible.
@@ -82,13 +89,14 @@ export function buildSystemSheet() {
     await request('/api/logout', { method: 'POST' });
     location.reload();
   });
-  row.append(checkBtn, runBtn, outBtn);
+  row.append(checkBtn, runBtn, svcBtn, outBtn);
 
   const msg = status('sys-msg');
   wrap.append(idBlock, appRow, row, msg.el);
 
   let version = null; // the operator's /api/version answer, fetched on open
   let latest = null;
+  let svcLatest = null;
 
   const say = (text, bad) => msg.say(text, bad ? 'bad' : '');
 
@@ -108,6 +116,13 @@ export function buildSystemSheet() {
       detail.textContent = `a dev checkout, not a release — updated by git, not by the button · started ${version.startedAt}`;
     }
     idBlock.append(name, detail);
+    // The roster line: which services this operator discovered at start. The honest
+    // absence reads as the free build, not as an error.
+    const svc = document.createElement('small');
+    svc.className = 'sys-services';
+    const roster = Array.isArray(version?.services) ? version.services : [];
+    svc.textContent = roster.length ? `services: ${roster.join(' · ')}` : 'services: none — the free build';
+    idBlock.append(svc);
   };
 
   const check = async () => {
@@ -122,18 +137,33 @@ export function buildSystemSheet() {
     {
       const d = res.data;
       latest = d.latest;
+      const bits = [];
       if (!d.latest) {
-        say('the feed named no release yet (a private repo needs gh auth on the host)');
+        bits.push('the feed named no cowork release yet (a private repo needs gh auth on the host)');
       } else if (d.upToDate) {
-        say(`✓ up to date — ${d.installed} is the latest release`);
+        bits.push(`✓ cowork up to date — ${d.installed}`);
       } else if (version && !version.release) {
-        say(`latest release is ${d.latest} — this box runs a checkout, so the button stays off`);
+        bits.push(`latest cowork release is ${d.latest} — this box runs a checkout, so the button stays off`);
       } else {
         runBtn.textContent = `Update to ${d.latest}`;
         runBtn.hidden = false;
         runBtn.disabled = false;
-        say(`${d.latest} is available (installed: ${d.installed || 'none'})`);
+        bits.push(`cowork ${d.latest} available (installed: ${d.installed || 'none'})`);
       }
+      // The services half of the same answer. The button is off on a checkout for
+      // the same reason the cowork one is: the updater manages installs, git
+      // manages source trees.
+      const s = d.services || {};
+      if (s.latest && !s.upToDate && version && version.release) {
+        svcLatest = s.latest;
+        svcBtn.textContent = s.installed ? `Update services to ${s.latest}` : `Install services ${s.latest}`;
+        svcBtn.hidden = false;
+        svcBtn.disabled = false;
+        bits.push(`services ${s.latest} available${s.installed ? ` (installed: ${s.installed})` : ''}`);
+      } else if (s.latest && s.upToDate) {
+        bits.push(`✓ services up to date — ${s.installed}`);
+      }
+      say(bits.join(' · '));
     }
     checkBtn.disabled = false;
   };
@@ -167,8 +197,39 @@ export function buildSystemSheet() {
     checkBtn.disabled = false;
   };
 
+  /** Services completion: the operator restarts (startedAt moves) and the roster
+   *  answers — a filled roster after a fresh start IS the install having landed. */
+  const watchSvc = async () => {
+    const was = version?.startedAt;
+    for (let i = 0; i < 100; i++) {
+      await new Promise((ok) => setTimeout(ok, 3000));
+      const rv = await request('/api/version', { cache: 'no-store' });
+      // A failed read is the restart itself — keep polling.
+      if (rv.ok && rv.data.startedAt !== was && (rv.data.services || []).length) {
+        say(`✓ services live: ${rv.data.services.join(' · ')} — reloading`);
+        setTimeout(() => location.reload(), 1200);
+        return;
+      }
+    }
+    say('services did not answer after 5 minutes — journalctl --user -u "ronin-update-*" has the transcript', true);
+    svcBtn.disabled = false;
+  };
+
+  const runSvc = async () => {
+    svcBtn.disabled = true;
+    checkBtn.disabled = true;
+    say(`installing services ${svcLatest} — fetch, verify, contract check, restart. The page blinks at the restart; sessions are untouched…`);
+    const r = await request('/api/update/run', { method: 'POST', json: { package: 'services' } });
+    if (!r.ok) {
+      say(r.message, true);
+      svcBtn.disabled = false;
+    } else watchSvc();
+    checkBtn.disabled = false;
+  };
+
   checkBtn.addEventListener('click', check);
   runBtn.addEventListener('click', run);
+  svcBtn.addEventListener('click', runSvc);
 
   const open = () => {
     dlg.open();

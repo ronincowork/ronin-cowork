@@ -219,8 +219,13 @@ const services: ServiceRegistration[] = [];
 const SERVICES_DIR = path.join(__dirname, 'services');
 if (fs.existsSync(SERVICES_DIR)) {
   for (const dir of fs.readdirSync(SERVICES_DIR).sort()) {
-    const entry = path.join(SERVICES_DIR, dir, 'register.ts');
-    if (!fs.existsSync(entry)) continue; // not a service (a stray file, a README)
+    // A shipped services archive carries compiled register.js (the owner's ruling:
+    // the archive delivers services, never source); a dev tree carries register.ts.
+    // tsx runs both, and .js wins when both exist — an install is its shipped form.
+    const entry = ['register.js', 'register.ts']
+      .map((f) => path.join(SERVICES_DIR, dir, f))
+      .find((p) => fs.existsSync(p));
+    if (!entry) continue; // not a service (a stray file, a README)
     try {
       const mod = await import(pathToFileURL(entry).href);
       if (typeof mod.register !== 'function') throw new Error('no register() export');

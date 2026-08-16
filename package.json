@@ -1,7 +1,7 @@
 {
   "name": "ronin-cowork",
   "version": "1.0.0",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "type": "module",
   "description": "View and operate your tmux sessions from a browser grid — xterm.js + node-pty + tmux, secure over Tailscale.",
   "scripts": {
