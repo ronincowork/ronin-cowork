@@ -1,13 +1,12 @@
 # KOTOBA (言葉) — every noun in the house, in one place
 
-> **This is the public copy** — the house KOTOBA minus every `dev_scope` row,
-> per its own Scope rule. Regenerated from the private ronin-lab repo; edit it
-> there, never here.
-
-
 > **The source of truth for Ronin vocabulary.** If a term is used in code, a catalog, a
 > doc or a session and it is not in this file, either add it here deliberately or stop
 > using it. One line per term; the file-of-record has the detail.
+>
+> **There is one KOTOBA, and this is it.** Its authority spans the whole ronin_machine:
+> cowork, services, and the development environment around them. Repository ownership
+> belongs in a row's scope and record; it never creates another vocabulary file.
 >
 > **Why a vocabulary file is load-bearing.** Ronin guides agents with words, not with
 > enforcement — **environment over enforcement**, at full strength. We do not trap an
@@ -53,8 +52,8 @@ Every row carries the scope of the thing it names. The scopes are defined in
 Compound so each is a unique, greppable token — `user_scope` never collides with the
 ordinary word *user*.
 
-**The public KOTOBA is this file minus every `dev_scope` row.** That is the whole split, and it
-is mechanical rather than a judgement call — which is the point of the column.
+`dev_scope` controls whether the thing named ships; it does not split the vocabulary.
+KOTOBA itself ships whole so every part of the house reads the same definitions.
 
 ---
 
@@ -162,7 +161,7 @@ holds many **project_roots**; each of those usually sits in a **project_repo**.
 | **project_root** | system_scope | the *directory* a session is born into, plus the session_launch_spec it gets — an entry in the inclusion_list. **Memories are keyed by it**; customizations are not, they belong to the_owner. The term is `system_scope`; **the entries are `user_scope`** — they live in the catalogs store's `PROJECT_ROOTS.md`, and the shipped `ronin_catalogs/PROJECT_ROOTS.md` keeps only the stock launch table | `docs/project-roots.md` |
 | **project_repo** | system_scope | the *git repo* a project_root sits in. Usually the same directory; a project_root need not be a repo at all | `docs/project-roots.md` |
 | **inclusion_list** | system_scope | which directories on a ronin_machine are part of your Ronin — an inclusion_list, not a layout. Ships empty | `docs/project-roots.md` |
-| **session_launch_spec** | system_scope | one runnable **provider · model** pairing resolved to the exact command that starts it — `{provider, model, cmd}`, one CELL of the shipped launch table. Adding a provider is a ROW and adding a model a COLUMN, **never a code path**: that property is the whole of vendor neutrality. A `project_root` names a default and the launch may override; an install whose table yields none cannot spawn a configured session. **Named 2026-08-15, replacing `brain`** — which claimed cognition for two labels and a command string, and blurred the three things § NUANCE keeps apart (the CLI vs the model vs this run of it) | `ronin_catalogs/PROJECT_ROOTS.md` |
+| **session_launch_spec** | system_scope | one runnable **provider · model** pairing resolved to the exact command that starts it — `{provider, model, cmd}`, one CELL of the shipped launch table. Adding a provider is a ROW and adding a model a COLUMN, **never a code path**: that property is the whole of vendor neutrality. A `project_root` names a default and the launch may override; an install whose table yields none cannot spawn a configured session. **Named 2026-08-15, replacing `brain`** — which claimed cognition for two labels and a command string, and blurred the three things § NUANCE keeps apart (the CLI vs the model vs this run of it) | `docs/model-providers.md` · `ronin_catalogs/PROJECT_ROOTS.md` |
 
 ### The two repos, and how a service plugs in
 
@@ -286,9 +285,10 @@ it mean anything is the document behind it, plus a tool where the work needs one
 
 | Term | Scope | Means | Record |
 |---|---|---|---|
-| **session_job** | system_scope | what a session is doing right now; fixes icon, dial, permissions and opening prompt: `RiffOnIt`, `DraftPlan`, `CutCode`, `ChaseBug`, `CheckWork`, `QuarterBack`, `OddJob`, `OpenShell`, and `MikaAssist` — see § SESSION JOBS | `ronin_catalogs/SESSION_JOBS.md` |
+| **session_job** | system_scope | what a session is doing right now; fixes icon, dial, permissions and opening prompt: `RiffOnIt`, `DraftPlan`, `CutCode`, `ChaseBug`, `CheckWork`, `QuarterBack`, `OddJob`, `OpenShell`, `PersonalAssistant`, and `MikaAssist` — see § SESSION JOBS | `ronin_catalogs/SESSION_JOBS.md` |
 | **the two axes** | system_scope | `project_root` (where) · `session_job` (what it is doing) — **one token, every surface**: the launcher sets them, OBOERU matches on them, TOMODACHI counts by them. Defined here once; § OBOERU uses it, and does not redefine it | `co-working/user_repo/README/OBOERU.md` |
 | **opening prompt / ack rule** | system_scope | the birth instruction; "report back in your own words what you understand this job to be" | `src/spawn.ts` |
+| **`mcp_off`** | system_scope | **[proposed]** the launch-table key holding a provider's own "launch with no MCP servers" flags, appended to the cell's cmd when a launch turns MCP off — the ＋ New form's toggle, carried per session like the dial. DATA, never a code path: cowork names no CLI flag and no MCP server; a provider declaring none is refused rather than launched connected. *MCP* is the protocol's own name, not a coinage | `ronin_catalogs/PROJECT_ROOTS.md` · `src/spawn.ts` |
 | **`lifecycle:`** | system_scope | the catalog key mapping an session_job to its michi name. ⚠R2 | `ronin_catalogs/SESSION_JOBS.md` |
 
 **The act/state split.** An session_job is an **act** (`DraftPlan`); a michi is the **state**
@@ -297,7 +297,7 @@ gerunds, so no string appears in both catalogs — see § OVERLAP item 1.
 
 ---
 
-## § SESSION JOBS — the nine
+## § SESSION JOBS — the ten
 
 | Term | Scope | Means | Record |
 |---|---|---|---|
@@ -309,6 +309,7 @@ gerunds, so no string appears in both catalogs — see § OVERLAP item 1.
 | **QuarterBack** | system_scope | coordinates other sessions — dispatch, unblock, report upward. The orchestrator, and **still bound by every dial**: a 👤 session is invisible to it | `ronin_catalogs/SESSION_JOBS.md` |
 | **OddJob** | system_scope | does the one task asked and nothing around it — the escape hatch, for work that fits no other kind. No plan, no sweep, no tidying on the way past | `ronin_catalogs/SESSION_JOBS.md` |
 | **OpenShell** | system_scope | **`agent: none`** — opens a session and launches nothing, leaving the pane at a shell prompt. Every field describing an agent is *absent* rather than blanked: no model, no posture, no opening, no ack, no permissions. (Row added 2026-08-14 — the heading counted it as the eighth while the table had never listed it) | `ronin_catalogs/SESSION_JOBS.md` |
+| **PersonalAssistant** | system_scope | icon **🎩**. The OWNER's own assistant — **powered by gbrain, and says so**: brain-first (search before answering, capture on request), one confirmation per outside connection. Names and credits gbrain by the owner's ruling — *"we're not trying to steal their stuff without saying what it is"* — with the repo cited in the remit; without the gbrain service it degrades to a plain assistant. Reading arrives from `job/PersonalAssistant/` on the session-boot shelf. Ruled owner 2026-08-16; **gbrain is a proper name** (§ OPEN — the bare word `brain` stays retired) | `ronin_catalogs/SESSION_JOBS.md` |
 | **MikaAssist** | system_scope | icon **ミ**. RONIN's own business, not the owner's work — a helpful assistant, defaulting to help, plus the four mika_macros. See § MIKA. | `docs/mika.md` |
 
 **The grammar: verb + object.** A bare `plan` or `review` is ambiguous because it is a noun
@@ -316,7 +317,7 @@ as often as a verb; a compound reads as a command. **Display** in CamelCase, **t
 the lowercase run-on — `+riffonit:`, `+draftplan:`, `+cutcode:`, `+chasebug:`, `+checkwork:`,
 `+quarterback:`, `+oddjob:`. No separator to mistype, and it survives being typed into a pane.
 
-**Four of them sit outside the grammar, for stated reasons:**
+**Five of them sit outside the grammar, for stated reasons:**
 
 - **`RiffOnIt`** — riff takes a preposition, so verb+object fights the word. It keeps the
   exception because it still reads as a command. The unnamed `It` is exact: this is the one
@@ -334,6 +335,10 @@ the lowercase run-on — `+riffonit:`, `+draftplan:`, `+cutcode:`, `+chasebug:`,
   her among the eight that take instructions. **She also has no invocation token** — you do
   not type `+mikaassist:`, you type one of her four mika_macros and Ronin brings her.
   **[planned]**
+- **`PersonalAssistant`** — `QuarterBack`'s reason: a role, not an act, defined by its
+  relation to the owner rather than by one output. The owner's own words (2026-08-16):
+  *"I would call that personal assistant."* Token `+personalassistant:`. Not `MikaAssist`'s
+  twin: Mika does the house's business, this seat does the owner's.
 
 **A kind is the session's current role, not a birth mark.** A session is launched as one
 and **migrates** — `RiffOnIt` → `DraftPlan` → `CutCode` is one session changing what it is
@@ -1108,4 +1113,3 @@ action — if two docs disagree with this file, this file wins and the docs get 
 Retired words are deleted, not annotated (git holds the history). One line per term; the
 record column is where the detail lives, so this file never grows essays. **Every new row
 gets a scope** — a row without one cannot be published or withheld correctly.
-

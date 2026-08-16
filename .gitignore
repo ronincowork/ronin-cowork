@@ -6,6 +6,10 @@ release/
 # src/services/ at boot (docs/connector-contract.md). This repo flips public; the
 # ignore is what makes "services can never enter cowork's history" structural.
 src/services/
+# The counting service still defaults its stats into this legacy in-repo path
+# (record.ts, TOMODACHI_DIR) — usage data, the owner's, never committable. The real
+# fix (a store row) belongs to the services repo; this line is the public repo's guard.
+co-working/
 .env
 *.log
 .DS_Store

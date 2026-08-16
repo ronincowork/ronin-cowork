@@ -2977,6 +2977,7 @@ body {
 .ks-form.noagent textarea,
 .ks-form.noagent .ks-extras-h,
 .ks-form.noagent .ks-extras,
+.ks-form.noagent .ks-mcp,
 .ks-form.noagent .ks-model { display: none; }
 
 
@@ -4416,9 +4417,34 @@ body {
 .ks-saved-btn:hover {
   border-color: var(--info);
 }
-.ks-save {
+/* The MCP toggle: quiet while on (the default needs no attention), loud while off —
+   a session launching with no MCP servers is a deliberate state worth a color. */
+.ks-mcp {
   font-size: 12px;
 }
+.ks-mcp.off {
+  color: var(--warn);
+  border-color: var(--warn);
+}
+/* Credit line on the opened form (`credit:` in the catalog) — a real link, accent per
+   the design tokens ("Electric blue — active, links, focus"), own tap target. */
+.ks-credit {
+  display: inline-block;
+  font-size: 11px;
+  color: var(--info);
+  text-decoration: none;
+  margin: 2px 0 4px;
+}
+/* An explicit display beats the [hidden] UA rule, so restate it — without this the
+   credit, once shown for one kind, stuck to every kind's form after it. */
+.ks-credit[hidden] {
+  display: none;
+}
+.ks-credit:hover,
+.ks-credit:focus-visible {
+  text-decoration: underline;
+}
+
 /* ---- ▥ Hotwords: whose list is showing (copy-on-write, not a merge) ---- */
 .hot-whose {
   margin: 2px 0 6px;

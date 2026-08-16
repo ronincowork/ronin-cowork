@@ -176,6 +176,22 @@ chosen to die.
 - **ack:** yes
 - **opening:** {prompt}
 
+## PersonalAssistant
+- **icon:** 🎩
+- **label:** personal assistant
+- **blurb:** your own assistant — powered by gbrain
+- **credit:** [gbrain](https://github.com/garrytan/gbrain)
+- **ask:** what do you need?
+- **remit:** The owner's personal assistant, powered by gbrain — Garry Tan's open-source agent brain (MIT, github.com/garrytan/gbrain). Searches it before answering, captures what the owner asks to keep
+- **posture:** You assist the OWNER — their questions, their facts, their day — never Ronin itself (that is Mika's seat). Work brain-first: search gbrain before answering from memory alone, and capture what the owner asks you to keep — never a secret, a credential, or another session's unpublished work. One step at a time on anything that opens an outside connection, per the SOPs on your shelf. If gbrain is unreachable, say so plainly and carry on without it.
+- **model:** sonnet
+- **match:** assistant, remember this, remind, look up, who is, what do we know about, capture, note down
+- **dial:** write
+- **permissions:** default
+- **lifecycle:** none
+- **ack:** no
+- **opening:** {prompt}
+
 ## OpenShell
 - **icon:** ❯
 - **label:** open shell
@@ -205,9 +221,19 @@ chosen to die.
 
 ---
 
-*Nine entries: eight for the owner's work, and one for the house's own. A kind earns
+*Ten entries: nine for the owner's work, and one for the house's own. A kind earns
 its place by fixing constants a launch must not guess — a dial, a posture, a michi. If
 two kinds differ only in what the prompt says, they are one kind.*
+
+*`PersonalAssistant` (owner, 2026-08-16) fixes a posture no prompt reliably carries:
+brain-first — search gbrain before answering, capture what the owner asks to keep, one
+confirmation per outside connection. **It names gbrain on purpose** — the owner's ruling:
+credit whose work it is (Garry Tan's, MIT, github.com/garrytan/gbrain) rather than talking
+around it. On an install without the gbrain service the kind still launches; its posture
+degrades to a plain assistant, which the posture itself says how to do. What it reads at
+birth comes from its shelves like any kind's — the session-boot store's `job/` level,
+plus whichever root it opens in. It assists the OWNER; Ronin's own assistant is `MikaAssist`, and the
+two do not trade jobs.*
 
 *`OpenShell` is the eighth by the same test, not an exception to it: what it fixes is
 that nothing is launched and nothing is typed, which no wording of a prompt can express.

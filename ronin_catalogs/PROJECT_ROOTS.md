@@ -26,6 +26,9 @@ default for both; the role or the launch may override. Adding a provider is a ro
 in this table, and adding a model is a column — never a code path; that is the
 whole of what vendor-neutrality requires.
 
+The extension contract and third-party provider checklist live in
+`docs/model-providers.md`.
+
 The column headings ARE the model names the UI shows, and the **first column is
 the provider's default** when a project_root names no model.
 
@@ -34,25 +37,40 @@ names, and OpenAI's are not Anthropic's — so a `| provider | …` heading row 
 restarts the column names, and every table below feeds the same one list. That is
 still a row and a column, not a code path.
 
+### Anthropic
+
+Anthropic model IDs are passed unchanged to Claude's `--model` option.
+
 | provider | opus | fable | sonnet | haiku |
 |---|---|---|---|---|
 | `anthropic` | `claude --model opus` | `claude --model fable` | `claude --model sonnet` | `claude --model haiku` |
 
-| provider | default |
-|---|---|
-| `openai` | `codex` |
+- **mcp_off:** `--strict-mcp-config`
 
-**Why `openai`'s only column is called `default` and not a model name.** A cell holds a
-COMMAND, and bare `codex` launches whatever model that CLI is configured to use — the
-one Codex pane ever measured on a Ronin box showed `gpt-5.6-sol default · ~/tmux-ronin`
-in its status row (`src/services/rireki/decode.ts:219`), but that is Codex's choice on that box on that
-day, not ours to assert. Codex's model names are TBD until someone with the CLI installed
-verifies them and the `--model` flag against it (it is not installed here). The settled
-design is that **a model is optional** — a provider with no model list still launches,
-and the picker will eventually be two controls, provider then model, so this column
-disappears rather than becoming a name to maintain. Naming it after a model we guessed is
-exactly the placeholder that would outlive its reason. One column here, one command, and
-codex is launchable today.
+`mcp_off` is the provider's own "launch with no MCP servers" flags — appended to the
+cell's command when a launch turns MCP off (the ＋ New form's toggle). With no
+`--mcp-config` given, `--strict-mcp-config` means Claude loads zero MCP servers:
+no shared memory layer, no connectors, for that session only. A provider section
+without an `mcp_off` line cannot launch with MCP off; the spawn refuses rather than
+launching connected.
+
+### OpenAI
+
+OpenAI model IDs are passed unchanged to Codex's `--model` option. The current model
+family and IDs are recorded in the [official OpenAI model catalog](https://developers.openai.com/api/docs/models).
+
+| provider | gpt-5.6-sol | gpt-5.6-terra | gpt-5.6-luna |
+|---|---|---|---|
+| `openai` | `codex --model gpt-5.6-sol --dangerously-bypass-approvals-and-sandbox` | `codex --model gpt-5.6-terra --dangerously-bypass-approvals-and-sandbox` | `codex --model gpt-5.6-luna --dangerously-bypass-approvals-and-sandbox` |
+
+- **mcp_off:** `-c mcp_servers={}`
+
+The first column, `gpt-5.6-sol`, is Ronin's OpenAI default. Every cell names the complete
+command, so selecting another column launches that exact model rather than inheriting
+Codex's local default. Availability belongs to the owner's OpenAI account: if an account
+cannot use a model, Codex reports that refusal in the new tile; Ronin never substitutes.
+This install runs Codex unrestricted because the ronin_machine is the external sandbox;
+the explicit `--dangerously-bypass-approvals-and-sandbox` flag is visible in every cell.
 
 Other providers (pi, perplexity, …) arrive the same way: a contributor PR adding a
 table block.
@@ -61,4 +79,3 @@ table block.
 CLI permissions mode (`default` / `bypass`) and the `@ronin-control` dial the
 session is born with (`user` / `read` / `write` — see
 `docs/session-control-dials.md`).
-

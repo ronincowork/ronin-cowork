@@ -64,6 +64,14 @@ export interface SessionLaunchSpec {
   provider: string;
   model: string;
   cmd: string;
+  /**
+   * The provider's own "launch with no MCP servers" flags — appended to `cmd` when a
+   * launch asks for MCP off (`- **mcp_off:** \`…\`` in the provider's section). DATA,
+   * like the cmd itself: cowork knows no CLI's flags and no MCP server's name; a
+   * provider that declares none simply cannot launch with MCP off, and the spawn
+   * refuses rather than silently launching connected.
+   */
+  mcpOff?: string;
 }
 
 const expand = (p: string) => (p.startsWith('~') ? path.join(os.homedir(), p.slice(1)) : p);
@@ -133,23 +141,31 @@ function parseLaunchTable(raw: string): SessionLaunchSpec[] {
     const c = line.split('|').map((s) => s.trim());
     return c[0] === '' && c[c.length - 1] === '' ? c.slice(1, -1) : c;
   };
-  let models: string[] = [];
   const out: SessionLaunchSpec[] = [];
-  for (const line of raw.split('\n')) {
-    if (!line.includes('|')) continue;
-    const cells = cellsOf(line);
-    if (cells.length < 2) continue;
-    if (/^provider$/i.test(cells[0])) {
-      models = cells.slice(1).map((m) => m.replace(/`/g, '').trim());
-      continue;
+  // Per `### Provider` section, so a section's `- **mcp_off:**` line reaches exactly the
+  // providers its own table names, wherever in the section it sits.
+  for (const section of raw.split(/^### /m)) {
+    let models: string[] = [];
+    const specs: SessionLaunchSpec[] = [];
+    // The provider's no-MCP flags, backticked like every cmd in this file.
+    const mcpOff = /^-\s*\*\*mcp_off:\*\*\s*`(.+)`\s*$/m.exec(section)?.[1]?.trim();
+    for (const line of section.split('\n')) {
+      if (!line.includes('|')) continue;
+      const cells = cellsOf(line);
+      if (cells.length < 2) continue;
+      if (/^provider$/i.test(cells[0])) {
+        models = cells.slice(1).map((m) => m.replace(/`/g, '').trim());
+        continue;
+      }
+      const provider = /^`([a-z0-9_-]+)`$/i.exec(cells[0])?.[1];
+      if (!provider || !models.length) continue;
+      cells.slice(1).forEach((cell, i) => {
+        const cmd = /^`(.+)`$/.exec(cell)?.[1];
+        const model = models[i];
+        if (cmd && model) specs.push({ provider, model, cmd, ...(mcpOff ? { mcpOff } : {}) });
+      });
     }
-    const provider = /^`([a-z0-9_-]+)`$/i.exec(cells[0])?.[1];
-    if (!provider || !models.length) continue;
-    cells.slice(1).forEach((cell, i) => {
-      const cmd = /^`(.+)`$/.exec(cell)?.[1];
-      const model = models[i];
-      if (cmd && model) out.push({ provider, model, cmd });
-    });
+    out.push(...specs);
   }
   return out;
 }

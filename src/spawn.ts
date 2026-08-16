@@ -2,7 +2,7 @@ import { appendFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { REPO_ROOT } from './config.js';
 import { bootFiles, ensureShelf } from './session-boot.js';
-import { listProjectRoots, type ProjectRootInfo } from './project-roots.js';
+import { listProjectRoots, listSessionLaunchSpecs, type ProjectRootInfo } from './project-roots.js';
 import { storeDir } from './stores.js';
 import {
   listSessionJobs,
@@ -48,6 +48,15 @@ export interface SpawnForm {
   mode?: 'manual' | 'assisted';
   project_root?: string;
   cmd?: string;
+  /**
+   * MCP on or off for THIS session — a mechanical pick like the cmd, present in both
+   * modes. Default true: the CLI's own config applies, untouched. False appends the
+   * provider's declared `mcp_off` flags to the cmd, so the session launches with no
+   * MCP servers at all; a provider that declares none REFUSES the launch rather than
+   * silently launching connected. Ronin never learns what was disconnected — the
+   * flags are catalog data, the servers are the CLI's own business.
+   */
+  mcp?: boolean;
   tags?: string[];
   /** Files/dirs to read before anything else. */
   seed?: string[];
@@ -82,6 +91,9 @@ export interface Resolved {
   agent: boolean;
   /** `cap: exempt` — born even at the session max. It still counts once it is. */
   capExempt: boolean;
+  /** What the receipt reports: false only when the launch asked for MCP off AND the
+   * provider declared how (`mcp_off` appended to cmd). */
+  mcp: boolean;
 }
 
 const ACK_RULE =
@@ -174,9 +186,10 @@ export async function resolveForm(
   taken: Set<string>,
   referenceDir?: string,
 ): Promise<Resolved> {
-  const [kinds, roots] = await Promise.all([
+  const [kinds, roots, launchSpecs] = await Promise.all([
     listSessionJobs(),
     listProjectRoots(),
+    listSessionLaunchSpecs(),
   ]);
   const kind = kinds.find((k) => k.name === form.session_job);
   if (!kind) throw new Error(`Unknown session_job "${form.session_job}" (see ronin_catalogs/SESSION_JOBS.md).`);
@@ -199,6 +212,23 @@ export async function resolveForm(
   // `claude`: the pane is meant to be left at a shell prompt, untouched.
   const agent = kind.agent;
 
+  // MCP off: append the provider's own declared flags to the cmd — data from the same
+  // table the cmd came from, matched by the cmd string itself so a hand-typed cmd
+  // (no table row) is honestly unsupported. No flags declared = REFUSE, because a
+  // session the owner asked to launch disconnected must never launch connected.
+  let cmd = agent ? form.cmd || root?.cmd || 'claude' : '';
+  const mcpOffWanted = agent && form.mcp === false;
+  if (mcpOffWanted) {
+    const spec = launchSpecs.find((b) => b.cmd === cmd);
+    if (!spec?.mcpOff) {
+      throw new Error(
+        'This launch command declares no `mcp_off:` flags in the launch table, ' +
+          'so it cannot be launched with MCP off (see ronin_catalogs/PROJECT_ROOTS.md).',
+      );
+    }
+    cmd = `${cmd} ${spec.mcpOff}`;
+  }
+
   return {
     name: wanted || slugName(kind.name, form.prompt, taken),
     // A kind's own `dir:` WINS over the project_root's, because it is a constant of the
@@ -206,7 +236,7 @@ export async function resolveForm(
     // chance. Exactly one kind has one (`MikaAssist`, `{install}`): she works on Ronin's
     // own business, so she starts where Ronin's documents are whatever root was picked.
     dir: kindDir(kind) || root?.dir || '',
-    cmd: agent ? form.cmd || root?.cmd || 'claude' : '',
+    cmd,
     tags: (form.tags ?? []).filter(Boolean).slice(0, 16),
     dial: kind.dial,
     lifecycle: kind.lifecycle && kind.lifecycle !== 'none' ? kind.lifecycle : '',
@@ -216,6 +246,7 @@ export async function resolveForm(
     brief: agent ? buildBrief(kind, root, form, referenceDir, await bootFiles(root?.name ?? '', kind.name)) : '',
     agent,
     capExempt: kind.capExempt,
+    mcp: !mcpOffWanted,
   };
 }
 
