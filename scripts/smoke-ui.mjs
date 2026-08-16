@@ -175,7 +175,7 @@ async function checkDom(page, label) {
  * flip, and the sheet's focus round-trip. Kept few and unbrittle on purpose — this is
  * the seed of the journey layer, not a snapshot suite.
  */
-async function checkJourneys(page, label) {
+async function checkJourneys(page, label, jsErrors) {
   // 1 — the き Commons menu speaks the popover contract: rows from the registry,
   // aria-expanded truth, Escape closes.
   await page.locator('#commonsbtn').click();
@@ -246,6 +246,82 @@ async function checkJourneys(page, label) {
   }));
   if (!noteAfter.open && noteAfter.focusBack) ok(`${label}: Escape closes the sheet and returns focus to 📝`);
   else bad(`${label}: sheet close broken — open=${noteAfter.open} focusReturned=${noteAfter.focusBack}`);
+
+  // 6 — the launch journey, VALIDATION half. Deliberately not a real spawn: a gate
+  // that launches sessions on every verify is a gate spawning work, so what is proven
+  // is the refusal contract — manual mode with no name must refuse LOCALLY: focus
+  // lands on the name field and no /api/launch request leaves the page.
+  await page.locator('#newbtn').click(); // the real route in: か New opens the launcher
+  await page.waitForTimeout(300);
+  const kindBtn = page.locator('.tile.active .ks-btn').first();
+  if ((await kindBtn.count()) === 0) {
+    console.log('  note — no session_jobs in the catalog; the launch-validation journey skipped');
+  } else {
+    let launched = false;
+    const sniff = (req) => {
+      if (req.url().includes('/api/launch')) launched = true;
+    };
+    page.on('request', sniff);
+    await kindBtn.click();
+    await page.waitForTimeout(200);
+    await page.evaluate(() => {
+      const name = document.querySelector('.tile.active .ks-name');
+      if (name) name.value = ''; // manual mode requires it — the refusal under test
+    });
+    await page.locator('.tile.active .home-go').click();
+    await page.waitForTimeout(300);
+    page.off('request', sniff);
+    const focusOnName = await page.evaluate(() => document.activeElement?.classList?.contains('ks-name'));
+    if (!launched && focusOnName) ok(`${label}: launch with no name refuses locally — focus lands on the name, nothing sent`);
+    else bad(`${label}: launch validation broken — sent=${launched} focusOnName=${focusOnName}`);
+    // Put the form and the panel away so later probes meet the terminal again.
+    await page.evaluate(() => {
+      [...document.querySelectorAll('.tile.active .ks-form button')].find((b) => b.textContent === 'Cancel')?.click();
+      document.querySelector('.home.show .home-x')?.click();
+    });
+    await page.waitForTimeout(200);
+  }
+
+  // 7 — the FAILED-SAVE journey: the note sheet's save fails (injected at the route,
+  // so the server never sees it) and the contract must hold — the sheet stays open,
+  // the typed text survives, and the line says why. This is the "failures stop
+  // impersonating success" rule, proven rather than promised.
+  const TYPED = 'typed by the gate — must survive the failure';
+  // The 500 below is OURS: the browser logs every failed resource, and the collector
+  // must not report the gate's own injection as a page fault. Errors present before
+  // the injection stay; the injected one is removed after, by its exact shape.
+  const errsBefore = jsErrors.length;
+  await page.route('**/note', (route) =>
+    route.request().method() === 'POST'
+      ? route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'gate-injected failure' }) })
+      : route.continue(),
+  );
+  await page.locator('.tile .tile-head button.note').first().click();
+  try {
+    await page.waitForSelector('#notesheet.open textarea:not([disabled])', { timeout: 4000 });
+    await page.locator('#notesheet textarea').fill(TYPED);
+    await page.evaluate(() => {
+      [...document.querySelectorAll('#notesheet .ns-bar button')].find((b) => b.textContent === 'Save')?.click();
+    });
+    await page.waitForTimeout(400);
+    const after = await page.evaluate(() => ({
+      open: document.getElementById('notesheet')?.classList.contains('open'),
+      text: document.querySelector('#notesheet textarea')?.value,
+      said: document.querySelector('#notesheet .ns-msg')?.textContent || '',
+    }));
+    if (after.open && after.text === TYPED && /not saved/.test(after.said)) {
+      ok(`${label}: a failed save keeps the sheet open, keeps the text, and says why`);
+    } else {
+      bad(`${label}: failed-save contract broken — open=${after.open} textKept=${after.text === TYPED} said="${after.said}"`);
+    }
+  } catch {
+    bad(`${label}: the note sheet did not open for the failed-save journey`);
+  }
+  await page.unroute('**/note');
+  for (let i = jsErrors.length - 1; i >= errsBefore; i--) {
+    if (/Failed to load resource.*500/.test(jsErrors[i])) jsErrors.splice(i, 1);
+  }
+  await page.keyboard.press('Escape');
 }
 
 /**
@@ -334,7 +410,7 @@ async function runPass({ label, browser, contextOpts }) {
   await checkDom(page, label);
   await attachProbe(page, label);
   if (label === 'desktop') {
-    await checkJourneys(page, label);
+    await checkJourneys(page, label, jsErrors);
     await checkA11y(page, label, await loadAxeSource());
   } else {
     await checkPhoneJourneys(page, label);

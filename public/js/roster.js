@@ -36,9 +36,12 @@ export function buildRoster(tile, host) {
   maxRow.className = 'home-maxrow';
   const maxLab = document.createElement('label');
   maxLab.textContent = 'session max';
-  maxLab.htmlFor = 'sessionmax';
   const maxInp = document.createElement('input');
-  maxInp.id = 'sessionmax';
+  // Four tiles build four rosters, so a fixed id here was four elements wearing one
+  // id — latent (label-for resolved to the first tile's input from every tile).
+  // The tile's index keeps it unique and keeps the label honest.
+  maxInp.id = `sessionmax-${tile.index}`;
+  maxLab.htmlFor = maxInp.id;
   maxInp.type = 'number';
   maxInp.min = '0';
   maxInp.step = '1';

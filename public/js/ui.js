@@ -194,11 +194,15 @@ export function field(control, spec) {
   const lab = document.createElement('label');
   lab.textContent = spec.label;
   if (spec.sr !== false) lab.className = 'ui-sr';
-  control.id = control.id || `uif-${++uid}`;
+  // The counter is taken UNCONDITIONALLY: a control that brought its own id used to
+  // skip the ++, so the NEXT line reused the previous field's number and two message
+  // elements shared an id — latent until the first pre-named consumer arrived.
+  const n = ++uid;
+  control.id = control.id || `uif-${n}`;
   lab.htmlFor = control.id;
   const msg = document.createElement('div');
   msg.className = 'ui-status';
-  msg.id = `uifm-${uid}`;
+  msg.id = `uifm-${n}`;
   msg.setAttribute('role', 'status');
   el.append(lab, control, msg);
   const say = (text, bad) => {

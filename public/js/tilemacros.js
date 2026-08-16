@@ -1,5 +1,6 @@
 /* part of the tmux-ronin client — see js/README.md */
 import { macroData } from './home.js';
+import { toast } from './ui.js';
 import { IS_TOUCH, S } from './state.js';
 import { addProvMark } from './provenance.js';
 
@@ -118,12 +119,14 @@ export function buildTileMacros(tile) {
         if (m.send) {
           if (coolingFor(m.name)) return;
           close();
-          if (!fire(m.send)) alert('Open a session in this tile first.');
+          // The toast, not an alert — an alert over a live pane steals the keyboard
+          // (docs/ui.md), and this is exactly a tile-scoped outcome.
+          if (!fire(m.send)) toast('open a session in this tile first', false);
           else firedAt.set(m.name, Date.now());
           return;
         }
         close();
-        if (!prefill('+' + m.name + ': ')) alert('Open a session in this tile first.');
+        if (!prefill('+' + m.name + ': ')) toast('open a session in this tile first', false);
       });
       menu.appendChild(row);
     }
