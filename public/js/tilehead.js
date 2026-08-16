@@ -57,9 +57,9 @@ export const DIAL_TITLE =
  * live TUI, and a reader who does not know the key is exactly who is reading this tooltip.
  */
 export const lockedTitle = () =>
-  '🔒 LOCKED — this view is attached to the live tmux session. You see the terminal painting in lockstep, so scrolling has to go back to the server and back.  ⚠ TO COPY TEXT: hold ' +
+  '🔒 LOCKED — attached to the live tmux session, painting in lockstep.  ⚠ TO COPY TEXT: hold ' +
   SELECT_MOD +
-  ' while you drag, then ⌘C / Ctrl-C — a plain drag goes to tmux, not to your clipboard. (Switching to 🔓 unlocked also works: there the text selects like any web page.)';
+  ' while you drag, then ⌘C / Ctrl-C — a plain drag goes to tmux, not your clipboard. (🔓 unlocked also works: text selects like a web page.)';
 
 /**
  * THE HEADER, left to right. One row per control; see the file header for the columns.
