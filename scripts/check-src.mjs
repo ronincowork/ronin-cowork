@@ -44,6 +44,11 @@ const files = [];
 (function walk(dir) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, e.name);
+    // src/services/ is INSTALLED code, not this repo's (gitignored; the assembler
+    // discovers it at boot). Its ceiling is RONIN_SERVICES' to keep — the comment on
+    // GRANDFATHERED already says so; this skip is that sentence made mechanical.
+    // check-kyokai still reads it: the seam gate is the one that looks across.
+    if (e.isDirectory() && dir === SRC && e.name === 'services') continue;
     if (e.isDirectory()) walk(p);
     else if (e.name.endsWith('.ts')) files.push(p);
   }
