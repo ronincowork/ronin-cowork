@@ -19,7 +19,7 @@ See `co-working/user_repo/wip/buildouts/` history and `CLAUDE.md` for the full a
 
 ## The map
 
-Forty-four modules, 8,852 lines. Counts below are `wc -l`, measured against the tree.
+Forty-four modules, 8,916 lines. Counts below are `wc -l`, measured against the tree.
 
 The platform row (request/ui/panes/theme) landed 2026-08-16 with the UI/UX
 professionalisation pass: transport, dialog behaviour, the pane registry and the theme
@@ -29,26 +29,26 @@ written contract those modules enforce.
 
 | Module | Lines | What it owns |
 |---|---|---|
-| `state.js` | 152 | DOM handle, constants, `tiles`, the shared-state object `S`, save/load |
+| `state.js` | 153 | DOM handle, constants, `tiles`, the shared-state object `S`, save/load |
 | `errors.js` | 115 | `showFailure`, `guard`, `deadTile` — the containment layer |
 | `request.js` | 88 | the ONE transport contract — every JSON call's "what happened" |
-| `ui.js` | 301 | the primitives: sheet, toast, popover, field, status, button, tabs (docs/ui.md) |
-| `panes.js` | 37 | the pane registry — the Commons' rooms, spelled once for every surface |
-| `theme.js` | 81 | dark/light: the saved choice, `termTheme()` read off the CSS tokens, the flip |
+| `ui.js` | 305 | the primitives: sheet, toast, popover, field, status, button, tabs (docs/ui.md) |
+| `panes.js` | 38 | the pane registry — the Commons' rooms, spelled once for every surface |
+| `theme.js` | 107 | dark/light: the saved choice, `termTheme()` read off the CSS tokens, the flip |
 | `viewport.js` | 41 | `setLayout` — its own module because three others need it |
 | `api.js` | 44 | the `/api/sessions` calls |
 | `widgets.js` | 225 | `makeDial`, `makeGauge`, `setInert`, the job menu |
 | `events.js` | 96 | the `/events` socket, birth/death chips, `openSessionSomewhere` |
 | `home.js` | 158 | THE DATA CACHE — `refreshHome` + the catalog loaders, `homeFault`, `showReceipt` |
-| `commons.js` | 163 | `buildHome` — the control-plane SHELL: tab strip, panes, room mounting |
-| `roster.js` | 207 | the ⌂ Roster room — the session list, the session max, the stale line |
-| `launcher.js` | 457 | the ＋ New session room — the koshidashi board, form, saved launches |
+| `commons.js` | 158 | `buildHome` — the control-plane SHELL: tab strip, panes, room mounting |
+| `roster.js` | 210 | the ⌂ Roster room — the session list, the session max, the stale line |
+| `launcher.js` | 480 | the ＋ New session room — the koshidashi board, form, saved launches |
 | `wipeboard.js` | 292 | `buildWipeboard` — the ▤ Wipeboard pane |
 | `projectroots.js` | 245 | `buildProjectRoots` — the ▣ Roots pane |
 | `hotwords.js` | 132 | `buildHotwords` — the ▥ Hotwords pane, the dictation glossary |
 | `stats.js` | 413 | `buildStats` — the ▦ Stats pane (TOMODACHI usage readout) |
 | `koshi.js` | 185 | `buildKoshi` — the 目 Koshi pane, model per Koshi job |
-| `system.js` | 184 | `buildSystem` — ⚙ System: release identity, updates, appearance, log out |
+| `system.js` | 187 | `buildSystem` — ⚙ System: release identity, updates, appearance, log out |
 | `shingo.js` | 289 | SHINGO 信号 — the session ladder: header chip, unrolled ladder, the letter |
 | `tile.js` | 675 | `class Tile` — one cell of the coworkspace: a header, a mount point, and the view it composes |
 | `tilehead.js` | 246 | `buildTileHead` — the cell's chrome: picker, dot, dial, gauge, chip, torii, buttons |
@@ -60,14 +60,14 @@ written contract those modules enforce.
 | `dvr.js` | 37 | `dvrStep` — the unlocked input rule, pure (tested: `tests/dvr.test.js`) |
 | `ansi.js` | 12 | `ANSI_RE` — its own module so the tape's pure logic loads outside a browser |
 | `tiledrop.js` | 233 | TOUCH ONLY — `collapseTileHead`, `makeDrop`: the one-row phone header |
-| `tilemacros.js` | 148 | `buildTileMacros` — the ⚡ button on a tile head; prefills `+name: `, never runs |
+| `tilemacros.js` | 151 | `buildTileMacros` — the ⚡ button on a tile head; prefills `+name: `, never runs |
 | `voice.js` | 181 | dictation: `makeClipRecorder` + `wireDictation` (the 🎤 on the tile's compose box) |
 | `panels.js` | 248 | `buildNotePanel` 📝, `buildTagPanel` 🏷 (on `ui.sheet`), `toClipboard` |
 | `macros.js` | 103 | `buildSessionPicker` — the pad key's session switcher (on `ui.sheet`) |
 | `pad.js` | 246 | keypad — bindings, chords, firing |
 | `padpanel.js` | 504 | keypad — the ▦ panel and ask-on-press |
 | `weblink.js` | 198 | keypad — WebHID programming of the device |
-| `layout.js` | 434 | `build`, `buildDrawers` — assembling the page |
+| `layout.js` | 439 | `build`, `buildDrawers` — assembling the page |
 | `main.js` | 72 | `init` and the boot call |
 | `tips.js` | 289 | the help box — the one hover/focus explanation panel |
 | `mika.js` | 81 | `askMika` — the way to the house assistant |

@@ -43,6 +43,9 @@ if (!pw) {
 
 /** Geometry + resolved colour for the selectors that are content-independent. */
 async function fingerprint(page, entries) {
+  // Fonts first: the kana/mark glyphs ride fallback fonts that can land after
+  // networkidle, and a late glyph is a width drift is a scrollbar is a 2px lie.
+  await page.evaluate(() => document.fonts.ready);
   return page.evaluate((list) => {
     const out = {};
     for (const sel of list) {
@@ -69,7 +72,9 @@ const DESKTOP = [
   '#bar', '#brandbtn', '#newbtn', '#mikabtn', '#commonsbtn', '#padbtn', '#layoutcycle',
   '.tile .tile-head', '.home-tabs', '.home-tabs button[data-pane="sessions"]', '.home-maxrow',
 ];
-const PHONE = ['#bar', '#bar .tdrop-btn.me', '#bar .tdrop-btn.ni', '#bar select.sess', '#bar .layout-cycle'];
+// NOT the session picker: its flex width follows the live session names — content,
+// not chrome, and a baseline on content is a baseline that cries wolf.
+const PHONE = ['#bar', '#bar .tdrop-btn.me', '#bar .tdrop-btn.ni', '#bar .layout-cycle'];
 const LOGIN = ['form', '#pw', '#go', 'h1'];
 
 const browser = await pw.chromium.launch().catch((e) => {
@@ -80,7 +85,7 @@ const browser = await pw.chromium.launch().catch((e) => {
 const shot = { platform: PLATFORM, viewport: '1400x900 / 402x681', surfaces: {} };
 
 {
-  const page = await (await browser.newContext({ viewport: { width: 1400, height: 900 } })).newPage();
+  const page = await (await browser.newContext({ viewport: { width: 1400, height: 900 }, colorScheme: 'dark' })).newPage();
   await page.goto(URL_, { waitUntil: 'networkidle', timeout: 30_000 });
   await page.waitForTimeout(1500);
   shot.surfaces.desktop = await fingerprint(page, DESKTOP);
@@ -94,6 +99,7 @@ const shot = { platform: PLATFORM, viewport: '1400x900 / 402x681', surfaces: {} 
     viewport: { width: 402, height: 681 },
     isMobile: true,
     hasTouch: true,
+    colorScheme: 'dark', // the shell follows the device now; the baseline is the dark shell
   })).newPage();
   await page.goto(URL_, { waitUntil: 'networkidle', timeout: 30_000 });
   await page.waitForTimeout(1500);
@@ -102,7 +108,7 @@ const shot = { platform: PLATFORM, viewport: '1400x900 / 402x681', surfaces: {} 
 }
 {
   // login.html is static, so this works before AND after the auth routes exist.
-  const page = await (await browser.newContext({ viewport: { width: 800, height: 700 } })).newPage();
+  const page = await (await browser.newContext({ viewport: { width: 800, height: 700 }, colorScheme: 'dark' })).newPage();
   await page.goto(URL_.replace(/\/$/, '') + '/login.html', { waitUntil: 'networkidle', timeout: 30_000 });
   shot.surfaces.login = await fingerprint(page, LOGIN);
   await page.close();

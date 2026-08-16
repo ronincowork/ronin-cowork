@@ -32,6 +32,7 @@ export const PANES = [
   { id: 'hotwords', label: '▥ Hotwords', hint: 'Words dictation keeps getting wrong — the glossary sent with your voice' },
   { id: 'stats', label: '▦ Stats', hint: 'How this install actually gets used — TOMODACHI' },
   { id: 'koshi', label: '目 Koshi', hint: 'Which model each Koshi job asks' },
-  // Core, never dimmed: version and updates are the install's own business, no service.
-  { id: 'system', label: '⚙ System', hint: 'What this install is running — check for updates, run one' },
+  // ⚙ System is DELIBERATELY not a row: install-level facts (release, updates,
+  // appearance, log out) are page-level, so the gear lives in the bar and opens one
+  // sheet (js/system.js) — a room here meant four copies, one per tile.
 ];

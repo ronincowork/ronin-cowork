@@ -51,13 +51,17 @@ Amber is attention and identity; `--warn` is "needs you"; red is only ever wrong
 
 ## Theme
 
-Two themes, same roles: `:root` is dark (the default), `:root[data-theme='light']`
-remaps the shell. The owner flips it in ⚙ System (per device, localStorage
-`tmuxgrid.theme`); `index.html` applies the saved value inline before first paint.
-**Terminal surfaces stay dark in both themes** — the `--term-*` tokens are deliberately
-absent from the light block. One resolved palette feeds CSS, xterm and the browser's
-`theme-color`; `check-css` holds `theme.js`'s token reads and the stylesheet to the
-same list.
+Two shells, same roles: `:root` is dark, `:root[data-theme='light']` remaps. **The
+default FOLLOWS THE DEVICE** (`prefers-color-scheme`, live — flip the Mac and Ronin
+flips with it, owner's ruling 2026-08-16), and the one control is the flip button in
+the ⚙ System sheet: flipping away from the device's mode pins the shell; flipping
+back to match re-arms following — no third control exists (`theme.js setTheme`).
+Per device (localStorage `tmuxgrid.theme`); `index.html` resolves the choice inline
+before first paint. **Terminal surfaces stay dark in both shells** — the `--term-*`
+tokens are deliberately absent from the light block. One resolved palette feeds CSS,
+xterm and the browser's `theme-color`; `check-css` holds `theme.js`'s token reads and
+the stylesheet to the same list. The browser gates pin `colorScheme: 'dark'` so the
+baselines are a choice, not the headless engine's default.
 
 ## Transport and failure
 
@@ -140,6 +144,13 @@ plus one feature module; service gating stays `serviceOff()` in `state.js`.
 
 `commons.js` is the control-plane shell only; the roster and the launcher are rooms
 (`roster.js`, `launcher.js`) like Wipeboard and Docs.
+
+⚙ System is deliberately NOT a room: install-level facts (release, updates,
+appearance, log out) are page-level, so ONE gear in the bar opens one sheet
+(`system.js`) — a room meant four copies, one per tile (owner's ruling 2026-08-16).
+On touch the gear relocates into the ニ sheet like the other bar verbs. The Commons
+tab strip scrolls at every width — a 4-up desktop tile is narrower than the row of
+rooms, and clipping the tail is how a tab goes quietly missing.
 
 ## Keyboard and focus
 

@@ -1,10 +1,17 @@
 /* part of the tmux-ronin client — see js/README.md */
 import { request } from './request.js';
-import { status } from './ui.js';
-import { currentTheme, setTheme } from './theme.js';
+import { button, sheet, status } from './ui.js';
+import { resolvedTheme, setTheme } from './theme.js';
+import { S } from './state.js';
 
 /**
- * the commons' ⚙ System pane — what this install is, and the update buttons.
+ * ⚙ SYSTEM — what this install is, in ONE sheet off the bar's gear.
+ *
+ * It was a Commons room, which meant four copies — one per tile — for facts that are
+ * the INSTALL's, not a tile's. The owner's ruling (2026-08-16): a gear per tile makes
+ * no sense. So it is a page-level ui.sheet now, opened by the one ⚙ in the bar
+ * (relocated into the ニ sheet on touch like the other bar verbs), and the Commons
+ * keeps only the rooms that are actually about work.
  *
  * TWO MECHANICAL BUTTONS AND NOTHING AUTOMATIC. "Check for updates" is the one
  * moment this client causes an outbound ask (the server asks the release feed —
@@ -21,75 +28,66 @@ import { currentTheme, setTheme } from './theme.js';
  * On a CHECKOUT (release:null) the run button stays off: a source tree is updated by
  * git, not by unpacking a release over it — the readout says so instead of guessing.
  */
-export function buildSystem(pane) {
+export function buildSystemSheet() {
+  const dlg = sheet({ id: 'syssheet', cls: 'sys-card', label: 'System' });
   const wrap = document.createElement('div');
   wrap.className = 'sys';
+  dlg.card.appendChild(wrap);
 
   const idBlock = document.createElement('div');
   idBlock.className = 'sys-id';
 
+  // APPEARANCE — one flip button, and following the device is the default. The
+  // button shows the shell's CURRENT mode; pressing it flips. Flipping away from
+  // what the Mac prefers pins the shell; flipping back to match re-arms following
+  // (js/theme.js setTheme) — so "make it match" and "follow it" stay one act and
+  // no third control exists. Terminal panes stay dark either way, by design.
+  const appRow = document.createElement('div');
+  appRow.className = 'sys-theme';
+  const appLab = document.createElement('span');
+  appLab.className = 'sys-theme-lbl';
+  appLab.textContent = 'appearance';
+  const flip = button('', {
+    cls: 'sys-flip',
+    title: "The shell's mode — tap to flip. Ronin follows this device until you flip away; flip back to match and it follows again.",
+  });
+  const paintFlip = () => {
+    flip.textContent = resolvedTheme() === 'dark' ? '● dark' : '○ light';
+  };
+  flip.addEventListener('click', () => {
+    setTheme(resolvedTheme() === 'dark' ? 'light' : 'dark');
+    paintFlip();
+  });
+  paintFlip();
+  appRow.append(appLab, flip);
+
   const row = document.createElement('div');
   row.className = 'sys-actions';
-  const checkBtn = document.createElement('button');
-  checkBtn.type = 'button';
-  checkBtn.textContent = 'Check for updates';
-  checkBtn.title = 'Ask the release feed what the latest version is (only when pressed)';
-  const runBtn = document.createElement('button');
-  runBtn.type = 'button';
-  runBtn.className = 'sys-run';
-  runBtn.textContent = 'Update';
+  const checkBtn = button('Check for updates', {
+    title: 'Ask the release feed what the latest version is (only when pressed)',
+  });
+  const runBtn = button('Update', { cls: 'sys-run' });
   runBtn.disabled = true;
   runBtn.hidden = true;
-  row.append(checkBtn, runBtn);
-
-  const msg = status('sys-msg');
-
   // LOG OUT — only drawn when a login exists (/api/health `login`), because a button
   // that answers "you were never logged in" is furniture. Clearing the cookie sends
   // the next navigation through /login; the reload makes that immediate and visible.
-  const outBtn = document.createElement('button');
-  outBtn.type = 'button';
-  outBtn.className = 'sys-logout';
-  outBtn.textContent = 'Log out';
-  outBtn.title = 'End this device\u2019s session — the next visit asks for the password';
+  const outBtn = button('Log out', {
+    cls: 'sys-logout',
+    title: 'End this device’s session — the next visit asks for the password',
+  });
   outBtn.hidden = true;
   outBtn.addEventListener('click', async () => {
     outBtn.disabled = true;
     await request('/api/logout', { method: 'POST' });
     location.reload();
   });
-  row.append(outBtn);
+  row.append(checkBtn, runBtn, outBtn);
 
-  // APPEARANCE — dark or light, this device's own choice (js/theme.js). It sits in
-  // ⚙ System because it is a fact about the install as YOU see it, beside the release
-  // identity. Two buttons, one lit: a dropdown for a two-value choice is ceremony.
-  // Terminal panes stay dark either way — the light theme is the shell's, on purpose.
-  const appRow = document.createElement('div');
-  appRow.className = 'sys-theme';
-  const appLab = document.createElement('span');
-  appLab.className = 'sys-theme-lbl';
-  appLab.textContent = 'appearance';
-  const mkTheme = (v, label, hint) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.dataset.theme = v;
-    b.textContent = label;
-    b.title = hint;
-    b.addEventListener('click', () => {
-      setTheme(v);
-      appRow.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x.dataset.theme === v));
-    });
-    return b;
-  };
-  const darkBtn = mkTheme('dark', '● dark', 'The dark shell — the default');
-  const lightBtn = mkTheme('light', '○ light', 'A light shell. Terminal panes stay dark — that is the design, not a gap.');
-  (currentTheme() === 'light' ? lightBtn : darkBtn).classList.add('on');
-  appRow.append(appLab, darkBtn, lightBtn);
-
+  const msg = status('sys-msg');
   wrap.append(idBlock, appRow, row, msg.el);
-  pane.appendChild(wrap);
 
-  let version = null; // the operator's /api/version answer, fetched on enter
+  let version = null; // the operator's /api/version answer, fetched on open
   let latest = null;
 
   const say = (text, bad) => msg.say(text, bad ? 'bad' : '');
@@ -172,13 +170,18 @@ export function buildSystem(pane) {
   checkBtn.addEventListener('click', check);
   runBtn.addEventListener('click', run);
 
-  const enter = async () => {
-    const r = await request('/api/version', { cache: 'no-store' });
-    version = r.ok ? r.data : null;
-    renderId();
-    const h = await request('/api/health', { cache: 'no-store' });
-    outBtn.hidden = !(h.ok && h.data.login);
+  const open = () => {
+    dlg.open();
+    paintFlip(); // the Mac may have flipped while the sheet was away
+    say('');
+    void (async () => {
+      const r = await request('/api/version', { cache: 'no-store' });
+      version = r.ok ? r.data : null;
+      renderId();
+      const h = await request('/api/health', { cache: 'no-store' });
+      outBtn.hidden = !(h.ok && h.data.login);
+    })();
   };
 
-  return { enter };
+  S.sysPanel = { open, close: dlg.close };
 }
