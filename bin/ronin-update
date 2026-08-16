@@ -46,10 +46,11 @@ set -euo pipefail
 
 SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # the tree this script is in
 SLUG="${RONIN_RELEASE_REPO:-ronincowork/ronin-cowork}"    # the cowork release feed
-# The services feed. Private today (gh auth reaches it); when the public assets-only
-# releases repo exists, this default changes to it and the ⚙ gear's install is
-# reachable ungated — the flow here is identical either way.
-SVC_SLUG="${RONIN_SERVICES_REPO:-ronincowork/ronin-services}"
+# The services feed: the PUBLIC assets-only releases repo — tarballs, never source
+# (the paid layer's code stays private; the owner ruled the download ungated). A
+# stranger's curl reaches it with no auth, which is what makes the ⚙ gear's install
+# one press. Override for a fork or a private trial: RONIN_SERVICES_REPO.
+SVC_SLUG="${RONIN_SERVICES_REPO:-ronincowork/ronin-releases}"
 
 fail() { echo "✗ $1" >&2; exit 1; }
 say()  { echo "→ $1"; }
@@ -71,12 +72,22 @@ while [ $# -gt 0 ]; do
 done
 
 # --- where is the install home? ---
-# An installed copy lives at <home>/releases/<v>/ — VERSION present, parent named
-# `releases`. A checkout has neither, and must be told.
-if [ -z "$HOME_DIR" ]; then
-  if [ -f "$SELF/VERSION" ] && [ "$(basename "$(dirname "$SELF")")" = "releases" ]; then
+# An installed copy carries VERSION and sits either at <home>/releases/<v>/ or is
+# reached through <home>/current (the ⚙ gear runs it that way — bash keeps the
+# logical path, so the parent reads "current", not "releases"; the physical-path
+# check covers any other symlinked route). A checkout has none of this: --home.
+if [ -z "$HOME_DIR" ] && [ -f "$SELF/VERSION" ]; then
+  if [ "$(basename "$SELF")" = "current" ]; then
+    HOME_DIR="$(cd "$SELF/.." && pwd)"
+  elif [ "$(basename "$(dirname "$SELF")")" = "releases" ]; then
     HOME_DIR="$(cd "$SELF/../.." && pwd)"
-  elif [ "$MODE" = "check" ] && [ -z "$FILE" ]; then
+  else
+    P="$(readlink -f "$SELF" 2>/dev/null)"
+    [ "$(basename "$(dirname "$P")")" = "releases" ] && HOME_DIR="$(dirname "$(dirname "$P")")"
+  fi
+fi
+if [ -z "$HOME_DIR" ]; then
+  if [ "$MODE" = "check" ] && [ -z "$FILE" ]; then
     : # a bare --check from a checkout still works: installed=none, latest from the feed
   else
     fail "run from a checkout: pass --home <dir> (the install home; docs/release.md)"
