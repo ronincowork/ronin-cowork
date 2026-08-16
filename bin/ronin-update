@@ -262,7 +262,7 @@ if [ "$PACKAGE" = "services" ]; then
   # Into the serving tree, where the assembler discovers them at boot.
   mkdir -p "$HOME_DIR/current/src/services"
   for d in "$HOME_DIR/services"/*/; do
-    [ -f "$d/register.ts" ] || continue
+    { [ -f "$d/register.js" ] || [ -f "$d/register.ts" ]; } || continue
     name="$(basename "$d")"
     rm -rf "${HOME_DIR:?}/current/src/services/$name"
     cp -r "$d" "$HOME_DIR/current/src/services/$name"
@@ -308,7 +308,7 @@ ln -sfn "$HOME_DIR/.env" "$TARGET/.env"
 if [ -d "$HOME_DIR/services" ]; then
   mkdir -p "$TARGET/src/services"
   for d in "$HOME_DIR/services"/*/; do
-    [ -f "$d/register.ts" ] || continue
+    { [ -f "$d/register.js" ] || [ -f "$d/register.ts" ]; } || continue
     cp -r "$d" "$TARGET/src/services/$(basename "$d")"
   done
   say "carried services forward ($(services_installed_release)) — the candidate gates as The Works"
