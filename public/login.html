@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0e14" />
+    <title>tmux ronin — log in</title>
+    <!-- SELF-CONTAINED ON PURPOSE: this page is served ahead of the auth gate, so it
+         loads nothing else — style.css and the app stay behind the door. The handful
+         of colours below are the same tokens style.css defines; a palette change
+         touches both, and this comment is the pointer that keeps them honest. -->
+    <script>
+      try {
+        if (localStorage.getItem('tmuxgrid.theme') === 'light') document.documentElement.dataset.theme = 'light';
+      } catch (e) {}
+    </script>
+    <style>
+      :root {
+        --bg: #0b0e14;
+        --panel: #131826;
+        --line: #2a3247;
+        --fg: #c5c8c6;
+        --muted: #6b7488;
+        --accent: #e0af68;
+        --bad-soft: #e6a1a1;
+        --well: #0d1220;
+      }
+      :root[data-theme='light'] {
+        --bg: #f4f2ec;
+        --panel: #ffffff;
+        --line: #c8c2b2;
+        --fg: #2c2e36;
+        --muted: #6d7284;
+        --accent: #a06b1a;
+        --bad-soft: #8f3a3a;
+        --well: #f7f5ef;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        height: 100%;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+      body { display: flex; align-items: center; justify-content: center; }
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: min(340px, 92vw);
+        padding: 22px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+      }
+      h1 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: 0.3px; }
+      label { font-size: 11px; letter-spacing: 0.4px; text-transform: uppercase; color: var(--muted); }
+      input {
+        height: 40px;
+        padding: 0 10px;
+        background: var(--well);
+        color: var(--fg);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        font-size: 16px; /* 16px stops iOS Safari zooming the page on focus */
+      }
+      input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+      button {
+        height: 40px;
+        background: transparent;
+        color: var(--accent);
+        border: 1px solid var(--accent);
+        border-radius: 8px;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      button:disabled { opacity: 0.5; }
+      .err { min-height: 1.2em; margin: 0; color: var(--bad-soft); font-size: 12px; }
+      small { color: var(--muted); font-size: 11px; line-height: 1.5; }
+    </style>
+  </head>
+  <body>
+    <form id="f">
+      <h1>⛩ ronin</h1>
+      <label for="pw">password</label>
+      <input id="pw" type="password" autocomplete="current-password" autofocus required />
+      <p class="err" id="err" role="alert"></p>
+      <button id="go" type="submit">Log in</button>
+      <small>Set or change this password on the host with <code>bin/ronin-passwd</code>. The session lasts 30 days on this device; changing the password ends every session.</small>
+    </form>
+    <script>
+      const f = document.getElementById('f');
+      const pw = document.getElementById('pw');
+      const go = document.getElementById('go');
+      const err = document.getElementById('err');
+      f.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        go.disabled = true;
+        err.textContent = '';
+        try {
+          const r = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ password: pw.value }),
+          });
+          const d = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(d.error || 'HTTP ' + r.status);
+          location.replace('/');
+          return;
+        } catch (ex) {
+          // The password stays in the box: a failed login costs a retry, not retyping.
+          err.textContent = ex.message === 'Failed to fetch' ? 'could not reach Ronin' : ex.message;
+        }
+        go.disabled = false;
+        pw.focus();
+      });
+    </script>
+  </body>
+</html>

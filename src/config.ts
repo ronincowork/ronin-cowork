@@ -81,8 +81,11 @@ function isLoopback(addr: string): boolean {
  * Turning auth on lifts the restriction entirely — this checks for an UNGUARDED door,
  * not a wide one, and an operator who sets GRID_USER/GRID_PASS has answered the question.
  */
-export function assertBindIsSafe(): void {
-  if (authEnabled) return;
+export function assertBindIsSafe(passwordAuth = false): void {
+  // Either kind of credential answers the question this floor asks. The password
+  // half cannot be read here (config.ts must stay dependency-light), so the caller
+  // passes the fact in — src/index.ts hands it `passwordAuthEnabled()`.
+  if (authEnabled || passwordAuth) return;
   if (isLoopback(config.bind)) return;
   // Compare against the address Tailscale reports rather than "is it private": a LAN
   // address is not a tailnet, and every box on the café wifi shares one.
