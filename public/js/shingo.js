@@ -27,6 +27,17 @@ const HERE = '⛩';
  * The header chip. Hidden until a ladder exists — a session that keeps no TEGAMI costs
  * nothing on screen, which is what keeps this optional in practice as well as in theory.
  */
+/**
+ * Clamp agent-authored text before it becomes a hover label. The help box is a fixed
+ * three lines (~120 chars at its width); stock labels are guaranteed to fit by
+ * check-tips at build time, but a session's own words arrive at runtime and are
+ * unbounded — without this, one long objective overflows the box and fails the gate
+ * for the whole install.
+ */
+export function clampTip(s) {
+  return s.length > 120 ? s.slice(0, 119) + '…' : s;
+}
+
 export function makeChip(onTap) {
   const btn = document.createElement('button');
   btn.type = 'button';
@@ -59,7 +70,11 @@ export function makeChip(onTap) {
     btn.classList.toggle('gate', !!t.chip.gate);
     btn.classList.toggle('side', !!t.ladder_state);
     const held = t.chip.gate ? 'Held at a gate' : 'Tap for the ladder';
-    btn.title = (t.objective ? t.objective + '\n' : '') + held +
+    // The objective is AGENT-AUTHORED and unbounded; the help box is three lines.
+    // Clamp here at the source, or any session that writes a long objective overflows
+    // the box and fails check-tips for everyone (it measures the live DOM).
+    const ob = t.objective ? clampTip(t.objective) + '\n' : '';
+    btn.title = ob + held +
       (quiet ? ' · ladder unchanged for ' + quiet : '');
     return t;
   };

@@ -15,7 +15,7 @@
 import { request } from './request.js';
 import { STATUS_LABEL, homeData, homeFault, jobIcon } from './home.js';
 import { IS_TOUCH, S } from './state.js';
-import { humanAge } from './shingo.js';
+import { clampTip, humanAge } from './shingo.js';
 
 /**
  * @param {object} tile  rows connect into this tile
@@ -131,7 +131,8 @@ export function buildRoster(tile, host) {
       const age = s.tegami.quietMs >= 60000 ? humanAge(s.tegami.quietMs) : '';
       const quiet = age ? (IS_TOUCH ? ' · ' : ' · quiet ') + age : '';
       sg.textContent = s.tegami.chip.text + quiet;
-      sg.title = s.tegami.objective || '';
+      // Agent-authored and unbounded — clamped for the fixed help box (see shingo.js).
+      sg.title = s.tegami.objective ? clampTip(s.tegami.objective) : '';
       r.appendChild(sg);
     }
     if (s.status) {
