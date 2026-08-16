@@ -16,8 +16,8 @@
  * The registry owns names and order, NOT behaviour: which service gates a room stays
  * `serviceOff()` in state.js, and each room's fetches, state and rendering stay in its
  * own module. Agent-agnostic on purpose — nothing here (or in any pane) may assume
- * which agent CLI runs in a tile; a new provider or agent is catalog data
- * (docs/model-providers.md), never a new pane branch.
+ * which agent CLI runs in a tile; a new provider or agent is catalog data (a
+ * ronin_catalogs/PROJECT_ROOTS.md launch cell), never a new pane branch.
  */
 export const PANES = [
   { id: 'sessions', label: '⌂ Roster', hint: 'The running sessions' },

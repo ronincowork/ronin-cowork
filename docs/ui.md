@@ -168,7 +168,9 @@ reviewed way to accept an intended change) · `tests/` (the pure contracts:
 ## Agents are data, not branches
 
 The launcher renders `session_launch_spec` cells; providers and agent CLIs arrive as
-catalog rows (`docs/model-providers.md`), never as UI branches. Future agent forms
+catalog rows (`ronin_catalogs/PROJECT_ROOTS.md` — each populated cell is a
+provider/model/cmd triple; the standing write-up of that contract rides the owner's
+model-providers doc, in flight beside this), never as UI branches. Future agent forms
 (Hermes, gbrain and whatever "app" tiles become) enter the same way: the tile's view
 kinds (terminal | tape) may grow a sibling, and nothing in the shell may assume which
 agent is behind a pane.
