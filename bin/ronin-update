@@ -160,16 +160,35 @@ unit_serves_home() {
     [ "$(readlink -f "$wd" 2>/dev/null)" = "$(readlink -f "$HOME_DIR/current")" ]
 }
 
+# The render check, byoin's contract exactly (bin/ronin-byoin): exit 0 = rendered
+# and looked at; exit 2 = NO HEADLESS BROWSER here, an honest SKIP with its reason —
+# a laptop installing for the first time has no Playwright and must not be refused
+# for it; anything else = the page is actually broken.
+render_check() { # $1=tree $2=url $3=what; returns 1 only on a REAL failure
+  local out rc=0
+  out="$(cd "$1" && node scripts/smoke-ui.mjs "$2" 2>&1)" || rc=$?
+  if [ "$rc" = 0 ]; then
+    say "$3 gated: the page renders"
+  elif [ "$rc" = 2 ]; then
+    say "⚠ render gate SKIPPED for $3 — no headless browser on this machine, so the page has NOT been looked at (docs/host-tools.md). The boot and the version answer are the proof available here."
+  else
+    printf '%s\n' "$out" | tail -12 | sed 's/^/  /'
+    return 1
+  fi
+}
+
 restart_and_gate() {
   say "restarting tmux-ronin (sessions live in tmux-server.service — untouched)"
   systemctl --user restart tmux-ronin || fail "restart failed — systemctl --user status tmux-ronin"
-  # Gate the live page with the install's own gate, at the install's own address.
-  local port bind out
+  local port bind url
   port="$(sed -n 's/^PORT=//p' "$HOME_DIR/.env" 2>/dev/null | head -1)"
   bind="$(sed -n 's/^BIND=//p' "$HOME_DIR/.env" 2>/dev/null | head -1)"
-  out="$(cd "$HOME_DIR/current" && PORT="${port:-3006}" BIND="${bind:-}" libexec/ronin-gate)"
-  echo "$out"
-  echo "$out" | grep -q 'RONIN GATE: PASS' ||
+  url="http://${bind:-127.0.0.1}:${port:-3006}/"
+  for _ in $(seq 1 30); do
+    curl -fsS -m 2 -o /dev/null "${url}api/health" 2>/dev/null && break
+    sleep 1
+  done
+  render_check "$HOME_DIR/current" "$url" "the live page" ||
     fail "the LIVE page failed its gate after the swap — roll back: bin/ronin-update --rollback"
 }
 
@@ -335,14 +354,11 @@ done
 ANSWER="$(curl -fsS -m 3 "http://127.0.0.1:$SCRATCH/api/version" 2>/dev/null || true)"
 echo "$ANSWER" | grep -q "\"release\":\"$VER\"" ||
   fail "the candidate does not answer release $VER (got: ${ANSWER:-nothing}) — nothing was swapped"
-GATE_OUT="$(cd "$TARGET" && RONIN_GATE_URL="http://127.0.0.1:$SCRATCH/" libexec/ronin-gate)"
-echo "$GATE_OUT" | sed 's/^/  /'
-echo "$GATE_OUT" | grep -q 'RONIN GATE: PASS' ||
+render_check "$TARGET" "http://127.0.0.1:$SCRATCH/" "the candidate ($VER)" ||
   fail "the CANDIDATE failed its render gate — nothing was swapped; the serving release never moved"
 kill_tree "$CANDIDATE_PID"
 wait "$CANDIDATE_PID" 2>/dev/null || true
 CANDIDATE_PID=""
-say "candidate gated: $VER renders"
 
 # --- swap ---
 CUR="$(readlink "$HOME_DIR/current" 2>/dev/null || true)"
