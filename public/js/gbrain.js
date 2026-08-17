@@ -76,8 +76,9 @@ export function buildGbrain(root, isShowing, askPersonalAssistant) {
     search.append(heading('Search'));
     const weightsTone = data.search.weights === 'running' ? 'good' : 'bad';
     search.append(row('Local embeddings', value(data.search.weights), weightsTone));
-    search.append(row('Model', data.search.model));
-    search.append(row('Dimensions', String(data.search.dimensions)));
+    // Measured or absent — a dash, never a claimed model on a box that has none.
+    search.append(row('Model', data.search.model ?? '—', data.search.model ? '' : 'warn'));
+    search.append(row('Dimensions', data.search.dimensions === null ? '—' : String(data.search.dimensions)));
     const retrieval = data.search.mode === 'hybrid' ? 'hybrid (keyword + semantic)' : data.search.mode === 'keyword_only' ? 'degraded — keyword only' : 'unknown';
     search.append(row('Retrieval', retrieval, toneFor(data.search.mode)));
     if (data.search.reason) search.append(row('Reason', value(data.search.reason), 'warn'));
