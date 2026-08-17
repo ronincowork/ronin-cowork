@@ -47,14 +47,33 @@ noticed it there.
 **DISPLAY ONLY — an unpreviewed macro still runs**, typed by hand, bound to a keypad key, or
 compiled with `tejun`. Nothing is hidden from an agent and nothing is deleted; the toggle
 answers "is this on the button", not "does this exist".
-A previewed entry carries the two lines the button is drawn from:
-**`- **label:**`** — the headline, in plain words, **never the `+name:` spelling** — and
-**`- **blurb:**`** — one or two sentences saying what it does, shown always and not on
-hover (the owner has a phone, where hover does not exist). Write both for somebody who does
-not know the macro exists. They are deliberately NOT the prose under the heading: that is
-written for the agent about to run the recipe, and it opens with the rule the agent must not
-break, which teaches a human nothing. Same two keys, same job, as the kind buttons in
-`SESSION_JOBS.md`.
+The card is drawn from the entry's `label:` and `blurb:` — which every entry carries, previewed
+or not, for the reason below.
+
+**TWO AUDIENCES, AND NEITHER STANDS IN FOR THE OTHER** (owner, 2026-08-17 — *"we need to
+split out the description and the agent instruction into two different things because they
+don't overlap, and the macro should carry both"*). Every entry here is read by two readers
+who need opposite things, so it carries two separate pieces of writing:
+
+- **The prose under the heading is the AGENT'S INSTRUCTION** — what you read in order to RUN
+  the macro. It opens with the rule the agent must not break (`forkit` starts *"Owner-invoked
+  only — never fork on your own initiative"*), it names actions and params, and it assumes the
+  house vocabulary. Served as `instruction` on `/api/macros`; the field was called
+  `description` until 2026-08-17, and that name is what invited a human surface to render it.
+- **`label:` and `blurb:` are what a PERSON reads** to decide whether they want the macro:
+  a plain-words headline (**never the `+name:` spelling**) and one or two sentences saying what
+  it does, for somebody who has never heard of it. No jargon a newcomer would not have, and
+  **true about what the macro actually does** rather than evocative — a destructive macro's
+  blurb must say so plainly instead of sounding inviting. Same two keys, same job, as the kind
+  buttons in `SESSION_JOBS.md`.
+
+**Both are required on every entry** — `check:catalogs` fails a stock entry missing either —
+and **no human surface may fall back to the instruction.** Showing *"Owner-invoked only —
+never fork on your own initiative"* to a person who tapped a button to find out what it does
+teaches them nothing; that fallback existed until 2026-08-17 and it was the exact overlap the
+owner is splitting. Every macro carries the pair even though the drop shows four, because the
+next surface is a library people browse to adopt macros from, and copy written for four
+entries would have to be written again for all of them.
 
 **RUN IT — DON'T NARRATE IT.** A macro invocation is a button press, not a
 conversation. Do not announce what a macro is, that you are about to read TEJUN docs,
@@ -69,6 +88,8 @@ from Ronin's target picker in that case, or pass it as a macro arg.
 
 ## updateplan
 - **class:** session_macro.workflow
+- **label:** Ask it to update its plan
+- **blurb:** Ronin types one line into the session asking the agent to bring its ladder up to date, so the steps shown under the tile header match what it has actually done. Nothing else happens — it fixes the list and carries on with what it was doing, without reporting back to you.
 Ask this session to bring its TEGAMI up to date. **Ronin sends this one for you** —
 the button does not prefill it, it types the line below and presses Enter, so the
 session updates its ladder without you writing anything. Nothing else happens: the
@@ -140,6 +161,8 @@ from here on — the origin session must not relay.
 
 ## buildout
 - **class:** session_macro.workflow
+- **label:** Plan it before any code
+- **blurb:** Ask for the work written up as a plan first — what it is for, the steps it breaks into, how you will know it is finished. No code gets written: the agent hands you the document and waits while you read and change it.
 Plan a piece of work as a document the owner can read, edit and riff on — no code yet.
 "buildout: <what to build>".
 
@@ -153,6 +176,8 @@ edits the doc before any cutting starts.
 
 ## cutcode
 - **class:** session_macro.workflow
+- **label:** Build what the plan says
+- **blurb:** Point the agent at a plan you have already agreed and it builds from it — one step at a time, or all the way to the end. It opens a pull request for you to approve and never merges anything itself.
 Build from a buildout doc. "cutcode: <doc> leg" / "cutcode: <doc> finish"
 (add `live` if sequencing matters; default is `dev`).
 
@@ -166,6 +191,8 @@ Report: what got cut, what remains in the doc, the PR link. On `leg`, stop and w
 
 ## land
 - **class:** session_macro.workflow
+- **label:** Finish up, then close this session
+- **blurb:** Writes the work down where it will last — a README beside the code, a pull request for anything uncommitted, one line in the index of finished work — and then ends the session for good. Use it when the work is done: the pane closes and there is nothing to come back to.
 **Land YOURSELF.** No args: finish the work of THIS session, leave the record, end
 this session. The buildout doc you were working from is your own wip;
 if you truly can't tell what you were building, ask — don't guess.
@@ -185,6 +212,8 @@ Sessions are disposable: nothing of value may live only in a pane.
 
 ## delete
 - **class:** session_macro.workflow
+- **label:** Throw this session away
+- **blurb:** Ends the session and keeps nothing — no write-up, no pull request, no index entry, no way back. For sessions that produced nothing worth saving. It refuses and tells you if there is unsaved work, which is the case for finishing up properly instead.
 **End THIS session quietly — nothing recorded.** For sessions that produced no
 artifact worth keeping: evaluations, catch-ups, questions, scratch work. No README,
 no manifest line, no PR. It just goes away.
@@ -199,6 +228,8 @@ Contrast with `land`: land RECORDS (README + manifest + PR) then dies; delete ju
 
 ## tag
 - **class:** session_macro.lookup
+- **label:** Who is in this group
+- **blurb:** Name a group of sessions and get back who is in it right now, with each one's permission dial. It only looks the name up — it never tags anything, and it sends the members nothing.
 Aliases: group
 Owner names a GROUP and expects you to know who is in it: `+tag: ronin` — "the ronin
 group" is now the set we are talking about. **Read-only: this NEVER tags anything.**
@@ -299,6 +330,8 @@ is not an occasion for one.
 
 ## read
 - **class:** session_macro.workflow
+- **label:** Catch up on another session
+- **blurb:** Have this agent look in on another session and tell you what it is doing, how it is going, and anything that is waiting on you. It reads only, and stops rather than touching a session you have not opened up.
 Owner asks for a catch-up on a session: "read <session>".
 
 | # | Action | With |
@@ -312,6 +345,8 @@ keep watching but MUST NOT write until the owner changes the dial.
 
 ## readwrite
 - **class:** session_macro.workflow
+- **label:** Have it work in another session
+- **blurb:** The same catch-up as reading a session, and then this agent acts in that one for you — fixes the thing, answers the question. It only goes ahead if you have set that session's dial to let an agent write; it will never flip the dial itself.
 Owner wants an agent acting in a session: "read-write <session>" / "check <session>
 and fix …".
 
@@ -326,6 +361,8 @@ action).
 
 ## evaluate
 - **class:** session_macro.workflow
+- **label:** Get a second opinion on it
+- **blurb:** Have this agent read another session's work — its documents, its commits, the plan it is following — and tell you whether it holds up, what is missing and what looks risky. The verdict comes to you and is never written into the session being judged.
 Owner asks for an independent read-only assessment of another session's work:
 "evaluate <session>'s plan".
 

@@ -232,10 +232,30 @@ can then go, 'Oh, I see.'"* Three consequences, and none of them is cosmetic:
   and nothing is deleted.
 - **No `+name:` on the face.** The headline is the entry's `label:`, in plain words. The
   invocation moved into the help box — still learnable, no longer the first thing read.
-- **The description is always visible**, from the entry's `blurb:`, never clamped and never
+- **The body copy is always visible**, from the entry's `blurb:`, never clamped and never
   on hover. Confirmed directly by the owner, who also has a phone, where hover does not
   exist. This is body copy inside the button and deliberately **not** `tips.js`, which is
   the terse hover primitive and is width-gated by `check-tips`.
+
+**TWO AUDIENCES, AND NO FALLBACK BETWEEN THEM (owner's ruling, 2026-08-17).** *"We need to
+split out the description and the agent instruction into two different things because they
+don't overlap, and the macro should carry both."* A catalog entry is written twice:
+
+- the prose under the `## name` heading is the **agent's instruction** — served as
+  `instruction` on `/api/macros` (renamed from `description` the same day, because that name
+  is what invited a human surface to render it);
+- `label:` and `blurb:` are the **person's copy**, and the card renders those and only those.
+
+The card used to fall back to the instruction when an entry carried no blurb. That is gone:
+it would have greeted a person who tapped ⚡ to find out what `forkit` does with *"Owner-invoked
+only — never fork on your own initiative"* — a prohibition addressed to somebody else. Both
+halves are now required on **every** macro, previewed or not (`check-catalogs` fails a stock
+entry missing either), because the next surface is a library people browse to adopt macros
+from and copy written for four would have to be written again for thirteen.
+
+A macro of the **owner's own** can still reach the drop without a blurb — a user catalog file
+is theirs and no gate reaches it. That card is its label plus one quiet line saying the blurb
+is missing and where to add it. Never the instruction, and never a blank, which reads as broken.
 
 The card is the same shape as the launcher's kind buttons (`.ks-btn`) because it is the same
 job: picking a thing you may never have heard of by reading what it does.

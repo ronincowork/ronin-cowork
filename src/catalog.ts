@@ -67,10 +67,12 @@ export type Entry = { name: string; origin: Origin; shadowed: boolean; get: (key
  * below to READ a field, and `src/macros.ts` to SKIP the fields and find the prose.
  *
  * That second use is a bug fix (2026-08-17). MACROS.md entries open with `- **class:**` and
- * `listMacros` took its description from the first paragraph without knowing a field line
- * from a sentence — so every blurb the client rendered began
+ * `listMacros` took the agent's `instruction` from the first paragraph without knowing a field
+ * line from a sentence — so every blurb the client rendered began
  * `- class: session_macro.workflow …`. Survivable while the blurb was a hover afterthought;
- * fatal the day the ⚡ drop became four teaching buttons with the description as their body.
+ * fatal the day the ⚡ drop became four teaching buttons rendering that text as their body.
+ * The cards read `blurb:` and only `blurb:` now (owner, same day: the two do not overlap),
+ * but the skip is still what keeps `instruction` from opening with a field line.
  */
 export const isKeyLine = (line: string): boolean => /^-\s*\*\*[\w-]+:\*\*/.test(line.trim());
 

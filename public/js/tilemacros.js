@@ -33,13 +33,18 @@ import { addProvMark } from './provenance.js';
  *   - NO `+name:` ON THE FACE. The headline is the catalog's `label:`, plain words.
  *     The invocation moved to the help box, which is where the syntax is still
  *     learnable without being what you read first.
- *   - THE DESCRIPTION IS ALWAYS VISIBLE, never on hover. The owner confirmed it
+ *   - THE BODY COPY IS ALWAYS VISIBLE, never on hover. The owner confirmed it
  *     directly, and he reads Ronin on a phone, where hover does not exist.
+ *
+ * A CATALOG ENTRY IS WRITTEN TWICE, FOR TWO READERS (owner, 2026-08-17). The prose under
+ * a `## name` heading in MACROS.md is the AGENT'S instruction — it opens with the rule the
+ * agent must not break — and `label:`/`blurb:` are the PERSON'S copy. This file renders only
+ * the second pair. It never renders `instruction`, not even as a fallback; see render().
  *
  * The reference — the whole instruction, every macro, the ones not previewed
  * included — is `ronin_catalogs/MACROS.md`.
  */
-/** Catalog blurbs are markdown, and a tooltip renders none of it — `**bold**` and
+/** Catalog blurbs are markdown, and a card renders none of it — `**bold**` and
  *  backticks arrive as literal punctuation. Strip the syntax, keep the words. */
 const plain = (s) =>
   (s || '')
@@ -127,12 +132,24 @@ export function buildTileMacros(tile) {
       // The mark rides on the headline, exactly as it does on the launcher's kind
       // buttons — a macro of yours, or one of ours you replaced (js/provenance.js).
       addProvMark(nm, m);
-      // Body copy, ALWAYS VISIBLE. `blurb:` is written for somebody who does not know
-      // the macro exists; the description falls in behind it for an entry (a user's
-      // own, most likely) that carries no blurb, so a previewed macro is never a
-      // headline with nothing under it.
+      // Body copy, ALWAYS VISIBLE, and it is `blurb:` or it is nothing.
+      //
+      // NO FALLBACK TO `instruction` (owner, 2026-08-17 — *"we need to split out the
+      // description and the agent instruction into two different things because they don't
+      // overlap"*). Until today this line read `m.blurb || plain(m.description)`, so a
+      // previewed entry with no blurb showed the agent's own instruction to a person:
+      // `forkit` would have greeted them with "Owner-invoked only — never fork on your own
+      // initiative", a prohibition addressed to somebody else that teaches the reader nothing
+      // about what the button does. Falling back IS the overlap the owner is splitting.
+      //
+      // So what does a blurbless card say? Stock entries cannot get here — check-catalogs
+      // fails MACROS.md if any entry lacks `label:`/`blurb:`. The real case is a macro of the
+      // OWN OWNER'S, in their own catalogs file (js/provenance.js exists for exactly that),
+      // marked `preview: yes` with no blurb written. That card is label-only plus one quiet,
+      // honest line naming the gap and the fix — not a blank under the headline (which reads
+      // as broken), not the instruction, and not a guess at what their macro does.
       const why = document.createElement('small');
-      why.textContent = m.blurb || plain(m.description);
+      why.textContent = plain(m.blurb) || 'no blurb yet — add a blurb: line to its MACROS.md entry';
       row.append(nm, why);
       // The invocation lives in the HELP BOX now. It is off the face by the owner's
       // ruling, but it must stay learnable — the whole premise of this menu is that
