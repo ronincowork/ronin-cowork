@@ -24,6 +24,7 @@
 import type express from 'express';
 import { readSettei } from '../settei.js';
 import {
+  readAgentsSection,
   writeAgentsSection,
   writeGbrainSection,
   writeMachineSection,
@@ -82,9 +83,19 @@ export function registerSettei(app: express.Express): void {
       };
     }
     try {
+      // MERGE, DO NOT REPLACE — and this is not tidiness. Two surfaces write here: the
+      // first-load page and the ⚙ Setup room, and a job is keyed by name, so a caller
+      // that sends only the job it changed would otherwise delete every other job and
+      // the session default with them. Sending the whole section is a convention, and a
+      // convention is not a guarantee. Only the keys actually present in the body move.
+      const prior = await readAgentsSection();
+      const priorJobs = (prior.jobs ?? {}) as Record<string, unknown>;
+      const priorSessions = (prior.sessions ?? {}) as { default?: Record<string, unknown> };
       await writeAgentsSection({
-        sessions: { default: { provider: str(d.provider) ?? null, model: str(d.model) ?? null } },
-        jobs,
+        sessions: body.sessions === undefined
+          ? priorSessions
+          : { default: { provider: str(d.provider) ?? null, model: str(d.model) ?? null } },
+        jobs: body.jobs === undefined ? priorJobs : { ...priorJobs, ...jobs },
       });
       res.json({ ok: true });
     } catch (e) {
