@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# pre-push — the gates run HERE, not in the pull request.
+#
+# WHY THIS EXISTS, in one sentence: the repo gates are one command, everybody knows that,
+# and pushes kept arriving that had never run it — so the first thing a reviewer saw was a
+# red PR for a fault the author could have seen in ten seconds.
+#
+# It is not carelessness so much as a bad habit with a plausible shape: you run the two or
+# three checks you think your change touched, they pass, and you push. But WHICH gate a
+# change breaks is exactly what you cannot know in advance — a revert leaves a dead export
+# behind check-dead, a new directory git cannot track breaks check-docs three files away, a
+# comment naming a home directory trips check-place. `bin/ronin-byoin` is one command
+# precisely so nobody has to guess which subset matters.
+#
+# THE RENDER CHECK IS NOT A PUSH GATE, and this is a distinction rather than a loophole.
+# A pre-push hook asks *is the tree honest with itself*; the render check asks *does the
+# running page work*. Only the first is a fact about the commit being pushed. The second
+# depends on a browser the box may not have (an honest SKIP — docs/host-tools.md), on the
+# live operator, and on whatever every other session currently has half-finished in the
+# shared tree. Blocking everyone's push on one live page fault is how a guard gets
+# switched off for good.
+#
+# So: a render failure WARNS and lets the push through, named out loud. Every other gate
+# blocks. CI enforces the same set, because its runner has no browser and skips it too.
+#
+# FAILS OPEN when it cannot judge: no byoin on disk means this is not a cowork checkout.
+#
+# Override: RONIN_SKIP_BYOIN=1 git push …   (a WIP branch, a docs typo, a push you intend
+# to force over — all real. It should be a deliberate choice rather than the default.)
+[ "${RONIN_SKIP_BYOIN:-0}" = 1 ] && exit 0
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
+BYOIN="$ROOT/bin/ronin-byoin"
+[ -x "$BYOIN" ] || exit 0
+
+echo "pre-push: running the repo gates (bin/ronin-byoin --gates) …"
+OUT="$("$BYOIN" --gates 2>&1)"; RC=$?
+printf '%s\n' "$OUT"
+[ "$RC" = 0 ] && exit 0
+
+# Which gates failed? The verdict line names them: "BYOIN: N gate(s) failed — a b c"
+FAILED="$(printf '%s\n' "$OUT" | sed -n 's/^BYOIN: .*gate(s) failed — //p' | tail -1)"
+BLOCKING=""
+for g in $FAILED; do
+  case "$g" in
+    smoke-ui | visual-ui) ;;                  # the page, not the tree
+    *) BLOCKING="$BLOCKING $g" ;;
+  esac
+done
+
+if [ -z "$BLOCKING" ] && [ -n "$FAILED" ]; then
+  cat >&2 <<MSG
+
+  ─────────────────────────────────────────────────────────────────────────
+  PUSHED ANYWAY — the only failure is the render check ($FAILED).
+
+  That is about the running page, not the tree you are pushing, and CI skips
+  it for want of a browser. It is still real: THE PAGE HAS NOT BEEN LOOKED AT.
+  If it is your break, fix it. If it is not, make sure whoever owns it knows.
+  ─────────────────────────────────────────────────────────────────────────
+
+MSG
+  exit 0
+fi
+
+cat >&2 <<MSG
+
+  ─────────────────────────────────────────────────────────────────────────
+  PUSH REFUSED —$BLOCKING
+
+  CI runs the same gates, so this is a red PR you can avoid right now. Each
+  failure names its own remedy above; docs/byoin.md is the roster. A SKIP is
+  not a failure — read the line, it says what was not checked and why.
+
+  If you meant to push anyway (work in progress, a branch nobody reviews):
+
+      RONIN_SKIP_BYOIN=1 git push …
+
+  ─────────────────────────────────────────────────────────────────────────
+
+MSG
+exit 1
