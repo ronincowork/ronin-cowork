@@ -1,6 +1,6 @@
-# gbrain — the brain a session can be wired to
+# gbrain — shared knowledge for connected sessions
 
-**gbrain is not ours.** It is Garry Tan's open-source agent brain — MIT licensed, and this
+**gbrain is not ours.** It is Garry Tan's open-source agent-memory system — MIT licensed, and this
 page exists partly to say so plainly: <https://github.com/garrytan/gbrain>. What it is, how
 retrieval works, its CLI, its recipes for connecting email and calendar — **their README and
 `docs/` are the reference, read live, never copied here.** On a machine where the gbrain
@@ -12,16 +12,43 @@ self-wiring entity graph, and synthesized answers with citations. One server pro
 the database; every session with MCP on can reach it; the CLI against the same database is
 refused while the server runs (single-writer, by design — theirs).
 
+The picture the house uses (owner, 2026-08-17): **gbrain is a filing cabinet and a
+librarian.** The cabinet is the git repo of markdown — your actual notes, the one thing
+that cannot be rebuilt, which is why it lives in a durable home outside every repo. The
+librarian is the server: it reads every page, keeps an index in a database, and answers
+sessions' questions. Lose the librarian or the index and you have lost a re-read;
+lose the cabinet and you have lost the knowledge. Everything the gbrain `ronin_service` installs
+is replaceable machinery around that one irreplaceable folder.
+
 ## What cowork ships — all of it generic
 
-Cowork itself has no gbrain code and no gbrain dependency. It ships three pieces that any
-MCP-served tool can use, and gbrain is simply the first occupant:
+Cowork has no gbrain runtime dependency. It ships the generic launch pieces below and the
+service-owned gbrain Commons tab; the tab is opaque and inert when the `gbrain` service is
+absent.
 
 | piece | what | where |
 |---|---|---|
-| **the toggle** | ＋ New session: **gbrain on** (default — the CLI's own config applies) / **gbrain off**. The label says gbrain by the owner's ruling; the mechanism is all-MCP — off launches the session with **no** MCP servers, every other connector included, and the tooltip says so. Per launch; relaunch to change | `public/js/launcher.js` · `src/spawn.ts` |
-| **`mcp_off:`** | the launch-table key holding a provider's own "no MCP" flags, appended to the cell's command when the toggle is off. A provider that declares none is **refused** when off is asked for — never launched connected | `ronin_catalogs/PROJECT_ROOTS.md` · `src/project-roots.ts` |
+| **the toggle** | ＋ New session: **gbrain on** (default — the CLI's own config applies) / **gbrain off**. The label says gbrain by the owner's ruling; the intended mechanism is all-MCP — off should launch the session with **no** MCP servers, every other connector included. Per launch; relaunch to change. The Codex exception is recorded below | `public/js/launcher.js` · `src/spawn.ts` |
+| **`mcp_off:`** | the launch-table key holding a provider's declared "no MCP" flags, appended to the cell's command when the toggle is off. A provider that declares none is refused; a declared flag still needs an end-to-end proof that it worked | `ronin_catalogs/PROJECT_ROOTS.md` · `src/project-roots.ts` |
 | **`credit:`** | the session_job key — one markdown link, text and href — rendered on the opened launch form as a real anchor (*powered by gbrain ↗*). Never inside the kind button: an anchor in a button is nested-interactive, which the axe gate fails | `src/catalog.ts` · `public/js/launcher.js` |
+
+### Review finding — connected is not provisioned, and off is not yet proved
+
+The toggle is only a launch-time pass-through to the agent CLI. **On does not install,
+start, authenticate or register gbrain.** It makes whatever MCP servers that CLI already
+carries available to the new session. On a fresh machine that can mean nothing; provisioning
+the owner's gbrain server and registering it with each CLI remains the gbrain `ronin_service`'s job.
+
+The shared-access path has been proved: Claude and Codex sessions concurrently read and
+wrote one PGLite database through one HTTP server. The inverse claim has not. In particular,
+Codex merges `-c mcp_servers={}` with its user configuration rather than replacing the
+configured servers, so the current OpenAI `mcp_off` row leaves gbrain enabled. **Until an
+end-to-end launch exposes zero MCP tools, “gbrain off” is a known broken claim for Codex.**
+The launch receipt records what Ronin requested, not what the CLI actually exposed.
+
+One more boundary is deliberate: this is per-session *access*, not per-session data. Every
+session launched with MCP on reaches the same gbrain corpus, and gbrain has no Ronin session
+partition. A capture from one connected session can be recalled by another.
 
 ## 🎩 PersonalAssistant — the kind that names it
 
@@ -31,19 +58,22 @@ opens an outside connection. **It credits gbrain by name and link, by the owner'
 On an install without gbrain it still launches and degrades to a plain assistant — the
 posture itself says how.
 
-What such a session knows at birth is shelf content, not catalog text: the session-boot
-store's job level carries the working SOP and gbrain's own skillpack on installs that
-have them, and a root whose directory is the brain's own repo can carry the same on its
-root-level shelf (`docs/session-boot.md`).
+What such a session knows at birth is shelf content, not catalog text. An overview is not
+an operating protocol: the job shelf must point first to gbrain's live installed skill
+resolver, which dispatches the request to `brain-ops`, `query`, `capture` and
+the other applicable skills. Those skill bodies can be fetched from the installed package
+or through gbrain's `get_skill` MCP tool; they should not be copied into cowork. The working
+SOP and architecture overview may sit beside the resolver, and a `gbrain` project root may
+carry the same pointers on its root shelf (`docs/session-boot.md`).
 
 ## Embeddings — why search needs a model, and which door that opens
 
 **gbrain's search is only whole with an embedding model.** Pages are chunked into the
-database; keyword (BM25) search works with no model at all — that is **keyless mode**, the
-shipped default, and gbrain marks its own responses `degraded: embed_unavailable` while in
-it. Exact tokens and names land; concept and synonym questions quietly under-return. The
+database; keyword (BM25) search works with no model at all — that is the degraded fallback,
+and gbrain marks its own responses `degraded: embed_unavailable` while in it. Exact tokens
+and names land; concept and synonym questions quietly under-return. The
 vector half needs an **embedding model**, and enabling one means a re-init and full
-re-import — **cheap while the brain is small, growing with every page**, so the decision
+re-import — **cheap while the gbrain corpus is small, growing with every page**, so the decision
 belongs early.
 
 Two families, and they differ in exactly one thing that matters here:
@@ -54,10 +84,53 @@ Two families, and they differ in exactly one thing that matters here:
 | **egress** | **a standing door: every page at index, every query at search** | **none — embedding happens on the machine** |
 | cost | an API key and a bill | disk and CPU for a small model |
 
-**The decided posture (owner, 2026-08-16): keyless is the shipped default; local embeddings
-are the offered upgrade; a hosted provider is a named door the install never opens itself.**
+**The decided posture (owner, re-ruled 2026-08-17): opting into gbrain installs and uses
+local embeddings. BM25-only keyless operation is the degraded posture when that local unit
+is unavailable. Ronin offers no hosted embedding-provider option.**
 Known sharp edges when enabling local: pin the embedding dimensions explicitly, and
 `gbrain doctor` prints the exact repair when they fight (their issues #2051, #2301).
+
+## The gbrain commons_tab
+
+**When gbrain is not installed, the tab is one button** (owner's ask, 2026-08-17):
+**Load gbrain** — a single press runs the service's own installer (weights, gbrain
+pinned, the cabinet, the server, tokens, wiring, shelves), streaming its log into the
+tab until the panel below takes over. The button exists only while `installed` is
+false in `GET /api/gbrain`; the press lands on `POST /api/gbrain/install`, which is
+refused while a run is underway. Nothing in cowork ever presses it itself.
+
+The gbrain Commons tab makes the mechanical state visible without requiring the
+owner to know what to ask an agent. Its primary privacy readout is:
+
+```text
+Local gbrain process     ● running
+Listening                VM only
+External model provider  none
+Integrations             none
+Public access            off
+```
+
+Here `127.0.0.1:7777`, when shown under details, is the VM's own loopback address for the
+local gbrain HTTP/MCP process—not gbrain HQ and not public access. The tab also lists
+available and connected integrations without checkboxes. Setup or repair hands an editable
+request to PersonalAssistant, because credential recipes and their outside doors still
+need an agent explanation and the owner's confirmation. The focused build-out and
+service response contract live in GBRAIN_PANEL.md in ronin-lab's gbrain work folder. Cowork owns its
+HTML/CSS/JavaScript; the gbrain `ronin_service` owns the secret-free `GET /api/gbrain`
+snapshot. With services absent, the tab stays visible but opaque and cannot be opened.
+
+The integration headline counts outside connections, not gbrain's internal “reflex”
+policies. Those policies do not mean Gmail, Calendar, Drive, a gateway or a public tunnel
+has been connected.
+
+### Where connection credentials live
+
+The implemented boundary is narrow: the gbrain credential gateway owns acquisition and
+refresh, while Ronin receives only redacted connection state. The commons_tab neither reads
+nor writes credentials. Whether a future **SETTEI** connection surface stores an OAuth token
+in a protected field, a service-owned store or the gateway's own store remains an open
+storage ruling; auth/passkeys do not settle it by analogy, and neither does the existing
+`.env` rule for operator-supplied provider keys.
 
 ## What leaves the machine — measured, not asserted
 
@@ -69,16 +142,16 @@ install, and version checks** (`self_upgrade: notify` in its config). No model c
 (keyless), no telemetry observed. A socket check is a snapshot, not an audit — the standing,
 checkable answer is AGERU's `egress_log` when it exists.
 
-## Connectors vs the brain — two different Gmails
+## Connectors vs gbrain — two different Gmails
 
 A claude session may also carry **claude.ai connectors** (Anthropic-hosted MCP servers that
-come with the owner's claude.ai account — Gmail, Calendar, Drive). They are not the brain
+come with the owner's claude.ai account — Gmail, Calendar, Drive). They are not gbrain
 and not a competitor to it:
 
-| | claude.ai connectors | gbrain ingestion (email-to-brain etc.) |
+| | claude.ai connectors | gbrain ingestion (`email-to-brain`, etc.) |
 |---|---|---|
-| what they give | **live hands** — read the inbox now, make an event now; nothing stored | **knowledge** — mail becomes pages in the brain: indexed, entity-linked, searchable with history |
-| who can use it | claude sessions only | any agent wired to the brain — claude, codex, hermes |
+| what they give | **live hands** — read the inbox now, make an event now; nothing stored | **knowledge** — mail becomes indexed, entity-linked gbrain pages searchable with history |
+| who can use it | claude sessions only | any agent wired to gbrain — claude, codex, hermes |
 | data flow | a fresh Anthropic ↔ Google call per query | Google → the owner's machine, continuously, via gbrain's credential-gateway recipe |
 | setup | the claude.ai account; each connector still needs its own OAuth completed before any tool works | agent-walked recipe, doors named first, one yes at a time |
 
@@ -89,7 +162,7 @@ present is not the same as connected.
 ## What is deliberately NOT cowork's
 
 The gbrain install itself, the one `serve --http` server and its unit, client registration
-and token lifecycle, and the per-CLI MCP wiring — that is the **gbrain service's** job
+and token lifecycle, and the per-CLI MCP wiring — that is the **gbrain `ronin_service`'s** job
 (services layer), or the owner's by hand. Cowork behaves identically whether or not any of
 it exists: the toggle governs whatever the CLI's config carries, including nothing.
 

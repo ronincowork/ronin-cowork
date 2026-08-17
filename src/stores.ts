@@ -170,6 +170,38 @@ export const STORES: readonly Store[] = [
     createdBy: 'the owner saving a setting',
     when: 'first setting written',
   },
+  {
+    id: 'koshi_weights',
+    root: 'user',
+    rel: 'koshi_weights',
+    what: 'local model weights and the pinned llama.cpp that serves them — data, re-downloadable, never in a repo',
+    createdBy: "the koshi_weights service's setup.sh",
+    when: 'the koshi_weights service installed',
+  },
+  {
+    id: 'koshi_weights_service',
+    root: 'user',
+    rel: 'koshi_weights_service',
+    what: "the koshi_weights service's own state — the install runner's state and log",
+    createdBy: "the koshi_weights service's api (install-contract.md)",
+    when: 'first standalone install pressed',
+  },
+  {
+    id: 'gbrain_brain',
+    root: 'user',
+    rel: 'gbrain_brain',
+    what: "the cabinet — the owner's gbrain brain repo of markdown; the one thing an uninstall never touches",
+    createdBy: "the gbrain service's setup.sh",
+    when: 'the gbrain service installed',
+  },
+  {
+    id: 'gbrain_service',
+    root: 'user',
+    rel: 'gbrain_service',
+    what: 'the gbrain service\'s own state — admin bootstrap env (0600), minted CLI tokens, the installed-by-ronin stamp',
+    createdBy: "the gbrain service's setup.sh",
+    when: 'the gbrain service installed',
+  },
 ] as const;
 
 const byId = new Map(STORES.map((s) => [s.id, s]));

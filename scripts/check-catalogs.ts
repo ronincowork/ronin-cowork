@@ -2,7 +2,7 @@
  * CHECK-CATALOGS — a byoin_check: the stock catalogs, held to their own rules. Lives
  * in `npm run verify`, which is where BYOIN reads its byoin_check list.
  *
- * Two questions, both asked from the running code's point of view:
+ * Three questions, all asked from the running code's point of view:
  *
  *   1. SURFACING. Does every bare `## name` entry in a stock catalog actually come out
  *      of the reader that serves it? The readers drop what they cannot use — a session
@@ -10,7 +10,11 @@
  *      failure mode. A dropped stock entry FAILS the check. (A user file on this box
  *      can legitimately hide one; the message says so when that is the likely cause.)
  *
- *   2. DEAD LINKS. Does every repo file a stock catalog points an agent at exist in
+ *   2. THE HUMAN HALF. Does every stock macro carry `label:` and `blurb:` as well as the
+ *      agent's instruction? Two readers, two pieces of writing, neither substituting for
+ *      the other (owner, 2026-08-17). See `macroCopy` below for why it is a gate.
+ *
+ *   3. DEAD LINKS. Does every repo file a stock catalog points an agent at exist in
  *      this install? A catalog is agent instructions, so a dead link is an errand that
  *      cannot be run. Counted as warns while ronin_library/ is built up one screened
  *      piece at a time; they harden to failures when the owner rules the shelf ready.
@@ -58,6 +62,40 @@ async function surfacing(file: string, served: () => Promise<{ name: string }[]>
   }
 }
 
+/**
+ * THE HUMAN HALF. Every macro is written twice, for two readers who need opposite things:
+ * the prose under the heading is the AGENT'S instruction (it opens with the rule the agent
+ * must not break) and `label:`/`blurb:` are what a PERSON reads to decide whether they want
+ * it. The owner's ruling, 2026-08-17: *"we need to split out the description and the agent
+ * instruction into two different things because they don't overlap, and the macro should
+ * carry both."*
+ *
+ * Both halves have to be REQUIRED or they drift, and the drift is silent in the worst
+ * direction: with no gate, the only thing that notices a missing blurb is a person reading
+ * a card, and the old repair for that was a fallback to the instruction — showing "never
+ * fork on your own initiative" to somebody who tapped a button to find out what it does.
+ * The fallback is gone (public/js/tilemacros.js), so a missing blurb is now a visibly
+ * unfinished card. This is the check that stops one shipping.
+ *
+ * ALL THIRTEEN, not the four previewed. `preview:` is a display toggle and it changes
+ * monthly; the copy is the entry's, and the next surface is a library people browse to
+ * adopt macros from. Copy written for four would have to be written again for all of them.
+ */
+async function macroCopy(): Promise<void> {
+  for (const m of await listMacros()) {
+    if (m.origin !== 'stock') continue; // a user's own file is theirs; the client handles a blank
+    for (const field of ['label', 'blurb'] as const) {
+      if (!m[field].trim()) {
+        fail(
+          `MACROS.md: macro "${m.name}" has no \`- **${field}:**\` — every entry carries the ` +
+            `human copy as well as the agent's instruction, and no surface may show the ` +
+            `instruction to a person in its place`,
+        );
+      }
+    }
+  }
+}
+
 /** Repo paths a catalog names. An agent reads these as errands, so they must resolve. */
 async function deadLinks(file: string): Promise<void> {
   const raw = await readFile(path.join(STOCK_DIR, file), 'utf8');
@@ -81,6 +119,7 @@ await surfacing('SESSION_JOBS.md', listSessionJobs);
 await surfacing('MACROS.md', listMacros);
 await surfacing('ACTIONS.md', () => readEntries('ACTIONS.md'));
 await surfacing('TOOLS.md', () => readEntries('TOOLS.md'));
+await macroCopy();
 
 // The launch table: an install with no session_launch_specs cannot spawn a configured session.
 // Provider cells are exact launch contracts, not display-only labels. OpenAI must expose

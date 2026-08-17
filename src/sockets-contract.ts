@@ -46,6 +46,6 @@ export interface Sockets {
 
 /** What a service ships: one register() entry point. */
 export interface ServiceRegistration {
-  name: string; // the service folder name: michi | koshi | rireki | counting | koe
+  name: string; // the service folder name: michi | koshi | rireki | counting | koe | gbrain
   register(sockets: Sockets): void;
 }

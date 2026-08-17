@@ -14,8 +14,8 @@
  */
 import { request } from './request.js';
 import { STATUS_LABEL, homeData, homeFault, jobIcon } from './home.js';
-import { IS_TOUCH, S } from './state.js';
-import { humanAge } from './shingo.js';
+import { S } from './state.js';
+import { clampTip, humanAge } from './shingo.js';
 
 /**
  * @param {object} tile  rows connect into this tile
@@ -95,6 +95,18 @@ export function buildRoster(tile, host) {
   list.className = 'home-list';
   host.appendChild(list);
 
+  // A ROW IS A FIXED GRID, NOT A FLOW (owner's ruling 2026-08-17). Every landmark on
+  // the right — the SHINGO chip, the status word, the ⛽ reading — sits at the SAME x on
+  // every row, so the eye runs straight down a column instead of hunting for where each
+  // reading landed. A session with no ladder leaves the ladder's slot EMPTY; it does not
+  // pull the context reading left. That was the whole complaint: right-aligned flow meant
+  // no two rows agreed on where anything was, and a list you cannot scan down is a list
+  // you have to read one row at a time.
+  //
+  // The columns are declared once in style.css (`.home-row`, the `--hr-*` tracks) and
+  // each cell is placed by its class, so an ABSENT element leaves its track standing.
+  // Nothing here builds a placeholder: a missing reading is a gap, which is the honest
+  // drawing of "nobody has said", and a gap in a fixed column reads as one.
   const rowFor = (s) => {
     const r = document.createElement('button');
     r.type = 'button';
@@ -116,22 +128,25 @@ export function buildRoster(tile, host) {
     jb.textContent = mark;
     jb.title = mark ? s.session_job : 'has not said what it is doing yet';
     r.appendChild(jb);
+    // The name takes the slack (`minmax(0, 1fr)`), so the spacer `.grow` that used to
+    // shove the readings rightwards is gone with the flex row it existed to stretch —
+    // pushing things apart is what made every row's landmarks land somewhere different.
     const nm = document.createElement('b');
     nm.textContent = s.name;
-    const grow = document.createElement('span');
-    grow.className = 'grow';
-    r.append(nm, grow);
+    r.appendChild(nm);
     // SHINGO on the roll call: position, or held. One amber row and you know where
     // to click through — which is the whole reason the board exists.
     if (s.tegami && s.tegami.chip && s.tegami.ladder?.length) {
       const sg = document.createElement('span');
       sg.className = 'home-shingo' + (s.tegami.chip.gate ? ' gate' : '');
-      // TOUCH: the age without the word. "quiet" costs five characters on a row that
-      // has none to spare, and a bare duration beside a position reads as one anyway.
+      // THE AGE WITHOUT THE WORD, on every device now (owner's ruling 2026-08-17). It
+      // was already the touch spelling — "quiet" costs five characters on a row that has
+      // none to spare, and a bare duration beside a position reads as one anyway — and
+      // the desktop had no better claim on the width. `phase 3 · leg 3/12 · 9h`.
       const age = s.tegami.quietMs >= 60000 ? humanAge(s.tegami.quietMs) : '';
-      const quiet = age ? (IS_TOUCH ? ' · ' : ' · quiet ') + age : '';
-      sg.textContent = s.tegami.chip.text + quiet;
-      sg.title = s.tegami.objective || '';
+      sg.textContent = s.tegami.chip.text + (age ? ' · ' + age : '');
+      // Agent-authored and unbounded — clamped for the fixed help box (see shingo.js).
+      sg.title = s.tegami.objective ? clampTip(s.tegami.objective) : '';
       r.appendChild(sg);
     }
     if (s.status) {
@@ -146,22 +161,58 @@ export function buildRoster(tile, host) {
       cx.textContent = '⛽ ' + s.ctx + '%';
       r.appendChild(cx);
     }
+    // WHICH MODEL IS ANSWERING — that is the whole column (owner's ruling 2026-08-17).
+    //
+    // It shipped for an hour as `agent · provider · model` — `codex · openai · gpt-5.6-sol`
+    // — and the owner cut it to the model alone: "showing just the model is fine, that
+    // tells everyone what they need to know." He is right, and the other two were paying
+    // for themselves twice over: `opus 5` already says Claude and `gpt-5.6-sol` already
+    // says Codex, so the agent restated the model and the provider restated the agent.
+    //
+    // The width claim that came with the three-part version was WRONG, and it is recorded
+    // here because it is the kind of wrong that survives if nobody measures. It said the
+    // column cost the session name 116px of 237px. Measured in the browser afterwards, the
+    // name track is 181px and the longest name on this board needs 81px — the names were
+    // never close to starved. What the arithmetic missed is that a fixed track charges its
+    // FULL width whether or not anything is in it, so a 140px column showing nothing on
+    // every row was the actual cost. Sizing a track to the worst case its content can
+    // reach is what eats a row, not the number of facts in it.
+    //
+    // SCRAPED, NOT STAMPED, and that is why it works at all today: js/../src/ctx.ts reads
+    // it off the pane's own status line on the refresh that is already happening, so it is
+    // right for sessions that predate every option this house has ever set, and it follows
+    // a mid-session model switch instead of remembering the launch.
+    //
+    // A MISSING FACT IS SIMPLY ABSENT — no `undefined`, no `unknown`, no dash. The roster's
+    // own rule, from the SHINGO chip (js/shingo.js): "an absent chip costs the owner
+    // nothing and stops a dash-plus-age pretending to be a position". A dash here would
+    // read as a state a session is IN rather than as a thing nobody has said.
+    //
+    // Lowercased as rendered and NOT mapped: `Opus 5` becomes `opus 5`, and that is the
+    // whole transform. The owner turned down a three-letter-code registry.
+    const stack = (s.model || '').toLowerCase();
+    if (stack) {
+      const sk = document.createElement('span');
+      sk.className = 'home-stack';
+      sk.textContent = stack;
+      // The cell clips (see style.css), so the untruncated reading has to be reachable.
+      sk.title = stack;
+      r.appendChild(sk);
+    }
     // 🏷 on the row: set THIS session's groups without opening it first. Its own
     // button, not the row's click, so tapping the row still just opens the session.
     // TOUCH: no 🏷 at all. The list is already SORTED INTO GROUPS under headings,
     // so the label repeated the heading you just read — and the button was a verb
     // on a board that is meant to be a READ.
-    if (!IS_TOUCH) {
-      const tg = document.createElement('span');
-      tg.className = 'home-tag' + ((s.tags || []).length ? ' on' : '');
-      tg.textContent = (s.tags || []).length ? '🏷 ' + s.tags.join(' · ') : '🏷';
-      tg.title = 'Set groups for ' + s.name;
-      tg.addEventListener('click', (e) => {
-        e.stopPropagation(); // don't connect — this is the label, not the door
-        if (S.tagPanel) S.tagPanel.open(s.name);
-      });
-      r.appendChild(tg);
-    }
+    //
+    // NO 🏷 ON A ROSTER ROW AT ALL (owner's ruling 2026-08-17, twice). The first pass
+    // dropped the tag NAMES and kept the button, on the reasoning that it was the only
+    // way to edit groups without opening the session. The owner's answer: that is not a
+    // gap, it is the design — "the way you change the tag is by going into a particular
+    // session and clicking on that session's tag button", which is the 🏷 in the tile
+    // header (tilehead.js). A verb that already has a home does not need a second one on
+    // a board whose whole job is to be READ, and the rows are already filed under the
+    // very headings the button was there to edit.
     r.addEventListener('click', () => tile.connect(s.name));
     return r;
   };

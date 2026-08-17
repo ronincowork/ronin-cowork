@@ -26,10 +26,23 @@
  *                    the rectangle is a constant, so crossing the eight right-hand
  *                    buttons changes the words and moves nothing. Never anchored to the
  *                    cursor, never flipped above, never nudged off an edge.
- *   TWO ZONES        a STATUS line — what this control currently reads, for the ones
- *                    that have a value — and WHAT IS THIS underneath. The status line
- *                    holds its height even when empty, so the box does not reflow
- *                    between a control that has one and a control that does not.
+ *   TWO ZONES        a HEADER line — a keyboard shortcut, or what this control currently
+ *                    reads, for the ones that have either — and WHAT IS THIS underneath,
+ *                    separated by a rule. THE HEADER EXISTS IF AND ONLY IF IT HAS
+ *                    CONTENT: no shortcut and no reading means no header and no rule, and
+ *                    the explanation starts at the top of the box.
+ *
+ * THE HEADER USED TO BE UNCONDITIONAL and that was the bug (owner, 2026-08-17). It held
+ * its height when empty — `min-height` on `.helpbox-status` — on the argument that the
+ * box would otherwise reflow between a control that has a reading and one that does not.
+ * That argument was already covered: `.helpbox` is a FIXED width AND height, so nothing
+ * reflows either way; the reserved line bought nothing and cost the majority case. Every
+ * control without a reading — which is most of them, and ALL of the macro rows — drew an
+ * empty block and a rule above two lines of text. Owner, scrolling the macro list: "it's
+ * very convoluted because of the way that it has that header. You barely see the text,
+ * and there's this big white block head at the top." So the rule is content, not caller:
+ * one `:empty` in the stylesheet, and every blank source normalised to '' here so that
+ * a whitespace-only reading cannot sneak a rule back in.
  *
  * Controls outside any tile (the top bar) dock under the top bar by the same rule.
  *
@@ -92,9 +105,40 @@ function takeOver(el) {
   el.removeAttribute('title');
 }
 
+/**
+ * A KEYBOARD SHORTCUT, lifted out of the label it is already written in.
+ *
+ * There is no shortcut registry and this deliberately does not start one (owner's KISS
+ * ruling, 2026-08-17). The chords that exist are owned where they are handled — the
+ * Ctrl+Shift / Ctrl+Alt block in `layout.js` — and the two controls that HAVE one already
+ * announce it the only way they ever could: at the front of their own title, as
+ * `"⌃⇧C — the CoWorking Commons: …"` (`index.html`, き Commons and か New). That prefix is
+ * the data. Reading it here is what puts the chord above the rule instead of buried in
+ * the middle of a sentence, and costs nothing new to maintain: write the chord at the
+ * front of the label, as those two already do, and it lands in the header.
+ *
+ * THE PATTERN IS DELIBERATELY NARROW. It must not fire on prose, and prose in this client
+ * uses the same ` — ` join freely (`padpanel.js` builds `widget — what it does`). So it
+ * demands a leading MODIFIER GLYPH — ⌃⇧⌥⌘, which no sentence starts with — then a short
+ * key, then the em dash. "Ctrl-C (interrupt)" on ^C is not a shortcut FOR that button, it
+ * is what the button sends, and it correctly does not match.
+ *
+ * `data-keys` is the explicit door for a control built in JS that would rather say so
+ * than encode it in prose. Nothing sets it today; it costs one line to honour.
+ */
+const CHORD = /^([⌃⇧⌥⌘]+[A-Za-z0-9↑↓←→]{0,5})\s+—\s+/;
+
+function keysOf(el) {
+  if (el.dataset.keys) return el.dataset.keys.trim();
+  const m = CHORD.exec(el.dataset.tip || '');
+  return m ? m[1] : '';
+}
+
 function whatIsThis(el) {
   takeOver(el); // belt and braces; the observer has almost certainly beaten us here
-  return el.dataset.tip || '';
+  // The chord comes off the front: it is being shown in the header, and printing it in
+  // both zones is how you get a bubble that says the same thing twice in 92 pixels.
+  return (el.dataset.tip || '').replace(CHORD, '');
 }
 
 /**
@@ -105,11 +149,32 @@ function whatIsThis(el) {
  * you turn it, which is feedback about an action rather than hover help — but their
  * hover reveal is gone from the stylesheet, so the only way that text reaches you on
  * hover is here, inside the one box.
+ *
+ * TRIMMED AT THE SOURCE, both branches. A badge that is momentarily whitespace, or a
+ * `data-status=" "`, is not a reading — and left untrimmed it is a non-empty text node,
+ * which is enough to defeat `.helpbox-status:empty` and put the rule back over a control
+ * that has nothing to report. Blank means '' here so the stylesheet's one rule holds.
  */
 function statusOf(el) {
-  if (el.dataset.status) return el.dataset.status;
+  if (el.dataset.status) return el.dataset.status.trim();
   const badge = el.querySelector('.gauge-badge, .dial-badge');
   return badge ? badge.textContent.trim() : '';
+}
+
+/**
+ * The header line: the shortcut, the live reading, or nothing at all.
+ *
+ * ONE RULE, ONE PLACE — every caller goes through here, so "header exists iff it has
+ * content" is not something a caller can get wrong. Writing '' leaves the element with no
+ * child nodes at all, which is what `.helpbox-status:empty` in the stylesheet keys off to
+ * take the block AND its rule out of the box entirely.
+ *
+ * Both at once is not a case that exists today (the controls with a reading are the dial
+ * and the gauges; the ones with a chord are in the top bar), but joining beats picking a
+ * winner and silently dropping the other.
+ */
+function setHeader(el) {
+  statusEl.textContent = [keysOf(el), statusOf(el)].filter(Boolean).join(' · ');
 }
 
 /**
@@ -117,27 +182,34 @@ function statusOf(el) {
  * control's own position.
  *
  * TWO COORDINATES, not one. The header is two groups either side of a `.grow` spacer:
- * the session picker and the mark sit left, the eight controls sit right. Docking
- * everything left meant the whole right-hand cluster threw its box across to the far
- * side of the tile, so the answer appeared nowhere near the question. Each side now
- * docks to its own edge.
+ * the session picker and the mark sit left, the controls sit right. Docking everything
+ * left meant the whole right-hand cluster threw its box across to the far side of the
+ * tile, so the answer appeared nowhere near the question. Each side now docks to its
+ * own edge.
  *
  * Within a side the rectangle is still a CONSTANT — that is the property worth keeping.
- * Crossing the eight right-hand buttons cannot move or resize the box; only stepping
- * between the two groups does, and those are two different places on the header.
+ * Crossing the right-hand buttons cannot move or resize the box; only stepping between
+ * the two groups does, and those are two different places on the header.
  *
  * The side is read from DOM ORDER against the spacer rather than from coordinates:
  * position depends on how wide the tile is and which buttons are hidden, whereas the
  * order in the markup is what actually defines the two groups.
+ *
+ * ONE EXCEPTION TO "below the header", earned in a browser on 2026-08-17: six of those
+ * controls now live in メ's drop (`tilemore.js`), which itself hangs below the header —
+ * so docking to the header's bottom edge laid the box straight over the strip, covering
+ * all six while you read about one. When the control is inside an open drop, the drop is
+ * the thing the box hangs off. The SIDE is still read off the header's spacer, because
+ * メ is one of the right-hand group whatever it happens to contain.
  */
 function dockFor(el, boxWidth) {
   const tile = el.closest('.tile');
-  const anchor = tile ? tile.querySelector('.tile-head') : document.getElementById('bar');
-  if (!anchor) return null;
-  const grow = anchor.querySelector('.grow');
+  const head = tile ? tile.querySelector('.tile-head') : document.getElementById('bar');
+  if (!head) return null;
+  const grow = head.querySelector('.grow');
   const onLeft = grow ? !!(grow.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_PRECEDING) : true;
-  const a = anchor.getBoundingClientRect();
-  const host = (tile || anchor).getBoundingClientRect();
+  const a = (el.closest('.tmore') || head).getBoundingClientRect();
+  const host = (tile || head).getBoundingClientRect();
   return {
     left: Math.round(onLeft ? host.left + 8 : host.right - boxWidth - 8),
     top: Math.round(a.bottom + 6),
@@ -155,7 +227,7 @@ function show(el) {
   const what = whatIsThis(el);
   if (!what) return;
   ensureBox();
-  statusEl.textContent = statusOf(el);
+  setHeader(el);
   whatEl.textContent = what;
   // Shown BEFORE it is measured: a hidden element has no width, and the right-hand dock
   // is `tile.right - width`. All of this runs in one turn, so nothing paints at the old
@@ -182,7 +254,9 @@ function show(el) {
  */
 export function refreshTipStatus(el) {
   if (!box || !showing || !el || (showing !== el && !el.contains(showing))) return;
-  statusEl.textContent = statusOf(showing);
+  // Through `setHeader` and not `statusOf` directly, so a control whose reading arrives
+  // late grows its rule at that moment instead of never having one.
+  setHeader(showing);
 }
 
 function arm(el) {

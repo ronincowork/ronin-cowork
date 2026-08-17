@@ -214,7 +214,7 @@ is a gap in the machinery, not a reason to reach for the word. See § NUANCE.
 | Term | Scope | Means | Record |
 |---|---|---|---|
 | **TEJUN** | system_scope | the procedure system: macro → action → tool | `reading-list/TEJUN.md` |
-| **macro** | system_scope | a recipe the_owner invokes; nothing but an ordered list of actions. Stock: `forkit`, `draftplan`, `cutcode`, `land`, `delete`, `tag`, `wipeboard`, `read`, `readwrite`, `evaluate` | `ronin_catalogs/MACROS.md` |
+| **macro** | system_scope | a recipe the_owner invokes; nothing but an ordered list of actions. Stock: `forkit`, `buildout`, `cutcode`, `land`, `delete`, `tag`, `wipeboard`, `tell`, `read`, `readwrite`, `evaluate` | `ronin_catalogs/MACROS.md` |
 | **session_macro** | system_scope | a macro **the agent executes**: an invocation dropped into a session's own input (`+forkit: build the login page`), which the agent reads and acts on. Ronin only helps you type it — it never runs one. Every catalogd macro today is one. **Two classes, and every entry's `class:` line says which: `session_macro.lookup` · `session_macro.workflow`** | `ronin_catalogs/MACROS.md` |
 | **workspace_macro** | system_scope | a macro **Ronin executes**, mechanically, above any one session. No agent involved *in performing it* — the launcher is machinery, the session it births is an agent. Stock: `session_launch` (the ＋ tab), and Mika's spawn-or-inject | `docs/commons.md` |
 | **mika_macro** | system_scope | a session_macro that is **re-addressed**: executed by an agent, but by MIKA's agent rather than the session it was typed into. `+project_root:` · `+system_help:` · `+new_session:` · `+system_config:`. Catalogued in their OWN file so no surface listing `MACROS.md` can show them. | § MIKA |
@@ -229,9 +229,12 @@ is a gap in the machinery, not a reason to reach for the word. See § NUANCE.
 | **session_macro.workflow** | system_scope | a recipe of cataloged actions the agent performs: compile (`ronin_bin/tejun`) or step through (`ronin_bin/tejun-step`), execute in order, report the outcome | `ronin_catalogs/MACROS.md` |
 | **read-letter · write-letter** | system_scope | the two actions over a session's own TEGAMI: read the ladder as written (`read_tegami`), or set it / point at the rung being worked (`write_tegami`). Cataloged 2026-08-14 — the tools had implemented no action since MICHI shipped, which is why they sat outside TEJUN | `ronin_catalogs/ACTIONS.md` |
 | **`run:`** | system_scope | the macro key choosing delivery (owner, 2026-08-14): absent or `whole` = the full blob at once, the default; `stepped` = compile arms the step tracker and hands one step at a time. Any macro can be stepped on demand via `tejun-step start` | `ronin_catalogs/MACROS.md` |
+| **`preview:`** | system_scope | the macro key choosing DISPLAY (owner, 2026-08-17): absent = not on the tile's ⚡ drop, the default; `yes` = drawn there as one of the four teaching cards, drawn from the same entry's `label:`/`blurb:`. **Display only — an unpreviewed macro still runs**, and opt-in because the drop teaches nothing when it holds a dozen | `ronin_catalogs/MACROS.md` |
+| **`instruction` vs `label:`/`blurb:`** | system_scope | the two halves every macro entry is written in, for two readers who need opposite things (owner, 2026-08-17: *"we need to split out the description and the agent instruction into two different things because they don't overlap, and the macro should carry both"*). **`instruction`** = the prose under the `## name` heading, addressed to the AGENT about to run the recipe and opening with the rule it must not break; served under that name on `/api/macros` since the rename from `description`, whose name is what invited a human surface to render it. **`label:`** (plain-words headline, never the `+name:` spelling) + **`blurb:`** (one or two sentences, always visible, true about what the macro does) = what a PERSON reads to decide whether they want it. Required on EVERY macro, not only previewed ones — `scripts/check-catalogs.ts` fails a stock entry missing either — and **no human surface may fall back to `instruction`**. Same two keys, same job, as `SESSION_JOBS.md`'s kind buttons | `ronin_catalogs/MACROS.md` · `src/macros.ts` |
 | **invocation** | system_scope | `+<name>: <args>` — the `+` marks a macro line; bare `<name>:` also works; never *required* to recognize one | `reading-list/TEJUN.md` |
 | **harakiri** | system_scope | a session ends itself; refuses to end another | `ronin_catalogs/ACTIONS.md` |
 | **forkit** | system_scope | spin the current topic into its own session; the work leaves with it | `ronin_catalogs/MACROS.md` |
+| **tell** | system_scope | the macro for one session messaging another (`+tell: <session> <message>`) — control-check, then `tejun-send`, then report the verdict. It COMPOSES the send-to-session action, which is plumbing and not invocable itself; the reply lands in the other session's tile, never relayed back | `ronin_catalogs/MACROS.md` |
 
 ### § SCRIPTS — the genus, and why most of them are not tools
 
@@ -309,7 +312,7 @@ gerunds, so no string appears in both catalogs — see § OVERLAP item 1.
 | **QuarterBack** | system_scope | coordinates other sessions — dispatch, unblock, report upward. The orchestrator, and **still bound by every dial**: a 👤 session is invisible to it | `ronin_catalogs/SESSION_JOBS.md` |
 | **OddJob** | system_scope | does the one task asked and nothing around it — the escape hatch, for work that fits no other kind. No plan, no sweep, no tidying on the way past | `ronin_catalogs/SESSION_JOBS.md` |
 | **OpenShell** | system_scope | **`agent: none`** — opens a session and launches nothing, leaving the pane at a shell prompt. Every field describing an agent is *absent* rather than blanked: no model, no posture, no opening, no ack, no permissions. (Row added 2026-08-14 — the heading counted it as the eighth while the table had never listed it) | `ronin_catalogs/SESSION_JOBS.md` |
-| **PersonalAssistant** | system_scope | icon **🎩**. The OWNER's own assistant — **powered by gbrain, and says so**: brain-first (search before answering, capture on request), one confirmation per outside connection. Names and credits gbrain by the owner's ruling — *"we're not trying to steal their stuff without saying what it is"* — with the repo cited in the remit; without the gbrain service it degrades to a plain assistant. Reading arrives from `job/PersonalAssistant/` on the session-boot shelf. Ruled owner 2026-08-16; **gbrain is a proper name** (§ OPEN — the bare word `brain` stays retired) | `ronin_catalogs/SESSION_JOBS.md` |
+| **PersonalAssistant** | system_scope | icon **🎩**. The OWNER's own assistant — **powered by gbrain, and says so**: brain-first (search before answering, capture on request), one confirmation per outside connection. Names and credits gbrain by the owner's ruling — *"we're not trying to steal their stuff without saying what it is"* — with the repo cited in the remit; without the gbrain `ronin_service` it degrades to a plain assistant. Reading arrives from `job/PersonalAssistant/` on the session-boot shelf. Ruled owner 2026-08-16; **gbrain is a proper name** (§ OPEN — the bare word `brain` stays retired) | `ronin_catalogs/SESSION_JOBS.md` |
 | **MikaAssist** | system_scope | icon **ミ**. RONIN's own business, not the owner's work — a helpful assistant, defaulting to help, plus the four mika_macros. See § MIKA. | `docs/mika.md` |
 
 **The grammar: verb + object.** A bare `plan` or `review` is ambiguous because it is a noun
@@ -545,6 +548,7 @@ hid that.
 | **koshi job** | system_scope | one of them. Named `koshi_<job>`, always — the prefix is what makes the set greppable | `co-working/user_repo/wip/buildouts/KOSHI.md` |
 | **incarnation** | system_scope | a koshi job on the model side — each one separately pointed at an outlet | `src/services/koshi/koshi-model.ts` |
 | **outlet** | system_scope | where a koshi question goes: `koshi_session` · `koshi_external` · `koshi_hosted_weights`. An outage is an "I don't know", never a throw | `src/services/koshi/koshi-model.ts` |
+| **`koshi_weights`** | system_scope | the weights service and its store — the machinery behind the `koshi_hosted_weights` outlet: pinned llama.cpp + hash-pinned GGUFs on localhost, `@koshi-weights`' role given a body. Standalone AND gbrain's dependency; its runner state lives in the `koshi_weights_service` store. The one `koshi_` name that is not a job, and it says so **[proposed]** | `ronin-services/koshi_weights/` |
 | **pace** | system_scope | how keen a self-paced incarnation is — `relaxed` · `steady` · `keen` scale the whole cadence table, never one row | `src/services/koshi/koshi-model.ts` |
 | **目 Koshi** | system_scope | the commons tab where the owner sets which model each koshi job asks. The one place a koshi is configured, and it is configuration, not definition | `docs/commons.md` |
 
@@ -638,8 +642,8 @@ word may be used for the other.
 | **coworkspace** | system_scope | **the whole UI** — every surface, tile, panel and button the owner drives. All of it ships in `RONIN_COWORK`; a `ronin_service` fills a subset of *cowork's own* UI and ships no HTML, JS or CSS of its own | `docs/architecture.md` |
 | **tile** | system_scope | one cell of the coworkspace, showing one session. **The public word** — see § THE GROUND for why it beats *pane* | `docs/architecture.md` |
 | **viewer session** (`grid_*`) | system_scope | hidden grouped tmux session backing a tile; killed on disconnect | `docs/architecture.md` |
-| **coworking_commons** | system_scope | the shared surface inside a tile, when no session is showing. Eight commons_tabs behind one strip. Alias: **the commons** | `docs/commons.md` |
-| **commons_tab** | system_scope | one section of the coworking_commons, reached from its tab strip: **⌂ Roster · ＋ New session · ▤ Wipeboard · ▧ Docs · ▣ Roots · ▥ Hotwords · ▦ Stats · 目 Koshi**. Alias: **tab**, prose only — bare *tab* is a common word and is not the term. **Never a "pane"** — see § THE GROUND | `docs/commons.md` |
+| **coworking_commons** | system_scope | the shared surface inside a tile, when no session is showing. Ten commons_tabs behind one strip. Alias: **the commons** | `docs/gbrain.md` |
+| **commons_tab** | system_scope | one section of the coworking_commons, reached from its tab strip: **⌂ Roster · ＋ New session · ▤ Wipeboard · ▧ Docs · ▣ Roots · ▥ Hotwords · ▦ Stats · 目 Koshi · gbrain · ⚙ Setup**. Alias: **tab**, prose only — bare *tab* is a common word and is not the term. **Never a "pane" or "panel"** — see § THE GROUND | `docs/gbrain.md` |
 | **session_launch** | system_scope | the commons' **＋ New** tab — where a session is born with a `project_root`, a `session_job` and an opening prompt. Alias: **launch**. One door: `launch_job` (the catalog fill) · `launch_bare` (a name alone) | `docs/commons.md` |
 | **session_roster** | system_scope | the commons' **⌂ Roster** tab — every session on the ronin_machine. The session list, full stop; the macro forms beside it were removed 2026-08-09. Alias: **the roster**. Never "the board" | `docs/commons.md` |
 | **locked 🔒 / unlocked 🔓** | system_scope | locked = *this view is attached to the live tmux session*; unlocked = *the session is still running, this view is not attached to it* | `docs/LOCKED-VS-UNLOCKED.md` |
@@ -706,8 +710,12 @@ and what the Setup commons_tab shows — never what survives.
 | **knob** | `PORT`, `SCRIBE_URL`, `TMUX_WINDOW_SIZE` | `process.env`, a memory copy from boot | **no** — inert until a restart, which is **BYOKI** wearing a UI |
 | **secret** | `OPENAI_API_KEY`, `GRID_PASS` | `.env`, never sourced | **no, and never rendered** |
 
-> **`ronin.json` never holds a credential.** It is served whole by an HTTP GET; `.env` is
-> already the secret store, and `bin/ronin-doctor` refuses to source it *because it holds
+> **`ronin.json` now holds the login record — so it is NEVER served whole.** The owner's
+> auth landed `auth` (scrypt + the session signing secret) and `passkeys` in it
+> (2026-08-17 correction: the old rule said "never holds a credential, served whole by an
+> HTTP GET", and both halves are now false — no route serves it whole, and none may ever
+> be added). Settings leave it per-field, through their own routes. `.env` stays the
+> store for provider keys, and `bin/ronin-doctor` refuses to source it *because it holds
 > secrets*. A key's **presence** and its variable name may be shown. Never a byte of its
 > value, and never a field to type one into.
 

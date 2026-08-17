@@ -18,6 +18,7 @@ import {
   sessionDir,
   sessionExists,
   setControl,
+  setLaunchStamp,
   setProjectRoot,
   setTags,
 } from '../tmux.js';
@@ -25,7 +26,7 @@ import { runCommand, sendText } from '../send.js';
 import { AtSessionMax, liveCount, readMax, readOwner, writeMax, writeOwner } from '../user-config.js';
 import { resolveForm, appendLedger, type SpawnForm } from '../spawn.js';
 import { classifyStatus, waitReadyForBrief, type SessionStatus } from '../status.js';
-import { scanContext } from '../ctx.js';
+import { scanContext, scanModel } from '../ctx.js';
 
 import { count } from '../counts.js';
 import { seedTegami, withRoles } from '../tegami.js';
@@ -100,6 +101,12 @@ export function registerLaunch(app: express.Express): void {
       // reliably happens. Two shipped tools (tejun-recall, tejun-remember) read this to
       // scope a memory and nothing used to set it.
       if (resolved.project_root) await setProjectRoot(resolved.name, resolved.project_root);
+      // WHICH CLI, written at birth for the same reason the project_root is: this is the
+      // one moment it is known. The cmd names the CLI, and a minute from now tmux can only
+      // say the pane is running `node`. NOT for the roster — that column is the scraped
+      // model alone now — but for RIREKI, which picks a tape decoder from `@ronin-agent`
+      // and has expected this stamp since it was written, guessing until today.
+      await setLaunchStamp(resolved.name, resolved.launchAgent);
       // THE ROLE, SET MECHANICALLY. The button the owner pressed IS what this session is
       // for, so the letter is written with `session_job` already filled rather than left
       // for the agent to guess at a fact that was never in doubt. The session owns it
@@ -201,8 +208,17 @@ export function registerLaunch(app: express.Express): void {
   });
 
   // Home-panel feed: the session list enriched with a status-probe classification
-  // (ready / thinking / awaiting-input, patterns in src/status.ts) and the context-
-  // gauge reading — one capture-pane per session, shared by both scrapes.
+  // (ready / thinking / awaiting-input, patterns in src/status.ts), the context-gauge
+  // reading and the MODEL beside it — one capture-pane per session, shared by all three
+  // scrapes. The model rides this capture rather than earning its own tmux call: it sits
+  // on the very status line the gauge is read off (src/ctx.ts), so it is free here.
+  //
+  // THE MODEL IS THE WHOLE COLUMN. It shipped for one commit as `agent · provider · model`,
+  // read from a birth stamp; the owner cut it to the model alone, because `opus 5` already
+  // says Claude and `gpt-5.6-sol` already says Codex. The `launchStamps()` board read that
+  // served the other two went with them. The upside of what is left is that scraping needs
+  // no stamp, so this is right for every session on the box today rather than only for
+  // those born after a restart.
   app.get('/api/home', async (_req, res) => {
     try {
       const list = await withRoles(await listSessions());
@@ -210,16 +226,24 @@ export function registerLaunch(app: express.Express): void {
         list.map(async (s) => {
           let status: SessionStatus | null = null;
           let ctx: number | null = null;
+          let model: string | null = null;
           try {
             const text = await capturePane(s.name, 0);
             status = classifyStatus(text);
             ctx = scanContext(text);
+            model = scanModel(text);
           } catch {
             // session vanished mid-scan — plain row, no readings
           }
           // THE ROW SOCKET: services contribute their fields (michi's tegami ladder
           // column among them); none registered = nothing added and the board prints "—".
-          return { ...s, status, ctx, ...(await collectRowFields(s.name)) };
+          return {
+            ...s,
+            status,
+            ctx,
+            model,
+            ...(await collectRowFields(s.name)),
+          };
         }),
       );
       res.json(out);

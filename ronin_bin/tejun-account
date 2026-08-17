@@ -8,8 +8,9 @@
 # they set. Both are facts about a box on a day, so both are measured here and written
 # down nowhere (`ronin_sops/accounts.md` cites this tool and carries no values).
 #
-# Read-only, and it never prints a credential: `ronin.json` is served whole over HTTP by
-# design and holds no secret, which is exactly why a secret must never be put in it.
+# Read-only, and it never prints a credential — BY SELECTION, not because the file has
+# none: `ronin.json` now carries the login record (auth + passkeys), so this tool prints
+# only the named fields below and the file is never served or echoed whole, by anything.
 set -u
 
 STORE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../bin" && pwd)/ronin-store"

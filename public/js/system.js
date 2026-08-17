@@ -1,6 +1,6 @@
 /* part of the tmux-ronin client — see js/README.md */
 import { request } from './request.js';
-import { button, sheet, status } from './ui.js';
+import { button, field, sheet, status } from './ui.js';
 import { resolvedTheme, setTheme } from './theme.js';
 import { S } from './state.js';
 
@@ -28,6 +28,157 @@ import { S } from './state.js';
  * On a CHECKOUT (release:null) the run button stays off: a source tree is updated by
  * git, not by unpacking a release over it — the readout says so instead of guessing.
  */
+/* ---------- passkeys ----------
+ * REGISTRATION LIVES BEHIND THE GATE AND THAT IS THE DESIGN, NOT AN ACCIDENT. You add a
+ * passkey by first proving you are already the owner; the login page can only SPEND one.
+ * An unauthenticated "register a passkey" button would be a public become-the-owner
+ * button, which is a worse door than no door at all (src/routes/passkey-api.ts).
+ *
+ * The two things that can make the button useless are both reported rather than hidden:
+ * a non-secure context (the tailnet IP — WebAuthn simply does not exist there), and a
+ * credential registered under a different name than the one this page was reached by. A
+ * passkey is bound to its domain, so a key made on the MagicDNS name will not be offered
+ * on any other address, and saying so beats an owner concluding it was lost.
+ */
+function buildPasskeyBlock() {
+  const el = document.createElement('div');
+  el.className = 'sys-passkeys';
+  // Hidden until /api/health confirms a login exists — drawing it first and retracting
+  // it a moment later is a flash of a control the owner may not even have.
+  el.hidden = true;
+  const head = document.createElement('div');
+  head.className = 'sys-theme-lbl';
+  head.textContent = 'passkeys';
+  const list = document.createElement('div');
+  const msg = status('sys-msg');
+
+  const name = document.createElement('input');
+  name.type = 'text';
+  name.placeholder = 'this device';
+  name.maxLength = 60;
+  const nameField = field(name, { label: 'passkey name' });
+
+  const addBtn = button('Add a passkey', {
+    cls: 'sys-run',
+    title: 'Register this device — Touch ID, Face ID or a security key',
+  });
+  const row = document.createElement('div');
+  row.className = 'sys-actions';
+  row.append(addBtn);
+  el.append(head, list, nameField.el, row, msg.el);
+
+  const toBuf = (s) => {
+    const b = atob(s.replace(/-/g, '+').replace(/_/g, '/'));
+    const u = new Uint8Array(b.length);
+    for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i);
+    return u.buffer;
+  };
+  const b64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+  const b64u = (buf) => b64(buf).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+  const render = (d) => {
+    list.innerHTML = '';
+    const creds = (d && d.credentials) || [];
+    if (!creds.length) {
+      const none = document.createElement('small');
+      none.textContent = 'none registered — this device can be the first.';
+      list.append(none);
+    }
+    for (const c of creds) {
+      const line = document.createElement('div');
+      line.className = 'sys-theme';
+      const lab = document.createElement('small');
+      lab.textContent = c.label + (c.usable ? '' : ` (registered on ${c.rpId} — not usable from this address)`);
+      const rm = button('Remove', { title: `Remove ${c.label}` });
+      rm.addEventListener('click', async () => {
+        // No confirm(): removing one of several passkeys is reversible by re-adding,
+        // and the destructive-confirm primitive is reserved for work that is not.
+        rm.disabled = true;
+        const r = await request('/api/passkey/remove', { method: 'POST', json: { id: c.id } });
+        msg.say(r.ok ? 'removed' : r.message, r.ok ? 'ok' : 'bad');
+        refresh();
+      });
+      line.append(lab, rm);
+      list.append(line);
+    }
+    if (d && d.recovery) {
+      const rec = document.createElement('small');
+      rec.textContent = `a recovery code is outstanding until ${new Date(d.recovery.expiresAt).toLocaleTimeString()}`;
+      list.append(rec);
+    }
+  };
+
+  const refresh = async () => {
+    const r = await request('/api/passkey/list', { cache: 'no-store' });
+    if (!r.ok) {
+      // A 404 means this operator predates the routes — the same honest reading the
+      // update button gives, rather than an error the owner cannot act on.
+      msg.say(r.status === 404 ? 'this operator predates passkeys — its next restart carries the routes' : r.message, 'bad');
+      addBtn.disabled = true;
+      return;
+    }
+    render(r.data);
+    const secure = window.isSecureContext && !!(window.PublicKeyCredential && navigator.credentials);
+    addBtn.disabled = !secure || !r.data.rpId;
+    if (!secure) {
+      msg.say('Adding a passkey needs the HTTPS address — this one is not a secure context.', 'bad');
+    } else if (!r.data.rpId) {
+      msg.say(`Passkeys unavailable: ${r.data.why || 'no relying-party name'}`, 'bad');
+    }
+  };
+
+  addBtn.addEventListener('click', async () => {
+    addBtn.disabled = true;
+    msg.say('waiting for the authenticator…', 'busy');
+    try {
+      const o = await request('/api/passkey/register-options', { cache: 'no-store' });
+      if (!o.ok) throw new Error(o.message);
+      const cred = await navigator.credentials.create({
+        publicKey: {
+          challenge: toBuf(o.data.challenge),
+          rp: { id: o.data.rpId, name: 'Ronin' },
+          // ONE owner, so one stable user handle: a fixed id means re-registering the
+          // same device REPLACES its entry in the keychain instead of littering it.
+          user: { id: new TextEncoder().encode('ronin-owner'), name: `ronin@${o.data.rpId}`, displayName: 'Ronin owner' },
+          pubKeyCredParams: [
+            { type: 'public-key', alg: -7 }, // ES256 — what Apple's platform authenticator uses
+            { type: 'public-key', alg: -257 }, // RS256 — Windows Hello and older keys
+          ],
+          // residentKey: the credential lives ON the device, which is what lets the
+          // login page omit allowCredentials and never enumerate the owner's devices.
+          authenticatorSelection: { residentKey: 'required', userVerification: 'required' },
+          excludeCredentials: (o.data.excludeCredentials || []).map((id) => ({ type: 'public-key', id: toBuf(id) })),
+          attestation: 'none', // we do not check it, so we do not collect it
+          timeout: 60000,
+        },
+      });
+      // getPublicKey() is why this needs no CBOR parser on the server — see src/passkey.ts.
+      const spki = cred.response.getPublicKey && cred.response.getPublicKey();
+      const r = await request('/api/passkey/register', {
+        method: 'POST',
+        json: {
+          id: cred.id,
+          publicKey: spki ? b64(spki) : '',
+          alg: cred.response.getPublicKeyAlgorithm ? cred.response.getPublicKeyAlgorithm() : 0,
+          clientDataJSON: b64u(cred.response.clientDataJSON),
+          label: name.value.trim(),
+        },
+      });
+      if (!r.ok) throw new Error(r.message);
+      name.value = '';
+      msg.say('✓ passkey added', 'ok');
+      refresh();
+      return;
+    } catch (ex) {
+      const cancelled = ex && (ex.name === 'NotAllowedError' || ex.name === 'AbortError');
+      msg.say(cancelled ? 'cancelled' : ex.message, cancelled ? '' : 'bad');
+    }
+    addBtn.disabled = false;
+  });
+
+  return { el, refresh };
+}
+
 export function buildSystemSheet() {
   const dlg = sheet({ id: 'syssheet', cls: 'sys-card', label: 'System' });
   const wrap = document.createElement('div');
@@ -92,7 +243,8 @@ export function buildSystemSheet() {
   row.append(checkBtn, runBtn, svcBtn, outBtn);
 
   const msg = status('sys-msg');
-  wrap.append(idBlock, appRow, row, msg.el);
+  const passkeys = buildPasskeyBlock();
+  wrap.append(idBlock, appRow, row, msg.el, passkeys.el);
 
   let version = null; // the operator's /api/version answer, fetched on open
   let latest = null;
@@ -240,7 +392,13 @@ export function buildSystemSheet() {
       version = r.ok ? r.data : null;
       renderId();
       const h = await request('/api/health', { cache: 'no-store' });
+      // Both the logout button and the passkey block hang off the same fact: a login
+      // exists on this install. Passkeys mint the SAME session cookie the password does
+      // and are signed by the secret stored beside the password record (src/auth.ts), so
+      // on a Basic-only box there is nothing for either control to act on.
       outBtn.hidden = !(h.ok && h.data.login);
+      passkeys.el.hidden = outBtn.hidden;
+      if (!passkeys.el.hidden) passkeys.refresh();
     })();
   };
 

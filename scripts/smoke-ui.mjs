@@ -73,6 +73,18 @@ async function openPage(browser, contextOpts) {
   // visual baseline are written against the dark shell, so the pin is the honesty.
   const ctx = await browser.newContext({ ignoreHTTPSErrors: true, colorScheme: 'dark', ...contextOpts });
   const page = await ctx.newPage();
+  // The rendering gate exercises the whole coworkspace even on a box whose owner has
+  // not completed first load yet. Shadow ONLY the initial read in this browser: no file
+  // is written, PUTs pass through untouched, and the real first-load module still gets
+  // syntax/dead-code checks. Keeping the route for reloads matters because the gbrain
+  // handoff journey deliberately reloads to reset the shared launcher.
+  await page.route('**/api/settei', async (route) => {
+    if (route.request().method() !== 'GET') return route.continue();
+    const response = await route.fetch();
+    const data = await response.json();
+    if (data?.set?.owner && !String(data.set.owner.name ?? '').trim()) data.set.owner.name = 'Ronin rendering gate';
+    await route.fulfill({ response, json: data });
+  });
   const jsErrors = [];
   const netFails = [];
   // Benign browser noise, not app faults. ResizeObserver settling fires constantly when
@@ -174,36 +186,96 @@ async function checkDom(page, label) {
  * FIRST JOURNEYS — behaviour, not just paint. Desktop pass only for now: these drive
  * the pointer/keyboard surface, and the touch grammar (drops, hoisted header) deserves
  * probes written for it rather than these re-aimed. Each journey asserts a CONTRACT
- * from docs/ui.md: the popover's open/close truth, the one pane registry, the theme
+ * from docs/ui.md: the bar-is-a-destination rule, the one pane registry, the theme
  * flip, and the sheet's focus round-trip. Kept few and unbrittle on purpose — this is
  * the seed of the journey layer, not a snapshot suite.
  */
 async function checkJourneys(page, label, jsErrors) {
-  // 1 — the き Commons menu speaks the popover contract: rows from the registry,
-  // aria-expanded truth, Escape closes.
+  // 1 — ⛩ Commons is a DESTINATION, not a menu (owner's ruling 2026-08-17): one press
+  // lands on ⌂ Roster, and nothing drops. This probe asserted the popover's open/close
+  // truth until then; the popover went with the menu it existed for.
   await page.locator('#commonsbtn').click();
-  await page.waitForTimeout(200);
-  const menu = await page.evaluate(() => ({
-    rows: document.querySelectorAll('.commons-menu .commons-row').length,
-    expanded: document.getElementById('commonsbtn')?.getAttribute('aria-expanded'),
+  await page.waitForTimeout(300);
+  const commons = await page.evaluate(() => ({
+    pane: document.querySelector('.home.show')?.dataset.pane,
+    // ONE strip, not every tile's. A sessionless tile shows its own home panel, so an
+    // unscoped count returns 4 × 10 and "10 rooms" would silently never be what was checked.
+    tabs: document.querySelector('.home.show .home-tabrow')?.querySelectorAll('button').length,
+    menu: !!document.querySelector('.commons-menu'),
   }));
-  if (menu.rows === 8 && menu.expanded === 'true') ok(`${label}: Commons menu opens with all 8 rooms (registry-fed; ⚙ lives in the bar)`);
-  else bad(`${label}: Commons menu wrong — ${menu.rows} rows, aria-expanded=${menu.expanded}`);
-  await page.keyboard.press('Escape');
-  const shut = await page.evaluate(() => document.querySelector('.commons-menu')?.hidden === true);
-  if (shut) ok(`${label}: Escape closes the Commons menu`);
-  else bad(`${label}: Escape did not close the Commons menu`);
+  if (commons.pane === 'sessions' && !commons.menu) ok(`${label}: ⛩ Commons goes straight to ⌂ Roster, and drops nothing`);
+  else bad(`${label}: ⛩ Commons landed on "${commons.pane}"${commons.menu ? ' and dropped a menu' : ''}, wanted the roster`);
+  if (commons.tabs === 10) ok(`${label}: the Commons strip carries all 10 rooms (registry-fed; ⚙ lives in the bar)`);
+  else bad(`${label}: the Commons strip has ${commons.tabs} rooms, wanted 10`);
 
-  // 2 — a menu row lands its room: ▤ Wipeboard (a core room on every build).
-  await page.locator('#commonsbtn').click();
-  await page.locator('.commons-menu .commons-row', { hasText: 'Wipeboard' }).first().click();
+  // 2 — a strip tab lands its room: ▤ Wipeboard (a core room on every build). The strip
+  // is the ONLY way to pick a room now, which is what makes this the probe that has to
+  // hold — the bar reaches the Commons, the strip reaches the rooms.
+  await page.locator('.home.show .home-tabrow [data-pane="wipe"]').first().click();
   await page.waitForTimeout(300);
   const pane = await page.evaluate(() => document.querySelector('.home.show')?.dataset.pane);
-  if (pane === 'wipe') ok(`${label}: menu row lands on the ▤ Wipeboard pane`);
-  else bad(`${label}: menu row landed on pane "${pane}", wanted "wipe"`);
+  if (pane === 'wipe') ok(`${label}: a strip tab lands on the ▤ Wipeboard pane`);
+  else bad(`${label}: the strip tab landed on pane "${pane}", wanted "wipe"`);
   await page.evaluate(() => document.querySelector('.home.show .home-x')?.click());
 
-  // 3 — the ONE gear: ⚙ in the bar opens the System sheet, and the appearance flip
+  // 3 — gbrain is the service-switch proof: always visible; inert in cowork alone;
+  // live and populated when the service registered.
+  const hasGbrain = await page.evaluate(async () => (await (await fetch('/api/version')).json()).services?.includes('gbrain'));
+  // On the STRIP, since 2026-08-17 — it is the only registry-fed surface left, so it is
+  // where "visible but inert" has to be true. The `.off` rule the tab wears is the same
+  // one the menu row wore; only the surface asserting it moved.
+  await page.locator('#commonsbtn').click();
+  await page.waitForTimeout(300);
+  const gbrainRow = page.locator('.home.show .home-tabrow [data-pane="gbrain"]').first();
+  if (!hasGbrain) {
+    if (await gbrainRow.isDisabled()) ok(`${label}: gbrain is visible but inert without its service`);
+    else bad(`${label}: gbrain is clickable without its service`);
+    await page.evaluate(() => document.querySelector('.home.show .home-x')?.click());
+  } else {
+    if (await gbrainRow.isDisabled()) bad(`${label}: gbrain service registered but its room is inert`);
+    else if (!(await page.evaluate(async () => (await (await fetch('/api/gbrain')).json()).installed))) {
+      // NOT INSTALLED is a legal, first-class state (install-contract.md § The tab
+      // rule): the room must be exactly one Load button, not the status panel.
+      await gbrainRow.click();
+      try {
+        await page.waitForSelector('.home.show[data-pane="gbrain"] .gb-privacy button', { timeout: 8000 });
+        const btn = await page.locator('.home.show[data-pane="gbrain"] .gb-privacy button').first().textContent();
+        if (/load|retry/i.test(btn || '')) ok(`${label}: gbrain room offers the one-press Load while not installed`);
+        else bad(`${label}: gbrain not installed but the room's button says "${btn}", wanted Load`);
+      } catch {
+        bad(`${label}: gbrain not installed and the room offered no Load button`);
+      }
+      await page.evaluate(() => document.querySelector('.home.show .home-x')?.click());
+    } else {
+      await gbrainRow.click();
+      try {
+        await page.waitForSelector('.home.show[data-pane="gbrain"] .gb-privacy .gb-row', { timeout: 8000 });
+        const rows = await page.locator('.home.show[data-pane="gbrain"] .gb-privacy .gb-row').count();
+        if (rows === 5) ok(`${label}: gbrain service room loads its five privacy facts`);
+        else bad(`${label}: gbrain service room loaded ${rows} privacy facts, wanted 5`);
+        const ask = page.locator('.home.show[data-pane="gbrain"] .gb-integration button').first();
+        if (await ask.count()) {
+          await ask.click();
+          const handoff = await page.evaluate(() => ({
+            pane: document.querySelector('.home.show')?.dataset.pane,
+            prompt: document.querySelector('.home.show .home-null textarea')?.value || '',
+          }));
+          if (handoff.pane === 'new' && handoff.prompt.includes('connect') && handoff.prompt.includes('gbrain')) {
+            ok(`${label}: an integration hands an editable request to PersonalAssistant`);
+          } else bad(`${label}: gbrain integration did not hand off to the New Session form`);
+          // The handoff deliberately changes the shared launcher's mode and form.
+          // Reload so this probe cannot alter the later launch-validation premise.
+          await page.reload();
+          await page.waitForSelector('.tile');
+        } else bad(`${label}: gbrain listed no available integration action`);
+      } catch {
+        bad(`${label}: gbrain service room did not load its status`);
+      }
+      await page.evaluate(() => document.querySelector('.home.show .home-x')?.click());
+    }
+  }
+
+  // 4 — the ONE gear: ⚙ in the bar opens the System sheet, and the appearance flip
   // button flips the shell and flips it back (auto-follow re-arms on the way back —
   // the colorScheme pin above makes dark the device mode here).
   await page.locator('#sysbtn').click();
@@ -224,8 +296,20 @@ async function checkJourneys(page, label, jsErrors) {
   else bad(`${label}: theme flip broken — dark=${darkBg} light=${lightBg} back=${backBg}`);
   const failAfterTheme = await page.evaluate(() => !!document.getElementById('failbar'));
   if (failAfterTheme) bad(`${label}: the theme flip raised the failure banner`);
+  // WAIT FOR THE SHEET TO BE GONE, do not sleep 200ms and hope (2026-08-17). This was a
+  // fixed timeout, and roughly one run in two the sheet was still open when the next probe
+  // started — so probe 4 focused a tab underneath a live modal and read `undefined`, and
+  // the note-journey click later died on `#syssheet intercepts pointer events` after
+  // 30 seconds. Both failures blamed the product; neither was the product. A gate that
+  // fails one run in two teaches people to re-run it, which is how a real failure gets
+  // waved through.
+  // `#syssheet.open` DETACHED, not `#syssheet:not(.open)` visible: a ui.sheet is built once
+  // and lives for the page, so the closed sheet is still in the DOM and merely hidden —
+  // and waitForSelector's default state is `visible`, so the obvious spelling waits for a
+  // hidden div to appear and times out every time. Matching on `.open` and waiting for the
+  // match to vanish asks the question the class actually answers.
   await page.keyboard.press('Escape');
-  await page.waitForTimeout(200);
+  await page.waitForSelector('#syssheet.open', { state: 'detached', timeout: 3000 });
 
   // 4 — the Commons strip is a real tablist: arrows move focus along it, Enter lands
   // the focused room. (Activation stays deliberate — focus alone must not open a room.)
@@ -251,6 +335,8 @@ async function checkJourneys(page, label, jsErrors) {
   // enters, Escape closes and gives focus back to the opener.
   await page.evaluate(() => document.querySelector('.home.show .home-x')?.click());
   await page.waitForTimeout(200);
+  // 📝 lives behind メ since 2026-08-17 — six controls came off the row into its drop.
+  await page.locator('.tile .tile-head button.tmore-btn').first().click();
   await page.locator('.tile .tile-head button.note').first().click();
   try {
     await page.waitForSelector('#notesheet.open textarea:not([disabled])', { timeout: 4000 });
@@ -316,6 +402,8 @@ async function checkJourneys(page, label, jsErrors) {
       ? route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'gate-injected failure' }) })
       : route.continue(),
   );
+  // 📝 lives behind メ since 2026-08-17 — six controls came off the row into its drop.
+  await page.locator('.tile .tile-head button.tmore-btn').first().click();
   await page.locator('.tile .tile-head button.note').first().click();
   try {
     await page.waitForSelector('#notesheet.open textarea:not([disabled])', { timeout: 4000 });
@@ -355,18 +443,23 @@ async function checkPhoneJourneys(page, label) {
   const niOpen = await page.evaluate(() => !!document.querySelector('.tdrop.open'));
   if (niOpen) ok(`${label}: ニ opens the app sheet`);
   else return bad(`${label}: ニ did not open its sheet`);
-  // A row is a door: Commons opens the rooms menu, a room row lands its pane.
+  // A row is a door, and since 2026-08-17 Commons is a door to ONE place: ⌂ Roster.
+  // It opened a second menu inside the sheet until then — a sheet dropping a menu over
+  // itself was three taps deep on a 402px phone, which is most of why the menu went.
   await page.tap('#commonsbtn');
-  await page.waitForTimeout(200);
-  await page.tap('.commons-menu .commons-row:nth-child(4)'); // ▧ Docs
   await page.waitForTimeout(300);
   const pane = await page.evaluate(() => document.querySelector('.home.show')?.dataset.pane);
-  if (pane === 'docs') ok(`${label}: ニ → Commons → row lands on ▧ Docs`);
-  else bad(`${label}: Commons row landed on "${pane}", wanted "docs"`);
+  if (pane === 'sessions') ok(`${label}: ニ → Commons lands on ⌂ Roster in one tap`);
+  else bad(`${label}: ニ → Commons landed on "${pane}", wanted "sessions"`);
   const sheetGone = await page.evaluate(() => !document.querySelector('.tdrop.open'));
   if (sheetGone) ok(`${label}: the sheet closed behind the door it opened`);
   else bad(`${label}: the ニ sheet stayed open over the pane`);
-  // The strip: tap back to the roster.
+  // The strip: the only way to a specific room, so tap one — ▧ Docs — and come back.
+  await page.tap('.tile .home-tabrow [data-pane="docs"]');
+  await page.waitForTimeout(300);
+  const docs = await page.evaluate(() => document.querySelector('.home.show')?.dataset.pane);
+  if (docs === 'docs') ok(`${label}: the tab strip lands ▧ Docs by tap`);
+  else bad(`${label}: strip tap landed "${docs}", wanted "docs"`);
   await page.tap('.tile .home-tabrow [data-pane="sessions"]');
   await page.waitForTimeout(200);
   const back = await page.evaluate(() => document.querySelector('.home.show')?.dataset.pane);
@@ -402,10 +495,14 @@ async function checkA11y(page, label, axeSrc) {
     else ok(`${label}: axe ${state} — no serious/critical violations`);
   };
   await scan('at rest');
+  // The Commons panel, not a menu: ⛩ drops nothing since 2026-08-17, so the second
+  // state worth scanning is the room it lands in — a tab strip and a live roster.
   await page.locator('#commonsbtn').click();
-  await page.waitForTimeout(150);
-  await scan('with the Commons menu open');
-  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+  await scan('with the Commons open on ⌂ Roster');
+  await page.evaluate(() => document.querySelector('.home.show .home-x')?.click());
+  // 📝 lives behind メ since 2026-08-17 — six controls came off the row into its drop.
+  await page.locator('.tile .tile-head button.tmore-btn').first().click();
   await page.locator('.tile .tile-head button.note').first().click();
   await page.waitForTimeout(400);
   await scan('with the note sheet open');

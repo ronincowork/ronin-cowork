@@ -61,7 +61,7 @@ export const PAD_KEYS = {
   // tile and the list closes. One key, no mouse — see buildSessionPicker.
   sesspick: { label: '⌸ Session switcher' },
   // Opens the Commons over whatever tile is active, on its ⌂ Roster landing — the
-  // same destination the き Commons button reaches. The panel overlays a connected
+  // same destination the ⛩ Commons button reaches. The panel overlays a connected
   // tile, so this works whether or not the tile is showing a session.
   commons: { label: '⌂ Commons' },
   tile1: { label: '⊞ Tile 1 (top-left)', tile: 0 },
@@ -165,7 +165,7 @@ export function firePadBinding(bind) {
       return;
     }
     if (bind.key === 'commons') {
-      // Same tile resolution as the き Commons button: the active tile, else the
+      // Same tile resolution as the ⛩ Commons button: the active tile, else the
       // first one actually on screen — so the key still lands somewhere when
       // nothing has been clicked yet.
       const t = S.active || tiles.find((x) => x.el.style.display !== 'none') || tiles[0];

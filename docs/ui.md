@@ -114,12 +114,28 @@ a `destroy()` owner at that moment, not speculatively.
 - **Sheet/dialog** — `ui.sheet` (`public/js/ui.js`): scrim + card, `role=dialog`,
   focus enters the first field (never on touch — the iOS keyboard), Tab is contained,
   Escape and the backdrop dismiss, and focus RETURNS to the opener. Consumers: Notes,
-  Tags, the session switcher. The pad's panel and ask-prompt predate the primitive and
-  keep their bespoke sheets until they next change behaviour.
-- **Popover/menu** — `ui.popover`: `aria-expanded` on the button, outside click and
-  Escape close, focus returns. Consumer: the き Commons menu. The job menu and the
-  touch drops (`tiledrop.js`) carry the same dismissal rules in their own code, which
-  their comments justify.
+  Tags, the session switcher, ⚙ System, and — since 2026-08-17, the last family to
+  come across — the pad's ▦ panel and its ask-on-press prompt. The prompt is the one
+  surface that overrides the touch rule and focuses its field anyway: it has nothing
+  to read, it IS the field. Nothing hand-rolls a sheet any more.
+- **Popover/menu** — **retired 2026-08-17.** `ui.popover` had one consumer, the き
+  Commons menu, and that menu is gone (see Navigation). A primitive with no consumer is
+  a corpse `check-dead` fails the build on, and parked code is not kept alive by an
+  exemption — the tape is in git. The dismissal grammar it held is not repealed: the job
+  menu (`widgets.js`) and the touch drops (`tiledrop.js`) still carry it in their own
+  code, and the day a bar control drops a menu again it comes back to `ui.js` rather
+  than being hand-rolled at the call site for the fourth time.
+  **Weighed again the same day and still not restored.** メ on the tile header now drops
+  the six controls that used to end the row (`public/js/tilemore.js`, docs/tile.md); it
+  follows ⚡'s grammar, and the reason is mechanical rather than taste. The drops that
+  hang off a tile header close each other with a `.open` **class** sweep — ⚡'s own, and
+  the phone's — while `popover()` hid with the `hidden` **attribute**, so a drop no sweep
+  can see would open on top of the macro menu six pixels to its left. Restoring the
+  primitive for one of two adjacent header dropdowns and not the other would be a third
+  convention, not a shared one. What that call site DOES carry is the half of `popover()`
+  that was about access: `aria-haspopup` / `aria-expanded` on the opener, and focus back
+  on it when the drop closes under the keyboard. The paragraph above still stands, and it
+  is about the BAR; a tile header is not the bar.
 - **Toast** — `ui.toast`: one chip, `role=status`, errors hold longer than successes.
 - **Field** — `ui.field`: a real accessible name and a message line for a control,
   `display: contents` so the layout it sits in does not move. Labels are
@@ -138,19 +154,39 @@ a `destroy()` owner at that moment, not speculatively.
 ## Navigation
 
 The Commons' rooms live in ONE registry — `public/js/panes.js` — consumed by the tab
-strip (`commons.js`) and the き menu (`layout.js`). A row carries a full label, an
-optional compact label for the 402px strip, and a hint. A new room is one registry row
-plus one feature module; service gating stays `serviceOff()` in `state.js`.
+strip (`commons.js`). A row carries a full label, an optional compact label for the
+402px strip, and a hint. A new room is one registry row plus one feature module;
+service gating stays `serviceOff()` in `state.js`.
+
+**The bar is a DESTINATION, the strip is the choosing (owner's ruling 2026-08-17).**
+⛩ Commons is one press and lands on ⌂ Roster — "the main tab in the Commons and first
+port of call on hitting the Commons". It dropped a registry-fed popover of every room
+until then; the menu is gone, glyph and all (き → ⛩, the house mark for "open the
+Commons"). **The known cost, taken with eyes open: the bar no longer reaches a SPECIFIC
+room in one press.** That is the trade, not an oversight — do not reinstate the menu as
+a fallback. ONE surface reads the registry now: the tab strip. The registry still exists
+as a registry because the drift it was written against — two hand-kept lists of rooms —
+is what happens the moment a second surface needs them.
 
 `commons.js` is the control-plane shell only; the roster and the launcher are rooms
 (`roster.js`, `launcher.js`) like Wipeboard and Docs.
 
-⚙ System is deliberately NOT a room: install-level facts (release, updates,
-appearance, log out) are page-level, so ONE gear in the bar opens one sheet
+⚙ Account is deliberately NOT a room: install-level facts (release, updates,
+appearance, log out) are page-level, so ONE control in the bar opens one sheet
 (`system.js`) — a room meant four copies, one per tile (owner's ruling 2026-08-16).
-On touch the gear relocates into the ニ sheet like the other bar verbs. The Commons
+It reads **Account** since 2026-08-17 and that is **a staging post, not the final
+shape**: the owner wants an Accounts tab in the Commons eventually, backed by SETTEI.
+Only the label moved — the fields such a room would hold (owner name, entitlement) are
+exactly what SETTEI has not settled, and an empty room is four empty copies of the
+ruling above. Build it when SETTEI lands and there is content for it.
+On touch the control relocates into the ニ sheet like the other bar verbs. The Commons
 tab strip scrolls at every width — a 4-up desktop tile is narrower than the row of
 rooms, and clipping the tail is how a tab goes quietly missing.
+
+**The five bar verbs are one width** — New · Commons · Keypad · Mika Assist · Account,
+`min-width` plus centred labels, so the row reads even rather than as five different
+kinds of control. The grid count is exempt: it is a number, not a verb. At ≤680px the
+words go and the width goes with them (a genuine shell change, so a `@media` query).
 
 ## Keyboard and focus
 
@@ -160,6 +196,13 @@ rooms, and clipping the tail is how a tab goes quietly missing.
   explanation is unnecessary.
 - Every `title` becomes the help box (`tips.js`), which also serves keyboard focus and
   supplies `aria-label` to icon-only buttons. Labels are gated by `check-tips`.
+- The help box's header — the line above the rule — carries a keyboard shortcut, a live
+  reading, or nothing, and **exists only when it has content** (owner, 2026-08-17: an
+  empty header over every macro row buried the text under a blank block). A shortcut
+  reaches it by being written at the FRONT of the label, `⌃⇧C — the CoWorking Commons: …`;
+  `tips.js` lifts it into the header and takes it off the front of the explanation. There
+  is no shortcut registry and deliberately isn't one — the chords stay owned by the
+  handler in `layout.js`.
 - Escape closes the topmost transient surface, everywhere.
 
 ## Structure gates
@@ -190,5 +233,51 @@ agent is behind a pane.
 
 `/login` (`public/login.html`) is the one pre-auth page: self-contained on purpose,
 same visual language, same theme switch. The password is set on the host with
-`bin/ronin-passwd`; the mechanics are `src/auth.ts`. Passkeys are the planned upgrade
-and reuse the same cookie/session half when they land.
+`bin/ronin-passwd`; the mechanics are `src/auth.ts`.
+
+**Three doors, one session.** Passkey, password and recovery code all end by minting the
+same HttpOnly `<expiry>.<hmac>` cookie, signed by the secret stored beside the scrypt
+record — so changing the password still ends every session at once, whichever door it
+was opened with. Basic auth (`GRID_USER`/`GRID_PASS`) is untouched and still satisfies
+the same gate for scripts.
+
+**Passkeys need HTTPS, and the page says so.** WebAuthn is only exposed in a secure
+context, and an IP address is not a legal relying-party ID — so passkeys cannot work on
+the plain-HTTP tailnet-IP address and can on the `tailscale serve` address `setup.sh`
+prints as step 2. Rather than hiding a button that would do nothing,
+`/api/passkey/options` reports why, and `src/passkey.ts`'s `secureUrl()` reads the live
+`tailscale serve status` so the page can name the address that would work. The RP ID is
+derived per request from `Host` (`RONIN_RP_ID` overrides it for a proxy that rewrites
+Host), so one build serves every install.
+
+**Registration is behind the gate, spending is in front.** A passkey is added from ⚙
+System (`public/js/system.js`) after proving you are already the owner; the login page
+can only use one. There is deliberately no unauthenticated registration route.
+`bin/ronin-recovery` mints a one-shot code, valid 30 minutes, for the case where a
+passkey will not offer itself and changing the password — which would log every other
+device out — is too big a hammer. `src/passkey.ts` holds the verification and
+`src/routes/passkey-api.ts` the routes; `tests/passkey.test.ts` signs real assertions
+with a real P-256 key so the byte layout and the signature check are actually held.
+
+No WebAuthn library was added: the browser hands back an already-decoded public key
+(`getPublicKey()`), which is the only part that would have wanted a CBOR parser.
+
+**WRITTEN BUT UNWITNESSED — read this before you touch any of it (2026-08-17).** The
+server half is held by tests: 14 of them, signing real P-256 assertions, so tampered,
+wrong-origin, cross-site, replayed and unverified assertions are each proven to fail.
+**The browser ceremony has never run.** No line of this has met a real
+`navigator.credentials` call, a real Touch ID prompt or a real device; it landed against
+a server that was never restarted to pick it up. Two things are settled only by the owner
+opening `https://<magicdns>:8443` and pressing the button once:
+
+- **whether `tailscale serve` forwards the original `Host`.** The RP ID derives from it.
+  It is built to refuse loudly rather than guess — if `Host` arrives as the IP the
+  endpoint returns a plain-English refusal and the page shows it — and `RONIN_RP_ID` is
+  the escape hatch. One glance at the first real attempt closes this.
+- **whether registration from ⚙ System and login from `/login` actually complete.**
+
+So: do not describe passkeys as working, and do not rebuild this because it looks
+unfinished — it is finished and unproven, which is a different thing. The gap is one
+restart and one press, not more code. If that first attempt fails, fix what it shows you;
+the shape above is deliberate and every choice in it has its reason recorded either here
+or in `src/passkey.ts`'s head comment.

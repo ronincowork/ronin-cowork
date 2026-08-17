@@ -33,13 +33,20 @@
  *   read     for a control whose help is a READING rather than a fixed sentence — the
  *            groups it is in, whether it has a note, what job it is doing. Returns the
  *            live help and may paint the element; called on every refresh.
+ *   hosts    this control DROPS the rows that follow it (メ, and only メ). Its widget
+ *            returns a `menu` and a `close`; see `drop` and `tilemore.js`.
+ *   drop     build me into the nearest preceding `hosts` control's menu instead of into
+ *            the row. Everything else about the row is unchanged — the point is that the
+ *            control is the SAME element wherever it is appended.
  *
  * The order of the rows IS the order on screen, `grow` and all, so reading the table is
- * reading the header left to right.
+ * reading the header left to right — and then, past メ, left to right inside its drop.
  */
 import { CONTROL_POSITIONS, makeDial, makeGauge, setInert } from './widgets.js';
 import { makeChip } from './shingo.js';
 import { buildTileMacros } from './tilemacros.js';
+import { buildTileMore } from './tilemore.js';
+import { isCoarse } from './tiledrop.js';
 import { S, SELECT_MOD, serviceMissing } from './state.js';
 import { jobIcon } from './home.js';
 
@@ -104,20 +111,31 @@ const HEADER = () => (rows ??= [
 
   { grow: true },
 
-  // メ is a way IN to the commons, not a close: the session keeps streaming behind the
-  // panel and ✕ on the tab strip brings you back. It needs no session — it is the way
-  // to GET one — which is why it is the only button on the right with no `needs`.
-  { key: 'menuBtn', cls: 'menu', text: 'メ',
+  // ⛩ IS THE COMMONS, EVERYWHERE (owner's ruling 2026-08-17). It was メ here and き in
+  // the bar, for the same act, while ⛩ meant "the letter" on this very header — one
+  // glyph for two things and two glyphs for one. Now the torii means exactly one thing
+  // wherever it appears: the way in to the Commons. The bar's button changed in the same
+  // pass; the tegami torii that used to sit beside this one is gone (see below).
+  //
+  // A way in AND a way back out since 2026-08-17: pressing ⛩ again puts the Commons away
+  // (`toggleHome`, tile.js). It only opened for a day, and a button that goes dead on the
+  // second press is one you stop trusting. The session keeps streaming behind the panel
+  // either way, and ✕ on the tab strip still works. It needs no session — it is the way to
+  // GET one — which is why it is the only button on the right with no `needs`, and also
+  // why an EMPTY tile keeps the one-way behaviour: there is nothing behind the panel to
+  // give back.
+  { key: 'menuBtn', cls: 'menu', text: '⛩',
     help: '⌃⇧C — the CoWorking Commons: roster, new session, wipeboard, docs, roots, hotwords. Opens over this tile; ✕ comes back.',
-    on: (t) => t.showHome('sessions') },
+    on: (t) => t.toggleHome('sessions') },
 
-  // ⛩ opens the letter itself — the file as the agent left it — because the chip's
-  // readout is an interpretation and sometimes you want the source. Its route is michi's.
-  { key: 'torii', cls: 'torii', text: '⛩', needs: 'session michi',
-    help: "Read this session's TEGAMI — the letter as the agent left it",
-    quiet: { session: 'The session letter — no session in this tile yet',
-             michi: 'The session letter — no ladder service is installed' },
-    on: (t) => t.toggleLetter() },
+  // THE TEGAMI TORII IS GONE (owner's ruling 2026-08-17, reaffirmed after the objection
+  // below was put to him). It opened `/tegami/raw` — the letter verbatim — and it was the
+  // only client route to that endpoint. The objection: the shingo chip opens the PARSED
+  // ladder, not the file, and shingo.js hides the chip entirely when there is no ladder,
+  // so a session with a letter and no ladder up now has no route to its own letter. The
+  // owner's call is that the button costs more header width than that case is worth. If
+  // the raw view comes back it belongs INSIDE the ladder panel, where the reader already
+  // is, not as a second glyph competing with the first.
 
   // ⚡ session_macros for THIS session: prefills the input you are typing in and stops.
   // It never runs anything. The reference is the commons' macros tab, deliberately elsewhere.
@@ -128,10 +146,23 @@ const HEADER = () => (rows ??= [
     help: "Macros — drop one into this session's input",
     quiet: 'Macros — no session in this tile yet' },
 
-  { key: 'lockEl', cls: 'lock', text: '🔒', help: lockedTitle,
+  // メ — AND EVERY ROW BELOW IT IS INSIDE ITS DROP (owner's ruling 2026-08-17). Eight
+  // controls ended this row and a session picker has to fit a name; at four tiles up
+  // there was not room for both. Three stay on top — ⛩ ⚡ メ — and the six that were
+  // left drop out of メ in one horizontal strip, unchanged. See tilemore.js for the
+  // glyph's history (it was the Commons button here until ⛩ took that everywhere) and
+  // for why this follows ⚡'s dismissal grammar rather than the retired `ui.popover`.
+  //
+  // NO `needs`. It is a container, not an act: it holds 🔒, which works with no session
+  // at all, and dimming it would hide the six explanations of why its contents are dim.
+  { key: 'moreBtn', hosts: true,
+    widget: () => buildTileMore(),
+    help: "This session's other controls — 🔒 lock, 🏷 groups, ⛽ context, 🎛 control, 📝 note, 🗑 kill" },
+
+  { key: 'lockEl', cls: 'lock', text: '🔒', drop: true, help: lockedTitle,
     on: (t) => t.flipLock() },
 
-  { key: 'tagBtn', cls: 'tags', text: '🏷', needs: 'session',
+  { key: 'tagBtn', cls: 'tags', text: '🏷', drop: true, needs: 'session',
     help: 'Groups this session belongs to',
     quiet: 'Groups — no session in this tile yet',
     on: (t) => t.openTags(),
@@ -142,17 +173,23 @@ const HEADER = () => (rows ??= [
     } },
 
   // Hidden until there is a reading — a plain shell pane has no context, and that is fine.
-  { key: 'gauge', holds: true,
+  //
+  // A LIVE READING BEHIND A CLICK, which is normally the wrong trade — a gauge you have
+  // to open is a gauge you stop watching. The owner was asked about exactly this and
+  // ruled it anyway: "the context viewer is also visible at the bottom of all of the
+  // Claude sessions anyway, so we're showing it twice." The pane already prints the
+  // number; this was the second copy, and the second copy is what pays for the header.
+  { key: 'gauge', drop: true, holds: true,
     widget: () => makeGauge('ctx'),
     help: "Context gauge — how full this session's context window is, read off the pane's own status line. Hidden until there is a reading." },
 
   // On BOTH surfaces — cockpit dials are the motif everywhere (an explicit override of
   // the desktop-freeze rule for this control).
-  { key: 'dial', needs: 'session', holds: true,
+  { key: 'dial', drop: true, needs: 'session', holds: true,
     widget: (t) => makeDial(CONTROL_POSITIONS, (v) => t.pickControl(v)),
     help: DIAL_TITLE, quiet: 'Control dial — no session in this tile yet' },
 
-  { key: 'noteBtn', cls: 'note', text: '📝', needs: 'session',
+  { key: 'noteBtn', cls: 'note', text: '📝', drop: true, needs: 'session',
     help: 'Session note (post-it)',
     quiet: 'Session note — no session in this tile yet',
     on: (t) => t.openNote(),
@@ -162,7 +199,7 @@ const HEADER = () => (rows ??= [
       return has ? 'Session note (has notes)' : 'Session note (empty)';
     } },
 
-  { key: 'killBtn', cls: 'kill', text: '🗑', needs: 'session',
+  { key: 'killBtn', cls: 'kill', text: '🗑', drop: true, needs: 'session',
     help: 'Kill session (ends it + its viewers)',
     quiet: 'Kill session — no session in this tile yet',
     on: (t) => t.kill() },
@@ -211,11 +248,26 @@ export function buildTileHead(tile) {
   el.append(head, body);
 
   const out = { el, body, headHelp: {} };
+  // THE メ DROP IS DESKTOP-ONLY, and that is not a taste call — it is what keeps touch
+  // from ending up with a drop inside a drop. `collapseTileHead` hoists this header into
+  // the phone's app bar behind its OWN メ, snapshotting `[...head.children]` to put back
+  // later; a control nested one level down in a desktop drop is not in that snapshot, so
+  // the restore would leave it inside a sheet that is then removed, taking the control
+  // with it. Gated on `isCoarse()`, the same test `collapseTileHead` gates on, so the two
+  // are exactly complementary: coarse pointer gets the phone's row and this never builds;
+  // fine pointer gets this and the phone's collapse never runs.
+  const dropped = !isCoarse();
+  let host = null; // the `hosts` row's widget, once it has been built
   for (const row of HEADER()) {
     if (row.grow) {
       head.append(Object.assign(document.createElement('span'), { className: 'grow' }));
       continue;
     }
+    // Touch builds no メ AND no drop: `host` stays null, so every `drop` row falls back
+    // into the row it always sat in and `collapseTileHead` finds the header it expects.
+    // A メ built here and left empty would also be a second メ in a bar that already has
+    // one, meaning two different things two inches apart.
+    if (row.hosts && !dropped) continue;
     // Four controls are built by their own module and come back as {el, set}; the rest
     // are a tag and a glyph. Either way what lands in `out` is what tile.js already
     // expects — the widget object where there is one, the element where there is not.
@@ -237,10 +289,23 @@ export function buildTileHead(tile) {
     // the same condition that dims it — an inert control here stays HOVERABLE so it can
     // say why (see setInert), so the refusal has to live in the handler.
     if (row.on) node.addEventListener('click', () => !quietReason(row, tile) && row.on(tile, node));
-    head.append(node);
+    // A `drop` row goes INTO メ's strip; everything else goes in the row. Same element,
+    // same handlers, same title — only the parent differs, which is the whole trick.
+    const nest = row.drop && host;
+    (nest ? host.menu : head).append(node);
+    // A control in the strip that OPENS something shuts the strip behind it, so the
+    // panel it just raised is not covered by the drop it came out of. The INSTRUMENTS
+    // (⛽ and 🎛 — the `holds` rows, whose value changes in place under your finger) leave
+    // it up, exactly as `tiledrop.js` gives the dial its 'stay' mode on the phone.
+    // Skipped while the control is inert: you clicked a dimmed 🗑 to find out why, and
+    // closing the drop under you is the opposite of an answer.
+    if (nest && !row.holds) {
+      node.addEventListener('click', () => !quietReason(row, tile) && host.close());
+    }
     out[row.key] = made ?? node;
-    // ⚡ carries a menu that hangs off the header rather than sitting in the row.
+    // ⚡ and メ carry a menu that hangs off the header rather than sitting in the row.
     if (made?.menu) head.append(made.menu);
+    if (row.hosts) host = made; // only reached when `dropped` — see the skip above
   }
   return out;
 }

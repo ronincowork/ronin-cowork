@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import os from 'node:os';
 import { storeDir } from './stores.js';
+import { listAgentAvailability } from './agents.js';
 
 const execFileP = promisify(execFile);
 
@@ -90,8 +91,74 @@ const expand = (p: string) => (p.startsWith('~') ? path.join(os.homedir(), p.sli
  * and therefore who), in src/catalog.ts. The same two keys scope a memory.
  */
 export async function listProjectRoots(): Promise<ProjectRootInfo[]> {
+  await ensureFirstRoot();
   const [raw, launch] = await Promise.all([readUserRoots(), listSessionLaunchSpecs()]);
   return parseRoots(raw, launch);
+}
+
+/* ---------------------------------------------------------------------------
+ * THE FLOOR — a fresh box gets one project_root, because zero does not work.
+ *
+ * This file used to ship deliberately empty of roots, and the reasoning was half right:
+ * an upgrade replaces the STOCK catalog, so a root written there would vanish under the
+ * owner. That argues for WHERE the file lives — user scope, outside every repo — and not
+ * for it being empty the first time they look at it.
+ *
+ * Empty was not merely a blank list. With no root, three things went wrong at once, and
+ * none of them was a decision anyone made:
+ *
+ *   spawn.ts   dir: kindDir(kind) || root?.dir || ''    -> empty
+ *   tmux.ts    if (cwd) args.push('-c', cwd)            -> no -c at all, so the first
+ *                                                          session starts wherever the
+ *                                                          tmux server happens to sit
+ *   spawn.ts   cmd: form.cmd || root?.cmd || 'claude'   -> a bare string matching no
+ *                                                          launch-table row, so MCP-off
+ *                                                          refuses it (mcp_off is matched
+ *                                                          by the cmd string)
+ *
+ * So the floor is `home`: the owner's own directory. It always exists, it is
+ * definitionally theirs, and it is definitionally not the install tree — a floor, not a
+ * guess about what they work on, which is why it does not breach the rule against
+ * speculatively including someone's directories. They rename it, repoint it, or add
+ * beside it the moment they know better.
+ *
+ * Provider and model come from MEASUREMENT rather than a default: the first launch spec
+ * whose command is actually present on this machine. A box with only Codex is not handed
+ * an Anthropic row it cannot run, and a box with nothing installed gets a root with no
+ * launch fields at all — which is honest, and Setup then asks.
+ *
+ * Seeded on first READ, not at boot: this is the module that owns the knowledge, it needs
+ * no hook in a file other sessions are editing, and it heals a box whose catalog was
+ * deleted. Absence of the FILE is the trigger — an owner who emptied their own catalog of
+ * roots keeps it empty, because the file is still there.
+ * ------------------------------------------------------------------------- */
+
+/** Once per process. A failed seed is not retried in a loop; the next start tries again. */
+let flooring: Promise<void> | null = null;
+
+async function ensureFirstRoot(): Promise<void> {
+  flooring ??= (async () => {
+    try {
+      await stat(USER_PROJECT_ROOTS_MD);
+      return; // the owner has a catalog; it is theirs, empty of roots or not
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException)?.code !== 'ENOENT') return;
+    }
+    try {
+      const [specs, agents] = await Promise.all([listSessionLaunchSpecs(), listAgentAvailability()]);
+      const present = new Set(agents.filter((a) => a.installed).map((a) => a.cmd));
+      const runnable = specs.find((s) => present.has(s.cmd.split(/\s+/)[0]));
+      await upsertProjectRoot('home', {
+        dir: os.homedir(),
+        remit: 'Your home directory — where Ronin starts until you name a project of your own.',
+        ...(runnable ? { provider: runnable.provider, model: runnable.model } : {}),
+      });
+    } catch {
+      // A box that cannot write its own catalog still serves: the roster shows no roots
+      // and says so. The floor must never take the page down with it.
+    }
+  })();
+  return flooring;
 }
 
 /** The parse itself, over text rather than the file — so a WRITE can re-read its own

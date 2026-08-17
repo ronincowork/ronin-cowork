@@ -2,6 +2,7 @@
 import { macroData } from './home.js';
 import { toast } from './ui.js';
 import { IS_TOUCH, S } from './state.js';
+import { closeTileMore } from './tilemore.js';
 import { addProvMark } from './provenance.js';
 
 /**
@@ -18,10 +19,32 @@ import { addProvMark } from './provenance.js';
  *   compose overlay open  -> append into the textarea (touch types here)
  *   unlocked tile         -> append to the parked buffer, shown in the strip
  *   locked tile           -> sendRaw(), which is `{t:'i'}` with no Enter
- * The reference — read the whole instruction, browse what exists — is the commons'
- * macros tab, deliberately a different surface. See docs/tejun-macro-system.md.
+ *
+ * A TEACHING SURFACE SINCE 2026-08-17, and that is what the shape below is about.
+ * The drop used to be every macro in the catalog, one dense `+name:` row each, the
+ * explanation on hover. The owner: *"it's just very ugly… I would rather have four
+ * macros and have larger buttons. These should be headlines, and the boxes are big
+ * enough that you can actually describe in them what that means, so people can then
+ * go, 'Oh, I see.'"* So three things changed together and none of them stands alone:
+ *
+ *   - FOUR, not thirteen. `preview: yes` in the catalog entry is the only way onto
+ *     this drop (src/macros.ts). *"If we have too many, people just don't get
+ *     educated."* Nothing is hidden from an agent — every macro still runs.
+ *   - NO `+name:` ON THE FACE. The headline is the catalog's `label:`, plain words.
+ *     The invocation moved to the help box, which is where the syntax is still
+ *     learnable without being what you read first.
+ *   - THE BODY COPY IS ALWAYS VISIBLE, never on hover. The owner confirmed it
+ *     directly, and he reads Ronin on a phone, where hover does not exist.
+ *
+ * A CATALOG ENTRY IS WRITTEN TWICE, FOR TWO READERS (owner, 2026-08-17). The prose under
+ * a `## name` heading in MACROS.md is the AGENT'S instruction — it opens with the rule the
+ * agent must not break — and `label:`/`blurb:` are the PERSON'S copy. This file renders only
+ * the second pair. It never renders `instruction`, not even as a fallback; see render().
+ *
+ * The reference — the whole instruction, every macro, the ones not previewed
+ * included — is `ronin_catalogs/MACROS.md`.
  */
-/** Catalog blurbs are markdown, and a tooltip renders none of it — `**bold**` and
+/** Catalog blurbs are markdown, and a card renders none of it — `**bold**` and
  *  backticks arrive as literal punctuation. Strip the syntax, keep the words. */
 const plain = (s) =>
   (s || '')
@@ -95,25 +118,51 @@ export function buildTileMacros(tile) {
 
   const render = () => {
     menu.innerHTML = '';
-    for (const m of macroData || []) {
+    // `preview: yes` in the catalog entry, and nothing else, puts a macro here.
+    const shown = (macroData || []).filter((m) => m.preview);
+    for (const m of shown) {
       const row = document.createElement('button');
+      row.type = 'button';
       row.className = 'tmac-row' + (m.send ? ' sends' : '');
       const nm = document.createElement('b');
-      // A macro that fires is not spelled like one you finish typing: no trailing
-      // colon to fill in, and a ⏎ so the row cannot be mistaken for a prefill.
-      nm.textContent = m.send ? '+' + m.name + ' ⏎' : '+' + m.name + ':';
-      // The invocation ALONE on the row, and the description on hover. This menu is
-      // the fast path — you are mid-sentence — and blurbs run to a paragraph, which
-      // made the list a wall of text. The full instruction belongs in the reference.
-      row.title = plain(m.description);
-      row.append(nm);
-      // A macro of yours, or one of ours you replaced, says so here too — the same
-      // mark on every surface a catalog is rendered on (js/provenance.js).
-      addProvMark(row, m);
+      // The headline, in the owner's plain words — and a ⏎ for a macro that FIRES,
+      // because pressing Enter into a working session is not the same act as dropping
+      // text in the box, and the face has to say which one this is.
+      nm.textContent = (m.label || m.name) + (m.send ? ' ⏎' : '');
+      // The mark rides on the headline, exactly as it does on the launcher's kind
+      // buttons — a macro of yours, or one of ours you replaced (js/provenance.js).
+      addProvMark(nm, m);
+      // Body copy, ALWAYS VISIBLE, and it is `blurb:` or it is nothing.
+      //
+      // NO FALLBACK TO `instruction` (owner, 2026-08-17 — *"we need to split out the
+      // description and the agent instruction into two different things because they don't
+      // overlap"*). Until today this line read `m.blurb || plain(m.description)`, so a
+      // previewed entry with no blurb showed the agent's own instruction to a person:
+      // `forkit` would have greeted them with "Owner-invoked only — never fork on your own
+      // initiative", a prohibition addressed to somebody else that teaches the reader nothing
+      // about what the button does. Falling back IS the overlap the owner is splitting.
+      //
+      // So what does a blurbless card say? Stock entries cannot get here — check-catalogs
+      // fails MACROS.md if any entry lacks `label:`/`blurb:`. The real case is a macro of the
+      // OWN OWNER'S, in their own catalogs file (js/provenance.js exists for exactly that),
+      // marked `preview: yes` with no blurb written. That card is label-only plus one quiet,
+      // honest line naming the gap and the fix — not a blank under the headline (which reads
+      // as broken), not the instruction, and not a guess at what their macro does.
+      const why = document.createElement('small');
+      why.textContent = plain(m.blurb) || 'no blurb yet — add a blurb: line to its MACROS.md entry';
+      row.append(nm, why);
+      // The invocation lives in the HELP BOX now. It is off the face by the owner's
+      // ruling, but it must stay learnable — the whole premise of this menu is that
+      // what it types is text you could have typed yourself.
+      row.title = m.send
+        ? `+${m.name} ⏎ — Ronin types this line into the session and presses Enter for you`
+        : `+${m.name}: — drops that into the input for you to finish and send`;
       const cool = m.send ? coolingFor(m.name) : 0;
       if (cool) {
         row.disabled = true;
-        nm.textContent += `  · sent, wait ${cool}s`;
+        // The blurb's place, not an appendix to the headline: a spent button explaining
+        // what it does is less use than one explaining why it will not go.
+        why.textContent = `sent — wait ${cool}s before sending it again`;
       }
       row.addEventListener('click', () => {
         if (m.send) {
@@ -130,16 +179,49 @@ export function buildTileMacros(tile) {
       });
       menu.appendChild(row);
     }
-    if (!(macroData || []).length) menu.textContent = 'no macros yet';
+    // Two ways to be empty and one sentence for both — the catalog has not loaded, or
+    // nothing in it is marked `preview: yes`. Either way the fix is the same file.
+    if (!shown.length) menu.textContent = 'no macros previewed — see MACROS.md';
+  };
+
+  /**
+   * THE TILE CLIPS, so the drop must know how tall its tile is.
+   *
+   * `.tile` is `overflow: hidden` and this menu hangs off `.tile-head` inside it, so a
+   * drop taller than the room below the header is not "overflowing" — it is CUT, with no
+   * scrollbar and no sign that anything is missing. Measured 2026-08-17 at four tiles up:
+   * the fourth card lost its bottom half, which is the exact failure a teaching surface
+   * cannot survive. The 2×2 wrap in style.css keeps it short enough in the ordinary case;
+   * this is the guarantee, for a short tile, a long blurb, or a fifth previewed macro.
+   *
+   * No CSS length can say it — `60vh` is the window, `100%` is the header's own 35px, and
+   * `cqh` needs size containment the tile deliberately does not have. So it is measured,
+   * at OPEN time rather than once: the grid count, the window and the phone's keyboard all
+   * resize a tile under a menu that is not showing.
+   */
+  const fitToTile = () => {
+    const head = btn.closest('.tile-head');
+    const box = btn.closest('.tile');
+    if (!head || !box) return;
+    const room = box.getBoundingClientRect().bottom - head.getBoundingClientRect().bottom - 8;
+    // A floor, because a tile can be shorter than one card and a 12px-tall scroller with
+    // nothing legible in it is worse than a menu that overhangs a very small tile.
+    menu.style.maxHeight = `${Math.max(140, Math.round(room))}px`;
   };
 
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
     const open = menu.classList.contains('open');
+    // メ sits immediately to ⚡'s right since 2026-08-17 and its drop anchors to the same
+    // corner of the same header, so leaving it up puts two panels on one spot. Through
+    // `closeTileMore` rather than a `.tmore.open` class sweep: four tiles build four メ
+    // buttons and each carries its own `aria-expanded`, which a class sweep leaves lying.
+    closeTileMore();
     document.querySelectorAll('.tmac.open').forEach((m) => m.classList.remove('open'));
     if (open) return;
     render();
     menu.classList.add('open');
+    fitToTile();
   });
   menu.addEventListener('click', (e) => e.stopPropagation());
   document.addEventListener('click', close);

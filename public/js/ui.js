@@ -10,8 +10,6 @@
  *   sheet()   a modal card over a dimmed backdrop — dialog semantics, focus entry,
  *             Tab containment, Escape/backdrop dismissal, focus restoration
  *   toast()   the one transient outcome chip (grew out of the pad's; now house-wide)
- *   popover() a button-anchored menu — aria-expanded, outside click, Escape,
- *             focus back on the button that opened it
  *   field()   a control with a REAL accessible name — display:contents, so it adds
  *             semantics to an existing layout without changing a pixel of it
  *   status()  the async outcome line — loading…/saved/not saved-and-why, announced
@@ -138,42 +136,19 @@ export function toast(msg, ok = true) {
   toastTimer = setTimeout(() => toastEl.classList.remove('show'), ok ? 2200 : 5000);
 }
 
-/* ---------- the button-anchored menu ---------- */
-
-/**
- * Wire a button to the menu it drops. The menu element already exists and is styled
- * by its owner; this owns open/close truth: aria-expanded on the button, outside
- * click, Escape, and focus back on the button when the menu closes under keyboard.
+/* ---------- the button-anchored menu: GONE, and what it was for ----------
  *
- * @param {HTMLElement} btn
- * @param {HTMLElement} menu  hidden via the `hidden` attribute when closed
- * @returns {{close: () => void, toggle: () => void}}
+ * `popover()` lived here — aria-expanded on the opener, outside click, Escape, focus
+ * back on the button. It had exactly ONE consumer, the き Commons menu, and on
+ * 2026-08-17 the owner ruled that menu out: ⛩ Commons now goes straight to ⌂ Roster
+ * and drops nothing. A primitive with no consumer is a corpse (check-dead flags a dead
+ * export), and parked code is not kept alive by an exemption — the tape is in git.
+ *
+ * THE RULES IT HELD ARE NOT REPEALED, only unused here. The job menu (`widgets.js`)
+ * and the touch drops (`tiledrop.js`) still carry the same dismissal grammar in their
+ * own code, and the day a bar control drops a menu again, that grammar comes back to
+ * this file rather than being hand-rolled at the call site for the fourth time.
  */
-export function popover(btn, menu) {
-  const close = () => {
-    if (menu.hidden) return;
-    menu.hidden = true;
-    btn.setAttribute('aria-expanded', 'false');
-    if (menu.contains(document.activeElement)) btn.focus();
-  };
-  const toggle = () => {
-    menu.hidden = !menu.hidden;
-    btn.setAttribute('aria-expanded', String(!menu.hidden));
-  };
-  btn.setAttribute('aria-haspopup', 'true');
-  btn.setAttribute('aria-expanded', 'false');
-  btn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    toggle();
-  });
-  document.addEventListener('click', (e) => {
-    if (!menu.hidden && !menu.contains(e.target)) close();
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !menu.hidden) close();
-  });
-  return { close, toggle };
-}
 
 /* ---------- the labelled control ---------- */
 

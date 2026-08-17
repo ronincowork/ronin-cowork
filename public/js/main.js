@@ -9,6 +9,7 @@ import { build } from './layout.js';
 import { S, TILE_COUNT, loadState, tiles } from './state.js';
 import { setLayout } from './viewport.js';
 import { installTips } from './tips.js';
+import { buildFirstRun } from './firstrun.js';
 
 export async function init() {
   // Ask the operator which optional surfaces are plugged in BEFORE the grid is built,
@@ -28,6 +29,34 @@ export async function init() {
   }
   // The theme before the grid: tiles are born reading the resolved terminal palette.
   guard('apply theme', applyTheme);
+
+  // FIRST LOAD, and it is opened DELIBERATELY — `?setup` and nothing else.
+  //
+  // It used to decide for itself, from "nobody has said who they are". That fired on a
+  // box with months of sessions and five project roots whose owner had simply never
+  // typed a name, and replaced the workspace at the workspace's own URL. Two lessons,
+  // and the second is the one that generalises:
+  //
+  //   1. A PROXY IS NOT A FACT. "No owner name" describes a box nobody has ANSWERED
+  //      for; it does not describe a box nobody has USED, and only the second could
+  //      justify taking the page. When the record carries an explicit key for this —
+  //      set by a genuinely fresh install, not inferred — the test reads that key.
+  //   2. ABSENCE MUST MEAN "DO NOT SHOW". A missing key is the normal state of every
+  //      box that predates the key, so a condition that fires on absence breaks every
+  //      existing install the day it ships. The default has to be quiet.
+  //
+  // Until that key exists this is opt-in only, so a wrong answer costs a wrong page
+  // rather than the product.
+  if (new URLSearchParams(location.search).has('setup')) {
+    const host = document.createElement('div');
+    document.body.replaceChildren(host);
+    await buildFirstRun(host, () => {
+      location.href = location.pathname; // back to the workspace, setup dropped
+    });
+    return;
+  }
+
+
   guard('build the grid', build);
   const saved = guard('read saved state', loadState, { map: [], layout: TILE_COUNT });
   // A phone OPENS on one terminal, always — not just on first run. A 2x2 grid of tiny

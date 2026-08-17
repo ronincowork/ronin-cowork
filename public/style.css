@@ -335,9 +335,7 @@ body {
    are written to fit; `scripts/check-tips.mjs` fails the build if one does not, so a
    too-long label is caught at build time instead of being silently clipped at 2am.
 
-   TWO ZONES, and the status line holds its height when empty — otherwise the box would
-   still reflow between a control that has a reading and one that does not, which is the
-   same restlessness by a smaller amount. */
+   TWO ZONES, and the header is CONDITIONAL — see `.helpbox-status:empty` below. */
 .helpbox {
   position: fixed;
   z-index: 90;
@@ -365,12 +363,11 @@ body {
 .helpbox.show {
   display: block;
 }
-/* THE STATUS LINE — what this control reads right now (the dial's position, the gauge's
-   percentage). One line, clipped rather than wrapped: a reading that grew to two lines
-   would push the explanation down and break the fixed geometry. `min-height` is what
-   keeps the box identical for the controls that have no reading at all. */
+/* THE HEADER LINE — a keyboard shortcut (⌃⇧C on き Commons), or what this control reads
+   right now (the dial's position, the gauge's percentage). One line, clipped rather than
+   wrapped: a reading that grew to two lines would push the explanation down and break the
+   fixed geometry. */
 .helpbox-status {
-  min-height: 1.45em;
   margin-bottom: 4px;
   padding-bottom: 4px;
   border-bottom: 1px solid var(--line);
@@ -380,8 +377,27 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* WHAT IS THIS — three lines at this width and font. The build check is calibrated to
-   exactly this box, so changing either dimension means re-running it. */
+/* NO CONTENT, NO HEADER — and no rule either, which is the half that mattered.
+   This line used to carry `min-height: 1.45em` so it held its height when empty, on the
+   argument that the box would otherwise reflow between a control with a reading and one
+   without. But `.helpbox` is a fixed width AND height: nothing reflows either way, so the
+   reserved line bought nothing and charged the majority case for it. Most controls have
+   no reading, the macro rows have neither reading nor shortcut, and every one of them
+   drew an empty block plus a divider on top of its two lines of text. Owner, 2026-08-17,
+   scrolling the macro list: "you barely see the text, and there's this big white block
+   head at the top."
+
+   `:empty` is the whole rule — one test, on content, so no caller can opt in or out of it
+   by accident. It matches only an element with NO child nodes, which is why `tips.js`
+   trims every source and writes '' rather than a space: one stray whitespace text node
+   and the divider is back. Same shape as `.ui-status:empty` above, for the same reason. */
+.helpbox-status:empty {
+  display: none;
+}
+/* WHAT IS THIS — three lines at this width and font, four when there is no header above
+   it. The build check is calibrated to the WITH-header case (`check-tips.mjs` reserves the
+   line in its probe), so it stays the conservative measurement of the two. Changing either
+   box dimension means re-running it. */
 .helpbox-what {
   color: var(--fg);
 }
@@ -438,9 +454,10 @@ body {
   flex: 1;
 }
 /* Top-bar verbs — BOTH surfaces (owner override of the touch/desktop split) */
-/* The three top-bar verbs. One rule, one size — the old list named #homebtn and
-   #macrobtn, which no longer exist, so Commons and Keypad were falling back to the
-   browser default and looked like a different family of control. */
+/* The LOOK: one rule, one family — the old list named #homebtn and #macrobtn, which no
+   longer exist, so Commons and Keypad were falling back to the browser default and
+   looked like a different family of control. The grid count rides this rule too; it is
+   the same box. SIZING splits below, because the count is not a verb. */
 #newbtn,
 #mikabtn,
 #commonsbtn,
@@ -459,11 +476,55 @@ body {
   cursor: pointer;
   white-space: nowrap;
 }
+/* ONE WIDTH FOR THE FIVE VERBS, and the label sits inside it.
+   Owner, 2026-08-17: "each of the boxes on the right, except for the number … should be
+   the same width so there's not a small New and a large Commons … and then just fit
+   inside that button so that it looks a little bit more symmetrical." Boxes sized to
+   their own text made a ragged row of five different rectangles reading as five
+   different KINDS of control, which they are not — they are five doors.
+
+   `min-width`, not `width`: it degrades honestly if a label is ever renamed longer —
+   the box widens rather than clipping the word. `justify-content: center` is what puts
+   the label INSIDE the box instead of hard against the left padding.
+
+   100px IS MEASURED, NOT CHOSEN. The longest verb, "ミ Mika Assist", renders at 94px in
+   the shipped font; 100px is the widest the five can be before #bar stops fitting its
+   own row at 681px, the narrow edge of the range where the labels are still shown (104
+   overflows by 5px there, 120 by 85 — measured 2026-08-17). A bar that scrolls sideways
+   to reach ⚙ Account is a worse defect than 6px of slack, so the row takes the number
+   that always fits. Rename a verb longer than this and RE-MEASURE at 681px; do not just
+   nudge it up. */
+#newbtn,
+#mikabtn,
+#commonsbtn,
+#padbtn,
+#sysbtn {
+  min-width: 100px;
+  justify-content: center;
+}
+/* THE PHONE BAR IS A GENUINE SHELL CHANGE, so it stays a viewport query (docs/ui.md):
+   at ≤680px the words go and the verbs are icon-only, because bar space is tight.
+   THE EQUAL WIDTH GOES WITH THEM — five 100px boxes holding one glyph each would eat
+   500px of a 402px row and shove the grid count off the end, which is the opposite of
+   what the width was for. `min-width: auto` hands each glyph back its own small box.
+
+   Commons and Account are in this list now; they were not. #commonsbtn kept its word at
+   402px and ⚙ had no word to lose, so the phone bar carried two exceptions to a rule
+   with three members. One rule, five members, no exceptions. */
 @media (max-width: 680px) {
   #newbtn .txt,
   #mikabtn .txt,
-  #padbtn .txt {
+  #commonsbtn .txt,
+  #padbtn .txt,
+  #sysbtn .txt {
     display: none; /* icon-only on phones — bar space is tight */
+  }
+  #newbtn,
+  #mikabtn,
+  #commonsbtn,
+  #padbtn,
+  #sysbtn {
+    min-width: auto;
   }
 }
 /* Copy panel — real selectable text, native copy on any device */
@@ -582,85 +643,140 @@ body {
     border-radius: 0;
   }
 }
-/* Tile ⚡ macros — the fast path: a small dropdown that PREFILLS the session's input.
-   Anchored to the tile header (which is position:relative), not a full-screen modal:
-   the reference lives in the commons's macros tab, this is meant to be one tap and gone. */
+/* Tile ⚡ macros — four TEACHING buttons, dropped from the tile header (which is
+   position:relative), not a full-screen modal.
+
+   It was a dense list of `+name:` rows with the explanation on hover until 2026-08-17.
+   The owner: "it's just very ugly… I would rather have four macros and have larger
+   buttons. These should be headlines, and the boxes are big enough that you can actually
+   describe in them what that means, so people can then go, 'Oh, I see.'" So the row is a
+   CARD — headline, then body copy that is always on screen, never a tooltip (he reads
+   Ronin on a phone, and a phone has no hover). Which four is the catalog's business:
+   `preview: yes` in ronin_catalogs/MACROS.md, read by src/macros.ts.
+
+   TWO COLUMNS WHEN THERE IS ROOM, AND NO QUERY OF ANY KIND. Four cards in one column
+   are 454px tall; a 4-up tile is ~418px and `.tile` is `overflow: hidden`, so the fourth
+   card was cut in half by the tile's own edge — measured 2026-08-17, and an unreadable
+   button is the exact failure this drop was rebuilt to end. It wraps into a 2×2 instead,
+   which halves the height. `auto-fit` + `minmax` does that from the width it actually
+   has, so the anchor stays honest at every tile size and on the phone (~390px, one
+   column) without a `@media` — which would be the wrong question here anyway, since a
+   narrow tile and a narrow phone are different facts — and without `@container tile`,
+   which cannot be asked from here: that container is `.tile-body`, and this drop hangs
+   off `.tile-head`, its SIBLING. */
 .tmac {
   display: none;
   position: absolute;
   top: 100%;
   right: 6px;
   z-index: 12;
-  width: min(340px, calc(100% - 12px));
+  width: min(560px, calc(100% - 12px));
+  /* The opening height. `tilemacros.js` immediately tightens this to the room actually
+     left below the header IN THIS TILE, which no CSS length can name — see the note
+     there. Kept here so the box is bounded even before that runs. */
   max-height: 60vh;
   overflow-y: auto;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 10px;
-  padding: 4px;
+  padding: 6px;
   box-shadow: var(--shadow-sheet);
 }
 .tmac.open {
-  display: block;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 6px;
 }
+/* The same card as the launcher's kind buttons (.ks-btn) — headline + description, left
+   aligned, room to breathe — because it is the same job: choosing a thing you may never
+   have heard of by reading what it does. */
 .tmac .tmac-row {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
   width: 100%;
   height: auto;
+  padding: 10px 12px;
   text-align: left;
-  background: transparent;
-  border: 0;
-  border-radius: 8px;
-  padding: 7px 9px;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.4;
+  background: var(--raise);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--fg);
   cursor: pointer;
 }
 .tmac .tmac-row:hover,
 .tmac .tmac-row:active {
-  background: var(--line);
+  border-color: var(--accent);
+}
+.tmac .tmac-row b {
+  color: var(--fg-strong);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
 }
 /* A macro Ronin types and submits for you. Marked, because pressing Enter into a
    working session is not the same act as dropping text in the box. */
 .tmac .tmac-row.sends b {
-  color: var(--fg);
+  color: var(--accent);
+}
+/* NOT clamped. The body copy is the whole point of the button — a description cut off
+   at two lines teaches half of something, which is the failure the cards replaced. */
+.tmac .tmac-row small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
 }
 .tmac .tmac-row:disabled {
   opacity: 0.45;
   cursor: default;
 }
 .tmac .tmac-row:disabled:hover {
-  background: transparent;
-}
-.tmac .tmac-row b {
-  display: block;
-  color: var(--accent);
-  font: 12px/1.6 Menlo, "DejaVu Sans Mono", Consolas, monospace;
-  font-weight: 500;
-}
-/* Two lines, then ellipsis. The dropdown is the FAST PATH — a macro's full
-   instruction belongs in the reference, not here, and some blurbs are a paragraph. */
-.tmac .tmac-row span {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  border-color: var(--line);
 }
 
-/* Work Louder pad — same modal pattern; the board is a picture of the Creator Micro 2 */
-#padsheet {
+/* Tile メ — the rest of the header, dropped in ONE HORIZONTAL STRIP (owner, 2026-08-17:
+   "you just see those boxes exactly as they are, but maybe it just drops down
+   horizontally"). Deliberately the same box as .tmac above it — same anchor corner, same
+   panel, same shadow — because they are two drops off one header and ⚡ sits right beside
+   メ; a second look would read as a second kind of thing.
+
+   What is NOT here is any rule for what is inside: the six controls keep the `.tile-head
+   button` sizing they were built with, since they are the same elements, merely appended
+   somewhere else. That is the whole point of the move, and a `.tmore button { … }` block
+   would quietly undo it.
+
+   WRAPS rather than clipping. The strip is ~212px at six controls and a 4-up tile is far
+   wider, so this is the tile nobody has built yet — but an absolutely-positioned row that
+   overflows its tile is a control you cannot reach, and a wrap is cheaper than a container
+   query for the same promise. */
+.tmore {
   display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 30;
-  background: var(--scrim);
+  position: absolute;
+  top: 100%;
+  right: 6px;
+  z-index: 12;
+  gap: 8px;
+  row-gap: 6px;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
+  max-width: calc(100% - 12px);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 5px 8px;
+  box-shadow: var(--shadow-sheet);
 }
-#padsheet.open {
+.tmore.open {
   display: flex;
 }
+
+/* Work Louder pad — a ui.sheet consumer since 2026-08-17; the board is a picture of the
+   Creator Micro 2. The scrim, the centering and the open/closed switch belong to the
+   primitive now (@layer ui, .ui-sheet), which is why the `#padsheet { position: fixed;
+   z-index: 30; … }` block that used to stand here is gone with the JS that toggled it.
+   What stays is what is THIS card's: its width, its scroll, and the board inside it. */
 #padsheet .pad-card {
   display: flex;
   flex-direction: column;
@@ -863,21 +979,16 @@ body {
   white-space: nowrap;
   cursor: pointer;
 }
-/* Ask-on-press prompt: the popped window IS the macro's args field */
-#padask {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 35;
-  background: var(--scrim);
-  align-items: center;
-  justify-content: center;
-}
-#padask.open {
-  display: flex;
-}
+/* Ask-on-press prompt: the popped window IS the macro's args field. A ui.sheet consumer
+   since 2026-08-17, so the scrim and the open switch are the primitive's; this card's own
+   business is that it is ONE ROW — name, then box — where every other card in the house is
+   a column, hence the explicit flex-direction over .ui-card's default.
+   It used to sit at z-index 35 above the pad panel's 30, because an ask-key pressed while
+   ▦ is open has to pop OVER the board. Both are .ui-sheet at one z-index now, and DOM
+   order carries it instead: js/layout.js builds the panel first, the prompt second. */
 #padask .pa-card {
   display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 10px;
   width: min(520px, 92vw);
@@ -1039,9 +1150,12 @@ body {
 .tile-head button:hover {
   border-color: var(--accent);
 }
-/* メ — the way into commons. Wider, because katakana is not an icon glyph and gets
-   clipped in a 26px square. */
-.tile-head button.menu {
+/* ⛩ the Commons and メ its drop. Wider, because a torii and a katakana are not icon
+   glyphs and get clipped in a 26px square. (This said "メ — the way into commons" until
+   2026-08-17: ⛩ took the Commons on every surface that day, and メ came back on the same
+   header as the button the other six controls drop out of — see js/tilemore.js.) */
+.tile-head button.menu,
+.tile-head button.tmore-btn {
   width: 28px;
   font-size: 13px;
 }
@@ -1207,7 +1321,27 @@ body {
      as the box put two panels on screen for one control. The badge stays for the
      .show flash on click, which is feedback about an action, not hover. */
 }
+/* THE TILE IS THE CONTAINER — `@container tile (…)` is measured against this box.
+ *
+ * Ronin is a tile-based workspace, not a desktop app that shrinks. A Commons room is
+ * narrow because it is on a phone OR because it is one cell of a 4-up desktop grid,
+ * and `@media (max-width: …)` cannot tell those apart: on a 1280px Mac each tile body
+ * is ~630px wide and every viewport rule still handed it the roomy desktop layout.
+ * So anything that describes THIS BOX asks this box (see `@container tile` below);
+ * only genuine shell changes — the app bar going icon-only, a sheet covering the
+ * screen, the grid stacking into a scroll column — stay on viewport queries.
+ *
+ * `inline-size`, never `size`: size containment would make the block axis independent
+ * of the contents too, and this box's height is the flex row's to give. The layout
+ * containment that rides along costs nothing here — the box is already
+ * `position: relative` and already `overflow: hidden`, and every fixed-position
+ * surface in the client (helpbox, toast, sheets, .job-menu, #chip, #kdashi) is
+ * appended to document.body rather than into a tile, so nothing loses its viewport
+ * anchor. xterm is unaffected: FitAddon measures the terminal element inside this
+ * box, and this box's own width still comes from the grid column, not its contents. */
 .tile-body {
+  container-type: inline-size;
+  container-name: tile;
   flex: 1 1 auto;
   min-height: 0;
   padding: 4px 2px 2px 6px;
@@ -1583,7 +1717,7 @@ body {
   gap: 10px;
   min-height: 0;
 }
-/* Eight admin panes, one at a time, named by [data-pane] on .home. (Was a single
+/* Commons tabs, one at a time, named by [data-pane] on .home. (Was a single
    `.browsing` toggle while there were only two — see buildHome. ⚙ System left the
    panes for the bar's one sheet, 2026-08-16.) */
 .home-null,
@@ -1592,7 +1726,9 @@ body {
 .home-proj,
 .home-hotwords,
 .home-stats,
-.home-koshi {
+.home-koshi,
+.home-gbrain,
+.home-settei {
   display: none;
 }
 .home[data-pane='new'] .home-null {
@@ -1618,6 +1754,123 @@ body {
 }
 .home[data-pane='koshi'] .home-koshi {
   display: flex;
+}
+.home[data-pane='gbrain'] .home-gbrain {
+  display: flex;
+}
+.home[data-pane='settei'] .home-settei {
+  display: flex;
+}
+
+/* ---- ⚙ SETUP: the install record, in one room (js/settei.js).
+   Three kinds of row and they must not look alike: a `.st-field` is something you set,
+   a `.st-obs` is what the box measured and has no control at all, and `.st-note` is
+   what follows from the two. The difference is carried by weight and colour rather
+   than by a border, because the rows sit in one column and a boxed row would read as
+   a card. ---- */
+.home-settei {
+  flex-direction: column;
+  gap: 0;
+  overflow-y: auto;
+  padding: 10px 14px 18px;
+}
+.st-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 8px;
+}
+.st-blurb {
+  color: var(--fg-dim);
+  font-size: 13px;
+}
+.st-blurb.bad {
+  color: var(--bad);
+}
+.st-stamp {
+  color: var(--fg-faint);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.st-body {
+  display: flex;
+  flex-direction: column;
+}
+.st-grp {
+  color: var(--fg-faint);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 16px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--line);
+}
+.st-row {
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line-faint);
+}
+.st-row.st-obs {
+  display: grid;
+  grid-template-columns: minmax(0, 168px) minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+}
+.st-lab {
+  color: var(--fg-dim);
+  font-size: 13px;
+}
+.st-val {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.st-note {
+  color: var(--fg-faint);
+  margin-left: 8px;
+}
+.st-link {
+  color: var(--fg-faint);
+  font-size: 12px;
+}
+/* The label sits in a fixed first column and the control beside it; the field's own
+   status line has no rule here on purpose — `.ui-status` is a primitive and the app
+   layer may not select one, so the message simply wraps onto the next line, which is
+   where it wanted to be. */
+.st-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+.st-field > label {
+  flex: 0 0 156px;
+  color: var(--fg-dim);
+  font-size: 13px;
+}
+.st-inp {
+  width: min(320px, 100%);
+  background: var(--bg-input);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 5px 8px;
+  font: inherit;
+  font-size: 13px;
+}
+.st-inp.st-num {
+  width: 88px;
+  font-variant-numeric: tabular-nums;
+}
+.st-check {
+  justify-self: start;
+}
+@media (max-width: 560px) {
+  .st-row.st-obs,
+  .st-field {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'label' 'control' 'msg';
+  }
 }
 
 /* ---- ⚙ SYSTEM: the one sheet off the bar's gear (js/system.js). ---- */
@@ -1741,6 +1994,112 @@ body {
 .ko-empty {
   opacity: 0.7;
   font-size: 12px;
+}
+
+/* ---- GBRAIN: local process, privacy boundary, search and integrations. ---- */
+.home-gbrain {
+  flex-direction: column;
+  min-height: 0;
+  padding: 10px;
+  gap: 8px;
+  overflow: auto;
+}
+.gb-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.gb-intro,
+.gb-empty {
+  opacity: 0.75;
+  font-size: 12px;
+}
+.gb-card {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 9px 10px;
+}
+.gb-log {
+  /* the Load button's live installer log — same species as a terminal readout */
+  max-height: 180px;
+  overflow: auto;
+  font-size: 11px;
+  opacity: 0.85;
+  margin: 6px 0;
+  white-space: pre-wrap;
+}
+.gb-remove {
+  /* the way back out — present, quiet, never competing with the panel above it */
+  margin-top: 10px;
+  opacity: 0.7;
+}
+.gb-card h3 {
+  margin: 0 0 6px;
+  font-size: 13px;
+}
+.gb-row {
+  display: grid;
+  grid-template-columns: minmax(145px, 1fr) minmax(100px, auto);
+  gap: 12px;
+  padding: 3px 0;
+  align-items: baseline;
+}
+.gb-row strong {
+  text-align: right;
+  font-weight: 600;
+}
+.gb-row.good strong,
+.gb-state.connected {
+  color: var(--ok);
+}
+.gb-row.warn strong,
+.gb-state.needs_attention,
+.gb-state.unknown {
+  color: var(--warn);
+}
+.gb-row.bad strong {
+  color: var(--bad);
+}
+.gb-card details {
+  margin-top: 7px;
+  font-size: 11px;
+  opacity: 0.75;
+}
+.gb-card details p {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+}
+.gb-integration {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+.gb-integration:first-of-type {
+  border-top: 0;
+}
+.gb-integration > div {
+  min-width: 0;
+}
+.gb-integration b,
+.gb-integration small {
+  display: block;
+}
+.gb-integration small {
+  margin-top: 2px;
+  opacity: 0.7;
+}
+.gb-integration button {
+  grid-column: 1 / -1;
+  justify-self: start;
+  font-size: 11px;
+}
+.gb-state {
+  white-space: nowrap;
+  font-size: 11px;
 }
 
 /* ---- ▥ HOTWORDS: the words dictation keeps getting wrong (ronin_catalogs/HOTWORDS.md).
@@ -2429,10 +2788,11 @@ body {
 /* Same two turns as the tile's button — see `.tile-head button.job`. A roster row is a
    READ, so the mark sits quieter here than anywhere: it is scanned down a column, not
    pressed. */
+/* Its own track now (`--hr-mark`), so the `flex`/`margin-right` that used to hold the
+   column open went with the flex row — the grid holds it, and a second mechanism saying
+   the same thing is the one that drifts (2026-08-17). */
 .home-job {
-  flex: 0 0 auto;
   width: 1.35em;
-  margin-right: 5px;
   font-size: 11px;
   line-height: 1;
   text-align: center;
@@ -2455,13 +2815,15 @@ body {
     outline: 1px solid var(--line);
   }
 }
-@media (pointer: coarse) {
-  /* TOUCH: drawn, never a button — it is the tap padding a phone-width row cannot
-     spare, not the glyph. Re-marking is a desktop verb (js/commons.js). */
-  .home-job {
-    margin-right: 4px;
-  }
-}
+/* TOUCH: the mark is drawn, never a button — the tap padding is what a phone-width row
+   cannot spare, not the glyph; re-marking is a desktop verb (js/commons.js). Nothing to
+   declare for it any more, now that the grid holds the column: the `margin-right: 4px`
+   that lived here was the flex row's spacing, and it went with the flex row. The row's
+   own touch SHAPE (five columns, not six) is stated beside `.home-row` instead — stated
+   here it lost to the base rule, which is later in the file and equally specific, and the
+   402px row kept paying 34px for a 🏷 that touch never builds (caught in the browser,
+   2026-08-17: the phone's name track measured 48px). */
+
 
 /* The re-mark menu: pick one of the catalog's jobs. A popover, not a sheet — the 🏷
    editor is a sheet because it edits a list; this picks one of eight and dies. */
@@ -2514,29 +2876,10 @@ body {
     background: var(--bg);
   }
 }
-.home-tag {
-  flex: 0 0 auto;
-  padding: 2px 7px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  color: var(--muted);
-  font-size: 11px;
-  white-space: nowrap;
-  max-width: 45%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  cursor: pointer;
-}
-.home-tag.on {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-@media (hover: hover) and (pointer: fine) {
-  .home-tag:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-}
+/* The roster's 🏷 stood here until 2026-08-17. The owner's ruling, given twice: a roster
+   row carries no tag button at all — groups are changed from the session's OWN 🏷 in its
+   tile header, and a board whose job is to be READ does not need a second door to a verb
+   that already has one. The rows are filed under the very headings it used to edit. */
 
 /* group heading in the session list — the tag, and how many are in it */
 .home-grp {
@@ -2566,8 +2909,56 @@ body {
   height: 1px;
   background: var(--line);
 }
+/* THE ROW IS SIX INVISIBLE COLUMNS (owner's ruling 2026-08-17).
+
+   It was a flex row with a `.grow` spacer, so every reading floated to wherever the ones
+   before it happened to end: a session with no ladder put its ⛽ figure where a session
+   with one put its status word, and no two rows agreed on where anything was. You could
+   read a row; you could not read the LIST. Fixed tracks pin the x of every landmark —
+   the SHINGO chip starts in the same place on row one and row nine, and so does the
+   context reading — and A MISSING VALUE LEAVES ITS SLOT EMPTY rather than dragging
+   everything to its right leftwards. Missing is missing; that is the readable answer.
+
+   `justify-self: start` on the cells is what makes this a COLUMN rather than a row of
+   stretched boxes: each reading begins at its track's left edge and takes only the width
+   it needs, so a short chip stays a short chip sitting in a fixed slot.
+
+   The tracks are NAMED so the two places that reshape the row set numbers, not templates
+   — a template said twice is a rule you then have to keep in step. Every number below was
+   MEASURED in the browser rather than guessed (2026-08-17), which is the only way a fixed
+   track is honest: the widest realistic content, plus a couple of pixels, and anything
+   past that ellipsizes. `phase 3 · leg 4/6 · 12h` is 130px of 10.5px mono; `awaiting
+   input` is 68px; `⛽ 100%` is 46px; the 🏷 pill is 27px. An agent can write an unbounded
+   `ladder_state` into the chip, so clipping has to be the outcome for the tail — the
+   alternative is one session's prose setting the geometry of every other row.
+
+   SIX became true again on 2026-08-17, when the 🏷 pill's retired track was replaced by
+   `--hr-stack`: WHICH MODEL IS ANSWERING (js/roster.js). It was `agent · provider · model`
+   at 140px for about an hour, and the owner cut it to the model alone — which halved the
+   track, because `gpt-5.6-sol` is 62px of 11px text, `gpt-5-codex` 62px, `sonnet 4.5`
+   55px and `opus 5` 38px. 76px shows every one of them whole with room for a longer name
+   to give up its tail.
+
+   THE 140px VERSION IS THE LESSON WORTH KEEPING. A fixed track charges its full width on
+   every row whether or not anything is in it, so while the birth stamp was unwritten it
+   took 140px from every row to display nothing at all — and the report that went with it
+   claimed the cost was to the session name, which measurement then refuted: the name
+   track is 181px here and the longest name on the board needs 81px. Size a track to what
+   its content actually reaches, not to the worst case it could theoretically reach, and
+   check what it looks like EMPTY.
+
+   It is the LAST track on purpose: the most clip-prone reading on the row, and at the
+   right edge a clip runs into the row's own padding rather than into another column. */
 .home-row {
-  display: flex;
+  --hr-mark: 1.35em; /* the session_job glyph — the same width `.home-job` already held */
+  --hr-shingo: 132px;
+  --hr-status: 70px;
+  --hr-ctx: 48px;
+  --hr-stack: 76px;
+  display: grid;
+  grid-template-columns:
+    var(--hr-mark) minmax(0, 1fr) var(--hr-shingo) var(--hr-status) var(--hr-ctx)
+    var(--hr-stack);
   align-items: center;
   gap: 8px;
   width: 100%;
@@ -2585,11 +2976,109 @@ body {
   background: var(--bg-2);
   border-color: var(--line);
 }
+/* The name takes the slack, and clips rather than widening its track: a long session
+   name must not be the thing that moves the columns for every other row. */
 .home-row b {
+  min-width: 0;
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.home-row .grow {
-  flex: 1;
+/* EVERY CELL NAMES ITS COLUMN, and this is the load-bearing half of the whole idea.
+   Auto-placement fills the next FREE track, so a session with no ladder would drop its
+   status word into the ladder's slot and its ⛽ figure into the status word's — the very
+   sliding the fixed grid exists to stop, reintroduced by the engine's default. Named
+   columns mean an absent element leaves a HOLE, which is what was asked for. Scoped
+   under `.home-row` so nothing later on the bare class can quietly outrank it. */
+.home-row > .home-job {
+  grid-column: 1;
+}
+.home-row > b {
+  grid-column: 2;
+}
+.home-row > .home-shingo {
+  grid-column: 3;
+}
+.home-row > .home-status {
+  grid-column: 4;
+}
+.home-row > .home-ctx {
+  grid-column: 5;
+}
+.home-row > .home-stack {
+  grid-column: 6;
+}
+/* Each reading starts at its own track's left edge and stops at its right one. */
+.home-row > .home-shingo,
+.home-row > .home-status,
+.home-row > .home-ctx,
+.home-row > .home-stack {
+  justify-self: start;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* The touch override that restated this template with five tracks instead of six is
+   gone (2026-08-17): the 🏷 left the row on every device, so five IS the base rule and
+   a finger and a mouse now want the same shape. The lesson it recorded outlives it —
+   a `0px` track still collects its gap, so dropping a column means dropping it from the
+   template, not sizing it to nothing. */
+
+/* A TILE UNDER 600px DROPS THE agent · provider · model READING ENTIRELY.
+
+   THE ONE PLACE THE TEMPLATE IS RESTATED, and the note above about a template said twice
+   being a rule you then have to keep in step still stands — this is the exception it
+   warned about, taken knowingly, and the pair to keep in step is these two blocks. That
+   note's own lesson is why this is a restatement rather than a `--hr-stack: 0px`: A `0px`
+   TRACK STILL COLLECTS ITS GAP, so a column is dropped from the template or it is not
+   dropped at all. `display: none` on the cell is the other half —
+   without it the element still names `grid-column: 6`, grid invents an implicit sixth
+   track for it, and the row overflows exactly as if nothing had been reclaimed.
+
+   THE NUMBER, MEASURED (2026-08-17, Chromium, 4-up tiles). The column costs 148px (140px
+   plus its gap), all of it out of the session name, and the name is the one track that
+   gives: at the owner's own 4-up desktop tile — 629px body, 587px row — the name goes
+   from 237px to 121px, which is his trade to make and he made it. Below that it stops
+   being a trade: a 579px tile leaves the name 71px, and a 402px phone leaves it ZERO and
+   overflows the row by 63px. 600px is where the kept case bottoms out at a ~95px name;
+   under it the reading goes and the name gets its 240px back whole.
+
+   So this is the one reading on the row that a narrow tile does not carry. It is the
+   right one to lose: it is a LABEL on the session (what it was launched as, which does
+   not change) rather than news about it (held at a gate, awaiting input, 92% of context),
+   and it is the one you can still get by opening the session. */
+@container tile (max-width: 600px) {
+  .home-row {
+    grid-template-columns:
+      var(--hr-mark) minmax(0, 1fr) var(--hr-shingo) var(--hr-status) var(--hr-ctx);
+  }
+  .home-row > .home-stack {
+    display: none;
+  }
+}
+
+/* A NARROW TILE: give the name back what the chip can spare. Numbers only — this block
+   restates no template (the 600px block above is the single exception, and says why).
+
+   THE THRESHOLD IS THE ROSTER'S OWN, not the 680px the Commons strip uses further down,
+   and the difference is the whole point of asking the tile rather than the viewport: at
+   680px this fired inside the owner's ordinary 4-up desktop tile (629px body, 585px row)
+   where the roomy tracks fit with 233px left for the name, and clipped the SHINGO chip to
+   buy width nothing needed. 520px is where the name is genuinely down to ~140px and the
+   trade starts paying. Below it the chip drops to the length that still shows a position
+   and an age WHOLE — `phase 2 · 0/3 · 14m` measures 108px on a 402px phone, so 110px is
+   the number, and the leg count is what gives way above it. The status word does not
+   move: `awaiting input` clipped to `awaiting i…` is the one reading here that would be
+   worse said than unsaid. Measured, not reasoned — on the phone the roomy tracks left
+   the name 76px and the chip 2px short, and both of those were only visible in a
+   browser. */
+@container tile (max-width: 520px) {
+  .home-row {
+    --hr-shingo: 110px;
+    --hr-ctx: 46px;
+    gap: 6px;
+  }
 }
 .home-status {
   font-size: 11px;
@@ -2606,6 +3095,18 @@ body {
   color: var(--bad);
 }
 .home-ctx {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+/* WHAT THE SESSION IS RUNNING — `codex · openai · gpt-5-codex`. Drawn exactly like the
+   other secondary readings on the row (11px, muted, one line): it is a label on the
+   session, not news about it, so it must never out-shout the status word beside it, and
+   the two facts that are only known at spawn look no different from the one scraped live
+   — the row does not owe the reader that seam. Lowercasing is done in the DOM rather than
+   with `text-transform`, because the string is a NAME (`opus 5`, `gpt-5-codex`) and a
+   selectable/copyable name should be the same characters it appears to be. */
+.home-stack {
   font-size: 11px;
   color: var(--muted);
   white-space: nowrap;
@@ -2963,7 +3464,11 @@ body {
   padding: 6px 8px;
   font-size: 12px;
 }
-@media (max-width: 680px) {
+/* Two inputs side by side need room for two inputs — a fact about THIS FORM's box, not
+   about the phone. It was `@media (max-width: 680px)` until 2026-08-17, so the pair
+   stayed side by side and unreadably narrow in a 4-up desktop tile, where the form is
+   ~630px wide and the viewport is 1280. Asked of the tile now (see `.tile-body`). */
+@container tile (max-width: 680px) {
   .ks-extras { flex-direction: column; }
 }
 
@@ -2994,7 +3499,14 @@ body {
   padding: 8px 10px 0;
   /* The strip SCROLLS everywhere, not only on phones: a 4-up desktop tile is
      narrower than the row of rooms, and flex overflow was silently clipping the
-     last tabs there — found on the owner's Mac, 2026-08-16. */
+     last tabs there — found on the owner's Mac, 2026-08-16.
+
+     `overscroll-behavior-x: contain` is what makes "the strip moves, the page does
+     not" true rather than aspirational: without it, flicking the strip past its end
+     hands the gesture on to the page and the whole roster slides — which is the
+     behaviour being fixed, arriving by another door. (This explanation used to sit
+     over the phone block below, which restated all three of these declarations; the
+     restatement went on 2026-08-17 and the reason came up here to the one rule.) */
   flex-wrap: nowrap;
   overflow-x: auto;
   overscroll-behavior-x: contain;
@@ -3023,8 +3535,10 @@ body {
 }
 .home-tabs button.on { background: var(--raise); color: var(--fg-strong); border-color: var(--line-3); }
 .home-tabs .home-x {
-  /* ✕ rides the right edge instead of scrolling out of reach — every width, same
-     reason as the phone rule below: it is the way back to the terminal. */
+  /* ✕ rides the right edge instead of scrolling out of reach — at EVERY width, in
+     this one rule: it is the way back to the terminal, so it is never a thing you go
+     looking for. The background is what stops tabs showing through underneath it as
+     they pass. The narrow block below adds an outline and nothing else. */
   position: sticky;
   right: 0;
   margin-left: auto;
@@ -3034,24 +3548,55 @@ body {
   background: var(--bg);
   color: var(--muted-3);
 }
-/* ---- touch: THE STRIP SCROLLS, THE PAGE DOES NOT ----
+/* ---- A NARROW COMMONS: TIGHTEN THE STRIP, NAIL DOWN THE PAGE ----
    Seven rooms plus the ✕ measure 549px against a 402px phone. I wrapped them onto two
    rows first; the owner looked at it and asked for a scrolling strip instead, so the
    strip is the one thing that moves sideways and the page underneath is nailed down.
 
-   `overscroll-behavior-x: contain` is what makes that true rather than aspirational:
-   without it, flicking the strip past its end hands the gesture to the page and the
-   whole roster slides — which is the behaviour being fixed, arriving by another door. */
-@media (max-width: 680px) {
+   This whole block was `@media (max-width: 680px)` until 2026-08-17, and most of it
+   was answering the wrong question. A Commons room is narrow because it is on a phone
+   OR because it is one cell of a 4-up desktop grid — on a 1280px Mac the tile body is
+   ~630px and the viewport rule never fired, so the crowded case got the roomy layout.
+   It asks the tile now (`container-name: tile`, on `.tile-body`). The number is kept
+   at 680px deliberately: on the 402px phone the tile body is well under it, so the
+   phone renders byte-identically and the change is purely that narrow DESKTOP tiles
+   finally get the same treatment.
+
+   THREE DECLARATIONS WENT INSTEAD OF MOVING, because the base rules above already say
+   them at every width and had done since the strip was made to scroll unconditionally
+   (2026-08-16): `.home-tabs`'s flex-wrap/overflow-x/overscroll-behavior-x — including
+   the `overscroll-behavior-x: contain` this comment used to explain, which is why the
+   explanation now lives beside the base rule — `.home-tabs button`'s `flex: 0 0 auto`,
+   and all of `.home-x`'s sticky/margin/flex/background. Restating a rule under a
+   condition reads as "this is what makes it true here", and it was not.
+
+   The two touch-shaped survivors moved DOWN to `pointer: coarse` rather than here —
+   see the block below; their reasons name the finger, not the box. */
+@container tile (max-width: 680px) {
   .home {
     overflow-x: hidden; /* nothing added later reintroduces the sideways slide */
   }
   .home-tabs {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
     gap: 4px;
     padding: 8px 8px 0;
+  }
+  .home-tabs button {
+    padding: 5px 10px;
+  }
+  /* Crowded strip: give ✕ its own edge. It is already sticky at every width (above) —
+     what changes here is that the tabs sliding under it are close enough to read as
+     one run of buttons, so the outline is what keeps it a destination. */
+  .home-tabs .home-x {
+    border-color: var(--line-2);
+  }
+}
+/* The two rules from that block whose reason was the FINGER, not the width, put where
+   they belong on 2026-08-17. Hiding the scrollbar had to leave the width query in
+   particular: the owner's 4-up desktop strip is the case that overflows (docs/ui.md),
+   and the scrollbar is exactly how a mouse user learns the tail is still there — the
+   `scrollbar-gutter: stable` above keeps the height constant either way. */
+@media (pointer: coarse) {
+  .home-tabs {
     /* The strip is the affordance; a scrollbar over it is noise on a touch screen. */
     scrollbar-width: none;
   }
@@ -3059,20 +3604,7 @@ body {
     display: none;
   }
   .home-tabs button {
-    flex: 0 0 auto; /* never squeeze a label to fit — that is what scrolling is for */
-    min-height: 32px;
-    padding: 5px 10px;
-  }
-  /* ✕ rides the right edge instead of scrolling out of reach: it is the way back to
-     the terminal and must not be a thing you go looking for. The background is what
-     stops tabs showing through underneath it as they pass. */
-  .home-tabs .home-x {
-    position: sticky;
-    right: 0;
-    margin-left: auto;
-    flex: 0 0 auto;
-    background: var(--bg);
-    border-color: var(--line-2);
+    min-height: 32px; /* a tap target, not a narrow-box measurement */
   }
 }
 
@@ -3583,10 +4115,11 @@ body {
   color: var(--ok-2);
 }
 /* No record service installed (the free build): the 🔓 view is off, so the switch is
-   visible but inert — opaque says "not plugged in", not "missing". The commons tabs
-   and menu rows of an absent service get the same treatment. */
-.home-tabs button.off,
-.commons-row.off {
+   visible but inert — opaque says "not plugged in", not "missing". The commons tab of
+   an absent service gets the same treatment. (It named `.commons-row` too, until the
+   bar's Commons menu went on 2026-08-17 — the tab strip is the only registry-fed
+   surface left, so it is the only one that has to say "off".) */
+.home-tabs button.off {
   opacity: 0.3;
   pointer-events: none;
 }
@@ -3828,9 +4361,11 @@ body {
   border-top: 1px solid var(--line);
 }
 
-/* The board column. Same three fields as the chip, one row per session. */
+/* The board column, and since 2026-08-17 a column in the literal sense: it sits in the
+   row's fixed `--hr-shingo` track (see `.home-row`), which is what makes "run your eye
+   down the chips" a thing you can actually do. The `flex: 0 0 auto` that held it out of
+   the old flow went with the flow. */
 .home-shingo {
-  flex: 0 0 auto;
   font-family: Menlo, "DejaVu Sans Mono", Consolas, monospace;
   font-size: 10.5px;
   color: var(--accent);
@@ -3845,101 +4380,13 @@ body {
   background: color-mix(in srgb, var(--warn) 12%, transparent);
 }
 
-/* ---- the letter: the TEGAMI file itself, opened from the ⛩ in any tile header ---- */
-.tile-head button.torii {
-  color: var(--accent);
-}
-.tile-head button.torii.open {
-  border-color: var(--accent);
-}
-.shingo-letter {
-  position: absolute;
-  inset: 0;
-  z-index: 6;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg);
-}
-.sletter-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  background: var(--bg-2);
-  border-bottom: 1px solid var(--line);
-  flex: 0 0 auto;
-}
-.sletter-path {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: Menlo, "DejaVu Sans Mono", Consolas, monospace;
-  font-size: 10.5px;
-  color: var(--muted);
-}
-.sletter-x {
-  flex: 0 0 auto;
-  width: 26px;
-  height: 24px;
-  background: transparent;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  color: var(--muted);
-  cursor: pointer;
-}
-/* wrap="off" in spirit: the json block is laid out in columns and soft-wrapping mangles
-   it, so the block scrolls sideways instead. */
-.sletter-body {
-  flex: 1 1 auto;
-  margin: 0;
-  padding: 10px 12px;
-  overflow: auto;
-  font-family: Menlo, "DejaVu Sans Mono", Consolas, monospace;
-  font-size: 12px;
-  line-height: 1.6;
-  color: var(--fg);
-  white-space: pre;
-  user-select: text;
-  -webkit-user-select: text;
-}
+/* The TEGAMI letter panel and its ⛩ button stood here until 2026-08-17 (.tile-head
+   button.torii, .shingo-letter, .sletter-head/-path/-x/-body). The owner removed the
+   button — the torii means "the Commons" everywhere now — so the panel it opened went
+   with it. js/shingo.js records what the surface was and where it would belong if it
+   comes back. */
 
-/* ---- ▤ Commons (top bar) — one button, the five rooms of commons ----
-   Rows mirror the commons' tab strip in order and glyph, so a pick lands where the label
-   said and the strip then shows you where you are. Anchored to the bar, not the
-   viewport: the button is the thing it belongs to. */
-#bar { position: relative; } /* kept: the drop menus on touch still hang off it */
-.commons-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  z-index: 40;
-  display: flex;
-  flex-direction: column;
-  min-width: 168px;
-  padding: 4px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  box-shadow: var(--shadow-menu);
-}
-.commons-menu[hidden] { display: none; }
-.commons-row {
-  text-align: left;
-  padding: 7px 10px;
-  border: 0;
-  border-radius: 6px;
-  background: none;
-  color: var(--fg);
-  font: inherit;
-  white-space: nowrap;
-  cursor: pointer;
-}
-.commons-row:hover,
-.commons-row:focus-visible { background: var(--line); color: var(--accent); }
-
-.commons-wrap { position: relative; display: inline-flex; }
-.commons-menu { left: 0; }
+#bar { position: relative; }
 
 
 /* ---- ▦ STATS: TOMODACHI's readout — how this install actually gets used ----
@@ -4315,12 +4762,17 @@ body {
   border-top: 1px solid var(--line);
 }
 
-/* The grid count is the FIFTH button, one box the same size as the four verbs beside it
-   (it joins their rule above). It was a segmented 1|2|4 inside that box: three cells to
-   say what one says, two of them dark at any moment, and 24px each — too narrow to hit
-   with a finger, which is why touch deleted the whole thing rather than inherit it.
-   One button wearing the number it is on, clicked to cycle, is the same control on both
-   surfaces. Centred, and monospaced digits so 1 / 2 / 4 do not shift the box. */
+/* The grid count wears the verbs' CHROME (it joins their look rule above) but not their
+   width: the five verbs are one width so the row reads even, and the count is exempt by
+   the owner's own wording — "each of the boxes on the right, EXCEPT FOR THE NUMBER,
+   which is a number of tiles viewable" (2026-08-17). A single digit stretched to 120px
+   would be a hole in the row, not symmetry.
+
+   It was a segmented 1|2|4 inside that box: three cells to say what one says, two of
+   them dark at any moment, and 24px each — too narrow to hit with a finger, which is why
+   touch deleted the whole thing rather than inherit it. One button wearing the number it
+   is on, clicked to cycle, is the same control on both surfaces. Centred, and monospaced
+   digits so 1 / 2 / 4 do not shift the box. */
 #bar .layout-cycle {
   justify-content: center;
   font-variant-numeric: tabular-nums;
@@ -4342,10 +4794,6 @@ body {
     color: var(--fg);
   }
 }
-/* The menu wears the bar's own surface, not the panel's darker one — it drops out
-   of the bar and should read as part of it. */
-.commons-menu { background: var(--bg-2); }
-
 /* ---- PROVENANCE: a catalog entry that is the user's own (js/provenance.js).
    Stock gets NOTHING — silence is the right rendering for "as shipped", and the
    common case must not be decorated to serve the rare one. Two glyphs, because

@@ -36,6 +36,45 @@ your own shadow of it) picks; `tejun-step start <name>` steps ANY macro on deman
 you or the owner wants the check-ins.
 **Never report a run complete with steps undone — especially the last one.**
 
+**Preview is the macro's own toggle: `- **preview:** yes` in an entry** puts it on the ⚡
+drop of every tile header. **No marking = not on the drop — the default**, and that is the
+whole of it: the drop is a TEACHING surface rather than an index, four big buttons a person
+who has never heard of a macro can read and go *"oh, I see, it does something I didn't know
+this could do"* (owner, 2026-08-17 — *"If we have too many, people just don't get
+educated"*). Opt-in, not opt-out, because this file holds a dozen entries and the drop holds
+about four: under opt-out every macro added later would appear on the button until somebody
+noticed it there.
+**DISPLAY ONLY — an unpreviewed macro still runs**, typed by hand, bound to a keypad key, or
+compiled with `tejun`. Nothing is hidden from an agent and nothing is deleted; the toggle
+answers "is this on the button", not "does this exist".
+The card is drawn from the entry's `label:` and `blurb:` — which every entry carries, previewed
+or not, for the reason below.
+
+**TWO AUDIENCES, AND NEITHER STANDS IN FOR THE OTHER** (owner, 2026-08-17 — *"we need to
+split out the description and the agent instruction into two different things because they
+don't overlap, and the macro should carry both"*). Every entry here is read by two readers
+who need opposite things, so it carries two separate pieces of writing:
+
+- **The prose under the heading is the AGENT'S INSTRUCTION** — what you read in order to RUN
+  the macro. It opens with the rule the agent must not break (`forkit` starts *"Owner-invoked
+  only — never fork on your own initiative"*), it names actions and params, and it assumes the
+  house vocabulary. Served as `instruction` on `/api/macros`; the field was called
+  `description` until 2026-08-17, and that name is what invited a human surface to render it.
+- **`label:` and `blurb:` are what a PERSON reads** to decide whether they want the macro:
+  a plain-words headline (**never the `+name:` spelling**) and one or two sentences saying what
+  it does, for somebody who has never heard of it. No jargon a newcomer would not have, and
+  **true about what the macro actually does** rather than evocative — a destructive macro's
+  blurb must say so plainly instead of sounding inviting. Same two keys, same job, as the kind
+  buttons in `SESSION_JOBS.md`.
+
+**Both are required on every entry** — `check:catalogs` fails a stock entry missing either —
+and **no human surface may fall back to the instruction.** Showing *"Owner-invoked only —
+never fork on your own initiative"* to a person who tapped a button to find out what it does
+teaches them nothing; that fallback existed until 2026-08-17 and it was the exact overlap the
+owner is splitting. Every macro carries the pair even though the drop shows four, because the
+next surface is a library people browse to adopt macros from, and copy written for four
+entries would have to be written again for all of them.
+
 **RUN IT — DON'T NARRATE IT.** A macro invocation is a button press, not a
 conversation. Do not announce what a macro is, that you are about to read TEJUN docs,
 or what steps you plan to take. Read what you need silently, do the work, and report
@@ -49,6 +88,8 @@ from Ronin's target picker in that case, or pass it as a macro arg.
 
 ## updateplan
 - **class:** session_macro.workflow
+- **label:** Ask it to update its plan
+- **blurb:** Ronin types one line into the session asking the agent to bring its ladder up to date, so the steps shown under the tile header match what it has actually done. Nothing else happens — it fixes the list and carries on with what it was doing, without reporting back to you.
 Ask this session to bring its TEGAMI up to date. **Ronin sends this one for you** —
 the button does not prefill it, it types the line below and presses Enter, so the
 session updates its ladder without you writing anything. Nothing else happens: the
@@ -62,6 +103,9 @@ Send: Update your TEGAMI now — read it, bring the ladder in line with what you
 
 ## show_file
 - **class:** session_macro.workflow
+- **preview:** yes
+- **label:** See the files it is working on
+- **blurb:** Ask this session what it has open. It lists its documents on the ▧ Docs tab in commons, so you open and edit the real file instead of hunting your disk for it.
 Owner wants to READ what you are working on: `+show_file`, or `+show_file: MDEDIT.md`.
 Bring your document list up to date, then tell them where to look. **Do not paste the
 document into the pane and do not summarise it** — the point is that they open the real
@@ -86,6 +130,9 @@ is this session working on" and one that answers "what did it remember to mentio
 
 ## forkit
 - **class:** session_macro.workflow
+- **preview:** yes
+- **label:** Fork this session in two
+- **blurb:** Tell this agent to fork itself — it writes down what you have been working on, opens a second session on that topic, and hands the context over. This one stays on its track.
 **Owner-invoked only — never fork on your own initiative.** If a fork seems right,
 PROPOSE it ("I'd like to fork X into its own session") and wait for the go-ahead.
 Unannounced sessions are untrackable for the human until the UI reveals them. Spin the current conversation's active topic out into its own agent
@@ -114,6 +161,8 @@ from here on — the origin session must not relay.
 
 ## buildout
 - **class:** session_macro.workflow
+- **label:** Plan it before any code
+- **blurb:** Ask for the work written up as a plan first — what it is for, the steps it breaks into, how you will know it is finished. No code gets written: the agent hands you the document and waits while you read and change it.
 Plan a piece of work as a document the owner can read, edit and riff on — no code yet.
 "buildout: <what to build>".
 
@@ -127,6 +176,8 @@ edits the doc before any cutting starts.
 
 ## cutcode
 - **class:** session_macro.workflow
+- **label:** Build what the plan says
+- **blurb:** Point the agent at a plan you have already agreed and it builds from it — one step at a time, or all the way to the end. It opens a pull request for you to approve and never merges anything itself.
 Build from a buildout doc. "cutcode: <doc> leg" / "cutcode: <doc> finish"
 (add `live` if sequencing matters; default is `dev`).
 
@@ -140,6 +191,8 @@ Report: what got cut, what remains in the doc, the PR link. On `leg`, stop and w
 
 ## land
 - **class:** session_macro.workflow
+- **label:** Finish up, then close this session
+- **blurb:** Writes the work down where it will last — a README beside the code, a pull request for anything uncommitted, one line in the index of finished work — and then ends the session for good. Use it when the work is done: the pane closes and there is nothing to come back to.
 **Land YOURSELF.** No args: finish the work of THIS session, leave the record, end
 this session. The buildout doc you were working from is your own wip;
 if you truly can't tell what you were building, ask — don't guess.
@@ -159,6 +212,8 @@ Sessions are disposable: nothing of value may live only in a pane.
 
 ## delete
 - **class:** session_macro.workflow
+- **label:** Throw this session away
+- **blurb:** Ends the session and keeps nothing — no write-up, no pull request, no index entry, no way back. For sessions that produced nothing worth saving. It refuses and tells you if there is unsaved work, which is the case for finishing up properly instead.
 **End THIS session quietly — nothing recorded.** For sessions that produced no
 artifact worth keeping: evaluations, catch-ups, questions, scratch work. No README,
 no manifest line, no PR. It just goes away.
@@ -173,6 +228,8 @@ Contrast with `land`: land RECORDS (README + manifest + PR) then dies; delete ju
 
 ## tag
 - **class:** session_macro.lookup
+- **label:** Who is in this group
+- **blurb:** Name a group of sessions and get back who is in it right now, with each one's permission dial. It only looks the name up — it never tags anything, and it sends the members nothing.
 Aliases: group
 Owner names a GROUP and expects you to know who is in it: `+tag: ronin` — "the ronin
 group" is now the set we are talking about. **Read-only: this NEVER tags anything.**
@@ -209,6 +266,9 @@ never guess at a near-match, `kojin` and `kojinsa` are different groups.
 
 ## wipeboard
 - **class:** session_macro.lookup
+- **preview:** yes
+- **label:** The board agents talk on
+- **blurb:** A wipeboard is one file several sessions read and append to, so agents on one problem talk to each other instead of through you. Name one and this says what it is for, who is on it, and where it lives.
 Owner names a WIPEBOARD and expects you to know what it is and who is on it:
 `+wipeboard: parserwork`. A wipeboard is a shared text surface — one markdown file
 several sessions all read and append to — so agents on the same problem talk to each
@@ -234,8 +294,44 @@ Being pointed at a wipeboard is not an instruction to start posting on it; wait 
 the owner wants said. When you DO post, the rules are in the wipeboard-post action:
 append only, never rewrite another agent's post, never edit the Brief.
 
+## tell
+- **class:** session_macro.workflow
+- **preview:** yes
+- **label:** Message another session
+- **blurb:** Hand this agent a line for another agent and it delivers it — checking that session's dial first, and never typing over a draft at its prompt. The reply lands in that session's own tile.
+Owner wants THIS session to say something to ANOTHER one:
+`+tell: page_capture the login work is on hold, stay off it for now`. The owner's words for
+what it is: *"I can tell my agent to talk to another agent."* One message, one session,
+delivered or refused — it is not a fan-out over a group and it is not a conversation.
+
+Params: `session` (who to reach — the first word after the colon), `message` (everything
+after that; send the owner's words unless he asks you to put it your own way).
+
+| # | Action | With |
+|---|---|---|
+| 1 | control-check | needs `write` **on the target, not on you**. Dialed `user` or `read`: report the lock and ask the owner to flip THAT tile's dial to 🤖, then wait — NEVER flip it yourself |
+| 2 | send-to-session | `tejun-send <session> <message>` — one call. It re-checks the dial, refuses to overwrite a real draft, sends the text and the Enter separately, and confirms the other agent started. Do not hand-roll the five steps |
+| 3 | report-outcome | the tool's verdict as it gave it, and what you actually said |
+
+**Say who it is from.** `tejun-send` puts no watermark on the message, so what lands at the
+other prompt looks exactly like the owner typing — open with `from @<your session>:` or the
+agent on the other end answers the wrong person.
+
+Report: the verdict (`DELIVERED` / `DENIED` / `BLOCKED` / `STUCK` / `NO-SESSION`) and the
+message you sent, in one short block. **Then stop, and do not wait for a reply** — the
+answer appears in the OTHER session's tile, where the owner reads it himself. Relaying it
+back through here makes this session a switchboard and hides which agent said what.
+
+A refusal is an ANSWER, not an obstacle. `DENIED` means the dial forbids the write and only
+the owner's hand changes that; `BLOCKED` means a human's unsent draft is at that prompt and
+typing over it would destroy their words. Neither is retried, and neither is worked around
+with a bare `tmux send-keys` — going around the shim is a deliberate, visible act and this
+is not an occasion for one.
+
 ## read
 - **class:** session_macro.workflow
+- **label:** Catch up on another session
+- **blurb:** Have this agent look in on another session and tell you what it is doing, how it is going, and anything that is waiting on you. It reads only, and stops rather than touching a session you have not opened up.
 Owner asks for a catch-up on a session: "read <session>".
 
 | # | Action | With |
@@ -249,6 +345,8 @@ keep watching but MUST NOT write until the owner changes the dial.
 
 ## readwrite
 - **class:** session_macro.workflow
+- **label:** Have it work in another session
+- **blurb:** The same catch-up as reading a session, and then this agent acts in that one for you — fixes the thing, answers the question. It only goes ahead if you have set that session's dial to let an agent write; it will never flip the dial itself.
 Owner wants an agent acting in a session: "read-write <session>" / "check <session>
 and fix …".
 
@@ -263,6 +361,8 @@ action).
 
 ## evaluate
 - **class:** session_macro.workflow
+- **label:** Get a second opinion on it
+- **blurb:** Have this agent read another session's work — its documents, its commits, the plan it is following — and tell you whether it holds up, what is missing and what looks risky. The verdict comes to you and is never written into the session being judged.
 Owner asks for an independent read-only assessment of another session's work:
 "evaluate <session>'s plan".
 

@@ -20,7 +20,9 @@ import { fetchSessions } from './api.js';
 import { tiles } from './state.js';
 
 export let homeData = null; // session list enriched with status + ctx
-export let macroData = null; // [{name, description, params:[{name, hint}]}]
+// `instruction` is the AGENT's prose and `label`/`blurb` are the PERSON's copy — two
+// readers, two fields, and no client surface may render the first (src/macros.ts).
+export let macroData = null; // [{name, instruction, label, blurb, params:[{name, hint}]}]
 export let homeInflight = false;
 /** Why the roster might be stale: the last /api/home failure's message, or null. */
 export let homeFault = null;

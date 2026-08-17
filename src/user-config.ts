@@ -225,6 +225,164 @@ export const updateAuthSection = (value: Record<string, unknown> | null): Promis
     else doc.auth = value;
   });
 
+/**
+ * PASSKEY's section — registered authenticators and the one-shot recovery code. The
+ * SHAPE is src/passkey.ts's, same bargain as `auth` above.
+ *
+ * SEPARATE FROM `auth` ON PURPOSE (2026-08-17). `updateAuthSection` REPLACES the auth
+ * object wholesale, which is what `ronin-passwd` wants — and if passkeys lived inside
+ * it, changing the password would silently delete every registered device. A password
+ * change is supposed to end SESSIONS, not confiscate the owner's phone. Two sections,
+ * two lifetimes. `null` removes it. No bus publish: nothing in bash logs anyone in.
+ */
+export const updatePasskeysSection = (value: Record<string, unknown> | null): Promise<void> =>
+  updateConfig((doc) => {
+    if (value === null) delete doc.passkeys;
+    else doc.passkeys = value;
+  });
+
+/* ------------------------------------------------ SETTEI's own sections (⚙ Setup) */
+
+/**
+ * THE SECTIONS THE ⚙ SETUP TAB OWNS, and it owns them BY NAME.
+ *
+ * Four writers rather than one generic "save the config", and that is the whole safety
+ * property: `ronin.json` also carries `auth` — a scrypt record and the secret that signs
+ * session tokens — and `passkeys`. A route that took a document and wrote it would let a
+ * browser post a new signing secret; a route that takes `{ name, where }` cannot, no
+ * matter what else is in the body. `updateConfig` then preserves every section the caller
+ * never heard of, which is why adding one here costs nobody a migration.
+ *
+ * NO BUS PUBLISH ON ANY OF THESE, and it is checked rather than assumed: nothing in
+ * `bin/` or `ronin_bin/` parses a machine name, an outlet choice or an entitlement.
+ * `docs/user-config.md`'s rule is *if a bash tool needs a setting, publish it* — so a
+ * `@ronin-machine` option today would be a bus entry with no reader, which rots faster
+ * than no entry at all. Publish when a reader appears.
+ */
+
+/** What the owner calls this box, and where it is. Absent = fall back to the hostname. */
+export const readMachineSection = (): Promise<Record<string, unknown>> =>
+  readSection<Record<string, unknown>>('machine', {});
+
+/**
+ * `where` IS FREE TEXT BY RULING (owner, 2026-08-17): *you know where your box is, the
+ * box does not.* Detecting a region means a cloud metadata call, and no outbound call
+ * belongs in a record that renders on page load.
+ */
+export const writeMachineSection = (v: { name?: string; where?: string }): Promise<void> =>
+  updateConfig((doc) => {
+    const m = ((doc.machine ?? {}) as Record<string, unknown>) || {};
+    if (v.name !== undefined) m.name = String(v.name).trim().slice(0, 64);
+    if (v.where !== undefined) m.where = String(v.where).trim().slice(0, 120);
+    doc.machine = m;
+  });
+
+/**
+ * HOW WORK GETS A MODEL — two different questions, and merging them is the trap.
+ *
+ * `sessions.default` is what a NEW SESSION launches as: a CLI in a tile. Per-project
+ * defaults already live in the roots file; this is the floor under a project that names
+ * none, which today falls back to a bare `claude` — a string matching no launch-table
+ * row, which is why MCP-off refuses it and a fresh box launches wrong.
+ *
+ * `jobs` is the house's own model-fed work: one question, one answer, over an API. Not a
+ * session, so each needs a key — and what is stored is the env var's NAME. Never a key.
+ */
+export const readAgentsSection = (): Promise<Record<string, unknown>> =>
+  readSection<Record<string, unknown>>('agents', {});
+
+export const writeAgentsSection = (value: Record<string, unknown>): Promise<void> =>
+  updateConfig((doc) => {
+    doc.agents = value;
+  });
+
+/** Whether the owner turned gbrain on. Services-only; the toggle is not the installer. */
+export const writeGbrainSection = (enabled: boolean): Promise<void> =>
+  updateConfig((doc) => {
+    doc.gbrain = { enabled: Boolean(enabled) };
+  });
+
+/**
+ * THE SUBSCRIPTION — the id, the address it is bound to, when the round trip closed, and
+ * which terms were accepted.
+ *
+ * **The id is not a key.** It authorises nothing and gates nothing on this box; it rides
+ * outward on usage drops so the collector can match usage to the account that accepted
+ * the terms, and the collector treats it as a claim to match rather than as proof.
+ * Anything that can read the config store can read it, which is exactly why it must never
+ * become a credential.
+ *
+ * The email is recorded beside it by ruling (owner, 2026-08-17): a subscription you
+ * cannot identify is a support ticket waiting to happen.
+ */
+export const writeServicesSection = (v: {
+  entitlement?: string | null;
+  email?: string | null;
+  verified?: string | null;
+  terms?: string | null;
+}): Promise<void> =>
+  updateConfig((doc) => {
+    const s = ((doc.services ?? {}) as Record<string, unknown>) || {};
+    for (const k of ['entitlement', 'email', 'verified', 'terms'] as const) {
+      if (v[k] !== undefined) s[k] = v[k] === null ? null : String(v[k]).trim().slice(0, 200);
+    }
+    doc.services = s;
+  });
+
+/**
+ * HAS THIS BOX BEEN THROUGH FIRST RUN? — and the answer must never be inferred.
+ *
+ * THE REGRESSION THIS EXISTS TO PREVENT (2026-08-17): a first-load surface gated on
+ * *"`owner.name` is unset"*, which is true of a box with months of sessions and five
+ * project roots on it, and it replaced the workspace at the workspace's own URL. The
+ * owner's ruling: **do not guesstimate from a key that means something else — have a
+ * specific key that means this.**
+ *
+ * THE TRAP INSIDE THAT RULING, and it is the whole reason this reads the way it does:
+ * **absence must mean DO NOT SHOW.** A missing key is the normal state of every install
+ * that predates the key, so a condition firing on absence breaks every existing box the
+ * day it ships. So the key asserts *show me*, never *hide me*, and nothing anywhere is
+ * allowed to invert it:
+ *
+ *   setup.pending === true     a genuinely fresh install, stamped at birth → show it
+ *   setup.completed_at         it was done, and when → quiet
+ *   no `setup` key at all      an install older than this key → quiet, forever
+ *
+ * **Birth is the absence of the FILE, not of a value.** `stampFreshInstall()` writes only
+ * when `ronin.json` does not exist, which is the same signal the project-root floor
+ * already uses, and it is the one moment a box is unambiguously new.
+ */
+export const readSetupSection = (): Promise<Record<string, unknown>> =>
+  readSection<Record<string, unknown>>('setup', {});
+
+/**
+ * Stamp a brand-new install, once, at boot. **Writes nothing if the file exists** — an
+ * install that has ever saved a setting is not new, and this must be safe to call on
+ * every start forever. Best-effort by construction: failing to stamp costs a first-run
+ * offer, and throwing here would cost the whole boot.
+ */
+export async function stampFreshInstall(): Promise<void> {
+  try {
+    await readFile(configPath(), 'utf8');
+    return; // the file exists — this box has settings, so it is not being born
+  } catch {
+    /* no file: a fresh install, and the only moment this is knowable */
+  }
+  try {
+    await updateConfig((doc) => {
+      doc.setup = { pending: true, stamped_at: new Date().toISOString() };
+    });
+  } catch {
+    /* a config store we cannot write is a different failure, and not this one's to raise */
+  }
+}
+
+/** First run finished. `pending` goes, and when it happened stays — a record, not a flag. */
+export const completeSetup = (): Promise<void> =>
+  updateConfig((doc) => {
+    doc.setup = { completed_at: new Date().toISOString() };
+  });
+
 /** Put the name on the bus for the bash half. Best-effort, exactly like publishMax. */
 export async function publishOwner(name?: string): Promise<void> {
   const value = name ?? (await readOwner());

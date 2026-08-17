@@ -33,6 +33,15 @@ export const MODEL_PATTERNS: RegExp[] = [
   /⛽ ctx \d+(?:\.\d+)?% · ([^\n·]{1,24}?)\s*$/,
   // Codex CLI: "… · gpt-5-codex"
   /·\s*(gpt-[\w.-]{1,20})\s*$/i,
+  // Codex CLI (current build, measured on this box 2026-08-17): the model opens the
+  // footer line and the reasoning effort and directory follow it —
+  // "  gpt-5.6-sol default · ~/dohyo/ronin-lab · Main [default]". The entry above
+  // expects the model at the END of the line, so it matched NONE of the four Codex
+  // sessions running here: every one of them read as a session with no model. Added when
+  // the ⌂ Roster started printing the reading and the gap became visible on half the box.
+  // The trailing `·` is required so this cannot fire on ordinary transcript prose that
+  // happens to open with a model name.
+  /^\s*(gpt-[\w.-]{1,24})(?:\s+\w+)?\s+·/i,
 ];
 
 /** Status lines live at the pane bottom — only the visible tail is worth scanning. */

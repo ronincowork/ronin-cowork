@@ -27,7 +27,7 @@ import { presetData, refreshHome } from './home.js';
 import { IS_TOUCH, NEW, S, saveState, serviceMissing, tiles } from './state.js';
 import { buildHome } from './commons.js';
 import { guard } from './errors.js';
-import { buildLadder, buildLetter } from './shingo.js';
+import { buildLadder } from './shingo.js';
 import { buildTileHead, lockedTitle, syncTileHead } from './tilehead.js';
 import { openJobMenu } from './widgets.js';
 import { dvrStep } from './dvr.js';
@@ -170,6 +170,30 @@ export class Tile {
     this.home.classList.remove('show');
   }
 
+  /**
+   * ⛩ IS A TOGGLE — press it again and the Commons goes away (owner, 2026-08-17).
+   *
+   * It was a one-way door for a day: ⛩ called showHome() and pressing it a second time
+   * did nothing at all, so the only way back to the pane was the ✕ on the tab strip. A
+   * control that opens a thing and then goes dead is a control you press twice and
+   * distrust. `#brandbtn` had carried the right logic since long before — this is that
+   * logic, moved here so the bar's ⛩, the brand and the tile head's ⛩ cannot drift into
+   * three answers to one question.
+   *
+   * THE `this.session` GUARD IS LOAD-BEARING and is the reason this is not a plain flip:
+   * an empty tile has NOTHING behind the Commons, so hiding it would leave the owner
+   * staring at a blank cell with no way back in. On a tile with no session ⛩ stays a
+   * one-way door, on purpose.
+   *
+   * The pane check means ⛩ closes the Commons only when it is showing the room ⛩ opens.
+   * Pressed while you are reading Docs it takes you to ⌂ Roster — the destination it
+   * promises — rather than dismissing the panel out from under you.
+   */
+  toggleHome(which = 'sessions') {
+    if (this.homeVisible() && this.home.dataset.pane === which && this.session) this.hideHome();
+    else this.showHome(which);
+  }
+
   homeVisible() {
     return this.el.style.display !== 'none' && this.home.classList.contains('show');
   }
@@ -235,39 +259,20 @@ export class Tile {
     if (!this.tegami) this.closeLadder();
   }
 
-  /**
-   * The letter, verbatim — this tile's own session, opened from the ⛩ in its header.
-   * Read-only, and never both panels at once.
+  /*
+   * `toggleLetter` / `closeLetter` were here until 2026-08-17. They drew the TEGAMI file
+   * verbatim over the pane, opened from a ⛩ in this tile's header, and they were the only
+   * client reader of `/api/sessions/:name/tegami/raw`. The owner removed that button — the
+   * torii now means "the Commons" everywhere — so the panel, its opener and `buildLetter`
+   * all went with it rather than lingering as an unreachable surface.
    *
-   * Deliberately NOT "show any session's letter": the board is a readout, and reading a
-   * letter happens from the terminal tile. A torii on every board row marked nothing,
-   * because everything had one.
+   * The server route is MICHI's and is untouched: a service owns its own endpoints, and
+   * this client no longer being a consumer is not a reason to take one away.
    */
-  async toggleLetter() {
-    if (this.el.querySelector('.shingo-letter')) return this.closeLetter();
-    const name = this.session;
-    // No session, or no michi: `/tegami/raw` is the service's route and answering a 404
-    // by drawing an empty "no letter yet" panel told the owner the session had no letter
-    // when the truth was that nothing here could ever have one.
-    if (!name || serviceMissing('michi')) return;
-    this.closeLadder();
-    let d = { file: '', text: null };
-    const r = await request('/api/sessions/' + encodeURIComponent(name) + '/tegami/raw', { cache: 'no-store' });
-    if (r.ok) d = r.data;
-    this.closeLetter();
-    this.body.appendChild(buildLetter(d, () => this.closeLetter()));
-    this.torii.classList.add('open');
-  }
-
-  closeLetter() {
-    this.el.querySelector('.shingo-letter')?.remove();
-    this.torii.classList.remove('open');
-  }
 
   toggleLadder() {
     if (this.ladderOpen) this.closeLadder();
     else {
-      this.closeLetter();
       this.ladderOpen = true;
       this.drawLadder();
     }
@@ -281,24 +286,22 @@ export class Tile {
 
   /**
    * Put everything away that is covering the pane: this tile's ladder and letter, and
-   * the page-level sheets (メ, ニ, ⚡, the Commons menu) which are not this tile's to
-   * own but are in the way just the same.
+   * the page-level sheets (メ, ニ, ⚡) which are not this tile's to own but are in the
+   * way just the same.
    *
    * One method rather than a dismissal at each call site, because "what counts as
    * open" is the thing that will grow — the next sheet someone adds should be closed
    * by every caller automatically, not by remembering to add it in three places.
+   *
+   * The き Commons menu used to be dismissed here too. It is gone (2026-08-17): ⛩
+   * Commons goes straight to ⌂ Roster and drops nothing, so there is no fourth surface
+   * left to put away. If a bar control ever drops a menu again, it is closed HERE.
    */
   clearOverlays() {
     this.closeLadder();
-    this.closeLetter();
     document
       .querySelectorAll('.tdrop.open, .tmac.open')
       .forEach((m) => m.classList.remove('open'));
-    const menu = document.querySelector('.commons-menu');
-    if (menu && !menu.hidden) {
-      menu.hidden = true;
-      document.getElementById('commonsbtn')?.setAttribute('aria-expanded', 'false');
-    }
   }
 
   /** Unroll the ladder under the header — same data as the chip, at full zoom. */

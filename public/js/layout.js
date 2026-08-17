@@ -8,9 +8,7 @@ import { buildPadAsk, buildPadPanel } from './padpanel.js';
 import { askMika } from './mika.js';
 import { buildNotePanel, buildTagPanel } from './panels.js';
 import { buildSystemSheet } from './system.js';
-import { IS_TOUCH, S, TILE_COUNT, WHEEL_DOWN, grid, serviceOff, tiles } from './state.js';
-import { PANES } from './panes.js';
-import { popover } from './ui.js';
+import { IS_TOUCH, S, TILE_COUNT, WHEEL_DOWN, grid, tiles } from './state.js';
 
 import { Tile } from './tile.js';
 import { collapseTileHead, isCoarse, makeDrop } from './tiledrop.js';
@@ -77,8 +75,10 @@ export function build() {
         // (⌃⇧C is DevTools-inspect on Linux/Windows Chrome; the Alt chord covers those.)
         if (e.altKey === e.shiftKey) return; // exactly one of Alt / Shift, never both
         // Ctrl+Alt+C — the CoWorking Commons ("the Commons") over the tile you are in, on
-        // the session roster. C for Commons. Same act as メ, the most-used control on the header: getting to the list
-        // of sessions should not cost a mouse trip. Falls back to the first visible
+        // the session roster. C for Commons. Same act as ⛩, the most-used control on the
+        // header (it said メ until 2026-08-17, when ⛩ took the Commons everywhere and メ
+        // came back on that header as the drop): getting to the list of sessions should
+        // not cost a mouse trip. Falls back to the first visible
         // tile so it works before you have clicked into anything.
         if (e.code === 'KeyN') {
           const t = S.active || tiles.find((x) => x.el.style.display !== 'none');
@@ -162,20 +162,22 @@ export function build() {
   // Per-session note editor (📝 on each tile head) — works the same on desktop and touch.
   guard('note panel', buildNotePanel);
   guard('tag panel', buildTagPanel);
-  // ⚙ System — ONE sheet at page level (js/system.js); the bar's gear opens it.
+  // ⚙ Account — ONE sheet at page level (js/system.js); the bar's gear opens it.
+  //
+  // THE LABEL MOVED, NOT THE DESTINATION (2026-08-17). The owner wants this to read
+  // Account, and eventually to open an Accounts tab in the Commons backed by SETTEI.
+  // Only the word changed today: the fields such a room would hold (owner name,
+  // entitlement) are exactly what SETTEI has not settled, and the ruling this sheet
+  // exists under still stands — install-level facts are page-level, so ONE control in
+  // the bar opens ONE sheet, never a room copied into every tile (owner, 2026-08-16,
+  // docs/ui.md). This is a staging post. The room comes when SETTEI lands and there is
+  // content for it; until then do not build an empty one.
   guard('system sheet', buildSystemSheet);
   key('sysbtn', () => S.sysPanel && S.sysPanel.open());
 
   // Session macros (⚡ on each tile head) are the tile's own — built in
   // tilemacros.js by Tile itself; nothing to wire here.
 
-  // ▤ Commons — one button for every room in the CoWorking Commons, because there is
-  // one destination and five rooms in it. Three separate top-bar buttons said otherwise,
-  // and two of the five rooms had no way in from the bar at all.
-  //
-  // The rows ARE the tab strip inside commons, in the same order and with the same
-  // glyphs, so pressing one lands you where you expected and the strip shows you
-  // where you are. Adding a room means one row here and one tab there.
   // か New — putting a session out to work is the one verb that deserves its own
   // button rather than a row inside a menu: it is how work starts.
   key('newbtn', () => {
@@ -211,47 +213,37 @@ export function build() {
   key('brandbtn', () => {
     const t = S.active || tiles.find((x) => x.el.style.display !== 'none') || tiles[0];
     if (!t) return;
-    if (t.homeVisible() && t.home.dataset.pane === 'sessions' && t.session) t.hideHome();
-    else t.showHome('sessions');
+    t.toggleHome('sessions');
   });
 
-  guard('commons menu', () => {
-    const btn = document.getElementById('commonsbtn');
-    if (!btn) return;
-    const menu = document.createElement('div');
-    menu.className = 'commons-menu';
-    menu.hidden = true;
-    // Open/close truth (outside click, Escape, aria-expanded, focus return) is the
-    // popover primitive's; this block owns only the rows.
-    const pop = popover(btn, menu);
-    const go = (pane) => {
-      const t = S.active || tiles.find((x) => x.el.style.display !== 'none') || tiles[0];
-      if (t) t.showHome(pane);
-      pop.close();
-    };
-    // One list for every surface: the pane registry (js/panes.js). The menu takes the
-    // FULL labels — it has the room the 402px tab strip does not.
-    for (const p of PANES) {
-      const row = document.createElement('button');
-      row.type = 'button';
-      row.className = 'commons-row';
-      row.textContent = p.label;
-      row.title = p.hint;
-      // Same rule as the tab strip: an absent service's room is shown opaque-and-inert.
-      if (serviceOff(p.id)) {
-        row.classList.add('off');
-        row.disabled = true;
-        row.title = 'Off — this service is not installed.';
-      } else row.addEventListener('click', () => go(p.id));
-      menu.appendChild(row);
-    }
-    // Anchor to the button, not the bar: absolute positioning resolves against the
-    // nearest positioned ancestor, and with #bar as that ancestor the menu opened at
-    // the bar's left edge — the whole width of the header away from what was clicked.
-    const wrap = document.createElement('span');
-    wrap.className = 'commons-wrap';
-    btn.before(wrap);
-    wrap.append(btn, menu);
+  // ⛩ Commons — ONE PRESS, straight to ⌂ Roster. No menu.
+  //
+  // It dropped a popover of every room in the pane registry until 2026-08-17, and the
+  // owner ruled that out: the room you want is behind a list of nine you do not, every
+  // single time, and the Commons already carries the same registry as a tab strip you
+  // land on anyway. So the bar's job is the DESTINATION, and the strip is the choosing.
+  //
+  // Roster because it is "the main tab in the Commons and first port of call on hitting
+  // the Commons" (owner, 2026-08-17) — the same pane メ and ⌃⇧C open.
+  //
+  // THE KNOWN COST, taken with eyes open: the bar no longer reaches a SPECIFIC room in
+  // one press. That is the trade, not an oversight; do not reinstate the menu as a
+  // fallback. The glyph is ⛩ — the house mark for "open the Commons".
+  //
+  // THE HISTORY THAT IS STILL LOAD-BEARING, carried down from the menu's own comment:
+  // before the menu there were THREE separate top-bar buttons for three rooms, which
+  // said the Commons was three destinations, and two of the rooms had no way in from
+  // the bar at all. The lesson survives the menu — ONE bar control for ONE destination —
+  // and it is why New and Mika Assist are still out here beside it: starting a session
+  // and asking for help are verbs, not rooms.
+  key('commonsbtn', () => {
+    const t = S.active || tiles.find((x) => x.el.style.display !== 'none') || tiles[0];
+    // TOGGLE, not a one-way door — pressed again it puts the Commons away and gives the
+    // pane back. It called showHome() for a day and pressing ⛩ twice did nothing, which
+    // left the ✕ on the tab strip as the only way out (owner, 2026-08-17). The rule lives
+    // on the tile (`toggleHome`) so this button, the brand and the tile head's ⛩ cannot
+    // drift into three answers.
+    if (t) t.toggleHome('sessions');
   });
 
   // Work Louder pad (▦ in the top bar) — both surfaces (owner override). The
@@ -409,7 +401,9 @@ export function buildDrawers() {
     ['mikabtn', 'Mika Assist'],
     ['commonsbtn', 'Commons'],
     ['padbtn', 'Keypad'],
-    ['sysbtn', 'System'],
+    // Account, not System — the bar's word and this row's word are the same control
+    // wearing one name. See the sysbtn wiring above for why only the LABEL moved.
+    ['sysbtn', 'Account'],
   ];
   for (const [id, label] of APP) {
     const el = document.getElementById(id);

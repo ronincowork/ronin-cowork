@@ -26,14 +26,19 @@
  *                             it wholesale. Near-empty on purpose.
  *   <session_boot store>/     YOURS, outside every repo. Survives upgrade AND uninstall.
  *
- * THREE LEVELS, from the two axes a session already knows about itself:
+ * FOUR LEVELS — three from the axes a session already knows about itself, and one from
+ * the launch's own MCP choice (owner's ruling, 2026-08-17):
  *
  *   all/                every session, always
+ *   mcp_on/             only sessions launched with MCP on — how a connected session
+ *                       learns what it is connected to. Vendor-neutral by construction:
+ *                       cowork includes the level, services put files on it, and a
+ *                       session launched disconnected reads none of them
  *   root/<project_root>/  only sessions working in that directory
  *   job/<session_job>/    only sessions doing that kind of work
  *
- * They are ADDITIVE, not a hierarchy — a CutCode session in ronin_cowork reads all three,
- * and nothing overrides anything. `where` and `what for` are independent: the same
+ * They are ADDITIVE, not a hierarchy — a CutCode session in ronin_cowork reads all of its
+ * levels, and nothing overrides anything. `where` and `what for` are independent: the same
  * bug-chasing habits apply in every repo, and the same repo notes apply to every job.
  *
  * ONE ASYMMETRY: stock may ship `job/` folders but never `root/` ones. The jobs are
@@ -73,6 +78,7 @@ export async function ensureShelf(roots: string[] = []): Promise<void> {
   const base = userShelf();
   const dirs = [
     path.join(base, 'all'),
+    path.join(base, 'mcp_on'),
     path.join(base, 'root'),
     path.join(base, 'job'),
     ...roots.map((r) => path.join(base, 'root', r)),
@@ -120,9 +126,12 @@ async function filesIn(dir: string): Promise<string[]> {
  * name would also collapse — deliberate, and the reason a file meant for one root should
  * not be given a name that stock already uses.
  */
-export async function bootFiles(projectRoot: string, sessionJob: string): Promise<string[]> {
+export async function bootFiles(projectRoot: string, sessionJob: string, mcpOn = true): Promise<string[]> {
   const user = userShelf();
   const dirs: string[] = [path.join(STOCK, 'all'), path.join(user, 'all')];
+  // The connected shelf rides the launch's own MCP choice: off means no tools AND no
+  // reading list about them — the same decision, honored in both places.
+  if (mcpOn) dirs.push(path.join(STOCK, 'mcp_on'), path.join(user, 'mcp_on'));
   // Stock cannot have a root/ — it does not know the owner's directories.
   if (projectRoot) dirs.push(path.join(user, 'root', projectRoot));
   if (sessionJob) dirs.push(path.join(STOCK, 'job', sessionJob), path.join(user, 'job', sessionJob));

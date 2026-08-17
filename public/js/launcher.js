@@ -28,7 +28,7 @@ import { addProvMark, addYourOwn } from './provenance.js';
 /**
  * @param {object} tile  a launched session opens in this tile
  * @param {HTMLElement} host  the null pane (`.home-null`)
- * @returns {{render: () => void}}
+ * @returns {{render: () => void, open: (kind: string, prompt?: string) => void}}
  */
 export function buildLauncher(tile, host) {
   // Which group the new session is born into. Tagging at birth is the only kind that
@@ -275,6 +275,12 @@ export function buildLauncher(tile, host) {
         // it is the only truth available: nothing is sent at all.
         if (k.agent === false) mode = 'manual';
         form.classList.toggle('noagent', k.agent === false);
+        // `mcp: always` — born connected (owner's ruling, 2026-08-17): the toggle does
+        // not apply, so it is not offered. The spawn refuses a contradicting launch;
+        // this just keeps the form honest about there being no choice.
+        if (k.mcpAlways) mcpOn = true;
+        mcpBtn.hidden = !!k.mcpAlways;
+        applyMcp();
         formHead.textContent = `${k.icon} ${k.label} — ${k.ask}`;
         // textContent + server-vetted http(s) URL only — a catalog line must never
         // become markup here.
@@ -474,5 +480,18 @@ export function buildLauncher(tile, host) {
     if (savedRow.dataset.n !== String((savedLaunchData || []).length)) buildSaved();
   };
 
-  return { render };
+  // Service-owned Commons rooms can hand a task to an existing kind without growing
+  // a second launcher. It fills this form and stops; the owner still reads and presses
+  // Start. Unknown kinds are silent because catalogs can be user-replaced at runtime.
+  const open = (name, promptText = '') => {
+    render();
+    const b = grid2.querySelector(`.ks-btn[data-kind="${CSS.escape(name)}"]`);
+    if (!b) return;
+    b.click();
+    assistBtn.click();
+    what.value = promptText;
+    what.focus();
+  };
+
+  return { render, open };
 }

@@ -26,12 +26,24 @@
       <button id="brandbtn" class="brand" title="⛩ ronin — the session roster">⛩ ronin</button>
       <span class="grow"></span>
       <button id="newbtn" title="⌃⇧N — start a new session: pick what it is for, where it works and who it is">か<span class="txt"> New</span></button>
-      <button id="commonsbtn" title="⌃⇧C — the CoWorking Commons: the session roster, a new session, the wipeboard, your project roots, hotwords. (⌃⌥C on Linux/Windows.)" aria-haspopup="true" aria-expanded="false">き<span class="txt"> Commons</span></button>
+      <!-- ⛩ is the house mark for "open the Commons", and this is the door: ONE press
+           lands on ⌂ Roster, the first port of call once you are in there. It dropped a
+           registry-fed menu of every room until 2026-08-17; the owner ruled the menu out
+           (a list of nine rooms in front of the one you wanted every time) and took the
+           known cost with his eyes open — the bar no longer reaches a SPECIFIC room in
+           one press. The tab strip inside the Commons is where you pick a room now. -->
+      <button id="commonsbtn" title="⌃⇧C — the CoWorking Commons, straight to ⌂ Roster. The tab strip inside it reaches the other rooms. (⌃⌥C on Linux/Windows.)">⛩<span class="txt"> Commons</span></button>
       <button id="padbtn" title="Keypad — the Work Louder pad: physical keys fire macros">く<span class="txt"> Keypad</span></button>
       <button id="mikabtn" title="Mika Assist — ask about Ronin itself: how it works, project roots, starting a session, changing a setting. Starts her if she is not up.">ミ<span class="txt"> Mika Assist</span></button>
       <!-- ⚙ is install-level, so it lives at page level: ONE gear in the bar opening one
-           sheet, never a room duplicated into every tile's Commons (owner, 2026-08-16). -->
-      <button id="sysbtn" title="System — what this install runs: appearance, check for updates, log out">⚙</button>
+           sheet, never a room duplicated into every tile's Commons (owner, 2026-08-16).
+           A STAGING POST, NOT THE FINAL SHAPE (2026-08-17): the owner wants this to read
+           Account and eventually to open an Accounts tab in the Commons, backed by SETTEI.
+           Only the LABEL moved today — the button still opens the same system.js sheet —
+           because the fields an Accounts room would hold (owner name, entitlement) are
+           exactly what SETTEI has not settled yet, and a room with nothing in it is four
+           empty copies of the ruling above. Build the room when SETTEI lands. -->
+      <button id="sysbtn" title="Account — this install and the way in: appearance, check for updates, passkey, log out">⚙<span class="txt"> Account</span></button>
       <div class="ctrls" role="group" aria-label="Keys">
         <button id="k-esc" title="Esc">Esc</button>
         <button id="k-int" title="Ctrl-C (interrupt)">^C</button>

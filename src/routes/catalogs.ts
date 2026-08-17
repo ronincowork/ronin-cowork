@@ -9,6 +9,7 @@ import { homedir } from 'node:os';
 import type express from 'express';
 import { projectRootsOfSessions } from '../tmux.js';
 import { listMacros } from '../macros.js';
+import { listAgentAvailability } from '../agents.js';
 import {
   listProjectRoots,
   listSessionLaunchSpecs,
@@ -142,6 +143,18 @@ export function registerCatalogs(app: express.Express): void {
   app.get('/api/session-launch-specs', async (_req, res) => {
     try {
       res.json(await listSessionLaunchSpecs());
+    } catch (e) {
+      res.status(500).json({ error: errMsg(e) });
+    }
+  });
+
+  // Which supported agent CLIs are present on THIS machine — the fact that decides whether
+  // Setup asks "use it?" or "install it?" of each one. Installed or not, and nothing about
+  // whether it is signed in: the owner's accounts are not ours to inspect. `src/agents.ts`
+  // carries why the probe has to be a login shell and not this process's PATH.
+  app.get('/api/agents', async (_req, res) => {
+    try {
+      res.json(await listAgentAvailability());
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }

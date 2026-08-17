@@ -17,9 +17,12 @@
  *   Basic      stays exactly as it was (GRID_USER/GRID_PASS), for scripts and tools;
  *              a request may satisfy either.
  *
- * Passkeys are the intended upgrade and deliberately not here yet: WebAuthn needs a
- * dependency and ceremony this file should not half-do. The cookie/session half below
- * is the part a passkey login will reuse unchanged.
+ *   passkey    LANDED 2026-08-17, in src/passkey.ts — the ceremony got its own file, as
+ *              this comment always intended, and needed no dependency after all (see
+ *              that header for why). It reuses the cookie/session half below UNCHANGED:
+ *              a passkey login ends by calling `makeToken` with this same secret, so
+ *              rotating the password still revokes everything at once. Registering a
+ *              passkey therefore REQUIRES a password record — the secret lives here.
  *
  * The crypto pieces are PURE (record in, verdict out) so tests/auth.test.ts holds them
  * with no live machine; only the two exported *Config functions touch ronin.json.
@@ -69,8 +72,14 @@ export async function makeRecord(password: string): Promise<AuthRecord> {
   };
 }
 
-/** Does this password match this record? Constant-time on the comparison. */
-export async function verifyRecord(rec: AuthRecord, password: string): Promise<boolean> {
+/** Does this password match this record? Constant-time on the comparison.
+ *
+ *  Takes `Omit<AuthRecord, 'secret'>` rather than the whole record because verification
+ *  genuinely never reads the signing secret — and src/passkey.ts's recovery code is
+ *  exactly this scrypt record WITHOUT one (sessions stay signed by the password's
+ *  secret, so there is only ever one). Widening the parameter says that in the type
+ *  instead of forcing a fake secret through just to satisfy it. */
+export async function verifyRecord(rec: Omit<AuthRecord, 'secret'>, password: string): Promise<boolean> {
   try {
     const hash = await scryptAsync(password, Buffer.from(rec.salt, 'base64'), rec.keylen, {
       N: rec.N,

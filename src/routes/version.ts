@@ -65,6 +65,21 @@ const commit = git('rev-parse', '--short', 'HEAD') ?? stamped?.commit ?? null;
 const dirty = commit === null || stamped ? null : git('status', '--porcelain', '--', 'src', 'package.json') !== '';
 const startedAt = new Date().toISOString();
 
+/**
+ * THIS PROCESS'S IDENTITY, for a reader that does not want an HTTP round trip.
+ *
+ * Exported because SETTEI's record reports the same four facts, and the alternative was a
+ * second `git rev-parse` per request — which would describe the TREE rather than the
+ * process, the exact confusion (BYOKI) this module exists to dissolve. One measurement,
+ * taken once at load, read by both.
+ */
+export const roninIdentity = (): {
+  release: string | null;
+  commit: string;
+  dirty: boolean | null;
+  startedAt: string;
+} => ({ release: stamped?.release ?? null, commit: commit ?? 'unknown', dirty, startedAt });
+
 export function registerVersion(app: express.Express): void {
   app.get('/api/version', (_req, res) => {
     // `stream`: is the 🔓 tape view plugged in? The stream handler is rireki's, set

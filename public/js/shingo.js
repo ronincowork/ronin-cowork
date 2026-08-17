@@ -27,6 +27,24 @@ const HERE = '⛩';
  * The header chip. Hidden until a ladder exists — a session that keeps no TEGAMI costs
  * nothing on screen, which is what keeps this optional in practice as well as in theory.
  */
+/**
+ * Clamp agent-authored text before it becomes a hover label. The help box is a fixed
+ * three lines (~120 chars at its width); stock labels are guaranteed to fit by
+ * check-tips at build time, but a session's own words arrive at runtime and are
+ * unbounded — without this, one long objective overflows the box and fails the gate
+ * for the whole install.
+ *
+ * THE BUDGET IS THE WHOLE LABEL, not this fragment of it, which is why `room` exists
+ * (2026-08-17). The chip does not hover its objective alone: it appends "Held at a gate ·
+ * ladder unchanged for 3h" underneath. Clamping the objective to the full 120 and THEN
+ * adding 45 more characters spends the budget twice, and check-tips duly failed at 165
+ * chars / 17px over on a real session — the exact overflow the clamp was written to
+ * prevent, walked around by its own caller. A caller that adds a tail passes what is left.
+ */
+export function clampTip(s, room = 120) {
+  return s.length > room ? s.slice(0, room - 1) + '…' : s;
+}
+
 export function makeChip(onTap) {
   const btn = document.createElement('button');
   btn.type = 'button';
@@ -59,8 +77,18 @@ export function makeChip(onTap) {
     btn.classList.toggle('gate', !!t.chip.gate);
     btn.classList.toggle('side', !!t.ladder_state);
     const held = t.chip.gate ? 'Held at a gate' : 'Tap for the ladder';
-    btn.title = (t.objective ? t.objective + '\n' : '') + held +
-      (quiet ? ' · ladder unchanged for ' + quiet : '');
+    // The objective is AGENT-AUTHORED and unbounded; the help box is three lines.
+    // Clamp here at the source, or any session that writes a long objective overflows
+    // the box and fails check-tips for everyone (it measures the live DOM).
+    //
+    // THE TAIL IS BUILT FIRST because it is the part that must survive. It says whether
+    // the session is stuck; the objective is context for that answer. Handing its length
+    // to `clampTip` is what stops the two of them adding up past the box — they used to,
+    // and check-tips caught it at 165 chars on a live session (2026-08-17). Clamping the
+    // JOINED string instead would have trimmed the wrong end.
+    const tail = held + (quiet ? ' · ladder unchanged for ' + quiet : '');
+    const ob = t.objective ? clampTip(t.objective, 120 - tail.length - 1) + '\n' : '';
+    btn.title = ob + tail;
     return t;
   };
   return { el: btn, set };
@@ -241,43 +269,17 @@ export function buildLadder(t) {
   return box;
 }
 
-/**
- * THE LETTER ITSELF — the file, verbatim, in a real scrollable, selectable block.
+/*
+ * `buildLetter` stood here until 2026-08-17 — the TEGAMI file verbatim, in a selectable
+ * <pre>, opened from a ⛩ in the tile header. The owner removed that button (the torii
+ * now means "the Commons" everywhere), which left this with no caller, and an unreachable
+ * renderer is a corpse check-dead is right to refuse.
  *
- * The chip and the ladder are an interpretation; this is the source. Every session gets
- * the torii whether or not it has a ladder up, because "what does this session's letter
- * actually say" is a question you ask most often when the readout looks wrong.
- *
- * Read-only, like everything on this side. Nothing here writes, and the only way to
- * change a letter remains the agent that owns it.
+ * What went with it is worth naming, because the comment that stood here argued for it:
+ * the chip and the ladder are an INTERPRETATION, and this was the source. If the raw view
+ * is ever wanted again it belongs inside the ladder panel, where the reader already is.
+ * `GET /api/sessions/:name/tegami/raw` still serves it — the route is michi's and stays.
  */
-export function buildLetter({ file, text }, onClose) {
-  const wrap = document.createElement('div');
-  wrap.className = 'shingo-letter';
-
-  const head = document.createElement('div');
-  head.className = 'sletter-head';
-  const path = document.createElement('span');
-  path.className = 'sletter-path';
-  path.textContent = file || '';
-  path.title = file || '';
-  const x = document.createElement('button');
-  x.type = 'button';
-  x.className = 'sletter-x';
-  x.textContent = '✕';
-  x.title = 'Close';
-  x.addEventListener('click', onClose);
-  head.append(path, x);
-
-  const body = document.createElement('pre');
-  body.className = 'sletter-body';
-  // No ladder is a legitimate state, not an error — say so plainly rather than showing
-  // an empty box the reader has to interpret.
-  body.textContent = text == null ? 'No letter on disk for this session yet.' : text;
-
-  wrap.append(head, body);
-  return wrap;
-}
 
 /** `51m`, `3h`, `2d` — short enough to sit on a board row. */
 export function humanAge(ms) {

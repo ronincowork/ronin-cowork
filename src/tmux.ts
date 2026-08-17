@@ -429,6 +429,53 @@ export async function projectRootsOfSessions(): Promise<Record<string, string>> 
   }
 }
 
+/**
+ * WHAT WAS LAUNCHED INTO THE PANE — the agent (the CLI: `claude`, `codex`) and the
+ * provider whose model it is talking to (`anthropic`, `openai`). Two options, written
+ * ONCE, at spawn, because spawn is the only moment anything knows: the resolver is
+ * holding a whole session_launch_spec (`{provider, model, cmd}`) and what it hands the
+ * pane is a command string nobody downstream can read the vendor back out of.
+ *
+ * `#{pane_current_command}` IS NOT THE SHORTCUT, and that is the whole reason a stamp
+ * exists. Measured on this box, 2026-08-17: a Codex session answers `node`, because the
+ * Codex CLI is a node script. It answers `claude` correctly for Anthropic — which is
+ * exactly the shape of bug that ships, right on the machine it was written on and wrong
+ * on half the sessions.
+ *
+ * `@ronin-agent` WAS DESIGNED BEFORE IT WAS WRITTEN. RIREKI's `vendorOf()` has read it as
+ * the first and most trusted link in its identity chain since that function existed —
+ * "stamped at spawn, commons knows exactly what it launched" — and nothing had ever set
+ * it, so every session on every box silently fell through to step 2 (`pane_current_command`,
+ * i.e. `node`) and then to sniffing the tape. So the name and the value shape are RIREKI's,
+ * not ours: a bare decoder key, `claude` / `codex`, never a label and never a path.
+ *
+ * THE MODEL IS DELIBERATELY NOT STAMPED beside them. It is scraped live off the pane's own
+ * status line (`scanModel`, src/ctx.ts), which keeps it true when the model is switched
+ * mid-session — and makes it the one of the three a session born before this shipped can
+ * still show. See § NUANCE in KOTOBA.md: the CLI, the model and this run of it are three
+ * things the house can feel apart and has one word for.
+ */
+const AGENT_OPT = '@ronin-agent';
+
+/**
+ * Stamp WHICH CLI a session was launched as — called at birth, beside the tags and the
+ * project_root. A blank value is NOT written: an unset option and an option set to ''
+ * read back identically, so writing the empty one would only be a second way to say
+ * nothing. Failures are swallowed for the same reason a note or a tag failure is — a
+ * label must never cost the owner their session.
+ *
+ * A PROVIDER STAMP STOOD BESIDE THIS for one commit on 2026-08-17 and is gone with the
+ * roster column that was its only reader: the owner cut that column to the model alone,
+ * because `opus 5` already says Claude and `gpt-5.6-sol` already says Codex. This one
+ * stays because it has a reader of its own, and had one before the roster ever asked:
+ * RIREKI picks a tape decoder from it (`vendorOf`, services/rireki/scroll.ts), where it
+ * is the top of a four-step identity chain and the only step that is not a guess.
+ */
+export async function setLaunchStamp(name: string, agent: string): Promise<void> {
+  if (!agent.trim()) return;
+  await pexec('tmux', ['set-option', '-t', exactPane(name), AGENT_OPT, agent.trim()]).catch(() => {});
+}
+
 /** tmux user option holding a session's control dial (see ronin_catalogs/ACTIONS.md control-check). */
 const CONTROL_OPT = '@ronin-control';
 

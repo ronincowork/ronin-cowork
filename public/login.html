@@ -8,7 +8,19 @@
     <!-- SELF-CONTAINED ON PURPOSE: this page is served ahead of the auth gate, so it
          loads nothing else — style.css and the app stay behind the door. The handful
          of colours below are the same tokens style.css defines; a palette change
-         touches both, and this comment is the pointer that keeps them honest. -->
+         touches both, and this comment is the pointer that keeps them honest.
+
+         THE PRIMITIVES ARE COPIED, NOT IMPORTED, AND THAT IS THE CONSTRAINT TALKING
+         (2026-08-17). The plan wants this page to be an early consumer of ui/field,
+         ui/button and ui/status. It cannot IMPORT them: js/ui.js and style.css both
+         sit behind the gate, and moving them in front of it to dress a login form
+         would put the whole client's stylesheet on the unauthenticated surface — a bad
+         trade for a page with three controls. So it consumes the GRAMMAR instead: the
+         same `.ui-status` element with the same `data-kind` values (''/'ok'/'bad'),
+         the same `role="status"`, the same `.ui-sr` clip recipe, the same "empty means
+         hidden" rule. Identical names on both sides mean the day a pre-auth asset
+         bundle exists, this becomes a deletion rather than a rewrite. Keep them
+         spelled the same as js/ui.js and style.css or that day gets expensive. -->
     <script>
       try {
         var t = localStorage.getItem('tmuxgrid.theme');
@@ -25,6 +37,7 @@
         --muted: #6b7488;
         --accent: #e0af68;
         --bad-soft: #e6a1a1;
+        --ok: #9ece6a;
         --well: #0d1220;
       }
       :root[data-theme='light'] {
@@ -35,6 +48,7 @@
         --muted: #6d7284;
         --accent: #a06b1a;
         --bad-soft: #8f3a3a;
+        --ok: #4a7a2a;
         --well: #f7f5ef;
       }
       * { box-sizing: border-box; }
@@ -67,7 +81,7 @@
         border-radius: 8px;
         font-size: 16px; /* 16px stops iOS Safari zooming the page on focus */
       }
-      input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+      input:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
       button {
         height: 40px;
         background: transparent;
@@ -77,46 +91,211 @@
         font-size: 14px;
         cursor: pointer;
       }
-      button:disabled { opacity: 0.5; }
-      .err { min-height: 1.2em; margin: 0; color: var(--bad-soft); font-size: 12px; }
+      button:disabled { opacity: 0.5; cursor: default; }
+      /* The passkey button is the RECOMMENDED door when it is offered at all, so it is
+         the filled one. The password below it stays a peer, not a demotion — it is the
+         fallback the owner may always take. */
+      button.primary { background: var(--accent); color: var(--bg); font-weight: 600; }
+      /* ---- the ui/status grammar, copied — see the head comment ---- */
+      .ui-status { margin: 0; font-size: 12px; line-height: 1.4; color: var(--muted); }
+      .ui-status:empty { display: none; }
+      .ui-status[data-kind='bad'] { color: var(--bad-soft); }
+      .ui-status[data-kind='ok'] { color: var(--ok); }
+      .ui-sr {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+        border: 0;
+      }
+      /* "or" between the two doors, as a rule with a word in it. aria-hidden: it is
+         decoration, and a screen reader reading "or" between two labelled buttons adds
+         nothing it cannot already tell. */
+      .sep { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; }
+      .sep::before, .sep::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+      details { border-top: 1px solid var(--line); padding-top: 10px; }
+      summary { font-size: 12px; color: var(--muted); cursor: pointer; }
+      details[open] > summary { margin-bottom: 10px; }
+      .rc-row { display: flex; flex-direction: column; gap: 8px; }
+      #rc { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 1px; }
       small { color: var(--muted); font-size: 11px; line-height: 1.5; }
+      a { color: var(--accent); }
     </style>
   </head>
   <body>
     <form id="f">
       <h1>⛩ ronin</h1>
+
+      <button id="pk" class="primary" type="button" hidden>Use a passkey</button>
+      <p class="ui-status" id="pkmsg" role="status"></p>
+      <div class="sep" id="sep" aria-hidden="true" hidden>or</div>
+
       <label for="pw">password</label>
-      <input id="pw" type="password" autocomplete="current-password" autofocus required />
-      <p class="err" id="err" role="alert"></p>
+      <input id="pw" type="password" autocomplete="current-password" required />
+      <p class="ui-status" id="err" role="alert" data-kind="bad"></p>
       <button id="go" type="submit">Log in</button>
-      <small>Set or change this password on the host with <code>bin/ronin-passwd</code>. The session lasts 30 days on this device; changing the password ends every session.</small>
+
+      <details id="rcbox">
+        <summary>Use a recovery code</summary>
+        <div class="rc-row">
+          <label for="rc" class="ui-sr">recovery code</label>
+          <input id="rc" type="text" inputmode="text" autocomplete="one-time-code" spellcheck="false"
+                 placeholder="XXXXX-XXXXX-XXXXX-XXXXX" />
+          <button id="rcgo" type="button">Log in with code</button>
+          <p class="ui-status" id="rcmsg" role="status"></p>
+          <small>Mint one on the host with <code>bin/ronin-recovery</code>. Valid 30 minutes, one use.</small>
+        </div>
+      </details>
+
+      <small>Set or change the password on the host with <code>bin/ronin-passwd</code>. The session lasts 30 days on this device; changing the password ends every session.</small>
     </form>
     <script>
-      const f = document.getElementById('f');
-      const pw = document.getElementById('pw');
-      const go = document.getElementById('go');
-      const err = document.getElementById('err');
+      const $ = (id) => document.getElementById(id);
+      const f = $('f'), pw = $('pw'), go = $('go'), err = $('err');
+      const pk = $('pk'), pkmsg = $('pkmsg'), sep = $('sep');
+      const rc = $('rc'), rcgo = $('rcgo'), rcmsg = $('rcmsg');
+
+      const say = (el, text, kind) => {
+        el.textContent = text || '';
+        el.dataset.kind = kind || '';
+      };
+
+      /* WebAuthn speaks ArrayBuffers and the wire speaks base64url. These two are the
+         whole translation layer; everything else is the browser's own ceremony. */
+      const toBuf = (s) => {
+        const b = atob(s.replace(/-/g, '+').replace(/_/g, '/'));
+        const u = new Uint8Array(b.length);
+        for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i);
+        return u.buffer;
+      };
+      const toB64u = (buf) =>
+        btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+      const post = async (url, body) => {
+        const r = await fetch(url, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(d.error || 'HTTP ' + r.status);
+        return d;
+      };
+
+      /* ---- the passkey door -------------------------------------------------------
+         WHY THIS PAGE EXPLAINS ITSELF INSTEAD OF JUST HIDING THE BUTTON. WebAuthn is
+         only exposed in a Secure Context, so on `http://<tailnet-ip>:3006` there is no
+         passkey to offer and never can be. A silently missing button would leave the
+         owner hunting for a feature that is working exactly as designed — so when the
+         server says why, we say why, and name the HTTPS address it reported. */
+      async function initPasskey() {
+        let o;
+        try {
+          o = await (await fetch('/api/passkey/options', { cache: 'no-store' })).json();
+        } catch {
+          return; // the server is unreachable; the password form will say so on submit
+        }
+        const supported = window.isSecureContext && !!(window.PublicKeyCredential && navigator.credentials);
+        if (o.available && supported) {
+          pk.hidden = false;
+          sep.hidden = false;
+          return;
+        }
+        if (!o.registered) return; // nothing registered — nothing to explain yet
+        // Something IS registered but cannot be used from here. That is worth a sentence.
+        if (!supported && o.secureUrl) {
+          pkmsg.innerHTML =
+            'A passkey is registered, but passkeys need the secure address: <a href="' +
+            o.secureUrl.replace(/"/g, '&quot;') +
+            '/login">' +
+            o.secureUrl.replace(/</g, '&lt;') +
+            '</a>';
+          pkmsg.dataset.kind = '';
+        } else if (!supported) {
+          say(pkmsg, 'A passkey is registered, but this address is not a secure context — open Ronin over HTTPS to use it.');
+        } else if (o.why) {
+          say(pkmsg, 'Passkeys unavailable: ' + o.why);
+        }
+      }
+
+      pk.addEventListener('click', async () => {
+        pk.disabled = true;
+        say(pkmsg, 'waiting for Touch ID / Face ID…');
+        say(err, '');
+        try {
+          const o = await (await fetch('/api/passkey/options', { cache: 'no-store' })).json();
+          if (!o.available) throw new Error(o.why || 'passkeys are not available here');
+          // No allowCredentials: these are discoverable passkeys, so the browser picks
+          // the right one itself and the server never has to publish a list of the
+          // owner's devices to an unauthenticated page.
+          const cred = await navigator.credentials.get({
+            publicKey: {
+              challenge: toBuf(o.challenge),
+              rpId: o.rpId,
+              userVerification: 'required',
+              timeout: 60000,
+            },
+          });
+          if (!cred) throw new Error('no passkey was returned');
+          await post('/api/passkey/login', {
+            id: cred.id,
+            clientDataJSON: toB64u(cred.response.clientDataJSON),
+            authenticatorData: toB64u(cred.response.authenticatorData),
+            signature: toB64u(cred.response.signature),
+          });
+          location.replace('/');
+          return;
+        } catch (ex) {
+          // NotAllowedError is the browser's word for "cancelled or timed out", which is
+          // not a failure worth shouting about — the owner did it on purpose.
+          const cancelled = ex && (ex.name === 'NotAllowedError' || ex.name === 'AbortError');
+          say(pkmsg, cancelled ? 'passkey cancelled' : ex.message, cancelled ? '' : 'bad');
+        }
+        pk.disabled = false;
+      });
+
+      /* ---- the password door (unchanged behaviour) ---- */
       f.addEventListener('submit', async (e) => {
         e.preventDefault();
         go.disabled = true;
-        err.textContent = '';
+        say(err, '');
         try {
-          const r = await fetch('/api/login', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ password: pw.value }),
-          });
-          const d = await r.json().catch(() => ({}));
-          if (!r.ok) throw new Error(d.error || 'HTTP ' + r.status);
+          await post('/api/login', { password: pw.value });
           location.replace('/');
           return;
         } catch (ex) {
           // The password stays in the box: a failed login costs a retry, not retyping.
-          err.textContent = ex.message === 'Failed to fetch' ? 'could not reach Ronin' : ex.message;
+          say(err, ex.message === 'Failed to fetch' ? 'could not reach Ronin' : ex.message, 'bad');
         }
         go.disabled = false;
         pw.focus();
       });
+
+      /* ---- the recovery door ---- */
+      rcgo.addEventListener('click', async () => {
+        rcgo.disabled = true;
+        say(rcmsg, 'checking…');
+        try {
+          // Sent as typed. The server canonicalises (src/passkey.ts canonicalCode) so
+          // that dashes, case and O-for-0 are forgiven in exactly ONE place — doing it
+          // here too would be a second spelling that could drift from the minter's.
+          await post('/api/passkey/recover', { code: rc.value });
+          location.replace('/');
+          return;
+        } catch (ex) {
+          say(rcmsg, ex.message === 'Failed to fetch' ? 'could not reach Ronin' : ex.message, 'bad');
+        }
+        rcgo.disabled = false;
+      });
+
+      // Focus the password only on a pointer device: autofocus raises the iOS keyboard
+      // over the passkey button, which is the control most likely to be wanted there.
+      if (matchMedia('(hover: hover)').matches) pw.focus();
+      initPasskey();
     </script>
   </body>
 </html>

@@ -24,7 +24,10 @@ import { cleanupViewers, listSessions, publishRoninUrl } from './tmux.js';
 import { publishMax, publishOwner } from './user-config.js';
 import { registerCatalogs } from './routes/catalogs.js';
 import { registerLaunch } from './routes/launch.js';
+import { registerPasskeyLogin, registerPasskeyManage } from './routes/passkey-api.js';
 import { registerSessions } from './routes/sessions-api.js';
+import { registerSettei } from './routes/settei-api.js';
+import { stampFreshInstall } from './user-config.js';
 import { registerUpdate } from './routes/update-api.js';
 import { registerVersion } from './routes/version.js';
 import { registerWipeboards } from './routes/wipeboards-api.js';
@@ -91,8 +94,38 @@ function checkAuth(headers: { authorization?: string; cookie?: string }): boolea
   return !!rec && checkToken(rec.secret, cookieToken(headers.cookie));
 }
 
+/**
+ * Mint the session cookie. ONE definition, because there are now three doors that end
+ * here — password, passkey and recovery code — and three copies of a cookie's flags is
+ * three chances for one of them to forget `httpOnly`.
+ *
+ * No `secure: true`, deliberately: this same server is reached over plain HTTP on the
+ * tailnet IP as well as HTTPS through `tailscale serve`, and a Secure cookie would make
+ * the HTTP address impossible to log into. The tailnet is the wall (src/config.ts);
+ * the flag would be theatre there and a lockout here.
+ *
+ * Returns FALSE when there is no password record to sign with, and callers must respect
+ * that rather than assume it (2026-08-17): `ronin-passwd clear` can remove the record
+ * while registered passkeys remain in ronin.json, and the first version of this returned
+ * void — so a passkey login answered `{ok:true}`, set no cookie, and bounced the owner
+ * straight back to /login with nothing to explain it. A door that reports success and
+ * does not open is worse than one that refuses.
+ */
+function issueSession(res: express.Response): boolean {
+  const rec = authRecord();
+  if (!rec) return false;
+  res.cookie(COOKIE, makeToken(rec.secret, SESSION_TTL_MS), {
+    httpOnly: true,
+    sameSite: 'lax',
+    maxAge: SESSION_TTL_MS,
+    path: '/',
+  });
+  return true;
+}
+
 // --- the login door (the only routes ahead of the gate) ---
 app.get('/login', (_req, res) => res.sendFile(path.join(PUBLIC, 'login.html')));
+registerPasskeyLogin(app, issueSession); // /api/passkey/{options,login,recover} — src/routes/passkey-api.ts
 app.post('/api/login', async (req, res) => {
   const rec = authRecord();
   if (!rec) return res.status(404).json({ error: 'No password is set on this install — see bin/ronin-passwd.' });
@@ -106,12 +139,7 @@ app.post('/api/login', async (req, res) => {
     return res.status(401).json({ error: 'Wrong password.' });
   }
   loginSucceeded(addr);
-  res.cookie(COOKIE, makeToken(rec.secret, SESSION_TTL_MS), {
-    httpOnly: true,
-    sameSite: 'lax',
-    maxAge: SESSION_TTL_MS,
-    path: '/',
-  });
+  issueSession(res);
   res.json({ ok: true });
 });
 app.post('/api/logout', (_req, res) => {
@@ -198,10 +226,15 @@ app.get('/api/health', (_req, res) =>
   }),
 );
 
+registerPasskeyManage(app); // /api/passkey/{list,register-options,register,remove} — BEHIND the gate on purpose
 registerLaunch(app); // /api/launch (both variants), /api/sessions, /api/home, session-max, owner — src/routes/launch.ts
 registerCatalogs(app); // /api/macros, /api/hotwords*, /api/project-roots*, /api/session-launch-specs, /api/session-jobs — src/routes/catalogs.ts
 registerVersion(app); // /api/version — release string, or the commit this process started from — src/routes/version.ts
 registerUpdate(app); // /api/update/* — the ⚙ gear's check + run, press-only — src/routes/update-api.ts
+registerSettei(app); // /api/settei — the install record, and writes BY NAME only — src/routes/settei-api.ts
+// A box being born says so, ONCE, and only when ronin.json does not exist yet. Absence of
+// the key means an install older than the key, which must stay quiet — src/user-config.ts.
+void stampFreshInstall();
 
 // Services register, then their routes mount — AFTER core's, which is safe because
 // every service path (/api/tomodachi/*, /api/transcribe, /api/koshi*) is disjoint
