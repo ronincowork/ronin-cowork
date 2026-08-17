@@ -25,6 +25,7 @@ import type express from 'express';
 import { readSettei } from '../settei.js';
 import {
   completeSetup,
+  readSetupSection,
   readAgentsSection,
   writeAgentsSection,
   writeGbrainSection,
@@ -121,6 +122,21 @@ export function registerSettei(app: express.Express): void {
     try {
       await completeSetup();
       res.json({ ok: true });
+    } catch (e) {
+      res.status(500).json({ error: errMsg(e) });
+    }
+  });
+
+  /**
+   * IS THIS BOX WAITING FOR ITS FIRST RUN? The client asks this on every load, so it
+   * reads one section of the config file and measures nothing — `GET /api/settei`
+   * assembles the whole record including a login-shell probe, which is the wrong cost
+   * for a yes/no the workspace needs before it can build.
+   */
+  app.get('/api/settei/setup', async (_req, res) => {
+    try {
+      const s = await readSetupSection();
+      res.json({ pending: s.pending === true, completed_at: s.completed_at ?? null });
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }

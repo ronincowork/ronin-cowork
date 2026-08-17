@@ -222,6 +222,11 @@ export async function buildFirstRun(host, onDone) {
         return;
       }
 
+      // FIRST RUN IS FINISHED — clear the birth flag now, after the writes landed and
+      // before the handoff. Only the surface knows the questions were answered, and a
+      // session that fails to start below must not leave the box pending forever.
+      await request('/api/settei/setup', { method: 'PUT' });
+
       // THE HANDOFF. A form cannot settle whether a repository is already cloned, or
       // where they meant it to go, or what "half-finished" means — and it should not try
       // to, because Ronin is full of agents who can simply ask. So everything mechanical
