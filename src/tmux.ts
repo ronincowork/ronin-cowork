@@ -456,53 +456,24 @@ export async function projectRootsOfSessions(): Promise<Record<string, string>> 
  * things the house can feel apart and has one word for.
  */
 const AGENT_OPT = '@ronin-agent';
-const PROVIDER_OPT = '@ronin-provider';
-
-/** What a session was launched as. Empty means nobody stamped it — never a guess. */
-export interface LaunchStamp {
-  agent: string;
-  provider: string;
-}
 
 /**
- * Stamp what is running in a session — called at birth, beside the tags and the
+ * Stamp WHICH CLI a session was launched as — called at birth, beside the tags and the
  * project_root. A blank value is NOT written: an unset option and an option set to ''
  * read back identically, so writing the empty one would only be a second way to say
  * nothing. Failures are swallowed for the same reason a note or a tag failure is — a
- * label the roster would have liked must never cost the owner their session.
+ * label must never cost the owner their session.
+ *
+ * A PROVIDER STAMP STOOD BESIDE THIS for one commit on 2026-08-17 and is gone with the
+ * roster column that was its only reader: the owner cut that column to the model alone,
+ * because `opus 5` already says Claude and `gpt-5.6-sol` already says Codex. This one
+ * stays because it has a reader of its own, and had one before the roster ever asked:
+ * RIREKI picks a tape decoder from it (`vendorOf`, services/rireki/scroll.ts), where it
+ * is the top of a four-step identity chain and the only step that is not a guess.
  */
-export async function setLaunchStamp(name: string, agent: string, provider: string): Promise<void> {
-  for (const [opt, val] of [[AGENT_OPT, agent], [PROVIDER_OPT, provider]] as const) {
-    if (!val.trim()) continue;
-    await pexec('tmux', ['set-option', '-t', exactPane(name), opt, val.trim()]).catch(() => {});
-  }
-}
-
-/**
- * Every live session's stamp in ONE call — same shape as projectRootsOfSessions above and
- * for the same reason: the roster draws a board, and a board asks tmux once, not once per
- * row. An UNSTAMPED session is in the map with two empty strings rather than missing from
- * it, because "nobody has said" is a real answer the roster has to be able to draw as an
- * empty slot; every session that predates this shipping is one, until it is relaunched.
- */
-export async function launchStamps(): Promise<Record<string, LaunchStamp>> {
-  try {
-    const { stdout } = await pexec('tmux', [
-      'list-sessions',
-      '-F',
-      `#{session_name}\t#{${AGENT_OPT}}\t#{${PROVIDER_OPT}}`,
-    ]);
-    const out: Record<string, LaunchStamp> = {};
-    for (const line of stdout.split('\n').filter(Boolean)) {
-      const [name, agent, provider] = line.split('\t');
-      if (name && !name.startsWith(config.viewerPrefix)) {
-        out[name] = { agent: (agent ?? '').trim(), provider: (provider ?? '').trim() };
-      }
-    }
-    return out;
-  } catch {
-    return {};
-  }
+export async function setLaunchStamp(name: string, agent: string): Promise<void> {
+  if (!agent.trim()) return;
+  await pexec('tmux', ['set-option', '-t', exactPane(name), AGENT_OPT, agent.trim()]).catch(() => {});
 }
 
 /** tmux user option holding a session's control dial (see ronin_catalogs/ACTIONS.md control-check). */

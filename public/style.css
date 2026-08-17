@@ -2642,18 +2642,28 @@ body {
    alternative is one session's prose setting the geometry of every other row.
 
    SIX became true again on 2026-08-17, when the 🏷 pill's retired track was replaced by
-   `--hr-stack`: the agent · provider · model reading (js/roster.js). Measured the same
-   way — `codex · openai · gpt-5-codex` is 140px of 11px text and `claude · anthropic ·
-   sonnet 4.5` is 150px, so 140px shows the realistic worst case whole and lets the
-   longest model name give up its tail. It is the LAST track on purpose: it is the widest
-   and the most clip-prone reading on the row, and at the right edge a clip runs into the
-   row's own padding rather than into another column. */
+   `--hr-stack`: WHICH MODEL IS ANSWERING (js/roster.js). It was `agent · provider · model`
+   at 140px for about an hour, and the owner cut it to the model alone — which halved the
+   track, because `gpt-5.6-sol` is 62px of 11px text, `gpt-5-codex` 62px, `sonnet 4.5`
+   55px and `opus 5` 38px. 76px shows every one of them whole with room for a longer name
+   to give up its tail.
+
+   THE 140px VERSION IS THE LESSON WORTH KEEPING. A fixed track charges its full width on
+   every row whether or not anything is in it, so while the birth stamp was unwritten it
+   took 140px from every row to display nothing at all — and the report that went with it
+   claimed the cost was to the session name, which measurement then refuted: the name
+   track is 181px here and the longest name on the board needs 81px. Size a track to what
+   its content actually reaches, not to the worst case it could theoretically reach, and
+   check what it looks like EMPTY.
+
+   It is the LAST track on purpose: the most clip-prone reading on the row, and at the
+   right edge a clip runs into the row's own padding rather than into another column. */
 .home-row {
   --hr-mark: 1.35em; /* the session_job glyph — the same width `.home-job` already held */
   --hr-shingo: 132px;
   --hr-status: 70px;
   --hr-ctx: 48px;
-  --hr-stack: 140px;
+  --hr-stack: 76px;
   display: grid;
   grid-template-columns:
     var(--hr-mark) minmax(0, 1fr) var(--hr-shingo) var(--hr-status) var(--hr-ctx)

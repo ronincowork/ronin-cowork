@@ -14,7 +14,6 @@ import {
   capturePane,
   createSession,
   isValidName,
-  launchStamps,
   listSessions,
   sessionDir,
   sessionExists,
@@ -102,12 +101,12 @@ export function registerLaunch(app: express.Express): void {
       // reliably happens. Two shipped tools (tejun-recall, tejun-remember) read this to
       // scope a memory and nothing used to set it.
       if (resolved.project_root) await setProjectRoot(resolved.name, resolved.project_root);
-      // WHAT IT IS RUNNING, written at birth for the same reason the project_root is: this
-      // is the one moment it is known. The launch table gave us the provider and the cmd
-      // names the CLI, and a minute from now tmux can only say the pane is running `node`.
-      // The ⌂ Roster reads it back (`/api/home`), and RIREKI reads `@ronin-agent` to pick
-      // a decoder — it has expected this stamp since it was written. See src/tmux.ts.
-      await setLaunchStamp(resolved.name, resolved.launchAgent, resolved.provider);
+      // WHICH CLI, written at birth for the same reason the project_root is: this is the
+      // one moment it is known. The cmd names the CLI, and a minute from now tmux can only
+      // say the pane is running `node`. NOT for the roster — that column is the scraped
+      // model alone now — but for RIREKI, which picks a tape decoder from `@ronin-agent`
+      // and has expected this stamp since it was written, guessing until today.
+      await setLaunchStamp(resolved.name, resolved.launchAgent);
       // THE ROLE, SET MECHANICALLY. The button the owner pressed IS what this session is
       // for, so the letter is written with `session_job` already filled rather than left
       // for the agent to guess at a fact that was never in doubt. The session owns it
@@ -214,14 +213,15 @@ export function registerLaunch(app: express.Express): void {
   // scrapes. The model rides this capture rather than earning its own tmux call: it sits
   // on the very status line the gauge is read off (src/ctx.ts), so it is free here.
   //
-  // The agent and the provider do NOT come off the pane — they are the birth stamp, read
-  // for the whole board in one `list-sessions` before the map (src/tmux.ts). Which is why
-  // a session born before the stamp shipped still shows its model and nothing else: two
-  // of the three are remembered and one is observed.
+  // THE MODEL IS THE WHOLE COLUMN. It shipped for one commit as `agent · provider · model`,
+  // read from a birth stamp; the owner cut it to the model alone, because `opus 5` already
+  // says Claude and `gpt-5.6-sol` already says Codex. The `launchStamps()` board read that
+  // served the other two went with them. The upside of what is left is that scraping needs
+  // no stamp, so this is right for every session on the box today rather than only for
+  // those born after a restart.
   app.get('/api/home', async (_req, res) => {
     try {
       const list = await withRoles(await listSessions());
-      const stamps = await launchStamps();
       const out = await Promise.all(
         list.map(async (s) => {
           let status: SessionStatus | null = null;
@@ -235,7 +235,6 @@ export function registerLaunch(app: express.Express): void {
           } catch {
             // session vanished mid-scan — plain row, no readings
           }
-          const stamp = stamps[s.name];
           // THE ROW SOCKET: services contribute their fields (michi's tegami ladder
           // column among them); none registered = nothing added and the board prints "—".
           return {
@@ -243,10 +242,6 @@ export function registerLaunch(app: express.Express): void {
             status,
             ctx,
             model,
-            // '' not null, and never a placeholder: unstamped is an EMPTY SLOT on the row,
-            // never `unknown` or a dash, which would read as a state the session is in.
-            agent: stamp?.agent ?? '',
-            provider: stamp?.provider ?? '',
             ...(await collectRowFields(s.name)),
           };
         }),

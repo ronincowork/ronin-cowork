@@ -103,14 +103,6 @@ export interface Resolved {
    * process is called, and for Codex that is `node`.
    */
   launchAgent: string;
-  /**
-   * Whose model that CLI is talking to — `anthropic`, `openai` — read off the
-   * session_launch_spec the `cmd` came from. EMPTY when the cmd matches no row in the
-   * launch table (a hand-typed `cmd:` on a project_root), and empty is the right answer
-   * there: the table is what knows the vendor, and inferring one from the binary name
-   * would be a guess dressed as a fact.
-   */
-  provider: string;
 }
 
 const ACK_RULE =
@@ -236,8 +228,9 @@ export async function resolveForm(
   let cmd = agent ? form.cmd || root?.cmd || 'claude' : '';
   // The row this cmd came out of, matched BEFORE the MCP-off flags are appended below —
   // appending changes the very string the match is on, and looking it up afterwards would
-  // find nothing for exactly the launches that asked for something unusual. One find,
-  // used twice: the mcp_off flags, and the provider the roster prints.
+  // find nothing for exactly the launches that asked for something unusual. It carried the
+  // provider too until 2026-08-17, for a roster column the owner then cut to the model
+  // alone; the mcp_off flags are what is left, and they were always the load-bearing use.
   const spec = launchSpecs.find((b) => b.cmd === cmd);
   const mcpOffWanted = agent && form.mcp === false;
   // A kind marked `mcp: always` is BORN connected (owner's ruling, 2026-08-17): the
@@ -287,7 +280,6 @@ export async function resolveForm(
     // is free to name a path. RIREKI's decoder keys are bare binary names, and this value
     // is written into the option RIREKI reads, so it has to arrive in RIREKI's spelling.
     launchAgent: agent ? path.basename(cmd.trim().split(/\s+/)[0] ?? '') : '',
-    provider: spec?.provider ?? '',
   };
 }
 

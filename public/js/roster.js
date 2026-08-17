@@ -161,33 +161,36 @@ export function buildRoster(tile, host) {
       cx.textContent = '⛽ ' + s.ctx + '%';
       r.appendChild(cx);
     }
-    // WHAT THE SESSION IS RUNNING — the agent, whose model, and which model, in that
-    // order, dot-joined: `codex · openai · gpt-5.6-sol`. Owner's ruling 2026-08-17, and
-    // the roster is THE ONLY PLACE IT GOES — "I think that's the only place we need to
-    // put it" — so the tile header does not repeat it.
+    // WHICH MODEL IS ANSWERING — that is the whole column (owner's ruling 2026-08-17).
     //
-    // ONE column for three facts, not three columns, because there is no room for three.
-    // Measured in the browser at the owner's own 4-up desktop geometry (629px tile body,
-    // 587px row): the five existing tracks left the session name 237px, and the one
-    // column added here costs 116px of that. A second and a third would have taken the
-    // name past the point where a name is a name.
+    // It shipped for an hour as `agent · provider · model` — `codex · openai · gpt-5.6-sol`
+    // — and the owner cut it to the model alone: "showing just the model is fine, that
+    // tells everyone what they need to know." He is right, and the other two were paying
+    // for themselves twice over: `opus 5` already says Claude and `gpt-5.6-sol` already
+    // says Codex, so the agent restated the model and the provider restated the agent.
     //
-    // TWO SOURCES, ONE READING, and the seam is deliberate. The agent and the provider are
-    // the BIRTH STAMP (@ronin-agent / @ronin-provider, src/tmux.ts) — remembered, because
-    // after the spawn nothing can tell them; the model is SCRAPED off the pane's status
-    // line every refresh, so it follows a mid-session model switch. That is also why a
-    // session born before the stamp shipped renders here as a bare model name and nothing
-    // else: the honest partial, not a filled-in guess.
+    // The width claim that came with the three-part version was WRONG, and it is recorded
+    // here because it is the kind of wrong that survives if nobody measures. It said the
+    // column cost the session name 116px of 237px. Measured in the browser afterwards, the
+    // name track is 181px and the longest name on this board needs 81px — the names were
+    // never close to starved. What the arithmetic missed is that a fixed track charges its
+    // FULL width whether or not anything is in it, so a 140px column showing nothing on
+    // every row was the actual cost. Sizing a track to the worst case its content can
+    // reach is what eats a row, not the number of facts in it.
+    //
+    // SCRAPED, NOT STAMPED, and that is why it works at all today: js/../src/ctx.ts reads
+    // it off the pane's own status line on the refresh that is already happening, so it is
+    // right for sessions that predate every option this house has ever set, and it follows
+    // a mid-session model switch instead of remembering the launch.
     //
     // A MISSING FACT IS SIMPLY ABSENT — no `undefined`, no `unknown`, no dash. The roster's
     // own rule, from the SHINGO chip (js/shingo.js): "an absent chip costs the owner
     // nothing and stops a dash-plus-age pretending to be a position". A dash here would
     // read as a state a session is IN rather than as a thing nobody has said.
     //
-    // Lowercased as rendered, and NOT mapped: `Opus 5` becomes `opus 5` and that is the
-    // whole transform. The owner turned down a three-letter-code registry — the strings
-    // the launch table and the status line already carry are the strings shown.
-    const stack = [s.agent, s.provider, s.model].filter(Boolean).join(' · ').toLowerCase();
+    // Lowercased as rendered and NOT mapped: `Opus 5` becomes `opus 5`, and that is the
+    // whole transform. The owner turned down a three-letter-code registry.
+    const stack = (s.model || '').toLowerCase();
     if (stack) {
       const sk = document.createElement('span');
       sk.className = 'home-stack';
