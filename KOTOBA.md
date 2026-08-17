@@ -706,8 +706,12 @@ and what the Setup commons_tab shows — never what survives.
 | **knob** | `PORT`, `SCRIBE_URL`, `TMUX_WINDOW_SIZE` | `process.env`, a memory copy from boot | **no** — inert until a restart, which is **BYOKI** wearing a UI |
 | **secret** | `OPENAI_API_KEY`, `GRID_PASS` | `.env`, never sourced | **no, and never rendered** |
 
-> **`ronin.json` never holds a credential.** It is served whole by an HTTP GET; `.env` is
-> already the secret store, and `bin/ronin-doctor` refuses to source it *because it holds
+> **`ronin.json` now holds the login record — so it is NEVER served whole.** The owner's
+> auth landed `auth` (scrypt + the session signing secret) and `passkeys` in it
+> (2026-08-17 correction: the old rule said "never holds a credential, served whole by an
+> HTTP GET", and both halves are now false — no route serves it whole, and none may ever
+> be added). Settings leave it per-field, through their own routes. `.env` stays the
+> store for provider keys, and `bin/ronin-doctor` refuses to source it *because it holds
 > secrets*. A key's **presence** and its variable name may be shown. Never a byte of its
 > value, and never a field to type one into.
 
