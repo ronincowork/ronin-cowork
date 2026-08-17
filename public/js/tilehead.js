@@ -117,12 +117,16 @@ const HEADER = () => (rows ??= [
   // wherever it appears: the way in to the Commons. The bar's button changed in the same
   // pass; the tegami torii that used to sit beside this one is gone (see below).
   //
-  // A way IN, not a close: the session keeps streaming behind the panel and ✕ on the tab
-  // strip brings you back. It needs no session — it is the way to GET one — which is why
-  // it is the only button on the right with no `needs`.
+  // A way in AND a way back out since 2026-08-17: pressing ⛩ again puts the Commons away
+  // (`toggleHome`, tile.js). It only opened for a day, and a button that goes dead on the
+  // second press is one you stop trusting. The session keeps streaming behind the panel
+  // either way, and ✕ on the tab strip still works. It needs no session — it is the way to
+  // GET one — which is why it is the only button on the right with no `needs`, and also
+  // why an EMPTY tile keeps the one-way behaviour: there is nothing behind the panel to
+  // give back.
   { key: 'menuBtn', cls: 'menu', text: '⛩',
     help: '⌃⇧C — the CoWorking Commons: roster, new session, wipeboard, docs, roots, hotwords. Opens over this tile; ✕ comes back.',
-    on: (t) => t.showHome('sessions') },
+    on: (t) => t.toggleHome('sessions') },
 
   // THE TEGAMI TORII IS GONE (owner's ruling 2026-08-17, reaffirmed after the objection
   // below was put to him). It opened `/tegami/raw` — the letter verbatim — and it was the

@@ -213,8 +213,7 @@ export function build() {
   key('brandbtn', () => {
     const t = S.active || tiles.find((x) => x.el.style.display !== 'none') || tiles[0];
     if (!t) return;
-    if (t.homeVisible() && t.home.dataset.pane === 'sessions' && t.session) t.hideHome();
-    else t.showHome('sessions');
+    t.toggleHome('sessions');
   });
 
   // ⛩ Commons — ONE PRESS, straight to ⌂ Roster. No menu.
@@ -239,7 +238,12 @@ export function build() {
   // and asking for help are verbs, not rooms.
   key('commonsbtn', () => {
     const t = S.active || tiles.find((x) => x.el.style.display !== 'none') || tiles[0];
-    if (t) t.showHome('sessions');
+    // TOGGLE, not a one-way door — pressed again it puts the Commons away and gives the
+    // pane back. It called showHome() for a day and pressing ⛩ twice did nothing, which
+    // left the ✕ on the tab strip as the only way out (owner, 2026-08-17). The rule lives
+    // on the tile (`toggleHome`) so this button, the brand and the tile head's ⛩ cannot
+    // drift into three answers.
+    if (t) t.toggleHome('sessions');
   });
 
   // Work Louder pad (▦ in the top bar) — both surfaces (owner override). The

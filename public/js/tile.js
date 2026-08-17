@@ -170,6 +170,30 @@ export class Tile {
     this.home.classList.remove('show');
   }
 
+  /**
+   * ⛩ IS A TOGGLE — press it again and the Commons goes away (owner, 2026-08-17).
+   *
+   * It was a one-way door for a day: ⛩ called showHome() and pressing it a second time
+   * did nothing at all, so the only way back to the pane was the ✕ on the tab strip. A
+   * control that opens a thing and then goes dead is a control you press twice and
+   * distrust. `#brandbtn` had carried the right logic since long before — this is that
+   * logic, moved here so the bar's ⛩, the brand and the tile head's ⛩ cannot drift into
+   * three answers to one question.
+   *
+   * THE `this.session` GUARD IS LOAD-BEARING and is the reason this is not a plain flip:
+   * an empty tile has NOTHING behind the Commons, so hiding it would leave the owner
+   * staring at a blank cell with no way back in. On a tile with no session ⛩ stays a
+   * one-way door, on purpose.
+   *
+   * The pane check means ⛩ closes the Commons only when it is showing the room ⛩ opens.
+   * Pressed while you are reading Docs it takes you to ⌂ Roster — the destination it
+   * promises — rather than dismissing the panel out from under you.
+   */
+  toggleHome(which = 'sessions') {
+    if (this.homeVisible() && this.home.dataset.pane === which && this.session) this.hideHome();
+    else this.showHome(which);
+  }
+
   homeVisible() {
     return this.el.style.display !== 'none' && this.home.classList.contains('show');
   }
