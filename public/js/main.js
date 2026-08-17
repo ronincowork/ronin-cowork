@@ -9,6 +9,17 @@ import { build } from './layout.js';
 import { S, TILE_COUNT, loadState, tiles } from './state.js';
 import { setLayout } from './viewport.js';
 import { installTips } from './tips.js';
+import { needsFirstRun, buildFirstRun } from './firstrun.js';
+
+/** `guard` is synchronous; the first-load check is one fetch. Same contract — a throw
+ * costs the check, not the page — and the fallback is "no, carry on to the grid". */
+async function guardAsync(fn) {
+  try {
+    return await fn();
+  } catch {
+    return false;
+  }
+}
 
 export async function init() {
   // Ask the operator which optional surfaces are plugged in BEFORE the grid is built,
@@ -28,6 +39,26 @@ export async function init() {
   }
   // The theme before the grid: tiles are born reading the resolved terminal palette.
   guard('apply theme', applyTheme);
+
+  // FIRST LOAD. A box nobody has answered for opens on the Setup surface instead of the
+  // grid: a grid of empty pickers is what a fresh install looked like before, and it
+  // teaches nothing. The condition is one read (js/firstrun.js) — nobody has said who
+  // they are — so FINISHING the surface is what stops it appearing, which is what
+  // "asked once" has to mean if it is not to need a flag of its own.
+  //
+  // It ENDS, and that is the whole difference from ⚙ Setup (js/settei.js), which has no
+  // order and no ending and re-answers the same fields forever. Same record underneath.
+  //
+  // A failed check falls through to the grid: a box that cannot answer is not one to
+  // interrogate, and an install that hides behind a broken question is worse than one
+  // that opens on an empty board.
+  if (await guardAsync(needsFirstRun)) {
+    const host = document.createElement('div');
+    document.body.replaceChildren(host);
+    await buildFirstRun(host, () => location.reload());
+    return;
+  }
+
   guard('build the grid', build);
   const saved = guard('read saved state', loadState, { map: [], layout: TILE_COUNT });
   // A phone OPENS on one terminal, always — not just on first run. A 2x2 grid of tiny
