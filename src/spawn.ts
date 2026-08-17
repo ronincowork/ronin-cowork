@@ -3,6 +3,7 @@ import path from 'node:path';
 import { REPO_ROOT } from './config.js';
 import { bootFiles, ensureShelf } from './session-boot.js';
 import { listProjectRoots, listSessionLaunchSpecs, type ProjectRootInfo } from './project-roots.js';
+import { readAgentsSection } from './user-config.js';
 import { storeDir } from './stores.js';
 import {
   listSessionJobs,
@@ -195,10 +196,11 @@ export async function resolveForm(
   taken: Set<string>,
   referenceDir?: string,
 ): Promise<Resolved> {
-  const [kinds, roots, launchSpecs] = await Promise.all([
+  const [kinds, roots, launchSpecs, agentsSet] = await Promise.all([
     listSessionJobs(),
     listProjectRoots(),
     listSessionLaunchSpecs(),
+    readAgentsSection(),
   ]);
   const kind = kinds.find((k) => k.name === form.session_job);
   if (!kind) throw new Error(`Unknown session_job "${form.session_job}" (see ronin_catalogs/SESSION_JOBS.md).`);
@@ -225,7 +227,21 @@ export async function resolveForm(
   // table the cmd came from, matched by the cmd string itself so a hand-typed cmd
   // (no table row) is honestly unsupported. No flags declared = REFUSE, because a
   // session the owner asked to launch disconnected must never launch connected.
-  let cmd = agent ? form.cmd || root?.cmd || 'claude' : '';
+  // THE INSTALL DEFAULT — what a new session launches as when neither the form nor the
+  // project names one. It is stored as `provider` + `model` and resolved through the
+  // launch table HERE, never as a command string: the table is the one place a provider
+  // is a row and a model is a column, and a stored cmd would freeze a vendor's flags into
+  // the owner's config where no table edit could reach them.
+  //
+  // Before this existed the fallback was a bare `claude` — a string matching no table
+  // row, so MCP-off refused it and a fresh box launched wrong. The bare literal stays as
+  // the last resort for a box with no table at all, and it is the only Anthropic name in
+  // this file for that reason.
+  const dflt = (agentsSet.sessions as { default?: { provider?: string; model?: string } } | undefined)?.default;
+  const defaultCmd = dflt?.provider && dflt?.model
+    ? launchSpecs.find((s) => s.provider === dflt.provider && s.model === dflt.model)?.cmd
+    : undefined;
+  let cmd = agent ? form.cmd || root?.cmd || defaultCmd || 'claude' : '';
   // The row this cmd came out of, matched BEFORE the MCP-off flags are appended below —
   // appending changes the very string the match is on, and looking it up afterwards would
   // find nothing for exactly the launches that asked for something unusual. It carried the

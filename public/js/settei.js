@@ -28,6 +28,7 @@ import { field, status } from './ui.js';
  */
 export function buildSettei(root, isShowing) {
   let rec = null;
+  let specs = [];
 
   const head = document.createElement('div');
   head.className = 'st-head';
@@ -161,20 +162,28 @@ export function buildSettei(root, isShowing) {
     /* how work gets a model */
     group('how work gets a model');
     const dflt = set.agents.sessions?.default ?? {};
+    // EVERY PROVIDER AND MODEL THE TABLE KNOWS, in table order, and no vendor is named
+    // in this file. The list comes from ronin_catalogs/PROJECT_ROOTS.md through
+    // /api/session-launch-specs — a provider is a row there and a model is a column, so
+    // adding either is a table edit and never a code change. An earlier version of this
+    // row was a free-text box with 'anthropic' and 'opus' as its placeholder, which read
+    // as both stuck and partisan; it was neither intended nor defensible.
+    const pick = document.createElement('select');
+    pick.className = 'st-inp';
+    pick.add(new Option('— none set —', ''));
+    for (const s of specs) {
+      // Say what the box can actually run. An uninstalled agent still appears, because
+      // the table is what the house supports and hiding a row teaches nothing — but it
+      // says so, rather than being offered as though it would work.
+      const have = observed.agents[s.cmd.split(' ')[0]]?.installed;
+      pick.add(new Option(`${s.provider} · ${s.model}${have ? '' : ' — not installed'}`, `${s.provider} ${s.model}`));
+    }
+    pick.value = dflt.provider && dflt.model ? `${dflt.provider} ${dflt.model}` : '';
     body.appendChild(
-      setRow('new sessions use', input(dflt.provider, { max: 40, placeholder: 'anthropic' }),
-        st.agents.new_session,
-        (v) => request('/api/settei/agents', {
-          method: 'PUT',
-          json: { sessions: { default: { provider: v, model: dflt.model } }, jobs: set.agents.jobs },
-        })),
-    );
-    body.appendChild(
-      setRow('…with model', input(dflt.model, { max: 40, placeholder: 'opus' }), '',
-        (v) => request('/api/settei/agents', {
-          method: 'PUT',
-          json: { sessions: { default: { provider: dflt.provider, model: v } }, jobs: set.agents.jobs },
-        })),
+      setRow('new sessions use', pick, st.agents.new_session, (v) => {
+        const [provider, model] = v ? v.split(' ') : [null, null];
+        return request('/api/settei/agents', { method: 'PUT', json: { sessions: { default: { provider, model } } } });
+      }),
     );
     for (const [name, job] of Object.entries(set.agents.jobs ?? {})) {
       // A job's pointing is edited in its own room (目 Koshi); here it is the resolved
@@ -223,7 +232,11 @@ export function buildSettei(root, isShowing) {
       blurb.textContent = 'reading…';
       stamp.textContent = '';
     }
-    const r = await request('/api/settei');
+    // Two calls, not one: the record is this install, and the launch table is what the
+    // house supports. Keeping them apart is what lets the dropdown offer a provider this
+    // box has not installed yet and say so, instead of pretending the table is the box.
+    const [r, sp] = await Promise.all([request('/api/settei'), request('/api/session-launch-specs')]);
+    specs = sp.ok && Array.isArray(sp.data) ? sp.data : [];
     if (!r.ok) {
       blurb.textContent = r.message;
       blurb.classList.add('bad');
