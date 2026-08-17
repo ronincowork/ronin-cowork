@@ -33,9 +33,16 @@ const HERE = '⛩';
  * check-tips at build time, but a session's own words arrive at runtime and are
  * unbounded — without this, one long objective overflows the box and fails the gate
  * for the whole install.
+ *
+ * THE BUDGET IS THE WHOLE LABEL, not this fragment of it, which is why `room` exists
+ * (2026-08-17). The chip does not hover its objective alone: it appends "Held at a gate ·
+ * ladder unchanged for 3h" underneath. Clamping the objective to the full 120 and THEN
+ * adding 45 more characters spends the budget twice, and check-tips duly failed at 165
+ * chars / 17px over on a real session — the exact overflow the clamp was written to
+ * prevent, walked around by its own caller. A caller that adds a tail passes what is left.
  */
-export function clampTip(s) {
-  return s.length > 120 ? s.slice(0, 119) + '…' : s;
+export function clampTip(s, room = 120) {
+  return s.length > room ? s.slice(0, room - 1) + '…' : s;
 }
 
 export function makeChip(onTap) {
@@ -73,9 +80,15 @@ export function makeChip(onTap) {
     // The objective is AGENT-AUTHORED and unbounded; the help box is three lines.
     // Clamp here at the source, or any session that writes a long objective overflows
     // the box and fails check-tips for everyone (it measures the live DOM).
-    const ob = t.objective ? clampTip(t.objective) + '\n' : '';
-    btn.title = ob + held +
-      (quiet ? ' · ladder unchanged for ' + quiet : '');
+    //
+    // THE TAIL IS BUILT FIRST because it is the part that must survive. It says whether
+    // the session is stuck; the objective is context for that answer. Handing its length
+    // to `clampTip` is what stops the two of them adding up past the box — they used to,
+    // and check-tips caught it at 165 chars on a live session (2026-08-17). Clamping the
+    // JOINED string instead would have trimmed the wrong end.
+    const tail = held + (quiet ? ' · ladder unchanged for ' + quiet : '');
+    const ob = t.objective ? clampTip(t.objective, 120 - tail.length - 1) + '\n' : '';
+    btn.title = ob + tail;
     return t;
   };
   return { el: btn, set };

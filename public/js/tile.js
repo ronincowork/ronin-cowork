@@ -281,12 +281,16 @@ export class Tile {
 
   /**
    * Put everything away that is covering the pane: this tile's ladder and letter, and
-   * the page-level sheets (メ, ニ, ⚡, the Commons menu) which are not this tile's to
-   * own but are in the way just the same.
+   * the page-level sheets (メ, ニ, ⚡) which are not this tile's to own but are in the
+   * way just the same.
    *
    * One method rather than a dismissal at each call site, because "what counts as
    * open" is the thing that will grow — the next sheet someone adds should be closed
    * by every caller automatically, not by remembering to add it in three places.
+   *
+   * The き Commons menu used to be dismissed here too. It is gone (2026-08-17): ⛩
+   * Commons goes straight to ⌂ Roster and drops nothing, so there is no fourth surface
+   * left to put away. If a bar control ever drops a menu again, it is closed HERE.
    */
   clearOverlays() {
     this.closeLadder();
@@ -294,11 +298,6 @@ export class Tile {
     document
       .querySelectorAll('.tdrop.open, .tmac.open')
       .forEach((m) => m.classList.remove('open'));
-    const menu = document.querySelector('.commons-menu');
-    if (menu && !menu.hidden) {
-      menu.hidden = true;
-      document.getElementById('commonsbtn')?.setAttribute('aria-expanded', 'false');
-    }
   }
 
   /** Unroll the ladder under the header — same data as the chip, at full zoom. */

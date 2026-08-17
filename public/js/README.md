@@ -32,8 +32,8 @@ written contract those modules enforce.
 | `state.js` | 153 | DOM handle, constants, `tiles`, the shared-state object `S`, save/load |
 | `errors.js` | 115 | `showFailure`, `guard`, `deadTile` — the containment layer |
 | `request.js` | 88 | the ONE transport contract — every JSON call's "what happened" |
-| `ui.js` | 305 | the primitives: sheet, toast, popover, field, status, button, tabs (docs/ui.md) |
-| `panes.js` | 38 | the pane registry — the Commons' rooms, spelled once for every surface |
+| `ui.js` | 280 | the primitives: sheet, toast, field, status, button, tabs (docs/ui.md) |
+| `panes.js` | 38 | the pane registry — the Commons' rooms, spelled once for its tab strip |
 | `theme.js` | 107 | dark/light: the saved choice, `termTheme()` read off the CSS tokens, the flip |
 | `viewport.js` | 41 | `setLayout` — its own module because three others need it |
 | `api.js` | 44 | the `/api/sessions` calls |
@@ -48,9 +48,10 @@ written contract those modules enforce.
 | `hotwords.js` | 132 | `buildHotwords` — the ▥ Hotwords pane, the dictation glossary |
 | `stats.js` | 413 | `buildStats` — the ▦ Stats pane (TOMODACHI usage readout) |
 | `koshi.js` | 185 | `buildKoshi` — the 目 Koshi pane, model per Koshi job |
+| `gbrain.js` | commons_tab | local gbrain process, privacy, search and integration status |
 | `system.js` | 187 | `buildSystem` — ⚙ System: release identity, updates, appearance, log out |
 | `shingo.js` | 289 | SHINGO 信号 — the session ladder: header chip, unrolled ladder, the letter |
-| `tile.js` | 675 | `class Tile` — one cell of the coworkspace: a header, a mount point, and the view it composes |
+| `tile.js` | 674 | `class Tile` — one cell of the coworkspace: a header, a mount point, and the view it composes |
 | `tilehead.js` | 246 | `buildTileHead` — the cell's chrome: picker, dot, dial, gauge, chip, torii, buttons |
 | `tapeview.js` | 305 | **RIREKI's client render** — the 🔓 view: transcript, folds, live frame, scroll anchoring, paging |
 | `tapefold.js` | 98 | `groupRecs` — the fold rule, pure (tested: `tests/tape-fold.test.js`) |
@@ -67,7 +68,7 @@ written contract those modules enforce.
 | `pad.js` | 246 | keypad — bindings, chords, firing |
 | `padpanel.js` | 533 | keypad — the ▦ panel and ask-on-press (both on `ui.sheet`) |
 | `weblink.js` | 198 | keypad — WebHID programming of the device |
-| `layout.js` | 439 | `build`, `buildDrawers` — assembling the page |
+| `layout.js` | 420 | `build`, `buildDrawers` — assembling the page |
 | `main.js` | 72 | `init` and the boot call |
 | `tips.js` | 289 | the help box — the one hover/focus explanation panel |
 | `mika.js` | 81 | `askMika` — the way to the house assistant |

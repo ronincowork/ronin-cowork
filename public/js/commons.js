@@ -8,10 +8,11 @@
  * one job nothing else can own: the tab strip, the pane elements, which pane shows,
  * and handing each room its mount point.
  *
- * The strip reads the pane registry (js/panes.js) — the same list the き Commons menu
- * reads — so a room cannot exist on one surface and be missing from another. A tab
- * owned by a service that is not registered is visible but opaque-and-inert, the same
- * treatment as the lock button on a build with no record service.
+ * The strip reads the pane registry (js/panes.js). It was one of two readers — the bar's
+ * き Commons menu was the other, and the registry exists because those two lists drifted;
+ * since 2026-08-17 the menu is gone (⛩ Commons is one press to ⌂ Roster) and the strip is
+ * THE way to a room. A tab owned by a service that is not registered is visible but
+ * opaque-and-inert, the same treatment as the lock button on a build with no record service.
  */
 import { refreshHome } from './home.js';
 import { serviceOff } from './state.js';

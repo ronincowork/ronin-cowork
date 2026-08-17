@@ -95,6 +95,18 @@ export function buildRoster(tile, host) {
   list.className = 'home-list';
   host.appendChild(list);
 
+  // A ROW IS A FIXED GRID, NOT A FLOW (owner's ruling 2026-08-17). Every landmark on
+  // the right — the SHINGO chip, the status word, the ⛽ reading — sits at the SAME x on
+  // every row, so the eye runs straight down a column instead of hunting for where each
+  // reading landed. A session with no ladder leaves the ladder's slot EMPTY; it does not
+  // pull the context reading left. That was the whole complaint: right-aligned flow meant
+  // no two rows agreed on where anything was, and a list you cannot scan down is a list
+  // you have to read one row at a time.
+  //
+  // The columns are declared once in style.css (`.home-row`, the `--hr-*` tracks) and
+  // each cell is placed by its class, so an ABSENT element leaves its track standing.
+  // Nothing here builds a placeholder: a missing reading is a gap, which is the honest
+  // drawing of "nobody has said", and a gap in a fixed column reads as one.
   const rowFor = (s) => {
     const r = document.createElement('button');
     r.type = 'button';
@@ -116,21 +128,23 @@ export function buildRoster(tile, host) {
     jb.textContent = mark;
     jb.title = mark ? s.session_job : 'has not said what it is doing yet';
     r.appendChild(jb);
+    // The name takes the slack (`minmax(0, 1fr)`), so the spacer `.grow` that used to
+    // shove the readings rightwards is gone with the flex row it existed to stretch —
+    // pushing things apart is what made every row's landmarks land somewhere different.
     const nm = document.createElement('b');
     nm.textContent = s.name;
-    const grow = document.createElement('span');
-    grow.className = 'grow';
-    r.append(nm, grow);
+    r.appendChild(nm);
     // SHINGO on the roll call: position, or held. One amber row and you know where
     // to click through — which is the whole reason the board exists.
     if (s.tegami && s.tegami.chip && s.tegami.ladder?.length) {
       const sg = document.createElement('span');
       sg.className = 'home-shingo' + (s.tegami.chip.gate ? ' gate' : '');
-      // TOUCH: the age without the word. "quiet" costs five characters on a row that
-      // has none to spare, and a bare duration beside a position reads as one anyway.
+      // THE AGE WITHOUT THE WORD, on every device now (owner's ruling 2026-08-17). It
+      // was already the touch spelling — "quiet" costs five characters on a row that has
+      // none to spare, and a bare duration beside a position reads as one anyway — and
+      // the desktop had no better claim on the width. `phase 3 · leg 3/12 · 9h`.
       const age = s.tegami.quietMs >= 60000 ? humanAge(s.tegami.quietMs) : '';
-      const quiet = age ? (IS_TOUCH ? ' · ' : ' · quiet ') + age : '';
-      sg.textContent = s.tegami.chip.text + quiet;
+      sg.textContent = s.tegami.chip.text + (age ? ' · ' + age : '');
       // Agent-authored and unbounded — clamped for the fixed help box (see shingo.js).
       sg.title = s.tegami.objective ? clampTip(s.tegami.objective) : '';
       r.appendChild(sg);
@@ -152,10 +166,19 @@ export function buildRoster(tile, host) {
     // TOUCH: no 🏷 at all. The list is already SORTED INTO GROUPS under headings,
     // so the label repeated the heading you just read — and the button was a verb
     // on a board that is meant to be a READ.
+    //
+    // THE GLYPH ONLY, NEVER THE NAMES (owner's ruling 2026-08-17). `🏷 kojinsa · review`
+    // was allowed up to 45% of the row to restate the heading the row is already sitting
+    // under — the same redundancy that took the label off touch, costing width instead of
+    // a tap. What is left is the AFFORDANCE, and only the affordance: this is the one way
+    // to edit a session's groups without opening it, and deleting the button along with
+    // its label would have removed a verb the owner asked to make quieter, not to lose.
+    // The bare 🏷 is not a new drawing either — it is exactly what an untagged session
+    // already wore, so this is the shipped form, applied to every row.
     if (!IS_TOUCH) {
       const tg = document.createElement('span');
       tg.className = 'home-tag' + ((s.tags || []).length ? ' on' : '');
-      tg.textContent = (s.tags || []).length ? '🏷 ' + s.tags.join(' · ') : '🏷';
+      tg.textContent = '🏷';
       tg.title = 'Set groups for ' + s.name;
       tg.addEventListener('click', (e) => {
         e.stopPropagation(); // don't connect — this is the label, not the door

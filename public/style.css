@@ -335,9 +335,7 @@ body {
    are written to fit; `scripts/check-tips.mjs` fails the build if one does not, so a
    too-long label is caught at build time instead of being silently clipped at 2am.
 
-   TWO ZONES, and the status line holds its height when empty — otherwise the box would
-   still reflow between a control that has a reading and one that does not, which is the
-   same restlessness by a smaller amount. */
+   TWO ZONES, and the header is CONDITIONAL — see `.helpbox-status:empty` below. */
 .helpbox {
   position: fixed;
   z-index: 90;
@@ -365,12 +363,11 @@ body {
 .helpbox.show {
   display: block;
 }
-/* THE STATUS LINE — what this control reads right now (the dial's position, the gauge's
-   percentage). One line, clipped rather than wrapped: a reading that grew to two lines
-   would push the explanation down and break the fixed geometry. `min-height` is what
-   keeps the box identical for the controls that have no reading at all. */
+/* THE HEADER LINE — a keyboard shortcut (⌃⇧C on き Commons), or what this control reads
+   right now (the dial's position, the gauge's percentage). One line, clipped rather than
+   wrapped: a reading that grew to two lines would push the explanation down and break the
+   fixed geometry. */
 .helpbox-status {
-  min-height: 1.45em;
   margin-bottom: 4px;
   padding-bottom: 4px;
   border-bottom: 1px solid var(--line);
@@ -380,8 +377,27 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* WHAT IS THIS — three lines at this width and font. The build check is calibrated to
-   exactly this box, so changing either dimension means re-running it. */
+/* NO CONTENT, NO HEADER — and no rule either, which is the half that mattered.
+   This line used to carry `min-height: 1.45em` so it held its height when empty, on the
+   argument that the box would otherwise reflow between a control with a reading and one
+   without. But `.helpbox` is a fixed width AND height: nothing reflows either way, so the
+   reserved line bought nothing and charged the majority case for it. Most controls have
+   no reading, the macro rows have neither reading nor shortcut, and every one of them
+   drew an empty block plus a divider on top of its two lines of text. Owner, 2026-08-17,
+   scrolling the macro list: "you barely see the text, and there's this big white block
+   head at the top."
+
+   `:empty` is the whole rule — one test, on content, so no caller can opt in or out of it
+   by accident. It matches only an element with NO child nodes, which is why `tips.js`
+   trims every source and writes '' rather than a space: one stray whitespace text node
+   and the divider is back. Same shape as `.ui-status:empty` above, for the same reason. */
+.helpbox-status:empty {
+  display: none;
+}
+/* WHAT IS THIS — three lines at this width and font, four when there is no header above
+   it. The build check is calibrated to the WITH-header case (`check-tips.mjs` reserves the
+   line in its probe), so it stays the conservative measurement of the two. Changing either
+   box dimension means re-running it. */
 .helpbox-what {
   color: var(--fg);
 }
@@ -438,9 +454,10 @@ body {
   flex: 1;
 }
 /* Top-bar verbs — BOTH surfaces (owner override of the touch/desktop split) */
-/* The three top-bar verbs. One rule, one size — the old list named #homebtn and
-   #macrobtn, which no longer exist, so Commons and Keypad were falling back to the
-   browser default and looked like a different family of control. */
+/* The LOOK: one rule, one family — the old list named #homebtn and #macrobtn, which no
+   longer exist, so Commons and Keypad were falling back to the browser default and
+   looked like a different family of control. The grid count rides this rule too; it is
+   the same box. SIZING splits below, because the count is not a verb. */
 #newbtn,
 #mikabtn,
 #commonsbtn,
@@ -459,11 +476,55 @@ body {
   cursor: pointer;
   white-space: nowrap;
 }
+/* ONE WIDTH FOR THE FIVE VERBS, and the label sits inside it.
+   Owner, 2026-08-17: "each of the boxes on the right, except for the number … should be
+   the same width so there's not a small New and a large Commons … and then just fit
+   inside that button so that it looks a little bit more symmetrical." Boxes sized to
+   their own text made a ragged row of five different rectangles reading as five
+   different KINDS of control, which they are not — they are five doors.
+
+   `min-width`, not `width`: it degrades honestly if a label is ever renamed longer —
+   the box widens rather than clipping the word. `justify-content: center` is what puts
+   the label INSIDE the box instead of hard against the left padding.
+
+   100px IS MEASURED, NOT CHOSEN. The longest verb, "ミ Mika Assist", renders at 94px in
+   the shipped font; 100px is the widest the five can be before #bar stops fitting its
+   own row at 681px, the narrow edge of the range where the labels are still shown (104
+   overflows by 5px there, 120 by 85 — measured 2026-08-17). A bar that scrolls sideways
+   to reach ⚙ Account is a worse defect than 6px of slack, so the row takes the number
+   that always fits. Rename a verb longer than this and RE-MEASURE at 681px; do not just
+   nudge it up. */
+#newbtn,
+#mikabtn,
+#commonsbtn,
+#padbtn,
+#sysbtn {
+  min-width: 100px;
+  justify-content: center;
+}
+/* THE PHONE BAR IS A GENUINE SHELL CHANGE, so it stays a viewport query (docs/ui.md):
+   at ≤680px the words go and the verbs are icon-only, because bar space is tight.
+   THE EQUAL WIDTH GOES WITH THEM — five 100px boxes holding one glyph each would eat
+   500px of a 402px row and shove the grid count off the end, which is the opposite of
+   what the width was for. `min-width: auto` hands each glyph back its own small box.
+
+   Commons and Account are in this list now; they were not. #commonsbtn kept its word at
+   402px and ⚙ had no word to lose, so the phone bar carried two exceptions to a rule
+   with three members. One rule, five members, no exceptions. */
 @media (max-width: 680px) {
   #newbtn .txt,
   #mikabtn .txt,
-  #padbtn .txt {
+  #commonsbtn .txt,
+  #padbtn .txt,
+  #sysbtn .txt {
     display: none; /* icon-only on phones — bar space is tight */
+  }
+  #newbtn,
+  #mikabtn,
+  #commonsbtn,
+  #padbtn,
+  #sysbtn {
+    min-width: auto;
   }
 }
 /* Copy panel — real selectable text, native copy on any device */
@@ -1590,7 +1651,7 @@ body {
   gap: 10px;
   min-height: 0;
 }
-/* Eight admin panes, one at a time, named by [data-pane] on .home. (Was a single
+/* Commons tabs, one at a time, named by [data-pane] on .home. (Was a single
    `.browsing` toggle while there were only two — see buildHome. ⚙ System left the
    panes for the bar's one sheet, 2026-08-16.) */
 .home-null,
@@ -2436,10 +2497,11 @@ body {
 /* Same two turns as the tile's button — see `.tile-head button.job`. A roster row is a
    READ, so the mark sits quieter here than anywhere: it is scanned down a column, not
    pressed. */
+/* Its own track now (`--hr-mark`), so the `flex`/`margin-right` that used to hold the
+   column open went with the flex row — the grid holds it, and a second mechanism saying
+   the same thing is the one that drifts (2026-08-17). */
 .home-job {
-  flex: 0 0 auto;
   width: 1.35em;
-  margin-right: 5px;
   font-size: 11px;
   line-height: 1;
   text-align: center;
@@ -2462,13 +2524,15 @@ body {
     outline: 1px solid var(--line);
   }
 }
-@media (pointer: coarse) {
-  /* TOUCH: drawn, never a button — it is the tap padding a phone-width row cannot
-     spare, not the glyph. Re-marking is a desktop verb (js/commons.js). */
-  .home-job {
-    margin-right: 4px;
-  }
-}
+/* TOUCH: the mark is drawn, never a button — the tap padding is what a phone-width row
+   cannot spare, not the glyph; re-marking is a desktop verb (js/commons.js). Nothing to
+   declare for it any more, now that the grid holds the column: the `margin-right: 4px`
+   that lived here was the flex row's spacing, and it went with the flex row. The row's
+   own touch SHAPE (five columns, not six) is stated beside `.home-row` instead — stated
+   here it lost to the base rule, which is later in the file and equally specific, and the
+   402px row kept paying 34px for a 🏷 that touch never builds (caught in the browser,
+   2026-08-17: the phone's name track measured 48px). */
+
 
 /* The re-mark menu: pick one of the catalog's jobs. A popover, not a sheet — the 🏷
    editor is a sheet because it edits a list; this picks one of eight and dies. */
@@ -2521,17 +2585,19 @@ body {
     background: var(--bg);
   }
 }
+/* THE GROUP EDITOR'S DOOR — the glyph, and nothing else (2026-08-17). It used to carry
+   the session's group names, which is why it wanted `max-width: 45%` and an ellipsis:
+   it was restating the heading the row is already filed under, for up to half the row.
+   The names are gone and the button is not — this is the only way to set a session's
+   groups without opening it first, and quieting a verb is not the same as deleting it.
+   What is left is one pill in a fixed 28px track: constant, and out of the scan. */
 .home-tag {
-  flex: 0 0 auto;
   padding: 2px 7px;
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--muted);
   font-size: 11px;
   white-space: nowrap;
-  max-width: 45%;
-  overflow: hidden;
-  text-overflow: ellipsis;
   cursor: pointer;
 }
 .home-tag.on {
@@ -2573,8 +2639,38 @@ body {
   height: 1px;
   background: var(--line);
 }
+/* THE ROW IS SIX INVISIBLE COLUMNS (owner's ruling 2026-08-17).
+
+   It was a flex row with a `.grow` spacer, so every reading floated to wherever the ones
+   before it happened to end: a session with no ladder put its ⛽ figure where a session
+   with one put its status word, and no two rows agreed on where anything was. You could
+   read a row; you could not read the LIST. Fixed tracks pin the x of every landmark —
+   the SHINGO chip starts in the same place on row one and row nine, and so does the
+   context reading — and A MISSING VALUE LEAVES ITS SLOT EMPTY rather than dragging
+   everything to its right leftwards. Missing is missing; that is the readable answer.
+
+   `justify-self: start` on the cells is what makes this a COLUMN rather than a row of
+   stretched boxes: each reading begins at its track's left edge and takes only the width
+   it needs, so a short chip stays a short chip sitting in a fixed slot.
+
+   The tracks are NAMED so the two places that reshape the row set numbers, not templates
+   — a template said twice is a rule you then have to keep in step. Every number below was
+   MEASURED in the browser rather than guessed (2026-08-17), which is the only way a fixed
+   track is honest: the widest realistic content, plus a couple of pixels, and anything
+   past that ellipsizes. `phase 3 · leg 4/6 · 12h` is 130px of 10.5px mono; `awaiting
+   input` is 68px; `⛽ 100%` is 46px; the 🏷 pill is 27px. An agent can write an unbounded
+   `ladder_state` into the chip, so clipping has to be the outcome for the tail — the
+   alternative is one session's prose setting the geometry of every other row. */
 .home-row {
-  display: flex;
+  --hr-mark: 1.35em; /* the session_job glyph — the same width `.home-job` already held */
+  --hr-shingo: 132px;
+  --hr-status: 70px;
+  --hr-ctx: 48px;
+  --hr-tag: 28px;
+  display: grid;
+  grid-template-columns:
+    var(--hr-mark) minmax(0, 1fr) var(--hr-shingo) var(--hr-status) var(--hr-ctx)
+    var(--hr-tag);
   align-items: center;
   gap: 8px;
   width: 100%;
@@ -2592,11 +2688,83 @@ body {
   background: var(--bg-2);
   border-color: var(--line);
 }
+/* The name takes the slack, and clips rather than widening its track: a long session
+   name must not be the thing that moves the columns for every other row. */
 .home-row b {
+  min-width: 0;
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.home-row .grow {
-  flex: 1;
+/* EVERY CELL NAMES ITS COLUMN, and this is the load-bearing half of the whole idea.
+   Auto-placement fills the next FREE track, so a session with no ladder would drop its
+   status word into the ladder's slot and its ⛽ figure into the status word's — the very
+   sliding the fixed grid exists to stop, reintroduced by the engine's default. Named
+   columns mean an absent element leaves a HOLE, which is what was asked for. Scoped
+   under `.home-row` so nothing later on the bare class can quietly outrank it. */
+.home-row > .home-job {
+  grid-column: 1;
+}
+.home-row > b {
+  grid-column: 2;
+}
+.home-row > .home-shingo {
+  grid-column: 3;
+}
+.home-row > .home-status {
+  grid-column: 4;
+}
+.home-row > .home-ctx {
+  grid-column: 5;
+}
+.home-row > .home-tag {
+  grid-column: 6;
+}
+/* Each reading starts at its own track's left edge and stops at its right one. */
+.home-row > .home-shingo,
+.home-row > .home-status,
+.home-row > .home-ctx,
+.home-row > .home-tag {
+  justify-self: start;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* TOUCH: FIVE COLUMNS, NOT SIX WITH AN EMPTY ONE. js/roster.js does not BUILD the 🏷 on
+   a finger, so the sixth track would be 28px plus its gap of nothing at all — and 34px is
+   a third of what the session name has to live on at 402px. This is the one place the
+   template is restated rather than re-sized, because a `0px` track still collects its
+   gap. It sits HERE, after the base rule, on purpose: an identically specific rule earlier
+   in the file loses, which is exactly what happened when it was written up beside
+   `.home-job` (browser-measured, 2026-08-17). */
+@media (pointer: coarse) {
+  .home-row {
+    grid-template-columns:
+      var(--hr-mark) minmax(0, 1fr) var(--hr-shingo) var(--hr-status) var(--hr-ctx);
+  }
+}
+/* A NARROW TILE: give the name back what the chip can spare. Numbers only — the template
+   is not restated (see above).
+
+   THE THRESHOLD IS THE ROSTER'S OWN, not the 680px the Commons strip uses further down,
+   and the difference is the whole point of asking the tile rather than the viewport: at
+   680px this fired inside the owner's ordinary 4-up desktop tile (629px body, 585px row)
+   where the roomy tracks fit with 233px left for the name, and clipped the SHINGO chip to
+   buy width nothing needed. 520px is where the name is genuinely down to ~140px and the
+   trade starts paying. Below it the chip drops to the length that still shows a position
+   and an age WHOLE — `phase 2 · 0/3 · 14m` measures 108px on a 402px phone, so 110px is
+   the number, and the leg count is what gives way above it. The status word does not
+   move: `awaiting input` clipped to `awaiting i…` is the one reading here that would be
+   worse said than unsaid. Measured, not reasoned — on the phone the roomy tracks left
+   the name 76px and the chip 2px short, and both of those were only visible in a
+   browser. */
+@container tile (max-width: 520px) {
+  .home-row {
+    --hr-shingo: 110px;
+    --hr-ctx: 46px;
+    gap: 6px;
+  }
 }
 .home-status {
   font-size: 11px;
@@ -3621,10 +3789,11 @@ body {
   color: var(--ok-2);
 }
 /* No record service installed (the free build): the 🔓 view is off, so the switch is
-   visible but inert — opaque says "not plugged in", not "missing". The commons tabs
-   and menu rows of an absent service get the same treatment. */
-.home-tabs button.off,
-.commons-row.off {
+   visible but inert — opaque says "not plugged in", not "missing". The commons tab of
+   an absent service gets the same treatment. (It named `.commons-row` too, until the
+   bar's Commons menu went on 2026-08-17 — the tab strip is the only registry-fed
+   surface left, so it is the only one that has to say "off".) */
+.home-tabs button.off {
   opacity: 0.3;
   pointer-events: none;
 }
@@ -3866,9 +4035,11 @@ body {
   border-top: 1px solid var(--line);
 }
 
-/* The board column. Same three fields as the chip, one row per session. */
+/* The board column, and since 2026-08-17 a column in the literal sense: it sits in the
+   row's fixed `--hr-shingo` track (see `.home-row`), which is what makes "run your eye
+   down the chips" a thing you can actually do. The `flex: 0 0 auto` that held it out of
+   the old flow went with the flow. */
 .home-shingo {
-  flex: 0 0 auto;
   font-family: Menlo, "DejaVu Sans Mono", Consolas, monospace;
   font-size: 10.5px;
   color: var(--accent);
@@ -3943,41 +4114,13 @@ body {
   -webkit-user-select: text;
 }
 
-/* ---- ▤ Commons (top bar) — one button, the five rooms of commons ----
-   Rows mirror the commons' tab strip in order and glyph, so a pick lands where the label
-   said and the strip then shows you where you are. Anchored to the bar, not the
-   viewport: the button is the thing it belongs to. */
-#bar { position: relative; } /* kept: the drop menus on touch still hang off it */
-.commons-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  z-index: 40;
-  display: flex;
-  flex-direction: column;
-  min-width: 168px;
-  padding: 4px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  box-shadow: var(--shadow-menu);
-}
-.commons-menu[hidden] { display: none; }
-.commons-row {
-  text-align: left;
-  padding: 7px 10px;
-  border: 0;
-  border-radius: 6px;
-  background: none;
-  color: var(--fg);
-  font: inherit;
-  white-space: nowrap;
-  cursor: pointer;
-}
-.commons-row:hover,
-.commons-row:focus-visible { background: var(--line); color: var(--accent); }
-
-.commons-wrap { position: relative; display: inline-flex; }
-.commons-menu { left: 0; }
+/* ---- ⛩ Commons (top bar) — the DROP IS GONE, the anchor is not ----
+   The き button dropped a registry-fed menu of every room until 2026-08-17
+   (.commons-menu / .commons-row / .commons-wrap, all removed with it). The owner ruled
+   it out: ⛩ Commons is one press to ⌂ Roster and the tab strip inside does the choosing.
+   `#bar { position: relative }` STAYS — the touch drops (メ, ニ, ⚡) still hang off it,
+   and deleting it with the menu would drop three sheets to the viewport's top-left. */
+#bar { position: relative; }
 
 
 /* ---- ▦ STATS: TOMODACHI's readout — how this install actually gets used ----
@@ -4353,12 +4496,17 @@ body {
   border-top: 1px solid var(--line);
 }
 
-/* The grid count is the FIFTH button, one box the same size as the four verbs beside it
-   (it joins their rule above). It was a segmented 1|2|4 inside that box: three cells to
-   say what one says, two of them dark at any moment, and 24px each — too narrow to hit
-   with a finger, which is why touch deleted the whole thing rather than inherit it.
-   One button wearing the number it is on, clicked to cycle, is the same control on both
-   surfaces. Centred, and monospaced digits so 1 / 2 / 4 do not shift the box. */
+/* The grid count wears the verbs' CHROME (it joins their look rule above) but not their
+   width: the five verbs are one width so the row reads even, and the count is exempt by
+   the owner's own wording — "each of the boxes on the right, EXCEPT FOR THE NUMBER,
+   which is a number of tiles viewable" (2026-08-17). A single digit stretched to 120px
+   would be a hole in the row, not symmetry.
+
+   It was a segmented 1|2|4 inside that box: three cells to say what one says, two of
+   them dark at any moment, and 24px each — too narrow to hit with a finger, which is why
+   touch deleted the whole thing rather than inherit it. One button wearing the number it
+   is on, clicked to cycle, is the same control on both surfaces. Centred, and monospaced
+   digits so 1 / 2 / 4 do not shift the box. */
 #bar .layout-cycle {
   justify-content: center;
   font-variant-numeric: tabular-nums;
@@ -4380,10 +4528,6 @@ body {
     color: var(--fg);
   }
 }
-/* The menu wears the bar's own surface, not the panel's darker one — it drops out
-   of the bar and should read as part of it. */
-.commons-menu { background: var(--bg-2); }
-
 /* ---- PROVENANCE: a catalog entry that is the user's own (js/provenance.js).
    Stock gets NOTHING — silence is the right rendering for "as shipped", and the
    common case must not be decorated to serve the rare one. Two glyphs, because
