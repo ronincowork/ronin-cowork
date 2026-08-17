@@ -215,6 +215,14 @@ export interface SessionJobInfo {
    */
   credit?: { text: string; url: string };
   /**
+   * Born connected — `- **mcp:** always`. The launch toggle does not apply to this kind:
+   * the launcher does not offer it, and the spawn REFUSES a launch that asks for MCP off
+   * (owner's ruling, 2026-08-17 — a PersonalAssistant without its brain is not a
+   * degraded assistant, it is a different kind). Absent for every ordinary kind, where
+   * the toggle is the owner's per-launch choice.
+   */
+  mcpAlways: boolean;
+  /**
    * Where this kind ALWAYS works, whatever project_root is picked — `- **dir:**` in the
    * catalog. Empty for every ordinary kind, because the directory is the project_root's
    * to supply and a kind that named one would be naming a machine.
@@ -253,6 +261,7 @@ export async function listSessionJobs(): Promise<SessionJobInfo[]> {
         opening: e.get('opening'),
         agent: e.get('agent').toLowerCase() !== 'none',
         capExempt: e.get('cap').toLowerCase() === 'exempt',
+        mcpAlways: e.get('mcp').toLowerCase() === 'always',
         dir: e.get('dir'),
         credit: parseCredit(e.get('credit')),
       };

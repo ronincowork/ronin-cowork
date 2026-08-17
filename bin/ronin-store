@@ -32,7 +32,11 @@ session_boot|user|session_boot
 wipeboards|user|wipeboards
 catalogs|user|catalogs
 memory|user|memory
-config|user|config"
+config|user|config
+koshi_weights|user|koshi_weights
+koshi_weights_service|user|koshi_weights_service
+gbrain_brain|user|gbrain_brain
+gbrain_service|user|gbrain_service"
 
 root_dir() {
   case "$1" in

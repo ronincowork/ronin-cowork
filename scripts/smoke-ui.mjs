@@ -221,7 +221,20 @@ async function checkJourneys(page, label, jsErrors) {
     await page.evaluate(() => document.querySelector('.home.show .home-x')?.click());
   } else {
     if (await gbrainRow.isDisabled()) bad(`${label}: gbrain service registered but its room is inert`);
-    else {
+    else if (!(await page.evaluate(async () => (await (await fetch('/api/gbrain')).json()).installed))) {
+      // NOT INSTALLED is a legal, first-class state (install-contract.md § The tab
+      // rule): the room must be exactly one Load button, not the status panel.
+      await gbrainRow.click();
+      try {
+        await page.waitForSelector('.home.show[data-pane="gbrain"] .gb-privacy button', { timeout: 8000 });
+        const btn = await page.locator('.home.show[data-pane="gbrain"] .gb-privacy button').first().textContent();
+        if (/load|retry/i.test(btn || '')) ok(`${label}: gbrain room offers the one-press Load while not installed`);
+        else bad(`${label}: gbrain not installed but the room's button says "${btn}", wanted Load`);
+      } catch {
+        bad(`${label}: gbrain not installed and the room offered no Load button`);
+      }
+      await page.evaluate(() => document.querySelector('.home.show .home-x')?.click());
+    } else {
       await gbrainRow.click();
       try {
         await page.waitForSelector('.home.show[data-pane="gbrain"] .gb-privacy .gb-row', { timeout: 8000 });

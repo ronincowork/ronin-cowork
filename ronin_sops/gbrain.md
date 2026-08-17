@@ -23,10 +23,15 @@ CLI has already cost one session a turn, and its debrief says so.
 ## The toggle (＋ New: gbrain on / off)
 
 Per session, chosen at launch, mechanical like the dial. **On** (default): the CLI launches
-with its own config — the brain and any other MCP connectors are reachable. **Off**: the
-session launches with **no MCP servers at all** — not just the brain. It cannot be flipped
-mid-session; that is a relaunch. An agent never proposes off on its own initiative — only
-when the owner's words asked for it.
+with its own config — the brain and any other MCP connectors are reachable — and the
+session's boot reading includes the connected shelf (`mcp_on/`), so it is born knowing how
+to use what it can reach. **Off**: the session launches with **no MCP servers at all** —
+not just the brain — and reads no connected shelf either; tools and know-how ride the one
+choice (owner, 2026-08-17). It cannot be flipped mid-session; that is a relaunch. An agent
+never proposes off on its own initiative — only when the owner's words asked for it.
+
+**🎩 PersonalAssistant has no toggle: it is born connected** (`mcp: always`,
+`ronin_catalogs/SESSION_JOBS.md`) — the form does not offer off and the spawn refuses it.
 
 ## What you may do with the brain
 
@@ -57,9 +62,11 @@ keys, validates them, configures, smoke-tests. The house rules over that procedu
    run, report the smoke-test result. A refusal is an answer.
 4. **ngrok is special: it is an inbound door** — a public URL into this machine. It is
    never part of "setting up email"; it is its own proposal with its own yes.
-5. **A hosted embedding provider is a door too** — it receives every page at index time
-   and every query at search time. Local embeddings (Ollama / llama.cpp) add no egress
-   and are the house default when semantic search is wanted.
+5. **Embeddings are local — a ruling, not a default** (owner, 2026-08-17). The gbrain
+   service pulls in the local embed model itself; a gbrain that sends pages or queries
+   to a hosted embedding provider is not a shape this house ships. A hosted provider
+   would receive every page at index time and every query at search time — that door
+   stays shut, not merely watched.
 
 ## When the brain is down
 

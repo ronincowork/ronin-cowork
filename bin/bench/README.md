@@ -47,6 +47,10 @@ a local 4B, a local 8B and a hosted model independently returned the **same** ru
 unrelated models agreeing where the agent is silent is an argument for Koshi, not three
 misses.
 
+(That 8B is history, not a menu — ruled, owner 2026-08-17: it benched worse than the 4B
+on the answer key and is dropped from consideration. Don't re-bench or re-propose it; the
+only step-up candidate is the 14B, benched off-box via `KOSHI_WEIGHTS_URL` first.)
+
 So each item also has `truth`, which is `null` until a person edits the dataset file and
 says what the right answer was. Fill in the ones you are sure of and leave the rest —
 `table` then reports **SCORE** against your answer key alongside agreement with the proxy.
