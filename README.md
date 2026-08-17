@@ -43,9 +43,9 @@ enforces that no other core file ever reaches across the line.
 
 ## Installing it
 
-**Hand `docs/install.md` to Claude or Codex on the target machine and say go** — it
-walks every scenario (new VM, existing server, laptop) from nothing to a coworkspace
-in the browser, installing the released cowork and the services layer on the way.
+**Hand `docs/install.md` to the agent on the machine Ronin will run on and say go** —
+four commands and a URL. The owner opens that URL, the setup page asks what it needs,
+and their first session is launched by the page itself.
 
 ## Running it (contributors, from a checkout)
 

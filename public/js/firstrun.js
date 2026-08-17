@@ -19,14 +19,6 @@ import { request } from './request.js';
 import { field, status, button } from './ui.js';
 import { SECTIONS, FIELDS, FACTS, SERVICE_FEATURES, SERVICE_TERMS, LIGHT, pm, toRequests } from './setup-fields.js';
 
-/** The whole condition: nobody has said who they are. One read, no flag file — and
- * finishing the page is what makes it stop appearing, which is what "asked once" means. */
-export async function needsFirstRun() {
-  const r = await request('/api/settei', { cache: 'no-store' });
-  if (!r.ok) return false; // a box that cannot answer is not a box to interrogate
-  return !String(r.data?.set?.owner?.name ?? '').trim();
-}
-
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
