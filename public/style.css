@@ -2639,15 +2639,25 @@ body {
    past that ellipsizes. `phase 3 · leg 4/6 · 12h` is 130px of 10.5px mono; `awaiting
    input` is 68px; `⛽ 100%` is 46px; the 🏷 pill is 27px. An agent can write an unbounded
    `ladder_state` into the chip, so clipping has to be the outcome for the tail — the
-   alternative is one session's prose setting the geometry of every other row. */
+   alternative is one session's prose setting the geometry of every other row.
+
+   SIX became true again on 2026-08-17, when the 🏷 pill's retired track was replaced by
+   `--hr-stack`: the agent · provider · model reading (js/roster.js). Measured the same
+   way — `codex · openai · gpt-5-codex` is 140px of 11px text and `claude · anthropic ·
+   sonnet 4.5` is 150px, so 140px shows the realistic worst case whole and lets the
+   longest model name give up its tail. It is the LAST track on purpose: it is the widest
+   and the most clip-prone reading on the row, and at the right edge a clip runs into the
+   row's own padding rather than into another column. */
 .home-row {
   --hr-mark: 1.35em; /* the session_job glyph — the same width `.home-job` already held */
   --hr-shingo: 132px;
   --hr-status: 70px;
   --hr-ctx: 48px;
+  --hr-stack: 140px;
   display: grid;
   grid-template-columns:
-    var(--hr-mark) minmax(0, 1fr) var(--hr-shingo) var(--hr-status) var(--hr-ctx);
+    var(--hr-mark) minmax(0, 1fr) var(--hr-shingo) var(--hr-status) var(--hr-ctx)
+    var(--hr-stack);
   align-items: center;
   gap: 8px;
   width: 100%;
@@ -2695,10 +2705,14 @@ body {
 .home-row > .home-ctx {
   grid-column: 5;
 }
+.home-row > .home-stack {
+  grid-column: 6;
+}
 /* Each reading starts at its own track's left edge and stops at its right one. */
 .home-row > .home-shingo,
 .home-row > .home-status,
-.home-row > .home-ctx {
+.home-row > .home-ctx,
+.home-row > .home-stack {
   justify-self: start;
   max-width: 100%;
   overflow: hidden;
@@ -2710,8 +2724,41 @@ body {
    a `0px` track still collects its gap, so dropping a column means dropping it from the
    template, not sizing it to nothing. */
 
-/* A NARROW TILE: give the name back what the chip can spare. Numbers only — the template
-   is not restated (see above).
+/* A TILE UNDER 600px DROPS THE agent · provider · model READING ENTIRELY.
+
+   THE ONE PLACE THE TEMPLATE IS RESTATED, and the note above about a template said twice
+   being a rule you then have to keep in step still stands — this is the exception it
+   warned about, taken knowingly, and the pair to keep in step is these two blocks. That
+   note's own lesson is why this is a restatement rather than a `--hr-stack: 0px`: A `0px`
+   TRACK STILL COLLECTS ITS GAP, so a column is dropped from the template or it is not
+   dropped at all. `display: none` on the cell is the other half —
+   without it the element still names `grid-column: 6`, grid invents an implicit sixth
+   track for it, and the row overflows exactly as if nothing had been reclaimed.
+
+   THE NUMBER, MEASURED (2026-08-17, Chromium, 4-up tiles). The column costs 148px (140px
+   plus its gap), all of it out of the session name, and the name is the one track that
+   gives: at the owner's own 4-up desktop tile — 629px body, 587px row — the name goes
+   from 237px to 121px, which is his trade to make and he made it. Below that it stops
+   being a trade: a 579px tile leaves the name 71px, and a 402px phone leaves it ZERO and
+   overflows the row by 63px. 600px is where the kept case bottoms out at a ~95px name;
+   under it the reading goes and the name gets its 240px back whole.
+
+   So this is the one reading on the row that a narrow tile does not carry. It is the
+   right one to lose: it is a LABEL on the session (what it was launched as, which does
+   not change) rather than news about it (held at a gate, awaiting input, 92% of context),
+   and it is the one you can still get by opening the session. */
+@container tile (max-width: 600px) {
+  .home-row {
+    grid-template-columns:
+      var(--hr-mark) minmax(0, 1fr) var(--hr-shingo) var(--hr-status) var(--hr-ctx);
+  }
+  .home-row > .home-stack {
+    display: none;
+  }
+}
+
+/* A NARROW TILE: give the name back what the chip can spare. Numbers only — this block
+   restates no template (the 600px block above is the single exception, and says why).
 
    THE THRESHOLD IS THE ROSTER'S OWN, not the 680px the Commons strip uses further down,
    and the difference is the whole point of asking the tile rather than the viewport: at
@@ -2747,6 +2794,18 @@ body {
   color: var(--bad);
 }
 .home-ctx {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+/* WHAT THE SESSION IS RUNNING — `codex · openai · gpt-5-codex`. Drawn exactly like the
+   other secondary readings on the row (11px, muted, one line): it is a label on the
+   session, not news about it, so it must never out-shout the status word beside it, and
+   the two facts that are only known at spawn look no different from the one scraped live
+   — the row does not owe the reader that seam. Lowercasing is done in the DOM rather than
+   with `text-transform`, because the string is a NAME (`opus 5`, `gpt-5-codex`) and a
+   selectable/copyable name should be the same characters it appears to be. */
+.home-stack {
   font-size: 11px;
   color: var(--muted);
   white-space: nowrap;

@@ -94,6 +94,23 @@ export interface Resolved {
   /** What the receipt reports: false only when the launch asked for MCP off AND the
    * provider declared how (`mcp_off` appended to cmd). */
   mcp: boolean;
+  /**
+   * THE CLI ACTUALLY LAUNCHED — `claude`, `codex` — the first word of `cmd`, basenamed.
+   * Empty for an `agent: none` kind, which launches nothing at all.
+   *
+   * Stamped onto the session as `@ronin-agent` (src/tmux.ts) because this is the only
+   * moment it is known for certain: after the spawn, all tmux can say is what the pane's
+   * process is called, and for Codex that is `node`.
+   */
+  launchAgent: string;
+  /**
+   * Whose model that CLI is talking to — `anthropic`, `openai` — read off the
+   * session_launch_spec the `cmd` came from. EMPTY when the cmd matches no row in the
+   * launch table (a hand-typed `cmd:` on a project_root), and empty is the right answer
+   * there: the table is what knows the vendor, and inferring one from the binary name
+   * would be a guess dressed as a fact.
+   */
+  provider: string;
 }
 
 const ACK_RULE =
@@ -217,9 +234,22 @@ export async function resolveForm(
   // (no table row) is honestly unsupported. No flags declared = REFUSE, because a
   // session the owner asked to launch disconnected must never launch connected.
   let cmd = agent ? form.cmd || root?.cmd || 'claude' : '';
+  // The row this cmd came out of, matched BEFORE the MCP-off flags are appended below —
+  // appending changes the very string the match is on, and looking it up afterwards would
+  // find nothing for exactly the launches that asked for something unusual. One find,
+  // used twice: the mcp_off flags, and the provider the roster prints.
+  const spec = launchSpecs.find((b) => b.cmd === cmd);
   const mcpOffWanted = agent && form.mcp === false;
+  // A kind marked `mcp: always` is BORN connected (owner's ruling, 2026-08-17): the
+  // launcher never offers the toggle for it, and a launch that asks anyway (a macro, a
+  // hand-built request) is refused rather than silently connected or disconnected.
+  if (mcpOffWanted && kind.mcpAlways) {
+    throw new Error(
+      `${kind.name} is born connected (\`mcp: always\` in ronin_catalogs/SESSION_JOBS.md) — ` +
+        'it cannot be launched with MCP off.',
+    );
+  }
   if (mcpOffWanted) {
-    const spec = launchSpecs.find((b) => b.cmd === cmd);
     if (!spec?.mcpOff) {
       throw new Error(
         'This launch command declares no `mcp_off:` flags in the launch table, ' +
@@ -243,10 +273,21 @@ export async function resolveForm(
     session_job: kind.name,
     project_root: root?.name ?? '',
     mode: form.mode === 'manual' ? 'manual' : 'assisted',
-    brief: agent ? buildBrief(kind, root, form, referenceDir, await bootFiles(root?.name ?? '', kind.name)) : '',
+    // The shelf follows the toggle (owner's ruling, 2026-08-17): a session launched with
+    // MCP off reads no mcp_on/ shelf — the tools and the reading list about them ride
+    // the same choice. Job and root shelves are untouched by it.
+    brief: agent
+      ? buildBrief(kind, root, form, referenceDir, await bootFiles(root?.name ?? '', kind.name, !mcpOffWanted))
+      : '',
     agent,
     capExempt: kind.capExempt,
     mcp: !mcpOffWanted,
+    // `claude --model opus` -> `claude`; `/opt/homebrew/bin/codex --model …` -> `codex`.
+    // The first word, basenamed, because the launch table's cells are commands and a cell
+    // is free to name a path. RIREKI's decoder keys are bare binary names, and this value
+    // is written into the option RIREKI reads, so it has to arrive in RIREKI's spelling.
+    launchAgent: agent ? path.basename(cmd.trim().split(/\s+/)[0] ?? '') : '',
+    provider: spec?.provider ?? '',
   };
 }
 

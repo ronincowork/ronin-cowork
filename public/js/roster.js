@@ -161,6 +161,41 @@ export function buildRoster(tile, host) {
       cx.textContent = '⛽ ' + s.ctx + '%';
       r.appendChild(cx);
     }
+    // WHAT THE SESSION IS RUNNING — the agent, whose model, and which model, in that
+    // order, dot-joined: `codex · openai · gpt-5.6-sol`. Owner's ruling 2026-08-17, and
+    // the roster is THE ONLY PLACE IT GOES — "I think that's the only place we need to
+    // put it" — so the tile header does not repeat it.
+    //
+    // ONE column for three facts, not three columns, because there is no room for three.
+    // Measured in the browser at the owner's own 4-up desktop geometry (629px tile body,
+    // 587px row): the five existing tracks left the session name 237px, and the one
+    // column added here costs 116px of that. A second and a third would have taken the
+    // name past the point where a name is a name.
+    //
+    // TWO SOURCES, ONE READING, and the seam is deliberate. The agent and the provider are
+    // the BIRTH STAMP (@ronin-agent / @ronin-provider, src/tmux.ts) — remembered, because
+    // after the spawn nothing can tell them; the model is SCRAPED off the pane's status
+    // line every refresh, so it follows a mid-session model switch. That is also why a
+    // session born before the stamp shipped renders here as a bare model name and nothing
+    // else: the honest partial, not a filled-in guess.
+    //
+    // A MISSING FACT IS SIMPLY ABSENT — no `undefined`, no `unknown`, no dash. The roster's
+    // own rule, from the SHINGO chip (js/shingo.js): "an absent chip costs the owner
+    // nothing and stops a dash-plus-age pretending to be a position". A dash here would
+    // read as a state a session is IN rather than as a thing nobody has said.
+    //
+    // Lowercased as rendered, and NOT mapped: `Opus 5` becomes `opus 5` and that is the
+    // whole transform. The owner turned down a three-letter-code registry — the strings
+    // the launch table and the status line already carry are the strings shown.
+    const stack = [s.agent, s.provider, s.model].filter(Boolean).join(' · ').toLowerCase();
+    if (stack) {
+      const sk = document.createElement('span');
+      sk.className = 'home-stack';
+      sk.textContent = stack;
+      // The cell clips (see style.css), so the untruncated reading has to be reachable.
+      sk.title = stack;
+      r.appendChild(sk);
+    }
     // 🏷 on the row: set THIS session's groups without opening it first. Its own
     // button, not the row's click, so tapping the row still just opens the session.
     // TOUCH: no 🏷 at all. The list is already SORTED INTO GROUPS under headings,

@@ -14,10 +14,12 @@ import {
   capturePane,
   createSession,
   isValidName,
+  launchStamps,
   listSessions,
   sessionDir,
   sessionExists,
   setControl,
+  setLaunchStamp,
   setProjectRoot,
   setTags,
 } from '../tmux.js';
@@ -25,7 +27,7 @@ import { runCommand, sendText } from '../send.js';
 import { AtSessionMax, liveCount, readMax, readOwner, writeMax, writeOwner } from '../user-config.js';
 import { resolveForm, appendLedger, type SpawnForm } from '../spawn.js';
 import { classifyStatus, waitReadyForBrief, type SessionStatus } from '../status.js';
-import { scanContext } from '../ctx.js';
+import { scanContext, scanModel } from '../ctx.js';
 
 import { count } from '../counts.js';
 import { seedTegami, withRoles } from '../tegami.js';
@@ -100,6 +102,12 @@ export function registerLaunch(app: express.Express): void {
       // reliably happens. Two shipped tools (tejun-recall, tejun-remember) read this to
       // scope a memory and nothing used to set it.
       if (resolved.project_root) await setProjectRoot(resolved.name, resolved.project_root);
+      // WHAT IT IS RUNNING, written at birth for the same reason the project_root is: this
+      // is the one moment it is known. The launch table gave us the provider and the cmd
+      // names the CLI, and a minute from now tmux can only say the pane is running `node`.
+      // The ⌂ Roster reads it back (`/api/home`), and RIREKI reads `@ronin-agent` to pick
+      // a decoder — it has expected this stamp since it was written. See src/tmux.ts.
+      await setLaunchStamp(resolved.name, resolved.launchAgent, resolved.provider);
       // THE ROLE, SET MECHANICALLY. The button the owner pressed IS what this session is
       // for, so the letter is written with `session_job` already filled rather than left
       // for the agent to guess at a fact that was never in doubt. The session owns it
@@ -201,25 +209,46 @@ export function registerLaunch(app: express.Express): void {
   });
 
   // Home-panel feed: the session list enriched with a status-probe classification
-  // (ready / thinking / awaiting-input, patterns in src/status.ts) and the context-
-  // gauge reading — one capture-pane per session, shared by both scrapes.
+  // (ready / thinking / awaiting-input, patterns in src/status.ts), the context-gauge
+  // reading and the MODEL beside it — one capture-pane per session, shared by all three
+  // scrapes. The model rides this capture rather than earning its own tmux call: it sits
+  // on the very status line the gauge is read off (src/ctx.ts), so it is free here.
+  //
+  // The agent and the provider do NOT come off the pane — they are the birth stamp, read
+  // for the whole board in one `list-sessions` before the map (src/tmux.ts). Which is why
+  // a session born before the stamp shipped still shows its model and nothing else: two
+  // of the three are remembered and one is observed.
   app.get('/api/home', async (_req, res) => {
     try {
       const list = await withRoles(await listSessions());
+      const stamps = await launchStamps();
       const out = await Promise.all(
         list.map(async (s) => {
           let status: SessionStatus | null = null;
           let ctx: number | null = null;
+          let model: string | null = null;
           try {
             const text = await capturePane(s.name, 0);
             status = classifyStatus(text);
             ctx = scanContext(text);
+            model = scanModel(text);
           } catch {
             // session vanished mid-scan — plain row, no readings
           }
+          const stamp = stamps[s.name];
           // THE ROW SOCKET: services contribute their fields (michi's tegami ladder
           // column among them); none registered = nothing added and the board prints "—".
-          return { ...s, status, ctx, ...(await collectRowFields(s.name)) };
+          return {
+            ...s,
+            status,
+            ctx,
+            model,
+            // '' not null, and never a placeholder: unstamped is an EMPTY SLOT on the row,
+            // never `unknown` or a dash, which would read as a state the session is in.
+            agent: stamp?.agent ?? '',
+            provider: stamp?.provider ?? '',
+            ...(await collectRowFields(s.name)),
+          };
         }),
       );
       res.json(out);

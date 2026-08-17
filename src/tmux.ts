@@ -429,6 +429,82 @@ export async function projectRootsOfSessions(): Promise<Record<string, string>> 
   }
 }
 
+/**
+ * WHAT WAS LAUNCHED INTO THE PANE — the agent (the CLI: `claude`, `codex`) and the
+ * provider whose model it is talking to (`anthropic`, `openai`). Two options, written
+ * ONCE, at spawn, because spawn is the only moment anything knows: the resolver is
+ * holding a whole session_launch_spec (`{provider, model, cmd}`) and what it hands the
+ * pane is a command string nobody downstream can read the vendor back out of.
+ *
+ * `#{pane_current_command}` IS NOT THE SHORTCUT, and that is the whole reason a stamp
+ * exists. Measured on this box, 2026-08-17: a Codex session answers `node`, because the
+ * Codex CLI is a node script. It answers `claude` correctly for Anthropic — which is
+ * exactly the shape of bug that ships, right on the machine it was written on and wrong
+ * on half the sessions.
+ *
+ * `@ronin-agent` WAS DESIGNED BEFORE IT WAS WRITTEN. RIREKI's `vendorOf()` has read it as
+ * the first and most trusted link in its identity chain since that function existed —
+ * "stamped at spawn, commons knows exactly what it launched" — and nothing had ever set
+ * it, so every session on every box silently fell through to step 2 (`pane_current_command`,
+ * i.e. `node`) and then to sniffing the tape. So the name and the value shape are RIREKI's,
+ * not ours: a bare decoder key, `claude` / `codex`, never a label and never a path.
+ *
+ * THE MODEL IS DELIBERATELY NOT STAMPED beside them. It is scraped live off the pane's own
+ * status line (`scanModel`, src/ctx.ts), which keeps it true when the model is switched
+ * mid-session — and makes it the one of the three a session born before this shipped can
+ * still show. See § NUANCE in KOTOBA.md: the CLI, the model and this run of it are three
+ * things the house can feel apart and has one word for.
+ */
+const AGENT_OPT = '@ronin-agent';
+const PROVIDER_OPT = '@ronin-provider';
+
+/** What a session was launched as. Empty means nobody stamped it — never a guess. */
+export interface LaunchStamp {
+  agent: string;
+  provider: string;
+}
+
+/**
+ * Stamp what is running in a session — called at birth, beside the tags and the
+ * project_root. A blank value is NOT written: an unset option and an option set to ''
+ * read back identically, so writing the empty one would only be a second way to say
+ * nothing. Failures are swallowed for the same reason a note or a tag failure is — a
+ * label the roster would have liked must never cost the owner their session.
+ */
+export async function setLaunchStamp(name: string, agent: string, provider: string): Promise<void> {
+  for (const [opt, val] of [[AGENT_OPT, agent], [PROVIDER_OPT, provider]] as const) {
+    if (!val.trim()) continue;
+    await pexec('tmux', ['set-option', '-t', exactPane(name), opt, val.trim()]).catch(() => {});
+  }
+}
+
+/**
+ * Every live session's stamp in ONE call — same shape as projectRootsOfSessions above and
+ * for the same reason: the roster draws a board, and a board asks tmux once, not once per
+ * row. An UNSTAMPED session is in the map with two empty strings rather than missing from
+ * it, because "nobody has said" is a real answer the roster has to be able to draw as an
+ * empty slot; every session that predates this shipping is one, until it is relaunched.
+ */
+export async function launchStamps(): Promise<Record<string, LaunchStamp>> {
+  try {
+    const { stdout } = await pexec('tmux', [
+      'list-sessions',
+      '-F',
+      `#{session_name}\t#{${AGENT_OPT}}\t#{${PROVIDER_OPT}}`,
+    ]);
+    const out: Record<string, LaunchStamp> = {};
+    for (const line of stdout.split('\n').filter(Boolean)) {
+      const [name, agent, provider] = line.split('\t');
+      if (name && !name.startsWith(config.viewerPrefix)) {
+        out[name] = { agent: (agent ?? '').trim(), provider: (provider ?? '').trim() };
+      }
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
 /** tmux user option holding a session's control dial (see ronin_catalogs/ACTIONS.md control-check). */
 const CONTROL_OPT = '@ronin-control';
 

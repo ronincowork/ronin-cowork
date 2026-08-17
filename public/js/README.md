@@ -41,7 +41,7 @@ written contract those modules enforce.
 | `events.js` | 96 | the `/events` socket, birth/death chips, `openSessionSomewhere` |
 | `home.js` | 158 | THE DATA CACHE — `refreshHome` + the catalog loaders, `homeFault`, `showReceipt` |
 | `commons.js` | 158 | `buildHome` — the control-plane SHELL: tab strip, panes, room mounting |
-| `roster.js` | 210 | the ⌂ Roster room — the session list, the session max, the stale line |
+| `roster.js` | 258 | the ⌂ Roster room — the session list, the session max, the stale line |
 | `launcher.js` | 480 | the ＋ New session room — the koshidashi board, form, saved launches |
 | `wipeboard.js` | 292 | `buildWipeboard` — the ▤ Wipeboard pane |
 | `projectroots.js` | 245 | `buildProjectRoots` — the ▣ Roots pane |
