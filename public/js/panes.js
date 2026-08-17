@@ -37,7 +37,16 @@ export const PANES = [
   { id: 'hotwords', label: '▥ Hotwords', hint: 'Words dictation keeps getting wrong — the glossary sent with your voice' },
   { id: 'stats', label: '▦ Stats', hint: 'How this install actually gets used — TOMODACHI' },
   { id: 'koshi', label: '目 Koshi', hint: 'Which model each Koshi job asks' },
-  // ⚙ System is DELIBERATELY not a row: install-level facts (release, updates,
-  // appearance, log out) are page-level, so the gear lives in the bar and opens one
-  // sheet (js/system.js) — a room here meant four copies, one per tile.
+  { id: 'gbrain', label: 'gbrain', hint: 'Local gbrain, search and integration status' },
+  { id: 'settei', label: '⚙ Setup', hint: 'What this install is set to — you, this machine, your projects, services' },
+  // The gear's own sheet (js/system.js) stays page-level and is NOT a row: release,
+  // update, appearance and log out are the install's, not a tile's, and a room for them
+  // meant four copies, one per tile.
+  //
+  // The room the owner wanted, backed by SETTEI, is the ⚙ Setup row above as of
+  // 2026-08-17 — its fields are settled (ronin-lab plans/SETTEI.md Part VI) and it draws
+  // one assembled record: what the owner SET, what the box OBSERVED, and what FOLLOWS.
+  // So settings moved here; the gear's two mechanical buttons did not. KOTOBA_GLOSSARY
+  // rules the label — SETTEI stays ours, and the tab a person reads says Setup.
+  // See docs/ui.md.
 ];

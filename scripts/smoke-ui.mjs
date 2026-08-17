@@ -73,6 +73,18 @@ async function openPage(browser, contextOpts) {
   // visual baseline are written against the dark shell, so the pin is the honesty.
   const ctx = await browser.newContext({ ignoreHTTPSErrors: true, colorScheme: 'dark', ...contextOpts });
   const page = await ctx.newPage();
+  // The rendering gate exercises the whole coworkspace even on a box whose owner has
+  // not completed first load yet. Shadow ONLY the initial read in this browser: no file
+  // is written, PUTs pass through untouched, and the real first-load module still gets
+  // syntax/dead-code checks. Keeping the route for reloads matters because the gbrain
+  // handoff journey deliberately reloads to reset the shared launcher.
+  await page.route('**/api/settei', async (route) => {
+    if (route.request().method() !== 'GET') return route.continue();
+    const response = await route.fetch();
+    const data = await response.json();
+    if (data?.set?.owner && !String(data.set.owner.name ?? '').trim()) data.set.owner.name = 'Ronin rendering gate';
+    await route.fulfill({ response, json: data });
+  });
   const jsErrors = [];
   const netFails = [];
   // Benign browser noise, not app faults. ResizeObserver settling fires constantly when
@@ -187,14 +199,14 @@ async function checkJourneys(page, label, jsErrors) {
   const commons = await page.evaluate(() => ({
     pane: document.querySelector('.home.show')?.dataset.pane,
     // ONE strip, not every tile's. A sessionless tile shows its own home panel, so an
-    // unscoped count returns 4 × 9 and "9 rooms" would silently never be what was checked.
+    // unscoped count returns 4 × 10 and "10 rooms" would silently never be what was checked.
     tabs: document.querySelector('.home.show .home-tabrow')?.querySelectorAll('button').length,
     menu: !!document.querySelector('.commons-menu'),
   }));
   if (commons.pane === 'sessions' && !commons.menu) ok(`${label}: ⛩ Commons goes straight to ⌂ Roster, and drops nothing`);
   else bad(`${label}: ⛩ Commons landed on "${commons.pane}"${commons.menu ? ' and dropped a menu' : ''}, wanted the roster`);
-  if (commons.tabs === 9) ok(`${label}: the Commons strip carries all 9 rooms (registry-fed; ⚙ lives in the bar)`);
-  else bad(`${label}: the Commons strip has ${commons.tabs} rooms, wanted 9`);
+  if (commons.tabs === 10) ok(`${label}: the Commons strip carries all 10 rooms (registry-fed; ⚙ lives in the bar)`);
+  else bad(`${label}: the Commons strip has ${commons.tabs} rooms, wanted 10`);
 
   // 2 — a strip tab lands its room: ▤ Wipeboard (a core room on every build). The strip
   // is the ONLY way to pick a room now, which is what makes this the probe that has to

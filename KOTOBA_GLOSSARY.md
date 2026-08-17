@@ -39,8 +39,8 @@ learn in order to use Ronin should cost them a second language first.
 | session | **session** | One agent, one job, one name. Keeps running when you close the tab. |
 | agent | **agent** | The CLI in a tile — `claude`, `codex`, `pi`, a shell script. |
 | `coworking_commons` | **the commons** | The shared surface inside a tile when no session is showing. Already plain English — no translation needed. |
-| `commons_tab` | **tab** | One section of the commons, reached from its tab strip. Say *the Roster tab*, *the Setup tab*. **Never "pane"** — that word already means the tmux terminal a tile shows. |
-| SETTEI (設定) | **Setup** *(the tab)* · **your settings** *(the things in it)* | What you have set about how your Ronin behaves — your name, how many sessions may run, which folders are yours, what it is connected to. **The name SETTEI stays ours and never reaches a user's face**; the tab says **⚙ Setup**. **[planned]** |
+| `commons_tab` | **tab** | One section of the commons, reached from its tab strip. Say *the Roster tab*, *the Setup tab*. **Never "pane" or "panel"** — pane already means the tmux terminal a tile shows, and panel adds a second word for a tab. |
+| SETTEI (設定) | **Setup** *(the tab)* · **your settings** *(the things in it)* | What you have set about how your Ronin behaves — your name, how many sessions may run, which folders are yours, what it is connected to. **The name SETTEI stays ours and never reaches a user's face**; the tab says **⚙ Setup**. |
 | `user_customization` | **your own macros and jobs** | The recipes you write to extend what Ronin can do. Distinct from settings: **you set a setting, you write a recipe.** |
 | `session_roster` | **the roster** | The commons' **⌂ Roster** tab: every session on the machine. The session list, full stop — the macro forms beside it were removed 2026-08-09. **Never "the board".** |
 | `session_launch` | **launch** | The commons' **＋ New** tab. Where a session is born. |

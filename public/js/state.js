@@ -67,7 +67,7 @@ export const S = {
   // Set once at boot from /api/version (main.js); false is the full install's answer.
   streamOff: false,
   // Registered service names from the same answer (michi | koshi | rireki | counting |
-  // koe), or null when the operator predates the field. A surface owned by a service
+  // koe | gbrain), or null when the operator predates the field. A surface owned by a service
   // not on the roster is drawn opaque-and-inert and never fetched (sockets.ts's rule).
   services: null,
   lastSelection: '', // last non-empty terminal selection (see below)
@@ -77,9 +77,10 @@ export const S = {
 };
 
 // Which service owns which optional commons pane. A pane not listed is core and always
-// on. Both the tab strip and the Commons menus consult this, same as the lock button
-// consults streamOff: absent service = the surface is visible but opaque-and-inert.
-const PANE_SERVICE = { hotwords: 'koe', stats: 'counting', koshi: 'koshi' };
+// on. The tab strip consults this (and the bar's Commons menu did, until it went on
+// 2026-08-17), same as the lock button consults streamOff: absent service = the surface
+// is visible but opaque-and-inert.
+const PANE_SERVICE = { hotwords: 'koe', stats: 'counting', koshi: 'koshi', gbrain: 'gbrain' };
 /**
  * Is a SERVICE absent from this install? The one way to ask.
  *

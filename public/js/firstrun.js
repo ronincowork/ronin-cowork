@@ -137,7 +137,7 @@ export async function buildFirstRun(host, onDone) {
   );
   const projName = textRow(projCard, 'Name', 'Short, lowercase. You will type it when you point an agent somewhere.', '', 'ronin');
   const projRemit = textRow(projCard, 'What is it for?', 'One line. Agents read it to know what they have been put in front of.', '', 'The browser grid of live tmux sessions');
-  const projDir = textRow(projCard, 'Where does it live?', '', String(m.home ?? ''), '/home/you/projects/thing');
+  const projDir = textRow(projCard, 'Where does it live?', '', String(m.home ?? ''), 'project directory');
   projDir.classList.add('fr-path');
 
   const agentCard = section(

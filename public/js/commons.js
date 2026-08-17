@@ -21,8 +21,10 @@ import { PANES } from './panes.js';
 import { buildRoster } from './roster.js';
 import { buildLauncher } from './launcher.js';
 import { buildHotwords } from './hotwords.js';
+import { buildGbrain } from './gbrain.js';
 import { buildKoshi } from './koshi.js';
 import { buildProjectRoots } from './projectroots.js';
+import { buildSettei } from './settei.js';
 import { buildStats } from './stats.js';
 import { buildWipeboard } from './wipeboard.js';
 import { buildDocs } from './docs.js';
@@ -85,13 +87,18 @@ export function buildHome(tile) {
   statsPane.className = 'home-stats';
   const koshiPane = document.createElement('div');
   koshiPane.className = 'home-koshi';
-  el.append(tabs, nullPane, mainPane, wipePane, docsPane, projPane, hotwordsPane, statsPane, koshiPane);
+  const gbrainPane = document.createElement('div');
+  gbrainPane.className = 'home-gbrain';
+  const setteiPane = document.createElement('div');
+  setteiPane.className = 'home-settei';
+  el.append(tabs, nullPane, mainPane, wipePane, docsPane, projPane, hotwordsPane, statsPane, koshiPane, gbrainPane, setteiPane);
   // Real tab semantics over the strip that already exists (ui.tabs): tablist/tab roles,
   // aria-selected, roving tabindex, arrow keys. Activation stays a click — entering a
   // room starts its fetches, and focus must not do that on its own.
   const paneEl = {
     sessions: mainPane, new: nullPane, wipe: wipePane, docs: docsPane, proj: projPane,
-    hotwords: hotwordsPane, stats: statsPane, koshi: koshiPane,
+    hotwords: hotwordsPane, stats: statsPane, koshi: koshiPane, gbrain: gbrainPane,
+    settei: setteiPane,
   };
   const tabBtns = [...tabs.querySelectorAll('button[data-pane]')];
   const strip = makeTabs(tabRow, tabBtns, (b) => paneEl[b.dataset.pane]);
@@ -107,6 +114,8 @@ export function buildHome(tile) {
     if (which === 'proj') proj.enter();
     if (which === 'hotwords') words.enter();
     if (which === 'koshi') koshi.enter();
+    if (which === 'gbrain') gbrain.enter();
+    if (which === 'settei') settei.enter();
     if (which === 'stats') stats.enter();
   };
   // ✕ only makes sense once a session is showing behind the panel.
@@ -139,6 +148,15 @@ export function buildHome(tile) {
   // itself as showing.
   const words = buildHotwords(hotwordsPane, () => tile.homeVisible() && el.dataset.pane === 'hotwords');
   const koshi = buildKoshi(koshiPane, () => tile.homeVisible() && el.dataset.pane === 'koshi');
+  const gbrain = buildGbrain(
+    gbrainPane,
+    () => tile.homeVisible() && el.dataset.pane === 'gbrain',
+    (prompt) => {
+      showPane('new');
+      launcher.open('PersonalAssistant', prompt);
+    },
+  );
+  const settei = buildSettei(setteiPane, () => tile.homeVisible() && el.dataset.pane === 'settei');
   const stats = buildStats(statsPane);
 
   // Re-render the LIVE parts (roster, launcher board); open forms keep their state.
