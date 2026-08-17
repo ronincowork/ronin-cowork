@@ -335,6 +335,8 @@ async function checkJourneys(page, label, jsErrors) {
   // enters, Escape closes and gives focus back to the opener.
   await page.evaluate(() => document.querySelector('.home.show .home-x')?.click());
   await page.waitForTimeout(200);
+  // 📝 lives behind メ since 2026-08-17 — six controls came off the row into its drop.
+  await page.locator('.tile .tile-head button.tmore-btn').first().click();
   await page.locator('.tile .tile-head button.note').first().click();
   try {
     await page.waitForSelector('#notesheet.open textarea:not([disabled])', { timeout: 4000 });
@@ -400,6 +402,8 @@ async function checkJourneys(page, label, jsErrors) {
       ? route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'gate-injected failure' }) })
       : route.continue(),
   );
+  // 📝 lives behind メ since 2026-08-17 — six controls came off the row into its drop.
+  await page.locator('.tile .tile-head button.tmore-btn').first().click();
   await page.locator('.tile .tile-head button.note').first().click();
   try {
     await page.waitForSelector('#notesheet.open textarea:not([disabled])', { timeout: 4000 });
@@ -497,6 +501,8 @@ async function checkA11y(page, label, axeSrc) {
   await page.waitForTimeout(300);
   await scan('with the Commons open on ⌂ Roster');
   await page.evaluate(() => document.querySelector('.home.show .home-x')?.click());
+  // 📝 lives behind メ since 2026-08-17 — six controls came off the row into its drop.
+  await page.locator('.tile .tile-head button.tmore-btn').first().click();
   await page.locator('.tile .tile-head button.note').first().click();
   await page.waitForTimeout(400);
   await scan('with the note sheet open');

@@ -709,6 +709,43 @@ body {
   overflow: hidden;
 }
 
+/* Tile メ — the rest of the header, dropped in ONE HORIZONTAL STRIP (owner, 2026-08-17:
+   "you just see those boxes exactly as they are, but maybe it just drops down
+   horizontally"). Deliberately the same box as .tmac above it — same anchor corner, same
+   panel, same shadow — because they are two drops off one header and ⚡ sits right beside
+   メ; a second look would read as a second kind of thing.
+
+   What is NOT here is any rule for what is inside: the six controls keep the `.tile-head
+   button` sizing they were built with, since they are the same elements, merely appended
+   somewhere else. That is the whole point of the move, and a `.tmore button { … }` block
+   would quietly undo it.
+
+   WRAPS rather than clipping. The strip is ~212px at six controls and a 4-up tile is far
+   wider, so this is the tile nobody has built yet — but an absolutely-positioned row that
+   overflows its tile is a control you cannot reach, and a wrap is cheaper than a container
+   query for the same promise. */
+.tmore {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 6px;
+  z-index: 12;
+  gap: 8px;
+  row-gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  max-width: calc(100% - 12px);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 5px 8px;
+  box-shadow: var(--shadow-sheet);
+}
+.tmore.open {
+  display: flex;
+}
+
 /* Work Louder pad — a ui.sheet consumer since 2026-08-17; the board is a picture of the
    Creator Micro 2. The scrim, the centering and the open/closed switch belong to the
    primitive now (@layer ui, .ui-sheet), which is why the `#padsheet { position: fixed;
@@ -1087,9 +1124,12 @@ body {
 .tile-head button:hover {
   border-color: var(--accent);
 }
-/* メ — the way into commons. Wider, because katakana is not an icon glyph and gets
-   clipped in a 26px square. */
-.tile-head button.menu {
+/* ⛩ the Commons and メ its drop. Wider, because a torii and a katakana are not icon
+   glyphs and get clipped in a 26px square. (This said "メ — the way into commons" until
+   2026-08-17: ⛩ took the Commons on every surface that day, and メ came back on the same
+   header as the button the other six controls drop out of — see js/tilemore.js.) */
+.tile-head button.menu,
+.tile-head button.tmore-btn {
   width: 28px;
   font-size: 13px;
 }

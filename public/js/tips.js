@@ -182,27 +182,34 @@ function setHeader(el) {
  * control's own position.
  *
  * TWO COORDINATES, not one. The header is two groups either side of a `.grow` spacer:
- * the session picker and the mark sit left, the eight controls sit right. Docking
- * everything left meant the whole right-hand cluster threw its box across to the far
- * side of the tile, so the answer appeared nowhere near the question. Each side now
- * docks to its own edge.
+ * the session picker and the mark sit left, the controls sit right. Docking everything
+ * left meant the whole right-hand cluster threw its box across to the far side of the
+ * tile, so the answer appeared nowhere near the question. Each side now docks to its
+ * own edge.
  *
  * Within a side the rectangle is still a CONSTANT — that is the property worth keeping.
- * Crossing the eight right-hand buttons cannot move or resize the box; only stepping
- * between the two groups does, and those are two different places on the header.
+ * Crossing the right-hand buttons cannot move or resize the box; only stepping between
+ * the two groups does, and those are two different places on the header.
  *
  * The side is read from DOM ORDER against the spacer rather than from coordinates:
  * position depends on how wide the tile is and which buttons are hidden, whereas the
  * order in the markup is what actually defines the two groups.
+ *
+ * ONE EXCEPTION TO "below the header", earned in a browser on 2026-08-17: six of those
+ * controls now live in メ's drop (`tilemore.js`), which itself hangs below the header —
+ * so docking to the header's bottom edge laid the box straight over the strip, covering
+ * all six while you read about one. When the control is inside an open drop, the drop is
+ * the thing the box hangs off. The SIDE is still read off the header's spacer, because
+ * メ is one of the right-hand group whatever it happens to contain.
  */
 function dockFor(el, boxWidth) {
   const tile = el.closest('.tile');
-  const anchor = tile ? tile.querySelector('.tile-head') : document.getElementById('bar');
-  if (!anchor) return null;
-  const grow = anchor.querySelector('.grow');
+  const head = tile ? tile.querySelector('.tile-head') : document.getElementById('bar');
+  if (!head) return null;
+  const grow = head.querySelector('.grow');
   const onLeft = grow ? !!(grow.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_PRECEDING) : true;
-  const a = anchor.getBoundingClientRect();
-  const host = (tile || anchor).getBoundingClientRect();
+  const a = (el.closest('.tmore') || head).getBoundingClientRect();
+  const host = (tile || head).getBoundingClientRect();
   return {
     left: Math.round(onLeft ? host.left + 8 : host.right - boxWidth - 8),
     top: Math.round(a.bottom + 6),

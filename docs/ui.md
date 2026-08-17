@@ -125,6 +125,17 @@ a `destroy()` owner at that moment, not speculatively.
   menu (`widgets.js`) and the touch drops (`tiledrop.js`) still carry it in their own
   code, and the day a bar control drops a menu again it comes back to `ui.js` rather
   than being hand-rolled at the call site for the fourth time.
+  **Weighed again the same day and still not restored.** メ on the tile header now drops
+  the six controls that used to end the row (`public/js/tilemore.js`, docs/tile.md); it
+  follows ⚡'s grammar, and the reason is mechanical rather than taste. The drops that
+  hang off a tile header close each other with a `.open` **class** sweep — ⚡'s own, and
+  the phone's — while `popover()` hid with the `hidden` **attribute**, so a drop no sweep
+  can see would open on top of the macro menu six pixels to its left. Restoring the
+  primitive for one of two adjacent header dropdowns and not the other would be a third
+  convention, not a shared one. What that call site DOES carry is the half of `popover()`
+  that was about access: `aria-haspopup` / `aria-expanded` on the opener, and focus back
+  on it when the drop closes under the keyboard. The paragraph above still stands, and it
+  is about the BAR; a tile header is not the bar.
 - **Toast** — `ui.toast`: one chip, `role=status`, errors hold longer than successes.
 - **Field** — `ui.field`: a real accessible name and a message line for a control,
   `display: contents` so the layout it sits in does not move. Labels are

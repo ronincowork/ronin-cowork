@@ -52,7 +52,7 @@ written contract those modules enforce.
 | `system.js` | 187 | `buildSystem` — ⚙ System: release identity, updates, appearance, log out |
 | `shingo.js` | 289 | SHINGO 信号 — the session ladder: header chip, unrolled ladder, the letter |
 | `tile.js` | 674 | `class Tile` — one cell of the coworkspace: a header, a mount point, and the view it composes |
-| `tilehead.js` | 246 | `buildTileHead` — the cell's chrome: picker, dot, dial, gauge, chip, torii, buttons |
+| `tilehead.js` | 307 | `buildTileHead` — the cell's chrome, one table and a loop: dot, picker, chip, mark, ⛩ ⚡ メ, and the six メ drops |
 | `tapeview.js` | 305 | **RIREKI's client render** — the 🔓 view: transcript, folds, live frame, scroll anchoring, paging |
 | `tapefold.js` | 98 | `groupRecs` — the fold rule, pure (tested: `tests/tape-fold.test.js`) |
 | `termview.js` | 250 | the 🔒 view — the untouched `tmux attach` xterm mirror, and touch drag-scroll |
@@ -61,7 +61,8 @@ written contract those modules enforce.
 | `dvr.js` | 37 | `dvrStep` — the unlocked input rule, pure (tested: `tests/dvr.test.js`) |
 | `ansi.js` | 12 | `ANSI_RE` — its own module so the tape's pure logic loads outside a browser |
 | `tiledrop.js` | 233 | TOUCH ONLY — `collapseTileHead`, `makeDrop`: the one-row phone header |
-| `tilemacros.js` | 151 | `buildTileMacros` — the ⚡ button on a tile head; prefills `+name: `, never runs |
+| `tilemacros.js` | 157 | `buildTileMacros` — the ⚡ button on a tile head; prefills `+name: `, never runs |
+| `tilemore.js` | 127 | DESKTOP ONLY — `buildTileMore`: メ on a tile head, and the six controls it drops in one strip |
 | `voice.js` | 181 | dictation: `makeClipRecorder` + `wireDictation` (the 🎤 on the tile's compose box) |
 | `panels.js` | 248 | `buildNotePanel` 📝, `buildTagPanel` 🏷 (on `ui.sheet`), `toClipboard` |
 | `macros.js` | 103 | `buildSessionPicker` — the pad key's session switcher (on `ui.sheet`) |

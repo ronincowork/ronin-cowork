@@ -2,6 +2,7 @@
 import { macroData } from './home.js';
 import { toast } from './ui.js';
 import { IS_TOUCH, S } from './state.js';
+import { closeTileMore } from './tilemore.js';
 import { addProvMark } from './provenance.js';
 
 /**
@@ -136,6 +137,11 @@ export function buildTileMacros(tile) {
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
     const open = menu.classList.contains('open');
+    // メ sits immediately to ⚡'s right since 2026-08-17 and its drop anchors to the same
+    // corner of the same header, so leaving it up puts two panels on one spot. Through
+    // `closeTileMore` rather than a `.tmore.open` class sweep: four tiles build four メ
+    // buttons and each carries its own `aria-expanded`, which a class sweep leaves lying.
+    closeTileMore();
     document.querySelectorAll('.tmac.open').forEach((m) => m.classList.remove('open'));
     if (open) return;
     render();

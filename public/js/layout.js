@@ -75,8 +75,10 @@ export function build() {
         // (⌃⇧C is DevTools-inspect on Linux/Windows Chrome; the Alt chord covers those.)
         if (e.altKey === e.shiftKey) return; // exactly one of Alt / Shift, never both
         // Ctrl+Alt+C — the CoWorking Commons ("the Commons") over the tile you are in, on
-        // the session roster. C for Commons. Same act as メ, the most-used control on the header: getting to the list
-        // of sessions should not cost a mouse trip. Falls back to the first visible
+        // the session roster. C for Commons. Same act as ⛩, the most-used control on the
+        // header (it said メ until 2026-08-17, when ⛩ took the Commons everywhere and メ
+        // came back on that header as the drop): getting to the list of sessions should
+        // not cost a mouse trip. Falls back to the first visible
         // tile so it works before you have clicked into anything.
         if (e.code === 'KeyN') {
           const t = S.active || tiles.find((x) => x.el.style.display !== 'none');

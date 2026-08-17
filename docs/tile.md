@@ -43,6 +43,7 @@ same `needs` string, and both dim the control the same way.
 | 🎛 control dial | — | always |
 | ⛩ commons | — | always (individual tabs gate: `koe` · `counting` · `koshi`) |
 | ⚡ macros | — | always |
+| メ the drop | — | always — it is a container, and it holds 🔒, which needs no session |
 | 🔒/🔓 lock | rireki's stream handler | inert and opaque; every tile born 🔒 and stays 🔒 |
 | 🏷 groups | — | always |
 | 📝 note | — | always |
@@ -86,8 +87,18 @@ show on a phone, where every scroll gesture round-trips through tmux copy-mode.
 Built order (`public/js/tilehead.js`):
 
 ```
-● │ [ session ▾ ] │ chip │ mark │ ←spacer→ │ ⛩ ⚡ 🔒 🏷 ⛽ 🎛 📝 🗑
+● │ [ session ▾ ] │ chip │ mark │ ←spacer→ │ ⛩ ⚡ メ
+                                                  └─ 🔒 🏷 ⛽ 🎛 📝 🗑
 ```
+
+**Three on top, six behind メ** (owner's ruling 2026-08-17). The row used to end in
+eight controls against a picker that has to fit a session name, and at four tiles up
+there was not room for both — measured at a 629px tile, the eight left the spacer 23px
+short before the picker started giving up characters. So ⛩ Commons and ⚡ Macros stay,
+and the rest drop out of メ **as themselves**: the same elements, appended into a
+horizontal strip instead of into the row, keeping every handler, every live setter and
+every `needs` rule they were built with. Nothing was redesigned into a menu row — the
+dial is still the dial and the gauge is still the gauge.
 
 **One table, and a loop.** Every control above is one row of `HEADER` in
 `public/js/tilehead.js`, and everything about it is on that row: where it sits, its class,
@@ -211,7 +222,50 @@ deliberately a different surface.
 
 Inert without a session: there is nothing to prefill.
 
+### メ The drop — the rest of the header
+
+One click, and 🔒 🏷 ⛽ 🎛 📝 🗑 appear in a horizontal strip under the header. The owner's
+words: *"consolidate the Lock, the Tags, the Gauge, the Dial, the Save status, and the
+Trash Can into a single button… When you click it, you just see those boxes exactly as they
+are, but maybe it just drops down horizontally."* Which is what it does — the controls are
+**the same nodes, appended somewhere else**, not a redrawing of them as menu rows.
+
+**メ is a reclaimed glyph, and this shape is not new.** It was the tile-head Commons button
+until 2026-08-17, when ⛩ took the Commons everywhere and freed it. On touch it has meant
+exactly this all along: `tiledrop.js` collapses the whole header into one bar row where メ
+is *this session*. Desktop is being brought into line with a design the phone already wore.
+The only difference is the shape — a pointer needs no word beside the icon, and a desktop
+header has room for a strip rather than a list.
+
+**It needs nothing**, which is a claim about the control: it is a container, and it holds
+🔒, which works with no session at all. Dimming it would have hidden the six explanations of
+why its contents are dim. A control that is inert in the row is inert in the drop, with the
+same sentence — `setInert` paints the element, and the element is the one that moved.
+
+**Dismissal follows ⚡, not the retired `ui.popover`** (`public/js/tilemore.js` says why at
+length). The short version: ⚡ sits immediately to メ's left, anchors to the same corner of
+the same header, and closes its rivals with a `.open` **class** sweep, which is the phone's
+grammar too. A `hidden`-attribute drop would be one no existing sweep could see and the two
+would open on top of each other. What it does take from the retired primitive is the half
+that was about access — `aria-haspopup` / `aria-expanded` on メ, and focus back on メ when
+the drop closes under the keyboard.
+
+Escape closes it, in the **capture** phase and only while it is open — so it beats a locked
+pane to the keystroke when the drop is up, and never takes Escape away from that pane when
+it is not. Clicking outside closes it; clicking a control inside closes it *if that control
+opens something*. The instruments (⛽ and 🎛, the `holds` rows whose value changes in place)
+leave it up, exactly as the phone gives the dial its `stay` mode.
+
+**Desktop only.** `collapseTileHead` hoists this header into the phone's app bar behind its
+*own* メ, snapshotting the header's children to restore later; a control nested one level
+deeper is not in that snapshot, and the restore would leave it inside a sheet that is then
+removed. So the drop is built on a fine pointer and skipped on a coarse one — the same
+`isCoarse()` test the collapse gates on, which makes the two exactly complementary. A phone
+at two or four tiles gets its own headers back, all eight controls in the row, as before.
+
 ### 🔒 / 🔓 The lock
+
+Behind メ.
 
 **Not "streaming" and not "disconnected".** The session is running in tmux either way. What
 differs is whether *this view* is attached, and the consequence is lag.
@@ -232,12 +286,20 @@ that most needed to explain itself said nothing.
 
 ### 🏷 Groups
 
+Behind メ.
+
 The session's memberships, stored on the tmux session itself (`@ronin-tags`). The point is
 **addressing, not decoration** — "the kojinsa group" resolves to a session list, so a
 coordinator can be pointed at a set instead of at named members one by one. Agents resolve
 the same names with `ronin_bin/tejun-group`. The button lights when the session is in any.
 
 ### ⛽ The context gauge
+
+Behind メ — and that is the one place where hiding a control costs something real, because
+a reading you have to open is a reading you stop watching. The owner was asked about exactly
+that and ruled it anyway: *"the context viewer is also visible at the bottom of all of the
+Claude sessions anyway, so we're showing it twice."* The pane already prints the number; the
+gauge was the second copy, and the second copy is what pays for the header's width.
 
 How full the session's context window is. A tachometer tuned to the **useful** range: 0% at
 6:00, 15% at 9:00, 50% at 12:00, pegged by ~80% — sessions never reach 100%, and the
@@ -252,6 +314,9 @@ and the model.
 A readout, not a control. Dials are inputs; gauges are readouts.
 
 ### 🎛 The control dial
+
+Behind メ, and it is one of the two rows that do NOT close the drop when clicked: you turn
+it by tapping the thing you are already looking at, three detents in a ring.
 
 `@ronin-control` — who, other than the owner, may touch this session. Three detents, tap to
 advance:
@@ -272,10 +337,15 @@ cockpit motif is meant to be the same everywhere.
 
 ### 📝 Note
 
+Behind メ.
+
 A post-it on the session. Lives on the tmux session itself as a user option — no separate
 storage, gone when the session dies. The button lights when there is one.
 
 ### 🗑 Kill
+
+Behind メ — which is also a second's worth of friction in front of the one control on this
+header that cannot be undone. That is a side effect of the width ruling, not its reason.
 
 Destroys the tmux session on the host, root plus its `grid_*` viewers. Confirms first, then
 the tile detaches and returns to the commons. Inert without a session — there is nothing to
@@ -360,11 +430,15 @@ else printable, and sends it on Enter. The composer takes a native paste.
 Touch collapses the whole header into **one row** (`public/js/tiledrop.js`):
 
 ```
-⛩ ronin │ [ session ▾ ] │ ⛩ │ 4 │ ニ
+⛩ ronin │ [ session ▾ ] │ メ │ 4 │ ニ
 ```
 
-**⛩ is this session** — Status, Ladder, Macros, Groups, Note, Control, Kill.
+**メ is this session** — Status, Ladder, Macros, Groups, Note, Control, Kill.
 **ニ is Ronin** — Keys, Home, New, Board, Pad. Everything else is terminal.
+
+(This block said ⛩ for a few hours on 2026-08-17, written from the middle of the pass that
+moved the torii; the code never did — `tiledrop.js` has always dropped this sheet off メ,
+and メ on the desktop header is the same glyph meaning the same thing.)
 
 The controls in those sheets are **the same nodes, relocated, not cloned**, so every handler
 already bound keeps working and the live widgets keep updating from their existing owners.
@@ -420,6 +494,7 @@ today; it would cost something the day the dot becomes a button.
 | the hover help box | `public/js/tips.js` |
 | chip, ladder, letter | `public/js/shingo.js` |
 | ⚡ | `public/js/tilemacros.js` |
+| メ — the desktop drop | `public/js/tilemore.js` |
 | 📝 and 🏷 | `public/js/panels.js` |
 | the phone's one row | `public/js/tiledrop.js` |
 | the letter's role half | `src/tegami.ts` |
