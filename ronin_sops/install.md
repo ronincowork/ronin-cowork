@@ -26,7 +26,7 @@ what the box has. Those separate constantly:
 - a release that was updated under a running operator, so what is serving is not what is
   on disk.
 
-The install packet's own rule: **treat the receipt as evidence, not truth. Re-run any check
+The rule: **treat a record of what was done as evidence, not truth. Re-run any check
 before relying on it.** That applies hardest when the evidence is a form, because a form
 cannot be asked a follow-up question and a person can.
 
