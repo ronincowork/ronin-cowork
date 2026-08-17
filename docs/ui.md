@@ -190,5 +190,51 @@ agent is behind a pane.
 
 `/login` (`public/login.html`) is the one pre-auth page: self-contained on purpose,
 same visual language, same theme switch. The password is set on the host with
-`bin/ronin-passwd`; the mechanics are `src/auth.ts`. Passkeys are the planned upgrade
-and reuse the same cookie/session half when they land.
+`bin/ronin-passwd`; the mechanics are `src/auth.ts`.
+
+**Three doors, one session.** Passkey, password and recovery code all end by minting the
+same HttpOnly `<expiry>.<hmac>` cookie, signed by the secret stored beside the scrypt
+record — so changing the password still ends every session at once, whichever door it
+was opened with. Basic auth (`GRID_USER`/`GRID_PASS`) is untouched and still satisfies
+the same gate for scripts.
+
+**Passkeys need HTTPS, and the page says so.** WebAuthn is only exposed in a secure
+context, and an IP address is not a legal relying-party ID — so passkeys cannot work on
+the plain-HTTP tailnet-IP address and can on the `tailscale serve` address `setup.sh`
+prints as step 2. Rather than hiding a button that would do nothing,
+`/api/passkey/options` reports why, and `src/passkey.ts`'s `secureUrl()` reads the live
+`tailscale serve status` so the page can name the address that would work. The RP ID is
+derived per request from `Host` (`RONIN_RP_ID` overrides it for a proxy that rewrites
+Host), so one build serves every install.
+
+**Registration is behind the gate, spending is in front.** A passkey is added from ⚙
+System (`public/js/system.js`) after proving you are already the owner; the login page
+can only use one. There is deliberately no unauthenticated registration route.
+`bin/ronin-recovery` mints a one-shot code, valid 30 minutes, for the case where a
+passkey will not offer itself and changing the password — which would log every other
+device out — is too big a hammer. `src/passkey.ts` holds the verification and
+`src/routes/passkey-api.ts` the routes; `tests/passkey.test.ts` signs real assertions
+with a real P-256 key so the byte layout and the signature check are actually held.
+
+No WebAuthn library was added: the browser hands back an already-decoded public key
+(`getPublicKey()`), which is the only part that would have wanted a CBOR parser.
+
+**WRITTEN BUT UNWITNESSED — read this before you touch any of it (2026-08-17).** The
+server half is held by tests: 14 of them, signing real P-256 assertions, so tampered,
+wrong-origin, cross-site, replayed and unverified assertions are each proven to fail.
+**The browser ceremony has never run.** No line of this has met a real
+`navigator.credentials` call, a real Touch ID prompt or a real device; it landed against
+a server that was never restarted to pick it up. Two things are settled only by the owner
+opening `https://<magicdns>:8443` and pressing the button once:
+
+- **whether `tailscale serve` forwards the original `Host`.** The RP ID derives from it.
+  It is built to refuse loudly rather than guess — if `Host` arrives as the IP the
+  endpoint returns a plain-English refusal and the page shows it — and `RONIN_RP_ID` is
+  the escape hatch. One glance at the first real attempt closes this.
+- **whether registration from ⚙ System and login from `/login` actually complete.**
+
+So: do not describe passkeys as working, and do not rebuild this because it looks
+unfinished — it is finished and unproven, which is a different thing. The gap is one
+restart and one press, not more code. If that first attempt fails, fix what it shows you;
+the shape above is deliberate and every choice in it has its reason recorded either here
+or in `src/passkey.ts`'s head comment.

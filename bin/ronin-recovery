@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# RONIN RECOVERY — a one-shot login code, minted from the host.
+#
+#   bin/ronin-recovery          mint a code — printed ONCE, valid 30 minutes, one use
+#   bin/ronin-recovery clear    revoke an outstanding code
+#   bin/ronin-recovery status   is one outstanding? how many passkeys are registered?
+#
+# This is the way back in when a passkey will not offer itself and you do not want to
+# change the password — a password change rotates the signing secret and logs every
+# other device out. Enter the code on the login page under "use a recovery code".
+# Only its scrypt hash is stored, in the user config store's ronin.json.
+# See src/recovery-cli.ts for the working half, src/passkey.ts for the rest.
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+exec npx tsx src/recovery-cli.ts "${1:-new}"

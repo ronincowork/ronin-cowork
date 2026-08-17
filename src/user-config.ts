@@ -225,6 +225,22 @@ export const updateAuthSection = (value: Record<string, unknown> | null): Promis
     else doc.auth = value;
   });
 
+/**
+ * PASSKEY's section — registered authenticators and the one-shot recovery code. The
+ * SHAPE is src/passkey.ts's, same bargain as `auth` above.
+ *
+ * SEPARATE FROM `auth` ON PURPOSE (2026-08-17). `updateAuthSection` REPLACES the auth
+ * object wholesale, which is what `ronin-passwd` wants — and if passkeys lived inside
+ * it, changing the password would silently delete every registered device. A password
+ * change is supposed to end SESSIONS, not confiscate the owner's phone. Two sections,
+ * two lifetimes. `null` removes it. No bus publish: nothing in bash logs anyone in.
+ */
+export const updatePasskeysSection = (value: Record<string, unknown> | null): Promise<void> =>
+  updateConfig((doc) => {
+    if (value === null) delete doc.passkeys;
+    else doc.passkeys = value;
+  });
+
 /** Put the name on the bus for the bash half. Best-effort, exactly like publishMax. */
 export async function publishOwner(name?: string): Promise<void> {
   const value = name ?? (await readOwner());
