@@ -1194,7 +1194,27 @@ body {
      as the box put two panels on screen for one control. The badge stays for the
      .show flash on click, which is feedback about an action, not hover. */
 }
+/* THE TILE IS THE CONTAINER — `@container tile (…)` is measured against this box.
+ *
+ * Ronin is a tile-based workspace, not a desktop app that shrinks. A Commons room is
+ * narrow because it is on a phone OR because it is one cell of a 4-up desktop grid,
+ * and `@media (max-width: …)` cannot tell those apart: on a 1280px Mac each tile body
+ * is ~630px wide and every viewport rule still handed it the roomy desktop layout.
+ * So anything that describes THIS BOX asks this box (see `@container tile` below);
+ * only genuine shell changes — the app bar going icon-only, a sheet covering the
+ * screen, the grid stacking into a scroll column — stay on viewport queries.
+ *
+ * `inline-size`, never `size`: size containment would make the block axis independent
+ * of the contents too, and this box's height is the flex row's to give. The layout
+ * containment that rides along costs nothing here — the box is already
+ * `position: relative` and already `overflow: hidden`, and every fixed-position
+ * surface in the client (helpbox, toast, sheets, .job-menu, #chip, #kdashi) is
+ * appended to document.body rather than into a tile, so nothing loses its viewport
+ * anchor. xterm is unaffected: FitAddon measures the terminal element inside this
+ * box, and this box's own width still comes from the grid column, not its contents. */
 .tile-body {
+  container-type: inline-size;
+  container-name: tile;
   flex: 1 1 auto;
   min-height: 0;
   padding: 4px 2px 2px 6px;
@@ -2950,7 +2970,11 @@ body {
   padding: 6px 8px;
   font-size: 12px;
 }
-@media (max-width: 680px) {
+/* Two inputs side by side need room for two inputs — a fact about THIS FORM's box, not
+   about the phone. It was `@media (max-width: 680px)` until 2026-08-17, so the pair
+   stayed side by side and unreadably narrow in a 4-up desktop tile, where the form is
+   ~630px wide and the viewport is 1280. Asked of the tile now (see `.tile-body`). */
+@container tile (max-width: 680px) {
   .ks-extras { flex-direction: column; }
 }
 
@@ -2981,7 +3005,14 @@ body {
   padding: 8px 10px 0;
   /* The strip SCROLLS everywhere, not only on phones: a 4-up desktop tile is
      narrower than the row of rooms, and flex overflow was silently clipping the
-     last tabs there — found on the owner's Mac, 2026-08-16. */
+     last tabs there — found on the owner's Mac, 2026-08-16.
+
+     `overscroll-behavior-x: contain` is what makes "the strip moves, the page does
+     not" true rather than aspirational: without it, flicking the strip past its end
+     hands the gesture on to the page and the whole roster slides — which is the
+     behaviour being fixed, arriving by another door. (This explanation used to sit
+     over the phone block below, which restated all three of these declarations; the
+     restatement went on 2026-08-17 and the reason came up here to the one rule.) */
   flex-wrap: nowrap;
   overflow-x: auto;
   overscroll-behavior-x: contain;
@@ -3010,8 +3041,10 @@ body {
 }
 .home-tabs button.on { background: var(--raise); color: var(--fg-strong); border-color: var(--line-3); }
 .home-tabs .home-x {
-  /* ✕ rides the right edge instead of scrolling out of reach — every width, same
-     reason as the phone rule below: it is the way back to the terminal. */
+  /* ✕ rides the right edge instead of scrolling out of reach — at EVERY width, in
+     this one rule: it is the way back to the terminal, so it is never a thing you go
+     looking for. The background is what stops tabs showing through underneath it as
+     they pass. The narrow block below adds an outline and nothing else. */
   position: sticky;
   right: 0;
   margin-left: auto;
@@ -3021,24 +3054,55 @@ body {
   background: var(--bg);
   color: var(--muted-3);
 }
-/* ---- touch: THE STRIP SCROLLS, THE PAGE DOES NOT ----
+/* ---- A NARROW COMMONS: TIGHTEN THE STRIP, NAIL DOWN THE PAGE ----
    Seven rooms plus the ✕ measure 549px against a 402px phone. I wrapped them onto two
    rows first; the owner looked at it and asked for a scrolling strip instead, so the
    strip is the one thing that moves sideways and the page underneath is nailed down.
 
-   `overscroll-behavior-x: contain` is what makes that true rather than aspirational:
-   without it, flicking the strip past its end hands the gesture to the page and the
-   whole roster slides — which is the behaviour being fixed, arriving by another door. */
-@media (max-width: 680px) {
+   This whole block was `@media (max-width: 680px)` until 2026-08-17, and most of it
+   was answering the wrong question. A Commons room is narrow because it is on a phone
+   OR because it is one cell of a 4-up desktop grid — on a 1280px Mac the tile body is
+   ~630px and the viewport rule never fired, so the crowded case got the roomy layout.
+   It asks the tile now (`container-name: tile`, on `.tile-body`). The number is kept
+   at 680px deliberately: on the 402px phone the tile body is well under it, so the
+   phone renders byte-identically and the change is purely that narrow DESKTOP tiles
+   finally get the same treatment.
+
+   THREE DECLARATIONS WENT INSTEAD OF MOVING, because the base rules above already say
+   them at every width and had done since the strip was made to scroll unconditionally
+   (2026-08-16): `.home-tabs`'s flex-wrap/overflow-x/overscroll-behavior-x — including
+   the `overscroll-behavior-x: contain` this comment used to explain, which is why the
+   explanation now lives beside the base rule — `.home-tabs button`'s `flex: 0 0 auto`,
+   and all of `.home-x`'s sticky/margin/flex/background. Restating a rule under a
+   condition reads as "this is what makes it true here", and it was not.
+
+   The two touch-shaped survivors moved DOWN to `pointer: coarse` rather than here —
+   see the block below; their reasons name the finger, not the box. */
+@container tile (max-width: 680px) {
   .home {
     overflow-x: hidden; /* nothing added later reintroduces the sideways slide */
   }
   .home-tabs {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
     gap: 4px;
     padding: 8px 8px 0;
+  }
+  .home-tabs button {
+    padding: 5px 10px;
+  }
+  /* Crowded strip: give ✕ its own edge. It is already sticky at every width (above) —
+     what changes here is that the tabs sliding under it are close enough to read as
+     one run of buttons, so the outline is what keeps it a destination. */
+  .home-tabs .home-x {
+    border-color: var(--line-2);
+  }
+}
+/* The two rules from that block whose reason was the FINGER, not the width, put where
+   they belong on 2026-08-17. Hiding the scrollbar had to leave the width query in
+   particular: the owner's 4-up desktop strip is the case that overflows (docs/ui.md),
+   and the scrollbar is exactly how a mouse user learns the tail is still there — the
+   `scrollbar-gutter: stable` above keeps the height constant either way. */
+@media (pointer: coarse) {
+  .home-tabs {
     /* The strip is the affordance; a scrollbar over it is noise on a touch screen. */
     scrollbar-width: none;
   }
@@ -3046,20 +3110,7 @@ body {
     display: none;
   }
   .home-tabs button {
-    flex: 0 0 auto; /* never squeeze a label to fit — that is what scrolling is for */
-    min-height: 32px;
-    padding: 5px 10px;
-  }
-  /* ✕ rides the right edge instead of scrolling out of reach: it is the way back to
-     the terminal and must not be a thing you go looking for. The background is what
-     stops tabs showing through underneath it as they pass. */
-  .home-tabs .home-x {
-    position: sticky;
-    right: 0;
-    margin-left: auto;
-    flex: 0 0 auto;
-    background: var(--bg);
-    border-color: var(--line-2);
+    min-height: 32px; /* a tap target, not a narrow-box measurement */
   }
 }
 
