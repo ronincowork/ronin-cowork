@@ -13,13 +13,17 @@ the database; every session with MCP on can reach it; the CLI against the same d
 refused while the server runs (single-writer, by design — theirs).
 
 The picture the house uses (owner, 2026-08-17): **gbrain is a filing cabinet and a
-librarian.** The cabinet is the git repo of markdown — what you file lives there, in a
-durable home outside every repo, and the librarian reads it into its index and answers
-sessions' questions. **One nuance, measured on this install rather than assumed: what
-an agent writes over MCP (`put_page`, `capture`, `remember`) goes into the librarian's
-own drawers — the database — and is NOT written back as a file in the cabinet.** So the
-database is not merely a rebuildable index: it also holds every agent-captured page,
-which is why the uninstall keeps BOTH the cabinet and the database, and says so.
+librarian** — but on a Ronin install the honest version is blunter. Nobody hand-files
+markdown. Every writer this machine has is an agent over MCP (`put_page`, `capture`,
+`remember`), and those writes land in **the librarian's own drawers — the database —
+never as files in the cabinet.** Nor can the cabinet feed the index while the house is
+up: syncing repo files is a CLI act, the CLI is refused while `serve` runs
+(single-writer lock), and the MCP surface carries no sync op. **So on this deployment
+the DATABASE is the brain**; the cabinet is an import bay — real when the owner bulk-
+imports existing notes or a feed recipe lands files (both need a stop-sync-start
+window), near-empty otherwise. Upstream's "markdown repo is the system of record"
+describes their agent-lives-in-the-repo shape, not ours. Backup accordingly: `~/.gbrain`
+first, the cabinet with it — and the uninstall keeps both, and says so.
 
 ## What cowork ships — all of it generic
 
