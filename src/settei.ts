@@ -41,7 +41,15 @@ import { CONTRACT_V } from './sockets-contract.js';
 import { roninIdentity } from './routes/version.js';
 import { listProjectRoots } from './project-roots.js';
 import { listAgentAvailability } from './agents.js';
-import { readAgentsSection, readMachineSection, readOwner, readMax, readSection, liveCount } from './user-config.js';
+import {
+  readAgentsSection,
+  readMachineSection,
+  readOwner,
+  readMax,
+  readSection,
+  readSetupSection,
+  liveCount,
+} from './user-config.js';
 
 const pexec = promisify(execFile);
 
@@ -184,6 +192,7 @@ async function readSet(): Promise<Record<string, unknown>> {
   const agents = await readAgentsSection();
   const gbrain = await readSection<Record<string, unknown>>('gbrain', {});
   const services = await readSection<Record<string, unknown>>('services', {});
+  const setup = await readSetupSection();
   const roots = await listProjectRoots();
 
   const projects: SetteiProject[] = roots.map((r) => ({
@@ -207,6 +216,13 @@ async function readSet(): Promise<Record<string, unknown>> {
       jobs: (agents.jobs as unknown) ?? {},
     },
     gbrain: { enabled: gbrain.enabled === true },
+    // ASSERTS "SHOW ME", NEVER "HIDE ME". Absent is the normal state of every install
+    // older than the key, so it has to be quiet — see stampFreshInstall().
+    setup: {
+      pending: setup.pending === true,
+      stamped_at: setup.stamped_at ?? null,
+      completed_at: setup.completed_at ?? null,
+    },
     services: {
       entitlement: services.entitlement ?? null,
       email: services.email ?? null,
@@ -306,24 +322,29 @@ async function computeStatus(
     }),
   );
 
-  const jobs = ((set.agents as Record<string, unknown>).jobs ?? {}) as Record<string, SetteiJob>;
-  const jobStatus = Object.fromEntries(
-    Object.entries(jobs).map(([name, j]) => {
-      const needs = j?.key_env;
-      const ok = !needs || keys[needs];
-      return [
-        name,
-        ok
-          ? `pointed at ${j?.provider ?? j?.outlet}${j?.model ? `/${j.model}` : ''}`
-          : `pointed at ${j?.provider ?? j?.outlet} — ${needs} not set`,
-      ];
-    }),
-  );
-
   const sessionDefault = ((set.agents as Record<string, unknown>).sessions ?? {}) as {
     default?: { provider?: string | null; model?: string | null };
   };
   const dflt = sessionDefault.default;
+
+  const jobs = ((set.agents as Record<string, unknown>).jobs ?? {}) as Record<string, SetteiJob>;
+  const jobStatus = Object.fromEntries(
+    Object.entries(jobs).map(([name, j]) => {
+      const needs = j?.key_env;
+      const where = j?.provider ?? j?.outlet;
+      if (needs && !keys[needs]) return [name, `pointed at ${where} — ${needs} not set`];
+      // SAY WHEN A CHEAP JOB IS ON THE EXPENSIVE MODEL. A house job is pointed at
+      // something light on purpose — Mika explains the house and runs errands — and the
+      // costly mistake is pointing it at the same model the sessions use without
+      // noticing. Two rows each showing a model name make that invisible; saying it out
+      // loud is most of why the row is worth drawing at all.
+      const sameAsDefault = Boolean(j?.model) && j?.model === dflt?.model && j?.provider === dflt?.provider;
+      return [
+        name,
+        `pointed at ${where}${j?.model ? `/${j.model}` : ''}${sameAsDefault ? ' — same as your session default' : ''}`,
+      ];
+    }),
+  );
 
   const r = observed.routes as {
     url: string;
@@ -359,6 +380,11 @@ async function computeStatus(
       usable: Object.entries(agentsSeen).filter(([, a]) => a.installed).map(([n]) => n),
       ...jobStatus,
     },
+    setup: (set.setup as { pending: boolean; completed_at: string | null }).pending
+      ? 'first run has not been finished'
+      : (set.setup as { completed_at: string | null }).completed_at
+        ? `first run finished ${(set.setup as { completed_at: string }).completed_at}`
+        : 'not applicable — this install predates the first-run surface',
     subscription: services.entitlement
       ? `services — ${String(services.entitlement)}${services.verified ? `, verified ${String(services.verified)}` : ''}`
       : 'free cowork — no entitlement recorded',

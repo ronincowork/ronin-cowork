@@ -329,6 +329,60 @@ export const writeServicesSection = (v: {
     doc.services = s;
   });
 
+/**
+ * HAS THIS BOX BEEN THROUGH FIRST RUN? — and the answer must never be inferred.
+ *
+ * THE REGRESSION THIS EXISTS TO PREVENT (2026-08-17): a first-load surface gated on
+ * *"`owner.name` is unset"*, which is true of a box with months of sessions and five
+ * project roots on it, and it replaced the workspace at the workspace's own URL. The
+ * owner's ruling: **do not guesstimate from a key that means something else — have a
+ * specific key that means this.**
+ *
+ * THE TRAP INSIDE THAT RULING, and it is the whole reason this reads the way it does:
+ * **absence must mean DO NOT SHOW.** A missing key is the normal state of every install
+ * that predates the key, so a condition firing on absence breaks every existing box the
+ * day it ships. So the key asserts *show me*, never *hide me*, and nothing anywhere is
+ * allowed to invert it:
+ *
+ *   setup.pending === true     a genuinely fresh install, stamped at birth → show it
+ *   setup.completed_at         it was done, and when → quiet
+ *   no `setup` key at all      an install older than this key → quiet, forever
+ *
+ * **Birth is the absence of the FILE, not of a value.** `stampFreshInstall()` writes only
+ * when `ronin.json` does not exist, which is the same signal the project-root floor
+ * already uses, and it is the one moment a box is unambiguously new.
+ */
+export const readSetupSection = (): Promise<Record<string, unknown>> =>
+  readSection<Record<string, unknown>>('setup', {});
+
+/**
+ * Stamp a brand-new install, once, at boot. **Writes nothing if the file exists** — an
+ * install that has ever saved a setting is not new, and this must be safe to call on
+ * every start forever. Best-effort by construction: failing to stamp costs a first-run
+ * offer, and throwing here would cost the whole boot.
+ */
+export async function stampFreshInstall(): Promise<void> {
+  try {
+    await readFile(configPath(), 'utf8');
+    return; // the file exists — this box has settings, so it is not being born
+  } catch {
+    /* no file: a fresh install, and the only moment this is knowable */
+  }
+  try {
+    await updateConfig((doc) => {
+      doc.setup = { pending: true, stamped_at: new Date().toISOString() };
+    });
+  } catch {
+    /* a config store we cannot write is a different failure, and not this one's to raise */
+  }
+}
+
+/** First run finished. `pending` goes, and when it happened stays — a record, not a flag. */
+export const completeSetup = (): Promise<void> =>
+  updateConfig((doc) => {
+    doc.setup = { completed_at: new Date().toISOString() };
+  });
+
 /** Put the name on the bus for the bash half. Best-effort, exactly like publishMax. */
 export async function publishOwner(name?: string): Promise<void> {
   const value = name ?? (await readOwner());

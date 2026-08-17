@@ -24,6 +24,7 @@
 import type express from 'express';
 import { readSettei } from '../settei.js';
 import {
+  completeSetup,
   readAgentsSection,
   writeAgentsSection,
   writeGbrainSection,
@@ -97,6 +98,28 @@ export function registerSettei(app: express.Express): void {
           : { default: { provider: str(d.provider) ?? null, model: str(d.model) ?? null } },
         jobs: body.jobs === undefined ? priorJobs : { ...priorJobs, ...jobs },
       });
+      res.json({ ok: true });
+    } catch (e) {
+      res.status(500).json({ error: errMsg(e) });
+    }
+  });
+
+  /**
+   * FIRST RUN IS FINISHED — the only way the pending flag is ever cleared.
+   *
+   * Deliberately its own endpoint rather than a side-effect of the last field being
+   * saved: a person can leave the surface half-answered and come back, and a flag that
+   * cleared itself on the last write would decide that for them. The surface says when
+   * it is done, because only the surface knows.
+   *
+   * There is no route to SET pending. A box is stamped at birth, once, by
+   * `stampFreshInstall()` — the moment `ronin.json` does not exist — and nothing can
+   * re-arm it over HTTP, so no request can put an established install back into first
+   * run. That is the regression this whole key exists to prevent, closed at the door.
+   */
+  app.put('/api/settei/setup', async (_req, res) => {
+    try {
+      await completeSetup();
       res.json({ ok: true });
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });

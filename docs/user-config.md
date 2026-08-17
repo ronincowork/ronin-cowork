@@ -119,6 +119,13 @@ What survives, and what every reader must keep true:
   fact is a lie the moment the box changes; `src/settei.ts` measures them on read and stamps
   the answer with `observed_at`.
 - **Anything derived.** If it can be computed from two things already here, compute it.
+- **The owner's projects.** A `project_root` — its directory, its purpose, its default
+  provider and model — lives in `PROJECT_ROOTS.md` in the **catalogs store**, written
+  through `/api/project-roots`, and stays hand-editable there. That is a real landing place,
+  just a different store. The ⚙ Setup room *shows* projects with their remit and whether
+  their directory still resolves, and links to ▣ Project root to change them; it is not
+  their second owner. Said here because both surfaces that write settings pass close enough
+  to this to assume otherwise.
 - **Device state.** The theme and the grid layout are per browser and belong in
   `localStorage` — a phone showing one tile while a Mac shows a 2×2 grid is correct.
 - **A credential the owner types.** There is no such field today, and adding one is a
@@ -126,12 +133,14 @@ What survives, and what every reader must keep true:
 
 ## Traps this has already hit
 
-- **Bash reads the bus, not the file.** `bin/ronin-may-spawn` and `ronin_bin/tejun-wipeboard`
+- **Bash reads the bus, not the file.** `libexec/ronin-may-spawn` and `ronin_bin/tejun-wipeboard`
   never parse `ronin.json`. If a bash tool needs a setting, publish it.
 - **A setting in the wrong ROOT is lost, not just misplaced.** Koshi's outlet choices lived
   under `storeDir('session')` — the root uninstall deletes — for as long as they existed.
-  `docs/stores.md`'s sentence decides it: *if deleting it would lose the user's own work or
-  their choices, it is `user`.* A choice made in a UI built for making choices is a choice.
+  The store table's own sentence decides it (`src/stores.ts`, and the standing doc it
+  cites is one of the six that never crossed the split — ronin-lab `OPEN_THREADS` 2.7):
+  *if deleting it would lose the user's own work or their choices, it is `user`.* A choice
+  made in a UI built for making choices is a choice.
 - **A literal is not a default.** `user: glen` sat in `src/wipeboards.ts` for months as
   "hardcoded until a profile exists", so every install signed its owner's posts with our
   owner's name. That is **JUSHO** — nothing shipped names a person — and it is what this
@@ -144,4 +153,5 @@ What survives, and what every reader must keep true:
 
 `src/settei.ts` (the assembled record: set · observed · status) · `ronin_sops/accounts.md`
 (the SOP that tells an agent to go and look) · `ronin_bin/tejun-account` (what it looks
-with) · ronin-lab `plans/SETTEI.md` (why the record is shaped this way)
+with). **Why the record is shaped this way** is SETTEI's plan, which lives in the private
+ronin-lab repo and is deliberately not a path in this tree.
