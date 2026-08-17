@@ -648,19 +648,11 @@ body {
   overflow: hidden;
 }
 
-/* Work Louder pad — same modal pattern; the board is a picture of the Creator Micro 2 */
-#padsheet {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 30;
-  background: var(--scrim);
-  align-items: center;
-  justify-content: center;
-}
-#padsheet.open {
-  display: flex;
-}
+/* Work Louder pad — a ui.sheet consumer since 2026-08-17; the board is a picture of the
+   Creator Micro 2. The scrim, the centering and the open/closed switch belong to the
+   primitive now (@layer ui, .ui-sheet), which is why the `#padsheet { position: fixed;
+   z-index: 30; … }` block that used to stand here is gone with the JS that toggled it.
+   What stays is what is THIS card's: its width, its scroll, and the board inside it. */
 #padsheet .pad-card {
   display: flex;
   flex-direction: column;
@@ -863,21 +855,16 @@ body {
   white-space: nowrap;
   cursor: pointer;
 }
-/* Ask-on-press prompt: the popped window IS the macro's args field */
-#padask {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 35;
-  background: var(--scrim);
-  align-items: center;
-  justify-content: center;
-}
-#padask.open {
-  display: flex;
-}
+/* Ask-on-press prompt: the popped window IS the macro's args field. A ui.sheet consumer
+   since 2026-08-17, so the scrim and the open switch are the primitive's; this card's own
+   business is that it is ONE ROW — name, then box — where every other card in the house is
+   a column, hence the explicit flex-direction over .ui-card's default.
+   It used to sit at z-index 35 above the pad panel's 30, because an ask-key pressed while
+   ▦ is open has to pop OVER the board. Both are .ui-sheet at one z-index now, and DOM
+   order carries it instead: js/layout.js builds the panel first, the prompt second. */
 #padask .pa-card {
   display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 10px;
   width: min(520px, 92vw);

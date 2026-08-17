@@ -65,7 +65,7 @@ written contract those modules enforce.
 | `panels.js` | 248 | `buildNotePanel` 📝, `buildTagPanel` 🏷 (on `ui.sheet`), `toClipboard` |
 | `macros.js` | 103 | `buildSessionPicker` — the pad key's session switcher (on `ui.sheet`) |
 | `pad.js` | 246 | keypad — bindings, chords, firing |
-| `padpanel.js` | 504 | keypad — the ▦ panel and ask-on-press |
+| `padpanel.js` | 533 | keypad — the ▦ panel and ask-on-press (both on `ui.sheet`) |
 | `weblink.js` | 198 | keypad — WebHID programming of the device |
 | `layout.js` | 439 | `build`, `buildDrawers` — assembling the page |
 | `main.js` | 72 | `init` and the boot call |

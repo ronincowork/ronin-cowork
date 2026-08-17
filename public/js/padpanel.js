@@ -1,16 +1,33 @@
 /* part of the tmux-ronin client — see js/README.md */
 import { macroData } from './home.js';
 import { PAD_CONTROLS, PAD_KEYS, PAD_LAYOUT, PAD_WIDGETS, firePadSend, padBinds, savePadBinds } from './pad.js';
-import { toast } from './ui.js';
+import { field, sheet, toast } from './ui.js';
 import { toClipboard } from './panels.js';
 import { S } from './state.js';
 import { WL_COMBOS, WL_ENCODER, WL_JOYSTICK, WL_RONIN_KEYMAP, wlConnect, wlDownload, wlWriteFile } from './weblink.js';
 
+/**
+ * ASK-ON-PRESS — the prompt an `ask: true` binding pops so ONE physical key can carry
+ * a different argument every time (⚡ buildout, then ⚡ buildout: mika, …). The popped
+ * window IS the macro's args field: the macro name, a box, Enter.
+ *
+ * On ui.sheet since 2026-08-17, and every half it was missing is a half the primitive
+ * already carried. It had no dialog semantics at all — no role, no name,
+ * nothing for a screen reader to announce. Tab walked straight out of the card into
+ * the page behind the scrim. And `close()` ended in `inp.blur()`, which parks keyboard
+ * focus on <body>, so the next Tab restarted the page from the top — the exact bug
+ * js/ui.js's header names. Escape was bound on the INPUT's keydown, so it stopped
+ * working the moment focus left the box; the primitive answers on the sheet root and
+ * keeps a document-level fallback for a sheet opened by pointer.
+ *
+ * IT IS BUILT AFTER buildPadPanel (js/layout.js) AND THAT ORDER IS LOAD-BEARING: both
+ * surfaces are .ui-sheet at the same z-index, and a physical ask-key pressed while the
+ * ▦ panel is open must pop the prompt OVER the board, not under it. Equal z-index means
+ * DOM order decides, and DOM order here is build order.
+ */
 export function buildPadAsk() {
-  const sheet = document.createElement('div');
-  sheet.id = 'padask';
-  const card = document.createElement('div');
-  card.className = 'pa-card';
+  let cur = null; // the binding being asked about
+  const dlg = sheet({ id: 'padask', cls: 'pa-card', label: 'Macro arguments', onClose: () => (cur = null) });
   const label = document.createElement('code');
   const inp = document.createElement('input');
   inp.type = 'text';
@@ -18,52 +35,77 @@ export function buildPadAsk() {
   inp.autocapitalize = 'off';
   inp.autocomplete = 'off';
   inp.spellcheck = false;
-  card.append(label, inp);
-  sheet.appendChild(card);
-  document.body.appendChild(sheet);
+  // The placeholder tells you the KEYS, not what the box is for — so the box gets a
+  // real name of its own. ui.field is display:contents and its message line is
+  // :empty-hidden, so the row is the same two items it always was.
+  const inpField = field(inp, { label: 'macro arguments' });
+  dlg.card.append(label, inpField.el);
 
-  let cur = null; // the binding being asked about
-  const close = () => {
-    cur = null;
-    sheet.classList.remove('open');
-    inp.blur();
-  };
   const open = (bind) => {
     cur = bind;
     label.textContent = '+' + bind.macro + ':';
     inp.value = bind.args || '';
-    sheet.classList.add('open');
+    dlg.open();
+    // THE ONE SURFACE THAT OVERRIDES ui.sheet's "never focus a field on a coarse
+    // pointer". That rule protects sheets you must READ before typing — the iOS
+    // keyboard covers them. Here the sheet is nothing BUT the field: a pad press that
+    // pops a box you then have to tap to type in is a press wasted. select() so the
+    // remembered args are replaced by typing and kept by a bare ↵.
     inp.focus();
     inp.select();
   };
   inp.addEventListener('keydown', (e) => {
+    // Escape and Tab are the SHEET's — ui.sheet dismisses and contains them on the
+    // sheet root, which is the ancestor of this box, so those two alone are let out.
+    // Every other keystroke stops here: this prompt floats over a live terminal and
+    // over the document-level Escape listeners (the tile ⚡ menu, the touch drops, the
+    // help box), and a character meant for the args must reach none of them.
+    if (e.key === 'Escape' || e.key === 'Tab') return;
     e.stopPropagation();
-    if (e.key === 'Escape') close();
-    else if (e.key === 'Enter') {
-      const b = cur;
-      const args = inp.value.trim();
-      close();
-      if (b) firePadSend(b.macro, args, b.session);
-    }
+    if (e.key !== 'Enter') return;
+    const b = cur;
+    const args = inp.value.trim();
+    dlg.close(); // closing first hands focus back to whatever the pad was pressed from
+    if (b) firePadSend(b.macro, args, b.session);
   });
-  sheet.addEventListener('pointerdown', (e) => {
-    if (e.target === sheet) close();
-  });
-  S.padAsk = { open, isOpen: () => sheet.classList.contains('open') };
+  S.padAsk = { open, isOpen: dlg.isOpen };
 }
 
 /**
  * Work Louder pad panel (▦ in the top bar): a picture of the Creator Micro 2.
  * A physical press lights the matching on-screen key and fires its binding —
  * panel open or not (the panel is the picture + binder, not the engine).
- * Tap an on-screen key to bind it: macro, args, target session. Same modal
- * pattern as the macro panel; both surfaces (owner override).
+ * Tap an on-screen key to bind it: macro, args, target session.
+ *
+ * This block used to end "same modal pattern as the macro panel". The macro panel
+ * became buildSessionPicker and moved onto ui.sheet, so that sentence pointed at a
+ * pattern that no longer existed — the worst kind of comment, one that reads as a
+ * cross-reference and leads nowhere. Since 2026-08-17 both pad surfaces are ui.sheet
+ * consumers and the pattern is spelled in ONE place, js/ui.js. What went with the
+ * hand-rolled version: a document-level Escape listener added at build and never
+ * removed, no dialog semantics, and a Tab that walked out through the scrim.
+ *
+ * THE BINDING EDITOR STAYS AN IN-CARD DISCLOSURE (.pad-edit / .open), deliberately.
+ * It is not a dialog: you tap a key, the key stays lit `.editing` under your finger
+ * while you pick what it does, and a second scrim over the board would hide the one
+ * thing you are pointing at. It is inside the card, so the primitive's Tab trap and
+ * Escape already cover it, and its controls come and go from the trap by themselves
+ * (ui.js's tabbable() skips anything display:none).
  */
 export function buildPadPanel() {
-  const sheet = document.createElement('div');
-  sheet.id = 'padsheet';
-  const card = document.createElement('div');
-  card.className = 'pad-card';
+  const dlg = sheet({
+    id: 'padsheet',
+    cls: 'pad-card',
+    label: 'Work Louder pad',
+    // The panel's teardown hangs HERE, not on the Close button, because Escape and a
+    // backdrop tap now close through the primitive and they are the two routes that
+    // used to skip it. Dismissing with Esc must still drop the WebHID connection.
+    onClose: () => {
+      closeEditor();
+      stopCapture();
+      progReset();
+    },
+  });
   const bar = document.createElement('div');
   bar.className = 'pad-bar';
   const title = document.createElement('span');
@@ -86,9 +128,7 @@ export function buildPadPanel() {
   board.className = 'pad-board';
   const extras = document.createElement('div');
   extras.className = 'pad-extras';
-  card.append(bar, board, extras);
-  sheet.appendChild(card);
-  document.body.appendChild(sheet);
+  dlg.card.append(bar, board, extras);
 
   const cells = new Map(); // chord -> on-screen key button (the drawn layout)
   const extraCells = new Map(); // chord -> button for captured off-layout chords
@@ -129,7 +169,7 @@ export function buildPadPanel() {
   saveBtn.textContent = 'Save';
   row2.append(sessSel, askLbl, saveBtn);
   edit.append(editTitle, row1, row2);
-  card.appendChild(edit);
+  dlg.card.appendChild(edit);
 
   // Macro bindings use args/target/ask; ⌨ key bindings need none of them.
   const syncEditor = () => {
@@ -284,7 +324,7 @@ export function buildPadPanel() {
   // -- ⚙ program the pad itself: write the Ronin layout onto a layer over WebHID --
   const prog = document.createElement('div');
   prog.className = 'pad-prog';
-  card.appendChild(prog);
+  dlg.card.appendChild(prog);
   const progBtn = document.createElement('button');
   progBtn.textContent = '⚙ Program pad…';
   const layerSel = document.createElement('select');
@@ -465,17 +505,12 @@ export function buildPadPanel() {
     }
   });
 
-  const close = () => {
-    closeEditor();
-    stopCapture();
-    progReset(); // drop the HID connection with the panel
-    sheet.classList.remove('open');
-  };
+  const close = dlg.close; // the teardown rides on the sheet's onClose — see the top
   const open = () => {
     renderCaps();
-    sheet.classList.add('open');
+    dlg.open();
   };
-  const isOpen = () => sheet.classList.contains('open');
+  const isOpen = dlg.isOpen;
   /** A physical key fired: show which one. */
   const hit = (chord) => {
     // Name what it's bound to, not just the code — makes "which direction did
@@ -489,16 +524,10 @@ export function buildPadPanel() {
     btn.classList.add('hit');
     setTimeout(() => btn.classList.remove('hit'), 250);
   };
+  // Backdrop tap and Escape are the primitive's now. Escape while ⊕ Capture is armed
+  // still disarms rather than closing: js/layout.js takes it in the CAPTURE phase and
+  // stops it there, so it never reaches the sheet root — the same order that made the
+  // old bubble-phase listener behave, kept by construction rather than by luck.
   closeBtn.addEventListener('click', close);
-  sheet.addEventListener('pointerdown', (e) => {
-    if (e.target === sheet) close();
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && sheet.classList.contains('open')) close();
-  });
   S.padPanel = { open, close, isOpen, hit, capturing, capture, stopCapture };
 }
-
-
-
-/* ---------- boot ---------- */

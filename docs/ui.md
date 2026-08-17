@@ -114,8 +114,10 @@ a `destroy()` owner at that moment, not speculatively.
 - **Sheet/dialog** — `ui.sheet` (`public/js/ui.js`): scrim + card, `role=dialog`,
   focus enters the first field (never on touch — the iOS keyboard), Tab is contained,
   Escape and the backdrop dismiss, and focus RETURNS to the opener. Consumers: Notes,
-  Tags, the session switcher. The pad's panel and ask-prompt predate the primitive and
-  keep their bespoke sheets until they next change behaviour.
+  Tags, the session switcher, ⚙ System, and — since 2026-08-17, the last family to
+  come across — the pad's ▦ panel and its ask-on-press prompt. The prompt is the one
+  surface that overrides the touch rule and focuses its field anyway: it has nothing
+  to read, it IS the field. Nothing hand-rolls a sheet any more.
 - **Popover/menu** — `ui.popover`: `aria-expanded` on the button, outside click and
   Escape close, focus returns. Consumer: the き Commons menu. The job menu and the
   touch drops (`tiledrop.js`) carry the same dismissal rules in their own code, which
