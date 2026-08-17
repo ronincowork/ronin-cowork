@@ -214,7 +214,7 @@ is a gap in the machinery, not a reason to reach for the word. See § NUANCE.
 | Term | Scope | Means | Record |
 |---|---|---|---|
 | **TEJUN** | system_scope | the procedure system: macro → action → tool | `reading-list/TEJUN.md` |
-| **macro** | system_scope | a recipe the_owner invokes; nothing but an ordered list of actions. Stock: `forkit`, `draftplan`, `cutcode`, `land`, `delete`, `tag`, `wipeboard`, `read`, `readwrite`, `evaluate` | `ronin_catalogs/MACROS.md` |
+| **macro** | system_scope | a recipe the_owner invokes; nothing but an ordered list of actions. Stock: `forkit`, `buildout`, `cutcode`, `land`, `delete`, `tag`, `wipeboard`, `tell`, `read`, `readwrite`, `evaluate` | `ronin_catalogs/MACROS.md` |
 | **session_macro** | system_scope | a macro **the agent executes**: an invocation dropped into a session's own input (`+forkit: build the login page`), which the agent reads and acts on. Ronin only helps you type it — it never runs one. Every catalogd macro today is one. **Two classes, and every entry's `class:` line says which: `session_macro.lookup` · `session_macro.workflow`** | `ronin_catalogs/MACROS.md` |
 | **workspace_macro** | system_scope | a macro **Ronin executes**, mechanically, above any one session. No agent involved *in performing it* — the launcher is machinery, the session it births is an agent. Stock: `session_launch` (the ＋ tab), and Mika's spawn-or-inject | `docs/commons.md` |
 | **mika_macro** | system_scope | a session_macro that is **re-addressed**: executed by an agent, but by MIKA's agent rather than the session it was typed into. `+project_root:` · `+system_help:` · `+new_session:` · `+system_config:`. Catalogued in their OWN file so no surface listing `MACROS.md` can show them. | § MIKA |
@@ -229,9 +229,11 @@ is a gap in the machinery, not a reason to reach for the word. See § NUANCE.
 | **session_macro.workflow** | system_scope | a recipe of cataloged actions the agent performs: compile (`ronin_bin/tejun`) or step through (`ronin_bin/tejun-step`), execute in order, report the outcome | `ronin_catalogs/MACROS.md` |
 | **read-letter · write-letter** | system_scope | the two actions over a session's own TEGAMI: read the ladder as written (`read_tegami`), or set it / point at the rung being worked (`write_tegami`). Cataloged 2026-08-14 — the tools had implemented no action since MICHI shipped, which is why they sat outside TEJUN | `ronin_catalogs/ACTIONS.md` |
 | **`run:`** | system_scope | the macro key choosing delivery (owner, 2026-08-14): absent or `whole` = the full blob at once, the default; `stepped` = compile arms the step tracker and hands one step at a time. Any macro can be stepped on demand via `tejun-step start` | `ronin_catalogs/MACROS.md` |
+| **`preview:`** | system_scope | the macro key choosing DISPLAY (owner, 2026-08-17): absent = not on the tile's ⚡ drop, the default; `yes` = drawn there as one of the four teaching cards, from the same entry's `label:` (headline, plain words) and `blurb:` (always-visible body copy). **Display only — an unpreviewed macro still runs**, and opt-in because the drop teaches nothing when it holds a dozen | `ronin_catalogs/MACROS.md` |
 | **invocation** | system_scope | `+<name>: <args>` — the `+` marks a macro line; bare `<name>:` also works; never *required* to recognize one | `reading-list/TEJUN.md` |
 | **harakiri** | system_scope | a session ends itself; refuses to end another | `ronin_catalogs/ACTIONS.md` |
 | **forkit** | system_scope | spin the current topic into its own session; the work leaves with it | `ronin_catalogs/MACROS.md` |
+| **tell** | system_scope | the macro for one session messaging another (`+tell: <session> <message>`) — control-check, then `tejun-send`, then report the verdict. It COMPOSES the send-to-session action, which is plumbing and not invocable itself; the reply lands in the other session's tile, never relayed back | `ronin_catalogs/MACROS.md` |
 
 ### § SCRIPTS — the genus, and why most of them are not tools
 

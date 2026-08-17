@@ -61,7 +61,7 @@ written contract those modules enforce.
 | `dvr.js` | 37 | `dvrStep` — the unlocked input rule, pure (tested: `tests/dvr.test.js`) |
 | `ansi.js` | 12 | `ANSI_RE` — its own module so the tape's pure logic loads outside a browser |
 | `tiledrop.js` | 233 | TOUCH ONLY — `collapseTileHead`, `makeDrop`: the one-row phone header |
-| `tilemacros.js` | 157 | `buildTileMacros` — the ⚡ button on a tile head; prefills `+name: `, never runs |
+| `tilemacros.js` | 216 | `buildTileMacros` — the ⚡ button on a tile head; the `preview:` macros as teaching cards, prefills `+name: `, never runs |
 | `tilemore.js` | 127 | DESKTOP ONLY — `buildTileMore`: メ on a tile head, and the six controls it drops in one strip |
 | `voice.js` | 181 | dictation: `makeClipRecorder` + `wireDictation` (the 🎤 on the tile's compose box) |
 | `panels.js` | 248 | `buildNotePanel` 📝, `buildTagPanel` 🏷 (on `ui.sheet`), `toClipboard` |

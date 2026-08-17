@@ -213,12 +213,35 @@ syntax forever.
 Where the text lands, in precedence order: the composer's textarea (touch) → the parked
 buffer (unlocked, shown in the strip) → `sendRaw` with no Enter (locked).
 
-A macro marked `send:` is the exception — it fires and presses Enter for you, drawn as
-`+name ⏎` with no trailing colon. Those carry a **120-second per-tile cooldown** and say
-`· sent, wait Ns` rather than silently swallowing an impatient second tap.
+A macro marked `send:` is the exception — it fires and presses Enter for you, marked with a
+`⏎` after its headline. Those carry a **120-second per-tile cooldown**, and a spent card
+says `sent — wait Ns before sending it again` in place of its description rather than
+silently swallowing an impatient second tap.
 
-The reference — browse everything, read the instruction — is the commons' macros tab,
-deliberately a different surface.
+**FOUR CARDS, AND THE DROP IS A TEACHING SURFACE (owner's ruling, 2026-08-17).** It was
+every macro in the catalog, one `+name:` row each, the explanation on hover. The owner:
+*"I would rather have four macros and have larger buttons… These should be headlines, and
+the boxes are big enough that you can actually describe in them what that means, so people
+can then go, 'Oh, I see.'"* Three consequences, and none of them is cosmetic:
+
+- **Four, not thirteen.** A macro is on the drop only if its catalog entry says
+  `- **preview:** yes` (`ronin_catalogs/MACROS.md`, parsed in `src/macros.ts`). Opt-in,
+  because a dozen entries and a surface that holds four means opt-out would put every macro
+  written later on the button until somebody noticed. *"If we have too many, people just
+  don't get educated."* **Display only: every macro still runs**, typed or from the keypad,
+  and nothing is deleted.
+- **No `+name:` on the face.** The headline is the entry's `label:`, in plain words. The
+  invocation moved into the help box — still learnable, no longer the first thing read.
+- **The description is always visible**, from the entry's `blurb:`, never clamped and never
+  on hover. Confirmed directly by the owner, who also has a phone, where hover does not
+  exist. This is body copy inside the button and deliberately **not** `tips.js`, which is
+  the terse hover primitive and is width-gated by `check-tips`.
+
+The card is the same shape as the launcher's kind buttons (`.ks-btn`) because it is the same
+job: picking a thing you may never have heard of by reading what it does.
+
+The reference — every macro, the ones not previewed included, with the full instruction —
+is `ronin_catalogs/MACROS.md`.
 
 Inert without a session: there is nothing to prefill.
 

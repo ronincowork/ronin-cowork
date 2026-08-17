@@ -36,6 +36,26 @@ your own shadow of it) picks; `tejun-step start <name>` steps ANY macro on deman
 you or the owner wants the check-ins.
 **Never report a run complete with steps undone — especially the last one.**
 
+**Preview is the macro's own toggle: `- **preview:** yes` in an entry** puts it on the ⚡
+drop of every tile header. **No marking = not on the drop — the default**, and that is the
+whole of it: the drop is a TEACHING surface rather than an index, four big buttons a person
+who has never heard of a macro can read and go *"oh, I see, it does something I didn't know
+this could do"* (owner, 2026-08-17 — *"If we have too many, people just don't get
+educated"*). Opt-in, not opt-out, because this file holds a dozen entries and the drop holds
+about four: under opt-out every macro added later would appear on the button until somebody
+noticed it there.
+**DISPLAY ONLY — an unpreviewed macro still runs**, typed by hand, bound to a keypad key, or
+compiled with `tejun`. Nothing is hidden from an agent and nothing is deleted; the toggle
+answers "is this on the button", not "does this exist".
+A previewed entry carries the two lines the button is drawn from:
+**`- **label:**`** — the headline, in plain words, **never the `+name:` spelling** — and
+**`- **blurb:**`** — one or two sentences saying what it does, shown always and not on
+hover (the owner has a phone, where hover does not exist). Write both for somebody who does
+not know the macro exists. They are deliberately NOT the prose under the heading: that is
+written for the agent about to run the recipe, and it opens with the rule the agent must not
+break, which teaches a human nothing. Same two keys, same job, as the kind buttons in
+`SESSION_JOBS.md`.
+
 **RUN IT — DON'T NARRATE IT.** A macro invocation is a button press, not a
 conversation. Do not announce what a macro is, that you are about to read TEJUN docs,
 or what steps you plan to take. Read what you need silently, do the work, and report
@@ -62,6 +82,9 @@ Send: Update your TEGAMI now — read it, bring the ladder in line with what you
 
 ## show_file
 - **class:** session_macro.workflow
+- **preview:** yes
+- **label:** See the files it is working on
+- **blurb:** Ask this session what it has open. It lists its documents on the ▧ Docs tab in commons, so you open and edit the real file instead of hunting your disk for it.
 Owner wants to READ what you are working on: `+show_file`, or `+show_file: MDEDIT.md`.
 Bring your document list up to date, then tell them where to look. **Do not paste the
 document into the pane and do not summarise it** — the point is that they open the real
@@ -86,6 +109,9 @@ is this session working on" and one that answers "what did it remember to mentio
 
 ## forkit
 - **class:** session_macro.workflow
+- **preview:** yes
+- **label:** Fork this session in two
+- **blurb:** Tell this agent to fork itself — it writes down what you have been working on, opens a second session on that topic, and hands the context over. This one stays on its track.
 **Owner-invoked only — never fork on your own initiative.** If a fork seems right,
 PROPOSE it ("I'd like to fork X into its own session") and wait for the go-ahead.
 Unannounced sessions are untrackable for the human until the UI reveals them. Spin the current conversation's active topic out into its own agent
@@ -209,6 +235,9 @@ never guess at a near-match, `kojin` and `kojinsa` are different groups.
 
 ## wipeboard
 - **class:** session_macro.lookup
+- **preview:** yes
+- **label:** The board agents talk on
+- **blurb:** A wipeboard is one file several sessions read and append to, so agents on one problem talk to each other instead of through you. Name one and this says what it is for, who is on it, and where it lives.
 Owner names a WIPEBOARD and expects you to know what it is and who is on it:
 `+wipeboard: parserwork`. A wipeboard is a shared text surface — one markdown file
 several sessions all read and append to — so agents on the same problem talk to each
@@ -233,6 +262,40 @@ Report: the brief in a line, the members with their dials, and the path — then
 Being pointed at a wipeboard is not an instruction to start posting on it; wait for what
 the owner wants said. When you DO post, the rules are in the wipeboard-post action:
 append only, never rewrite another agent's post, never edit the Brief.
+
+## tell
+- **class:** session_macro.workflow
+- **preview:** yes
+- **label:** Message another session
+- **blurb:** Hand this agent a line for another agent and it delivers it — checking that session's dial first, and never typing over a draft at its prompt. The reply lands in that session's own tile.
+Owner wants THIS session to say something to ANOTHER one:
+`+tell: page_capture the login work is on hold, stay off it for now`. The owner's words for
+what it is: *"I can tell my agent to talk to another agent."* One message, one session,
+delivered or refused — it is not a fan-out over a group and it is not a conversation.
+
+Params: `session` (who to reach — the first word after the colon), `message` (everything
+after that; send the owner's words unless he asks you to put it your own way).
+
+| # | Action | With |
+|---|---|---|
+| 1 | control-check | needs `write` **on the target, not on you**. Dialed `user` or `read`: report the lock and ask the owner to flip THAT tile's dial to 🤖, then wait — NEVER flip it yourself |
+| 2 | send-to-session | `tejun-send <session> <message>` — one call. It re-checks the dial, refuses to overwrite a real draft, sends the text and the Enter separately, and confirms the other agent started. Do not hand-roll the five steps |
+| 3 | report-outcome | the tool's verdict as it gave it, and what you actually said |
+
+**Say who it is from.** `tejun-send` puts no watermark on the message, so what lands at the
+other prompt looks exactly like the owner typing — open with `from @<your session>:` or the
+agent on the other end answers the wrong person.
+
+Report: the verdict (`DELIVERED` / `DENIED` / `BLOCKED` / `STUCK` / `NO-SESSION`) and the
+message you sent, in one short block. **Then stop, and do not wait for a reply** — the
+answer appears in the OTHER session's tile, where the owner reads it himself. Relaying it
+back through here makes this session a switchboard and hides which agent said what.
+
+A refusal is an ANSWER, not an obstacle. `DENIED` means the dial forbids the write and only
+the owner's hand changes that; `BLOCKED` means a human's unsent draft is at that prompt and
+typing over it would destroy their words. Neither is retried, and neither is worked around
+with a bare `tmux send-keys` — going around the shim is a deliberate, visible act and this
+is not an occasion for one.
 
 ## read
 - **class:** session_macro.workflow

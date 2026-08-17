@@ -60,6 +60,26 @@ export interface CatalogSection {
 
 export type Entry = { name: string; origin: Origin; shadowed: boolean; get: (key: string) => string };
 
+/**
+ * `- **key:** value` — the ONE spelling a catalog entry states a field in, in every file
+ * (`- **dial:** read`, `- **run:** stepped`, `- **preview:** yes`). Two readers need it and
+ * for different reasons, which is why it is here rather than inlined at either: `readEntries`
+ * below to READ a field, and `src/macros.ts` to SKIP the fields and find the prose.
+ *
+ * That second use is a bug fix (2026-08-17). MACROS.md entries open with `- **class:**` and
+ * `listMacros` took its description from the first paragraph without knowing a field line
+ * from a sentence — so every blurb the client rendered began
+ * `- class: session_macro.workflow …`. Survivable while the blurb was a hover afterthought;
+ * fatal the day the ⚡ drop became four teaching buttons with the description as their body.
+ */
+export const isKeyLine = (line: string): boolean => /^-\s*\*\*[\w-]+:\*\*/.test(line.trim());
+
+/** The value of one `- **key:** value` line, or '' when the entry does not carry it. */
+export const entryValue = (lines: string[], key: string): string =>
+  (lines.find((l) => new RegExp(`^-\\s*\\*\\*${key}:\\*\\*`, 'i').test(l.trim())) ?? '')
+    .replace(new RegExp(`^\\s*-\\s*\\*\\*${key}:\\*\\*\\s*`, 'i'), '')
+    .trim();
+
 /** The user's copy, or '' when there is not one yet. Absence is a fresh install, never a fault. */
 async function readUserCatalog(file: string): Promise<string> {
   try {
@@ -139,10 +159,7 @@ export async function readEntries(file: string, stockOptional = false): Promise<
       name: s.name,
       origin: s.origin,
       shadowed: s.shadowed,
-      get: (key: string) =>
-        (s.lines.find((l) => new RegExp(`^-\\s*\\*\\*${key}:\\*\\*`, 'i').test(l.trim())) ?? '')
-          .replace(new RegExp(`^\\s*-\\s*\\*\\*${key}:\\*\\*\\s*`, 'i'), '')
-          .trim(),
+      get: (key: string) => entryValue(s.lines, key),
     });
   }
   return out;

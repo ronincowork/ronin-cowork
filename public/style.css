@@ -643,70 +643,96 @@ body {
     border-radius: 0;
   }
 }
-/* Tile ⚡ macros — the fast path: a small dropdown that PREFILLS the session's input.
-   Anchored to the tile header (which is position:relative), not a full-screen modal:
-   the reference lives in the commons's macros tab, this is meant to be one tap and gone. */
+/* Tile ⚡ macros — four TEACHING buttons, dropped from the tile header (which is
+   position:relative), not a full-screen modal.
+
+   It was a dense list of `+name:` rows with the explanation on hover until 2026-08-17.
+   The owner: "it's just very ugly… I would rather have four macros and have larger
+   buttons. These should be headlines, and the boxes are big enough that you can actually
+   describe in them what that means, so people can then go, 'Oh, I see.'" So the row is a
+   CARD — headline, then body copy that is always on screen, never a tooltip (he reads
+   Ronin on a phone, and a phone has no hover). Which four is the catalog's business:
+   `preview: yes` in ronin_catalogs/MACROS.md, read by src/macros.ts.
+
+   TWO COLUMNS WHEN THERE IS ROOM, AND NO QUERY OF ANY KIND. Four cards in one column
+   are 454px tall; a 4-up tile is ~418px and `.tile` is `overflow: hidden`, so the fourth
+   card was cut in half by the tile's own edge — measured 2026-08-17, and an unreadable
+   button is the exact failure this drop was rebuilt to end. It wraps into a 2×2 instead,
+   which halves the height. `auto-fit` + `minmax` does that from the width it actually
+   has, so the anchor stays honest at every tile size and on the phone (~390px, one
+   column) without a `@media` — which would be the wrong question here anyway, since a
+   narrow tile and a narrow phone are different facts — and without `@container tile`,
+   which cannot be asked from here: that container is `.tile-body`, and this drop hangs
+   off `.tile-head`, its SIBLING. */
 .tmac {
   display: none;
   position: absolute;
   top: 100%;
   right: 6px;
   z-index: 12;
-  width: min(340px, calc(100% - 12px));
+  width: min(560px, calc(100% - 12px));
+  /* The opening height. `tilemacros.js` immediately tightens this to the room actually
+     left below the header IN THIS TILE, which no CSS length can name — see the note
+     there. Kept here so the box is bounded even before that runs. */
   max-height: 60vh;
   overflow-y: auto;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 10px;
-  padding: 4px;
+  padding: 6px;
   box-shadow: var(--shadow-sheet);
 }
 .tmac.open {
-  display: block;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 6px;
 }
+/* The same card as the launcher's kind buttons (.ks-btn) — headline + description, left
+   aligned, room to breathe — because it is the same job: choosing a thing you may never
+   have heard of by reading what it does. */
 .tmac .tmac-row {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
   width: 100%;
   height: auto;
+  padding: 10px 12px;
   text-align: left;
-  background: transparent;
-  border: 0;
-  border-radius: 8px;
-  padding: 7px 9px;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.4;
+  background: var(--raise);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--fg);
   cursor: pointer;
 }
 .tmac .tmac-row:hover,
 .tmac .tmac-row:active {
-  background: var(--line);
+  border-color: var(--accent);
+}
+.tmac .tmac-row b {
+  color: var(--fg-strong);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
 }
 /* A macro Ronin types and submits for you. Marked, because pressing Enter into a
    working session is not the same act as dropping text in the box. */
 .tmac .tmac-row.sends b {
-  color: var(--fg);
+  color: var(--accent);
+}
+/* NOT clamped. The body copy is the whole point of the button — a description cut off
+   at two lines teaches half of something, which is the failure the cards replaced. */
+.tmac .tmac-row small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
 }
 .tmac .tmac-row:disabled {
   opacity: 0.45;
   cursor: default;
 }
 .tmac .tmac-row:disabled:hover {
-  background: transparent;
-}
-.tmac .tmac-row b {
-  display: block;
-  color: var(--accent);
-  font: 12px/1.6 Menlo, "DejaVu Sans Mono", Consolas, monospace;
-  font-weight: 500;
-}
-/* Two lines, then ellipsis. The dropdown is the FAST PATH — a macro's full
-   instruction belongs in the reference, not here, and some blurbs are a paragraph. */
-.tmac .tmac-row span {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  border-color: var(--line);
 }
 
 /* Tile メ — the rest of the header, dropped in ONE HORIZONTAL STRIP (owner, 2026-08-17:
