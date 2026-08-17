@@ -66,6 +66,12 @@ function renderField(card, f, ctx) {
 /** Build the surface into `host`. `onDone` runs once the answers are saved. */
 export async function buildFirstRun(host, onDone) {
   host.className = 'fr-root';
+  // `html, body { overflow: hidden }` is deliberate — the grid must never scroll behind
+  // the on-screen keyboard. This surface is a document rather than a grid, so it makes
+  // ITSELF the scroller instead of relaxing that rule for everyone: fixed to the
+  // viewport, scrolling inside. Without this the page renders in full and cannot be
+  // reached past the fold, which is how it shipped and why nobody could read it.
+  host.style.cssText = 'position:fixed;inset:0;overflow-y:auto;overscroll-behavior:contain;';
   host.replaceChildren();
 
   const [rec, agentsRes, specsRes] = await Promise.all([

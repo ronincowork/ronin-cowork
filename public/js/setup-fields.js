@@ -34,7 +34,7 @@ export const SECTIONS = [
   {
     id: 'machine',
     title: 'This machine',
-    lede: 'Ronin runs here and shows you its terminals in a browser — this page is that browser, already talking to it. Everything below was measured on the box just now, so nothing here is a guess.',
+    lede: 'Ronin is now installed on this machine — laptop, home server or a VM somewhere, it makes no difference to what follows. This page is already talking to it.',
     facts: true,
   },
   {
@@ -50,7 +50,7 @@ export const SECTIONS = [
   {
     id: 'agents',
     title: 'Agents',
-    lede: 'Ronin does not talk to a model itself. It runs the agent you already use — Claude Code, Codex and their kin — each in its own terminal, and gives you all of them in one place. So this asks only what is on the machine: something present asks whether you want it here, something absent tells you how to get it. Ronin checks the command and nothing else — signing in happens inside the agent, the first time you use it.',
+    lede: 'Ronin is the room your agents work in — a co-working space for the CLIs you already use, each in its own terminal, all on one screen. So the only question here is what is on the machine: something present asks whether you want it in the room, something absent tells you how to get it. Ronin looks for the command and nothing else — signing in happens inside the agent itself, the first time you use it.',
     custom: 'agents',
   },
   {
@@ -188,17 +188,20 @@ export const FIELDS = [
   },
 ];
 
-/** The machine facts strip: read-only, and each row is dropped when the box did not
- * report it rather than rendered blank. Adding one is a row here. */
+/** The machine strip — DELIBERATELY SHORT. An inventory belongs to someone choosing a
+ * box; this person already has one and is only adding Ronin to it, so the only facts
+ * that earn a place are the ones a later answer depends on: cores and memory are what
+ * the session cap is reasoned from, and the name is how they will recognise the box in
+ * the roster. Everything else the box knows lives in the ⚙ Setup room, which is where
+ * you go to ask rather than to be told.
+ *
+ * Keys are the record's own (`observed.machine`): host · user · kind · hypervisor ·
+ * provider · product · cores · ram_gb · arch. A row whose value is missing is dropped
+ * rather than rendered blank. Adding one is a row here. */
 export const FACTS = [
-  ['hostname', (m) => m.hostname],
-  ['system', (m) => m.system ?? m.os],
-  ['architecture', (m) => m.arch],
+  ['this box', (m) => m.host],
   ['cores', (m) => m.cores],
-  ['memory', (m) => m.memory ?? m.ram],
-  ['disk free', (m) => m.disk],
-  ['tmux', (m) => m.tmux],
-  ['node', (m) => m.node],
+  ['memory', (m) => (m.ram_gb ? m.ram_gb + ' GB' : null)],
 ];
 
 /** What Ronin Services buys. One row per thing; the page renders whatever is here. */
