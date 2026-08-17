@@ -40,7 +40,8 @@ import { listServices } from './sockets.js';
 import { CONTRACT_V } from './sockets-contract.js';
 import { roninIdentity } from './routes/version.js';
 import { listProjectRoots } from './project-roots.js';
-import { readOwner, readMax, readSection, liveCount } from './user-config.js';
+import { listAgentAvailability } from './agents.js';
+import { readAgentsSection, readMachineSection, readOwner, readMax, readSection, liveCount } from './user-config.js';
 
 const pexec = promisify(execFile);
 
@@ -75,13 +76,19 @@ export interface SetteiRecord {
 
 /* ------------------------------------------------------- small honest measurers */
 
-/** Absent reads `null`, never missing: a thing this box could have and does not. */
+/**
+ * Absent reads `null`, never missing: a thing this box could have and does not.
+ *
+ * FOR TOOLS ONLY — `gh`, `tailscale`, `chromium`. **The agent CLIs do not come through
+ * here**, and the difference is the whole reason `src/agents.ts` exists: this process's
+ * PATH is not the one a pane gets. `systemd --user` carries a minimal PATH, so a CLI
+ * installed through npm-global or nvm is routinely present in the owner's shell and
+ * absent here — a scan from node and a scan from the tmux server's environment each
+ * answer wrong, in different directions. Agent availability is measured in a LOGIN
+ * SHELL by `listAgentAvailability()` and this record consumes that answer rather than
+ * producing a second, cheaper, wronger one.
+ */
 async function whichPath(cmd: string): Promise<string | null> {
-  // PATH SCAN, NOT A PROBE — and the difference matters. `systemd --user` carries a
-  // minimal PATH, so a CLI installed through npm-global or nvm is routinely present in
-  // the owner's shell and absent from this process's environment. ATARASHI leg 2 owns
-  // the real probe (it has to answer in the environment a tmux pane actually gets);
-  // this stands in until it lands and is deliberately the cheap version.
   const dirs = (process.env.PATH ?? '').split(path.delimiter).filter(Boolean);
   for (const d of dirs) {
     const p = path.join(d, cmd);
@@ -173,8 +180,8 @@ function routes(): Record<string, unknown> {
 /** The half that persists, read back from where it actually lives. */
 async function readSet(): Promise<Record<string, unknown>> {
   const owner = await readSection<Record<string, unknown>>('owner', {});
-  const machine = await readSection<Record<string, unknown>>('machine', {});
-  const agents = await readSection<Record<string, unknown>>('agents', {});
+  const machine = await readMachineSection();
+  const agents = await readAgentsSection();
   const gbrain = await readSection<Record<string, unknown>>('gbrain', {});
   const services = await readSection<Record<string, unknown>>('services', {});
   const roots = await listProjectRoots();
@@ -211,10 +218,20 @@ async function readSet(): Promise<Record<string, unknown>> {
 
 /** The half the box answers for itself. Nothing here is written down. */
 async function readObserved(): Promise<Record<string, unknown>> {
-  // The owner-ruled starting four, plus local weights. Absent is `null`, not missing.
-  const names = ['claude', 'codex', 'gemini', 'hermes', 'ollama'];
-  const found = await Promise.all(names.map((n) => whichPath(n)));
-  const agents = Object.fromEntries(names.map((n, i) => [n, found[i]]));
+  /**
+   * THE OWNER-RULED STARTING FOUR, measured by ATARASHI's login-shell probe.
+   *
+   * `installed` is the only claim it makes — never *signed in*, because the owner ruled
+   * we do not inspect accounts. And the probe's failure mode is deliberately generous:
+   * if the login shell will not run at all, every agent comes back `installed: false`,
+   * because a shell that will not run is not evidence that nothing is installed. That is
+   * the right default for a page offering an install, so this record keeps the full
+   * `{ installed, path }` rather than flattening to a bare null — a reader can then see
+   * the shape of the claim instead of inheriting a bare absence it cannot check.
+   */
+  const agents = Object.fromEntries(
+    (await listAgentAvailability()).map((a) => [a.id, { installed: a.installed, path: a.path || null }]),
+  );
 
   const tools = Object.fromEntries(
     await Promise.all(
@@ -264,7 +281,7 @@ async function computeStatus(
   const obsMachine = observed.machine as Record<string, unknown>;
   const setMachine = set.machine as Record<string, unknown>;
   const setOwner = set.owner as Record<string, unknown>;
-  const agentsSeen = observed.agents as Record<string, string | null>;
+  const agentsSeen = observed.agents as Record<string, { installed: boolean; path: string | null }>;
   const keys = observed.keys as Record<string, boolean>;
   const projects = set.projects as SetteiProject[];
   const services = set.services as Record<string, unknown>;
@@ -339,7 +356,7 @@ async function computeStatus(
     })),
     agents: {
       new_session: dflt?.provider && dflt?.model ? `${dflt.provider}/${dflt.model}` : 'no install default — per-project only',
-      usable: Object.entries(agentsSeen).filter(([, p]) => p).map(([n]) => n),
+      usable: Object.entries(agentsSeen).filter(([, a]) => a.installed).map(([n]) => n),
       ...jobStatus,
     },
     subscription: services.entitlement
