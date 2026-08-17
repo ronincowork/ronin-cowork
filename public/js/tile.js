@@ -27,7 +27,7 @@ import { presetData, refreshHome } from './home.js';
 import { IS_TOUCH, NEW, S, saveState, serviceMissing, tiles } from './state.js';
 import { buildHome } from './commons.js';
 import { guard } from './errors.js';
-import { buildLadder, buildLetter } from './shingo.js';
+import { buildLadder } from './shingo.js';
 import { buildTileHead, lockedTitle, syncTileHead } from './tilehead.js';
 import { openJobMenu } from './widgets.js';
 import { dvrStep } from './dvr.js';
@@ -235,39 +235,20 @@ export class Tile {
     if (!this.tegami) this.closeLadder();
   }
 
-  /**
-   * The letter, verbatim — this tile's own session, opened from the ⛩ in its header.
-   * Read-only, and never both panels at once.
+  /*
+   * `toggleLetter` / `closeLetter` were here until 2026-08-17. They drew the TEGAMI file
+   * verbatim over the pane, opened from a ⛩ in this tile's header, and they were the only
+   * client reader of `/api/sessions/:name/tegami/raw`. The owner removed that button — the
+   * torii now means "the Commons" everywhere — so the panel, its opener and `buildLetter`
+   * all went with it rather than lingering as an unreachable surface.
    *
-   * Deliberately NOT "show any session's letter": the board is a readout, and reading a
-   * letter happens from the terminal tile. A torii on every board row marked nothing,
-   * because everything had one.
+   * The server route is MICHI's and is untouched: a service owns its own endpoints, and
+   * this client no longer being a consumer is not a reason to take one away.
    */
-  async toggleLetter() {
-    if (this.el.querySelector('.shingo-letter')) return this.closeLetter();
-    const name = this.session;
-    // No session, or no michi: `/tegami/raw` is the service's route and answering a 404
-    // by drawing an empty "no letter yet" panel told the owner the session had no letter
-    // when the truth was that nothing here could ever have one.
-    if (!name || serviceMissing('michi')) return;
-    this.closeLadder();
-    let d = { file: '', text: null };
-    const r = await request('/api/sessions/' + encodeURIComponent(name) + '/tegami/raw', { cache: 'no-store' });
-    if (r.ok) d = r.data;
-    this.closeLetter();
-    this.body.appendChild(buildLetter(d, () => this.closeLetter()));
-    this.torii.classList.add('open');
-  }
-
-  closeLetter() {
-    this.el.querySelector('.shingo-letter')?.remove();
-    this.torii.classList.remove('open');
-  }
 
   toggleLadder() {
     if (this.ladderOpen) this.closeLadder();
     else {
-      this.closeLetter();
       this.ladderOpen = true;
       this.drawLadder();
     }
@@ -294,7 +275,6 @@ export class Tile {
    */
   clearOverlays() {
     this.closeLadder();
-    this.closeLetter();
     document
       .querySelectorAll('.tdrop.open, .tmac.open')
       .forEach((m) => m.classList.remove('open'));

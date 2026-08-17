@@ -271,8 +271,20 @@ async function checkJourneys(page, label, jsErrors) {
   else bad(`${label}: theme flip broken — dark=${darkBg} light=${lightBg} back=${backBg}`);
   const failAfterTheme = await page.evaluate(() => !!document.getElementById('failbar'));
   if (failAfterTheme) bad(`${label}: the theme flip raised the failure banner`);
+  // WAIT FOR THE SHEET TO BE GONE, do not sleep 200ms and hope (2026-08-17). This was a
+  // fixed timeout, and roughly one run in two the sheet was still open when the next probe
+  // started — so probe 4 focused a tab underneath a live modal and read `undefined`, and
+  // the note-journey click later died on `#syssheet intercepts pointer events` after
+  // 30 seconds. Both failures blamed the product; neither was the product. A gate that
+  // fails one run in two teaches people to re-run it, which is how a real failure gets
+  // waved through.
+  // `#syssheet.open` DETACHED, not `#syssheet:not(.open)` visible: a ui.sheet is built once
+  // and lives for the page, so the closed sheet is still in the DOM and merely hidden —
+  // and waitForSelector's default state is `visible`, so the obvious spelling waits for a
+  // hidden div to appear and times out every time. Matching on `.open` and waiting for the
+  // match to vanish asks the question the class actually answers.
   await page.keyboard.press('Escape');
-  await page.waitForTimeout(200);
+  await page.waitForSelector('#syssheet.open', { state: 'detached', timeout: 3000 });
 
   // 4 — the Commons strip is a real tablist: arrows move focus along it, Enter lands
   // the focused room. (Activation stays deliberate — focus alone must not open a room.)

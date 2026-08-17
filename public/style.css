@@ -2585,31 +2585,10 @@ body {
     background: var(--bg);
   }
 }
-/* THE GROUP EDITOR'S DOOR — the glyph, and nothing else (2026-08-17). It used to carry
-   the session's group names, which is why it wanted `max-width: 45%` and an ellipsis:
-   it was restating the heading the row is already filed under, for up to half the row.
-   The names are gone and the button is not — this is the only way to set a session's
-   groups without opening it first, and quieting a verb is not the same as deleting it.
-   What is left is one pill in a fixed 28px track: constant, and out of the scan. */
-.home-tag {
-  padding: 2px 7px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  color: var(--muted);
-  font-size: 11px;
-  white-space: nowrap;
-  cursor: pointer;
-}
-.home-tag.on {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-@media (hover: hover) and (pointer: fine) {
-  .home-tag:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-}
+/* The roster's 🏷 stood here until 2026-08-17. The owner's ruling, given twice: a roster
+   row carries no tag button at all — groups are changed from the session's OWN 🏷 in its
+   tile header, and a board whose job is to be READ does not need a second door to a verb
+   that already has one. The rows are filed under the very headings it used to edit. */
 
 /* group heading in the session list — the tag, and how many are in it */
 .home-grp {
@@ -2666,11 +2645,9 @@ body {
   --hr-shingo: 132px;
   --hr-status: 70px;
   --hr-ctx: 48px;
-  --hr-tag: 28px;
   display: grid;
   grid-template-columns:
-    var(--hr-mark) minmax(0, 1fr) var(--hr-shingo) var(--hr-status) var(--hr-ctx)
-    var(--hr-tag);
+    var(--hr-mark) minmax(0, 1fr) var(--hr-shingo) var(--hr-status) var(--hr-ctx);
   align-items: center;
   gap: 8px;
   width: 100%;
@@ -2718,32 +2695,21 @@ body {
 .home-row > .home-ctx {
   grid-column: 5;
 }
-.home-row > .home-tag {
-  grid-column: 6;
-}
 /* Each reading starts at its own track's left edge and stops at its right one. */
 .home-row > .home-shingo,
 .home-row > .home-status,
-.home-row > .home-ctx,
-.home-row > .home-tag {
+.home-row > .home-ctx {
   justify-self: start;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* TOUCH: FIVE COLUMNS, NOT SIX WITH AN EMPTY ONE. js/roster.js does not BUILD the 🏷 on
-   a finger, so the sixth track would be 28px plus its gap of nothing at all — and 34px is
-   a third of what the session name has to live on at 402px. This is the one place the
-   template is restated rather than re-sized, because a `0px` track still collects its
-   gap. It sits HERE, after the base rule, on purpose: an identically specific rule earlier
-   in the file loses, which is exactly what happened when it was written up beside
-   `.home-job` (browser-measured, 2026-08-17). */
-@media (pointer: coarse) {
-  .home-row {
-    grid-template-columns:
-      var(--hr-mark) minmax(0, 1fr) var(--hr-shingo) var(--hr-status) var(--hr-ctx);
-  }
-}
+/* The touch override that restated this template with five tracks instead of six is
+   gone (2026-08-17): the 🏷 left the row on every device, so five IS the base rule and
+   a finger and a mouse now want the same shape. The lesson it recorded outlives it —
+   a `0px` track still collects its gap, so dropping a column means dropping it from the
+   template, not sizing it to nothing. */
+
 /* A NARROW TILE: give the name back what the chip can spare. Numbers only — the template
    is not restated (see above).
 
@@ -4054,72 +4020,12 @@ body {
   background: color-mix(in srgb, var(--warn) 12%, transparent);
 }
 
-/* ---- the letter: the TEGAMI file itself, opened from the ⛩ in any tile header ---- */
-.tile-head button.torii {
-  color: var(--accent);
-}
-.tile-head button.torii.open {
-  border-color: var(--accent);
-}
-.shingo-letter {
-  position: absolute;
-  inset: 0;
-  z-index: 6;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg);
-}
-.sletter-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  background: var(--bg-2);
-  border-bottom: 1px solid var(--line);
-  flex: 0 0 auto;
-}
-.sletter-path {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: Menlo, "DejaVu Sans Mono", Consolas, monospace;
-  font-size: 10.5px;
-  color: var(--muted);
-}
-.sletter-x {
-  flex: 0 0 auto;
-  width: 26px;
-  height: 24px;
-  background: transparent;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  color: var(--muted);
-  cursor: pointer;
-}
-/* wrap="off" in spirit: the json block is laid out in columns and soft-wrapping mangles
-   it, so the block scrolls sideways instead. */
-.sletter-body {
-  flex: 1 1 auto;
-  margin: 0;
-  padding: 10px 12px;
-  overflow: auto;
-  font-family: Menlo, "DejaVu Sans Mono", Consolas, monospace;
-  font-size: 12px;
-  line-height: 1.6;
-  color: var(--fg);
-  white-space: pre;
-  user-select: text;
-  -webkit-user-select: text;
-}
+/* The TEGAMI letter panel and its ⛩ button stood here until 2026-08-17 (.tile-head
+   button.torii, .shingo-letter, .sletter-head/-path/-x/-body). The owner removed the
+   button — the torii means "the Commons" everywhere now — so the panel it opened went
+   with it. js/shingo.js records what the surface was and where it would belong if it
+   comes back. */
 
-/* ---- ⛩ Commons (top bar) — the DROP IS GONE, the anchor is not ----
-   The き button dropped a registry-fed menu of every room until 2026-08-17
-   (.commons-menu / .commons-row / .commons-wrap, all removed with it). The owner ruled
-   it out: ⛩ Commons is one press to ⌂ Roster and the tab strip inside does the choosing.
-   `#bar { position: relative }` STAYS — the touch drops (メ, ニ, ⚡) still hang off it,
-   and deleting it with the menu would drop three sheets to the viewport's top-left. */
 #bar { position: relative; }
 
 

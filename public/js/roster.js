@@ -14,7 +14,7 @@
  */
 import { request } from './request.js';
 import { STATUS_LABEL, homeData, homeFault, jobIcon } from './home.js';
-import { IS_TOUCH, S } from './state.js';
+import { S } from './state.js';
 import { clampTip, humanAge } from './shingo.js';
 
 /**
@@ -167,25 +167,14 @@ export function buildRoster(tile, host) {
     // so the label repeated the heading you just read — and the button was a verb
     // on a board that is meant to be a READ.
     //
-    // THE GLYPH ONLY, NEVER THE NAMES (owner's ruling 2026-08-17). `🏷 kojinsa · review`
-    // was allowed up to 45% of the row to restate the heading the row is already sitting
-    // under — the same redundancy that took the label off touch, costing width instead of
-    // a tap. What is left is the AFFORDANCE, and only the affordance: this is the one way
-    // to edit a session's groups without opening it, and deleting the button along with
-    // its label would have removed a verb the owner asked to make quieter, not to lose.
-    // The bare 🏷 is not a new drawing either — it is exactly what an untagged session
-    // already wore, so this is the shipped form, applied to every row.
-    if (!IS_TOUCH) {
-      const tg = document.createElement('span');
-      tg.className = 'home-tag' + ((s.tags || []).length ? ' on' : '');
-      tg.textContent = '🏷';
-      tg.title = 'Set groups for ' + s.name;
-      tg.addEventListener('click', (e) => {
-        e.stopPropagation(); // don't connect — this is the label, not the door
-        if (S.tagPanel) S.tagPanel.open(s.name);
-      });
-      r.appendChild(tg);
-    }
+    // NO 🏷 ON A ROSTER ROW AT ALL (owner's ruling 2026-08-17, twice). The first pass
+    // dropped the tag NAMES and kept the button, on the reasoning that it was the only
+    // way to edit groups without opening the session. The owner's answer: that is not a
+    // gap, it is the design — "the way you change the tag is by going into a particular
+    // session and clicking on that session's tag button", which is the 🏷 in the tile
+    // header (tilehead.js). A verb that already has a home does not need a second one on
+    // a board whose whole job is to be READ, and the rows are already filed under the
+    // very headings the button was there to edit.
     r.addEventListener('click', () => tile.connect(s.name));
     return r;
   };

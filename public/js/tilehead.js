@@ -104,20 +104,27 @@ const HEADER = () => (rows ??= [
 
   { grow: true },
 
-  // メ is a way IN to the commons, not a close: the session keeps streaming behind the
-  // panel and ✕ on the tab strip brings you back. It needs no session — it is the way
-  // to GET one — which is why it is the only button on the right with no `needs`.
-  { key: 'menuBtn', cls: 'menu', text: 'メ',
+  // ⛩ IS THE COMMONS, EVERYWHERE (owner's ruling 2026-08-17). It was メ here and き in
+  // the bar, for the same act, while ⛩ meant "the letter" on this very header — one
+  // glyph for two things and two glyphs for one. Now the torii means exactly one thing
+  // wherever it appears: the way in to the Commons. The bar's button changed in the same
+  // pass; the tegami torii that used to sit beside this one is gone (see below).
+  //
+  // A way IN, not a close: the session keeps streaming behind the panel and ✕ on the tab
+  // strip brings you back. It needs no session — it is the way to GET one — which is why
+  // it is the only button on the right with no `needs`.
+  { key: 'menuBtn', cls: 'menu', text: '⛩',
     help: '⌃⇧C — the CoWorking Commons: roster, new session, wipeboard, docs, roots, hotwords. Opens over this tile; ✕ comes back.',
     on: (t) => t.showHome('sessions') },
 
-  // ⛩ opens the letter itself — the file as the agent left it — because the chip's
-  // readout is an interpretation and sometimes you want the source. Its route is michi's.
-  { key: 'torii', cls: 'torii', text: '⛩', needs: 'session michi',
-    help: "Read this session's TEGAMI — the letter as the agent left it",
-    quiet: { session: 'The session letter — no session in this tile yet',
-             michi: 'The session letter — no ladder service is installed' },
-    on: (t) => t.toggleLetter() },
+  // THE TEGAMI TORII IS GONE (owner's ruling 2026-08-17, reaffirmed after the objection
+  // below was put to him). It opened `/tegami/raw` — the letter verbatim — and it was the
+  // only client route to that endpoint. The objection: the shingo chip opens the PARSED
+  // ladder, not the file, and shingo.js hides the chip entirely when there is no ladder,
+  // so a session with a letter and no ladder up now has no route to its own letter. The
+  // owner's call is that the button costs more header width than that case is worth. If
+  // the raw view comes back it belongs INSIDE the ladder panel, where the reader already
+  // is, not as a second glyph competing with the first.
 
   // ⚡ session_macros for THIS session: prefills the input you are typing in and stops.
   // It never runs anything. The reference is the commons' macros tab, deliberately elsewhere.

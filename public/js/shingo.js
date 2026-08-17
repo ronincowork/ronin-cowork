@@ -269,43 +269,17 @@ export function buildLadder(t) {
   return box;
 }
 
-/**
- * THE LETTER ITSELF — the file, verbatim, in a real scrollable, selectable block.
+/*
+ * `buildLetter` stood here until 2026-08-17 — the TEGAMI file verbatim, in a selectable
+ * <pre>, opened from a ⛩ in the tile header. The owner removed that button (the torii
+ * now means "the Commons" everywhere), which left this with no caller, and an unreachable
+ * renderer is a corpse check-dead is right to refuse.
  *
- * The chip and the ladder are an interpretation; this is the source. Every session gets
- * the torii whether or not it has a ladder up, because "what does this session's letter
- * actually say" is a question you ask most often when the readout looks wrong.
- *
- * Read-only, like everything on this side. Nothing here writes, and the only way to
- * change a letter remains the agent that owns it.
+ * What went with it is worth naming, because the comment that stood here argued for it:
+ * the chip and the ladder are an INTERPRETATION, and this was the source. If the raw view
+ * is ever wanted again it belongs inside the ladder panel, where the reader already is.
+ * `GET /api/sessions/:name/tegami/raw` still serves it — the route is michi's and stays.
  */
-export function buildLetter({ file, text }, onClose) {
-  const wrap = document.createElement('div');
-  wrap.className = 'shingo-letter';
-
-  const head = document.createElement('div');
-  head.className = 'sletter-head';
-  const path = document.createElement('span');
-  path.className = 'sletter-path';
-  path.textContent = file || '';
-  path.title = file || '';
-  const x = document.createElement('button');
-  x.type = 'button';
-  x.className = 'sletter-x';
-  x.textContent = '✕';
-  x.title = 'Close';
-  x.addEventListener('click', onClose);
-  head.append(path, x);
-
-  const body = document.createElement('pre');
-  body.className = 'sletter-body';
-  // No ladder is a legitimate state, not an error — say so plainly rather than showing
-  // an empty box the reader has to interpret.
-  body.textContent = text == null ? 'No letter on disk for this session yet.' : text;
-
-  wrap.append(head, body);
-  return wrap;
-}
 
 /** `51m`, `3h`, `2d` — short enough to sit on a board row. */
 export function humanAge(ms) {

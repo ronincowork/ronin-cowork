@@ -39,10 +39,9 @@ same `needs` string, and both dim the control the same way.
 | session picker | — | always |
 | the mark (job) | — | always — see the note below |
 | SHINGO chip + ladder | `michi` | chip hidden, ladder unreachable, never fetched |
-| ⛩ torii (the letter) | `michi` | inert, with the reason on hover; never fetched |
 | ⛽ context gauge | — | always (hides when there is no reading) |
 | 🎛 control dial | — | always |
-| メ commons | — | always (individual tabs gate: `koe` · `counting` · `koshi`) |
+| ⛩ commons | — | always (individual tabs gate: `koe` · `counting` · `koshi`) |
 | ⚡ macros | — | always |
 | 🔒/🔓 lock | rireki's stream handler | inert and opaque; every tile born 🔒 and stays 🔒 |
 | 🏷 groups | — | always |
@@ -87,7 +86,7 @@ show on a phone, where every scroll gesture round-trips through tmux copy-mode.
 Built order (`public/js/tilehead.js`):
 
 ```
-● │ [ session ▾ ] │ chip │ mark │ ←spacer→ │ メ ⛩ ⚡ 🔒 🏷 ⛽ 🎛 📝 🗑
+● │ [ session ▾ ] │ chip │ mark │ ←spacer→ │ ⛩ ⚡ 🔒 🏷 ⛽ 🎛 📝 🗑
 ```
 
 **One table, and a loop.** Every control above is one row of `HEADER` in
@@ -167,28 +166,30 @@ other writer, for when an agent never re-marked itself or was redirected mid-fli
 
 `POST /api/sessions/:name/session_job` → 409 if the letter has no readable json block.
 
-### メ The commons
+### ⛩ The torii — the Commons
 
-⌃⇧C (⌃⌥C on Linux/Windows). Opens the CoWorking Commons over this tile — roster, new session,
-wipeboard, project roots, hotwords. **A way in, not a close:** the session keeps streaming
-behind the panel and ✕ on the tab strip comes back to it. Stopping viewing is the blank
-option in the picker; killing is 🗑.
+⌃⇧C (⌃⌥C on Linux/Windows). One press, straight to the CoWorking Commons over this tile,
+landing on ⌂ Roster — roster, new session, wipeboard, project roots, hotwords. It needs no
+session, because it is the way to GET one. **A way in, not a close:** the session keeps
+streaming behind the panel and ✕ on the tab strip comes back to it. Stopping viewing is the
+blank option in the picker; killing is 🗑.
 
-### ⛩ The torii — this session's letter
+**The torii means this, and only this, everywhere** (owner's ruling 2026-08-17). It was メ
+here and き in the bar for the same act, while ⛩ on this same header meant something else
+entirely — the letter. One glyph for two things and two glyphs for one thing. Both moved in
+the same pass, so the mark never had a period of meaning both.
 
-Opens the TEGAMI **verbatim** — the file as the agent left it, in a real scrollable,
-selectable block. The chip and the ladder are an interpretation; this is the source, and
-"what does this letter actually say" is the question you ask most often when the readout
-looks wrong.
+**The letter button is gone.** It opened `/api/sessions/:name/tegami/raw` — the TEGAMI
+verbatim, in a scrollable selectable block — and it was the only client reader of that
+route. What went with it is worth naming, because it was deliberate: the chip and the
+ladder are an INTERPRETATION, and the letter was the source, which is the question you ask
+when the readout looks wrong. The cost is real and the owner weighed it: `js/shingo.js`
+hides the chip when a session has no ladder, so a session with a letter and no ladder up now
+has no route to its own letter at all. The header width won.
 
-On **every** session, ladder or not. Read-only; the only thing that changes a letter is the
-agent that owns it. Never both panels at once — opening the letter closes the ladder.
-
-**Inert without a session, and without michi** (`needs: 'session michi'`). Its route,
-`/api/sessions/:name/tegami/raw`, ships with the service. Until 2026-08-15 it was gated by
-neither: on a cowork-only install it opened a panel reading *"no letter on disk for this
-session yet"* — a fetch into a 404 dressed as an empty state, telling the owner the session
-had no letter when the truth was that nothing there could ever have one.
+The route is MICHI's and still serves — a client ceasing to be a consumer is not a reason to
+take an endpoint away. If the raw view returns, it belongs inside the ladder panel, where
+the reader already is, not as a second glyph competing with the first.
 
 ### ⚡ Macros
 
@@ -359,10 +360,10 @@ else printable, and sends it on Enter. The composer takes a native paste.
 Touch collapses the whole header into **one row** (`public/js/tiledrop.js`):
 
 ```
-⛩ ronin │ [ session ▾ ] │ メ │ 4 │ ニ
+⛩ ronin │ [ session ▾ ] │ ⛩ │ 4 │ ニ
 ```
 
-**メ is this session** — Status, Ladder, TEGAMI, Macros, Groups, Note, Control, Kill.
+**⛩ is this session** — Status, Ladder, Macros, Groups, Note, Control, Kill.
 **ニ is Ronin** — Keys, Home, New, Board, Pad. Everything else is terminal.
 
 The controls in those sheets are **the same nodes, relocated, not cloned**, so every handler
