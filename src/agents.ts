@@ -19,21 +19,22 @@
  * ---------------------------------------------------------------------------
  * WHY A LOGIN SHELL, and not `command -v` from this process.
  *
- * Three PATHs disagree on a normal box, measured on dohyo-unified 2026-08-17:
+ * Three PATHs disagree on an ordinary box. Measured 2026-08-17, with `claude` installed by
+ * its own installer into `~/.local/bin`:
  *
- *   this Node process   ...:/home/glen3/.local/bin:...      claude FOUND
- *   tmux server env     /usr/local/bin:/usr/bin:/bin        claude ABSENT
- *   a login shell       ...:/home/glen3/.local/bin:...      claude FOUND
+ *   this Node process   ...:~/.local/bin:...            claude FOUND
+ *   tmux server env     /usr/local/bin:/usr/bin:/bin    claude ABSENT
+ *   a login shell       ...:~/.local/bin:...            claude FOUND
  *
- * `claude` installed by its own installer lives in `~/.local/bin`, which a login shell
- * puts on PATH from the user's profile and the tmux server's inherited environment does
- * not have. A pane does not run with the server's environment: `new-session` starts the
- * default shell as a LOGIN shell, which rebuilds PATH from profile — so the login shell's
- * answer is the pane's answer, and it is the only one worth reporting.
+ * A login shell puts `~/.local/bin` on PATH from the user's profile; the tmux server's
+ * inherited environment does not have it. And a pane does not run with the server's
+ * environment — `new-session` starts the default shell as a LOGIN shell, which rebuilds
+ * PATH from profile. So the login shell's answer IS the pane's answer, and it is the only
+ * one worth reporting.
  *
- * Probing this process's own PATH is nearly right and wrong in a way that would be hard to
- * see: the service inherits whatever environment started it, which on this box happens to
- * include `~/.local/bin` and on the next box will not.
+ * Probing this process's own PATH is nearly right, and wrong in a way that would be hard
+ * to see: the service inherits whatever environment started it, which on a developer's box
+ * happens to carry `~/.local/bin` and on a fresh install will not.
  * ------------------------------------------------------------------------- */
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
