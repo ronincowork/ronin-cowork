@@ -241,6 +241,94 @@ export const updatePasskeysSection = (value: Record<string, unknown> | null): Pr
     else doc.passkeys = value;
   });
 
+/* ------------------------------------------------ SETTEI's own sections (⚙ Setup) */
+
+/**
+ * THE SECTIONS THE ⚙ SETUP TAB OWNS, and it owns them BY NAME.
+ *
+ * Four writers rather than one generic "save the config", and that is the whole safety
+ * property: `ronin.json` also carries `auth` — a scrypt record and the secret that signs
+ * session tokens — and `passkeys`. A route that took a document and wrote it would let a
+ * browser post a new signing secret; a route that takes `{ name, where }` cannot, no
+ * matter what else is in the body. `updateConfig` then preserves every section the caller
+ * never heard of, which is why adding one here costs nobody a migration.
+ *
+ * NO BUS PUBLISH ON ANY OF THESE, and it is checked rather than assumed: nothing in
+ * `bin/` or `ronin_bin/` parses a machine name, an outlet choice or an entitlement.
+ * `docs/user-config.md`'s rule is *if a bash tool needs a setting, publish it* — so a
+ * `@ronin-machine` option today would be a bus entry with no reader, which rots faster
+ * than no entry at all. Publish when a reader appears.
+ */
+
+/** What the owner calls this box, and where it is. Absent = fall back to the hostname. */
+export const readMachineSection = (): Promise<Record<string, unknown>> =>
+  readSection<Record<string, unknown>>('machine', {});
+
+/**
+ * `where` IS FREE TEXT BY RULING (owner, 2026-08-17): *you know where your box is, the
+ * box does not.* Detecting a region means a cloud metadata call, and no outbound call
+ * belongs in a record that renders on page load.
+ */
+export const writeMachineSection = (v: { name?: string; where?: string }): Promise<void> =>
+  updateConfig((doc) => {
+    const m = ((doc.machine ?? {}) as Record<string, unknown>) || {};
+    if (v.name !== undefined) m.name = String(v.name).trim().slice(0, 64);
+    if (v.where !== undefined) m.where = String(v.where).trim().slice(0, 120);
+    doc.machine = m;
+  });
+
+/**
+ * HOW WORK GETS A MODEL — two different questions, and merging them is the trap.
+ *
+ * `sessions.default` is what a NEW SESSION launches as: a CLI in a tile. Per-project
+ * defaults already live in the roots file; this is the floor under a project that names
+ * none, which today falls back to a bare `claude` — a string matching no launch-table
+ * row, which is why MCP-off refuses it and a fresh box launches wrong.
+ *
+ * `jobs` is the house's own model-fed work: one question, one answer, over an API. Not a
+ * session, so each needs a key — and what is stored is the env var's NAME. Never a key.
+ */
+export const readAgentsSection = (): Promise<Record<string, unknown>> =>
+  readSection<Record<string, unknown>>('agents', {});
+
+export const writeAgentsSection = (value: Record<string, unknown>): Promise<void> =>
+  updateConfig((doc) => {
+    doc.agents = value;
+  });
+
+/** Whether the owner turned gbrain on. Services-only; the toggle is not the installer. */
+export const writeGbrainSection = (enabled: boolean): Promise<void> =>
+  updateConfig((doc) => {
+    doc.gbrain = { enabled: Boolean(enabled) };
+  });
+
+/**
+ * THE SUBSCRIPTION — the id, the address it is bound to, when the round trip closed, and
+ * which terms were accepted.
+ *
+ * **The id is not a key.** It authorises nothing and gates nothing on this box; it rides
+ * outward on usage drops so the collector can match usage to the account that accepted
+ * the terms, and the collector treats it as a claim to match rather than as proof.
+ * Anything that can read the config store can read it, which is exactly why it must never
+ * become a credential.
+ *
+ * The email is recorded beside it by ruling (owner, 2026-08-17): a subscription you
+ * cannot identify is a support ticket waiting to happen.
+ */
+export const writeServicesSection = (v: {
+  entitlement?: string | null;
+  email?: string | null;
+  verified?: string | null;
+  terms?: string | null;
+}): Promise<void> =>
+  updateConfig((doc) => {
+    const s = ((doc.services ?? {}) as Record<string, unknown>) || {};
+    for (const k of ['entitlement', 'email', 'verified', 'terms'] as const) {
+      if (v[k] !== undefined) s[k] = v[k] === null ? null : String(v[k]).trim().slice(0, 200);
+    }
+    doc.services = s;
+  });
+
 /** Put the name on the bus for the bash half. Best-effort, exactly like publishMax. */
 export async function publishOwner(name?: string): Promise<void> {
   const value = name ?? (await readOwner());

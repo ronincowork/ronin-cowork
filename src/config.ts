@@ -13,8 +13,16 @@ import path from 'node:path';
 /** @service — services resolve the install root through cowork's one answer. */
 export const REPO_ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-/** First IPv4 address Tailscale reports for this node, or 127.0.0.1 as a fallback. */
-function tailnetIp(): string {
+/**
+ * First IPv4 address Tailscale reports for this node, or 127.0.0.1 as a fallback.
+ *
+ * Exported since 2026-08-17 for SETTEI's record, which has to tell the owner the one
+ * distinction that matters about exposure: bound to your tailnet with no password is a
+ * closed door, and bound wider with no password is a live shell on an open port. Both
+ * are "not loopback", so nothing short of this comparison can separate them — and
+ * `assertBindIsSafe` below already relies on exactly the same test.
+ */
+export function tailnetIp(): string {
   try {
     const out = execFileSync('tailscale', ['ip', '-4'], { encoding: 'utf8' }).trim();
     const ip = out.split('\n')[0]?.trim();
