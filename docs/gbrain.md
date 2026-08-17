@@ -13,12 +13,13 @@ the database; every session with MCP on can reach it; the CLI against the same d
 refused while the server runs (single-writer, by design — theirs).
 
 The picture the house uses (owner, 2026-08-17): **gbrain is a filing cabinet and a
-librarian.** The cabinet is the git repo of markdown — your actual notes, the one thing
-that cannot be rebuilt, which is why it lives in a durable home outside every repo. The
-librarian is the server: it reads every page, keeps an index in a database, and answers
-sessions' questions. Lose the librarian or the index and you have lost a re-read;
-lose the cabinet and you have lost the knowledge. Everything the gbrain `ronin_service` installs
-is replaceable machinery around that one irreplaceable folder.
+librarian.** The cabinet is the git repo of markdown — what you file lives there, in a
+durable home outside every repo, and the librarian reads it into its index and answers
+sessions' questions. **One nuance, measured on this install rather than assumed: what
+an agent writes over MCP (`put_page`, `capture`, `remember`) goes into the librarian's
+own drawers — the database — and is NOT written back as a file in the cabinet.** So the
+database is not merely a rebuildable index: it also holds every agent-captured page,
+which is why the uninstall keeps BOTH the cabinet and the database, and says so.
 
 ## What cowork ships — all of it generic
 

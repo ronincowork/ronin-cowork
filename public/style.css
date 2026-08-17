@@ -2034,6 +2034,43 @@ body {
   margin-top: 10px;
   opacity: 0.7;
 }
+/* Every button on the gbrain room wears the house tokens (owner, 2026-08-17: a raw
+   browser button that ignores hover reads as dead). Same recipe as the notesheet
+   bar; the Load press alone is accented, because it is the room's one big verb. */
+.gb-head button,
+.gb-card button {
+  background: var(--panel);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  height: 30px;
+  padding: 0 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color 120ms, background 120ms;
+}
+.gb-head button:hover,
+.gb-card button:hover {
+  border-color: var(--accent);
+  background: var(--raise);
+}
+.gb-head button:disabled,
+.gb-card button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.gb-privacy > button {
+  /* the Load press — the room's one primary */
+  height: 36px;
+  padding: 0 18px;
+  font-size: 13px;
+  border-color: var(--accent);
+  color: var(--fg-strong);
+}
+.gb-privacy > button:hover {
+  background: var(--accent);
+  color: var(--bg);
+}
 .gb-card h3 {
   margin: 0 0 6px;
   font-size: 13px;
