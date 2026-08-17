@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settei</title>
+<style>
+  :root {
+    --paper:   #F2F1ED;
+    --surface: #FBFAF7;
+    --sunk:    #EAE8E2;
+    --ink:     #16181D;
+    --muted:   #5E6068;
+    --rule:    #DFDCD4;
+    --rule-firm:#C9C5BA;
+    --accent:  #2F4A73;
+    --set:     #2C6A55;
+    --obs:     #6A5A8C;
+    --calc:    #92661C;
+    --open:    #A63A29;
+
+    --display: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --body: Charter, "Bitstream Charter", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:#131519; --surface:#1A1D23; --sunk:#0E1014; --ink:#E9E7E2;
+      --muted:#9A9CA4; --rule:#2A2E36; --rule-firm:#3A3F49; --accent:#8FB0DE;
+      --set:#62B394; --obs:#AE9BD4; --calc:#D2A24E; --open:#E0705C;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:#131519; --surface:#1A1D23; --sunk:#0E1014; --ink:#E9E7E2;
+    --muted:#9A9CA4; --rule:#2A2E36; --rule-firm:#3A3F49; --accent:#8FB0DE;
+    --set:#62B394; --obs:#AE9BD4; --calc:#D2A24E; --open:#E0705C;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: var(--body); font-size: 17px; line-height: 1.62;
+    margin: 0; padding: 0 24px 96px; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1010px; margin: 0 auto; }
+  .col  { max-width: 65ch; }
+
+  header.mast {
+    padding: 72px 0 30px; border-bottom: 2px solid var(--ink); margin-bottom: 40px;
+  }
+  .kicker {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--muted); margin: 0 0 18px;
+  }
+  h1 {
+    font-family: var(--display); font-weight: 760;
+    font-size: clamp(38px, 6vw, 60px); letter-spacing: -0.028em;
+    line-height: 1.02; text-wrap: balance; margin: 0 0 20px;
+  }
+  h1 .jp {
+    font-size: 0.44em; font-weight: 500; letter-spacing: 0.06em;
+    color: var(--muted); vertical-align: 0.34em; margin-left: 0.5em;
+  }
+  .standfirst { font-size: 20px; line-height: 1.5; max-width: 58ch; margin: 0; }
+  .mast-meta {
+    display: flex; flex-wrap: wrap; gap: 8px 28px; margin-top: 26px;
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+  }
+
+  section { margin: 0 0 58px; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em;
+    text-transform: uppercase; display: flex; align-items: baseline;
+    gap: 12px; margin: 0 0 14px; color: var(--accent);
+  }
+  .eyebrow::after { content: ""; flex: 1; height: 1px; background: var(--rule-firm); }
+  .eyebrow.e-set  { color: var(--set); }
+  .eyebrow.e-obs  { color: var(--obs); }
+  .eyebrow.e-calc { color: var(--calc); }
+  h2 {
+    font-family: var(--display); font-weight: 700;
+    font-size: clamp(24px, 3.3vw, 31px); letter-spacing: -0.02em;
+    line-height: 1.14; text-wrap: balance; margin: 0 0 16px;
+  }
+  h3 {
+    font-family: var(--display); font-weight: 660; font-size: 17.5px;
+    letter-spacing: -0.008em; margin: 32px 0 10px;
+  }
+  p { margin: 0 0 16px; }
+  .lede { font-size: 19px; line-height: 1.55; max-width: 60ch; }
+  ul { padding-left: 1.2em; margin: 0 0 16px; }
+  li { margin-bottom: 8px; }
+
+  code, .m {
+    font-family: var(--mono); font-size: 0.86em; background: var(--sunk);
+    border: 1px solid var(--rule); border-radius: 3px;
+    padding: 0.1em 0.36em; white-space: nowrap;
+  }
+
+  .prov {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1px; background: var(--rule-firm);
+    border: 1px solid var(--rule-firm); margin: 26px 0;
+  }
+  .prov > div { background: var(--surface); padding: 18px 20px 20px; }
+  .prov h4 {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em;
+    text-transform: uppercase; margin: 0 0 4px;
+  }
+  .prov .sub { font-family: var(--mono); font-size: 11px; color: var(--muted); margin: 0 0 10px; }
+  .prov p { font-size: 14.5px; line-height: 1.45; margin: 0; }
+  .p-set { color: var(--set); } .p-obs { color: var(--obs); } .p-calc { color: var(--calc); }
+
+  .plate {
+    background: var(--sunk); border: 1px solid var(--rule-firm);
+    margin: 24px 0 10px; overflow-x: auto;
+  }
+  .plate-hd {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted);
+    padding: 12px 20px; border-bottom: 1px solid var(--rule-firm);
+    background: var(--surface); display: flex; gap: 18px; flex-wrap: wrap;
+  }
+  .plate-hd b { color: var(--ink); font-weight: 600; }
+  pre {
+    font-family: var(--mono); font-size: 13.5px; line-height: 1.7;
+    margin: 0; padding: 20px 22px; white-space: pre;
+  }
+  .k-set { color: var(--set); } .k-obs { color: var(--obs); }
+  .k-calc { color: var(--calc); } .k-new { color: var(--open); }
+  .j-str { color: var(--ink); }
+  .j-num { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .j-null, .j-note, .j-p { color: var(--muted); font-style: italic; }
+
+  .platecap {
+    font-size: 13.5px; color: var(--muted); font-style: italic;
+    margin: 0 0 24px; max-width: 76ch;
+  }
+  .platecap b { color: var(--ink); font-style: normal; font-weight: 700; }
+
+  .callout {
+    background: var(--surface); border: 1px solid var(--rule-firm);
+    border-left: 3px solid var(--accent); padding: 20px 24px;
+    margin: 26px 0; max-width: 68ch;
+  }
+  .callout p:last-child { margin-bottom: 0; }
+  .callout .who {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+  }
+
+  .tablewrap { overflow-x: auto; margin: 22px 0 8px; }
+  table { border-collapse: collapse; width: 100%; min-width: 600px; font-size: 15px; line-height: 1.45; }
+  th {
+    font-family: var(--display); font-weight: 640; font-size: 11.5px;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+    text-align: left; padding: 0 14px 8px 0;
+    border-bottom: 1.5px solid var(--rule-firm); vertical-align: bottom;
+  }
+  td { padding: 11px 14px 11px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: 1.5px solid var(--rule-firm); }
+  caption {
+    caption-side: bottom; text-align: left; font-size: 13.5px;
+    color: var(--muted); padding-top: 12px; font-style: italic;
+  }
+
+  .sketch {
+    border: 1px solid var(--rule-firm); background: var(--surface);
+    margin: 24px 0 10px; font-family: var(--display); overflow-x: auto;
+  }
+  .sk-tabs { display: flex; border-bottom: 1px solid var(--rule-firm); font-size: 12.5px; min-width: 620px; }
+  .sk-tabs span { padding: 10px 14px; color: var(--muted); border-right: 1px solid var(--rule); white-space: nowrap; }
+  .sk-tabs span.on { color: var(--ink); font-weight: 660; background: var(--paper); box-shadow: inset 0 -2px 0 var(--accent); }
+  .sk-body { padding: 4px 24px 22px; min-width: 620px; }
+  .sk-grp {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted);
+    margin: 20px 0 4px; padding-bottom: 6px; border-bottom: 1px solid var(--rule-firm);
+  }
+  .sk-row {
+    display: grid; grid-template-columns: 160px 1fr; gap: 16px;
+    align-items: center; padding: 9px 0; border-bottom: 1px solid var(--rule);
+  }
+  .sk-lab { font-size: 13px; color: var(--muted); }
+  .sk-inp {
+    border: 1px solid var(--rule-firm); background: var(--paper);
+    padding: 6px 10px; font-family: var(--mono); font-size: 13px;
+    color: var(--ink); display: inline-block;
+  }
+  .sk-ro { font-family: var(--mono); font-size: 13px; color: var(--ink); }
+  .sk-note { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .sk-btn {
+    display: inline-block; border: 1px solid var(--accent); color: var(--accent);
+    padding: 7px 14px; font-size: 13px; font-weight: 620; margin-top: 16px;
+  }
+  .sk-link { color: var(--accent); font-size: 13px; }
+
+  .ruled {
+    border: 1px solid var(--set); border-left-width: 4px; background: var(--surface);
+    padding: 20px 24px; margin: 0 0 22px; max-width: 74ch;
+  }
+  .ruled p { font-size: 15px; margin: 0 0 10px; }
+  .ruled p:last-child { margin: 0; }
+  .ruled b { color: var(--ink); }
+
+  .ask {
+    border: 1px solid var(--rule-firm); background: var(--surface);
+    padding: 20px 24px; margin: 0 0 14px; max-width: 74ch;
+  }
+  .ask h4 { font-family: var(--display); font-weight: 680; font-size: 16.5px; margin: 0 0 8px; }
+  .ask p { font-size: 15px; margin: 0 0 8px; }
+  .ask p:last-child { margin: 0; }
+  .rec { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .rec b { color: var(--ink); }
+
+  footer {
+    margin-top: 66px; padding-top: 22px; border-top: 2px solid var(--ink);
+    font-family: var(--mono); font-size: 12px; color: var(--muted); line-height: 1.7;
+  }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  @media (max-width: 620px) {
+    body { font-size: 16px; padding: 0 18px 72px; }
+    header.mast { padding-top: 48px; }
+    .sk-row { grid-template-columns: 1fr; gap: 5px; }
+    pre { font-size: 11.5px; }
+  }
+</style>
+</head>
+<body>
+<div style="max-width:1010px;margin:0 auto;padding:14px 18px;border:1px solid var(--rule-firm);border-left:4px solid var(--set);background:var(--surface);font-size:15px;line-height:1.5">
+<b>This is the proposal. The real thing now exists.</b> The record and its four write routes
+landed on <span class="m">ronin-cowork dev</span> on 17 Aug 2026 (<span class="m">ce80b34</span>,
+<span class="m">f5dfccd</span>) and the ⚙ Setup room is built and wired. Read this page for the
+argument and the shape; read <span class="m">GET /api/settei</span> on a running box for what
+actually shipped. Two things below have already been overtaken: the CLI probe is
+ATARASHI&rsquo;s login-shell one rather than a PATH scan, and the shared field manifest was
+adopted after all.
+</div>
+<div class="wrap">
+
+  <header class="mast">
+    <p class="kicker">ronin-lab · plans/SETTEI.md · measured 17 Aug 2026, 12:30 UTC</p>
+    <h1>Settei<span class="jp">設定</span></h1>
+    <p class="standfirst">One record of what this install is — what you set, what the box observed, and what follows from both.</p>
+    <div class="mast-meta">
+      <span>one document</span>
+      <span>three provenances</span>
+      <span>every value measured on this box</span>
+    </div>
+  </header>
+
+  <section class="col">
+    <p class="eyebrow">The idea</p>
+    <h2>Assembled from several places, and that is the design.</h2>
+    <p class="lede">One record, three sections. Everything in it arrived one of three ways, and keeping those apart is what stops a config file lying — but they read as <strong>one document</strong>, because which file a value happens to sit in is our problem, not yours.</p>
+
+    <div class="prov">
+      <div>
+        <h4 class="p-set">set</h4>
+        <p class="sub">you typed it</p>
+        <p>Your name, this box, your projects, how work gets a model, your services decision. <strong>The only half that persists.</strong></p>
+      </div>
+      <div>
+        <h4 class="p-obs">observed</h4>
+        <p class="sub">the box measured it</p>
+        <p>Hardware, OS, versions, routes, which agents exist. <strong>Never written down</strong> — with an <span class="m">observed_at</span> so you know how fresh it is.</p>
+      </div>
+      <div>
+        <h4 class="p-calc">status</h4>
+        <p class="sub">follows from both</p>
+        <p>What is healthy, what is missing, what is running. <strong>Computed on read</strong>, never stored.</p>
+      </div>
+    </div>
+
+    <p>One writer, writing one half. No cache, no sync, no reconciliation — which is where the simplicity actually lives.</p>
+  </section>
+
+  <section>
+    <p class="eyebrow e-set">1 · What you set</p>
+    <h2 class="col">Persists. This is the file on disk.</h2>
+    <p class="col">Values are this box's real ones. Where a field reads <span class="m">null</span> it genuinely has never been set — the honest state of this install, not a placeholder.</p>
+
+    <div class="plate">
+      <div class="plate-hd"><span><b>set</b></span><span>persists</span><span class="k-new">■ new field</span></div>
+<pre>{
+  <span class="k-set">"owner"</span>:   { <span class="k-set">"name"</span>: <span class="j-null">null</span> },
+  <span class="k-set">"machine"</span>: { <span class="k-new">"name"</span>: <span class="j-null">null</span>,        <span class="j-note">// what you call this box</span>
+               <span class="k-new">"where"</span>: <span class="j-null">null</span> },      <span class="j-note">// free text: "Hetzner fsn1", "under my desk"</span>
+  <span class="k-set">"sessions"</span>:{ <span class="k-set">"max"</span>: <span class="j-num">10</span> },
+
+  <span class="k-set">"projects"</span>: [                       <span class="j-note">// in PROJECT_ROOTS.md — hand-editable, shown here</span>
+    { <span class="k-set">"name"</span>: <span class="j-str">"ronin"</span>,
+      <span class="k-set">"dir"</span>:  <span class="j-str">"~/dohyo/tmux-ronin"</span>,
+      <span class="k-new">"remit"</span>: <span class="j-str">"The browser grid of live tmux sessions (this product)"</span>,
+      <span class="k-set">"provider"</span>: <span class="j-str">"anthropic"</span>, <span class="k-set">"model"</span>: <span class="j-str">"opus"</span>,
+      <span class="k-set">"memory"</span>: [<span class="j-str">"ronin"</span>, <span class="j-str">"macros"</span>, <span class="j-str">"tejun"</span>] },
+    { <span class="k-set">"name"</span>: <span class="j-str">"lab"</span>,
+      <span class="k-set">"dir"</span>:  <span class="j-str">"~/dohyo/ronin-lab"</span>,
+      <span class="k-new">"remit"</span>: <span class="j-str">"The house's own papers — the dev KOTOBA and the live</span>
+                <span class="j-str">plans; thinking work, not code"</span>,
+      <span class="k-set">"provider"</span>: <span class="j-str">"anthropic"</span>, <span class="k-set">"model"</span>: <span class="j-str">"opus"</span>,
+      <span class="k-set">"memory"</span>: [<span class="j-str">"lab"</span>, <span class="j-str">"market"</span>, <span class="j-str">"pricing"</span>, <span class="j-str">"strategy"</span>] },
+    { <span class="k-set">"name"</span>: <span class="j-str">"ronin_cowork"</span>,
+      <span class="k-new">"remit"</span>: <span class="j-str">"The free build — sessions, tiles, commons, all frontend"</span>, <span class="j-p">… </span>},
+    { <span class="k-set">"name"</span>: <span class="j-str">"ronin_services"</span>,
+      <span class="k-new">"remit"</span>: <span class="j-str">"The paid layer — michi, rireki, counting, koshi, koe"</span>, <span class="j-p">… </span>},
+    { <span class="k-set">"name"</span>: <span class="j-str">"gbrain"</span>,
+      <span class="k-new">"remit"</span>: <span class="j-str">"The brain: gbrain knowledge repo + brain-keeping"</span>, <span class="j-p">… </span>}
+  ],
+
+  <span class="k-new">"agents"</span>: {                         <span class="j-note">// how work gets a model</span>
+    <span class="k-new">"sessions"</span>: { <span class="k-new">"default"</span>: { <span class="k-new">"provider"</span>: <span class="j-null">null</span>, <span class="k-new">"model"</span>: <span class="j-null">null</span> } },
+    <span class="k-new">"jobs"</span>: {                        <span class="j-note">// API calls, not sessions — so each needs a key</span>
+      <span class="k-set">"koshi_monitor"</span>: { <span class="k-set">"outlet"</span>: <span class="j-str">"koshi_external"</span>,
+                         <span class="k-set">"provider"</span>: <span class="j-str">"openai"</span>, <span class="k-set">"model"</span>: <span class="j-str">"gpt-5.6-luna"</span>,
+                         <span class="k-set">"key_env"</span>: <span class="j-str">"OPENAI_API_KEY"</span>,  <span class="j-note">// the NAME. never the key</span>
+                         <span class="k-set">"pace"</span>: <span class="j-str">"steady"</span> }
+    }
+  },
+
+  <span class="k-set">"gbrain"</span>:   { <span class="k-new">"enabled"</span>: <span class="j-num">false</span> },
+  <span class="k-new">"services"</span>: { <span class="k-new">"entitlement"</span>: <span class="j-null">null</span>, <span class="k-new">"email"</span>: <span class="j-null">null</span>,
+                <span class="k-new">"verified"</span>: <span class="j-null">null</span>, <span class="k-new">"terms"</span>: <span class="j-null">null</span> }
+}</pre>
+    </div>
+    <p class="platecap"><b>Remit is the line you pick a project from in a list</b> — it already exists in the roots file and nothing was surfacing it. <b>Where</b> is free text by ruling: you know where your box is, the box does not.</p>
+
+    <div class="callout col">
+      <p class="who">Two things wearing one word</p>
+      <p><span class="m">agents.sessions</span> is what a <strong>new session</strong> launches as — a CLI in a tile. Per-project defaults exist; an install-level one does not, which is why a project naming none falls back to a bare <span class="m">claude</span> that matches no launch-table row.</p>
+      <p><span class="m">agents.jobs</span> is the house's own <strong>model-fed jobs</strong> — one question, one answer, over an API. Not a session, so each needs a key. The record holds the variable's <em>name</em>; the value stays in <span class="m">.env</span> and appears nowhere.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow e-obs">2 · What the box observed</p>
+    <h2 class="col">Measured on read, with a timestamp so you know how fresh.</h2>
+
+    <div class="plate">
+      <div class="plate-hd"><span><b>observed</b></span><span>never stored</span></div>
+<pre>{
+  <span class="k-obs">"observed_at"</span>: <span class="j-str">"2026-08-17T12:30:24Z"</span>,
+
+  <span class="k-obs">"machine"</span>: {
+    <span class="k-obs">"kind"</span>:       <span class="j-str">"virtual"</span>,       <span class="j-note">// systemd-detect-virt</span>
+    <span class="k-obs">"hypervisor"</span>: <span class="j-str">"kvm"</span>,
+    <span class="k-obs">"provider"</span>:   <span class="j-str">"Hetzner"</span>,       <span class="j-note">// DMI vendor — no network call</span>
+    <span class="k-obs">"product"</span>:    <span class="j-str">"vServer"</span>,
+    <span class="k-obs">"cores"</span>: <span class="j-num">8</span>, <span class="k-obs">"ram_gb"</span>: <span class="j-num">15</span>, <span class="k-obs">"arch"</span>: <span class="j-str">"x86_64"</span>
+  },
+  <span class="k-obs">"os"</span>:      { <span class="k-obs">"name"</span>: <span class="j-str">"Ubuntu 26.04 LTS"</span>, <span class="k-obs">"kernel"</span>: <span class="j-str">"7.0.0-29-generic"</span> },
+  <span class="k-obs">"runtime"</span>: { <span class="k-obs">"node"</span>: <span class="j-str">"v22.23.2"</span>, <span class="k-obs">"python"</span>: <span class="j-str">"3.14.4"</span>, <span class="k-obs">"tmux"</span>: <span class="j-str">"3.6"</span> },
+
+  <span class="k-obs">"ronin"</span>: {
+    <span class="k-obs">"release"</span>: <span class="j-null">null</span>, <span class="k-obs">"commit"</span>: <span class="j-str">"aeb9bdd"</span>, <span class="k-obs">"dirty"</span>: <span class="j-num">true</span>,   <span class="j-note">// a checkout</span>
+    <span class="k-obs">"contract"</span>: <span class="j-num">1</span>, <span class="k-obs">"started_at"</span>: <span class="j-str">"2026-08-17T09:51:55Z"</span>,
+    <span class="k-obs">"services"</span>: [<span class="j-str">"counting"</span>, <span class="j-str">"gbrain"</span>, <span class="j-str">"koe"</span>, <span class="j-str">"koshi"</span>, <span class="j-str">"michi"</span>, <span class="j-str">"rireki"</span>]
+  },
+
+  <span class="k-new">"routes"</span>: {                        <span class="j-note">// how this box is reached, and by whom</span>
+    <span class="k-new">"url"</span>:  <span class="j-str">"http://100.101.235.17:3006"</span>,   <span class="j-note">// @ronin-url, on the bus</span>
+    <span class="k-new">"bind"</span>: <span class="j-str">"100.101.235.17"</span>, <span class="k-new">"port"</span>: <span class="j-num">3006</span>,
+    <span class="k-new">"reachable"</span>: { <span class="k-new">"tailnet"</span>: <span class="j-num">true</span>, <span class="k-new">"loopback"</span>: <span class="j-num">false</span>, <span class="k-new">"public"</span>: <span class="j-num">false</span> },
+    <span class="k-new">"auth"</span>: { <span class="k-new">"basic"</span>: <span class="j-num">false</span>, <span class="k-new">"login"</span>: <span class="j-num">false</span> },  <span class="j-note">// tailnet IS the door today</span>
+    <span class="k-new">"also_listening"</span>: [
+      { <span class="k-new">"port"</span>: <span class="j-num">8099</span>, <span class="k-new">"what"</span>: <span class="j-str">"tailnet-preview — concepts/"</span> }
+    ]
+  },
+
+  <span class="k-obs">"agents"</span>: {                        <span class="j-note">// the owner-ruled starting four, plus local weights</span>
+    <span class="k-obs">"claude"</span>: <span class="j-str">"~/.local/bin/claude"</span>,
+    <span class="k-obs">"codex"</span>:  <span class="j-str">"/usr/bin/codex"</span>,
+    <span class="k-new">"gemini"</span>: <span class="j-null">null</span>,
+    <span class="k-new">"hermes"</span>: <span class="j-null">null</span>,
+    <span class="k-obs">"ollama"</span>: <span class="j-null">null</span>
+  },
+  <span class="k-obs">"keys"</span>:  { <span class="k-obs">"ANTHROPIC_API_KEY"</span>: <span class="j-num">false</span>, <span class="k-obs">"OPENAI_API_KEY"</span>: <span class="j-num">false</span> },
+  <span class="k-obs">"tools"</span>: { <span class="k-obs">"gh"</span>: <span class="j-num">true</span>, <span class="k-obs">"tailscale"</span>: <span class="j-num">true</span>, <span class="k-obs">"chromium"</span>: <span class="j-num">false</span> }
+}</pre>
+    </div>
+    <p class="platecap">Everything here cost one shell command or one call to a route Ronin already answers. <b>No cloud metadata call</b> — provider comes from the DMI table the kernel already read, and region is deliberately not detected: it is <span class="m">machine.where</span>, in your words. <b>An absent agent reads <span class="m">null</span>, not missing</b> — a thing this box could have and does not.</p>
+
+    <div class="callout col">
+      <p class="who">One measurement corrected an earlier claim</p>
+      <p>The services roster is <strong>not empty</strong>: this box answers <span class="m">counting · gbrain · koe · koshi · michi · rireki</span>. An earlier draft of this page said "services: none", taken from the gear's default text rather than from the route. It also means <em>does this box have a brain</em> has a partial answer already — the roster says the gbrain service is <strong>registered</strong>, which is not the same as a brain being wired to a store, but it is more than nothing.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow e-calc">3 · What follows</p>
+    <h2 class="col">Health, not summary strings.</h2>
+
+    <div class="plate">
+      <div class="plate-hd"><span><b>status</b></span><span>computed on read</span></div>
+<pre>{
+  <span class="k-calc">"owner_name"</span>:   <span class="j-str">"glen3"</span>,           <span class="j-note">// unset — falling back to the machine user</span>
+  <span class="k-calc">"machine_name"</span>: <span class="j-str">"dohyo-unified"</span>,   <span class="j-note">// unset — falling back to the hostname</span>
+  <span class="k-calc">"sessions"</span>:     { <span class="k-calc">"running"</span>: <span class="j-num">9</span>, <span class="k-calc">"max"</span>: <span class="j-num">10</span>, <span class="k-calc">"state"</span>: <span class="j-str">"near the cap"</span> },
+
+  <span class="k-calc">"projects"</span>: [
+    { <span class="k-calc">"name"</span>: <span class="j-str">"ronin"</span>,          <span class="k-calc">"dir"</span>: <span class="j-str">"ok"</span>, <span class="k-calc">"brain"</span>: <span class="j-str">"anthropic/opus"</span> },
+    { <span class="k-calc">"name"</span>: <span class="j-str">"lab"</span>,            <span class="k-calc">"dir"</span>: <span class="j-str">"ok"</span>, <span class="k-calc">"brain"</span>: <span class="j-str">"anthropic/opus"</span> },
+    { <span class="k-calc">"name"</span>: <span class="j-str">"ronin_cowork"</span>,   <span class="k-calc">"dir"</span>: <span class="j-str">"ok"</span>, <span class="k-calc">"brain"</span>: <span class="j-str">"anthropic/opus"</span> },
+    { <span class="k-calc">"name"</span>: <span class="j-str">"ronin_services"</span>, <span class="k-calc">"dir"</span>: <span class="j-str">"ok"</span>, <span class="k-calc">"brain"</span>: <span class="j-str">"anthropic/opus"</span> },
+    { <span class="k-calc">"name"</span>: <span class="j-str">"gbrain"</span>,         <span class="k-calc">"dir"</span>: <span class="j-str">"ok"</span>, <span class="k-calc">"brain"</span>: <span class="j-str">"none set — uses the install default"</span> }
+  ],
+
+  <span class="k-calc">"routes"</span>: [
+    { <span class="k-calc">"what"</span>: <span class="j-str">"coworkspace"</span>, <span class="k-calc">"at"</span>: <span class="j-str">"http://100.101.235.17:3006"</span>,
+      <span class="k-calc">"state"</span>: <span class="j-str">"answering"</span>, <span class="k-calc">"exposure"</span>: <span class="j-str">"tailnet only — no password set"</span> }
+  ],
+
+  <span class="k-calc">"services"</span>: [
+    { <span class="k-calc">"name"</span>: <span class="j-str">"koshi"</span>,   <span class="k-calc">"state"</span>: <span class="j-str">"registered, not pointed"</span> },
+    { <span class="k-calc">"name"</span>: <span class="j-str">"gbrain"</span>,  <span class="k-calc">"state"</span>: <span class="j-str">"registered, disabled in settings"</span> },
+    { <span class="k-calc">"name"</span>: <span class="j-str">"counting"</span>,<span class="k-calc">"state"</span>: <span class="j-str">"registered"</span> }
+  ],
+
+  <span class="k-calc">"agents"</span>: {
+    <span class="k-calc">"new_session"</span>:   <span class="j-str">"no install default — per-project only"</span>,
+    <span class="k-calc">"usable"</span>:       [<span class="j-str">"claude"</span>, <span class="j-str">"codex"</span>],
+    <span class="k-calc">"koshi_monitor"</span>: <span class="j-str">"pointed at openai — OPENAI_API_KEY not set"</span>
+  },
+
+  <span class="k-calc">"subscription"</span>: <span class="j-str">"free cowork — no entitlement recorded"</span>,
+  <span class="k-calc">"render_gate"</span>:  <span class="j-str">"skipped — no browser on this box"</span>
+}</pre>
+    </div>
+    <p class="platecap">Every line here is a comparison the box can make and you would otherwise make in your head. <b>"Pointed at openai — <span class="m">OPENAI_API_KEY</span> not set"</b> is the one that earns the section: today that failure is discovered when Koshi tries to answer and cannot.</p>
+  </section>
+
+  <section>
+    <p class="eyebrow">4 · The tab</p>
+    <h2 class="col">The same record, with the settable half editable.</h2>
+    <p class="col">One Commons room. What you set is a field; what the box observed is a line; what follows is a readout. Projects are shown here and edited where they already live.</p>
+
+    <div class="sketch">
+      <div class="sk-tabs">
+        <span>⌂ Roster</span><span>＋ New session</span><span>▤ Wipeboard</span>
+        <span>▧ Docs</span><span>▣ Roots</span><span class="on">⚙ Setup</span>
+      </div>
+      <div class="sk-body">
+
+        <div class="sk-grp">you and this machine</div>
+        <div class="sk-row">
+          <div class="sk-lab">your name</div>
+          <div><span class="sk-inp" style="width:200px">Glen</span> <span class="sk-note">&nbsp;unset — using <b>glen3</b></span></div>
+        </div>
+        <div class="sk-row">
+          <div class="sk-lab">this machine</div>
+          <div><span class="sk-inp" style="width:200px">the dohyo box</span> <span class="sk-note">&nbsp;unset — using <b>dohyo-unified</b></span></div>
+        </div>
+        <div class="sk-row">
+          <div class="sk-lab">where it is</div>
+          <div><span class="sk-inp" style="width:200px">Hetzner · fsn1</span> <span class="sk-note">&nbsp;Hetzner vServer · kvm · 8 cores · 15 GB</span></div>
+        </div>
+        <div class="sk-row">
+          <div class="sk-lab">reachable at</div>
+          <div><span class="sk-ro">http://100.101.235.17:3006</span> <span class="sk-note">&nbsp;tailnet only · no password set</span></div>
+        </div>
+        <div class="sk-row">
+          <div class="sk-lab">running</div>
+          <div><span class="sk-ro">Ubuntu 26.04 · node v22.23.2</span> <span class="sk-note">&nbsp;checkout aeb9bdd · contract 1</span></div>
+        </div>
+
+        <div class="sk-grp">capacity</div>
+        <div class="sk-row">
+          <div class="sk-lab">session max</div>
+          <div><span class="sk-inp" style="width:70px">10</span> <span class="sk-note">&nbsp;9 running · also on ⌂ Roster, same setting</span></div>
+        </div>
+
+        <div class="sk-grp">projects · 5</div>
+        <div class="sk-row">
+          <div class="sk-lab">lab</div>
+          <div><span class="sk-ro">~/dohyo/ronin-lab</span> <span class="sk-note">&nbsp;the house's own papers · anthropic/opus</span></div>
+        </div>
+        <div class="sk-row">
+          <div class="sk-lab">gbrain</div>
+          <div><span class="sk-ro">~/dohyo/gbrain-e2e-brain</span> <span class="sk-note">&nbsp;the brain repo · no brain set — uses the default</span></div>
+        </div>
+        <div class="sk-row">
+          <div class="sk-lab">&nbsp;</div>
+          <div><span class="sk-link">3 more · edit in ▣ Roots →</span></div>
+        </div>
+
+        <div class="sk-grp">how work gets a model</div>
+        <div class="sk-row">
+          <div class="sk-lab">new sessions</div>
+          <div><span class="sk-inp" style="width:110px">anthropic</span> <span class="sk-inp" style="width:88px">opus</span> <span class="sk-note">&nbsp;unless the project says otherwise</span></div>
+        </div>
+        <div class="sk-row">
+          <div class="sk-lab">Koshi monitor</div>
+          <div><span class="sk-inp" style="width:110px">openai</span> <span class="sk-inp" style="width:126px">gpt-5.6-luna</span> <span class="sk-note" style="color:var(--open)">&nbsp;OPENAI_API_KEY not set</span></div>
+        </div>
+        <div class="sk-row">
+          <div class="sk-lab">agents on this box</div>
+          <div><span class="sk-ro">claude · codex</span> <span class="sk-note">&nbsp;gemini, hermes, ollama not installed — <span style="color:var(--accent)">install</span></span></div>
+        </div>
+
+        <div class="sk-grp">services · 6 registered</div>
+        <div class="sk-row">
+          <div class="sk-lab">subscription</div>
+          <div><span class="sk-ro">free cowork</span> <span class="sk-note">&nbsp;no entitlement — <span style="color:var(--accent)">get services</span></span></div>
+        </div>
+        <div class="sk-row">
+          <div class="sk-lab">gbrain</div>
+          <div><span class="sk-ro">off</span> <span class="sk-note">&nbsp;registered but disabled</span></div>
+        </div>
+
+        <div><span class="sk-btn">Save</span></div>
+      </div>
+    </div>
+    <p class="platecap">Observed lines are drawn from the box, never typed — so a row cannot claim something the machine would contradict.</p>
+  </section>
+
+  <section>
+    <p class="eyebrow">5 · The subscription</p>
+    <h2 class="col">Four fields, and the round trip that fills them.</h2>
+    <div class="col">
+      <p>Press <em>get services</em>, accept the terms, give an email. We send a link; you click it; the id is minted against that address and comes back as a <strong>code you paste in</strong>. From then on every usage drop carries the id, so we can match usage to the account that accepted the terms.</p>
+      <p>Two properties worth keeping in view, because they shape the field: <strong>the id is not a key</strong> — it unlocks nothing on the box, and our collector treats it as a claim to match rather than proof. And <strong>it cannot ride inside the tarball</strong>, because one artifact with one checksum is what makes a release identifiable.</p>
+      <p class="rec">The full reasoning — why gating the entitlement rather than the bytes, and the AGERU egress argument behind the pasted code — lives in <b>plans/SETTEI.md Part III</b>. It does not need to be re-read to look at the record.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">6 · Settled, and what is left</p>
+    <h2 class="col">Five rulings in. Judgment calls out.</h2>
+
+    <div class="ruled">
+      <p><b>Ruled.</b> The surface is a <b>Commons tab</b>, not the gear · <span class="m">machine.where</span> is <b>free text</b> · the subscription <b>records the email</b> beside the id · the id arrives as a <b>pasted code</b> · the entitlement <b>records only</b> and enforces nothing on the box · the session cap appears in <b>both ⚙ Setup and ⌂ Roster</b> over one route.</p>
+    </div>
+
+    <div class="ask">
+      <h4>Where does the line fall between observed and set?</h4>
+      <p>Provider and hypervisor come free from the DMI table. Region does not — it needs a cloud metadata call, so it is <span class="m">machine.where</span> in your words instead. Instance size is the same shape: cores and RAM are observed, but <em>"CX43"</em> is not knowable without asking Hetzner.</p>
+      <p class="rec">Working rule: <b>observe what the kernel already knows; ask you for the rest.</b> No outbound call belongs in a record that renders on page load.</p>
+    </div>
+
+    <div class="ask">
+      <h4>How much service health belongs here?</h4>
+      <p>Registered is cheap and honest. <em>Working</em> is not — proving Koshi answers means spending an API call, and a record that costs money to render is a record nobody opens twice.</p>
+      <p class="rec">Recommendation: <b>report registration and configuration, never liveness.</b> A "check it now" button is a different thing and can come later.</p>
+    </div>
+  </section>
+
+  <footer>
+    <p>plans/SETTEI.md · ronin-lab main · every value measured on this box 17 Aug 2026 12:30 UTC · ATARASHI owns the CLI probe and the first load · no code written</p>
+  </footer>
+
+</div>
+</body>
+</html>
