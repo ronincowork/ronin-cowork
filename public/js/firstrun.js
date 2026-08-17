@@ -40,6 +40,10 @@ function renderField(card, f, ctx) {
   if (f.kind === 'select') {
     control = document.createElement('select');
     for (const o of f.options?.(ctx) ?? []) control.add(new Option(o.label, o.value));
+  } else if (f.kind === 'textarea') {
+    control = document.createElement('textarea');
+    control.rows = 3;
+    if (f.placeholder) control.placeholder = f.placeholder;
   } else if (f.kind === 'check') {
     control = document.createElement('input');
     control.type = 'checkbox';
@@ -225,7 +229,43 @@ export async function buildFirstRun(host, onDone) {
         save.disabled = false;
         return;
       }
-      line.say('Saved.', 'ok');
+
+      // THE HANDOFF. A form cannot settle whether a repository is already cloned, or
+      // where they meant it to go, or what "half-finished" means — and it should not try
+      // to, because Ronin is full of agents who can simply ask. So everything mechanical
+      // is saved above, and everything else is BUNDLED and handed to the first session.
+      //
+      // The page's job is to be complete about what is mechanical and honest about what
+      // is not. This is the honest half.
+      line.say('Opening your first session…', 'busy');
+      const brief = [
+        'You are the first session on a new Ronin install. The setup page has already saved everything below — do not ask for any of it again.',
+        '',
+        values.ownerName ? 'The owner is called ' + values.ownerName + '.' : null,
+        values.machineName ? 'They call this machine "' + values.machineName + '".' : null,
+        values.projName ? 'Their first project is "' + values.projName + '"' + (values.projRemit ? ' — ' + values.projRemit : '') + '.' : null,
+        values.projDir ? 'Its project_root points at ' + values.projDir + '.' : null,
+        '',
+        'IN THEIR OWN WORDS:',
+        (values.projNotes || '').trim() || '(they wrote nothing here)',
+        '',
+        'What a form could not settle, and you can simply ask about: whether that directory is what they meant, whether a repository still needs cloning and where it should go, and anything their note implies. Ask rather than assume. Change nothing outside the project directory without saying so first. When there is nothing left, say what you did and stop.',
+      ]
+        .filter((l) => l !== null)
+        .join('\n');
+
+      const born = await request('/api/launch', {
+        method: 'POST',
+        json: {
+          session_job: 'Atarashi',
+          name: 'setup',
+          project_root: String(values.projName || '').trim().toLowerCase() || undefined,
+          prompt: brief,
+        },
+      });
+      // A session that would not start must not strand a finished setup: everything is
+      // already saved, so say so and let them into the workspace.
+      line.say(born.ok ? 'Saved. Your first session is opening.' : 'Saved — but the first session did not start. Open one from ＋ New when you are in.', born.ok ? 'ok' : 'bad');
       onDone?.();
     },
   });

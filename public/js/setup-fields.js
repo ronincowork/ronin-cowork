@@ -140,6 +140,15 @@ export const FIELDS = [
     omitIf: (v) => !v.trim(),
   },
   {
+    id: 'projNotes',
+    sec: 'project',
+    kind: 'textarea',
+    label: 'Anything else we should know about it?',
+    hint: 'In your own words. A repository that still needs cloning, where you want it, what you are trying to build, what is half-finished — this is not stored as a setting; it is handed to your first session, who can actually ask you about it.',
+    placeholder: 'It is a private repo I have not cloned yet — github.com/me/thing',
+    // No route on purpose: it is a briefing, not a setting.
+  },
+  {
     id: 'model',
     sec: 'defaults',
     kind: 'select',
@@ -220,6 +229,11 @@ export const SERVICE_TERMS = [
 ];
 
 /**
+ * A field with NO `route` is still asked and still read — it is simply never sent as
+ * configuration. That is the free-text bundle: what the owner says about their project
+ * in their own words, which has no shape a form could store and every reason to reach a
+ * person who can ask about it.
+ *
  * Group answers into one body per route and hand back what to send. Fields sharing a
  * route are merged, so a route is called ONCE however many fields feed it — which is
  * what makes adding a field to an existing route free.
@@ -228,6 +242,7 @@ export function toRequests(values, ctx) {
   const byRoute = new Map();
   for (const f of FIELDS) {
     const v = values[f.id];
+    if (!f.route) continue; // briefed, not stored
     if (v === undefined || (f.omitIf && f.omitIf(v))) continue;
     const key = f.route;
     if (!byRoute.has(key)) byRoute.set(key, { route: f.route, method: f.method || 'PUT', body: {} });
