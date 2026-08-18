@@ -21,7 +21,7 @@ src/settei.ts                     the assembled record the ⚙ Setup tab draws
 | Section | What | Written by | Bus option |
 |---|---|---|---|
 | `sessions.max` | how many sessions may run at once | `PUT /api/session-max` — ⌂ Roster and ⚙ Setup, **one route** | `@ronin-session-max` |
-| `owner.name` | what to call the owner | `PUT /api/owner` | `@ronin-owner` |
+| `owner.name` | what to call the owner | `PUT /api/settei/owner` | `@ronin-owner` |
 | `machine.name` · `machine.where` | what this box is called, and where it is | `PUT /api/settei/machine` | none |
 | `agents.sessions.default` · `agents.jobs` | how work gets a model | `PUT /api/settei/agents` | none |
 | `gbrain.enabled` | whether the owner turned gbrain on | `PUT /api/settei/gbrain` | none |

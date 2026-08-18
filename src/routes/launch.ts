@@ -285,17 +285,9 @@ export function registerLaunch(app: express.Express): void {
     }
   });
 
-  app.put('/api/owner', async (req, res) => {
-    const raw = String(req.body?.name ?? '').trim();
-    // A blank name is how you ask for the default back, not an error.
-    try {
-      // writeOwner republishes to the tmux option, so `ronin_bin/tejun-wipeboard` agrees with
-      // this from the moment it is saved rather than from the next restart.
-      res.json({ name: await writeOwner(raw) });
-    } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
-    }
-  });
+  // The owner's name is WRITTEN through the settei door (`PUT /api/settei/owner`,
+  // routes/settei-api.ts) — its only writers were the setup surfaces, so it folded in
+  // (2026-08-18). The read stays here beside the fallback rule it documents.
 
   app.put('/api/session-max', async (req, res) => {
     const raw = req.body?.max;

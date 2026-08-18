@@ -45,7 +45,7 @@ flag is a filter one of them eventually gets written without.
 
 **She shows the change as what it will become and waits for a yes.** Then the yes goes
 through the machinery that already exists: `POST /api/project-roots`, `POST /api/launch`,
-`PUT /api/owner`. No second write path and no new refusal rules — which is also the honest
+`PUT /api/settei/owner`. No second write path and no new refusal rules — which is also the honest
 answer to "an agent wrote to my catalog". It did not. It drafted, and you said yes.
 
 The action is `propose-and-confirm` (`ronin_catalogs/ACTIONS.md`), and any macro that

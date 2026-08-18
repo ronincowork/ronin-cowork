@@ -118,7 +118,7 @@ export function buildSettei(root, isShowing) {
     body.appendChild(
       setRow('your name', input(set.owner.name, { max: 64, placeholder: st.owner_name }),
         set.owner.name ? '' : `unset — using ${st.owner_name}`,
-        (v) => request('/api/owner', { method: 'PUT', json: { name: v } })),
+        (v) => request('/api/settei/owner', { method: 'PUT', json: { name: v } })),
     );
     body.appendChild(
       setRow('this machine', input(set.machine.name, { max: 64, placeholder: m.host }),

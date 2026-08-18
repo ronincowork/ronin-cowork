@@ -113,7 +113,7 @@
   <div class="rec typed">
     <div class="rec-hd"><span class="nm"><span class="prov">set</span> — persists in ronin.json</span><span class="life">written by named PUTs · keys preserved</span></div>
 <pre>{
-  "owner":    { "name": null },                    <span class="c">← PUT /api/owner · null = fallback to the machine user</span>
+  "owner":    { "name": null },                    <span class="c">← PUT /api/settei/owner · null = fallback to the machine user</span>
   "machine":  { "name": null, "where": null },     <span class="c">← PUT /api/settei/machine · where is free text, by ruling</span>
   "sessions": { "max": 10 },                       <span class="c">← PUT /api/session-max · same number ⌂ Roster edits</span>
 
@@ -236,7 +236,7 @@
   <table>
     <thead><tr><th>family</th><th>provenance</th><th>produced by</th><th>shown in</th></tr></thead>
     <tbody>
-      <tr><td>owner.name</td><td>typed</td><td>PUT /api/owner</td><td class="v"><b>S ⚙</b></td></tr>
+      <tr><td>owner.name</td><td>typed</td><td>PUT /api/settei/owner</td><td class="v"><b>S ⚙</b></td></tr>
       <tr><td>machine.name · where</td><td>typed</td><td>PUT /api/settei/machine</td><td class="v"><b>S ⚙</b></td></tr>
       <tr><td>sessions.max</td><td>typed</td><td>PUT /api/session-max — shared with ⌂ Roster</td><td class="v"><b>S ⚙</b></td></tr>
       <tr><td>projects</td><td>typed, referenced</td><td>catalogs store · POST /api/project-roots</td><td class="v"><b>S ⚙</b> (shown; edited in ▣)</td></tr>

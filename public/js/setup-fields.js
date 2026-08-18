@@ -91,7 +91,7 @@ export const FIELDS = [
     label: 'What should we call you?',
     placeholder: 'Your name',
     initial: (ctx) => String(ctx.record?.set?.owner?.name ?? ''),
-    route: '/api/owner',
+    route: '/api/settei/owner',
     fold: (b, v) => {
       b.name = v.trim();
     },

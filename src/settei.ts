@@ -236,7 +236,7 @@ export const SETTEI_SCHEMA = {
   sources: { caps: [5, 10, 15, 20] },
 
   families: {
-    owner: { method: 'PUT', route: '/api/owner' },
+    owner: { method: 'PUT', route: '/api/settei/owner' },
     machine: { method: 'PUT', route: '/api/settei/machine' },
     agents: { method: 'PUT', route: '/api/settei/agents' },
     'session-max': { method: 'PUT', route: '/api/session-max' },

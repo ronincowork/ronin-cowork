@@ -16,10 +16,12 @@ view asks what is unanswered, the ⚙ tab shows everything, the 新 reading list
 build) extracts what is needed and not present, and `tejun-account` prints the identity
 lines for a shell. No surface reads a source directly, and no second assembly exists.
 
-Writes are the mirror: **named PUTs, one per family** (`src/routes/settei-api.ts`),
-each through `updateConfig()`, which saves atomically and preserves every key it never
-heard of. There is no `PUT /api/settei` that takes a document, and no route serves the
-underlying file — the file has other tenants (below).
+Writes are the mirror: **one door, `PUT /api/settei/:family`**
+(`src/routes/settei-api.ts`) — each family a narrow named writer through
+`updateConfig()`, which saves atomically and preserves every key it never heard of.
+An unknown family is refused, never guessed at. There is no `PUT /api/settei` that
+takes a document, and no route serves the underlying file — the file has other
+tenants (below).
 
 Every leaf in the answer carries its provenance — **typed · found · derived** — and
 provenance is all a view needs to render a leaf: an input, a fact line, or a task.
@@ -75,7 +77,7 @@ known. `⚙` = edit it in the ⚙ Setup view unless another editor is named.
 
 | Looking for | It lives | Known / edited |
 |---|---|---|
-| the owner's name | `ronin.json` `owner.name` | typed · `PUT /api/owner` · ⚙ |
+| the owner's name | `ronin.json` `owner.name` | typed · `PUT /api/settei/owner` · ⚙ |
 | what the machine is called | `ronin.json` `machine.name` | typed · ⚙ |
 | where the machine is | `ronin.json` `machine.where` | typed, free text by ruling · ⚙ |
 | the effective name/machine (fallbacks applied) | nowhere — derived in the answer | `status.owner_name`, `status.machine_name` |
@@ -94,7 +96,7 @@ known. `⚙` = edit it in the ⚙ Setup view unless another editor is named.
 |---|---|---|
 | the projects (name, dir, remit, per-project model) | **catalogs store** `PROJECT_ROOTS.md` | typed · ▣ Project root or by hand · settei reads by reference |
 | does a project's directory still exist | nowhere — one stat per read | derived · `status.projects[].dir` |
-| the owner's setup notes (`projNotes`) | **nowhere today — vanishes on an agent-less Save** | plan leg 2 makes it a typed leaf |
+| the owner's setup notes (`projNotes`) | **nowhere — the ask is deleted at plan leg 3, not rehomed** | ruled extravaganza (owner, 2026-08-18); one registry row if the want ever returns |
 
 ### Models, agents, and keys
 
@@ -116,7 +118,7 @@ known. `⚙` = edit it in the ⚙ Setup view unless another editor is named.
 | the entitlement id, email, terms | `ronin.json` `services` | typed · pasted code, recorded never verified · ⚙ |
 | gbrain on or off | `ronin.json` `gbrain.enabled` | typed · ⚙ |
 | which services are registered | nowhere — the install's roster per read | found · `observed.ronin.services` |
-| what a selection still needs | nowhere — `needed[]`, to build | derived · plan leg 1 |
+| what a selection still needs | nowhere — `needed[]`, to build | derived · plan leg 4, judged from the registry's `requires` |
 
 ### The machine and the install
 
