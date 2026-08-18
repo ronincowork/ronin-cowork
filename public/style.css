@@ -421,6 +421,33 @@ body {
    is too far from the one screen you keep coming back to. Clicking the logo to get
    to the front page is the oldest convention on the web; this just honours it.
    Still LOOKS like the wordmark: no button chrome until you point at it. */
+/* ＋ NEW TAB — beside the brand, and deliberately NOT one of the five right-hand verbs.
+   Those share a measured `min-width: 100px` (see the bar rule below) and that number means
+   those five; a sixth wearing it would push the row 100px wider for a control whose whole
+   label is one character. So this is sized for what it is: a small square next to the
+   wordmark, quiet until you look for it. */
+#bar .newtab {
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  margin-left: 2px;
+  padding: 0;
+  border: 1px solid var(--line-2);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+@media (hover: hover) and (pointer: fine) {
+  #bar .newtab:hover {
+    border-color: var(--accent-2);
+    color: var(--accent-2);
+  }
+}
+
 #bar .brand {
   font-weight: 600;
   letter-spacing: 0.3px;

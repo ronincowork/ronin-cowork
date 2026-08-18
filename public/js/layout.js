@@ -210,6 +210,15 @@ export function build() {
   // of any pane would make the mark mean "close whatever this is", which is the ✕'s
   // job; and on an empty tile the panel IS the tile, so hiding it leaves a blank
   // screen and no way back.
+  // ＋ — a SECOND RONIN, in a new browser tab. Not a "view": no layout argument, no blank
+  // flag, no state of its own. It opens the same page the owner could already open by hand,
+  // and it exists so that anyone who has not thought to try it finds out they can (owner,
+  // 2026-08-18). The new tab restores from localStorage exactly as a hand-opened one does.
+  //
+  // `location.pathname`, not `location.href`: href would carry `?setup` into a tab that is
+  // not asking for the first-run flow.
+  key('newtabbtn', () => window.open(location.pathname, '_blank'));
+
   key('brandbtn', () => {
     const t = S.active || tiles.find((x) => x.el.style.display !== 'none') || tiles[0];
     if (!t) return;
