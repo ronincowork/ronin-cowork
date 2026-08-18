@@ -12,7 +12,7 @@ over it. Nothing here has a store of its own.
 
 - **`GET /api/settei`** (`src/settei.ts`) assembles the record per request, in three
   sections separated by provenance: **`set`** — the owner typed it, and this half alone
-  persists in `ronin.json`; **`observed`** — the box measured it (login-shell agent
+  persists in `ronin.json`; **`observed`** — found on the machine and in it (login-shell agent
   probe, DMI, roster, routes), never stored; **`status`** — computed from the other two
   on read.
 - **Writes are by name, never by document** (`src/routes/settei-api.ts`). Each PUT names
@@ -66,8 +66,8 @@ none, Save simply finishes into the workspace.
 page could not: it asks rather than assumes, touches nothing outside the project
 directory unannounced, and stops when done. Its boot shelf
 (`ronin_session_boot/job/Atarashi/`) tells it to treat every saved answer as intent, not
-truth, and links the install SOP (`ronin_sops/install.md`) for measuring what the box
-actually has. A session that fails to start does not strand a finished setup — everything
+truth, and links the install SOP (`ronin_sops/install.md`) for measuring what the machine and its install
+actually have. A session that fails to start does not strand a finished setup — everything
 is already saved, and the page says so.
 
 ## The standing ⚙ Setup tab
