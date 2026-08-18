@@ -637,13 +637,33 @@ say *tile* or *commons* but not the thing containing them.
 with no session showing holds the commons. Different scales of the same idea, and neither
 word may be used for the other.
 
+**THE TWO SURFACES, AND THE LINE BETWEEN THEM** (owner's ruling, 2026-08-18). A
+`session_commons` is about SESSIONS; an `admin_desk` is about THE MACHINE. **Both live
+inside a tile** — the desk is a sibling of the commons in the same machinery, not a new kind
+of surface (owner, 2026-08-18: *"page level surface? cant it just be a tile?"* — and it can;
+a tile is a full pane, which is the very reason SETTEI was made a room instead of staying in
+the gear sheet). What separates them is not where they are drawn but whether they are drawn
+**on demand**: a commons appears in every sessionless tile whether or not it is wanted, a desk
+appears where the owner asks for one. The line is scope, and it is the same line drawn once
+for the gear:
+*release, update, appearance and log out are the install's, not a tile's, and a room for them
+meant four copies, one per tile.* Six tabs were on the wrong side of it — `▣ Roots`,
+`▥ Hotwords`, `▦ Stats`, `目 Koshi`, `gbrain`, `⚙ Configuration` are every one of them
+install-level and were being drawn once per sessionless tile.
+
+**Why the desk is not a commons.** A commons is *shared ground inside a tile*; that scoping is
+the whole of its meaning. Widening it to "any surface holding tabs" would give the word two
+meanings, which this file opens by calling a defect in the thing we ship. Nor is it a *panel* —
+see the `commons_tab` row.
+
 | Term | Scope | Means | Record |
 |---|---|---|---|
 | **coworkspace** | system_scope | **the whole UI** — every surface, tile, panel and button the owner drives. All of it ships in `RONIN_COWORK`; a `ronin_service` fills a subset of *cowork's own* UI and ships no HTML, JS or CSS of its own | `docs/architecture.md` |
 | **tile** | system_scope | one cell of the coworkspace, showing one session. **The public word** — see § THE GROUND for why it beats *pane* | `docs/architecture.md` |
 | **viewer session** (`grid_*`) | system_scope | hidden grouped tmux session backing a tile; killed on disconnect | `docs/architecture.md` |
-| **coworking_commons** | system_scope | the shared surface inside a tile, when no session is showing. Ten commons_tabs behind one strip. Alias: **the commons** | `docs/gbrain.md` |
-| **commons_tab** | system_scope | one section of the coworking_commons, reached from its tab strip: **⌂ Roster · ＋ New session · ▤ Wipeboard · ▧ Docs · ▣ Roots · ▥ Hotwords · ▦ Stats · 目 Koshi · gbrain · ⚙ Configuration**. Alias: **tab**, prose only — bare *tab* is a common word and is not the term. **Never a "pane" or "panel"** — see § THE GROUND | `docs/gbrain.md` |
+| **session_commons** | system_scope | the shared surface inside a tile, when no session is showing — **one per tile, and about sessions**. **Four** commons_tabs behind one strip — ⌂ Roster · ＋ New session · ▤ Wipeboard · ▧ Docs. It held ten until 2026-08-18, when the six about the install left for the `admin_desk`. Alias: **the commons**. Was `coworking_commons` until 2026-08-18; renamed when the desk was ruled, because the old name said which app it was in and the new one says what it is about | `docs/gbrain.md` |
+| **commons_tab** | system_scope | one section of the session_commons, reached from its tab strip: **⌂ Roster · ＋ New session · ▤ Wipeboard · ▧ Docs**, and only those four. The other six left for the `admin_desk` on 2026-08-18; **a desk row is not a commons_tab** — it is a nav row with a `glyph` and a bare `label`, where a tab is one string carrying both. Alias: **tab**, prose only — bare *tab* is a common word and is not the term. **Never a "pane" or "panel"** — pane already means the tmux terminal a tile shows, and panel adds a second word for a tab. See § THE GROUND | `docs/gbrain.md` |
+| **admin_desk** | system_scope | what a tile shows when the owner asks it for **the machine** rather than a session: everything about **this install** (⚙ Configuration · ▣ Roots · ▥ Hotwords · 目 Koshi · gbrain · ▦ Stats) and **this app** (appearance · release & update · log out). A sibling of the session_commons in the same tile machinery — same overlay, same ✕ back to the terminal — reached from the bar's ⚙ the way ⛩ reaches the commons. **Drawn where it is asked for**, which is the whole point: the six rooms it takes over are install-level and were being drawn in every sessionless tile whether or not anyone wanted them. Alias: **the desk**. **ADMIN, not INSTALL** (owner, 2026-08-18: *"we call it Install Desk but really it is an Admin Desk. (logout etc.)"*) — *install* describes the box, and half of what the desk holds is not about the box: logging out is an account, appearance is a preference. *Admin* is what you are doing at it. The word was also already loose in the tree: `commons.js`, `events.js` and `tile.js` each called the **commons** "the admin pane", which it is not — the commons is about sessions. Those comments say commons now, and admin means this. Never a "commons" (that word is tile-scoped) and never a "panel" | `public/js/desk.js` · `public/js/tiledesk.js` |
 | **session_launch** | system_scope | the commons' **＋ New** tab — where a session is born with a `project_root`, a `session_job` and an opening prompt. Alias: **launch**. One door: `launch_job` (the catalog fill) · `launch_bare` (a name alone) | `docs/commons.md` |
 | **session_roster** | system_scope | the commons' **⌂ Roster** tab — every session on the ronin_machine. The session list, full stop; the macro forms beside it were removed 2026-08-09. Alias: **the roster**. Never "the board" | `docs/commons.md` |
 | **locked 🔒 / unlocked 🔓** | system_scope | locked = *this view is attached to the live tmux session*; unlocked = *the session is still running, this view is not attached to it* | `docs/LOCKED-VS-UNLOCKED.md` |

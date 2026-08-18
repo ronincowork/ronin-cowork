@@ -8,10 +8,19 @@
  * one job nothing else can own: the tab strip, the pane elements, which pane shows,
  * and handing each room its mount point.
  *
- * The strip reads the pane registry (js/panes.js). It was one of two readers — the bar's
- * き Commons menu was the other, and the registry exists because those two lists drifted;
- * since 2026-08-17 the menu is gone (⛩ Commons is one press to ⌂ Roster) and the strip is
- * THE way to a room. A tab owned by a service that is not registered is visible but
+ * IT SHRANK AGAIN ON 2026-08-18, and this time the rooms did not move into their own
+ * files — they moved to their own SURFACE. Six of the ten were about the install rather
+ * than about sessions, and the strip that held all ten measured 871px against a 609px
+ * tile. They are the admin_desk's now (js/desk.js); the registry says which surface owns
+ * a row (`surface`), and this file reads only its own. What is left is four tabs and the
+ * frame around them.
+ *
+ * The strip reads the pane registry (js/panes.js), filtered to `surface: 'commons'`. It
+ * was one of two readers — the bar's き Commons menu was the other, and the registry exists
+ * because those two lists drifted; since 2026-08-17 the menu is gone (⛩ Commons is one
+ * press to ⌂ Roster) and the strip is THE way to a session room. The desk is the second
+ * reader now, and the filter is why that cannot drift the way the menu did: one list, two
+ * readers, and a row states which one it belongs to. A tab owned by a service that is not registered is visible but
  * opaque-and-inert, the same treatment as the lock button on a build with no record service.
  */
 import { refreshHome } from './home.js';
@@ -20,12 +29,6 @@ import { tabs as makeTabs } from './ui.js';
 import { PANES } from './panes.js';
 import { buildRoster } from './roster.js';
 import { buildLauncher } from './launcher.js';
-import { buildHotwords } from './hotwords.js';
-import { buildGbrain } from './gbrain.js';
-import { buildKoshi } from './koshi.js';
-import { buildProjectRoots } from './projectroots.js';
-import { buildSettei } from './settei.js';
-import { buildStats } from './stats.js';
 import { buildWipeboard } from './wipeboard.js';
 import { buildDocs } from './docs.js';
 
@@ -47,18 +50,31 @@ export function buildHome(tile) {
   tabRow.className = 'home-tabrow';
   tabs.appendChild(tabRow);
   // One tab per registry row, in registry order. The 402px phone strip takes the
-  // compact label where a row carries one; the hint rides as hover help either way.
-  for (const p of PANES) {
+  // compact label where a row carries one.
+  //
+  // NO HOVER HELP ON A TAB, and nothing relocated — owner's ruling, 2026-08-18: "we
+  // don't need a pop-up. There doesn't need to be anything on hover. Just get rid of
+  // it." A tab already says what its room is, in the one place the eye is: its own
+  // label. A 300px panel restating that in a sentence was cost with no reader, and it
+  // was landing over the strip it described. `title` is the thing tips.js takes over,
+  // so the way to have no box is to set none — and the registry's `hint` column went
+  // with this line, which was its only reader (js/panes.js).
+  for (const p of PANES.filter((p) => p.surface === 'commons')) {
     const b = document.createElement('button');
     b.type = 'button';
     b.dataset.pane = p.id;
     b.textContent = p.compact || p.label;
-    b.title = p.hint;
     // A tab owned by an absent service is visible but opaque-and-inert.
     if (serviceOff(p.id)) {
       b.classList.add('off');
       b.disabled = true;
-      b.title = 'Off — this service is not installed.';
+      // The reason rides as the ACCESSIBLE NAME rather than a `title`, because a title
+      // is a pop-up waiting to happen and this strip is now to have none. Nothing is
+      // lost either way: a disabled button fires no pointer events, so this one never
+      // opened a box — it was a label only a screen reader could ever reach, and that
+      // is what it now is. The visible text leads the name so the name still contains
+      // it (WCAG 2.5.3, label in name).
+      b.setAttribute('aria-label', `${b.textContent} — off, this service is not installed.`);
     } else b.addEventListener('click', () => showPane(p.id));
     tabRow.appendChild(b);
   }
@@ -70,6 +86,48 @@ export function buildHome(tile) {
   closeTab.title = 'Back to the terminal';
   tabs.appendChild(closeTab);
 
+  /* WHICH ENDS OF THE STRIP HAVE MORE ON THEM. Ten rooms plus the ✕ is 831px against
+   * a 599px desktop tile, so a third of the strip is off-screen at any moment and
+   * something has to say so. That used to be the scrollbar, which drew across the
+   * bottom of the tabs on overflow ("it looks awful", owner, 2026-08-18) and is now off
+   * at every width; the strip fades at whichever end still has tabs behind it instead,
+   * and this is the half that knows when. CSS owns the look, `data-edge` is the fact. */
+  const markEdges = () => {
+    const more = tabs.scrollWidth - tabs.clientWidth;
+    // 2px of slack at both ends, because neither number is an integer: the labels are
+    // glyphs, so scrollWidth lands on a fraction and a strip scrolled fully right sits
+    // a hair short of `more`. A fade stuck on at a dead end is exactly the smudge the
+    // gate in the stylesheet exists to prevent.
+    const left = tabs.scrollLeft > 2;
+    const right = more > 2 && tabs.scrollLeft < more - 2;
+    tabs.dataset.edge = left && right ? 'both' : left ? 'left' : right ? 'right' : 'none';
+  };
+  tabs.addEventListener('scroll', markEdges, { passive: true });
+  // The overflow is a function of the TILE, not the window — a room is narrow because it
+  // is on a phone or because it is one cell of a 4-up grid — so the strip is measured
+  // when the strip resizes. This also covers the first measurement: the observer fires
+  // once on observe, by which time the panel has a width.
+  new ResizeObserver(markEdges).observe(tabs);
+
+  /* Put a tab back on the strip when it becomes the one showing. A pane can be entered
+   * from somewhere other than its own tab — ⚙ Configuration from first-run, ▧ Docs from the
+   * tile's 📄 route, ＋ New from gbrain handing off a prompt — and with a third of the
+   * strip off-screen the tab that just went `on` was regularly not visible at all, so
+   * the strip disagreed with the pane. Horizontal only, and computed rather than
+   * `scrollIntoView({inline:'nearest'})`: that is free to scroll the panel's own
+   * vertical scroller too, and the tab is never the thing that is off-screen vertically.
+   */
+  const revealTab = (b) => {
+    const s = tabs.getBoundingClientRect();
+    if (!b || !s.width) return; // built but not shown yet — nothing has a rect
+    const r = b.getBoundingClientRect();
+    const pad = 12;
+    // The ✕ sits over the right end, so the room to aim for stops short of it.
+    const right = s.right - closeTab.getBoundingClientRect().width - pad;
+    if (r.left < s.left + pad) tabs.scrollLeft -= s.left + pad - r.left;
+    else if (r.right > right) tabs.scrollLeft += r.right - right;
+  };
+
   // One element per room, one showing at a time (CSS matches [data-pane]).
   const nullPane = document.createElement('div');
   nullPane.className = 'home-null';
@@ -79,27 +137,11 @@ export function buildHome(tile) {
   wipePane.className = 'home-wipe';
   const docsPane = document.createElement('div');
   docsPane.className = 'home-docs';
-  const projPane = document.createElement('div');
-  projPane.className = 'home-proj';
-  const hotwordsPane = document.createElement('div');
-  hotwordsPane.className = 'home-hotwords';
-  const statsPane = document.createElement('div');
-  statsPane.className = 'home-stats';
-  const koshiPane = document.createElement('div');
-  koshiPane.className = 'home-koshi';
-  const gbrainPane = document.createElement('div');
-  gbrainPane.className = 'home-gbrain';
-  const setteiPane = document.createElement('div');
-  setteiPane.className = 'home-settei';
-  el.append(tabs, nullPane, mainPane, wipePane, docsPane, projPane, hotwordsPane, statsPane, koshiPane, gbrainPane, setteiPane);
+  el.append(tabs, nullPane, mainPane, wipePane, docsPane);
   // Real tab semantics over the strip that already exists (ui.tabs): tablist/tab roles,
   // aria-selected, roving tabindex, arrow keys. Activation stays a click — entering a
   // room starts its fetches, and focus must not do that on its own.
-  const paneEl = {
-    sessions: mainPane, new: nullPane, wipe: wipePane, docs: docsPane, proj: projPane,
-    hotwords: hotwordsPane, stats: statsPane, koshi: koshiPane, gbrain: gbrainPane,
-    settei: setteiPane,
-  };
+  const paneEl = { sessions: mainPane, new: nullPane, wipe: wipePane, docs: docsPane };
   const tabBtns = [...tabs.querySelectorAll('button[data-pane]')];
   const strip = makeTabs(tabRow, tabBtns, (b) => paneEl[b.dataset.pane]);
   strip.select(homeTab); // matches the default pane
@@ -107,16 +149,12 @@ export function buildHome(tile) {
     if (serviceOff(which)) return; // an inert tab's pane, asked for by any other route
     el.dataset.pane = which;
     tabs.querySelectorAll('button[data-pane]').forEach((b) => b.classList.toggle('on', b.dataset.pane === which));
-    strip.select(tabs.querySelector(`button[data-pane="${which}"]`));
+    const tab = tabs.querySelector(`button[data-pane="${which}"]`);
+    strip.select(tab);
+    revealTab(tab);
     if (which === 'sessions') render();
     if (which === 'wipe') wipe.enter();
     if (which === 'docs') docs.enter();
-    if (which === 'proj') proj.enter();
-    if (which === 'hotwords') words.enter();
-    if (which === 'koshi') koshi.enter();
-    if (which === 'gbrain') gbrain.enter();
-    if (which === 'settei') settei.enter();
-    if (which === 'stats') stats.enter();
   };
   // ✕ only makes sense once a session is showing behind the panel.
   closeTab.addEventListener('click', () => tile.hideHome());
@@ -142,22 +180,6 @@ export function buildHome(tile) {
   // answering "is this the pane on screen", so its polling costs nothing while hidden.
   const wipe = buildWipeboard(tile, wipePane, () => tile.homeVisible() && el.dataset.pane === 'wipe');
   const docs = buildDocs(tile, docsPane, () => tile.homeVisible() && el.dataset.pane === 'docs');
-  const proj = buildProjectRoots(projPane, () => tile.homeVisible() && el.dataset.pane === 'proj', tile);
-  // 'hotwords', not 'words' — the pane key was renamed with the feature and this
-  // predicate was missed once, so it answered false forever and the pane never counted
-  // itself as showing.
-  const words = buildHotwords(hotwordsPane, () => tile.homeVisible() && el.dataset.pane === 'hotwords');
-  const koshi = buildKoshi(koshiPane, () => tile.homeVisible() && el.dataset.pane === 'koshi');
-  const gbrain = buildGbrain(
-    gbrainPane,
-    () => tile.homeVisible() && el.dataset.pane === 'gbrain',
-    (prompt) => {
-      showPane('new');
-      launcher.open('PersonalAssistant', prompt);
-    },
-  );
-  const settei = buildSettei(setteiPane, () => tile.homeVisible() && el.dataset.pane === 'settei');
-  const stats = buildStats(statsPane);
 
   // Re-render the LIVE parts (roster, launcher board); open forms keep their state.
   const render = () => {
@@ -168,7 +190,17 @@ export function buildHome(tile) {
 
   // `openDoc` — ▧ Docs, opened straight onto one file. The tile's 📄 route (2026-08-18,
   // js/tiledocs.js): the room, then the file, in the order the shell has to do them.
-  return { el, render, showPane, openDoc: (p) => { showPane('docs'); docs.open(p); } };
+  return {
+    el,
+    render,
+    showPane,
+    openDoc: (p) => { showPane('docs'); docs.open(p); },
+    /* THE GBRAIN HAND-OFF, which now arrives from another surface. gbrain moved to the
+     * admin_desk (js/desk.js) and its "ask this of a PersonalAssistant" button still has
+     * to land in ＋ New — which is the commons', and stays the commons'. So the desk asks
+     * the tile, the tile asks here, and the launcher never learns it has two callers. */
+    askPersonalAssistant: (prompt) => { showPane('new'); launcher.open('PersonalAssistant', prompt); },
+  };
 }
 
 /* ---------- KOSHI_DASHI — the receipt for a spawn ----------

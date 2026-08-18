@@ -7,7 +7,6 @@ import { PAD_CODE, firePadBinding, padBinds, padChord } from './pad.js';
 import { buildPadAsk, buildPadPanel } from './padpanel.js';
 import { askMika } from './mika.js';
 import { buildNotePanel, buildTagPanel } from './panels.js';
-import { buildSystemSheet } from './system.js';
 import { IS_TOUCH, S, TILE_COUNT, WHEEL_DOWN, grid, tiles } from './state.js';
 
 import { Tile } from './tile.js';
@@ -165,15 +164,22 @@ export function build() {
   // ⚙ Account — ONE sheet at page level (js/system.js); the bar's gear opens it.
   //
   // THE LABEL MOVED, NOT THE DESTINATION (2026-08-17). The owner wants this to read
-  // Account, and eventually to open an Accounts tab in the Commons backed by SETTEI.
-  // Only the word changed today: the fields such a room would hold (owner name,
-  // entitlement) are exactly what SETTEI has not settled, and the ruling this sheet
-  // exists under still stands — install-level facts are page-level, so ONE control in
-  // the bar opens ONE sheet, never a room copied into every tile (owner, 2026-08-16,
-  // docs/ui.md). This is a staging post. The room comes when SETTEI lands and there is
-  // content for it; until then do not build an empty one.
-  guard('system sheet', buildSystemSheet);
-  key('sysbtn', () => S.sysPanel && S.sysPanel.open());
+  // ⚙ ADMIN DESK — and it is the staging post above, arrived (2026-08-18).
+  //
+  // This was `S.sysPanel.open()` on a page-level ui.sheet, under the 2026-08-16 ruling
+  // that install-level facts must not be copied into every tile. That ruling holds; what
+  // changed is that there is now a surface on the right side of it. The desk is a TILE —
+  // drawn in the one you press ⚙ in, not in all four — so it keeps the singleness the
+  // sheet was bought for and gets back the full pane a sheet could never give.
+  //
+  // It takes the ACTIVE tile, exactly as ⛩ and か do above: the bar's verbs all act on
+  // the tile you are in, and a fifth that picked its own would be the odd one out. And it
+  // TOGGLES, because ⛩ already learned that lesson — a control that opens a thing and
+  // then goes dead is a control you press twice and distrust.
+  key('sysbtn', () => {
+    const t = S.active || tiles[0];
+    if (t) t.toggleDesk();
+  });
 
   // Session macros (⚡ on each tile head) are the tile's own — built in
   // tilemacros.js by Tile itself; nothing to wire here.
@@ -412,7 +418,7 @@ export function buildDrawers() {
     ['padbtn', 'Keypad'],
     // Account, not System — the bar's word and this row's word are the same control
     // wearing one name. See the sysbtn wiring above for why only the LABEL moved.
-    ['sysbtn', 'Account'],
+    ['sysbtn', 'Admin Desk'],
   ];
   for (const [id, label] of APP) {
     const el = document.getElementById(id);

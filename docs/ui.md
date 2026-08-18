@@ -201,6 +201,43 @@ On touch the control relocates into the ニ sheet like the other bar verbs. The 
 tab strip scrolls at every width — a 4-up desktop tile is narrower than the row of
 rooms, and clipping the tail is how a tab goes quietly missing.
 
+**THE STRIP IS FOUR TABS (2026-08-18).** It held ten and two kinds of thing: four about
+SESSIONS and six about the INSTALL. Ten measured 871px against a 609px tile, and the
+⚙ Configuration rename (67px → 107px) pushed even a 1920 display 10px over — so it scrolled
+at every width there was. Length was the symptom; the defect was that the six were drawn in
+**every sessionless tile**, four copies of facts with one value. The house had already ruled
+that line once, for the gear — *release, update, appearance and log out are the install's,
+not a tile's* — and the six were on the wrong side of it.
+
+They are the **`admin_desk`**'s now (`js/desk.js`), raised by ⚙ on the bar. The desk is a
+TILE, not a page-level sheet (owner: *"page level surface? cant it just be a tile?"*): the
+copies were never about a surface being able to live in a tile, they were about six rooms
+being drawn in every empty one whether or not anyone wanted them. A tile is also a full
+pane, which is why ⚙ Configuration became a room instead of staying in the gear's sheet — a
+sheet would have re-lost that. It has **no tile header**: every control up there acts on a
+session. Its own ✕ is **undo** — back to the terminal when the tile has a session, back to
+the Commons when it does not, and the Commons is also the fallback if the session died while
+the desk was up, because an empty tile has nothing behind its overlays. ⚙ toggles, the lesson
+⛩ already learned. The rail is **glyphs + labels** with a collapse button: the
+`@container tile` query says how a name lays out (beside its glyph, or stacked at 70px in a
+4-up), the button says whether names show at all.
+
+**One registry, two readers.** `js/panes.js` gives every row a `surface` — `commons` or
+`desk` — and each surface filters to its own. That is the same file that exists because the
+strip and the old き menu drifted; a row now states which surface owns it, so they cannot.
+
+**How you know the strip has more on it: a fade, not a scrollbar** (owner, 2026-08-18:
+"there is a scroll bar showing at times and it looks awful"). Ten rooms plus the ✕ is
+831px against a 599px desktop tile, so a third of the strip is off-screen at any moment.
+The bar used to be that signal on a mouse, drawn across the bottom edge of a 26px strip
+on overflow, with a permanently reserved `scrollbar-gutter` behind it to stop the strip's
+height flapping. It is off at every width now: each end of the strip fades out when there
+are tabs behind it, `commons.js` writes `data-edge` from the scroll position, and the
+stylesheet owns the look. Nothing draws, so the height is constant without reserving
+anything. Selecting a pane also scrolls its tab back onto the strip — a room can be
+entered from somewhere other than its own tab (⚙ Configuration from first-run, ▧ Docs from the
+tile's 📄), and the strip must not disagree with the pane.
+
 **The five bar verbs are one width** — New · Commons · Keypad · Mika Assist · Account,
 `min-width` plus centred labels, so the row reads even rather than as five different
 kinds of control. The grid count is exempt: it is a number, not a verb. At ≤680px the
@@ -214,6 +251,31 @@ words go and the width goes with them (a genuine shell change, so a `@media` que
   explanation is unnecessary.
 - Every `title` becomes the help box (`tips.js`), which also serves keyboard focus and
   supplies `aria-label` to icon-only buttons. Labels are gated by `check-tips`.
+- **A control that names itself on its face gets no pop-up.** The Commons room tabs and the
+  ⚡ macro cards both lost theirs on 2026-08-18. A macro card already prints its `label:` and
+  `blurb:` in two always-visible lines, so the box repeated the answer and laid 300px of it
+  over the cards underneath (owner: *"its dumb to have the hover description covering the
+  button description"*). Where the text is still worth keeping it moves to `aria-label`,
+  never back to `title` — `tips.js` takes over any `title` it finds, so a title **is** a
+  pop-up here by definition. The macro invocation (`+name:`) lives there now; it stays off
+  the face by the earlier ruling and out of a box by this one.
+- **The Commons room tabs carry no hover help at all** (owner, 2026-08-18: "we don't need
+  a pop-up. There doesn't need to be anything on hover. Just get rid of it"). A tab's label
+  already says what its room is, so a panel restating it in a sentence was cost with no
+  reader — and it was landing over the strip it described. The registry's `hint` column
+  went with the line that read it, rather than staying unread (`panes.js`). A room that
+  needs more than its label needs a better label. An `off` tab's reason is its
+  `aria-label`, not a `title`: a title is a pop-up waiting to happen, and a disabled
+  button was never hoverable anyway.
+- The box hangs off **the nearest thing below the header that the control is inside, else
+  the header** — メ's drop, or the Commons tab strip. Docking to the header put a 300px box
+  across seven of the ten rooms, and since a tab is not in the header it also failed the
+  side test and docked to the tile's far right, so the answer appeared at the opposite end
+  of the strip from the question. The tabs have since lost their help outright (above), but
+  the rule stands on the ✕, which is a bare glyph with no label of its own and would cover
+  the tabs the same way. The side is read off whatever divides that anchor's two groups, in
+  DOM order: the header's `.grow` spacer, or the strip's ✕, which carries `margin-left:
+  auto` and so is the strip's own spacer.
 - The help box's header — the line above the rule — carries a keyboard shortcut, a live
   reading, or nothing, and **exists only when it has content** (owner, 2026-08-17: an
   empty header over every macro row buried the text under a blank block). A shortcut
