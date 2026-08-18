@@ -190,9 +190,50 @@ function routes(): Record<string, unknown> {
   };
 }
 
+/**
+ * HOW THIS BOX IS REACHED BY HAND — the ssh family (owner, 2026-08-18). The box can
+ * say every address a person could point ssh at, and whether sshd is listening; it
+ * can never know the alias the owner types on their laptop — that lives client-side,
+ * in an ~/.ssh/config it has no business reading. Interfaces only, no metadata call
+ * (the no-egress rule holds): the tailnet address is recognised by its CGNAT range
+ * (100.64/10), everything else non-internal is reported as public.
+ *
+ * `listening` is boolean OR NULL — on a box with no /proc (a Mac) the question is
+ * unanswerable, and unanswerable must never be spelled `false`: absent means absent.
+ * Only port 22 is asked about; a moved sshd port is the owner's own arrangement.
+ */
+async function sshReach(): Promise<Record<string, unknown>> {
+  let listening: boolean | null = null;
+  try {
+    const tcp = await readFile('/proc/net/tcp', 'utf8');
+    const tcp6 = (await readTrimmed('/proc/net/tcp6')) ?? '';
+    // /proc/net/tcp: local_address is col 2 (hex ip:port), st is col 4; 0A = LISTEN.
+    listening = (tcp + '\n' + tcp6)
+      .split('\n')
+      .slice(1)
+      .some((l) => {
+        const c = l.trim().split(/\s+/);
+        return c[3] === '0A' && c[1]?.toUpperCase().endsWith(':0016');
+      });
+  } catch {
+    /* not linux — unknown, not false */
+  }
+  const isTailnet = (a: string) => /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(a);
+  const tailnet: string[] = [];
+  const pub: string[] = [];
+  for (const infos of Object.values(os.networkInterfaces())) {
+    for (const i of infos ?? []) {
+      if (i.internal) continue;
+      if (i.family === 'IPv4') (isTailnet(i.address) ? tailnet : pub).push(i.address);
+      // Link-local and ULA v6 reach nobody who does not already have a better route.
+      else if (i.family === 'IPv6' && !/^(fe80|fd|fc)/.test(i.address)) pub.push(i.address);
+    }
+  }
+  return { ssh: { listening, port: 22, addresses: { tailnet, public: pub } } };
+}
+
 /* ------------------------------------------------------------------ the record */
 
-/** The half that persists, read back from where it actually lives. */
 /** A typed string leaf: the owner's words, or null. A BLANK IS NOT AN ANSWER — an
  * empty or whitespace string reads as null, so the fallback machinery downstream
  * (`??` in computeStatus, "unset — using …" in ⚙) never mistakes a cleared field for
@@ -293,6 +334,7 @@ async function readObserved(jobKeyNames: string[]): Promise<Record<string, unkno
       services: listServices(),
     },
     routes: routes(),
+    reach: await sshReach(),
     agents,
     keys,
     tools,
@@ -386,7 +428,28 @@ async function computeStatus(
     machine_name: (setMachine.name as string) ?? (obsMachine.host as string),
     sessions: { running, max, state: max === 0 ? 'no limit' : running >= max ? 'at the cap' : `${running} of ${max}` },
     projects: projectStatus,
-    routes: [{ what: 'coworkspace', at: r.url, state: 'answering', exposure }],
+    routes: [{
+      what: 'coworkspace',
+      at: r.url,
+      state: 'answering',
+      exposure,
+      // THE ALIAS (owner, 2026-08-18): on a tailnet bind the hostname usually IS the
+      // MagicDNS name, so http://<host>:<port> reaches the same door with a name a
+      // person can remember. Derived from facts already measured — no lookup, no call.
+      alias: r.reachable.tailnet ? `http://${obsMachine.host as string}:${(observed.routes as { port: number }).port}` : null,
+    }],
+    // REACH BY HAND — the sentence a person actually needs: what to type. The tailnet
+    // address leads because it is the private door; public addresses are listed as
+    // facts, never recommended. Unknown stays unknown — a Mac cannot answer sshd.
+    ssh: (() => {
+      const reach = (observed.reach as { ssh: { listening: boolean | null; addresses: { tailnet: string[]; public: string[] } } }).ssh;
+      if (reach.listening === false) return 'sshd is not listening — not reachable by ssh';
+      const user = (obsMachine.user as string) ?? '';
+      const first = reach.addresses.tailnet[0] ?? reach.addresses.public[0];
+      if (!first) return 'no reachable address found';
+      const rest = [...reach.addresses.tailnet.slice(1), ...reach.addresses.public.filter((a) => a !== first)];
+      return `ssh ${user}@${first}${reach.addresses.tailnet[0] ? ' — your tailnet' : ''}${rest.length ? ` · also answers on ${rest.join(', ')}` : ''}${reach.listening === null ? ' · sshd not measurable on this OS' : ''}`;
+    })(),
     services: listServices().map((name) => ({
       name,
       state: name === 'gbrain' && (set.gbrain as { enabled: boolean }).enabled !== true

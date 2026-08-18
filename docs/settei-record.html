@@ -179,7 +179,11 @@
 
   "routes": { "url": "http://100.101.235.17:3006",                    <span class="c">── reach: where it answers, and to whom</span>
               "reachable": { "loopback": false, "tailnet": true, "wider": false },
-              "auth": { "basic": false } }
+              "auth": { "basic": false } },
+
+  "reach": { "ssh": { "listening": true, "port": 22,                  <span class="c">── reach by hand: what a person could point</span>
+             "addresses": { "tailnet": ["100.101.235.17"],            <span class="c">   ssh at. Interfaces only — never the</span>
+                            "public": ["135.181.254.135"] } } }       <span class="c">   laptop-side alias, never a metadata call</span>
 }</pre>
   </div>
 </section>
@@ -250,6 +254,7 @@
       <tr><td>tools</td><td>found</td><td>PATH scan</td><td class="v"><b>⚙</b></td></tr>
       <tr><td>ronin (identity · roster)</td><td>found</td><td>/api/version machinery</td><td class="v"><b>⚙</b></td></tr>
       <tr><td>routes</td><td>found</td><td>bind + tailnet measurement</td><td class="v"><b>S ⚙</b></td></tr>
+      <tr><td>reach.ssh</td><td>found</td><td>interfaces + sshd listen</td><td class="v"><b>⚙</b> · status.ssh says what to type</td></tr>
       <tr><td>status.*</td><td>derived</td><td>computeStatus(set, observed)</td><td class="v"><b>⚙</b> as readouts</td></tr>
       <tr><td>needed[]</td><td>derived</td><td>the registry's requires, judged per read</td><td class="v"><b>⚙</b> beside its leaf · <b>新</b> as tasks</td></tr>
     </tbody>

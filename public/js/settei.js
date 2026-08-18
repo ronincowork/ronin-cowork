@@ -170,7 +170,9 @@ export function buildSettei(root, isShowing) {
       m.hypervisor ? ` ${m.hypervisor}` : ''));
     body.appendChild(obsRow('running', `${observed.os.name} · node ${observed.runtime.node}`,
       ` ${observed.ronin.release ?? observed.ronin.commit}${observed.ronin.dirty ? ' (dirty)' : ''} · contract ${observed.ronin.contract}`));
-    body.appendChild(obsRow('reachable at', st.routes[0]?.at, ` ${st.routes[0]?.exposure}`));
+    body.appendChild(obsRow('Ronin reachable at', st.routes[0]?.at,
+      ` ${st.routes[0]?.exposure}${st.routes[0]?.alias ? ` · or ${st.routes[0].alias} (MagicDNS)` : ''}`));
+    body.appendChild(obsRow('reach by ssh', st.ssh));
 
     /* capacity */
     group('capacity');
