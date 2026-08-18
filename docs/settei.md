@@ -5,8 +5,8 @@
 > sources below, and every surface anyone sees is a conversion of that one read.
 > Companions: `docs/settei-architecture.html` (the model, drawn),
 > `docs/settei-record.html` (the object, leaf by leaf), `docs/install.md` (the door in),
-> `docs/user-config.md` (the config store's contract). What remains to build is
-> `ronin-lab plans/ATARASHI.md`.
+> `docs/user-config.md` (`ronin.json`'s contract), `docs/env.md` (`.env`'s contract —
+> knobs and secrets). What remains to build is `ronin-lab plans/ATARASHI.md`.
 
 ## The one door
 
@@ -34,7 +34,7 @@ from one of these, and adding a source is adding a row here.
 | **`ronin.json`** — the `config` store, user scope | owner · machine · sessions.max · agents · gbrain · services · setup | **typed — the only persisted half** | written only through `updateConfig()`; the file also hosts `auth` and `passkeys`, which are **not settei** — the file is storage, not the object |
 | **the catalogs store** — `PROJECT_ROOTS.md` | projects, with their remits and per-project defaults | typed, **by reference** | settei reads it in and never owns it; ▣ Project root and the owner's editor stay its writers |
 | **the mechanical scans** — seven families today, extensible | machine & OS (DMI, cores, kernel) · agent CLIs (login-shell probe) · API-key presence · host tools · the install's identity and services roster · reach and exposure · the work (project dirs, live sessions) | **found** — per read, never stored | a stored measurement is a lie the moment the machine changes; every answer carries `observed_at` |
-| **`.env`** (+ the unit) | **only a name and a boolean** — which key variables exist and whether each is set | found (presence only) | the value never crosses into settei in either direction; secrets live in `.env` and nowhere else |
+| **`.env`** (+ the unit) — `docs/env.md` | **only a name and a boolean** — which key variables exist and whether each is set | found (presence only) | the value never crosses into settei in either direction; secrets live in `.env` and nowhere else |
 | **the browser** — `localStorage` | nothing, today | — | theme and layout are honestly device state; keypad bindings are ruled settei and stranded here — a known defect, not a decision |
 | *(computed in the door)* | `status` · `needed[]` (to build) | **derived** | not a source — it exists only in the answer, judged fresh from typed and found on every read |
 

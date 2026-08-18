@@ -127,6 +127,7 @@ const IGNORE = {
   'docs/user-config.md': ['ronin.json'],
   'docs/README.md': ['ronin.json'],
   'docs/settei.md': ['ronin.json'],
+  'docs/env.md': ['ronin.json'],
   // One entry, three reasons — a second `'KOTOBA.md':` key would silently win over this
   // one and orphan whichever comment lost. `app.js` is BUNKAI's dismantled file, named by
   // the row about dismantling it. `ronin.json` and `koshi-outlets.json` are § SETTEI's:
