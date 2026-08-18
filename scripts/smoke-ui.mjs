@@ -253,10 +253,10 @@ async function checkJourneys(page, label, jsErrors) {
         const rows = await page.locator('.home.show[data-pane="gbrain"] .gb-privacy .gb-row').count();
         if (rows === 5) ok(`${label}: gbrain service room loads its five privacy facts`);
         else bad(`${label}: gbrain service room loaded ${rows} privacy facts, wanted 5`);
-        const answerRow = await page.locator('.home.show[data-pane="gbrain"] .gb-card .gb-row').filter({ hasText: 'Answers (think/synthesize)' }).first().textContent();
-        if (/\b(on|off — needs a model key|unknown)\b/.test(answerRow || '')) {
-          ok(`${label}: gbrain surfaces its answer capability beside search`);
-        } else bad(`${label}: gbrain did not surface a bounded answer capability`);
+        const answerRow = await page.locator('.home.show[data-pane="gbrain"] .gb-card .gb-row').filter({ hasText: 'Answers' }).first().textContent();
+        if (/composed by the agent \(by design\)|gbrain composition available|unknown/.test(answerRow || '')) {
+          ok(`${label}: gbrain names who composes answers beside search`);
+        } else bad(`${label}: gbrain did not name who composes answers`);
         const ask = page.locator('.home.show[data-pane="gbrain"] .gb-integration button').first();
         if (await ask.count()) {
           await ask.click();
