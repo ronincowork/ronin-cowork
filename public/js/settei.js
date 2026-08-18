@@ -163,8 +163,10 @@ export function buildSettei(root, isShowing) {
     /* you and this machine — the typed rows are the registry's, in its order */
     group('you and this machine');
     for (const row of fieldsIn((f) => (f.sec === 'you' || f.sec === 'machine') && f.lands)) body.appendChild(row);
+    // The box's own name leads the row — it must be readable here even when the owner
+    // has typed nothing (the setup page's THIS BOX fact, kept visible for good).
     body.appendChild(obsRow('hardware',
-      `${m.kind === 'virtual' ? `${m.provider ?? 'virtual'} ${m.product ?? ''}`.trim() : 'physical'} · ${m.cores} cores · ${m.ram_gb} GB`,
+      `${m.host} · ${m.kind === 'virtual' ? `${m.provider ?? 'virtual'} ${m.product ?? ''}`.trim() : 'physical'} · ${m.cores} cores · ${m.ram_gb} GB`,
       m.hypervisor ? ` ${m.hypervisor}` : ''));
     body.appendChild(obsRow('running', `${observed.os.name} · node ${observed.runtime.node}`,
       ` ${observed.ronin.release ?? observed.ronin.commit}${observed.ronin.dirty ? ' (dirty)' : ''} · contract ${observed.ronin.contract}`));
@@ -188,31 +190,13 @@ export function buildSettei(root, isShowing) {
 
     /* how work gets a model */
     group('how work gets a model');
-    const dflt = set.agents.sessions?.default ?? {};
-    // EVERY PROVIDER AND MODEL THE TABLE KNOWS, in table order, and no vendor is named
-    // in this file. The list comes from ronin_catalogs/PROJECT_ROOTS.md through
-    // /api/session-launch-specs — a provider is a row there and a model is a column, so
-    // adding either is a table edit and never a code change. An earlier version of this
-    // row was a free-text box with 'anthropic' and 'opus' as its placeholder, which read
-    // as both stuck and partisan; it was neither intended nor defensible.
-    const pick = document.createElement('select');
-    pick.className = 'st-inp';
-    pick.add(new Option('— none set —', ''));
-    for (const s of specs) {
-      // Say what the box can actually run. An uninstalled agent still appears, because
-      // the table is what the house supports and hiding a row teaches nothing — but it
-      // says so, rather than being offered as though it would work.
-      const have = observed.agents[s.cmd.split(' ')[0]]?.installed;
-      pick.add(new Option(`${s.provider} · ${s.model}${have ? '' : ' — not installed'}`, `${s.provider} ${s.model}`));
-    }
-    pick.value = dflt.provider && dflt.model ? `${dflt.provider} ${dflt.model}` : '';
-    body.appendChild(
-      setRow('new sessions use', pick, st.agents.new_session, (v) => {
-        const [provider, model] = v ? v.split(' ') : [null, null];
-        return request('/api/settei/agents', { method: 'PUT', json: { sessions: { default: { provider, model } } } });
-      }),
+    for (const row of fieldsIn((f) => f.sec === 'defaults' && f.lands?.family === 'agents')) body.appendChild(row);
+    // Jobs the registry already edits above render once, not twice.
+    const managed = new Set(
+      schema.fields.map((f) => f.lands?.key).filter((k) => k?.startsWith('jobs.')).map((k) => k.split('.')[1]),
     );
     for (const [name, job] of Object.entries(set.agents.jobs ?? {})) {
+      if (managed.has(name)) continue;
       // A job's pointing is edited in its own room (目 Koshi); here it is the resolved
       // answer plus whether the key it names is actually present — which is the part
       // no other surface says out loud.

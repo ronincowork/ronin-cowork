@@ -193,6 +193,14 @@ function routes(): Record<string, unknown> {
 /* ------------------------------------------------------------------ the record */
 
 /** The half that persists, read back from where it actually lives. */
+/** A typed string leaf: the owner's words, or null. A BLANK IS NOT AN ANSWER — an
+ * empty or whitespace string reads as null, so the fallback machinery downstream
+ * (`??` in computeStatus, "unset — using …" in ⚙) never mistakes a cleared field for
+ * a given name. The live defect this closes: a stored `machine.name: ""` made
+ * status.machine_name empty and the hostname invisible on the whole ⚙ tab. */
+const typedStr = (v: unknown): string | null =>
+  typeof v === 'string' && v.trim() !== '' ? v : null;
+
 async function readSet(): Promise<Record<string, unknown>> {
   const owner = await readSection<Record<string, unknown>>('owner', {});
   const machine = await readMachineSection();
@@ -211,10 +219,10 @@ async function readSet(): Promise<Record<string, unknown>> {
   }));
 
   return {
-    owner: { name: typeof owner.name === 'string' ? owner.name : null },
+    owner: { name: typedStr(owner.name) },
     machine: {
-      name: typeof machine.name === 'string' ? machine.name : null,
-      where: typeof machine.where === 'string' ? machine.where : null,
+      name: typedStr(machine.name),
+      where: typedStr(machine.where),
     },
     sessions: { max: await readMax() },
     projects,
