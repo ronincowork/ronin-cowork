@@ -236,26 +236,17 @@ export async function buildFirstRun(host, onDone) {
       }
 
       line.say('Opening your first session…', 'busy');
-      const brief = [
-        'You are the first session on a new Ronin install. The setup page has already saved everything below — do not ask for any of it again.',
-        '',
-        values.ownerName ? 'The owner is called ' + values.ownerName + '.' : null,
-        values.machineName ? 'They call this machine "' + values.machineName + '".' : null,
-        values.projName ? 'Their first project is "' + values.projName + '"' + (values.projRemit ? ' — ' + values.projRemit : '') + '.' : null,
-        values.projDir ? 'Its project_root points at ' + values.projDir + '.' : null,
-        '',
-        'What a form could not settle, and you can simply ask about: whether that directory is what they meant, whether a repository still needs cloning and where it should go. Ask rather than assume. Change nothing outside the project directory without saying so first. When there is nothing left, say what you did and stop.',
-      ]
-        .filter((l) => l !== null)
-        .join('\n');
-
+      // THE POINTER, NOT THE BRIEF. Nothing is composed at Save: the seat's own shelf
+      // (ronin_session_boot/job/Atarashi/) has it read GET /api/settei at start, so a
+      // session born now and one born three weeks from now read the same fresh truth,
+      // and nothing here can go stale or be lost. The seat itself is the registry's.
       const born = await request('/api/launch', {
         method: 'POST',
         json: {
-          session_job: 'Atarashi',
-          name: 'setup',
+          session_job: schema.seat.job,
+          name: schema.seat.name,
           project_root: String(values.projName || '').trim().toLowerCase() || undefined,
-          prompt: brief,
+          prompt: schema.seat.prompt,
         },
       });
       // A session that would not start must not strand a finished setup: everything is

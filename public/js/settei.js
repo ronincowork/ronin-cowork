@@ -1,6 +1,6 @@
 /* part of the tmux-ronin client — see js/README.md */
 import { request } from './request.js';
-import { field, status } from './ui.js';
+import { button, field, status } from './ui.js';
 import { pm, getPath, currentOf, optionsOf, toRequest } from './settei-schema.js';
 
 /* ---------- ⚙ SETUP — what this install IS, in one room ----------
@@ -252,6 +252,35 @@ export function buildSettei(root, isShowing) {
     gbRow.className = 'st-row';
     gbRow.appendChild(gbField.el);
     body.appendChild(gbRow);
+
+    // WHAT THE SERVICES CHOICE STILL NEEDS — the door's needed[] family, beside the
+    // leaf that caused it. Computed per read, so satisfying it makes the row vanish
+    // on the next look with no write anywhere; met items simply do not exist.
+    for (const n of (rec.needed ?? []).filter((x) => x.leaf === 'services')) {
+      body.appendChild(obsRow('still needed', n.needs, ` ${n.how}`));
+    }
+
+    /* the reading list's offer — an agent exists and the list is non-empty. One
+     * press, per the flow's death condition: the seat reads the door itself at
+     * start, so this hands over a pointer and nothing else. */
+    if (st.agents.usable.length && (rec.needed ?? []).length) {
+      const row = document.createElement('div');
+      row.className = 'st-row';
+      const go = button('start your setup session', {
+        cls: 'st-inp',
+        onClick: async () => {
+          go.disabled = true;
+          const r = await request('/api/launch', {
+            method: 'POST',
+            json: { session_job: schema.seat.job, name: schema.seat.name, prompt: schema.seat.prompt },
+          });
+          go.disabled = false;
+          go.textContent = r.ok ? 'setup session started — see ⌂ Roster' : r.message || 'could not start';
+        },
+      });
+      row.appendChild(go);
+      body.appendChild(row);
+    }
   };
 
   const load = async ({ quiet } = {}) => {

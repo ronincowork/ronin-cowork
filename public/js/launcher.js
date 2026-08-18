@@ -241,7 +241,24 @@ export function buildLauncher(tile, host) {
   const savedRow = document.createElement('div');
   savedRow.className = 'ks-saved';
 
-  board.append(boardHead, savedRow, grid2, form);
+  // "START YOUR SETUP SESSION" — the reading list's offer (settei's needed[]),
+  // shown when an agent CLI is found AND the list is non-empty. It FILLS THE FORM
+  // and stops, like every button on this board — the owner still reads and presses
+  // Start. Judged once per build: the condition moves at the pace of setup, not of
+  // tiles, and the record read costs a login-shell probe not worth re-paying.
+  const offer = document.createElement('button');
+  offer.className = 'ks-saved-btn ks-offer';
+  offer.hidden = true;
+  void (async () => {
+    const r = await request('/api/settei');
+    const rec = r.ok ? r.data : null;
+    if (!rec || !(rec.needed ?? []).length || !(rec.status?.agents?.usable ?? []).length) return;
+    offer.textContent = '新 start your setup session';
+    offer.title = rec.needed.map((n) => n.needs).join(' · ');
+    offer.addEventListener('click', () => open(rec.schema.seat.job, rec.schema.seat.prompt));
+    offer.hidden = false;
+  })();
+  board.append(boardHead, offer, savedRow, grid2, form);
   host.appendChild(board);
 
   let kind = null;

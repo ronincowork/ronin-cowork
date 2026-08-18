@@ -12,9 +12,10 @@
 
 **One read: `GET /api/settei`** (`src/settei.ts`). One call, one answer, no writes, no
 cache. Every view converts that one read for its reader and its objective — the setup
-view asks what is unanswered, the ⚙ tab shows everything, the 新 reading list (to
-build) extracts what is needed and not present, and `tejun-account` prints the identity
-lines for a shell. No surface reads a source directly, and no second assembly exists.
+view asks what is unanswered, the ⚙ tab shows everything, the 新 seat reads
+`needed[]` as its reading list at its own start, and `tejun-account` prints the
+identity lines for a shell. No surface reads a source directly, and no second
+assembly exists.
 
 Writes are the mirror: **one door, `PUT /api/settei/:family`**
 (`src/routes/settei-api.ts`) — each family a narrow named writer through
@@ -28,7 +29,7 @@ provenance is all a view needs to render a leaf: an input, a fact line, or a tas
 
 ## The registry
 
-The schema of the object is part of the object. `SETTEI_SCHEMA` (`src/settei.ts`)
+The schema of the object is part of the object. `SETTEI_SCHEMA` (`src/settei-registry.ts` — pure data, split out by the line ceiling, still the one declaration)
 declares every askable leaf once, as pure data — section, furniture (label ·
 teaching · kind), `from` (a path into the record), `lands` (a write family and the
 key inside its body), optional `requires` — and rides every answer as `schema`, so a
@@ -36,8 +37,8 @@ renderer needs nothing else. No view may know a field the registry does not say.
 
 The scan-name lists live in the registry too (`scans.keys`, `scans.tools`) — a name
 worth scanning is a name the registry mentions — joined at read time by every
-`key_env` a configured job names. `requires` is judged against the found half (the
-`needed[]` family, to build) and its vocabulary is four verbs and stays four:
+`key_env` a configured job names. `requires` is judged against the found half — the
+`needed[]` family in the answer — and its vocabulary is four verbs and stays four:
 `key` · `agent` · `tool` · `set`. `families` maps each write family to its route and
 is the migration seam for the one write door.
 
@@ -61,7 +62,7 @@ from one of these, and adding a source is adding a row here.
 | **the mechanical scans** — seven families today, extensible | machine & OS (DMI, cores, kernel) · agent CLIs (login-shell probe) · API-key presence · host tools · the install's identity and services roster · reach and exposure · the work (project dirs, live sessions) | **found** — per read, never stored | a stored measurement is a lie the moment the machine changes; every answer carries `observed_at` |
 | **`.env`** (+ the unit) — `docs/env.md` | **only a name and a boolean** — which key variables exist and whether each is set | found (presence only) | the value never crosses into settei in either direction; secrets live in `.env` and nowhere else |
 | **the browser** — `localStorage` | nothing, today | — | theme and layout are honestly device state; keypad bindings are ruled settei and stranded here — a known defect, not a decision |
-| *(computed in the door)* | `status` · `needed[]` (to build) | **derived** | not a source — it exists only in the answer, judged fresh from typed and found on every read |
+| *(computed in the door)* | `status` · `needed[]` | **derived** | not a source — it exists only in the answer, judged fresh from typed and found on every read |
 
 And one thing that is the reverse of a source: **the tmux bus** (`@ronin-owner`,
 `@ronin-session-max`) carries *copies out* of typed leaves, published after a write so
@@ -96,7 +97,7 @@ known. `⚙` = edit it in the ⚙ Setup view unless another editor is named.
 |---|---|---|
 | the projects (name, dir, remit, per-project model) | **catalogs store** `PROJECT_ROOTS.md` | typed · ▣ Project root or by hand · settei reads by reference |
 | does a project's directory still exist | nowhere — one stat per read | derived · `status.projects[].dir` |
-| the owner's setup notes (`projNotes`) | **nowhere — the ask is deleted at plan leg 3, not rehomed** | ruled extravaganza (owner, 2026-08-18); one registry row if the want ever returns |
+| the owner's setup notes (`projNotes`) | **nowhere — the ask was deleted, not rehomed** | ruled extravaganza (owner, 2026-08-18); one registry row if the want ever returns |
 
 ### Models, agents, and keys
 
@@ -118,7 +119,7 @@ known. `⚙` = edit it in the ⚙ Setup view unless another editor is named.
 | the entitlement id, email, terms | `ronin.json` `services` | typed · pasted code, recorded never verified · ⚙ |
 | gbrain on or off | `ronin.json` `gbrain.enabled` | typed · ⚙ |
 | which services are registered | nowhere — the install's roster per read | found · `observed.ronin.services` |
-| what a selection still needs | nowhere — `needed[]`, to build | derived · plan leg 4, judged from the registry's `requires` |
+| what a selection still needs | nowhere — `needed[]` in the answer | derived · the registry's `requires`, judged per read; met items do not exist |
 
 ### The machine and the install
 
@@ -167,24 +168,26 @@ and the seeded `home` root guarantees a floor even if the view is skipped.
 
 ## The reading list, and the seat
 
-What a form cannot settle goes to someone who can ask. `projNotes` is deliberately
-routeless — the owner's own words, never a setting. When an agent CLI exists at Save,
-the view launches **新 Atarashi** (`session_job` catalog row) on a brief; the seat asks
-rather than assumes, touches nothing outside the project directory unannounced, and
-stops. Its shelf (`ronin_session_boot/job/Atarashi/`) binds it to treat saved answers
-as intent and measure what is true (`ronin_sops/install.md`).
+What a form cannot settle goes to someone who can ask. `needed[]` rides every answer:
+the registry's `requires`, judged against the found half per read — met items do not
+exist, so satisfying a need makes its task vanish everywhere with no write anywhere.
+The unmet rows render in ⚙ beside the leaf that caused them.
 
-**To build** (plan legs 1–3): the notes become a typed leaf so an agent-less Save never
-loses them; `needed[]` — each askable leaf's `requires`, judged against found — joins
-the derived half; and the reading list becomes a standing view *read live at seat
-start*, offered as "start your setup session" whenever an agent exists and the list is
-non-empty.
+The seat is the registry's own (`schema.seat`): **新 Atarashi**, launched from Save
+when an agent CLI exists, and offered as **"start your setup session"** in ⚙ and on
+the ＋ New board whenever an agent is found and the list is non-empty. Every launch
+hands over a one-line pointer and nothing else — **the seat reads `GET /api/settei`
+itself at start** (its shelf, `ronin_session_boot/job/Atarashi/00_ATARASHI.md`, says
+so), so a session born at Save and one born three weeks later read the same fresh
+truth, and nothing is composed, parked, or stale. The seat asks rather than assumes,
+touches nothing outside the project directory unannounced, and stops
+(`ronin_sops/install.md` is its verification SOP).
 
 ## The standing ⚙ view
 
-`public/js/settei.js`: one fetch of the record, one screen. Typed leaves are fields
-saving per-field through the same named PUTs; found leaves are lines of text; derived
-leaves are readouts beside the thing they are about. Projects are shown here and edited
-where they live; the session cap is the same number ⌂ Roster edits, over one route.
-**To build** (plan leg 4): the typed rows render from the manifest, so a leaf asked
-anywhere is editable here, structurally.
+`public/js/settei.js`: one fetch of the record, one screen. The typed rows render
+from the registry — a leaf asked anywhere is editable here, structurally — saving
+per-field through the one write door; found leaves are lines of text; derived leaves
+are readouts beside the thing they are about, seated by the registry's declared
+`fallback`/`note`/`aside` paths. Projects are shown here and edited where they live;
+the session cap is the same number ⌂ Roster edits, over one route.
