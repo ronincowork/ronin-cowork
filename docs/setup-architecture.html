@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>One Record, Two Showings</title>
+<title>One Object, Three Views</title>
 <style>
   :root {
     --bg: #f5f4ef;
@@ -14,629 +14,267 @@
     --accent: #3d5da8;
     --accent-soft: #e5eaf6;
     --seam: #b85c2e;
-    --seam-soft: #f5e5d9;
     --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
     --body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #171814;
-      --surface: #1e1f1a;
-      --ink: #e7e5da;
-      --muted: #9c9a8b;
-      --line: #393a31;
-      --accent: #8ea9de;
-      --accent-soft: #242c3e;
-      --seam: #d98f5e;
-      --seam-soft: #392a1d;
+      --bg: #171814; --surface: #1e1f1a; --ink: #e7e5da; --muted: #9c9a8b;
+      --line: #393a31; --accent: #8ea9de; --accent-soft: #242c3e; --seam: #d98f5e;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #171814;
-    --surface: #1e1f1a;
-    --ink: #e7e5da;
-    --muted: #9c9a8b;
-    --line: #393a31;
-    --accent: #8ea9de;
-    --accent-soft: #242c3e;
-    --seam: #d98f5e;
-    --seam-soft: #392a1d;
+    --bg: #171814; --surface: #1e1f1a; --ink: #e7e5da; --muted: #9c9a8b;
+    --line: #393a31; --accent: #8ea9de; --accent-soft: #242c3e; --seam: #d98f5e;
   }
-
   * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--ink);
-    font-family: var(--body);
-    font-size: 16px;
-    line-height: 1.6;
-  }
-  main {
-    max-width: 880px;
-    margin: 0 auto;
-    padding: 48px 20px 80px;
-  }
-  header.masthead { margin-bottom: 56px; }
-  .eyebrow {
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin: 0 0 14px;
-  }
-  h1 {
-    font-family: var(--mono);
-    font-weight: 600;
-    font-size: clamp(28px, 5.4vw, 44px);
-    line-height: 1.12;
-    letter-spacing: -.01em;
-    margin: 0 0 16px;
-    text-wrap: balance;
-  }
-  .dek {
-    max-width: 62ch;
-    color: var(--muted);
-    font-size: 17px;
-    margin: 0;
-  }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.6; }
+  main { max-width: 880px; margin: 0 auto; padding: 48px 20px 80px; }
+  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; }
+  h1 { font-family: var(--mono); font-weight: 600; font-size: clamp(28px, 5.4vw, 44px); line-height: 1.12; margin: 0 0 16px; text-wrap: balance; }
+  .dek { max-width: 62ch; color: var(--muted); font-size: 17px; margin: 0; }
   .dek b { color: var(--ink); font-weight: 600; }
-
   section { margin: 56px 0 0; }
-  .sec-head {
-    display: flex;
-    align-items: baseline;
-    gap: 14px;
-    border-top: 1px solid var(--line);
-    padding-top: 14px;
-    margin-bottom: 18px;
-  }
-  .sec-head h2 {
-    font-family: var(--mono);
-    font-size: 19px;
-    font-weight: 600;
-    margin: 0;
-    text-wrap: balance;
-  }
-  .sec-head .tag {
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: .12em;
-    text-transform: uppercase;
-    color: var(--accent);
-    white-space: nowrap;
-  }
+  .sec-head { display: flex; align-items: baseline; gap: 14px; border-top: 1px solid var(--line); padding-top: 14px; margin-bottom: 18px; }
+  .sec-head h2 { font-family: var(--mono); font-size: 19px; font-weight: 600; margin: 0; text-wrap: balance; }
+  .sec-head .tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); white-space: nowrap; }
   p { max-width: 68ch; margin: 0 0 14px; }
   p.note { color: var(--muted); font-size: 14px; max-width: 70ch; }
-  code {
-    font-family: var(--mono);
-    font-size: .85em;
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 4px;
-    padding: 1px 5px;
-    white-space: nowrap;
-  }
-
+  code { font-family: var(--mono); font-size: .85em; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; white-space: nowrap; }
   figure { margin: 26px 0; }
   .fig-scroll { overflow-x: auto; }
   .fig-scroll svg { min-width: 640px; max-width: 100%; height: auto; display: block; }
-  figcaption {
-    font-size: 14px;
-    color: var(--muted);
-    max-width: 70ch;
-    margin-top: 10px;
-  }
+  figcaption { font-size: 14px; color: var(--muted); max-width: 70ch; margin-top: 10px; }
   figcaption b { color: var(--ink); }
 
-  .legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px 22px;
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--muted);
-    margin: 6px 0 2px;
-  }
-  .legend span { display: inline-flex; align-items: center; gap: 8px; }
-  .key-line { width: 30px; height: 0; border-top: 2px solid var(--ink); }
-  .key-line.seam { border-top: 2px dashed var(--seam); }
-  .key-line.accent { border-top: 2px solid var(--accent); }
+  .views { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin: 20px 0; }
+  .view { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 16px 18px; }
+  .view h3 { font-family: var(--mono); font-size: 14px; font-weight: 700; margin: 0 0 4px; }
+  .view .pred { font-family: var(--mono); font-size: 12px; color: var(--accent); margin: 0 0 10px; }
+  .view p { font-size: 14px; color: var(--muted); margin: 0 0 8px; }
+  .view p:last-child { margin-bottom: 0; }
+  .view p b { color: var(--ink); }
+  .view .state { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+  .view .state.built { color: var(--accent); }
+  .view .state.open { color: var(--seam); }
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 14.5px;
-  }
-  .table-scroll { overflow-x: auto; }
-  th {
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: .1em;
-    text-transform: uppercase;
-    color: var(--muted);
-    text-align: left;
-    font-weight: 600;
-    padding: 8px 14px 8px 0;
-    border-bottom: 1px solid var(--line);
-  }
-  td {
-    padding: 10px 14px 10px 0;
-    border-bottom: 1px solid var(--line);
-    vertical-align: top;
-  }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+  .table-scroll { overflow-x: auto; margin: 14px 0; }
+  th { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); text-align: left; font-weight: 600; padding: 8px 14px 8px 0; border-bottom: 1px solid var(--line); }
+  td { padding: 10px 14px 10px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
   td:first-child { font-family: var(--mono); font-size: 13px; white-space: nowrap; }
 
-  .stitch {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-left: 3px solid var(--seam);
-    border-radius: 6px;
-    padding: 18px 20px;
-    margin: 0 0 16px;
-  }
-  .stitch h3 {
-    font-family: var(--mono);
-    font-size: 15px;
-    font-weight: 600;
-    margin: 0 0 8px;
-  }
-  .stitch h3 .s-id { color: var(--seam); margin-right: 10px; }
-  .stitch p { font-size: 15px; margin-bottom: 8px; }
-  .stitch p:last-child { margin-bottom: 0; }
+  ul.rules { max-width: 70ch; padding-left: 22px; }
+  ul.rules li { margin-bottom: 9px; }
 
-  .ruling {
-    display: grid;
-    grid-template-columns: 46px 1fr;
-    gap: 0 14px;
-    padding: 14px 0;
-    border-bottom: 1px solid var(--line);
-  }
-  .ruling:last-child { border-bottom: none; }
-  .ruling .r-id {
-    font-family: var(--mono);
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--accent);
-    padding-top: 2px;
-  }
-  .ruling h3 { font-size: 15.5px; font-weight: 600; margin: 0 0 6px; font-family: var(--body); }
-  .ruling p { font-size: 15px; margin-bottom: 6px; }
-  .ruling p:last-child { margin-bottom: 0; }
-  .lean { color: var(--muted); font-size: 14px; }
-  .lean b { color: var(--ink); }
-
-  footer {
-    margin-top: 64px;
-    border-top: 1px solid var(--line);
-    padding-top: 16px;
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--muted);
-    line-height: 1.9;
-  }
+  footer { margin-top: 64px; border-top: 1px solid var(--line); padding-top: 16px; font-family: var(--mono); font-size: 12px; color: var(--muted); line-height: 1.9; }
   footer .stamp { color: var(--seam); }
-  a { color: var(--accent); }
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 </style>
 </head>
 <body>
 <main>
 
-<header class="masthead">
-  <p class="eyebrow">Ronin · setup architecture · measured 2026-08-17</p>
-  <h1>One Record, Two Showings</h1>
-  <p class="dek">How the setup flow is built, drawn. One path: an agent installs cowork on
-  the owner's own machine, the owner opens the URL and lands on the setup page, and their
-  first session is born from the page. The spine is live; <b>two seams are open</b>, both
-  stitches. Prose companion: <code>docs/setup.md</code>.</p>
+<header>
+  <p class="eyebrow">Ronin · settei architecture · as ruled 2026-08-18</p>
+  <h1>One Object, Three Views</h1>
+  <p class="dek"><b>SETTEI is the top: one object holding everything this install is.</b>
+  It is fed from below — typed once by the owner, measured off the machine, derived from
+  both — and every surface anyone ever sees is a <b>view</b>: a query over the object
+  plus some furniture. There is no setup flow. There is a view that happens to be full
+  on day one.</p>
 </header>
 
 <section>
-  <div class="sec-head"><span class="tag">which install</span><h2>One of two doors — this page is the box you already have</h2></div>
-  <p>Everything below is the <b>bring-your-own-box</b> install: a home server, a laptop, a
-  VM you rent — a machine you control and are simply pointing at. You already have an agent
-  on that box; you hand it <code>docs/install.md</code>, four commands land the release, and
-  the product takes over from the URL. A second door — <b>we provision the machine for
-  you</b> — will be its own product and is not written here. Its one obligation to this
-  architecture: end where door one begins, a box you control with cowork serving, so
-  nothing below ever knows which door was used.</p>
+  <div class="sec-head"><span class="tag">the model</span><h2>Fed from the left, viewed from the right</h2></div>
 
   <figure>
     <div class="fig-scroll">
-    <svg viewBox="0 0 920 250" role="img" aria-label="Two doors into the same install: bring your own box, where an agent you already have follows the repo instructions; and a future provisioned-VM door. Both converge on a box you control with cowork serving, where this page's flow begins.">
-      <defs>
-        <marker id="arr4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
-        </marker>
-      </defs>
-      <g font-family="ui-monospace, Menlo, monospace" font-size="13" fill="currentColor">
-
-        <rect x="30" y="26" width="340" height="92" rx="6" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
-        <text x="50" y="52" font-weight="700">door 1 · you have the box</text>
-        <text x="50" y="72" font-size="11.5" fill="var(--muted)">home server · laptop · a VM you rent</text>
-        <text x="50" y="90" font-size="11.5" fill="var(--muted)">your agent follows the repo’s install instructions</text>
-        <text x="50" y="108" font-size="11.5" fill="var(--muted)">this page — all of it</text>
-
-        <rect x="30" y="150" width="340" height="74" rx="6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="2 4"/>
-        <text x="50" y="176" font-weight="700">door 2 · we provision the box</text>
-        <text x="50" y="196" font-size="11.5" fill="var(--muted)">a separate product, to be created</text>
-        <text x="50" y="214" font-size="11.5" fill="var(--muted)">owes this flow one thing: end where door 1 begins</text>
-
-        <line x1="370" y1="72" x2="470" y2="112" stroke="currentColor" stroke-width="1.6" marker-end="url(#arr4)"/>
-        <line x1="370" y1="187" x2="470" y2="140" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2 4" marker-end="url(#arr4)"/>
-        <rect x="474" y="88" width="230" height="76" rx="6" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
-        <text x="589" y="116" text-anchor="middle" font-weight="700">a box you control</text>
-        <text x="589" y="136" text-anchor="middle" font-size="11.5" fill="var(--muted)">cowork serving · URL open</text>
-        <text x="589" y="154" text-anchor="middle" font-size="11.5" fill="var(--muted)">the doors converge here</text>
-
-        <line x1="704" y1="126" x2="760" y2="126" stroke="currentColor" stroke-width="1.6" marker-end="url(#arr4)"/>
-
-        <g font-size="12.5">
-          <text x="772" y="106" font-weight="700">from here, this page:</text>
-          <text x="772" y="128" fill="var(--muted)">?setup · Fig 2</text>
-          <text x="772" y="148" fill="var(--muted)">the record · Fig 1</text>
-          <text x="772" y="168" fill="var(--muted)">the packet · Fig 3</text>
-        </g>
-      </g>
-    </svg>
-    </div>
-    <figcaption><b>Figure 0 · Two doors, one install.</b> The fine-dotted door does not
-    exist yet and is not this system’s work — only its convergence point is this
-    system’s contract.</figcaption>
-  </figure>
-</section>
-
-<section>
-  <div class="sec-head"><span class="tag">the spine</span><h2>Every surface is a face over one record</h2></div>
-  <p>Both sessions built to the same sentence — yours: <em>“first-run and the Setup tab are
-  different stages of the same information.”</em> There is one assembled record
-  (<code>GET /api/settei</code>), one door for every write
-  (<code>updateConfig()</code>), and no new store. First load asks in order and ends;
-  the ⚙ Setup tab shows current values and never ends. Neither surface stores anything
-  of its own.</p>
-
-  <div class="legend">
-    <span><span class="key-line"></span> built &amp; wired</span>
-    <span><span class="key-line accent"></span> the record — the spine</span>
-    <span><span class="key-line seam"></span> open seam — built on one side, unwired on the other</span>
-  </div>
-
-  <figure>
-    <div class="fig-scroll">
-    <svg viewBox="0 0 920 640" role="img" aria-label="Architecture diagram: the setup-fields manifest feeds the first-load page but not the standing Setup tab; both surfaces read and write the SETTEI record through named endpoints; the record assembles set, observed and status from ronin.json, live measurement and the catalogs store.">
+    <svg viewBox="0 0 920 460" role="img" aria-label="Architecture: two sources — the owner typing and the box being measured — feed the settei object, which holds typed, measured and derived leaves. Three views query it: the setup view of what is askable and unanswered, the standing Setup tab of everything, and the Atarashi reading list of what is needed minus what is present.">
       <defs>
         <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
           <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
         </marker>
-        <marker id="arrS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-          <path d="M0,0 L10,5 L0,10 z" fill="var(--seam)"/>
-        </marker>
-      </defs>
-      <g font-family="ui-monospace, Menlo, monospace" font-size="13" fill="currentColor" stroke="none">
-
-        <!-- manifest -->
-        <rect x="330" y="16" width="260" height="58" rx="6" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
-        <text x="460" y="40" text-anchor="middle" font-weight="700">setup-fields.js</text>
-        <text x="460" y="60" text-anchor="middle" font-size="11.5" fill="var(--muted)">a field is one object literal</text>
-
-        <!-- manifest -> firstrun -->
-        <line x1="384" y1="74" x2="252" y2="130" stroke="currentColor" stroke-width="1.6" marker-end="url(#arr)"/>
-        <text x="262" y="96" text-anchor="end" font-size="11.5" fill="var(--muted)">renders every field</text>
-
-        <!-- manifest -> settei (seam) -->
-        <line x1="536" y1="74" x2="668" y2="130" stroke="var(--seam)" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrS)"/>
-        <text x="660" y="96" text-anchor="start" font-size="11.5" fill="var(--seam)">promised — rows hand-written  S1</text>
-
-        <!-- surfaces -->
-        <rect x="60" y="130" width="384" height="86" rx="6" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
-        <text x="80" y="156" font-weight="700">?setup — first load</text>
-        <text x="80" y="176" font-size="11.5" fill="var(--muted)">firstrun.js · asks in order, teaches, ends</text>
-        <text x="80" y="194" font-size="11.5" fill="var(--muted)">owned by atarashi</text>
-
-        <rect x="476" y="130" width="384" height="86" rx="6" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
-        <text x="496" y="156" font-weight="700">⚙ Setup — the standing tab</text>
-        <text x="496" y="176" font-size="11.5" fill="var(--muted)">settei.js · current values, per-field saves, never ends</text>
-        <text x="496" y="194" font-size="11.5" fill="var(--muted)">owned by settei</text>
-
-        <!-- surfaces -> endpoints -->
-        <line x1="252" y1="216" x2="252" y2="286" stroke="currentColor" stroke-width="1.6" marker-end="url(#arr)"/>
-        <text x="262" y="256" font-size="11.5" fill="var(--muted)">one pass of writes at Start</text>
-        <line x1="668" y1="216" x2="668" y2="286" stroke="currentColor" stroke-width="1.6" marker-end="url(#arr)"/>
-        <text x="678" y="256" font-size="11.5" fill="var(--muted)">per-field saves</text>
-        <line x1="460" y1="286" x2="460" y2="216" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#arr)"/>
-        <text x="452" y="256" text-anchor="end" font-size="11.5" fill="var(--accent)">GET /api/settei — both read it</text>
-
-        <!-- endpoints band -->
-        <rect x="60" y="286" width="800" height="64" rx="6" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
-        <text x="80" y="312" font-weight="700">named endpoints — a write can only touch named keys</text>
-        <text x="80" y="332" font-size="11.5" fill="var(--muted)">PUT /api/owner · /api/settei/machine · agents · gbrain · services · /api/session-max</text>
-
-        <!-- endpoints -> record -->
-        <line x1="380" y1="350" x2="380" y2="410" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#arr)"/>
-        <text x="370" y="384" text-anchor="end" font-size="11.5" fill="var(--muted)">through updateConfig() — the one door</text>
-
-        <!-- first project exception -->
-        <line x1="790" y1="350" x2="790" y2="548" stroke="currentColor" stroke-width="1.6" marker-end="url(#arr)"/>
-        <text x="800" y="452" font-size="11.5" fill="var(--muted)">first project</text>
-        <text x="800" y="468" font-size="11.5" fill="var(--muted)">POST</text>
-        <text x="800" y="484" font-size="11.5" fill="var(--muted)">/api/</text>
-        <text x="800" y="500" font-size="11.5" fill="var(--muted)">project-roots</text>
-
-        <!-- record -->
-        <rect x="120" y="410" width="600" height="96" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.8"/>
-        <text x="140" y="436" font-weight="700">the SETTEI record — src/settei.ts, assembled per request</text>
-        <text x="140" y="462" font-size="12" font-weight="700">set</text>
-        <text x="180" y="462" font-size="11.5" fill="var(--muted)">the owner typed it — the only half persisted</text>
-        <text x="140" y="480" font-size="12" font-weight="700">observed</text>
-        <text x="216" y="480" font-size="11.5" fill="var(--muted)">the box measured it — never stored</text>
-        <text x="140" y="498" font-size="12" font-weight="700">status</text>
-        <text x="196" y="498" font-size="11.5" fill="var(--muted)">follows from the other two — computed on read</text>
-
-        <!-- record <- stores -->
-        <line x1="230" y1="548" x2="230" y2="506" stroke="currentColor" stroke-width="1.6" marker-end="url(#arr)"/>
-        <line x1="480" y1="548" x2="480" y2="506" stroke="currentColor" stroke-width="1.6" marker-end="url(#arr)"/>
-        <line x1="700" y1="548" x2="700" y2="506" stroke="currentColor" stroke-width="1.6" marker-end="url(#arr)"/>
-
-        <!-- stores -->
-        <rect x="60" y="548" width="330" height="72" rx="6" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
-        <text x="80" y="574" font-weight="700">ronin.json</text>
-        <text x="80" y="594" font-size="11.5" fill="var(--muted)">user scope · atomic save · keys preserved</text>
-
-        <rect x="410" y="548" width="220" height="72" rx="6" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
-        <text x="430" y="574" font-weight="700">the box itself</text>
-        <text x="430" y="594" font-size="11.5" fill="var(--muted)">login-shell probe · DMI · roster</text>
-
-        <rect x="650" y="548" width="210" height="72" rx="6" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
-        <text x="670" y="574" font-weight="700">catalogs store</text>
-        <text x="670" y="594" font-size="11.5" fill="var(--muted)">PROJECT_ROOTS.md</text>
-      </g>
-    </svg>
-    </div>
-    <figcaption><b>Figure 1 · The spine, and its one open seam.</b> Everything solid is
-    built and proved on this box. The dashed edge is S1: the manifest’s own header claims
-    both surfaces read it, but only first load does — the standing tab restates every row
-    by hand, which is the exact two-lists-that-drift failure both plans name as the bug.</figcaption>
-  </figure>
-</section>
-
-<section>
-  <div class="sec-head"><span class="tag">first load</span><h2>Birth is a stamped fact, wired at both ends</h2></div>
-  <p>Freshness is never inferred: a genuinely fresh install stamps <code>setup.pending</code>
-  at its first operator boot, nothing can re-arm it over HTTP, and a box that predates the
-  key has no setup section and stays quiet forever — <em>absence means do-not-show</em>.
-  The client asks a cheap route on every load and takes a pending box straight to the setup
-  page; Save clears the flag before the handoff, so a first session that fails to start
-  cannot leave a box pending. <code>?setup</code> remains the deliberate way back in.</p>
-
-  <figure>
-    <div class="fig-scroll">
-    <svg viewBox="0 0 920 290" role="img" aria-label="Lifecycle diagram: a fresh box stamps setup.pending at birth, the client routes on it every load, and the setup page's Save clears it. A box that predates the key stays quiet forever.">
-      <defs>
-        <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
-        </marker>
-        <marker id="arrS2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-          <path d="M0,0 L10,5 L0,10 z" fill="var(--seam)"/>
+        <marker id="arrA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
         </marker>
       </defs>
       <g font-family="ui-monospace, Menlo, monospace" font-size="13" fill="currentColor">
 
-        <rect x="30" y="40" width="180" height="66" rx="6" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
-        <text x="120" y="66" text-anchor="middle" font-weight="700">fresh box</text>
-        <text x="120" y="86" text-anchor="middle" font-size="11.5" fill="var(--muted)">no ronin.json yet</text>
+        <!-- sources -->
+        <rect x="30" y="80" width="240" height="90" rx="6" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
+        <text x="50" y="106" font-weight="700">the owner types</text>
+        <text x="50" y="126" font-size="11.5" fill="var(--muted)">from any view, any day —</text>
+        <text x="50" y="142" font-size="11.5" fill="var(--muted)">named PUTs, keys preserved,</text>
+        <text x="50" y="158" font-size="11.5" fill="var(--muted)">the only half persisted</text>
 
-        <line x1="210" y1="73" x2="268" y2="73" stroke="currentColor" stroke-width="1.6" marker-end="url(#arr2)"/>
-        <text x="239" y="60" text-anchor="middle" font-size="11.5" fill="var(--muted)">stamped at birth</text>
+        <rect x="30" y="280" width="240" height="90" rx="6" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
+        <text x="50" y="306" font-weight="700">the box is measured</text>
+        <text x="50" y="326" font-size="11.5" fill="var(--muted)">on read, never stored —</text>
+        <text x="50" y="342" font-size="11.5" fill="var(--muted)">login-shell probe · DMI · routes</text>
+        <text x="50" y="358" font-size="11.5" fill="var(--muted)">keys present · email verified</text>
 
-        <rect x="268" y="40" width="190" height="66" rx="6" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
-        <text x="363" y="66" text-anchor="middle" font-weight="700">setup.pending</text>
-        <text x="363" y="86" text-anchor="middle" font-size="11.5" fill="var(--muted)">server knows; built ✓</text>
+        <line x1="270" y1="125" x2="332" y2="170" stroke="currentColor" stroke-width="1.6" marker-end="url(#arr)"/>
+        <text x="278" y="112" font-size="11.5" fill="var(--muted)">intent</text>
+        <line x1="270" y1="325" x2="332" y2="285" stroke="currentColor" stroke-width="1.6" marker-end="url(#arr)"/>
+        <text x="278" y="352" font-size="11.5" fill="var(--muted)">reality</text>
 
-        <line x1="458" y1="73" x2="540" y2="73" stroke="currentColor" stroke-width="1.6" marker-end="url(#arr2)"/>
-        <text x="499" y="48" text-anchor="middle" font-size="11.5" fill="var(--muted)">main.js routes on it,</text>
-        <text x="499" y="62" text-anchor="middle" font-size="11.5" fill="var(--muted)">every load — cheap GET</text>
+        <!-- settei -->
+        <rect x="336" y="130" width="250" height="200" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+        <text x="461" y="162" text-anchor="middle" font-weight="700" font-size="16">SETTEI</text>
+        <text x="461" y="182" text-anchor="middle" font-size="11.5" fill="var(--muted)">one object, assembled per read</text>
+        <text x="356" y="216" font-size="12" font-weight="700">typed</text>
+        <text x="416" y="216" font-size="11.5" fill="var(--muted)">what the owner said</text>
+        <text x="356" y="244" font-size="12" font-weight="700">measured</text>
+        <text x="440" y="244" font-size="11.5" fill="var(--muted)">what the box has</text>
+        <text x="356" y="272" font-size="12" font-weight="700">derived</text>
+        <text x="424" y="272" font-size="11.5" fill="var(--muted)">status · what is still</text>
+        <text x="424" y="288" font-size="11.5" fill="var(--muted)">needed, computed away</text>
+        <text x="461" y="316" text-anchor="middle" font-size="11" fill="var(--muted)">every leaf knows how it is known</text>
 
-        <rect x="540" y="40" width="180" height="66" rx="6" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
-        <text x="630" y="66" text-anchor="middle" font-weight="700">?setup page</text>
-        <text x="630" y="86" text-anchor="middle" font-size="11.5" fill="var(--muted)">asks once, ends ✓</text>
+        <!-- views -->
+        <line x1="586" y1="170" x2="646" y2="90" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#arrA)"/>
+        <text x="600" y="106" font-size="11" fill="var(--accent)">askable ∧ unanswered</text>
+        <line x1="586" y1="230" x2="646" y2="230" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#arrA)"/>
+        <text x="598" y="217" font-size="11" fill="var(--accent)">everything</text>
+        <line x1="586" y1="290" x2="646" y2="370" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#arrA)"/>
+        <text x="600" y="360" font-size="11" fill="var(--accent)">needed − present</text>
 
-        <line x1="720" y1="73" x2="800" y2="73" stroke="currentColor" stroke-width="1.6" marker-end="url(#arr2)"/>
-        <text x="760" y="48" text-anchor="middle" font-size="11.5" fill="var(--muted)">Save clears it,</text>
-        <text x="760" y="62" text-anchor="middle" font-size="11.5" fill="var(--muted)">before the handoff</text>
+        <rect x="650" y="40" width="240" height="100" rx="6" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
+        <text x="670" y="66" font-weight="700">the setup view</text>
+        <text x="670" y="86" font-size="11.5" fill="var(--muted)">first-time human · ordered,</text>
+        <text x="670" y="102" font-size="11.5" fill="var(--muted)">teaches, ends · full on day one,</text>
+        <text x="670" y="118" font-size="11.5" fill="var(--muted)">refills when new asks arrive</text>
 
-        <rect x="800" y="40" width="104" height="66" rx="6" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
-        <text x="852" y="66" text-anchor="middle" font-weight="700">done</text>
-        <text x="852" y="86" text-anchor="middle" font-size="10.5" fill="var(--muted)">completed_at</text>
+        <rect x="650" y="180" width="240" height="100" rx="6" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
+        <text x="670" y="206" font-weight="700">⚙ the standing view</text>
+        <text x="670" y="226" font-size="11.5" fill="var(--muted)">the owner, forever · dense,</text>
+        <text x="670" y="242" font-size="11.5" fill="var(--muted)">current, editable · asked once</text>
+        <text x="670" y="258" font-size="11.5" fill="var(--muted)">means editable here, always</text>
 
-        <text x="630" y="140" text-anchor="middle" font-size="11.5" fill="var(--muted)">PUT /api/settei/setup — the only way pending ever clears</text>
-
-        <rect x="30" y="180" width="380" height="66" rx="6" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
-        <text x="50" y="206" font-weight="700">box that predates the key</text>
-        <text x="50" y="226" font-size="11.5" fill="var(--muted)">no setup section at all</text>
-
-        <line x1="410" y1="213" x2="530" y2="213" stroke="currentColor" stroke-width="1.6" marker-end="url(#arr2)"/>
-        <rect x="530" y="180" width="374" height="66" rx="6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="2 4"/>
-        <text x="717" y="206" text-anchor="middle" font-weight="700">stays quiet, forever</text>
-        <text x="717" y="226" text-anchor="middle" font-size="11.5" fill="var(--muted)">absence means do-not-show — the revert’s lesson, kept</text>
+        <rect x="650" y="320" width="240" height="100" rx="6" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
+        <text x="670" y="346" font-weight="700">新 the reading list</text>
+        <text x="670" y="366" font-size="11.5" fill="var(--muted)">an agent, when one exists ·</text>
+        <text x="670" y="382" font-size="11.5" fill="var(--muted)">task-shaped, read live at seat</text>
+        <text x="670" y="398" font-size="11.5" fill="var(--muted)">start — nothing composed or parked</text>
       </g>
     </svg>
     </div>
-    <figcaption><b>Figure 2 · The birth key’s life, wired end to end.</b> A fresh box
-    lands on the setup page with no one typing anything; a finished or pre-key box never
-    sees it. The bottom lane is the safety property: no condition ever fires on a missing
-    key.</figcaption>
+    <figcaption><b>The whole architecture in one picture.</b> Two sources feed the object;
+    three views query it. A view is a predicate plus furniture — the object never knows
+    the views exist, and a new view is a new query, not new architecture.</figcaption>
   </figure>
+
+  <p class="note">The one field list behind all of it: <code>setup-fields.js</code>
+  declares every askable leaf once — label, teaching, where it lands. A view can never
+  know something the manifest doesn't say; that is what makes three renderers of one
+  schema safe.</p>
 </section>
 
 <section>
-  <div class="sec-head"><span class="tag">the handoff</span><h2>Setup stops surveying — a form collects, a session resolves</h2></div>
-  <p>The newest element, and the right instinct: a form cannot settle whether a repo is
-  already cloned, where “half-finished” points, or what the owner’s note implies — but
-  Ronin is full of agents who can simply <em>ask</em>. So the page is complete about what is
-  mechanical and honest about what is not: it saves the settings, then bundles everything
-  unresolved into a <b>packet</b> — the owner’s name, the machine, the project and its root,
-  their note verbatim (<code>projNotes</code>, a field with deliberately no route), and the
-  list of what a form could not settle — and launches the first session on it, under a new
-  catalog-row job, <b>新&nbsp;Atarashi</b>: ask rather than assume, touch nothing outside the
-  project directory unannounced, finish and stop.</p>
-  <p>The gap is <em>when</em>. Today the packet launches at Save, immediately — which assumes
-  a usable agent already exists. On the fresh box this page exists for, the CLI may be
-  neither installed nor signed in at Save, and launching into an unauthenticated CLI is the
-  documented danger: Codex draws <code>›</code> for both its trust row and its ready prompt,
-  so a blindly-delivered brief can <em>answer the trust dialog</em>. The packet needs a place
-  to wait, and a trigger that drops the session in once an agent is established.</p>
-
-  <figure>
-    <div class="fig-scroll">
-    <svg viewBox="0 0 920 330" role="img" aria-label="Handoff diagram: Save composes a packet of unresolved setup items and today launches the Atarashi session immediately. On a fresh box the agent is not yet installed and signed in, and there is no place for the packet to park and no trigger to drop the session in later — both edges are open seam S4.">
-      <defs>
-        <marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
-        </marker>
-        <marker id="arrS3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-          <path d="M0,0 L10,5 L0,10 z" fill="var(--seam)"/>
-        </marker>
-      </defs>
-      <g font-family="ui-monospace, Menlo, monospace" font-size="13" fill="currentColor">
-
-        <rect x="30" y="46" width="164" height="70" rx="6" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
-        <text x="112" y="74" text-anchor="middle" font-weight="700">Save, on ?setup</text>
-        <text x="112" y="94" text-anchor="middle" font-size="11.5" fill="var(--muted)">mechanical writes land</text>
-
-        <line x1="194" y1="81" x2="256" y2="81" stroke="currentColor" stroke-width="1.6" marker-end="url(#arr3)"/>
-        <text x="225" y="68" text-anchor="middle" font-size="11.5" fill="var(--muted)">composes</text>
-
-        <rect x="256" y="30" width="256" height="118" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.8"/>
-        <text x="276" y="56" font-weight="700">the packet</text>
-        <text x="276" y="78" font-size="11.5" fill="var(--muted)">who · machine · project + root</text>
-        <text x="276" y="96" font-size="11.5" fill="var(--muted)">their words, verbatim (projNotes)</text>
-        <text x="276" y="114" font-size="11.5" fill="var(--muted)">what a form could not settle</text>
-        <text x="276" y="136" font-size="11.5" fill="var(--muted)">never stored as a setting</text>
-
-        <line x1="512" y1="81" x2="694" y2="81" stroke="currentColor" stroke-width="1.6" marker-end="url(#arr3)"/>
-        <text x="603" y="56" text-anchor="middle" font-size="11.5" fill="var(--muted)">today: POST /api/launch at Save —</text>
-        <text x="603" y="70" text-anchor="middle" font-size="11.5" fill="var(--muted)">assumes a usable agent</text>
-
-        <rect x="694" y="40" width="200" height="86" rx="6" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
-        <text x="794" y="68" text-anchor="middle" font-weight="700">新 Atarashi session</text>
-        <text x="794" y="88" text-anchor="middle" font-size="11.5" fill="var(--muted)">asks, finishes, stops</text>
-        <text x="794" y="106" text-anchor="middle" font-size="11.5" fill="var(--muted)">not a standing assistant</text>
-
-        <!-- fresh-box lane -->
-        <line x1="384" y1="148" x2="384" y2="200" stroke="var(--seam)" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrS3)"/>
-        <text x="396" y="178" font-size="11.5" fill="var(--seam)">fresh box: nowhere to wait — S4</text>
-
-        <rect x="256" y="200" width="256" height="76" rx="6" fill="none" stroke="var(--seam)" stroke-width="1.6" stroke-dasharray="7 5"/>
-        <text x="384" y="228" text-anchor="middle" font-weight="700" fill="var(--seam)">parked packet</text>
-        <text x="384" y="248" text-anchor="middle" font-size="11.5" fill="var(--muted)">no home exists today — R5</text>
-
-        <rect x="548" y="200" width="200" height="76" rx="6" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
-        <text x="648" y="228" text-anchor="middle" font-weight="700">agent established</text>
-        <text x="648" y="248" text-anchor="middle" font-size="11.5" fill="var(--muted)">installed AND signed in</text>
-        <text x="648" y="266" text-anchor="middle" font-size="11.5" fill="var(--muted)">sign-in is a pane, §8.3</text>
-
-        <line x1="512" y1="238" x2="544" y2="238" stroke="var(--seam)" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrS3)"/>
-
-        <line x1="748" y1="238" x2="794" y2="238" stroke="var(--seam)" stroke-width="2" stroke-dasharray="7 5"/>
-        <line x1="794" y1="238" x2="794" y2="130" stroke="var(--seam)" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrS3)"/>
-        <text x="806" y="200" font-size="11.5" fill="var(--seam)">no trigger drops</text>
-        <text x="806" y="216" font-size="11.5" fill="var(--seam)">the session in — S4</text>
-      </g>
-    </svg>
+  <div class="sec-head"><span class="tag">the views</span><h2>Three queries, three audiences</h2></div>
+  <div class="views">
+    <div class="view">
+      <h3>the setup view</h3>
+      <p class="pred">askable ∧ unanswered · ordered</p>
+      <p><b>Reader:</b> a human meeting Ronin. Teaches before it asks; ends. Admission is
+      the birth key — a fresh install stamps <code>setup.pending</code>, the client routes
+      on it, Save dismisses it. Never inferred, never re-armed.</p>
+      <p><b>The payoff:</b> when a future feature adds new askable leaves, this view has
+      content again — onboarding for new features falls out for free.</p>
+      <p class="state built">built · firstrun.js</p>
     </div>
-    <figcaption><b>Figure 3 · The packet, and the wait it cannot do.</b> The top lane is
-    built (<code>dc5df75</code>) and right for a box that already has a signed-in agent.
-    The bottom lane is the new element: on a fresh box the packet must park until an agent
-    is established, and something must then drop the 新&nbsp;Atarashi session in with the
-    packet intact. Neither the parking place nor the trigger exists — S4, ruled in R5.</figcaption>
-  </figure>
+    <div class="view">
+      <h3>⚙ the standing view</h3>
+      <p class="pred">everything · current · editable</p>
+      <p><b>Reader:</b> the owner, any day. Typed leaves are fields, measured leaves are
+      facts, derived leaves are readouts — provenance decides the rendering, not per-view
+      logic.</p>
+      <p><b>Rule made structural:</b> asked once means editable here forever. No leaf the
+      setup view asked may render read-only here.</p>
+      <p class="state open">built · to move onto the manifest</p>
+    </div>
+    <div class="view">
+      <h3>新 the reading list</h3>
+      <p class="pred">needed − present · task-shaped</p>
+      <p><b>Reader:</b> a 新 Atarashi session, once an agent exists on the box. What the
+      owner's choices still need, minus what the box observably has, plus the owner's own
+      words — read <b>live at seat start</b>. Nothing is composed at Save, so nothing can
+      be lost or go stale; the only real data is the owner's notes.</p>
+      <p class="state open">to build — with the derived requirements</p>
+    </div>
+  </div>
 </section>
 
 <section>
-  <div class="sec-head"><span class="tag">open seams</span><h2>Two stitches remain</h2></div>
-
-  <div class="stitch">
-    <h3><span class="s-id">S1</span>The standing tab does not read the manifest</h3>
-    <p><code>setup-fields.js</code> exists precisely so two surfaces cannot drift, and its
-    header says both read it. Only first load does. Drift has already begun: the session cap
-    is a 5/10/15/20 picker at first load but a free number with “0&nbsp;=&nbsp;no limit” in the tab, and
-    <b>Mika’s model is asked at first load then shown read-only in the tab</b> — the
-    “asked once, never editable again” wizard failure both plans call the design’s cardinal sin.</p>
-    <p>Atarashi’s own gate is already waiting on this. The stitch: <code>settei.js</code>
-    renders its <code>set</code> rows from the manifest; measured rows stay hand-drawn, since
-    a fact has nothing to ask.</p>
+  <div class="sec-head"><span class="tag">lifecycle</span><h2>Lifecycle is which query returns something</h2></div>
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>Day</th><th>setup view</th><th>⚙ standing</th><th>新 reading list</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>day one</td>
+        <td>full — every askable leaf unanswered</td>
+        <td>mostly measured facts</td>
+        <td>whatever the first choices demand</td>
+      </tr>
+      <tr>
+        <td>day thirty</td>
+        <td>empty, dismissed — quiet</td>
+        <td>the daily door to every setting</td>
+        <td>fills only when a choice demands something the box lacks</td>
+      </tr>
+      <tr>
+        <td>feature day</td>
+        <td>has content again — the new asks</td>
+        <td>gains the new leaves, same edit</td>
+        <td>gains the new demands, if any</td>
+      </tr>
+    </tbody>
+  </table>
   </div>
-
-  <div class="stitch">
-    <h3><span class="s-id">S4</span>The packet cannot wait for an agent</h3>
-    <p>The handoff launches at Save. On a fresh box no agent may be installed or signed in
-    yet, the brief risks being delivered into a trust dialog, and if the launch fails the
-    packet — the owner’s own words included — is simply <b>gone</b>; the fallback line says
-    “open one from ＋ New” but nothing carries the brief there. The stitch: give the packet
-    a durable home and a trigger that drops the 新&nbsp;Atarashi session in once an agent is
-    established (R5 decides which home and which trigger).</p>
-  </div>
-
+  <p class="note">No view has a lifecycle of its own. The object changes; the queries
+  just return different answers.</p>
 </section>
 
 <section>
-  <div class="sec-head"><span class="tag">for discussion</span><h2>The rulings this page wants from you</h2></div>
+  <div class="sec-head"><span class="tag">the rules</span><h2>What holds it together</h2></div>
+  <ul class="rules">
+    <li><b>Every leaf knows how it is known</b> — typed, measured, or derived. That is
+      what lets any view render any leaf without per-view knowledge: input, fact, or
+      task.</li>
+    <li><b>Only the typed half persists.</b> A stored measurement is a lie the moment the
+      box changes; a stored derivation is a to-do list that rots. Both are computed on
+      read, so they can never be stale and never need un-writing.</li>
+    <li><b>One object means one answer, not one file.</b> <code>ronin.json</code> holds
+      what the owner typed; the object is assembled per read. Writes touch named keys
+      through one door and preserve what they never heard of.</li>
+    <li><b>Secrets appear as presence, never value</b> — in the object itself, so every
+      view inherits the safety without knowing it exists.</li>
+    <li><b>Settei references other stores, never owns them.</b> Projects live in the
+      catalogs store and render here with their health; the roots file stays
+      hand-editable and this never becomes its second owner.</li>
+    <li><b>The required path needs no agent.</b> Install is mechanical, the setup view is
+      a form, Save is complete. The reading list exists for the day an agent does.</li>
+  </ul>
+</section>
 
-  <div class="ruling">
-    <span class="r-id">R1</span>
-    <div>
-      <h3>Is every asked field re-answerable in the standing tab?</h3>
-      <p>Concretely: Mika’s model. It lands in <code>agents.jobs</code>, which the tab renders
-      read-only with a pointer to 目 Koshi — which does not edit MikaAssist.</p>
-      <p class="lean">My lean: <b>yes — asked once means editable forever</b>; S1’s stitch is
-      where it gets fixed for free.</p>
-    </div>
-  </div>
-
-  <div class="ruling">
-    <span class="r-id">R3</span>
-    <div>
-      <h3>KEYSTORE leg 1 — logins, or keys?</h3>
-      <p>The one open question that sizes everything else. “Choose model providers” — a third
-      of the stated flow — is blocked on it, and the honest scope may be small: Ronin can open
-      a pane and run each CLI’s own login, holding nothing; a store is needed only for
-      key-only providers.</p>
-      <p class="lean">My lean: <b>logins for what has logins, a scoped store only for what
-      cannot</b> — it is the only answer that cannot trip the silent-billing trap the house
-      already documented.</p>
-    </div>
-  </div>
-
-  <div class="ruling">
-    <span class="r-id">R5</span>
-    <div>
-      <h3>Where does the packet park, and what drops the session in?</h3>
-      <p>Three honest shapes. <b>(a)</b> The boot shelf: the packet becomes a boot file the
-      first session reads on spawn — the store built for exactly “what a new session reads
-      before anything else,” but it has no UI and nothing today spawns from it.
-      <b>(b)</b> The server holds a pending launch: Save stores the packet beside
-      <code>setup</code> in the record’s machinery, and the same probe that answers
-      “installed” learns to answer “signed in” and fires the launch when it flips.
-      <b>(c)</b> Launch now, deliver on ready: the pane opens immediately, the CLI runs its
-      own sign-in there (§8.3 — Ronin’s unique move), and the brief is submitted only when
-      the six-part contract says the prompt is genuinely ready, never into a trust dialog.</p>
-      <p class="lean">My lean: <b>(c) as the spine, (a) as the parking form</b> — the pane is
-      already the one place sign-in can happen, Ronin already owns ready-detection, and a
-      packet written to the boot shelf survives a failed launch instead of vanishing with it.
-      (b) builds a scheduler nobody else needs.</p>
-    </div>
-  </div>
-
+<section>
+  <div class="sec-head"><span class="tag">to build</span><h2>What is not this picture yet</h2></div>
+  <p>Three gaps between the drawing and the tree, held in
+  <code>ronin-lab plans/ATARASHI.md</code>: the <b>derived "needed − present" leaves</b>
+  and the reading-list view that queries them; the <b>standing view rendered from the
+  manifest</b> (today it restates its rows by hand — the cap and Mika already drift);
+  and the setup view's <b>missing stylesheet</b>. Plus the one standing question that is
+  not this page's: where a typed credential could ever live (<code>KEYSTORE.md</code>).</p>
 </section>
 
 <footer>
-  <div class="stamp">Living drawing of the setup system — updated as the seams close;
-  dies with the last one.</div>
-  <div>companions · docs/setup.md · docs/install.md · docs/user-config.md ·
-  the remaining work: ronin-lab plans/ATARASHI.md</div>
-  <div>drawn 2026-08-17</div>
+  <div class="stamp">Living drawing of the settei architecture — updated as the gaps
+  close; the model is ruled, the reading-list view is not yet built.</div>
+  <div>companions · docs/setup.md · setup-journey.html (the walk) · setup-additions.html
+  (adding a leaf) · plans/ATARASHI.md (what remains)</div>
+  <div>recut 2026-08-18 — settei moved to the top, where it belonged</div>
 </footer>
 
 </main>
