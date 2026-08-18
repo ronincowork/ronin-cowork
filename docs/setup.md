@@ -52,12 +52,15 @@ a floor exists even if the page is skipped.
 
 ## The handoff
 
-A form cannot settle whether a repository is already cloned or what "half-finished"
-means, and it does not try. `projNotes` is a field with deliberately no route — read,
-never sent as configuration. After the mechanical writes land and the flag clears, the
-page composes a brief — who the owner is, the machine, the project and its root, their
-note verbatim, and what a form could not settle — and launches the first session on it:
-`POST /api/launch` with `session_job: Atarashi`.
+Setup is complete at Save — the page is mechanical and needs no agent; a box with no
+CLI on it is finished, not failing. The handoff is a bonus for a box that already has
+one. A form cannot settle whether a repository is already cloned or what
+"half-finished" means, and it does not try. `projNotes` is a field with deliberately no
+route — read, never sent as configuration. When the probe found an agent CLI, the page
+composes a brief after the writes land — who the owner is, the machine, the project and
+its root, their note verbatim, and what a form could not settle — and launches the
+first session on it: `POST /api/launch` with `session_job: Atarashi`. When it found
+none, Save simply finishes into the workspace.
 
 **新 Atarashi** (`ronin_catalogs/SESSION_JOBS.md`) is the seat that finishes what the
 page could not: it asks rather than assumes, touches nothing outside the project

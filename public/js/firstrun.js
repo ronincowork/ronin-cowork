@@ -227,13 +227,16 @@ export async function buildFirstRun(host, onDone) {
       // session that fails to start below must not leave the box pending forever.
       await request('/api/settei/setup', { method: 'PUT' });
 
-      // THE HANDOFF. A form cannot settle whether a repository is already cloned, or
-      // where they meant it to go, or what "half-finished" means — and it should not try
-      // to, because Ronin is full of agents who can simply ask. So everything mechanical
-      // is saved above, and everything else is BUNDLED and handed to the first session.
-      //
-      // The page's job is to be complete about what is mechanical and honest about what
-      // is not. This is the honest half.
+      // SETUP IS COMPLETE RIGHT HERE. The page is mechanical and needs no agent — a box
+      // with no CLI on it is finished, not failing, and nothing on screen may suggest
+      // otherwise. The handoff below is a bonus for a box that already has an agent:
+      // the first session starts with a brief instead of the owner typing context.
+      if (!ctx.modelOpts.length) {
+        line.say('Saved. Opening your coworkspace…', 'ok');
+        onDone?.();
+        return;
+      }
+
       line.say('Opening your first session…', 'busy');
       const brief = [
         'You are the first session on a new Ronin install. The setup page has already saved everything below — do not ask for any of it again.',
