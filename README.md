@@ -43,9 +43,25 @@ enforces that no other core file ever reaches across the line.
 
 ## Installing it
 
-**Hand `docs/install.md` to the agent on the machine Ronin will run on and say go** —
-four commands and a URL. The owner opens that URL, the setup page asks what it needs,
-and their first session is launched by the page itself.
+On a machine you control — your laptop, a home server, a VM you rent:
+
+```bash
+git clone https://github.com/ronincowork/ronin-cowork.git
+cd ronin-cowork
+bin/ronin-update --home ~/ronin      # fetches the release, verifies, unpacks
+cd ~/ronin/current && ./setup.sh     # sets everything up on this machine
+```
+
+`setup.sh` tells you if it needs anything (tmux, Node), does the rest itself, and
+**prints the URL it is serving on**. Open that URL in your browser: a fresh install
+lands on the setup page, which asks what it needs and opens your first session.
+
+If the box is remote, reach the URL over the private route you already use — an SSH
+tunnel is enough (`ssh -L 3006:127.0.0.1:3006 you@yourbox`, then open
+`http://127.0.0.1:3006`). Never expose the port publicly.
+
+Already have an agent on that machine (Claude Code, Codex)? Hand it `docs/install.md`
+and it runs these steps for you. Optional — not a requirement.
 
 ## Running it (contributors, from a checkout)
 
