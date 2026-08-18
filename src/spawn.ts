@@ -227,8 +227,9 @@ export async function resolveForm(
   // table the cmd came from, matched by the cmd string itself so a hand-typed cmd
   // (no table row) is honestly unsupported. No flags declared = REFUSE, because a
   // session the owner asked to launch disconnected must never launch connected.
-  // THE INSTALL DEFAULT — what a new session launches as when neither the form nor the
-  // project names one. It is stored as `provider` + `model` and resolved through the
+  // THE INSTALL DEFAULT — what a new session launches as when the form names none.
+  // A root never chooses a model (owner, 2026-08-18: one default, one place).
+  // It is stored as `provider` + `model` and resolved through the
   // launch table HERE, never as a command string: the table is the one place a provider
   // is a row and a model is a column, and a stored cmd would freeze a vendor's flags into
   // the owner's config where no table edit could reach them.
@@ -241,7 +242,7 @@ export async function resolveForm(
   const defaultCmd = dflt?.provider && dflt?.model
     ? launchSpecs.find((s) => s.provider === dflt.provider && s.model === dflt.model)?.cmd
     : undefined;
-  let cmd = agent ? form.cmd || root?.cmd || defaultCmd || 'claude' : '';
+  let cmd = agent ? form.cmd || defaultCmd || 'claude' : '';
   // The row this cmd came out of, matched BEFORE the MCP-off flags are appended below —
   // appending changes the very string the match is on, and looking it up afterwards would
   // find nothing for exactly the launches that asked for something unusual. It carried the

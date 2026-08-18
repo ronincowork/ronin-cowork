@@ -15,14 +15,15 @@ A **`project_root`** is *where* the work happens — one of the two universal ax
 (`project_root` · `session_job`) used everywhere: spawn forms, memory frontmatter,
 macros. See `ronin_catalogs/SESSION_JOBS.md` for what a session is for and therefore who
 it is. One lookup fixes: where to work (`dir`), what a cold agent reads first (`read`),
-which memories it recalls (`memory`), and the default session_launch_spec (`provider` + `model`) —
-resolved through the table below.
+and which memories it recalls (`memory`). A root never chooses a model — sessions have
+ONE default (`agents.sessions.default`, set in ⚙ Configuration), and every launch may
+pick otherwise on the form (owner, 2026-08-18).
 
 ## Providers and models — the launch table
 
 A session_launch_spec is chosen in two steps: **provider** (whose CLI) then **model** (which
-model, by its real name — no cheap/mid/heavy euphemisms). A `project_root` names a
-default for both; the role or the launch may override. Adding a provider is a row
+model, by its real name — no cheap/mid/heavy euphemisms). The launch form picks one,
+else the install default applies — one default, one place. Adding a provider is a row
 in this table, and adding a model is a column — never a code path; that is the
 whole of what vendor-neutrality requires.
 
@@ -30,7 +31,7 @@ The extension contract and third-party provider checklist live in
 `docs/model-providers.md`.
 
 The column headings ARE the model names the UI shows, and the **first column is
-the provider's default** when a project_root names no model.
+the provider's default**.
 
 **A provider whose models are its own gets its own table.** The columns are model
 names, and OpenAI's are not Anthropic's — so a `| provider | …` heading row simply

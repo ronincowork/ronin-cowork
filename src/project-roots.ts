@@ -5,7 +5,6 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import os from 'node:os';
 import { storeDir } from './stores.js';
-import { listAgentAvailability } from './agents.js';
 
 const execFileP = promisify(execFile);
 
@@ -47,17 +46,18 @@ async function readUserRoots(): Promise<string> {
   }
 }
 
+/** NO provider/model/cmd, and their absence is the ruling (owner, 2026-08-18): a root
+ * never chooses a model — sessions have ONE default, `agents.sessions.default`, and
+ * the launch form may override per session. Old user files still carrying
+ * `- **provider:**` / `- **model:**` lines parse fine: unknown field lines are simply
+ * not read, and the write path preserves them byte-for-byte (upsert touches only the
+ * keys it is sent). Tolerated, never honored, never written back. */
 export interface ProjectRootInfo {
   name: string;
   /** Working directory, ~ already expanded. */
   dir: string;
-  provider: string;
-  /** The model by name — `opus`, `sonnet`, `haiku`, … never a tier euphemism. */
-  model: string;
   match: string[];
   remit: string;
-  /** The CLI to launch, resolved through the provider/model table. '' if unknown. */
-  cmd: string;
 }
 
 /** Every launchable `provider · model` the table knows, in table order. */
@@ -92,8 +92,7 @@ const expand = (p: string) => (p.startsWith('~') ? path.join(os.homedir(), p.sli
  */
 export async function listProjectRoots(): Promise<ProjectRootInfo[]> {
   await ensureFirstRoot();
-  const [raw, launch] = await Promise.all([readUserRoots(), listSessionLaunchSpecs()]);
-  return parseRoots(raw, launch);
+  return parseRoots(await readUserRoots());
 }
 
 /* ---------------------------------------------------------------------------
@@ -111,7 +110,7 @@ export async function listProjectRoots(): Promise<ProjectRootInfo[]> {
  *   tmux.ts    if (cwd) args.push('-c', cwd)            -> no -c at all, so the first
  *                                                          session starts wherever the
  *                                                          tmux server happens to sit
- *   spawn.ts   cmd: form.cmd || root?.cmd || 'claude'   -> a bare string matching no
+ *   spawn.ts   cmd: form.cmd || defaultCmd || 'claude' -> a bare string matching no
  *                                                          launch-table row, so MCP-off
  *                                                          refuses it (mcp_off is matched
  *                                                          by the cmd string)
@@ -121,11 +120,6 @@ export async function listProjectRoots(): Promise<ProjectRootInfo[]> {
  * guess about what they work on, which is why it does not breach the rule against
  * speculatively including someone's directories. They rename it, repoint it, or add
  * beside it the moment they know better.
- *
- * Provider and model come from MEASUREMENT rather than a default: the first launch spec
- * whose command is actually present on this machine. A box with only Codex is not handed
- * an Anthropic row it cannot run, and a box with nothing installed gets a root with no
- * launch fields at all — which is honest, and Setup then asks.
  *
  * Seeded on first READ, not at boot: this is the module that owns the knowledge, it needs
  * no hook in a file other sessions are editing, and it heals a box whose catalog was
@@ -145,13 +139,10 @@ async function ensureFirstRoot(): Promise<void> {
       if ((e as NodeJS.ErrnoException)?.code !== 'ENOENT') return;
     }
     try {
-      const [specs, agents] = await Promise.all([listSessionLaunchSpecs(), listAgentAvailability()]);
-      const present = new Set(agents.filter((a) => a.installed).map((a) => a.cmd));
-      const runnable = specs.find((s) => present.has(s.cmd.split(/\s+/)[0]));
+      // The floor names no model — nothing does, per the one-default ruling.
       await upsertProjectRoot('home', {
         dir: os.homedir(),
         remit: 'Your home directory — where Ronin starts until you name a project of your own.',
-        ...(runnable ? { provider: runnable.provider, model: runnable.model } : {}),
       });
     } catch {
       // A box that cannot write its own catalog still serves: the roster shows no roots
@@ -162,9 +153,10 @@ async function ensureFirstRoot(): Promise<void> {
 }
 
 /** The parse itself, over text rather than the file — so a WRITE can re-read its own
- * result before committing it (see writeCatalog). The launch table is passed IN because
- * it lives in the other scope's file; a root block never carries its own. */
-function parseRoots(raw: string, launch: SessionLaunchSpec[]): ProjectRootInfo[] {
+ * result before committing it (see writeCatalog). Only the fields named below are
+ * read; any other `- **key:** value` line — including the retired provider/model
+ * lines old user files still carry — is ignored here and preserved on write. */
+function parseRoots(raw: string): ProjectRootInfo[] {
   const roots: ProjectRootInfo[] = [];
   for (const chunk of raw.split(/^## +/m).slice(1)) {
     const lines = chunk.split('\n');
@@ -177,21 +169,14 @@ function parseRoots(raw: string, launch: SessionLaunchSpec[]): ProjectRootInfo[]
         .trim();
     const dir = field('dir');
     if (!dir) continue; // a project_root without a directory is not launchable
-    const provider = field('provider') || 'anthropic';
-    // No model named = the provider's first column, which the table declares to be
-    // its default (anthropic → opus).
-    const model = field('model') || launch.find((b) => b.provider === provider)?.model || '';
     roots.push({
       name,
       dir: expand(dir),
-      provider,
-      model,
       match: field('match')
         .split(',')
         .map((m) => m.trim())
         .filter(Boolean),
       remit: field('remit'),
-      cmd: launch.find((b) => b.provider === provider && b.model === model)?.cmd ?? '',
     });
   }
   return roots;
@@ -279,15 +264,17 @@ const NEW_USER_FILE = `# PROJECT_ROOTS — your directories (user scope)
 > co-editor, not an owner.
 >
 > One \`## <handle>\` block per directory, with \`- **key:** value\` lines under it
-> (\`dir\`, \`memory\`, \`provider\`, \`model\`, \`match\`, \`remit\`).
+> (\`dir\`, \`memory\`, \`match\`, \`remit\`).
 >
 > What a session here READS at birth is not a field — it is the files on this root's
 > shelf. Ask \`ronin-store session_boot\` for it, and see docs/session-boot.md.
 > The provider/model launch table is stock and lives in the install, not here.
 `;
 
-/** Field order for a block this code creates. Hand-written blocks keep their own. */
-const FIELD_ORDER = ['dir', 'memory', 'provider', 'model', 'match', 'remit'] as const;
+/** Field order for a block this code creates. Hand-written blocks keep their own.
+ * provider/model retired 2026-08-18 (one default, one place) — never written again;
+ * blocks that still have them keep them untouched, unread. */
+const FIELD_ORDER = ['dir', 'memory', 'match', 'remit'] as const;
 export type RootField = (typeof FIELD_ORDER)[number];
 
 /** A project_root handle: one lowercase word, the `##` heading, the whole shortcut. */
@@ -320,7 +307,7 @@ const isFieldLine = (line: string, key: string) => new RegExp(`^\\s*-\\s*\\*\\*$
 async function writeCatalog(text: string, verify: (roots: ProjectRootInfo[]) => string | null): Promise<void> {
   let roots: ProjectRootInfo[];
   try {
-    roots = parseRoots(text, await listSessionLaunchSpecs());
+    roots = parseRoots(text);
   } catch (e) {
     throw new Error(`Refused: the edited catalog does not parse (${String((e as Error)?.message ?? e)}).`);
   }

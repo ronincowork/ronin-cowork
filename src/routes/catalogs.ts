@@ -35,7 +35,8 @@ import {
 const errMsg = (e: unknown) => String((e as Error)?.message ?? e).replaceAll(homedir(), '~');
 
 /** The fields commons may write. Anything else in a block is the owner's and is preserved. */
-const ROOT_FIELDS: RootField[] = ['dir', 'memory', 'provider', 'model', 'match', 'remit'];
+// provider/model retired 2026-08-18 — a body carrying them has nowhere to land.
+const ROOT_FIELDS: RootField[] = ['dir', 'memory', 'match', 'remit'];
 const bodyFields = (body: unknown) => {
   const out: Partial<Record<RootField, string>> = {};
   for (const k of ROOT_FIELDS) {
