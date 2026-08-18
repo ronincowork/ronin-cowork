@@ -54,8 +54,39 @@
  */
 const drops = new Set();
 
-/** Shut every メ drop on the page. ⚡ calls this when its own menu opens. */
+/** Shut every メ drop on the page. ⚡ and 📄 call this when their own menu opens. */
 export const closeTileMore = () => drops.forEach((close) => close());
+
+/**
+ * BOUND A DROP TO THE ROOM UNDER THE HEADER — shared by every drop that hangs off one,
+ * because the trap belongs to the header, not to any one menu.
+ *
+ * `.tile` is `overflow: hidden` and these menus hang off `.tile-head` inside it, so a drop
+ * taller than the room below the header is not "overflowing" — it is CUT, with no
+ * scrollbar and no sign that anything is missing. Measured 2026-08-17 on ⚡'s cards at four
+ * tiles up: the fourth card lost its bottom half. Lived in `tilemacros.js` until
+ * 2026-08-18, when 📄 became the second drop needing the same guarantee (`tiledocs.js`) and
+ * a measurement spelled twice is a measurement that drifts.
+ *
+ * No CSS length can say it — `60vh` is the window, `100%` is the header's own 35px, and
+ * `cqh` needs the size containment the tile deliberately does not have (`@container tile`
+ * cannot be asked from here at all: that container is `.tile-body`, this menu's SIBLING).
+ * So it is measured, at OPEN time rather than once — the grid count, the window and the
+ * phone's keyboard all resize a tile under a menu that is not showing.
+ *
+ * `floor` because a tile can be shorter than one row, and a 12px-tall scroller with
+ * nothing legible in it is worse than a menu that overhangs a very small tile.
+ *
+ * Silent when the anchor is not in a tile: on touch `tiledrop.js` HOISTS these menus into
+ * the app bar, where there is no `.tile-head` above them and nothing to measure against.
+ */
+export function fitDropToTile(anchor, menu, floor = 140) {
+  const head = anchor.closest('.tile-head');
+  const box = anchor.closest('.tile');
+  if (!head || !box) return;
+  const room = box.getBoundingClientRect().bottom - head.getBoundingClientRect().bottom - 8;
+  menu.style.maxHeight = `${Math.max(floor, Math.round(room))}px`;
+}
 
 /**
  * The メ button and the strip it drops. Returned in the {el, menu} shape every other
@@ -92,11 +123,11 @@ export function buildTileMore() {
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
     const wasOpen = menu.classList.contains('open');
-    // Every rival first. ⚡'s macro list anchors to the same corner of the same header,
-    // so two open at once is two panels on one spot; and a second tile's メ is a drop
-    // describing a session you are no longer looking at.
+    // Every rival first. ⚡'s macro list and 📄's doc list anchor to the same corner of the
+    // same header, so two open at once is two panels on one spot; and a second tile's メ is
+    // a drop describing a session you are no longer looking at.
     closeTileMore();
-    document.querySelectorAll('.tmac.open').forEach((m) => m.classList.remove('open'));
+    document.querySelectorAll('.tmac.open, .tdocs.open').forEach((m) => m.classList.remove('open'));
     if (wasOpen) return; // the click that closes is the click on メ itself
     menu.classList.add('open');
     btn.setAttribute('aria-expanded', 'true');

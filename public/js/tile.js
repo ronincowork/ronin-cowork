@@ -64,6 +64,9 @@ export class Tile {
     this.home = home.el;
     this.renderHome = home.render;
     this.showPane = home.showPane;
+    // ▧ Docs on ONE file. Raw: it shows a pane, it does not raise the panel — `openDoc` is
+    // the act. See js/tiledocs.js.
+    this.showDoc = home.openDoc;
     this.body.appendChild(this.home);
 
     // SHINGO 信号: this session's ladder, read off its TEGAMI. The chip (built with the
@@ -170,6 +173,15 @@ export class Tile {
     this.home.classList.remove('show');
   }
 
+  /** Open one of this session's docs over this tile — 📄 on the header (2026-08-18; why it
+   *  clobbers the terminal is the owner's own reasoning, in js/tiledocs.js). `showHome()`
+   *  bare on purpose: it raises the panel and leaves the pane alone, because `showDoc` is
+   *  about to name it — naming it twice redraws ▧ Docs' list before opening the file. */
+  openDoc(path) {
+    this.showHome();
+    this.showDoc(path);
+  }
+
   /**
    * ⛩ IS A TOGGLE — press it again and the Commons goes away (owner, 2026-08-17).
    *
@@ -255,6 +267,11 @@ export class Tile {
     if (r.kind === 'network') return;
     this.tegami = r.ok ? r.data : null;
     this.chip.set(this.tegami);
+    // 📄 reads its count off the letter (2026-08-18) and this is the only place the letter
+    // changes. Measured without it: switch a tile from a session with docs to one with none
+    // and 📄 stayed lit, claiming the previous session's docs until the roster poll redrew.
+    // `syncTileHead`, not `syncHeader` — the reading pass, without re-fetching the dial.
+    syncTileHead(this);
     if (this.ladderOpen) this.drawLadder();
     if (!this.tegami) this.closeLadder();
   }

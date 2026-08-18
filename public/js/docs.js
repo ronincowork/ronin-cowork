@@ -14,6 +14,12 @@ import { homeData } from './home.js';
  * that explorer piece."* A doc reaches this list because an agent ran
  * `write_tegami --doc <path>`, and a doc nobody listed is reached by asking the agent to
  * list it. That is the whole finding mechanism. See docs/mdedit.md.
+ *
+ * THE EDITOR HAS A SECOND DOOR SINCE 2026-08-18 — 📄 on a tile header opens ONE of that
+ * session's docs straight into it (`js/tiledocs.js` → `commons.js` `openDoc` → `open`
+ * below). It narrows this list to the session the tile is already showing; it enumerates
+ * nothing this pane does not, and the rule above is untouched — the caller has to hold a
+ * path that an agent already listed. Read that file before re-litigating this one.
  */
 export function buildDocs(tile, root, isShowing) {
   let openPath = null; // null = the list is showing
@@ -59,7 +65,18 @@ export function buildDocs(tile, root, isShowing) {
 
   /* ---------- opening and saving ---------- */
 
+  /**
+   * Open one file into the editor. Returned from `buildDocs` since 2026-08-18 so a caller
+   * can name a path instead of only entering the tab — 📄 on the tile header opens THIS
+   * session's docs directly (`js/tiledocs.js`, `commons.js`'s `openDoc`). The list is
+   * still the only thing that ENUMERATES; a caller must already hold the path, which is
+   * what keeps "no file browser" true in the widened interface.
+   */
   const open = async (path) => {
+    // The guard ← has always had, now that ← is not the only way in. Arriving from the
+    // tile can land on a doc while another is open and TYPED IN; without this, that
+    // typing would go without a word. Same question, same wording, one place further out.
+    if (dirty && path !== openPath && !confirm('Discard unsaved changes?')) return;
     openPath = path;
     title.textContent = path.split('/').pop();
     title.title = path;
@@ -193,5 +210,8 @@ export function buildDocs(tile, root, isShowing) {
       sig = ''; // returning to the tab always redraws, however stale the signature
       refresh();
     },
+    // ONE-DIRECTIONAL, deliberately: this pane learns nothing about tiles or headers in
+    // return. It takes a path and shows it; who asked, and why, stays the caller's.
+    open,
   };
 }

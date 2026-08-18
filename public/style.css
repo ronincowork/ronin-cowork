@@ -799,6 +799,81 @@ body {
   display: flex;
 }
 
+/* Tile 📄 — THIS session's listed docs (owner, 2026-08-18; js/tiledocs.js). The third drop
+   off this one header, so it is deliberately the same box as .tmac and .tmore above it:
+   same anchor corner, same panel, same shadow. A LIST rather than a strip, because these
+   are filenames and a filename wants its own line.
+
+   Height is bounded in JS (`fitDropToTile`, js/tilemore.js) and the note there says why no
+   CSS length can do it: `.tile` is overflow:hidden, so a list longer than the room under
+   the header is CUT with no scrollbar — the failure ⚡'s cards measured on 2026-08-17. The
+   60vh here is only the bound before that runs. */
+.tdocs {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 6px;
+  z-index: 12;
+  width: min(360px, calc(100% - 12px));
+  max-height: 60vh;
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 6px;
+  box-shadow: var(--shadow-sheet);
+}
+.tdocs.open {
+  display: block;
+}
+/* The ▧ Docs tab's row, at drop size (.dc-row is the same shape sized for a pane). Every
+   dimension here is an OVERRIDE: this menu lives inside .tile-head, whose `button` rule is
+   a 26×24 square for glyphs, and a filename in a 26px box is invisible. .tmac-row does the
+   same for the same reason. */
+.tdocs .tdocs-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  height: auto;
+  padding: 7px 9px;
+  margin-bottom: 4px;
+  text-align: left;
+  background: var(--raise);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--fg);
+  font-size: 13px;
+  cursor: pointer;
+}
+.tdocs .tdocs-row:last-child {
+  margin-bottom: 0;
+}
+.tdocs .tdocs-row b {
+  color: var(--fg-strong);
+  font-weight: 600;
+}
+/* The last two directories, and they yield first: the name is what you are reading. */
+.tdocs .tdocs-row span {
+  color: var(--muted);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tdocs-empty {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  padding: 8px 6px;
+}
+/* Lit when this session has listed something — the same reading 🏷 and 📝 carry, so the
+   drop does not have to be opened to learn it is empty. */
+.tile-head button.tdocs-btn.has-docs {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 /* Work Louder pad — a ui.sheet consumer since 2026-08-17; the board is a picture of the
    Creator Micro 2. The scrim, the centering and the open/closed switch belong to the
    primitive now (@layer ui, .ui-sheet), which is why the `#padsheet { position: fixed;

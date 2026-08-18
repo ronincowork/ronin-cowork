@@ -46,6 +46,7 @@ import { CONTROL_POSITIONS, makeDial, makeGauge, setInert } from './widgets.js';
 import { makeChip } from './shingo.js';
 import { buildTileMacros } from './tilemacros.js';
 import { buildTileMore } from './tilemore.js';
+import { buildTileDocs } from './tiledocs.js';
 import { isCoarse } from './tiledrop.js';
 import { S, SELECT_MOD, serviceMissing } from './state.js';
 import { jobIcon } from './home.js';
@@ -157,7 +158,7 @@ const HEADER = () => (rows ??= [
   // at all, and dimming it would hide the six explanations of why its contents are dim.
   { key: 'moreBtn', hosts: true,
     widget: () => buildTileMore(),
-    help: "This session's other controls — 🔒 lock, 🏷 groups, ⛽ context, 🎛 control, 📝 note, 🗑 kill" },
+    help: "This session's other controls — 🔒 lock, 🏷 groups, ⛽ context, 🎛 control, 📄 docs, 📝 note, 🗑 kill" },
 
   { key: 'lockEl', cls: 'lock', text: '🔒', drop: true, help: lockedTitle,
     on: (t) => t.flipLock() },
@@ -188,6 +189,37 @@ const HEADER = () => (rows ??= [
   { key: 'dial', drop: true, needs: 'session', holds: true,
     widget: (t) => makeDial(CONTROL_POSITIONS, (v) => t.pickControl(v)),
     help: DIAL_TITLE, quiet: 'Control dial — no session in this tile yet' },
+
+  // 📄 — THIS session's listed docs, one press from the tile that already knows them
+  // (owner, 2026-08-18). Beside 📝 because they are the two things a session keeps in
+  // writing: the post-it it wrote for you, and the documents it is working in.
+  //
+  // `session michi` — the list is TEGAMI data and TEGAMI is michi's, exactly as the
+  // SHINGO chip is. No michi, no doc list, and the honest answer is a dimmed button
+  // saying which of the two is missing rather than an empty drop.
+  //
+  // The list itself is already ON the tile (`tile.tegami.docs`, from `refreshTegami`),
+  // so this fetches nothing — see js/tiledocs.js, which also records why narrowing the
+  // ▧ Docs list to one session is not the file browser the owner ruled out.
+  { key: 'docsBtn', drop: true, needs: 'session michi',
+    widget: (t) => buildTileDocs(t),
+    help: "This session's docs — open one over this tile",
+    quiet: {
+      session: "This session's docs — no session in this tile yet",
+      michi: "This session's docs — michi is not installed, so no session keeps a doc list",
+    },
+    // Lit when there is something behind it, the same reading 🏷 and 📝 carry: a control
+    // you must open to find out it is empty is one you stop opening.
+    read: (t, el) => {
+      // `t.session &&` because `detach` syncs the header BEFORE it clears the letter, so
+      // reading `tegami` alone leaves a detached tile lit for the docs of the session that
+      // just left it. The session is the truth about whether there is anything to count.
+      const n = ((t.session && t.tegami?.docs) || []).length;
+      el.classList.toggle('has-docs', !!n);
+      return n
+        ? `Docs — ${n} listed by this session. Opens one over this tile; ✕ comes back.`
+        : 'Docs — this session has listed none yet. An agent lists one with write_tegami --doc';
+    } },
 
   { key: 'noteBtn', cls: 'note', text: '📝', drop: true, needs: 'session',
     help: 'Session note (post-it)',

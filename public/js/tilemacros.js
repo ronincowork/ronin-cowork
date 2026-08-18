@@ -2,7 +2,7 @@
 import { macroData } from './home.js';
 import { toast } from './ui.js';
 import { IS_TOUCH, S } from './state.js';
-import { closeTileMore } from './tilemore.js';
+import { closeTileMore, fitDropToTile } from './tilemore.js';
 import { addProvMark } from './provenance.js';
 
 /**
@@ -198,16 +198,13 @@ export function buildTileMacros(tile) {
    * `cqh` needs size containment the tile deliberately does not have. So it is measured,
    * at OPEN time rather than once: the grid count, the window and the phone's keyboard all
    * resize a tile under a menu that is not showing.
+   *
+   * THE MEASUREMENT MOVED to `tilemore.js` on 2026-08-18, when 📄 became the second drop off
+   * this header needing the same guarantee (`tiledocs.js`). The reasoning stays here, where
+   * the failure was measured; the arithmetic is shared, because two copies of one number
+   * are one edit away from disagreeing.
    */
-  const fitToTile = () => {
-    const head = btn.closest('.tile-head');
-    const box = btn.closest('.tile');
-    if (!head || !box) return;
-    const room = box.getBoundingClientRect().bottom - head.getBoundingClientRect().bottom - 8;
-    // A floor, because a tile can be shorter than one card and a 12px-tall scroller with
-    // nothing legible in it is worse than a menu that overhangs a very small tile.
-    menu.style.maxHeight = `${Math.max(140, Math.round(room))}px`;
-  };
+  const fitToTile = () => fitDropToTile(btn, menu);
 
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -217,7 +214,8 @@ export function buildTileMacros(tile) {
     // `closeTileMore` rather than a `.tmore.open` class sweep: four tiles build four メ
     // buttons and each carries its own `aria-expanded`, which a class sweep leaves lying.
     closeTileMore();
-    document.querySelectorAll('.tmac.open').forEach((m) => m.classList.remove('open'));
+    // 📄's doc list anchors to that same corner (2026-08-18) — same sweep, same reason.
+    document.querySelectorAll('.tmac.open, .tdocs.open').forEach((m) => m.classList.remove('open'));
     if (open) return;
     render();
     menu.classList.add('open');
