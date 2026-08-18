@@ -73,7 +73,7 @@ homes.
 ## The index — if you are looking for it, this is where it is
 
 The same ledger, flipped to the seeker's direction: every fact, its home, and how it is
-known. `⚙` = edit it in the ⚙ Setup view unless another editor is named.
+known. `⚙` = edit it in the ⚙ Configuration view unless another editor is named.
 
 ### Who and what this install is
 

@@ -545,7 +545,12 @@ function holds(
   if (check.kind === 'key') return (observed.keys as Record<string, boolean>)[name] === true;
   if (check.kind === 'agent') return (observed.agents as Record<string, { installed: boolean }>)[name]?.installed === true;
   if (check.kind === 'tool') return (observed.tools as Record<string, boolean>)[name] === true;
-  if (check.kind === 'service') return ((observed.ronin as { services: string[] }).services ?? []).includes(name);
+  if (check.kind === 'service') {
+    const ss = ((observed.ronin as { services: string[] }).services ?? []);
+    // '*' is the bundle: Ronin Services installs as one act, so any registered socket
+    // means the bundle is on the box. Not a sixth verb — a spelling of this one.
+    return name === '*' ? ss.length > 0 : ss.includes(name);
+  }
   return false;
 }
 
@@ -574,7 +579,11 @@ function computeNeeded(
   };
   const wanted = ((set.wanted ?? []) as Array<{ kind: string; name: string }>)
     .filter((w) => HOW[w.kind] && !holds(w, set, observed))
-    .map((w) => ({ leaf: 'wanted', needs: `${w.name} (${w.kind})`, how: HOW[w.kind](w.name) }));
+    .map((w) => ({
+      leaf: 'wanted',
+      needs: w.kind === 'service' && w.name === '*' ? 'Ronin Services (the bundle)' : `${w.name} (${w.kind})`,
+      how: HOW[w.kind](w.name),
+    }));
   return [...declared, ...wanted];
 }
 

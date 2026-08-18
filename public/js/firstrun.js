@@ -1,5 +1,5 @@
 /* FIRST LOAD — the ordered surface a fresh install opens on. It explains, asks once,
- * and ENDS. That is the whole difference between this and the ⚙ Setup room
+ * and ENDS. That is the whole difference between this and the ⚙ Configuration room
  * (js/settei.js): Setup has no order and no ending, every row re-answerable forever.
  * Same record underneath, two surfaces, and neither stores anything of its own.
  *
@@ -142,7 +142,7 @@ export async function buildFirstRun(host, onDone) {
         row.append(box, body);
         card.append(row);
       }
-      if (!agents.length) card.append(el('p', 'fr-lede', 'Could not read this machine for agents. You can set this later from ⚙ Setup.'));
+      if (!agents.length) card.append(el('p', 'fr-lede', 'Could not read this machine for agents. You can set this later from ⚙ Configuration.'));
     }
 
     if (sec.custom === 'services') {

@@ -3,7 +3,7 @@ import { request } from './request.js';
 import { button, field, status } from './ui.js';
 import { pm, getPath, currentOf, optionsOf, toRequest } from './settei-schema.js';
 
-/* ---------- ⚙ SETUP — what this install IS, in one room ----------
+/* ---------- ⚙ CONFIGURATION — what this install IS, in one room ----------
  *
  * One fetch (`GET /api/settei`) and one screen. The record it draws has three sections
  * and the pane keeps them visibly apart, because a row you can change and a row the box
@@ -219,21 +219,27 @@ export function buildSettei(root, isShowing) {
     }
     if (!(observed.weights ?? []).length) body.appendChild(obsRow('local weights', 'none downloaded'));
 
-    /* agent installations — a three-column grid with the REQUEST column LEADING
-     * (owner, 2026-08-18): tick = put it on the needed list, ✓ = already on the box.
-     * One meaning per column, taught ONCE on the hint line — never per row, which
-     * read as a sentence trailing off to a floating control. */
+    /* agent installations — THE CHECKBOX IS THE INSTALLED BIT (owner, 2026-08-18):
+     * ticked-and-fixed means it is on the box; an empty one is live — ticking it puts
+     * the thing on the needed list. Col 2 the name, col 3 where it is (or who makes
+     * it). One meaning, taught ONCE on the hint line. */
     group('agent installations');
     const hint = document.createElement('div');
     hint.className = 'st-row st-link';
-    hint.textContent = 'tick the first column to put one on the needed list';
+    hint.textContent = 'a tick means it is on the box — tick an empty one to put it on the needed list';
     body.appendChild(hint);
     const wantedNow = () => (set.wanted ?? []);
-    const wantTick = (kind, name) => {
+    const instTick = (installed, kind, name) => {
       const box = document.createElement('input');
       box.type = 'checkbox';
       box.className = 'st-check';
-      box.title = 'put it on the needed list';
+      if (installed) {
+        box.checked = true;
+        box.disabled = true; // a fact, not a control — reality unticks it, not you
+        box.title = 'installed';
+        return box;
+      }
+      box.title = 'not installed — tick to put it on the needed list';
       box.checked = wantedNow().some((w) => w.kind === kind && w.name === name);
       box.addEventListener('change', async () => {
         const next = wantedNow().filter((w) => !(w.kind === kind && w.name === name));
@@ -243,42 +249,39 @@ export function buildSettei(root, isShowing) {
       });
       return box;
     };
-    for (const [id, a] of Object.entries(observed.agents)) {
+    const tickRow = (installed, kind, name, label, where) => {
       const row = document.createElement('div');
       row.className = 'st-row st-agent';
       const req = document.createElement('div');
       req.className = 'st-req';
-      if (a.installed) req.textContent = '✓';
-      else req.appendChild(wantTick('agent', id));
-      const name = document.createElement('div');
-      name.className = 'st-lab';
-      name.textContent = a.label ?? id;
-      const state = document.createElement('div');
-      state.className = 'st-val';
-      state.textContent = a.installed
-        ? `installed${a.path ? ` · ${a.path}` : ''}`
-        : `not installed · ${a.from ?? ''}`;
-      row.append(req, name, state);
-      body.appendChild(row);
+      req.appendChild(instTick(installed, kind, name));
+      const nm = document.createElement('div');
+      nm.className = 'st-lab';
+      nm.textContent = label;
+      const val = document.createElement('div');
+      val.className = 'st-val';
+      val.textContent = where ?? '';
+      row.append(req, nm, val);
+      return row;
+    };
+    for (const [id, a] of Object.entries(observed.agents)) {
+      body.appendChild(tickRow(a.installed, 'agent', id, a.label ?? id, a.installed ? a.path ?? '' : a.from ?? ''));
     }
 
-    /* services — Ronin Services is a BUNDLE (owner, 2026-08-18): installed or not,
-       one row, no roster recital. The per-socket detail stays in the record for any
-       reader that needs it; this room answers the owner's actual question. */
+    /* services — the SAME leading-tick format as the agents (owner, 2026-08-18):
+       Ronin Services is a bundle, one row, tick = installed; gbrain likewise; and
+       "use gbrain" stays its own setting beneath — a choice, not a fact. */
     group('services');
-    body.appendChild(obsRow('Ronin Services', observed.ronin.services.length ? '✓ installed' : 'not installed'));
+    body.appendChild(tickRow(observed.ronin.services.length > 0, 'service', '*', 'Ronin Services', ''));
+    body.appendChild(tickRow(observed.ronin.services.includes('gbrain'), 'service', 'gbrain', 'gbrain', ''));
     const gb = document.createElement('input');
     gb.type = 'checkbox';
     gb.className = 'st-check';
     gb.checked = set.gbrain.enabled;
     const gbField = field(gb, { label: 'use gbrain', sr: false });
     gbField.el.classList.add('st-field');
-    // TWO FACTS, SAID APART: whether gbrain is installed is measured; the tick is the
-    // owner's own setting — an installed service can be deliberately off, and an
-    // unlabelled empty box reads as "not installed", which is a different claim.
-    gbField.say(observed.ronin.services.includes('gbrain')
-      ? 'installed on this box — the tick is whether your agents use it'
-      : 'not installed — the setting waits here for when it is');
+    // The installed FACT is the row above; this tick is the CHOICE.
+    gbField.say('tick this if your agents use it');
     gb.addEventListener('change', async () => {
       gbField.say('saving…');
       const r = await request('/api/settei/gbrain', { method: 'PUT', json: { enabled: gb.checked } });

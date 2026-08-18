@@ -1,6 +1,7 @@
 # Wanted and Needed — the two lists, and why only one is stored
 
-> Current state, not a plan. Companion to `docs/settei.md` (the one object these
+> Current state, not a plan. The ⚙ Configuration tab renders both. Companion to
+> `docs/settei.md` (the one object these
 > lists live in). In code: `src/settei.ts` (`computeNeeded`), `src/settei-registry.ts`
 > (`requires`, the verbs), `public/js/settei.js` (the ⚙ ticks and the needed box),
 > `ronin_session_boot/job/Atarashi/00_ATARASHI.md` (the seat that works the list).
@@ -37,15 +38,16 @@ Both are judged by the same five verbs, and the vocabulary **stays five**:
 | `key(name)` | is this env var set? | the env scan — presence only, never a value |
 | `agent(id)` | is this CLI installed? | the login-shell probe |
 | `tool(name)` | is this host tool on PATH? | the PATH scan |
-| `service(name)` | is this socket registered? | the install's roster |
+| `service(name)` | is this socket registered? (`*` = any — the bundle) | the install's roster |
 | `set(path)` | did the owner answer this? | the typed half — blank and `false` are not answers |
 
 The next "just one more condition kind" is a new scan family, not a new verb.
 
 ## The surfaces
 
-- **⚙ agent installations** — an absent agent carries a tick: *put it on the needed
-  list*. Ticking writes the want (typed); the task appears in the box below.
+- **⚙ agent installations / services** — the leading checkbox IS the installed bit:
+  ticked-and-fixed means on the box (a fact — reality unticks it, not you); an empty
+  one is live, and ticking it writes the want. Taught once, on the hint line.
 - **⚙ still needed** — the one box: every unmet thing, requires and wants alike,
   each with its how. Empty reads "nothing — your choices are satisfied."
 - **"Start your setup session"** — beneath the box (and on ＋ New) whenever an agent
