@@ -25,6 +25,26 @@ window), near-empty otherwise. Upstream's "markdown repo is the system of record
 describes their agent-lives-in-the-repo shape, not ours. Backup accordingly: `~/.gbrain`
 first, the cabinet with it — and the uninstall keeps both, and says so.
 
+## The two tools gbrain needs from outside itself — nailed down, 2026-08-18
+
+**gbrain alone is not a working brain.** It needs two models it does not carry, and the
+install story is only honest when both are named up front:
+
+| # | the tool | status on a Ronin install | without it (VERIFIED live on this box) |
+|---|---|---|---|
+| 1 | **an embedding model** | **SHIPPED — the Load button installs it** (koshi_weights: local llama.cpp + nomic-embed, zero egress) | search falls to keyword-only; concept questions under-return |
+| 2 | **a chat model** | **NOT shipped — a metered API key** (Anthropic/OpenAI/OpenRouter) in gbrain's own config; keyless is the shipped default | `think` answers "(no LLM available)"; `synthesize` errors outright; **`query` returns an EMPTY list silently** — the trap: it reads as "the brain knows nothing"; `extract_facts` extracts zero; every unattended pass (autopilot, Minion agent-turns, integration filing) is off |
+
+**Subscriptions cannot stand in for #2.** A Claude Max or ChatGPT/Codex subscription
+authenticates the interactive CLIs, never raw API calls — gbrain cannot ride them. The
+keyless fallback IS the subscription path: the agent in the session does the thinking
+(`search` + its own judgment), which runs on the plan the owner already pays for. That
+is Ronin's shipped posture; the BYO-key field belongs to first-run (@system_setup /
+the atarashi carries the default).
+
+*(A third external exists and is ruled out: a hosted reranker (Voyage key). Search
+runs without it and nothing here offers it.)*
+
 ## What cowork ships — all of it generic
 
 Cowork has no gbrain runtime dependency. It ships the generic launch pieces below and the

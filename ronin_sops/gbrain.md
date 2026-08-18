@@ -35,9 +35,12 @@ never proposes off on its own initiative — only when the owner's words asked f
 
 ## What you may do with the brain
 
-- **Query freely** (`search`, `think`). Retrieval is what it is for. Keyless installs are
-  keyword-only — exact tokens land, concept questions under-return, and gbrain marks its
-  own responses degraded; say so rather than presenting thin results as the whole truth.
+- **Query freely — with the right verb for this install's posture.** `search` is the
+  workhorse: with the local weights up it is semantic, not just keyword. **Without a chat
+  key in gbrain's config** (the shipped default): `think` and `synthesize` answer "no LLM
+  available" — the synthesis is YOUR job from search results — and **`query` returns an
+  empty list silently: never read that as "the brain knows nothing", and prefer `search`.**
+  Say what degraded rather than presenting thin results as the whole truth.
 - **Capture judiciously.** What you write is readable by **every session with the brain
   on** — there is no per-session partition (a per-page `visibility` knob exists; use it
   for local-only facts). Never capture a secret, a credential, or another session's
