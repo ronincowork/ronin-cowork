@@ -219,11 +219,30 @@ export function buildSettei(root, isShowing) {
     }
     if (!(observed.weights ?? []).length) body.appendChild(obsRow('local weights', 'none downloaded'));
 
-    /* agent installations — the long list, one row per agent the probe knows */
+    /* agent installations — the long list, one row per agent the probe knows. An
+     * absent one carries the want-tick: ticking types an intent (PUT /api/settei/wanted)
+     * and the unmet want surfaces in the needed box below until the CLI lands. */
     group('agent installations');
+    const wantedNow = () => (set.wanted ?? []);
+    const wantTick = (kind, name) => {
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.className = 'st-check';
+      box.title = 'put it on the needed list';
+      box.checked = wantedNow().some((w) => w.kind === kind && w.name === name);
+      box.addEventListener('change', async () => {
+        const next = wantedNow().filter((w) => !(w.kind === kind && w.name === name));
+        if (box.checked) next.push({ kind, name });
+        await request('/api/settei/wanted', { method: 'PUT', json: { wanted: next } });
+        await load({ quiet: true });
+      });
+      return box;
+    };
     for (const [id, a] of Object.entries(observed.agents)) {
-      body.appendChild(obsRow(a.label ?? id, a.installed ? '✓ installed' : 'not installed',
-        a.installed ? (a.path ? ` ${a.path}` : '') : ` ${a.from ?? ''} — install it and it appears here`));
+      const row = obsRow(a.label ?? id, a.installed ? '✓ installed' : 'not installed',
+        a.installed ? (a.path ? ` ${a.path}` : '') : ` ${a.from ?? ''} — tick to put it on the needed list `);
+      if (!a.installed) row.querySelector('.st-val')?.appendChild(wantTick('agent', id));
+      body.appendChild(row);
     }
 
     /* services — Ronin Services is a BUNDLE (owner, 2026-08-18): installed or not,
@@ -267,12 +286,15 @@ export function buildSettei(root, isShowing) {
         (v) => request('/api/settei/services', { method: 'PUT', json: { entitlement: v, email: set.services.email } })),
     );
 
-    // WHAT THE SERVICES CHOICE STILL NEEDS — the door's needed[] family, beside the
-    // leaf that caused it. Computed per read, so satisfying it makes the row vanish
-    // on the next look with no write anywhere; met items simply do not exist.
-    for (const n of (rec.needed ?? []).filter((x) => x.leaf === 'services')) {
-      body.appendChild(obsRow('still needed', n.needs, ` ${n.how}`));
+    /* THE NEEDED BOX (owner, 2026-08-18) — every unmet thing in one place: the
+     * registry's requires and the owner's own wants, computed per read. Satisfy one
+     * and it vanishes on the next look with no write anywhere. This is exactly the
+     * list the setup seat reads at its own start. */
+    group('still needed');
+    for (const n of rec.needed ?? []) {
+      body.appendChild(obsRow(n.leaf, n.needs, ` ${n.how}`));
     }
+    if (!(rec.needed ?? []).length) body.appendChild(obsRow('nothing', 'your choices are satisfied'));
 
     /* the reading list's offer — an agent exists and the list is non-empty. One
      * press, per the flow's death condition: the seat reads the door itself at

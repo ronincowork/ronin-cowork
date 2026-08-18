@@ -296,6 +296,11 @@ async function readSet(): Promise<Record<string, unknown>> {
       jobs: (agents.jobs as unknown) ?? {},
     },
     gbrain: { enabled: gbrain.enabled === true },
+    // THE WANT LIST — typed intents, each judged against found per read (computeNeeded).
+    // The want persists; the needed entry it produces never does.
+    wanted: (await readSection<Array<{ kind?: unknown; name?: unknown }>>('wanted', []))
+      .filter((w) => typeof w?.kind === 'string' && typeof w?.name === 'string')
+      .map((w) => ({ kind: w.kind as string, name: w.name as string })),
     // ASSERTS "SHOW ME", NEVER "HIDE ME". Absent is the normal state of every install
     // older than the key, so it has to be quiet — see stampFreshInstall().
     setup: {
@@ -533,12 +538,14 @@ function holds(
     const v = String(check.path ?? '')
       .split('.')
       .reduce<unknown>((o, k) => (o == null ? undefined : (o as Record<string, unknown>)[k]), set);
-    return v != null && v !== '';
+    // A blank is not an answer, and neither is false — an untoggled toggle never applies.
+    return v != null && v !== '' && v !== false;
   }
   const name = check.name ?? '';
   if (check.kind === 'key') return (observed.keys as Record<string, boolean>)[name] === true;
   if (check.kind === 'agent') return (observed.agents as Record<string, { installed: boolean }>)[name]?.installed === true;
   if (check.kind === 'tool') return (observed.tools as Record<string, boolean>)[name] === true;
+  if (check.kind === 'service') return ((observed.ronin as { services: string[] }).services ?? []).includes(name);
   return false;
 }
 
@@ -553,9 +560,22 @@ function computeNeeded(
   set: Record<string, unknown>,
   observed: Record<string, unknown>,
 ): SetteiRecord['needed'] {
-  return SETTEI_SCHEMA.requires
+  const declared = SETTEI_SCHEMA.requires
     .filter((r) => holds(r.applies, set, observed) && !holds(r.met, set, observed))
     .map((r) => ({ leaf: r.leaf, needs: r.needs, how: r.how }));
+  // THE WANT LIST — the owner's own additions (⚙, 'add to needed'). A want IS a check
+  // the owner typed: judged with the same five verbs, unmet becomes a task, met
+  // simply produces nothing — the want stays typed, the entry was never stored.
+  const HOW: Record<string, (n: string) => string> = {
+    agent: (n) => `install the ${n} CLI — it appears in agent installations the moment it lands`,
+    service: () => 'install Ronin Services — it registers itself',
+    tool: (n) => `install ${n} on the host`,
+    key: (n) => `set ${n} in .env and restart the operator`,
+  };
+  const wanted = ((set.wanted ?? []) as Array<{ kind: string; name: string }>)
+    .filter((w) => HOW[w.kind] && !holds(w, set, observed))
+    .map((w) => ({ leaf: 'wanted', needs: `${w.name} (${w.kind})`, how: HOW[w.kind](w.name) }));
+  return [...declared, ...wanted];
 }
 
 /** The whole record. One call, one answer, no writes — schema included, because the

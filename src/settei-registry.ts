@@ -26,8 +26,10 @@
  * path read out beside the row, always), and `aside` (a static line of teaching).
  *
  * `requires` is judged against the observed half (the `needed[]` family) and its
- * vocabulary is four verbs and STAYS four — `key` · `agent` · `tool` · `set`. The
- * first "just one more condition kind" is a new scan family, not a new verb.
+ * vocabulary is five verbs and STAYS five — `key` · `agent` · `tool` · `set` ·
+ * `service` (the install's registered sockets; joined 2026-08-18 for the gbrain row
+ * and the want list). The next "just one more condition kind" is a new scan family,
+ * not a new verb.
  *
  * The scan-name lists live here too (`scans`), because a name worth scanning is a
  * name the registry mentions — plus every `key_env` a configured job names, which is
@@ -195,6 +197,7 @@ export const SETTEI_SCHEMA = {
 
   families: {
     owner: { method: 'PUT', route: '/api/settei/owner' },
+    wanted: { method: 'PUT', route: '/api/settei/wanted' },
     machine: { method: 'PUT', route: '/api/settei/machine' },
     agents: { method: 'PUT', route: '/api/settei/agents' },
     'session-max': { method: 'PUT', route: '/api/session-max' },
@@ -240,6 +243,13 @@ export const SETTEI_SCHEMA = {
       met: { kind: 'set', path: 'services.verified' },
       needs: 'the verified email',
       how: 'click the link in the services email, paste the code',
+    },
+    {
+      leaf: 'gbrain',
+      applies: { kind: 'set', path: 'gbrain.enabled' },
+      met: { kind: 'service', name: 'gbrain' },
+      needs: 'the gbrain service installed',
+      how: 'the toggle is already on — install Ronin Services and gbrain registers itself',
     },
   ],
 

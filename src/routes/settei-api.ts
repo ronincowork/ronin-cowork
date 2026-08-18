@@ -31,6 +31,7 @@ import type express from 'express';
 import { readSettei } from '../settei.js';
 import {
   completeSetup,
+  writeWantedSection,
   readSetupSection,
   readAgentsSection,
   writeAgentsSection,
@@ -97,6 +98,19 @@ const FAMILY_WRITERS: Record<string, (body: Record<string, unknown>) => Promise<
       jobs: body.jobs === undefined ? priorJobs : { ...priorJobs, ...jobs },
     });
     return { ok: true };
+  },
+
+  /** THE WANT LIST — whole-list replace of the owner's typed intents. Five verbs only;
+   * anything else in the body has nowhere to land. The list is intent: needed[] is
+   * judged from it per read and never stored. */
+  wanted: async (body) => {
+    const kinds = new Set(['agent', 'service', 'tool', 'key', 'set']);
+    const list = (Array.isArray(body.wanted) ? body.wanted : [])
+      .filter((w): w is { kind: string; name: string } =>
+        kinds.has(String((w as Record<string, unknown>)?.kind)) && typeof (w as Record<string, unknown>)?.name === 'string')
+      .map((w) => ({ kind: w.kind, name: w.name }));
+    await writeWantedSection(list);
+    return { ok: true, wanted: list };
   },
 
   /** The gbrain toggle. A setting, not an installer — pressing it installs nothing. */

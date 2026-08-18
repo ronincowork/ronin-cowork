@@ -121,7 +121,8 @@ known. `⚙` = edit it in the ⚙ Setup view unless another editor is named.
 | the entitlement id, email, terms | `ronin.json` `services` | typed · pasted code, recorded never verified · ⚙ |
 | gbrain on or off | `ronin.json` `gbrain.enabled` | typed · ⚙ |
 | which services are registered | nowhere — the install's roster per read | found · `observed.ronin.services` |
-| what a selection still needs | nowhere — `needed[]` in the answer | derived · the registry's `requires`, judged per read; met items do not exist |
+| what a selection still needs | nowhere — `needed[]` in the answer | derived · the registry's `requires` **and the want list**, judged per read; met items do not exist |
+| the owner's want list | `ronin.json` `wanted` | typed · `PUT /api/settei/wanted` · the ⚙ "add to needed" ticks — intent persists, the needed entry it produces never does |
 
 ### The machine and the install
 

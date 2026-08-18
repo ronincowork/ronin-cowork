@@ -133,6 +133,9 @@
 
   "gbrain":   { "enabled": false },                <span class="c">← PUT /api/settei/gbrain · a setting; pressing installs nothing</span>
 
+  "wanted":   [],                                  <span class="c">← PUT /api/settei/wanted · typed intents ("add to needed" in ⚙);</span>
+                                                   <span class="c">  each is judged per read — unmet joins needed[], met produces nothing</span>
+
   "setup":    { "pending": false,                  <span class="c">← stamped at birth by stampFreshInstall(), cleared by Save;</span>
                 "stamped_at": null,                <span class="c">  no route can re-arm it. Absent section = predates the key</span>
                 "completed_at": null },
@@ -255,7 +258,8 @@
       <tr><td>routes</td><td>found</td><td>bind + tailnet measurement</td><td class="v"><b>S ⚙</b></td></tr>
       <tr><td>reach.ssh</td><td>found</td><td>interfaces + sshd listen</td><td class="v"><b>⚙</b> · status.ssh says what to type</td></tr>
       <tr><td>status.*</td><td>derived</td><td>computeStatus(set, observed)</td><td class="v"><b>⚙</b> as readouts</td></tr>
-      <tr><td>needed[]</td><td>derived</td><td>the registry's requires, judged per read</td><td class="v"><b>⚙</b> beside its leaf · <b>新</b> as tasks</td></tr>
+      <tr><td>wanted</td><td>typed</td><td>PUT /api/settei/wanted — the ⚙ ticks</td><td class="v"><b>⚙</b></td></tr>
+      <tr><td>needed[]</td><td>derived</td><td>the registry's requires + the want list, judged per read</td><td class="v"><b>⚙</b> the needed box · <b>新</b> as tasks</td></tr>
     </tbody>
   </table>
   </div>
