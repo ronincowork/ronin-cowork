@@ -31,7 +31,7 @@
  */
 import os from 'node:os';
 import { readFile } from 'node:fs/promises';
-import { access } from 'node:fs/promises';
+import { access, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -41,6 +41,7 @@ import { listServices } from './sockets.js';
 import { CONTRACT_V } from './sockets-contract.js';
 import { roninIdentity } from './routes/version.js';
 import { listProjectRoots } from './project-roots.js';
+import { storeDir } from './stores.js';
 import { listAgentAvailability } from './agents.js';
 import {
   readAgentsSection,
@@ -232,6 +233,31 @@ async function sshReach(): Promise<Record<string, unknown>> {
   return { ssh: { listening, port: 22, addresses: { tailnet, public: pub } } };
 }
 
+/** LOCAL WEIGHTS — open models actually downloaded onto this box (the koshi_weights
+ * store's models/). Named and sized per read, because "I believe we downloaded qwen"
+ * is exactly the sentence a record exists to replace with a measurement. An empty or
+ * absent shelf is the ordinary state of a box that has not installed the service. */
+async function localWeights(): Promise<Array<Record<string, unknown>>> {
+  const dir = path.join(storeDir('koshi_weights'), 'models');
+  let names: string[];
+  try {
+    names = await readdir(dir);
+  } catch {
+    return [];
+  }
+  const out: Array<Record<string, unknown>> = [];
+  for (const n of names.sort()) {
+    if (n.startsWith('.') || n === 'SHA256SUMS') continue;
+    try {
+      const st = await stat(path.join(dir, n));
+      if (st.isFile()) out.push({ name: n, mb: Math.round(st.size / 1024 ** 2) });
+    } catch {
+      /* vanished mid-read */
+    }
+  }
+  return out;
+}
+
 /* ------------------------------------------------------------------ the record */
 
 /** A typed string leaf: the owner's words, or null. A BLANK IS NOT AN ANSWER — an
@@ -338,6 +364,7 @@ async function readObserved(jobKeyNames: string[]): Promise<Record<string, unkno
     },
     routes: routes(),
     reach: await sshReach(),
+    weights: await localWeights(),
     agents,
     keys,
     tools,

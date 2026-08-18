@@ -112,6 +112,7 @@ known. `⚙` = edit it in the ⚙ Setup view unless another editor is named.
 | **which names the scan checks** | the registry — `SETTEI_SCHEMA.scans` | plus every `key_env` a configured job names, joined per read |
 | a key's **value** | **`.env` — only there** | never enters settei in either direction |
 | the launch table (providers × models) | stock catalogs `PROJECT_ROOTS.md` | data, never a code path |
+| open weights actually downloaded | nowhere — the koshi_weights store scanned per read | found · `observed.weights` — name and size, never assumed |
 
 ### Services and the deal
 

@@ -213,6 +213,12 @@ export function buildSettei(root, isShowing) {
       body.appendChild(obsRow(name, isSet ? '✓ set' : 'not set', ' presence only — the value stays in .env'));
     }
 
+    // Open-source weights actually ON the box — named and sized, never assumed.
+    for (const w of observed.weights ?? []) {
+      body.appendChild(obsRow(w.name, '✓ downloaded', ` ${w.mb} MB · koshi_weights store`));
+    }
+    if (!(observed.weights ?? []).length) body.appendChild(obsRow('local weights', 'none downloaded'));
+
     /* agent installations — the long list, one row per agent the probe knows */
     group('agent installations');
     for (const [id, a] of Object.entries(observed.agents)) {
@@ -229,9 +235,14 @@ export function buildSettei(root, isShowing) {
     gb.type = 'checkbox';
     gb.className = 'st-check';
     gb.checked = set.gbrain.enabled;
-    const gbField = field(gb, { label: 'gbrain', sr: false });
+    const gbField = field(gb, { label: 'use gbrain', sr: false });
     gbField.el.classList.add('st-field');
-    gbField.say(observed.ronin.services.includes('gbrain') ? 'registered on this box' : 'not installed');
+    // TWO FACTS, SAID APART: whether gbrain is installed is measured; the tick is the
+    // owner's own setting — an installed service can be deliberately off, and an
+    // unlabelled empty box reads as "not installed", which is a different claim.
+    gbField.say(observed.ronin.services.includes('gbrain')
+      ? 'installed on this box — the tick is whether your agents use it'
+      : 'not installed — the setting waits here for when it is');
     gb.addEventListener('change', async () => {
       gbField.say('saving…');
       const r = await request('/api/settei/gbrain', { method: 'PUT', json: { enabled: gb.checked } });
