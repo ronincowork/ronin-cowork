@@ -60,14 +60,14 @@ const TAILNET_IP = tailnetIp();
 
 /* ------------------------------------------------------------------ the shapes */
 
-/** One project as the record shows it — the roots file's own fields, nothing added. */
+/** One project as the record shows it. NO per-root model: there is ONE default for
+ * new sessions (`agents.sessions.default`, the owner's ruling 2026-08-18) and a root
+ * carries none — whatever columns the roots file still has, settei does not read them. */
 export interface SetteiProject {
   name: string;
   dir: string;
   /** The one line a person picks a project from in a list. Already in the roots file. */
   remit: string;
-  provider: string;
-  model: string;
 }
 
 /** What a job that needs a model is pointed at. `key_env` is a NAME, never a key. */
@@ -281,8 +281,6 @@ async function readSet(): Promise<Record<string, unknown>> {
     name: r.name,
     dir: r.dir,
     remit: r.remit,
-    provider: r.provider,
-    model: r.model,
   }));
 
   return {
@@ -428,12 +426,7 @@ async function computeStatus(
           }
         }
       }
-      return {
-        name: p.name,
-        dir,
-        repo,
-        brain: p.provider && p.model ? `${p.provider}/${p.model}` : 'none set — uses the install default',
-      };
+      return { name: p.name, dir, repo };
     }),
   );
 

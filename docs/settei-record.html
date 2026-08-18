@@ -119,9 +119,8 @@
   "sessions": { "max": 10 },                       <span class="c">← PUT /api/session-max · same number ⌂ Roster edits</span>
 
   "projects": [                                    <span class="c">← REFERENCED from the catalogs store, never owned here;</span>
-    { "name": "lab", "dir": "~/dohyo/ronin-lab",   <span class="c">  edited in ▣ Project root / POST /api/project-roots</span>
-      "remit": "plans, records, concepts",
-      "provider": "anthropic", "model": "opus" }   <span class="c">  … 4 more roots on this machine</span>
+    { "name": "lab", "dir": "~/dohyo/ronin-lab",   <span class="c">  edited in ▣ Project root / POST /api/project-roots.</span>
+      "remit": "plans, records, concepts" }        <span class="c">  NO per-root model — one default, one place</span>
   ],
 
   "agents": {
@@ -198,8 +197,8 @@
   "machine_name": "dohyo-unified",
   "sessions": { "running": 9, "max": 10, "state": "9 of 10" },       <span class="c">the live count, against the cap</span>
 
-  "projects": [ { "name": "lab", "dir": "ok", "brain": "anthropic/opus" },
-                { "name": "gbrain", "dir": <span class="hot">"missing"</span>, "brain": "anthropic/opus" } ],
+  "projects": [ { "name": "lab", "dir": "ok", "repo": "github.com/ronincowork/ronin-lab" },
+                { "name": "gbrain", "dir": <span class="hot">"missing"</span>, "repo": "—" } ],
                                                    <span class="c">one stat per root — the most common real breakage</span>
 
   "routes":   [ { "what": "coworkspace", "at": "http://100.101.235.17:3006",

@@ -154,8 +154,6 @@ export const SETTEI_SCHEMA = {
       seed: 'models:first',
       shape: 'provider-model',
       lands: { family: 'agents', key: 'sessions.default' },
-      // The project root the same page creates should launch on the same thing.
-      alsoLands: { family: 'project' },
       omit: 'blank',
     },
     {

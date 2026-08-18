@@ -85,10 +85,6 @@ function land(body, key, value) {
 /**
  * Answers in, requests out — one body per family, so a route is called ONCE however
  * many fields feed it, which is what makes adding a field to an existing family free.
- * `alsoLands` merges the shaped value into a second family's body root — the one
- * cross-field note the page needs (the project a page creates launches on the default
- * the same page chose) — and only when that family is being sent anyway: it seasons a
- * body, it never conjures one.
  */
 export function toRequests(schema, values) {
   const byFamily = new Map();
@@ -101,12 +97,6 @@ export function toRequests(schema, values) {
     const v = values[f.id];
     if (v === undefined || omitted(f, v)) continue;
     land(body(f.lands.family), f.lands.key, shaped(f, v));
-  }
-  for (const f of schema.fields) {
-    const v = values[f.id];
-    if (!f.alsoLands || v === undefined || omitted(f, v)) continue;
-    if (!byFamily.has(f.alsoLands.family)) continue;
-    Object.assign(byFamily.get(f.alsoLands.family), shaped(f, v));
   }
 
   return [...byFamily.entries()].map(([fam, json]) => {

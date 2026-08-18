@@ -58,7 +58,7 @@ from one of these, and adding a source is adding a row here.
 | Source | Contributes | Provenance | The rule that binds it |
 |---|---|---|---|
 | **`ronin.json`** — the `config` store, user scope | owner · machine · sessions.max · agents · gbrain · services · setup | **typed — the only persisted half** | written only through `updateConfig()`; the file also hosts `auth` and `passkeys`, which are **not settei** — the file is storage, not the object |
-| **the catalogs store** — `PROJECT_ROOTS.md` | projects, with their remits and per-project defaults | typed, **by reference** | settei reads it in and never owns it; ▣ Project root and the owner's editor stay its writers |
+| **the catalogs store** — `PROJECT_ROOTS.md` | projects, with their remits | typed, **by reference** | settei reads it in and never owns it; ▣ Project root and the owner's editor stay its writers |
 | **the mechanical scans** — eight families today, extensible | machine & OS (DMI, cores, kernel) · agent CLIs (login-shell probe) · API-key presence · host tools · the install's identity and services roster · reach and exposure (web + ssh) · the work (project dirs, live sessions) | **found** — per read, never stored | a stored measurement is a lie the moment the machine changes; every answer carries `observed_at` |
 | **`.env`** (+ the unit) — `docs/env.md` | **only a name and a boolean** — which key variables exist and whether each is set | found (presence only) | the value never crosses into settei in either direction; secrets live in `.env` and nowhere else |
 | **the browser** — `localStorage` | nothing, today | — | theme and layout are honestly device state; keypad bindings are ruled settei and stranded here — a known defect, not a decision |
@@ -95,7 +95,7 @@ known. `⚙` = edit it in the ⚙ Setup view unless another editor is named.
 
 | Looking for | It lives | Known / edited |
 |---|---|---|
-| the projects (name, dir, remit, per-project model) | **catalogs store** `PROJECT_ROOTS.md` | typed · ▣ Project root or by hand · settei reads by reference |
+| the projects (name, dir, remit) | **catalogs store** `PROJECT_ROOTS.md` | typed · ▣ Project root or by hand · settei reads by reference — **no per-root model: one default, one place (owner, 2026-08-18)** |
 | does a project's directory still exist | nowhere — one stat per read | derived · `status.projects[].dir` |
 | does a root have a repository, and where origin points | nowhere — one file read per root (`.git/config`) | derived · `status.projects[].repo` — measured, never recorded |
 | the owner's setup notes (`projNotes`) | **nowhere — the ask was deleted, not rehomed** | ruled extravaganza (owner, 2026-08-18); one registry row if the want ever returns |

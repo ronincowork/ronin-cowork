@@ -183,7 +183,7 @@ export function buildSettei(root, isShowing) {
     for (const p of set.projects) {
       const health = st.projects.find((x) => x.name === p.name);
       body.appendChild(obsRow(p.name, p.remit || p.dir,
-        health?.dir === 'missing' ? ` ✕ ${p.dir} is gone` : ` ${health?.brain ?? ''}${health?.repo ? ` · ${health.repo}` : ''}`));
+        health?.dir === 'missing' ? ` ✕ ${p.dir} is gone` : health?.repo ? ` ${health.repo}` : ''));
     }
     const link = document.createElement('div');
     link.className = 'st-row st-link';

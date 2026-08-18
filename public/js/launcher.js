@@ -405,16 +405,8 @@ export function buildLauncher(tile, host) {
     if (!seen.size) modelSel.add(new Option('claude', 'claude'));
     modelSel.value = [...modelSel.options].some((o) => o.value === cur) ? cur : modelSel.options[0].value;
   };
-  // Keep the session_launch_spec in step with the project unless you have chosen one yourself.
-  let modelTouched = false;
-  modelSel.addEventListener('change', () => {
-    modelTouched = true;
-  });
-  whereSel.addEventListener('change', () => {
-    if (modelTouched) return;
-    const proj = (projectData || []).find((r) => r.name === whereSel.value);
-    if (proj && proj.cmd && [...modelSel.options].some((o) => o.value === proj.cmd)) modelSel.value = proj.cmd;
-  });
+  // NO per-root model sync: there is ONE default for new sessions and the form's own
+  // picker (owner's ruling, 2026-08-18) — a root does not choose a model for you.
   // Enter in the name moves to the prompt rather than launching a nameless session.
   nameInp.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter') return;
