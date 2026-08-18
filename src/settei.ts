@@ -92,9 +92,16 @@ export interface SetteiRecord {
  * block does not say, which is what makes several renderers of one record safe. The
  * declaration used to live client-side (`public/js/setup-fields.js`) and used to be
  * closures — `initial(ctx)`, `fold(body,v)` — which no server could serve or judge.
- * Here every closure became a datum: `from` is a path into the record, `lands` names
- * a write family and a key inside its body, `options` names a source the renderer
- * resolves, `omit: 'blank'` is the one omission rule anyone ever used.
+ * Here every closure became a datum: `from` is the leaf's home — a path into the
+ * record; `seed` is what the setup view starts on when the leaf is unanswered
+ * (a named source, resolved by the renderer); `lands` names a write family and a key
+ * inside its body; `options` names an option source; `omit: 'blank'` is the one
+ * omission rule anyone ever used; `short` is the row label where the standing view
+ * needs a noun rather than the ask's full question; `ask: false` marks a leaf the
+ * standing view edits but first run does not ask. Three more speak only in ⚙:
+ * `fallback` (a derived path said as "unset — using …" while the leaf is unanswered —
+ * a fallback in force is visible, never passed off as an answer), `note` (a derived
+ * path read out beside the row, always), and `aside` (a static line of teaching).
  *
  * `requires` is judged against the observed half (the `needed[]` family) and its
  * vocabulary is four verbs and STAYS four — `key` · `agent` · `tool` · `set`. The
@@ -104,8 +111,9 @@ export interface SetteiRecord {
  * name the registry mentions — plus every `key_env` a configured job names, which is
  * typed data and joins at read time. No other file may carry a list of these names.
  *
- * `families` maps a write family to its route. It is the migration seam: when the
- * per-family handlers collapse into `PUT /api/settei/:family`, only this table moves.
+ * `families` maps a write family to its route — most through the one write door
+ * (`PUT /api/settei/:family`); the exceptions say where the leaf actually lives (the
+ * cap's shared route with ⌂ Roster, the catalogs store's own POST).
  */
 export const SETTEI_SCHEMA = {
   sections: [
@@ -145,10 +153,28 @@ export const SETTEI_SCHEMA = {
       sec: 'machine',
       kind: 'text',
       label: 'What do you want to call this machine?',
+      short: 'this machine',
       hint: 'Yours to choose — it is what you will see in the roster. The hostname stays what it is.',
       placeholder: 'the workshop',
       from: 'set.machine.name',
+      fallback: 'status.machine_name',
       lands: { family: 'machine', key: 'name' },
+      omit: 'blank',
+    },
+    {
+      // Asked nowhere on first run, editable forever in ⚙ — free text by ruling: the
+      // owner knows where the box is and the box does not; detecting it would mean a
+      // cloud metadata call from a page load.
+      id: 'machineWhere',
+      sec: 'machine',
+      kind: 'text',
+      ask: false,
+      label: 'Where is it?',
+      short: 'where it is',
+      aside: 'in your own words — nothing detects this',
+      placeholder: 'Hetzner fsn1 · under my desk',
+      from: 'set.machine.where',
+      lands: { family: 'machine', key: 'where' },
       omit: 'blank',
     },
     {
@@ -156,8 +182,10 @@ export const SETTEI_SCHEMA = {
       sec: 'you',
       kind: 'text',
       label: 'What should we call you?',
+      short: 'your name',
       placeholder: 'Your name',
       from: 'set.owner.name',
+      fallback: 'status.owner_name',
       lands: { family: 'owner', key: 'name' },
       omit: 'blank',
     },
@@ -188,7 +216,7 @@ export const SETTEI_SCHEMA = {
       cls: 'fr-path',
       label: 'Where does it live?',
       placeholder: 'project directory',
-      from: 'home',
+      seed: 'home',
       lands: { family: 'project', key: 'dir' },
       omit: 'blank',
     },
@@ -197,11 +225,15 @@ export const SETTEI_SCHEMA = {
       sec: 'defaults',
       kind: 'select',
       label: 'Model',
+      short: 'new sessions use',
       hint: 'Any session can be launched with another.',
       options: 'models',
-      from: 'models:first',
+      from: 'set.agents.sessions.default',
+      seed: 'models:first',
       shape: 'provider-model',
       lands: { family: 'agents', key: 'sessions.default' },
+      // The project root the same page creates should launch on the same thing.
+      alsoLands: { family: 'project' },
       omit: 'blank',
     },
     {
@@ -209,9 +241,11 @@ export const SETTEI_SCHEMA = {
       sec: 'defaults',
       kind: 'select',
       label: 'Which model answers Mika?',
+      short: 'answers Mika',
       hint: 'Mika is Ronin’s own assistant — she explains the house and runs small errands. She does not need your best model, and using one is how a helper gets expensive.',
       options: 'models',
-      from: 'models:light',
+      from: 'set.agents.jobs.MikaAssist',
+      seed: 'models:light',
       shape: 'provider-model',
       // Keyed by the session_job's own name — the token the launcher, memory and
       // counting already share, so nothing has to translate it.
@@ -219,21 +253,24 @@ export const SETTEI_SCHEMA = {
       omit: 'blank',
     },
     {
+      // THE ONE SHAPE, RULED HERE. This row was a 5/10/15/20 picker on first run and a
+      // free number in ⚙ — one setting, two shapes, exactly the drift the registry
+      // exists to kill. The number won because 0 = no limit is real and a picker
+      // cannot say it.
       id: 'cap',
       sec: 'defaults',
-      kind: 'select',
+      kind: 'number',
+      min: 0,
       label: 'How many agents at once',
-      hint: 'Budget about 700 MB per agent. Ronin refuses a new session past your number rather than letting the machine run out of memory.',
-      options: 'caps',
+      short: 'session max',
+      hint: 'Budget about 700 MB per agent. Ronin refuses a new session past your number rather than letting the machine run out of memory. 0 = no limit.',
+      note: 'status.sessions.state',
+      aside: 'also on ⌂ Roster, same setting',
       from: 'set.sessions.max',
       shape: 'number',
       lands: { family: 'session-max', key: 'max' },
     },
   ],
-
-  /** Named option sources. `models` is the launch table via /api/session-launch-specs —
-   * data the record deliberately does not own; `caps` is the list itself. */
-  sources: { caps: [5, 10, 15, 20] },
 
   families: {
     owner: { method: 'PUT', route: '/api/settei/owner' },

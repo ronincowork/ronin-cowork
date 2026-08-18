@@ -6,9 +6,11 @@
  * IT ALSO TEACHES. A first install is the one moment someone will read a sentence about
  * what Ronin is, so each section says what the thing IS before asking for a value.
  *
- * THIS FILE IS A RENDERER, NOT A FORM. What is asked lives in js/setup-fields.js —
- * add a row there and it appears here, saves itself through the right route, and needs
- * no edit in this file at all. Nothing below knows what a field means.
+ * THIS FILE IS A RENDERER, NOT A FORM. What is asked is the record's own `schema`
+ * block — the registry, served with the answer (src/settei.ts) — read through the
+ * vocabulary in js/settei-schema.js. Add a row to the registry and it appears here,
+ * saves itself through the right family, and needs no edit in this file at all.
+ * Nothing below knows what a field means.
  *
  * DELIBERATELY NOT HERE: an "install it" button for a missing agent (no installer
  * exists yet, and a control that does nothing is the dead cell this page removes); any
@@ -17,7 +19,7 @@
  */
 import { request } from './request.js';
 import { field, status, button } from './ui.js';
-import { SECTIONS, FIELDS, FACTS, SERVICE_FEATURES, SERVICE_TERMS, LIGHT, pm, toRequests } from './setup-fields.js';
+import { LIGHT, pm, getPath, initialOf, optionsOf, toRequests } from './settei-schema.js';
 
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
@@ -26,19 +28,16 @@ const el = (tag, cls, text) => {
   return n;
 };
 
-/** One field descriptor in, one live control out. The only place a `kind` is read. */
+/** One registry row in, one live control out. The only place a `kind` is read. */
 function renderField(card, f, ctx) {
   let control;
   if (f.kind === 'select') {
     control = document.createElement('select');
-    for (const o of f.options?.(ctx) ?? []) control.add(new Option(o.label, o.value));
-  } else if (f.kind === 'textarea') {
-    control = document.createElement('textarea');
-    control.rows = 3;
-    if (f.placeholder) control.placeholder = f.placeholder;
-  } else if (f.kind === 'check') {
+    for (const o of optionsOf(f, ctx)) control.add(new Option(o.label, o.value));
+  } else if (f.kind === 'number') {
     control = document.createElement('input');
-    control.type = 'checkbox';
+    control.type = 'number';
+    if (f.min !== undefined) control.min = String(f.min);
   } else {
     control = document.createElement('input');
     control.type = 'text';
@@ -46,17 +45,14 @@ function renderField(card, f, ctx) {
   }
   if (f.cls) control.classList.add(f.cls);
 
-  const initial = f.initial?.(ctx);
-  if (initial != null && initial !== '') {
-    if (f.kind === 'check') control.checked = !!initial;
-    else control.value = String(initial);
-  }
+  const initial = initialOf(f, ctx);
+  if (initial !== '') control.value = initial;
 
   const wrap = field(control, { label: f.label, sr: false });
   wrap.el.classList.add('fr-row');
   if (f.hint) wrap.say(f.hint);
   card.append(wrap.el);
-  return () => (f.kind === 'check' ? control.checked : control.value);
+  return () => control.value;
 }
 
 /** Build the surface into `host`. `onDone` runs once the answers are saved. */
@@ -76,6 +72,7 @@ export async function buildFirstRun(host, onDone) {
     request('/api/session-launch-specs'),
   ]);
   const record = rec.ok ? (rec.data ?? {}) : {};
+  const schema = record.schema ?? { sections: [], fields: [], facts: [], families: {}, services: { features: [], terms: [] } };
   const agents = agentsRes.ok && Array.isArray(agentsRes.data) ? agentsRes.data : [];
   const specs = specsRes.ok && Array.isArray(specsRes.data) ? specsRes.data : [];
   const machine = record.observed?.machine ?? {};
@@ -88,9 +85,6 @@ export async function buildFirstRun(host, onDone) {
   });
   const ctx = {
     record,
-    agents,
-    specs,
-    machine,
     home: machine.home ?? '',
     modelOpts: runnable.map((s) => ({ label: s.provider + ' · ' + s.model, value: pm(s) })),
     light: runnable.find((s) => LIGHT.test(s.model)) ?? runnable[runnable.length - 1],
@@ -107,7 +101,7 @@ export async function buildFirstRun(host, onDone) {
   let wantServices = null;
   let serviceEmail = null;
 
-  for (const sec of SECTIONS) {
+  for (const sec of schema.sections) {
     const s = el('section', 'fr-sec');
     s.append(el('h2', 'fr-h', sec.title));
     if (sec.lede) s.append(el('p', 'fr-lede', sec.lede));
@@ -116,7 +110,10 @@ export async function buildFirstRun(host, onDone) {
     host.append(s);
 
     if (sec.facts) {
-      const rows = FACTS.map(([k, get]) => [k, get(machine)]).filter(([, v]) => v != null && v !== '');
+      const rows = schema.facts
+        .map((fa) => [fa.label, getPath(record.observed, fa.path), fa.suffix ?? ''])
+        .filter(([, v]) => v != null && v !== '')
+        .map(([k, v, suf]) => [k, String(v) + suf]);
       if (rows.length) {
         const dl = el('dl', 'fr-facts');
         for (const [k, v] of rows) {
@@ -152,7 +149,7 @@ export async function buildFirstRun(host, onDone) {
       const sell = el('div', 'fr-sell');
       sell.append(el('h3', null, 'Ronin Services'), el('p', null, "Five things your coworkspace can't do on its own."));
       card.append(sell);
-      for (const [n, w] of SERVICE_FEATURES) {
+      for (const [n, w] of schema.services.features) {
         const f = el('div', 'fr-feat');
         f.append(el('b', null, n), el('span', null, w));
         card.append(f);
@@ -170,7 +167,7 @@ export async function buildFirstRun(host, onDone) {
       const terms = el('div', 'fr-terms');
       terms.hidden = true;
       terms.append(el('p', 'fr-lede', 'Ronin itself is open source — Apache-2.0, free, yours, with or without any of this. The services licence asks two things in return.'));
-      for (const [n, w] of SERVICE_TERMS) {
+      for (const [n, w] of schema.services.terms) {
         const a = el('div', 'fr-ask');
         a.append(el('b', null, n), el('span', null, w));
         terms.append(a);
@@ -189,7 +186,8 @@ export async function buildFirstRun(host, onDone) {
       });
     }
 
-    for (const f of FIELDS.filter((x) => x.sec === sec.id)) read[f.id] = renderField(card, f, ctx);
+    // `ask: false` marks a leaf the ⚙ room edits but first run does not ask.
+    for (const f of schema.fields.filter((x) => x.sec === sec.id && x.ask !== false)) read[f.id] = renderField(card, f, ctx);
   }
 
   const foot = el('div', 'fr-foot');
@@ -202,8 +200,8 @@ export async function buildFirstRun(host, onDone) {
       const values = Object.fromEntries(Object.entries(read).map(([id, get]) => [id, get()]));
       const problems = [];
 
-      for (const req of toRequests(values, ctx)) {
-        const r = await request(req.route, { method: req.method, json: req.body });
+      for (const req of toRequests(schema, values)) {
+        const r = await request(req.route, { method: req.method, json: req.json });
         // A project handle already taken is not worth blocking on: the floor root exists
         // on every box, and the owner can rename from ▣ Roots.
         if (!r.ok && r.status !== 409) problems.push(req.route + ': ' + (r.message || 'failed'));
@@ -246,10 +244,7 @@ export async function buildFirstRun(host, onDone) {
         values.projName ? 'Their first project is "' + values.projName + '"' + (values.projRemit ? ' — ' + values.projRemit : '') + '.' : null,
         values.projDir ? 'Its project_root points at ' + values.projDir + '.' : null,
         '',
-        'IN THEIR OWN WORDS:',
-        (values.projNotes || '').trim() || '(they wrote nothing here)',
-        '',
-        'What a form could not settle, and you can simply ask about: whether that directory is what they meant, whether a repository still needs cloning and where it should go, and anything their note implies. Ask rather than assume. Change nothing outside the project directory without saying so first. When there is nothing left, say what you did and stop.',
+        'What a form could not settle, and you can simply ask about: whether that directory is what they meant, whether a repository still needs cloning and where it should go. Ask rather than assume. Change nothing outside the project directory without saying so first. When there is nothing left, say what you did and stop.',
       ]
         .filter((l) => l !== null)
         .join('\n');

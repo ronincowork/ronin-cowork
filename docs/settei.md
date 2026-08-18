@@ -159,9 +159,8 @@ A genuinely fresh install says so itself; nothing is ever inferred.
 
 `public/js/firstrun.js`. Every askable leaf is declared once and no view may know a
 field the declaration does not say — that declaration is the registry (above), served
-with the answer. The client-side `public/js/setup-fields.js` still carries a duplicate
-the renderers read; it is deleted when they move onto `schema` (plan leg 3), and until
-then the registry is the one that is true. It asks in order, teaches as it asks, and ends. Setup is complete at Save — the
+with the answer and read through the shared vocabulary (`public/js/settei-schema.js`).
+There is no client-side field list. It asks in order, teaches as it asks, and ends. Setup is complete at Save — the
 view is mechanical and needs no agent; a machine with no CLI on it is finished, not
 failing. The first project lands in the catalogs store via `POST /api/project-roots`,
 and the seeded `home` root guarantees a floor even if the view is skipped.

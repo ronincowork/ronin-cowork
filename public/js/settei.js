@@ -1,6 +1,7 @@
 /* part of the tmux-ronin client — see js/README.md */
 import { request } from './request.js';
 import { field, status } from './ui.js';
+import { pm, getPath, currentOf, optionsOf, toRequest } from './settei-schema.js';
 
 /* ---------- ⚙ SETUP — what this install IS, in one room ----------
  *
@@ -25,6 +26,13 @@ import { field, status } from './ui.js';
  * their editor and the roots file stays hand-editable, so this pane links rather than
  * becoming a second owner. The session max is the same number as ⌂ Roster's over one
  * route: two views, never two settings.
+ *
+ * THE TYPED ROWS RENDER FROM THE RECORD'S OWN `schema` (the registry, src/settei.ts),
+ * through the vocabulary in js/settei-schema.js — a leaf asked anywhere is editable
+ * here structurally, and this file knows no field. The found and derived rows stay
+ * composed by hand on purpose: "pointed at openai — OPENAI_API_KEY not set" is worth
+ * more than a generic renderer could say. Layout — which schema section lands in
+ * which group — is this room's own furniture.
  */
 export function buildSettei(root, isShowing) {
   let rec = null;
@@ -105,33 +113,56 @@ export function buildSettei(root, isShowing) {
 
   /* ---------- the screen ---------- */
 
+  /** One registry row in, one saving ⚙ row out — the only place a `kind` is read. */
+  const schemaRow = (f) => {
+    const cur = currentOf(f, { record: rec });
+    const ctx = { record: rec, modelOpts: allModelOpts() };
+    let control;
+    if (f.kind === 'select') {
+      control = document.createElement('select');
+      control.className = 'st-inp';
+      control.add(new Option('— none set —', ''));
+      for (const o of optionsOf(f, ctx)) control.add(new Option(o.label, o.value));
+      control.value = cur;
+    } else if (f.kind === 'number') {
+      control = input(cur, { type: 'number', cls: 'st-num', min: f.min });
+    } else {
+      control = input(cur, { max: 120, placeholder: f.fallback ? String(getPath(rec, f.fallback) ?? '') : f.placeholder });
+    }
+    const notes = [];
+    if (f.note) notes.push(String(getPath(rec, f.note) ?? ''));
+    // A fallback in force is visible — a default is never passed off as an answer.
+    if (cur === '' && f.fallback) notes.push(`unset — using ${getPath(rec, f.fallback) ?? ''}`);
+    if (f.aside) notes.push(f.aside);
+    return setRow(f.short ?? f.label, control, notes.filter(Boolean).join(' · '), (v) => {
+      const req = toRequest(rec.schema, f, v);
+      return request(req.route, { method: req.method, json: req.json });
+    });
+  };
+
+  /** EVERY PROVIDER AND MODEL THE TABLE KNOWS, in table order, and no vendor is named
+   * in this file. The list comes from ronin_catalogs/PROJECT_ROOTS.md through
+   * /api/session-launch-specs. An uninstalled agent still appears, because the table
+   * is what the house supports and hiding a row teaches nothing — but it says so,
+   * rather than being offered as though it would work. */
+  const allModelOpts = () =>
+    specs.map((sp) => {
+      const have = rec.observed.agents[sp.cmd.split(' ')[0]]?.installed;
+      return { label: `${sp.provider} · ${sp.model}${have ? '' : ' — not installed'}`, value: pm(sp) };
+    });
+
   const render = () => {
     body.innerHTML = '';
-    const { set, observed, status: st } = rec;
+    const { set, observed, status: st, schema } = rec;
     const m = observed.machine;
+    const fieldsIn = (test) => schema.fields.filter(test).map(schemaRow);
 
     blurb.textContent = 'What this install is set to — and what it is running on.';
     stamp.textContent = `measured ${new Date(observed.observed_at).toLocaleString()}`;
 
-    /* you and this machine */
+    /* you and this machine — the typed rows are the registry's, in its order */
     group('you and this machine');
-    body.appendChild(
-      setRow('your name', input(set.owner.name, { max: 64, placeholder: st.owner_name }),
-        set.owner.name ? '' : `unset — using ${st.owner_name}`,
-        (v) => request('/api/settei/owner', { method: 'PUT', json: { name: v } })),
-    );
-    body.appendChild(
-      setRow('this machine', input(set.machine.name, { max: 64, placeholder: m.host }),
-        set.machine.name ? '' : `unset — using ${m.host}`,
-        (v) => request('/api/settei/machine', { method: 'PUT', json: { name: v } })),
-    );
-    body.appendChild(
-      setRow('where it is', input(set.machine.where, { max: 120, placeholder: 'Hetzner fsn1 · under my desk' }),
-        // Free text by ruling: the owner knows where the box is and the box does not.
-        // Detecting it would mean a cloud metadata call from a page load.
-        'in your own words — nothing detects this',
-        (v) => request('/api/settei/machine', { method: 'PUT', json: { where: v } })),
-    );
+    for (const row of fieldsIn((f) => (f.sec === 'you' || f.sec === 'machine') && f.lands)) body.appendChild(row);
     body.appendChild(obsRow('hardware',
       `${m.kind === 'virtual' ? `${m.provider ?? 'virtual'} ${m.product ?? ''}`.trim() : 'physical'} · ${m.cores} cores · ${m.ram_gb} GB`,
       m.hypervisor ? ` ${m.hypervisor}` : ''));
@@ -141,11 +172,7 @@ export function buildSettei(root, isShowing) {
 
     /* capacity */
     group('capacity');
-    body.appendChild(
-      setRow('session max', input(set.sessions.max, { type: 'number', cls: 'st-num', min: 0 }),
-        `${st.sessions.state}${set.sessions.max ? '' : ' · 0 = no limit'} · also on ⌂ Roster, same setting`,
-        (v) => request('/api/session-max', { method: 'PUT', json: { max: Number(v) } })),
-    );
+    for (const row of fieldsIn((f) => f.lands?.family === 'session-max')) body.appendChild(row);
 
     /* projects — shown, never edited here */
     group(`projects · ${set.projects.length}`);
