@@ -219,10 +219,15 @@ export function buildSettei(root, isShowing) {
     }
     if (!(observed.weights ?? []).length) body.appendChild(obsRow('local weights', 'none downloaded'));
 
-    /* agent installations — the long list, one row per agent the probe knows. An
-     * absent one carries the want-tick: ticking types an intent (PUT /api/settei/wanted)
-     * and the unmet want surfaces in the needed box below until the CLI lands. */
+    /* agent installations — a three-column grid with the REQUEST column LEADING
+     * (owner, 2026-08-18): tick = put it on the needed list, ✓ = already on the box.
+     * One meaning per column, taught ONCE on the hint line — never per row, which
+     * read as a sentence trailing off to a floating control. */
     group('agent installations');
+    const hint = document.createElement('div');
+    hint.className = 'st-row st-link';
+    hint.textContent = 'tick the first column to put one on the needed list';
+    body.appendChild(hint);
     const wantedNow = () => (set.wanted ?? []);
     const wantTick = (kind, name) => {
       const box = document.createElement('input');
@@ -239,9 +244,21 @@ export function buildSettei(root, isShowing) {
       return box;
     };
     for (const [id, a] of Object.entries(observed.agents)) {
-      const row = obsRow(a.label ?? id, a.installed ? '✓ installed' : 'not installed',
-        a.installed ? (a.path ? ` ${a.path}` : '') : ` ${a.from ?? ''} — tick to put it on the needed list `);
-      if (!a.installed) row.querySelector('.st-val')?.appendChild(wantTick('agent', id));
+      const row = document.createElement('div');
+      row.className = 'st-row st-agent';
+      const req = document.createElement('div');
+      req.className = 'st-req';
+      if (a.installed) req.textContent = '✓';
+      else req.appendChild(wantTick('agent', id));
+      const name = document.createElement('div');
+      name.className = 'st-lab';
+      name.textContent = a.label ?? id;
+      const state = document.createElement('div');
+      state.className = 'st-val';
+      state.textContent = a.installed
+        ? `installed${a.path ? ` · ${a.path}` : ''}`
+        : `not installed · ${a.from ?? ''}`;
+      row.append(req, name, state);
       body.appendChild(row);
     }
 
