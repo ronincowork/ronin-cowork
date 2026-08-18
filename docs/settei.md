@@ -24,6 +24,29 @@ underlying file — the file has other tenants (below).
 Every leaf in the answer carries its provenance — **typed · found · derived** — and
 provenance is all a view needs to render a leaf: an input, a fact line, or a task.
 
+## The registry
+
+The schema of the object is part of the object. `SETTEI_SCHEMA` (`src/settei.ts`)
+declares every askable leaf once, as pure data — section, furniture (label ·
+teaching · kind), `from` (a path into the record), `lands` (a write family and the
+key inside its body), optional `requires` — and rides every answer as `schema`, so a
+renderer needs nothing else. No view may know a field the registry does not say.
+
+The scan-name lists live in the registry too (`scans.keys`, `scans.tools`) — a name
+worth scanning is a name the registry mentions — joined at read time by every
+`key_env` a configured job names. `requires` is judged against the found half (the
+`needed[]` family, to build) and its vocabulary is four verbs and stays four:
+`key` · `agent` · `tool` · `set`. `families` maps each write family to its route and
+is the migration seam for the one write door.
+
+### Pending additions
+
+The intake: a leaf someone wants is one row here, then one row in the registry.
+
+| leaf | asked | lands | requires | status |
+|---|---|---|---|---|
+| *(none pending)* | | | | |
+
 ## The sources
 
 This is the actual ledger — not a mystical list. Everything in the settei answer comes
@@ -82,7 +105,7 @@ known. `⚙` = edit it in the ⚙ Setup view unless another editor is named.
 | the env-var **name** a job bills through | `ronin.json` `agents.jobs.<name>.key_env` | typed — a name is a setting |
 | which CLIs are installed, and where | nowhere — login-shell probe per read | found · `observed.agents` |
 | is a given key **set** | nowhere — env scan per read | found · `observed.keys` · presence only |
-| **which names the scan checks** | **hardcoded in `src/settei.ts` today** | dissolves into the manifest's `requires` at plan leg 1 |
+| **which names the scan checks** | the registry — `SETTEI_SCHEMA.scans` | plus every `key_env` a configured job names, joined per read |
 | a key's **value** | **`.env` — only there** | never enters settei in either direction |
 | the launch table (providers × models) | stock catalogs `PROJECT_ROOTS.md` | data, never a code path |
 
@@ -133,9 +156,10 @@ A genuinely fresh install says so itself; nothing is ever inferred.
 ## The setup view
 
 `public/js/firstrun.js`. Every askable leaf is declared once and no view may know a
-field the declaration does not say — today that declaration is the client-side
-`public/js/setup-fields.js`; the plan folds it into the door as the registry, where the
-schema of the object belongs, and the file is deleted. It asks in order, teaches as it asks, and ends. Setup is complete at Save — the
+field the declaration does not say — that declaration is the registry (above), served
+with the answer. The client-side `public/js/setup-fields.js` still carries a duplicate
+the renderers read; it is deleted when they move onto `schema` (plan leg 3), and until
+then the registry is the one that is true. It asks in order, teaches as it asks, and ends. Setup is complete at Save — the
 view is mechanical and needs no agent; a machine with no CLI on it is finished, not
 failing. The first project lands in the catalogs store via `POST /api/project-roots`,
 and the seeded `home` root guarantees a floor even if the view is skipped.

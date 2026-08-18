@@ -80,7 +80,211 @@ export interface SetteiRecord {
   set: Record<string, unknown>;
   observed: Record<string, unknown>;
   status: Record<string, unknown>;
+  schema: typeof SETTEI_SCHEMA;
 }
+
+/* ------------------------------------------------------------------ the registry */
+
+/**
+ * THE REGISTRY — every askable leaf declared once, as DATA, and served with the answer.
+ *
+ * The schema of the object is part of the object: a view may not know a field this
+ * block does not say, which is what makes several renderers of one record safe. The
+ * declaration used to live client-side (`public/js/setup-fields.js`) and used to be
+ * closures — `initial(ctx)`, `fold(body,v)` — which no server could serve or judge.
+ * Here every closure became a datum: `from` is a path into the record, `lands` names
+ * a write family and a key inside its body, `options` names a source the renderer
+ * resolves, `omit: 'blank'` is the one omission rule anyone ever used.
+ *
+ * `requires` is judged against the observed half (the `needed[]` family) and its
+ * vocabulary is four verbs and STAYS four — `key` · `agent` · `tool` · `set`. The
+ * first "just one more condition kind" is a new scan family, not a new verb.
+ *
+ * The scan-name lists live here too (`scans`), because a name worth scanning is a
+ * name the registry mentions — plus every `key_env` a configured job names, which is
+ * typed data and joins at read time. No other file may carry a list of these names.
+ *
+ * `families` maps a write family to its route. It is the migration seam: when the
+ * per-family handlers collapse into `PUT /api/settei/:family`, only this table moves.
+ */
+export const SETTEI_SCHEMA = {
+  sections: [
+    {
+      id: 'machine',
+      title: 'This machine',
+      lede: 'Ronin is now installed on this machine — laptop, home server or a VM somewhere, it makes no difference to what follows. This page is already talking to it.',
+      facts: true,
+    },
+    {
+      id: 'you',
+      title: 'You',
+      lede: 'One name, used by everything on the box that has to address you — the assistant, the roster, an agent writing you a note.',
+    },
+    {
+      id: 'project',
+      title: 'Your first project',
+      lede: 'A project is a directory Ronin is allowed to work in, plus a line saying what it is for. Every session carries two things — where it works and what it is doing — and this is the first half. Add as many as you like later from ▣ Roots.',
+    },
+    {
+      id: 'agents',
+      title: 'Agents',
+      lede: 'Ronin is the room your agents work in — a co-working space for the CLIs you already use, each in its own terminal, all on one screen. So the only question here is what is on the machine: something present asks whether you want it in the room, something absent tells you how to get it. Ronin looks for the command and nothing else — signing in happens inside the agent itself, the first time you use it.',
+      custom: 'agents',
+    },
+    {
+      id: 'defaults',
+      title: 'Defaults for new sessions',
+      lede: 'A default is what a new session starts as, never what it is stuck with — every launch can pick something else.',
+    },
+    { id: 'services', title: 'Optional', custom: 'services' },
+  ],
+
+  fields: [
+    {
+      id: 'machineName',
+      sec: 'machine',
+      kind: 'text',
+      label: 'What do you want to call this machine?',
+      hint: 'Yours to choose — it is what you will see in the roster. The hostname stays what it is.',
+      placeholder: 'the workshop',
+      from: 'set.machine.name',
+      lands: { family: 'machine', key: 'name' },
+      omit: 'blank',
+    },
+    {
+      id: 'ownerName',
+      sec: 'you',
+      kind: 'text',
+      label: 'What should we call you?',
+      placeholder: 'Your name',
+      from: 'set.owner.name',
+      lands: { family: 'owner', key: 'name' },
+      omit: 'blank',
+    },
+    {
+      id: 'projName',
+      sec: 'project',
+      kind: 'text',
+      label: 'Name',
+      hint: 'Short, lowercase. You will type it when you point an agent somewhere.',
+      placeholder: 'ronin',
+      norm: 'lower',
+      lands: { family: 'project', key: 'name' },
+      omit: 'blank',
+    },
+    {
+      id: 'projRemit',
+      sec: 'project',
+      kind: 'text',
+      label: 'What is it for?',
+      hint: 'One line. Agents read it to know what they have been put in front of.',
+      placeholder: 'The browser grid of live tmux sessions',
+      lands: { family: 'project', key: 'remit' },
+    },
+    {
+      id: 'projDir',
+      sec: 'project',
+      kind: 'text',
+      cls: 'fr-path',
+      label: 'Where does it live?',
+      placeholder: 'project directory',
+      from: 'home',
+      lands: { family: 'project', key: 'dir' },
+      omit: 'blank',
+    },
+    {
+      id: 'model',
+      sec: 'defaults',
+      kind: 'select',
+      label: 'Model',
+      hint: 'Any session can be launched with another.',
+      options: 'models',
+      from: 'models:first',
+      shape: 'provider-model',
+      lands: { family: 'agents', key: 'sessions.default' },
+      omit: 'blank',
+    },
+    {
+      id: 'mika',
+      sec: 'defaults',
+      kind: 'select',
+      label: 'Which model answers Mika?',
+      hint: 'Mika is Ronin’s own assistant — she explains the house and runs small errands. She does not need your best model, and using one is how a helper gets expensive.',
+      options: 'models',
+      from: 'models:light',
+      shape: 'provider-model',
+      // Keyed by the session_job's own name — the token the launcher, memory and
+      // counting already share, so nothing has to translate it.
+      lands: { family: 'agents', key: 'jobs.MikaAssist' },
+      omit: 'blank',
+    },
+    {
+      id: 'cap',
+      sec: 'defaults',
+      kind: 'select',
+      label: 'How many agents at once',
+      hint: 'Budget about 700 MB per agent. Ronin refuses a new session past your number rather than letting the machine run out of memory.',
+      options: 'caps',
+      from: 'set.sessions.max',
+      shape: 'number',
+      lands: { family: 'session-max', key: 'max' },
+    },
+  ],
+
+  /** Named option sources. `models` is the launch table via /api/session-launch-specs —
+   * data the record deliberately does not own; `caps` is the list itself. */
+  sources: { caps: [5, 10, 15, 20] },
+
+  families: {
+    owner: { method: 'PUT', route: '/api/owner' },
+    machine: { method: 'PUT', route: '/api/settei/machine' },
+    agents: { method: 'PUT', route: '/api/settei/agents' },
+    'session-max': { method: 'PUT', route: '/api/session-max' },
+    project: { method: 'POST', route: '/api/project-roots' },
+  },
+
+  /** The machine strip on the setup view — deliberately short: only the facts a later
+   * answer depends on. Paths are into `observed`. A missing value drops its row. */
+  facts: [
+    { label: 'this box', path: 'machine.host' },
+    { label: 'cores', path: 'machine.cores' },
+    { label: 'memory', path: 'machine.ram_gb', suffix: ' GB' },
+  ],
+
+  /** What Ronin Services buys, and the two asks. The page renders whatever is here. */
+  services: {
+    features: [
+      ['Live status ladders', 'Every agent shows its plan and how far through it is — on the tile and in the roster. Stop asking how it is going.'],
+      ['Readable transcripts', 'Tiles become real text instead of a terminal mirror. Select it, copy it, scroll back through it — on your phone too.'],
+      ['Voice', 'Talk to a session instead of typing at it, and have it read back to you.'],
+      ['Usage statistics', 'What every session spent, by model, over time.'],
+      ['gbrain', 'A memory your agents search before they answer, and write to as they work.'],
+    ],
+    terms: [
+      ['Share how it runs', 'How many sessions, which models, how long they ran. Never your code, and never what was typed — by you or by your agents. It is how we find out where the experience is bad and make it better for everyone.'],
+      ["Don't resell it", 'Use the services for your own work, commercial or not, as much as you like. Just don’t turn around and sell the services themselves.'],
+    ],
+  },
+
+  /** The names the mechanical scans check. Joined at read time by every `key_env` a
+   * configured job names — typed data the registry cannot know in advance. */
+  scans: {
+    keys: ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY'],
+    tools: ['gh', 'tailscale', 'chromium'],
+  },
+
+  /** What a choice still needs — judged against the record per read (the `needed[]`
+   * family), met items do not exist. Seed: services finish over the email link, alone. */
+  requires: [
+    {
+      leaf: 'services',
+      applies: { kind: 'set', path: 'services.email' },
+      met: { kind: 'set', path: 'services.verified' },
+      needs: 'the verified email',
+      how: 'click the link in the services email, paste the code',
+    },
+  ],
+};
 
 /* ------------------------------------------------------- small honest measurers */
 
@@ -232,8 +436,10 @@ async function readSet(): Promise<Record<string, unknown>> {
   };
 }
 
-/** The half the box answers for itself. Nothing here is written down. */
-async function readObserved(): Promise<Record<string, unknown>> {
+/** The half the box answers for itself. Nothing here is written down.
+ * `jobKeyNames` — every `key_env` the typed half names; joins the registry's own
+ * key list so a job pointed at a provider is a key the scan checks, automatically. */
+async function readObserved(jobKeyNames: string[]): Promise<Record<string, unknown>> {
   /**
    * THE OWNER-RULED STARTING FOUR, measured by ATARASHI's login-shell probe.
    *
@@ -251,13 +457,14 @@ async function readObserved(): Promise<Record<string, unknown>> {
 
   const tools = Object.fromEntries(
     await Promise.all(
-      ['gh', 'tailscale', 'chromium'].map(async (t) => [t, (await whichPath(t)) !== null] as const),
+      SETTEI_SCHEMA.scans.tools.map(async (t) => [t, (await whichPath(t)) !== null] as const),
     ),
   );
 
   // PRESENCE ONLY. The variable's name is public; its value is not, and there is no
-  // path from this record to one.
-  const keyNames = ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY'];
+  // path from this record to one. The names come from the registry — a name worth
+  // scanning is a name the registry mentions — plus what the typed jobs point at.
+  const keyNames = [...new Set([...SETTEI_SCHEMA.scans.keys, ...jobKeyNames])];
   const keys = Object.fromEntries(keyNames.map((k) => [k, Boolean(process.env[k])]));
 
   const id = roninIdentity();
@@ -391,9 +598,14 @@ async function computeStatus(
   };
 }
 
-/** The whole record. One call, one answer, no writes. */
+/** The whole record. One call, one answer, no writes — schema included, because the
+ * schema of the object is part of the object and a renderer needs nothing else. */
 export async function readSettei(): Promise<SetteiRecord> {
   const set = await readSet();
-  const observed = await readObserved();
-  return { set, observed, status: await computeStatus(set, observed) };
+  const jobs = ((set.agents as Record<string, unknown>).jobs ?? {}) as Record<string, SetteiJob>;
+  const jobKeyNames = Object.values(jobs)
+    .map((j) => j?.key_env)
+    .filter((k): k is string => typeof k === 'string' && k.length > 0);
+  const observed = await readObserved(jobKeyNames);
+  return { set, observed, status: await computeStatus(set, observed), schema: SETTEI_SCHEMA };
 }
