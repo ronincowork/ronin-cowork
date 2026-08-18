@@ -205,23 +205,28 @@ export function buildSettei(root, isShowing) {
       body.appendChild(obsRow(name.replace(/_/g, ' '), `${job.provider ?? job.outlet}${job.model ? ` · ${job.model}` : ''}`,
         st.agents[name] ? ` ${st.agents[name]}` : ''));
     }
-    body.appendChild(obsRow('agents on this box',
-      st.agents.usable.length ? st.agents.usable.join(' · ') : 'none found',
-      ` ${Object.entries(observed.agents).filter(([, a]) => !a.installed).map(([n]) => n).join(', ')} — install to use`));
 
-    /* services */
-    group(`services · ${observed.ronin.services.length} registered`);
-    body.appendChild(obsRow('subscription', st.subscription,
-      set.services.email ? ` ${set.services.email}` : ''));
-    body.appendChild(
-      // THE PASTED CODE (owner's ruling). The verification email carries the id; this is
-      // where it lands. It records and does not verify — the id gates nothing on this
-      // box, so a wrong one costs a wrong line in a record rather than access to
-      // anything, and the collector treats it as a claim to match rather than proof.
-      setRow('entitlement code', input(set.services.entitlement, { max: 200, placeholder: 'paste the code from your email' }),
-        'from the services email — recorded here, checked by us',
-        (v) => request('/api/settei/services', { method: 'PUT', json: { entitlement: v, email: set.services.email } })),
-    );
+    // THE KEYS, BY NAME ONLY. Presence is scanned per read (names come from the
+    // registry plus every key_env a job points at); the value lives in .env and never
+    // enters the record in either direction — there is nothing here to leak.
+    for (const [name, isSet] of Object.entries(observed.keys)) {
+      body.appendChild(obsRow(name, isSet ? '✓ set' : 'not set', ' presence only — the value stays in .env'));
+    }
+
+    /* agent installations — the long list, one row per agent the probe knows */
+    group('agent installations');
+    for (const [id, a] of Object.entries(observed.agents)) {
+      body.appendChild(obsRow(a.label ?? id, a.installed ? '✓ installed' : 'not installed',
+        a.installed ? (a.path ? ` ${a.path}` : '') : ` ${a.from ?? ''} — install it and it appears here`));
+    }
+
+    /* services — the install's own, by name; no count, the names ARE the answer.
+       gbrain sits here with its fellows, its toggle being its row. */
+    group('services');
+    for (const svc of st.services) {
+      if (svc.name === 'gbrain') continue; // its toggle row below is its entry
+      body.appendChild(obsRow(svc.name, svc.state));
+    }
     const gb = document.createElement('input');
     gb.type = 'checkbox';
     gb.className = 'st-check';
@@ -238,6 +243,20 @@ export function buildSettei(root, isShowing) {
     gbRow.className = 'st-row';
     gbRow.appendChild(gbField.el);
     body.appendChild(gbRow);
+
+    /* the deal — Ronin Services the subscription, a different thing from the sockets above */
+    group('subscription');
+    body.appendChild(obsRow('subscription', st.subscription,
+      set.services.email ? ` ${set.services.email}` : ''));
+    body.appendChild(
+      // THE PASTED CODE (owner's ruling). The verification email carries the id; this is
+      // where it lands. It records and does not verify — the id gates nothing on this
+      // box, so a wrong one costs a wrong line in a record rather than access to
+      // anything, and the collector treats it as a claim to match rather than proof.
+      setRow('entitlement code', input(set.services.entitlement, { max: 200, placeholder: 'paste the code from your email' }),
+        'from the services email — recorded here, checked by us',
+        (v) => request('/api/settei/services', { method: 'PUT', json: { entitlement: v, email: set.services.email } })),
+    );
 
     // WHAT THE SERVICES CHOICE STILL NEEDS — the door's needed[] family, beside the
     // leaf that caused it. Computed per read, so satisfying it makes the row vanish

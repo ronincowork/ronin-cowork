@@ -164,6 +164,7 @@ export const SETTEI_SCHEMA = {
       kind: 'select',
       label: 'Which model answers Mika?',
       short: 'answers Mika',
+      aside: "Mika is Ronin's own helpful assistant",
       hint: 'Mika is Ronin’s own assistant — she explains the house and runs small errands. She does not need your best model, and using one is how a helper gets expensive.',
       options: 'models',
       from: 'set.agents.jobs.MikaAssist',

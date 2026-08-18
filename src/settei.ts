@@ -304,7 +304,10 @@ async function readObserved(jobKeyNames: string[]): Promise<Record<string, unkno
    * the shape of the claim instead of inheriting a bare absence it cannot check.
    */
   const agents = Object.fromEntries(
-    (await listAgentAvailability()).map((a) => [a.id, { installed: a.installed, path: a.path || null }]),
+    (await listAgentAvailability()).map((a) => [
+      a.id,
+      { label: a.label, from: a.from, installed: a.installed, path: a.path || null },
+    ]),
   );
 
   const tools = Object.fromEntries(
