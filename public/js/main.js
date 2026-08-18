@@ -30,30 +30,33 @@ export async function init() {
   // The theme before the grid: tiles are born reading the resolved terminal palette.
   guard('apply theme', applyTheme);
 
-  // FIRST LOAD, and it is opened DELIBERATELY — `?setup` and nothing else.
+  // FIRST LOAD. A fresh install lands here; everyone else never sees it.
   //
-  // It used to decide for itself, from "nobody has said who they are". That fired on a
-  // box with months of sessions and five project roots whose owner had simply never
-  // typed a name, and replaced the workspace at the workspace's own URL. Two lessons,
-  // and the second is the one that generalises:
+  // The test is the EXPLICIT birth key, never an inference. The first gate decided from
+  // "nobody has said who they are", fired on a box with months of sessions whose owner
+  // had simply never typed a name, and replaced the workspace at the workspace's own
+  // URL. The lessons are structural now:
   //
-  //   1. A PROXY IS NOT A FACT. "No owner name" describes a box nobody has ANSWERED
-  //      for; it does not describe a box nobody has USED, and only the second could
-  //      justify taking the page. When the record carries an explicit key for this —
-  //      set by a genuinely fresh install, not inferred — the test reads that key.
-  //   2. ABSENCE MUST MEAN "DO NOT SHOW". A missing key is the normal state of every
-  //      box that predates the key, so a condition that fires on absence breaks every
-  //      existing install the day it ships. The default has to be quiet.
+  //   1. A PROXY IS NOT A FACT. `setup.pending` is stamped by stampFreshInstall() the
+  //      moment ronin.json does not exist, cleared only by the page's own Save, and
+  //      nothing can re-arm it over HTTP.
+  //   2. ABSENCE MUST MEAN "DO NOT SHOW". A box that predates the key has no setup
+  //      section and stays quiet forever — and so does a failed read, because a wrong
+  //      answer must cost a missing page, never the product.
   //
-  // Until that key exists this is opt-in only, so a wrong answer costs a wrong page
-  // rather than the product.
-  if (new URLSearchParams(location.search).has('setup')) {
-    const host = document.createElement('div');
-    document.body.replaceChildren(host);
-    await buildFirstRun(host, () => {
-      location.href = location.pathname; // back to the workspace, setup dropped
-    });
-    return;
+  // `?setup` remains as the deliberate way back in — the page is reachable, not only
+  // routed to.
+  {
+    const wants = new URLSearchParams(location.search).has('setup');
+    const s = wants ? null : await request('/api/settei/setup');
+    if (wants || (s?.ok && s.data.pending === true)) {
+      const host = document.createElement('div');
+      document.body.replaceChildren(host);
+      await buildFirstRun(host, () => {
+        location.href = location.pathname; // back to the workspace, setup dropped
+      });
+      return;
+    }
   }
 
 

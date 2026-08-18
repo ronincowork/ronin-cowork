@@ -46,6 +46,7 @@ same `needs` string, and both dim the control the same way.
 | メ the drop | — | always — it is a container, and it holds 🔒, which needs no session |
 | 🔒/🔓 lock | rireki's stream handler | inert and opaque; every tile born 🔒 and stays 🔒 |
 | 🏷 groups | — | always |
+| 📄 docs | `michi` | inert and opaque, saying so; the doc list is TEGAMI data |
 | 📝 note | — | always |
 | 🗑 kill | — | always |
 
@@ -88,10 +89,11 @@ Built order (`public/js/tilehead.js`):
 
 ```
 ● │ [ session ▾ ] │ chip │ mark │ ←spacer→ │ ⛩ ⚡ メ
-                                                  └─ 🔒 🏷 ⛽ 🎛 📝 🗑
+                                                  └─ 🔒 🏷 ⛽ 🎛 📄 📝 🗑
 ```
 
-**Three on top, six behind メ** (owner's ruling 2026-08-17). The row used to end in
+**Three on top, the rest behind メ** (owner's ruling 2026-08-17; six then, seven since 📄
+landed on 2026-08-18). The row used to end in
 eight controls against a picker that has to fit a session name, and at four tiles up
 there was not room for both — measured at a 629px tile, the eight left the spacer 23px
 short before the picker started giving up characters. So ⛩ Commons and ⚡ Macros stay,
@@ -267,7 +269,7 @@ Inert without a session: there is nothing to prefill.
 
 ### メ The drop — the rest of the header
 
-One click, and 🔒 🏷 ⛽ 🎛 📝 🗑 appear in a horizontal strip under the header. The owner's
+One click, and 🔒 🏷 ⛽ 🎛 📄 📝 🗑 appear in a horizontal strip under the header. The owner's
 words: *"consolidate the Lock, the Tags, the Gauge, the Dial, the Save status, and the
 Trash Can into a single button… When you click it, you just see those boxes exactly as they
 are, but maybe it just drops down horizontally."* Which is what it does — the controls are
@@ -295,16 +297,35 @@ the drop closes under the keyboard.
 
 Escape closes it, in the **capture** phase and only while it is open — so it beats a locked
 pane to the keystroke when the drop is up, and never takes Escape away from that pane when
-it is not. Clicking outside closes it; clicking a control inside closes it *if that control
-opens something*. The instruments (⛽ and 🎛, the `holds` rows whose value changes in place)
-leave it up, exactly as the phone gives the dial its `stay` mode.
+it is not — and **not while a modal sheet is up over it**, since that Escape belongs to the
+topmost surface and this listener would otherwise reach it first. Clicking outside closes
+it; clicking a control inside closes it *if that control raises something the strip could
+cover*. The instruments (⛽ and 🎛, the `holds` rows whose value changes in place) leave it
+up, exactly as the phone gives the dial its `stay` mode.
+
+**And so do 🏷 and 📝** — the `modal` rows, since 2026-08-18. Their sheet sits over a
+full-viewport scrim at a z-index far above the strip, so there was never anything for the
+strip to cover; closing it only hid their own opener, and a `display: none` button cannot
+take focus back when the sheet closes. Focus fell to `<body>` and the next Tab restarted
+the page. Leaving the drop up means the owner comes back to the exact control they left
+from, and 📄 is the counter-example that keeps this a per-row column rather than a rule:
+its docs pane is an in-tile surface the strip really would sit on top of, so 📄 still closes
+it. The primitive was hardened in the same pass (docs/ui.md) — this stops *causing* the
+failure, `ui.sheet` stops *hiding* it.
+
+A **click on the scrim** closes the drop as well, and that is the intended asymmetry
+rather than a leak: the scrim's click still reaches `document`, where it is an outside
+click for everything under it. The keyboard peels one layer per Escape (sheet, then drop);
+a pointer pressed on the scrim dismisses the stack it was pressed through. Measured
+2026-08-18 — Escape from 📝's sheet lands on 📝 with the drop still up, a backdrop click
+lands on メ with the drop closed, and neither lands on `<body>`.
 
 **Desktop only.** `collapseTileHead` hoists this header into the phone's app bar behind its
 *own* メ, snapshotting the header's children to restore later; a control nested one level
 deeper is not in that snapshot, and the restore would leave it inside a sheet that is then
 removed. So the drop is built on a fine pointer and skipped on a coarse one — the same
 `isCoarse()` test the collapse gates on, which makes the two exactly complementary. A phone
-at two or four tiles gets its own headers back, all eight controls in the row, as before.
+at two or four tiles gets its own headers back, every control in the row, as before.
 
 ### 🔒 / 🔓 The lock
 
@@ -377,6 +398,48 @@ authorization. Full story: `docs/session-control-dials.md`.
 
 On both surfaces — an explicit override of the never-change-desktop rule, because the
 cockpit motif is meant to be the same everywhere.
+
+### 📄 Docs
+
+Behind メ, beside 📝 — the two things a session keeps in writing: the post-it it wrote for
+you, and the documents it is working in.
+
+One press lists **this session's** docs; one more opens the file, in place, over this tile.
+The owner's words (2026-08-18): *"If I wanted to look at a tile and say 'oh, I want to watch
+this tile's docs', it's not actually easy or intuitive to find them by going to the Commons,
+going to Docs, and then looking for their particular agent's tracked docs."* The ▧ Docs tab
+lists **every** session's docs grouped by session, so reaching one tile's meant leaving the
+tile, remembering the session's name, and finding its group among all the others — three
+steps and a memory test for a fact the tile already knows about itself.
+
+**It fetches nothing.** `refreshTegami` already parks the whole letter on the tile and
+`docs` is part of that payload (`src/services/michi/tegami.ts`), refreshed on connect, after
+a write, and by the 30s poll. So there is no loading state and no failure state here to
+design: the read that already exists refuses to fetch without michi rather than 404ing,
+discards a response if the tile switched session mid-flight, and keeps its last value on a
+failed read. `public/js/tiledocs.js` renders what that left behind.
+
+**Opening one clobbers the terminal**, which is the owner's own reasoning: *"it would just
+open in place on that session, clobbering the session I'm looking at, which is fine because
+you can just close the commons and you're back in the session."* The Commons already renders
+*into* a tile, so this is the existing architecture and not a new panel — the same editor the
+▧ Docs tab uses (`public/js/docs.js`, whose `open` is exported for exactly this), the session
+still streaming behind it, ✕ on the tab strip to come back.
+
+**It is not the file browser, and it is not a crack in that rule.** A doc is on this list for
+the one reason it is on the ▧ Docs tab: an agent ran `write_tegami --doc <path>`. All that is
+different is the scope. Which is also why a session that has listed nothing gets a sentence
+saying so — the same sentence the tab uses for its own empty list, narrowed to one session —
+and never a fallback to the global list, which would rebuild the hunt inside the tile.
+
+The button lights when there is something behind it, the same reading 🏷 and 📝 carry, so the
+drop does not have to be opened to learn it is empty. **Needs a session and `michi`**: the
+list is TEGAMI data, exactly as the SHINGO chip is, and without either the button dims and
+says which is missing.
+
+Height is measured at open time against the room under the header (`fitDropToTile`,
+`public/js/tilemore.js`) — `.tile` is `overflow: hidden`, so a list longer than the tile is
+cut with no scrollbar. That measurement was ⚡'s, spelled once and now shared by both drops.
 
 ### 📝 Note
 
@@ -476,7 +539,7 @@ Touch collapses the whole header into **one row** (`public/js/tiledrop.js`):
 ⛩ ronin │ [ session ▾ ] │ メ │ 4 │ ニ
 ```
 
-**メ is this session** — Status, Ladder, Macros, Groups, Note, Control, Kill.
+**メ is this session** — Status, Ladder, Macros, Groups, Docs, Note, Control, Kill.
 **ニ is Ronin** — Keys, Home, New, Board, Pad. Everything else is terminal.
 
 (This block said ⛩ for a few hours on 2026-08-17, written from the middle of the pass that

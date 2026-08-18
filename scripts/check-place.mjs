@@ -51,6 +51,9 @@ const { STORES } = await tsImport('../src/stores.ts', import.meta.url);
  * NEVER add one without the reason — and never to silence a real finding.
  */
 const ALLOW = {
+  // The front-door install commands run on a FRESH machine, before any resolver
+  // exists — a person types them literally, so the path must be shown.
+  'README.md': 'the install commands a person types before ronin-store exists',
   // The two bindings of the store table ARE the place the paths are written down.
   'src/stores.ts': 'the table itself',
   'bin/ronin-store': 'the bash binding of the table',

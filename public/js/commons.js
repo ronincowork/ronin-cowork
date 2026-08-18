@@ -166,7 +166,9 @@ export function buildHome(tile) {
     roster.render();
   };
 
-  return { el, render, showPane };
+  // `openDoc` — ▧ Docs, opened straight onto one file. The tile's 📄 route (2026-08-18,
+  // js/tiledocs.js): the room, then the file, in the order the shell has to do them.
+  return { el, render, showPane, openDoc: (p) => { showPane('docs'); docs.open(p); } };
 }
 
 /* ---------- KOSHI_DASHI — the receipt for a spawn ----------

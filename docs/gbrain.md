@@ -13,12 +13,43 @@ the database; every session with MCP on can reach it; the CLI against the same d
 refused while the server runs (single-writer, by design — theirs).
 
 The picture the house uses (owner, 2026-08-17): **gbrain is a filing cabinet and a
-librarian.** The cabinet is the git repo of markdown — your actual notes, the one thing
-that cannot be rebuilt, which is why it lives in a durable home outside every repo. The
-librarian is the server: it reads every page, keeps an index in a database, and answers
-sessions' questions. Lose the librarian or the index and you have lost a re-read;
-lose the cabinet and you have lost the knowledge. Everything the gbrain `ronin_service` installs
-is replaceable machinery around that one irreplaceable folder.
+librarian** — but on a Ronin install the honest version is blunter. Nobody hand-files
+markdown. Every writer this machine has is an agent over MCP (`put_page`, `capture`,
+`remember`), and those writes land in **the librarian's own drawers — the database —
+never as files in the cabinet.** Nor can the cabinet feed the index while the house is
+up: syncing repo files is a CLI act, the CLI is refused while `serve` runs
+(single-writer lock), and the MCP surface carries no sync op. **So on this deployment
+the DATABASE is the brain**; the cabinet is an import bay — real when the owner bulk-
+imports existing notes or a feed recipe lands files (both need a stop-sync-start
+window), near-empty otherwise. Upstream's "markdown repo is the system of record"
+describes their agent-lives-in-the-repo shape, not ours. Backup accordingly: `~/.gbrain`
+first, the cabinet with it — and the uninstall keeps both, and says so.
+
+## What gbrain needs from outside itself — and what Ronin's use actually requires
+
+gbrain carries no model of its own. What it needs depends on which of its two products
+you run, and **Ronin runs the first** (owner's ruling, 2026-08-18):
+
+| the product | outside tools needed | Ronin's status |
+|---|---|---|
+| **A memory for agents** — agents file and retrieve over MCP; the agent composes answers from the chunks | **one: an embedding model** | **complete.** The Load button ships it (koshi_weights — local, zero egress). Nothing is missing and nothing else is needed |
+| **An autonomous brain** — gbrain thinks unattended: `think`/`synthesize`, scheduled enrichment, feeds filing themselves | the embedder PLUS **a chat model** | **not our product.** No key is configured, by ruling — not as a gap |
+
+The reasoning, in the owner's words: agents are the only consumers Ronin has — gbrain is
+localhost-only and nothing but an agent's MCP registration can reach it. On the retrieval
+path gbrain hands found chunks over raw; the agent receiving them IS the LLM and does the
+thinking on the owner's subscription. A key would only buy gbrain the ability to think on
+its own, which nothing here asks of it.
+
+**What keyless behavior looks like, verified live** (so nobody rediscovers it as a fault):
+`think` answers "(no LLM available)", `synthesize` errors honestly, **`query` returns an
+empty list silently — agents must use `search`, never `query`** (the SOP says so), and
+`extract_facts` extracts nothing. All expected; none of it is used in our shape.
+
+**If unattended feeds are ever ordered**, the chat-model question reopens — and even then
+a metered API key is not the only road: upstream ships a `claude-cli` chat recipe that
+routes gbrain's own calls through the local claude CLI on the owner's subscription
+(verified in the installed package). A decision for that day; nothing is pre-configured.
 
 ## What cowork ships — all of it generic
 

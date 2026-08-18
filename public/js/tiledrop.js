@@ -54,6 +54,11 @@ const ITEMS = [
   // the ニ sheet's own Commons row — a second door to it does not belong in this list.
   ['.tmac-btn', 'Macros'],
   ['.tags', 'Groups'],
+  // 📄 THIS session's listed docs (2026-08-18). It has to be named here or it is
+  // STRANDED: the desktop builds it into メ's drop, touch builds it into the header row
+  // instead, and a control the hoist does not name stays behind in a header the
+  // stylesheet then hides. Its own drop follows its button up — see the hoist below.
+  ['.tdocs-btn', 'Docs'],
   ['.note', 'Note'],
   ['.dial', 'Control'],
   ['.kill', 'Kill session'],
@@ -117,7 +122,9 @@ export function makeDrop(glyph, title, kind) {
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
     const wasOpen = menu.classList.contains('open');
-    document.querySelectorAll('.tdrop.open, .tmac.open').forEach((m) => m.classList.remove('open'));
+    // 📄's doc list joined the sweep on 2026-08-18: it hangs off this same bar once the
+    // header is hoisted, so it is a rival exactly as ⚡'s macro list is.
+    document.querySelectorAll('.tdrop.open, .tmac.open, .tdocs.open').forEach((m) => m.classList.remove('open'));
     if (wasOpen) return;
     // A control that hides itself (no ladder up, no context reading) must not leave
     // its word stranded on a row with nothing to tap. CSS `:has()` does this too;
@@ -158,7 +165,7 @@ export function collapseTileHead(tile) {
   // removed, because ⟳ does not come back.
   tile.headKids = [...head.children];
 
-  const drop = makeDrop('メ', 'This session — status, ladder, TEGAMI, macros, groups, note, control', 'me');
+  const drop = makeDrop('メ', 'This session — status, ladder, TEGAMI, macros, groups, docs, note, control', 'me');
   tile.headDrop = drop;
   for (const [sel, label] of ITEMS) {
     const ctl = head.querySelector(sel);
@@ -183,9 +190,11 @@ export function collapseTileHead(tile) {
   // between メ and ニ. Inserting against it reads left-to-right either way round —
   // appending was right exactly once, on the first pass.
   const anchor = bar.querySelector('#layoutcycle');
-  // ⚡'s menu is anchored to whatever it sits in; it follows its button up here.
+  // ⚡'s menu is anchored to whatever it sits in; it follows its button up here. So does
+  // 📄's (2026-08-18) — a menu left in the hidden header is a button that opens nothing.
   const tmac = head.querySelector('.tmac');
-  for (const n of [dot, sel, drop.btn, drop.menu, tmac]) {
+  const tdocs = head.querySelector('.tdocs');
+  for (const n of [dot, sel, drop.btn, drop.menu, tmac, tdocs]) {
     if (n) anchor ? bar.insertBefore(n, anchor) : bar.append(n);
   }
   // The emptied head STAYS in the tile, hidden by the stylesheet. It is still the

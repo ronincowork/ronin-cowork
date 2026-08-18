@@ -30,6 +30,13 @@ src/settei.ts                     the assembled record the ⚙ Setup tab draws
 | `auth` | the login record — scrypt params **and the session signing secret** | `bin/ronin-passwd` | none |
 | `passkeys` | registered authenticators, and the one-shot recovery code | `/api/passkey/*` | none |
 
+**The file has two kinds of tenant.** The sections above the line — owner, machine,
+sessions, agents, gbrain, services, setup — are **settei's typed half**, and the assembled
+record (`docs/settei.md`) includes them. The last three — `koshi`, `auth`, `passkeys` —
+share the file and are **not settei**: `koshi` is 目's wiring, and `auth`/`passkeys` are
+credentials the record must never carry. Same storage, different tenants; the file is not
+the object.
+
 **Most sections have no bus option, and that is the rule working rather than an exception
 to it.** Nothing in `bin/` or `ronin_bin/` parses an outlet choice, a machine name or an
 entitlement — checked, not assumed. The rule below is *if a bash tool needs a setting,
@@ -151,6 +158,8 @@ What survives, and what every reader must keep true:
 
 ## Related
 
+`docs/settei.md` (the unified representation over this file and every other source) ·
+`docs/env.md` (the other file on disk — knobs and secrets, and why neither is a setting) ·
 `src/settei.ts` (the assembled record: set · observed · status) · `ronin_sops/accounts.md`
 (the SOP that tells an agent to go and look) · `ronin_bin/tejun-account` (what it looks
 with). **Why the record is shaped this way** is SETTEI's plan, which lives in the private

@@ -81,6 +81,12 @@ export function buildGbrain(root, isShowing, askPersonalAssistant) {
     search.append(row('Dimensions', data.search.dimensions === null ? '—' : String(data.search.dimensions)));
     const retrieval = data.search.mode === 'hybrid' ? 'hybrid (keyword + semantic)' : data.search.mode === 'keyword_only' ? 'degraded — keyword only' : 'unknown';
     search.append(row('Retrieval', retrieval, toneFor(data.search.mode)));
+    const answers = data.search.answers?.state === 'on'
+      ? 'gbrain composition available'
+      : data.search.answers?.state === 'off'
+        ? 'composed by the agent (by design)'
+        : 'unknown';
+    search.append(row('Answers', answers, data.search.answers?.state === 'unknown' ? 'warn' : 'good'));
     if (data.search.reason) search.append(row('Reason', value(data.search.reason), 'warn'));
   };
 

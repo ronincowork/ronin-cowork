@@ -126,6 +126,8 @@ const IGNORE = {
   // line above: a real file on the box, never a file in this repo, so it cannot resolve here.
   'docs/user-config.md': ['ronin.json'],
   'docs/README.md': ['ronin.json'],
+  'docs/settei.md': ['ronin.json'],
+  'docs/env.md': ['ronin.json'],
   // One entry, three reasons — a second `'KOTOBA.md':` key would silently win over this
   // one and orphan whichever comment lost. `app.js` is BUNKAI's dismantled file, named by
   // the row about dismantling it. `ronin.json` and `koshi-outlets.json` are § SETTEI's:
@@ -139,6 +141,12 @@ const IGNORE = {
   // directory that needs a store home. Each is removed as its gap is filled — this
   // block shrinking to nothing is the split finishing.
   'docs/shadowing.md': ['HOTWORDS.md', 'src/services/koe/hotwords.ts', 'docs/stores.md', 'docs/repo-to-operator.md', 'DAIKUSAN.md'],
+  // 📄's section cites where `docs` lives in the letter — michi's, so it is in
+  // RONIN_SERVICES like koe's and rireki's above, real on any box that installed the
+  // service and absent from this repo. Caught by CI and not by the box, which is the
+  // whole point of the entry: `src/services/` is assembled at boot and gitignored, so a
+  // developer's local check-docs passes on files the runner will never see (2026-08-18).
+  'docs/tile.md': ['src/services/michi/tegami.ts'],
   'README.md': ['connector-contract.md'],
   'public/js/README.md': ['app.js', 'co-working/user_repo/wip/buildouts/', 'CLAUDE.md', 'docs/commons.md', 'src/services/rireki/', 'co-working/user_repo/README/KEYPAD_README.md', '../../co-working/user_repo/README/KEYPAD_README.md'],
   // (The house-dir literals that lived in ACTIONS/MACROS collapsed into the documents

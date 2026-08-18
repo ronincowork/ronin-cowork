@@ -1,9 +1,10 @@
-# Install Ronin — the front door, for an agent
+# Install Ronin — the same steps, walked by an agent
 
-> Hand this file's URL to the agent on the machine Ronin will run on — Claude, Codex or
-> kin — and say go. When it is done, the owner opens one URL and the product takes over:
-> the setup page asks what it needs, and the first session is launched by the page, not
-> by you.
+> The install is four commands and a URL, and a person can run them straight from the
+> README — no agent required. This file is for when the owner hands the job to the agent
+> already on the box: it is the same steps, plus the care an agent owes someone else's
+> machine. When it is done, the owner opens one URL and the product takes over: the setup
+> page asks what it needs, and the first session is launched by the page, not by you.
 
 The machine is one the owner already has and controls: a laptop, a home server, a VM they
 rent. If they do not have a machine yet, this is not the document — a provisioned path is

@@ -118,6 +118,24 @@ a `destroy()` owner at that moment, not speculatively.
   come across — the pad's ▦ panel and its ask-on-press prompt. The prompt is the one
   surface that overrides the touch rule and focuses its field anyway: it has nothing
   to read, it IS the field. Nothing hand-rolls a sheet any more.
+  **"Returns to the opener" is VERIFIED, not attempted (2026-08-18).** It used to be a
+  `.focus()` guarded on `isConnected`, and neither half was the question: `.focus()` is a
+  silent no-op on an element that cannot take focus, and a node inside a `display: none`
+  parent is `isConnected === true`. A sheet raised from a control that then went hidden —
+  メ's tile-header drop used to shut itself behind exactly these two — closed with the
+  keyboard on `<body>`, so the next Tab restarted the page, which is the failure this
+  contract exists to prevent. The restore now checks that focus LANDED, and when the opener
+  refuses it falls back to the nearest still-rendered ancestor of the opener, given
+  `tabindex=-1`: not a guess at which control replaced it (a primitive knows no Ronin
+  vocabulary and cannot know), a guess at the PLACE, so Tab continues from where the opener
+  sat. `<body>` is never a destination; landing there is the failure.
+  **Backdrop dismissal keeps focus too**, and that was broken for every consumer, not just
+  the hidden-opener ones. The browser's own mousedown focus rule runs after the dismissal
+  handler and moves focus to the nearest focusable ancestor of what was pressed — the scrim
+  is a bare `div`, so that is `<body>`, arriving right after the restore and undoing it.
+  Measured 2026-08-18: Escape returned the opener on every sheet on the page while a
+  backdrop click returned `<body>` on every one of them, ⚙ System and the session switcher
+  included. The pointer's default is cancelled, so the restore is the last word.
 - **Popover/menu** — **retired 2026-08-17.** `ui.popover` had one consumer, the き
   Commons menu, and that menu is gone (see Navigation). A primitive with no consumer is
   a corpse `check-dead` fails the build on, and parked code is not kept alive by an
@@ -203,7 +221,11 @@ words go and the width goes with them (a genuine shell change, so a `@media` que
   `tips.js` lifts it into the header and takes it off the front of the explanation. There
   is no shortcut registry and deliberately isn't one — the chords stay owned by the
   handler in `layout.js`.
-- Escape closes the topmost transient surface, everywhere.
+- Escape closes the topmost transient surface, everywhere. A capture-phase Escape listener
+  (the tile drops, the job menu) has to YIELD while a modal sheet is up over it, or being
+  first in the propagation order quietly makes it topmost when it is not — メ's drop, which
+  since 2026-08-18 stays open behind 🏷 and 📝, checks for an open `ui.sheet` and stands
+  down (`public/js/tilemore.js`, docs/tile.md).
 
 ## Structure gates
 

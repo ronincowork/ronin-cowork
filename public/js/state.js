@@ -138,6 +138,37 @@ export const tiles = [];
 export function saveState() {
   localStorage.setItem(LS_SESSIONS, JSON.stringify(tiles.map((t) => t.session || '')));
   localStorage.setItem(LS_LAYOUT, String(grid.dataset.layout || TILE_COUNT));
+  syncTitle();
+}
+
+/**
+ * THE BROWSER TAB WEARS THE FIRST TILE'S SESSION (owner, 2026-08-18).
+ *
+ * `index.html` shipped `<title>tmux ronin</title>` and nothing ever changed it, so an owner
+ * running four Ronin tabs had four tabs called the same thing — ⌘-tab was a guess and so was
+ * the tab strip. That is the whole complaint, and it had a one-line cause.
+ *
+ * THE FIRST TILE ONLY, not all four joined. Four names in a browser tab is a string no tab
+ * strip is wide enough to show; the browser truncates from the END, so the first tile is the
+ * part that survives at any width — which makes it the only part worth putting there. The
+ * owner picked this himself: "should we just have the first tile be the tab name? That would
+ * be enough."
+ *
+ * `· ronin` rides behind it so a tab is still identifiably Ronin among a window full of other
+ * things. It is the half that gets truncated away when the strip is tight, which is the right
+ * way round.
+ *
+ * NOTHING IS STORED. The title is derived on every save, so there is no state to restore, go
+ * stale, or fight another tab over — and a refresh cannot lose it.
+ *
+ * It hangs off saveState() rather than growing its own call sites because saveState already
+ * runs at exactly the three moments the answer can change: a tile connects, a tile lets go,
+ * and the layout changes (tile.js ×3, viewport.js ×1). A second set of hooks would be a
+ * second thing to keep in sync with the first.
+ */
+function syncTitle() {
+  const first = tiles[0] && tiles[0].session;
+  document.title = first ? `${first} · ronin` : 'tmux ronin';
 }
 export function loadState() {
   let map = [];

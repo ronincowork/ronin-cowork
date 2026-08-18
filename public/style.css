@@ -421,6 +421,33 @@ body {
    is too far from the one screen you keep coming back to. Clicking the logo to get
    to the front page is the oldest convention on the web; this just honours it.
    Still LOOKS like the wordmark: no button chrome until you point at it. */
+/* ＋ NEW TAB — beside the brand, and deliberately NOT one of the five right-hand verbs.
+   Those share a measured `min-width: 100px` (see the bar rule below) and that number means
+   those five; a sixth wearing it would push the row 100px wider for a control whose whole
+   label is one character. So this is sized for what it is: a small square next to the
+   wordmark, quiet until you look for it. */
+#bar .newtab {
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  margin-left: 2px;
+  padding: 0;
+  border: 1px solid var(--line-2);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+@media (hover: hover) and (pointer: fine) {
+  #bar .newtab:hover {
+    border-color: var(--accent-2);
+    color: var(--accent-2);
+  }
+}
+
 #bar .brand {
   font-weight: 600;
   letter-spacing: 0.3px;
@@ -770,6 +797,81 @@ body {
 }
 .tmore.open {
   display: flex;
+}
+
+/* Tile 📄 — THIS session's listed docs (owner, 2026-08-18; js/tiledocs.js). The third drop
+   off this one header, so it is deliberately the same box as .tmac and .tmore above it:
+   same anchor corner, same panel, same shadow. A LIST rather than a strip, because these
+   are filenames and a filename wants its own line.
+
+   Height is bounded in JS (`fitDropToTile`, js/tilemore.js) and the note there says why no
+   CSS length can do it: `.tile` is overflow:hidden, so a list longer than the room under
+   the header is CUT with no scrollbar — the failure ⚡'s cards measured on 2026-08-17. The
+   60vh here is only the bound before that runs. */
+.tdocs {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 6px;
+  z-index: 12;
+  width: min(360px, calc(100% - 12px));
+  max-height: 60vh;
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 6px;
+  box-shadow: var(--shadow-sheet);
+}
+.tdocs.open {
+  display: block;
+}
+/* The ▧ Docs tab's row, at drop size (.dc-row is the same shape sized for a pane). Every
+   dimension here is an OVERRIDE: this menu lives inside .tile-head, whose `button` rule is
+   a 26×24 square for glyphs, and a filename in a 26px box is invisible. .tmac-row does the
+   same for the same reason. */
+.tdocs .tdocs-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  height: auto;
+  padding: 7px 9px;
+  margin-bottom: 4px;
+  text-align: left;
+  background: var(--raise);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--fg);
+  font-size: 13px;
+  cursor: pointer;
+}
+.tdocs .tdocs-row:last-child {
+  margin-bottom: 0;
+}
+.tdocs .tdocs-row b {
+  color: var(--fg-strong);
+  font-weight: 600;
+}
+/* The last two directories, and they yield first: the name is what you are reading. */
+.tdocs .tdocs-row span {
+  color: var(--muted);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tdocs-empty {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  padding: 8px 6px;
+}
+/* Lit when this session has listed something — the same reading 🏷 and 📝 carry, so the
+   drop does not have to be opened to learn it is empty. */
+.tile-head button.tdocs-btn.has-docs {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 /* Work Louder pad — a ui.sheet consumer since 2026-08-17; the board is a picture of the
@@ -2033,6 +2135,43 @@ body {
   /* the way back out — present, quiet, never competing with the panel above it */
   margin-top: 10px;
   opacity: 0.7;
+}
+/* Every button on the gbrain room wears the house tokens (owner, 2026-08-17: a raw
+   browser button that ignores hover reads as dead). Same recipe as the notesheet
+   bar; the Load press alone is accented, because it is the room's one big verb. */
+.gb-head button,
+.gb-card button {
+  background: var(--panel);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  height: 30px;
+  padding: 0 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color 120ms, background 120ms;
+}
+.gb-head button:hover,
+.gb-card button:hover {
+  border-color: var(--accent);
+  background: var(--raise);
+}
+.gb-head button:disabled,
+.gb-card button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.gb-privacy > button {
+  /* the Load press — the room's one primary */
+  height: 36px;
+  padding: 0 18px;
+  font-size: 13px;
+  border-color: var(--accent);
+  color: var(--fg-strong);
+}
+.gb-privacy > button:hover {
+  background: var(--accent);
+  color: var(--bg);
 }
 .gb-card h3 {
   margin: 0 0 6px;

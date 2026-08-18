@@ -55,12 +55,54 @@ export function sheet(spec) {
 
   const isOpen = () => el.classList.contains('open');
 
+  /**
+   * Put the keyboard back where it came from — AND CHECK THAT IT LANDED.
+   *
+   * The check is the whole point. `.focus()` is a silent no-op on an element that cannot
+   * take focus, and "can it take focus" is not the question `isConnected` answers: a node
+   * inside a `display: none` parent is `isConnected === true` and unfocusable. So the old
+   * guard passed, the call did nothing, focus stayed on `<body>`, and the sheet reported
+   * success. Measured 2026-08-18 on メ's tile-header drop (`tilemore.js`): the strip used
+   * to shut itself the moment a control in it raised a panel, so by the time 📝's sheet
+   * was dismissed its opener was hidden inside a closed drop. That call site was fixed too
+   * — a control raising a MODAL sheet now leaves the drop up, because a full-viewport
+   * scrim cannot be covered by the strip underneath it — but the trap was never theirs
+   * alone: ANY consumer that hides its opener while its sheet is up walks into this, and a
+   * primitive that silently fails to restore focus is a bug wherever it happens.
+   *
+   * The fallback is deliberately NOT a guess at a control. This file knows no Ronin
+   * vocabulary (see the header) and cannot know which button "means" the one that went
+   * away. It guesses a PLACE instead: the nearest ancestor of the opener still rendered,
+   * made focusable with `tabindex=-1` — out of the Tab order, reachable by script. That
+   * leaves the next Tab continuing from where the opener SAT rather than restarting the
+   * page, which is the exact damage this paragraph has existed to prevent since it was
+   * first written. `<body>` is never a destination: landing there is the failure.
+   */
+  const restore = () => {
+    if (opener?.isConnected) {
+      opener.focus();
+      if (document.activeElement === opener) return;
+    }
+    // getClientRects, not offsetParent: a `position: fixed` ancestor reports a null
+    // offsetParent while being perfectly visible, and sheets get opened out of fixed
+    // shells. Stops short of <body> — reaching it would be re-doing the bug by hand.
+    for (let n = opener?.parentElement; n && n !== document.body; n = n.parentElement) {
+      if (!n.getClientRects().length) continue;
+      if (!n.hasAttribute('tabindex')) n.tabIndex = -1;
+      n.focus();
+      if (document.activeElement === n) return;
+    }
+  };
+
   const close = () => {
     if (!isOpen()) return;
     el.classList.remove('open');
     // Focus restoration is the half every hand-rolled sheet forgot: closing used to
-    // drop keyboard focus on <body>, and the next Tab started the page over.
-    if (opener && opener.isConnected && el.contains(document.activeElement)) opener.focus();
+    // drop keyboard focus on <body>, and the next Tab started the page over. The guard
+    // is only about not YANKING focus off something the owner deliberately moved to
+    // while the sheet was up; where it goes when it IS ours to give back is `restore`'s
+    // business, and that verifies rather than hopes (2026-08-18).
+    if (el.contains(document.activeElement)) restore();
     opener = null;
     spec.onClose?.();
   };
@@ -78,7 +120,25 @@ export function sheet(spec) {
 
   // Backdrop tap = dismissal, exactly as every sheet already behaved.
   el.addEventListener('pointerdown', (e) => {
-    if (e.target === el) close();
+    if (e.target !== el) return;
+    // preventDefault FIRST, and it is not decoration. The browser's OWN focus rule runs
+    // on the mousedown this pointer event compatibility-fires, after this handler, and it
+    // moves focus to the nearest focusable ancestor of whatever was pressed. The scrim is
+    // a bare <div>, so that is `<body>` — arriving just after close() handed focus back to
+    // the opener, and silently undoing it. Measured 2026-08-18 across every sheet on the
+    // page: Escape returned the opener correctly while a backdrop click returned BODY
+    // EVERYWHERE, ⚙ System and the session switcher included. Nobody had suspected those
+    // two; the drop bug is what made anyone look. Cancelling the pointer's default
+    // suppresses the compatibility MOUSEDOWN, which is the one that moves focus, so
+    // `restore` gets the last word.
+    //
+    // The compatibility CLICK still fires — measured, not assumed, and deliberately left
+    // alone. It reaches `document` as an outside click, which is how the surfaces
+    // UNDERNEATH a scrim (メ's drop) learn to put themselves away. That is the honest
+    // split: the keyboard peels one layer per Escape, a pointer pressed on the scrim
+    // dismisses the stack it was pressed through. Both end on a real control.
+    e.preventDefault();
+    close();
   });
   // Escape closes; Tab stays inside while the sheet is modal.
   el.addEventListener('keydown', (e) => {

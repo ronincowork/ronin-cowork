@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Settei Record</title>
+<style>
+  :root {
+    --bg: #f5f4ef;
+    --surface: #fdfcf8;
+    --ink: #26271f;
+    --muted: #6e6c60;
+    --line: #d9d6c9;
+    --accent: #3d5da8;
+    --accent-soft: #e5eaf6;
+    --seam: #b85c2e;
+    --seam-soft: #f5e5d9;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+    --body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #171814; --surface: #1e1f1a; --ink: #e7e5da; --muted: #9c9a8b;
+      --line: #393a31; --accent: #8ea9de; --accent-soft: #242c3e;
+      --seam: #d98f5e; --seam-soft: #392a1d;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #171814; --surface: #1e1f1a; --ink: #e7e5da; --muted: #9c9a8b;
+    --line: #393a31; --accent: #8ea9de; --accent-soft: #242c3e;
+    --seam: #d98f5e; --seam-soft: #392a1d;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.6; }
+  main { max-width: 880px; margin: 0 auto; padding: 48px 20px 80px; }
+  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; }
+  h1 { font-family: var(--mono); font-weight: 600; font-size: clamp(28px, 5.4vw, 44px); line-height: 1.12; margin: 0 0 16px; text-wrap: balance; }
+  .dek { max-width: 62ch; color: var(--muted); font-size: 17px; margin: 0; }
+  .dek b { color: var(--ink); font-weight: 600; }
+  section { margin: 56px 0 0; }
+  .sec-head { display: flex; align-items: baseline; gap: 14px; border-top: 1px solid var(--line); padding-top: 14px; margin-bottom: 18px; }
+  .sec-head h2 { font-family: var(--mono); font-size: 19px; font-weight: 600; margin: 0; text-wrap: balance; }
+  .sec-head .tag { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); white-space: nowrap; }
+  p { max-width: 68ch; margin: 0 0 14px; }
+  p.note { color: var(--muted); font-size: 14px; max-width: 70ch; }
+  code { font-family: var(--mono); font-size: .85em; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; white-space: nowrap; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 10px 26px; font-family: var(--mono); font-size: 12.5px; margin: 6px 0 4px; }
+  .legend span { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); }
+  .chip { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
+  .chip.t { background: var(--accent); }
+  .chip.f { background: transparent; border: 2px solid var(--ink); }
+  .chip.d { background: transparent; border: 2px dashed var(--seam); }
+
+  .rec { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; margin: 18px 0; overflow: hidden; }
+  .rec-hd { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; padding: 12px 18px; border-bottom: 1px solid var(--line); }
+  .rec-hd .nm { font-family: var(--mono); font-size: 14px; font-weight: 700; }
+  .rec-hd .nm .prov { font-weight: 600; }
+  .rec-hd .life { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); align-self: center; }
+  .rec.typed .rec-hd { border-left: 4px solid var(--accent); }
+  .rec.found .rec-hd { border-left: 4px solid var(--ink); }
+  .rec.derived .rec-hd { border-left: 4px solid var(--seam); }
+  pre { margin: 0; padding: 14px 18px; overflow-x: auto; font-family: var(--mono); font-size: 12.5px; line-height: 1.75; color: var(--ink); }
+  pre .c { color: var(--muted); }
+  pre .hot { color: var(--seam); font-weight: 600; }
+  pre .k { color: var(--accent); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .table-scroll { overflow-x: auto; margin: 14px 0; }
+  th { font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); text-align: left; font-weight: 600; padding: 8px 12px 8px 0; border-bottom: 1px solid var(--line); }
+  td { padding: 8px 12px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td:first-child { font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+  td.v { font-family: var(--mono); font-size: 12px; white-space: nowrap; color: var(--muted); }
+  td.v b { color: var(--ink); }
+
+  ul.rules { max-width: 70ch; padding-left: 22px; }
+  ul.rules li { margin-bottom: 9px; }
+
+  footer { margin-top: 64px; border-top: 1px solid var(--line); padding-top: 16px; font-family: var(--mono); font-size: 12px; color: var(--muted); line-height: 1.9; }
+  footer .stamp { color: var(--seam); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <p class="eyebrow">Ronin · the object, leaf by leaf · reference</p>
+  <h1>The Settei Record</h1>
+  <p class="dek">The one object, written out — filled with this machine's real values, so
+  every claim can be checked. <b>Each leaf carries its provenance</b> — typed · found ·
+  derived — because provenance is all a view needs to render a leaf: an input, a fact
+  line, or a task. This page is the schema the code answers.</p>
+</header>
+
+<section>
+  <div class="sec-head"><span class="tag">how to read it</span><h2>Three provenances, one object</h2></div>
+  <div class="legend">
+    <span><span class="chip t"></span> typed — the owner said it · the only half persisted</span>
+    <span><span class="chip f"></span> found — a scan answered it · per read, never stored</span>
+    <span><span class="chip d"></span> derived — follows from the other two · computed away</span>
+  </div>
+  <p class="note">In code: <code>set</code> / <code>observed</code> / <code>status</code>
+  on <code>GET /api/settei</code> (<code>src/settei.ts</code>), plus the
+  <code>needed</code> family still to build. One call, one answer, no writes. No route
+  serves the underlying file — <code>ronin.json</code> also holds the token-signing
+  secret, so the record is assembled from named keys, never the document.</p>
+</section>
+
+<section>
+  <div class="sec-head"><span class="tag">typed</span><h2>What the owner said</h2></div>
+
+  <div class="rec typed">
+    <div class="rec-hd"><span class="nm"><span class="prov">set</span> — persists in ronin.json</span><span class="life">written by named PUTs · keys preserved</span></div>
+<pre>{
+  "owner":    { "name": null },                    <span class="c">← PUT /api/owner · null = fallback to the machine user</span>
+  "machine":  { "name": null, "where": null },     <span class="c">← PUT /api/settei/machine · where is free text, by ruling</span>
+  "sessions": { "max": 10 },                       <span class="c">← PUT /api/session-max · same number ⌂ Roster edits</span>
+
+  "projects": [                                    <span class="c">← REFERENCED from the catalogs store, never owned here;</span>
+    { "name": "lab", "dir": "~/dohyo/ronin-lab",   <span class="c">  edited in ▣ Project root / POST /api/project-roots</span>
+      "remit": "plans, records, concepts",
+      "provider": "anthropic", "model": "opus" }   <span class="c">  … 4 more roots on this machine</span>
+  ],
+
+  "agents": {
+    "sessions": { "default": { "provider": null, "model": null } },   <span class="c">← what a new session launches as</span>
+    "jobs": {                                                         <span class="c">← the model-fed house jobs — pointed, never given</span>
+      "koshi_monitor": { "outlet": "koshi_external", "provider": "openai",
+                         "model": "gpt-5.6-luna", "key_env": "OPENAI_API_KEY" }
+    }                                                                 <span class="c">  key_env is a NAME. Never a key.</span>
+  },
+
+  "gbrain":   { "enabled": false },                <span class="c">← PUT /api/settei/gbrain · a setting; pressing installs nothing</span>
+
+  "setup":    { "pending": false,                  <span class="c">← stamped at birth by stampFreshInstall(), cleared by Save;</span>
+                "stamped_at": null,                <span class="c">  no route can re-arm it. Absent section = predates the key</span>
+                "completed_at": null },
+
+  "services": { "entitlement": null, "email": null,     <span class="c">← PUT /api/settei/services · records, never verifies;</span>
+                "verified": null, "terms": null }        <span class="c">  the id is not a key and gates nothing on this machine</span>
+}</pre>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="tag">found</span><h2>What the scans answered</h2></div>
+  <p class="note">One family per scanner — the same seven rows as the architecture page's
+  source stack. Adding a scanner adds a family here and changes nothing else.</p>
+
+  <div class="rec found">
+    <div class="rec-hd"><span class="nm"><span class="prov">observed</span> — assembled per read</span><span class="life">never stored · carries its timestamp</span></div>
+<pre>{
+  "observed_at": "2026-08-18T09:12:04Z",           <span class="c">a fact without a timestamp cannot be told from a stale one</span>
+
+  "machine": { "host": "dohyo-unified", "user": "glen3",       <span class="c">── machine &amp; OS: DMI + os-release.</span>
+               "kind": "virtual", "hypervisor": "kvm",          <span class="c">   no cloud metadata call — a record that</span>
+               "provider": "Hetzner", "product": "vServer",     <span class="c">   phones anyone to draw itself is a third</span>
+               "cores": 8, "ram_gb": 15 },                      <span class="c">   egress door</span>
+  "os":      { "name": "Ubuntu 26.04 LTS", "kernel": "7.0.0-29-generic" },
+  "runtime": { "node": "v22.23.2" },
+
+  "agents": {                                                   <span class="c">── the login-shell probe. installed is the ONLY</span>
+    "claude": { "installed": true,  "path": "~/.local/bin/claude" },  <span class="c">claim — never signed-in; accounts are</span>
+    "codex":  { "installed": true,  "path": "/usr/bin/codex" },       <span class="c">not inspected, by ruling</span>
+    "gemini": { "installed": false, "path": null },
+    "hermes": { "installed": false, "path": null }
+  },
+
+  "keys":  { "ANTHROPIC_API_KEY": false,           <span class="c">── the env scan. PRESENCE ONLY — the name is public,</span>
+             "OPENAI_API_KEY": false },            <span class="c">   the value is not, and no path from here reaches one</span>
+
+  "tools": { "gh": true, "tailscale": true, "chromium": false },      <span class="c">── host tools on PATH</span>
+
+  "ronin": { "release": null, "commit": "fcfe271", "dirty": true,     <span class="c">── the install itself: identity +</span>
+             "contract": 1, "started_at": "2026-08-18T07:58:11Z",     <span class="c">   the registered services roster</span>
+             "services": ["counting","gbrain","koe","koshi","michi","rireki"] },
+
+  "routes": { "url": "http://100.101.235.17:3006",                    <span class="c">── reach: where it answers, and to whom</span>
+              "reachable": { "loopback": false, "tailnet": true, "wider": false },
+              "auth": { "basic": false } }
+}</pre>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="tag">derived</span><h2>What follows — computed, never written</h2></div>
+
+  <div class="rec derived">
+    <div class="rec-hd"><span class="nm"><span class="prov">status</span> — every line a comparison you would otherwise make in your head</span><span class="life">registration &amp; configuration, never liveness</span></div>
+<pre>{
+  "owner_name": "glen3",                           <span class="c">typed is null, so the fallback is IN FORCE and visibly so</span>
+  "machine_name": "dohyo-unified",
+  "sessions": { "running": 9, "max": 10, "state": "9 of 10" },       <span class="c">the live count, against the cap</span>
+
+  "projects": [ { "name": "lab", "dir": "ok", "brain": "anthropic/opus" },
+                { "name": "gbrain", "dir": <span class="hot">"missing"</span>, "brain": "anthropic/opus" } ],
+                                                   <span class="c">one stat per root — the most common real breakage</span>
+
+  "routes":   [ { "what": "coworkspace", "at": "http://100.101.235.17:3006",
+                  "state": "answering", "exposure": "your tailnet only" } ],
+
+  "services": [ { "name": "gbrain", "state": "registered, disabled in settings" },
+                { "name": "koshi",  "state": "registered" } <span class="c">…</span> ],
+
+  "agents": {
+    "new_session": "no install default — per-project only",
+    "usable": ["claude", "codex"],
+    "koshi_monitor": <span class="hot">"pointed at openai — OPENAI_API_KEY not set"</span>
+  },                                               <span class="c">the line that earns the section: today this failure is</span>
+                                                   <span class="c">discovered when Koshi tries to answer and cannot</span>
+  "setup": "first run finished 2026-08-18T08:40:12Z",
+  "subscription": "free cowork — no entitlement recorded"
+}</pre>
+  </div>
+
+  <div class="rec derived">
+    <div class="rec-hd"><span class="nm"><span class="prov">needed</span> — needed − present · TO BUILD</span><span class="life">the reading-list view queries exactly this</span></div>
+<pre><span class="c">// Each askable leaf may declare requires; this family is that declaration judged</span>
+<span class="c">// against `found`. Unmet items render as tasks; met items do not exist.</span>
+[
+  { "leaf": "services", "needs": "the verified email",
+    "satisfied_when": "set.services.verified is not null",
+    "how": "click the link in the services email, paste the code",
+    "met": false }
+]</pre>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="tag">the map</span><h2>Every family: who writes it, who shows it</h2></div>
+  <p class="note">The bridge to code. S = the setup view · ⚙ = the standing view ·
+  新 = the reading list. A leaf's provenance decides its rendering in every view; no view
+  carries per-leaf knowledge that is not in the manifest.</p>
+  <div class="table-scroll">
+  <table>
+    <thead><tr><th>family</th><th>provenance</th><th>produced by</th><th>shown in</th></tr></thead>
+    <tbody>
+      <tr><td>owner.name</td><td>typed</td><td>PUT /api/owner</td><td class="v"><b>S ⚙</b></td></tr>
+      <tr><td>machine.name · where</td><td>typed</td><td>PUT /api/settei/machine</td><td class="v"><b>S ⚙</b></td></tr>
+      <tr><td>sessions.max</td><td>typed</td><td>PUT /api/session-max — shared with ⌂ Roster</td><td class="v"><b>S ⚙</b></td></tr>
+      <tr><td>projects</td><td>typed, referenced</td><td>catalogs store · POST /api/project-roots</td><td class="v"><b>S ⚙</b> (shown; edited in ▣)</td></tr>
+      <tr><td>agents.sessions.default</td><td>typed</td><td>PUT /api/settei/agents</td><td class="v"><b>S ⚙</b></td></tr>
+      <tr><td>agents.jobs</td><td>typed</td><td>PUT /api/settei/agents</td><td class="v"><b>S ⚙</b></td></tr>
+      <tr><td>gbrain.enabled</td><td>typed</td><td>PUT /api/settei/gbrain</td><td class="v"><b>S ⚙</b></td></tr>
+      <tr><td>services.*</td><td>typed</td><td>PUT /api/settei/services</td><td class="v"><b>S ⚙</b></td></tr>
+      <tr><td>setup.*</td><td>typed (by the system)</td><td>stampFreshInstall() · PUT /api/settei/setup</td><td class="v">admission rule for <b>S</b></td></tr>
+      <tr><td>machine &amp; os &amp; runtime</td><td>found</td><td>DMI · os-release · process</td><td class="v"><b>S ⚙</b> as facts</td></tr>
+      <tr><td>agents (installed)</td><td>found</td><td>the login-shell probe</td><td class="v"><b>S ⚙</b> · gates 新's offer</td></tr>
+      <tr><td>keys (presence)</td><td>found</td><td>the env scan — names, never values</td><td class="v"><b>⚙ 新</b></td></tr>
+      <tr><td>tools</td><td>found</td><td>PATH scan</td><td class="v"><b>⚙</b></td></tr>
+      <tr><td>ronin (identity · roster)</td><td>found</td><td>/api/version machinery</td><td class="v"><b>⚙</b></td></tr>
+      <tr><td>routes</td><td>found</td><td>bind + tailnet measurement</td><td class="v"><b>S ⚙</b></td></tr>
+      <tr><td>status.*</td><td>derived</td><td>computeStatus(set, observed)</td><td class="v"><b>⚙</b> as readouts</td></tr>
+      <tr><td>needed[] — TO BUILD</td><td>derived</td><td>requires(set) − found</td><td class="v"><b>⚙</b> beside its leaf · <b>新</b> as tasks</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="tag">the rules</span><h2>What the record promises</h2></div>
+  <ul class="rules">
+    <li><b>Only typed persists.</b> Found and derived are computed per read and carry
+      <code>observed_at</code>; a stored measurement is a lie waiting to happen.</li>
+    <li><b>Secrets are presence, never value</b> — <code>key_env</code> is a name,
+      <code>keys</code> is a boolean, and there is no path from this record to a value in
+      either direction.</li>
+    <li><b>A fallback in force is visible</b> — typed <code>null</code> beside derived
+      <code>"glen3"</code>, so a default is never passed off as an answer.</li>
+    <li><b>Absent means absent, never missing</b> — a CLI this machine could have reads
+      <code>installed: false</code>, not a dropped key; a section that predates its key
+      stays quiet.</li>
+    <li><b>Derived costs nothing to render</b> — registration and configuration, never
+      liveness; a record that spends an API call to draw itself is a record nobody opens
+      twice.</li>
+  </ul>
+</section>
+
+<footer>
+  <div class="stamp">Reference of the live record, plus the one family still to build
+  (needed[]). Values shown were measured on this machine, 2026-08-18.</div>
+  <div>the set · settei-architecture.html (the model) · setup-journey.html (the walk) ·
+  docs/settei.md · plans/ATARASHI.md</div>
+  <div>recut 2026-08-18 — from Part VI concept to the schema the code answers</div>
+</footer>
+
+</main>
+</body>
+</html>
