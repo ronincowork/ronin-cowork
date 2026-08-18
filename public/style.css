@@ -5338,4 +5338,25 @@ body {
   text-align: center;
 }
 
+/* the ⚙ offer — a real button in the room's own tokens: filled, hover-dark, cursor.
+   It was wearing .st-inp (an input's clothes) and read as a dead field. */
+.st-go {
+  background: var(--accent);
+  color: var(--on-accent);
+  border: 1px solid var(--accent-deep);
+  border-radius: 4px;
+  padding: 7px 16px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.st-go:hover {
+  background: var(--accent-deep);
+}
+.st-go:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 }

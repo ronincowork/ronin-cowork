@@ -323,7 +323,7 @@ export function buildSettei(root, isShowing) {
       const row = document.createElement('div');
       row.className = 'st-row';
       const go = button('start your setup session', {
-        cls: 'st-inp',
+        cls: 'st-go',
         onClick: async () => {
           go.disabled = true;
           const r = await request('/api/launch', {
