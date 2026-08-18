@@ -5324,4 +5324,18 @@ body {
   }
 }
 
+/* agent installations — the request column LEADS (owner, 2026-08-18): a tick asks
+   for it, ✓ means the box already has it. The hint line above the rows carries the
+   one teaching; the rows carry none. */
+.st-agent {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 156px) minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+}
+.st-agent .st-req {
+  color: var(--ok-2);
+  text-align: center;
+}
+
 }
