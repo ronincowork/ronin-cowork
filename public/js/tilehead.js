@@ -38,6 +38,17 @@
  *   drop     build me into the nearest preceding `hosts` control's menu instead of into
  *            the row. Everything else about the row is unchanged — the point is that the
  *            control is the SAME element wherever it is appended.
+ *   modal    this control raises a MODAL sheet (`ui.sheet`), so メ's drop stays UP behind
+ *            it. A `drop` row otherwise shuts the strip when clicked, so the panel it
+ *            raised is not covered — but a modal sheet holds the whole viewport behind a
+ *            scrim at a z-index far above the strip and CANNOT be covered by it. Closing
+ *            bought nothing there and cost the opener: a control inside a `display:none`
+ *            drop cannot take focus back when the sheet closes, so the keyboard fell to
+ *            `<body>` and the next Tab restarted the page (measured 2026-08-18; ui.js
+ *            `restore` now catches the general case, and this stops causing it). 📄 is the
+ *            counter-example, and the reason this is a column rather than a rule: the docs
+ *            pane is an in-tile surface the strip really would sit on top of, so 📄 still
+ *            closes the drop.
  *
  * The order of the rows IS the order on screen, `grow` and all, so reading the table is
  * reading the header left to right — and then, past メ, left to right inside its drop.
@@ -163,7 +174,7 @@ const HEADER = () => (rows ??= [
   { key: 'lockEl', cls: 'lock', text: '🔒', drop: true, help: lockedTitle,
     on: (t) => t.flipLock() },
 
-  { key: 'tagBtn', cls: 'tags', text: '🏷', drop: true, needs: 'session',
+  { key: 'tagBtn', cls: 'tags', text: '🏷', drop: true, modal: true, needs: 'session',
     help: 'Groups this session belongs to',
     quiet: 'Groups — no session in this tile yet',
     on: (t) => t.openTags(),
@@ -221,7 +232,7 @@ const HEADER = () => (rows ??= [
         : 'Docs — this session has listed none yet. An agent lists one with write_tegami --doc';
     } },
 
-  { key: 'noteBtn', cls: 'note', text: '📝', drop: true, needs: 'session',
+  { key: 'noteBtn', cls: 'note', text: '📝', drop: true, modal: true, needs: 'session',
     help: 'Session note (post-it)',
     quiet: 'Session note — no session in this tile yet',
     on: (t) => t.openNote(),
@@ -328,10 +339,15 @@ export function buildTileHead(tile) {
     // A control in the strip that OPENS something shuts the strip behind it, so the
     // panel it just raised is not covered by the drop it came out of. The INSTRUMENTS
     // (⛽ and 🎛 — the `holds` rows, whose value changes in place under your finger) leave
-    // it up, exactly as `tiledrop.js` gives the dial its 'stay' mode on the phone.
+    // it up, exactly as `tiledrop.js` gives the dial its 'stay' mode on the phone. So do
+    // the `modal` rows (🏷 and 📝), and for a reason that is the same sentence read the
+    // other way: their sheet is over a full-viewport scrim, so there is nothing for the
+    // strip to cover, and shutting it took the OPENER out of the document's flow —
+    // `ui.sheet` then had nowhere to hand the keyboard back to (2026-08-18; see the
+    // `modal` column in the header comment for the whole incident).
     // Skipped while the control is inert: you clicked a dimmed 🗑 to find out why, and
     // closing the drop under you is the opposite of an answer.
-    if (nest && !row.holds) {
+    if (nest && !row.holds && !row.modal) {
       node.addEventListener('click', () => !quietReason(row, tile) && host.close());
     }
     out[row.key] = made ?? node;

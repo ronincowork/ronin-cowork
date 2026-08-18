@@ -40,6 +40,15 @@
  * docs/ui.md still asks for it: `aria-haspopup` / `aria-expanded` on the opener, and
  * focus back on メ when the drop closes under the keyboard. That half of `popover()` was
  * about ACCESS and is not repealed by the half that was about `hidden`.
+ *
+ * THE FOCUS HALF WAS A DEAD LETTER UNTIL 2026-08-18, and worth recording because the line
+ * above read as if it worked. `close()` only hands focus to メ when focus is INSIDE the
+ * drop — and the two rows that raise a sheet used to shut the drop on the way out, so by
+ * the time anything came back the focus was in a sheet and the opener was hidden in a
+ * `display:none` strip that could not take it. Nobody saw it: the render gate was
+ * crashing before it got this far. 🏷 and 📝 are `modal` rows now (tilehead.js) and leave
+ * this drop UP behind their scrim, which is what finally gives that sentence something to
+ * be true about — and see the Escape listener below for the order the two layers unwind.
  */
 
 /**
@@ -148,6 +157,16 @@ export function buildTileMore() {
     'keydown',
     (e) => {
       if (e.key !== 'Escape' || !menu.classList.contains('open')) return;
+      // AND NOT WHILE A MODAL SHEET IS UP OVER IT. Since 2026-08-18 the two rows that
+      // raise a `ui.sheet` (🏷 and 📝) leave this drop OPEN behind their scrim — closing it
+      // hid their own opener and `ui.sheet` had nowhere to put the keyboard back
+      // (tilehead.js, the `modal` column). So this listener is now live at a moment it
+      // never used to be, and being a document CAPTURE listener it reaches Escape before
+      // the sheet does. Without this line the first Escape shut the drop out from under a
+      // sheet that stayed open — "Escape closes the topmost transient surface"
+      // (docs/ui.md) run exactly backwards. The sheet takes this press; the next one
+      // takes the drop, which is the order they are stacked on screen.
+      if (document.querySelector('.ui-sheet.open')) return;
       e.stopPropagation();
       close();
     },

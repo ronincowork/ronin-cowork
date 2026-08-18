@@ -297,9 +297,28 @@ the drop closes under the keyboard.
 
 Escape closes it, in the **capture** phase and only while it is open — so it beats a locked
 pane to the keystroke when the drop is up, and never takes Escape away from that pane when
-it is not. Clicking outside closes it; clicking a control inside closes it *if that control
-opens something*. The instruments (⛽ and 🎛, the `holds` rows whose value changes in place)
-leave it up, exactly as the phone gives the dial its `stay` mode.
+it is not — and **not while a modal sheet is up over it**, since that Escape belongs to the
+topmost surface and this listener would otherwise reach it first. Clicking outside closes
+it; clicking a control inside closes it *if that control raises something the strip could
+cover*. The instruments (⛽ and 🎛, the `holds` rows whose value changes in place) leave it
+up, exactly as the phone gives the dial its `stay` mode.
+
+**And so do 🏷 and 📝** — the `modal` rows, since 2026-08-18. Their sheet sits over a
+full-viewport scrim at a z-index far above the strip, so there was never anything for the
+strip to cover; closing it only hid their own opener, and a `display: none` button cannot
+take focus back when the sheet closes. Focus fell to `<body>` and the next Tab restarted
+the page. Leaving the drop up means the owner comes back to the exact control they left
+from, and 📄 is the counter-example that keeps this a per-row column rather than a rule:
+its docs pane is an in-tile surface the strip really would sit on top of, so 📄 still closes
+it. The primitive was hardened in the same pass (docs/ui.md) — this stops *causing* the
+failure, `ui.sheet` stops *hiding* it.
+
+A **click on the scrim** closes the drop as well, and that is the intended asymmetry
+rather than a leak: the scrim's click still reaches `document`, where it is an outside
+click for everything under it. The keyboard peels one layer per Escape (sheet, then drop);
+a pointer pressed on the scrim dismisses the stack it was pressed through. Measured
+2026-08-18 — Escape from 📝's sheet lands on 📝 with the drop still up, a backdrop click
+lands on メ with the drop closed, and neither lands on `<body>`.
 
 **Desktop only.** `collapseTileHead` hoists this header into the phone's app bar behind its
 *own* メ, snapshotting the header's children to restore later; a control nested one level
