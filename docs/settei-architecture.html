@@ -179,10 +179,12 @@
     views exist, and a new view is a new query, not new architecture.</figcaption>
   </figure>
 
-  <p class="note">The one field list behind all of it: <code>setup-fields.js</code>
-  declares every askable leaf once — label, teaching, where it lands. A view can never
-  know something the manifest doesn't say; that is what makes three renderers of one
-  schema safe.</p>
+  <p class="note">The one declaration behind all of it: every leaf is declared once —
+  label, teaching, where it lands — and no view may know a leaf the declaration does not
+  say; that is what makes three renderers of one schema safe. Today the declaration sits
+  client-side (<code>setup-fields.js</code>); the plan folds it into the door as
+  <b>the registry</b> and deletes the file, because the schema of the object is part of
+  the object.</p>
 </section>
 
 <section>
@@ -287,7 +289,7 @@
   <div class="stamp">Living drawing of the settei architecture — updated as the gaps
   close; the model is ruled, the reading-list view is not yet built.</div>
   <div>the set · settei-record.html (the object, leaf by leaf) · setup-journey.html (the walk)
-  · setup-additions.html (adding a leaf) · docs/settei.md · plans/ATARASHI.md</div>
+  · docs/settei.md · plans/ATARASHI.md</div>
   <div>recut 2026-08-18 — settei moved to the top, where it belonged</div>
 </footer>
 
