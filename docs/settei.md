@@ -132,9 +132,10 @@ A genuinely fresh install says so itself; nothing is ever inferred.
 
 ## The setup view
 
-`public/js/firstrun.js`, rendered over the field manifest (`public/js/setup-fields.js`
-— every askable leaf declared once; no view may know a field the manifest does not
-say). It asks in order, teaches as it asks, and ends. Setup is complete at Save — the
+`public/js/firstrun.js`. Every askable leaf is declared once and no view may know a
+field the declaration does not say — today that declaration is the client-side
+`public/js/setup-fields.js`; the plan folds it into the door as the registry, where the
+schema of the object belongs, and the file is deleted. It asks in order, teaches as it asks, and ends. Setup is complete at Save — the
 view is mechanical and needs no agent; a machine with no CLI on it is finished, not
 failing. The first project lands in the catalogs store via `POST /api/project-roots`,
 and the seeded `home` root guarantees a floor even if the view is skipped.

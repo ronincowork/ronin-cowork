@@ -219,10 +219,6 @@
 <pre><span class="c">// Each askable leaf may declare requires; this family is that declaration judged</span>
 <span class="c">// against `found`. Unmet items render as tasks; met items do not exist.</span>
 [
-  { "leaf": "gbrain", "needs": "an API key",
-    "satisfied_when": "keys.&lt;provider key&gt; is true",       <span class="c">which key is the owner's open ruling</span>
-    "how": "set it in .env; the operator applies it on restart",
-    "met": false },
   { "leaf": "services", "needs": "the verified email",
     "satisfied_when": "set.services.verified is not null",
     "how": "click the link in the services email, paste the code",
