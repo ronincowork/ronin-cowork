@@ -25,25 +25,31 @@ window), near-empty otherwise. Upstream's "markdown repo is the system of record
 describes their agent-lives-in-the-repo shape, not ours. Backup accordingly: `~/.gbrain`
 first, the cabinet with it — and the uninstall keeps both, and says so.
 
-## The two tools gbrain needs from outside itself — nailed down, 2026-08-18
+## What gbrain needs from outside itself — and what Ronin's use actually requires
 
-**gbrain alone is not a working brain.** It needs two models it does not carry, and the
-install story is only honest when both are named up front:
+gbrain carries no model of its own. What it needs depends on which of its two products
+you run, and **Ronin runs the first** (owner's ruling, 2026-08-18):
 
-| # | the tool | status on a Ronin install | without it (VERIFIED live on this box) |
-|---|---|---|---|
-| 1 | **an embedding model** | **SHIPPED — the Load button installs it** (koshi_weights: local llama.cpp + nomic-embed, zero egress) | search falls to keyword-only; concept questions under-return |
-| 2 | **a chat model** | **NOT shipped — a metered API key** (Anthropic/OpenAI/OpenRouter) in gbrain's own config; keyless is the shipped default | `think` answers "(no LLM available)"; `synthesize` errors outright; **`query` returns an EMPTY list silently** — the trap: it reads as "the brain knows nothing"; `extract_facts` extracts zero; every unattended pass (autopilot, Minion agent-turns, integration filing) is off |
+| the product | outside tools needed | Ronin's status |
+|---|---|---|
+| **A memory for agents** — agents file and retrieve over MCP; the agent composes answers from the chunks | **one: an embedding model** | **complete.** The Load button ships it (koshi_weights — local, zero egress). Nothing is missing and nothing else is needed |
+| **An autonomous brain** — gbrain thinks unattended: `think`/`synthesize`, scheduled enrichment, feeds filing themselves | the embedder PLUS **a chat model** | **not our product.** No key is configured, by ruling — not as a gap |
 
-**Subscriptions cannot stand in for #2.** A Claude Max or ChatGPT/Codex subscription
-authenticates the interactive CLIs, never raw API calls — gbrain cannot ride them. The
-keyless fallback IS the subscription path: the agent in the session does the thinking
-(`search` + its own judgment), which runs on the plan the owner already pays for. That
-is Ronin's shipped posture; the BYO-key field belongs to first-run (@system_setup /
-the atarashi carries the default).
+The reasoning, in the owner's words: agents are the only consumers Ronin has — gbrain is
+localhost-only and nothing but an agent's MCP registration can reach it. On the retrieval
+path gbrain hands found chunks over raw; the agent receiving them IS the LLM and does the
+thinking on the owner's subscription. A key would only buy gbrain the ability to think on
+its own, which nothing here asks of it.
 
-*(A third external exists and is ruled out: a hosted reranker (Voyage key). Search
-runs without it and nothing here offers it.)*
+**What keyless behavior looks like, verified live** (so nobody rediscovers it as a fault):
+`think` answers "(no LLM available)", `synthesize` errors honestly, **`query` returns an
+empty list silently — agents must use `search`, never `query`** (the SOP says so), and
+`extract_facts` extracts nothing. All expected; none of it is used in our shape.
+
+**If unattended feeds are ever ordered**, the chat-model question reopens — and even then
+a metered API key is not the only road: upstream ships a `claude-cli` chat recipe that
+routes gbrain's own calls through the local claude CLI on the owner's subscription
+(verified in the installed package). A decision for that day; nothing is pre-configured.
 
 ## What cowork ships — all of it generic
 
