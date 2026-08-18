@@ -97,6 +97,7 @@ known. `⚙` = edit it in the ⚙ Setup view unless another editor is named.
 |---|---|---|
 | the projects (name, dir, remit, per-project model) | **catalogs store** `PROJECT_ROOTS.md` | typed · ▣ Project root or by hand · settei reads by reference |
 | does a project's directory still exist | nowhere — one stat per read | derived · `status.projects[].dir` |
+| does a root have a repository, and where origin points | nowhere — one file read per root (`.git/config`) | derived · `status.projects[].repo` — measured, never recorded |
 | the owner's setup notes (`projNotes`) | **nowhere — the ask was deleted, not rehomed** | ruled extravaganza (owner, 2026-08-18); one registry row if the want ever returns |
 
 ### Models, agents, and keys

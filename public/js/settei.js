@@ -183,7 +183,7 @@ export function buildSettei(root, isShowing) {
     for (const p of set.projects) {
       const health = st.projects.find((x) => x.name === p.name);
       body.appendChild(obsRow(p.name, p.remit || p.dir,
-        health?.dir === 'missing' ? ` ✕ ${p.dir} is gone` : ` ${health?.brain ?? ''}`));
+        health?.dir === 'missing' ? ` ✕ ${p.dir} is gone` : ` ${health?.brain ?? ''}${health?.repo ? ` · ${health.repo}` : ''}`));
     }
     const link = document.createElement('div');
     link.className = 'st-row st-link';
@@ -220,13 +220,11 @@ export function buildSettei(root, isShowing) {
         a.installed ? (a.path ? ` ${a.path}` : '') : ` ${a.from ?? ''} — install it and it appears here`));
     }
 
-    /* services — the install's own, by name; no count, the names ARE the answer.
-       gbrain sits here with its fellows, its toggle being its row. */
+    /* services — Ronin Services is a BUNDLE (owner, 2026-08-18): installed or not,
+       one row, no roster recital. The per-socket detail stays in the record for any
+       reader that needs it; this room answers the owner's actual question. */
     group('services');
-    for (const svc of st.services) {
-      if (svc.name === 'gbrain') continue; // its toggle row below is its entry
-      body.appendChild(obsRow(svc.name, svc.state));
-    }
+    body.appendChild(obsRow('Ronin Services', observed.ronin.services.length ? '✓ installed' : 'not installed'));
     const gb = document.createElement('input');
     gb.type = 'checkbox';
     gb.className = 'st-check';

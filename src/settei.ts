@@ -377,9 +377,34 @@ async function computeStatus(
       } catch {
         dir = 'missing';
       }
+      // THE REPO IS MEASURED, NEVER RECORDED (owner asked 2026-08-18; the model rules
+      // the shape): whether a root has a repository and where origin points are facts
+      // the directory answers per read — a repo cloned tonight shows up tomorrow with
+      // no one editing a catalog, and a note in the roots file would be a stored
+      // measurement, lying the moment someone runs git clone. One file read per root
+      // (.git/config), no exec, no call out.
+      let repo = '—';
+      if (dir === 'ok') {
+        const cfg = await readTrimmed(path.join(p.dir, '.git', 'config'));
+        if (cfg !== null) {
+          const m = cfg.match(/\[remote "origin"\][^[]*?url\s*=\s*(\S+)/);
+          repo = m
+            ? m[1].replace(/^git@([^:/]+):/, '$1/').replace(/^[a-z+]+:\/\//, '').replace(/\.git$/, '')
+            : 'local repo — no remote';
+        } else {
+          try {
+            // a .git FILE is a worktree/submodule pointer — a repo, home elsewhere
+            await access(path.join(p.dir, '.git'));
+            repo = 'repo — worktree of another';
+          } catch {
+            repo = 'no repo';
+          }
+        }
+      }
       return {
         name: p.name,
         dir,
+        repo,
         brain: p.provider && p.model ? `${p.provider}/${p.model}` : 'none set — uses the install default',
       };
     }),
