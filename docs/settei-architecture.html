@@ -181,10 +181,10 @@
 
   <p class="note">The one declaration behind all of it: every leaf is declared once —
   label, teaching, where it lands — and no view may know a leaf the declaration does not
-  say; that is what makes three renderers of one schema safe. Today the declaration sits
-  client-side (<code>setup-fields.js</code>); the plan folds it into the door as
-  <b>the registry</b> and deletes the file, because the schema of the object is part of
-  the object.</p>
+  say; that is what makes three renderers of one schema safe. The declaration is
+  <b>the registry</b> (<code>src/settei-registry.ts</code>, pure data), served with
+  every answer as <code>schema</code>; the client-side field list is deleted, because
+  the schema of the object is part of the object.</p>
 </section>
 
 <section>
@@ -208,16 +208,16 @@
       logic.</p>
       <p><b>Rule made structural:</b> asked once means editable here forever. No leaf the
       setup view asked may render read-only here.</p>
-      <p class="state open">built · to move onto the manifest</p>
+      <p class="state built">built · renders from the registry</p>
     </div>
     <div class="view">
       <h3>新 the reading list</h3>
       <p class="pred">needed − present · task-shaped</p>
       <p><b>Reader:</b> a 新 Atarashi session, once an agent exists on the box. What the
-      owner's choices still need, minus what is observably there, plus the owner's own
-      words — read <b>live at seat start</b>. Nothing is composed at Save, so nothing can
-      be lost or go stale; the only real data is the owner's notes.</p>
-      <p class="state open">to build — with the derived requirements</p>
+      owner's choices still need, minus what is observably there — <code>needed[]</code>,
+      read <b>live at seat start</b> (the seat's shelf says so). Nothing is composed at
+      Save, so nothing can be lost or go stale.</p>
+      <p class="state built">built · the seat reads the door</p>
     </div>
   </div>
 </section>
@@ -276,18 +276,17 @@
 </section>
 
 <section>
-  <div class="sec-head"><span class="tag">to build</span><h2>What is not this picture yet</h2></div>
-  <p>Three gaps between the drawing and the tree, held in
-  <code>ronin-lab plans/ATARASHI.md</code>: the <b>derived "needed − present" leaves</b>
-  and the reading-list view that queries them; the <b>standing view rendered from the
-  manifest</b> (today it restates its rows by hand — the cap and Mika already drift);
-  and the setup view's <b>missing stylesheet</b>. Plus the one standing question that is
+  <div class="sec-head"><span class="tag">what remains</span><h2>What is not proved yet</h2></div>
+  <p>The tree now matches the drawing — registry, one write door, renderers,
+  <code>needed[]</code>, the live-read seat, the stylesheet. What remains is proof, held
+  in <code>ronin-lab plans/ATARASHI.md</code>: the owner's own eyes on both views, then
+  the whole walk on a box that is not ours. Plus the one standing question that is
   not this page's: where a typed credential could ever live (<code>KEYSTORE.md</code>).</p>
 </section>
 
 <footer>
-  <div class="stamp">Living drawing of the settei architecture — updated as the gaps
-  close; the model is ruled, the reading-list view is not yet built.</div>
+  <div class="stamp">Living drawing of the settei architecture — the model is ruled and
+  the tree matches it; what remains is the walk on a box that is not ours.</div>
   <div>the set · settei-record.html (the object, leaf by leaf) · setup-journey.html (the walk)
   · docs/settei.md · plans/ATARASHI.md</div>
   <div>recut 2026-08-18 — settei moved to the top, where it belonged</div>

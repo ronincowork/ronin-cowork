@@ -11,6 +11,11 @@
 # Read-only, and it never prints a credential — BY SELECTION, not because the file has
 # none: `ronin.json` now carries the login record (auth + passkeys), so this tool prints
 # only the named fields below and the file is never served or echoed whole, by anything.
+#
+# THE LOCAL FILE READ IS BLESSED HERE (ruling, 2026-08-18). Doctrine says surfaces
+# convert the one door (`GET /api/settei`) and bash reads the bus; this tool reads the
+# file directly because it must answer on a box whose operator is not running — the
+# exact moment an account question gets asked. Named keys only, never the document.
 set -u
 
 STORE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../bin" && pwd)/ronin-store"
@@ -49,8 +54,14 @@ else:
     # person. A fallback is not an answer — it is the absence of one, wearing a name.
     row("owner name", f"NOT SET — falling back to the OS username ({os.environ.get('USER','?')})")
 
-ent = cfg.get("entitlement") or cfg.get("entitlement_id")
-row("entitlement", f"{ent}  (services install)" if ent else "none recorded — a free cowork install")
+# The services section is where PUT /api/settei/services lands it — the old top-level
+# spellings never held anything and read as absence on every install.
+svc = cfg.get("services") or {}
+ent = svc.get("entitlement")
+if ent:
+    row("entitlement", f"{ent}  (" + ("verified " + svc["verified"] if svc.get("verified") else "recorded, not yet verified") + ")")
+else:
+    row("entitlement", "none recorded — a free cowork install")
 
 mx = (cfg.get("sessions") or {}).get("max")
 row("session max", mx if mx is not None else "not set — the built-in default applies")

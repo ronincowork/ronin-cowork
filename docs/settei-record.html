@@ -101,10 +101,11 @@
     <span><span class="chip d"></span> derived — follows from the other two · computed away</span>
   </div>
   <p class="note">In code: <code>set</code> / <code>observed</code> / <code>status</code>
-  on <code>GET /api/settei</code> (<code>src/settei.ts</code>), plus the
-  <code>needed</code> family still to build. One call, one answer, no writes. No route
-  serves the underlying file — <code>ronin.json</code> also holds the token-signing
-  secret, so the record is assembled from named keys, never the document.</p>
+  / <code>needed</code> / <code>schema</code> on <code>GET /api/settei</code>
+  (<code>src/settei.ts</code>; the registry in <code>src/settei-registry.ts</code>).
+  One call, one answer, no writes. No route serves the underlying file —
+  <code>ronin.json</code> also holds the token-signing secret, so the record is
+  assembled from named keys, never the document.</p>
 </section>
 
 <section>
@@ -215,14 +216,12 @@
   </div>
 
   <div class="rec derived">
-    <div class="rec-hd"><span class="nm"><span class="prov">needed</span> — needed − present · TO BUILD</span><span class="life">the reading-list view queries exactly this</span></div>
-<pre><span class="c">// Each askable leaf may declare requires; this family is that declaration judged</span>
-<span class="c">// against `found`. Unmet items render as tasks; met items do not exist.</span>
+    <div class="rec-hd"><span class="nm"><span class="prov">needed</span> — needed − present</span><span class="life">the ⚙ rows and the seat's reading list render exactly this</span></div>
+<pre><span class="c">// The registry's requires, judged against `found` per read. Unmet items render as</span>
+<span class="c">// tasks; met items DO NOT EXIST — satisfying one clears it with no write anywhere.</span>
 [
   { "leaf": "services", "needs": "the verified email",
-    "satisfied_when": "set.services.verified is not null",
-    "how": "click the link in the services email, paste the code",
-    "met": false }
+    "how": "click the link in the services email, paste the code" }
 ]</pre>
   </div>
 </section>
@@ -252,7 +251,7 @@
       <tr><td>ronin (identity · roster)</td><td>found</td><td>/api/version machinery</td><td class="v"><b>⚙</b></td></tr>
       <tr><td>routes</td><td>found</td><td>bind + tailnet measurement</td><td class="v"><b>S ⚙</b></td></tr>
       <tr><td>status.*</td><td>derived</td><td>computeStatus(set, observed)</td><td class="v"><b>⚙</b> as readouts</td></tr>
-      <tr><td>needed[] — TO BUILD</td><td>derived</td><td>requires(set) − found</td><td class="v"><b>⚙</b> beside its leaf · <b>新</b> as tasks</td></tr>
+      <tr><td>needed[]</td><td>derived</td><td>the registry's requires, judged per read</td><td class="v"><b>⚙</b> beside its leaf · <b>新</b> as tasks</td></tr>
     </tbody>
   </table>
   </div>
@@ -278,8 +277,8 @@
 </section>
 
 <footer>
-  <div class="stamp">Reference of the live record, plus the one family still to build
-  (needed[]). Values shown were measured on this machine, 2026-08-18.</div>
+  <div class="stamp">Reference of the live record, all five parts of the answer.
+  Values shown were measured on this machine, 2026-08-18.</div>
   <div>the set · settei-architecture.html (the model) · setup-journey.html (the walk) ·
   docs/settei.md · plans/ATARASHI.md</div>
   <div>recut 2026-08-18 — from Part VI concept to the schema the code answers</div>
