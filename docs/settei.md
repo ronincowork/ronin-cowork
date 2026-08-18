@@ -43,6 +43,81 @@ And one thing that is the reverse of a source: **the tmux bus** (`@ronin-owner`,
 zero-dependency bash tools can read one value without a JSON parser. Copies, never
 homes.
 
+## The index — if you are looking for it, this is where it is
+
+The same ledger, flipped to the seeker's direction: every fact, its home, and how it is
+known. `⚙` = edit it in the ⚙ Setup view unless another editor is named.
+
+### Who and what this install is
+
+| Looking for | It lives | Known / edited |
+|---|---|---|
+| the owner's name | `ronin.json` `owner.name` | typed · `PUT /api/owner` · ⚙ |
+| what the machine is called | `ronin.json` `machine.name` | typed · ⚙ |
+| where the machine is | `ronin.json` `machine.where` | typed, free text by ruling · ⚙ |
+| the effective name/machine (fallbacks applied) | nowhere — derived in the answer | `status.owner_name`, `status.machine_name` |
+| has first run happened | `ronin.json` `setup` | typed by the system: stamped at birth, cleared by Save |
+
+### Capacity and sessions
+
+| Looking for | It lives | Known / edited |
+|---|---|---|
+| the session cap | `ronin.json` `sessions.max` | typed · one route shared by ⚙ and ⌂ Roster |
+| how many sessions are running now | nowhere — counted live | derived · `status.sessions` |
+
+### Projects and the work
+
+| Looking for | It lives | Known / edited |
+|---|---|---|
+| the projects (name, dir, remit, per-project model) | **catalogs store** `PROJECT_ROOTS.md` | typed · ▣ Project root or by hand · settei reads by reference |
+| does a project's directory still exist | nowhere — one stat per read | derived · `status.projects[].dir` |
+| the owner's setup notes (`projNotes`) | **nowhere today — vanishes on an agent-less Save** | plan leg 2 makes it a typed leaf |
+
+### Models, agents, and keys
+
+| Looking for | It lives | Known / edited |
+|---|---|---|
+| the default for new sessions | `ronin.json` `agents.sessions.default` | typed · ⚙ |
+| which model answers Mika / a house job | `ronin.json` `agents.jobs.<name>` | typed · ⚙ (koshi jobs point in 目) |
+| the env-var **name** a job bills through | `ronin.json` `agents.jobs.<name>.key_env` | typed — a name is a setting |
+| which CLIs are installed, and where | nowhere — login-shell probe per read | found · `observed.agents` |
+| is a given key **set** | nowhere — env scan per read | found · `observed.keys` · presence only |
+| **which names the scan checks** | **hardcoded in `src/settei.ts` today** | dissolves into the manifest's `requires` at plan leg 1 |
+| a key's **value** | **`.env` — only there** | never enters settei in either direction |
+| the launch table (providers × models) | stock catalogs `PROJECT_ROOTS.md` | data, never a code path |
+
+### Services and the deal
+
+| Looking for | It lives | Known / edited |
+|---|---|---|
+| the entitlement id, email, terms | `ronin.json` `services` | typed · pasted code, recorded never verified · ⚙ |
+| gbrain on or off | `ronin.json` `gbrain.enabled` | typed · ⚙ |
+| which services are registered | nowhere — the install's roster per read | found · `observed.ronin.services` |
+| what a selection still needs | nowhere — `needed[]`, to build | derived · plan leg 1 |
+
+### The machine and the install
+
+| Looking for | It lives | Known / edited |
+|---|---|---|
+| hardware, virtualization, cores, RAM | nowhere — DMI + os per read | found · `observed.machine` |
+| OS, kernel, node | nowhere — read per request | found · `observed.os` / `.runtime` |
+| host tools (gh, tailscale, chromium) | nowhere — PATH scan per read | found · `observed.tools` |
+| release, commit, contract, started | nowhere — the install answers | found · `observed.ronin` |
+| the URL, and who can reach it | nowhere — measured per read | found + derived · `observed.routes`, `status.routes[].exposure` |
+
+### Near settei, but not settei
+
+| Looking for | It lives | Note |
+|---|---|---|
+| the login password, the token-signing secret | `ronin.json` `auth` | **not settei** — same file, different tenant; never rendered |
+| passkeys | `ronin.json` `passkeys` | not settei · ⚙ System |
+| koshi outlet wiring | `ronin.json` `koshi` | edited in 目; settei shows the resolved job lines |
+| knobs — `PORT`, `BIND`, `TMUX_*` | `.env` + the unit | inert until operator restart; shown read-only if shown |
+| hotwords, saved launches, session jobs | catalogs store | the owner's recipes — authored, not set |
+| the boot shelf | `session_boot` store | what a session reads at birth; no UI today |
+| theme, layout | browser `localStorage` | device state, honestly per-device |
+| keypad bindings | browser `localStorage` | **ruled settei, stranded — known defect** |
+
 ## The birth key
 
 A genuinely fresh install says so itself; nothing is ever inferred.
