@@ -131,11 +131,36 @@ function tmux(args, quiet = true) {
   } catch { return null; }
 }
 
+/** Why the probe could not be created, in the words of whatever refused it. */
+let probeRefusal = null;
+
 function startProbe() {
   tmux(['kill-session', '-t', `=${PROBE}`]);
   // -d so it is never attached here; a plain shell is enough to paint.
-  if (tmux(['new-session', '-d', '-s', PROBE, '-x', '120', '-y', '40']) === null) return false;
+  //
+  // STDERR IS KEPT for this one call, unlike every other tmux() here. Whatever refused the
+  // session — the box's session max (libexec/ronin-may-spawn), a dial, a dead server — is
+  // the only account of why the whole gate is about to stop, and throwing it away is how
+  // "is the tmux server up?" came to be printed at a server that was up (2026-08-17). The
+  // call site prints this verbatim rather than guessing.
+  try {
+    execFileSync('tmux', ['new-session', '-d', '-s', PROBE, '-x', '120', '-y', '40'],
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  } catch (e) {
+    probeRefusal = String(e?.stderr ?? '').trim() || `tmux new-session failed: ${e?.message ?? e}`;
+    return false;
+  }
   // Hidden from the owner's eye the way viewers are, and never writable by an agent.
+  //
+  // THIS LINE DOES NOT LAND whenever bin/shim is on the caller's PATH, which is how anyone
+  // on this box runs the gate (measured 2026-08-18): the shim refuses every @ronin-control
+  // write with "dial flips are owner-only", exit 4, and tmux() swallows it. Left as it is
+  // rather than routed around /usr/bin/tmux — that is exactly the deliberate, visible act
+  // the shim exists to make you take — and note that it would BREAK this gate if it worked:
+  // with the dial at `user` the shim would then refuse the gate's OWN send-keys below and
+  // the pane would never paint. So the probe is a plain session wearing the note on the
+  // next line, and this is the record of why. Making it genuinely owner-only is a change to
+  // Ronin's own session creation, not a bypass in a test script.
   tmux(['set-option', '-t', PROBE, '@ronin-control', 'user']);
   tmux(['set-option', '-t', PROBE, '@ronin_note', 'throwaway — the render gate, killed when it finishes']);
   for (let i = 0; i < 30; i++) tmux(['send-keys', '-t', PROBE, `echo ${BANNER} ${i}`, 'Enter']);
@@ -269,8 +294,26 @@ async function checkJourneys(page, label, jsErrors) {
           } else bad(`${label}: gbrain integration did not hand off to the New Session form`);
           // The handoff deliberately changes the shared launcher's mode and form.
           // Reload so this probe cannot alter the later launch-validation premise.
-          await page.reload();
+          //
+          // AND THEN WAIT FOR THE BOOT TO FINISH, exactly as runPass waits after its own
+          // goto. `reload()` alone resolves on `load`, which is long before this page is
+          // usable (2026-08-18). main.js's init awaits fetchSessions() and only THEN runs
+          // `guard('reattach saved sessions')`, whose `tile.connect()` calls `hideHome()`
+          // (tile.js) — so on a busy box that step lands a second or two after the reload
+          // and SHUTS whatever panel has been opened in the meantime. Caught by stack trace
+          // rather than by argument: the tab-strip probe below opened the Commons, pressed
+          // Enter, watched the right room land, and then had the panel closed under it
+          // ~250ms later from main.js:81. It failed about two runs in five and blamed the
+          // tablist every time — the same shape of lie as the System-sheet cascade above.
+          //
+          // THE RACE IS THE PRODUCT'S, NOT THIS SCRIPT'S, and waiting here does not repeal
+          // it: a person who presses ⛩ while the page is still booting has the Commons
+          // taken away from them too. Reported to the owner 2026-08-18; if it is fixed, the
+          // probe for it belongs here as its own journey, not as a fault this one absorbs.
+          // What the wait buys is that the journeys below test what they say they test.
+          await page.reload({ waitUntil: 'networkidle' });
           await page.waitForSelector('.tile');
+          await page.waitForTimeout(3000);
         } else bad(`${label}: gbrain listed no available integration action`);
       } catch {
         bad(`${label}: gbrain service room did not load its status`);
@@ -317,23 +360,74 @@ async function checkJourneys(page, label, jsErrors) {
 
   // 4 — the Commons strip is a real tablist: arrows move focus along it, Enter lands
   // the focused room. (Activation stays deliberate — focus alone must not open a room.)
-  await page.evaluate(() => {
-    const t = document.querySelector('.tile.active .tile-head button.menu');
-    t?.click(); // メ — bring the Commons up so the strip is on screen
-  });
-  await page.waitForTimeout(200);
-  await page.evaluate(() => document.querySelector('.tile.active .home-tabrow [aria-selected="true"]')?.focus());
-  await page.keyboard.press('ArrowRight');
-  const arrowed = await page.evaluate(() => document.activeElement?.dataset?.pane);
-  await page.keyboard.press('Enter');
-  await page.waitForTimeout(200);
-  const landed = await page.evaluate(() => document.querySelector('.home.show')?.dataset.pane);
-  if (arrowed && landed === arrowed) ok(`${label}: tab strip: ArrowRight moves focus, Enter lands the room (${landed})`);
-  else bad(`${label}: tab strip keyboard broken — focus on "${arrowed}", landed "${landed}"`);
-  await page.evaluate(() => {
-    const t = document.querySelector('.tile.active .home-tabrow [data-pane="sessions"]');
-    t?.click();
-  });
+  //
+  // ONE NAMED TILE, never `.tile.active` (2026-08-18). This probe used to aim its clicks at
+  // `.tile.active …` and read its answer from an UNSCOPED `document.querySelector('.home
+  // .show')`, and both name a tile the probe never chose. `.active` is set by focusin
+  // (tile.js `activate`) and the gbrain journey above RELOADS the page, so from the day
+  // gbrain registered on this box NO tile carried `.active` by the time this ran. Every
+  // `?.` then no-oped in silence: the Commons never opened, focus was still on #sysbtn
+  // where the System sheet's Escape had just put it back, ArrowRight moved nothing, and
+  // `arrowed` read `undefined`. `landed` still said "sessions" — the unscoped read found
+  // tile 2's own home panel, because a SESSIONLESS tile shows one — so the sentence "focus
+  // on undefined, landed sessions" described a pane no key had touched. It was called
+  // intermittent for a day because it tracked whether anything had happened to focus a
+  // tile, not whether the tablist worked.
+  //
+  // Then the Enter landed on #sysbtn and REOPENED the System sheet, and the note journey
+  // below died thirty seconds later on `#syssheet intercepts pointer events`, taking the
+  // whole run with it. One stranded focus, two unrelated-looking failures, the second fatal
+  // and the second the one everybody read. So the keys are pressed ONLY once focus is
+  // PROVEN to sit on a tab: a probe that cannot reach its subject says so and stops, rather
+  // than typing into whatever happened to be focused.
+  const tile1 = page.locator('.tile').first();
+  // A KNOWN STARTING STATE FIRST, and it is a PRECONDITION rather than an assertion — the
+  // subject here is the tablist, not the panel's arrival. ⛩ TOGGLES since 2026-08-17
+  // (tile.js `toggleHome`), so pressing it blind is only safe once the panel is known to be
+  // down. Measured 2026-08-18: the gbrain journey above reloads the page and tile 1 spends a
+  // moment SESSIONLESS, and a sessionless tile shows its own home panel — so on some runs
+  // the strip was already up with an arbitrary tab selected and ArrowRight wrapped off the
+  // end of it. Waiting for the panel to be DOWN makes ⛩ mean "open" every time and pins the
+  // selected tab to ⌂ Roster, which is what makes the arrow's answer predictable. (It is
+  // also the point at which boot's reattach has landed — see the note on that reload, and
+  // do not shorten this wait without reading it.)
+  const settled = await tile1
+    .locator('.home.show').first().waitFor({ state: 'hidden', timeout: 10_000 })
+    .then(() => true, () => false);
+  if (!settled) {
+    bad(`${label}: tile 1 never settled back onto its session — the tab strip had no known starting state`);
+  } else {
+    // ⛩ is the Commons and stayed in the header row; メ (.tmore-btn) is the drop beside it.
+    // They are not interchangeable, whatever the comment that used to sit here said.
+    await tile1.locator('.tile-head button.menu').click();
+    const onTab = tile1.locator('.home.show .home-tabrow [aria-selected="true"]').first();
+    let focused = false;
+    try {
+      await onTab.waitFor({ timeout: 3000 });
+      focused = await onTab.evaluate((el) => (el.focus(), document.activeElement === el));
+    } catch { /* focused stays false, and is reported rather than typed through */ }
+    if (!focused) {
+      bad(`${label}: ⛩ never raised the Commons strip over the first tile — the tablist was unreachable`);
+    } else {
+      await page.keyboard.press('ArrowRight');
+      const arrowed = await page.evaluate(() => document.activeElement?.dataset?.pane);
+      await page.keyboard.press('Enter');
+      await page.waitForTimeout(200);
+      // THIS tile's pane, not the document's first — see the scoping note above. Read
+      // through evaluate and not `locator(...).getAttribute()`: a locator READ BLOCKS for
+      // the full 30s timeout when the panel is not there, and on 2026-08-18 that turned a
+      // probe that should have said "landed null" into another whole-run crash. A journey
+      // asking "what happened" must be able to answer "nothing" immediately.
+      const landed = await tile1.evaluate((t) => t.querySelector('.home.show')?.dataset.pane ?? null);
+      if (arrowed && landed === arrowed) ok(`${label}: tab strip: ArrowRight moves focus, Enter lands the room (${landed})`);
+      else bad(`${label}: tab strip keyboard broken — focus on "${arrowed}", landed "${landed}"`);
+      // CLEANUP, so it is best-effort and must not be able to block. A locator click waits
+      // the full 30s for an element that is not coming and takes the whole run down with
+      // it; putting the strip back where the next probe expects it is housekeeping, and
+      // housekeeping that can fail the gate is a second failure mode for no assertion.
+      await tile1.evaluate((t) => t.querySelector('.home.show .home-tabrow [data-pane="sessions"]')?.click());
+    }
+  }
 
   // 5 — the note sheet keeps the ui.sheet contract: opens from the tile head, focus
   // enters, Escape closes and gives focus back to the opener.
@@ -546,9 +640,43 @@ async function runPass({ label, browser, contextOpts }) {
 console.log(`\nRENDERING smoke test → ${URL_}\n`);
 
 // The gate's own pane. Live sessions are never touched — see attachProbe.
-if (!startProbe()) bad('could not create the gate probe session (is the tmux server up?)');
+//
+// CLEANUP IS ARMED BEFORE THE PROBE EXISTS, and covers every way this process can end
+// (2026-08-18). `exit` already caught the ordinary paths — including an uncaught
+// TimeoutError out of a journey, which is the way this gate usually dies — but NOTHING
+// caught a signal other than SIGINT, and a run stopped by a harness timeout, a closed
+// terminal or a plain `kill` dies on SIGTERM/SIGHUP with `exit` never firing. That is how a
+// `gate_probe_*` outlives its run and turns up in the owner's roster. It also RATCHETS: on
+// a box at its session max one orphan is the difference between the next run getting a
+// probe and being refused one. stopProbe is idempotent — killing a session that is not
+// there is a no-op — so arming it a line early costs nothing and closes the window where a
+// crash between create and arm would leak.
 process.on('exit', stopProbe);
-process.on('SIGINT', () => { stopProbe(); process.exit(130); });
+// No stopProbe() in here on purpose: process.exit() fires the `exit` handler above, and
+// cleanup living in exactly one place is what makes "unconditional" checkable.
+for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
+  process.on(sig, () => process.exit(sig === 'SIGINT' ? 130 : 143));
+}
+if (!startProbe()) {
+  // WHAT REFUSED IT, IN ITS OWN WORDS, AND THEN STOP. This used to say "could not create
+  // the gate probe session (is the tmux server up?)" and carry on running every probe
+  // below. Both halves were wrong on 2026-08-17: the tmux server was up, the box was at its
+  // session max, and ronin-may-spawn says so explicitly — but the text was a guess and it
+  // sent people hunting for a fault in the tree. With no probe session there is nothing for
+  // attachProbe to attach, so the tile stays empty, every control that `needs: 'session'`
+  // is correctly inert, and the journeys below time out clicking disabled buttons. Twenty
+  // failures describing a cause that is not the UI is worse than none.
+  //
+  // Exit 1, not the exit 2 "I could not look" a missing browser gets. A box with no browser
+  // is a fact about the machine and an honest SKIP; a box that will not give this gate a
+  // session is a state a person has to change — and a leaked probe holding the last slot
+  // must never be able to make the render gate quietly skip itself for good.
+  console.error(
+    '\nFAIL: the gate could not create its own probe session, so it never looked at the page.' +
+    '\nWhat refused it:\n\n' + String(probeRefusal).replace(/^/gm, '  ') + '\n',
+  );
+  process.exit(1);
+}
 
 // ---- desktop ----
 // EXIT 2 IS "I COULD NOT LOOK", and a browser that will not start is that, not a broken
