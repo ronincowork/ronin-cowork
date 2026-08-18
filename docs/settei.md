@@ -6,7 +6,8 @@
 > Companions: `docs/settei-architecture.html` (the model, drawn),
 > `docs/settei-record.html` (the object, leaf by leaf), `docs/install.md` (the door in),
 > `docs/user-config.md` (`ronin.json`'s contract), `docs/env.md` (`.env`'s contract —
-> knobs and secrets). What remains to build is `ronin-lab plans/ATARASHI.md`.
+> knobs and secrets), `docs/wanted-needed.md` (the two lists — intent and arithmetic).
+> What remains to build is `ronin-lab plans/ATARASHI.md`.
 
 ## The one door
 
