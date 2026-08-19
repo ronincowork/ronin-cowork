@@ -27,6 +27,40 @@ restyle a primitive's hooks (`.ui-*`, `#toast`, `.helpbox`) or shadow a foundati
 token" is `check-css`'s to enforce (checks 4–5), not the cascade's. Splitting layers
 into files is a mechanical move for the day a layer earns one.
 
+## The look is spelled once — all of it
+
+**Editing `@layer foundations` re-skins the whole app.** That is the promise (owner,
+2026-08-19: *"if someone wanted to change how their co-work space looked entirely, they
+could just change everything by giving a simple instruction to update the design tokens"*),
+and it only holds while nothing carrying look is spelled anywhere else — so
+`scripts/check-css.mjs` gates every family, not just colour. A raw `8px` radius in a
+feature rule is the same defect as a raw `#131826`.
+
+The census that prompted this (2026-08-19): **eleven** border-radius values, **twelve**
+font-sizes including 10.5/11.5/12.5px, spacing on nearly every integer from 1 to 18, and
+**seven** font stacks doing the work of three roles. An agent could not get a colour wrong
+and could not get a radius right.
+
+| Family | Tokens | What it governs |
+|---|---|---|
+| shape | `--radius-hair/xs/sm/md/lg/xl` + `--radius-pill` `--radius-round` | corners. `md` unless you have a reason. `pill`/`round` are shapes, so squaring the app leaves a dot a dot |
+| space | `--space-1` … `--space-12` (2px ladder) | padding, margin, gap. `--space-4` (8px) is the house default |
+| type | `--text-1` … `--text-10`, `--text-micro` | `--text-3` (12px) is this app's body, not a caption — Ronin is dense on purpose |
+| voice | `--font-ui` `--font-mono` `--font-term` | **three roles, not two.** `--font-term` is what xterm renders (`js/termview.js` reads it via `termFace()`), and the tape, composer and jump button must match it glyph-for-glyph or a wrapped line stops lining up |
+| edge | `--edge` `--edge-2` | border widths — a heavier-lined theme is one edit, not four hundred |
+| motion | `--motion-quick/settle/slow/hint`, `--ease` `--ease-out` | four speeds; nothing animates for decoration |
+| elevation | `--scrim` `--shadow-menu` `--shadow-sheet` | |
+
+These are **theme-independent** and defined once: a square corner is square in both shells.
+Only the colour roles are redefined under `:root[data-theme='light']`.
+
+**The escape hatch costs you a name.** A one-off MEASUREMENT is not a rung and must not
+become one — `--tape-clearance` (the composer's height, so the last transcript line is not
+hidden), `--ptr-len`/`--ptr-wide` (the dial needle's geometry, three numbers that must move
+together), `--fr-gutter` (first-load is a document, not the app grid). A `--name:` line is
+the one legal home for a raw value, so naming it satisfies the gate *and* says what the
+number is. `0` is always legal: the absence of a value is not a value.
+
 ## Colour
 
 Colour is spelled once, in tokens, and `scripts/check-css.mjs` fails the build on a raw

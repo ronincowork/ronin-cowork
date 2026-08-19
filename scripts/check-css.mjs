@@ -33,7 +33,22 @@
  *      card (`.ns-card`), never the primitive's hooks.
  *   5. THE APP LAYER DOES NOT REDEFINE A FOUNDATION TOKEN — feature-scoped tokens
  *      (`--k-*`, the gauge's `--g1..3`) are legal; shadowing `--bg` is not.
- *   6. THE CONTRAST FLOOR HOLDS, BOTH THEMES — WCAG ratios computed from the token
+ *   6. THE LOOK IS SPELLED ONCE, not just the colour. Same rule as check 1, widened on
+ *      2026-08-19 to the families that carry the look: `border-radius`, `font-size`,
+ *      `font`/`font-family`, spacing (`padding`/`margin`/`gap`), border widths and
+ *      transition/animation timing. The census that prompted it found eleven radii,
+ *      twelve font-sizes including half-pixels, spacing on nearly every integer 1–18,
+ *      and SEVEN font stacks doing the work of three roles.
+ *
+ *      WHY A GATE AND NOT A STYLE GUIDE. The owner's ask is that editing the token block
+ *      re-skins the whole app — "change everything by giving a simple instruction to
+ *      update the design tokens". That is only true while nothing carrying look is
+ *      spelled anywhere else, and a rule nothing enforces is a rule that decays with the
+ *      next feature. `0` is always legal (the absence of a value is not a value), and a
+ *      one-off MEASUREMENT is legal once it is named — `--tape-clearance`, `--ptr-len`,
+ *      `--fr-gutter` — because a `--name:` line is the one legal home for a raw value.
+ *      That is the escape hatch, and it costs you a name and a reason.
+ *   7. THE CONTRAST FLOOR HOLDS, BOTH THEMES — WCAG ratios computed from the token
  *      definitions themselves. Floors are set from the measured 2026-08-16 palette
  *      (weakest passing pair, small margin) so a regression fails while the current
  *      look stands. `--dim` is excluded on purpose: it is the zero-state colour,
@@ -84,6 +99,29 @@ lines.forEach((line, i) => {
     if (NAMED.test(v) && !/transparent|currentColor|inherit|none/.test(v)) {
       problems.push(`style.css:${i + 1} named colour outside a token definition: ${line.trim()}`);
     }
+  }
+});
+
+// --- 6. the look is spelled once: shape, space, type, voice, edge, motion ---
+// Same shape as check 1 — a raw value is legal only on a `--token:` line. Kept high-precision:
+// only these properties, only bare px/ms literals, and `0` always passes.
+const LOOK = [
+  [/^\s*border-radius\s*:/, /(?<![\w.-])\d+(?:\.\d+)?px\b/, 'radius', '--radius-*'],
+  [/^\s*font-size\s*:/, /(?<![\w.-])\d+(?:\.\d+)?px\b/, 'font-size', '--text-*'],
+  [/^\s*(?:padding|margin|gap|row-gap|column-gap)(?:-[\w-]+)?\s*:/, /(?<![\w.-])\d+(?:\.\d+)?px\b/, 'spacing', '--space-*'],
+  [/^\s*border(?:-(?:top|right|bottom|left|block|inline)(?:-\w+)?)?(?:-width)?\s*:/, /(?<![\w.-])\d+(?:\.\d+)?px\b/, 'border width', '--edge / --edge-2'],
+  [/^\s*(?:transition|animation)(?:-duration)?\s*:/, /(?<![\w.-])[\d.]+m?s\b/, 'motion', '--motion-*'],
+  [/^\s*font(?:-family)?\s*:/, /\b(?:Menlo|Consolas|Roboto|ui-monospace|system-ui|-apple-system|BlinkMacSystemFont|"Segoe UI"|'Segoe UI'|DejaVu)\b/, 'font stack', '--font-ui / --font-mono / --font-term'],
+];
+lines.forEach((line, i) => {
+  if (/^\s*--[\w-]+\s*:/.test(line)) return; // a token definition — the one legal home
+  for (const [prop, raw, what, use] of LOOK) {
+    if (!prop.test(line)) continue;
+    const value = line.slice(line.indexOf(':') + 1);
+    if (raw.test(value)) {
+      problems.push(`style.css:${i + 1} raw ${what} outside a token definition — use ${use}: ${line.trim()}`);
+    }
+    break;
   }
 });
 

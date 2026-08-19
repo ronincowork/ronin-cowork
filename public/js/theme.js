@@ -44,6 +44,26 @@ export const resolvedTheme = (choice = currentTheme()) =>
  * again on a theme flip — cheap (one getComputedStyle), and it CANNOT disagree with
  * the stylesheet, which is the whole point.
  */
+/**
+ * THE TERMINAL'S FACE, read from the stylesheet like its palette (2026-08-19).
+ *
+ * `fontFamily` was spelled a second time in js/termview.js, three inches under a comment
+ * saying the palette is spelled once in CSS and xterm reads that spelling. The face was
+ * the exception, and an exception in a one-source-of-truth rule is where the drift starts:
+ * the tape, the composer and the jump button all have to match this stack glyph-for-glyph
+ * or a wrapped line stops lining up with the terminal above it, and there were already
+ * three mono stacks in the file doing the work of two roles. Now `--font-term` is the
+ * spelling and everyone reads it — including the re-skin that changes it.
+ */
+export function termFace() {
+  const cs = getComputedStyle(document.documentElement);
+  return {
+    fontFamily: cs.getPropertyValue('--font-term').trim(),
+    // parseFloat, because xterm wants a NUMBER and the token is a length ('13px').
+    fontSize: parseFloat(cs.getPropertyValue('--text-4')),
+  };
+}
+
 export function termTheme() {
   const cs = getComputedStyle(document.documentElement);
   const v = (name) => cs.getPropertyValue(name).trim();

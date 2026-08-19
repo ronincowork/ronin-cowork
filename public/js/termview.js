@@ -14,7 +14,7 @@
  * vendor files load before the module graph runs, so it is referenced, never imported.
  */
 import { IS_TOUCH, SELECT_MOD, WHEEL_DOWN, WHEEL_UP, forcesSelection } from './state.js';
-import { termTheme } from './theme.js';
+import { termFace, termTheme } from './theme.js';
 
 export class TermView {
   /**
@@ -25,10 +25,10 @@ export class TermView {
   constructor(body, hooks) {
     this.body = body;
     this.term = new Terminal({
-      fontSize: 13,
-      fontFamily: 'Menlo, "DejaVu Sans Mono", Consolas, monospace',
-      // Resolved from the stylesheet's --term-* tokens (js/theme.js) — the palette is
-      // spelled once, in CSS, and xterm reads that spelling.
+      // Face AND palette both resolved from the stylesheet (js/theme.js) — spelled once,
+      // in CSS, and xterm reads that spelling. The font used to be the one exception here
+      // and is not any more: --font-term and --text-4.
+      ...termFace(),
       theme: termTheme(),
       cursorBlink: true,
       scrollback: 30000,
