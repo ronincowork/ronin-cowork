@@ -58,6 +58,20 @@ export interface ProjectRootInfo {
   dir: string;
   match: string[];
   remit: string;
+  /**
+   * ARCHIVED — off the new-session picker, still on the admin desk.
+   *
+   * A root the owner has finished with is not a root they want to lose: the directory is
+   * still there, sessions still carry its name, and the block still records what it was
+   * for. Excluding it would take all of that with it, so the two acts are separate —
+   * `archived` is the quiet one, and `exclude` stays the loud one.
+   *
+   * It is one bit and it hides the root in exactly one place: the list the launcher's
+   * ▣ picker is built from (`GET /api/project-roots`). Everything that resolves a root
+   * BY NAME — a spawn, a saved launch, a session already running under it — keeps
+   * working, because a name that used to launch must never stop meaning what it meant.
+   */
+  archived: boolean;
 }
 
 /** Every launchable `provider · model` the table knows, in table order. */
@@ -177,6 +191,10 @@ function parseRoots(raw: string): ProjectRootInfo[] {
         .map((m) => m.trim())
         .filter(Boolean),
       remit: field('remit'),
+      // One bit, spelled the way the other catalogs spell theirs (`- **hidden:** yes`
+      // in src/catalog.ts). Anything but `yes` — including the line's absence, which is
+      // the ordinary case — leaves the root on the picker.
+      archived: /^yes$/i.test(field('archived')),
     });
   }
   return roots;
@@ -266,6 +284,10 @@ const NEW_USER_FILE = `# PROJECT_ROOTS — your directories (user scope)
 > One \`## <handle>\` block per directory, with \`- **key:** value\` lines under it
 > (\`dir\`, \`memory\`, \`match\`, \`remit\`).
 >
+> \`- **archived:** yes\` retires a root without losing it: it comes off the new-session
+> picker and stays on the ▣ Project root tab, where one button puts it back. Sessions
+> already born under it are untouched — the name never stops meaning what it meant.
+>
 > What a session here READS at birth is not a field — it is the files on this root's
 > shelf. Ask \`ronin-store session_boot\` for it, and see docs/session-boot.md.
 > The provider/model launch table is stock and lives in the install, not here.
@@ -274,7 +296,7 @@ const NEW_USER_FILE = `# PROJECT_ROOTS — your directories (user scope)
 /** Field order for a block this code creates. Hand-written blocks keep their own.
  * provider/model retired 2026-08-18 (one default, one place) — never written again;
  * blocks that still have them keep them untouched, unread. */
-const FIELD_ORDER = ['dir', 'memory', 'match', 'remit'] as const;
+const FIELD_ORDER = ['dir', 'memory', 'match', 'remit', 'archived'] as const;
 export type RootField = (typeof FIELD_ORDER)[number];
 
 /** A project_root handle: one lowercase word, the `##` heading, the whole shortcut. */
