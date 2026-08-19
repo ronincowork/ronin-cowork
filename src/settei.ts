@@ -31,15 +31,17 @@
  */
 import os from 'node:os';
 import { readFile } from 'node:fs/promises';
-import { access } from 'node:fs/promises';
+import { access, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { config, authEnabled, tailnetIp } from './config.js';
+import { SETTEI_SCHEMA } from './settei-registry.js';
 import { listServices } from './sockets.js';
 import { CONTRACT_V } from './sockets-contract.js';
 import { roninIdentity } from './routes/version.js';
 import { listProjectRoots } from './project-roots.js';
+import { storeDir } from './stores.js';
 import { listAgentAvailability } from './agents.js';
 import {
   readAgentsSection,
@@ -58,14 +60,14 @@ const TAILNET_IP = tailnetIp();
 
 /* ------------------------------------------------------------------ the shapes */
 
-/** One project as the record shows it — the roots file's own fields, nothing added. */
+/** One project as the record shows it. NO per-root model: there is ONE default for
+ * new sessions (`agents.sessions.default`, the owner's ruling 2026-08-18) and a root
+ * carries none — whatever columns the roots file still has, settei does not read them. */
 export interface SetteiProject {
   name: string;
   dir: string;
   /** The one line a person picks a project from in a list. Already in the roots file. */
   remit: string;
-  provider: string;
-  model: string;
 }
 
 /** What a job that needs a model is pointed at. `key_env` is a NAME, never a key. */
@@ -80,7 +82,13 @@ export interface SetteiRecord {
   set: Record<string, unknown>;
   observed: Record<string, unknown>;
   status: Record<string, unknown>;
+  /** What a choice still needs, judged per read — met items do not exist. */
+  needed: Array<{ leaf: string; needs: string; how: string }>;
+  schema: typeof SETTEI_SCHEMA;
 }
+
+/* The registry lives in src/settei-registry.ts — pure data, split out by the
+ * line ceiling; it is still the ONE declaration and this file still serves it. */
 
 /* ------------------------------------------------------- small honest measurers */
 
@@ -183,9 +191,83 @@ function routes(): Record<string, unknown> {
   };
 }
 
+/**
+ * HOW THIS BOX IS REACHED BY HAND — the ssh family (owner, 2026-08-18). The box can
+ * say every address a person could point ssh at, and whether sshd is listening; it
+ * can never know the alias the owner types on their laptop — that lives client-side,
+ * in an ~/.ssh/config it has no business reading. Interfaces only, no metadata call
+ * (the no-egress rule holds): the tailnet address is recognised by its CGNAT range
+ * (100.64/10), everything else non-internal is reported as public.
+ *
+ * `listening` is boolean OR NULL — on a box with no /proc (a Mac) the question is
+ * unanswerable, and unanswerable must never be spelled `false`: absent means absent.
+ * Only port 22 is asked about; a moved sshd port is the owner's own arrangement.
+ */
+async function sshReach(): Promise<Record<string, unknown>> {
+  let listening: boolean | null = null;
+  try {
+    const tcp = await readFile('/proc/net/tcp', 'utf8');
+    const tcp6 = (await readTrimmed('/proc/net/tcp6')) ?? '';
+    // /proc/net/tcp: local_address is col 2 (hex ip:port), st is col 4; 0A = LISTEN.
+    listening = (tcp + '\n' + tcp6)
+      .split('\n')
+      .slice(1)
+      .some((l) => {
+        const c = l.trim().split(/\s+/);
+        return c[3] === '0A' && c[1]?.toUpperCase().endsWith(':0016');
+      });
+  } catch {
+    /* not linux — unknown, not false */
+  }
+  const isTailnet = (a: string) => /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(a);
+  const tailnet: string[] = [];
+  const pub: string[] = [];
+  for (const infos of Object.values(os.networkInterfaces())) {
+    for (const i of infos ?? []) {
+      if (i.internal) continue;
+      if (i.family === 'IPv4') (isTailnet(i.address) ? tailnet : pub).push(i.address);
+      // Link-local and ULA v6 reach nobody who does not already have a better route.
+      else if (i.family === 'IPv6' && !/^(fe80|fd|fc)/.test(i.address)) pub.push(i.address);
+    }
+  }
+  return { ssh: { listening, port: 22, addresses: { tailnet, public: pub } } };
+}
+
+/** LOCAL WEIGHTS — open models actually downloaded onto this box (the koshi_weights
+ * store's models/). Named and sized per read, because "I believe we downloaded qwen"
+ * is exactly the sentence a record exists to replace with a measurement. An empty or
+ * absent shelf is the ordinary state of a box that has not installed the service. */
+async function localWeights(): Promise<Array<Record<string, unknown>>> {
+  const dir = path.join(storeDir('koshi_weights'), 'models');
+  let names: string[];
+  try {
+    names = await readdir(dir);
+  } catch {
+    return [];
+  }
+  const out: Array<Record<string, unknown>> = [];
+  for (const n of names.sort()) {
+    if (n.startsWith('.') || n === 'SHA256SUMS') continue;
+    try {
+      const st = await stat(path.join(dir, n));
+      if (st.isFile()) out.push({ name: n, mb: Math.round(st.size / 1024 ** 2) });
+    } catch {
+      /* vanished mid-read */
+    }
+  }
+  return out;
+}
+
 /* ------------------------------------------------------------------ the record */
 
-/** The half that persists, read back from where it actually lives. */
+/** A typed string leaf: the owner's words, or null. A BLANK IS NOT AN ANSWER — an
+ * empty or whitespace string reads as null, so the fallback machinery downstream
+ * (`??` in computeStatus, "unset — using …" in ⚙) never mistakes a cleared field for
+ * a given name. The live defect this closes: a stored `machine.name: ""` made
+ * status.machine_name empty and the hostname invisible on the whole ⚙ tab. */
+const typedStr = (v: unknown): string | null =>
+  typeof v === 'string' && v.trim() !== '' ? v : null;
+
 async function readSet(): Promise<Record<string, unknown>> {
   const owner = await readSection<Record<string, unknown>>('owner', {});
   const machine = await readMachineSection();
@@ -199,15 +281,13 @@ async function readSet(): Promise<Record<string, unknown>> {
     name: r.name,
     dir: r.dir,
     remit: r.remit,
-    provider: r.provider,
-    model: r.model,
   }));
 
   return {
-    owner: { name: typeof owner.name === 'string' ? owner.name : null },
+    owner: { name: typedStr(owner.name) },
     machine: {
-      name: typeof machine.name === 'string' ? machine.name : null,
-      where: typeof machine.where === 'string' ? machine.where : null,
+      name: typedStr(machine.name),
+      where: typedStr(machine.where),
     },
     sessions: { max: await readMax() },
     projects,
@@ -216,6 +296,11 @@ async function readSet(): Promise<Record<string, unknown>> {
       jobs: (agents.jobs as unknown) ?? {},
     },
     gbrain: { enabled: gbrain.enabled === true },
+    // THE WANT LIST — typed intents, each judged against found per read (computeNeeded).
+    // The want persists; the needed entry it produces never does.
+    wanted: (await readSection<Array<{ kind?: unknown; name?: unknown }>>('wanted', []))
+      .filter((w) => typeof w?.kind === 'string' && typeof w?.name === 'string')
+      .map((w) => ({ kind: w.kind as string, name: w.name as string })),
     // ASSERTS "SHOW ME", NEVER "HIDE ME". Absent is the normal state of every install
     // older than the key, so it has to be quiet — see stampFreshInstall().
     setup: {
@@ -232,8 +317,10 @@ async function readSet(): Promise<Record<string, unknown>> {
   };
 }
 
-/** The half the box answers for itself. Nothing here is written down. */
-async function readObserved(): Promise<Record<string, unknown>> {
+/** The half the box answers for itself. Nothing here is written down.
+ * `jobKeyNames` — every `key_env` the typed half names; joins the registry's own
+ * key list so a job pointed at a provider is a key the scan checks, automatically. */
+async function readObserved(jobKeyNames: string[]): Promise<Record<string, unknown>> {
   /**
    * THE OWNER-RULED STARTING FOUR, measured by ATARASHI's login-shell probe.
    *
@@ -246,18 +333,22 @@ async function readObserved(): Promise<Record<string, unknown>> {
    * the shape of the claim instead of inheriting a bare absence it cannot check.
    */
   const agents = Object.fromEntries(
-    (await listAgentAvailability()).map((a) => [a.id, { installed: a.installed, path: a.path || null }]),
+    (await listAgentAvailability()).map((a) => [
+      a.id,
+      { label: a.label, from: a.from, installed: a.installed, path: a.path || null },
+    ]),
   );
 
   const tools = Object.fromEntries(
     await Promise.all(
-      ['gh', 'tailscale', 'chromium'].map(async (t) => [t, (await whichPath(t)) !== null] as const),
+      SETTEI_SCHEMA.scans.tools.map(async (t) => [t, (await whichPath(t)) !== null] as const),
     ),
   );
 
   // PRESENCE ONLY. The variable's name is public; its value is not, and there is no
-  // path from this record to one.
-  const keyNames = ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY'];
+  // path from this record to one. The names come from the registry — a name worth
+  // scanning is a name the registry mentions — plus what the typed jobs point at.
+  const keyNames = [...new Set([...SETTEI_SCHEMA.scans.keys, ...jobKeyNames])];
   const keys = Object.fromEntries(keyNames.map((k) => [k, Boolean(process.env[k])]));
 
   const id = roninIdentity();
@@ -275,6 +366,8 @@ async function readObserved(): Promise<Record<string, unknown>> {
       services: listServices(),
     },
     routes: routes(),
+    reach: await sshReach(),
+    weights: await localWeights(),
     agents,
     keys,
     tools,
@@ -314,11 +407,31 @@ async function computeStatus(
       } catch {
         dir = 'missing';
       }
-      return {
-        name: p.name,
-        dir,
-        brain: p.provider && p.model ? `${p.provider}/${p.model}` : 'none set — uses the install default',
-      };
+      // THE REPO IS MEASURED, NEVER RECORDED (owner asked 2026-08-18; the model rules
+      // the shape): whether a root has a repository and where origin points are facts
+      // the directory answers per read — a repo cloned tonight shows up tomorrow with
+      // no one editing a catalog, and a note in the roots file would be a stored
+      // measurement, lying the moment someone runs git clone. One file read per root
+      // (.git/config), no exec, no call out.
+      let repo = '—';
+      if (dir === 'ok') {
+        const cfg = await readTrimmed(path.join(p.dir, '.git', 'config'));
+        if (cfg !== null) {
+          const m = cfg.match(/\[remote "origin"\][^[]*?url\s*=\s*(\S+)/);
+          repo = m
+            ? m[1].replace(/^git@([^:/]+):/, '$1/').replace(/^[a-z+]+:\/\//, '').replace(/\.git$/, '')
+            : 'local repo — no remote';
+        } else {
+          try {
+            // a .git FILE is a worktree/submodule pointer — a repo, home elsewhere
+            await access(path.join(p.dir, '.git'));
+            repo = 'repo — worktree of another';
+          } catch {
+            repo = 'no repo';
+          }
+        }
+      }
+      return { name: p.name, dir, repo };
     }),
   );
 
@@ -368,7 +481,28 @@ async function computeStatus(
     machine_name: (setMachine.name as string) ?? (obsMachine.host as string),
     sessions: { running, max, state: max === 0 ? 'no limit' : running >= max ? 'at the cap' : `${running} of ${max}` },
     projects: projectStatus,
-    routes: [{ what: 'coworkspace', at: r.url, state: 'answering', exposure }],
+    routes: [{
+      what: 'coworkspace',
+      at: r.url,
+      state: 'answering',
+      exposure,
+      // THE ALIAS (owner, 2026-08-18): on a tailnet bind the hostname usually IS the
+      // MagicDNS name, so http://<host>:<port> reaches the same door with a name a
+      // person can remember. Derived from facts already measured — no lookup, no call.
+      alias: r.reachable.tailnet ? `http://${obsMachine.host as string}:${(observed.routes as { port: number }).port}` : null,
+    }],
+    // REACH BY HAND — the sentence a person actually needs: what to type. The tailnet
+    // address leads because it is the private door; public addresses are listed as
+    // facts, never recommended. Unknown stays unknown — a Mac cannot answer sshd.
+    ssh: (() => {
+      const reach = (observed.reach as { ssh: { listening: boolean | null; addresses: { tailnet: string[]; public: string[] } } }).ssh;
+      if (reach.listening === false) return 'sshd is not listening — not reachable by ssh';
+      const user = (obsMachine.user as string) ?? '';
+      const first = reach.addresses.tailnet[0] ?? reach.addresses.public[0];
+      if (!first) return 'no reachable address found';
+      const rest = [...reach.addresses.tailnet.slice(1), ...reach.addresses.public.filter((a) => a !== first)];
+      return `ssh ${user}@${first}${reach.addresses.tailnet[0] ? ' — your tailnet' : ''}${rest.length ? ` · also answers on ${rest.join(', ')}` : ''}${reach.listening === null ? ' · sshd not measurable on this OS' : ''}`;
+    })(),
     services: listServices().map((name) => ({
       name,
       state: name === 'gbrain' && (set.gbrain as { enabled: boolean }).enabled !== true
@@ -391,9 +525,82 @@ async function computeStatus(
   };
 }
 
-/** The whole record. One call, one answer, no writes. */
+/* ------------------------------------------------------- what is still needed */
+
+/** One vocabulary check, judged against the record. Four verbs, never more — the
+ * first "just one more condition kind" is a new scan family, not a new verb here. */
+function holds(
+  check: { kind: string; path?: string; name?: string },
+  set: Record<string, unknown>,
+  observed: Record<string, unknown>,
+): boolean {
+  if (check.kind === 'set') {
+    const v = String(check.path ?? '')
+      .split('.')
+      .reduce<unknown>((o, k) => (o == null ? undefined : (o as Record<string, unknown>)[k]), set);
+    // A blank is not an answer, and neither is false — an untoggled toggle never applies.
+    return v != null && v !== '' && v !== false;
+  }
+  const name = check.name ?? '';
+  if (check.kind === 'key') return (observed.keys as Record<string, boolean>)[name] === true;
+  if (check.kind === 'agent') return (observed.agents as Record<string, { installed: boolean }>)[name]?.installed === true;
+  if (check.kind === 'tool') return (observed.tools as Record<string, boolean>)[name] === true;
+  if (check.kind === 'service') {
+    const ss = ((observed.ronin as { services: string[] }).services ?? []);
+    // '*' is the bundle: Ronin Services installs as one act, so any registered socket
+    // means the bundle is on the box. Not a sixth verb — a spelling of this one.
+    return name === '*' ? ss.length > 0 : ss.includes(name);
+  }
+  return false;
+}
+
+/**
+ * NEEDED — what a choice still needs, judged fresh on every read. A registry
+ * `requires` row speaks only while its `applies` check holds, and an entry exists
+ * only while its `met` check does not: MET ITEMS DO NOT EXIST, so nothing is ever
+ * written, cleared, or stale, and satisfying a need makes its task vanish everywhere
+ * with no write anywhere. The ⚙ rows and the seat's reading list render exactly this.
+ */
+function computeNeeded(
+  set: Record<string, unknown>,
+  observed: Record<string, unknown>,
+): SetteiRecord['needed'] {
+  const declared = SETTEI_SCHEMA.requires
+    .filter((r) => holds(r.applies, set, observed) && !holds(r.met, set, observed))
+    .map((r) => ({ leaf: r.leaf, needs: r.needs, how: r.how }));
+  // THE WANT LIST — the owner's own additions (⚙, 'add to needed'). A want IS a check
+  // the owner typed: judged with the same five verbs, unmet becomes a task, met
+  // simply produces nothing — the want stays typed, the entry was never stored.
+  const HOW: Record<string, (n: string) => string> = {
+    agent: (n) => `install the ${n} CLI — it appears in agent installations the moment it lands`,
+    service: () => 'install Ronin Services — it registers itself',
+    tool: (n) => `install ${n} on the host`,
+    key: (n) => `set ${n} in .env and restart the operator`,
+  };
+  const wanted = ((set.wanted ?? []) as Array<{ kind: string; name: string }>)
+    .filter((w) => HOW[w.kind] && !holds(w, set, observed))
+    .map((w) => ({
+      leaf: 'wanted',
+      needs: w.kind === 'service' && w.name === '*' ? 'Ronin Services (the bundle)' : `${w.name} (${w.kind})`,
+      how: HOW[w.kind](w.name),
+    }));
+  return [...declared, ...wanted];
+}
+
+/** The whole record. One call, one answer, no writes — schema included, because the
+ * schema of the object is part of the object and a renderer needs nothing else. */
 export async function readSettei(): Promise<SetteiRecord> {
   const set = await readSet();
-  const observed = await readObserved();
-  return { set, observed, status: await computeStatus(set, observed) };
+  const jobs = ((set.agents as Record<string, unknown>).jobs ?? {}) as Record<string, SetteiJob>;
+  const jobKeyNames = Object.values(jobs)
+    .map((j) => j?.key_env)
+    .filter((k): k is string => typeof k === 'string' && k.length > 0);
+  const observed = await readObserved(jobKeyNames);
+  return {
+    set,
+    observed,
+    status: await computeStatus(set, observed),
+    needed: computeNeeded(set, observed),
+    schema: SETTEI_SCHEMA,
+  };
 }

@@ -101,10 +101,11 @@
     <span><span class="chip d"></span> derived — follows from the other two · computed away</span>
   </div>
   <p class="note">In code: <code>set</code> / <code>observed</code> / <code>status</code>
-  on <code>GET /api/settei</code> (<code>src/settei.ts</code>), plus the
-  <code>needed</code> family still to build. One call, one answer, no writes. No route
-  serves the underlying file — <code>ronin.json</code> also holds the token-signing
-  secret, so the record is assembled from named keys, never the document.</p>
+  / <code>needed</code> / <code>schema</code> on <code>GET /api/settei</code>
+  (<code>src/settei.ts</code>; the registry in <code>src/settei-registry.ts</code>).
+  One call, one answer, no writes. No route serves the underlying file —
+  <code>ronin.json</code> also holds the token-signing secret, so the record is
+  assembled from named keys, never the document.</p>
 </section>
 
 <section>
@@ -113,14 +114,13 @@
   <div class="rec typed">
     <div class="rec-hd"><span class="nm"><span class="prov">set</span> — persists in ronin.json</span><span class="life">written by named PUTs · keys preserved</span></div>
 <pre>{
-  "owner":    { "name": null },                    <span class="c">← PUT /api/owner · null = fallback to the machine user</span>
+  "owner":    { "name": null },                    <span class="c">← PUT /api/settei/owner · null = fallback to the machine user</span>
   "machine":  { "name": null, "where": null },     <span class="c">← PUT /api/settei/machine · where is free text, by ruling</span>
   "sessions": { "max": 10 },                       <span class="c">← PUT /api/session-max · same number ⌂ Roster edits</span>
 
   "projects": [                                    <span class="c">← REFERENCED from the catalogs store, never owned here;</span>
-    { "name": "lab", "dir": "~/dohyo/ronin-lab",   <span class="c">  edited in ▣ Project root / POST /api/project-roots</span>
-      "remit": "plans, records, concepts",
-      "provider": "anthropic", "model": "opus" }   <span class="c">  … 4 more roots on this machine</span>
+    { "name": "lab", "dir": "~/dohyo/ronin-lab",   <span class="c">  edited in ▣ Project root / POST /api/project-roots.</span>
+      "remit": "plans, records, concepts" }        <span class="c">  NO per-root model — one default, one place</span>
   ],
 
   "agents": {
@@ -132,6 +132,9 @@
   },
 
   "gbrain":   { "enabled": false },                <span class="c">← PUT /api/settei/gbrain · a setting; pressing installs nothing</span>
+
+  "wanted":   [],                                  <span class="c">← PUT /api/settei/wanted · typed intents ("add to needed" in ⚙);</span>
+                                                   <span class="c">  each is judged per read — unmet joins needed[], met produces nothing</span>
 
   "setup":    { "pending": false,                  <span class="c">← stamped at birth by stampFreshInstall(), cleared by Save;</span>
                 "stamped_at": null,                <span class="c">  no route can re-arm it. Absent section = predates the key</span>
@@ -178,7 +181,11 @@
 
   "routes": { "url": "http://100.101.235.17:3006",                    <span class="c">── reach: where it answers, and to whom</span>
               "reachable": { "loopback": false, "tailnet": true, "wider": false },
-              "auth": { "basic": false } }
+              "auth": { "basic": false } },
+
+  "reach": { "ssh": { "listening": true, "port": 22,                  <span class="c">── reach by hand: what a person could point</span>
+             "addresses": { "tailnet": ["100.101.235.17"],            <span class="c">   ssh at. Interfaces only — never the</span>
+                            "public": ["135.181.254.135"] } } }       <span class="c">   laptop-side alias, never a metadata call</span>
 }</pre>
   </div>
 </section>
@@ -193,8 +200,8 @@
   "machine_name": "dohyo-unified",
   "sessions": { "running": 9, "max": 10, "state": "9 of 10" },       <span class="c">the live count, against the cap</span>
 
-  "projects": [ { "name": "lab", "dir": "ok", "brain": "anthropic/opus" },
-                { "name": "gbrain", "dir": <span class="hot">"missing"</span>, "brain": "anthropic/opus" } ],
+  "projects": [ { "name": "lab", "dir": "ok", "repo": "github.com/ronincowork/ronin-lab" },
+                { "name": "gbrain", "dir": <span class="hot">"missing"</span>, "repo": "—" } ],
                                                    <span class="c">one stat per root — the most common real breakage</span>
 
   "routes":   [ { "what": "coworkspace", "at": "http://100.101.235.17:3006",
@@ -215,14 +222,12 @@
   </div>
 
   <div class="rec derived">
-    <div class="rec-hd"><span class="nm"><span class="prov">needed</span> — needed − present · TO BUILD</span><span class="life">the reading-list view queries exactly this</span></div>
-<pre><span class="c">// Each askable leaf may declare requires; this family is that declaration judged</span>
-<span class="c">// against `found`. Unmet items render as tasks; met items do not exist.</span>
+    <div class="rec-hd"><span class="nm"><span class="prov">needed</span> — needed − present</span><span class="life">the ⚙ rows and the seat's reading list render exactly this</span></div>
+<pre><span class="c">// The registry's requires, judged against `found` per read. Unmet items render as</span>
+<span class="c">// tasks; met items DO NOT EXIST — satisfying one clears it with no write anywhere.</span>
 [
   { "leaf": "services", "needs": "the verified email",
-    "satisfied_when": "set.services.verified is not null",
-    "how": "click the link in the services email, paste the code",
-    "met": false }
+    "how": "click the link in the services email, paste the code" }
 ]</pre>
   </div>
 </section>
@@ -236,7 +241,7 @@
   <table>
     <thead><tr><th>family</th><th>provenance</th><th>produced by</th><th>shown in</th></tr></thead>
     <tbody>
-      <tr><td>owner.name</td><td>typed</td><td>PUT /api/owner</td><td class="v"><b>S ⚙</b></td></tr>
+      <tr><td>owner.name</td><td>typed</td><td>PUT /api/settei/owner</td><td class="v"><b>S ⚙</b></td></tr>
       <tr><td>machine.name · where</td><td>typed</td><td>PUT /api/settei/machine</td><td class="v"><b>S ⚙</b></td></tr>
       <tr><td>sessions.max</td><td>typed</td><td>PUT /api/session-max — shared with ⌂ Roster</td><td class="v"><b>S ⚙</b></td></tr>
       <tr><td>projects</td><td>typed, referenced</td><td>catalogs store · POST /api/project-roots</td><td class="v"><b>S ⚙</b> (shown; edited in ▣)</td></tr>
@@ -251,8 +256,10 @@
       <tr><td>tools</td><td>found</td><td>PATH scan</td><td class="v"><b>⚙</b></td></tr>
       <tr><td>ronin (identity · roster)</td><td>found</td><td>/api/version machinery</td><td class="v"><b>⚙</b></td></tr>
       <tr><td>routes</td><td>found</td><td>bind + tailnet measurement</td><td class="v"><b>S ⚙</b></td></tr>
+      <tr><td>reach.ssh</td><td>found</td><td>interfaces + sshd listen</td><td class="v"><b>⚙</b> · status.ssh says what to type</td></tr>
       <tr><td>status.*</td><td>derived</td><td>computeStatus(set, observed)</td><td class="v"><b>⚙</b> as readouts</td></tr>
-      <tr><td>needed[] — TO BUILD</td><td>derived</td><td>requires(set) − found</td><td class="v"><b>⚙</b> beside its leaf · <b>新</b> as tasks</td></tr>
+      <tr><td>wanted</td><td>typed</td><td>PUT /api/settei/wanted — the ⚙ ticks</td><td class="v"><b>⚙</b></td></tr>
+      <tr><td>needed[]</td><td>derived</td><td>the registry's requires + the want list, judged per read</td><td class="v"><b>⚙</b> the needed box · <b>新</b> as tasks</td></tr>
     </tbody>
   </table>
   </div>
@@ -278,8 +285,8 @@
 </section>
 
 <footer>
-  <div class="stamp">Reference of the live record, plus the one family still to build
-  (needed[]). Values shown were measured on this machine, 2026-08-18.</div>
+  <div class="stamp">Reference of the live record, all five parts of the answer.
+  Values shown were measured on this machine, 2026-08-18.</div>
   <div>the set · settei-architecture.html (the model) · setup-journey.html (the walk) ·
   docs/settei.md · plans/ATARASHI.md</div>
   <div>recut 2026-08-18 — from Part VI concept to the schema the code answers</div>

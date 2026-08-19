@@ -1,4 +1,4 @@
-/* part of the tmux-ronin client — see js/README.md */
+/* part of the ronin-cowork client — see js/README.md */
 /**
  * The /api/sessions calls — the session set's own little API. Transport goes through
  * request() like everything else; what a failure means is decided here.

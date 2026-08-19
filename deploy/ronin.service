@@ -1,18 +1,18 @@
-# systemd --user unit for tmux-ronin. THIS FILE IS THE UNIT — edit it here.
+# systemd --user unit for ronin. THIS FILE IS THE UNIT — edit it here.
 #
-# `./setup.sh` copies it to ~/.config/systemd/user/tmux-ronin.service, filling in two
+# `./setup.sh` copies it to ~/.config/systemd/user/ronin.service, filling in two
 # placeholder tokens as it goes: the repo directory and the node bin directory (see
 # render_unit() in setup.sh). setup.sh holds no unit text of its own, so there is
 # nothing for this file to drift away from. Change something here, re-run ./setup.sh.
 # To install without running the rest of setup.sh: copy this file into
 # ~/.config/systemd/user/, replace the two tokens by hand, `systemctl --user
-# daemon-reload`, then `systemctl --user enable --now tmux-ronin`.
+# daemon-reload`, then `systemctl --user enable --now ronin`.
 #
 # Keep it running without an active login:
 #   sudo loginctl enable-linger "$USER"
 
 [Unit]
-Description=tmux-ronin — browser grid of tmux sessions
+Description=Ronin — browser grid of tmux sessions
 After=network-online.target
 Wants=network-online.target
 # The tmux server must exist BEFORE ronin can be the one to start it: a server
@@ -39,7 +39,7 @@ ExecStart=__NODE_DIR__/npm start
 # RENDERING GATE — check that the page actually works after every start, whether or
 # not anybody remembered to. Detached (`&`) so it never delays the unit, and `-` so a
 # failing gate can never wedge the service into a restart loop: it REPORTS.
-#   journalctl --user -u tmux-ronin -f | grep 'RONIN GATE'
+#   journalctl --user -u ronin -f | grep 'RONIN GATE'
 # For a deploy whose exit code you want to act on, use bin/ronin-deploy.
 # Needs a headless browser (Playwright Chromium — see docs/host-tools.md); absent, the
 # gate says so and the service is unaffected.

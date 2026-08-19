@@ -41,13 +41,15 @@ import { promisify } from 'node:util';
 
 const pexec = promisify(execFile);
 
-/** The supported set, in the order the Setup page lists them. Exactly these four: the
- * first run is not a provider marketplace, and an agent earns a row here only after its
- * new-session behaviour is proved (docs/model-providers.md). */
+/** The supported set, in the order the Setup page lists them. The first run is not a
+ * provider marketplace: an agent earns a row here when the owner rules it in, and its
+ * new-session behaviour is proved before it earns a launch-table column
+ * (docs/model-providers.md). Grok joined 2026-08-18 by the owner's word. */
 export const AGENTS = [
   { id: 'claude', cmd: 'claude', label: 'Claude Code', from: 'Anthropic' },
   { id: 'codex', cmd: 'codex', label: 'Codex', from: 'OpenAI' },
   { id: 'gemini', cmd: 'gemini', label: 'Gemini CLI', from: 'Google' },
+  { id: 'grok', cmd: 'grok', label: 'Grok CLI', from: 'xAI' },
   { id: 'hermes', cmd: 'hermes', label: 'Hermes', from: 'Nous Research' },
 ] as const;
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Headless end-to-end test of the tmux-ronin pipe — no browser needed.
+ * Headless end-to-end test of the ronin-cowork pipe — no browser needed.
  *
  *   1. POST /api/launch (bare variant — a name and nothing else) to create a throwaway session
  *   2. GET  /api/sessions and assert it shows up

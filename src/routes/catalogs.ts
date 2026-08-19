@@ -9,6 +9,7 @@ import { homedir } from 'node:os';
 import type express from 'express';
 import { projectRootsOfSessions } from '../tmux.js';
 import { listMacros } from '../macros.js';
+import { listSkins } from '../skins.js';
 import { listAgentAvailability } from '../agents.js';
 import {
   listProjectRoots,
@@ -35,17 +36,36 @@ import {
 const errMsg = (e: unknown) => String((e as Error)?.message ?? e).replaceAll(homedir(), '~');
 
 /** The fields commons may write. Anything else in a block is the owner's and is preserved. */
-const ROOT_FIELDS: RootField[] = ['dir', 'memory', 'provider', 'model', 'match', 'remit'];
+// provider/model retired 2026-08-18 — a body carrying them has nowhere to land.
+const ROOT_FIELDS: RootField[] = ['dir', 'memory', 'match', 'remit'];
 const bodyFields = (body: unknown) => {
   const out: Partial<Record<RootField, string>> = {};
   for (const k of ROOT_FIELDS) {
     const v = (body as Record<string, unknown>)?.[k];
     if (typeof v === 'string') out[k] = v.trim().slice(0, 500);
   }
+  // `archived` is ONE BIT, so it is normalised here and never taken as prose: true
+  // writes `- **archived:** yes`, false takes the line back out (an empty value is how
+  // upsertProjectRoot deletes a key). A body that says nothing about it leaves it alone,
+  // which is what lets the edit form keep sending only the four text fields.
+  const arch = (body as Record<string, unknown>)?.archived;
+  if (arch !== undefined) out.archived = arch === true || arch === 'yes' ? 'yes' : '';
   return out;
 };
 
 export function registerCatalogs(app: express.Express): void {
+  /* THE LOOK, as entries. A skin is a set of design tokens and nothing else — no selector,
+   * no rule — so this route serves data the client sets as custom properties and could not
+   * turn into markup if it tried (src/skins.ts). Shadowable like any catalog: shipped
+   * skins update with the repo, a skin of yours is yours and an upgrade cannot touch it. */
+  app.get('/api/skins', async (_req, res) => {
+    try {
+      res.json(await listSkins());
+    } catch (e) {
+      res.status(500).json({ error: errMsg(e) });
+    }
+  });
+
   app.get('/api/macros', async (_req, res) => {
     try {
       res.json(await listMacros());
@@ -60,9 +80,16 @@ export function registerCatalogs(app: express.Express): void {
   // fresh install. The session_launch_spec each root resolves to comes from the SHIPPED launch table
   // (/api/session-launch-specs below) — system scope, because they are stock and the roots are not.
   // The hotwords routes are KOE's, mounted through the ROUTES socket (koe/hotwords-api.ts).
+  //
+  // ARCHIVED ROOTS ARE NOT HERE. This is the list the launcher's ▣ picker is built
+  // from, and the whole of what archiving does is drop out of it — a root you have
+  // finished with should not sit at the top of the form acting like a default. It is a
+  // FILTER ON ONE LIST, never a deletion: /api/project-roots/detail still carries it,
+  // and every path that resolves a root BY NAME (spawn, saved launches, the tag on a
+  // running session) reads listProjectRoots() whole, so nothing that used to launch stops.
   app.get('/api/project-roots', async (_req, res) => {
     try {
-      res.json(await listProjectRoots());
+      res.json((await listProjectRoots()).filter((r) => !r.archived));
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }
@@ -75,6 +102,9 @@ export function registerCatalogs(app: express.Express): void {
    * The live half is READ, never stored (docs/project-roots.md): a remote written into
    * the catalog is stale the day someone changes it. `untagged` is reported alongside,
    * because a session nobody tagged must be visible as untagged rather than bucketed.
+   *
+   * ARCHIVED ROOTS ARE HERE, flagged. This pane is where they still exist — seeing one,
+   * and putting it back, is the other half of what archiving means.
    */
   app.get('/api/project-roots/detail', async (_req, res) => {
     try {

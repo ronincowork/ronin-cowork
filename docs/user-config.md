@@ -7,7 +7,7 @@ leaves it.
 ```
 bin/ronin-store config            where it is on this machine
 src/user-config.ts                every read, write and publish
-src/settei.ts                     the assembled record the ⚙ Setup tab draws
+src/settei.ts                     the assembled record the ⚙ Configuration tab draws
 ```
 
 > **Restored to this repo 2026-08-17.** This document is cited by `src/user-config.ts` and
@@ -20,8 +20,8 @@ src/settei.ts                     the assembled record the ⚙ Setup tab draws
 
 | Section | What | Written by | Bus option |
 |---|---|---|---|
-| `sessions.max` | how many sessions may run at once | `PUT /api/session-max` — ⌂ Roster and ⚙ Setup, **one route** | `@ronin-session-max` |
-| `owner.name` | what to call the owner | `PUT /api/owner` | `@ronin-owner` |
+| `sessions.max` | how many sessions may run at once | `PUT /api/session-max` — ⌂ Roster and ⚙ Configuration, **one route** | `@ronin-session-max` |
+| `owner.name` | what to call the owner | `PUT /api/settei/owner` | `@ronin-owner` |
 | `machine.name` · `machine.where` | what this box is called, and where it is | `PUT /api/settei/machine` | none |
 | `agents.sessions.default` · `agents.jobs` | how work gets a model | `PUT /api/settei/agents` | none |
 | `gbrain.enabled` | whether the owner turned gbrain on | `PUT /api/settei/gbrain` | none |
@@ -117,7 +117,7 @@ What survives, and what every reader must keep true:
    at boot too, so a box edited by hand while Ronin was down still agrees with itself.
 6. **Read per call, do not cache.** These files are tiny and edited rarely; a cache buys a
    syscall and costs an invalidation story.
-7. **Add the row to the table above**, and to `src/settei.ts` if the ⚙ Setup tab should show
+7. **Add the row to the table above**, and to `src/settei.ts` if the ⚙ Configuration tab should show
    it. A setting nothing renders is a setting nobody knows they have.
 
 ## What does NOT go in here
@@ -129,7 +129,7 @@ What survives, and what every reader must keep true:
 - **The owner's projects.** A `project_root` — its directory, its purpose, its default
   provider and model — lives in `PROJECT_ROOTS.md` in the **catalogs store**, written
   through `/api/project-roots`, and stays hand-editable there. That is a real landing place,
-  just a different store. The ⚙ Setup room *shows* projects with their remit and whether
+  just a different store. The ⚙ Configuration room *shows* projects with their remit and whether
   their directory still resolves, and links to ▣ Project root to change them; it is not
   their second owner. Said here because both surfaces that write settings pass close enough
   to this to assume otherwise.

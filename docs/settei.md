@@ -6,23 +6,50 @@
 > Companions: `docs/settei-architecture.html` (the model, drawn),
 > `docs/settei-record.html` (the object, leaf by leaf), `docs/install.md` (the door in),
 > `docs/user-config.md` (`ronin.json`'s contract), `docs/env.md` (`.env`'s contract —
-> knobs and secrets). What remains to build is `ronin-lab plans/ATARASHI.md`.
+> knobs and secrets), `docs/wanted-needed.md` (the two lists — intent and arithmetic).
+> What remains to build is `ronin-lab plans/ATARASHI.md`.
 
 ## The one door
 
 **One read: `GET /api/settei`** (`src/settei.ts`). One call, one answer, no writes, no
 cache. Every view converts that one read for its reader and its objective — the setup
-view asks what is unanswered, the ⚙ tab shows everything, the 新 reading list (to
-build) extracts what is needed and not present, and `tejun-account` prints the identity
-lines for a shell. No surface reads a source directly, and no second assembly exists.
+view asks what is unanswered, the ⚙ tab shows everything, the 新 seat reads
+`needed[]` as its reading list at its own start, and `tejun-account` prints the
+identity lines for a shell. No surface reads a source directly, and no second
+assembly exists.
 
-Writes are the mirror: **named PUTs, one per family** (`src/routes/settei-api.ts`),
-each through `updateConfig()`, which saves atomically and preserves every key it never
-heard of. There is no `PUT /api/settei` that takes a document, and no route serves the
-underlying file — the file has other tenants (below).
+Writes are the mirror: **one door, `PUT /api/settei/:family`**
+(`src/routes/settei-api.ts`) — each family a narrow named writer through
+`updateConfig()`, which saves atomically and preserves every key it never heard of.
+An unknown family is refused, never guessed at. There is no `PUT /api/settei` that
+takes a document, and no route serves the underlying file — the file has other
+tenants (below).
 
 Every leaf in the answer carries its provenance — **typed · found · derived** — and
 provenance is all a view needs to render a leaf: an input, a fact line, or a task.
+
+## The registry
+
+The schema of the object is part of the object. `SETTEI_SCHEMA` (`src/settei-registry.ts` — pure data, split out by the line ceiling, still the one declaration)
+declares every askable leaf once, as pure data — section, furniture (label ·
+teaching · kind), `from` (a path into the record), `lands` (a write family and the
+key inside its body), optional `requires` — and rides every answer as `schema`, so a
+renderer needs nothing else. No view may know a field the registry does not say.
+
+The scan-name lists live in the registry too (`scans.keys`, `scans.tools`) — a name
+worth scanning is a name the registry mentions — joined at read time by every
+`key_env` a configured job names. `requires` is judged against the found half — the
+`needed[]` family in the answer — and its vocabulary is four verbs and stays four:
+`key` · `agent` · `tool` · `set`. `families` maps each write family to its route and
+is the migration seam for the one write door.
+
+### Pending additions
+
+The intake: a leaf someone wants is one row here, then one row in the registry.
+
+| leaf | asked | lands | requires | status |
+|---|---|---|---|---|
+| *(none pending)* | | | | |
 
 ## The sources
 
@@ -32,11 +59,11 @@ from one of these, and adding a source is adding a row here.
 | Source | Contributes | Provenance | The rule that binds it |
 |---|---|---|---|
 | **`ronin.json`** — the `config` store, user scope | owner · machine · sessions.max · agents · gbrain · services · setup | **typed — the only persisted half** | written only through `updateConfig()`; the file also hosts `auth` and `passkeys`, which are **not settei** — the file is storage, not the object |
-| **the catalogs store** — `PROJECT_ROOTS.md` | projects, with their remits and per-project defaults | typed, **by reference** | settei reads it in and never owns it; ▣ Project root and the owner's editor stay its writers |
-| **the mechanical scans** — seven families today, extensible | machine & OS (DMI, cores, kernel) · agent CLIs (login-shell probe) · API-key presence · host tools · the install's identity and services roster · reach and exposure · the work (project dirs, live sessions) | **found** — per read, never stored | a stored measurement is a lie the moment the machine changes; every answer carries `observed_at` |
+| **the catalogs store** — `PROJECT_ROOTS.md` | projects, with their remits | typed, **by reference** | settei reads it in and never owns it; ▣ Project root and the owner's editor stay its writers |
+| **the mechanical scans** — eight families today, extensible | machine & OS (DMI, cores, kernel) · agent CLIs (login-shell probe) · API-key presence · host tools · the install's identity and services roster · reach and exposure (web + ssh) · the work (project dirs, live sessions) | **found** — per read, never stored | a stored measurement is a lie the moment the machine changes; every answer carries `observed_at` |
 | **`.env`** (+ the unit) — `docs/env.md` | **only a name and a boolean** — which key variables exist and whether each is set | found (presence only) | the value never crosses into settei in either direction; secrets live in `.env` and nowhere else |
 | **the browser** — `localStorage` | nothing, today | — | theme and layout are honestly device state; keypad bindings are ruled settei and stranded here — a known defect, not a decision |
-| *(computed in the door)* | `status` · `needed[]` (to build) | **derived** | not a source — it exists only in the answer, judged fresh from typed and found on every read |
+| *(computed in the door)* | `status` · `needed[]` | **derived** | not a source — it exists only in the answer, judged fresh from typed and found on every read |
 
 And one thing that is the reverse of a source: **the tmux bus** (`@ronin-owner`,
 `@ronin-session-max`) carries *copies out* of typed leaves, published after a write so
@@ -46,13 +73,13 @@ homes.
 ## The index — if you are looking for it, this is where it is
 
 The same ledger, flipped to the seeker's direction: every fact, its home, and how it is
-known. `⚙` = edit it in the ⚙ Setup view unless another editor is named.
+known. `⚙` = edit it in the ⚙ Configuration view unless another editor is named.
 
 ### Who and what this install is
 
 | Looking for | It lives | Known / edited |
 |---|---|---|
-| the owner's name | `ronin.json` `owner.name` | typed · `PUT /api/owner` · ⚙ |
+| the owner's name | `ronin.json` `owner.name` | typed · `PUT /api/settei/owner` · ⚙ |
 | what the machine is called | `ronin.json` `machine.name` | typed · ⚙ |
 | where the machine is | `ronin.json` `machine.where` | typed, free text by ruling · ⚙ |
 | the effective name/machine (fallbacks applied) | nowhere — derived in the answer | `status.owner_name`, `status.machine_name` |
@@ -69,9 +96,10 @@ known. `⚙` = edit it in the ⚙ Setup view unless another editor is named.
 
 | Looking for | It lives | Known / edited |
 |---|---|---|
-| the projects (name, dir, remit, per-project model) | **catalogs store** `PROJECT_ROOTS.md` | typed · ▣ Project root or by hand · settei reads by reference |
+| the projects (name, dir, remit) | **catalogs store** `PROJECT_ROOTS.md` | typed · ▣ Project root or by hand · settei reads by reference — **no per-root model: one default, one place (owner, 2026-08-18)** |
 | does a project's directory still exist | nowhere — one stat per read | derived · `status.projects[].dir` |
-| the owner's setup notes (`projNotes`) | **nowhere today — vanishes on an agent-less Save** | plan leg 2 makes it a typed leaf |
+| does a root have a repository, and where origin points | nowhere — one file read per root (`.git/config`) | derived · `status.projects[].repo` — measured, never recorded |
+| the owner's setup notes (`projNotes`) | **nowhere — the ask was deleted, not rehomed** | ruled extravaganza (owner, 2026-08-18); one registry row if the want ever returns |
 
 ### Models, agents, and keys
 
@@ -82,9 +110,10 @@ known. `⚙` = edit it in the ⚙ Setup view unless another editor is named.
 | the env-var **name** a job bills through | `ronin.json` `agents.jobs.<name>.key_env` | typed — a name is a setting |
 | which CLIs are installed, and where | nowhere — login-shell probe per read | found · `observed.agents` |
 | is a given key **set** | nowhere — env scan per read | found · `observed.keys` · presence only |
-| **which names the scan checks** | **hardcoded in `src/settei.ts` today** | dissolves into the manifest's `requires` at plan leg 1 |
+| **which names the scan checks** | the registry — `SETTEI_SCHEMA.scans` | plus every `key_env` a configured job names, joined per read |
 | a key's **value** | **`.env` — only there** | never enters settei in either direction |
 | the launch table (providers × models) | stock catalogs `PROJECT_ROOTS.md` | data, never a code path |
+| open weights actually downloaded | nowhere — the koshi_weights store scanned per read | found · `observed.weights` — name and size, never assumed |
 
 ### Services and the deal
 
@@ -93,7 +122,8 @@ known. `⚙` = edit it in the ⚙ Setup view unless another editor is named.
 | the entitlement id, email, terms | `ronin.json` `services` | typed · pasted code, recorded never verified · ⚙ |
 | gbrain on or off | `ronin.json` `gbrain.enabled` | typed · ⚙ |
 | which services are registered | nowhere — the install's roster per read | found · `observed.ronin.services` |
-| what a selection still needs | nowhere — `needed[]`, to build | derived · plan leg 1 |
+| what a selection still needs | nowhere — `needed[]` in the answer | derived · the registry's `requires` **and the want list**, judged per read; met items do not exist |
+| the owner's want list | `ronin.json` `wanted` | typed · `PUT /api/settei/wanted` · the ⚙ "add to needed" ticks — intent persists, the needed entry it produces never does |
 
 ### The machine and the install
 
@@ -104,6 +134,7 @@ known. `⚙` = edit it in the ⚙ Setup view unless another editor is named.
 | host tools (gh, tailscale, chromium) | nowhere — PATH scan per read | found · `observed.tools` |
 | release, commit, contract, started | nowhere — the install answers | found · `observed.ronin` |
 | the URL, and who can reach it | nowhere — measured per read | found + derived · `observed.routes`, `status.routes[].exposure` |
+| how to reach it by ssh | nowhere — interfaces + sshd listen, per read | found + derived · `observed.reach.ssh`, `status.ssh` · never the laptop-side alias |
 
 ### Near settei, but not settei
 
@@ -133,33 +164,35 @@ A genuinely fresh install says so itself; nothing is ever inferred.
 ## The setup view
 
 `public/js/firstrun.js`. Every askable leaf is declared once and no view may know a
-field the declaration does not say — today that declaration is the client-side
-`public/js/setup-fields.js`; the plan folds it into the door as the registry, where the
-schema of the object belongs, and the file is deleted. It asks in order, teaches as it asks, and ends. Setup is complete at Save — the
+field the declaration does not say — that declaration is the registry (above), served
+with the answer and read through the shared vocabulary (`public/js/settei-schema.js`).
+There is no client-side field list. It asks in order, teaches as it asks, and ends. Setup is complete at Save — the
 view is mechanical and needs no agent; a machine with no CLI on it is finished, not
 failing. The first project lands in the catalogs store via `POST /api/project-roots`,
 and the seeded `home` root guarantees a floor even if the view is skipped.
 
 ## The reading list, and the seat
 
-What a form cannot settle goes to someone who can ask. `projNotes` is deliberately
-routeless — the owner's own words, never a setting. When an agent CLI exists at Save,
-the view launches **新 Atarashi** (`session_job` catalog row) on a brief; the seat asks
-rather than assumes, touches nothing outside the project directory unannounced, and
-stops. Its shelf (`ronin_session_boot/job/Atarashi/`) binds it to treat saved answers
-as intent and measure what is true (`ronin_sops/install.md`).
+What a form cannot settle goes to someone who can ask. `needed[]` rides every answer:
+the registry's `requires`, judged against the found half per read — met items do not
+exist, so satisfying a need makes its task vanish everywhere with no write anywhere.
+The unmet rows render in ⚙ beside the leaf that caused them.
 
-**To build** (plan legs 1–3): the notes become a typed leaf so an agent-less Save never
-loses them; `needed[]` — each askable leaf's `requires`, judged against found — joins
-the derived half; and the reading list becomes a standing view *read live at seat
-start*, offered as "start your setup session" whenever an agent exists and the list is
-non-empty.
+The seat is the registry's own (`schema.seat`): **新 Atarashi**, launched from Save
+when an agent CLI exists, and offered as **"start your setup session"** in ⚙ and on
+the ＋ New board whenever an agent is found and the list is non-empty. Every launch
+hands over a one-line pointer and nothing else — **the seat reads `GET /api/settei`
+itself at start** (its shelf, `ronin_session_boot/job/Atarashi/00_ATARASHI.md`, says
+so), so a session born at Save and one born three weeks later read the same fresh
+truth, and nothing is composed, parked, or stale. The seat asks rather than assumes,
+touches nothing outside the project directory unannounced, and stops
+(`ronin_sops/install.md` is its verification SOP).
 
 ## The standing ⚙ view
 
-`public/js/settei.js`: one fetch of the record, one screen. Typed leaves are fields
-saving per-field through the same named PUTs; found leaves are lines of text; derived
-leaves are readouts beside the thing they are about. Projects are shown here and edited
-where they live; the session cap is the same number ⌂ Roster edits, over one route.
-**To build** (plan leg 4): the typed rows render from the manifest, so a leaf asked
-anywhere is editable here, structurally.
+`public/js/settei.js`: one fetch of the record, one screen. The typed rows render
+from the registry — a leaf asked anywhere is editable here, structurally — saving
+per-field through the one write door; found leaves are lines of text; derived leaves
+are readouts beside the thing they are about, seated by the registry's declared
+`fallback`/`note`/`aside` paths. Projects are shown here and edited where they live;
+the session cap is the same number ⌂ Roster edits, over one route.

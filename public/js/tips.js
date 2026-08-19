@@ -1,4 +1,4 @@
-/* part of the tmux-ronin client — see js/README.md */
+/* part of the ronin-cowork client — see js/README.md */
 /**
  * THE HELP BOX — one panel, one size, one place. Hovering a control fills it.
  *
@@ -195,20 +195,46 @@ function setHeader(el) {
  * position depends on how wide the tile is and which buttons are hidden, whereas the
  * order in the markup is what actually defines the two groups.
  *
- * ONE EXCEPTION TO "below the header", earned in a browser on 2026-08-17: six of those
- * controls now live in メ's drop (`tilemore.js`), which itself hangs below the header —
- * so docking to the header's bottom edge laid the box straight over the strip, covering
- * all six while you read about one. When the control is inside an open drop, the drop is
- * the thing the box hangs off. The SIDE is still read off the header's spacer, because
- * メ is one of the right-hand group whatever it happens to contain.
+ * TWO EXCEPTIONS TO "below the header", and they are the same exception twice: a control
+ * that lives in something which ITSELF hangs below the header cannot have its help docked
+ * to the header, because the header's bottom edge is where that thing already is.
+ *
+ *   メ'S DROP (`tilemore.js`), earned in a browser on 2026-08-17. Six header controls
+ *   moved into the drop, and docking to the header laid the box straight over the drop —
+ *   covering all six while you read about one.
+ *
+ *   THE COMMONS TAB STRIP (`commons.js`), 2026-08-18. The strip sits immediately below
+ *   the header, so anything in it that docked to the header's bottom edge landed ON the
+ *   strip: hovering ▣ Roots laid a 300px box across SEVEN of the ten rooms, and since a
+ *   tab is not in the header it also failed the spacer test and docked to the tile's far
+ *   RIGHT, putting the answer at the opposite end of the strip from the question. Owner:
+ *   "the helpful hints are dropping in front of the tabs and hard to find."
+ *
+ *   THE TABS THEN LOST THEIR HELP OUTRIGHT, which was the owner's second ruling that day
+ *   and the better one — a tab's label already says what its room is, so there was never
+ *   anything for a box to add (`panes.js`). That does NOT retire this anchor. What is
+ *   still in the strip is the ✕, a bare glyph with no label of its own, which is exactly
+ *   the case help exists for; and its box would cover the tabs from the header just as
+ *   readily. One control is enough to keep the rule honest.
+ *
+ * So the anchor is "the nearest thing below the header that the control is inside, else
+ * the header", and the SIDE is read off whatever divides THAT anchor's two groups.
  */
 function dockFor(el, boxWidth) {
   const tile = el.closest('.tile');
   const head = tile ? tile.querySelector('.tile-head') : document.getElementById('bar');
   if (!head) return null;
-  const grow = head.querySelector('.grow');
-  const onLeft = grow ? !!(grow.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_PRECEDING) : true;
-  const a = (el.closest('.tmore') || head).getBoundingClientRect();
+  // The thing to clear: whatever the control is inside that already hangs below the
+  // header (メ's drop, the Commons tab strip), else the header itself.
+  const anchor = el.closest('.tmore, .home-tabs') || head;
+  // THE DIVIDER between the anchor's two groups, in DOM order. The header's is its
+  // `.grow` spacer; the tab strip's is the ✕, which carries `margin-left: auto` and so
+  // IS that strip's spacer — which puts a tab's help under the tabs and ✕'s help under
+  // ✕, each on its own end. メ's drop has no divider of its own and falls back to the
+  // header's, because メ is one of the right-hand group whatever it contains.
+  const split = anchor.querySelector('.grow, .home-x') || head.querySelector('.grow');
+  const onLeft = split ? !!(split.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_PRECEDING) : true;
+  const a = anchor.getBoundingClientRect();
   const host = (tile || head).getBoundingClientRect();
   return {
     left: Math.round(onLeft ? host.left + 8 : host.right - boxWidth - 8),

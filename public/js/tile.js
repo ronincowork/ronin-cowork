@@ -1,4 +1,4 @@
-/* part of the tmux-ronin client — see js/README.md */
+/* part of the ronin-cowork client — see js/README.md */
 /**
  * THE TILE — one cell of the coworkspace, and nothing more.
  *
@@ -26,6 +26,7 @@ import { toast } from './ui.js';
 import { presetData, refreshHome } from './home.js';
 import { IS_TOUCH, NEW, S, saveState, serviceMissing, tiles } from './state.js';
 import { buildHome } from './commons.js';
+import { installDesk } from './tiledesk.js';
 import { guard } from './errors.js';
 import { buildLadder } from './shingo.js';
 import { buildTileHead, lockedTitle, syncTileHead } from './tilehead.js';
@@ -68,6 +69,8 @@ export class Tile {
     // the act. See js/tiledocs.js.
     this.showDoc = home.openDoc;
     this.body.appendChild(this.home);
+    // THE ADMIN DESK — a sibling of the Commons, not a room in it (js/tiledesk.js).
+    installDesk(this, home.askPersonalAssistant);
 
     // SHINGO 信号: this session's ladder, read off its TEGAMI. The chip (built with the
     // header) is the indicator; tapping it is ALWAYS the ladder, gate or not.
@@ -161,6 +164,7 @@ export class Tile {
    * panel is a place you can come back to rather than a one-way screen.
    */
   showHome(which) {
+    this.lowerDesk(); // one overlay at a time — js/tiledesk.js
     this.home.classList.add('show');
     // Home is where a tile lands — empty or not. New session is one tab away.
     if (which) this.showPane(which);

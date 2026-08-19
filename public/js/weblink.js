@@ -1,4 +1,4 @@
-/* part of the tmux-ronin client — see js/README.md */
+/* part of the ronin-cowork client — see js/README.md */
 
 
 /* ---------- Work Louder device programming (WebHID — Chrome/Edge desktop) ---------- */

@@ -1,4 +1,4 @@
-/* part of the tmux-ronin client — see js/README.md */
+/* part of the ronin-cowork client — see js/README.md */
 /**
  * THE UNLOCKED INPUT RULE, as a pure function — no DOM, no socket.
  *

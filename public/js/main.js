@@ -1,8 +1,9 @@
-/* part of the tmux-ronin client — see js/README.md */
+/* part of the ronin-cowork client — see js/README.md */
 import { fetchSessions } from './api.js';
 import { request } from './request.js';
 import { guard, showFailure } from './errors.js';
 import { applyTheme } from './theme.js';
+import { restoreSkin } from './skins.js';
 import { connectEvents } from './events.js';
 import { loadMacros, loadPresets, loadProjects, loadSavedLaunches, refreshHome } from './home.js';
 import { build } from './layout.js';
@@ -29,6 +30,8 @@ export async function init() {
   }
   // The theme before the grid: tiles are born reading the resolved terminal palette.
   guard('apply theme', applyTheme);
+  // After the theme, because a skin outranks it for whatever it names (js/skins.js).
+  guard('restore skin', restoreSkin);
 
   // FIRST LOAD. A fresh install lands here; everyone else never sees it.
   //

@@ -4,7 +4,7 @@
 # Wired to ExecStartPost in the systemd unit, so every start/restart is checked
 # whether or not anybody remembered to. The verdict lands in the journal:
 #
-#   journalctl --user -u tmux-ronin -f | grep 'RONIN GATE'
+#   journalctl --user -u ronin -f | grep 'RONIN GATE'
 #
 # It is a REPORTER, not a killer: it never fails the unit (the unit is prefixed with
 # `-` and this runs detached). A broken UI that is up and complaining loudly beats a

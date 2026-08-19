@@ -1,12 +1,12 @@
-# systemd --user unit for the TMUX SERVER ITSELF — not for tmux-ronin.
+# systemd --user unit for the TMUX SERVER ITSELF — not for ronin.
 #
 # Why this unit exists (read before deleting it):
 #   A tmux server belongs to the systemd cgroup of whichever process first started
-#   it. If tmux-ronin is that process — it runs `tmux new-session` whenever a tile
+#   it. If ronin is that process — it runs `tmux new-session` whenever a tile
 #   or the commons launcher asks for a session — the server lands inside
-#   tmux-ronin.service. systemd's default KillMode=control-group then SIGTERMs
+#   ronin.service. systemd's default KillMode=control-group then SIGTERMs
 #   *every process in that cgroup* on stop, so a routine
-#   `systemctl --user restart tmux-ronin` kills the tmux server and every session,
+#   `systemctl --user restart ronin` kills the tmux server and every session,
 #   agent and shell on the box. Nobody typed `tmux kill-anything`.
 #   This unit starts the server first, in its own cgroup, so restarting the app is
 #   just restarting the app.
@@ -17,7 +17,7 @@
 # unit text of its own, so there is nothing for this file to drift away from.
 #
 # STOPPING THIS UNIT KILLS EVERY TMUX SESSION. That is what it owns. There is no
-# reason to restart it while a server is running; tmux-ronin restarts on its own.
+# reason to restart it while a server is running; ronin restarts on its own.
 
 [Unit]
 Description=tmux server (owns every session; kept out of the app's cgroup)

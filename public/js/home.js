@@ -1,4 +1,4 @@
-/* part of the tmux-ronin client — see js/README.md */
+/* part of the ronin-cowork client — see js/README.md */
 /**
  * HOME DATA — the client's one cache of what the server knows about sessions and
  * catalogs, and the one place that refreshes it.

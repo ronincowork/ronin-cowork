@@ -61,15 +61,20 @@ echo "→ installed units"
 if [ "$OS" = "Linux" ] && command -v systemctl >/dev/null 2>&1; then
   UNIT_DIR="$HOME/.config/systemd/user"
 
-  if [ -f "$UNIT_DIR/tmux-ronin.service" ]; then
-    act "stop, disable and remove tmux-ronin.service"
-    if [ "$GO" = 1 ]; then
-      systemctl --user disable --now tmux-ronin 2>/dev/null || true
-      rm -f "$UNIT_DIR/tmux-ronin.service"
+  # The operator unit is ronin.service; tmux-ronin.service is its pre-2026-08-19 name.
+  # A box that never re-ran setup.sh after the rename still has the old one — take both.
+  FOUND_UNIT=0
+  for unit in ronin tmux-ronin; do
+    if [ -f "$UNIT_DIR/$unit.service" ]; then
+      FOUND_UNIT=1
+      act "stop, disable and remove $unit.service"
+      if [ "$GO" = 1 ]; then
+        systemctl --user disable --now "$unit" 2>/dev/null || true
+        rm -f "$UNIT_DIR/$unit.service"
+      fi
     fi
-  else
-    say "tmux-ronin.service is not installed"
-  fi
+  done
+  [ "$FOUND_UNIT" = 0 ] && say "the Ronin unit is not installed"
 
   if [ -f "$UNIT_DIR/tmux-server.service" ]; then
     live=$(tmux list-sessions -F '#{session_name}' 2>/dev/null | wc -l | tr -d ' ')
@@ -89,14 +94,19 @@ if [ "$OS" = "Linux" ] && command -v systemctl >/dev/null 2>&1; then
   fi
   [ "$GO" = 1 ] && systemctl --user daemon-reload 2>/dev/null || true
 elif [ "$OS" = "Darwin" ]; then
-  PLIST="$HOME/Library/LaunchAgents/com.tmux-ronin.plist"
-  if [ -f "$PLIST" ]; then
-    act "unload and remove $PLIST"
-    if [ "$GO" = 1 ]; then
-      launchctl unload -w "$PLIST" 2>/dev/null || true
-      rm -f "$PLIST"
+  FOUND_PLIST=0
+  for PLIST in "$HOME/Library/LaunchAgents/com.ronin.plist" \
+               "$HOME/Library/LaunchAgents/com.tmux-ronin.plist"; do
+    if [ -f "$PLIST" ]; then
+      FOUND_PLIST=1
+      act "unload and remove $PLIST"
+      if [ "$GO" = 1 ]; then
+        launchctl unload -w "$PLIST" 2>/dev/null || true
+        rm -f "$PLIST"
+      fi
     fi
-  else
+  done
+  if [ "$FOUND_PLIST" = 0 ]; then
     say "launchd agent is not installed"
   fi
 else
@@ -160,22 +170,26 @@ fi
 # says "Safe to delete this block". This deletes exactly the fence and what it holds —
 # nothing else in anyone's rc file moves.
 echo "→ PATH blocks in rc files"
-SHIM_BEGIN="# >>> tmux-ronin PATH (added by setup.sh) >>>"
-SHIM_END="# <<< tmux-ronin PATH <<<"
+# Two marker generations: "ronin" is current; "tmux-ronin" was written by setup.sh
+# before the 2026-08-19 rename and may still fence a block in an older rc file.
 FOUND_RC=0
-for rc in "$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.bash_login" "$HOME/.profile" \
-          "$HOME/.zshrc" "$HOME/.zprofile" "$HOME/.zshenv" "$HOME/.zlogin"; do
-  [ -f "$rc" ] || continue
-  grep -qF "$SHIM_BEGIN" "$rc" || continue
-  FOUND_RC=$((FOUND_RC + 1))
-  act "remove the marked block from $rc"
-  if [ "$GO" = 1 ]; then
-    tmp="$(mktemp)"
-    awk -v b="$SHIM_BEGIN" -v e="$SHIM_END" \
-      '$0 == b {drop = 1} drop != 1 {print} $0 == e {drop = 0}' "$rc" > "$tmp" &&
-      cat "$tmp" > "$rc"   # cat-over, not mv: keeps the rc file's inode, mode and owner
-    rm -f "$tmp"
-  fi
+for MARK in "ronin" "tmux-ronin"; do
+  SHIM_BEGIN="# >>> $MARK PATH (added by setup.sh) >>>"
+  SHIM_END="# <<< $MARK PATH <<<"
+  for rc in "$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.bash_login" "$HOME/.profile" \
+            "$HOME/.zshrc" "$HOME/.zprofile" "$HOME/.zshenv" "$HOME/.zlogin"; do
+    [ -f "$rc" ] || continue
+    grep -qF "$SHIM_BEGIN" "$rc" || continue
+    FOUND_RC=$((FOUND_RC + 1))
+    act "remove the marked block from $rc"
+    if [ "$GO" = 1 ]; then
+      tmp="$(mktemp)"
+      awk -v b="$SHIM_BEGIN" -v e="$SHIM_END" \
+        '$0 == b {drop = 1} drop != 1 {print} $0 == e {drop = 0}' "$rc" > "$tmp" &&
+        cat "$tmp" > "$rc"   # cat-over, not mv: keeps the rc file's inode, mode and owner
+      rm -f "$tmp"
+    fi
+  done
 done
 [ "$FOUND_RC" = 0 ] && say "no marked blocks anywhere — nothing to remove"
 say "note: shells already open keep their PATH until they restart"

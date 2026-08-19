@@ -230,8 +230,13 @@ async function checkJourneys(page, label, jsErrors) {
   }));
   if (commons.pane === 'sessions' && !commons.menu) ok(`${label}: ⛩ Commons goes straight to ⌂ Roster, and drops nothing`);
   else bad(`${label}: ⛩ Commons landed on "${commons.pane}"${commons.menu ? ' and dropped a menu' : ''}, wanted the roster`);
-  if (commons.tabs === 10) ok(`${label}: the Commons strip carries all 10 rooms (registry-fed; ⚙ lives in the bar)`);
-  else bad(`${label}: the Commons strip has ${commons.tabs} rooms, wanted 10`);
+  // FOUR, NOT TEN (2026-08-18). The strip carried ten rooms and two kinds of thing —
+  // four about sessions and six about the install — and measured 871px against a 609px
+  // tile. The six are the admin_desk's now; probe 4 counts them there. Both counts are
+  // fed by the one registry (js/panes.js `surface`), which is what stops the two lists
+  // drifting the way the strip and the old き menu did.
+  if (commons.tabs === 4) ok(`${label}: the Commons strip carries its 4 session rooms (registry-fed)`);
+  else bad(`${label}: the Commons strip has ${commons.tabs} rooms, wanted 4`);
 
   // 2 — a strip tab lands its room: ▤ Wipeboard (a core room on every build). The strip
   // is the ONLY way to pick a room now, which is what makes this the probe that has to
@@ -246,16 +251,17 @@ async function checkJourneys(page, label, jsErrors) {
   // 3 — gbrain is the service-switch proof: always visible; inert in cowork alone;
   // live and populated when the service registered.
   const hasGbrain = await page.evaluate(async () => (await (await fetch('/api/version')).json()).services?.includes('gbrain'));
-  // On the STRIP, since 2026-08-17 — it is the only registry-fed surface left, so it is
-  // where "visible but inert" has to be true. The `.off` rule the tab wears is the same
-  // one the menu row wore; only the surface asserting it moved.
-  await page.locator('#commonsbtn').click();
-  await page.waitForTimeout(300);
-  const gbrainRow = page.locator('.home.show .home-tabrow [data-pane="gbrain"]').first();
+  // ON THE DESK, since 2026-08-18 — gbrain is install-level, so it moved off the Commons
+  // strip with the other five. "Visible but inert" has to be true wherever the room is
+  // drawn, and the `.desk-row.off` rule is the same one the tab wore; only the surface
+  // asserting it moved, for the second time (menu → strip → desk).
+  await page.locator('#sysbtn').click();
+  await page.waitForSelector('.desk.show', { timeout: 3000 });
+  const gbrainRow = page.locator('.desk.show .desk-row[data-room="gbrain"]').first();
   if (!hasGbrain) {
     if (await gbrainRow.isDisabled()) ok(`${label}: gbrain is visible but inert without its service`);
     else bad(`${label}: gbrain is clickable without its service`);
-    await page.evaluate(() => document.querySelector('.home.show .home-x')?.click());
+    await page.evaluate(() => document.querySelector('.desk.show .desk-x')?.click());
   } else {
     if (await gbrainRow.isDisabled()) bad(`${label}: gbrain service registered but its room is inert`);
     else if (!(await page.evaluate(async () => (await (await fetch('/api/gbrain')).json()).installed))) {
@@ -263,35 +269,44 @@ async function checkJourneys(page, label, jsErrors) {
       // rule): the room must be exactly one Load button, not the status panel.
       await gbrainRow.click();
       try {
-        await page.waitForSelector('.home.show[data-pane="gbrain"] .gb-privacy button', { timeout: 8000 });
-        const btn = await page.locator('.home.show[data-pane="gbrain"] .gb-privacy button').first().textContent();
+        await page.waitForSelector('.desk.show[data-room="gbrain"] .gb-privacy button', { timeout: 8000 });
+        const btn = await page.locator('.desk.show[data-room="gbrain"] .gb-privacy button').first().textContent();
         if (/load|retry/i.test(btn || '')) ok(`${label}: gbrain room offers the one-press Load while not installed`);
         else bad(`${label}: gbrain not installed but the room's button says "${btn}", wanted Load`);
       } catch {
         bad(`${label}: gbrain not installed and the room offered no Load button`);
       }
-      await page.evaluate(() => document.querySelector('.home.show .home-x')?.click());
+      await page.evaluate(() => document.querySelector('.desk.show .desk-x')?.click());
     } else {
       await gbrainRow.click();
       try {
-        await page.waitForSelector('.home.show[data-pane="gbrain"] .gb-privacy .gb-row', { timeout: 8000 });
-        const rows = await page.locator('.home.show[data-pane="gbrain"] .gb-privacy .gb-row').count();
+        await page.waitForSelector('.desk.show[data-room="gbrain"] .gb-privacy .gb-row', { timeout: 8000 });
+        const rows = await page.locator('.desk.show[data-room="gbrain"] .gb-privacy .gb-row').count();
         if (rows === 5) ok(`${label}: gbrain service room loads its five privacy facts`);
         else bad(`${label}: gbrain service room loaded ${rows} privacy facts, wanted 5`);
-        const answerRow = await page.locator('.home.show[data-pane="gbrain"] .gb-card .gb-row').filter({ hasText: 'Answers' }).first().textContent();
+        const answerRow = await page.locator('.desk.show[data-room="gbrain"] .gb-card .gb-row').filter({ hasText: 'Answers' }).first().textContent();
         if (/composed by the agent \(by design\)|gbrain composition available|unknown/.test(answerRow || '')) {
           ok(`${label}: gbrain names who composes answers beside search`);
         } else bad(`${label}: gbrain did not name who composes answers`);
-        const ask = page.locator('.home.show[data-pane="gbrain"] .gb-integration button').first();
+        const ask = page.locator('.desk.show[data-room="gbrain"] .gb-integration button').first();
         if (await ask.count()) {
           await ask.click();
+          // IT CROSSES SURFACES NOW, and that is the half worth asserting. gbrain is a
+          // desk room; ＋ New is a Commons tab. The Commons' `showPane` names a pane but
+          // does not RAISE the panel — every caller used to be inside it already — so a
+          // hand-off from the desk has to lower the desk and raise the Commons first, or
+          // the launcher opens filled-in and invisible behind the desk. It did exactly
+          // that for one run on 2026-08-18; this probe is why that lasted one run.
           const handoff = await page.evaluate(() => ({
+            deskUp: !!document.querySelector('.desk.show'),
+            homeUp: !!document.querySelector('.home.show'),
             pane: document.querySelector('.home.show')?.dataset.pane,
             prompt: document.querySelector('.home.show .home-null textarea')?.value || '',
           }));
-          if (handoff.pane === 'new' && handoff.prompt.includes('connect') && handoff.prompt.includes('gbrain')) {
-            ok(`${label}: an integration hands an editable request to PersonalAssistant`);
-          } else bad(`${label}: gbrain integration did not hand off to the New Session form`);
+          if (handoff.homeUp && !handoff.deskUp && handoff.pane === 'new'
+              && handoff.prompt.includes('connect') && handoff.prompt.includes('gbrain')) {
+            ok(`${label}: an integration hands an editable request across to PersonalAssistant`);
+          } else bad(`${label}: gbrain hand-off landed wrong — desk up=${handoff.deskUp}, home up=${handoff.homeUp}, pane=${handoff.pane}`);
           // The handoff deliberately changes the shared launcher's mode and form.
           // Reload so this probe cannot alter the later launch-validation premise.
           //
@@ -322,41 +337,104 @@ async function checkJourneys(page, label, jsErrors) {
     }
   }
 
-  // 4 — the ONE gear: ⚙ in the bar opens the System sheet, and the appearance flip
-  // button flips the shell and flips it back (auto-follow re-arms on the way back —
-  // the colorScheme pin above makes dark the device mode here).
+  // 4 — the ONE gear: ⚙ in the bar raises the admin_desk on the active tile, the tile
+  // header goes while it is up, and the appearance flip button — which now lives in the
+  // desk's "This app" group rather than a sheet — flips the shell and flips it back
+  // (auto-follow re-arms on the way back; the colorScheme pin above makes dark the
+  // device mode here).
+  //
+  // THIS PROBE USED TO DRIVE `#syssheet` (a page-level ui.sheet) and was rewritten on
+  // 2026-08-18 when ⚙ became the desk. What it asserts is deliberately unchanged: one
+  // gear, one surface, and the flip works from it. The waiting is simpler now for a
+  // structural reason worth keeping — a desk is a tile overlay, not a modal, so nothing
+  // can intercept pointer events for the probes that follow, which is what the long
+  // comment this replaced was entirely about.
   await page.locator('#sysbtn').click();
   try {
-    await page.waitForSelector('#syssheet.open', { timeout: 3000 });
-    ok(`${label}: the bar's ⚙ opens the one System sheet`);
+    await page.waitForSelector('.tile.deskup .desk.show', { timeout: 3000 });
+    ok(`${label}: the bar's ⚙ raises the admin_desk on the active tile`);
   } catch {
-    bad(`${label}: the bar's ⚙ did not open the System sheet`);
+    bad(`${label}: the bar's ⚙ did not raise the admin_desk`);
   }
+  // The six that left the strip are all here, plus the app's own three under them.
+  const deskRows = await page.evaluate(() => ({
+    install: [...document.querySelectorAll('.desk.show .desk-row')].filter((r) => ['settei','proj','hotwords','koshi','gbrain','stats'].includes(r.dataset.room)).length,
+    app: [...document.querySelectorAll('.desk.show .desk-row')].filter((r) => ['appearance','release','account'].includes(r.dataset.room)).length,
+  }));
+  if (deskRows.install === 6 && deskRows.app === 3) ok(`${label}: the desk carries the 6 install rooms and the app's 3`);
+  else bad(`${label}: the desk has ${deskRows.install} install rooms and ${deskRows.app} app rows, wanted 6 and 3`);
+
+  const headGone = await page.evaluate(() => {
+    const h = document.querySelector('.tile.deskup .tile-head');
+    return h ? getComputedStyle(h).display === 'none' : false;
+  });
+  if (headGone) ok(`${label}: the desk is a clean tile — the session header goes with it`);
+  else bad(`${label}: the tile header is still drawn over the desk`);
+
+  await page.locator('.desk.show .desk-row[data-room="appearance"]').click();
   const darkBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-  await page.locator('#syssheet .sys-flip').click();
+  await page.locator('.desk.show .sys-flip').click();
   await page.waitForTimeout(200);
   const lightBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-  await page.locator('#syssheet .sys-flip').click();
+  await page.locator('.desk.show .sys-flip').click();
   await page.waitForTimeout(200);
   const backBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
   if (lightBg !== darkBg && backBg === darkBg) ok(`${label}: the flip button flips the shell and back (${darkBg} ⇄ ${lightBg})`);
   else bad(`${label}: theme flip broken — dark=${darkBg} light=${lightBg} back=${backBg}`);
   const failAfterTheme = await page.evaluate(() => !!document.getElementById('failbar'));
   if (failAfterTheme) bad(`${label}: the theme flip raised the failure banner`);
-  // WAIT FOR THE SHEET TO BE GONE, do not sleep 200ms and hope (2026-08-17). This was a
-  // fixed timeout, and roughly one run in two the sheet was still open when the next probe
-  // started — so probe 4 focused a tab underneath a live modal and read `undefined`, and
-  // the note-journey click later died on `#syssheet intercepts pointer events` after
-  // 30 seconds. Both failures blamed the product; neither was the product. A gate that
-  // fails one run in two teaches people to re-run it, which is how a real failure gets
-  // waved through.
-  // `#syssheet.open` DETACHED, not `#syssheet:not(.open)` visible: a ui.sheet is built once
-  // and lives for the page, so the closed sheet is still in the DOM and merely hidden —
-  // and waitForSelector's default state is `visible`, so the obvious spelling waits for a
-  // hidden div to appear and times out every time. Matching on `.open` and waiting for the
-  // match to vanish asks the question the class actually answers.
-  await page.keyboard.press('Escape');
-  await page.waitForSelector('#syssheet.open', { state: 'detached', timeout: 3000 });
+
+  // SKINS — a skin is design tokens and nothing else, so the probe reads a TOKEN and then
+  // a rendered element: the variable proves the block landed, the element proves the app
+  // actually wears it. Shipped skins only here; the user's own copy is a store this gate
+  // must not write to.
+  const skins = await page.locator('.desk.show .sys-skin').count();
+  if (skins >= 2) ok(`${label}: the skin picker lists ${skins} skins from the catalog`);
+  else bad(`${label}: the skin picker listed ${skins} skins, wanted at least 2`);
+  const before = await page.evaluate(() => ({
+    tok: getComputedStyle(document.documentElement).getPropertyValue('--radius-md').trim(),
+    drawn: getComputedStyle(document.querySelector('.desk.show .desk-row')).borderRadius,
+  }));
+  await page.locator('.desk.show .sys-skin', { hasText: 'Square' }).first().click();
+  await page.waitForTimeout(250);
+  const after = await page.evaluate(() => ({
+    tok: getComputedStyle(document.documentElement).getPropertyValue('--radius-md').trim(),
+    drawn: getComputedStyle(document.querySelector('.desk.show .desk-row')).borderRadius,
+  }));
+  if (after.tok !== before.tok && after.drawn !== before.drawn) {
+    ok(`${label}: a skin re-skins the running app (--radius-md ${before.tok}→${after.tok}, drawn ${before.drawn}→${after.drawn})`);
+  } else bad(`${label}: picking a skin changed nothing — token ${before.tok}→${after.tok}, drawn ${before.drawn}→${after.drawn}`);
+  // A COLOUR SKIN MUST KEEP THE FLIP — the case that actually broke. `paper` carries a dark
+  // face and a light face, and the bug this catches is silent in both directions: a prefix
+  // that eats one of the token's own dashes parses to zero tokens, so the skin applies
+  // nothing and looks merely subtle rather than broken (2026-08-19, one run).
+  await page.locator('.desk.show .sys-skin', { hasText: 'Paper' }).first().click();
+  await page.waitForTimeout(250);
+  const faceA = await page.evaluate(() => ({
+    shell: document.documentElement.dataset.theme,
+    bg: getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(),
+  }));
+  await page.locator('.desk.show .sys-flip').click();
+  await page.waitForTimeout(350);
+  const faceB = await page.evaluate(() => ({
+    shell: document.documentElement.dataset.theme,
+    bg: getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(),
+  }));
+  if (faceA.bg !== faceB.bg && faceA.shell !== faceB.shell) {
+    ok(`${label}: a colour skin keeps the flip — ${faceA.shell} ${faceA.bg} ⇄ ${faceB.shell} ${faceB.bg}`);
+  } else bad(`${label}: the skin's two faces did not follow the shell — ${JSON.stringify(faceA)} vs ${JSON.stringify(faceB)}`);
+  await page.locator('.desk.show .sys-flip').click(); // back to the shell we arrived in
+  await page.waitForTimeout(250);
+
+  // Put it back: this probe shares a browser profile with the ones after it, and a squared
+  // shell is not the state they were written against.
+  await page.locator('.desk.show .sys-skin', { hasText: 'Stock' }).first().click();
+  await page.waitForTimeout(200);
+
+  // ⚙ TOGGLES, and the tile comes back — the lesson ⛩ already learned (js/tile.js).
+  await page.locator('#sysbtn').click();
+  await page.waitForSelector('.tile.deskup', { state: 'detached', timeout: 3000 });
+  ok(`${label}: ⚙ again puts the desk away and gives the tile its header back`);
 
   // 4 — the Commons strip is a real tablist: arrows move focus along it, Enter lands
   // the focused room. (Activation stays deliberate — focus alone must not open a room.)

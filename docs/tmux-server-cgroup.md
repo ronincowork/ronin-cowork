@@ -14,11 +14,11 @@ the server stays in the cgroup of the process that asked for it.
 
 Ronin asks for sessions: `tmux new-session` runs on every commons launcher spawn and on
 `POST /api/sessions`. If no server is running at that moment, Ronin is the one that
-starts it, and the server lands in `tmux-ronin.service`:
+starts it, and the server lands in `ronin.service`:
 
 ```
-$ systemd-cgls --user-unit tmux-ronin.service
-Unit tmux-ronin.service (/user.slice/…/app.slice/tmux-ronin.service):
+$ systemd-cgls --user-unit ronin.service
+Unit ronin.service (/user.slice/…/app.slice/ronin.service):
 ├─1999849 npm start…
 ├─1999873 node … src/index.ts
 ├─2000201 tmux new-session -d -s shutdown     ← the tmux SERVER
@@ -29,7 +29,7 @@ systemd's default `KillMode=control-group` means *stopping a unit SIGTERMs every
 process in its cgroup*. tmux handles SIGTERM by ending every session. So:
 
 ```
-systemctl --user restart tmux-ronin   →   the whole box's tmux goes with it
+systemctl --user restart ronin   →   the whole box's tmux goes with it
 ```
 
 Restarting Ronin is a routine thing — it's the documented way to pick up a `src/`
@@ -38,7 +38,7 @@ been started from an SSH login instead, it lived in that login's scope and survi
 so a restart looked harmless right up until the next time Ronin got there first.
 
 Two clues that fingered it: the tmux server process was always *younger* than the
-last Ronin start, and its `/proc/<pid>/cgroup` read `…/tmux-ronin.service`.
+last Ronin start, and its `/proc/<pid>/cgroup` read `…/ronin.service`.
 
 ## The fix
 
@@ -52,7 +52,7 @@ so a missing server is not a failure), because the `-f` config only runs for a s
 this unit actually started — enabling the unit on a box that already has a server would
 otherwise leave `exit-empty` on.
 
-`tmux-ronin.service` gains `Wants=`/`After=tmux-server.service`, plus an
+`ronin.service` gains `Wants=`/`After=tmux-server.service`, plus an
 `ExecStartPre` that restarts the server unit **only when no server is running at all**
 (i.e. when there are no sessions to lose — the unit staying `active (exited)` after
 its server died is the one case `Wants=` can't catch).
@@ -98,7 +98,7 @@ every session.** That unit owns them. That's ownership, not fragility.
   a new "create a session" path inherits this constraint.
 - **Never `systemctl --user restart tmux-server`** while sessions exist — that unit
   owns them, and stopping it is the one legitimate way to kill them all.
-- `systemctl --user restart tmux-ronin` is safe once the server unit is in place.
+- `systemctl --user restart ronin` is safe once the server unit is in place.
   Before it, it was the most destructive command on the box.
 
 ## The guard on the remaining foot-gun
@@ -130,10 +130,10 @@ nothing refuses, so the rule is written down and nothing else. Check with
 
 `stop`, `restart`, `try-restart`, `reload-or-restart`, `try-reload-or-restart` and `kill`
 against `tmux-server[.service]` are checked; every other systemctl call — including
-`restart tmux-ronin` and `status tmux-server` — is passed straight through.
+`restart ronin` and `status tmux-server` — is passed straight through.
 
 **Why not systemd's own `RefuseManualStop=yes`?** Because it refuses *always*, and one
-manual stop is legitimate: reviving a server that died. Both `tmux-ronin.service`'s
+manual stop is legitimate: reviving a server that died. Both `ronin.service`'s
 `ExecStartPre` and `ensureTmuxServer()` do that by restarting this unit. The session
 count is exactly the line between the two cases — a restart with sessions live is the
 accident, a restart with none is the repair — so the guard allows the repair path and
@@ -160,14 +160,14 @@ to be replaced once, which ends the sessions it holds. Do it when the box is qui
 ```bash
 systemctl --user daemon-reload
 systemctl --user enable --now tmux-server     # no-op if a server is already running
-systemctl --user restart tmux-ronin           # last restart that takes tmux with it
+systemctl --user restart ronin           # last restart that takes tmux with it
 systemctl --user restart tmux-server          # server re-born in its own cgroup
 ```
 
 Verify — the server must NOT appear under the app's unit:
 
 ```bash
-systemd-cgls --user-unit tmux-ronin.service    # node + `tmux attach` clients only
+systemd-cgls --user-unit ronin.service    # node + `tmux attach` clients only
 systemd-cgls --user-unit tmux-server.service   # the tmux server lives here
 ```
 

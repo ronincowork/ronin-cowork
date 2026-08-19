@@ -60,14 +60,14 @@ export async function removeHandoff(session: string): Promise<string | null> {
       if (!matches(entry.slice(0, -3), session)) continue;
       const path = join(handoffDir, entry);
       await unlink(path);
-      console.log(`[tmux-ronin] handoff removed with session ${session}: ${entry}`);
+      console.log(`[ronin] handoff removed with session ${session}: ${entry}`);
       return path;
     }
   } catch (e) {
     const code = (e as NodeJS.ErrnoException)?.code;
     // No handoffs directory at all is normal in a fresh checkout, not worth a line.
     if (code !== 'ENOENT') {
-      console.error(`[tmux-ronin] handoff cleanup for ${session}:`, (e as Error)?.message ?? e);
+      console.error(`[ronin] handoff cleanup for ${session}:`, (e as Error)?.message ?? e);
     }
   }
   return null;

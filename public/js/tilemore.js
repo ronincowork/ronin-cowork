@@ -1,4 +1,4 @@
-/* part of the tmux-ronin client — see js/README.md */
+/* part of the ronin-cowork client — see js/README.md */
 
 /**
  * メ ON THE TILE HEADER — the six controls that used to end the row, dropped in one

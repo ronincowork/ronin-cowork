@@ -280,10 +280,9 @@ export const writeMachineSection = (v: { name?: string; where?: string }): Promi
 /**
  * HOW WORK GETS A MODEL — two different questions, and merging them is the trap.
  *
- * `sessions.default` is what a NEW SESSION launches as: a CLI in a tile. Per-project
- * defaults already live in the roots file; this is the floor under a project that names
- * none, which today falls back to a bare `claude` — a string matching no launch-table
- * row, which is why MCP-off refuses it and a fresh box launches wrong.
+ * `sessions.default` is what a NEW SESSION launches as: a CLI in a tile. It is THE
+ * default — one, for the whole install (owner, 2026-08-18); a root does not choose a
+ * model for you.
  *
  * `jobs` is the house's own model-fed work: one question, one answer, over an API. Not a
  * session, so each needs a key — and what is stored is the env var's NAME. Never a key.
@@ -300,6 +299,17 @@ export const writeAgentsSection = (value: Record<string, unknown>): Promise<void
 export const writeGbrainSection = (enabled: boolean): Promise<void> =>
   updateConfig((doc) => {
     doc.gbrain = { enabled: Boolean(enabled) };
+  });
+
+/**
+ * THE WANT LIST — the owner's typed intents, each judged against the found half per
+ * read to produce a needed[] entry until the box satisfies it. The want persists (it
+ * is intent); the needed entry never does (it is computed). Narrow shape, whole-list
+ * replace: a short list the owner curates from ⚙, not a log.
+ */
+export const writeWantedSection = (list: Array<{ kind: string; name: string }>): Promise<void> =>
+  updateConfig((doc) => {
+    doc.wanted = list.slice(0, 50).map((w) => ({ kind: String(w.kind), name: String(w.name).slice(0, 80) }));
   });
 
 /**

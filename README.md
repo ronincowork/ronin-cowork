@@ -54,7 +54,9 @@ cd ~/ronin/current && ./setup.sh     # sets everything up on this machine
 
 `setup.sh` tells you if it needs anything (tmux, Node), does the rest itself, and
 **prints the URL it is serving on**. Open that URL in your browser: a fresh install
-lands on the setup page, which asks what it needs and opens your first session.
+lands on the setup page — answer it once, Save, and you are in your coworkspace.
+No agent is needed anywhere in that path; if an agent CLI is already on the box,
+your first session opens too, already knowing what you answered.
 
 If the box is remote, reach the URL over the private route you already use — an SSH
 tunnel is enough (`ssh -L 3006:127.0.0.1:3006 you@yourbox`, then open

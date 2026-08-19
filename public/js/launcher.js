@@ -1,4 +1,4 @@
-/* part of the tmux-ronin client — see js/README.md */
+/* part of the ronin-cowork client — see js/README.md */
 /**
  * ＋ NEW SESSION — the koshidashi board: buttons that put a session out to work.
  *
@@ -241,7 +241,24 @@ export function buildLauncher(tile, host) {
   const savedRow = document.createElement('div');
   savedRow.className = 'ks-saved';
 
-  board.append(boardHead, savedRow, grid2, form);
+  // "START YOUR SETUP SESSION" — the reading list's offer (settei's needed[]),
+  // shown when an agent CLI is found AND the list is non-empty. It FILLS THE FORM
+  // and stops, like every button on this board — the owner still reads and presses
+  // Start. Judged once per build: the condition moves at the pace of setup, not of
+  // tiles, and the record read costs a login-shell probe not worth re-paying.
+  const offer = document.createElement('button');
+  offer.className = 'ks-saved-btn ks-offer';
+  offer.hidden = true;
+  void (async () => {
+    const r = await request('/api/settei');
+    const rec = r.ok ? r.data : null;
+    if (!rec || !(rec.needed ?? []).length || !(rec.status?.agents?.usable ?? []).length) return;
+    offer.textContent = '新 start your setup session';
+    offer.title = rec.needed.map((n) => n.needs).join(' · ');
+    offer.addEventListener('click', () => open(rec.schema.seat.job, rec.schema.seat.prompt));
+    offer.hidden = false;
+  })();
+  board.append(boardHead, offer, savedRow, grid2, form);
   host.appendChild(board);
 
   let kind = null;
@@ -388,16 +405,8 @@ export function buildLauncher(tile, host) {
     if (!seen.size) modelSel.add(new Option('claude', 'claude'));
     modelSel.value = [...modelSel.options].some((o) => o.value === cur) ? cur : modelSel.options[0].value;
   };
-  // Keep the session_launch_spec in step with the project unless you have chosen one yourself.
-  let modelTouched = false;
-  modelSel.addEventListener('change', () => {
-    modelTouched = true;
-  });
-  whereSel.addEventListener('change', () => {
-    if (modelTouched) return;
-    const proj = (projectData || []).find((r) => r.name === whereSel.value);
-    if (proj && proj.cmd && [...modelSel.options].some((o) => o.value === proj.cmd)) modelSel.value = proj.cmd;
-  });
+  // NO per-root model sync: there is ONE default for new sessions and the form's own
+  // picker (owner's ruling, 2026-08-18) — a root does not choose a model for you.
   // Enter in the name moves to the prompt rather than launching a nameless session.
   nameInp.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter') return;

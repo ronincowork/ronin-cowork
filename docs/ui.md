@@ -27,6 +27,67 @@ restyle a primitive's hooks (`.ui-*`, `#toast`, `.helpbox`) or shadow a foundati
 token" is `check-css`'s to enforce (checks 4–5), not the cascade's. Splitting layers
 into files is a mechanical move for the day a layer earns one.
 
+## The look is spelled once — all of it
+
+**Editing `@layer foundations` re-skins the whole app.** That is the promise (owner,
+2026-08-19: *"if someone wanted to change how their co-work space looked entirely, they
+could just change everything by giving a simple instruction to update the design tokens"*),
+and it only holds while nothing carrying look is spelled anywhere else — so
+`scripts/check-css.mjs` gates every family, not just colour. A raw `8px` radius in a
+feature rule is the same defect as a raw `#131826`.
+
+The census that prompted this (2026-08-19): **eleven** border-radius values, **twelve**
+font-sizes including 10.5/11.5/12.5px, spacing on nearly every integer from 1 to 18, and
+**seven** font stacks doing the work of three roles. An agent could not get a colour wrong
+and could not get a radius right.
+
+| Family | Tokens | What it governs |
+|---|---|---|
+| shape | `--radius-hair/xs/sm/md/lg/xl` + `--radius-pill` `--radius-round` | corners. `md` unless you have a reason. `pill`/`round` are shapes, so squaring the app leaves a dot a dot |
+| space | `--space-1` … `--space-12` (2px ladder) | padding, margin, gap. `--space-4` (8px) is the house default |
+| type | `--text-1` … `--text-10`, `--text-micro` | `--text-3` (12px) is this app's body, not a caption — Ronin is dense on purpose |
+| voice | `--font-ui` `--font-mono` `--font-term` | **three roles, not two.** `--font-term` is what xterm renders (`js/termview.js` reads it via `termFace()`), and the tape, composer and jump button must match it glyph-for-glyph or a wrapped line stops lining up |
+| edge | `--edge` `--edge-2` | border widths — a heavier-lined theme is one edit, not four hundred |
+| motion | `--motion-quick/settle/slow/hint`, `--ease` `--ease-out` | four speeds; nothing animates for decoration |
+| elevation | `--scrim` `--shadow-menu` `--shadow-sheet` | |
+
+These are **theme-independent** and defined once: a square corner is square in both shells.
+Only the colour roles are redefined under `:root[data-theme='light']`.
+
+**Light and dark are Stock's two faces, and that is why they stay in CSS.** `:root` and
+`:root[data-theme='light']` under `@layer foundations` are exactly what a skin spells as
+`dark--x` and `light--x` — one mechanism, not two, and the owner's reading ("light/dark is
+really just the first two skins") is already satisfied rather than pending. Stock is spelled
+in the stylesheet because it is the **floor**: the page must paint correctly with no JS
+having run, on a first visit or a flaky link, and a floor that has to be fetched is not one.
+Moving it into `SKINS.md` would also put one palette in two places — and `check-css` reads
+its contrast floor out of the stylesheet by selector and has never heard of `SKINS.md`, so
+the copy that renders would go unmeasured while the copy that does not stayed green.
+
+**The honest limit: a skin's colours are checked by nothing.** The gate measures
+`@layer foundations`. Shipped skins are written to stay clear of the floor — `paper` moves
+grounds and leaves the ink alone, which is the change that cannot make anything unreadable.
+A skin of your own can do as it likes; nothing is measuring it for you.
+
+**A skin is a set of these tokens, and nothing else** (`ronin_catalogs/SKINS.md`,
+`js/skins.js`). It cannot add a rule, move a control or style one surface differently from
+another — it can only answer questions `@layer foundations` already asks, which is the whole
+safety story: there is no selector in a skin to get wrong, and a token spelled wrong is
+inert. Shadowable like any catalog (`docs/shadowing.md`): shipped skins update with the
+repo, a skin of yours is yours and an upgrade cannot touch it, and the picker says which is
+which because only a skin of ours that you replaced can silently stop tracking an upgrade.
+**A token a skin names is chosen for both shells** — light and dark are themes, a skin is a
+skin — which is why the shipped skins stay off colour and compose with the flip instead of
+competing with it. The whole feature is one catalog, one route and thirty lines of client;
+it is the dividend of the token work above, not a second system.
+
+**The escape hatch costs you a name.** A one-off MEASUREMENT is not a rung and must not
+become one — `--tape-clearance` (the composer's height, so the last transcript line is not
+hidden), `--ptr-len`/`--ptr-wide` (the dial needle's geometry, three numbers that must move
+together), `--fr-gutter` (first-load is a document, not the app grid). A `--name:` line is
+the one legal home for a raw value, so naming it satisfies the gate *and* says what the
+number is. `0` is always legal: the absence of a value is not a value.
+
 ## Colour
 
 Colour is spelled once, in tokens, and `scripts/check-css.mjs` fails the build on a raw
@@ -41,7 +102,10 @@ The roles, defined in `public/style.css`:
 - text: `--fg-strong` · `--fg` · `--muted` · `--muted-2` · `--muted-3` · `--dim` (zero-state)
 - meaning: `--accent` (attention/identity) · `--accent-2` (reference) · `--ok`/`--ok-2` ·
   `--warn` (needs you) · the `--bad-*` family (wrong, in grades) · `--info` · `--action`
-- house: `--kaki` (this session) · `--aiiro` (Ronin) — Kojin's fixed palette, borrowed
+- house: `--kaki` (this session; heightened access/visibility) · `--aiiro` (Ronin) —
+  Kojin's fixed palette, borrowed. `--heighten`, `--heighten-hover`, `--heighten-fg`, and
+  `--heighten-shape` are the semantic treatment: a kaki hexagon for an access or view
+  control whose ability to be found quickly is part of its function.
 - elevation: `--scrim`, `--shadow-menu`, `--shadow-sheet` — the whole vocabulary
 - terminal: the `--term-*` block — xterm's palette and the tape/composer surfaces,
   read back into JS by `termTheme()` (`public/js/theme.js`), never restated
@@ -57,11 +121,66 @@ flips with it, owner's ruling 2026-08-16), and the one control is the flip butto
 the ⚙ System sheet: flipping away from the device's mode pins the shell; flipping
 back to match re-arms following — no third control exists (`theme.js setTheme`).
 Per device (localStorage `tmuxgrid.theme`); `index.html` resolves the choice inline
-before first paint. **Terminal surfaces stay dark in both shells** — the `--term-*`
-tokens are deliberately absent from the light block. One resolved palette feeds CSS,
-xterm and the browser's `theme-color`; `check-css` holds `theme.js`'s token reads and
-the stylesheet to the same list. The browser gates pin `colorScheme: 'dark'` so the
-baselines are a choice, not the headless engine's default.
+before first paint. One resolved palette feeds CSS, xterm and the browser's
+`theme-color`; `check-css` holds `theme.js`'s token reads and the stylesheet to the
+same list. The browser gates pin `colorScheme: 'dark'` so the baselines are a choice,
+not the headless engine's default.
+
+**The terminal goes light with the shell** (2026-08-19). It used to stay dark on
+purpose — a terminal is read against a dark ground by convention and every TUI palette
+assumes it — and the owner overruled that: white-on-black is precisely what puts a
+non-terminal person off, so a light shell around a black pane has not gone light. The
+light block remaps every `--term-*` token; **`theme.js` needed no change at all**,
+because `termTheme()` re-reads the tokens on each flip. Remapping them in CSS is the
+whole mechanism, which is the token rule paying for itself.
+
+The light set is **Tomorrow**, the day sibling of the dark set's Tomorrow Night — one
+scheme, two grounds. Two departures from stock, both forced by the paper:
+
+- **Every colour clears 3:1 on `--term-bg`.** Tomorrow's `#eab700` yellow is 1.7:1 on
+  paper, so a TUI's warning line would read as blank. A light pane that is merely light
+  is not legible.
+- **ANSI white is not white.** Dark schemes map 7/15 to the foreground, so `\e[97m`
+  gets the strongest ink. Map that literally on paper and the text disappears — the
+  fault Solarized Light is known for. Here 7 is a mid grey and 15 is near-black, so
+  bright white stays the strongest mark, which is the role the emitting code means.
+
+**The 256-colour cube follows the shell too** (2026-08-19). Sixteen named slots is only
+half a terminal palette; the other 240 are the xterm cube, and a program that addresses
+those was left painting for a ground that had gone. `theme.js` generates all 240
+arithmetically — no colour is spelled there — and pushes them as xterm's `extendedAnsi`,
+read as written on the dark shell and mirrored in **CIE L\*** on paper. The transform
+reverses MEANING rather than maximising legibility, because one palette serves both text
+and fills: light ink becomes dark ink, and a dark rectangle becomes a light one. Clamping
+every entry to 3:1 would turn every fill back into a dark rectangle. Which shell reads it
+which way is a token, `--term-cube`.
+
+What this cannot fix: a TUI that hardcodes an RGB value rather than asking for a slot or a
+cube index keeps its own colours in either shell. The palette is a set of answers to
+questions the program has to ask — and **`docs/ui-agents.md` is the record of what each
+agent CLI actually asks**, with the measured numbers and the settings each one needs.
+
+**"Bright white is the strongest mark" is now a CONTRACT, not a nicety, and it reaches
+outside Ronin.** Claude Code — the agent in most of these panes — ships themes in two
+shapes: `light`/`dark` hardcode RGB, and `light-ansi`/`dark-ansi` emit **slot names**
+(`text: ansi:whiteBright`). Under an `-ansi` theme it never sends a colour, so xterm holds
+the slot index and re-renders existing text the moment `applyTheme` pushes a new palette —
+which is why **flipping Ronin's light/dark recolours the agent's output live**, with nothing
+written to `~/.claude` and nothing for Ronin to reach into. Both halves are true at once:
+Ronin cannot touch that program's settings, and that program follows Ronin's flip.
+
+It only works because 15 is the strongest mark in BOTH shells. Measured on this palette:
+
+| Claude Code theme | its `text` slot | on Ronin light | on Ronin dark |
+|---|---|---|---|
+| `light-ansi` | `ansi:black` | 15.57:1 | **1.17:1 — body text invisible** |
+| `dark-ansi` | `ansi:whiteBright` | 17.29:1 | 16.06:1 |
+
+So a pinned `-ansi` theme survives the flip only if it pins the one whose slot is legible on
+both grounds, and on this palette that is `dark-ansi` in either shell. `light-ansi` looks
+right until the first flip back and then loses the body text — caught on the owner's own box,
+2026-08-19. **Change 7/15 in either shell and that table has to be recomputed**; the
+consumer is a program this repo does not ship.
 
 ## Transport and failure
 
@@ -201,6 +320,43 @@ On touch the control relocates into the ニ sheet like the other bar verbs. The 
 tab strip scrolls at every width — a 4-up desktop tile is narrower than the row of
 rooms, and clipping the tail is how a tab goes quietly missing.
 
+**THE STRIP IS FOUR TABS (2026-08-18).** It held ten and two kinds of thing: four about
+SESSIONS and six about the INSTALL. Ten measured 871px against a 609px tile, and the
+⚙ Configuration rename (67px → 107px) pushed even a 1920 display 10px over — so it scrolled
+at every width there was. Length was the symptom; the defect was that the six were drawn in
+**every sessionless tile**, four copies of facts with one value. The house had already ruled
+that line once, for the gear — *release, update, appearance and log out are the install's,
+not a tile's* — and the six were on the wrong side of it.
+
+They are the **`admin_desk`**'s now (`js/desk.js`), raised by ⚙ on the bar. The desk is a
+TILE, not a page-level sheet (owner: *"page level surface? cant it just be a tile?"*): the
+copies were never about a surface being able to live in a tile, they were about six rooms
+being drawn in every empty one whether or not anyone wanted them. A tile is also a full
+pane, which is why ⚙ Configuration became a room instead of staying in the gear's sheet — a
+sheet would have re-lost that. It has **no tile header**: every control up there acts on a
+session. Its own ✕ is **undo** — back to the terminal when the tile has a session, back to
+the Commons when it does not, and the Commons is also the fallback if the session died while
+the desk was up, because an empty tile has nothing behind its overlays. ⚙ toggles, the lesson
+⛩ already learned. The rail is **glyphs + labels** with a collapse button: the
+`@container tile` query says how a name lays out (beside its glyph, or stacked at 70px in a
+4-up), the button says whether names show at all.
+
+**One registry, two readers.** `js/panes.js` gives every row a `surface` — `commons` or
+`desk` — and each surface filters to its own. That is the same file that exists because the
+strip and the old き menu drifted; a row now states which surface owns it, so they cannot.
+
+**How you know the strip has more on it: a fade, not a scrollbar** (owner, 2026-08-18:
+"there is a scroll bar showing at times and it looks awful"). Ten rooms plus the ✕ is
+831px against a 599px desktop tile, so a third of the strip is off-screen at any moment.
+The bar used to be that signal on a mouse, drawn across the bottom edge of a 26px strip
+on overflow, with a permanently reserved `scrollbar-gutter` behind it to stop the strip's
+height flapping. It is off at every width now: each end of the strip fades out when there
+are tabs behind it, `commons.js` writes `data-edge` from the scroll position, and the
+stylesheet owns the look. Nothing draws, so the height is constant without reserving
+anything. Selecting a pane also scrolls its tab back onto the strip — a room can be
+entered from somewhere other than its own tab (⚙ Configuration from first-run, ▧ Docs from the
+tile's 📄), and the strip must not disagree with the pane.
+
 **The five bar verbs are one width** — New · Commons · Keypad · Mika Assist · Account,
 `min-width` plus centred labels, so the row reads even rather than as five different
 kinds of control. The grid count is exempt: it is a number, not a verb. At ≤680px the
@@ -214,6 +370,31 @@ words go and the width goes with them (a genuine shell change, so a `@media` que
   explanation is unnecessary.
 - Every `title` becomes the help box (`tips.js`), which also serves keyboard focus and
   supplies `aria-label` to icon-only buttons. Labels are gated by `check-tips`.
+- **A control that names itself on its face gets no pop-up.** The Commons room tabs and the
+  ⚡ macro cards both lost theirs on 2026-08-18. A macro card already prints its `label:` and
+  `blurb:` in two always-visible lines, so the box repeated the answer and laid 300px of it
+  over the cards underneath (owner: *"its dumb to have the hover description covering the
+  button description"*). Where the text is still worth keeping it moves to `aria-label`,
+  never back to `title` — `tips.js` takes over any `title` it finds, so a title **is** a
+  pop-up here by definition. The macro invocation (`+name:`) lives there now; it stays off
+  the face by the earlier ruling and out of a box by this one.
+- **The Commons room tabs carry no hover help at all** (owner, 2026-08-18: "we don't need
+  a pop-up. There doesn't need to be anything on hover. Just get rid of it"). A tab's label
+  already says what its room is, so a panel restating it in a sentence was cost with no
+  reader — and it was landing over the strip it described. The registry's `hint` column
+  went with the line that read it, rather than staying unread (`panes.js`). A room that
+  needs more than its label needs a better label. An `off` tab's reason is its
+  `aria-label`, not a `title`: a title is a pop-up waiting to happen, and a disabled
+  button was never hoverable anyway.
+- The box hangs off **the nearest thing below the header that the control is inside, else
+  the header** — メ's drop, or the Commons tab strip. Docking to the header put a 300px box
+  across seven of the ten rooms, and since a tab is not in the header it also failed the
+  side test and docked to the tile's far right, so the answer appeared at the opposite end
+  of the strip from the question. The tabs have since lost their help outright (above), but
+  the rule stands on the ✕, which is a bare glyph with no label of its own and would cover
+  the tabs the same way. The side is read off whatever divides that anchor's two groups, in
+  DOM order: the header's `.grow` spacer, or the strip's ✕, which carries `margin-left:
+  auto` and so is the strip's own spacer.
 - The help box's header — the line above the rule — carries a keyboard shortcut, a live
   reading, or nothing, and **exists only when it has content** (owner, 2026-08-17: an
   empty header over every macro row buried the text under a blank block). A shortcut

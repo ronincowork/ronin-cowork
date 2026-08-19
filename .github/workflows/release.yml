@@ -26,9 +26,17 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-      # tmux is a host tool, not a dependency — several checks shell out to it.
-      - name: install tmux
-        run: sudo apt-get update && sudo apt-get install -y tmux
+      # NO `apt-get install tmux` HERE, and it is not an oversight (removed 2026-08-19).
+      # The step existed on the claim that "several checks shell out to tmux". Measured:
+      # sixteen of the seventeen gates never touch it, and the seventeenth — smoke-ui —
+      # resolves Playwright FIRST and SKIPs before it would ever reach for a tmux session.
+      # A runner has no browser, so on a runner that skip is certain and tmux is never
+      # used at all. bin/ronin-build does not use it either.
+      # It was not free. `apt-get update` hangs whenever Azure's Ubuntu mirrors are
+      # unreachable — 22m52s on 2026-08-19, against 8 SECONDS for all seventeen gates —
+      # so the install was the slowest and least reliable thing in the job, on every run,
+      # for nothing. If a runner ever does drive a real render check (tier 2, above), it
+      # brings its own tmux back with it, next to the browser it will also need.
       - run: npm ci
       - name: BYOIN — no unchecked bytes get published
         run: bin/ronin-byoin --gates

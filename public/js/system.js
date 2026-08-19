@@ -1,17 +1,24 @@
-/* part of the tmux-ronin client — see js/README.md */
+/* part of the ronin-cowork client — see js/README.md */
 import { request } from './request.js';
-import { button, field, sheet, status } from './ui.js';
+import { button, field, status } from './ui.js';
+import { currentSkin, listSkins, setSkin } from './skins.js';
 import { resolvedTheme, setTheme } from './theme.js';
 import { S } from './state.js';
 
 /**
- * ⚙ SYSTEM — what this install is, in ONE sheet off the bar's gear.
+ * ⚙ SYSTEM — what this install is: appearance, the updater, and the way out.
  *
- * It was a Commons room, which meant four copies — one per tile — for facts that are
- * the INSTALL's, not a tile's. The owner's ruling (2026-08-16): a gear per tile makes
- * no sense. So it is a page-level ui.sheet now, opened by the one ⚙ in the bar
- * (relocated into the ニ sheet on touch like the other bar verbs), and the Commons
- * keeps only the rooms that are actually about work.
+ * IT HAS BEEN IN THREE PLACES, and the third is the one that was right. It began as a
+ * Commons room, which meant four copies — one per tile — for facts that are the INSTALL's,
+ * not a tile's (owner, 2026-08-16: a gear per tile makes no sense). So it became a
+ * page-level `ui.sheet` off the bar's ⚙. That fixed the copies and cost it the room: a
+ * sheet is a small box, and this content wants a pane.
+ *
+ * Since 2026-08-18 it is neither. These three groups hang in the **admin_desk** (js/desk.js)
+ * under "This app", below the six rooms about the install — one tile, opened where you ask
+ * for it, with a full pane to draw in. The line the 2026-08-16 ruling drew was right; what
+ * was missing was a surface on the correct side of it. `buildSystemPanel` returns elements
+ * now, not a sheet, and the ⚙ that used to open the sheet opens the desk.
  *
  * TWO MECHANICAL BUTTONS AND NOTHING AUTOMATIC. "Check for updates" is the one
  * moment this client causes an outbound ask (the server asks the release feed —
@@ -179,11 +186,23 @@ function buildPasskeyBlock() {
   return { el, refresh };
 }
 
-export function buildSystemSheet() {
-  const dlg = sheet({ id: 'syssheet', cls: 'sys-card', label: 'System' });
-  const wrap = document.createElement('div');
-  wrap.className = 'sys';
-  dlg.card.appendChild(wrap);
+/**
+ * THE APP'S OWN THREE, and they are NOT a sheet any more (2026-08-18).
+ *
+ * This was `buildSystemSheet()` — one `ui.sheet` holding appearance, the updater and the
+ * way out, opened by ⚙ on the bar. It is the same content, returned as three ELEMENTS for
+ * the admin_desk to hang in its nav ("This app", under the six install rooms). The owner's
+ * reason is the one this file always had: install-level facts do not belong in a tile —
+ * and a desk is the tile that is not about a session, so now they have somewhere to sit
+ * that is neither a sheet nor four copies.
+ *
+ * RE-PARENTED, NOT REWRITTEN, on purpose. `check`, `run`, `runSvc` and `renderId` share one
+ * closure over `version`/`latest`/`svcLatest`, and the updater and log-out are the two
+ * things in this client I can least afford to get subtly wrong. So the elements are grouped
+ * differently and every line of logic below is untouched: `row` split into the release's
+ * buttons and the account's, and `open()` became `enter()` without its `dlg.open()`.
+ */
+export function buildSystemPanel() {
 
   const idBlock = document.createElement('div');
   idBlock.className = 'sys-id';
@@ -192,7 +211,8 @@ export function buildSystemSheet() {
   // button shows the shell's CURRENT mode; pressing it flips. Flipping away from
   // what the Mac prefers pins the shell; flipping back to match re-arms following
   // (js/theme.js setTheme) — so "make it match" and "follow it" stay one act and
-  // no third control exists. Terminal panes stay dark either way, by design.
+  // no third control exists. The pane flips with the shell from 2026-08-19 — light
+  // means light all the way in, terminal included (docs/ui.md, Theme).
   const appRow = document.createElement('div');
   appRow.className = 'sys-theme';
   const appLab = document.createElement('span');
@@ -211,6 +231,51 @@ export function buildSystemSheet() {
   });
   paintFlip();
   appRow.append(appLab, flip);
+
+  /* THE SKIN PICKER, beside the light/dark flip because they are the same question asked
+   * twice — what does this look like — and a person hunting "appearance" should find both
+   * in one place rather than learning that one of them is a room of its own.
+   *
+   * A ROW PER SKIN, NOT A <select>. Each carries its blurb, and a skin of the owner's own
+   * says so: `origin` distinguishes something you added from something of ours you
+   * replaced, and only the second can silently stop tracking an upgrade (docs/shadowing.md)
+   * — which is exactly the thing worth seeing before you wonder why a shipped skin stopped
+   * changing. The list is empty on a build whose service cannot answer, and an empty list
+   * draws nothing rather than an error: no skins is a legal state, not a fault. */
+  const skinBlock = document.createElement('div');
+  skinBlock.className = 'sys-skins';
+  const skinLab = document.createElement('span');
+  skinLab.className = 'sys-theme-lbl';
+  skinLab.textContent = 'skin';
+  const skinList = document.createElement('div');
+  skinList.className = 'sys-skinlist';
+  skinBlock.append(skinLab, skinList);
+
+  const paintSkins = (skins) => {
+    skinList.innerHTML = '';
+    const chosen = currentSkin();
+    for (const sk of skins) {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'sys-skin' + (sk.name === chosen ? ' on' : '');
+      const nm = document.createElement('b');
+      nm.textContent = sk.label;
+      if (sk.origin === 'user') {
+        const mark = document.createElement('i');
+        mark.className = 'sys-skin-mine';
+        mark.textContent = sk.shadowed ? 'yours (replaces ours)' : 'yours';
+        nm.appendChild(mark);
+      }
+      const why = document.createElement('small');
+      why.textContent = sk.blurb;
+      row.append(nm, why);
+      row.addEventListener('click', () => {
+        setSkin(sk);
+        skinList.querySelectorAll('.sys-skin').forEach((r) => r.classList.toggle('on', r === row));
+      });
+      skinList.appendChild(row);
+    }
+  };
 
   const row = document.createElement('div');
   row.className = 'sys-actions';
@@ -240,11 +305,25 @@ export function buildSystemSheet() {
     await request('/api/logout', { method: 'POST' });
     location.reload();
   });
-  row.append(checkBtn, runBtn, svcBtn, outBtn);
+  // The release's buttons; `outBtn` leaves this row for the account's — the split that
+  // makes three nav rows possible. Nothing about what any of them DO changes.
+  row.append(checkBtn, runBtn, svcBtn);
+  const outRow = document.createElement('div');
+  outRow.className = 'sys-actions';
+  outRow.append(outBtn);
 
   const msg = status('sys-msg');
   const passkeys = buildPasskeyBlock();
-  wrap.append(idBlock, appRow, row, msg.el, passkeys.el);
+
+  const group = (...kids) => {
+    const g = document.createElement('div');
+    g.className = 'sys';
+    g.append(...kids);
+    return g;
+  };
+  const appearance = group(appRow, skinBlock);
+  const release = group(idBlock, row, msg.el);
+  const account = group(outRow, passkeys.el);
 
   let version = null; // the operator's /api/version answer, fetched on open
   let latest = null;
@@ -383,9 +462,12 @@ export function buildSystemSheet() {
   runBtn.addEventListener('click', run);
   svcBtn.addEventListener('click', runSvc);
 
-  const open = () => {
-    dlg.open();
-    paintFlip(); // the Mac may have flipped while the sheet was away
+  const enter = () => {
+    paintFlip(); // the Mac may have flipped while the desk was away
+    // Re-read every time: SKINS.md is parsed per request, so a hand-edit to the file — or
+    // an upgrade that ships a new one — is visible on the next visit to this room without
+    // a reload. That is the same promise the macro list makes about MACROS.md.
+    void listSkins().then(paintSkins);
     say('');
     void (async () => {
       const r = await request('/api/version', { cache: 'no-store' });
@@ -402,5 +484,5 @@ export function buildSystemSheet() {
     })();
   };
 
-  S.sysPanel = { open, close: dlg.close };
+  return { appearance, release, account, enter };
 }

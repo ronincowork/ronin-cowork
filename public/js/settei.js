@@ -1,8 +1,9 @@
-/* part of the tmux-ronin client — see js/README.md */
+/* part of the ronin-cowork client — see js/README.md */
 import { request } from './request.js';
-import { field, status } from './ui.js';
+import { button, field, status } from './ui.js';
+import { pm, getPath, currentOf, optionsOf, toRequest } from './settei-schema.js';
 
-/* ---------- ⚙ SETUP — what this install IS, in one room ----------
+/* ---------- ⚙ CONFIGURATION — what this install IS, in one room ----------
  *
  * One fetch (`GET /api/settei`) and one screen. The record it draws has three sections
  * and the pane keeps them visibly apart, because a row you can change and a row the box
@@ -25,6 +26,13 @@ import { field, status } from './ui.js';
  * their editor and the roots file stays hand-editable, so this pane links rather than
  * becoming a second owner. The session max is the same number as ⌂ Roster's over one
  * route: two views, never two settings.
+ *
+ * THE TYPED ROWS RENDER FROM THE RECORD'S OWN `schema` (the registry, src/settei.ts),
+ * through the vocabulary in js/settei-schema.js — a leaf asked anywhere is editable
+ * here structurally, and this file knows no field. The found and derived rows stay
+ * composed by hand on purpose: "pointed at openai — OPENAI_API_KEY not set" is worth
+ * more than a generic renderer could say. Layout — which schema section lands in
+ * which group — is this room's own furniture.
  */
 export function buildSettei(root, isShowing) {
   let rec = null;
@@ -105,54 +113,77 @@ export function buildSettei(root, isShowing) {
 
   /* ---------- the screen ---------- */
 
+  /** One registry row in, one saving ⚙ row out — the only place a `kind` is read. */
+  const schemaRow = (f) => {
+    const cur = currentOf(f, { record: rec });
+    const ctx = { record: rec, modelOpts: allModelOpts() };
+    let control;
+    if (f.kind === 'select') {
+      control = document.createElement('select');
+      control.className = 'st-inp';
+      control.add(new Option('— none set —', ''));
+      for (const o of optionsOf(f, ctx)) control.add(new Option(o.label, o.value));
+      control.value = cur;
+    } else if (f.kind === 'number') {
+      control = input(cur, { type: 'number', cls: 'st-num', min: f.min });
+    } else {
+      control = input(cur, { max: 120, placeholder: f.fallback ? String(getPath(rec, f.fallback) ?? '') : f.placeholder });
+    }
+    const notes = [];
+    if (f.note) notes.push(String(getPath(rec, f.note) ?? ''));
+    // A fallback in force is visible — a default is never passed off as an answer.
+    if (cur === '' && f.fallback) notes.push(`unset — using ${getPath(rec, f.fallback) ?? ''}`);
+    if (f.aside) notes.push(f.aside);
+    return setRow(f.short ?? f.label, control, notes.filter(Boolean).join(' · '), (v) => {
+      const req = toRequest(rec.schema, f, v);
+      return request(req.route, { method: req.method, json: req.json });
+    });
+  };
+
+  /** EVERY PROVIDER AND MODEL THE TABLE KNOWS, in table order, and no vendor is named
+   * in this file. The list comes from ronin_catalogs/PROJECT_ROOTS.md through
+   * /api/session-launch-specs. An uninstalled agent still appears, because the table
+   * is what the house supports and hiding a row teaches nothing — but it says so,
+   * rather than being offered as though it would work. */
+  const allModelOpts = () =>
+    specs.map((sp) => {
+      const have = rec.observed.agents[sp.cmd.split(' ')[0]]?.installed;
+      return { label: `${sp.provider} · ${sp.model}${have ? '' : ' — not installed'}`, value: pm(sp) };
+    });
+
   const render = () => {
     body.innerHTML = '';
-    const { set, observed, status: st } = rec;
+    const { set, observed, status: st, schema } = rec;
     const m = observed.machine;
+    const fieldsIn = (test) => schema.fields.filter(test).map(schemaRow);
 
     blurb.textContent = 'What this install is set to — and what it is running on.';
     stamp.textContent = `measured ${new Date(observed.observed_at).toLocaleString()}`;
 
-    /* you and this machine */
+    /* you and this machine — the typed rows are the registry's, in its order */
     group('you and this machine');
-    body.appendChild(
-      setRow('your name', input(set.owner.name, { max: 64, placeholder: st.owner_name }),
-        set.owner.name ? '' : `unset — using ${st.owner_name}`,
-        (v) => request('/api/owner', { method: 'PUT', json: { name: v } })),
-    );
-    body.appendChild(
-      setRow('this machine', input(set.machine.name, { max: 64, placeholder: m.host }),
-        set.machine.name ? '' : `unset — using ${m.host}`,
-        (v) => request('/api/settei/machine', { method: 'PUT', json: { name: v } })),
-    );
-    body.appendChild(
-      setRow('where it is', input(set.machine.where, { max: 120, placeholder: 'Hetzner fsn1 · under my desk' }),
-        // Free text by ruling: the owner knows where the box is and the box does not.
-        // Detecting it would mean a cloud metadata call from a page load.
-        'in your own words — nothing detects this',
-        (v) => request('/api/settei/machine', { method: 'PUT', json: { where: v } })),
-    );
+    for (const row of fieldsIn((f) => (f.sec === 'you' || f.sec === 'machine') && f.lands)) body.appendChild(row);
+    // The box's own name leads the row — it must be readable here even when the owner
+    // has typed nothing (the setup page's THIS BOX fact, kept visible for good).
     body.appendChild(obsRow('hardware',
-      `${m.kind === 'virtual' ? `${m.provider ?? 'virtual'} ${m.product ?? ''}`.trim() : 'physical'} · ${m.cores} cores · ${m.ram_gb} GB`,
+      `${m.host} · ${m.kind === 'virtual' ? `${m.provider ?? 'virtual'} ${m.product ?? ''}`.trim() : 'physical'} · ${m.cores} cores · ${m.ram_gb} GB`,
       m.hypervisor ? ` ${m.hypervisor}` : ''));
     body.appendChild(obsRow('running', `${observed.os.name} · node ${observed.runtime.node}`,
       ` ${observed.ronin.release ?? observed.ronin.commit}${observed.ronin.dirty ? ' (dirty)' : ''} · contract ${observed.ronin.contract}`));
-    body.appendChild(obsRow('reachable at', st.routes[0]?.at, ` ${st.routes[0]?.exposure}`));
+    body.appendChild(obsRow('Ronin reachable at', st.routes[0]?.at,
+      ` ${st.routes[0]?.exposure}${st.routes[0]?.alias ? ` · or ${st.routes[0].alias} (MagicDNS)` : ''}`));
+    body.appendChild(obsRow('reach by ssh', st.ssh));
 
     /* capacity */
     group('capacity');
-    body.appendChild(
-      setRow('session max', input(set.sessions.max, { type: 'number', cls: 'st-num', min: 0 }),
-        `${st.sessions.state}${set.sessions.max ? '' : ' · 0 = no limit'} · also on ⌂ Roster, same setting`,
-        (v) => request('/api/session-max', { method: 'PUT', json: { max: Number(v) } })),
-    );
+    for (const row of fieldsIn((f) => f.lands?.family === 'session-max')) body.appendChild(row);
 
     /* projects — shown, never edited here */
     group(`projects · ${set.projects.length}`);
     for (const p of set.projects) {
       const health = st.projects.find((x) => x.name === p.name);
       body.appendChild(obsRow(p.name, p.remit || p.dir,
-        health?.dir === 'missing' ? ` ✕ ${p.dir} is gone` : ` ${health?.brain ?? ''}`));
+        health?.dir === 'missing' ? ` ✕ ${p.dir} is gone` : health?.repo ? ` ${health.repo}` : ''));
     }
     const link = document.createElement('div');
     link.className = 'st-row st-link';
@@ -161,43 +192,108 @@ export function buildSettei(root, isShowing) {
 
     /* how work gets a model */
     group('how work gets a model');
-    const dflt = set.agents.sessions?.default ?? {};
-    // EVERY PROVIDER AND MODEL THE TABLE KNOWS, in table order, and no vendor is named
-    // in this file. The list comes from ronin_catalogs/PROJECT_ROOTS.md through
-    // /api/session-launch-specs — a provider is a row there and a model is a column, so
-    // adding either is a table edit and never a code change. An earlier version of this
-    // row was a free-text box with 'anthropic' and 'opus' as its placeholder, which read
-    // as both stuck and partisan; it was neither intended nor defensible.
-    const pick = document.createElement('select');
-    pick.className = 'st-inp';
-    pick.add(new Option('— none set —', ''));
-    for (const s of specs) {
-      // Say what the box can actually run. An uninstalled agent still appears, because
-      // the table is what the house supports and hiding a row teaches nothing — but it
-      // says so, rather than being offered as though it would work.
-      const have = observed.agents[s.cmd.split(' ')[0]]?.installed;
-      pick.add(new Option(`${s.provider} · ${s.model}${have ? '' : ' — not installed'}`, `${s.provider} ${s.model}`));
-    }
-    pick.value = dflt.provider && dflt.model ? `${dflt.provider} ${dflt.model}` : '';
-    body.appendChild(
-      setRow('new sessions use', pick, st.agents.new_session, (v) => {
-        const [provider, model] = v ? v.split(' ') : [null, null];
-        return request('/api/settei/agents', { method: 'PUT', json: { sessions: { default: { provider, model } } } });
-      }),
+    for (const row of fieldsIn((f) => f.sec === 'defaults' && f.lands?.family === 'agents')) body.appendChild(row);
+    // Jobs the registry already edits above render once, not twice.
+    const managed = new Set(
+      schema.fields.map((f) => f.lands?.key).filter((k) => k?.startsWith('jobs.')).map((k) => k.split('.')[1]),
     );
     for (const [name, job] of Object.entries(set.agents.jobs ?? {})) {
+      if (managed.has(name)) continue;
       // A job's pointing is edited in its own room (目 Koshi); here it is the resolved
       // answer plus whether the key it names is actually present — which is the part
       // no other surface says out loud.
       body.appendChild(obsRow(name.replace(/_/g, ' '), `${job.provider ?? job.outlet}${job.model ? ` · ${job.model}` : ''}`,
         st.agents[name] ? ` ${st.agents[name]}` : ''));
     }
-    body.appendChild(obsRow('agents on this box',
-      st.agents.usable.length ? st.agents.usable.join(' · ') : 'none found',
-      ` ${Object.entries(observed.agents).filter(([, a]) => !a.installed).map(([n]) => n).join(', ')} — install to use`));
 
-    /* services */
-    group(`services · ${observed.ronin.services.length} registered`);
+    // THE KEYS, BY NAME ONLY. Presence is scanned per read (names come from the
+    // registry plus every key_env a job points at); the value lives in .env and never
+    // enters the record in either direction — there is nothing here to leak.
+    for (const [name, isSet] of Object.entries(observed.keys)) {
+      body.appendChild(obsRow(name, isSet ? '✓ set' : 'not set', ' presence only — the value stays in .env'));
+    }
+
+    // Open-source weights actually ON the box — named and sized, never assumed.
+    for (const w of observed.weights ?? []) {
+      body.appendChild(obsRow(w.name, '✓ downloaded', ` ${w.mb} MB · koshi_weights store`));
+    }
+    if (!(observed.weights ?? []).length) body.appendChild(obsRow('local weights', 'none downloaded'));
+
+    /* agent installations — THE CHECKBOX IS THE INSTALLED BIT (owner, 2026-08-18):
+     * ticked-and-fixed means it is on the box; an empty one is live — ticking it puts
+     * the thing on the needed list. Col 2 the name, col 3 where it is (or who makes
+     * it). One meaning, taught ONCE on the hint line. */
+    group('agent installations');
+    const hint = document.createElement('div');
+    hint.className = 'st-row st-link';
+    hint.textContent = 'a tick means it is on the box — tick an empty one to put it on the needed list';
+    body.appendChild(hint);
+    const wantedNow = () => (set.wanted ?? []);
+    const instTick = (installed, kind, name) => {
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.className = 'st-check';
+      if (installed) {
+        box.checked = true;
+        box.disabled = true; // a fact, not a control — reality unticks it, not you
+        box.title = 'installed';
+        return box;
+      }
+      box.title = 'not installed — tick to put it on the needed list';
+      box.checked = wantedNow().some((w) => w.kind === kind && w.name === name);
+      box.addEventListener('change', async () => {
+        const next = wantedNow().filter((w) => !(w.kind === kind && w.name === name));
+        if (box.checked) next.push({ kind, name });
+        await request('/api/settei/wanted', { method: 'PUT', json: { wanted: next } });
+        await load({ quiet: true });
+      });
+      return box;
+    };
+    const tickRow = (installed, kind, name, label, where) => {
+      const row = document.createElement('div');
+      row.className = 'st-row st-agent';
+      const req = document.createElement('div');
+      req.className = 'st-req';
+      req.appendChild(instTick(installed, kind, name));
+      const nm = document.createElement('div');
+      nm.className = 'st-lab';
+      nm.textContent = label;
+      const val = document.createElement('div');
+      val.className = 'st-val';
+      val.textContent = where ?? '';
+      row.append(req, nm, val);
+      return row;
+    };
+    for (const [id, a] of Object.entries(observed.agents)) {
+      body.appendChild(tickRow(a.installed, 'agent', id, a.label ?? id, a.installed ? a.path ?? '' : a.from ?? ''));
+    }
+
+    /* services — the SAME leading-tick format as the agents (owner, 2026-08-18):
+       Ronin Services is a bundle, one row, tick = installed; gbrain likewise; and
+       "use gbrain" stays its own setting beneath — a choice, not a fact. */
+    group('services');
+    body.appendChild(tickRow(observed.ronin.services.length > 0, 'service', '*', 'Ronin Services', ''));
+    body.appendChild(tickRow(observed.ronin.services.includes('gbrain'), 'service', 'gbrain', 'gbrain', ''));
+    const gb = document.createElement('input');
+    gb.type = 'checkbox';
+    gb.className = 'st-check';
+    gb.checked = set.gbrain.enabled;
+    const gbField = field(gb, { label: 'use gbrain', sr: false });
+    gbField.el.classList.add('st-field');
+    // The installed FACT is the row above; this tick is the CHOICE.
+    gbField.say('tick this if your agents use it');
+    gb.addEventListener('change', async () => {
+      gbField.say('saving…');
+      const r = await request('/api/settei/gbrain', { method: 'PUT', json: { enabled: gb.checked } });
+      gbField.say(r.ok ? 'saved' : r.message, !r.ok);
+    });
+    const gbRow = document.createElement('div');
+    gbRow.className = 'st-row';
+    gbRow.appendChild(gbField.el);
+    body.appendChild(gbRow);
+
+    /* the deal — Ronin Services the subscription, a different thing from the sockets above */
+    group('subscription');
     body.appendChild(obsRow('subscription', st.subscription,
       set.services.email ? ` ${set.services.email}` : ''));
     body.appendChild(
@@ -209,22 +305,38 @@ export function buildSettei(root, isShowing) {
         'from the services email — recorded here, checked by us',
         (v) => request('/api/settei/services', { method: 'PUT', json: { entitlement: v, email: set.services.email } })),
     );
-    const gb = document.createElement('input');
-    gb.type = 'checkbox';
-    gb.className = 'st-check';
-    gb.checked = set.gbrain.enabled;
-    const gbField = field(gb, { label: 'gbrain', sr: false });
-    gbField.el.classList.add('st-field');
-    gbField.say(observed.ronin.services.includes('gbrain') ? 'registered on this box' : 'not installed');
-    gb.addEventListener('change', async () => {
-      gbField.say('saving…');
-      const r = await request('/api/settei/gbrain', { method: 'PUT', json: { enabled: gb.checked } });
-      gbField.say(r.ok ? 'saved' : r.message, !r.ok);
-    });
-    const gbRow = document.createElement('div');
-    gbRow.className = 'st-row';
-    gbRow.appendChild(gbField.el);
-    body.appendChild(gbRow);
+
+    /* THE NEEDED BOX (owner, 2026-08-18) — every unmet thing in one place: the
+     * registry's requires and the owner's own wants, computed per read. Satisfy one
+     * and it vanishes on the next look with no write anywhere. This is exactly the
+     * list the setup seat reads at its own start. */
+    group('still needed');
+    for (const n of rec.needed ?? []) {
+      body.appendChild(obsRow(n.leaf, n.needs, ` ${n.how}`));
+    }
+    if (!(rec.needed ?? []).length) body.appendChild(obsRow('nothing', 'your choices are satisfied'));
+
+    /* the reading list's offer — an agent exists and the list is non-empty. One
+     * press, per the flow's death condition: the seat reads the door itself at
+     * start, so this hands over a pointer and nothing else. */
+    if (st.agents.usable.length && (rec.needed ?? []).length) {
+      const row = document.createElement('div');
+      row.className = 'st-row';
+      const go = button('start your setup session', {
+        cls: 'st-go',
+        onClick: async () => {
+          go.disabled = true;
+          const r = await request('/api/launch', {
+            method: 'POST',
+            json: { session_job: schema.seat.job, name: schema.seat.name, prompt: schema.seat.prompt },
+          });
+          go.disabled = false;
+          go.textContent = r.ok ? 'setup session started — see ⌂ Roster' : r.message || 'could not start';
+        },
+      });
+      row.appendChild(go);
+      body.appendChild(row);
+    }
   };
 
   const load = async ({ quiet } = {}) => {

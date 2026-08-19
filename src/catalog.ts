@@ -306,6 +306,7 @@ const SHADOWABLE: Record<string, string> = {
   'ACTIONS.md': 'a primitive step macros are composed from',
   'TOOLS.md': 'an executable of yours that implements an action',
   'SAVED_LAUNCHES.md': 'a launcher form, filled in ahead of time and named',
+  'SKINS.md': 'a look — a set of design tokens, and nothing else',
 };
 
 /** Is this a catalog the user may keep their own copy of? */

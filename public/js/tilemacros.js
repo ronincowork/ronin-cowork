@@ -1,4 +1,4 @@
-/* part of the tmux-ronin client — see js/README.md */
+/* part of the ronin-cowork client — see js/README.md */
 import { macroData } from './home.js';
 import { toast } from './ui.js';
 import { IS_TOUCH, S } from './state.js';
@@ -151,12 +151,23 @@ export function buildTileMacros(tile) {
       const why = document.createElement('small');
       why.textContent = plain(m.blurb) || 'no blurb yet — add a blurb: line to its MACROS.md entry';
       row.append(nm, why);
-      // The invocation lives in the HELP BOX now. It is off the face by the owner's
-      // ruling, but it must stay learnable — the whole premise of this menu is that
-      // what it types is text you could have typed yourself.
-      row.title = m.send
-        ? `+${m.name} ⏎ — Ronin types this line into the session and presses Enter for you`
-        : `+${m.name}: — drops that into the input for you to finish and send`;
+      // THE INVOCATION IS THE ACCESSIBLE NAME, and it is deliberately not a `title`.
+      //
+      // It was one until 2026-08-18 — off the face by the owner's ruling, kept learnable in
+      // the help box. But a card ALREADY says what it does, in two always-visible lines
+      // (`nm` and `why`), so the box repeated the answer and then laid 300px of it across
+      // the cards underneath. Owner: *"its dumb to have the hover description covering the
+      // button description."* Same ruling as the Commons tabs got that morning: a control
+      // that names itself on its face does not want a pop-up naming it again.
+      //
+      // So it moves to `aria-label` rather than being deleted. `tips.js` takes over any
+      // `title` it finds, so a title is a pop-up here by definition; an accessible name is
+      // not, and it keeps the invocation learnable for a screen reader — which is also the
+      // reader who most needs to know this button types `+name:` rather than doing a thing.
+      // The face stays the owner's plain words either way.
+      row.setAttribute('aria-label', m.send
+        ? `${m.label || m.name} — +${m.name} ⏎, typed into the session and sent for you`
+        : `${m.label || m.name} — +${m.name}: dropped into the input for you to finish`);
       const cool = m.send ? coolingFor(m.name) : 0;
       if (cool) {
         row.disabled = true;
