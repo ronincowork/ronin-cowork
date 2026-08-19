@@ -146,6 +146,28 @@ What this cannot fix: a TUI that paints its own background dark, or hardcodes a 
 rather than asking for an ANSI slot, keeps its dark rectangle inside the light pane.
 The palette is a set of answers to questions the program has to ask.
 
+**"Bright white is the strongest mark" is now a CONTRACT, not a nicety, and it reaches
+outside Ronin.** Claude Code — the agent in most of these panes — ships themes in two
+shapes: `light`/`dark` hardcode RGB, and `light-ansi`/`dark-ansi` emit **slot names**
+(`text: ansi:whiteBright`). Under an `-ansi` theme it never sends a colour, so xterm holds
+the slot index and re-renders existing text the moment `applyTheme` pushes a new palette —
+which is why **flipping Ronin's light/dark recolours the agent's output live**, with nothing
+written to `~/.claude` and nothing for Ronin to reach into. Both halves are true at once:
+Ronin cannot touch that program's settings, and that program follows Ronin's flip.
+
+It only works because 15 is the strongest mark in BOTH shells. Measured on this palette:
+
+| Claude Code theme | its `text` slot | on Ronin light | on Ronin dark |
+|---|---|---|---|
+| `light-ansi` | `ansi:black` | 15.57:1 | **1.17:1 — body text invisible** |
+| `dark-ansi` | `ansi:whiteBright` | 17.29:1 | 16.06:1 |
+
+So a pinned `-ansi` theme survives the flip only if it pins the one whose slot is legible on
+both grounds, and on this palette that is `dark-ansi` in either shell. `light-ansi` looks
+right until the first flip back and then loses the body text — caught on the owner's own box,
+2026-08-19. **Change 7/15 in either shell and that table has to be recomputed**; the
+consumer is a program this repo does not ship.
+
 ## Transport and failure
 
 Every JSON call goes through `request()` (`public/js/request.js`) and gets one answer
