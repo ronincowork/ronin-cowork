@@ -35,11 +35,10 @@ FALLBACKS="tmux-256color,screen-256color,xterm-256color,xterm,linux,vt100"
 case "$(uname -s)" in
   Linux)
     # build-base: cc/make.  bison: tmux's parser.  pkgconf: how tmux finds the libs.
-    # ncurses: the build-host tic that compiles the fallback entries.
-    apk add --no-cache build-base bison pkgconf curl ncurses
+    apk add --no-cache build-base bison pkgconf curl
     ;;
   Darwin)
-    # The Xcode CLT carry cc/make/bison/tic; pkg-config is on the runner image, but
+    # The Xcode CLT carry cc/make/bison; pkg-config is on the runner image, but
     # say so loudly if an image ever drops it rather than failing three steps later.
     command -v pkg-config >/dev/null || brew install pkgconf
     ;;
@@ -80,22 +79,31 @@ fetch "libevent-$LIBEVENT_V.tar.gz" \
 fetch "tmux-$TMUX_V.tar.gz" \
   "https://github.com/tmux/tmux/releases/download/$TMUX_V/tmux-$TMUX_V.tar.gz" "$TMUX_SHA"
 
-# --- the fallback source of truth: the tarball's own terminfo, not the host's ---
-tic -x -o "$WORK/tidb" "$WORK/ncurses-$NCURSES_V/misc/terminfo.src" 2>/dev/null || true
-if TERMINFO="$WORK/tidb" infocmp tmux-256color >/dev/null 2>&1; then
-  export TERMINFO="$WORK/tidb"
-else
-  # The host tic could not compile the modern source (or infocmp disagrees) — fall
-  # back to the host db, and let the entry check below say exactly what is missing.
-  echo "note: using the host terminfo db for fallbacks (scratch compile unusable)"
-fi
+# --- stage 0: a modern tic/infocmp of our own ---
+# Compiling the fallback entries means MKfallback.sh running tic over the WHOLE 2024
+# terminfo.src at build time — and a host's tic cannot be trusted with that (macOS
+# ships a 2008-era tic that dies on the 'mintty' entry). So the first ncurses build
+# exists only to give the real one today's tools; nothing from it ships.
+mkdir -p "$WORK/toolbuild"
+cd "$WORK/toolbuild"
+run_logged "ncurses tools configure" "$WORK/ncurses-$NCURSES_V/configure" --prefix="$WORK/tools" \
+  --without-shared --without-debug --without-ada --without-manpages --without-tests
+run_logged "ncurses tools make" make -j"$JOBS"
+run_logged "ncurses tools install" make install
+TIC="$WORK/tools/bin/tic"
+INFOCMP="$WORK/tools/bin/infocmp"
+
+# Pre-flight: every fallback entry must exist in the tarball's own terminfo source.
+"$TIC" -x -o "$WORK/tidb" "$WORK/ncurses-$NCURSES_V/misc/terminfo.src" 2>/dev/null
 for entry in $(printf '%s' "$FALLBACKS" | tr ',' ' '); do
-  infocmp "$entry" >/dev/null 2>&1 || { echo "no terminfo source for fallback '$entry'" >&2; exit 1; }
+  TERMINFO="$WORK/tidb" "$INFOCMP" "$entry" >/dev/null 2>&1 \
+    || { echo "no terminfo source for fallback '$entry'" >&2; exit 1; }
 done
 
 # --- ncurses: wide-char (tmux is UTF-8), static only, fallbacks compiled in ---
 cd "$WORK/ncurses-$NCURSES_V"
 run_logged "ncurses configure" ./configure --prefix="$PREFIX" \
+  --with-tic-path="$TIC" --with-infocmp-path="$INFOCMP" \
   --enable-widec --without-shared --without-debug --without-ada \
   --without-manpages --without-progs --without-tests \
   --with-fallbacks="$FALLBACKS" \
