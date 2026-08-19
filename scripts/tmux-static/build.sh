@@ -130,7 +130,9 @@ cd "$WORK/tmux-$TMUX_V"
 export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"
 case "$(uname -s)" in
   Linux)  run_logged "tmux configure" ./configure --enable-static ;;
-  Darwin) run_logged "tmux configure" ./configure ;;
+  # macOS makes utf8proc a mandatory choice: disabled, as on every other platform —
+  # system wcwidth serves, and the bundle stays at three pinned sources.
+  Darwin) run_logged "tmux configure" ./configure --disable-utf8proc ;;
 esac
 run_logged "tmux make" make -j"$JOBS"
 strip tmux
