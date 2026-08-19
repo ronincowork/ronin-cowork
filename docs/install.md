@@ -55,8 +55,12 @@ The updater fetches the latest release, verifies its checksum, unpacks it under
 
 ## 3. Set up and serve
 
-`setup.sh` requires tmux and Node. If either is absent, say exactly which one and propose
-the ordinary installation for this OS; install with the owner's approval only. Then:
+A bundled release (it has a vendor directory — every release from the dependency bundle
+on, see `docs/DEPENDENCY_BUNDLE_INSTALL.md`) carries its own tmux, Node, and node_modules:
+nothing to check, nothing to install, and no dependency to name at the owner. Only an
+UNBUNDLED tree (a git checkout, or a release predating the bundle) requires tmux and Node
+from the box — there, if either is absent, say exactly which one and propose the ordinary
+installation for this OS; install with the owner's approval only. Then:
 
 ```bash
 cd <install-home>/current && ./setup.sh
