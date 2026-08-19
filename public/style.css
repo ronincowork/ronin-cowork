@@ -295,14 +295,23 @@
 
        WHITE IS NOT WHITE. Every dark scheme maps ANSI 7/15 to the foreground, so a TUI
        printing \e[37m or \e[97m gets its strongest ink. Map them literally on paper and
-       that text vanishes — the fault Solarized Light is famous for. Here 7 is a mid grey
-       and 15 is near-black: bright white stays the STRONGEST mark, which is the role the
-       code emitting it means, and the only reading that survives inverting the ground.
+       that text vanishes — the fault Solarized Light is famous for. Here 7 IS the
+       foreground (exactly as the dark set makes both #c5c8c6) and 15 is darker still:
+       bright white stays the STRONGEST mark, which is the role the code emitting it
+       means, and the only reading that survives inverting the ground.
+
+     THE INK WENT DARKER ON 2026-08-19, an hour after it landed: stock Tomorrow's #4d4d4c
+     is 8:1 on this paper and the owner read it as washed — "the text is now black, it's a
+     bit light". It is now 12.5:1. Worth keeping as the correction it is: clearing the
+     7:1 floor is what check-css can measure, and it is not the same as looking right.
+     Body text was TWO tokens, not one — plenty of TUIs print body through ANSI 37 rather
+     than the default foreground, so darkening --term-fg alone would have fixed half the
+     screen and left the other half exactly as pale.
 
      The pane is the lightest paper in the room (--panel is #fff, but a pane is a page, and
      it sits a shade above the desk it lies on). */
   --term-bg: #faf8f2;
-  --term-fg: #4d4d4c;
+  --term-fg: #2e302c;
   --term-cursor: #a06b1a;
   --term-selection: #d8e2f2;
   --term-ansi-black: #1d1f21;
@@ -312,7 +321,7 @@
   --term-ansi-blue: #2f5f9e;
   --term-ansi-magenta: #7a4d9c;
   --term-ansi-cyan: #2c7a7a;
-  --term-ansi-white: #6f716e;
+  --term-ansi-white: #2e302c;
   --term-ansi-br-black: #767874;
   --term-ansi-br-red: #d13b3b;
   --term-ansi-br-green: #6f8f28;
@@ -320,7 +329,7 @@
   --term-ansi-br-blue: #3f79c0;
   --term-ansi-br-magenta: #9060b8;
   --term-ansi-br-cyan: #35908f;
-  --term-ansi-br-white: #2b2d2a;
+  --term-ansi-br-white: #14150f;
   --term-tape-bg: #fdfcf8;
   --term-tape-fg: #2c2e36;
   --term-tape-line: #c8c2b2;
@@ -2770,6 +2779,17 @@ body {
 }
 .pr-block.gone {
   border-color: var(--bad-line);
+}
+/* Archived: still here, off the new-session picker. Dimmed and dashed rather than
+   coloured — it is retired, not broken, and `gone` owns the alarming border. */
+.pr-block.archived {
+  border-style: dashed;
+  background: none;
+  opacity: 0.66;
+}
+.pr-block.archived:hover,
+.pr-block.archived:focus-within {
+  opacity: 1;
 }
 .pr-top {
   display: flex;
