@@ -1,0 +1,21 @@
+# vendor.lock — every vendored byte in a bundled release, pinned.
+#
+# bin/ronin-build reads this file to assemble the per-platform bundles: the Node
+# runtime (official nodejs.org tarball), the static tmux (built and proven by
+# .github/workflows/tmux-static.yml, published as a tmux-static-vN release), and
+# node_modules (pinned by package-lock.json, not here). Every download is verified
+# against the sha256 below and the build fails loud on any mismatch.
+#
+# Bumping Node or tmux is a reviewed commit to this file — never a release side
+# effect. Node sha256s come from nodejs.org/dist/<version>/SHASUMS256.txt (the
+# .tar.xz lines); tmux sha256s from the tmux-static run that built the binary.
+#
+# `platforms` names what a release builds. Growing it = adding its pin lines first.
+
+platforms linux-x64
+
+node v22.23.2
+node-sha256 linux-x64 d60acfe00a2932254bb0ad20e01b0d74397a0875595de719654b214f4b03f307
+
+tmux tmux-static-v1
+tmux-sha256 linux-x64 f404dfb5b387cf19915309d7e5769e21def6ad1209240db1f1ba1824ba63d46e

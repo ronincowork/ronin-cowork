@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # RONIN BUILD — turn a tagged tree into the ronin_artifact.
 #
-#   bin/ronin-build v1.0.0            # build the tarball for that version, from HEAD
+#   bin/ronin-build v1.0.0            # plain tarball + a bundle per vendor.lock platform
 #   bin/ronin-build                   # version read from the tag at HEAD (CI's call)
 #   bin/ronin-build v1.0.0 --dirty    # local trial on a dirty tree; NEVER publish it
+#   bin/ronin-build --dirty --bare    # the plain tarball only, no bundles (fast trial)
+#   bin/ronin-build --dirty --platform linux-x64   # bundle one platform, not the list
 #
 # There is no compiler in this stack (tsx runs the TypeScript, the client is native ES
 # modules), so the build is a STAMP, a PRUNE and a TARBALL:
@@ -14,10 +16,15 @@
 #            scripts/ and tests/ deliberately: an install can run its own byoin_checks
 #   pack   — release/ronin-cowork-vX.Y.Z.tar.gz + SHA256SUMS
 #
-# Built from `git archive`, so only TRACKED files can ever land in a tarball — .env,
-# node_modules/ and any untracked scratch are excluded by construction, not by list.
-# node_modules do not travel (~74 MB, and the pty module is a per-platform native
-# binary); `npm install` stays in setup, which is what happens today.
+# Built from `git archive`, so only TRACKED files can ever land in the staged tree —
+# .env and any untracked scratch are excluded by construction, not by list.
+#
+# BUNDLES (the V1 slice, owner 2026-08-19): each platform named in vendor.lock also
+# gets a tarball carrying vendor/node/ (the official runtime), vendor/tmux (our
+# static build, from a tmux-static-vN release), and finished node_modules — assembled
+# cross-platform with `npm ci --os --cpu` (the pty and esbuild prebuilds make this
+# possible), so all four platforms build on this one machine. A bundled install
+# checks nothing, fetches nothing, and never names a dependency.
 #
 # The real build runs ONCE, in CI, at tag time (.github/workflows/release.yml). A box
 # only ever downloads and verifies a checksum — an artifact built on the machine that
@@ -32,12 +39,17 @@ fail() { echo "✗ $1" >&2; exit 1; }
 # --- arguments ---
 VERSION=""
 ALLOW_DIRTY=0
-for a in "$@"; do
-  case "$a" in
+BARE=0
+ONLY_PLATFORM=""
+while [ $# -gt 0 ]; do
+  case "$1" in
     --dirty) ALLOW_DIRTY=1 ;;
-    v[0-9]*) VERSION="$a" ;;
-    *) fail "unrecognised argument: $a (usage: bin/ronin-build [vX.Y.Z] [--dirty])" ;;
+    --bare) BARE=1 ;;
+    --platform) shift; ONLY_PLATFORM="${1:?--platform needs a value (e.g. linux-x64)}" ;;
+    v[0-9]*) VERSION="$1" ;;
+    *) fail "unrecognised argument: $1 (usage: bin/ronin-build [vX.Y.Z] [--dirty] [--bare] [--platform <p>])" ;;
   esac
+  shift
 done
 
 # No version argument: the tag at HEAD is the version. This is how CI calls it.
@@ -91,20 +103,91 @@ rm -rf "$STAGE/$NAME/.github"
 echo "→ pruned: .github/"
 
 # --- pack ---
-mkdir -p release
-TARBALL="release/$NAME.tar.gz"
-# Deterministic where GNU tar allows it: same commit in, same bytes out.
-if tar --version 2>/dev/null | grep -q GNU; then
-  tar -C "$STAGE" --sort=name --owner=0 --group=0 --numeric-owner \
-    --mtime="@$(git log -1 --format=%ct HEAD)" -czf "$TARBALL" "$NAME"
-else
-  tar -C "$STAGE" -czf "$TARBALL" "$NAME"
-fi
-(cd release && sha256sum "$NAME.tar.gz" > SHA256SUMS)
+# Deterministic where GNU tar allows it: same commit in, same bytes out. The vendored
+# trees keep that promise too — registry tarballs and official Node tarballs carry
+# fixed mtimes, and --mtime flattens whatever npm touched.
+MTIME="@$(git log -1 --format=%ct HEAD)"
+pack_tree() { # <parent-dir> <tarball>
+  if tar --version 2>/dev/null | grep -q GNU; then
+    tar -C "$1" --sort=name --owner=0 --group=0 --numeric-owner \
+      --mtime="$MTIME" -czf "$2" "$NAME"
+  else
+    tar -C "$1" -czf "$2" "$NAME"
+  fi
+}
 
-SIZE="$(du -h "$TARBALL" | cut -f1)"
+mkdir -p release
+pack_tree "$STAGE" "release/$NAME.tar.gz"
+BUILT="$NAME.tar.gz"
+
+# --- bundles: vendor.lock names the platforms and pins every vendored byte ---
+if [ "$BARE" = 0 ]; then
+  [ -f vendor.lock ] || fail "no vendor.lock — bundles are pinned there (--bare for a plain tarball)"
+  NODE_V="$(awk '$1=="node"{print $2}' vendor.lock)"
+  TMUX_TAG="$(awk '$1=="tmux"{print $2}' vendor.lock)"
+  PLATFORMS="$(awk '$1=="platforms"{$1="";print}' vendor.lock)"
+  [ -n "$NODE_V" ] && [ -n "$TMUX_TAG" ] && [ -n "$PLATFORMS" ] || fail "vendor.lock is missing node/tmux/platforms lines"
+  [ -n "$ONLY_PLATFORM" ] && PLATFORMS="$ONLY_PLATFORM"
+
+  CACHE="${RONIN_VENDOR_CACHE:-$HOME/.cache/ronin-vendor}"
+  mkdir -p "$CACHE"
+  TMUX_REPO="${RONIN_TMUX_REPO:-ronincowork/ronin-cowork}"
+
+  verify_pinned() { # <file> <sha256> — a mismatch is a poisoned cache or a bad pin: fail loud
+    echo "$2  $CACHE/$1" | sha256sum -c - >/dev/null 2>&1 \
+      || fail "checksum mismatch on $1 (rm $CACHE/$1 to re-fetch, or the pin in vendor.lock is wrong)"
+  }
+
+  for PLAT in $PLATFORMS; do
+    NODE_SHA="$(awk -v p="$PLAT" '$1=="node-sha256" && $2==p {print $3}' vendor.lock)"
+    TMUX_SHA="$(awk -v p="$PLAT" '$1=="tmux-sha256" && $2==p {print $3}' vendor.lock)"
+    [ -n "$NODE_SHA" ] && [ -n "$TMUX_SHA" ] || fail "vendor.lock has no pins for platform $PLAT"
+
+    NODE_TAR="node-$NODE_V-$PLAT.tar.xz"
+    if [ ! -f "$CACHE/$NODE_TAR" ]; then
+      curl -fsSL --retry 3 -o "$CACHE/$NODE_TAR.part" "https://nodejs.org/dist/$NODE_V/$NODE_TAR" \
+        && mv "$CACHE/$NODE_TAR.part" "$CACHE/$NODE_TAR" || fail "could not download $NODE_TAR"
+    fi
+    verify_pinned "$NODE_TAR" "$NODE_SHA"
+
+    TMUX_BIN="$TMUX_TAG-tmux-$PLAT"
+    if [ ! -f "$CACHE/$TMUX_BIN" ]; then
+      if command -v gh >/dev/null; then
+        gh release download "$TMUX_TAG" --repo "$TMUX_REPO" --pattern "tmux-$PLAT" \
+          --output "$CACHE/$TMUX_BIN" || fail "could not download tmux-$PLAT from $TMUX_REPO@$TMUX_TAG"
+      else
+        curl -fsSL --retry 3 -o "$CACHE/$TMUX_BIN.part" \
+          "https://github.com/$TMUX_REPO/releases/download/$TMUX_TAG/tmux-$PLAT" \
+          && mv "$CACHE/$TMUX_BIN.part" "$CACHE/$TMUX_BIN" \
+          || fail "could not download tmux-$PLAT (private repo? install gh)"
+      fi
+    fi
+    verify_pinned "$TMUX_BIN" "$TMUX_SHA"
+
+    echo "→ bundling $PLAT  (node $NODE_V · $TMUX_TAG · node_modules via npm ci)"
+    B="$STAGE/bundle-$PLAT"
+    mkdir -p "$B"
+    cp -a "$STAGE/$NAME" "$B/$NAME"
+    mkdir -p "$B/$NAME/vendor/node"
+    tar -xJf "$CACHE/$NODE_TAR" -C "$B/$NAME/vendor/node" --strip-components=1
+    install -m 755 "$CACHE/$TMUX_BIN" "$B/$NAME/vendor/tmux"
+    # --ignore-scripts: every native module here ships prebuilt (that is what makes
+    # cross-platform assembly possible), and a foreign platform's install scripts
+    # must never run host binaries. --os/--cpu pick that platform's prebuilds.
+    (cd "$B/$NAME" && npm ci --ignore-scripts --no-audit --no-fund \
+      --os="${PLAT%-*}" --cpu="${PLAT#*-}" >/dev/null 2>&1) || fail "npm ci failed for $PLAT"
+    echo "platform=$PLAT" >> "$B/$NAME/VERSION"
+    pack_tree "$B" "release/$NAME-$PLAT.tar.gz"
+    BUILT="$BUILT $NAME-$PLAT.tar.gz"
+  done
+fi
+
+(cd release && sha256sum $BUILT > SHA256SUMS)
+
 echo ""
-echo "✓ $TARBALL ($SIZE)"
-echo "  $(cat release/SHA256SUMS)"
-[ "$ALLOW_DIRTY" = 1 ] && echo "  ⚠ built --dirty — a trial, not a release; do not publish this file"
+for f in $BUILT; do
+  echo "✓ release/$f ($(du -h "release/$f" | cut -f1))"
+done
+sed 's/^/  /' release/SHA256SUMS
+[ "$ALLOW_DIRTY" = 1 ] && echo "  ⚠ built --dirty — a trial, not a release; do not publish these files"
 exit 0
