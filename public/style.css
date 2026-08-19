@@ -322,7 +322,21 @@
   --term-ansi-magenta: #7a4d9c;
   --term-ansi-cyan: #2c7a7a;
   --term-ansi-white: #2e302c;
-  --term-ansi-br-black: #767874;
+  /* BRIGHTBLACK IS A FILL HERE, NOT DIM TEXT — the one slot whose role INVERTS with the
+     ground rather than just its value (2026-08-19, an hour after the palette landed).
+     Claude Code draws the owner's own message as \e[100m background + \e[97m text; with
+     brightBlack a mid grey (#767874) that was near-black ink on a grey bar at 4.1:1, and
+     the owner could not read his own words. It is now 12.9:1.
+
+     The two jobs cannot both be served and the choice is forced, not preferred: brightWhite
+     must be DARK so \e[97m body text survives on paper (see above), and dark text needs a
+     LIGHT fill under it. Fix one end and the other follows. A mid grey is the compromise
+     that fails both — a bar too heavy to sit on the page and too dark to write on.
+     THE COST, stated so the next person does not rediscover it as a bug: a TUI using slot 8
+     as dim text gets 1.3:1 here, i.e. nothing. Claude Code does not (it dims with \e[2m,
+     which xterm blends against the ground and is unaffected); a tool that does will look
+     blank rather than faint, and the remedy is this line, not a patch elsewhere. */
+  --term-ansi-br-black: #dcd8ce;
   --term-ansi-br-red: #d13b3b;
   --term-ansi-br-green: #6f8f28;
   --term-ansi-br-yellow: #b08c00;
@@ -3472,10 +3486,8 @@ body {
     background: var(--bg);
   }
 }
-/* The roster's 🏷 stood here until 2026-08-17. The owner's ruling, given twice: a roster
-   row carries no tag button at all — groups are changed from the session's OWN 🏷 in its
-   tile header, and a board whose job is to be READ does not need a second door to a verb
-   that already has one. The rows are filed under the very headings it used to edit. */
+/* A roster row still carries no duplicate 🏷 button. Group changes here use the spatial
+   roster interaction instead: drag the row into a group heading. */
 
 /* group heading in the session list — the tag, and how many are in it */
 .home-grp {
@@ -3483,7 +3495,8 @@ body {
   align-items: center;
   gap: var(--space-3);
   margin: var(--space-4) 0 var(--space-1);
-  padding: 0 var(--space-4);
+  min-height: 28px;
+  padding: var(--space-2) var(--space-4);
   color: var(--accent);
   font-size: var(--text-2);
   letter-spacing: 0.4px;
@@ -3492,6 +3505,13 @@ body {
 .home-grp:first-child {
   margin-top: 0;
 }
+.home-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.home-group + .home-group { margin-top: var(--space-4); }
+.home-group .home-grp { margin: 0; }
 .home-grp b {
   font-weight: 600;
 }
@@ -3512,15 +3532,17 @@ body {
   outline: var(--edge) dashed var(--accent);
   outline-offset: calc(-1 * var(--edge));
 }
-.home-grp.saving { opacity: .6; }
-
 .home-group-add {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: var(--space-4);
   margin-top: var(--space-6);
-  padding-top: var(--space-5);
+  padding: var(--space-5) 0;
   border-top: var(--edge) solid var(--line);
+  background: var(--panel);
 }
 .home-group-add input {
   width: 150px;
