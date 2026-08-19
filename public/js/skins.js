@@ -18,18 +18,28 @@
  * A stylesheet block plays by the ordinary rules instead, which is what lets the decision
  * below be a decision rather than an accident.
  *
- * A TOKEN A SKIN NAMES IS CHOSEN FOR BOTH SHELLS. Light and dark are themes; a skin is a
- * skin. That is why the block is written at all three selectors: name `--radius-md` and the
- * app is that shape in either shell, which is what anyone picking "Square" means. Name a
- * COLOUR and you have decided it for light mode too — legal, occasionally the point, and
- * the flip you are spending. The shipped skins stay off colour for exactly that reason, so
- * they compose with light/dark instead of competing with it.
+ * LIGHT AND DARK ARE AN AXIS INSIDE A SKIN, not a thing a skin fights (2026-08-19). Three
+ * spellings in the catalog and three rules out of them:
+ *
+ *   --radius-md      both shells   — shape, space, type and motion want this
+ *   dark--bg         the dark one
+ *   light--bg        the light one
+ *
+ * Until today there was only the first, so naming a colour overrode it in light mode too
+ * and the flip quietly stopped working for that token. Harmless for the shipped skins,
+ * which are shape and spacing; useless for a skin that is actually about colour. A skin can
+ * now have a dark face and a light face, which is what lets the theme keep being the theme.
+ *
+ * EXACTLY ONE SHELL RULE EVER MATCHES, because `applyTheme` always resolves the choice to
+ * an explicit `data-theme` — even 'auto' writes the attribute it resolved to. So there is
+ * no third state to design for and no `prefers-color-scheme` query needed here.
  *
  * A MISSPELLED TOKEN IS INERT. It sets a custom property no rule reads. A skin cannot break
  * the app, only fail to change it — which is the safety story, and it is structural rather
  * than checked: there is no selector in a skin to get wrong.
  */
 import { request } from './request.js';
+import { applyTheme } from './theme.js';
 
 export const LS_SKIN = 'tmuxgrid.skin';
 const STYLE_ID = 'skin';
@@ -42,21 +52,25 @@ export const currentSkin = () => localStorage.getItem(LS_SKIN) || 'stock';
  * names none) leaves an empty block, which is the correct no-op: the shipped values win
  * because nothing overrides them.
  */
-export function applySkin(tokens) {
+export function applySkin(skin) {
   let el = document.getElementById(STYLE_ID);
   if (!el) {
     el = document.createElement('style');
     el.id = STYLE_ID;
     document.head.appendChild(el);
   }
-  const body = Object.entries(tokens || {})
-    .map(([k, v]) => `  ${k}: ${v};`)
-    .join('\n');
-  // All three selectors: see the note above on why a skin outranks the theme for what it
-  // names. `:root` alone would be overridden by `[data-theme]` for every colour role.
-  el.textContent = body
-    ? `:root, :root[data-theme='light'], :root[data-theme='dark'] {\n${body}\n}`
-    : '';
+  const body = (map) => Object.entries(map || {}).map(([k, v]) => `  ${k}: ${v};`).join('\n');
+  const rule = (sel, map) => (body(map) ? `${sel} {\n${body(map)}\n}` : '');
+  // THE SKIN OUTRANKS THE STYLESHEET BY CONSTRUCTION, not by luck: style.css lives in
+  // `@layer foundations`, and an UNLAYERED rule beats every layer whatever its specificity.
+  // So this block wins without having to out-specify `:root[data-theme='light']`.
+  // Shell-specific rules come last so they win over the both-shells rule, which they tie
+  // with on specificity.
+  el.textContent = [
+    rule(":root[data-theme='dark'], :root[data-theme='light']", skin?.tokens),
+    rule(":root[data-theme='dark']", skin?.dark),
+    rule(":root[data-theme='light']", skin?.light),
+  ].filter(Boolean).join('\n');
 }
 
 /** Every skin this install has, shipped and yours. `[]` when the service cannot answer. */
@@ -82,12 +96,20 @@ export async function restoreSkin() {
   // A skin that has been deleted or hidden since it was picked: fall back to stock rather
   // than leaving a name pointing at nothing.
   if (!skin) { localStorage.removeItem(LS_SKIN); return; }
-  applySkin(skin.tokens);
+  applySkin(skin);
+  applyTheme();
 }
 
 /** Choose one. Persisted per device, like the theme — the same kind of fact. */
 export function setSkin(skin) {
   if (!skin || skin.name === 'stock') localStorage.removeItem(LS_SKIN);
   else localStorage.setItem(LS_SKIN, skin.name);
-  applySkin(skin?.tokens);
+  applySkin(skin);
+  /* THE TERMINALS HAVE TO BE TOLD. Every other surface is plain CSS and follows a token the
+   * moment it changes; a live xterm holds its palette as a JS object and only re-reads on
+   * `applyTheme`. Without this, a skin naming a --term-* colour would land everywhere
+   * except the one pane the owner is actually looking at, and would then appear to work
+   * after the next unrelated light/dark flip — the kind of half-applied that reads as a
+   * ghost. Cheap and idempotent: applyTheme re-resolves and re-pushes. */
+  applyTheme();
 }

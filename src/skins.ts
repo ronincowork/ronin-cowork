@@ -28,12 +28,37 @@ export interface SkinInfo {
   blurb: string;
   origin: Origin;
   shadowed: boolean;
-  /** `--token` → value. Only `--`-prefixed keys; everything else is prose for a person. */
+  /** `--token` → value, applied in BOTH shells. */
   tokens: Record<string, string>;
+  /** `light--token` → value. Applied only under the light shell. */
+  light: Record<string, string>;
+  /** `dark--token` → value. Applied only under the dark shell. */
+  dark: Record<string, string>;
 }
 
-/** `- **--token:** value` — a skin's own field lines, as against `label`/`blurb`. */
-const TOKEN_LINE = /^-\s*\*\*(--[\w-]+):\*\*\s*(.+?)\s*$/;
+/**
+ * A skin's own field lines, as against `label`/`blurb`. Three spellings, and the prefix is
+ * WHICH SHELL:
+ *
+ *   - **--radius-md:** 0       both shells — shape, space, type, motion want this
+ *   - **dark--bg:** #05070a    the dark shell only
+ *   - **light--bg:** #fffdf8   the light shell only
+ *
+ * THE PREFIXED PAIR EXISTS BECAUSE A COLOUR SKIN OTHERWISE SPENDS THE FLIP (2026-08-19).
+ * Until today a skin had one place to put a value, so naming `--bg` overrode it in light
+ * mode too and the theme quietly stopped working for that token. Fine for the shipped
+ * skins, which are all shape and spacing; useless for a skin that is actually about
+ * colour. Now light and dark are an axis INSIDE a skin rather than a thing a skin fights.
+ *
+ * No colon in the prefix: the catalog's `- **key:** value` grammar keys on `[\w-]+`, and a
+ * second colon would end the key early. `light--bg` is one word to that reader and reads
+ * as what it is.
+ */
+// `dark--bg` is `dark` + `--bg`, NOT `dark-` + `-bg` — the prefix must not eat one of the
+// token's own dashes, or the group after it never sees the `--` it requires and the whole
+// line is silently skipped. It did exactly that for one run on 2026-08-19: `paper` parsed
+// to zero tokens and the skin appeared to do nothing at all.
+const TOKEN_LINE = /^-\s*\*\*(light|dark)?(--[\w-]+):\*\*\s*(.+?)\s*$/;
 
 export async function listSkins(): Promise<SkinInfo[]> {
   // stockOptional: a build that ships no SKINS.md is a build with no skins, not a fault.
@@ -42,10 +67,13 @@ export async function listSkins(): Promise<SkinInfo[]> {
   for (const s of sections) {
     if (entryValue(s.lines, 'hidden').toLowerCase() === 'yes') continue;
     const tokens: Record<string, string> = {};
+    const light: Record<string, string> = {};
+    const dark: Record<string, string> = {};
     for (const line of s.lines) {
       if (!isKeyLine(line)) continue;
       const m = TOKEN_LINE.exec(line.trim());
-      if (m) tokens[m[1]] = m[2];
+      if (!m) continue;
+      (m[1] === 'light' ? light : m[1] === 'dark' ? dark : tokens)[m[2]] = m[3];
     }
     out.push({
       name: s.name,
@@ -54,6 +82,8 @@ export async function listSkins(): Promise<SkinInfo[]> {
       origin: s.origin,
       shadowed: s.shadowed,
       tokens,
+      light,
+      dark,
     });
   }
   return out;

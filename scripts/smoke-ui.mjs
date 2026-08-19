@@ -404,6 +404,28 @@ async function checkJourneys(page, label, jsErrors) {
   if (after.tok !== before.tok && after.drawn !== before.drawn) {
     ok(`${label}: a skin re-skins the running app (--radius-md ${before.tok}→${after.tok}, drawn ${before.drawn}→${after.drawn})`);
   } else bad(`${label}: picking a skin changed nothing — token ${before.tok}→${after.tok}, drawn ${before.drawn}→${after.drawn}`);
+  // A COLOUR SKIN MUST KEEP THE FLIP — the case that actually broke. `paper` carries a dark
+  // face and a light face, and the bug this catches is silent in both directions: a prefix
+  // that eats one of the token's own dashes parses to zero tokens, so the skin applies
+  // nothing and looks merely subtle rather than broken (2026-08-19, one run).
+  await page.locator('.desk.show .sys-skin', { hasText: 'Paper' }).first().click();
+  await page.waitForTimeout(250);
+  const faceA = await page.evaluate(() => ({
+    shell: document.documentElement.dataset.theme,
+    bg: getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(),
+  }));
+  await page.locator('.desk.show .sys-flip').click();
+  await page.waitForTimeout(350);
+  const faceB = await page.evaluate(() => ({
+    shell: document.documentElement.dataset.theme,
+    bg: getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(),
+  }));
+  if (faceA.bg !== faceB.bg && faceA.shell !== faceB.shell) {
+    ok(`${label}: a colour skin keeps the flip — ${faceA.shell} ${faceA.bg} ⇄ ${faceB.shell} ${faceB.bg}`);
+  } else bad(`${label}: the skin's two faces did not follow the shell — ${JSON.stringify(faceA)} vs ${JSON.stringify(faceB)}`);
+  await page.locator('.desk.show .sys-flip').click(); // back to the shell we arrived in
+  await page.waitForTimeout(250);
+
   // Put it back: this probe shares a browser profile with the ones after it, and a squared
   // shell is not the state they were written against.
   await page.locator('.desk.show .sys-skin', { hasText: 'Stock' }).first().click();

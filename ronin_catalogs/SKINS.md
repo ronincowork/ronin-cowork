@@ -13,13 +13,23 @@
 > change one and that one is yours.
 >
 > **Format.** `- **label:**` and `- **blurb:**` are what a person reads. Every other line
-> is `- **--token:** value`, naming a token from `@layer foundations`.
+> names a token from `@layer foundations`, in one of three spellings:
 >
-> **A token you name is chosen for BOTH shells.** Light and dark are themes; a skin is a
-> skin. Name `--radius-md` and the app is that shape in either shell — which is what you
-> want, and is why the skins below stay off colour. Name `--bg` and you have decided the
-> background for light mode too, which is legal and occasionally the point, but it is the
-> flip you are spending. The `stock` skin names nothing, so it is exactly the shipped look.
+> | spelling | applies |
+> |---|---|
+> | `- **--radius-md:** 0` | **both shells** — shape, space, type and motion want this |
+> | `- **dark--bg:** #05070a` | the dark shell only |
+> | `- **light--bg:** #fffdf8` | the light shell only |
+>
+> **Light and dark are an axis INSIDE a skin, not a thing a skin fights.** A shape skin
+> names the bare form and is done — a corner is the same corner in either shell. A COLOUR
+> skin gives both faces, so the flip keeps working: it is still the theme's job to say which
+> shell you are in, and the skin's job to say what that shell looks like. (Before
+> 2026-08-19 there was only the bare form, so a colour skin overrode light mode too and
+> quietly spent the flip. If you name a colour bare, that is still what happens — legal, and
+> occasionally the point.)
+>
+> The `stock` skin names nothing at all, so it is exactly the shipped look, in both shells.
 
 ## stock
 - **label:** Stock
@@ -69,6 +79,18 @@
 - **--text-3:** 13px
 - **--text-4:** 14px
 
+## paper
+- **label:** Paper
+- **blurb:** A warmer ground in both shells — cream under the light, coffee under the dark.
+- **dark--bg:** #0d0b09
+- **dark--bg-2:** #14110d
+- **dark--panel:** #1a1611
+- **dark--well:** #100d0a
+- **light--bg:** #f6f1e6
+- **light--bg-2:** #ece5d6
+- **light--panel:** #fffdf8
+- **light--well:** #faf6ec
+
 ## mono
 - **label:** All mono
 - **blurb:** The shell speaks in the terminal's own face. Everything reads as one machine.
@@ -81,6 +103,12 @@ Notes, not entries.
 **Why there is no `hidden: yes` on `stock`.** It is the no-op skin — the one that names no
 tokens — and removing it would leave no way back to the shipped look from the picker.
 Shadow it if you want a different default; do not delete it.
+
+**Why `paper` names surfaces and not text.** A skin can say anything, and the contrast
+floor in `scripts/check-css.mjs` only measures the SHIPPED tokens — it cannot follow a skin
+that has not been written yet. So the shipped colour skin moves grounds and leaves the ink
+alone, which is the change that cannot make anything unreadable. A skin of your own can do
+as it likes; just know that nothing is checking it for you.
 
 **Adding one.** Copy a block, rename the heading, and name any token from `@layer
 foundations`: `--radius-*`, `--space-*`, `--text-*`, `--font-ui/mono/term`, `--edge*`,

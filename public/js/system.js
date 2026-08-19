@@ -1,7 +1,7 @@
 /* part of the tmux-ronin client — see js/README.md */
 import { request } from './request.js';
 import { button, field, status } from './ui.js';
-import { applySkin, currentSkin, listSkins, setSkin } from './skins.js';
+import { currentSkin, listSkins, setSkin } from './skins.js';
 import { resolvedTheme, setTheme } from './theme.js';
 import { S } from './state.js';
 
