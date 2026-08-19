@@ -54,6 +54,21 @@ and could not get a radius right.
 These are **theme-independent** and defined once: a square corner is square in both shells.
 Only the colour roles are redefined under `:root[data-theme='light']`.
 
+**Light and dark are Stock's two faces, and that is why they stay in CSS.** `:root` and
+`:root[data-theme='light']` under `@layer foundations` are exactly what a skin spells as
+`dark--x` and `light--x` — one mechanism, not two, and the owner's reading ("light/dark is
+really just the first two skins") is already satisfied rather than pending. Stock is spelled
+in the stylesheet because it is the **floor**: the page must paint correctly with no JS
+having run, on a first visit or a flaky link, and a floor that has to be fetched is not one.
+Moving it into `SKINS.md` would also put one palette in two places — and `check-css` reads
+its contrast floor out of the stylesheet by selector and has never heard of `SKINS.md`, so
+the copy that renders would go unmeasured while the copy that does not stayed green.
+
+**The honest limit: a skin's colours are checked by nothing.** The gate measures
+`@layer foundations`. Shipped skins are written to stay clear of the floor — `paper` moves
+grounds and leaves the ink alone, which is the change that cannot make anything unreadable.
+A skin of your own can do as it likes; nothing is measuring it for you.
+
 **A skin is a set of these tokens, and nothing else** (`ronin_catalogs/SKINS.md`,
 `js/skins.js`). It cannot add a rule, move a control or style one surface differently from
 another — it can only answer questions `@layer foundations` already asks, which is the whole

@@ -29,7 +29,27 @@
 > quietly spent the flip. If you name a colour bare, that is still what happens — legal, and
 > occasionally the point.)
 >
-> The `stock` skin names nothing at all, so it is exactly the shipped look, in both shells.
+> **`stock` NAMES NOTHING BECAUSE IT IS ALREADY SPELLED — in `public/style.css`.** The two
+> `:root` blocks under `@layer foundations` ARE Stock's two faces: `:root` is its dark face,
+> `:root[data-theme='light']` its light face, mapping one-for-one onto the three spellings
+> above. There is one mechanism here, not two. Stock lives in CSS rather than in this file
+> for two reasons, and both are load-bearing:
+>
+> 1. **It is the FLOOR, and a floor that has to be fetched is not one.** On a first-ever
+>    visit, with cleared storage, or with the tailnet flaky, the page paints correctly today
+>    with no JS having run at all. Move the shipped palette here and there is nothing to
+>    fall back to — not a flash of dark, a flash of *nothing*, with every `var(--bg)`
+>    resolving to empty. Same law as stock ⊕ user in `docs/shadowing.md`: the stock layer
+>    exists to be there before anything else is.
+> 2. **Keeping a floor AND a copy here would be the same palette spelled twice** — the exact
+>    drift the token rule exists to end — and `scripts/check-css.mjs` would measure the
+>    wrong one. Its contrast floor reads token values out of the STYLESHEET, by selector,
+>    from `@layer foundations` only; it has never heard of this file. So the CSS copy would
+>    stay green while the copy that actually renders went unmeasured.
+>
+> Which is the honest limit of this whole feature: **a skin's colours are checked by
+> nothing.** The shipped ones are hand-picked to stay clear of the floor; yours are yours.
+> (Ruled with @terminal_black, 2026-08-19, who owns the theme.)
 
 ## stock
 - **label:** Stock
