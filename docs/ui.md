@@ -91,11 +91,33 @@ flips with it, owner's ruling 2026-08-16), and the one control is the flip butto
 the ⚙ System sheet: flipping away from the device's mode pins the shell; flipping
 back to match re-arms following — no third control exists (`theme.js setTheme`).
 Per device (localStorage `tmuxgrid.theme`); `index.html` resolves the choice inline
-before first paint. **Terminal surfaces stay dark in both shells** — the `--term-*`
-tokens are deliberately absent from the light block. One resolved palette feeds CSS,
-xterm and the browser's `theme-color`; `check-css` holds `theme.js`'s token reads and
-the stylesheet to the same list. The browser gates pin `colorScheme: 'dark'` so the
-baselines are a choice, not the headless engine's default.
+before first paint. One resolved palette feeds CSS, xterm and the browser's
+`theme-color`; `check-css` holds `theme.js`'s token reads and the stylesheet to the
+same list. The browser gates pin `colorScheme: 'dark'` so the baselines are a choice,
+not the headless engine's default.
+
+**The terminal goes light with the shell** (2026-08-19). It used to stay dark on
+purpose — a terminal is read against a dark ground by convention and every TUI palette
+assumes it — and the owner overruled that: white-on-black is precisely what puts a
+non-terminal person off, so a light shell around a black pane has not gone light. The
+light block remaps every `--term-*` token; **`theme.js` needed no change at all**,
+because `termTheme()` re-reads the tokens on each flip. Remapping them in CSS is the
+whole mechanism, which is the token rule paying for itself.
+
+The light set is **Tomorrow**, the day sibling of the dark set's Tomorrow Night — one
+scheme, two grounds. Two departures from stock, both forced by the paper:
+
+- **Every colour clears 3:1 on `--term-bg`.** Tomorrow's `#eab700` yellow is 1.7:1 on
+  paper, so a TUI's warning line would read as blank. A light pane that is merely light
+  is not legible.
+- **ANSI white is not white.** Dark schemes map 7/15 to the foreground, so `\e[97m`
+  gets the strongest ink. Map that literally on paper and the text disappears — the
+  fault Solarized Light is known for. Here 7 is a mid grey and 15 is near-black, so
+  bright white stays the strongest mark, which is the role the emitting code means.
+
+What this cannot fix: a TUI that paints its own background dark, or hardcodes a colour
+rather than asking for an ANSI slot, keeps its dark rectangle inside the light pane.
+The palette is a set of answers to questions the program has to ask.
 
 ## Transport and failure
 

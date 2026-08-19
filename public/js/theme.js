@@ -17,11 +17,16 @@
  *      them. Now the stylesheet is the only statement and this derives from it;
  *   3. the browser's own chrome — <meta theme-color> follows the bar surface.
  *
- * TERMINAL SURFACES STAY DARK IN BOTH THEMES, deliberately: the `--term-*` tokens are
- * not remapped by the light theme. A terminal is read against a dark ground by long
- * convention and every TUI palette assumes it; a light shell around a dark pane is
- * the design, not an omission. index.html applies the saved attribute inline before
- * CSS paints, so a light-theme reload never flashes dark.
+ * TERMINAL SURFACES GO LIGHT TOO (2026-08-19). They did not until then, and this comment
+ * argued for it: a terminal is read against a dark ground by long convention and every TUI
+ * palette assumes it. The convention is real; the conclusion was still wrong. White-on-black
+ * IS the wall a non-terminal person hits, so a light shell that keeps a black pane has not
+ * gone light — it has put a light frame around the intimidating part. The `--term-*` tokens
+ * are now remapped by `:root[data-theme='light']` like every other role, which means THIS
+ * FILE NEEDED NO CHANGE to carry it: `termTheme()` re-reads the tokens on every flip, so
+ * remapping them in CSS is the entire mechanism. That is the token rule paying for itself.
+ * index.html applies the saved attribute inline before CSS paints, so a light-theme reload
+ * never flashes dark.
  */
 import { tiles } from './state.js';
 

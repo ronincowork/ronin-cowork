@@ -210,7 +210,8 @@ export function buildSystemPanel() {
   // button shows the shell's CURRENT mode; pressing it flips. Flipping away from
   // what the Mac prefers pins the shell; flipping back to match re-arms following
   // (js/theme.js setTheme) — so "make it match" and "follow it" stay one act and
-  // no third control exists. Terminal panes stay dark either way, by design.
+  // no third control exists. The pane flips with the shell from 2026-08-19 — light
+  // means light all the way in, terminal included (docs/ui.md, Theme).
   const appRow = document.createElement('div');
   appRow.className = 'sys-theme';
   const appLab = document.createElement('span');

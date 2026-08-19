@@ -93,8 +93,12 @@
      object (`termTheme()`), plus the tape/composer surfaces that sit over the pane.
      Spelled HERE and nowhere else: the THEME literal that used to shadow these in
      state.js is gone (TOKENS' D2 defect — one palette, two spellings).
-     DELIBERATELY NOT REMAPPED BY THE LIGHT THEME: a terminal reads dark, every TUI
-     palette assumes it, and a light shell around a dark pane is the design. */
+     THIS IS THE DARK SET; THE LIGHT SHELL REMAPS EVERY ONE OF THEM (2026-08-19). It used
+     to not, and the comment here argued the case: a terminal reads dark, every TUI palette
+     assumes it. Both halves were true and the conclusion was still wrong — the owner's
+     point is that white-on-black IS the wall a non-terminal person hits, and a light shell
+     that keeps it has not actually gone light. The palette is Tomorrow Night; the light
+     block below is its own sibling, Tomorrow, on the house paper. */
   --term-bg: #0b0e14;
   --term-fg: #c5c8c6;
   --term-cursor: #e0af68;
@@ -233,8 +237,8 @@
 
 /* ---- THE LIGHT THEME — the same roles, resolved for a light shell. js/theme.js sets
    `data-theme` from the owner's ⚙ System choice (per device, localStorage), and
-   index.html applies the saved value inline before first paint. The --term-* tokens
-   are absent here ON PURPOSE: terminal surfaces stay dark under the light shell. */
+   index.html applies the saved value inline before first paint. THE --term-* TOKENS ARE
+   REMAPPED HERE TOO: light means light all the way into the pane, terminal included. */
 :root[data-theme='light'] {
   --bg: #f4f2ec;
   --bg-2: #eae7df;
@@ -275,6 +279,61 @@
   --shadow-sheet: 0 12px 34px rgb(30 30 30 / 22%);
   --kaki-lift: #a34e2f;
   --aiiro-lift: #3d6394;
+
+  /* ---- THE TERMINAL, ON PAPER (2026-08-19, the owner's ask: "the terminal is still
+     white on black … so that the terminal is not so intimidating to non-terminal users").
+     Same sixteen roles, same reader — js/theme.js `termTheme()` re-reads these on every
+     flip, so nothing but these lines is the mechanism.
+
+     THE PALETTE IS TOMORROW, the day sibling of the dark set's Tomorrow Night, so the two
+     shells are one scheme rather than two moods. Two departures from stock Tomorrow, both
+     forced by the ground rather than taste:
+
+       YELLOW AND THE BRIGHTS ARE DARKENED. Tomorrow's #eab700 yellow is 1.7:1 on paper —
+       a TUI's warning would be a blank line. Every colour here clears 3:1 on --term-bg,
+       which is what makes a light pane legible rather than merely light.
+
+       WHITE IS NOT WHITE. Every dark scheme maps ANSI 7/15 to the foreground, so a TUI
+       printing \e[37m or \e[97m gets its strongest ink. Map them literally on paper and
+       that text vanishes — the fault Solarized Light is famous for. Here 7 is a mid grey
+       and 15 is near-black: bright white stays the STRONGEST mark, which is the role the
+       code emitting it means, and the only reading that survives inverting the ground.
+
+     The pane is the lightest paper in the room (--panel is #fff, but a pane is a page, and
+     it sits a shade above the desk it lies on). */
+  --term-bg: #faf8f2;
+  --term-fg: #4d4d4c;
+  --term-cursor: #a06b1a;
+  --term-selection: #d8e2f2;
+  --term-ansi-black: #1d1f21;
+  --term-ansi-red: #bc2f2f;
+  --term-ansi-green: #5c7a1d;
+  --term-ansi-yellow: #9a7b00;
+  --term-ansi-blue: #2f5f9e;
+  --term-ansi-magenta: #7a4d9c;
+  --term-ansi-cyan: #2c7a7a;
+  --term-ansi-white: #6f716e;
+  --term-ansi-br-black: #767874;
+  --term-ansi-br-red: #d13b3b;
+  --term-ansi-br-green: #6f8f28;
+  --term-ansi-br-yellow: #b08c00;
+  --term-ansi-br-blue: #3f79c0;
+  --term-ansi-br-magenta: #9060b8;
+  --term-ansi-br-cyan: #35908f;
+  --term-ansi-br-white: #2b2d2a;
+  --term-tape-bg: #fdfcf8;
+  --term-tape-fg: #2c2e36;
+  --term-tape-line: #c8c2b2;
+  --term-tape-line-2: #b3ac9a;
+  --term-tape-muted: #6d7284;
+  --term-tape-muted-2: #4a4f5e;
+  --term-jump-bg: rgb(250 248 242 / 92%);
+  --term-jump-bg-2: rgb(238 235 226 / 95%);
+  --term-panel: #f1efe8;
+  --term-panel-line: #d9d4c8;
+  --term-well: #ffffff;
+  --term-input-line: #c8c2b2;
+  --term-input-fg: #2c2e36;
 }
 
 /* Keyboard focus is visible EVERYWHERE, one rule: the amber ring. Pointer users never
