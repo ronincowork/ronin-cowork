@@ -102,7 +102,10 @@ The roles, defined in `public/style.css`:
 - text: `--fg-strong` · `--fg` · `--muted` · `--muted-2` · `--muted-3` · `--dim` (zero-state)
 - meaning: `--accent` (attention/identity) · `--accent-2` (reference) · `--ok`/`--ok-2` ·
   `--warn` (needs you) · the `--bad-*` family (wrong, in grades) · `--info` · `--action`
-- house: `--kaki` (this session) · `--aiiro` (Ronin) — Kojin's fixed palette, borrowed
+- house: `--kaki` (this session; heightened access/visibility) · `--aiiro` (Ronin) —
+  Kojin's fixed palette, borrowed. `--heighten`, `--heighten-hover`, `--heighten-fg`, and
+  `--heighten-shape` are the semantic treatment: a kaki hexagon for an access or view
+  control whose ability to be found quickly is part of its function.
 - elevation: `--scrim`, `--shadow-menu`, `--shadow-sheet` — the whole vocabulary
 - terminal: the `--term-*` block — xterm's palette and the tape/composer surfaces,
   read back into JS by `termTheme()` (`public/js/theme.js`), never restated
@@ -142,9 +145,20 @@ scheme, two grounds. Two departures from stock, both forced by the paper:
   fault Solarized Light is known for. Here 7 is a mid grey and 15 is near-black, so
   bright white stays the strongest mark, which is the role the emitting code means.
 
-What this cannot fix: a TUI that paints its own background dark, or hardcodes a colour
-rather than asking for an ANSI slot, keeps its dark rectangle inside the light pane.
-The palette is a set of answers to questions the program has to ask.
+**The 256-colour cube follows the shell too** (2026-08-19). Sixteen named slots is only
+half a terminal palette; the other 240 are the xterm cube, and a program that addresses
+those was left painting for a ground that had gone. `theme.js` generates all 240
+arithmetically — no colour is spelled there — and pushes them as xterm's `extendedAnsi`,
+read as written on the dark shell and mirrored in **CIE L\*** on paper. The transform
+reverses MEANING rather than maximising legibility, because one palette serves both text
+and fills: light ink becomes dark ink, and a dark rectangle becomes a light one. Clamping
+every entry to 3:1 would turn every fill back into a dark rectangle. Which shell reads it
+which way is a token, `--term-cube`.
+
+What this cannot fix: a TUI that hardcodes an RGB value rather than asking for a slot or a
+cube index keeps its own colours in either shell. The palette is a set of answers to
+questions the program has to ask — and **`docs/ui-agents.md` is the record of what each
+agent CLI actually asks**, with the measured numbers and the settings each one needs.
 
 **"Bright white is the strongest mark" is now a CONTRACT, not a nicety, and it reaches
 outside Ronin.** Claude Code — the agent in most of these panes — ships themes in two

@@ -74,20 +74,26 @@
   /* ---- Kojin house colours (karate/SYSTEM.md — the palette there is FIXED, six
      values, and these are two of them by name). Ronin borrows them for the two bar
      openers so メ and ニ read as a matched pair rather than two grey glyphs.
-     Kaki  (persimmon) — agent action. THIS SESSION. The one saturated mark.
+     Kaki  (persimmon) — agent action, and heightened access/visibility. The one
+     saturated mark: it sharpens a control the owner must be able to find quickly.
      Aiiro (indigo)    — selection and navigation. RONIN itself.
      Kojin's dark theme lifts the indigo "to carry"; #274A78 on this near-black
      ground is a bruise, so -lift is that lift and the two hexes stay untouched as
      the record of what they are.
 
-     KAKI HAS A SECOND USE from 2026-08-15: the copy hint (js/termview.js) flashes
-     kaki-lift, on the owner's word, because it is the one saturated mark and the
-     hint's whole job is to not be missed. The two never share a screen — メ is
-     touch-only, the hint is desktop-only. See the .copyhint block below. */
+     The semantic `--heighten-*` aliases pair kaki with the hexagon for access or view
+     controls whose discoverability is part of their function. The copy hint predates
+     that pair and uses kaki-lift for the same reason: its job is to not be missed. */
   --kaki: #c46243;
   --kaki-lift: #e08163;
   --aiiro: #274a78;
   --aiiro-lift: #6f95cc;
+  --heighten: var(--kaki);
+  --heighten-hover: var(--kaki-lift);
+  --heighten-fg: var(--on-strong);
+  --heighten-shape: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+  --heighten-inline-size: 22.5px;
+  --heighten-block-size: 21px;
 
   /* ---- THE TERMINAL PALETTE — the tokens js/theme.js reads back into xterm's theme
      object (`termTheme()`), plus the tape/composer surfaces that sit over the pane.
@@ -99,6 +105,13 @@
      point is that white-on-black IS the wall a non-terminal person hits, and a light shell
      that keeps it has not actually gone light. The palette is Tomorrow Night; the light
      block below is its own sibling, Tomorrow, on the house paper. */
+  /* THE 256-COLOUR CUBE, and which way it is read. xterm's palette is 16 named slots —
+     the --term-ansi-* tokens below — plus 240 more that the standard DEFINES ARITHMETICALLY
+     (a 6x6x6 RGB cube and 24 greys). Those 240 are not tokens and must not become 240
+     token lines; what IS a decision, and so lives here, is whether this shell reads them
+     as written or flipped. js/theme.js does the arithmetic and spells no colour.
+     `standard` on the dark shell because that is the ground every TUI palette assumes. */
+  --term-cube: standard;
   --term-bg: #0b0e14;
   --term-fg: #c5c8c6;
   --term-cursor: #e0af68;
@@ -310,6 +323,19 @@
 
      The pane is the lightest paper in the room (--panel is #fff, but a pane is a page, and
      it sits a shade above the desk it lies on). */
+  /* THE CUBE IS FLIPPED ON PAPER, and this is a REGRESSION FIX rather than a nicety.
+     Until cfb8230 the terminal stayed dark under the light shell, so a TUI painting from
+     the cube always had the dark ground it was written for. Making the terminal follow the
+     shell took that away from every program that addresses the cube instead of the sixteen
+     named slots — Codex is the one in this house: its tape is 38;5;231 (pure white, ~4k
+     times in one session) and fills of 48;5;22/52/237/16. On paper that is 1.06:1, which
+     is why the owner saw "big bright white sections" where the output should have been.
+     Claude Code was unaffected because an -ansi theme emits slot NAMES, and those are
+     remapped below. Flipping lightness and keeping hue is what makes "light ink on a dark
+     ground" survive onto paper — and it has to be a flip rather than a darkening, because
+     ONE palette serves both text and fills: darken everything for legibility and every
+     background fill turns back into a dark rectangle. */
+  --term-cube: invert;
   --term-bg: #faf8f2;
   --term-fg: #2e302c;
   --term-cursor: #a06b1a;
@@ -2233,14 +2259,26 @@ body {
   font-size: var(--text-3);
   line-height: 1;
   font-family: inherit;
-  padding: var(--space-2) var(--space-4);
+  padding: var(--space-2);
   cursor: pointer;
 }
 .desk-x:hover {
-  border-color: var(--line-2);
-  background: var(--well);
-  color: var(--fg-strong);
+  border-color: transparent;
 }
+.close-hex {
+  display: inline-grid;
+  place-items: center;
+  width: var(--heighten-inline-size);
+  height: var(--heighten-block-size);
+  clip-path: var(--heighten-shape);
+  background: var(--heighten);
+  color: var(--heighten-fg);
+  font-size: var(--text-5);
+  font-weight: 700;
+  line-height: 1;
+}
+.desk-x:hover .close-hex,
+.home-x:hover .close-hex { background: var(--heighten-hover); }
 .desk-pane {
   display: none;
   flex: 1;
@@ -4248,7 +4286,8 @@ body {
   border-radius: var(--radius-md);
   border-color: transparent;
   background: var(--bg);
-  color: var(--muted-3);
+  color: var(--on-strong);
+  padding: var(--space-2);
 }
 .home-tabs .home-x::before {
   content: '';
