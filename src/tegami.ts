@@ -132,7 +132,7 @@ export async function seedTegami(name: string, job: string): Promise<string | nu
     if ((e as NodeJS.ErrnoException)?.code === 'EEXIST') return tegamiPath(await sessionKey(name));
     // Never silent. A seed that fails quietly means a session with no letter and nobody
     // the wiser — the one failure mode that makes the whole readout untrustworthy.
-    console.error(`[tmux-ronin] tegami seed ${name}:`, e);
+    console.error(`[ronin] tegami seed ${name}:`, e);
     return null;
   }
 }

@@ -1,4 +1,4 @@
-/* part of the tmux-ronin client — see js/README.md */
+/* part of the ronin-cowork client — see js/README.md */
 import { macroData } from './home.js';
 import { PAD_CONTROLS, PAD_KEYS, PAD_LAYOUT, PAD_WIDGETS, firePadSend, padBinds, savePadBinds } from './pad.js';
 import { field, sheet, toast } from './ui.js';

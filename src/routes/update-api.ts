@@ -6,7 +6,7 @@
  * asks github.com anything, and it is never on a timer. /run is the same press-only
  * rule for the update itself.
  *
- * WHY /run GOES THROUGH systemd-run: the update restarts tmux-ronin — the unit this
+ * WHY /run GOES THROUGH systemd-run: the update restarts ronin — the unit this
  * process lives in. A child spawned here dies with its parent's cgroup at that
  * restart, killing the update mid-swap. A transient systemd unit lives OUTSIDE our
  * cgroup and survives it — the same isolation that keeps sessions alive in

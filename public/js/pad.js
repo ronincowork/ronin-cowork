@@ -1,4 +1,4 @@
-/* part of the tmux-ronin client — see js/README.md */
+/* part of the ronin-cowork client — see js/README.md */
 import { IS_TOUCH, S, WHEEL_DOWN, WHEEL_UP, grid, tiles } from './state.js';
 import { request } from './request.js';
 import { toast } from './ui.js';

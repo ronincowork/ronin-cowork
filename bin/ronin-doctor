@@ -22,6 +22,13 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 OS="$(uname -s)"
 
+# The operator unit is ronin.service; a box that has not re-run setup.sh since the
+# 2026-08-19 rename still runs it as tmux-ronin.service. Diagnose whichever is there.
+RONIN_UNIT="ronin"
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl --user cat ronin.service >/dev/null 2>&1 || RONIN_UNIT="tmux-ronin"
+fi
+
 FINDINGS=0
 sect() { echo "→ $1"; }
 ok()   { echo "  ok   — $1"; }
@@ -70,7 +77,10 @@ echo ""
 sect "installed units vs deploy/"
 if [ "$OS" = "Linux" ] && command -v systemctl >/dev/null 2>&1; then
   UNIT_DIR="$HOME/.config/systemd/user"
-  for unit in tmux-server.service tmux-ronin.service; do
+  if [ -f "$UNIT_DIR/tmux-ronin.service" ]; then
+    find_ "the operator still runs under its retired name tmux-ronin.service — run ./setup.sh to migrate it to ronin.service"
+  fi
+  for unit in tmux-server.service ronin.service; do
     tpl="$ROOT/deploy/$unit"
     inst="$UNIT_DIR/$unit"
     if [ ! -f "$tpl" ]; then
@@ -90,14 +100,17 @@ if [ "$OS" = "Linux" ] && command -v systemctl >/dev/null 2>&1; then
     fi
   done
 elif [ "$OS" = "Darwin" ]; then
-  tpl="$ROOT/deploy/com.tmux-ronin.plist"
-  inst="$HOME/Library/LaunchAgents/com.tmux-ronin.plist"
+  tpl="$ROOT/deploy/com.ronin.plist"
+  inst="$HOME/Library/LaunchAgents/com.ronin.plist"
+  if [ -f "$HOME/Library/LaunchAgents/com.tmux-ronin.plist" ]; then
+    find_ "the retired launchd agent com.tmux-ronin.plist is still installed — run ./setup.sh and unload the old one"
+  fi
   if [ ! -f "$inst" ]; then
-    find_ "com.tmux-ronin.plist was never installed — run ./setup.sh, then launchctl load -w $inst"
+    find_ "com.ronin.plist was never installed — run ./setup.sh, then launchctl load -w $inst"
   elif ! diff -q <(render_template "$tpl") "$inst" >/dev/null 2>&1; then
-    find_ "installed com.tmux-ronin.plist is not the one in deploy/ — run ./setup.sh, then launchctl unload/load -w $inst"
+    find_ "installed com.ronin.plist is not the one in deploy/ — run ./setup.sh, then launchctl unload/load -w $inst"
   else
-    ok "com.tmux-ronin.plist matches deploy/"
+    ok "com.ronin.plist matches deploy/"
   fi
 else
   note "no systemd or launchd here — nothing installed to compare"
@@ -157,14 +170,14 @@ fi
 HOSTIP="${HOSTIP:-127.0.0.1}"
 URL="http://${HOSTIP}:${PORT}/"
 if command -v systemctl >/dev/null 2>&1; then
-  state="$(systemctl --user show tmux-ronin -p ActiveState --value 2>/dev/null)"
-  [ "$state" = "active" ] || find_ "tmux-ronin unit is $state — starting it is the owner's hand (systemctl --user start tmux-ronin)"
+  state="$(systemctl --user show "$RONIN_UNIT" -p ActiveState --value 2>/dev/null)"
+  [ "$state" = "active" ] || find_ "the $RONIN_UNIT unit is $state — starting it is the owner's hand (systemctl --user start $RONIN_UNIT)"
 fi
 HEALTH_UP=0
 if curl -fsS -m 4 -o /dev/null "${URL}api/health" 2>/dev/null; then
   ok "serving at $URL"; HEALTH_UP=1
 else
-  find_ "nothing answers ${URL}api/health — the grid is down; journalctl --user -u tmux-ronin -n 50, restart is the owner's hand"
+  find_ "nothing answers ${URL}api/health — the grid is down; journalctl --user -u $RONIN_UNIT -n 50, restart is the owner's hand"
 fi
 
 # ---- 4b. the perimeter: is the front door shut? -----------------------------------
@@ -255,7 +268,7 @@ elif [ -n "$op_commit" ] && [ "$op_commit" != "unknown" ]; then
 else
   [ "$HEALTH_UP" = 1 ] &&
     note "operator answers /api/health but not /api/version — it predates the stamp; its next restart carries it"
-  pid="$(systemctl --user show tmux-ronin -p MainPID --value 2>/dev/null)"
+  pid="$(systemctl --user show "$RONIN_UNIT" -p MainPID --value 2>/dev/null)"
   if [ -n "${pid:-}" ] && [ "$pid" != "0" ] && [ -d "/proc/$pid" ]; then
     etimes="$(ps -o etimes= -p "$pid" 2>/dev/null | tr -d ' ')"
     started=$(( $(date +%s) - ${etimes:-0} ))
@@ -375,7 +388,7 @@ if [ "$OS" = "Linux" ] && command -v systemctl >/dev/null 2>&1; then
     cg="$(cat "/proc/${spid:-0}/cgroup" 2>/dev/null)"
     case "$cg" in
       *tmux-server.service*) ok "tmux server lives in tmux-server.service's cgroup" ;;
-      *tmux-ronin.service*)  find_ "the tmux server is inside tmux-ronin's cgroup — restarting tmux-ronin WILL kill every session on this box; see docs/tmux-server-cgroup.md (owner's hand)" ;;
+      *ronin.service*)       find_ "the tmux server is inside the operator's cgroup — restarting Ronin WILL kill every session on this box; see docs/tmux-server-cgroup.md (owner's hand)" ;;
       '')                    note "could not read the tmux server's cgroup" ;;
       *)                     find_ "the tmux server is outside tmux-server.service (started by hand?) — sessions die with whatever started it; see docs/tmux-server-cgroup.md (owner's hand)" ;;
     esac

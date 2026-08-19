@@ -1,4 +1,4 @@
-/* part of the tmux-ronin client — see js/README.md */
+/* part of the ronin-cowork client — see js/README.md */
 /**
  * ANSI escape sequences — the one pattern the tape render needs.
  *

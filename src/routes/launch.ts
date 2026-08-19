@@ -171,7 +171,7 @@ export function registerLaunch(app: express.Express): void {
       const { ready, held } = await waitReadyForBrief(resolved.name);
       if (held) {
         console.error(
-          `[tmux-ronin] ${resolved.name}: the CLI is asking something (trust this folder?) — ` +
+          `[ronin] ${resolved.name}: the CLI is asking something (trust this folder?) — ` +
             `waiting to deliver the brief until it is answered.`,
         );
       }
@@ -180,7 +180,7 @@ export function registerLaunch(app: express.Express): void {
         // typing a brief into that is at best lost and at worst an answer given on the
         // owner's behalf.
         console.error(
-          `[tmux-ronin] ${resolved.name}: never became ready — brief NOT sent. ` +
+          `[ronin] ${resolved.name}: never became ready — brief NOT sent. ` +
             `Answer whatever the pane is asking, then re-send it.`,
         );
         return;
@@ -192,11 +192,11 @@ export function registerLaunch(app: express.Express): void {
       // symptom, so it gets a line in the log.
       if (!sent.started) {
         console.error(
-          `[tmux-ronin] ${resolved.name}: the brief did not submit. ` +
+          `[ronin] ${resolved.name}: the brief did not submit. ` +
             `Check the tile — it may be sitting at the prompt, or a dialog may be open.`,
         );
       }
-    })().catch((e) => console.error(`[tmux-ronin] spawn ${resolved.name}:`, e));
+    })().catch((e) => console.error(`[ronin] spawn ${resolved.name}:`, e));
   });
 
   app.get('/api/sessions', async (_req, res) => {

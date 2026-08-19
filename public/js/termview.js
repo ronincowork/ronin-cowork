@@ -1,4 +1,4 @@
-/* part of the tmux-ronin client — see js/README.md */
+/* part of the ronin-cowork client — see js/README.md */
 /**
  * TERMVIEW — the 🔒 locked view: the untouched `tmux attach` mirror.
  *

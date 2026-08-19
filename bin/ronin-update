@@ -28,7 +28,7 @@
 # after the gate — not a second serving copy.
 #
 # WHAT AN UPDATE CANNOT DO: kill your sessions. They live in tmux-server.service, a
-# unit this script never touches; only tmux-ronin (the operator) restarts, and the
+# unit this script never touches; only ronin (the operator) restarts, and the
 # browser reconnects. The systemd unit points at <home>/current, so a swap never edits
 # the unit file — the one route a restart cannot carry (docs/repo-to-operator.md).
 # If a release changes deploy/*.service, this script says so loudly: that needs
@@ -54,6 +54,11 @@ SVC_SLUG="${RONIN_SERVICES_REPO:-ronincowork/ronin-releases}"
 
 fail() { echo "✗ $1" >&2; exit 1; }
 say()  { echo "→ $1"; }
+
+# The operator unit is ronin.service; a box that has not re-run setup.sh since the
+# 2026-08-19 rename still runs it as tmux-ronin.service. Talk to whichever exists.
+RONIN_UNIT="ronin"
+systemctl --user cat ronin.service >/dev/null 2>&1 || RONIN_UNIT="tmux-ronin"
 
 # --- arguments ---
 MODE="install"; WANT=""; FILE=""; HOME_DIR=""; JSON=0; PACKAGE="cowork"
@@ -155,7 +160,7 @@ fi
 # --- the serving question: does THIS home's current serve the unit? ---
 unit_serves_home() {
   local wd
-  wd="$(systemctl --user show tmux-ronin -p WorkingDirectory --value 2>/dev/null || true)"
+  wd="$(systemctl --user show "$RONIN_UNIT" -p WorkingDirectory --value 2>/dev/null || true)"
   [ -n "$wd" ] && [ -e "$HOME_DIR/current" ] &&
     [ "$(readlink -f "$wd" 2>/dev/null)" = "$(readlink -f "$HOME_DIR/current")" ]
 }
@@ -178,8 +183,8 @@ render_check() { # $1=tree $2=url $3=what; returns 1 only on a REAL failure
 }
 
 restart_and_gate() {
-  say "restarting tmux-ronin (sessions live in tmux-server.service — untouched)"
-  systemctl --user restart tmux-ronin || fail "restart failed — systemctl --user status tmux-ronin"
+  say "restarting Ronin (sessions live in tmux-server.service — untouched)"
+  systemctl --user restart "$RONIN_UNIT" || fail "restart failed — systemctl --user status $RONIN_UNIT"
   local port bind url
   port="$(sed -n 's/^PORT=//p' "$HOME_DIR/.env" 2>/dev/null | head -1)"
   bind="$(sed -n 's/^BIND=//p' "$HOME_DIR/.env" 2>/dev/null | head -1)"

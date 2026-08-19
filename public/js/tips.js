@@ -1,4 +1,4 @@
-/* part of the tmux-ronin client — see js/README.md */
+/* part of the ronin-cowork client — see js/README.md */
 /**
  * THE HELP BOX — one panel, one size, one place. Hovering a control fills it.
  *

@@ -4,9 +4,9 @@
  * A tmux server belongs to the systemd cgroup of whichever process started it.
  * Ronin starts sessions (`tmux new-session`) whenever a tile or the commons launcher
  * asks for one — so if no server is running at that moment, the server it forks
- * lands inside tmux-ronin.service. systemd's default KillMode=control-group then
+ * lands inside ronin.service. systemd's default KillMode=control-group then
  * SIGTERMs every process in that cgroup on stop, which means a routine
- * `systemctl --user restart tmux-ronin` silently kills the tmux server and with it
+ * `systemctl --user restart ronin` silently kills the tmux server and with it
  * every session, agent and shell on the machine. It looks like tmux "resetting
  * itself on the regular"; nobody typed a kill command.
  *
@@ -36,13 +36,13 @@ export async function checkTmuxServerCgroup(): Promise<boolean> {
     console.error(
       [
         '',
-        '[tmux-ronin] ⚠  THE TMUX SERVER IS INSIDE THIS SERVICE\'S CGROUP.',
-        `[tmux-ronin]    tmux server pid ${pid} · cgroup ${mine}`,
-        '[tmux-ronin]    `systemctl --user restart tmux-ronin` will SIGTERM it and kill',
-        '[tmux-ronin]    EVERY tmux session, agent and shell on this machine.',
-        '[tmux-ronin]    Fix: install + enable tmux-server.service (./setup.sh), then let',
-        '[tmux-ronin]    the server be restarted once so it is born in its own cgroup.',
-        '[tmux-ronin]    Details: docs/tmux-server-cgroup.md',
+        '[ronin] ⚠  THE TMUX SERVER IS INSIDE THIS SERVICE\'S CGROUP.',
+        `[ronin]    tmux server pid ${pid} · cgroup ${mine}`,
+        '[ronin]    `systemctl --user restart ronin` will SIGTERM it and kill',
+        '[ronin]    EVERY tmux session, agent and shell on this machine.',
+        '[ronin]    Fix: install + enable tmux-server.service (./setup.sh), then let',
+        '[ronin]    the server be restarted once so it is born in its own cgroup.',
+        '[ronin]    Details: docs/tmux-server-cgroup.md',
         '',
       ].join('\n'),
     );
@@ -77,11 +77,11 @@ export async function ensureTmuxServer(): Promise<void> {
     // no server means no sessions to lose. Not run during our own activation
     // (that's ExecStartPre's --no-block job), so this cannot deadlock on After=.
     await pexec('systemctl', ['--user', 'restart', 'tmux-server.service']);
-    console.log('[tmux-ronin] no tmux server — started tmux-server.service (keeps it out of our cgroup)');
+    console.log('[ronin] no tmux server — started tmux-server.service (keeps it out of our cgroup)');
   } catch {
     console.warn(
-      '[tmux-ronin] no tmux server and tmux-server.service is unavailable — the server ' +
-        'about to be forked will live in this service\'s cgroup, so restarting tmux-ronin ' +
+      '[ronin] no tmux server and tmux-server.service is unavailable — the server ' +
+        'about to be forked will live in this service\'s cgroup, so restarting ronin ' +
         'will kill every session. See docs/tmux-server-cgroup.md',
     );
   }

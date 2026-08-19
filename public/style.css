@@ -1,4 +1,4 @@
-/* tmux-ronin — the one stylesheet, in four cascade layers.
+/* ronin-cowork — the one stylesheet, in four cascade layers.
  *
  * WHAT @layer ENFORCES, honestly: later layers WIN, so the one direction the cascade
  * guarantees is vendor-lowest — every Ronin rule beats xterm.css by construction, not

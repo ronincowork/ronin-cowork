@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# tmux-ronin setup — installs dependencies and an always-on autostart service.
+# ronin-cowork setup — installs dependencies and an always-on autostart service.
 # Run from the repo root:   ./setup.sh
 #
 # Works on Linux (systemd --user) and macOS (prints launchd steps). No root needed
@@ -10,7 +10,7 @@ set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$REPO_DIR"
-echo "==> tmux-ronin setup in $REPO_DIR"
+echo "==> Ronin setup in $REPO_DIR"
 
 # --- prerequisites ---
 command -v tmux >/dev/null || { echo "ERROR: tmux not found — install tmux first."; exit 1; }
@@ -112,8 +112,8 @@ PATH_LINE_BOTH="export PATH=$SHIM_Q:$TOOLS_Q:\"\$PATH\""
 PATH_LINE_BIN="export PATH=$SHIM_Q:$TOOLS_Q:\"\${PATH#$SHIM_Q:}\""
 # Only the shim is missing: prepending puts it ahead of everything, bin/ included.
 PATH_LINE_SHIM="export PATH=$SHIM_Q:\"\$PATH\""
-SHIM_BEGIN="# >>> tmux-ronin PATH (added by setup.sh) >>>"
-SHIM_END="# <<< tmux-ronin PATH <<<"
+SHIM_BEGIN="# >>> ronin PATH (added by setup.sh) >>>"
+SHIM_END="# <<< ronin PATH <<<"
 real_of() { (cd "$1" 2>/dev/null && pwd -P) || printf '%s' "$1"; }
 SHIM_REAL="$(real_of "$SHIM_DIR")"
 BIN_REAL="$(real_of "$BIN_DIR")"
@@ -319,7 +319,7 @@ fi
 # __REPO_DIR__ / __NODE_DIR__ placeholders; setup.sh only fills those in. It used to
 # keep its own inline copy instead, and the copy silently drifted: the render gate
 # (ExecStartPost=-… libexec/ronin-gate &, added after the 2026-08-08 outage) existed only
-# in deploy/tmux-ronin.service, so no box installed by setup.sh ever ran it.
+# in the deploy/ unit file, so no box installed by setup.sh ever ran it.
 # Read deploy/tmux-server.service before touching it — that unit owns the tmux server,
 # and every session on the box lives in its cgroup.
 
@@ -363,29 +363,41 @@ if [ "$OS" = "Linux" ] && command -v systemctl >/dev/null; then
   mkdir -p "$UNIT_DIR"
   echo "==> rendering systemd units from deploy/*.service"
   render_unit "$REPO_DIR/deploy/tmux-server.service" "$UNIT_DIR/tmux-server.service"
-  render_unit "$REPO_DIR/deploy/tmux-ronin.service"  "$UNIT_DIR/tmux-ronin.service"
+  render_unit "$REPO_DIR/deploy/ronin.service"       "$UNIT_DIR/ronin.service"
+  # One-time migration: the operator unit was named tmux-ronin.service until 2026-08-19,
+  # after the frozen unified repo (KOTOBA: ronin_legacy). Retire it before the reload so
+  # only one unit ever points at this box.
+  if [ -f "$UNIT_DIR/tmux-ronin.service" ]; then
+    systemctl --user disable --now tmux-ronin 2>/dev/null || true
+    rm -f "$UNIT_DIR/tmux-ronin.service"
+    echo "==> retired the old unit name tmux-ronin.service — this box now runs ronin.service"
+  fi
   systemctl --user daemon-reload
   systemctl --user enable --now tmux-server
   # `enable --now` is a no-op on a unit that is already running — but the unit file was
-  # just re-rendered, so a live tmux-ronin must be RESTARTED or the box keeps running
+  # just re-rendered, so a live ronin must be RESTARTED or the box keeps running
   # the old tree while the unit points at the new one (BYOKI). tmux-server is never
   # restarted here: that unit owns every live session on the box.
-  if systemctl --user is-active --quiet tmux-ronin; then
-    systemctl --user enable tmux-ronin
-    systemctl --user restart tmux-ronin
-    echo "==> tmux-ronin was already running: restarted onto the freshly rendered unit"
+  if systemctl --user is-active --quiet ronin; then
+    systemctl --user enable ronin
+    systemctl --user restart ronin
+    echo "==> Ronin was already running: restarted onto the freshly rendered unit"
   else
-    systemctl --user enable --now tmux-ronin
+    systemctl --user enable --now ronin
   fi
-  echo "==> systemd --user services 'tmux-server' + 'tmux-ronin' installed and started"
-  echo "    logs:   journalctl --user -u tmux-ronin -f"
-  echo "    status: systemctl --user status tmux-ronin"
+  echo "==> systemd --user services 'tmux-server' + 'ronin' installed and started"
+  echo "    logs:   journalctl --user -u ronin -f"
+  echo "    status: systemctl --user status ronin"
 elif [ "$OS" = "Darwin" ]; then
   LA_DIR="$HOME/Library/LaunchAgents"
   mkdir -p "$LA_DIR"
-  echo "==> rendering launchd agent from deploy/com.tmux-ronin.plist"
-  render_unit "$REPO_DIR/deploy/com.tmux-ronin.plist" "$LA_DIR/com.tmux-ronin.plist"
-  echo "    load it with:  launchctl load -w $LA_DIR/com.tmux-ronin.plist"
+  echo "==> rendering launchd agent from deploy/com.ronin.plist"
+  render_unit "$REPO_DIR/deploy/com.ronin.plist" "$LA_DIR/com.ronin.plist"
+  echo "    load it with:  launchctl load -w $LA_DIR/com.ronin.plist"
+  if [ -f "$LA_DIR/com.tmux-ronin.plist" ]; then
+    echo "    old agent found (renamed 2026-08-19) — retire it with:"
+    echo "      launchctl unload -w $LA_DIR/com.tmux-ronin.plist && rm $LA_DIR/com.tmux-ronin.plist"
+  fi
 else
   echo "==> No systemd/launchd detected. Start manually with: npm start"
 fi

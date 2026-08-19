@@ -27,8 +27,11 @@ if [ "$restart" = 1 ]; then
   done
   echo "  ok — server typechecks, client parses"
 
-  echo "→ restarting tmux-ronin"
-  systemctl --user restart tmux-ronin || fail "restart failed"
+  echo "→ restarting Ronin"
+  # ronin.service, or tmux-ronin.service on a box that predates the 2026-08-19 rename
+  RONIN_UNIT="ronin"
+  systemctl --user cat ronin.service >/dev/null 2>&1 || RONIN_UNIT="tmux-ronin"
+  systemctl --user restart "$RONIN_UNIT" || fail "restart failed"
 fi
 
 echo "→ gating the rendered page"
@@ -46,7 +49,7 @@ cat <<'EOS'
 
     1. git diff / git log -1     — see what just changed
     2. git revert <sha> && bin/ronin-deploy
-    3. journalctl --user -u tmux-ronin -n 50
+    3. journalctl --user -u ronin -n 50
 
   A client-only change can be tried safely instead:
     npm run stage && npm run verify:staging     # candidate at /staging/, live untouched

@@ -1,4 +1,4 @@
-/* part of the tmux-ronin client — see js/README.md */
+/* part of the ronin-cowork client — see js/README.md */
 import { openSessionSomewhere } from './events.js';
 import { jobIcon } from './home.js';
 import { sheet, toast } from './ui.js';

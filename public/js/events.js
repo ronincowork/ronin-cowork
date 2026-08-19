@@ -1,4 +1,4 @@
-/* part of the tmux-ronin client — see js/README.md */
+/* part of the ronin-cowork client — see js/README.md */
 import { reconcileSessions } from './api.js';
 import { refreshHome } from './home.js';
 import { IS_TOUCH, S, TILE_COUNT, grid, tiles } from './state.js';

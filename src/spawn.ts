@@ -333,6 +333,6 @@ export async function appendLedger(form: SpawnForm, resolved: Resolved, ok: bool
     );
   } catch (e) {
     // A ledger failure must never cost the user their session.
-    console.error('[tmux-ronin] ledger:', (e as Error)?.message ?? e);
+    console.error('[ronin] ledger:', (e as Error)?.message ?? e);
   }
 }

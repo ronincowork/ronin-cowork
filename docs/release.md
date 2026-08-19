@@ -59,7 +59,7 @@ The flow, in order — and the order is the safety:
    release string on `/api/version`, and must pass the real-browser render gate
    (`libexec/ronin-gate`). **A failed gate swaps nothing — the serving release never
    moved.** The candidate is then killed; it served no one.
-5. **swap** the `current` symlink and restart `tmux-ronin` — only if that unit
+5. **swap** the `current` symlink and restart `ronin` — only if that unit
    actually serves this home; otherwise it says so and stops
 6. **gate the live page**, and report the release now answering
 

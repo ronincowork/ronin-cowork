@@ -75,7 +75,7 @@ export function registerSessions(app: express.Express): void {
     // anything it might have printed. The reply is for the log and for a caller that
     // somehow outlives its session — never a precondition for the kill.
     res.json({ ok: true, session: name });
-    console.log(`[tmux-ronin] harakiri: ${name} (pane ${pane})`);
+    console.log(`[ronin] harakiri: ${name} (pane ${pane})`);
     count('ended', { name, end: 'harakiri' });
     setTimeout(() => void killSessionTree(name), 50);
   });

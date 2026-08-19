@@ -1,4 +1,4 @@
-/* part of the tmux-ronin client — see js/README.md */
+/* part of the ronin-cowork client — see js/README.md */
 import { grid, saveState, tiles } from './state.js';
 import { collapseTileHead, expandTileHead, isCoarse } from './tiledrop.js';
 

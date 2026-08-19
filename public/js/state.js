@@ -1,4 +1,4 @@
-/* tmux-ronin — browser grid of live tmux sessions. No framework, just xterm.js. */
+/* ronin-cowork — browser grid of live tmux sessions. No framework, just xterm.js. */
 'use strict';
 
 export const grid = document.getElementById('grid');
