@@ -50,6 +50,17 @@ sha256_of() {
   else shasum -a 256 "$1" | awk '{print $1}'; fi
 }
 
+# Quiet on success, loud on failure: configure/make chatter goes to a log, and the
+# log's tail is printed when a step dies — a CI failure must say WHY in its own output.
+run_logged() { # <label> <cmd...>
+  _label="$1"; shift
+  if ! "$@" >>"$WORK/build.log" 2>&1; then
+    echo "FAILED: $_label — last 60 lines of the build log:" >&2
+    tail -60 "$WORK/build.log" >&2
+    exit 1
+  fi
+}
+
 SRC_DIR="$(pwd)"
 WORK="$(mktemp -d)"
 PREFIX="$WORK/prefix"
@@ -84,33 +95,33 @@ done
 
 # --- ncurses: wide-char (tmux is UTF-8), static only, fallbacks compiled in ---
 cd "$WORK/ncurses-$NCURSES_V"
-./configure --prefix="$PREFIX" \
+run_logged "ncurses configure" ./configure --prefix="$PREFIX" \
   --enable-widec --without-shared --without-debug --without-ada \
   --without-manpages --without-progs --without-tests \
   --with-fallbacks="$FALLBACKS" \
   --with-terminfo-dirs="/etc/terminfo:/lib/terminfo:/usr/share/terminfo" \
   --with-default-terminfo-dir="/usr/share/terminfo" \
-  --enable-pc-files --with-pkg-config-libdir="$PREFIX/lib/pkgconfig" \
-  >/dev/null
-make -j"$JOBS" >/dev/null
-make install >/dev/null
+  --enable-pc-files --with-pkg-config-libdir="$PREFIX/lib/pkgconfig"
+run_logged "ncurses make" make -j"$JOBS"
+run_logged "ncurses install" make install
 
 # --- libevent: static only, no openssl (tmux never speaks TLS through it) ---
 cd "$WORK/libevent-$LIBEVENT_V"
-./configure --prefix="$PREFIX" --disable-shared --disable-openssl \
-  --disable-libevent-regress --disable-samples >/dev/null
-make -j"$JOBS" >/dev/null
-make install >/dev/null
+run_logged "libevent configure" ./configure --prefix="$PREFIX" --disable-shared --disable-openssl \
+  --disable-libevent-regress --disable-samples
+run_logged "libevent make" make -j"$JOBS"
+run_logged "libevent install" make install
 
 # --- tmux: against exactly the two prefixes above ---
 # --enable-static passes -static, which musl supports and macOS's ld refuses; on
 # Darwin the same effect comes from the prefixes holding ONLY static archives.
 cd "$WORK/tmux-$TMUX_V"
+export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"
 case "$(uname -s)" in
-  Linux)  PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig" ./configure --enable-static >/dev/null ;;
-  Darwin) PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig" ./configure >/dev/null ;;
+  Linux)  run_logged "tmux configure" ./configure --enable-static ;;
+  Darwin) run_logged "tmux configure" ./configure ;;
 esac
-make -j"$JOBS" >/dev/null
+run_logged "tmux make" make -j"$JOBS"
 strip tmux
 
 OUT="$SRC_DIR/out"
