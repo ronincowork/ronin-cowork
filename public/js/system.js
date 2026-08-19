@@ -1,6 +1,7 @@
 /* part of the tmux-ronin client — see js/README.md */
 import { request } from './request.js';
 import { button, field, status } from './ui.js';
+import { applySkin, currentSkin, listSkins, setSkin } from './skins.js';
 import { resolvedTheme, setTheme } from './theme.js';
 import { S } from './state.js';
 
@@ -231,6 +232,51 @@ export function buildSystemPanel() {
   paintFlip();
   appRow.append(appLab, flip);
 
+  /* THE SKIN PICKER, beside the light/dark flip because they are the same question asked
+   * twice — what does this look like — and a person hunting "appearance" should find both
+   * in one place rather than learning that one of them is a room of its own.
+   *
+   * A ROW PER SKIN, NOT A <select>. Each carries its blurb, and a skin of the owner's own
+   * says so: `origin` distinguishes something you added from something of ours you
+   * replaced, and only the second can silently stop tracking an upgrade (docs/shadowing.md)
+   * — which is exactly the thing worth seeing before you wonder why a shipped skin stopped
+   * changing. The list is empty on a build whose service cannot answer, and an empty list
+   * draws nothing rather than an error: no skins is a legal state, not a fault. */
+  const skinBlock = document.createElement('div');
+  skinBlock.className = 'sys-skins';
+  const skinLab = document.createElement('span');
+  skinLab.className = 'sys-theme-lbl';
+  skinLab.textContent = 'skin';
+  const skinList = document.createElement('div');
+  skinList.className = 'sys-skinlist';
+  skinBlock.append(skinLab, skinList);
+
+  const paintSkins = (skins) => {
+    skinList.innerHTML = '';
+    const chosen = currentSkin();
+    for (const sk of skins) {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'sys-skin' + (sk.name === chosen ? ' on' : '');
+      const nm = document.createElement('b');
+      nm.textContent = sk.label;
+      if (sk.origin === 'user') {
+        const mark = document.createElement('i');
+        mark.className = 'sys-skin-mine';
+        mark.textContent = sk.shadowed ? 'yours (replaces ours)' : 'yours';
+        nm.appendChild(mark);
+      }
+      const why = document.createElement('small');
+      why.textContent = sk.blurb;
+      row.append(nm, why);
+      row.addEventListener('click', () => {
+        setSkin(sk);
+        skinList.querySelectorAll('.sys-skin').forEach((r) => r.classList.toggle('on', r === row));
+      });
+      skinList.appendChild(row);
+    }
+  };
+
   const row = document.createElement('div');
   row.className = 'sys-actions';
   const checkBtn = button('Check for updates', {
@@ -275,7 +321,7 @@ export function buildSystemPanel() {
     g.append(...kids);
     return g;
   };
-  const appearance = group(appRow);
+  const appearance = group(appRow, skinBlock);
   const release = group(idBlock, row, msg.el);
   const account = group(outRow, passkeys.el);
 
@@ -418,6 +464,10 @@ export function buildSystemPanel() {
 
   const enter = () => {
     paintFlip(); // the Mac may have flipped while the desk was away
+    // Re-read every time: SKINS.md is parsed per request, so a hand-edit to the file — or
+    // an upgrade that ships a new one — is visible on the next visit to this room without
+    // a reload. That is the same promise the macro list makes about MACROS.md.
+    void listSkins().then(paintSkins);
     say('');
     void (async () => {
       const r = await request('/api/version', { cache: 'no-store' });

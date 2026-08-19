@@ -42,6 +42,7 @@ file happens to define every stock name.
 | `MACROS.md` | `## name` blocks | entry-merge |
 | `ACTIONS.md` | `## name` blocks | entry-merge |
 | `TOOLS.md` | a table | same rule, keyed on the tool name in column 1 |
+| `SKINS.md` | `## name` blocks | entry-merge. A skin is a set of design tokens and nothing else — no selector, so the worst a bad one does is look bad |
 | `HOTWORDS.md` | a flat list under `## Terms` | **copy-on-write, not a merge** — see below |
 | `PROJECT_ROOTS.md` | already split by scope | **nothing to shadow** — the launch table is stock, the roots are yours |
 

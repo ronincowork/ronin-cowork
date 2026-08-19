@@ -2389,6 +2389,62 @@ body {
 .sys-id small {
   opacity: 0.7;
 }
+/* ---- THE SKIN PICKER, beside the light/dark flip (js/system.js). A row per skin, each
+   carrying its own blurb, because the question "what do these do" is answered by reading
+   them and not by picking one to find out. A skin of the owner's own says so on its face:
+   `origin` is what separates something you added from something of ours you replaced, and
+   only the second can silently stop tracking an upgrade. ---- */
+.sys-skins {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.sys-skinlist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.sys-skin {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--well);
+  color: var(--muted-2);
+  font-family: inherit;
+  text-align: left;
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+}
+.sys-skin:hover {
+  border-color: var(--line-2);
+}
+.sys-skin.on {
+  border-color: var(--accent);
+  background: var(--raise);
+  color: var(--fg-strong);
+}
+.sys-skin b {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  font-weight: 600;
+  font-size: var(--text-4);
+}
+.sys-skin small {
+  color: var(--muted);
+  font-size: var(--text-2);
+}
+/* Provenance, in the launcher's own words — a skin of yours, or one of ours you replaced. */
+.sys-skin-mine {
+  border: var(--edge) solid var(--kaki);
+  border-radius: var(--radius-pill);
+  color: var(--kaki-lift);
+  font-size: var(--text-1);
+  font-style: normal;
+  padding: 0 var(--space-2);
+}
 .sys-actions {
   display: flex;
   gap: var(--space-4);
@@ -3449,6 +3505,44 @@ body {
   height: 1px;
   background: var(--line);
 }
+
+.home-grp.drop-ready {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  outline: var(--edge) dashed var(--accent);
+  outline-offset: calc(-1 * var(--edge));
+}
+.home-grp.saving { opacity: .6; }
+
+.home-group-add {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: var(--edge) solid var(--line);
+}
+.home-group-add input {
+  width: 150px;
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-xs);
+  color: var(--fg);
+  background: var(--well);
+  font: inherit;
+}
+.home-group-add button {
+  padding: var(--space-3) var(--space-5);
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-xs);
+  color: var(--fg);
+  background: transparent;
+  cursor: pointer;
+}
+.home-group-add button:hover { border-color: var(--accent); color: var(--accent); }
+.home-group-msg { color: var(--muted); font-size: var(--text-2); }
+.home-row.dragging { opacity: .45; }
 /* THE ROW IS SIX INVISIBLE COLUMNS (owner's ruling 2026-08-17).
 
    It was a flex row with a `.grow` spacer, so every reading floated to wherever the ones

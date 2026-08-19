@@ -384,6 +384,31 @@ async function checkJourneys(page, label, jsErrors) {
   const failAfterTheme = await page.evaluate(() => !!document.getElementById('failbar'));
   if (failAfterTheme) bad(`${label}: the theme flip raised the failure banner`);
 
+  // SKINS — a skin is design tokens and nothing else, so the probe reads a TOKEN and then
+  // a rendered element: the variable proves the block landed, the element proves the app
+  // actually wears it. Shipped skins only here; the user's own copy is a store this gate
+  // must not write to.
+  const skins = await page.locator('.desk.show .sys-skin').count();
+  if (skins >= 2) ok(`${label}: the skin picker lists ${skins} skins from the catalog`);
+  else bad(`${label}: the skin picker listed ${skins} skins, wanted at least 2`);
+  const before = await page.evaluate(() => ({
+    tok: getComputedStyle(document.documentElement).getPropertyValue('--radius-md').trim(),
+    drawn: getComputedStyle(document.querySelector('.desk.show .desk-row')).borderRadius,
+  }));
+  await page.locator('.desk.show .sys-skin', { hasText: 'Square' }).first().click();
+  await page.waitForTimeout(250);
+  const after = await page.evaluate(() => ({
+    tok: getComputedStyle(document.documentElement).getPropertyValue('--radius-md').trim(),
+    drawn: getComputedStyle(document.querySelector('.desk.show .desk-row')).borderRadius,
+  }));
+  if (after.tok !== before.tok && after.drawn !== before.drawn) {
+    ok(`${label}: a skin re-skins the running app (--radius-md ${before.tok}→${after.tok}, drawn ${before.drawn}→${after.drawn})`);
+  } else bad(`${label}: picking a skin changed nothing — token ${before.tok}→${after.tok}, drawn ${before.drawn}→${after.drawn}`);
+  // Put it back: this probe shares a browser profile with the ones after it, and a squared
+  // shell is not the state they were written against.
+  await page.locator('.desk.show .sys-skin', { hasText: 'Stock' }).first().click();
+  await page.waitForTimeout(200);
+
   // ⚙ TOGGLES, and the tile comes back — the lesson ⛩ already learned (js/tile.js).
   await page.locator('#sysbtn').click();
   await page.waitForSelector('.tile.deskup', { state: 'detached', timeout: 3000 });

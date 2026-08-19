@@ -54,6 +54,18 @@ and could not get a radius right.
 These are **theme-independent** and defined once: a square corner is square in both shells.
 Only the colour roles are redefined under `:root[data-theme='light']`.
 
+**A skin is a set of these tokens, and nothing else** (`ronin_catalogs/SKINS.md`,
+`js/skins.js`). It cannot add a rule, move a control or style one surface differently from
+another — it can only answer questions `@layer foundations` already asks, which is the whole
+safety story: there is no selector in a skin to get wrong, and a token spelled wrong is
+inert. Shadowable like any catalog (`docs/shadowing.md`): shipped skins update with the
+repo, a skin of yours is yours and an upgrade cannot touch it, and the picker says which is
+which because only a skin of ours that you replaced can silently stop tracking an upgrade.
+**A token a skin names is chosen for both shells** — light and dark are themes, a skin is a
+skin — which is why the shipped skins stay off colour and compose with the flip instead of
+competing with it. The whole feature is one catalog, one route and thirty lines of client;
+it is the dividend of the token work above, not a second system.
+
 **The escape hatch costs you a name.** A one-off MEASUREMENT is not a rung and must not
 become one — `--tape-clearance` (the composer's height, so the last transcript line is not
 hidden), `--ptr-len`/`--ptr-wide` (the dial needle's geometry, three numbers that must move
