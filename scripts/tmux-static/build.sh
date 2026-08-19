@@ -111,7 +111,10 @@ run_logged "ncurses configure" ./configure --prefix="$PREFIX" \
   --with-default-terminfo-dir="/usr/share/terminfo" \
   --enable-pc-files --with-pkg-config-libdir="$PREFIX/lib/pkgconfig"
 run_logged "ncurses make" make -j"$JOBS"
-run_logged "ncurses install" make install
+# install.libs + install.includes ONLY: a plain `make install` would also install a
+# terminfo DATABASE into the runtime lookup dir configured above — /usr/share is
+# read-only on macOS, and no box needs our db anyway; the binary carries fallbacks.
+run_logged "ncurses install" make install.libs install.includes
 
 # --- libevent: static only, no openssl (tmux never speaks TLS through it) ---
 cd "$WORK/libevent-$LIBEVENT_V"
