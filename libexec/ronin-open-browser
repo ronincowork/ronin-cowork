@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Best-effort local-desktop browser launch. The caller must still print the URL:
+# an opener returning successfully is not proof that a browser displayed the page.
+
+URL="${1:-}"
+[ -n "$URL" ] || exit 0
+
+# A URL opened on the SSH host is not opened for the person running the installer.
+[ -z "${SSH_CONNECTION:-}${SSH_CLIENT:-}${SSH_TTY:-}" ] || exit 0
+
+case "$(uname -s 2>/dev/null)" in
+  Darwin)
+    # A local shell can still be running without a logged-in Aqua session.
+    command -v launchctl >/dev/null 2>&1 || exit 0
+    launchctl print "gui/$(id -u)" >/dev/null 2>&1 || exit 0
+    command -v open >/dev/null 2>&1 || exit 0
+    open "$URL" >/dev/null 2>&1 || true
+    ;;
+  Linux)
+    # DISPLAY covers X11; WAYLAND_DISPLAY covers native Wayland sessions.
+    [ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ] || exit 0
+    if command -v xdg-open >/dev/null 2>&1; then
+      (xdg-open "$URL" >/dev/null 2>&1 || \
+        { command -v gio >/dev/null 2>&1 && gio open "$URL" >/dev/null 2>&1; } || true) &
+    elif command -v gio >/dev/null 2>&1; then
+      (gio open "$URL" >/dev/null 2>&1 || true) &
+    fi
+    ;;
+esac
+
+exit 0

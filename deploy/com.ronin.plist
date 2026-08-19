@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   macOS launchd agent template for ronin (use a Mac as your home server).
-  Fill the two placeholders, install, and load:
+  Fill the three placeholders, install, and load (a bundled release: NODE_DIR is
+  $PWD/vendor/node/bin and TMUX_DIR is $PWD/vendor/bin; a checkout: resolve both
+  from PATH as below):
 
     sed -e "s#__REPO_DIR__#$PWD#" \
         -e 's#__NODE_DIR__#'"$(dirname "$(readlink -f "$(command -v node)")")"'#' \
+        -e 's#__TMUX_DIR__#'"$(dirname "$(command -v tmux)")"'#' \
         deploy/com.ronin.plist > ~/Library/LaunchAgents/com.ronin.plist
     launchctl load -w ~/Library/LaunchAgents/com.ronin.plist
 
@@ -22,7 +25,7 @@
   </array>
   <key>EnvironmentVariables</key>
   <dict>
-    <key>PATH</key><string>__NODE_DIR__:/usr/local/bin:/usr/bin:/bin</string>
+    <key>PATH</key><string>__TMUX_DIR__:__NODE_DIR__:/usr/local/bin:/usr/bin:/bin</string>
     <key>NODE_ENV</key><string>production</string>
   </dict>
   <key>RunAtLoad</key><true/>

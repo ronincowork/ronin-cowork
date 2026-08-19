@@ -120,18 +120,37 @@ latest_release() { # $1=repo slug
   fi
 }
 
-fetch_release() { # $1=repo slug $2=package name $3=version $4=workdir
+fetch_release() { # $1=repo slug $2=package name $3=version $4=workdir $5=platform (optional)
+  # With $5: try the bundled artifact and return 1 QUIETLY when the release has none
+  # (releases predating vendor.lock) — the caller falls back to the plain tarball.
+  name="$2-$3${5:+-$5}.tar.gz"
   if have_gh; then
     gh release download "$3" --repo "$1" \
-      --pattern "$2-$3.tar.gz" --pattern SHA256SUMS --dir "$4" ||
-      fail "could not download release $3 from $1"
+      --pattern "$name" --pattern SHA256SUMS --dir "$4" 2>/dev/null && return 0
+    rm -f "$4/$name"
+    [ -n "$5" ] && { rm -f "$4/SHA256SUMS"; return 1; }
+    fail "could not download release $3 from $1"
   else
-    curl -fsSL -o "$4/$2-$3.tar.gz" \
-      "https://github.com/$1/releases/download/$3/$2-$3.tar.gz" &&
+    curl -fsSL -o "$4/$name" \
+      "https://github.com/$1/releases/download/$3/$name" 2>/dev/null &&
     curl -fsSL -o "$4/SHA256SUMS" \
-      "https://github.com/$1/releases/download/$3/SHA256SUMS" ||
-      fail "could not download release $3 (private repo? install gh, or use --file)"
+      "https://github.com/$1/releases/download/$3/SHA256SUMS" 2>/dev/null && return 0
+    rm -f "$4/$name"
+    [ -n "$5" ] && { rm -f "$4/SHA256SUMS"; return 1; }
+    fail "could not download release $3 (private repo? install gh, or use --file)"
   fi
+}
+
+# The bundled artifact's name carries the box's platform. Empty = no bundle exists
+# for this box (or scope hasn't reached it); the plain tarball still installs.
+platform_name() {
+  case "$(uname -s)-$(uname -m)" in
+    Linux-x86_64)              echo linux-x64 ;;
+    Linux-aarch64|Linux-arm64) echo linux-arm64 ;;
+    Darwin-arm64)              echo darwin-arm64 ;;
+    Darwin-x86_64)             echo darwin-x64 ;;
+    *)                         echo "" ;;
+  esac
 }
 
 # --- check: report BOTH packages and stop ---
@@ -243,14 +262,24 @@ if [ -n "$FILE" ]; then
   fi
   TARBALL="$(basename "$FILE")"
   VER="$(echo "$TARBALL" | sed -n "s/^$PKG-\(v[0-9][^ ]*\)\.tar\.gz$/\1/p")"
-  [ -n "$VER" ] || fail "cannot read a version out of '$TARBALL' (expected $PKG-vX.Y.Z.tar.gz)"
+  case "$VER" in # a bundled tarball carries the platform after the version — strip it
+    *-linux-x64|*-linux-arm64|*-darwin-x64|*-darwin-arm64) VER="${VER%-*-*}" ;;
+  esac
+  [ -n "$VER" ] || fail "cannot read a version out of '$TARBALL' (expected $PKG-vX.Y.Z[-<platform>].tar.gz)"
 else
   VER="${WANT:-$(latest_release "$FEED")}"
   [ -n "$VER" ] || fail "could not learn the latest release (private repo needs gh auth; or pass --version / --file)"
   if [ "$VER" = "$INST" ]; then echo "✓ already on $PKG $VER — nothing to do"; exit 0; fi
   say "fetching $VER from $FEED"
-  fetch_release "$FEED" "$PKG" "$VER" "$WORK"
-  TARBALL="$PKG-$VER.tar.gz"
+  PLAT=""
+  [ "$PACKAGE" = "services" ] || PLAT="$(platform_name)"
+  if [ -n "$PLAT" ] && fetch_release "$FEED" "$PKG" "$VER" "$WORK" "$PLAT"; then
+    TARBALL="$PKG-$VER-$PLAT.tar.gz"
+    say "bundled artifact for $PLAT — it carries its own node, tmux, and node_modules"
+  else
+    fetch_release "$FEED" "$PKG" "$VER" "$WORK"
+    TARBALL="$PKG-$VER.tar.gz"
+  fi
 fi
 
 # --- verify ---
@@ -316,11 +345,18 @@ mv "$TARGET.partial" "$TARGET"
 say "unpacked to releases/$VER"
 
 # --- complete it: dependencies and the .env link ---
-# npm install, not --production: tsx sits in devDependencies and IS the runtime — a
-# repo fact this script records rather than routes around.
-say "npm install in the candidate (node_modules do not travel in the tarball)"
-(cd "$TARGET" && npm install --no-fund --no-audit --loglevel=error >/dev/null) ||
-  fail "npm install failed in $TARGET — the release does not complete on this machine"
+if [ -x "$TARGET/vendor/node/bin/node" ]; then
+  # A bundled release arrives complete — its own node, tmux, and node_modules.
+  # Nothing to install; a bundle that somehow lacked its modules should fail loud
+  # at the candidate gate, never trigger a quiet network trip here.
+  say "bundled release — node_modules travel in the tarball, nothing to install"
+else
+  # npm install, not --production: tsx sits in devDependencies and IS the runtime — a
+  # repo fact this script records rather than routes around.
+  say "npm install in the candidate (this release does not carry node_modules)"
+  (cd "$TARGET" && npm install --no-fund --no-audit --loglevel=error >/dev/null) ||
+    fail "npm install failed in $TARGET — the release does not complete on this machine"
+fi
 if [ ! -f "$HOME_DIR/.env" ]; then
   cp "$TARGET/.env.example" "$HOME_DIR/.env" && chmod 600 "$HOME_DIR/.env"
   say "created $HOME_DIR/.env from .env.example (edit for auth / port; it survives every update)"

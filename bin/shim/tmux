@@ -10,8 +10,14 @@
 # deliberate, visible act rather than an accident.
 set -u
 SELF_DIR=$(cd "$(dirname "$0")" && pwd)
-REAL=$(PATH=$(printf '%s' "$PATH" | tr ':' '\n' | grep -vxF "$SELF_DIR" | paste -sd:) command -v tmux)
-[ -n "${REAL:-}" ] || REAL=/usr/bin/tmux
+# A bundled release carries its own tmux — every box then runs the tmux we shipped,
+# not whatever a package manager left behind. The PATH hunt is the checkout fallback.
+if [ -x "$SELF_DIR/../../vendor/tmux" ]; then
+  REAL="$SELF_DIR/../../vendor/tmux"
+else
+  REAL=$(PATH=$(printf '%s' "$PATH" | tr ':' '\n' | grep -vxF "$SELF_DIR" | paste -sd:) command -v tmux)
+  [ -n "${REAL:-}" ] || REAL=/usr/bin/tmux
+fi
 args="$*"
 
 deny() { echo "ronin-dial: $1" >&2; exit 4; }

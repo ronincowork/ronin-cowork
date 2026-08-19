@@ -32,7 +32,7 @@ WorkingDirectory=__REPO_DIR__
 # so the brief async window costs nothing.
 ExecStartPre=-/bin/sh -c 'tmux list-sessions >/dev/null 2>&1 || systemctl --user --no-block restart tmux-server.service'
 # Node bin dir, resolved to a stable path (fnm/nvm shims are ephemeral).
-Environment=PATH=__NODE_DIR__:/usr/local/bin:/usr/bin:/bin
+Environment=PATH=__TMUX_DIR__:__NODE_DIR__:/usr/local/bin:/usr/bin:/bin
 Environment=NODE_ENV=production
 # Reads __REPO_DIR__/.env for PORT / BIND / GRID_USER / GRID_PASS / TMUX_WINDOW_SIZE / TMUX_MOUSE
 ExecStart=__NODE_DIR__/npm start

@@ -30,10 +30,10 @@ Type=oneshot
 RemainAfterExit=yes
 Environment=PATH=/usr/local/bin:/usr/bin:/bin
 # Starts the server if there isn't one; a no-op if there already is.
-ExecStart=/usr/bin/tmux -f __REPO_DIR__/deploy/tmux-server.conf start-server
+ExecStart=__TMUX_BIN__ -f __REPO_DIR__/deploy/tmux-server.conf start-server
 # Apply exit-empty to a server that was already running (the -f config only ran for
 # a server this unit started). Leading '-' so a missing server is not a failure.
-ExecStartPost=-/usr/bin/tmux set-option -s exit-empty off
+ExecStartPost=-__TMUX_BIN__ set-option -s exit-empty off
 
 [Install]
 WantedBy=default.target

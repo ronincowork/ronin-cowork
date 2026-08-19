@@ -171,6 +171,11 @@ if [ "$BARE" = 0 ]; then
     mkdir -p "$B/$NAME/vendor/node"
     tar -xJf "$CACHE/$NODE_TAR" -C "$B/$NAME/vendor/node" --strip-components=1
     install -m 755 "$CACHE/$TMUX_BIN" "$B/$NAME/vendor/tmux"
+    # vendor/bin: a PATH-able face for the same binary. ronin.service puts this
+    # directory first so the app's own tmux calls resolve to the bundle — without
+    # routing the app through the agent-guard shim (the dial must never gate the app).
+    mkdir -p "$B/$NAME/vendor/bin"
+    ln -s ../tmux "$B/$NAME/vendor/bin/tmux"
     # --ignore-scripts: every native module here ships prebuilt (that is what makes
     # cross-platform assembly possible), and a foreign platform's install scripts
     # must never run host binaries. --os/--cpu pick that platform's prebuilds.

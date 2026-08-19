@@ -12,24 +12,43 @@ REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$REPO_DIR"
 echo "==> Ronin setup in $REPO_DIR"
 
-# --- prerequisites ---
-command -v tmux >/dev/null || { echo "ERROR: tmux not found — install tmux first."; exit 1; }
-command -v node >/dev/null || { echo "ERROR: node not found — install Node.js 18+."; exit 1; }
-
-# Resolve a STABLE node path (e.g. fnm/nvm put an ephemeral shim on PATH).
-NODE_BIN="$(readlink -f "$(command -v node)" 2>/dev/null || command -v node)"
-NODE_DIR="$(dirname "$NODE_BIN")"
-echo "    tmux : $(command -v tmux)"
-echo "    node : $NODE_BIN ($(node -v))"
+# --- the runtime: a bundled release, or a developer's checkout ---
+# vendor/ present means a bundled release (vendor.lock, bin/ronin-build): the tree
+# already carries its own Node, static tmux, and node_modules, so nothing is checked,
+# nothing is fetched, and no dependency is ever named at the user. vendor/ absent
+# means a git checkout — the developer path stays exactly what it always was.
+if [ -x "$REPO_DIR/vendor/node/bin/node" ] && [ -x "$REPO_DIR/vendor/tmux" ]; then
+  BUNDLED=1
+  NODE_BIN="$REPO_DIR/vendor/node/bin/node"
+  NODE_DIR="$REPO_DIR/vendor/node/bin"
+  TMUX_BIN="$REPO_DIR/vendor/tmux"
+  TMUX_DIR="$REPO_DIR/vendor/bin"
+  echo "    bundled: node $("$NODE_BIN" -v) · $("$TMUX_BIN" -V) — nothing to check, nothing to fetch"
+else
+  BUNDLED=0
+  command -v tmux >/dev/null || { echo "ERROR: tmux not found — install tmux first."; exit 1; }
+  command -v node >/dev/null || { echo "ERROR: node not found — install Node.js 18+."; exit 1; }
+  # Resolve a STABLE node path (e.g. fnm/nvm put an ephemeral shim on PATH).
+  NODE_BIN="$(readlink -f "$(command -v node)" 2>/dev/null || command -v node)"
+  NODE_DIR="$(dirname "$NODE_BIN")"
+  TMUX_BIN="$(command -v tmux)"
+  TMUX_DIR="$(dirname "$TMUX_BIN")"
+  echo "    tmux : $TMUX_BIN"
+  echo "    node : $NODE_BIN ($(node -v))"
+fi
 if command -v tailscale >/dev/null; then
   echo "    tailscale: $(command -v tailscale)"
 else
   echo "    tailscale: not found (optional — needed for tailnet HTTPS + the microphone)"
 fi
 
-# --- install deps ---
-echo "==> npm install"
-"$NODE_DIR/npm" install
+# --- install deps (checkout only: a bundle arrives with finished node_modules) ---
+if [ "$BUNDLED" = 1 ]; then
+  echo "==> node_modules: vendored in the release — nothing to install"
+else
+  echo "==> npm install"
+  "$NODE_DIR/npm" install
+fi
 
 # --- .env ---
 if [ ! -f .env ]; then
@@ -349,6 +368,8 @@ render_unit() {
   text="$(<"$src")"                       # command substitution eats trailing newlines
   text="$(subst_literal "$text" '__REPO_DIR__' "$REPO_DIR")"
   text="$(subst_literal "$text" '__NODE_DIR__' "$NODE_DIR")"
+  text="$(subst_literal "$text" '__TMUX_BIN__' "$TMUX_BIN")"
+  text="$(subst_literal "$text" '__TMUX_DIR__' "$TMUX_DIR")"
   # A template that grows a placeholder setup.sh doesn't know about would otherwise
   # install a unit with a literal __THING__ in it. Say so; don't fail the install.
   if [[ "$text" =~ __[A-Z][A-Z0-9_]*__ ]]; then
@@ -427,11 +448,39 @@ echo
 # plus `clipboardData.setData` (js/layout.js), which works fine on http. What actually needs
 # a secure context is getUserMedia — the 🎤 — and `navigator.clipboard.writeText` in the
 # keypad panel, which falls back to execCommand anyway.
-echo "==> done. Open one of these in a browser (HTTPS needed for the 🎤 microphone):"
+OPEN_URL=""
+echo "==> done. Open and bookmark one of these URLs (HTTPS needed for the 🎤 microphone):"
 if [ -n "$FQDN" ]; then
   echo "      HTTP  (now)          : http://$FQDN:3006   (or http://$IP:3006)"
   echo "      HTTPS (after step 2) : https://$FQDN:8443"
+  OPEN_URL="http://$FQDN:3006"
 else
   echo "      HTTP  : http://${IP:-<server-ip-or-localhost>}:3006"
   echo "      HTTPS : after step 2, run 'tailscale serve status' to see the URL"
+  OPEN_URL="http://127.0.0.1:3006"
+fi
+
+# Printed instructions above are the contract. On a local graphical desktop this is
+# merely a convenience: wait for /api/health to answer 200, then ask the OS to open
+# the page. SSH/headless detection and opener failures are non-fatal in the helper.
+# Linux only, deliberately: macOS renders the launchd agent but the user loads it by
+# hand, so setup.sh has no moment where the service is observably ready to open.
+if [ "$OS" = "Linux" ]; then
+  RONIN_READY=0
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    if "$NODE_DIR/node" -e '
+      const http = require("node:http");
+      const req = http.get(process.argv[1] + "/api/health",
+        r => { r.resume(); process.exit(r.statusCode === 200 ? 0 : 1); });
+      req.setTimeout(500, () => req.destroy());
+      req.on("error", () => process.exit(1));
+    ' "$OPEN_URL" >/dev/null 2>&1; then
+      RONIN_READY=1
+      break
+    fi
+    sleep 1
+  done
+  if [ "$RONIN_READY" -eq 1 ]; then
+    "$REPO_DIR/libexec/ronin-open-browser" "$OPEN_URL" || true
+  fi
 fi
