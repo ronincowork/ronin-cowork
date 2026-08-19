@@ -42,115 +42,26 @@ fi
 # user: group-readable there means readable by every session on the box.
 chmod 600 .env 2>/dev/null || true
 
-# --- Claude Code status line (the ⛽ context gauge's source) ---
-# Ronin scrapes "⛽ ctx NN% · <model>" out of ordinary pane text (src/ctx.ts), and Claude
-# Code only prints that line if a `statusLine` command is set in ITS OWN settings. The
-# script stays here in the repo (hostside/statusline-ronin.sh) — settings only names it.
-# Merges into any existing settings.json, never clobbers a statusLine you set yourself,
-# and never fails the install.
+# --- Claude Code settings Ronin needs (two keys, one merge) ---
+# Ronin sets exactly TWO keys in Claude Code's own settings — `statusLine`, without which the
+# ⛽ context gauge stays dark, and `theme`, without which Ronin's light/dark stops at the edge
+# of the pane. Both the reasoning and the merge discipline live in the script; it is a file
+# rather than a heredoc because the common case is someone installing Claude Code AFTER
+# running setup.sh, and an install-time-only step misses exactly those people.
+# bin/ronin-doctor runs it with --check so the box says so out loud.
+CLAUDE_SETTINGS_PY="$REPO_DIR/hostside/claude-settings.py"
 STATUSLINE_SH="$REPO_DIR/hostside/statusline-ronin.sh"
-CLAUDE_SETTINGS="$HOME/.claude/settings.json"
-echo "==> Claude Code status line (feeds the ⛽ context gauge)"
-if [ ! -f "$STATUSLINE_SH" ]; then
-  echo "    SKIPPED: $STATUSLINE_SH not found — the ⛽ gauge will stay dark."
+echo "==> Claude Code settings (the ⛽ context gauge, and light/dark reaching the pane)"
+if [ ! -f "$CLAUDE_SETTINGS_PY" ] || [ ! -f "$STATUSLINE_SH" ]; then
+  echo "    SKIPPED: $CLAUDE_SETTINGS_PY or $STATUSLINE_SH not found."
 elif ! command -v python3 >/dev/null 2>&1; then
-  echo "    SKIPPED: python3 not found, cannot edit JSON safely. Add by hand to $CLAUDE_SETTINGS:"
-  echo "      \"statusLine\": { \"type\": \"command\", \"command\": \"$STATUSLINE_SH\" }"
+  echo "    SKIPPED: python3 not found, cannot edit JSON safely. Add by hand to ~/.claude/settings.json:"
+  echo "      \"statusLine\": { \"type\": \"command\", \"command\": \"$STATUSLINE_SH\" },"
+  echo "      \"theme\": \"dark-ansi\""
 else
   [ -x "$STATUSLINE_SH" ] || chmod +x "$STATUSLINE_SH" 2>/dev/null || true
-  python3 - "$STATUSLINE_SH" "$CLAUDE_SETTINGS" <<'PYEOF' || echo "    WARNING: could not register the status line — add it to $CLAUDE_SETTINGS by hand."
-import json, os, sys, tempfile
-
-script, settings = sys.argv[1], sys.argv[2]
-desired = {"type": "command", "command": script}
-snippet = '"statusLine": ' + json.dumps(desired)
-
-
-def say(msg):
-    print("    " + msg)
-
-
-def manual(reason):
-    say(reason)
-    say("The ⛽ gauge stays dark until this is set. Add by hand to %s:" % settings)
-    say("  " + snippet)
-
-
-raw = None
-if os.path.exists(settings):
-    try:
-        with open(settings, encoding="utf-8") as fh:
-            raw = fh.read()
-    except OSError as err:
-        manual("could not read %s (%s)." % (settings, err))
-        raise SystemExit(0)
-
-if raw is None or not raw.strip():
-    data = {}
-else:
-    try:
-        data = json.loads(raw)
-    except ValueError as err:
-        manual("%s is not valid JSON (%s) — left untouched." % (settings, err))
-        raise SystemExit(0)
-    if not isinstance(data, dict):
-        manual("%s is not a JSON object — left untouched." % settings)
-        raise SystemExit(0)
-
-current = data.get("statusLine")
-if current is not None:
-    cmd = current.get("command") if isinstance(current, dict) else current
-    mine = isinstance(cmd, str) and \
-        os.path.realpath(os.path.expanduser(cmd.strip())) == os.path.realpath(script)
-    if mine:
-        say("already registered -> %s" % script)
-        raise SystemExit(0)
-    say("LEFT ALONE: %s already sets a different statusLine:" % settings)
-    say("  " + json.dumps(current))
-    say("That one is yours, so setup did not touch it. For the ⛽ gauge, change it to:")
-    say("  " + snippet)
-    raise SystemExit(0)
-
-data["statusLine"] = desired
-existed = raw is not None and bool(raw.strip())
-directory = os.path.dirname(settings) or "."
-tmp = None
-try:
-    os.makedirs(directory, exist_ok=True)
-    mode = os.stat(settings).st_mode & 0o777 if os.path.exists(settings) else 0o644
-    fd, tmp = tempfile.mkstemp(dir=directory, prefix=".settings.json.ronin.")
-    with os.fdopen(fd, "w", encoding="utf-8") as fh:
-        json.dump(data, fh, indent=2, ensure_ascii=False)
-        fh.write("\n")
-    os.chmod(tmp, mode)
-    os.replace(tmp, settings)
-    tmp = None
-except OSError as err:
-    manual("could not write %s (%s)." % (settings, err))
-    raise SystemExit(0)
-finally:
-    if tmp and os.path.exists(tmp):
-        try:
-            os.unlink(tmp)
-        except OSError:
-            pass
-
-if existed:
-    say("registered in %s (%d other setting(s) preserved)" % (settings, len(data) - 1))
-else:
-    say("created %s" % settings)
-say("  -> %s" % script)
-
-# A statusLine in settings.local.json would win over the one just written.
-local = os.path.join(directory, "settings.local.json")
-try:
-    with open(local, encoding="utf-8") as fh:
-        other = json.load(fh)
-except Exception:
-    other = None
-if isinstance(other, dict) and other.get("statusLine") is not None:
-    say("NOTE: %s also sets statusLine and takes precedence — remove it or point it here." % local)
-PYEOF
+  python3 "$CLAUDE_SETTINGS_PY" "$STATUSLINE_SH" || \
+    echo "    WARNING: could not write ~/.claude/settings.json — add the two keys by hand."
 fi
 
 OS="$(uname -s)"   # also used by the autostart section below

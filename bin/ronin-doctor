@@ -403,6 +403,25 @@ else
   find_ "bin/ronin-store is missing or not executable — no tool can resolve a Ronin path on this box"
 fi
 
+# ---- 8. the two Claude Code settings Ronin's own features need ----------------------
+# NOT a settings audit and never becoming one: two keys, each the reason a Ronin feature
+# would otherwise be silently dark. This is a FIND rather than a note because both failures
+# look like Ronin being broken — a context gauge that never fills, and a light shell whose
+# pane stays black — and neither says why. The common case is someone who installed Claude
+# Code AFTER setup.sh ran, so the installer never saw their settings file at all.
+echo ""
+sect "Claude Code settings (hostside/claude-settings.py)"
+if ! command -v python3 >/dev/null 2>&1; then
+  note "python3 not found — cannot read ~/.claude/settings.json"
+elif [ ! -f "$HOME/.claude/settings.json" ] && ! command -v claude >/dev/null 2>&1; then
+  ok "Claude Code is not installed on this box — nothing to set"
+elif "$ROOT/hostside/claude-settings.py" --check >/dev/null 2>&1; then
+  ok "statusLine and an -ansi theme are both set"
+else
+  "$ROOT/hostside/claude-settings.py" --check 2>/dev/null | sed 's/^    /  /'
+  find_ "Claude Code is missing a setting Ronin needs — run: hostside/claude-settings.py"
+fi
+
 # ---- verdict -----------------------------------------------------------------------
 echo ""
 if [ "$FINDINGS" -eq 0 ]; then
