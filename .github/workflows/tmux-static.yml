@@ -1,14 +1,21 @@
-# TMUX-STATIC — builds the release's own tmux from pinned sources, then proves it
-# on a box with nothing: busybox has no libc the binary could borrow, no terminfo
-# database, no package manager. If the proof passes there, it passes on any box the
-# installer will ever meet.
+# TMUX-STATIC — builds the release's own tmux from pinned sources for every platform
+# the bundle ships on, then proves each binary on a box with nothing.
+#
+#   linux-x64 / linux-arm64 : Alpine (musl — actually static), arm64 under QEMU;
+#                             proven inside busybox: no libc, no terminfo, no
+#                             package manager.
+#   darwin-arm64 / darwin-x64 : native macOS runners; libevent + ncurses linked as
+#                             static archives (libSystem is always dynamic — the
+#                             only shape macOS allows); proven by otool -L showing
+#                             nothing but /usr/lib, and a session round-trip with
+#                             the terminfo db pointed at an empty directory.
 #
 # This runs when the recipe changes (push) or on demand (dispatch) — a few times a
 # year, when we bump tmux — NOT at release time. release.yml never compiles anything:
-# it downloads the binary this workflow published, pinned by checksum in vendor.lock.
+# it downloads the binaries this workflow published, pinned by checksum in vendor.lock.
 #
 # Publishing is a separate deliberate act: dispatch with a release_tag (or create the
-# tmux-static-vN release by hand from the run's artifact). Plain pushes only build
+# tmux-static-vN release by hand from the run's artifacts). Plain pushes only build
 # and prove.
 name: tmux-static
 
@@ -20,7 +27,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'publish as this release (e.g. tmux-static-v1); empty = build only'
+        description: 'publish as this release (e.g. tmux-static-v2); empty = build only'
         required: false
         default: ''
 
@@ -28,37 +35,98 @@ permissions:
   contents: write   # only used when release_tag is given
 
 jobs:
-  linux-x64:
+  linux:
+    strategy:
+      matrix:
+        include:
+          - platform: linux-x64
+            docker_platform: linux/amd64
+          - platform: linux-arm64
+            docker_platform: linux/arm64
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: QEMU (arm64 only — emulated build, same recipe)
+        if: matrix.platform == 'linux-arm64'
+        uses: docker/setup-qemu-action@v3
       - name: build in Alpine (musl — actually static, not glibc-static)
-        run: docker run --rm -v "$PWD:/src" -w /src alpine:3.22 sh scripts/tmux-static/build.sh linux-x64
+        run: |
+          docker run --rm --platform ${{ matrix.docker_platform }} \
+            -v "$PWD:/src" -w /src alpine:3.22 \
+            sh scripts/tmux-static/build.sh ${{ matrix.platform }}
       - name: prove it on a box with nothing
         run: |
           set -x
-          file out/tmux-linux-x64
-          file out/tmux-linux-x64 | grep -q 'statically linked'
-          # busybox: no glibc, no musl, no terminfo. -V proves it loads;
-          # the session round-trip proves the compiled-in terminfo fallbacks answer.
-          docker run --rm -v "$PWD/out:/o" busybox /o/tmux-linux-x64 -V
-          docker run --rm -v "$PWD/out:/o" -e TERM=xterm-256color busybox sh -c '
-            mkdir -p /tmp &&
-            /o/tmux-linux-x64 -S /tmp/s new-session -d &&
-            /o/tmux-linux-x64 -S /tmp/s send-keys "echo proof-$$" Enter &&
-            sleep 1 &&
-            /o/tmux-linux-x64 -S /tmp/s capture-pane -p &&
-            /o/tmux-linux-x64 -S /tmp/s kill-server' | grep -q '^proof-'
+          file out/tmux-${{ matrix.platform }}
+          file out/tmux-${{ matrix.platform }} | grep -q 'statically linked'
+          # busybox: no glibc, no musl, no terminfo. -V proves it loads; the session
+          # round-trip proves the compiled-in terminfo fallbacks answer.
+          docker run --rm --platform ${{ matrix.docker_platform }} \
+            -v "$PWD/out:/o" busybox /o/tmux-${{ matrix.platform }} -V
+          docker run --rm --platform ${{ matrix.docker_platform }} \
+            -v "$PWD/out:/o" -e TERM=xterm-256color busybox sh -c '
+              mkdir -p /tmp &&
+              /o/tmux-${{ matrix.platform }} -S /tmp/s new-session -d &&
+              /o/tmux-${{ matrix.platform }} -S /tmp/s send-keys "echo proof-ok" Enter &&
+              sleep 2 &&
+              /o/tmux-${{ matrix.platform }} -S /tmp/s capture-pane -p &&
+              /o/tmux-${{ matrix.platform }} -S /tmp/s kill-server' | grep -q '^proof-ok'
       - uses: actions/upload-artifact@v4
         with:
-          name: tmux-static-linux-x64
+          name: tmux-static-${{ matrix.platform }}
           path: out/
-      - name: publish (dispatch with release_tag only)
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag != '' }}
+
+  darwin:
+    strategy:
+      matrix:
+        include:
+          - platform: darwin-arm64
+            os: macos-latest
+          - platform: darwin-x64
+            os: macos-15-intel
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: build natively (static archives against dynamic libSystem)
+        run: sh scripts/tmux-static/build.sh ${{ matrix.platform }}
+      - name: prove it owes the box nothing but libSystem
+        run: |
+          set -x
+          otool -L out/tmux-${{ matrix.platform }}
+          # Every linked library must live in /usr/lib — nothing from brew,
+          # /opt, or our build prefix may leak in.
+          test -z "$(otool -L out/tmux-${{ matrix.platform }} | tail -n +2 | awk '{print $1}' | grep -v '^/usr/lib/')"
+          # Session round-trip with terminfo pointed at an empty directory:
+          # only the compiled-in fallbacks can answer.
+          export TERMINFO=/var/empty TERMINFO_DIRS=/var/empty TERM=xterm-256color
+          out/tmux-${{ matrix.platform }} -V
+          S="$RUNNER_TEMP/s"
+          out/tmux-${{ matrix.platform }} -S "$S" new-session -d
+          out/tmux-${{ matrix.platform }} -S "$S" send-keys "echo proof-ok" Enter
+          sleep 2
+          out/tmux-${{ matrix.platform }} -S "$S" capture-pane -p | grep -q '^proof-ok'
+          out/tmux-${{ matrix.platform }} -S "$S" kill-server
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tmux-static-${{ matrix.platform }}
+          path: out/
+
+  publish:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag != '' }}
+    needs: [linux, darwin]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: tmux-static-*
+          merge-multiple: true
+          path: out
+      - name: publish the tmux-static release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${{ inputs.release_tag }}" out/tmux-linux-x64 out/tmux-linux-x64.sha256 \
+          gh release create "${{ inputs.release_tag }}" out/tmux-* \
+            --repo "$GITHUB_REPOSITORY" \
             --title "${{ inputs.release_tag }}" \
-            --notes "Static tmux, built by tmux-static.yml from the pins in scripts/tmux-static/build.sh. Not a Ronin release — release.yml consumes these, pinned in vendor.lock." \
-            || gh release upload "${{ inputs.release_tag }}" out/tmux-linux-x64 out/tmux-linux-x64.sha256 --clobber
+            --notes "Static tmux for every bundle platform, built by tmux-static.yml from the pins in scripts/tmux-static/build.sh. Not a Ronin release — release.yml consumes these, pinned in vendor.lock." \
+            || gh release upload "${{ inputs.release_tag }}" out/tmux-* --repo "$GITHUB_REPOSITORY" --clobber
