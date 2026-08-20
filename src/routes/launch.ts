@@ -29,7 +29,7 @@ import { classifyStatus, waitReadyForBrief, type SessionStatus } from '../status
 import { scanContext, scanModel } from '../ctx.js';
 
 import { count } from '../counts.js';
-import { seedTegami, withRoles } from '../tegami.js';
+import { seedTegami, withRoles, writeGate } from '../tegami.js';
 import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFields } from '../sockets.js';
 
 /* ---------- ONE door to a new session: POST /api/launch ----------
@@ -168,8 +168,16 @@ export function registerLaunch(app: express.Express): void {
       // be discarded: the brief was typed anyway, into whatever was on screen. Twice that
       // was a trust-folder dialog, whose rows are drawn with the same `❯` as a prompt, so
       // the text went nowhere and the Enter answered the dialog.
-      const { ready, held, gone } = await waitReadyForBrief(resolved.name);
+      // The vendor, by the name spawn.ts already computed for the launch stamp — so the gate
+      // reads THIS agent's screen rather than any agent's (src/agents.ts carries the rows).
+      const { ready, held, gone } = await waitReadyForBrief(resolved.name, resolved.launchAgent);
       if (held) {
+        // LEG 4, and under the owner's ruling it is almost nothing: Ronin never answers a
+        // vendor's consent prompt, so all that is owed is telling the person WHERE the
+        // question is. They answer it in the tile they are already watching, the agent
+        // comes up, and the held brief follows. Walking a first-run sign-in is explicitly
+        // not Ronin's business — that is between the vendor and the owner.
+        await writeGate(resolved.name, 'The agent is asking you something in this tile. Answer it there and its brief follows.');
         console.error(
           `[ronin] ${resolved.name}: the CLI is asking something (trust this folder?) — ` +
             `waiting to deliver the brief until it is answered.`,
@@ -184,10 +192,16 @@ export function registerLaunch(app: express.Express): void {
         // CLI came up, died, and left the login shell behind. The old code read that shell
         // prompt as "ready" and typed the brief into bash — a session that looked completely
         // alive and had been told nothing (measured 2026-08-20, LAUNCH_READY.md).
+        await writeGate(
+          resolved.name,
+          gone
+            ? `The agent is not running — a shell prompt is showing where ${resolved.launchAgent} should be. Its brief was not delivered, and nothing was typed at the shell.`
+            : 'The agent never came up, so its brief was not delivered. Whatever this tile is showing is why.',
+        );
         console.error(
           gone
             ? `[ronin] ${resolved.name}: the agent is not there — a shell prompt is showing ` +
-                `where ${resolved.cmd.split(/\s+/)[0]} should be, so the brief was NOT sent. ` +
+                `where ${resolved.launchAgent} should be, so the brief was NOT sent. ` +
                 `The tile has whatever it printed on its way out.`
             : `[ronin] ${resolved.name}: never became ready — brief NOT sent. ` +
                 `Answer whatever the pane is asking, then re-send it.`,
@@ -200,10 +214,16 @@ export function registerLaunch(app: express.Express): void {
       // nothing, because it was never told anything. The one birth failure with no visible
       // symptom, so it gets a line in the log.
       if (!sent.started) {
+        await writeGate(resolved.name, 'The brief was typed into this tile but did not submit. It may still be sitting at the prompt.');
         console.error(
           `[ronin] ${resolved.name}: the brief did not submit. ` +
             `Check the tile — it may be sitting at the prompt, or a dialog may be open.`,
         );
+      } else if (held) {
+        // The hold resolved and the brief landed. Take the gate down rather than leave a
+        // stale rung claiming the session is still waiting on someone — a stale ladder is
+        // worse than none, and the agent has not written its own yet.
+        await writeGate(resolved.name, '');
       }
     })().catch((e) => console.error(`[ronin] spawn ${resolved.name}:`, e));
   });

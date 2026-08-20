@@ -92,3 +92,60 @@ test('a stale shell prompt above a live agent does not outrank it', () => {
   const screen = ['glen3@dohyo-unified:~/code$ codex', '', '› Use /skills to list available skills'].join('\n');
   assert.equal(agentPresence(screen), 'ready');
 });
+
+/* ---- LAUNCH_READY leg 2: the rows are the agent's own, and one list serves both ---- */
+
+test('one vendor’s prompt glyph does not answer for another’s session', () => {
+  // Codex's input row, read as if the session were running Claude. Nothing of Claude's
+  // matches it, so the gate keeps waiting rather than typing at the wrong thing.
+  assert.equal(agentPresence('› Use /skills to list available skills', 'claude'), null);
+  // And the same screen, correctly named, is readiness.
+  assert.equal(agentPresence('› Use /skills to list available skills', 'codex'), 'ready');
+});
+
+test('an agent nobody has characterised keeps the pre-table behaviour', () => {
+  // `gemini` declares no rows of its own. Narrowing it to an empty set would mean its
+  // brief was never delivered, so it falls back to every agent's rows. Degraded, never
+  // wrong — and this is the regression that would otherwise ship silently.
+  assert.equal(agentPresence('❯ Try "create a util that…"', 'gemini'), 'ready');
+  assert.equal(agentPresence('› Use /skills', 'grok'), 'ready');
+});
+
+test('category order survives composition: a numbered row is a dialog, not a prompt', () => {
+  const dialog = 'Do you trust the contents of this directory?\n\n› 1. Yes, continue\n  2. No, quit';
+  // Composed by category — every busy row, then every asking row, then every ready row —
+  // so a vendor's own ready row can never outrank its own dialog row.
+  assert.equal(agentPresence(dialog, 'codex'), 'asking');
+  assert.equal(classifyStatus(dialog), 'awaiting-input');
+});
+
+test('the composed list still answers the roster exactly as the hand-written one did', () => {
+  assert.equal(classifyStatus('❯ Try "create a util…"'), 'ready');
+  assert.equal(classifyStatus('› Use /skills'), 'ready');
+  assert.equal(classifyStatus('│ > type here '), 'ready');
+  assert.equal(classifyStatus('glen3@box:~$ '), 'ready');
+  assert.equal(classifyStatus('working… (esc to interrupt)'), 'thinking');
+  assert.equal(classifyStatus('✻ Cerebrating…'), 'thinking');
+  assert.equal(classifyStatus('Do you want to continue?'), 'awaiting-input');
+});
+
+test("gemini's measured trust dialog is recognised, bullet and all", () => {
+  // Verbatim shape from a real launch into a directory gemini had never seen.
+  const screen = [
+    ' │ Do you trust the files in this folder?                    │',
+    ' │ ● 1. Trust folder (some-dir)                              │',
+    ' │   2. Trust parent folder (tmp)                            │',
+    ' │   3. Don’t trust                                          │',
+  ].join('\n');
+  assert.equal(agentPresence(screen, 'gemini'), 'asking');
+  assert.equal(classifyStatus(screen), 'awaiting-input');
+});
+
+test('knowing ONE of an agent’s screens does not cost you the others', () => {
+  // gemini declares a dialog row and no prompt row, because nobody has seen past its
+  // dialog. Falling back per AGENT would have left it with no way to read as ready and
+  // silently stopped its briefs forever; the fallback is per CATEGORY, so it keeps every
+  // agent's ready rows while using its own dialog row.
+  assert.equal(agentPresence('❯ Try "create a util that…"', 'gemini'), 'ready');
+  assert.equal(agentPresence('› Use /skills', 'gemini'), 'ready');
+});

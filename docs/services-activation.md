@@ -19,10 +19,12 @@ and check-docs is right that this tree cannot vouch for it.)
 | `src/activation/flow.ts` | request, poll, resend, cancel, change address |
 | `src/routes/services-activation-api.ts` | the local-only browser API |
 
-**This is core, not a service, and KYOKAI enforces it.** `src/services/` is the paid layer
-that leaves with its side at the split. Activation is the door a *free* install uses to ask
-for the paid one, so it cannot live behind that door — free Cowork must be able to request
-Services without Services being present.
+**This is core, not a service, and the KYOKAI gate enforced it.** When this was written the
+paid layer still lived in this tree and the gate refused a first draft that put activation
+under it. The split has since completed — the paid code lives in `ronin-services` and no
+services directory remains here — but the rule that produced the placement still holds:
+activation is the door a *free* install uses to ask for the paid one, so it cannot live behind
+that door. Free Cowork must be able to request Services without Services being present.
 
 ## The house still has two egress doors
 
@@ -230,8 +232,10 @@ Keep the local-file installation path for development and offline recovery.
 ## Tomodachi — the weekly send
 
 `src/activation/tomodachi.ts`. The producer **drops** a finished packet into the telemetry
-outbox and AGERU picks it up. A directory rather than a function call, because core may not
-import `src/services/` and Services must not carry its own egress door.
+outbox and AGERU picks it up. A directory rather than a function call, and now a repository
+boundary as well: the producer lives in `ronin-services` and cannot be imported from here at
+all. Services must also not carry its own egress door — the house has two, and AGERU is the
+one that leaves.
 
 The sweep is **hourly, not weekly** — the producer decides when a packet exists, and an
 hourly sweep of an outbox that is usually empty is what lets a missed week catch up after a

@@ -1,3 +1,4 @@
+import { AGENTS } from './agents.js';
 import { capturePane } from './tmux.js';
 
 /**
@@ -26,28 +27,81 @@ type Whose = 'agent' | 'shell';
  *  used by the pattern row below and by the last-line test in `agentPresence`. */
 const SHELL_PROMPT = /[$%#]\s*$/m;
 
-export const STATUS_PATTERNS: { status: SessionStatus; whose: Whose; re: RegExp }[] = [
-  // Busy: Claude Code and Codex both print "(esc to interrupt)" while working.
-  { status: 'thinking', whose: 'agent', re: /esc to interrupt/i },
+/**
+ * THE HOUSE ROWS — true of agents in general, belonging to no vendor in particular, so
+ * they stay here rather than being copied into five table entries. They are also what
+ * answers for an agent nobody has characterised yet: an empty `screen` in `AGENTS` means
+ * "we have not read this one's screen", and these carry it, which is exactly the behaviour
+ * that shipped before the table existed.
+ */
+const HOUSE: { status: SessionStatus; re: RegExp }[] = [
   // Busy: a spinner glyph opening a line ("✻ Cerebrating…").
-  { status: 'thinking', whose: 'agent', re: /^\s*[✻✳✢✶✽·∗]\s+\S+…/m },
-  // Pending dialog: Claude uses ❯ and Codex uses › for the selected row.
-  { status: 'awaiting-input', whose: 'agent', re: /[❯›]\s*\d+\.\s/ },
+  { status: 'thinking', re: /^\s*[✻✳✢✶✽·∗]\s+\S+…/m },
   // Pending question: an explicit ask or y/n.
-  { status: 'awaiting-input', whose: 'agent', re: /\(y\/n\)|\[y\/n\]|do you want/i },
-  // Ready: an agent prompt row. Claude Code draws "❯ " and then fills the rest of
-  // the line with its own placeholder hint (`❯ Try "create a util…"`), so an
-  // "empty to end of line" test never fires and a fresh session looked unready
-  // until the readiness wait timed out. Match the prompt row itself, hint or no hint.
-  { status: 'ready', whose: 'agent', re: /^\s*[│┃]?\s*❯/m },
-  // Ready: Codex's input row. A numbered › row was classified as a dialog above.
-  { status: 'ready', whose: 'agent', re: /^\s*›(?:\s|$)/m },
+  { status: 'awaiting-input', re: /\(y\/n\)|\[y\/n\]|do you want/i },
   // Ready: the boxed "│ > " prompt row some CLIs draw instead of ❯.
-  { status: 'ready', whose: 'agent', re: /^\s*[│┃]\s*>\s/m },
+  { status: 'ready', re: /^\s*[│┃]\s*>\s/m },
+];
+
+/** One agent's declared rows, compiled. `cmd` is the join, because that is what a launch
+ *  stamps and what `spawn.ts` computes — see `AGENTS[].screen` for why these are data. */
+const vendorRows = (a: (typeof AGENTS)[number]): { status: SessionStatus; re: RegExp }[] => [
+  ...a.screen.busy.map((re) => ({ status: 'thinking' as const, re: new RegExp(re, 'i') })),
+  ...a.screen.asking.map((re) => ({ status: 'awaiting-input' as const, re: new RegExp(re) })),
+  ...a.screen.ready.map((re) => ({ status: 'ready' as const, re: new RegExp(re, 'm') })),
+];
+
+/**
+ * BY CATEGORY, NEVER BY SOURCE. Busy rows before dialog rows before ready rows, whoever
+ * declared them — that ordering IS the contract, and it is what keeps a numbered `›`
+ * dialog row from reading as Codex's prompt. Composing per source instead would let one
+ * vendor's ready row outrank another's dialog row, which is the shape of the original bug.
+ */
+function compose(rows: { status: SessionStatus; re: RegExp }[], whose: Whose = 'agent') {
+  const of = (st: SessionStatus) => rows.filter((r) => r.status === st).map((r) => ({ ...r, whose }));
+  return [...of('thinking'), ...of('awaiting-input'), ...of('ready')];
+}
+
+/**
+ * Every row, every vendor — the generic list, unchanged in meaning from the hand-written
+ * one it replaces. `classifyStatus` reads this, so the roster column and Koshi see exactly
+ * what they always saw, including a shell prompt answering "ready" for a terminal session.
+ */
+export const STATUS_PATTERNS: { status: SessionStatus; whose: Whose; re: RegExp }[] = [
+  ...compose([...HOUSE, ...AGENTS.flatMap(vendorRows)]),
   // Ready: a plain shell prompt as the last thing on a line. RIGHT for a terminal
   // session and WRONG for an agent one, which is exactly why it carries `whose`.
   { status: 'ready', whose: 'shell', re: SHELL_PROMPT },
 ];
+
+/**
+ * The rows that speak for ONE agent: the house rows, plus its own.
+ *
+ * THE FALLBACK IS PER CATEGORY, NOT PER AGENT, and that distinction is load-bearing. An
+ * agent that has said nothing about a category gets EVERY agent's rows for it — the
+ * pre-table behaviour — because narrowing to an empty set would mean a session that never
+ * reads as ready and a brief that is never delivered.
+ *
+ * Per-AGENT was the first cut and it was a trap: gemini's dialog row was measured and
+ * added, which flipped gemini from "says nothing, use everyone's rows" to "characterised,
+ * use only its own" — and it has no ready row, because nobody has ever seen past its trust
+ * dialog. One honest measurement would have silently stopped its briefs. The test caught
+ * it; this shape is why it stays caught. Knowing one screen of an agent must never cost
+ * you the screens you had.
+ */
+function rowsFor(agent: string): { status: SessionStatus; whose: Whose; re: RegExp }[] {
+  const a = AGENTS.find((x) => x.cmd === agent);
+  const own = a ? a.screen : null;
+  const everyone = AGENTS.flatMap(vendorRows);
+  const pick = (st: SessionStatus, declared: readonly string[] | undefined) =>
+    declared?.length ? vendorRows(a!).filter((r) => r.status === st) : everyone.filter((r) => r.status === st);
+  return compose([
+    ...HOUSE,
+    ...pick('thinking', own?.busy),
+    ...pick('awaiting-input', own?.asking),
+    ...pick('ready', own?.ready),
+  ]);
+}
 
 /** Status cues live at the pane bottom — only the visible tail is worth scanning. */
 const SCAN_LINES = 15;
@@ -78,7 +132,7 @@ export function classifyStatus(text: string): SessionStatus | null {
  */
 export type AgentPresence = 'ready' | 'busy' | 'asking' | 'gone';
 
-export function agentPresence(text: string): AgentPresence | null {
+export function agentPresence(text: string, agent = ''): AgentPresence | null {
   const lines = text.replace(/\n+$/, '').split('\n').slice(-SCAN_LINES);
   // RECENCY BEATS PATTERN ORDER, and only for this question. What the shell is showing
   // NOW is the last non-empty line; everything above it is history that has already
@@ -92,7 +146,9 @@ export function agentPresence(text: string): AgentPresence | null {
   // Otherwise the ordinary reading, over the AGENT's rows alone: the shell row can never
   // answer this question, which is the whole reason `whose` exists.
   const tail = lines.join('\n');
-  for (const p of STATUS_PATTERNS) {
+  // THIS agent's rows when it is named and characterised, every agent's otherwise. Naming
+  // it is what stops one vendor's prompt glyph answering for another's session.
+  for (const p of rowsFor(agent)) {
     if (p.whose !== 'agent' || !p.re.test(tail)) continue;
     // Order is the contract, here as in classifyStatus: busy rows sit before dialog rows,
     // which sit before ready rows, so the first match is the truest thing on screen.
@@ -113,9 +169,9 @@ export async function probeStatus(session: string): Promise<SessionStatus | null
 }
 
 /** The same capture, asked the second question. Null on capture failure, as above. */
-async function probeAgent(session: string): Promise<AgentPresence | null> {
+async function probeAgent(session: string, agent: string): Promise<AgentPresence | null> {
   try {
-    return agentPresence(await capturePane(session, 0));
+    return agentPresence(await capturePane(session, 0), agent);
   } catch {
     return null;
   }
@@ -151,12 +207,13 @@ async function probeAgent(session: string): Promise<AgentPresence | null> {
  */
 export async function waitReadyForBrief(
   session: string,
+  agent: string,
   { quietMs = 90000, heldMs = 900000 } = {},
 ): Promise<{ ready: boolean; held: boolean; gone: boolean }> {
   const start = Date.now();
   let held = false;
   for (;;) {
-    const seen = await probeAgent(session);
+    const seen = await probeAgent(session, agent);
     if (seen === 'ready') return { ready: true, held, gone: false };
     // THE AGENT IS NOT THERE. Give up immediately: every extra second is spent watching a
     // shell prompt that will never turn into a CLI, and the old code read this as ready.

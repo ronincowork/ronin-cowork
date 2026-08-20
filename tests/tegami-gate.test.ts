@@ -1,0 +1,56 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+
+/* LAUNCH_READY leg 3 — `writeGate` is loud, and it is a GUEST in the session's letter.
+ * Its refusals are the interesting half: the moment an agent has written a real ladder,
+ * those are its words. The store root is redirected per the env contract in src/stores.ts
+ * so this test never touches a real session. */
+const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-gate-test-'));
+process.env.RONIN_SESSION_DIR = root;
+const { writeGate, tegamiPath } = await import('../src/tegami.js');
+const { sessionKey } = await import('../src/session-dir.js');
+
+async function letter(name: string, ladder: string): Promise<string> {
+  const file = tegamiPath(await sessionKey(name));
+  await fs.mkdir(path.dirname(file), { recursive: true });
+  await fs.writeFile(file, ['# TEGAMI', '', '```json', `{ "objective": "keep me",`, `  "session_job": "CutCode",`, `  "ladder": ${ladder} }`, '```', ''].join('\n'));
+  return file;
+}
+const bodyOf = async (f: string) => JSON.parse((await fs.readFile(f, 'utf8')).match(/```json\n([\s\S]*?)\n```/)![1]);
+
+test('an empty ladder takes the gate, and nothing else in the letter moves', async () => {
+  const f = await letter('gate_empty', '[]');
+  assert.equal(await writeGate('gate_empty', 'The agent never came up.'), true);
+  const b = await bodyOf(f);
+  assert.deepEqual(b.ladder, [{ gate: 'The agent never came up.', status: 'ACTIVE' }]);
+  assert.equal(b.objective, 'keep me'); // the session's own words survive
+  assert.equal(b.session_job, 'CutCode');
+});
+
+test("a real ladder is the agent's words and is refused, untouched", async () => {
+  const real = '[ { "phase": "find the cause", "legs": [ { "title": "read the tape", "status": "ACTIVE" } ] } ]';
+  const f = await letter('gate_busy', real);
+  const before = await fs.readFile(f, 'utf8');
+  assert.equal(await writeGate('gate_busy', 'clobber me'), false);
+  assert.equal(await fs.readFile(f, 'utf8'), before); // byte for byte
+});
+
+test('a gate we wrote can be replaced, and cleared when the hold resolves', async () => {
+  const f = await letter('gate_clear', '[]');
+  await writeGate('gate_clear', 'asking you something');
+  assert.equal(await writeGate('gate_clear', 'still asking'), true);
+  assert.deepEqual((await bodyOf(f)).ladder, [{ gate: 'still asking', status: 'ACTIVE' }]);
+  assert.equal(await writeGate('gate_clear', ''), true);
+  assert.deepEqual((await bodyOf(f)).ladder, []);
+});
+
+test('no letter, or a letter with no json block, is a refusal and not a crash', async () => {
+  assert.equal(await writeGate('gate_absent', 'x'), false);
+  const f = tegamiPath(await sessionKey('gate_mangled'));
+  await fs.mkdir(path.dirname(f), { recursive: true });
+  await fs.writeFile(f, 'somebody hand-mangled this letter\n');
+  assert.equal(await writeGate('gate_mangled', 'x'), false);
+});
