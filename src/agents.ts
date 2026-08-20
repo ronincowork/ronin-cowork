@@ -45,18 +45,25 @@ const pexec = promisify(execFile);
  * provider marketplace: an agent earns a row here when the owner rules it in, and its
  * new-session behaviour is proved before it earns a launch-table column
  * (docs/model-providers.md). Grok joined 2026-08-18 by the owner's word. */
+/** THE single source of install commands (owner, 2026-08-20): the mechanical installer,
+ *  the setup page and ⚙ all read `get` from here — adjust it here and every surface
+ *  follows. All five are one click; none is special. Grok's package is verified official
+ *  (npm maintainer xai-security <security@x.ai>); Hermes installs by Nous's own script. */
 export const AGENTS = [
-  { id: 'claude', cmd: 'claude', label: 'Claude Code', from: 'Anthropic' },
-  { id: 'codex', cmd: 'codex', label: 'Codex', from: 'OpenAI' },
-  { id: 'gemini', cmd: 'gemini', label: 'Gemini CLI', from: 'Google' },
-  { id: 'grok', cmd: 'grok', label: 'Grok CLI', from: 'xAI' },
-  { id: 'hermes', cmd: 'hermes', label: 'Hermes', from: 'Nous Research' },
+  { id: 'claude', cmd: 'claude', label: 'Claude Code', from: 'Anthropic', get: 'npm install -g @anthropic-ai/claude-code' },
+  { id: 'codex', cmd: 'codex', label: 'Codex', from: 'OpenAI', get: 'npm install -g @openai/codex' },
+  { id: 'gemini', cmd: 'gemini', label: 'Gemini CLI', from: 'Google', get: 'npm install -g @google/gemini-cli' },
+  { id: 'grok', cmd: 'grok', label: 'Grok CLI', from: 'xAI', get: 'npm install -g @xai-official/grok' },
+  { id: 'hermes', cmd: 'hermes', label: 'Hermes', from: 'Nous Research', get: 'curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash' },
 ] as const;
 
 export interface AgentAvailability {
   id: string;
   label: string;
   from: string;
+  /** The one line that installs it, or where to read how — naming a missing thing
+   *  without saying how to get it is the same as not helping (USERS_JOURNEY). */
+  get: string;
   cmd: string;
   /** Present on this machine. Says nothing about whether it is signed in. */
   installed: boolean;
@@ -95,6 +102,6 @@ export async function listAgentAvailability(): Promise<AgentAvailability[]> {
 
   return AGENTS.map((a) => {
     const where = found.get(a.cmd) ?? '';
-    return { id: a.id, label: a.label, from: a.from, cmd: a.cmd, installed: !!where, path: where };
+    return { id: a.id, label: a.label, from: a.from, get: a.get, cmd: a.cmd, installed: !!where, path: where };
   });
 }

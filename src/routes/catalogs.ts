@@ -11,6 +11,7 @@ import { projectRootsOfSessions } from '../tmux.js';
 import { listMacros } from '../macros.js';
 import { listSkins } from '../skins.js';
 import { listAgentAvailability } from '../agents.js';
+import { dispatchInstall } from '../agent-install.js';
 import {
   listProjectRoots,
   listSessionLaunchSpecs,
@@ -185,6 +186,36 @@ export function registerCatalogs(app: express.Express): void {
   app.get('/api/agents', async (_req, res) => {
     try {
       res.json(await listAgentAvailability());
+    } catch (e) {
+      res.status(500).json({ error: errMsg(e) });
+    }
+  });
+
+  /**
+   * THE INSTALL OPERATION — the one door that executes the mechanical half of needed[].
+   *
+   * Beside the probe on purpose: the probe is what decides whether a row asks "use it?"
+   * or "install it?", and this is the answer to the second question. It is an OPERATION,
+   * not a service and not a surface — the setup page calls it at Save and ⚙ calls it any
+   * day after, and there is no third path, because a second one is a defect.
+   *
+   * The body is `{ items: [{ kind, name }] }` — the registry's own vocabulary, so the day
+   * a second kind becomes mechanical no caller changes. It answers with what it STARTED,
+   * never with what it achieved: the reply names a session per item, and whether the thing
+   * is installed is `GET /api/agents`'s to say, later. Nothing here waits for a runner and
+   * nothing here writes a record.
+   *
+   * 200 even when every item is refused. A refusal is an answer, it is per item, and the
+   * caller has to read the list either way (src/agent-install.ts).
+   */
+  app.post('/api/install', async (req, res) => {
+    const raw = Array.isArray(req.body?.items) ? req.body.items : null;
+    if (!raw) return res.status(400).json({ error: 'Send { items: [{ kind, name }] }.' });
+    const items = (raw as Array<Record<string, unknown>>)
+      .map((i) => ({ kind: String(i?.kind ?? '').trim(), name: String(i?.name ?? '').trim() }))
+      .filter((i) => i.kind && i.name);
+    try {
+      res.json(await dispatchInstall(items));
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }
