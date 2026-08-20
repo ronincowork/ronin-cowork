@@ -166,10 +166,12 @@ export async function buildFirstRun(host, onDone) {
           wantAgents.set(a.id, box);
           what = a.from + '. Not on this machine yet — tick it and Ronin runs `' + a.get + '` in its own tile, then starts it there for you to sign in.';
         } else {
-          // An operator that predates the install line cannot install anything, so the row
-          // does not pretend it can. Degraded, never wrong.
+          // NO COMMAND, SO NO CONTROL. Two ways to get here and one honest row for both:
+          // an agent Ronin has parked (`parked` says why, in the words a person reads —
+          // src/agents.ts), or an operator that predates the install line altogether. A
+          // tick that cannot deliver is worse than a row that admits it.
           box.disabled = true;
-          what = a.from + '. Not on this machine yet — install it and it appears here.';
+          what = a.from + '. ' + (a.parked || 'Not on this machine yet — install it and it appears here.');
         }
         body.append(name, el('div', 'fr-agent-what', what));
         row.append(box, body);

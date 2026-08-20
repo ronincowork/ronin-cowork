@@ -52,7 +52,7 @@ what says whose hand it takes.
 
 | `met_by` | means | today |
 |---|---|---|
-| `mechanical` | a command can do it **and Ronin knows the command** | the agent CLIs — `AGENTS[].get` (`src/agents.ts`) is the one source, and the install operation reads it |
+| `mechanical` | a command can do it **and Ronin knows the command** | an agent CLI whose `AGENTS[].get` is filled (`src/agents.ts`, the one source the install operation reads). An agent PARKED there — empty `get`, and a `parked` sentence saying why — is `owner`, so nothing ever claims to be installing what the operation would refuse |
 | `owner` | only the person can | the services email link, a key pasted in `.env`, an entitled download |
 | `agent` | judgment required, so the setup seat keeps it | a host tool — "install `gh`" means knowing whether this box is apt, brew or dnf |
 

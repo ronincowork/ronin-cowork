@@ -47,23 +47,44 @@ const pexec = promisify(execFile);
  * (docs/model-providers.md). Grok joined 2026-08-18 by the owner's word. */
 /** THE single source of install commands (owner, 2026-08-20): the mechanical installer,
  *  the setup page and ⚙ all read `get` from here — adjust it here and every surface
- *  follows. All five are one click; none is special. Grok's package is verified official
- *  (npm maintainer xai-security <security@x.ai>); Hermes installs by Nous's own script. */
+ *  follows. Grok's package is verified official (npm maintainer xai-security
+ *  <security@x.ai>).
+ *
+ *  `get` EMPTY MEANS RONIN CANNOT INSTALL IT, and `parked` is the sentence saying why —
+ *  written for the person reading the row, because a row that offers an install that
+ *  cannot work is worse than a row that admits it. It is the one field the surfaces need
+ *  in order to be honest, and it keeps `get` a single clean question: is there a command?
+ *
+ *  HERMES IS PARKED (owner, 2026-08-20), and it was measured, not assumed: run on a
+ *  stock box, Nous's own script asks twice for sudo to add system packages and then fails
+ *  its own last step, leaving no `hermes` command behind. It is the only one of the five
+ *  that is not a plain npm package. It comes back the day its line is re-verified — one
+ *  field on one row, and every surface follows. */
 export const AGENTS = [
-  { id: 'claude', cmd: 'claude', label: 'Claude Code', from: 'Anthropic', get: 'npm install -g @anthropic-ai/claude-code' },
-  { id: 'codex', cmd: 'codex', label: 'Codex', from: 'OpenAI', get: 'npm install -g @openai/codex' },
-  { id: 'gemini', cmd: 'gemini', label: 'Gemini CLI', from: 'Google', get: 'npm install -g @google/gemini-cli' },
-  { id: 'grok', cmd: 'grok', label: 'Grok CLI', from: 'xAI', get: 'npm install -g @xai-official/grok' },
-  { id: 'hermes', cmd: 'hermes', label: 'Hermes', from: 'Nous Research', get: 'curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash' },
+  { id: 'claude', cmd: 'claude', label: 'Claude Code', from: 'Anthropic', get: 'npm install -g @anthropic-ai/claude-code', parked: '' },
+  { id: 'codex', cmd: 'codex', label: 'Codex', from: 'OpenAI', get: 'npm install -g @openai/codex', parked: '' },
+  { id: 'gemini', cmd: 'gemini', label: 'Gemini CLI', from: 'Google', get: 'npm install -g @google/gemini-cli', parked: '' },
+  { id: 'grok', cmd: 'grok', label: 'Grok CLI', from: 'xAI', get: 'npm install -g @xai-official/grok', parked: '' },
+  {
+    id: 'hermes',
+    cmd: 'hermes',
+    label: 'Hermes',
+    from: 'Nous Research',
+    get: '',
+    parked: "Ronin cannot install this one yet — Nous's own installer needs system packages it has to ask you for, and does not finish without them. Install it from their site and it appears here.",
+  },
 ] as const;
 
 export interface AgentAvailability {
   id: string;
   label: string;
   from: string;
-  /** The one line that installs it, or where to read how — naming a missing thing
-   *  without saying how to get it is the same as not helping (USERS_JOURNEY). */
+  /** The one line that installs it — empty when Ronin has no command for it, and then
+   *  `parked` says why in the words a person reads. Naming a missing thing without
+   *  saying how to get it is the same as not helping (USERS_JOURNEY). */
   get: string;
+  /** Why Ronin cannot install it, when it cannot. Empty for every agent it can. */
+  parked: string;
   cmd: string;
   /** Present on this machine. Says nothing about whether it is signed in. */
   installed: boolean;
@@ -102,6 +123,6 @@ export async function listAgentAvailability(): Promise<AgentAvailability[]> {
 
   return AGENTS.map((a) => {
     const where = found.get(a.cmd) ?? '';
-    return { id: a.id, label: a.label, from: a.from, get: a.get, cmd: a.cmd, installed: !!where, path: where };
+    return { id: a.id, label: a.label, from: a.from, get: a.get, parked: a.parked, cmd: a.cmd, installed: !!where, path: where };
   });
 }

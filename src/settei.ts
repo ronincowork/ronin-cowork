@@ -42,7 +42,7 @@ import { CONTRACT_V } from './sockets-contract.js';
 import { roninIdentity } from './routes/version.js';
 import { listProjectRoots } from './project-roots.js';
 import { storeDir } from './stores.js';
-import { listAgentAvailability } from './agents.js';
+import { AGENTS, listAgentAvailability } from './agents.js';
 import {
   readAgentsSection,
   readMachineSection,
@@ -586,14 +586,18 @@ function computeNeeded(
   // apt, brew or dnf — judgment, so the seat keeps it; a key and an entitled download
   // are the owner's own hands. Adding a mechanical verb later is this table, not a
   // code path.
-  const HOW: Record<string, { how: (n: string) => string; met_by: MetBy }> = {
+  const HOW: Record<string, { how: (n: string) => string; met_by: (n: string) => MetBy }> = {
     agent: {
       how: (n) => `install the ${n} CLI — it appears in agent installations the moment it lands`,
-      met_by: 'mechanical',
+      // ASK THE ONE SOURCE. `mechanical` means Ronin knows the command, so a PARKED agent
+      // — one whose `get` is empty because its installer does not work — is the owner's
+      // hand, not ours. Reading AGENTS here is what stops the landing claiming to install
+      // something the operation would refuse.
+      met_by: (n) => (AGENTS.find((a) => a.id === n)?.get ? 'mechanical' : 'owner'),
     },
-    service: { how: () => 'install Ronin Services — it registers itself', met_by: 'owner' },
-    tool: { how: (n) => `install ${n} on the host`, met_by: 'agent' },
-    key: { how: (n) => `set ${n} in .env and restart the operator`, met_by: 'owner' },
+    service: { how: () => 'install Ronin Services — it registers itself', met_by: () => 'owner' },
+    tool: { how: (n) => `install ${n} on the host`, met_by: () => 'agent' },
+    key: { how: (n) => `set ${n} in .env and restart the operator`, met_by: () => 'owner' },
   };
   const wanted = ((set.wanted ?? []) as Array<{ kind: string; name: string }>)
     .filter((w) => HOW[w.kind] && !holds(w, set, observed))
@@ -601,7 +605,7 @@ function computeNeeded(
       leaf: 'wanted',
       needs: w.kind === 'service' && w.name === '*' ? 'Ronin Services (the bundle)' : `${w.name} (${w.kind})`,
       how: HOW[w.kind].how(w.name),
-      met_by: HOW[w.kind].met_by,
+      met_by: HOW[w.kind].met_by(w.name),
     }));
   return [...declared, ...wanted];
 }
