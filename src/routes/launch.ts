@@ -168,7 +168,9 @@ export function registerLaunch(app: express.Express): void {
       // be discarded: the brief was typed anyway, into whatever was on screen. Twice that
       // was a trust-folder dialog, whose rows are drawn with the same `❯` as a prompt, so
       // the text went nowhere and the Enter answered the dialog.
-      const { ready, held, gone } = await waitReadyForBrief(resolved.name);
+      // The vendor, by the name spawn.ts already computed for the launch stamp — so the gate
+      // reads THIS agent's screen rather than any agent's (src/agents.ts carries the rows).
+      const { ready, held, gone } = await waitReadyForBrief(resolved.name, resolved.launchAgent);
       if (held) {
         console.error(
           `[ronin] ${resolved.name}: the CLI is asking something (trust this folder?) — ` +
