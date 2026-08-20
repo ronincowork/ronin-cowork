@@ -83,6 +83,25 @@ through both the TypeScript and the `bin/ronin-store` bindings and fails on any 
 **Neither secret ever reaches the browser.** The claim secret is deleted the moment it is
 spent.
 
+## Where the person actually sees it
+
+**First run** (`public/js/firstrun.js`) — ticking Services and giving an address now POSTs
+`/api/services/activation`, which asks Ronin HQ to send the confirmation email. It used to
+record a note to itself and contact nobody.
+
+**HQ being unreachable does not block setup.** Only a refusal we caused — a malformed
+address — stops the page. Anything else finishes setup and leaves a pending request with a
+Retry in ⚙ Configuration, which is the recovery rule made real rather than described.
+
+**⚙ Configuration** (`public/js/services-card.js`) — the card renders the durable stage, not
+what the page remembers doing, so a reload, a second tab, or an operator restart all land on
+the truth. It offers Resend, Change address, Cancel, and a recovery Install, and it shows the
+egress record and the receipts inline.
+
+**Polling is visible.** The card says it is checking and backs off from 2s toward 30s, then
+stops when the stage settles. A spinner that never resolves and a page that has quietly given
+up look identical to a person, so it says which it is.
+
 ## The browser API — local only, no secret crosses it
 
 ```text
@@ -136,6 +155,23 @@ a button and got silence for a week would reasonably conclude it was broken.
 | **This link expired** | resend, without damaging an installed entitlement |
 | **Waiting to send** | HQ was unreachable; Retry is offered and setup was not blocked |
 
+## How this is proven
+
+`tests/services-activation.test.ts` holds the unit half and honours the repo's gate: no
+socket, no store, no live machine.
+
+`tests/integration/two-leg.test.ts` is the real walk, and is deliberately **not** under
+`tests/*.test.ts` so the unit gate ignores it:
+
+```sh
+npx tsx --test tests/integration/two-leg.test.ts
+```
+
+It spawns SHIWAKE as a subprocess and drives **these actual modules** against it — `flow.ts`
+requests and polls, `secrets.ts` stores the credentials, `tomodachi.ts` sends, and
+`libexec/ronin-hq.sh` (the shell `ronin-update --services` really runs) fetches the authorized
+release and its checksum verifies. Nothing in it reimplements the client.
+
 ## Failure recovery
 
 | what happened | what happens |
@@ -152,9 +188,37 @@ a button and got silence for a week would reasonably conclude it was broken.
 
 ## The updater handoff
 
-After a successful claim, installation goes through the updater that **already exists** —
-`POST /api/update/run { package: "services" }`, which runs fetch → verify → contract check →
-store → place → restart.
+**Installation starts by itself** the moment a poll reaches `verified`. Waiting for somebody
+to press a button left confirmed people looking at a finished flow that had not finished.
+
+It goes through the updater that **already exists**. `src/update-run.ts` is the single
+launcher; the ⚙ gear's `POST /api/update/run` and this flow both call it, because two
+launchers drift and the one that drifts is the one nobody presses until it matters.
+
+`POST /api/services/install` is the recovery verb. It **runs** the updater — it used to
+return a JSON description of the handoff, which nothing pressed, so a confirmed person sat at
+"Email confirmed" forever.
+
+### The authorized fetch
+
+`libexec/ronin-hq.sh`, sourced by `bin/ronin-update --services`, is the real path:
+
+```text
+GET  /v1/services/releases/current?contract_version=N   →  release_id + version + sha256
+POST /v1/services/releases/grant   { release_id }       →  a short-lived grant
+GET  /v1/services/releases/:id/artifact?grant=…         →  the bytes
+```
+
+The contract number is read from this install **before** asking, because "current" means
+current *for the contract we answer*.
+
+**Verification is unchanged.** The manifest's `sha256` is written into a `SHA256SUMS` beside
+the tarball, so the updater's existing checksum step runs exactly as it always has, and the
+contract check after it is untouched. The checksum now comes from an *authenticated* answer
+rather than from a file that travelled beside the download.
+
+The public feed remains the fallback: the owner ruled that download ungated, and a box with
+no entitlement must still be able to install.
 
 **The entitlement authorizes the fetch; it does not certify the artifact.** The updater still
 verifies the checksum and the Cowork/Services contract. An updater that stopped checking
@@ -162,6 +226,23 @@ because the download was authorized would have removed the check that catches a 
 transfer or a mismatched pairing.
 
 Keep the local-file installation path for development and offline recovery.
+
+## Tomodachi — the weekly send
+
+`src/activation/tomodachi.ts`. The producer **drops** a finished packet into the telemetry
+outbox and AGERU picks it up. A directory rather than a function call, because core may not
+import `src/services/` and Services must not carry its own egress door.
+
+The sweep is **hourly, not weekly** — the producer decides when a packet exists, and an
+hourly sweep of an outbox that is usually empty is what lets a missed week catch up after a
+machine was off. A weekly timer on a laptop that was closed that day simply never fires.
+
+**A packet leaves the outbox only when a receipt is in hand.** A timeout says nothing about
+whether HQ stored it, so the only safe move is to resend the identical bytes — which is safe
+because the packet id is derived from (install, week), so HQ returns the receipt it already
+issued instead of storing a duplicate.
+
+A closed, non-retryable refusal moves the file aside rather than retrying it forever.
 
 ## The egress record
 
