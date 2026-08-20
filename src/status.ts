@@ -1,5 +1,4 @@
 import { AGENTS } from './agents.js';
-import { capturePane } from './tmux.js';
 
 /**
  * Status probe (terminal view only): classify a session's state from its visible
@@ -73,11 +72,6 @@ export function classifyStatus(text: string): SessionStatus | null {
   return null;
 }
 
-/** Probe a live session (null on capture failure — e.g. it just died). */
-export async function probeStatus(session: string): Promise<SessionStatus | null> {
-  try {
-    return classifyStatus(await capturePane(session, 0));
-  } catch {
-    return null;
-  }
-}
+// probeStatus lived here — classifyStatus over a live capture — and died 2026-08-20
+// with no caller (check-dead, twice). Recreate it in six lines the day something needs
+// a live-capture classify; capturePane is the import to bring back with it.
