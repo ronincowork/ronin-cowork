@@ -55,8 +55,16 @@ export async function init() {
     if (wants || (s?.ok && s.data.pending === true)) {
       const host = document.createElement('div');
       document.body.replaceChildren(host);
-      await buildFirstRun(host, () => {
-        location.href = location.pathname; // back to the workspace, setup dropped
+      await buildFirstRun(host, (landing) => {
+        // THE LANDING CHOOSES WHAT GREETS THEM. Exiting to a bare pathname handed the
+        // person whatever localStorage happened to hold — on a fresh box, nothing, and
+        // on a box with two tabs, some other tab's tiles. `?tiles=` is the one-shot
+        // directive (js/state.js): honoured above both storages, written into this tab's
+        // own memory, then stripped from the address so a refresh keeps it and a bookmark
+        // never replays it. Empty is a real answer and means one empty tile — the commons,
+        // where ＋ New lives.
+        const q = new URLSearchParams({ tiles: (landing?.tiles ?? []).join(',') });
+        location.href = location.pathname + '?' + q;
       });
       return;
     }

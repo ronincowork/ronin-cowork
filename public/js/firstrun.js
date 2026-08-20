@@ -59,7 +59,14 @@ function renderField(card, f, ctx) {
   return () => control.value;
 }
 
-/** Build the surface into `host`. `onDone` runs once the answers are saved. */
+/**
+ * Build the surface into `host`. `onDone` runs once the answers are saved, and is handed
+ * `{ tiles }` — the session names this Save chose to land the person on, in the order
+ * they should read: the installs first, because they are the narration (LANDING.md),
+ * then the setup seat. An empty list is a real answer and means one empty tile, which is
+ * the commons and its ＋ New. The caller turns that into the one-shot `?tiles=` directive;
+ * how many of them fit is the grid's business, not this page's.
+ */
 export async function buildFirstRun(host, onDone) {
   host.className = 'fr-root';
   // `html, body { overflow: hidden }` is deliberate — the grid must never scroll behind
@@ -226,6 +233,8 @@ export async function buildFirstRun(host, onDone) {
       const values = Object.fromEntries(Object.entries(read).map(([id, get]) => [id, get()]));
       const problems = [];
       let installNote = '';
+      /** The tiles this Save lands on, in reading order. */
+      const landOn = [];
 
       for (const req of toRequests(schema, values)) {
         const r = await request(req.route, { method: req.method, json: req.json });
@@ -272,6 +281,9 @@ export async function buildFirstRun(host, onDone) {
           method: 'POST',
           json: { items: picks.map((id) => ({ kind: 'agent', name: id })) },
         });
+        // THE TILES ARE THE NARRATION. What came back is what actually STARTED, so the
+        // landing names only sessions that exist — never what we hoped would.
+        if (r.ok && Array.isArray(r.data)) landOn.push(...r.data.filter((x) => x.session).map((x) => x.session));
         // A dispatch that would not start must not strand a finished setup either: the
         // want is stored, ⚙ still offers it, and the workspace opens regardless. It is a
         // clause on the way out, never a wall — nothing gates someone starting work.
@@ -284,7 +296,7 @@ export async function buildFirstRun(host, onDone) {
       // the first session starts with a brief instead of the owner typing context.
       if (!ctx.modelOpts.length) {
         line.say('Saved. Opening your coworkspace…' + installNote, installNote ? 'bad' : 'ok');
-        onDone?.();
+        onDone?.({ tiles: landOn });
         return;
       }
 
@@ -304,11 +316,14 @@ export async function buildFirstRun(host, onDone) {
       });
       // A session that would not start must not strand a finished setup: everything is
       // already saved, so say so and let them into the workspace.
+      // The seat's OWN name, not the one we asked for: /api/launch resolves collisions,
+      // and a tile named after a session that does not exist is an empty tile.
+      if (born.ok && born.data?.name) landOn.push(born.data.name);
       line.say(
         (born.ok ? 'Saved. Your first session is opening.' : 'Saved — but the first session did not start. Open one from ＋ New when you are in.') + installNote,
         born.ok && !installNote ? 'ok' : 'bad',
       );
-      onDone?.();
+      onDone?.({ tiles: landOn });
     },
   });
   foot.append(save, el('span', 'fr-note', 'Your coworkspace opens straight away. Anything still to be fetched carries on in the background.'));
