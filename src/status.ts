@@ -74,15 +74,33 @@ export const STATUS_PATTERNS: { status: SessionStatus; whose: Whose; re: RegExp 
   { status: 'ready', whose: 'shell', re: SHELL_PROMPT },
 ];
 
-/** The rows that speak for ONE agent: the house rows plus its own. An agent that declares
- *  nothing gets every agent's rows instead — the pre-table behaviour, kept deliberately,
- *  because narrowing to an empty set would mean a gemini session never reads as ready and
- *  its brief would never be delivered. Degraded, never wrong. */
+/**
+ * The rows that speak for ONE agent: the house rows, plus its own.
+ *
+ * THE FALLBACK IS PER CATEGORY, NOT PER AGENT, and that distinction is load-bearing. An
+ * agent that has said nothing about a category gets EVERY agent's rows for it — the
+ * pre-table behaviour — because narrowing to an empty set would mean a session that never
+ * reads as ready and a brief that is never delivered.
+ *
+ * Per-AGENT was the first cut and it was a trap: gemini's dialog row was measured and
+ * added, which flipped gemini from "says nothing, use everyone's rows" to "characterised,
+ * use only its own" — and it has no ready row, because nobody has ever seen past its trust
+ * dialog. One honest measurement would have silently stopped its briefs. The test caught
+ * it; this shape is why it stays caught. Knowing one screen of an agent must never cost
+ * you the screens you had.
+ */
 function rowsFor(agent: string): { status: SessionStatus; whose: Whose; re: RegExp }[] {
   const a = AGENTS.find((x) => x.cmd === agent);
-  const own = a ? vendorRows(a) : [];
-  if (!own.length) return compose([...HOUSE, ...AGENTS.flatMap(vendorRows)]);
-  return compose([...HOUSE, ...own]);
+  const own = a ? a.screen : null;
+  const everyone = AGENTS.flatMap(vendorRows);
+  const pick = (st: SessionStatus, declared: readonly string[] | undefined) =>
+    declared?.length ? vendorRows(a!).filter((r) => r.status === st) : everyone.filter((r) => r.status === st);
+  return compose([
+    ...HOUSE,
+    ...pick('thinking', own?.busy),
+    ...pick('awaiting-input', own?.asking),
+    ...pick('ready', own?.ready),
+  ]);
 }
 
 /** Status cues live at the pane bottom — only the visible tail is worth scanning. */
