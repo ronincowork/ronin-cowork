@@ -78,7 +78,7 @@ export const SETTEI_SCHEMA = {
     {
       id: 'agents',
       title: 'Agents',
-      lede: 'Ronin is the room your agents work in — a co-working space for the CLIs you already use, each in its own terminal, all on one screen. So the only question here is what is on the machine: something present asks whether you want it in the room, something absent tells you how to get it. Ronin looks for the command and nothing else — signing in happens inside the agent itself, the first time you use it.',
+      lede: 'Ronin is the room your agents work in — a co-working space for the CLIs you already use, each in its own terminal, all on one screen. So the only question here is what is on the machine: something present is already in the room, and something absent can be fetched — tick it and Ronin installs it for you, in its own tile you can watch. Ronin looks for the command and nothing else — signing in happens inside the agent itself, the first time you use it.',
       custom: 'agents',
     },
     {

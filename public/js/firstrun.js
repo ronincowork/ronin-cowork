@@ -12,10 +12,14 @@
  * saves itself through the right family, and needs no edit in this file at all.
  * Nothing below knows what a field means.
  *
- * DELIBERATELY NOT HERE: an "install it" button for a missing agent (no installer
- * exists yet, and a control that does nothing is the dead cell this page removes); any
- * claim about whether an agent is SIGNED IN (/api/agents reports presence only); a key
- * field (no route accepts a credential value, by design).
+ * THE MISSING-AGENT ROW USED TO BE DEAD, and it is not any more (2026-08-20). It carried
+ * a disabled checkbox because nothing installed anything, and a control that does nothing
+ * is exactly the dead cell this page exists to remove. The installer exists now
+ * (src/agent-install.ts), so the tick is live and the row says what pressing it does —
+ * including the command it will run, before it runs.
+ *
+ * STILL DELIBERATELY NOT HERE: any claim about whether an agent is SIGNED IN (/api/agents
+ * reports presence only); a key field (no route accepts a credential value, by design).
  */
 import { request } from './request.js';
 import { field, status, button } from './ui.js';
@@ -98,6 +102,8 @@ export async function buildFirstRun(host, onDone) {
   host.append(head);
 
   const read = {}; // id -> () => value
+  /** agent id -> its live checkbox. Absent agents only: a present one's tick is a fact. */
+  const wantAgents = new Map();
   let wantServices = null;
   let serviceEmail = null;
 
@@ -126,19 +132,39 @@ export async function buildFirstRun(host, onDone) {
     }
 
     if (sec.custom === 'agents') {
+      // ONE MEANING, TAUGHT ONCE — the same sentence ⚙ teaches (js/settei.js), because it
+      // is the same checkbox: a tick is the installed bit, and an empty one is a control.
+      card.append(el('p', 'fr-lede', 'A tick means it is on the box — that one is a fact, not a choice. Tick an empty one and Ronin installs it, then starts it in the same tile so you can sign in.'));
       for (const a of agents) {
         const row = el('div', 'fr-agent');
         const box = document.createElement('input');
         box.type = 'checkbox';
-        box.checked = a.installed;
-        box.disabled = !a.installed; // nothing installs it yet, so nothing pretends to
         box.id = 'fr-agent-' + a.id;
         const body = el('div', 'fr-agent-body');
         const name = el('div', 'fr-agent-name');
         const lab = el('label', null, a.label);
         lab.htmlFor = box.id;
         name.append(lab, el('span', a.installed ? 'fr-tag on' : 'fr-tag off', a.installed ? 'installed' : 'not installed'));
-        body.append(name, el('div', 'fr-agent-what', a.installed ? 'Found at ' + a.path : a.from + '. Not on this machine yet — install it and it appears here.'));
+        let what;
+        if (a.installed) {
+          box.checked = true;
+          box.disabled = true; // a fact, not a control — reality unticks it, not you
+          box.title = 'installed';
+          what = 'Found at ' + a.path;
+        } else if (a.get) {
+          // SAY THE COMMAND, BEFORE IT RUNS. It shows again in the tile, because the tile
+          // IS the terminal it runs in — a vendor installer is somebody else's code and
+          // being able to read it first is the whole mitigation.
+          box.title = 'not installed — tick it and Ronin installs it';
+          wantAgents.set(a.id, box);
+          what = a.from + '. Not on this machine yet — tick it and Ronin runs `' + a.get + '` in its own tile, then starts it there for you to sign in.';
+        } else {
+          // An operator that predates the install line cannot install anything, so the row
+          // does not pretend it can. Degraded, never wrong.
+          box.disabled = true;
+          what = a.from + '. Not on this machine yet — install it and it appears here.';
+        }
+        body.append(name, el('div', 'fr-agent-what', what));
         row.append(box, body);
         card.append(row);
       }
@@ -199,6 +225,7 @@ export async function buildFirstRun(host, onDone) {
       line.say('Saving…', 'busy');
       const values = Object.fromEntries(Object.entries(read).map(([id, get]) => [id, get()]));
       const problems = [];
+      let installNote = '';
 
       for (const req of toRequests(schema, values)) {
         const r = await request(req.route, { method: req.method, json: req.json });
@@ -225,12 +252,38 @@ export async function buildFirstRun(host, onDone) {
       // session that fails to start below must not leave the box pending forever.
       await request('/api/settei/setup', { method: 'PUT' });
 
+      // THE TICKED AGENTS — intent stored, then installed, in that order and for that
+      // reason. The want is the intent and it PERSISTS (docs/wanted-needed.md), so an
+      // install that fails leaves the thing on the needed list where ⚙ still offers it;
+      // the dispatch is only the attempt. Both happen BEFORE the early return below,
+      // because a box with no agent at all is exactly the box that ticked some.
+      //
+      // DISPATCHED AT SAVE, IMMEDIATELY AND UNBIDDEN: the tick was the permission, and
+      // asking again at the landing would be asking twice. Nothing waits for it — the
+      // installs run in their own tiles while the coworkspace opens.
+      const picks = [...wantAgents].filter(([, box]) => box.checked).map(([id]) => id);
+      if (picks.length) {
+        const already = (record.set?.wanted ?? []).filter((w) => !(w.kind === 'agent' && picks.includes(w.name)));
+        await request('/api/settei/wanted', {
+          method: 'PUT',
+          json: { wanted: [...already, ...picks.map((id) => ({ kind: 'agent', name: id }))] },
+        });
+        const r = await request('/api/install', {
+          method: 'POST',
+          json: { items: picks.map((id) => ({ kind: 'agent', name: id })) },
+        });
+        // A dispatch that would not start must not strand a finished setup either: the
+        // want is stored, ⚙ still offers it, and the workspace opens regardless. It is a
+        // clause on the way out, never a wall — nothing gates someone starting work.
+        if (!r.ok) installNote = ' The installs did not start — tick them again from ⚙ Configuration.';
+      }
+
       // SETUP IS COMPLETE RIGHT HERE. The page is mechanical and needs no agent — a box
       // with no CLI on it is finished, not failing, and nothing on screen may suggest
       // otherwise. The handoff below is a bonus for a box that already has an agent:
       // the first session starts with a brief instead of the owner typing context.
       if (!ctx.modelOpts.length) {
-        line.say('Saved. Opening your coworkspace…', 'ok');
+        line.say('Saved. Opening your coworkspace…' + installNote, installNote ? 'bad' : 'ok');
         onDone?.();
         return;
       }
@@ -251,7 +304,10 @@ export async function buildFirstRun(host, onDone) {
       });
       // A session that would not start must not strand a finished setup: everything is
       // already saved, so say so and let them into the workspace.
-      line.say(born.ok ? 'Saved. Your first session is opening.' : 'Saved — but the first session did not start. Open one from ＋ New when you are in.', born.ok ? 'ok' : 'bad');
+      line.say(
+        (born.ok ? 'Saved. Your first session is opening.' : 'Saved — but the first session did not start. Open one from ＋ New when you are in.') + installNote,
+        born.ok && !installNote ? 'ok' : 'bad',
+      );
       onDone?.();
     },
   });
