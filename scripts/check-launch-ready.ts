@@ -1,95 +1,92 @@
 /**
- * THE ACCEPTANCE TEST — a launch reaches a ready agent, or fails loudly. Never a brief
- * typed at a shell prompt.
+ * THE ACCEPTANCE TEST — the machine typed nothing.
  *
  *   npx tsx scripts/check-launch-ready.ts
  *
- * The defect this asserts against was measured, not imagined: a seat launched into a
- * directory codex had never seen, codex raised its trust dialog and then died, bash came
- * back, the readiness gate read that shell prompt as "ready", and the brief was typed into
- * the shell. The session looked completely alive and had been told nothing
- * (wip/buildouts/LAUNCH_READY.md).
+ * Every installed vendor is launched into a directory it has never seen — which is what
+ * provokes a first-run trust dialog, the screen that started all of this — and three
+ * things are asserted about the session that comes back:
  *
- * TWO PARTS, and the first is the one that must never regress:
+ *   1. THE PROCESS IS THE VENDOR, not a shell. If a shell is in the tile then a machine
+ *      can type at it, and everything else here is decoration.
+ *   2. THE BRIEF IS ON ITS ARGV, so the agent was born already holding it. Nothing was
+ *      sent, because there was nothing to send it to.
+ *   3. A DEAD CLI STAYS READABLE. `remain-on-exit` means its last screen is frozen under
+ *      the session's own name instead of a live shell wearing it.
  *
- *   1. THE PIN. A session running a command that exits at once leaves nothing but a shell
- *      prompt. `waitReadyForBrief` must answer `gone` — immediately, not after a timeout —
- *      and must never answer `ready`. Deterministic, seconds, no agent involved.
- *   2. THE WALK. Every INSTALLED agent, launched into a directory it has never seen, which
- *      is what provokes a vendor's trust dialog. Each one must end at its own prompt
- *      (`ready`), at a dialog (`asking` — a person is being waited for, which is correct
- *      behaviour at any duration), or `gone`. What it may NEVER do is answer `ready` while
- *      the pane is showing a shell prompt, and that cross-check is the assertion.
+ * It would have failed on the build that typed briefs: there, the pane's process was the
+ * login shell by construction and the brief arrived as keystrokes.
  *
- * NOT IN `npm run verify`. It needs a live tmux server and it launches real agent CLIs, so
- * it is release-time, the same standing as `scripts/check-agent-installs.ts`. Run it when
- * status.ts, launch.ts or an agent's `screen` rows change.
+ * NOT IN `npm run verify` — it needs a live tmux server and launches real agent CLIs, the
+ * same standing as `scripts/check-agent-installs.ts`. Run it when tmux.ts, launch.ts or a
+ * vendor's `initial` changes.
  */
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { AGENTS, listAgentAvailability } from '../src/agents.js';
-import { agentPresence, waitReadyForBrief } from '../src/status.js';
-import { runCommand } from '../src/send.js';
-import { capturePane, createSession, killSessionTree, sessionExists } from '../src/tmux.js';
+import { AGENTS, launchArgv, listAgentAvailability } from '../src/agents.js';
+import { createSession, exactPane, killSessionTree, sessionExists } from '../src/tmux.js';
 
+const pexec = promisify(execFile);
 let failed = 0;
 const fail = (m: string) => { console.error(`  FAIL  ${m}`); failed++; };
 const ok = (m: string) => console.log(`  ok    ${m}`);
-const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const tmux = async (...a: string[]) => (await pexec('tmux', a)).stdout.trim();
 
-/** A session in a directory nothing has ever run in — what provokes a trust dialog. */
-async function inFreshDir(name: string, cmd: string, quietMs: number) {
+const BRIEF = 'RONIN-ACCEPTANCE do not act on this; the run is over. $(echo hi) `date` "q" & ;';
+
+async function walk(id: string, cmd: string) {
+  const name = `launchready_${id}`;
   const dir = mkdtempSync(path.join(os.tmpdir(), 'ronin-launchready-'));
   if (await sessionExists(name)) await killSessionTree(name);
-  await createSession(name, dir, { agent: false });
-  await runCommand(name, cmd);
-  const seen = await waitReadyForBrief(name, cmd.split(/\s+/)[0], { quietMs, heldMs: quietMs });
-  const pane = await capturePane(name, 0).catch(() => '');
-  await killSessionTree(name);
-  rmSync(dir, { recursive: true, force: true });
-  return { ...seen, pane };
+  const { argv, parked } = await launchArgv(cmd, BRIEF);
+  if (!argv.length) return fail(`${id} — could not resolve a binary to run; a launch would have failed`);
+  await createSession(name, dir, { agent: true, exempt: true, argv });
+  try {
+    const proc = await tmux('display-message', '-p', '-t', exactPane(name), '#{pane_current_command}');
+    const start = await tmux('display-message', '-p', '-t', exactPane(name), '#{pane_start_command}');
+    // 1 · no shell in the tile
+    if (/^(?:ba|z|k|da|fi)?sh$/.test(proc)) {
+      fail(`${id} — the tile's process is \`${proc}\`. A shell in the tile is something a machine can type at.`);
+    } else if (parked) {
+      ok(`${id} — running \`${proc}\`, brief parked on the shelf (this vendor takes no initial prompt)`);
+    } else if (!start.includes('RONIN-ACCEPTANCE')) {
+      // 2 · the brief rode argv
+      fail(`${id} — the brief is not on the process's argv, so it was never handed over`);
+    } else {
+      ok(`${id} — the tile IS \`${proc}\`, and its brief was on the command line at birth`);
+    }
+  } finally {
+    await killSessionTree(name);
+    rmSync(dir, { recursive: true, force: true });
+  }
 }
 
-console.log('check-launch-ready: the brief is never typed at a shell prompt');
+console.log('check-launch-ready: the machine typed nothing');
 
-/* 1 · the pin */
+/* 3 · a dead CLI stays readable, and takes nothing with it */
 {
-  const r = await inFreshDir('launchready_pin', 'true', 20_000);
-  if (r.ready) fail('a command that exits at once was reported READY — the brief would go into bash');
-  else if (!r.gone) fail(`a command that exits at once was not reported gone (held=${r.held})`);
-  else ok('a dead command is `gone`, not `ready` — the measured defect cannot recur');
+  const name = 'launchready_dead';
+  if (await sessionExists(name)) await killSessionTree(name);
+  await createSession(name, undefined, { agent: true, exempt: true, argv: ['/bin/false'] });
+  await new Promise((r) => setTimeout(r, 800));
+  if (!(await sessionExists(name))) fail('a CLI that dies at once took its session with it — its story is unreadable');
+  else {
+    const dead = await tmux('display-message', '-p', '-t', exactPane(name), '#{pane_dead}');
+    if (dead === '1') ok('a CLI that dies at once leaves its screen frozen and readable, not a live shell');
+    else fail(`a dead CLI's pane reports pane_dead=${dead}; something is still running in the tile`);
+    await killSessionTree(name);
+  }
 }
 
-/* 2 · the walk */
 const installed = (await listAgentAvailability()).filter((a) => a.installed);
 if (!installed.length) console.log('  --    no agent installed on this box; the walk has nothing to do');
-for (const a of installed) {
-  const spec = AGENTS.find((x) => x.id === a.id)!;
-  const r = await inFreshDir(`launchready_${a.id}`, spec.cmd, 45_000);
-  // THE ONE ASSERTION, and it is the whole defect class: readiness may never be a shell
-  // prompt. Everything else is REPORTED, because "a loud failure" is a pass by definition
-  // — the acceptance is that a brief is never typed at something that is not listening,
-  // not that every vendor comes up on every box.
-  if (r.ready && agentPresence(r.pane) === 'gone') {
-    fail(`${a.id} — reported READY while the tile was showing a shell prompt. This is the bug.`);
-  } else if (r.ready) {
-    ok(`${a.id} — reached its own prompt`);
-  } else if (r.gone) {
-    ok(`${a.id} — gone, and said so: a shell prompt where the agent should be`);
-  } else if (r.held) {
-    ok(`${a.id} — asking, and the tile says so. A person is being waited for, which is correct at any duration`);
-  } else {
-    // Not ready, not gone, no dialog recognised — so its screen is one nobody has read.
-    // The gate still held the brief and still wrote a rung, which is the contract; what is
-    // missing is only the better sentence. `AGENTS[].screen` is where that would go.
-    ok(`${a.id} — screen not recognised, so the brief was held and a gate written. Its rows in AGENTS[].screen are empty; reading its screen would upgrade this to "asking"`);
-  }
-  await wait(500);
-}
+for (const a of installed) await walk(a.id, AGENTS.find((x) => x.id === a.id)!.cmd);
 
 if (failed) {
-  console.error(`\nFAILED — ${failed} check(s). A brief could be typed at something that is not listening.`);
+  console.error(`\nFAILED — ${failed} check(s). Something in a tile could still be typed at.`);
   process.exit(1);
 }
-console.log('\ncheck-launch-ready: every launch ended at an agent, a dialog, or a loud failure.');
+console.log('\ncheck-launch-ready: every tile was the vendor itself, holding its brief. Nothing was typed.');
