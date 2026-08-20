@@ -24,7 +24,7 @@ CLI has already cost one session a turn, and its debrief says so.
 
 Per session, chosen at launch, mechanical like the dial. **On** (default): the CLI launches
 with its own config — the brain and any other MCP connectors are reachable — and the
-session's boot reading includes the connected shelf (`mcp_on/`), so it is born knowing how
+session's boot reading includes the connected shelf (`gbrain_connected/`), so it is born knowing how
 to use what it can reach. **Off**: the session launches with **no MCP servers at all** —
 not just the brain — and reads no connected shelf either; tools and know-how ride the one
 choice (owner, 2026-08-17). It cannot be flipped mid-session; that is a relaunch. An agent

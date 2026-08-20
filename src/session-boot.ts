@@ -29,11 +29,13 @@
  * FOUR LEVELS — three from the axes a session already knows about itself, and one from
  * the launch's own MCP choice (owner's ruling, 2026-08-17):
  *
- *   all/                every session, always
- *   mcp_on/             only sessions launched with MCP on — how a connected session
- *                       learns what it is connected to. Vendor-neutral by construction:
- *                       cowork includes the level, services put files on it, and a
- *                       session launched disconnected reads none of them
+ *   all/                  every session, always
+ *   <service>_connected/  only sessions launched with MCP on — how a connected session
+ *                         learns what it is connected to. Cowork ships NO such folder
+ *                         and matches the pattern only: a connected service makes and
+ *                         seeds its own (gbrain's setup makes gbrain_connected/), so
+ *                         the level is signed by its service (owner's ruling,
+ *                         2026-08-20) and the free build never names a vendor
  *   root/<project_root>/  only sessions working in that directory
  *   job/<session_job>/    only sessions doing that kind of work
  *
@@ -48,20 +50,58 @@
  * SHADOWING is by filename within a level: your `all/SHELVES.md` replaces ours whole.
  * Across levels there is no shadowing, because they are answering different questions.
  */
-import { mkdir, readdir, stat } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import { mkdir, readFile, readdir, rename, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { storeDir } from './stores.js';
+import { listMacros } from './macros.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** Stock: inside the install, beside ronin_sops/ and ronin_library/. */
 const STOCK = path.join(__dirname, '..', 'ronin_session_boot');
+const SESSION_MACROS_TEMPLATE = path.join(STOCK, 'SESSION_MACROS.md');
 
 /** The three levels, in reading order. `root` and `job` take the session's own value. */
 export type Level = 'all' | 'root' | 'job';
 
 const userShelf = () => storeDir('session_boot');
+
+/**
+ * The tile and the birth reading have ONE answer for which session macros are active:
+ * listMacros(), including the owner's catalog shadow, filtered by `preview: yes`.
+ *
+ * The prose around the list is hand-authored because it teaches the routing rule. The list
+ * itself is generated on every assisted launch into Ronin's disposable data root. A checked-in
+ * list would describe the stock catalog, not the active one, the moment the owner customized it.
+ */
+async function sessionMacrosReading(): Promise<string> {
+  const [template, active] = await Promise.all([
+    readFile(SESSION_MACROS_TEMPLATE, 'utf8'),
+    listMacros().then((macros) => macros.filter((macro) => macro.preview)),
+  ]);
+  const rendered = active.length
+    ? active
+        .map((macro) => `- \`+${macro.name}:\` — **${macro.label}**. ${macro.blurb}`)
+        .join('\n')
+    : '- No session macros are currently previewed on the tile button.';
+  const start = '<!-- ACTIVE_SESSION_MACROS:START -->';
+  const end = '<!-- ACTIVE_SESSION_MACROS:END -->';
+  const pattern = new RegExp(`${start}[\\s\\S]*?${end}`);
+  if (!pattern.test(template)) throw new Error('SESSION_MACROS.md has no generated-section markers.');
+
+  const dir = storeDir('session_boot_cache');
+  const target = path.join(dir, 'SESSION_MACROS.md');
+  // Several sessions may be born together. A shared `.tmp` name lets one rename the
+  // other's file out from under it; unique writers may safely race, with the last complete
+  // catalog snapshot becoming the cache.
+  const temp = `${target}.${process.pid}.${randomUUID()}.tmp`;
+  await mkdir(dir, { recursive: true });
+  await writeFile(temp, template.replace(pattern, `${start}\n${rendered}\n${end}`));
+  await rename(temp, target);
+  return target;
+}
 
 /**
  * Make the shelf so it can be found. A READ-ONLY shelf is never created by the ordinary
@@ -76,9 +116,11 @@ const userShelf = () => storeDir('session_boot');
  */
 export async function ensureShelf(roots: string[] = []): Promise<void> {
   const base = userShelf();
+  // No connected level is pre-made: a `<service>_connected/` folder is the seeding
+  // service's own act, and an empty one nothing seeded would be a claim about a
+  // connection that does not exist.
   const dirs = [
     path.join(base, 'all'),
-    path.join(base, 'mcp_on'),
     path.join(base, 'root'),
     path.join(base, 'job'),
     ...roots.map((r) => path.join(base, 'root', r)),
@@ -118,6 +160,32 @@ async function filesIn(dir: string): Promise<string[]> {
 }
 
 /**
+ * The connected levels on one shelf half: every `<service>_connected/` directory,
+ * sorted. Cowork ships none — a connected service seeds its own (gbrain's setup makes
+ * `gbrain_connected/`), which is how the level says WHOSE reading it is while the free
+ * build never names a vendor.
+ */
+async function connectedLevels(base: string): Promise<string[]> {
+  let names: string[];
+  try {
+    names = await readdir(base);
+  } catch {
+    return []; // absent is the ordinary state, never an error
+  }
+  const out: string[] = [];
+  for (const name of names.sort()) {
+    if (!name.endsWith('_connected') || name.startsWith('.')) continue;
+    const full = path.join(base, name);
+    try {
+      if ((await stat(full)).isDirectory()) out.push(full);
+    } catch {
+      /* vanished mid-read */
+    }
+  }
+  return out;
+}
+
+/**
  * What this session should read, in reading order: `all`, then its root's, then its job's,
  * stock before the owner's at each level.
  *
@@ -129,14 +197,16 @@ async function filesIn(dir: string): Promise<string[]> {
 export async function bootFiles(projectRoot: string, sessionJob: string, mcpOn = true): Promise<string[]> {
   const user = userShelf();
   const dirs: string[] = [path.join(STOCK, 'all'), path.join(user, 'all')];
-  // The connected shelf rides the launch's own MCP choice: off means no tools AND no
+  // The connected shelves ride the launch's own MCP choice: off means no tools AND no
   // reading list about them — the same decision, honored in both places.
-  if (mcpOn) dirs.push(path.join(STOCK, 'mcp_on'), path.join(user, 'mcp_on'));
+  if (mcpOn) dirs.push(...(await connectedLevels(STOCK)), ...(await connectedLevels(user)));
   // Stock cannot have a root/ — it does not know the owner's directories.
   if (projectRoot) dirs.push(path.join(user, 'root', projectRoot));
   if (sessionJob) dirs.push(path.join(STOCK, 'job', sessionJob), path.join(user, 'job', sessionJob));
 
   const byName = new Map<string, string>();
   for (const dir of dirs) for (const f of await filesIn(dir)) byName.set(path.basename(f), f);
+  // Generated last, so the live catalog's macro reading is always the file handed over.
+  byName.set('SESSION_MACROS.md', await sessionMacrosReading());
   return [...byName.values()];
 }

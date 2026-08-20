@@ -141,9 +141,12 @@ export function buildBrief(
   parts.push(kind.opening.replace(/\{prompt\}/g, form.prompt));
   if (form.reference) {
     parts.push(
+      // RIREKI's tape is the taught-normal catch-up (owner's ruling, 2026-08-20): it is
+      // durable and answers without a tile. Pane peek stays as the no-tape fallback only.
       `The session in question is @${form.reference}` +
         (referenceDir ? ` (working in ${referenceDir})` : '') +
-        `. Catch up on it with \`tejun-peek ${form.reference}\`, and control-check before touching it.`,
+        `. Catch up on it with \`tejun-rireki ${form.reference} since\` ` +
+        `(\`tejun-peek ${form.reference}\` if it has no tape), and control-check before touching it.`,
     );
   }
   if (form.inject?.trim()) parts.push(form.inject.trim());
@@ -284,7 +287,7 @@ export async function resolveForm(
     project_root: root?.name ?? '',
     mode: form.mode === 'manual' ? 'manual' : 'assisted',
     // The shelf follows the toggle (owner's ruling, 2026-08-17): a session launched with
-    // MCP off reads no mcp_on/ shelf — the tools and the reading list about them ride
+    // MCP off reads no *_connected shelf — the tools and the reading list about them ride
     // the same choice. Job and root shelves are untouched by it.
     brief: agent
       ? buildBrief(kind, root, form, referenceDir, await bootFiles(root?.name ?? '', kind.name, !mcpOffWanted))

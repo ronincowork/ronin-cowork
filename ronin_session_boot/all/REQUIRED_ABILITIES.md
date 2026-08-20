@@ -1,0 +1,58 @@
+# REQUIRED ABILITIES — what every session is expected to work with
+
+These are the abilities every session uses, whatever its root and whatever its job.
+**Check here first** — before searching, before improvising, before reaching for an SOP.
+Each section says what the ability is, names its guarded route, and points at the full
+procedure. **Prefer the tool over doing it by hand, always**: the tool encodes the safety
+steps so you cannot skip them. The map of everything else is `SHELVES.md`, which you have
+also been handed.
+
+## Session macros
+
+The owner invokes a Ronin workflow at you as `+<name>: <args>`. Compile it first —
+`tejun <name>` — then execute the recipe and report what it asks for. Never substitute a
+remembered workflow, and never translate a macro into a similar-sounding native
+capability. The active set and the full routing rule are in `SESSION_MACROS.md`, handed
+to you beside this file.
+
+## Other sessions
+
+**First, always: the dial.** Every session carries `@ronin-control` — 👤 user · 👁 read ·
+🤖 write. Reading another session needs at least 👁; writing needs 🤖. **Never flip a
+dial: that is the owner's hand.** A refusal is an answer — report it and ask, do not
+retry or work around. `docs/session-control-dials.md`.
+
+**Read one:** `tejun-rireki <session> since` — everything since the owner's last
+message, from the durable tape, answering even for a session with no tile open and when
+Ronin is not running. `tejun-rireki <session> text` for the recent tail. This is the
+normal route; `tejun-peek <session>` (recent pane output) is the fallback and readiness
+check for a session with no tape — never a substitute for one.
+
+**Message one:** `tejun-send <session> <message...>` — one targeted message, one
+verdict: `DELIVERED` / `DENIED` (dial) / `BLOCKED` (a human's draft at that prompt) /
+`STUCK` / `NO-SESSION`. Open with `from @<your session>:` — the tool adds no watermark,
+and an unsigned line looks like the owner typing. Report the verdict, then stop: the
+reply appears in the other session's tile. Do not relay. The owner's `+tell:` macro
+rides this tool.
+
+**Fork a topic:** `+forkit:` is **owner-invoked only**. Never fork on your own
+initiative — if a fork seems right, propose it and wait. When the owner invokes it,
+compile first (`tejun forkit`): the shape is a handoff document, a new session, an
+understanding report, and a stop until the owner says go.
+
+## This machine
+
+Facts about the box are **measured, never remembered** — nothing written down about a
+machine stays true. `tejun-survey` for what the box is and what space it has;
+`tejun-account` for who this install runs as and its limits; `bin/ronin-store --all` for
+where every store resolves. Run the tool before advising, and never spell a store path
+by hand.
+
+## When something here is absent
+
+Say what is true. If these tools are not on PATH, Ronin Services is not installed here —
+report that and stop; do not improvise with raw tmux. If a session has no tape, say so
+and fall back to `tejun-peek`. If a dial refuses, that is the owner's standing word.
+
+Full procedures live where everything does: compile the macro (`tejun <name>`), or read
+the rows in `ronin_catalogs/TOOLS.md` and `ronin_catalogs/ACTIONS.md`.

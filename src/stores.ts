@@ -91,6 +91,14 @@ export const STORES: readonly Store[] = [
     when: 'first taped byte, first letter',
   },
   {
+    id: 'session_boot_cache',
+    root: 'data',
+    rel: 'session-boot',
+    what: 'generated birth readings derived from live catalogs',
+    createdBy: "cowork's `src/session-boot.ts`",
+    when: 'an assisted session is launched',
+  },
+  {
     id: 'bench',
     root: 'data',
     rel: 'bench',

@@ -8,7 +8,7 @@ Put a file on the shelf and new sessions read it. That is the whole feature.
 | put it in | and it reaches |
 |---|---|
 | `all/` | every session, always |
-| `mcp_on/` | only sessions launched with MCP on — how a connected session learns what it is connected to |
+| `<service>_connected/` (e.g. `gbrain_connected/`) | only sessions launched with MCP on — how a connected session learns what it is connected to, signed by the service that seeded it |
 | `root/<project_root>/` | only sessions working in that directory |
 | `job/<session_job>/` | only sessions doing that kind of work |
 
@@ -17,10 +17,14 @@ all of its levels and nothing overrides anything — *where* the work happens an
 it is are independent questions, so the same bug-chasing habits apply in every repo and the
 same repo notes apply to every kind of work.
 
-`mcp_on/` (owner's ruling, 2026-08-17) makes the launch toggle govern both halves of a
-connection: a session launched with MCP off gets neither the tools nor the reading list
-about them. Cowork only includes the level — what sits on it is the services' business
-(the gbrain service seeds it), which is what keeps the level vendor-neutral.
+The connected level makes the launch toggle govern both halves of a connection (owner's
+ruling, 2026-08-17): a session launched with MCP off gets neither the tools nor the
+reading list about them. Cowork ships **no** connected folder and matches the pattern
+only — any `<service>_connected/` directory on the shelf is read by connected sessions.
+A connected service makes and seeds its own (gbrain's setup makes `gbrain_connected/`),
+so the name says whose reading it is (owner's ruling, 2026-08-20) while the free build
+names no vendor. An empty connected folder nothing seeded would be a claim about a
+connection that does not exist, which is why Ronin never pre-creates one.
 
 ## The two halves
 
@@ -66,8 +70,9 @@ is obvious:
 - **the owner had nowhere of their own** to add to it.
 
 A shelf answers all four by holding *files* rather than *names of files*. The brief is a
-directory listing taken at the instant of the launch — nothing is written down, so nothing
-can be wrong.
+directory listing taken at the instant of the launch, so a removed shelf file simply stops
+appearing. The one generated reading, `SESSION_MACROS.md`, is rebuilt from the live catalog
+at that same instant rather than maintained as a second list.
 
 `read:` is deleted, not deprecated. Existing entries were converted to links on their
 root's shelf.
@@ -97,13 +102,25 @@ could not be made.**
 
 ## What ships
 
-Two files, both links, and deliberately no more — the same stance `ronin_sops` and
-`ronin_library` take, screening things in one at a time.
+Three universal shelf files and one generated reading:
 
 - **`all/KOTOBA_GLOSSARY.md`** — the house vocabulary, so every session means the same
   things by the same words.
-- **`all/SHELVES.md`** — the map of where everything is. It earns its place by naming no
-  individual entry, so adding a macro or an SOP never makes it wrong.
+- **`all/SHELVES.md`** — the map of where everything is **and what is on each shelf**
+  (owner's ruling, 2026-08-20: a map naming zero books teaches nothing). Each roster
+  sits beside the `ls` that resolves the live truth, stores included, and the directory
+  wins whenever the two disagree.
+- **`all/REQUIRED_ABILITIES.md`** — the abilities every session uses whatever its root
+  or job, organized by topic: session macros, other sessions (the dial, reading one
+  through RIREKI's tape, messaging one through `tejun-send`, `+forkit` as the owner's
+  word alone), and measuring this machine. These are capabilities a session cannot
+  search for without already knowing their names, which is why they are taught rather
+  than shelved deeper. New universal topics join this file as sections; a topic splits
+  out only when its section grows past teaching into procedure.
+- **`SESSION_MACROS.md`** — a stock template whose active section is generated at birth
+  from the resolved `MACROS.md` catalog. The entries marked `preview: yes` are both what the
+  tile button shows and what the new session reads. The generated copy is disposable data
+  at `ronin-store session_boot_cache`; the template is not handed over directly.
 
 A shelf that arrives full is a shelf nobody curates.
 
