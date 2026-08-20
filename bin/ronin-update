@@ -141,6 +141,11 @@ fetch_release() { # $1=repo slug $2=package name $3=version $4=workdir $5=platfo
   fi
 }
 
+# The authorized services fetch lives in libexec/ronin-hq.sh so the grant seam can be
+# tested without running an install. Sourced, not duplicated.
+# shellcheck source=libexec/ronin-hq.sh
+. "$SELF/libexec/ronin-hq.sh"
+
 # The bundled artifact's name carries the box's platform. Empty = no bundle exists
 # for this box (or scope hasn't reached it); the plain tarball still installs.
 platform_name() {
@@ -266,6 +271,12 @@ if [ -n "$FILE" ]; then
     *-linux-x64|*-linux-arm64|*-darwin-x64|*-darwin-arm64) VER="${VER%-*-*}" ;;
   esac
   [ -n "$VER" ] || fail "cannot read a version out of '$TARBALL' (expected $PKG-vX.Y.Z[-<platform>].tar.gz)"
+elif [ "$PACKAGE" = "services" ] && HQ_VER="$(hq_fetch_services "$WORK")" && [ -n "$HQ_VER" ]; then
+  # AUTHORIZED PATH. An entitled install takes its services from Ronin HQ.
+  VER="$HQ_VER"
+  TARBALL="services-$VER.tar.gz"
+  if [ "$VER" = "$INST" ]; then echo "✓ already on $PKG $VER — nothing to do"; exit 0; fi
+  say "authorized release $VER from Ronin HQ"
 else
   VER="${WANT:-$(latest_release "$FEED")}"
   [ -n "$VER" ] || fail "could not learn the latest release (private repo needs gh auth; or pass --version / --file)"

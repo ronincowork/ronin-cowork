@@ -245,11 +245,18 @@ export async function buildFirstRun(host, onDone) {
         if (!r.ok && r.status !== 409) problems.push(req.route + ': ' + (r.message || 'failed'));
       }
       if (wantServices?.checked) {
-        const r = await request('/api/settei/services', {
-          method: 'PUT',
-          json: { email: serviceEmail.value.trim(), terms: 'accepted-pending-email' },
+        // THE CONSENT ACTION, not a note to self. This asks Ronin HQ to send the
+        // confirmation email; the operator keeps the claim secret and polls for the
+        // entitlement afterwards.
+        const r = await request('/api/services/activation', {
+          method: 'POST',
+          json: { email: serviceEmail.value.trim() },
         });
-        if (!r.ok) problems.push('services: ' + (r.message || 'failed'));
+        // HQ BEING UNREACHABLE MUST NOT BLOCK SETUP. Free Cowork is finished either way,
+        // and the request is recorded as pending with a Retry in ⚙ Configuration. Only a
+        // refusal we caused — a malformed address — is worth stopping the page for.
+        if (!r.ok && r.status === 400) problems.push('services: ' + (r.message || 'failed'));
+        else if (!r.ok) installNote = 'Ronin HQ could not be reached — your Services request is saved and will retry. See ⚙ Configuration.';
       }
 
       if (problems.length) {

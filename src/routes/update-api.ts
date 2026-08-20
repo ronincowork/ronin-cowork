@@ -18,9 +18,10 @@
  * docs/release.md is the procedure; bin/ronin-update is the one implementation.
  */
 import type express from 'express';
-import { execFile, spawn } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { join } from 'node:path';
 import { REPO_ROOT } from '../config.js';
+import { runUpdater, type Started } from '../update-run.js';
 
 const UPDATER = join(REPO_ROOT, 'bin', 'ronin-update');
 
@@ -48,26 +49,10 @@ export function registerUpdate(app: express.Express): void {
       res.status(400).json({ error: `unknown package "${pkg}" — cowork or services` });
       return;
     }
-    const args = pkg === 'services' ? [UPDATER, '--services'] : [UPDATER];
-    execFile('systemd-run', [
-      '--user', '--collect', `--unit=ronin-update-${Date.now()}`,
-      // The journal keeps the transcript: journalctl --user -u 'ronin-update-*'
-      ...args,
-    ], { timeout: 10000 }, (err) => {
-      if (!err) {
-        res.json({ started: true, via: 'systemd-run' });
-        return;
-      }
-      // No systemd on this host: detached is the honest best effort — the child
-      // shares no controlling terminal, but a launchd-style supervisor could still
-      // reap it with us. Said in the answer rather than hidden.
-      try {
-        const child = spawn(args[0], args.slice(1), { detached: true, stdio: 'ignore' });
-        child.unref();
-        res.json({ started: true, via: 'detached' });
-      } catch (e) {
-        res.status(500).json({ error: `could not start the updater: ${(e as Error).message}` });
-      }
-    });
+    // The launcher lives in src/update-run.ts so the Services activation flow starts the
+    // SAME thing this button does. Two launchers would drift.
+    runUpdater(pkg)
+      .then((started: Started) => res.json({ started: true, via: started.via }))
+      .catch((e: Error) => res.status(500).json({ error: `could not start the updater: ${e.message}` }));
   });
 }

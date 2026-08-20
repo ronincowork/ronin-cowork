@@ -2,6 +2,7 @@
 import { request } from './request.js';
 import { button, field, status } from './ui.js';
 import { pm, getPath, currentOf, optionsOf, toRequest } from './settei-schema.js';
+import { servicesCard } from './services-card.js';
 
 /* ---------- ⚙ CONFIGURATION — what this install IS, in one room ----------
  *
@@ -296,15 +297,12 @@ export function buildSettei(root, isShowing) {
     group('subscription');
     body.appendChild(obsRow('subscription', st.subscription,
       set.services.email ? ` ${set.services.email}` : ''));
-    body.appendChild(
-      // THE PASTED CODE (owner's ruling). The verification email carries the id; this is
-      // where it lands. It records and does not verify — the id gates nothing on this
-      // box, so a wrong one costs a wrong line in a record rather than access to
-      // anything, and the collector treats it as a claim to match rather than proof.
-      setRow('entitlement code', input(set.services.entitlement, { max: 200, placeholder: 'paste the code from your email' }),
-        'from the services email — recorded here, checked by us',
-        (v) => request('/api/settei/services', { method: 'PUT', json: { entitlement: v, email: set.services.email } })),
-    );
+    // THE REAL FLOW, replacing the pasted code. The id used to be typed in from the
+    // email and recorded without being checked; now the operator asks Ronin HQ, the
+    // person confirms on whatever device they are holding, and the install polls until
+    // the entitlement arrives. The card renders the durable stage rather than what this
+    // page remembers doing, so a reload or a second tab lands on the truth.
+    servicesCard(body);
 
     /* THE NEEDED BOX (owner, 2026-08-18) — every unmet thing in one place: the
      * registry's requires and the owner's own wants, computed per read. Satisfy one
