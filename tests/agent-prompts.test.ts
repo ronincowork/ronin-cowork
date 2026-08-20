@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { agentPresence, classifyStatus } from '../src/status.js';
+import { classifyStatus } from '../src/status.js';
 import { parsePrompt } from '../src/send.js';
 
 test('Codex trust choice is a dialog, never a ready prompt', () => {
@@ -24,102 +24,23 @@ test('Codex pending text is readable for submit verification', () => {
   });
 });
 
-/* ------------------------------------------------------------------ LAUNCH_READY
- * The two questions, held apart. `classifyStatus` answers "what is this pane doing?"
- * for the roster and for Koshi; `agentPresence` answers "is THE AGENT listening?" for
- * the one caller about to type at it. Every case below asserts BOTH, because the bug
- * was one question standing in for the other and the fix is worthless if it quietly
- * changes the roster's answer.
+/* ---- LAUNCH_READY: the vendor screen table, which now serves the ROSTER alone ----
+ * The readiness machinery these rows were first written for is deleted — the CLI is the
+ * tile's process and nothing waits to type at it. The rows stay, and matter MORE than
+ * before: the person is the one answering a vendor's dialog now, so the roster saying
+ * "awaiting-input" is how they know which tile to open.
  */
 
-/** Verbatim tail of the pane, from the guarded end-to-end walk on 2026-08-20. */
-const DIED_BACK_TO_BASH = [
-  '› 1. Yes, continue',
-  '  2. No, quit',
-  '  Press enter to continueError: timed out discarding buffered terminal input',
-  'glen3@dohyo-unified:/tmp/scratch$ ',
-].join('\n');
-
-test('a shell prompt left behind by a dead agent is not readiness', () => {
-  const shell = 'glen3@dohyo-unified:~/code$ ';
-  // The roster's answer does not change: for a terminal session this IS ready.
-  assert.equal(classifyStatus(shell), 'ready');
-  // The brief gate's answer is the opposite, and that is the whole point.
-  assert.equal(agentPresence(shell), 'gone');
-});
-
-test('the measured failure: codex dies on its trust dialog and bash comes back', () => {
-  // This exact screen used to classify as ready, and the brief was typed into bash.
-  assert.equal(agentPresence(DIED_BACK_TO_BASH), 'gone');
-});
-
-test('a trust dialog is the agent asking, not the agent gone', () => {
-  const screen = 'Do you trust the contents of this directory?\n\n› 1. Yes, continue\n  2. No, quit';
+test("gemini's measured trust dialog is legible on the roster, bullet and all", () => {
+  const screen = [
+    ' │ Do you trust the files in this folder?                    │',
+    ' │ ● 1. Trust folder (some-dir)                              │',
+    ' │   2. Trust parent folder (tmp)                            │',
+  ].join('\n');
   assert.equal(classifyStatus(screen), 'awaiting-input');
-  // `asking` holds the gate open on its long window — a person is being waited for.
-  assert.equal(agentPresence(screen), 'asking');
 });
 
-test('an agent prompt is readiness for both questions', () => {
-  assert.equal(agentPresence('› Use /skills to list available skills'), 'ready');
-  assert.equal(agentPresence('❯ Try "create a util that…"'), 'ready');
-  assert.equal(classifyStatus('❯ Try "create a util that…"'), 'ready');
-});
-
-test('a working agent is busy, not gone, even with no prompt row on screen', () => {
-  const screen = '✻ Cerebrating… (12s · esc to interrupt)';
-  assert.equal(agentPresence(screen), 'busy');
-  assert.equal(classifyStatus(screen), 'thinking');
-});
-
-test('nothing recognizable is null, not a guess, for both questions', () => {
-  assert.equal(agentPresence('installing dependencies'), null);
-  assert.equal(classifyStatus('installing dependencies'), null);
-});
-
-test('the moment after the command is typed is not "gone"', () => {
-  // runCommand echoes the command onto the prompt line and presses Enter; the CLI has not
-  // painted yet. The last line ends in the command, not in `$`, so the gate keeps waiting.
-  // A false `gone` here would abort EVERY launch before the agent had a chance to come up.
-  const starting = 'glen3@dohyo-unified:~/code$ claude --model opus';
-  assert.notEqual(agentPresence(starting), 'gone');
-  assert.equal(agentPresence(starting), null); // nothing recognizable yet — keep waiting
-});
-
-test('a stale shell prompt above a live agent does not outrank it', () => {
-  // The shell prompt the CLI was launched from stays in the scrollback forever. Only the
-  // LAST line speaks, so an agent that has since painted its prompt reads as ready.
-  const screen = ['glen3@dohyo-unified:~/code$ codex', '', '› Use /skills to list available skills'].join('\n');
-  assert.equal(agentPresence(screen), 'ready');
-});
-
-/* ---- LAUNCH_READY leg 2: the rows are the agent's own, and one list serves both ---- */
-
-test('one vendor’s prompt glyph does not answer for another’s session', () => {
-  // Codex's input row, read as if the session were running Claude. Nothing of Claude's
-  // matches it, so the gate keeps waiting rather than typing at the wrong thing.
-  assert.equal(agentPresence('› Use /skills to list available skills', 'claude'), null);
-  // And the same screen, correctly named, is readiness.
-  assert.equal(agentPresence('› Use /skills to list available skills', 'codex'), 'ready');
-});
-
-test('an agent nobody has characterised keeps the pre-table behaviour', () => {
-  // `gemini` declares no rows of its own. Narrowing it to an empty set would mean its
-  // brief was never delivered, so it falls back to every agent's rows. Degraded, never
-  // wrong — and this is the regression that would otherwise ship silently.
-  assert.equal(agentPresence('❯ Try "create a util that…"', 'gemini'), 'ready');
-  assert.equal(agentPresence('› Use /skills', 'grok'), 'ready');
-});
-
-test('category order survives composition: a numbered row is a dialog, not a prompt', () => {
-  const dialog = 'Do you trust the contents of this directory?\n\n› 1. Yes, continue\n  2. No, quit';
-  // Composed by category — every busy row, then every asking row, then every ready row —
-  // so a vendor's own ready row can never outrank its own dialog row.
-  assert.equal(agentPresence(dialog, 'codex'), 'asking');
-  assert.equal(classifyStatus(dialog), 'awaiting-input');
-});
-
-test('the composed list still answers the roster exactly as the hand-written one did', () => {
+test('the composed list answers the roster exactly as the hand-written one did', () => {
   assert.equal(classifyStatus('❯ Try "create a util…"'), 'ready');
   assert.equal(classifyStatus('› Use /skills'), 'ready');
   assert.equal(classifyStatus('│ > type here '), 'ready');
@@ -127,25 +48,5 @@ test('the composed list still answers the roster exactly as the hand-written one
   assert.equal(classifyStatus('working… (esc to interrupt)'), 'thinking');
   assert.equal(classifyStatus('✻ Cerebrating…'), 'thinking');
   assert.equal(classifyStatus('Do you want to continue?'), 'awaiting-input');
-});
-
-test("gemini's measured trust dialog is recognised, bullet and all", () => {
-  // Verbatim shape from a real launch into a directory gemini had never seen.
-  const screen = [
-    ' │ Do you trust the files in this folder?                    │',
-    ' │ ● 1. Trust folder (some-dir)                              │',
-    ' │   2. Trust parent folder (tmp)                            │',
-    ' │   3. Don’t trust                                          │',
-  ].join('\n');
-  assert.equal(agentPresence(screen, 'gemini'), 'asking');
-  assert.equal(classifyStatus(screen), 'awaiting-input');
-});
-
-test('knowing ONE of an agent’s screens does not cost you the others', () => {
-  // gemini declares a dialog row and no prompt row, because nobody has seen past its
-  // dialog. Falling back per AGENT would have left it with no way to read as ready and
-  // silently stopped its briefs forever; the fallback is per CATEGORY, so it keeps every
-  // agent's ready rows while using its own dialog row.
-  assert.equal(agentPresence('❯ Try "create a util that…"', 'gemini'), 'ready');
-  assert.equal(agentPresence('› Use /skills', 'gemini'), 'ready');
+  assert.equal(classifyStatus('Do you trust the contents of this directory?\n› 1. Yes'), 'awaiting-input');
 });

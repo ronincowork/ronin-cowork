@@ -217,6 +217,31 @@ export async function writeRole(name: string, job: string): Promise<string | nul
 }
 
 /**
+ * THE SHELF — park a brief a session could not be handed at birth.
+ *
+ * Almost every vendor takes its initial prompt as an argument, so almost every session is
+ * born already holding its brief and this is never reached. Two cases still need somewhere
+ * to put words: a vendor that takes no initial prompt, and anything only knowable AFTER
+ * the session exists (a services birth line names the letter, and the letter's path is
+ * keyed on the session's own creation time — so it cannot be known before there is one).
+ *
+ * It is a FILE, beside the session's letter, because the alternative is typing into the
+ * tile and that is the one thing this may never do. `writeGate` tells the person it is
+ * there; nothing else acts on it.
+ */
+export async function parkBrief(name: string, text: string): Promise<string | null> {
+  try {
+    const file = path.join(RIREKI_DIR, await sessionKey(name), 'brief.md');
+    await fs.mkdir(path.dirname(file), { recursive: true });
+    await fs.writeFile(file, text.endsWith('\n') ? text : `${text}\n`, 'utf8');
+    return file;
+  } catch (e) {
+    console.error(`[ronin] parking the brief for ${name}:`, e);
+    return null;
+  }
+}
+
+/**
  * LOUD — say on the session's own ladder that its brief was not delivered.
  *
  * A session whose brief never landed looks completely alive from anywhere you can see it:
