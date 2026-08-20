@@ -159,16 +159,9 @@ export function agentPresence(text: string, agent = ''): AgentPresence | null {
   return null;
 }
 
-/** Probe a live session (null on capture failure — e.g. it just died). */
-export async function probeStatus(session: string): Promise<SessionStatus | null> {
-  try {
-    return classifyStatus(await capturePane(session, 0));
-  } catch {
-    return null;
-  }
-}
-
-/** The same capture, asked the second question. Null on capture failure, as above. */
+/** The one live-capture probe, asked the second question. Null on capture failure —
+ *  e.g. it just died. (Its first-question twin, probeStatus, died 2026-08-20: PR #18
+ *  left it with no caller, and check-dead said so on the release push.) */
 async function probeAgent(session: string, agent: string): Promise<AgentPresence | null> {
   try {
     return agentPresence(await capturePane(session, 0), agent);
