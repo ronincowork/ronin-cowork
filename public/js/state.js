@@ -135,8 +135,20 @@ export const tiles = [];
  *   2. No single tile or step can take the whole page down.
  */
 export function saveState() {
-  localStorage.setItem(LS_SESSIONS, JSON.stringify(tiles.map((t) => t.session || '')));
-  localStorage.setItem(LS_LAYOUT, String(grid.dataset.layout || TILE_COUNT));
+  const sessions = JSON.stringify(tiles.map((t) => t.session || ''));
+  const layout = String(grid.dataset.layout || TILE_COUNT);
+  // sessionStorage is this TAB's own truth — per tab, survives refresh. localStorage is
+  // only the seed a brand-new tab starts from (the most recent save, anywhere). One
+  // shared copy used to be the whole state, so tabs clobbered each other and a refresh
+  // brought back some other tab's tiles (owner, 2026-08-20).
+  try {
+    sessionStorage.setItem(LS_SESSIONS, sessions);
+    sessionStorage.setItem(LS_LAYOUT, layout);
+  } catch (_) {
+    /* storage denied — the shared seed below still works, as before */
+  }
+  localStorage.setItem(LS_SESSIONS, sessions);
+  localStorage.setItem(LS_LAYOUT, layout);
   syncTitle();
 }
 
@@ -169,15 +181,60 @@ function syncTitle() {
   const first = tiles[0] && tiles[0].session;
   document.title = first ? `${first} · ronin` : 'tmux ronin';
 }
+/**
+ * ONE STATE, THREE SCOPES — first answer wins:
+ *
+ *   1. `?tiles=a,b,c[&layout=n]` — a one-shot directive: a URL tells THIS tab what to
+ *      show. Same shape as `?setup` (main.js): consumed into the tab's own memory and
+ *      stripped from the address, so a refresh keeps it and a bookmark never replays
+ *      it. It exists so the landing can choose what greets a person coming out of
+ *      setup (wip/buildouts/TILE_CONTROL.md in ronin-lab).
+ *   2. sessionStorage — this tab's own memory. A tab opened from here (＋, duplicate)
+ *      starts as a copy of its opener and then diverges freely.
+ *   3. localStorage — the seed a hand-opened new tab starts from: the most recent save.
+ *
+ * The device still rules HOW MANY tiles show — main.js's phone override reads the
+ * returned layout and forces 1 on a narrow screen, directive or not.
+ */
 export function loadState() {
-  let map = [];
-  try {
-    map = JSON.parse(localStorage.getItem(LS_SESSIONS) || '[]');
-  } catch (_) {
-    map = [];
+  const params = new URLSearchParams(location.search);
+  if (params.has('tiles')) {
+    const map = params.get('tiles').split(',').map((s) => s.trim());
+    // The comma structure declares the grid: `?tiles=claude` is one tile, `?tiles=,,,`
+    // is a blank four — SLOTS decide the layout, not how many carry a session name.
+    const layout = Number(params.get('layout')) || (map.length <= 1 ? 1 : map.length <= 2 ? 2 : TILE_COUNT);
+    try {
+      sessionStorage.setItem(LS_SESSIONS, JSON.stringify(map));
+      sessionStorage.setItem(LS_LAYOUT, String(layout));
+    } catch (_) {
+      /* storage denied — the directive still applies to this load */
+    }
+    params.delete('tiles');
+    params.delete('layout');
+    const rest = params.toString();
+    history.replaceState(null, '', location.pathname + (rest ? '?' + rest : '') + location.hash);
+    return { map, layout };
   }
-  const layout = Number(localStorage.getItem(LS_LAYOUT)) || TILE_COUNT;
-  return { map, layout };
+  const read = (store) => {
+    const raw = store.getItem(LS_SESSIONS);
+    if (raw === null) return null;
+    let map;
+    try {
+      map = JSON.parse(raw);
+    } catch (_) {
+      return null;
+    }
+    if (!Array.isArray(map)) return null;
+    return { map, layout: Number(store.getItem(LS_LAYOUT)) || TILE_COUNT };
+  };
+  let state = null;
+  try {
+    state = read(sessionStorage);
+  } catch (_) {
+    /* storage denied — fall through to the seed */
+  }
+  if (!state) state = read(localStorage);
+  return state || { map: [], layout: TILE_COUNT };
 }
 
 /* ---------- server calls ---------- */

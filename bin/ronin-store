@@ -36,7 +36,8 @@ config|user|config
 koshi_weights|user|koshi_weights
 koshi_weights_service|user|koshi_weights_service
 gbrain_brain|user|gbrain_brain
-gbrain_service|user|gbrain_service"
+gbrain_service|user|gbrain_service
+services_secrets|user|services_secrets"
 
 root_dir() {
   case "$1" in

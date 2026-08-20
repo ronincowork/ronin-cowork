@@ -202,6 +202,14 @@ export const STORES: readonly Store[] = [
     createdBy: "the gbrain service's setup.sh",
     when: 'the gbrain service installed',
   },
+  {
+    id: 'services_secrets',
+    root: 'user',
+    rel: 'services_secrets',
+    what: "the install's own Ronin Services credentials — the pending claim secret and the durable entitlement token, one file each at 0600",
+    createdBy: 'the Services activation flow, on first request',
+    when: 'Ronin Services was requested',
+  },
 ] as const;
 
 const byId = new Map(STORES.map((s) => [s.id, s]));

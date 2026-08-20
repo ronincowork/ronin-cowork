@@ -26,6 +26,7 @@ import { registerCatalogs } from './routes/catalogs.js';
 import { registerLaunch } from './routes/launch.js';
 import { registerPasskeyLogin, registerPasskeyManage } from './routes/passkey-api.js';
 import { registerSessions } from './routes/sessions-api.js';
+import { registerServicesActivation } from './routes/services-activation-api.js';
 import { registerSettei } from './routes/settei-api.js';
 import { stampFreshInstall } from './user-config.js';
 import { registerUpdate } from './routes/update-api.js';
@@ -232,6 +233,7 @@ registerCatalogs(app); // /api/macros, /api/hotwords*, /api/project-roots*, /api
 registerVersion(app); // /api/version — release string, or the commit this process started from — src/routes/version.ts
 registerUpdate(app); // /api/update/* — the ⚙ gear's check + run, press-only — src/routes/update-api.ts
 registerSettei(app); // /api/settei — the install record, and writes BY NAME only — src/routes/settei-api.ts
+registerServicesActivation(app); // /api/services/activation* — the Ronin Services request, local-only; no secret crosses this surface — src/routes/services-activation-api.ts
 // A box being born says so, ONCE, and only when ronin.json does not exist yet. Absence of
 // the key means an install older than the key, which must stay quiet — src/user-config.ts.
 void stampFreshInstall();
