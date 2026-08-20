@@ -216,6 +216,69 @@ export async function writeRole(name: string, job: string): Promise<string | nul
   return clean;
 }
 
+/**
+ * LOUD — say on the session's own ladder that its brief was not delivered.
+ *
+ * A session whose brief never landed looks completely alive from anywhere you can see it:
+ * a name, a dial, a running tile. It is the one birth failure with no visible symptom, and
+ * until now it was a line in the operator's journal that nobody reads (LAUNCH_READY.md).
+ *
+ * A GATE IS THE RIGHT SHAPE BY DEFINITION — it means *the work stopped and needs someone* —
+ * and it is already drawn on the tile header and in the roster, so nothing new is invented
+ * to show it. Ruled by the QB, 2026-08-20.
+ *
+ * IT IS NEVER TYPED INTO THE TILE. Writing an explanation into the pane is the exact sin
+ * this whole buildout exists to end; this writes the file the tile already reads.
+ *
+ * SURGICAL AND TIMID, the same discipline as `writeRole` above and for the same reason: a
+ * letter is the session's own words and Ronin is a guest in it. It replaces the `ladder`
+ * VALUE and nothing else, and it refuses outright unless the ladder is empty or is a single
+ * gate — the only two states this can honestly own. The moment an agent has put a real
+ * ladder up, those are its words and this stays out. Passing '' clears the gate again,
+ * which is how a hold that resolves stops leaving a stale rung behind.
+ */
+export async function writeGate(name: string, gate: string): Promise<boolean> {
+  const file = tegamiPath(await sessionKey(name));
+  let text: string;
+  try {
+    text = await fs.readFile(file, 'utf8');
+  } catch {
+    return false; // no letter — every launch seeds one, so this is a box in a bad way
+  }
+  const block = text.match(/```(?:json)?\s*\n([\s\S]*?)\n```/);
+  if (!block) return false;
+  const body = block[1];
+  // A FLAT array only: `[…]` with no nested brackets. A ladder carrying phases has
+  // `"legs": [ … ]` inside it, so it simply does not match and we leave it alone. That is
+  // the guard, and it is deliberately a shape test rather than a parse of the whole letter.
+  const ladder = body.match(/"ladder"\s*:\s*\[[^[\]]*\]/);
+  if (!ladder) return false;
+  let rungs: unknown;
+  try {
+    rungs = (JSON.parse(`{${ladder[0]}}`) as { ladder: unknown }).ladder;
+  } catch {
+    return false;
+  }
+  if (!Array.isArray(rungs)) return false;
+  // Empty, or one rung that is a gate. Anything else belongs to the session.
+  const ours = rungs.length === 0 || (rungs.length === 1 && !!(rungs[0] as { gate?: unknown })?.gate);
+  if (!ours) return false;
+
+  const value = gate ? JSON.stringify([{ gate, status: 'ACTIVE' }]) : '[]';
+  const next = body.replace(ladder[0], `"ladder": ${value}`);
+  try {
+    JSON.parse(next); // the guard: never leave a letter the tile cannot read
+  } catch {
+    return false;
+  }
+  const out =
+    text.slice(0, block.index!) + block[0].replace(body, next) + text.slice(block.index! + block[0].length);
+  const tmp = `${file}.gate`;
+  await fs.writeFile(tmp, out, 'utf8');
+  await fs.rename(tmp, file);
+  return true;
+}
+
 /** A session, plus the role out of its letter. */
 export type SessionWithRole = SessionInfo & { session_job: string };
 
