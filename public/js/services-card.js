@@ -102,7 +102,15 @@ export function servicesCard(container, onChange) {
       email.placeholder = 'you@example.com';
       const f = field(email, { label: 'Your email address', sr: false });
       f.el.classList.add('st-field');
-      f.say('Ronin sends one confirmation email. Free Cowork sends nothing.');
+      // The same disclosure as first run, because a person may meet Services for the first
+      // time here rather than there. docs/services-activation.md lists what this must say;
+      // it previously listed five things and this said one, which made the document a claim
+      // about the product rather than a description of it.
+      f.say('Ronin receives this address, the accepted terms version, and a request from '
+        + 'this install — enough to verify you and manage Services access. Services then '
+        + 'sends the weekly operating statistics described in the terms: counts, never code '
+        + 'and never what was typed. Free Cowork sends none of this merely because it is '
+        + 'installed. A pending request can be cancelled, and Services can be uninstalled later.');
       wrap.appendChild(f.el);
 
       // The action names what it DOES. "Save" would hide an immediate, disclosed account

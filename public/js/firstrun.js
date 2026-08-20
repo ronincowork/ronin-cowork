@@ -212,7 +212,15 @@ export async function buildFirstRun(host, onDone) {
       serviceEmail.placeholder = 'you@example.com';
       const ef = field(serviceEmail, { label: 'Where should we send the confirmation?', sr: false });
       ef.el.classList.add('fr-row');
-      ef.say('We email you a link. Confirming it is how you accept the two above, and the services install themselves after.');
+      // THE ONE ANSWER THAT LEAVES THE BOX, and the only place on this page that has to
+      // say so. USERS_JOURNEY step 4 requires three things stated beside this field before
+      // Save: what is sent, to whom, and that declining sends none of it. The previous
+      // wording said only that a link would arrive, which describes the reply and not the
+      // request — a person could read it and not know their address had gone anywhere.
+      ef.say('This is the one answer that leaves your machine. Ronin receives this address, '
+        + 'the terms version above, and a request from this install — enough to send the '
+        + 'confirmation and issue your entitlement, and nothing else. Leave the box unticked '
+        + 'and none of it is sent; free Cowork is unchanged either way.');
       terms.append(ef.el);
       card.append(terms);
       wantServices.addEventListener('change', () => {
