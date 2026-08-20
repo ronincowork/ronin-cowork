@@ -12,13 +12,30 @@
 import type express from 'express';
 import { readEgress } from '../activation/egress.js';
 import { listReceipts, sendDuePackets } from '../activation/tomodachi.js';
+import { listServices } from '../sockets.js';
 import {
   cancel, changeAddress, FlowError, poll, request, resend, isEntitled,
 } from '../activation/flow.js';
 import { publicState, readState, writeState } from '../activation/state.js';
 import { runUpdater } from '../update-run.js';
 
-/** Begin installation, once, without making the poll wait for it. */
+/**
+ * Begin installation, then WATCH FOR THE OUTCOME.
+ *
+ * runUpdater resolves when the updater has STARTED, not when it has worked. Reporting
+ * `installing` on that and never revisiting it meant a failed install left a person on
+ * "Installing Services" forever, with no error and nothing to press. Measured on the E2E
+ * walk: the updater exited 1 within a second and the stage still said installing minutes
+ * later. USERS_JOURNEY asks for the opposite in as many words — a person watching an
+ * install is fine, a person guessing at a spinner is not.
+ *
+ * `installed` is now proven by DISCOVERY — Services actually present — rather than asserted
+ * because a process was launched. That is the same standard the setup card already claimed:
+ * "proven by the service roster, not merely by a token."
+ *
+ * On timeout the entitlement is kept and the stage becomes an error that says a retry needs
+ * no new email, which is the documented recovery rule rather than a new one.
+ */
 async function startInstall(): Promise<void> {
   try {
     await writeState({ stage: 'installing', error_at_stage: null, error_message: null });
@@ -28,7 +45,37 @@ async function startInstall(): Promise<void> {
       stage: 'error', error_at_stage: 'installing',
       error_message: 'the installer did not start — you can try again without a new email',
     }).catch(() => {});
+    return;
   }
+  void watchForServices();
+}
+
+/** How long an install may take before we stop calling it "installing". */
+const INSTALL_TIMEOUT_MS = 10 * 60_000;
+const INSTALL_POLL_MS = 5_000;
+
+async function watchForServices(now = () => Date.now()): Promise<void> {
+  const deadline = now() + INSTALL_TIMEOUT_MS;
+  while (now() < deadline) {
+    await new Promise((r) => setTimeout(r, INSTALL_POLL_MS));
+    // The roster is the authority. A service is installed when it is there.
+    if (listServices().length > 0) {
+      await writeState({
+        stage: 'installed', error_at_stage: null, error_message: null,
+      }).catch(() => {});
+      return;
+    }
+    // Someone may have cancelled or restarted us into another stage meanwhile; do not
+    // stamp over whatever they did.
+    const s = await readState();
+    if (s.stage !== 'installing') return;
+  }
+  await writeState({
+    stage: 'error', error_at_stage: 'installing',
+    error_message: 'Services did not finish installing. Your entitlement is safe — '
+      + 'retrying needs no new email. The updater log is in the journal '
+      + '(journalctl --user -u "ronin-update-*").',
+  }).catch(() => {});
 }
 
 function fail(res: express.Response, e: unknown): void {
