@@ -128,3 +128,24 @@ test('the composed list still answers the roster exactly as the hand-written one
   assert.equal(classifyStatus('✻ Cerebrating…'), 'thinking');
   assert.equal(classifyStatus('Do you want to continue?'), 'awaiting-input');
 });
+
+test("gemini's measured trust dialog is recognised, bullet and all", () => {
+  // Verbatim shape from a real launch into a directory gemini had never seen.
+  const screen = [
+    ' │ Do you trust the files in this folder?                    │',
+    ' │ ● 1. Trust folder (some-dir)                              │',
+    ' │   2. Trust parent folder (tmp)                            │',
+    ' │   3. Don’t trust                                          │',
+  ].join('\n');
+  assert.equal(agentPresence(screen, 'gemini'), 'asking');
+  assert.equal(classifyStatus(screen), 'awaiting-input');
+});
+
+test('knowing ONE of an agent’s screens does not cost you the others', () => {
+  // gemini declares a dialog row and no prompt row, because nobody has seen past its
+  // dialog. Falling back per AGENT would have left it with no way to read as ready and
+  // silently stopped its briefs forever; the fallback is per CATEGORY, so it keeps every
+  // agent's ready rows while using its own dialog row.
+  assert.equal(agentPresence('❯ Try "create a util that…"', 'gemini'), 'ready');
+  assert.equal(agentPresence('› Use /skills', 'gemini'), 'ready');
+});

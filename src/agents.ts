@@ -117,9 +117,26 @@ export const AGENTS = [
     // those apart, and getting it wrong is how a brief answers a trust dialog.
     screen: { busy: ['esc to interrupt'], asking: ['›\\s*\\d+\\.\\s'], ready: ['^\\s*›(?:\\s|$)'] },
   },
-  // The three below are NOT characterised — nobody has read their screens against a real
+  {
+    id: 'gemini',
+    cmd: 'gemini',
+    label: 'Gemini CLI',
+    from: 'Google',
+    get: 'npm install -g @google/gemini-cli',
+    parked: '',
+    // Measured 2026-08-20 by launching it into a directory it had never seen. Gemini marks
+    // the selected row of its trust dialog with a BULLET — not Claude's `❯`, not Codex's
+    // `›` — and asks "Do you trust the files in this folder?", which the house `do you
+    // want` row does not catch, so the whole screen used to read as unrecognised.
+    //
+    // ONLY `asking` IS FILLED, because only the dialog has been seen: it never got past
+    // that screen, so nobody has read its prompt row. An empty category falls back to
+    // every agent's rows (src/status.ts), which is what keeps that honest instead of
+    // making it a silent regression.
+    screen: { busy: [], asking: ['●\\s*\\d+\\.\\s'], ready: [] },
+  },
+  // Grok and Hermes are NOT characterised — nobody has read their screens against a real
   // session, so they say nothing rather than guess, and the house rows answer for them.
-  { id: 'gemini', cmd: 'gemini', label: 'Gemini CLI', from: 'Google', get: 'npm install -g @google/gemini-cli', parked: '', screen: { busy: [], asking: [], ready: [] } },
   { id: 'grok', cmd: 'grok', label: 'Grok CLI', from: 'xAI', get: 'npm install -g @xai-official/grok', parked: '', screen: { busy: [], asking: [], ready: [] } },
   {
     id: 'hermes',
