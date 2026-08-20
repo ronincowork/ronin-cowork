@@ -1,8 +1,7 @@
 /**
  * THE TWO-LEG WALK — the real Cowork modules against a real SHIWAKE process.
  *
- * NOT under `tests/*.test.ts`, deliberately: the unit gate forbids sockets and stores, and
- * this test is the opposite of a unit test. Run it with
+ * Run it with
  *
  *   npx tsx --test tests/integration/two-leg.test.ts
  *
@@ -33,10 +32,12 @@ let dataRoot = '';
 let userRoot = '';
 let base = '';
 let available = true;
+/** WHY it is unavailable, so a skip cannot blame the wrong thing. */
+let unavailable = '';
 
 test.before(async () => {
   try { await fs.access(path.join(SHIWAKE, 'app/src/main.ts')); }
-  catch { available = false; return; }
+  catch { available = false; unavailable = `no ronin-shiwake checkout at ${SHIWAKE}`; return; }
 
   dataRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'walk-hq-'));
   userRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'walk-install-'));
@@ -71,7 +72,10 @@ test.before(async () => {
     } catch { /* not up yet */ }
     await new Promise((r) => setTimeout(r, 200));
   }
+  // The checkout WAS there; the server did not answer in time. Saying "no checkout" here
+  // would send the next person looking in entirely the wrong place.
   available = false;
+  unavailable = 'the SHIWAKE checkout is present but its server did not become ready in 20s';
 });
 
 test.after(async () => {
@@ -101,7 +105,7 @@ async function tokenFromInbox(): Promise<string> {
 }
 
 test('THE WALK: real Cowork modules take a real install from nothing to entitled', async (t) => {
-  if (!available) return t.skip('the ronin-shiwake checkout is not beside this one');
+  if (!available) return t.skip(unavailable);
 
   // THE REAL FLOW MODULE — not a reimplementation of it.
   const { request, poll } = await import('../../src/activation/flow.js');
@@ -138,7 +142,7 @@ test('THE WALK: real Cowork modules take a real install from nothing to entitled
 });
 
 test('THE EGRESS RECORD names every call, and carries no secret', async (t) => {
-  if (!available) return t.skip('shiwake not available');
+  if (!available) return t.skip(unavailable);
   const { readEgress } = await import('../../src/activation/egress.js');
   const lines = await readEgress(50);
 
@@ -154,15 +158,22 @@ test('THE EGRESS RECORD names every call, and carries no secret', async (t) => {
 
 test('THE UPDATER SEAM: libexec/ronin-hq.sh fetches an authorized release and verifies it',
   async (t) => {
-    if (!available) return t.skip('shiwake not available');
+    if (!available) return t.skip(unavailable);
 
     // Publish a release into SHIWAKE, the way the operator CLI will.
+    //
+    // A REAL TARBALL, with the real internal shape: ronin-services-vX.Y.Z/VERSION carrying
+    // contract=N. A fixture of arbitrary bytes would pass a checksum assertion and prove
+    // nothing about the step after it — which is exactly how the naming defect survived.
     const crypto = await import('node:crypto');
     const artifactDir = path.join(dataRoot, 'artifacts');
-    await fs.mkdir(artifactDir, { recursive: true });
-    const bytes = Buffer.from('a pretend services tarball');
-    const artifact = path.join(artifactDir, 'services-1.2.3.tar.gz');
-    await fs.writeFile(artifact, bytes);
+    const stage = path.join(artifactDir, 'stage', 'ronin-services-v1.2.3');
+    await fs.mkdir(stage, { recursive: true });
+    await fs.writeFile(path.join(stage, 'VERSION'), 'release=v1.2.3\ncontract=1\n');
+    const artifact = path.join(artifactDir, 'ronin-services-v1.2.3.tar.gz');
+    await exec('tar', ['-czf', artifact, '-C', path.join(artifactDir, 'stage'),
+                       'ronin-services-v1.2.3']);
+    const bytes = await fs.readFile(artifact);
     const sha = crypto.createHash('sha256').update(bytes).digest('hex');
 
     const releaseId = `rel_${'a'.repeat(26)}`;
@@ -183,30 +194,48 @@ test('THE UPDATER SEAM: libexec/ronin-hq.sh fetches an authorized release and ve
     const repo = path.resolve(import.meta.dirname, '../..');
 
     // RUN THE ACTUAL SHELL THE UPDATER RUNS. Not a reimplementation of its logic.
+    // SELF is the tree ronin-update lives in, and ronin-hq.sh resolves this install's own
+    // ronin-store through it — by absolute path, never through PATH. That is deliberate: a
+    // bare `ronin-store` finds whatever a shell happens to hit first, and on a machine with
+    // a checkout around that is the wrong copy, which silently costs the authorized path.
+    // The stub therefore sets SELF, exactly as the updater does.
     const { stdout } = await exec('sh', ['-c', `
       set -e
       say() { :; }
       fail() { echo "FAIL: $*" >&2; exit 1; }
+      SELF='${repo}'
       HOME_DIR='${homeDir}'
       . '${repo}/libexec/ronin-hq.sh'
       hq_fetch_services '${work}'
     `], {
       env: { ...process.env, RONIN_HQ_BASE: base,
-             RONIN_SERVICES_SECRETS_DIR: process.env.RONIN_SERVICES_SECRETS_DIR!,
-             PATH: `${repo}/bin:${process.env.PATH}` },
+             RONIN_SERVICES_SECRETS_DIR: process.env.RONIN_SERVICES_SECRETS_DIR! },
     });
 
-    assert.equal(stdout.trim(), '1.2.3', 'the seam picked the release matching our contract');
+    assert.equal(stdout.trim(), 'v1.2.3',
+      'the seam returns a TAG-shaped version, so $PKG-$VER resolves like the public path');
 
-    // The bytes arrived, and the checksum the updater will verify against is the one the
-    // AUTHENTICATED manifest gave — not one that travelled beside the download.
-    const got = await fs.readFile(path.join(work, 'services-1.2.3.tar.gz'));
+    // THE NAME MATTERS AS MUCH AS THE BYTES. Everything downstream is shared with the
+    // public path, which reads the contract out of "$PKG-$VER/VERSION". A download named
+    // services-1.2.3.tar.gz passed its checksum and then failed the contract check against
+    // a path that does not exist — the install refused, having downloaded a perfect
+    // artifact. Found on the E2E walk, one step past where a checksum-only test stops.
+    const tarball = path.join(work, 'ronin-services-v1.2.3.tar.gz');
+    const got = await fs.readFile(tarball);
     assert.equal(crypto.createHash('sha256').update(got).digest('hex'), sha);
     const sums = await fs.readFile(path.join(work, 'SHA256SUMS'), 'utf8');
-    assert.match(sums, new RegExp(`^${sha}  services-1\\.2\\.3\\.tar\\.gz$`, 'm'));
+    assert.match(sums, new RegExp(`^${sha}  ronin-services-v1\\.2\\.3\\.tar\\.gz$`, 'm'));
 
-    // And the verification the updater actually performs passes on it.
-    await exec('sh', ['-c', `cd '${work}' && grep services-1.2.3.tar.gz SHA256SUMS | sha256sum -c -`]);
+    // The verification the updater actually performs.
+    await exec('sh', ['-c',
+      `cd '${work}' && grep ronin-services-v1.2.3.tar.gz SHA256SUMS | sha256sum -c -`]);
+
+    // AND THE STEP AFTER IT, which is the one that was broken: the contract number must be
+    // readable by the exact expression ronin-update uses, or the install refuses.
+    const { stdout: contract } = await exec('sh', ['-c',
+      `tar -xzf '${tarball}' -O 'ronin-services-v1.2.3/VERSION' | sed -n 's/^contract=//p'`]);
+    assert.equal(contract.trim(), '1',
+      'the contract is readable at $PKG-$VER/VERSION — the check the updater performs next');
 
     await fs.rm(homeDir, { recursive: true, force: true });
     await fs.rm(work, { recursive: true, force: true });
@@ -214,7 +243,7 @@ test('THE UPDATER SEAM: libexec/ronin-hq.sh fetches an authorized release and ve
 
 test('THE TOMODACHI LOOP: the real sender delivers a dropped packet and keeps the receipt',
   async (t) => {
-    if (!available) return t.skip('shiwake not available');
+    if (!available) return t.skip(unavailable);
 
     const { sendDuePackets, listReceipts } = await import('../../src/activation/tomodachi.js');
 

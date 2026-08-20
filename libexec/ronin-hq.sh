@@ -24,7 +24,13 @@
 HQ_BASE="${RONIN_HQ_BASE:-https://hq.ronincowork.com}"
 
 hq_token() {
-  store="$(ronin-store services_secrets 2>/dev/null || true)"
+  # THIS INSTALL'S OWN ronin-store, by absolute path — never whatever PATH happens to
+  # resolve. On a machine with a cowork checkout lying around, bare `ronin-store` finds the
+  # checkout's copy, and an older one does not know the services_secrets store at all. It
+  # then reports "unknown store", the entitlement is never found, and the install falls back
+  # to the ungated public feed having said nothing. Measured on the E2E walk: the authorized
+  # path was never taken and the log read as a perfectly normal install.
+  store="$("$SELF/bin/ronin-store" services_secrets 2>/dev/null || true)"
   [ -n "$store" ] && [ -r "$store/entitlement_token" ] || return 1
   tok="$(cat "$store/entitlement_token" 2>/dev/null | tr -d '\r\n')"
   [ -n "$tok" ] || return 1
@@ -50,13 +56,22 @@ hq_fetch_services() {
   contract="$(cowork_contract)"
   [ -n "$contract" ] || { say "no contract number readable — not asking Ronin HQ"; return 1; }
 
+  # FROM HERE ON, A FAILURE IS WORTH SAYING OUT LOUD. We hold an entitlement, so the
+  # authorized path is the one that was meant to run; falling back to the public feed in
+  # silence would hide that this install is not being served the way it was entitled to be.
   cur="$(curl -fsS -m 20 -H "authorization: Bearer $tok" \
-    "$HQ_BASE/v1/services/releases/current?contract_version=$contract" 2>/dev/null)" || return 1
+    "$HQ_BASE/v1/services/releases/current?contract_version=$contract" 2>/dev/null)" || {
+    say "Ronin HQ was not reachable — falling back to the public release feed"
+    return 1
+  }
   rel="$(hq_json "$cur" release_id)"
   ver="$(hq_json "$cur" version)"
   sha="$(hq_json "$cur" sha256)"
   # "release": null is a real answer: nothing published for our contract. Up to date.
-  [ -n "$rel" ] && [ -n "$ver" ] && [ -n "$sha" ] || return 1
+  [ -n "$rel" ] && [ -n "$ver" ] && [ -n "$sha" ] || {
+    say "Ronin HQ has no services release for contract $contract — nothing to install"
+    return 1
+  }
 
   grant_body="$(curl -fsS -m 20 -X POST \
     -H "authorization: Bearer $tok" -H 'content-type: application/json' \
@@ -65,13 +80,24 @@ hq_fetch_services() {
   grant="$(hq_json "$grant_body" grant)"
   [ -n "$grant" ] || return 1
 
-  name="services-$ver.tar.gz"
+  # THE NAME MUST MATCH THE PUBLIC PATH'S CONVENTION, because everything downstream is
+  # shared. ronin-update reads the contract out of "$PKG-$VER/VERSION", and the artifact's
+  # own top-level directory is ronin-services-vX.Y.Z. Naming the download services-1.0.0
+  # meant the bytes arrived, the checksum passed, and then the contract check read a path
+  # that does not exist and refused the install. Measured on the E2E walk, one step past
+  # where the seam test stopped.
+  #
+  # The manifest carries a bare version (1.0.0); the tag and the directory carry a v.
+  case "$ver" in v*) tag="$ver" ;; *) tag="v$ver" ;; esac
+  name="ronin-services-$tag.tar.gz"
   curl -fsSL -m 300 -o "$work/$name" \
     "$HQ_BASE/v1/services/releases/$rel/artifact?grant=$grant" 2>/dev/null || return 1
 
   # The checksum comes from the AUTHENTICATED manifest, not from beside the download.
   # Writing it here means the existing verification step runs unchanged.
   printf '%s  %s\n' "$sha" "$name" > "$work/SHA256SUMS"
-  printf '%s' "$ver"
+  # Return the TAG-shaped version, so the caller's $PKG-$VER resolves the same way the
+  # public path's does.
+  printf '%s' "$tag"
 }
 

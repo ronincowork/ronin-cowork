@@ -22,14 +22,14 @@ import {
   setProjectRoot,
   setTags,
 } from '../tmux.js';
-import { runCommand, sendText } from '../send.js';
+import { launchArgv } from '../agents.js';
 import { AtSessionMax, liveCount, readMax, readOwner, writeMax, writeOwner } from '../user-config.js';
 import { resolveForm, appendLedger, type SpawnForm } from '../spawn.js';
-import { classifyStatus, waitReadyForBrief, type SessionStatus } from '../status.js';
+import { classifyStatus, type SessionStatus } from '../status.js';
 import { scanContext, scanModel } from '../ctx.js';
 
 import { count } from '../counts.js';
-import { seedTegami, withRoles, writeGate } from '../tegami.js';
+import { parkBrief, seedTegami, withRoles, writeGate } from '../tegami.js';
 import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFields } from '../sockets.js';
 
 /* ---------- ONE door to a new session: POST /api/launch ----------
@@ -69,6 +69,7 @@ export function registerLaunch(app: express.Express): void {
     // `agent: none` kind has no agent to tell. See below.
 
     let resolved;
+    let launch: { argv: string[]; parked: boolean } = { argv: [], parked: false };
     try {
       const live = await listSessions();
       const taken = new Set(live.map((s) => s.name));
@@ -95,7 +96,21 @@ export function registerLaunch(app: express.Express): void {
 
     try {
       await emitSessionWillBorn(resolved.name); // rireki resets a reused name's stale tape here
-      await createSession(resolved.name, resolved.dir, { agent: resolved.agent, exempt: resolved.capExempt });
+      // THE CLI IS THE TILE'S PROCESS, and the brief rides on its command line. There is no
+      // shell in an agent tile, so there is nothing for a machine to type at — which is the
+      // whole ruling (wip/buildouts/LAUNCH_READY.md). An `agent: none` kind passes no argv
+      // and gets the login shell, exactly as before: OpenShell is untouched.
+      launch = resolved.agent ? await launchArgv(resolved.cmd, resolved.brief) : { argv: [], parked: false };
+      if (resolved.agent && !launch.argv.length) {
+        return res.status(400).json({
+          error: `Could not find ${resolved.cmd.trim().split(/\s+/)[0]} on this machine. Install it from ⚙ Configuration, then launch again.`,
+        });
+      }
+      await createSession(resolved.name, resolved.dir, {
+        agent: resolved.agent,
+        exempt: resolved.capExempt,
+        argv: launch.argv,
+      });
       if (resolved.tags.length) await setTags(resolved.name, resolved.tags);
       // The project_root the session serves, written at birth — the one moment tagging
       // reliably happens. Two shipped tools (tejun-recall, tejun-remember) read this to
@@ -150,80 +165,30 @@ export function registerLaunch(app: express.Express): void {
     });
     void appendLedger(form, resolved, true);
     void (async () => {
-      // Seed the letter before the brief is delivered, so the brief can name the exact
-      // file and the session's first act can be to open it. A terminal is seeded as a
-      // backfill rather than a birth: "born" opens the letter's ladder holding a go/no-go
-      // gate, and there is no agent here to be held at one — the roster would show an
-      // ACTIVE gate nobody is standing at.
+      // NOTHING IS TYPED HERE, and there is no longer anywhere to type. The session was
+      // born running the CLI with its brief already on the command line; from this moment
+      // the tile belongs to the person. They walk the first run, answer whatever the vendor
+      // asks, and sign in with whatever account or key is theirs — none of which is Ronin's
+      // business and none of which is Ronin's keystroke.
+      //
+      // What is left is the one case words could not ride argv: a vendor that takes no
+      // initial prompt, and anything only knowable after the session exists — a services
+      // birth line names the letter, and the letter's path is keyed on the session's own
+      // creation time, so it cannot be known before there is a session. Those go on the
+      // shelf, and the ladder says where. On a build with no services and a vendor that
+      // takes a prompt — which is every vendor today — this does nothing at all.
       const birthLines = await collectBirthLines(resolved.name, !!resolved.agent);
-      // `agent: none`: nothing is launched and nothing is said. Falling through would
-      // press Enter in the pane (runCommand sends the literal string, then Enter), then
-      // burn the readiness wait waiting for a CLI prompt that will never come,
-      // and finally type the letter's brief into bash.
       if (!resolved.agent) return;
-      await runCommand(resolved.name, resolved.cmd);
-      // WAIT FOR READY, AND BELIEVE THE ANSWER — and wait far longer when what is
-      // blocking is a DIALOG, because then the thing being waited for is a person.
-      // The old wait gave up after 20s — shorter than a cold CLI start — and its `false` used to
-      // be discarded: the brief was typed anyway, into whatever was on screen. Twice that
-      // was a trust-folder dialog, whose rows are drawn with the same `❯` as a prompt, so
-      // the text went nowhere and the Enter answered the dialog.
-      // The vendor, by the name spawn.ts already computed for the launch stamp — so the gate
-      // reads THIS agent's screen rather than any agent's (src/agents.ts carries the rows).
-      const { ready, held, gone } = await waitReadyForBrief(resolved.name, resolved.launchAgent);
-      if (held) {
-        // LEG 4, and under the owner's ruling it is almost nothing: Ronin never answers a
-        // vendor's consent prompt, so all that is owed is telling the person WHERE the
-        // question is. They answer it in the tile they are already watching, the agent
-        // comes up, and the held brief follows. Walking a first-run sign-in is explicitly
-        // not Ronin's business — that is between the vendor and the owner.
-        await writeGate(resolved.name, 'The agent is asking you something in this tile. Answer it there and its brief follows.');
-        console.error(
-          `[ronin] ${resolved.name}: the CLI is asking something (trust this folder?) — ` +
-            `waiting to deliver the brief until it is answered.`,
-        );
-      }
-      if (!ready) {
-        // Do NOT send. A CLI that is not ready is either broken or still asking, and
-        // typing a brief into that is at best lost and at worst an answer given on the
-        // owner's behalf.
-        //
-        // `gone` is the case this whole buildout exists for and it gets its own words: the
-        // CLI came up, died, and left the login shell behind. The old code read that shell
-        // prompt as "ready" and typed the brief into bash — a session that looked completely
-        // alive and had been told nothing (measured 2026-08-20, LAUNCH_READY.md).
+      const shelved = [launch.parked ? resolved.brief : '', birthLines].filter(Boolean).join('\n');
+      if (!shelved) return;
+      const at = await parkBrief(resolved.name, shelved);
+      if (at) {
         await writeGate(
           resolved.name,
-          gone
-            ? `The agent is not running — a shell prompt is showing where ${resolved.launchAgent} should be. Its brief was not delivered, and nothing was typed at the shell.`
-            : 'The agent never came up, so its brief was not delivered. Whatever this tile is showing is why.',
+          launch.parked
+            ? 'Your brief could not be handed to this agent at launch, so it is parked in brief.md beside this session. Read it there.'
+            : 'There is a note for this session in brief.md beside it.',
         );
-        console.error(
-          gone
-            ? `[ronin] ${resolved.name}: the agent is not there — a shell prompt is showing ` +
-                `where ${resolved.launchAgent} should be, so the brief was NOT sent. ` +
-                `The tile has whatever it printed on its way out.`
-            : `[ronin] ${resolved.name}: never became ready — brief NOT sent. ` +
-                `Answer whatever the pane is asking, then re-send it.`,
-        );
-        return;
-      }
-      const sent = await sendText(resolved.name, resolved.brief + birthLines);
-      // SAY SO WHEN THE BRIEF DID NOT GO IN. A session whose brief never landed looks
-      // completely alive from the roster — a name, a dial, a running CLI — and is doing
-      // nothing, because it was never told anything. The one birth failure with no visible
-      // symptom, so it gets a line in the log.
-      if (!sent.started) {
-        await writeGate(resolved.name, 'The brief was typed into this tile but did not submit. It may still be sitting at the prompt.');
-        console.error(
-          `[ronin] ${resolved.name}: the brief did not submit. ` +
-            `Check the tile — it may be sitting at the prompt, or a dialog may be open.`,
-        );
-      } else if (held) {
-        // The hold resolved and the brief landed. Take the gate down rather than leave a
-        // stale rung claiming the session is still waiting on someone — a stale ladder is
-        // worse than none, and the agent has not written its own yet.
-        await writeGate(resolved.name, '');
       }
     })().catch((e) => console.error(`[ronin] spawn ${resolved.name}:`, e));
   });

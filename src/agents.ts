@@ -86,6 +86,21 @@ const pexec = promisify(execFile);
  * pattern would be worse than no pattern: it would answer "listening" about something that
  * is not.
  */
+/**
+ * HOW A BRIEF REACHES THIS AGENT — measured off each vendor's own `--help` on 2026-08-20,
+ * grok in a throwaway prefix because it is not installed here (the clean-room discipline
+ * `scripts/check-agent-installs.ts` uses).
+ *
+ *   'positional'  it takes an initial prompt as a plain argument AND stays interactive.
+ *   'none'        it does not. The brief is parked on the session shelf instead and the
+ *                 tile is told where — never typed at.
+ *
+ * Nothing carries 'none' today: all four installable vendors take a positional prompt.
+ * The value exists so that a vendor which does not is a row in this table rather than a
+ * rewrite, and it is said out loud that nothing exercises the other branch yet.
+ */
+export type InitialPrompt = 'positional' | 'none';
+
 export interface AgentScreen {
   busy: readonly string[];
   asking: readonly string[];
@@ -100,6 +115,8 @@ export const AGENTS = [
     from: 'Anthropic',
     get: 'npm install -g @anthropic-ai/claude-code',
     parked: '',
+    // `Usage: claude [options] [command] [prompt]` — `prompt  Your prompt`.
+    initial: 'positional' as InitialPrompt,
     // Claude draws `❯ ` and then fills the rest of the line with its own placeholder hint
     // (`❯ Try "create a util…"`), so an "empty to end of line" test never fires and a
     // fresh session looked unready until the readiness wait timed out. Match the row.
@@ -112,6 +129,8 @@ export const AGENTS = [
     from: 'OpenAI',
     get: 'npm install -g @openai/codex',
     parked: '',
+    // `Usage: codex [OPTIONS] [PROMPT]` — "Optional user prompt to start the session".
+    initial: 'positional' as InitialPrompt,
     // Codex uses `›` for both its input row and its dialog rows, so a NUMBERED › is a
     // dialog and a bare one is the prompt. The order of the categories is what keeps
     // those apart, and getting it wrong is how a brief answers a trust dialog.
@@ -124,6 +143,9 @@ export const AGENTS = [
     from: 'Google',
     get: 'npm install -g @google/gemini-cli',
     parked: '',
+    // Positional `query`: "Initial prompt. Runs in interactive mode by default." NEVER
+    // `-p`, which is its HEADLESS mode — that would answer and exit, not open a tile.
+    initial: 'positional' as InitialPrompt,
     // Measured 2026-08-20 by launching it into a directory it had never seen. Gemini marks
     // the selected row of its trust dialog with a BULLET — not Claude's `❯`, not Codex's
     // `›` — and asks "Do you trust the files in this folder?", which the house `do you
@@ -137,13 +159,15 @@ export const AGENTS = [
   },
   // Grok and Hermes are NOT characterised — nobody has read their screens against a real
   // session, so they say nothing rather than guess, and the house rows answer for them.
-  { id: 'grok', cmd: 'grok', label: 'Grok CLI', from: 'xAI', get: 'npm install -g @xai-official/grok', parked: '', screen: { busy: [], asking: [], ready: [] } },
+  { id: 'grok', cmd: 'grok', label: 'Grok CLI', from: 'xAI', get: 'npm install -g @xai-official/grok', parked: '', initial: 'positional' as InitialPrompt, screen: { busy: [], asking: [], ready: [] } },
   {
     id: 'hermes',
     cmd: 'hermes',
     label: 'Hermes',
     from: 'Nous Research',
     get: '',
+    // Parked, so nothing ever launches it and its argv shape has never been read.
+    initial: 'none' as InitialPrompt,
     parked: "Ronin cannot install this one yet — Nous's own installer needs system packages it has to ask you for, and does not finish without them. Install it from their site and it appears here.",
     screen: { busy: [], asking: [], ready: [] },
   },
@@ -199,4 +223,44 @@ export async function listAgentAvailability(): Promise<AgentAvailability[]> {
     const where = found.get(a.cmd) ?? '';
     return { id: a.id, label: a.label, from: a.from, get: a.get, parked: a.parked, cmd: a.cmd, installed: !!where, path: where };
   });
+}
+
+/** What a launch should actually run, and what to do with the brief. */
+export interface LaunchArgv {
+  /** argv for the tile's process: absolute binary first. Empty when nothing can run. */
+  argv: string[];
+  /** True when the brief could not ride argv and must be parked on the shelf instead. */
+  parked: boolean;
+}
+
+/**
+ * THE COMMAND A TILE BECOMES — argv, never a string for a shell to parse.
+ *
+ * ABSOLUTE PATH, FROM THE PROBE. A bare name would need a shell to resolve it, and a shell
+ * in the tile is the thing being removed: it is what the machine used to type at, and what
+ * a dying CLI used to fall back to. `listAgentAvailability()` already resolves the path a
+ * login shell would find, so it is the one answer worth trusting here too.
+ *
+ * THE BRIEF RIDES AS A PLAIN ARGUMENT when the vendor takes one, appended last so it lands
+ * on the positional every one of them uses. tmux execs argv literally — measured — so the
+ * brief may contain anything at all without quoting or escaping entering the picture.
+ *
+ * If the binary cannot be resolved, this returns nothing rather than guessing: a launch
+ * that cannot name its own program should fail where someone can see it, not become a
+ * shell that looks like it worked.
+ */
+export async function launchArgv(cmd: string, brief: string): Promise<LaunchArgv> {
+  const parts = cmd.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return { argv: [], parked: false };
+  const [head, ...rest] = parts;
+  const bare = head.split('/').pop() ?? head;
+  const spec = AGENTS.find((a) => a.cmd === bare);
+  const probed = (await listAgentAvailability()).find((a) => a.cmd === bare);
+  const bin = probed?.path || (head.includes('/') ? head : '');
+  if (!bin) return { argv: [], parked: false };
+  // An agent we do not carry a row for is treated as taking no initial prompt: parking is
+  // the safe half of the guess, because the cost is a brief on the shelf rather than an
+  // argument a vendor might read as a file, a flag, or a subcommand.
+  if (spec?.initial === 'positional' && brief) return { argv: [bin, ...rest, brief], parked: false };
+  return { argv: [bin, ...rest], parked: !!brief };
 }

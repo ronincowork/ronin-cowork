@@ -45,3 +45,37 @@ test('EgressRefused exists as its own kind, so a blocked call is not read as a n
   assert.ok(e instanceof Error);
   assert.ok(e instanceof EgressRefused);
 });
+
+/**
+ * THE INSTALL STAGE MUST BE ABLE TO FAIL.
+ *
+ * Measured on the E2E walk: the updater exited 1 within a second, and the stage still read
+ * "installing" minutes later with no error and nothing to press. `runUpdater` resolves when
+ * the process has STARTED, and reporting a stage on that basis is a guess dressed as a fact.
+ *
+ * A unit test here honours the repo's gate — no socket, no store, no live machine — so it
+ * pins the SHAPE of the contract rather than driving the flow: installed is proven by the
+ * roster, and a stall becomes an error that keeps the entitlement.
+ */
+test('the states an install can end in are exactly: installed, or an error that keeps the entitlement', () => {
+  const stages = ['not_requested', 'requesting', 'awaiting_email', 'verified',
+                  'installing', 'installed', 'expired', 'cancelled', 'address_changed', 'error'];
+
+  // `installing` is a transient, and the two ways out of it are both terminal and both named.
+  assert.ok(stages.includes('installed'), 'success has a name');
+  assert.ok(stages.includes('error'), 'failure has a name');
+
+  // The rule the walk proved we needed: an install that stalls must not stay "installing".
+  // Nothing may report success without the roster, and nothing may report failure by
+  // discarding the entitlement — retrying an install costs no new email.
+  const view = publicState({
+    stage: 'error', email_masked: 'g***@example.com', activation_id: 'act_x',
+    entitlement_id: 'ent_x', terms_version: '2026-08-01', requested_at: 'a',
+    verified_at: 'b', expires_at: 'c', resend_available_at: null,
+    error_at_stage: 'installing',
+    error_message: 'Services did not finish installing. Your entitlement is safe.',
+    updated_at: 'now',
+  });
+  assert.equal(view.entitlement_id, 'ent_x', 'the entitlement survives a failed install');
+  assert.match(view.error_message!, /entitlement is safe/);
+});

@@ -163,6 +163,18 @@ export interface CreateOpts {
    * help. Two reasons, two flags — one flag would make the comment on either a lie.
    */
   exempt?: boolean;
+  /**
+   * THE PROCESS THE TILE RUNS, as argv — the vendor binary and its arguments, absolute
+   * path first. Given, the CLI IS the tile: tmux execs it directly, there is no shell in
+   * the tile, and so there is nothing for a machine to type at. Absent, the tile is the
+   * login shell, which is what `OpenShell` is for and is unchanged.
+   *
+   * MEASURED, not assumed (2026-08-20): `tmux new-session -- prog a b` execs prog with
+   * those arguments LITERALLY — an argument containing `; $USER \`date\` & "q"` arrived
+   * intact, and the pane's parent is the tmux server with no shell between. That is what
+   * makes it safe to hand an agent its whole brief on the command line.
+   */
+  argv?: readonly string[];
 }
 
 export async function createSession(name: string, dir?: string, opts: CreateOpts = {}): Promise<void> {
@@ -180,15 +192,30 @@ export async function createSession(name: string, dir?: string, opts: CreateOpts
   await ensureTmuxServer();
   // An explicit dir (a role's, from ROLES.md) wins over the configured default.
   const cwd = dir || config.newSessionDir;
-  const args = ['new-session', '-d', '-s', name];
-  if (cwd) args.push('-c', cwd);
+  /**
+   * REMAIN-ON-EXIT, SET IN THE SAME TMUX INVOCATION as the session is created — a chained
+   * command, not a second call, because a CLI that dies on its first line would otherwise
+   * take the session with it before the option landed. That is not a hypothetical: it is
+   * the measured case (codex, on a trust dialog it could not read). With this, a dead CLI
+   * leaves its last screen frozen and readable under the session's own name instead of a
+   * live shell wearing it, and `#{pane_dead}` says so out loud.
+   *
+   * Only for a session that runs a CLI. A shell tile that exits is finished, and freezing
+   * a dead prompt would leave litter nobody asked for.
+   */
+  const build = (withDir: boolean) => {
+    const a = ['new-session', '-d', '-s', name];
+    if (withDir && cwd) a.push('-c', cwd);
+    if (opts.argv?.length) a.push('--', ...opts.argv, ';', 'set-option', '-w', '-t', name, 'remain-on-exit', 'on');
+    return a;
+  };
   try {
-    await pexec('tmux', args);
+    await pexec('tmux', build(true));
   } catch (err) {
     // A missing/inaccessible start-directory makes new-session fail; retry
     // without -c so session creation still works (falls back to ronin's cwd).
     if (cwd) {
-      await pexec('tmux', ['new-session', '-d', '-s', name]);
+      await pexec('tmux', build(false));
     } else {
       throw err;
     }

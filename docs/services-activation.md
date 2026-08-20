@@ -193,6 +193,16 @@ release and its checksum verifies. Nothing in it reimplements the client.
 **Installation starts by itself** the moment a poll reaches `verified`. Waiting for somebody
 to press a button left confirmed people looking at a finished flow that had not finished.
 
+**And `installed` is proven by the roster, not by having launched something.** The updater is
+started, then Services are watched for; if they do not appear within ten minutes the stage
+becomes an error that says the entitlement is safe and a retry needs no new email.
+
+That distinction was measured rather than imagined. On the E2E walk the updater exited 1
+within a second and the stage still read *Installing Services* minutes later, with no error and
+nothing to press — the exact failure USERS_JOURNEY names: a person watching an install is
+fine, a person guessing at a spinner is not. Reporting a stage because a process was launched
+is a guess dressed as a fact.
+
 It goes through the updater that **already exists**. `src/update-run.ts` is the single
 launcher; the ⚙ gear's `POST /api/update/run` and this flow both call it, because two
 launchers drift and the one that drifts is the one nobody presses until it matters.
