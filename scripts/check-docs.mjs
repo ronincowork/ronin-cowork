@@ -168,9 +168,17 @@ const IGNORE = {
   // Named with its repo in the prose — "src/lens.ts in the tmux-ronin repo" — so it is a
   // claim about another tree by construction, not a gap in this one.
   'libexec/rireki/README.md': ['src/lens.ts'],
-  // The boot shelf documents three levels; only `all/` is populated so far. A level that
-  // exists as a documented address before it holds a file is the design, not a defect.
-  'ronin_session_boot/README.md': ['root/'],
+  // The boot shelf documents levels that are addresses before they hold files — that is
+  // the design, not a defect. `gbrain_connected/` is the connected level: made and
+  // seeded by gbrain's setup in the owner's session_boot store, real on a box with the
+  // service and never in this repo — cowork matches `*_connected/` and deliberately
+  // ships no such folder (owner's ruling, 2026-08-20). Same reason on every doc that
+  // teaches the level by its live example.
+  'ronin_session_boot/README.md': ['root/', 'gbrain_connected/'],
+  'docs/session-boot.md': ['gbrain_connected/'],
+  'docs/SHELVES.md': ['gbrain_connected/'],
+  'docs/ability-pyramid.md': ['gbrain_connected/'],
+  'ronin_sops/gbrain.md': ['gbrain_connected/'],
   'ronin_catalogs/TOOLS.md': ['docs/oboeru.md', 'docs/koshi.md'],
 };
 
