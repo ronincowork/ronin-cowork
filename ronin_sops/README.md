@@ -65,7 +65,7 @@ real.
 
 **Who they are for.** The_owner may know an area cold or may never have had a repo.
 Nothing here is pushed at either of them — an SOP costs nothing until a situation calls
-for it, and the situation is what selects the reader. That is the whole skill gate; there
+for it, and the situation is what selects the reader. That is the whole gate; there
 is no other.
 
 ## How one reaches a session

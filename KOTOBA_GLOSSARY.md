@@ -218,3 +218,12 @@ test · shadowing · the session directory · build-out doc · handoff · `lande
    catches a retired word needs a list of them, and the rule forbids keeping one. Either the
    rule gains an exception for a machine-read list, or `check-kotoba` reads git. Not mine to
    decide alone — it changes a housekeeping rule.
+
+5. **`<service>_connected/` needs a home** (owner raised, 2026-08-20). The boot shelf's
+   connected level is signed by the service that seeds it — `gbrain_connected/` today
+   (`docs/session-boot.md`) — and the launcher's toggle already reads **gbrain on/off**
+   (`launcher.js:130`), so a user meets the service's own name, which is the point: the
+   name educates because it says WHAT is connected. To rule: does the *pattern*
+   `<service>_connected` get a glossary row (the service name is the vendor's, not ours to
+   coin), and does the SETTEI-scope service switch (does gbrain run and process files)
+   need a distinct on-screen word so it never blurs with the per-session toggle?

@@ -7,19 +7,22 @@ starts. It is read once, when a session is born.
 lives in a store outside every repo: `ronin-store session_boot`. A file of yours with the
 same name replaces ours whole; a new name sits beside it.
 
-## Three levels, and they add up
+## The levels, and they add up
 
 | | read by |
 |---|---|
 | `all/` | every session, always |
+| `<service>_connected/` | only sessions launched with MCP on — a connected service makes and seeds its own signed level (gbrain's setup makes `gbrain_connected/`) |
 | `root/<project_root>/` | only sessions working in that directory |
 | `job/<session_job>/` | only sessions doing that kind of work |
 
-A `CutCode` session in `ronin_cowork` reads all three. Nothing overrides anything —
+A `CutCode` session in `ronin_cowork` reads all of its levels. Nothing overrides anything —
 *where* the work happens and *what kind* it is are independent questions.
 
-**Stock has no `root/`, and cannot.** The jobs ship, so we know their names; your project
-roots are yours alone and no install knows them in advance.
+**Stock has no `root/` and no connected folder, and cannot.** The jobs ship, so we know
+their names; your project roots are yours alone, and a connected level is the seeding
+service's own act — an empty one nothing seeded would claim a connection that does not
+exist.
 
 ## Files or links
 
@@ -33,12 +36,15 @@ level deep, so an explainer at the shelf root is never handed to a session.
 
 ## What ships
 
-Two, both links, and deliberately no more — the same stance `ronin_sops` and
-`ronin_library` take, screening things in one at a time.
+Four universal readings, screened in one at a time:
 
 - `all/KOTOBA_GLOSSARY.md` — the house vocabulary, so every session means the same things
   by the same words.
-- `all/SHELVES.md` — the map of where everything is. It earns its place by naming no
-  individual entry, so adding a macro or an SOP never makes it wrong.
+- `all/SHELVES.md` — the map of where everything is, and what is on each shelf.
+- `all/REQUIRED_ABILITIES.md` — the abilities every session uses: session macros, other
+  sessions, measuring this machine.
+- `SESSION_MACROS.md` is a template, not read directly. At birth Ronin fills its active
+  macro section from the resolved `MACROS.md` catalog (`preview: yes`) and hands the
+  generated document to every assisted session.
 
 See `docs/session-boot.md`.
