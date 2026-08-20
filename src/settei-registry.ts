@@ -31,6 +31,24 @@
  * and the want list). The next "just one more condition kind" is a new scan family,
  * not a new verb.
  *
+ * `met_by` is THE CHOKE (owner, 2026-08-20): every requirement says what KIND of hand
+ * closes it, so the mechanical subset can be dispatched without anyone deciding again.
+ * Three values, and the whole point is that adding a mechanical item later is one row
+ * here rather than a new code path:
+ *
+ *   `mechanical`  a command can do it, AND Ronin knows the command. Today that is
+ *                 exactly the agent CLIs — `AGENTS[].get` in src/agents.ts is the one
+ *                 source, and the install operation reads it. "We could shell out to
+ *                 something" is not the test; knowing the line is.
+ *   `owner`       only the person can: click the link in an email, sign in inside an
+ *                 agent, paste a key, accept terms for a download that is entitled.
+ *   `agent`       judgment required, so it stays on the setup seat's reading list —
+ *                 installing `gh` means knowing whether this box is apt, brew or dnf,
+ *                 which is a decision, not a command.
+ *
+ * It classifies the REQUIREMENT, never its progress: whether something is in flight is
+ * the operation's own answer, not a field here.
+ *
  * The scan-name lists live here too (`scans`), because a name worth scanning is a
  * name the registry mentions — plus every `key_env` a configured job names, which is
  * typed data and joins at read time. No other file may carry a list of these names.
@@ -235,7 +253,11 @@ export const SETTEI_SCHEMA = {
   },
 
   /** What a choice still needs — judged against the record per read (the `needed[]`
-   * family), met items do not exist. Seed: services finish over the email link, alone. */
+   * family), met items do not exist. Seed: services finish over the email link, alone.
+   * `met_by` is the choke — see the header. Neither seed is mechanical today, and that
+   * is the honest reading: nothing here carries a command for either. The gbrain row
+   * turns `mechanical` the day the services bundle is entitled and the operation grows
+   * a runner for it (SHIWAKE) — one word on one row, which is the promise. */
   requires: [
     {
       leaf: 'services',
@@ -243,6 +265,7 @@ export const SETTEI_SCHEMA = {
       met: { kind: 'set', path: 'services.verified' },
       needs: 'the verified email',
       how: 'click the link in the services email, paste the code',
+      met_by: 'owner',
     },
     {
       leaf: 'gbrain',
@@ -250,6 +273,7 @@ export const SETTEI_SCHEMA = {
       met: { kind: 'service', name: 'gbrain' },
       needs: 'the gbrain service installed',
       how: 'the toggle is already on — install Ronin Services and gbrain registers itself',
+      met_by: 'owner',
     },
   ],
 

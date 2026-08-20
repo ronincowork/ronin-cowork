@@ -82,10 +82,18 @@ export interface SetteiRecord {
   set: Record<string, unknown>;
   observed: Record<string, unknown>;
   status: Record<string, unknown>;
-  /** What a choice still needs, judged per read — met items do not exist. */
-  needed: Array<{ leaf: string; needs: string; how: string }>;
+  /** What a choice still needs, judged per read — met items do not exist. Every entry
+   * carries the choke (`met_by`, src/settei-registry.ts): what KIND of hand closes it.
+   * The list is served already partitioned that way — one read, and a surface renders
+   * the three kinds by filtering, never by re-deciding what it is looking at. */
+  needed: Array<{ leaf: string; needs: string; how: string; met_by: MetBy }>;
   schema: typeof SETTEI_SCHEMA;
 }
+
+/** The choke: what kind of hand closes a requirement. Declared per row in the registry,
+ * where the three values are spelled out at length. `mechanical` is the install
+ * operation's subset and the only one anything dispatches. */
+export type MetBy = 'mechanical' | 'owner' | 'agent';
 
 /* The registry lives in src/settei-registry.ts — pure data, split out by the
  * line ceiling; it is still the ONE declaration and this file still serves it. */
@@ -567,22 +575,33 @@ function computeNeeded(
 ): SetteiRecord['needed'] {
   const declared = SETTEI_SCHEMA.requires
     .filter((r) => holds(r.applies, set, observed) && !holds(r.met, set, observed))
-    .map((r) => ({ leaf: r.leaf, needs: r.needs, how: r.how }));
+    .map((r) => ({ leaf: r.leaf, needs: r.needs, how: r.how, met_by: r.met_by as MetBy }));
   // THE WANT LIST — the owner's own additions (⚙, 'add to needed'). A want IS a check
   // the owner typed: judged with the same five verbs, unmet becomes a task, met
   // simply produces nothing — the want stays typed, the entry was never stored.
-  const HOW: Record<string, (n: string) => string> = {
-    agent: (n) => `install the ${n} CLI — it appears in agent installations the moment it lands`,
-    service: () => 'install Ronin Services — it registers itself',
-    tool: (n) => `install ${n} on the host`,
-    key: (n) => `set ${n} in .env and restart the operator`,
+  //
+  // A want carries the choke too, and by VERB rather than by row, because the verb is
+  // what says whose hand it takes. `agent` is mechanical because AGENTS[].get is a line
+  // Ronin holds; `tool` is not, because "install gh" means knowing whether this box is
+  // apt, brew or dnf — judgment, so the seat keeps it; a key and an entitled download
+  // are the owner's own hands. Adding a mechanical verb later is this table, not a
+  // code path.
+  const HOW: Record<string, { how: (n: string) => string; met_by: MetBy }> = {
+    agent: {
+      how: (n) => `install the ${n} CLI — it appears in agent installations the moment it lands`,
+      met_by: 'mechanical',
+    },
+    service: { how: () => 'install Ronin Services — it registers itself', met_by: 'owner' },
+    tool: { how: (n) => `install ${n} on the host`, met_by: 'agent' },
+    key: { how: (n) => `set ${n} in .env and restart the operator`, met_by: 'owner' },
   };
   const wanted = ((set.wanted ?? []) as Array<{ kind: string; name: string }>)
     .filter((w) => HOW[w.kind] && !holds(w, set, observed))
     .map((w) => ({
       leaf: 'wanted',
       needs: w.kind === 'service' && w.name === '*' ? 'Ronin Services (the bundle)' : `${w.name} (${w.kind})`,
-      how: HOW[w.kind](w.name),
+      how: HOW[w.kind].how(w.name),
+      met_by: HOW[w.kind].met_by,
     }));
   return [...declared, ...wanted];
 }

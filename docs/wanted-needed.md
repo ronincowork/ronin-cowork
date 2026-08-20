@@ -43,6 +43,23 @@ Both are judged by the same five verbs, and the vocabulary **stays five**:
 
 The next "just one more condition kind" is a new scan family, not a new verb.
 
+## The choke — every requirement says whose hand closes it
+
+Each entry on `needed[]` carries `met_by`, so the list arrives already partitioned and
+a surface renders the three kinds by filtering rather than by deciding again what it is
+looking at. Declared per `requires` row; for a want, by its verb, because the verb is
+what says whose hand it takes.
+
+| `met_by` | means | today |
+|---|---|---|
+| `mechanical` | a command can do it **and Ronin knows the command** | the agent CLIs — `AGENTS[].get` (`src/agents.ts`) is the one source, and the install operation reads it |
+| `owner` | only the person can | the services email link, a key pasted in `.env`, an entitled download |
+| `agent` | judgment required, so the setup seat keeps it | a host tool — "install `gh`" means knowing whether this box is apt, brew or dnf |
+
+It classifies the requirement, never its progress. Whether something is in flight is
+the install operation's own answer; nothing here is written, and met items still do not
+exist. Adding a mechanical item later is one row, not a code path.
+
 ## The surfaces
 
 - **⚙ agent installations / services** — the leading checkbox IS the installed bit:
@@ -50,6 +67,8 @@ The next "just one more condition kind" is a new scan family, not a new verb.
   one is live, and ticking it writes the want. Taught once, on the hint line.
 - **⚙ still needed** — the one box: every unmet thing, requires and wants alike,
   each with its how. Empty reads "nothing — your choices are satisfied."
+- **The landing** — the mechanical items are already running in their own tiles by the
+  time it opens; the strip carries the `owner` and `agent` remainder.
 - **"Start your setup session"** — beneath the box (and on ＋ New) whenever an agent
   CLI exists and the box is non-empty. One press seats 新 Atarashi with a one-line
   pointer; **the seat reads `GET /api/settei` itself at start**, so it works the same
