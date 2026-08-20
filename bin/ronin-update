@@ -274,7 +274,9 @@ if [ -n "$FILE" ]; then
 elif [ "$PACKAGE" = "services" ] && HQ_VER="$(hq_fetch_services "$WORK")" && [ -n "$HQ_VER" ]; then
   # AUTHORIZED PATH. An entitled install takes its services from Ronin HQ.
   VER="$HQ_VER"
-  TARBALL="services-$VER.tar.gz"
+  # Same shape as the public path: $PKG-$VER.tar.gz, and $PKG-$VER/ inside it. The contract
+  # check below depends on both, and it is the same line for both paths.
+  TARBALL="$PKG-$VER.tar.gz"
   if [ "$VER" = "$INST" ]; then echo "✓ already on $PKG $VER — nothing to do"; exit 0; fi
   say "authorized release $VER from Ronin HQ"
 else

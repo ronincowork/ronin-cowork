@@ -157,12 +157,19 @@ test('THE UPDATER SEAM: libexec/ronin-hq.sh fetches an authorized release and ve
     if (!available) return t.skip('shiwake not available');
 
     // Publish a release into SHIWAKE, the way the operator CLI will.
+    //
+    // A REAL TARBALL, with the real internal shape: ronin-services-vX.Y.Z/VERSION carrying
+    // contract=N. A fixture of arbitrary bytes would pass a checksum assertion and prove
+    // nothing about the step after it — which is exactly how the naming defect survived.
     const crypto = await import('node:crypto');
     const artifactDir = path.join(dataRoot, 'artifacts');
-    await fs.mkdir(artifactDir, { recursive: true });
-    const bytes = Buffer.from('a pretend services tarball');
-    const artifact = path.join(artifactDir, 'services-1.2.3.tar.gz');
-    await fs.writeFile(artifact, bytes);
+    const stage = path.join(artifactDir, 'stage', 'ronin-services-v1.2.3');
+    await fs.mkdir(stage, { recursive: true });
+    await fs.writeFile(path.join(stage, 'VERSION'), 'release=v1.2.3\ncontract=1\n');
+    const artifact = path.join(artifactDir, 'ronin-services-v1.2.3.tar.gz');
+    await exec('tar', ['-czf', artifact, '-C', path.join(artifactDir, 'stage'),
+                       'ronin-services-v1.2.3']);
+    const bytes = await fs.readFile(artifact);
     const sha = crypto.createHash('sha256').update(bytes).digest('hex');
 
     const releaseId = `rel_${'a'.repeat(26)}`;
@@ -196,17 +203,30 @@ test('THE UPDATER SEAM: libexec/ronin-hq.sh fetches an authorized release and ve
              PATH: `${repo}/bin:${process.env.PATH}` },
     });
 
-    assert.equal(stdout.trim(), '1.2.3', 'the seam picked the release matching our contract');
+    assert.equal(stdout.trim(), 'v1.2.3',
+      'the seam returns a TAG-shaped version, so $PKG-$VER resolves like the public path');
 
-    // The bytes arrived, and the checksum the updater will verify against is the one the
-    // AUTHENTICATED manifest gave — not one that travelled beside the download.
-    const got = await fs.readFile(path.join(work, 'services-1.2.3.tar.gz'));
+    // THE NAME MATTERS AS MUCH AS THE BYTES. Everything downstream is shared with the
+    // public path, which reads the contract out of "$PKG-$VER/VERSION". A download named
+    // services-1.2.3.tar.gz passed its checksum and then failed the contract check against
+    // a path that does not exist — the install refused, having downloaded a perfect
+    // artifact. Found on the E2E walk, one step past where a checksum-only test stops.
+    const tarball = path.join(work, 'ronin-services-v1.2.3.tar.gz');
+    const got = await fs.readFile(tarball);
     assert.equal(crypto.createHash('sha256').update(got).digest('hex'), sha);
     const sums = await fs.readFile(path.join(work, 'SHA256SUMS'), 'utf8');
-    assert.match(sums, new RegExp(`^${sha}  services-1\\.2\\.3\\.tar\\.gz$`, 'm'));
+    assert.match(sums, new RegExp(`^${sha}  ronin-services-v1\\.2\\.3\\.tar\\.gz$`, 'm'));
 
-    // And the verification the updater actually performs passes on it.
-    await exec('sh', ['-c', `cd '${work}' && grep services-1.2.3.tar.gz SHA256SUMS | sha256sum -c -`]);
+    // The verification the updater actually performs.
+    await exec('sh', ['-c',
+      `cd '${work}' && grep ronin-services-v1.2.3.tar.gz SHA256SUMS | sha256sum -c -`]);
+
+    // AND THE STEP AFTER IT, which is the one that was broken: the contract number must be
+    // readable by the exact expression ronin-update uses, or the install refuses.
+    const { stdout: contract } = await exec('sh', ['-c',
+      `tar -xzf '${tarball}' -O 'ronin-services-v1.2.3/VERSION' | sed -n 's/^contract=//p'`]);
+    assert.equal(contract.trim(), '1',
+      'the contract is readable at $PKG-$VER/VERSION — the check the updater performs next');
 
     await fs.rm(homeDir, { recursive: true, force: true });
     await fs.rm(work, { recursive: true, force: true });
