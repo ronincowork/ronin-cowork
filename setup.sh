@@ -333,6 +333,71 @@ else
   echo "      -> $SHIM_DIR/tmux  and  $BIN_DIR/write_tegami"
 fi
 
+# --- PATH: where an agent Ronin installs lands ---
+# Ronin can install an agent CLI for the owner (the install operation, src/agent-install.ts).
+# `npm install -g` puts the command in the NODE PREFIX's bin, and Ronin's prefix is ~/.local —
+# the standard user-level prefix, needing no root, outside every release directory (ronin-update
+# swaps releases, so anything under vendor/ would vanish at the next update), and already where
+# Claude Code's own installer puts itself.
+#
+# THE INSTALL IS NOTHING WITHOUT THIS LINE. The agent probe asks a LOGIN SHELL (src/agents.ts),
+# because a login shell's PATH is the PATH a pane gets — so an install into a prefix no rc file
+# mentions succeeds silently and the row says "not installed" forever.
+#
+# APPENDED, not prepended: the owner's own copy of an agent must win over one we fetched. The
+# shim block above prepends because a guard that is not first is inert; this is a fallback and
+# must never shadow. And the directory is CREATED here, because Debian's stock ~/.profile adds
+# ~/.local/bin to PATH only when it already exists at login.
+AGENT_PREFIX="$HOME/.local"
+AGENT_BIN="$AGENT_PREFIX/bin"
+echo "==> PATH: where an installed agent lands ($AGENT_BIN)"
+mkdir -p "$AGENT_BIN" 2>/dev/null || true
+# A bundled release carries its own Node and the box may have no other. Every npm-installed
+# agent starts `#!/usr/bin/env node`, so without this the install succeeds and the command dies
+# on its first line. In a checkout NODE_DIR is the system Node and is already on PATH.
+AGENT_DIRS=("$AGENT_BIN")
+[ "$BUNDLED" = 1 ] && AGENT_DIRS+=("$NODE_DIR")
+AGENT_TAIL=""
+for d in "${AGENT_DIRS[@]}"; do AGENT_TAIL="$AGENT_TAIL:$(printf '%q' "$d")"; done
+AGENT_LINE="export PATH=\"\$PATH\"$AGENT_TAIL"
+AGENT_BEGIN="# >>> ronin agent PATH (added by setup.sh) >>>"
+AGENT_END="# <<< ronin agent PATH <<<"
+
+agent_append() {                                   # $1 = file
+  {
+    printf '\n%s\n' "$AGENT_BEGIN"
+    printf '%s\n' "# Where an agent CLI installed by Ronin lands (npm prefix $AGENT_PREFIX), and the"
+    printf '%s\n' "# runtime that runs it. APPENDED, so your own copy of an agent always wins over ours."
+    printf '%s\n' "# Without this the probe cannot see what Ronin installed and a pane cannot run it."
+    printf '%s\n' "# Why: $REPO_DIR/src/agent-install.ts.  Safe to delete this block."
+    printf '%s\n' "$AGENT_LINE"
+    printf '%s\n' "$AGENT_END"
+  } >> "$1" 2>/dev/null
+}
+
+if [ -z "$RC" ]; then
+  echo "    SKIPPED: $RC_WHY. Put this in your shell's rc file by hand:"
+  echo "      $AGENT_LINE"
+else
+  for f in "$RC" ${RC_ALSO:+"$RC_ALSO"}; do
+    missing=0
+    for d in "${AGENT_DIRS[@]}"; do
+      rc_has_dir "$f" "$d" "$(real_of "$d")" || missing=1
+    done
+    if [ "$missing" = 0 ]; then
+      echo "    already on PATH via $f"
+    elif ! { [ -e "$f" ] && [ -w "$f" ]; } && ! { [ ! -e "$f" ] && [ -w "$(dirname "$f")" ]; }; then
+      echo "    LEFT ALONE: cannot append to $f — put this in it by hand:"
+      echo "      $AGENT_LINE"
+    elif agent_append "$f"; then
+      echo "    added ${AGENT_DIRS[*]} to $f"
+    else
+      echo "    LEFT ALONE: could not append to $f."
+    fi
+  done
+  echo "    NOTE: read at shell START. For this shell:  $AGENT_LINE"
+fi
+
 # --- autostart ---
 # ONE SOURCE OF TRUTH PER UNIT. The unit files live in deploy/*.service with
 # __REPO_DIR__ / __NODE_DIR__ placeholders; setup.sh only fills those in. It used to
