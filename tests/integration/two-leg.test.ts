@@ -1,8 +1,7 @@
 /**
  * THE TWO-LEG WALK — the real Cowork modules against a real SHIWAKE process.
  *
- * NOT under `tests/*.test.ts`, deliberately: the unit gate forbids sockets and stores, and
- * this test is the opposite of a unit test. Run it with
+ * Run it with
  *
  *   npx tsx --test tests/integration/two-leg.test.ts
  *
@@ -33,10 +32,12 @@ let dataRoot = '';
 let userRoot = '';
 let base = '';
 let available = true;
+/** WHY it is unavailable, so a skip cannot blame the wrong thing. */
+let unavailable = '';
 
 test.before(async () => {
   try { await fs.access(path.join(SHIWAKE, 'app/src/main.ts')); }
-  catch { available = false; return; }
+  catch { available = false; unavailable = `no ronin-shiwake checkout at ${SHIWAKE}`; return; }
 
   dataRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'walk-hq-'));
   userRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'walk-install-'));
@@ -71,7 +72,10 @@ test.before(async () => {
     } catch { /* not up yet */ }
     await new Promise((r) => setTimeout(r, 200));
   }
+  // The checkout WAS there; the server did not answer in time. Saying "no checkout" here
+  // would send the next person looking in entirely the wrong place.
   available = false;
+  unavailable = 'the SHIWAKE checkout is present but its server did not become ready in 20s';
 });
 
 test.after(async () => {
@@ -101,7 +105,7 @@ async function tokenFromInbox(): Promise<string> {
 }
 
 test('THE WALK: real Cowork modules take a real install from nothing to entitled', async (t) => {
-  if (!available) return t.skip('the ronin-shiwake checkout is not beside this one');
+  if (!available) return t.skip(unavailable);
 
   // THE REAL FLOW MODULE — not a reimplementation of it.
   const { request, poll } = await import('../../src/activation/flow.js');
@@ -138,7 +142,7 @@ test('THE WALK: real Cowork modules take a real install from nothing to entitled
 });
 
 test('THE EGRESS RECORD names every call, and carries no secret', async (t) => {
-  if (!available) return t.skip('shiwake not available');
+  if (!available) return t.skip(unavailable);
   const { readEgress } = await import('../../src/activation/egress.js');
   const lines = await readEgress(50);
 
@@ -154,7 +158,7 @@ test('THE EGRESS RECORD names every call, and carries no secret', async (t) => {
 
 test('THE UPDATER SEAM: libexec/ronin-hq.sh fetches an authorized release and verifies it',
   async (t) => {
-    if (!available) return t.skip('shiwake not available');
+    if (!available) return t.skip(unavailable);
 
     // Publish a release into SHIWAKE, the way the operator CLI will.
     //
@@ -190,17 +194,22 @@ test('THE UPDATER SEAM: libexec/ronin-hq.sh fetches an authorized release and ve
     const repo = path.resolve(import.meta.dirname, '../..');
 
     // RUN THE ACTUAL SHELL THE UPDATER RUNS. Not a reimplementation of its logic.
+    // SELF is the tree ronin-update lives in, and ronin-hq.sh resolves this install's own
+    // ronin-store through it — by absolute path, never through PATH. That is deliberate: a
+    // bare `ronin-store` finds whatever a shell happens to hit first, and on a machine with
+    // a checkout around that is the wrong copy, which silently costs the authorized path.
+    // The stub therefore sets SELF, exactly as the updater does.
     const { stdout } = await exec('sh', ['-c', `
       set -e
       say() { :; }
       fail() { echo "FAIL: $*" >&2; exit 1; }
+      SELF='${repo}'
       HOME_DIR='${homeDir}'
       . '${repo}/libexec/ronin-hq.sh'
       hq_fetch_services '${work}'
     `], {
       env: { ...process.env, RONIN_HQ_BASE: base,
-             RONIN_SERVICES_SECRETS_DIR: process.env.RONIN_SERVICES_SECRETS_DIR!,
-             PATH: `${repo}/bin:${process.env.PATH}` },
+             RONIN_SERVICES_SECRETS_DIR: process.env.RONIN_SERVICES_SECRETS_DIR! },
     });
 
     assert.equal(stdout.trim(), 'v1.2.3',
@@ -234,7 +243,7 @@ test('THE UPDATER SEAM: libexec/ronin-hq.sh fetches an authorized release and ve
 
 test('THE TOMODACHI LOOP: the real sender delivers a dropped packet and keeps the receipt',
   async (t) => {
-    if (!available) return t.skip('shiwake not available');
+    if (!available) return t.skip(unavailable);
 
     const { sendDuePackets, listReceipts } = await import('../../src/activation/tomodachi.js');
 
