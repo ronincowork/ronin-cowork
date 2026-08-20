@@ -1,4 +1,4 @@
-/* part of the tmux-ronin client — see js/README.md */
+/* part of the ronin-cowork client — see js/README.md */
 import { fetchSessions } from './api.js';
 import { deadTile, guard, showFailure } from './errors.js';
 import { refreshHome } from './home.js';
@@ -216,14 +216,15 @@ export function build() {
   // of any pane would make the mark mean "close whatever this is", which is the ✕'s
   // job; and on an empty tile the panel IS the tile, so hiding it leaves a blank
   // screen and no way back.
-  // ＋ — a SECOND RONIN, in a new browser tab. Not a "view": no layout argument, no blank
-  // flag, no state of its own. It opens the same page the owner could already open by hand,
-  // and it exists so that anyone who has not thought to try it finds out they can (owner,
-  // 2026-08-18). The new tab restores from localStorage exactly as a hand-opened one does.
+  // ＋ — a SECOND RONIN, in a new browser tab, and it opens BLANK: two empty tiles
+  // (owner, 2026-08-20 — "i want 2 tiles empty"), not a copy of this tab. Without the
+  // directive the new tab would inherit a copy of this tab's sessionStorage (the spec
+  // copies it to opened tabs) and read as a clone; `?tiles=,` is state.js's one-shot
+  // directive — two slots, no sessions — consumed at boot and stripped from the address.
   //
   // `location.pathname`, not `location.href`: href would carry `?setup` into a tab that is
   // not asking for the first-run flow.
-  key('newtabbtn', () => window.open(location.pathname, '_blank'));
+  key('newtabbtn', () => window.open(location.pathname + '?tiles=,', '_blank'));
 
   key('brandbtn', () => {
     const t = S.active || tiles.find((x) => x.el.style.display !== 'none') || tiles[0];
@@ -340,6 +341,11 @@ export function build() {
     // xterm draws to a canvas, so the browser's native copy can't see the selection —
     // feed it the captured terminal selection on ⌘C/Ctrl-C. Works on http and https.
     document.addEventListener('copy', (e) => {
+      // This is a terminal bridge, not a global clipboard policy. Without this scope a
+      // stale terminal selection replaced text copied from Docs' textarea (and any other
+      // ordinary field) even though the browser had a perfectly good native selection.
+      const fromTerminal = e.target instanceof Element && e.target.closest('.xterm');
+      if (!fromTerminal) return;
       const live = S.active && S.active.term.getSelection ? S.active.term.getSelection() : '';
       const sel = live || S.lastSelection;
       // Only hijack ⌘C when the terminal actually has a selection; otherwise let the
@@ -445,4 +451,3 @@ export function buildDrawers() {
   document.querySelector('#bar .grow')?.remove();
   keypad?.remove();
 }
-
