@@ -45,7 +45,11 @@ match) is exactly what makes the WSL path painless.
 ## Installing, per platform
 
 The user journey is identical everywhere: download → run `./setup.sh` → the link prints →
-open it. On a local graphical Linux desktop the browser is opened as a courtesy
+open it. The README's one-command door (`scripts/get-ronin`, fetched raw and piped to sh)
+is exactly that journey automated: pick this box's artifact, verify its checksum, install,
+run setup — assuming nothing is on the box, because the bundle guarantees nothing needs
+to be. The git door stays beside it for agents and readers, and can install either
+flavor. On a local graphical Linux desktop the browser is opened as a courtesy
 (`libexec/ronin-open-browser`, best-effort, never fatal, never over SSH); the printed
 link remains the contract on every platform.
 

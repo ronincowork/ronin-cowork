@@ -43,7 +43,25 @@ enforces that no other core file ever reaches across the line.
 
 ## Installing it
 
-On a machine you control — your laptop, a home server, a VM you rent:
+On a machine you control — your laptop, a home server, a VM you rent. Two doors,
+same Ronin; pick one:
+
+**Door 1 — the one command.** For a person with a terminal and nothing else: the
+release bundles its own Node, tmux, and node_modules, so this works on a box with
+nothing installed and never asks you for anything
+(`docs/DEPENDENCY_BUNDLE_INSTALL.md`):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ronincowork/ronin-cowork/master/scripts/get-ronin | sh
+```
+
+On Windows: run `wsl --install` once in PowerShell, then run that same command
+inside the WSL shell.
+
+**Door 2 — the git path.** For an agent, or anyone who wants to read what they run.
+Hand your agent this repository's URL; `docs/install.md` is its walk. From a
+checkout it can install the bundled release, or a plain one and bring its own tmux
+and Node:
 
 ```bash
 git clone https://github.com/ronincowork/ronin-cowork.git
@@ -52,11 +70,11 @@ bin/ronin-update --home ~/ronin      # fetches the release, verifies, unpacks
 cd ~/ronin/current && ./setup.sh     # sets everything up on this machine
 ```
 
-`setup.sh` tells you if it needs anything (tmux, Node), does the rest itself, and
-**prints the URL it is serving on**. Open that URL in your browser: a fresh install
-lands on the setup page — answer it once, Save, and you are in your coworkspace.
-No agent is needed anywhere in that path; if an agent CLI is already on the box,
-your first session opens too, already knowing what you answered.
+Either door ends the same way: setup **prints the URL it is serving on** (and on a
+local Linux desktop, opens it for you). Open that URL in your browser: a fresh
+install lands on the setup page — answer it once, Save, and you are in your
+coworkspace. No agent is needed anywhere in that path; if an agent CLI is already
+on the box, your first session opens too, already knowing what you answered.
 
 If the box is remote, reach the URL over the private route you already use — an SSH
 tunnel is enough (`ssh -L 3006:127.0.0.1:3006 you@yourbox`, then open

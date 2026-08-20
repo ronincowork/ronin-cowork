@@ -127,8 +127,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # --prerelease: plumbing, not a Ronin release — it must NEVER become the
+          # repo's "latest", which is what ronin-update and get-ronin resolve.
           gh release create "${{ inputs.release_tag }}" out/tmux-* \
             --repo "$GITHUB_REPOSITORY" \
+            --prerelease --latest=false \
             --title "${{ inputs.release_tag }}" \
             --notes "Static tmux for every bundle platform, built by tmux-static.yml from the pins in scripts/tmux-static/build.sh. Not a Ronin release — release.yml consumes these, pinned in vendor.lock." \
             || gh release upload "${{ inputs.release_tag }}" out/tmux-* --repo "$GITHUB_REPOSITORY" --clobber
