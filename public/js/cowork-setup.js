@@ -226,11 +226,16 @@ export async function buildCoworkSetup(host, onDone) {
     save.disabled = true; line.say('Saving…', 'busy');
     const values = { machineName: machineField.input.value, ownerName: ownerField.input.value, projName: projectName, projDir: projectDir, projRemit: remitField.input.value, model: modelField.select.value, mika: mikaField.select.value, cap: capField.select.value };
     const problems = []; let installNote = ''; const landOn = [];
-    for (const req of toRequests(schema, values)) { const result = await request(req.route, { method: req.method, json: req.json }); if (!result.ok && result.status !== 409) problems.push(result.message || req.route); }
+    // 409 is an answer only from the project POST — the project already exists from a
+    // previous Save. Any other family answering 409 is a problem worth showing.
+    for (const req of toRequests(schema, values)) { const result = await request(req.route, { method: req.method, json: req.json }); if (!result.ok && !(result.status === 409 && req.family === 'project')) problems.push(result.message || req.route); }
     const gbrainResult = await request('/api/settei/gbrain', { method: 'PUT', json: { enabled: wantServices.checked && wantGbrain.checked } }); if (!gbrainResult.ok) problems.push(gbrainResult.message);
     if (!activationExists && wantServices.checked) { const result = await request('/api/services/activation', { method: 'POST', json: { email: emailField.input.value.trim() } }); if (!result.ok && result.status === 400) problems.push(result.message); else if (!result.ok) installNote = ' Services activation needs attention in the workspace.'; }
     if (problems.length) { line.say(problems[0], 'bad'); save.disabled = false; return; }
-    await request('/api/settei/setup', { method: 'PUT' });
+    // The pending flag must actually clear — a silent failure here would loop the
+    // person back into setup on their next load with no word about why.
+    const done = await request('/api/settei/setup', { method: 'PUT' });
+    if (!done.ok) { line.say(done.message || 'could not record setup as finished — try Save again', 'bad'); save.disabled = false; return; }
     const picks = [...wantAgents].filter(([, box]) => box.checked).map(([id]) => id);
     if (picks.length) {
       const already = (record.set?.wanted ?? []).filter((w) => !(w.kind === 'agent' && picks.includes(w.name)));

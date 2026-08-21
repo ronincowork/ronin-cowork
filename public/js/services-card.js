@@ -91,11 +91,9 @@ export function servicesCard(container, onChange) {
 
       // The action names what it DOES. "Save" would hide an immediate, disclosed account
       // action behind a word that means "write this down".
-      actions.appendChild(button('Send confirmation email', {
+      actions.appendChild(nodeOf(button('Send confirmation email', {
         onClick: () => act(f, '/api/services/activation', { email: email.value.trim() }),
-      }).el ?? button('Send confirmation email', {
-        onClick: () => act(f, '/api/services/activation', { email: email.value.trim() }),
-      }));
+      })));
     }
 
     if (state.stage === 'awaiting_email'
