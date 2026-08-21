@@ -1,7 +1,7 @@
 # cowork_setup
 
-`cowork_setup` is RoninCoWork's first conversation with a new owner. Its canonical local
-route is `/cowork_setup`; `?setup` and `?cowork_setup` are accepted only to redirect old links.
+`cowork_setup` is RoninCoWork's first conversation with a new owner. Its only deliberate
+local route is `/cowork_setup`. It has no query-string aliases or legacy renderer.
 
 The page first shapes the coworkspace, then starts the first project. It is one readable,
 collapsible form rather than a wizard. The sticky **When you save** panel is a live account

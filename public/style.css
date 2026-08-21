@@ -5844,9 +5844,9 @@ body {
   border-color: var(--accent);
   color: var(--accent);
 }
-/* ---- FIRST LOAD — the setup surface a fresh install opens on (js/firstrun.js).
+/* ---- COWORK_SETUP — the surface a fresh install opens on (js/cowork-setup.js).
    A document, not a grid: the host fixes itself to the viewport and scrolls inside
-   (the inline rule in firstrun.js says why). Everything here is furniture for the
+   (the inline rule in cowork-setup.js says why). Everything here is furniture for the
    registry's own sections and fields — no rule knows a field. ---- */
 .fr-root {
   /* THIS SURFACE'S OWN MEASURE, and it is deliberately not the app's. Ronin proper is a

@@ -33,7 +33,7 @@ optionally with `&layout=1|2|4`.
   (main.js), exactly as it does over stored state.
 
 This is the lever for opening Ronin onto a chosen view — and the setup flow uses it:
-`firstrun`'s Save exits through `?tiles=`, naming the agent-install sessions first and the
+`cowork_setup` Save exits through `?tiles=`, naming the agent-install sessions first and the
 setup seat after; only sessions that actually started are named, and an empty list is one
 empty tile (the commons and its ＋ New). Any macro or doc can link a working set the same
 way.

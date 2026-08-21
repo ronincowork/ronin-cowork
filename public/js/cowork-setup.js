@@ -69,7 +69,7 @@ function logo() {
   return svg;
 }
 
-export async function buildFirstRun(host, onDone) {
+export async function buildCoworkSetup(host, onDone) {
   host.className = 'cs-root';
   host.style.cssText = 'position:fixed;inset:0;overflow-y:auto;overscroll-behavior:contain;';
   host.replaceChildren();

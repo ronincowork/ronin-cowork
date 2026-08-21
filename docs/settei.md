@@ -163,7 +163,7 @@ A genuinely fresh install says so itself; nothing is ever inferred.
 
 ## The setup view
 
-`public/js/firstrun.js`. Every askable leaf is declared once and no view may know a
+`public/js/cowork-setup.js`. Every askable leaf is declared once and no view may know a
 field the declaration does not say — that declaration is the registry (above), served
 with the answer and read through the shared vocabulary (`public/js/settei-schema.js`).
 There is no client-side field list. It asks in order, teaches as it asks, and ends. Setup is complete at Save — the

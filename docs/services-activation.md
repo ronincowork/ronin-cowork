@@ -107,7 +107,7 @@ spent.
 
 ## Where the person actually sees it
 
-**First run** (`public/js/firstrun.js`) — ticking Services and giving an address now POSTs
+**cowork_setup** (`public/js/cowork-setup.js`) — ticking Services and giving an address now POSTs
 `/api/services/activation`, which asks Ronin HQ to send the confirmation email. It used to
 record a note to itself and contact nobody.
 

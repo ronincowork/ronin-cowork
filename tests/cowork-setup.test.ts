@@ -15,18 +15,13 @@ test('cowork_setup is the live two-stage companion page, not the legacy renderer
   assert.match(source, /toRequests\(schema, values\)/);
 });
 
-test('the old first-run entry delegates to cowork_setup', async () => {
-  const source = await readFile(new URL('../public/js/firstrun.js', import.meta.url), 'utf8');
-  assert.match(source, /cowork-setup\.js/);
-  assert.doesNotMatch(source, /Set up your coworkspace/);
-});
-
-test('cowork_setup owns the canonical route and the old name only redirects', async () => {
+test('cowork_setup owns one path with no legacy mapping', async () => {
   const source = await readFile(new URL('../public/js/main.js', import.meta.url), 'utf8');
   const server = await readFile(new URL('../src/index.ts', import.meta.url), 'utf8');
   assert.match(server, /app\.get\('\/cowork_setup'/);
   assert.match(source, /pathname === '\/cowork_setup'/);
   assert.match(source, /history\.replaceState\([^\n]+'\/cowork_setup'/);
   assert.match(source, /location\.href = '\/\?' \+ q/);
-  assert.match(source, /has\('setup'\)/);
+  assert.match(source, /from '\.\/cowork-setup\.js'/);
+  assert.doesNotMatch(source, /has\('setup'\)|has\('cowork_setup'\)|firstrun/);
 });

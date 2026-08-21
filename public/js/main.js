@@ -10,7 +10,7 @@ import { build } from './layout.js';
 import { S, TILE_COUNT, loadState, tiles } from './state.js';
 import { setLayout } from './viewport.js';
 import { installTips } from './tips.js';
-import { buildFirstRun } from './firstrun.js';
+import { buildCoworkSetup } from './cowork-setup.js';
 import { installServicesStatus } from './services-activation.js';
 
 export async function init() {
@@ -48,18 +48,15 @@ export async function init() {
   //      section and stays quiet forever — and so does a failed read, because a wrong
   //      answer must cost a missing page, never the product.
   //
-  // `/cowork_setup` is the deliberate way back in. The old query spellings are accepted
-  // only as compatibility redirects to that first-class companion-page path.
+  // `/cowork_setup` is the deliberate way back in: one surface, one route, one name.
   {
-    const query = new URLSearchParams(location.search);
-    const legacy = query.has('setup') || query.has('cowork_setup');
-    const wants = location.pathname === '/cowork_setup' || legacy;
+    const wants = location.pathname === '/cowork_setup';
     const s = wants ? null : await request('/api/settei/setup');
     if (wants || (s?.ok && s.data.pending === true)) {
       if (location.pathname !== '/cowork_setup') history.replaceState(null, '', '/cowork_setup');
       const host = document.createElement('div');
       document.body.replaceChildren(host);
-      await buildFirstRun(host, (landing) => {
+      await buildCoworkSetup(host, (landing) => {
         // THE LANDING CHOOSES WHAT GREETS THEM. Exiting to a bare pathname handed the
         // person whatever localStorage happened to hold — on a fresh box, nothing, and
         // on a box with two tabs, some other tab's tiles. `?tiles=` is the one-shot

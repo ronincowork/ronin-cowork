@@ -78,7 +78,7 @@ name.
 
 ## The surfaces
 
-- **The setup page** (`public/js/firstrun.js`) — an absent agent's tick is live and the row
+- **cowork_setup** (`public/js/cowork-setup.js`) — an absent agent's tick is live and the row
   says what pressing it does, command included. A present agent's tick is fixed: a fact,
   not a control. At Save the want is written first, so a failed install stays on the needed
   list, and the dispatch follows.
