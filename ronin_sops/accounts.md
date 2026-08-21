@@ -2,7 +2,7 @@
 
 > Stock SOP. Your own copy in the sops store (`ronin-store sops` → `accounts.md`) replaces
 > this file whole — a default, not law.
-> **Voice: relay.** Written for the agent to walk a person through, not to follow itself.
+> **Voice: agent.** How the agent establishes and records who this install is for — not a walkthrough to relay.
 > **Tool: `tejun-account`** — the owner's name, the entitlement, the limits they set, and
 > what is still unanswered. Pair it with **`tejun-secrets`**, which answers which provider
 > credential is actually in force. Run both before asking the owner anything; half these

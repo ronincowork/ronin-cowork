@@ -14,8 +14,14 @@ import { storeDir } from './stores.js';
  *
  * Vendor neutrality holds by construction: "agents can read and write it" is ordinary
  * file I/O every CLI already has. Ronin announces a path and renders a file; it never
- * reaches into an agent. `ronin_bin/tejun-wipeboard` is the same surface from a shell, and
- * the two are interchangeable by design — neither is the "real" one.
+ * reaches into an agent. `ronin_bin/tejun-wipeboard` is the same surface from a shell.
+ *
+ * The two are no longer symmetrical, and the asymmetry is deliberate rather than a gap
+ * nobody noticed. A post from `tejun-wipeboard` NOTIFIES the rest of the board (2026-08-21:
+ * agent posts "went unheard" — the file moved and nobody was told); a post from this
+ * module does not, because it is the OWNER's line from the tile, and the owner already has
+ * the tile dials for reaching a session on purpose. If that changes, the notice belongs
+ * behind the same tejun-send the shell tool uses — never a second delivery path.
  */
 
 /** Boards are the user's own work, so they live in the wipeboards STORE (user root) —

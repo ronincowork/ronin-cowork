@@ -50,18 +50,25 @@ because the advice sounds right either way. The `> Tool:` line puts information-
 before the conversation instead of after it, and it costs one run. The numbers stay in a
 terminal, where they are true, and never in the file, where they would rot.
 
-## One voice: relay
+## Voice — each SOP says who it speaks to
 
-An SOP is **written for the agent to relay** — a walkthrough for a person who does not
-know the domain, delivered by the agent, and each one says so in its header. Getting this
-wrong means the agent silently follows a walkthrough itself instead of walking the_owner
-through it.
+An SOP declares its voice in its header, because the two failure modes are opposite:
 
-There used to be a second voice, *written at the agent*, and it had exactly one file:
-`documents.md`. That file is now `ronin_library/documents.md`, because a rule the agent
-applies itself is fetched by the machinery, not by a situation. The voice split and the
-shelf split turned out to be the same split — which is the best evidence the boundary is
-real.
+- **Relay** — a walkthrough for a person who does not know the domain, delivered by the
+  agent (`vpn.md`, `deploy.md`). Getting this wrong means the agent silently follows the
+  walkthrough itself instead of walking the_owner through it.
+- **Agent** — how the agent itself operates in an area (`syncthing.md`,
+  `ronin_methodology.md`). Not prescriptive — a common approach to use in the absence of
+  other instruction, stated so every session defaults the same way and the_owner has one
+  file to change. Getting this wrong is the mirror fault: an agent that reads a diagnosis
+  as a walkthrough talks the_owner through work it should simply have done.
+
+Judge the voice by who acts in the body, not by what the header of the file beside it
+happened to say. The line was boilerplate on ten of these before the shelf was audited on
+2026-08-21, and four of them were relaying nothing.
+
+A rule an *action* cites is neither: `documents.md` sits in `ronin_library/` because the
+machinery fetches it and a compile inlines it, so no situation ever has to go looking.
 
 **Who they are for.** The_owner may know an area cold or may never have had a repo.
 Nothing here is pushed at either of them — an SOP costs nothing until a situation calls
@@ -84,4 +91,6 @@ one replaces it whole, a new name sits beside stock, and an upgrade never touche
 store. Redefining one is how your sessions inherit *your* process instead of ours.
 
 **Deliberately near-empty.** Stock SOPs are screened in one at a time, exactly like the
-library.
+library. The stock roster and the situation that selects each book live in
+`docs/SHELVES.md`; `ronin_methodology.md` is the shared session-to-session method, while
+`github.md` remains the source-control walkthrough for ordinary owner projects.

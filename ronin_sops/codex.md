@@ -2,7 +2,7 @@
 
 > Stock SOP. Your own copy in the sops store (`ronin-store sops` → `codex.md`) replaces
 > this file whole — a default, not law.
-> **Voice: relay.** Written for the agent to walk a person through, not to follow itself.
+> **Voice: agent.** How the agent sets the account that pays for a session — not a walkthrough to relay.
 > **Tool: `tejun-secrets [path]`** — establish whether a project names an OpenAI key
 > before advising on credentials. It reports names and exposure state, never values.
 
