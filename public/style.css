@@ -990,41 +990,8 @@ body {
   border-color: var(--line);
 }
 
-/* @ mention picker — the live session list, beside the Commons torii. */
-.tmention {
-  display: none;
-  position: absolute;
-  top: 100%;
-  right: 6px;
-  z-index: 13;
-  width: max-content;
-  min-width: 180px;
-  max-width: calc(100% - 12px);
-  max-height: 60vh;
-  overflow-y: auto;
-  padding: var(--space-3);
-  background: var(--panel);
-  border: var(--edge) solid var(--line);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sheet);
-}
-.tmention.open { display: flex; flex-direction: column; }
-.tmention-row {
-  width: 100%;
-  height: auto;
-  padding: var(--space-3) var(--space-4);
-  color: var(--fg);
-  background: transparent;
-  border: 0;
-  border-radius: 0;
-  font: var(--text-3) var(--font-term);
-  text-align: left;
-  overflow-wrap: anywhere;
-  white-space: normal;
-  cursor: grab;
-}
-.tmention-row:hover,
-.tmention-row:focus-visible { color: var(--fg-strong); background: var(--raise); }
+/* The @ picker is deliberately the same native control as the session picker. */
+.tile-head select.tmention-btn { flex: 0 0 auto; width: 42px; padding-inline: var(--space-3); }
 .tile .composer.mention-ready textarea { border-color: var(--accent); }
 
 /* Tile メ — the rest of the header, dropped in ONE HORIZONTAL STRIP (owner, 2026-08-17:

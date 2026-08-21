@@ -161,7 +161,7 @@ const HEADER = () => (rows ??= [
 
   { key: 'mentionBtn', needs: 'session',
     widget: (t) => buildTileMentions(t),
-    help: 'Mention another session — click a name or drag it into the message box',
+    help: 'Mention another session — choose a name to add it to the message box',
     quiet: 'Mentions — no session in this tile yet' },
 
   // THE TEGAMI TORII IS GONE (owner's ruling 2026-08-17, reaffirmed after the objection

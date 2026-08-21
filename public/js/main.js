@@ -48,12 +48,17 @@ export async function init() {
   //      section and stays quiet forever — and so does a failed read, because a wrong
   //      answer must cost a missing page, never the product.
   //
-  // `?setup` remains as the deliberate way back in — the page is reachable, not only
-  // routed to.
+  // `?cowork_setup` is the deliberate way back in — the surface keeps its real name in
+  // the address bar. `?setup` is accepted only as an old-link compatibility redirect.
   {
-    const wants = new URLSearchParams(location.search).has('setup');
+    const query = new URLSearchParams(location.search);
+    const legacy = query.has('setup');
+    const wants = legacy || query.has('cowork_setup');
     const s = wants ? null : await request('/api/settei/setup');
     if (wants || (s?.ok && s.data.pending === true)) {
+      if (legacy || !query.has('cowork_setup')) {
+        history.replaceState(null, '', `${location.pathname}?cowork_setup`);
+      }
       const host = document.createElement('div');
       document.body.replaceChildren(host);
       await buildFirstRun(host, (landing) => {
