@@ -47,6 +47,7 @@ export function initialOf(f, ctx) {
   if (f.seed === 'home') return ctx.home ?? '';
   if (f.seed === 'models:first') return ctx.modelOpts?.[0]?.value ?? '';
   if (f.seed === 'models:light') return ctx.light ? pm(ctx.light) : '';
+  if (f.seed === 'sessions:estimate') return String(ctx.sessionEstimate ?? 0);
   return '';
 }
 

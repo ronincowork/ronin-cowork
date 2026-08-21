@@ -1,4 +1,4 @@
-/* part of the tmux-ronin client — see js/README.md */
+/* part of the ronin-cowork client — see js/README.md */
 /**
  * THE ADMIN DESK — what a tile shows when you ask it for the machine, not a session.
  *
@@ -78,7 +78,10 @@ export function buildDesk(tile) {
   const closeBtn = document.createElement('button');
   closeBtn.type = 'button';
   closeBtn.className = 'desk-x';
-  closeBtn.textContent = '✕';
+  const closeMark = document.createElement('span');
+  closeMark.className = 'close-hex';
+  closeMark.textContent = '×';
+  closeBtn.appendChild(closeMark);
   closeBtn.title = 'Back to what this tile was showing';
   closeBtn.addEventListener('click', () => tile.hideDesk());
   railTop.appendChild(closeBtn);

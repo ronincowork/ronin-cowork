@@ -1,4 +1,4 @@
-/* part of the tmux-ronin client — see js/README.md */
+/* part of the ronin-cowork client — see js/README.md */
 /**
  * ⌂ ROSTER — the session list, and the one number above it.
  *
@@ -14,7 +14,7 @@
  */
 import { request } from './request.js';
 import { STATUS_LABEL, homeData, homeFault, jobIcon } from './home.js';
-import { S } from './state.js';
+import { S, tiles } from './state.js';
 import { clampTip, humanAge } from './shingo.js';
 
 /**
@@ -95,6 +95,44 @@ export function buildRoster(tile, host) {
   list.className = 'home-list';
   host.appendChild(list);
 
+  // A group has no record of its own: it exists when at least one session carries its
+  // tag. Keep a newly named, empty group here as a drop target; the first drop makes it
+  // durable on the session itself.
+  const pendingGroups = new Set();
+  const groupAdd = document.createElement('form');
+  groupAdd.className = 'home-group-add';
+  const groupInput = document.createElement('input');
+  groupInput.type = 'text';
+  groupInput.maxLength = 32;
+  groupInput.placeholder = 'group name';
+  groupInput.setAttribute('aria-label', 'New group name');
+  groupInput.autocapitalize = 'off';
+  groupInput.autocomplete = 'off';
+  groupInput.spellcheck = false;
+  const groupButton = document.createElement('button');
+  groupButton.type = 'submit';
+  groupButton.textContent = '＋ Group';
+  const groupMessage = document.createElement('span');
+  groupMessage.className = 'home-group-msg';
+  groupAdd.append(groupInput, groupButton, groupMessage);
+  host.appendChild(groupAdd);
+
+  const cleanGroup = (value) =>
+    String(value || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 32);
+  groupAdd.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const group = cleanGroup(groupInput.value);
+    if (!group) {
+      groupMessage.textContent = 'use letters, digits, - or _';
+      groupInput.focus();
+      return;
+    }
+    pendingGroups.add(group);
+    groupInput.value = '';
+    groupMessage.textContent = `drag a session into ${group}`;
+    render();
+  });
+
   // A ROW IS A FIXED GRID, NOT A FLOW (owner's ruling 2026-08-17). Every landmark on
   // the right — the SHINGO chip, the status word, the ⛽ reading — sits at the SAME x on
   // every row, so the eye runs straight down a column instead of hunting for where each
@@ -111,6 +149,14 @@ export function buildRoster(tile, host) {
     const r = document.createElement('button');
     r.type = 'button';
     r.className = 'home-row';
+    r.draggable = true;
+    r.addEventListener('dragstart', (e) => {
+      e.dataTransfer.effectAllowed = 'copy';
+      e.dataTransfer.setData('application/x-ronin-session', s.name);
+      e.dataTransfer.setData('text/plain', s.name);
+      r.classList.add('dragging');
+    });
+    r.addEventListener('dragend', () => r.classList.remove('dragging'));
     // The session's MARK: the icon of the session_job in its LETTER, on every row. It
     // replaced the 人, which named only who was in charge, had to be set by hand, and
     // left every other row blank — the job is what actually differs between two
@@ -230,26 +276,95 @@ export function buildRoster(tile, host) {
     // session. Untagged sessions fall to the bottom under "no group". When nothing is
     // tagged at all the headings are skipped entirely, so an untagged setup looks
     // exactly as it did before.
-    const groups = [...new Set(data.flatMap((s) => s.tags || []))].sort();
+    const liveGroups = new Set(data.flatMap((s) => s.tags || []));
+    for (const group of liveGroups) pendingGroups.delete(group);
+    const groups = [...new Set([...liveGroups, ...pendingGroups])].sort();
     if (!groups.length) {
       for (const s of data) list.appendChild(rowFor(s));
     } else {
-      const heading = (text, n) => {
+      const heading = (text, n, container, acceptsDrop = true) => {
         const h = document.createElement('div');
         h.className = 'home-grp';
         h.append(Object.assign(document.createElement('b'), { textContent: text }));
         h.append(Object.assign(document.createElement('span'), { textContent: String(n) }));
-        list.appendChild(h);
+        container.appendChild(h);
+        if (!acceptsDrop) {
+          return;
+        }
+        h.title = `Drop a session here to add it to ${text}`;
+        container.addEventListener('dragover', (e) => {
+          if (!e.dataTransfer.types.includes('application/x-ronin-session')) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'copy';
+          h.classList.add('drop-ready');
+        });
+        container.addEventListener('dragleave', (e) => {
+          if (!container.contains(e.relatedTarget)) h.classList.remove('drop-ready');
+        });
+        container.addEventListener('drop', async (e) => {
+          e.preventDefault();
+          h.classList.remove('drop-ready');
+          const name = e.dataTransfer.getData('application/x-ronin-session');
+          const session = data.find((s) => s.name === name);
+          if (!session || (session.tags || []).includes(text)) return;
+          const wasPending = pendingGroups.has(text);
+          const optimistic = [...new Set([...(session.tags || []), text])].sort();
+          session.tags = optimistic;
+          const base = S.sessions.find((s) => s.name === name);
+          if (base) base.tags = optimistic;
+          pendingGroups.delete(text);
+          groupMessage.textContent = '';
+          tiles.forEach((t) => t.syncHeader());
+          // The visible move is the acknowledgement. Do it before either network round
+          // trip so dropping feels like moving a card, not submitting a form.
+          render();
+
+          const fail = (message) => {
+            session.tags = (session.tags || []).filter((tag) => tag !== text);
+            if (base) base.tags = (base.tags || []).filter((tag) => tag !== text);
+            if (wasPending && !data.some((s) => (s.tags || []).includes(text))) pendingGroups.add(text);
+            groupMessage.textContent = 'not saved — ' + message;
+            tiles.forEach((t) => t.syncHeader());
+            render();
+          };
+          // Read immediately before the write so a drop never erases a tag added from
+          // another tile since this roster's last poll.
+          const current = await request('/api/sessions/' + encodeURIComponent(name) + '/tags');
+          if (!current.ok) {
+            fail(current.message);
+            return;
+          }
+          const tags = [...new Set([...(current.data.tags || []), text])].sort();
+          const result = await request('/api/sessions/' + encodeURIComponent(name) + '/tags', {
+            method: 'POST',
+            json: { tags },
+          });
+          if (!result.ok) {
+            fail(result.message);
+            return;
+          }
+          const saved = Array.isArray(result.data.tags) ? result.data.tags : tags;
+          session.tags = saved;
+          if (base) base.tags = saved;
+          tiles.forEach((t) => t.syncHeader());
+          render();
+        });
       };
       for (const g of groups) {
         const mem = data.filter((s) => (s.tags || []).includes(g));
-        heading(g, mem.length);
-        for (const s of mem) list.appendChild(rowFor(s));
+        const block = document.createElement('div');
+        block.className = 'home-group';
+        list.appendChild(block);
+        heading(g, mem.length, block);
+        for (const s of mem) block.appendChild(rowFor(s));
       }
       const loose = data.filter((s) => !(s.tags || []).length);
       if (loose.length) {
-        heading('no group', loose.length);
-        for (const s of loose) list.appendChild(rowFor(s));
+        const block = document.createElement('div');
+        block.className = 'home-group';
+        list.appendChild(block);
+        heading('no group', loose.length, block, false);
+        for (const s of loose) block.appendChild(rowFor(s));
       }
     }
     if (!data.length) {

@@ -168,7 +168,9 @@ export function registerLaunch(app: express.Express): void {
       // be discarded: the brief was typed anyway, into whatever was on screen. Twice that
       // was a trust-folder dialog, whose rows are drawn with the same `❯` as a prompt, so
       // the text went nowhere and the Enter answered the dialog.
-      const { ready, held } = await waitReadyForBrief(resolved.name);
+      // The vendor, by the name spawn.ts already computed for the launch stamp — so the gate
+      // reads THIS agent's screen rather than any agent's (src/agents.ts carries the rows).
+      const { ready, held, gone } = await waitReadyForBrief(resolved.name, resolved.launchAgent);
       if (held) {
         console.error(
           `[ronin] ${resolved.name}: the CLI is asking something (trust this folder?) — ` +
@@ -179,9 +181,18 @@ export function registerLaunch(app: express.Express): void {
         // Do NOT send. A CLI that is not ready is either broken or still asking, and
         // typing a brief into that is at best lost and at worst an answer given on the
         // owner's behalf.
+        //
+        // `gone` is the case this whole buildout exists for and it gets its own words: the
+        // CLI came up, died, and left the login shell behind. The old code read that shell
+        // prompt as "ready" and typed the brief into bash — a session that looked completely
+        // alive and had been told nothing (measured 2026-08-20, LAUNCH_READY.md).
         console.error(
-          `[ronin] ${resolved.name}: never became ready — brief NOT sent. ` +
-            `Answer whatever the pane is asking, then re-send it.`,
+          gone
+            ? `[ronin] ${resolved.name}: the agent is not there — a shell prompt is showing ` +
+                `where ${resolved.cmd.split(/\s+/)[0]} should be, so the brief was NOT sent. ` +
+                `The tile has whatever it printed on its way out.`
+            : `[ronin] ${resolved.name}: never became ready — brief NOT sent. ` +
+                `Answer whatever the pane is asking, then re-send it.`,
         );
         return;
       }

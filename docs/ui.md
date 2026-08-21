@@ -102,8 +102,11 @@ The roles, defined in `public/style.css`:
 - text: `--fg-strong` · `--fg` · `--muted` · `--muted-2` · `--muted-3` · `--dim` (zero-state)
 - meaning: `--accent` (attention/identity) · `--accent-2` (reference) · `--ok`/`--ok-2` ·
   `--warn` (needs you) · the `--bad-*` family (wrong, in grades) · `--info` · `--action`
-- house: `--kaki` (this session; heightened access/visibility) · `--aiiro` (Ronin) —
-  Kojin's fixed palette, borrowed. `--heighten`, `--heighten-hover`, `--heighten-fg`, and
+- house: `--kaki` (the Ronin identity mark; this session; heightened access/visibility) ·
+  `--aiiro` (Ronin navigation and selection) — Kojin's fixed palette, borrowed. The kaki
+  identity ruling is the open hexagonal **hito** mark; using the same colour for heightened
+  action connects “this needs you” to the house without making every Ronin surface kaki.
+  `--heighten`, `--heighten-hover`, `--heighten-fg`, and
   `--heighten-shape` are the semantic treatment: a kaki hexagon for an access or view
   control whose ability to be found quickly is part of its function.
 - elevation: `--scrim`, `--shadow-menu`, `--shadow-sheet` — the whole vocabulary

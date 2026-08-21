@@ -10,6 +10,7 @@
     "start": "tsx src/index.ts",
     "smoke": "node scripts/smoke-test.mjs",
     "smoke:ui": "node scripts/smoke-ui.mjs",
+    "smoke:cowork-setup": "node scripts/cowork-setup-journey.mjs",
     "visual:ui": "node scripts/visual-ui.mjs",
     "stage": "node scripts/stage.mjs",
     "check:modules": "node scripts/check-modules.mjs",

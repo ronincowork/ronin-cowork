@@ -154,7 +154,7 @@ app.use((req, res, next) => {
   if (passwordAuthEnabled() && req.method === 'GET' && req.accepts(['json', 'html']) === 'html') {
     return res.redirect('/login');
   }
-  if (authEnabled) res.set('WWW-Authenticate', 'Basic realm="tmux-ronin"');
+  if (authEnabled) res.set('WWW-Authenticate', 'Basic realm="ronin"');
   res.status(401).send('Authentication required.');
 });
 
@@ -204,7 +204,7 @@ const noCacheClient = (res: express.Response, filePath: string) => {
 const STAGING = process.env.RONIN_STAGING_DIR ?? path.join(ROOT, 'public-staging');
 if (fs.existsSync(STAGING)) {
   app.use('/staging', express.static(STAGING, { setHeaders: noCacheClient }));
-  console.log(`[tmux-ronin] staging client at /staging/  (from ${STAGING})`);
+  console.log(`[ronin] staging client at /staging/  (from ${STAGING})`);
 }
 
 app.use(express.static(PUBLIC, { setHeaders: noCacheClient }));
@@ -228,7 +228,7 @@ app.get('/api/health', (_req, res) =>
 
 registerPasskeyManage(app); // /api/passkey/{list,register-options,register,remove} — BEHIND the gate on purpose
 registerLaunch(app); // /api/launch (both variants), /api/sessions, /api/home, session-max, owner — src/routes/launch.ts
-registerCatalogs(app); // /api/macros, /api/hotwords*, /api/project-roots*, /api/session-launch-specs, /api/session-jobs — src/routes/catalogs.ts
+registerCatalogs(app); // /api/macros, /api/project-roots*, /api/session-launch-specs, /api/agents, /api/session-jobs, /api/saved-launches*, /api/catalogs/seed — src/routes/catalogs.ts
 registerVersion(app); // /api/version — release string, or the commit this process started from — src/routes/version.ts
 registerUpdate(app); // /api/update/* — the ⚙ gear's check + run, press-only — src/routes/update-api.ts
 registerSettei(app); // /api/settei — the install record, and writes BY NAME only — src/routes/settei-api.ts
@@ -354,14 +354,14 @@ const wss = new WebSocketServer({
 server.on('upgrade', (req, socket, head) => {
   // Same one question as HTTP — the browser's socket carries the login cookie.
   if (!checkAuth(req.headers)) {
-    socket.write('HTTP/1.1 401 Unauthorized\r\nWWW-Authenticate: Basic realm="tmux-ronin"\r\n\r\n');
+    socket.write('HTTP/1.1 401 Unauthorized\r\nWWW-Authenticate: Basic realm="ronin"\r\n\r\n');
     socket.destroy();
     return;
   }
   // A page Ronin did not serve may not open a socket with the owner's ambient
   // credentials — auth cannot tell that apart, only the Origin can. See src/ws/origin.ts.
   if (!originAllowed(req.headers.origin, req.headers.host)) {
-    console.warn(`[tmux-ronin] refused a socket from origin ${req.headers.origin}`);
+    console.warn(`[ronin] refused a socket from origin ${req.headers.origin}`);
     socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
     socket.destroy();
     return;
@@ -394,13 +394,13 @@ server.on('upgrade', (req, socket, head) => {
 try {
   assertBindIsSafe(passwordAuthEnabled());
 } catch (e) {
-  console.error(`[tmux-ronin] ${(e as Error).message}`);
+  console.error(`[ronin] ${(e as Error).message}`);
   process.exit(1);
 }
 
 await checkTmuxServerCgroup(); // loud if our own restart would kill every session
 const removed = await cleanupViewers();
-if (removed) console.log(`[tmux-ronin] cleaned up ${removed} stale viewer session(s)`);
+if (removed) console.log(`[ronin] cleaned up ${removed} stale viewer session(s)`);
 // THE BOOT SOCKET: every service's timers, janitors and sinks start inside its own
 // register.ts boot hook — rireki's janitor+warmer+settler, counting's sink+catalog
 // feed, michi's letter sweep. What used to be wired line-by-line here is now each
@@ -408,7 +408,7 @@ if (removed) console.log(`[tmux-ronin] cleaned up ${removed} stale viewer sessio
 await startBootHooks();
 startSessionsBroadcast(); // the /events membership poll, on the same boot clock as before
 // The house board — the one board every install has, seeded once and then the user's.
-void seedHouseBoard().catch((e) => console.error('[tmux-ronin] house board seed failed:', e));
+void seedHouseBoard().catch((e) => console.error('[ronin] house board seed failed:', e));
 
 // Tools inside a pane (tejun-harakiri) find the API here instead of re-deriving the bind.
 void publishRoninUrl(`http://${config.bind}:${config.port}`);
@@ -420,11 +420,11 @@ void publishOwner();
 
 server.listen(config.port, config.bind, () => {
   console.log(
-    `[tmux-ronin] listening on http://${config.bind}:${config.port}  (basic auth: ${authEnabled ? 'ON' : 'off'}, login: ${passwordAuthEnabled() ? 'ON' : 'off'}, window-size: ${config.windowSize})`,
+    `[ronin] listening on http://${config.bind}:${config.port}  (basic auth: ${authEnabled ? 'ON' : 'off'}, login: ${passwordAuthEnabled() ? 'ON' : 'off'}, window-size: ${config.windowSize})`,
   );
   // Printed because a refused socket is otherwise a mystery from the browser end:
   // the page simply does not connect, and this line is what the log can be read against.
-  console.log(`[tmux-ronin] browser sockets accepted from: ${allowedOrigins().join(', ')}`);
+  console.log(`[ronin] browser sockets accepted from: ${allowedOrigins().join(', ')}`);
 });
 
 // The letter sweep and the sanitiser's catalog feed moved into michi's and counting's

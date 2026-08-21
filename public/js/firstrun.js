@@ -99,28 +99,70 @@ export async function buildFirstRun(host, onDone) {
     home: machine.home ?? '',
     modelOpts: runnable.map((s) => ({ label: s.provider + ' · ' + s.model, value: pm(s) })),
     light: runnable.find((s) => LIGHT.test(s.model)) ?? runnable[runnable.length - 1],
+    sessionEstimate: Math.max(1, Math.floor(((Number(machine.ram_gb || 0) * 1024) - Math.max(Number(machine.ram_gb || 0) * 256, 2048)) / 700)),
   };
 
   const head = el('div', 'fr-mast');
-  const mark = el('div', 'fr-mark');
-  mark.append(el('span', 'fr-torii', '⛩'), document.createTextNode(' ronin'));
-  head.append(mark, el('h1', 'fr-title', 'Set up your coworkspace'));
-  head.append(el('p', 'fr-sub', "You've downloaded Ronin onto this machine. A few answers and it's yours — all of them changeable later."));
+  const mark = el('div', 'fr-mark', 'RONIN COWORK');
+  head.append(mark, el('p', 'fr-live', 'YOU’RE CONNECTED — Ronin is live on your machine.'));
+  head.append(el('h1', 'fr-title', 'Make this coworkspace yours.'));
+  head.append(el('p', 'fr-sub', 'Tell Ronin Cowork who you are, where your work lives, and which agents you want here. You can change all of this later.'));
+  const proof = el('div', 'fr-proof');
+  proof.append(el('span', 'fr-proof-dot'), document.createTextNode(` Running privately on ${machine.host || 'this machine'}`));
+  head.append(proof);
   host.append(head);
+
+  const layout = el('div', 'fr-layout');
+  const form = el('div', 'fr-form');
+  const reviewShell = el('aside', 'fr-review-shell');
+  reviewShell.append(el('div', 'fr-stage fr-review-stage', 'When you save'));
+  const review = el('div', 'fr-review');
+  review.append(el('p', 'fr-review-intro', 'Review what RoninCoWork will do.'));
+  const reviewList = el('dl', 'fr-review-list');
+  review.append(reviewList);
+  reviewShell.append(review);
+  layout.append(form, reviewShell);
+  host.append(layout);
 
   const read = {}; // id -> () => value
   /** agent id -> its live checkbox. Absent agents only: a present one's tick is a fact. */
   const wantAgents = new Map();
   let wantServices = null;
   let serviceEmail = null;
+  let wantGbrain = null;
 
-  for (const sec of schema.sections) {
-    const s = el('section', 'fr-sec');
-    s.append(el('h2', 'fr-h', sec.title));
-    if (sec.lede) s.append(el('p', 'fr-lede', sec.lede));
+  const stage = (small, text, cls = '') => {
+    const n = el('div', `fr-stage ${cls}`);
+    n.append(el('small', null, small), document.createTextNode(' ' + text));
+    form.append(n);
+  };
+  stage('FIRST', 'Set up your coworkspace');
+
+  const sectionOrder = ['machine', 'you', 'agents', 'defaults', 'services', 'project'];
+  const sections = [...schema.sections].sort((a, b) => sectionOrder.indexOf(a.id) - sectionOrder.indexOf(b.id));
+  let sectionNumber = 0;
+
+  for (const sec of sections) {
+    if (sec.id === 'project') stage('THEN', 'Start your first project', 'fr-project-stage');
+    sectionNumber++;
+    const s = el('details', 'fr-sec');
+    s.open = true;
+    const summary = el('summary', 'fr-sec-head');
+    const titles = { machine: 'Name your coworkspace', you: 'What should Ronin call you?', agents: 'Your agents', defaults: 'How new sessions should start', services: 'Ronin Services · Optional', project: 'What would you like to work on first?' };
+    const ledes = {
+      machine: 'Choose the name you’ll recognize in your roster. The hostname does not change.',
+      you: 'Mika and your working agents use this name.',
+      agents: 'Agents already found here are ready. Select any others you want RoninCoWork to add.',
+      defaults: 'These are starting choices, never restrictions. Every launch can choose something else.',
+      services: 'Extra capabilities for your coworkspace. RoninCoWork works fully without them.',
+      project: 'Start with one project and its folder. You can add more whenever you need them.',
+    };
+    summary.append(el('span', 'fr-num', String(sectionNumber)), el('span', 'fr-head-copy'));
+    summary.lastChild.append(el('h2', 'fr-h', titles[sec.id] || sec.title), el('p', 'fr-lede', ledes[sec.id] || sec.lede || ''));
+    s.append(summary);
     const card = el('div', 'fr-card');
     s.append(card);
-    host.append(s);
+    form.append(s);
 
     if (sec.facts) {
       const rows = schema.facts
@@ -139,44 +181,50 @@ export async function buildFirstRun(host, onDone) {
     }
 
     if (sec.custom === 'agents') {
-      // ONE MEANING, TAUGHT ONCE — the same sentence ⚙ teaches (js/settei.js), because it
-      // is the same checkbox: a tick is the installed bit, and an empty one is a control.
-      card.append(el('p', 'fr-lede', 'A tick means it is on the box — that one is a fact, not a choice. Tick an empty one and Ronin installs it, then starts it in the same tile so you can sign in.'));
+      const table = el('div', 'fr-agents');
+      const hdr = el('div', 'fr-agent-head');
+      for (const h of ['', 'Agent', 'When you save', 'Status']) hdr.append(el('span', null, h));
+      table.append(hdr);
       for (const a of agents) {
         const row = el('div', 'fr-agent');
         const box = document.createElement('input');
         box.type = 'checkbox';
         box.id = 'fr-agent-' + a.id;
-        const body = el('div', 'fr-agent-body');
         const name = el('div', 'fr-agent-name');
         const lab = el('label', null, a.label);
         lab.htmlFor = box.id;
-        name.append(lab, el('span', a.installed ? 'fr-tag on' : 'fr-tag off', a.installed ? 'installed' : 'not installed'));
+        name.append(lab);
         let what;
         if (a.installed) {
           box.checked = true;
           box.disabled = true; // a fact, not a control — reality unticks it, not you
           box.title = 'installed';
-          what = 'Found at ' + a.path;
+          what = 'Nothing—already ready.';
         } else if (a.get) {
           // SAY THE COMMAND, BEFORE IT RUNS. It shows again in the tile, because the tile
           // IS the terminal it runs in — a vendor installer is somebody else's code and
           // being able to read it first is the whole mitigation.
           box.title = 'not installed — tick it and Ronin installs it';
           wantAgents.set(a.id, box);
-          what = a.from + '. Not on this machine yet — tick it and Ronin runs `' + a.get + '` in its own tile, then starts it there for you to sign in.';
+          what = 'Install if selected.';
         } else {
           // NO COMMAND, SO NO CONTROL. Two ways to get here and one honest row for both:
           // an agent Ronin has parked (`parked` says why, in the words a person reads —
           // src/agents.ts), or an operator that predates the install line altogether. A
           // tick that cannot deliver is worse than a row that admits it.
           box.disabled = true;
-          what = a.from + '. ' + (a.parked || 'Not on this machine yet — install it and it appears here.');
+          what = a.parked || 'Install manually and RoninCoWork will detect it.';
         }
-        body.append(name, el('div', 'fr-agent-what', what));
-        row.append(box, body);
-        card.append(row);
+        const tag = el('span', `fr-tag ${a.installed ? 'on' : a.get ? 'add' : ''}`, a.installed ? 'Installed' : a.get ? 'Available to add' : 'Manual install');
+        row.append(box, name, el('div', 'fr-agent-what', what), tag);
+        if (!a.installed && a.get) {
+          const more = el('details', 'fr-agent-more');
+          more.append(el('summary', null, 'Installation details'), el('div', 'fr-detail', `${a.from}. RoninCoWork will run ${a.get}.`));
+          row.append(more);
+        }
+        table.append(row);
       }
+      card.append(table);
       if (!agents.length) card.append(el('p', 'fr-lede', 'Could not read this machine for agents. You can set this later from ⚙ Configuration.'));
     }
 
@@ -212,11 +260,24 @@ export async function buildFirstRun(host, onDone) {
       serviceEmail.placeholder = 'you@example.com';
       const ef = field(serviceEmail, { label: 'Where should we send the confirmation?', sr: false });
       ef.el.classList.add('fr-row');
-      ef.say('We email you a link. Confirming it is how you accept the two above, and the services install themselves after.');
+      ef.say('1. Ronin emails a link → 2. You confirm the terms → 3. Services install.');
       terms.append(ef.el);
+      wantGbrain = document.createElement('input');
+      wantGbrain.type = 'checkbox';
+      wantGbrain.id = 'fr-gbrain';
+      const gb = el('label', 'fr-gbrain');
+      gb.htmlFor = wantGbrain.id;
+      const gbCopy = el('span');
+      gbCopy.append(el('b', null, 'Use gbrain memory '));
+      const gbLink = el('a', null, 'Garry Tan’s open-source agent memory');
+      gbLink.href = 'https://github.com/garrytan/gbrain'; gbLink.target = '_blank'; gbLink.rel = 'noreferrer';
+      gbCopy.append(gbLink, document.createTextNode('. Agents search it before answering and add to it as they work. Ronin provides a local embeddings model that uses about 0.3 GB.'));
+      gb.append(wantGbrain, gbCopy);
+      terms.append(gb);
       card.append(terms);
       wantServices.addEventListener('change', () => {
         terms.hidden = !wantServices.checked;
+        if (!wantServices.checked) wantGbrain.checked = false;
         if (wantServices.checked) serviceEmail.focus();
       });
     }
@@ -225,9 +286,31 @@ export async function buildFirstRun(host, onDone) {
     for (const f of schema.fields.filter((x) => x.sec === sec.id && x.ask !== false)) read[f.id] = renderField(card, f, ctx);
   }
 
+  const reviewRows = {};
+  const addReview = (id, label) => {
+    const row = el('div', 'fr-review-row');
+    row.append(el('dt', null, label));
+    const value = el('dd'); row.append(value); reviewList.append(row); reviewRows[id] = value;
+  };
+  for (const [id, label] of [['machineName','Coworkspace name'],['ownerName','Ronin will call you'],['agents','Ready agents'],['add','RoninCoWork will install'],['model','New sessions start with'],['mika','Mika uses'],['cap','Maximum agent sessions'],['services','Ronin Services'],['gbrain','gbrain memory'],['projName','First project'],['projDir','Working folder'],['projRemit','What are you working on?']]) addReview(id, label);
+  const refreshReview = () => {
+    const val = (id) => read[id]?.() || '';
+    reviewRows.machineName.textContent = val('machineName') || machine.host || 'Use the hostname';
+    reviewRows.ownerName.textContent = val('ownerName') || 'Use the machine user';
+    reviewRows.agents.textContent = agents.filter((a) => a.installed).map((a) => a.label).join(', ') || 'None detected';
+    reviewRows.add.textContent = [...wantAgents].filter(([, b]) => b.checked).map(([id]) => agents.find((a) => a.id === id)?.label || id).join(', ') || 'Nothing';
+    const modelText = (id) => { const v = val(id); return ctx.modelOpts.find((o) => o.value === v)?.label || 'No runnable model detected'; };
+    reviewRows.model.textContent = modelText('model'); reviewRows.mika.textContent = modelText('mika');
+    reviewRows.cap.textContent = val('cap') === '0' ? 'No limit' : (val('cap') ? `${val('cap')} sessions · about 700 MB each` : 'No limit');
+    reviewRows.services.textContent = wantServices?.checked ? `Begin activation${serviceEmail.value.trim() ? ` for ${serviceEmail.value.trim()}` : ' after an email is entered'}` : 'Not selected — nothing will be sent';
+    reviewRows.gbrain.textContent = wantServices?.checked && wantGbrain?.checked ? 'Local memory and embeddings · about 0.3 GB' : 'Not selected';
+    reviewRows.projName.textContent = val('projName') || 'Not named yet'; reviewRows.projDir.textContent = val('projDir') || 'Not chosen yet'; reviewRows.projRemit.textContent = val('projRemit') || 'No description yet';
+  };
+  layout.addEventListener('input', refreshReview); layout.addEventListener('change', refreshReview); refreshReview();
+
   const foot = el('div', 'fr-foot');
   const line = status('fr-status');
-  const save = button('Save and open Ronin', {
+  const save = button('Save and open RoninCoWork', {
     cls: 'fr-go',
     onClick: async () => {
       save.disabled = true;
@@ -245,11 +328,20 @@ export async function buildFirstRun(host, onDone) {
         if (!r.ok && r.status !== 409) problems.push(req.route + ': ' + (r.message || 'failed'));
       }
       if (wantServices?.checked) {
+        if (!serviceEmail.value.trim() || !serviceEmail.checkValidity()) {
+          problems.push('services: enter a valid email for the confirmation');
+        }
+      }
+      if (wantServices?.checked && !problems.length) {
         const r = await request('/api/settei/services', {
           method: 'PUT',
           json: { email: serviceEmail.value.trim(), terms: 'accepted-pending-email' },
         });
         if (!r.ok) problems.push('services: ' + (r.message || 'failed'));
+      }
+      {
+        const r = await request('/api/settei/gbrain', { method: 'PUT', json: { enabled: Boolean(wantServices?.checked && wantGbrain?.checked) } });
+        if (!r.ok) problems.push('gbrain: ' + (r.message || 'failed'));
       }
 
       if (problems.length) {
@@ -329,5 +421,5 @@ export async function buildFirstRun(host, onDone) {
     },
   });
   foot.append(save, el('span', 'fr-note', 'Your coworkspace opens straight away. Anything still to be fetched carries on in the background.'));
-  host.append(foot, line.el);
+  review.append(foot, line.el);
 }

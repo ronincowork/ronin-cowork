@@ -34,6 +34,7 @@ learn in order to use Ronin should cost them a second language first.
 |---|---|---|
 | Ronin | **Ronin** | The product. The one word anyone learns on purpose. |
 | `coworkspace` | **the coworkspace** | The whole UI — every tile, panel, tab and button in it. Say *the coworkspace* for the lot, *a tile* for one cell, *the commons* for a tile with no session in it. |
+| `cowork_setup` | **cowork setup** | The one-time surface that shapes a new coworkspace before it opens. In code and house documents always write `cowork_setup`; never shorten the surface name to bare *setup*, *setup page*, or *first run*. |
 | tile | **tile** | One cell of the coworkspace, showing one session. The public word for the terminal you look at. |
 | pane | *(say tile)* | The tmux terminal underneath. **Machinery only** — legal where tmux's own meaning is the subject (RIREKI tapes per pane), and nowhere else. If *tile* could be substituted without making the sentence wrong, it was supposed to say tile. |
 | session | **session** | One agent, one job, one name. Keeps running when you close the tab. |

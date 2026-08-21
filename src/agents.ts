@@ -60,11 +60,67 @@ const pexec = promisify(execFile);
  *  its own last step, leaving no `hermes` command behind. It is the only one of the five
  *  that is not a plain npm package. It comes back the day its line is re-verified — one
  *  field on one row, and every surface follows. */
+/**
+ * WHAT EACH AGENT'S SCREEN LOOKS LIKE — the second thing this file is the one source of.
+ *
+ * The `get` line proved the shape: per agent, declared once, read by every surface. A
+ * vendor's screen wants the same treatment, because the alternative is what we had — the
+ * knowledge of which glyph means "listening" living in `src/status.ts`, a second place,
+ * drifting from the list of agents it describes.
+ *
+ * REGEX SOURCES, NOT RegExp, and that is the registry's standing rule showing up here: a
+ * value in a table like this is DATA a reader interprets, never a code path. `status.ts`
+ * compiles them once at import.
+ *
+ * Three categories, and the order between them is the contract (busy, then asking, then
+ * ready), because the truest thing on a screen is the most specific one:
+ *
+ *   busy    it is working. Nothing should be typed at it yet.
+ *   asking  it has drawn a dialog. A PERSON is the thing being waited for, so waiting is
+ *           correct behaviour at any duration.
+ *   ready   its prompt row. It is listening.
+ *
+ * AN EMPTY LIST IS AN HONEST ANSWER, not a gap to fill with a guess. Only Claude Code and
+ * Codex have been characterised on a real screen; the rest carry nothing of their own and
+ * fall back to the house rows in `status.ts`, which is exactly today's behaviour. A wrong
+ * pattern would be worse than no pattern: it would answer "listening" about something that
+ * is not.
+ */
+export interface AgentScreen {
+  busy: readonly string[];
+  asking: readonly string[];
+  ready: readonly string[];
+}
+
 export const AGENTS = [
-  { id: 'claude', cmd: 'claude', label: 'Claude Code', from: 'Anthropic', get: 'npm install -g @anthropic-ai/claude-code', parked: '' },
-  { id: 'codex', cmd: 'codex', label: 'Codex', from: 'OpenAI', get: 'npm install -g @openai/codex', parked: '' },
-  { id: 'gemini', cmd: 'gemini', label: 'Gemini CLI', from: 'Google', get: 'npm install -g @google/gemini-cli', parked: '' },
-  { id: 'grok', cmd: 'grok', label: 'Grok CLI', from: 'xAI', get: 'npm install -g @xai-official/grok', parked: '' },
+  {
+    id: 'claude',
+    cmd: 'claude',
+    label: 'Claude Code',
+    from: 'Anthropic',
+    get: 'npm install -g @anthropic-ai/claude-code',
+    parked: '',
+    // Claude draws `❯ ` and then fills the rest of the line with its own placeholder hint
+    // (`❯ Try "create a util…"`), so an "empty to end of line" test never fires and a
+    // fresh session looked unready until the readiness wait timed out. Match the row.
+    screen: { busy: ['esc to interrupt'], asking: ['❯\\s*\\d+\\.\\s'], ready: ['^\\s*[│┃]?\\s*❯'] },
+  },
+  {
+    id: 'codex',
+    cmd: 'codex',
+    label: 'Codex',
+    from: 'OpenAI',
+    get: 'npm install -g @openai/codex',
+    parked: '',
+    // Codex uses `›` for both its input row and its dialog rows, so a NUMBERED › is a
+    // dialog and a bare one is the prompt. The order of the categories is what keeps
+    // those apart, and getting it wrong is how a brief answers a trust dialog.
+    screen: { busy: ['esc to interrupt'], asking: ['›\\s*\\d+\\.\\s'], ready: ['^\\s*›(?:\\s|$)'] },
+  },
+  // The three below are NOT characterised — nobody has read their screens against a real
+  // session, so they say nothing rather than guess, and the house rows answer for them.
+  { id: 'gemini', cmd: 'gemini', label: 'Gemini CLI', from: 'Google', get: 'npm install -g @google/gemini-cli', parked: '', screen: { busy: [], asking: [], ready: [] } },
+  { id: 'grok', cmd: 'grok', label: 'Grok CLI', from: 'xAI', get: 'npm install -g @xai-official/grok', parked: '', screen: { busy: [], asking: [], ready: [] } },
   {
     id: 'hermes',
     cmd: 'hermes',
@@ -72,6 +128,7 @@ export const AGENTS = [
     from: 'Nous Research',
     get: '',
     parked: "Ronin cannot install this one yet — Nous's own installer needs system packages it has to ask you for, and does not finish without them. Install it from their site and it appears here.",
+    screen: { busy: [], asking: [], ready: [] },
   },
 ] as const;
 

@@ -149,6 +149,9 @@ what exists. Ask the owner if the origin has none).
 | 2 | session-create | name `<topic>`, cwd `<dir>`, tags `<group>` |
 | 3 | run-command | `claude` |
 | 4 | wait-ready | claude pattern |
+
+glen: why claude? should be model agnostic and session-create is by the default
+
 | 5 | send-prompt | **READ AND REPORT UNDERSTANDING FIRST — never "read this and execute it".** A fork starts by proving it understood, not by working: "Read <handoff path>. Then report back, in your own words: what the job is, what you will NOT do (in particular: NO code, NO builds, NO commits until the owner says go), and anything in the brief that is unclear or looks wrong. Do not act on it yet — wait for the owner. Follow CLAUDE.md and CLAUDE.local.md conventions strictly." Add, for planning topics, what the eventual deliverable is: "when the owner gives the go-ahead, the output is a wip build-out plan per the documents SOP — a plan, not code." |
 | 6 | confirm-started | the fork has ACKNOWLEDGED — it reported its understanding and is waiting, not working |
 | 7 | report-outcome | session name, topic, handoff doc path, how to open it |
@@ -353,7 +356,7 @@ and fix …".
 | # | Action | With |
 |---|---|---|
 | 1 | control-check | needs `write`. If dialed `user` or `read`: report the lock and ask the owner to flip the dial to 🤖 in the UI, then wait — NEVER flip it yourself |
-| 2 | session-catchup + status-probe | — |
+| 2 | session-catchup + status-probe + read-letter | — |
 | 3 | report-outcome | state, then act |
 
 Report state; then act per the owner's instruction (sends go via the send-to-session

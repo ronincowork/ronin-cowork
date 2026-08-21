@@ -1,4 +1,4 @@
-/* part of the tmux-ronin client — see js/README.md */
+/* part of the ronin-cowork client — see js/README.md */
 /**
  * THE COMMONS SHELL — buildHome() is the control plane's frame, and only the frame.
  *
@@ -82,7 +82,10 @@ export function buildHome(tile) {
   homeTab.classList.add('on'); // matches the panel's default pane (see el.dataset.pane)
   const closeTab = document.createElement('button');
   closeTab.className = 'home-x';
-  closeTab.textContent = '✕';
+  const closeMark = document.createElement('span');
+  closeMark.className = 'close-hex';
+  closeMark.textContent = '×';
+  closeTab.appendChild(closeMark);
   closeTab.title = 'Back to the terminal';
   tabs.appendChild(closeTab);
 
