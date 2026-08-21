@@ -49,6 +49,8 @@ const ITEMS = [
   // you type in, and there is no room down there.
   ['.gauge', 'Status'],
   ['.shingo-chip', 'Ladder'],
+  ['.checkout.branch', 'Branches'],
+  ['.checkout.repo', 'Repositories'],
   // ['.torii', 'TEGAMI'] stood here until 2026-08-17, removed with the button itself.
   // The ⛩ on the tile head is the Commons now, and it is already reachable on touch as
   // the ニ sheet's own Commons row — a second door to it does not belong in this list.

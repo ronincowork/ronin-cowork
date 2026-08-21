@@ -54,7 +54,7 @@
  * reading the header left to right — and then, past メ, left to right inside its drop.
  */
 import { CONTROL_POSITIONS, makeDial, makeGauge, setInert } from './widgets.js';
-import { makeChip } from './shingo.js';
+import { clampTip, makeChip } from './shingo.js';
 import { buildTileMacros } from './tilemacros.js';
 import { buildTileMore } from './tilemore.js';
 import { buildTileDocs } from './tiledocs.js';
@@ -119,6 +119,40 @@ const HEADER = () => (rows ??= [
       el.classList.toggle('unset', !job);
       return job ? `${job} — click to change what this session is doing`
                  : 'Not marked — click to say what this session is doing';
+    } },
+
+  // THE CHECKOUTS — branch first, because it is the fact that changes while work moves.
+  // Both open the ladder, where every branch/repo pair is written out. With one checkout
+  // the button says the value; with several it says the count rather than picking one and
+  // falsely presenting it as THE branch or repository.
+  { key: 'branchBtn', cls: 'checkout branch', needs: 'session michi',
+    help: 'Branches this session is working on',
+    quiet: { session: 'Branches — no session in this tile yet',
+      michi: 'Branches — michi is not installed, so TEGAMI checkout data is unavailable' },
+    on: (t) => t.toggleLadder(),
+    read: (t, el) => {
+      const repos = t.tegami?.repos || [];
+      const branches = repos.map((x) => x.branch).filter(Boolean);
+      el.textContent = branches.length === 1 ? '⑂ ' + branches[0] : branches.length ? '⑂ ' + branches.length : '⑂ ?';
+      el.classList.toggle('unset', !branches.length);
+      return branches.length
+        ? clampTip('Branches: ' + repos.map((x) => `${x.branch || '(detached)'} — ${x.repo}`).join(' · ')) + '. Opens the ladder.'
+        : 'No branch listed yet. The session keeps its repos list current in TEGAMI.';
+    } },
+
+  { key: 'repoBtn', cls: 'checkout repo', needs: 'session michi',
+    help: 'Repositories this session is working in',
+    quiet: { session: 'Repositories — no session in this tile yet',
+      michi: 'Repositories — michi is not installed, so TEGAMI checkout data is unavailable' },
+    on: (t) => t.toggleLadder(),
+    read: (t, el) => {
+      const repos = t.tegami?.repos || [];
+      const short = (v) => v.replace(/^.*[/:]([^/]+\/[^/]+?)(\.git)?$/, '$1');
+      el.textContent = repos.length === 1 ? short(repos[0].repo) : repos.length ? `▣ ${repos.length}` : '▣ ?';
+      el.classList.toggle('unset', !repos.length);
+      return repos.length
+        ? clampTip('Repositories: ' + repos.map((x) => short(x.repo)).join(' · ')) + '. Opens the ladder.'
+        : 'No repository listed yet. The session keeps its repos list current in TEGAMI.';
     } },
 
   { grow: true },

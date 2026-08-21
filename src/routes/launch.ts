@@ -29,7 +29,7 @@ import { classifyStatus, type SessionStatus } from '../status.js';
 import { scanContext, scanModel } from '../ctx.js';
 
 import { count } from '../counts.js';
-import { parkBrief, seedTegami, withRoles, writeGate } from '../tegami.js';
+import { checkoutAt, parkBrief, seedTegami, withRoles, writeGate } from '../tegami.js';
 import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFields } from '../sockets.js';
 
 /* ---------- ONE door to a new session: POST /api/launch ----------
@@ -127,7 +127,7 @@ export function registerLaunch(app: express.Express): void {
       // for the agent to guess at a fact that was never in doubt. The session owns it
       // from here — `write_tegami` is how it says the work has changed — and we never
       // overwrite a letter that exists. See src/tegami.ts.
-      await seedTegami(resolved.name, resolved.session_job);
+      await seedTegami(resolved.name, resolved.session_job, await checkoutAt(resolved.dir));
       await setControl(resolved.name, resolved.dial);
     } catch (e) {
       void appendLedger(form, resolved, false);

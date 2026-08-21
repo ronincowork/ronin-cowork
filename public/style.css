@@ -865,6 +865,28 @@ body {
 .tile-head button.job[data-job='QuarterBack'] {
   font-size: var(--text-1);
 }
+.tile-head button.checkout {
+  width: auto;
+  min-width: 26px;
+  max-width: 24%;
+  padding: 0 var(--space-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-term);
+  font-size: var(--text-micro);
+  border-color: var(--line);
+}
+.tile-head button.checkout.branch {
+  color: var(--fg-strong);
+}
+.tile-head button.checkout.repo {
+  color: var(--muted);
+}
+.tile-head button.checkout.unset {
+  border-style: dashed;
+  color: var(--muted);
+}
 .home-job[data-job='QuarterBack'] {
   font-size: var(--text-1);
 }
@@ -5060,6 +5082,29 @@ body {
   font-size: var(--text-micro);
   letter-spacing: 0.06em;
   color: var(--accent-2);
+}
+.shingo-ladder .sl-checkout {
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-3);
+  border-bottom: var(--edge) solid var(--line);
+  min-width: 0;
+}
+.shingo-ladder .sl-checkout-line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.shingo-ladder .sl-branch {
+  color: var(--fg-strong);
+  font-size: var(--text-2);
+  overflow-wrap: anywhere;
+}
+.shingo-ladder .sl-repo {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 /* A side road is not an alarm — the session meant to step off, and nothing here wants
    the owner. Blue rather than the gate's amber, which is reserved for "you are needed". */

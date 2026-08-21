@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 
 /* LAUNCH_READY leg 3 — `writeGate` is loud, and it is a GUEST in the session's letter.
  * Its refusals are the interesting half: the moment an agent has written a real ladder,
@@ -10,8 +12,9 @@ import path from 'node:path';
  * so this test never touches a real session. */
 const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-gate-test-'));
 process.env.RONIN_SESSION_DIR = root;
-const { writeGate, tegamiPath } = await import('../src/tegami.js');
+const { checkoutAt, seedTegami, writeGate, tegamiPath } = await import('../src/tegami.js');
 const { sessionKey } = await import('../src/session-dir.js');
+const exec = promisify(execFile);
 
 async function letter(name: string, ladder: string): Promise<string> {
   const file = tegamiPath(await sessionKey(name));
@@ -53,4 +56,19 @@ test('no letter, or a letter with no json block, is a refusal and not a crash', 
   await fs.mkdir(path.dirname(f), { recursive: true });
   await fs.writeFile(f, 'somebody hand-mangled this letter\n');
   assert.equal(await writeGate('gate_mangled', 'x'), false);
+});
+
+test('a birth letter records the actual launch checkout as an editable repos list', async () => {
+  const repo = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-checkout-test-'));
+  await exec('git', ['init', '-b', 'feature/tegami', repo]);
+  await exec('git', ['-C', repo, 'remote', 'add', 'origin', 'git@github.com:ronin/example.git']);
+  const checkout = await checkoutAt(repo);
+  assert.deepEqual(checkout, {
+    repo: 'git@github.com:ronin/example.git',
+    branch: 'feature/tegami',
+  });
+
+  const file = await seedTegami('checkout_seed', 'CutCode', checkout);
+  assert.ok(file);
+  assert.deepEqual((await bodyOf(file!)).repos, [checkout]);
 });

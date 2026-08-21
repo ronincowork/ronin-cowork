@@ -33,9 +33,33 @@
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { RIREKI_DIR, sessionKey } from './session-dir.js';
 import { listSessionJobs } from './catalog.js';
 import type { SessionInfo } from './tmux.js';
+
+const exec = promisify(execFile);
+
+export interface TegamiCheckout {
+  repo: string;
+  branch: string;
+}
+
+/** The checkout the newborn is actually standing in; absence is a legal non-git root. */
+export async function checkoutAt(dir: string): Promise<TegamiCheckout> {
+  const git = async (...args: string[]) =>
+    (await exec('git', ['-C', dir, ...args], { timeout: 2_000 })).stdout.trim();
+  try {
+    const top = await git('rev-parse', '--show-toplevel');
+    const remote = await git('config', '--get', 'remote.origin.url').catch(() => '');
+    const branch = await git('branch', '--show-current').catch(() => '') ||
+      await git('rev-parse', '--short', 'HEAD').catch(() => '');
+    return { repo: remote || top, branch };
+  } catch {
+    return { repo: '', branch: '' };
+  }
+}
 
 /** The session's letter. One file, one name, no alternatives to search. */
 export function tegamiPath(key: string): string {
@@ -70,7 +94,7 @@ async function roleLines(): Promise<string> {
  * seeded EMPTY here — a gate we cannot service (no chip, no monitor) would light every
  * tile amber waiting on a go-ahead nobody is watching for.
  */
-function seedShell(name: string, job: string, roles: string): string {
+function seedShell(name: string, job: string, checkout: TegamiCheckout, roles: string): string {
   return `# TEGAMI — ${name}
 > **This file is your ladder, and it is a good way to communicate that you understand your
 > role, the input you need from the user, and your planned phases and legs.** What you keep
@@ -84,6 +108,11 @@ function seedShell(name: string, job: string, roles: string): string {
 > you, so it is a statement of what you were asked for, not a guess. Change it when the work
 > changes: a session that finishes planning and starts building has changed job, not become
 > a new session. It is the SESSION's job, not the agent's: same binary, different work.
+>
+> YOUR **repos** list is started from the checkout the new-session box put you in. It is
+> not limited to that project_root: add, remove, or change entries as you work across other
+> repositories. Keep every branch current. The branch is the important live coordinate:
+> it tells the owner where this session's work is landing.
 >
 ${roles}
 > YOUR **ladder** — the rungs, and which one you are on. Phases hold legs. Name a phase
@@ -107,6 +136,7 @@ ${roles}
 \`\`\`json
 { "objective": "",
   "session_job": ${JSON.stringify(job)},
+  "repos": ${JSON.stringify(checkout.repo || checkout.branch ? [checkout] : [])},
   "ladder": [] }
 \`\`\`
 `;
@@ -122,11 +152,15 @@ ${roles}
  * first and their file stands. We never overwrite a letter; the session owns its own
  * words the moment it has written any.
  */
-export async function seedTegami(name: string, job: string): Promise<string | null> {
+export async function seedTegami(
+  name: string,
+  job: string,
+  checkout: TegamiCheckout = { repo: '', branch: '' },
+): Promise<string | null> {
   try {
     const file = tegamiPath(await sessionKey(name));
     await fs.mkdir(path.dirname(file), { recursive: true });
-    await fs.writeFile(file, seedShell(name, job, await roleLines()), { flag: 'wx' });
+    await fs.writeFile(file, seedShell(name, job, checkout, await roleLines()), { flag: 'wx' });
     return file;
   } catch (e) {
     if ((e as NodeJS.ErrnoException)?.code === 'EEXIST') return tegamiPath(await sessionKey(name));
