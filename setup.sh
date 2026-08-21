@@ -39,7 +39,7 @@ fi
 if command -v tailscale >/dev/null; then
   echo "    tailscale: $(command -v tailscale)"
 else
-  echo "    tailscale: not found (optional — needed for tailnet HTTPS + the microphone)"
+  echo "    tailscale: not found (optional — it is what gives this box an HTTPS address)"
 fi
 
 # --- install deps (checkout only: a bundle arrives with finished node_modules) ---
@@ -496,33 +496,101 @@ if command -v tailscale >/dev/null; then
     'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{process.stdout.write((JSON.parse(d).Self.DNSName||"").replace(/\.$/,""))}catch{}})' 2>/dev/null || true)"
 fi
 
-echo
-echo "Next steps:"
-echo "  1) Keep it running without an active login (Linux):"
-echo "       sudo loginctl enable-linger $USER"
-echo "  2) (Recommended) tailnet HTTPS for remote access + the microphone:"
-if command -v tailscale >/dev/null; then
-  echo "       sudo tailscale serve --bg --https=8443 http://${IP:-<tailnet-ip>}:3006"
-else
-  echo "       install Tailscale, then:"
-  echo "       sudo tailscale serve --bg --https=8443 http://<tailnet-ip>:3006"
-fi
-echo
-# NOT "HTTPS needed for clipboard" — it never was, and saying so sent people looking for a
-# certificate when the answer was a modifier key. Copying out of a tile is the `copy` event
-# plus `clipboardData.setData` (js/layout.js), which works fine on http. What actually needs
-# a secure context is getUserMedia — the 🎤 — and `navigator.clipboard.writeText` in the
-# keypad panel, which falls back to execCommand anyway.
+# THE FINISH — one address, and commands that are commands.
+#
+# This block used to print a numbered menu ("1) …  2) (Recommended) …") and then offer a
+# CHOICE of two URLs to bookmark. A person who has just run one line in a terminal does not
+# want options; they want to know it worked, where to click, and what is left to type.
+# Owner, 2026-08-21: *"we need a far better and no option giving"*.
+#
+# So: one URL. Then only the commands that are actually still needed on THIS box — linger
+# is skipped when it is already on, and the tailscale line is absent entirely when
+# tailscale is not installed, because an instruction you cannot run is noise.
+# ONE LINK, AND IT IS THE ONE THAT WORKS.
+#
+# This used to print two — HTTP "now" and HTTPS "after step 2" — and explain that the
+# microphone needed the second. That is a choice plus a lecture about a feature nobody is
+# using, handed to somebody who just wants to click something. Owner, 2026-08-21.
+#
+# HTTPS cannot simply be the answer: `tailscale serve` needs sudo and this script does not
+# have it, so at THIS moment an https:// address may not exist, and printing a dead link is
+# worse than printing two live ones. So ask the machine which one is real. If serve is
+# already configured, that is the address. Otherwise it is the tailnet HTTP one, which
+# works right now, and the finish line below offers serve as a plain command.
 OPEN_URL=""
-echo "==> done. Open and bookmark one of these URLs (HTTPS needed for the 🎤 microphone):"
-if [ -n "$FQDN" ]; then
-  echo "      HTTP  (now)          : http://$FQDN:3006   (or http://$IP:3006)"
-  echo "      HTTPS (after step 2) : https://$FQDN:8443"
-  OPEN_URL="http://$FQDN:3006"
-else
-  echo "      HTTP  : http://${IP:-<server-ip-or-localhost>}:3006"
-  echo "      HTTPS : after step 2, run 'tailscale serve status' to see the URL"
-  OPEN_URL="http://127.0.0.1:3006"
+if command -v tailscale >/dev/null 2>&1; then
+  # `serve status` prints its mappings; an https:// line means the front door already exists.
+  SERVED="$(tailscale serve status 2>/dev/null | grep -oE 'https://[^ ]+' | head -1 || true)"
+  [ -n "$SERVED" ] && OPEN_URL="${SERVED%/}"
+fi
+if [ -z "$OPEN_URL" ]; then
+  if   [ -n "$FQDN" ];    then OPEN_URL="http://$FQDN:3006"
+  elif [ -n "${IP:-}" ];  then OPEN_URL="http://$IP:3006"
+  else                         OPEN_URL="http://127.0.0.1:3006"; fi
+fi
+
+banner() { # $1=url
+  local url="$1"
+  local title=" RONIN COWORK " ver="" mark="人"
+  [ -f "$REPO_DIR/VERSION" ] && ver="$(sed -n 's/^release=//p' "$REPO_DIR/VERSION" 2>/dev/null || true)"
+  [ -n "$ver" ] && ver=" $ver "
+
+  # VISUAL width is not character count: 人 is double-width in a terminal and one
+  # character to ${#…}, so the mark line measures one wider than it counts.
+  #
+  # The kaki hexagon ⬡ was here too and is gone on purpose: its East Asian Width is
+  # AMBIGUOUS, so it is one column in some terminals and two in others — a frame that
+  # only lines up on the machine it was written on. 人 is unambiguously Wide, and the
+  # mark is hito anyway (docs/ui.md).
+  local l1="$mark   Your agents have a room now."
+  local l2="Open the door:"
+  local w1=$(( ${#l1} + 1 )) w=0
+  [ "$w1" -gt "$w" ] && w=$w1
+  [ ${#l2} -gt "$w" ] && w=${#l2}
+  [ ${#url} -gt "$w" ] && w=${#url}
+  # A frame that cannot hold its own chrome is a broken frame.
+  local chrome=$(( ${#title} + ${#ver} + 4 ))
+  local inner=$(( w + 6 )); [ "$chrome" -gt "$inner" ] && inner=$chrome
+
+  local i fill="" dashes=$(( inner - ${#title} - ${#ver} - 2 ))
+  for ((i = 0; i < dashes; i++)); do fill="$fill─"; done
+  local bar=""; for ((i = 0; i < inner; i++)); do bar="$bar─"; done
+
+  printf '\n  ╭─%s%s%s─╮\n' "$title" "$fill" "$ver"
+  printf '  │%*s│\n' "$inner" ""
+  printf '  │   %s%*s│\n' "$l1" $(( inner - 3 - w1 )) ""
+  printf '  │%*s│\n' "$inner" ""
+  printf '  │   %s%*s│\n' "$l2" $(( inner - 3 - ${#l2} )) ""
+  # Bold only when a person is watching; a piped or logged transcript keeps the escapes out.
+  if [ -t 1 ]; then
+    printf '  │   \033[1m%s\033[0m%*s│\n' "$url" $(( inner - 3 - ${#url} )) ""
+  else
+    printf '  │   %s%*s│\n' "$url" $(( inner - 3 - ${#url} )) ""
+  fi
+  printf '  │%*s│\n' "$inner" ""
+  printf '  ╰%s╯\n\n' "$bar"
+}
+banner "$OPEN_URL"
+
+# Only what is still outstanding. `loginctl show-user` answers "Linger=yes" when it is
+# already done — asking twice is how a finish line stops meaning anything.
+LINGER=""
+if command -v loginctl >/dev/null 2>&1; then
+  [ "$(loginctl show-user "$USER" --property=Linger --value 2>/dev/null || echo no)" = "yes" ] || LINGER=1
+fi
+TS=""
+[ -n "${IP:-}" ] && command -v tailscale >/dev/null 2>&1 && TS=1
+
+if [ -n "$LINGER" ] || [ -n "$TS" ]; then
+  echo "  To finish, run:"
+  echo
+  [ -n "$LINGER" ] && echo "      sudo loginctl enable-linger $USER"
+  [ -n "$TS" ]     && echo "      sudo tailscale serve --bg --https=8443 http://$IP:3006"
+  echo
+  [ -n "$LINGER" ] && echo "  The first keeps Ronin running after you log out."
+  [ -n "$TS" ] && [ -n "$FQDN" ] && echo "  The second turns the address above into https://$FQDN:8443."
+  [ -n "$TS" ] && [ -z "$FQDN" ] && echo "  The second gives the address above an HTTPS front door."
+  echo
 fi
 
 # Printed instructions above are the contract. On a local graphical desktop this is
