@@ -1,0 +1,91 @@
+#!/bin/sh
+# RONIN UNINSTALL — reverse what get-ronin/setup.sh put on this box.
+#
+#   curl -fsSL https://raw.githubusercontent.com/ronincowork/ronin-cowork/master/scripts/ronin-uninstall | sh
+#   … | sh -s -- --purge      also delete the install home and data stores
+#
+# Without --purge this removes the machinery (units, PATH blocks, the theme edit) and
+# leaves the data (~/ronin, ~/.ronin) with a line saying how to delete it. Stopping
+# tmux-server ends every tmux session it owns — this is an uninstall, and it says so.
+set -eu
+
+PURGE=0
+[ "${1:-}" = "--purge" ] && PURGE=1
+
+# Ask the install's own store table while it still exists; fall back to the documented
+# defaults when it is already broken or half-removed — an uninstaller must work then too.
+USER_ROOT="${RONIN_USER_ROOT:-$HOME/ronin}"
+DATA_ROOT="${RONIN_DATA_ROOT:-$HOME/.ronin}"
+RS="$USER_ROOT/current/bin/ronin-store"
+if [ -x "$RS" ]; then
+  USER_ROOT="$("$RS" --root user 2>/dev/null || printf '%s' "$USER_ROOT")"
+  DATA_ROOT="$("$RS" --root data 2>/dev/null || printf '%s' "$DATA_ROOT")"
+fi
+say() { printf '%s\n' "$*"; }
+
+# --- units ---
+if command -v systemctl >/dev/null 2>&1; then
+  for u in ronin tmux-ronin tmux-server; do
+    if systemctl --user cat "$u.service" >/dev/null 2>&1; then
+      say "stopping $u.service"
+      systemctl --user disable --now "$u.service" >/dev/null 2>&1 || true
+      rm -f "$HOME/.config/systemd/user/$u.service"
+    fi
+  done
+  rm -f "$HOME/.config/systemd/user/default.target.wants/ronin.service" \
+        "$HOME/.config/systemd/user/default.target.wants/tmux-ronin.service" \
+        "$HOME/.config/systemd/user/default.target.wants/tmux-server.service" 2>/dev/null || true
+  systemctl --user daemon-reload 2>/dev/null || true
+fi
+if [ "$(uname -s)" = "Darwin" ] && [ -f "$HOME/Library/LaunchAgents/com.ronin.plist" ]; then
+  launchctl unload "$HOME/Library/LaunchAgents/com.ronin.plist" 2>/dev/null || true
+  rm -f "$HOME/Library/LaunchAgents/com.ronin.plist"
+  say "removed launchd agent com.ronin.plist"
+fi
+
+# --- the marked PATH blocks setup.sh appended ---
+# Both blocks, wherever they landed. sed -i differs on BSD; a temp file works everywhere.
+for rc in "$HOME/.bashrc" "$HOME/.profile" "$HOME/.zshrc" "$HOME/.bash_profile" "$HOME/.bash_login"; do
+  [ -f "$rc" ] || continue
+  if grep -q '>>> ronin ' "$rc" 2>/dev/null; then
+    tmp="$rc.ronin-uninstall.$$"
+    sed '/^# >>> ronin PATH (added by setup\.sh) >>>$/,/^# <<< ronin PATH <<<$/d
+         /^# >>> ronin agent PATH (added by setup\.sh) >>>$/,/^# <<< ronin agent PATH <<<$/d' "$rc" > "$tmp"
+    mv "$tmp" "$rc"
+    say "removed Ronin PATH blocks from $rc"
+  fi
+done
+
+# --- the theme edit (statusLine is only ever Ronin's own script; a person's is left alone) ---
+CS="$HOME/.claude/settings.json"
+if [ -f "$CS" ] && command -v python3 >/dev/null 2>&1; then
+  python3 - "$CS" <<'PY' || true
+import json, sys
+p = sys.argv[1]
+d = json.load(open(p))
+changed = False
+if d.get("theme") == "dark-ansi":
+    d["theme"] = "dark"; changed = True
+sl = d.get("statusLine") or {}
+if isinstance(sl, dict) and "statusline-ronin.sh" in str(sl.get("command", "")):
+    del d["statusLine"]; changed = True
+if changed:
+    json.dump(d, open(p, "w"), indent=2)
+    print("reverted Ronin's edits in ~/.claude/settings.json")
+PY
+fi
+
+# --- the data ---
+if [ "$PURGE" = 1 ]; then
+  rm -rf "$USER_ROOT" "$DATA_ROOT"
+  say "deleted $USER_ROOT and $DATA_ROOT"
+else
+  say ""
+  say "Kept your data:"
+  say "  $USER_ROOT   (install + catalogs, wipeboards, config)"
+  say "  $DATA_ROOT   (session records)"
+  say "Delete it too:  rm -rf $USER_ROOT $DATA_ROOT   (or rerun with --purge)"
+fi
+
+say ""
+say "Ronin is off this box. Open a new shell so the old PATH is gone."
