@@ -1002,11 +1002,20 @@ body {
   border-color: var(--muted);
   color: var(--fg);
   font-size: var(--text-3);
+  line-height: 22px;
   text-align: center;
+  text-align-last: center;
   cursor: pointer;
 }
 .tile-head select.tmention-btn:hover { border-color: var(--accent); }
 .tile-head select.tmention-btn:active { color: var(--accent); }
+.tile-head button.tmac-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+}
 .tile .composer.mention-ready textarea { border-color: var(--accent); }
 
 /* Tile メ — the rest of the header, dropped in ONE HORIZONTAL STRIP (owner, 2026-08-17:
