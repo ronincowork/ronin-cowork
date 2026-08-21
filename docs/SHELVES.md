@@ -36,6 +36,7 @@ file-for-file. `bin/ronin-store --all` prints every store on this machine, resol
 | `gbrain.md` | working the brain, when this machine has one |
 | `github.md` | how we go about source control |
 | `install.md` | is this install actually what it claims to be |
+| `ronin_methodology.md` | how work moves through sessions, shared artifacts, `dev`, and the final gate |
 | `secrets.md` | keys, tokens, and the one mistake that cannot be undone |
 | `skins.md` | changing how Ronin looks |
 | `syncthing.md` | the same folders on every machine — start here when someone cannot find a file |

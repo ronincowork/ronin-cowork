@@ -2,7 +2,7 @@
 
 > Stock SOP. Your own copy in the sops store (`ronin-store sops` → `syncthing.md`)
 > replaces this file whole — a default, not law.
-> **Voice: relay.** Written for the agent to walk a person through, not to follow itself.
+> **Voice: agent.** How the agent diagnoses syncthing on this box — not a walkthrough to relay.
 > **Tool: syncthing's own.** The measuring is the vendor's REST API and systemd, and no
 > answer from either is ever written down. `syncthing --paths` names the config file on
 > any box; the API key is inside it (`syncthing cli config gui apikey get` prints it).
