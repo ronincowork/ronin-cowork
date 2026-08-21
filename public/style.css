@@ -3492,6 +3492,16 @@ body {
   color: var(--muted);
   font-size: var(--text-2);
 }
+/* Drag a job onto a shelf to ADD it there — the roster's own cue, in ks clothes. */
+.ks-class.drop-ready {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  outline: var(--edge) dashed var(--accent);
+  outline-offset: calc(-1 * var(--edge));
+}
+.ks-btn.dragging {
+  opacity: 0.45;
+}
 .ks-form {
   display: none;
   flex-direction: column;

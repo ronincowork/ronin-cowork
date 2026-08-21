@@ -525,15 +525,16 @@ function jobClassesHeader(): string {
 }
 
 /**
- * THE SHIPPED SHELVES (owner, 2026-08-21: "we should have 2 default job classes").
- * In code, not in a seeded file, so they track releases exactly until the owner first
- * writes — the moment JOB_CLASSES.md exists, it rules whole, including ruling these
- * away. OddJob and OpenShell are on neither on purpose: they are neither craft, and
- * unshelved jobs sit flat under the shelves where both stay one glance away.
+ * THE SHIPPED SHELVES (owner, 2026-08-21). In code, not in a seeded file, so they track
+ * releases exactly until the owner first writes — the moment JOB_CLASSES.md exists, it
+ * rules whole, including ruling these away. Every stock job is on a shelf: an unshelved
+ * job renders in the flat tail, which cannot fold, and a default that cannot fold
+ * defeats the shelves (owner, same day, on seeing exactly that).
  */
 const DEFAULT_JOB_CLASSES: JobClass[] = [
   { name: 'developer', jobs: ['RiffOnIt', 'DraftPlan', 'CutCode', 'ChaseBug', 'CheckWork', 'QuarterBack'] },
   { name: 'assistant', jobs: ['PersonalAssistant', 'MikaAssist'] },
+  { name: 'extra', jobs: ['OddJob', 'Atarashi', 'OpenShell'] },
 ];
 
 export async function readJobClasses(): Promise<JobClass[]> {

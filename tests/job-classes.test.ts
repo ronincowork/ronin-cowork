@@ -24,13 +24,18 @@ after(async () => {
   await rm(root, { recursive: true, force: true });
 });
 
-test('a fresh store answers the two shipped shelves, memberships and all', async () => {
+test('a fresh store answers the three shipped shelves, memberships and all', async () => {
   const fresh = await readJobClasses();
-  assert.deepEqual(fresh.map((c) => c.name), ['developer', 'assistant']);
+  assert.deepEqual(fresh.map((c) => c.name), ['developer', 'assistant', 'extra']);
   assert.ok(fresh[0].jobs.includes('CutCode'));
   assert.ok(fresh[1].jobs.includes('PersonalAssistant'));
-  // Neither craft: OddJob and OpenShell sit flat under the shelves, on neither.
-  assert.ok(!fresh.flatMap((c) => c.jobs).includes('OddJob'));
+  assert.ok(fresh[2].jobs.includes('OddJob'));
+  // EVERY stock job is on a shelf: the flat tail cannot fold, and a default that
+  // cannot fold defeats the shelves (owner, 2026-08-21).
+  const stock = ['RiffOnIt', 'DraftPlan', 'CutCode', 'ChaseBug', 'CheckWork', 'QuarterBack',
+    'OddJob', 'Atarashi', 'PersonalAssistant', 'OpenShell', 'MikaAssist'];
+  const shelvedNames = new Set(fresh.flatMap((c) => c.jobs));
+  assert.deepEqual(stock.filter((j) => !shelvedNames.has(j)), []);
 });
 
 test('the manifest round-trips whole: order, multi-membership, and the empty shelf', async () => {
