@@ -91,9 +91,10 @@ for. Tegami answers *where that session is*; its transcript answers *what it has
 doing*; the build-out answers *what remains*; the wipeboard answers *what the group just
 learned*.
 
-### 4. Integrate continuously on `dev`
+### 4. Integrate continuously on the repository's declared line
 
-Ronin project repositories have two persistent remote branches:
+Under the reviewed arrangement, each repository declares its working and stable branch.
+Ronin's current product repositories use:
 
 ```text
 dev       current integrated development work
@@ -108,10 +109,11 @@ is the right answer when the checkout you are in is shared with other live sessi
 they are folded into `dev` and removed; they do not become a garden of remote feature
 branches.
 
-The final review is one `dev → master` pull request. The agent reports the gate and does
-not merge it for the owner. `master` is the release line, not the place where sessions
-develop. This is the Ronin-project exception already named in `github.md`; that file's
-single-working-branch advice remains the default for the owner's other repositories.
+The final review is one pull request from the declared working branch to the declared stable
+branch—`dev → master` for these repositories, but `dev → main` is the same arrangement. The
+agent reports the gate and does not merge it for the owner. This is the reviewed arrangement
+named in `github.md`. A Ronin repository under the direct arrangement instead publishes to its
+declared `main` or `master`: no ordinary PR, and published history is not rewritten.
 
 ### 5. Land the state, then retire the session
 

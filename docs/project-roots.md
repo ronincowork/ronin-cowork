@@ -176,9 +176,13 @@ complete.
 Sync is visibility, not backup. Git remains source history and the off-machine production backup
 remains a separate requirement.
 
-### 5. Establish and obey Ronin's two-branch rule
+### 5. Establish and obey the repository's publishing arrangement
 
-Ronin project repositories have two persistent remote branches:
+Choose the mode with the owner; do not decide from the repository name alone. The full
+contract is `ronin_sops/github.md`.
+
+Under the reviewed arrangement, a repository declares a working and stable branch. Ronin's
+current product repositories use:
 
 ```text
 dev       current integrated development work
@@ -195,10 +199,17 @@ worktree, but it must integrate that work into `dev` and delete the temporary lo
 must not publish the temporary branch merely to obtain a PR. Coordinate before updating `dev` so
 two active writers do not overwrite one another.
 
-For a new repository, create `master` as the stable base and `dev` from it, make `master` the
-GitHub default, and enable automatic deletion of merged PR head branches as a backstop—not as a
-substitute for the two-branch rule. Normal work never merges its own `dev → master` PR and never
-deploys via `git pull`.
+For a new reviewed repository, agree whether the stable branch is `main` or `master`, create
+`dev` from it, make the stable branch the GitHub default, and enable automatic deletion of
+merged PR head branches as a backstop—not as a substitute for the two-branch rule. Normal work
+never merges its own PR from the working branch to the stable branch and never deploys via
+`git pull`.
+
+Under the direct arrangement, the repository declares one branch—`main` or `master`—that agents
+may publish to without a PR. In a laboratory, agents commit and push coherent checkpoints,
+including deletions and abandoned directions, because its history is how earlier ideas remain
+recoverable. Agents stage only their own work, fetch before pushing, never force-push, and
+preserve the unsquashed history. `ronin-lab` declares direct publishing to `main`.
 
 ## Edit, archive and exclude
 
