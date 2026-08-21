@@ -58,6 +58,7 @@ import { clampTip, makeChip } from './shingo.js';
 import { buildTileMacros } from './tilemacros.js';
 import { buildTileMore } from './tilemore.js';
 import { buildTileDocs } from './tiledocs.js';
+import { buildTileMentions } from './tilementions.js';
 import { isCoarse } from './tiledrop.js';
 import { S, SELECT_MOD, serviceMissing } from './state.js';
 import { jobIcon } from './home.js';
@@ -157,6 +158,11 @@ const HEADER = () => (rows ??= [
   { key: 'menuBtn', cls: 'menu', text: '⛩',
     help: '⌃⇧C — the CoWorking Commons: roster, new session, wipeboard, docs, roots, hotwords. Opens over this tile; ✕ comes back.',
     on: (t) => t.toggleHome('sessions') },
+
+  { key: 'mentionBtn', needs: 'session',
+    widget: (t) => buildTileMentions(t),
+    help: 'Mention another session — click a name or drag it into the message box',
+    quiet: 'Mentions — no session in this tile yet' },
 
   // THE TEGAMI TORII IS GONE (owner's ruling 2026-08-17, reaffirmed after the objection
   // below was put to him). It opened `/tegami/raw` — the letter verbatim — and it was the

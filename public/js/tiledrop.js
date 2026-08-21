@@ -54,6 +54,7 @@ const ITEMS = [
   // The ⛩ on the tile head is the Commons now, and it is already reachable on touch as
   // the ニ sheet's own Commons row — a second door to it does not belong in this list.
   ['.tmac-btn', 'Macros'],
+  ['.tmention-btn', 'Mention session'],
   ['.tags', 'Groups'],
   // 📄 THIS session's listed docs (2026-08-18). It has to be named here or it is
   // STRANDED: the desktop builds it into メ's drop, touch builds it into the header row

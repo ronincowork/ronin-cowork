@@ -990,6 +990,43 @@ body {
   border-color: var(--line);
 }
 
+/* @ mention picker — the live session list, beside the Commons torii. */
+.tmention {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 6px;
+  z-index: 13;
+  width: min(320px, calc(100% - 12px));
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: var(--space-3);
+  background: var(--panel);
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sheet);
+}
+.tmention.open { display: flex; flex-direction: column; gap: var(--space-2); }
+.tmention-row {
+  width: 100%;
+  height: auto;
+  padding: var(--space-4) var(--space-5);
+  overflow: hidden;
+  color: var(--fg);
+  background: var(--raise);
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-sm);
+  font: var(--text-3) var(--font-term);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: grab;
+}
+.tmention-row:hover,
+.tmention-row:focus-visible { border-color: var(--accent); color: var(--fg-strong); }
+.tmention-row.current::after { content: ' · here'; color: var(--muted); }
+.tile .composer.mention-ready textarea { border-color: var(--accent); }
+
 /* Tile メ — the rest of the header, dropped in ONE HORIZONTAL STRIP (owner, 2026-08-17:
    "you just see those boxes exactly as they are, but maybe it just drops down
    horizontally"). Deliberately the same box as .tmac above it — same anchor corner, same

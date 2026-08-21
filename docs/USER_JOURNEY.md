@@ -184,8 +184,9 @@ the ungated feed, and a misleading seam-test skip message. Those defects were cl
 why the final gate remains a real foreign-machine walk rather than test-suite success alone.
 
 The complete owner-visible activation and installation loop is maintained in the Services
-repository's activation guide. In the workspace, **Check status** is the
-kakiiro action: it performs one Shiwake poll. There is no eternal background polling and no
+repository's activation guide. In the workspace, the Services status control sits beside the
+Ronin identity in the header. Opening that control does not contact Shiwake. Its kakiiro
+**Check status** action performs one Shiwake poll. There is no background polling and no
 spinner while nothing is happening; spinners appear only while checking or installing.
 
 ## What remains

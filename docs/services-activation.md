@@ -115,21 +115,23 @@ record a note to itself and contact nobody.
 address — stops the page. Anything else finishes setup and leaves a pending request with a
 Retry in ⚙ Configuration, which is the recovery rule made real rather than described.
 
-**⚙ Configuration** (`public/js/services-card.js`) — the card renders the durable stage, not
-what the page remembers doing, so a reload, a second tab, or an operator restart all land on
-the truth. It offers Resend, Change address, Cancel, and a recovery Install, and it shows the
-egress record and the receipts inline.
+**Cowork workspace** (`public/js/services-activation.js`) — a Services status control sits
+beside the Ronin identity in the header and renders the durable stage, not what the page
+remembers doing. Clicking the status control opens the available actions: Check status,
+Resend confirmation, Change email, Cancel Ronin Services, or a recovery Install when needed.
+A reload, a second tab, or an operator restart reads the same durable state.
 
-**Polling is visible.** The card says it is checking and backs off from 2s toward 30s, then
-stops when the stage settles. A spinner that never resolves and a page that has quietly given
-up look identical to a person, so it says which it is.
+**Polling is owner-triggered and visible.** Opening the status control does not contact
+Shiwake. Pressing the kakiiro **Check status** button performs one poll and says it is checking
+while that request is in flight. Page load and visibility changes may refresh local state, but
+they do not poll Shiwake. There is no timed backoff loop and no background polling daemon.
 
 ## The browser API — local only, no secret crosses it
 
 ```text
 GET    /api/services/activation           state + entitled + the egress record
 POST   /api/services/activation           the consent action
-POST   /api/services/activation/poll      resume
+POST   /api/services/activation/poll      one owner-triggered Shiwake check
 POST   /api/services/activation/resend
 DELETE /api/services/activation           pending request only
 POST   /api/services/activation/address   change address
@@ -145,9 +147,10 @@ a bearer token.
 
 ## Polling
 
-The operator polls because it owns the secret. **Poll briefly while setup or Configuration is
-visibly waiting, then back off.** On operator start or page open, make one natural resume
-check. **Do not add an immortal polling daemon.**
+The operator polls because it owns the secret, but only after the owner presses **Check
+status** in the workspace popover. One press makes one request. Opening the popover, opening
+the page, restoring a tab, or restarting the operator reads local durable state without
+contacting Shiwake. **Do not add automatic polling or a background polling daemon.**
 
 Every successful poll of a verified activation mints a **new** entitlement token and retires
 the previous one. Store it immediately; the old one stops working at once.
