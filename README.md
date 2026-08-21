@@ -41,6 +41,10 @@ The one place cowork names a service is a single assembler block in `src/index.t
 empty in this repo. Installing services fills it; a gate (`scripts/check-kyokai.mjs`)
 enforces that no other core file ever reaches across the line.
 
+**Every door into Ronin is drawn on one page:** `docs/api-surface.html` — cowork's own
+routes and its two websockets, the endpoints each service mounts through the ROUTES
+socket, the eight sockets themselves, and the bash shelf agents actually type at.
+
 ## Installing it
 
 On a machine you control — your laptop, a home server, a VM you rent. Two doors,

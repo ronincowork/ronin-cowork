@@ -82,7 +82,10 @@ export function buildHome(tile) {
   homeTab.classList.add('on'); // matches the panel's default pane (see el.dataset.pane)
   const closeTab = document.createElement('button');
   closeTab.className = 'home-x';
-  closeTab.textContent = '✕';
+  const closeMark = document.createElement('span');
+  closeMark.className = 'close-hex';
+  closeMark.textContent = '×';
+  closeTab.appendChild(closeMark);
   closeTab.title = 'Back to the terminal';
   tabs.appendChild(closeTab);
 

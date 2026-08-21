@@ -92,6 +92,7 @@ export function publicState(s: ActivationState) {
     verified_at: s.verified_at,
     expires_at: s.expires_at,
     resend_available_at: s.resend_available_at,
+    error_at_stage: s.error_at_stage,
     error_message: s.error_message,
   };
 }

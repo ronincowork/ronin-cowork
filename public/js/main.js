@@ -11,6 +11,7 @@ import { S, TILE_COUNT, loadState, tiles } from './state.js';
 import { setLayout } from './viewport.js';
 import { installTips } from './tips.js';
 import { buildFirstRun } from './firstrun.js';
+import { installServicesStatus } from './services-activation.js';
 
 export async function init() {
   // Ask the operator which optional surfaces are plugged in BEFORE the grid is built,
@@ -72,6 +73,7 @@ export async function init() {
 
 
   guard('build the grid', build);
+  guard('services activation status', installServicesStatus);
   const saved = guard('read saved state', loadState, { map: [], layout: TILE_COUNT });
   // A phone OPENS on one terminal, always — not just on first run. A 2x2 grid of tiny
   // terminals is not usable at 402px, and it is what makes the merged header honest:
@@ -112,4 +114,3 @@ export async function init() {
 // Boot inside a guard too: if init throws before its own guards are reached, the
 // header must still be usable and the reason must be on screen.
 init().catch((e) => showFailure('startup', e));
-

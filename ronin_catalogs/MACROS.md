@@ -60,12 +60,12 @@ who need opposite things, so it carries two separate pieces of writing:
   only — never fork on your own initiative"*), it names actions and params, and it assumes the
   house vocabulary. Served as `instruction` on `/api/macros`; the field was called
   `description` until 2026-08-17, and that name is what invited a human surface to render it.
-- **`label:` and `blurb:` are what a PERSON reads** to decide whether they want the macro:
-  a plain-words headline (**never the `+name:` spelling**) and one or two sentences saying what
-  it does, for somebody who has never heard of it. No jargon a newcomer would not have, and
-  **true about what the macro actually does** rather than evocative — a destructive macro's
-  blurb must say so plainly instead of sounding inviting. Same two keys, same job, as the kind
-  buttons in `SESSION_JOBS.md`.
+- **`label:` and `blurb:` are what a PERSON reads** to decide whether they want the macro.
+  Previewed macros use their executable `+name:` spelling as the concise button headline;
+  the always-visible blurb explains what it does for somebody who has never heard of it. No
+  jargon a newcomer would not have, and **true about what the macro actually does** rather
+  than evocative — a destructive macro's blurb must say so plainly instead of sounding
+  inviting. Same two keys, same job, as the kind buttons in `SESSION_JOBS.md`.
 
 **Both are required on every entry** — `check:catalogs` fails a stock entry missing either —
 and **no human surface may fall back to the instruction.** Showing *"Owner-invoked only —
@@ -104,7 +104,7 @@ Send: Update your TEGAMI now — read it, bring the ladder in line with what you
 ## show_file
 - **class:** session_macro.workflow
 - **preview:** yes
-- **label:** See the files it is working on
+- **label:** +show_file:
 - **blurb:** Ask this session what it has open. It lists its documents on the ▧ Docs tab in commons, so you open and edit the real file instead of hunting your disk for it.
 Owner wants to READ what you are working on: `+show_file`, or `+show_file: MDEDIT.md`.
 Bring your document list up to date, then tell them where to look. **Do not paste the
@@ -131,7 +131,7 @@ is this session working on" and one that answers "what did it remember to mentio
 ## forkit
 - **class:** session_macro.workflow
 - **preview:** yes
-- **label:** Fork this session in two
+- **label:** +forkit:
 - **blurb:** Tell this agent to fork itself — it writes down what you have been working on, opens a second session on that topic, and hands the context over. This one stays on its track.
 **Owner-invoked only — never fork on your own initiative.** If a fork seems right,
 PROPOSE it ("I'd like to fork X into its own session") and wait for the go-ahead.
@@ -267,7 +267,7 @@ never guess at a near-match, `kojin` and `kojinsa` are different groups.
 ## wipeboard
 - **class:** session_macro.lookup
 - **preview:** yes
-- **label:** The board agents talk on
+- **label:** +wipeboard:
 - **blurb:** A wipeboard is one file several sessions read and append to, so agents on one problem talk to each other instead of through you. Name one and this says what it is for, who is on it, and where it lives.
 Owner names a WIPEBOARD and expects you to know what it is and who is on it:
 `+wipeboard: parserwork`. A wipeboard is a shared text surface — one markdown file
@@ -297,7 +297,7 @@ append only, never rewrite another agent's post, never edit the Brief.
 ## tell
 - **class:** session_macro.workflow
 - **preview:** yes
-- **label:** Message another session
+- **label:** +tell:
 - **blurb:** Hand this agent a line for another agent and it delivers it — checking that session's dial first, and never typing over a draft at its prompt. The reply lands in that session's own tile.
 Owner wants THIS session to say something to ANOTHER one:
 `+tell: page_capture the login work is on hold, stay off it for now`. The owner's words for

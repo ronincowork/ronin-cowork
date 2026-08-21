@@ -43,6 +43,7 @@ import { roninIdentity } from './routes/version.js';
 import { listProjectRoots } from './project-roots.js';
 import { storeDir } from './stores.js';
 import { AGENTS, listAgentAvailability } from './agents.js';
+import { publicState, readState as readServicesActivation } from './activation/state.js';
 import {
   readAgentsSection,
   readMachineSection,
@@ -291,6 +292,7 @@ async function readSet(): Promise<Record<string, unknown>> {
     remit: r.remit,
   }));
 
+  const activation = await readServicesActivation();
   return {
     owner: { name: typedStr(owner.name) },
     machine: {
@@ -317,10 +319,12 @@ async function readSet(): Promise<Record<string, unknown>> {
       completed_at: setup.completed_at ?? null,
     },
     services: {
+      selected: activation.stage !== 'not_requested' && activation.stage !== 'cancelled',
       entitlement: services.entitlement ?? null,
       email: services.email ?? null,
       verified: services.verified ?? null,
       terms: services.terms ?? null,
+      activation: publicState(activation),
     },
   };
 }

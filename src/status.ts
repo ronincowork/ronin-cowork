@@ -71,7 +71,3 @@ export function classifyStatus(text: string): SessionStatus | null {
   for (const p of STATUS_PATTERNS) if (p.re.test(tail)) return p.status;
   return null;
 }
-
-// probeStatus lived here — classifyStatus over a live capture — and died 2026-08-20
-// with no caller (check-dead, twice). Recreate it in six lines the day something needs
-// a live-capture classify; capturePane is the import to bring back with it.

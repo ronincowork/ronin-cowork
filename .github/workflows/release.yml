@@ -25,6 +25,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The release gate below must be able to prove that this tag belongs to master.
+          fetch-depth: 0
+      - name: Refuse a tag cut from outside master
+        run: |
+          tag_commit="$(git rev-parse "${GITHUB_SHA}^{commit}")"
+          if ! git merge-base --is-ancestor "$tag_commit" origin/master; then
+            echo "::error::${GITHUB_REF_NAME} points to $tag_commit, which is not on master."
+            echo "Fetch and check out master before creating a release tag."
+            exit 1
+          fi
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

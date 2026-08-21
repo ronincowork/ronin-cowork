@@ -125,9 +125,9 @@ export function buildTileMacros(tile) {
       row.type = 'button';
       row.className = 'tmac-row' + (m.send ? ' sends' : '');
       const nm = document.createElement('b');
-      // The headline, in the owner's plain words — and a ⏎ for a macro that FIRES,
-      // because pressing Enter into a working session is not the same act as dropping
-      // text in the box, and the face has to say which one this is.
+      // The concise command-shaped headline — and a ⏎ for a macro that FIRES, because
+      // pressing Enter into a working session is not the same act as dropping text in
+      // the box, and the face has to say which one this is.
       nm.textContent = (m.label || m.name) + (m.send ? ' ⏎' : '');
       // The mark rides on the headline, exactly as it does on the launcher's kind
       // buttons — a macro of yours, or one of ours you replaced (js/provenance.js).
