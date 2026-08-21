@@ -141,7 +141,8 @@ export function agentPresence(text: string, agent = ''): AgentPresence | null {
   return null;
 }
 
-/** Probe a live session (null on capture failure — e.g. it just died). */
+/** Probe a live session (null on capture failure — e.g. it just died).
+ * @service Koshi consumes this through the installed Services connector boundary. */
 export async function probeStatus(session: string): Promise<SessionStatus | null> {
   try {
     return classifyStatus(await capturePane(session, 0));
