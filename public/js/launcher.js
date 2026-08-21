@@ -346,8 +346,13 @@ export function buildLauncher(tile, host) {
     for (const k of all.filter((x) => !shelved.has(x.name))) grid2.appendChild(jobButton(k));
     if (!all.length) grid2.textContent = 'no kinds in ronin_catalogs/SESSION_JOBS.md';
     grid2.dataset.n = String(all.length);
-    // The end of the list is where you find out the list is yours to extend.
-    grid2.appendChild(addYourOwn('SESSION_JOBS.md', 'session job'));
+    // HIDDEN, not gone (owner, 2026-08-21, OPEN_THREADS 4.31): the tile's whole answer
+    // is a file path popped at a person mid-launch — developer-shaped, not owner-shaped.
+    // It stays a consumer so the affordance survives to be redesigned, and one deleted
+    // line brings it back.
+    const own = addYourOwn('SESSION_JOBS.md', 'session job');
+    own.hidden = true;
+    grid2.appendChild(own);
   };
 
   const buildSaved = () => {

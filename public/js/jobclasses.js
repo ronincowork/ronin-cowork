@@ -72,14 +72,14 @@ export function buildJobShelves({ jobButton, allJobs, onChange }) {
   const input = document.createElement('input');
   input.type = 'text';
   input.maxLength = 32;
-  input.placeholder = 'new job group';
+  input.placeholder = 'job group';
   input.setAttribute('aria-label', 'New job group name');
   input.autocapitalize = 'off';
   input.autocomplete = 'off';
   input.spellcheck = false;
   const btn = document.createElement('button');
   btn.type = 'submit';
-  btn.textContent = '＋ add new job group';
+  btn.textContent = '＋ add new';
   const msg = document.createElement('span');
   msg.className = 'ks-class-msg';
   add.append(input, btn, msg);
