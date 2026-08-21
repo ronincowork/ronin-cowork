@@ -2,6 +2,7 @@
 
 > Stock SOP. Your own copy in the sops store (`ronin-store sops` → `skins.md`) replaces
 > this file whole — a default, not law.
+> **Voice: relay.** Written for the agent to walk a person through, not to follow itself.
 
 ## Two controls, one room
 

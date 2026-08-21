@@ -2,6 +2,7 @@
 
 > Stock SOP. Your own copy in the sops store (`ronin-store sops` → `gbrain.md`) replaces
 > this file whole — a default, not law.
+> **Voice: agent.** How the agent works with the brain when this machine has one — not a walkthrough to relay.
 > **Ruled onto the stock shelf by the owner, 2026-08-16.** gbrain itself is third-party —
 > Garry Tan's, MIT, github.com/garrytan/gbrain — and optional: an install without it loses
 > nothing here but the subject. `docs/gbrain.md` says what it is; this SOP says how the

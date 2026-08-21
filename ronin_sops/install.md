@@ -2,7 +2,7 @@
 
 > Stock SOP. Your own copy in the sops store (`ronin-store sops` → `install.md`) replaces
 > this file whole — a default, not law.
-> **Voice: relay.** Written for the agent to walk a person through, not to follow itself.
+> **Voice: agent.** How the agent verifies an install and says it back — not a walkthrough to relay.
 > **Tool: `tejun-install` — NOT BUILT YET.** When it exists it answers this whole SOP in
 > one call: the install's status document and everything left unresolved. Until then the
 > three checks below are run by hand and reasoned across. The gap is recorded in

@@ -162,6 +162,10 @@ const IGNORE = {
   // reason as the line above: they are a PROJECT_REPO's directories — a location in
   // whatever repo a session works in — and never a claim about this tree.
   'ronin_library/documents.md': ['wip/', 'wip/handoffs/', 'wip/buildouts/', 'manifest/', 'manifest/MANIFEST.md'],
+  // The methodology SOP states the same project-repo house-dir contract, and names
+  // provider-native instruction files that may exist in the project a session opens.
+  // None is a claim that this Cowork source tree carries that project's files.
+  'ronin_sops/ronin_methodology.md': ['wip/', 'CLAUDE.md', 'CLAUDE.local.md', 'AGENTS.md'],
   'ronin_catalogs/PROJECT_ROOTS.md': ['DAIKUSAN.md', 'src/services/rireki/decode.ts:219'],
   // Koshi is a SERVICE, so the outlet table it names ships in RONIN_SERVICES, not here.
   'bin/bench/README.md': ['src/koshi-model.ts'],
