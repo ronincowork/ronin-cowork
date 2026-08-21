@@ -123,11 +123,20 @@ export async function poll(): Promise<ActivationState> {
     });
   }
 
-  if (res.body.stage !== 'verified' || !res.body.entitlement_token) {
+  if (res.body.stage !== 'verified') {
     return writeState({
       stage: 'awaiting_email',
       expires_at: res.body.expires_at,
       resend_available_at: res.body.resend_available_at,
+    });
+  }
+  // Verification must yield both halves of one entitlement. A token without its public
+  // identity cannot be represented accurately, and an id without a token authorizes nothing.
+  // Keep the claim so a later Check status can recover if HQ repairs the response.
+  if (!res.body.entitlement_token || !res.body.entitlement_id) {
+    return writeState({
+      stage: 'error', error_at_stage: 'awaiting_email',
+      error_message: 'Ronin HQ confirmed the email but returned an incomplete entitlement',
     });
   }
 
@@ -135,14 +144,17 @@ export async function poll(): Promise<ActivationState> {
   // claim secret — and because every poll mints a fresh token that retires the last one, so
   // losing this write means the install is holding a credential that no longer works.
   await putEntitlementToken(res.body.entitlement_token);
-  await clearClaimSecret(); // it has done its job; keeping it is keeping a live credential
-
-  return writeState({
+  const verified = await writeState({
     stage: 'verified',
     entitlement_id: res.body.entitlement_id,
     verified_at: new Date().toISOString(),
     error_at_stage: null, error_message: null,
   });
+  // Clear the claim only after both halves of the entitlement are durable. A crash after
+  // the token write but before the state write remains recoverable because the claim can
+  // poll again. Clearing first stranded a token whose identity SETTEI could never learn.
+  await clearClaimSecret();
+  return verified;
 }
 
 /** RESEND. The server owns the cooldown; we surface it rather than second-guessing it. */

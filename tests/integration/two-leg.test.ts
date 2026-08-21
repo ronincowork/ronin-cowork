@@ -111,6 +111,7 @@ test('THE WALK: real Cowork modules take a real install from nothing to entitled
   const { request, poll } = await import('../../src/activation/flow.js');
   const { getClaimSecret, getEntitlementToken } = await import('../../src/activation/secrets.js');
   const { readState } = await import('../../src/activation/state.js');
+  const { readSettei } = await import('../../src/settei.js');
 
   const requested = await request(EMAIL);
   assert.equal(requested.stage, 'awaiting_email');
@@ -139,6 +140,18 @@ test('THE WALK: real Cowork modules take a real install from nothing to entitled
 
   // The durable stage survives a fresh read, which is what an operator restart does.
   assert.equal((await readState()).stage, 'verified');
+
+  // SETTEI reads that same durable aggregate. It must not wait for a second browser PUT
+  // or consult the retired manually written services fields in ronin.json.
+  const settei = await readSettei();
+  const services = settei.set.services as {
+    activation: { entitlement_id: string | null };
+    entitlement?: unknown;
+  };
+  assert.equal(services.activation.entitlement_id, verified.entitlement_id);
+  assert.ok(!Object.hasOwn(services, 'entitlement'),
+    'there is no second SETTEI entitlement record to reconcile');
+  assert.match(String(settei.status.subscription), new RegExp(String(verified.entitlement_id)));
 });
 
 test('THE EGRESS RECORD names every call, and carries no secret', async (t) => {

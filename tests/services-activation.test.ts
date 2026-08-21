@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { maskEmail, publicState } from '../src/activation/state.js';
 import { EgressRefused } from '../src/activation/transport.js';
+import { servicesSubscription, setteiServices } from '../src/settei.js';
 
 test('an address is masked for display and never shown back in full', () => {
   assert.equal(maskEmail('person@example.com'), 'p*****@example.com');
@@ -40,6 +41,37 @@ test('the state the browser sees carries no secret, only an identifier', () => {
   // The activation id is not part of the browser's view either: it is the thing the claim
   // secret authenticates against, and there is no reason for a page to hold it.
   assert.ok(!keys.includes('activation_id'));
+});
+
+test('SETTEI derives subscription identity from the activation result', () => {
+  const activation = {
+    stage: 'verified' as const,
+    email_masked: 'p*****@example.com',
+    activation_id: 'act_abc', entitlement_id: 'ent_abc',
+    terms_version: '2026-08-01', requested_at: 'x', verified_at: 'y', expires_at: 'z',
+    resend_available_at: null, error_at_stage: null, error_message: null, updated_at: 'now',
+  };
+
+  const set = setteiServices(activation);
+  assert.deepEqual(Object.keys(set).sort(), ['activation', 'selected'],
+    'SETTEI exposes the activation aggregate, not a second writable entitlement record');
+  assert.equal(set.activation.entitlement_id, 'ent_abc');
+  assert.equal(servicesSubscription(set.activation), 'services: ent_abc, verified y');
+});
+
+test('SETTEI reports the activation lifecycle accurately before entitlement', () => {
+  const base = {
+    email_masked: 'p*****@example.com', activation_id: 'act_abc', entitlement_id: null,
+    terms_version: '2026-08-01', requested_at: 'x', verified_at: null, expires_at: 'z',
+    resend_available_at: null, error_at_stage: null, error_message: null, updated_at: 'now',
+  };
+  assert.equal(servicesSubscription(publicState({ ...base, stage: 'awaiting_email' })),
+    'free cowork: Services confirmation pending');
+  assert.equal(servicesSubscription(publicState({
+    ...base, stage: 'error', error_at_stage: 'awaiting_email', error_message: 'HQ unavailable',
+  })), 'free cowork: Services activation needs attention');
+  assert.equal(servicesSubscription(publicState({ ...base, stage: 'not_requested' })),
+    'free cowork: no entitlement recorded');
 });
 
 test('workspace status checks Shiwake only after the owner presses Check status', async () => {

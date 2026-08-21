@@ -119,7 +119,7 @@ known. `⚙` = edit it in the ⚙ Configuration view unless another editor is na
 
 | Looking for | It lives | Known / edited |
 |---|---|---|
-| the entitlement id, email, terms | `ronin.json` `services` | typed · pasted code, recorded never verified · ⚙ |
+| Services activation, entitlement id, masked email, terms | activation state in the config store | written by the Shiwake request and poll flow · read by ⚙; SETTEI cannot edit it |
 | gbrain on or off | `ronin.json` `gbrain.enabled` | typed · ⚙ |
 | which services are registered | nowhere — the install's roster per read | found · `observed.ronin.services` |
 | what a selection still needs | nowhere — `needed[]` in the answer | derived · the registry's `requires` **and the want list**, judged per read; met items do not exist |

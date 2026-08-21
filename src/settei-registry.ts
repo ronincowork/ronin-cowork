@@ -252,21 +252,10 @@ export const SETTEI_SCHEMA = {
     tools: ['gh', 'tailscale', 'chromium'],
   },
 
-  /** What a choice still needs — judged against the record per read (the `needed[]`
-   * family), met items do not exist. Seed: services finish over the email link, alone.
-   * `met_by` is the choke — see the header. Neither seed is mechanical today, and that
-   * is the honest reading: nothing here carries a command for either. The gbrain row
-   * turns `mechanical` the day the services bundle is entitled and the operation grows
-   * a runner for it (SHIWAKE) — one word on one row, which is the promise. */
+  /** What a choice still needs, judged against the record per read. Services activation
+   * is not a SETTEI requirement: its own durable state machine owns request, confirmation,
+   * entitlement and install. This list contains only settings SETTEI actually owns. */
   requires: [
-    {
-      leaf: 'services',
-      applies: { kind: 'set', path: 'services.email' },
-      met: { kind: 'set', path: 'services.verified' },
-      needs: 'the verified email',
-      how: 'click the link in the services email, paste the code',
-      met_by: 'owner',
-    },
     {
       leaf: 'gbrain',
       applies: { kind: 'set', path: 'gbrain.enabled' },

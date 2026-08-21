@@ -295,8 +295,9 @@ export function buildSettei(root, isShowing) {
 
     /* the deal — Ronin Services the subscription, a different thing from the sockets above */
     group('subscription');
+    const activation = set.services.activation ?? {};
     body.appendChild(obsRow('subscription', st.subscription,
-      set.services.email ? ` ${set.services.email}` : ''));
+      activation.email_masked ? ` ${activation.email_masked}` : ''));
     // THE REAL FLOW, replacing the pasted code. The id used to be typed in from the
     // email and recorded without being checked; now the operator asks Ronin HQ, the
     // person confirms on whatever device they are holding, and the install polls until

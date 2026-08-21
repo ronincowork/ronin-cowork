@@ -62,6 +62,26 @@ an activation that already exists.
 The non-secret half lives in Ronin configuration where the owner can read it. It holds the
 **masked** address, never the full one.
 
+### One entitlement record
+
+The activation aggregate is the only non-secret record of Services entitlement. It owns the
+masked address, accepted terms version, activation stage, `entitlement_id`, and confirmation
+time. The secret store owns the bearer token. SETTEI derives its Services and subscription
+lines from that aggregate and cannot write entitlement facts.
+
+Older builds exposed `PUT /api/settei/services` and stored
+`ronin.json.services.{entitlement,email,verified,terms}` for a superseded flow where the owner
+pasted a code from an email. That data was never verified and is not migrated into the real
+activation record. Upgraded installs may retain those inert keys, but no entitlement, status,
+installer, or telemetry path trusts them. A real entitlement enters Cowork only through the
+Shiwake confirmation and authenticated poll described here.
+
+The poll persists the bearer token first, then the matching public identity, then deletes the
+spent claim secret. That order is recoverable at either crash boundary: until the public record
+lands, the claim remains available to poll again. A verified response must contain both an
+`entitlement_id` and an entitlement token; Cowork rejects an incomplete pair and keeps the claim
+for a later recovery poll.
+
 ## The two secrets, and where they live
 
 Both in the `services_secrets` store, mode `0600`, written via a temp file and a rename so a

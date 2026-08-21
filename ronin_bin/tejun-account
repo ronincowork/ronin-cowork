@@ -3,10 +3,9 @@
 # (TEJUN survey-account).
 # Usage: tejun-account          no arguments
 #
-# SETTEI's side of the story. `tejun-secrets` answers which CREDENTIAL is in force;
-# this answers who the install is FOR — the owner's name, the entitlement, the limits
-# they set. Both are facts about a box on a day, so both are measured here and written
-# down nowhere (`ronin_sops/accounts.md` cites this tool and carries no values).
+# The account side of the story. SETTEI answers what the owner chose; the activation
+# aggregate answers which entitlement Shiwake issued. `tejun-secrets` answers which
+# CREDENTIAL is in force. These are different facts with different owners.
 #
 # Read-only, and it never prints a credential — BY SELECTION, not because the file has
 # none: `ronin.json` now carries the login record (auth + passkeys), so this tool prints
@@ -22,10 +21,11 @@ STORE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../bin" && pwd)/ronin-store"
 [ -x "$STORE" ] || STORE=ronin-store
 CONFIG_DIR="$("$STORE" config 2>/dev/null)"
 CONFIG="${CONFIG_DIR:+$CONFIG_DIR/ronin.json}"
+ACTIVATION="${CONFIG_DIR:+$CONFIG_DIR/services-activation.json}"
 
 echo "ACCOUNT — who this install belongs to"
 
-if [ -z "$CONFIG" ] || [ ! -f "$CONFIG" ]; then
+if { [ -z "$CONFIG" ] || [ ! -f "$CONFIG" ]; } && { [ -z "$ACTIVATION" ] || [ ! -f "$ACTIVATION" ]; }; then
   printf '  %-16s %s\n' "config file" "not created yet — nothing has been set"
   echo
   echo "  A fresh install: no owner name, no entitlement, no limits of their own."
@@ -35,13 +35,20 @@ fi
 
 # One python3 pass — the house allows it where JSON is unavoidable, and hand-parsing
 # nested JSON in bash is how a config file starts lying to you.
-python3 - "$CONFIG" <<'PY'
+python3 - "$CONFIG" "$ACTIVATION" <<'PY'
 import json, os, sys
-try:
-    cfg = json.load(open(sys.argv[1]))
-except Exception as e:
-    print(f"  config file       UNREADABLE ({e.__class__.__name__}) — the owner's editor won")
-    raise SystemExit(0)
+
+def read(path, label):
+    if not path or not os.path.isfile(path):
+        return {}
+    try:
+        return json.load(open(path))
+    except Exception as e:
+        print(f"  {label:<16} UNREADABLE ({e.__class__.__name__})")
+        return {}
+
+cfg = read(sys.argv[1], "config file")
+activation = read(sys.argv[2], "activation")
 
 def row(k, v):
     print(f"  {k:<16} {v}")
@@ -54,14 +61,15 @@ else:
     # person. A fallback is not an answer — it is the absence of one, wearing a name.
     row("owner name", f"NOT SET — falling back to the OS username ({os.environ.get('USER','?')})")
 
-# The services section is where PUT /api/settei/services lands it — the old top-level
-# spellings never held anything and read as absence on every install.
-svc = cfg.get("services") or {}
-ent = svc.get("entitlement")
+# The non-secret activation aggregate is authoritative. The token that authorizes Services
+# is deliberately in another 0600 store and this read-only identity survey never opens it.
+ent = activation.get("entitlement_id")
 if ent:
-    row("entitlement", f"{ent}  (" + ("verified " + svc["verified"] if svc.get("verified") else "recorded, not yet verified") + ")")
+    verified = activation.get("verified_at")
+    row("entitlement", f"{ent}  (" + ("verified " + verified if verified else "identity recorded") + ")")
 else:
-    row("entitlement", "none recorded — a free cowork install")
+    stage = activation.get("stage")
+    row("entitlement", f"none recorded" + (f"  (activation: {stage})" if stage else " — a free cowork install"))
 
 mx = (cfg.get("sessions") or {}).get("max")
 row("session max", mx if mx is not None else "not set — the built-in default applies")
@@ -81,5 +89,5 @@ else:
 PY
 
 echo
-echo "This is SETTEI — what the owner SET. For which credential is actually in force,"
-echo "run tejun-secrets; that is a different question with a different failure mode."
+echo "SETTEI supplies the owner choices; the activation record supplies entitlement identity."
+echo "For which credential is actually in force, run tejun-secrets."
