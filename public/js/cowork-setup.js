@@ -182,7 +182,11 @@ export async function buildCoworkSetup(host, onDone) {
   const projectCard = card(5, 'What would you like to work on first?', 'Leave it empty and add projects later from ▣ Roots — or give a folder and RoninCoWork registers it as your first project.');
   projectCard.querySelector('h2').append(el('span', 'cs-optional', 'Optional'));
   const projectFields = el('div', 'cs-fields');
-  const dirField = inputField('cs-folder', 'Working folder', 'The full path to an existing directory on this machine. RoninCoWork will not create or clone it.', { placeholder: 'Enter an absolute path', cls: 'path' }); dirField.wrap.classList.add('full');
+  const dirField = inputField('cs-folder', 'Working folder', 'Pick from the suggestions or type the path — ~ is your home folder. It must already exist; RoninCoWork will not create or clone it.', { placeholder: '~/code/my-app', cls: 'path' }); dirField.wrap.classList.add('full');
+  // The selection half: the operator lists real subdirectories under what is typed so
+  // far, the datalist offers them natively, and typing stays first-class.
+  const dirList = el('datalist'); dirList.id = 'cs-folder-dirs';
+  dirField.input.setAttribute('list', dirList.id); dirField.wrap.append(dirList);
   const repoFact = el('div', 'cs-detected'); repoFact.append(el('b', null, 'Git repository: '), el('span', null, 'Not checked yet — Git is optional')); dirField.wrap.append(repoFact);
   const projectField = inputField('cs-project', 'Short name (Optional)', 'Left empty, the folder’s name is used. Lowercase letters, numbers, hyphens or underscores; at most 32 characters.', { placeholder: 'my-app' });
   const remitField = inputField('cs-purpose', 'What are you working on? (Optional)', 'One sentence gives agents useful context.', { placeholder: 'A customer support dashboard' });
@@ -220,8 +224,17 @@ export async function buildCoworkSetup(host, onDone) {
       repoFact.querySelector('span').textContent = repoText; updateReview();
     }, 350);
   };
+  let suggestTimer;
+  const suggestFolders = () => {
+    clearTimeout(suggestTimer);
+    suggestTimer = setTimeout(async () => {
+      const result = await request(`/api/project-roots/suggest?prefix=${encodeURIComponent(dirField.input.value.trim())}`, { cache: 'no-store' });
+      if (result.ok && Array.isArray(result.data.dirs)) dirList.replaceChildren(...result.data.dirs.map((d) => new Option(d)));
+    }, 200);
+  };
   for (const control of shell.querySelectorAll('input, select')) control.addEventListener('input', updateReview);
   dirField.input.addEventListener('input', inspectDir); wantServices.addEventListener('change', () => { if (!wantServices.checked) wantGbrain.checked = false; updateReview(); });
+  dirField.input.addEventListener('input', suggestFolders); dirField.input.addEventListener('focus', suggestFolders);
 
   save.addEventListener('click', async () => {
     // THE PROJECT IS OPTIONAL (owner, 2026-08-21): empty means skipped, never blocked.
