@@ -57,8 +57,6 @@ fetch "https://github.com/$REPO/releases/download/$VER/SHA256SUMS" "$WORK/SHA256
 WANT="$(awk -v n="$NAME" '$2==n{print $1}' "$WORK/SHA256SUMS")"
 [ -n "$WANT" ] || die "SHA256SUMS carries no line for $NAME"
 [ "$(sha256_of "$WORK/$NAME")" = "$WANT" ] || die "CHECKSUM MISMATCH on $NAME — refusing to install; the download is not the release"
-# ronin-update verifies and says so itself a few lines below; saying it twice in two
-# different voices is how the transcript starts sounding like two programs arguing.
 
 # The release's own machinery does the actual install: ronin-update owns the
 # <home>/releases layout and the current-symlink, setup.sh owns everything after.

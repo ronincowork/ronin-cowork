@@ -223,9 +223,6 @@ render_check() { # $1=tree $2=url $3=what; returns 1 only on a REAL failure
   if [ "$rc" = 0 ]; then
     say "$3 gated: the page renders"
   elif [ "$rc" = 2 ]; then
-    # NOT a warning, and it used to look like one. A stranger's laptop has no headless
-    # browser and never will; "⚠ … the page has NOT been looked at" reads as a fault they
-    # should act on, and there is nothing to act on. Said plainly, once, and moved past.
     say "render check skipped — no headless browser here; the boot and version answer are the proof (docs/host-tools.md)"
   else
     printf '%s\n' "$out" | tail -12 | sed 's/^/  /'
@@ -449,10 +446,7 @@ if unit_serves_home; then
   echo "✓ $VER is live — /api/version answers it"
 elif [ -z "$CUR" ]; then
   echo "✓ $VER is installed at $HOME_DIR/current — FIRST install on this home."
-  # These two lines are for someone who ran ronin-update BY HAND. get-ronin execs setup.sh
-  # on the very next line, so printing "to make it serve, run setup.sh" there told a first-time
-  # installer to do something that then happened by itself — and the cutover note is about a
-  # situation a first install is not in.
+  # Only for a hand-run update; get-ronin execs setup.sh itself.
   if [ -z "${RONIN_FROM_GET:-}" ]; then
     echo "  To make it serve: (cd $HOME_DIR/current && ./setup.sh)   # units, PATH, start"
     echo "  Cutover from a checkout-serving box is a deliberate act: docs/release.md."

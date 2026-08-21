@@ -496,30 +496,12 @@ if command -v tailscale >/dev/null; then
     'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{process.stdout.write((JSON.parse(d).Self.DNSName||"").replace(/\.$/,""))}catch{}})' 2>/dev/null || true)"
 fi
 
-# THE FINISH — one address, and commands that are commands.
-#
-# This block used to print a numbered menu ("1) …  2) (Recommended) …") and then offer a
-# CHOICE of two URLs to bookmark. A person who has just run one line in a terminal does not
-# want options; they want to know it worked, where to click, and what is left to type.
-# Owner, 2026-08-21: *"we need a far better and no option giving"*.
-#
-# So: one URL. Then only the commands that are actually still needed on THIS box — linger
-# is skipped when it is already on, and the tailscale line is absent entirely when
-# tailscale is not installed, because an instruction you cannot run is noise.
-# ONE LINK, AND IT IS THE ONE THAT WORKS.
-#
-# This used to print two — HTTP "now" and HTTPS "after step 2" — and explain that the
-# microphone needed the second. That is a choice plus a lecture about a feature nobody is
-# using, handed to somebody who just wants to click something. Owner, 2026-08-21.
-#
-# HTTPS cannot simply be the answer: `tailscale serve` needs sudo and this script does not
-# have it, so at THIS moment an https:// address may not exist, and printing a dead link is
-# worse than printing two live ones. So ask the machine which one is real. If serve is
-# already configured, that is the address. Otherwise it is the tailnet HTTP one, which
-# works right now, and the finish line below offers serve as a plain command.
+# Only what is still outstanding on this box: linger is skipped when already on, and the
+# tailscale line is absent when tailscale is not installed.
+# One address, and it has to be live: `tailscale serve` needs sudo this script does not
+# have, so https:// may not exist yet. Ask the machine which door is open.
 OPEN_URL=""
 if command -v tailscale >/dev/null 2>&1; then
-  # `serve status` prints its mappings; an https:// line means the front door already exists.
   SERVED="$(tailscale serve status 2>/dev/null | grep -oE 'https://[^ ]+' | head -1 || true)"
   [ -n "$SERVED" ] && OPEN_URL="${SERVED%/}"
 fi
@@ -535,13 +517,9 @@ banner() { # $1=url
   [ -f "$REPO_DIR/VERSION" ] && ver="$(sed -n 's/^release=//p' "$REPO_DIR/VERSION" 2>/dev/null || true)"
   [ -n "$ver" ] && ver=" $ver "
 
-  # VISUAL width is not character count: 人 is double-width in a terminal and one
-  # character to ${#…}, so the mark line measures one wider than it counts.
-  #
-  # The kaki hexagon ⬡ was here too and is gone on purpose: its East Asian Width is
-  # AMBIGUOUS, so it is one column in some terminals and two in others — a frame that
-  # only lines up on the machine it was written on. 人 is unambiguously Wide, and the
-  # mark is hito anyway (docs/ui.md).
+  # Visual width, not character count: 人 is double-width and counts as one. Keep
+  # ambiguous-width glyphs (⬡ and friends) out of the frame — they are one column in
+  # some terminals and two in others.
   local l1="$mark   Your agents have a room now."
   local l2="Open the door:"
   local w1=$(( ${#l1} + 1 )) w=0
@@ -561,7 +539,7 @@ banner() { # $1=url
   printf '  │   %s%*s│\n' "$l1" $(( inner - 3 - w1 )) ""
   printf '  │%*s│\n' "$inner" ""
   printf '  │   %s%*s│\n' "$l2" $(( inner - 3 - ${#l2} )) ""
-  # Bold only when a person is watching; a piped or logged transcript keeps the escapes out.
+  # Bold only for a tty, so a piped transcript stays clean.
   if [ -t 1 ]; then
     printf '  │   \033[1m%s\033[0m%*s│\n' "$url" $(( inner - 3 - ${#url} )) ""
   else
@@ -572,8 +550,6 @@ banner() { # $1=url
 }
 banner "$OPEN_URL"
 
-# Only what is still outstanding. `loginctl show-user` answers "Linger=yes" when it is
-# already done — asking twice is how a finish line stops meaning anything.
 LINGER=""
 if command -v loginctl >/dev/null 2>&1; then
   [ "$(loginctl show-user "$USER" --property=Linger --value 2>/dev/null || echo no)" = "yes" ] || LINGER=1
