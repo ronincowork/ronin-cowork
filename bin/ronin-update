@@ -223,7 +223,7 @@ render_check() { # $1=tree $2=url $3=what; returns 1 only on a REAL failure
   if [ "$rc" = 0 ]; then
     say "$3 gated: the page renders"
   elif [ "$rc" = 2 ]; then
-    say "⚠ render gate SKIPPED for $3 — no headless browser on this machine, so the page has NOT been looked at (docs/host-tools.md). The boot and the version answer are the proof available here."
+    say "render check skipped — no headless browser here; the boot and version answer are the proof (docs/host-tools.md)"
   else
     printf '%s\n' "$out" | tail -12 | sed 's/^/  /'
     return 1
@@ -446,8 +446,11 @@ if unit_serves_home; then
   echo "✓ $VER is live — /api/version answers it"
 elif [ -z "$CUR" ]; then
   echo "✓ $VER is installed at $HOME_DIR/current — FIRST install on this home."
-  echo "  To make it serve: (cd $HOME_DIR/current && ./setup.sh)   # units, PATH, start"
-  echo "  Cutover from a checkout-serving box is a deliberate act: docs/release.md."
+  # Only for a hand-run update; get-ronin execs setup.sh itself.
+  if [ -z "${RONIN_FROM_GET:-}" ]; then
+    echo "  To make it serve: (cd $HOME_DIR/current && ./setup.sh)   # units, PATH, start"
+    echo "  Cutover from a checkout-serving box is a deliberate act: docs/release.md."
+  fi
 else
   echo "✓ $VER is installed and current — but the unit serves elsewhere, so nothing restarted."
   echo "  This box's operator is not this home's (cutover pending? docs/release.md)."

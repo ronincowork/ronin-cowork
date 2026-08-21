@@ -3410,6 +3410,98 @@ body {
     border-color: var(--accent);
   }
 }
+/* ---- JOB CLASSES: the owner's shelves over the kind board (js/launcher.js).
+   Drawn as collapsible groupings, named classes — `group` stays the roster's
+   addressing word. Membership lives in the JOB_CLASSES.md side manifest. ---- */
+.ks-classes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.ks-classes:empty {
+  display: none;
+}
+.ks-class {
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-xl);
+  background: var(--panel);
+}
+.ks-class > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  color: var(--fg-strong);
+  font-size: var(--text-3);
+  cursor: pointer;
+}
+.ks-class > summary b {
+  font-weight: 600;
+}
+.ks-class-n {
+  color: var(--muted);
+  font-size: var(--text-2);
+}
+.ks-class-edit {
+  margin-left: auto;
+  padding: var(--space-1) var(--space-3);
+  background: transparent;
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-xs);
+  color: var(--muted);
+  cursor: pointer;
+}
+.ks-class-edit:hover {
+  border-color: var(--accent);
+  color: var(--fg);
+}
+.ks-class > .ks-grid {
+  padding: 0 var(--space-5) var(--space-5);
+}
+/* "unclassed" — only drawn once shelves exist; until then flat IS the whole board. */
+.ks-loose-h {
+  color: var(--muted-2);
+  font-size: var(--text-2);
+  text-transform: lowercase;
+  margin-top: var(--space-2);
+}
+.ks-class-add {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.ks-class-add input {
+  width: 150px;
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-xs);
+  color: var(--fg);
+  background: var(--well);
+  font: inherit;
+}
+.ks-class-add button {
+  padding: var(--space-3) var(--space-5);
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-xs);
+  color: var(--fg);
+  background: transparent;
+  cursor: pointer;
+}
+.ks-class-msg {
+  color: var(--muted);
+  font-size: var(--text-2);
+}
+/* Drag a job onto a shelf to ADD it there — the roster's own cue, in ks clothes. */
+.ks-class.drop-ready {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  outline: var(--edge) dashed var(--accent);
+  outline-offset: calc(-1 * var(--edge));
+}
+.ks-btn.dragging {
+  opacity: 0.45;
+}
 .ks-form {
   display: none;
   flex-direction: column;

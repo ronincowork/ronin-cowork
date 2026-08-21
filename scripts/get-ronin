@@ -57,7 +57,6 @@ fetch "https://github.com/$REPO/releases/download/$VER/SHA256SUMS" "$WORK/SHA256
 WANT="$(awk -v n="$NAME" '$2==n{print $1}' "$WORK/SHA256SUMS")"
 [ -n "$WANT" ] || die "SHA256SUMS carries no line for $NAME"
 [ "$(sha256_of "$WORK/$NAME")" = "$WANT" ] || die "CHECKSUM MISMATCH on $NAME — refusing to install; the download is not the release"
-say "==> checksum verified"
 
 # The release's own machinery does the actual install: ronin-update owns the
 # <home>/releases layout and the current-symlink, setup.sh owns everything after.
@@ -66,6 +65,6 @@ say "==> checksum verified"
 tar -xzf "$WORK/$NAME" -C "$WORK"
 TREE="$WORK/ronin-cowork-$VER"
 HOME_DIR="${RONIN_HOME:-$("$TREE/bin/ronin-store" --root user)}"
-"$TREE/bin/ronin-update" --file "$WORK/$NAME" --home "$HOME_DIR"
+RONIN_FROM_GET=1 "$TREE/bin/ronin-update" --file "$WORK/$NAME" --home "$HOME_DIR"
 cd "$HOME_DIR/current"
 exec ./setup.sh

@@ -467,3 +467,119 @@ export async function removeLaunch(name: string): Promise<void> {
   lines.splice(from, end - from);
   await writeCatalogFile('SAVED_LAUNCHES.md', lines.join('\n'));
 }
+
+/* ---------- job classes: the owner's shelving of the ＋ New kind board ---------- */
+
+/**
+ * JOB_CLASSES — the side manifest that shelves the launcher's session jobs, and nothing
+ * else.
+ *
+ * ITS OWN FILE, NOT A SHADOW, and the separation is the ruling (owner, 2026-08-21):
+ * classes must not be clobbered by updates, and house jobs must not be shadowed into
+ * staleness. A class line written into the shipped SESSION_JOBS.md dies at the next
+ * release; a stock entry shadowed whole just to carry a tag stops tracking upgrades. So
+ * membership lives in the one layer the owner owns — `<catalogs store>/JOB_CLASSES.md` —
+ * keyed by job NAME, and the stock catalog is never edited and never shadowed for it.
+ * Owner-authored jobs class through the same manifest: one place to look, one file.
+ *
+ * THE WORD IS CLASS, AND THAT IS A RULING TOO (owner, 2026-08-21: "we should not be
+ * using groups"): `group` in this house is the roster's ADDRESSING word — a session's
+ * `+tag:` memberships a coordinator resolves to live members. A job class organizes the
+ * ＋ New board and addresses NOTHING: nothing resolves one to members over an API and no
+ * behavior may branch on a class's name. The UI still draws them as collapsible
+ * groupings — the presentation is grouped, the vocabulary is class.
+ *
+ * A job may carry several classes (the personal trainer sits in `personal` AND
+ * `health`); a class is a shelf, not a type.
+ *
+ * The format is the house entry format, read by the same splitter every catalog uses:
+ * one `## <class>` per class, `- **jobs:** name, name` under it, file order = board
+ * order. A class with no jobs line is a real, EMPTY class — unlike the roster's derived
+ * groups there is a file here, so a class survives being emptied and dies only by
+ * deletion. A job named here that the catalog no longer knows renders nowhere and stays
+ * in the file: the manifest is the owner's, and a stock job may come back.
+ */
+export interface JobClass {
+  name: string;
+  jobs: string[];
+}
+
+const JOB_CLASSES_FILE = 'JOB_CLASSES.md';
+/** The roster's group-name rule (js/roster.js cleanGroup), enforced server-side. */
+const isValidClassName = (s: string): boolean => /^[a-z0-9][a-z0-9_-]{0,31}$/.test(s);
+/** A job name is a catalog heading's first word — word characters and hyphens. */
+const isValidJobName = (s: string): boolean => /^[\w-]{1,64}$/.test(s);
+
+function jobClassesHeader(): string {
+  return `# JOB_CLASSES — how the launcher shelves your session jobs (user scope)
+
+> **Ronin made this file; Ronin never replaces it.** It lives outside every repo, an
+> upgrade cannot touch it, and an uninstall leaves it. Hand-edit it freely.
+>
+> One \`## <class>\` block per job class, \`- **jobs:** name, name\` under it. File
+> order is display order on the ＋ New board; a block with no jobs line is an empty
+> class waiting for members, and a job may appear in several classes. Job classes
+> organize that board and address nothing — the roster's session groups are the
+> addressing kind (\`+tag:\`).
+`;
+}
+
+/**
+ * THE SHIPPED SHELVES (owner, 2026-08-21). In code, not in a seeded file, so they track
+ * releases exactly until the owner first writes — the moment JOB_CLASSES.md exists, it
+ * rules whole, including ruling these away. Every stock job is on a shelf: an unshelved
+ * job renders in the flat tail, which cannot fold, and a default that cannot fold
+ * defeats the shelves (owner, same day, on seeing exactly that).
+ */
+const DEFAULT_JOB_CLASSES: JobClass[] = [
+  { name: 'developer', jobs: ['RiffOnIt', 'DraftPlan', 'CutCode', 'ChaseBug', 'CheckWork', 'QuarterBack'] },
+  { name: 'assistant', jobs: ['PersonalAssistant', 'MikaAssist'] },
+  { name: 'extra', jobs: ['OddJob', 'Atarashi', 'OpenShell'] },
+];
+
+export async function readJobClasses(): Promise<JobClass[]> {
+  const raw = await readUserCatalog(JOB_CLASSES_FILE);
+  // ABSENT means the defaults; PRESENT rules whole. An owner who deletes every shelf
+  // gets an empty board back, not our defaults over their decision — the file they
+  // saved is the difference between "never said" and "said none".
+  if (raw === '') return DEFAULT_JOB_CLASSES.map((c) => ({ ...c, jobs: [...c.jobs] }));
+  return splitSections(raw, 'user')
+    .filter((s) => s.name === s.head) // a heading with a space is prose, never a class
+    .map((s) => ({ name: s.name, jobs: splitList(entryValue(s.lines, 'jobs')) }));
+}
+
+/**
+ * Replace the manifest whole. Board edits are single membership toggles, so the client
+ * sends the full next state; the file is small by cap, and per-entry surgery
+ * (saveLaunch's shape) would buy nothing here but a second code path.
+ */
+export async function writeJobClasses(classes: JobClass[]): Promise<JobClass[]> {
+  if (!Array.isArray(classes)) throw new Error('Send { classes: [{ name, jobs }] }.');
+  if (classes.length > 32) throw new Error('Refused: more than 32 job classes.');
+  const seen = new Set<string>();
+  const clean: JobClass[] = classes.map((g) => {
+    const name = String(g?.name ?? '').trim();
+    if (!isValidClassName(name)) {
+      throw new Error(`"${name}" is not a class name — lowercase letters, digits, - and _, at most 32.`);
+    }
+    if (seen.has(name)) throw new Error(`Class "${name}" appears twice.`);
+    seen.add(name);
+    const jobs = [...new Set((Array.isArray(g?.jobs) ? g.jobs : []).map((j) => String(j).trim()).filter(Boolean))];
+    for (const j of jobs) if (!isValidJobName(j)) throw new Error(`"${j}" is not a job name.`);
+    if (jobs.length > 64) throw new Error(`Class "${name}" holds more than 64 jobs.`);
+    return { name, jobs };
+  });
+
+  const text = [
+    jobClassesHeader(),
+    ...clean.flatMap((g) => ['', `## ${g.name}`, ...(g.jobs.length ? [`- **jobs:** ${g.jobs.join(', ')}`] : [])]),
+    '',
+  ].join('\n');
+  // Parse the RESULT before committing it — the same refusal saveLaunch makes: a
+  // manifest we could not read back is never written.
+  if (splitSections(text, 'user').filter((s) => s.name === s.head).length !== clean.length) {
+    throw new Error('Refused: the manifest would not read back whole.');
+  }
+  await writeCatalogFile(JOB_CLASSES_FILE, text);
+  return clean;
+}

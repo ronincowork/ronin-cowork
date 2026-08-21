@@ -23,6 +23,7 @@ import {
 } from './home.js';
 import { IS_TOUCH, S } from './state.js';
 import { button, field, status } from './ui.js';
+import { buildJobShelves, draggableJob } from './jobclasses.js';
 import { addProvMark, addYourOwn } from './provenance.js';
 
 /**
@@ -234,6 +235,12 @@ export function buildLauncher(tile, host) {
   form.append(formHead, creditEl, modeRow, modeSay, nameField.el, whatField.el, formRow, err.el, extrasHead, extras);
   const grid2 = document.createElement('div');
   grid2.className = 'ks-grid';
+  /* ---- job classes: the owner's shelves over this board (js/jobclasses.js) ---- */
+  const shelves = buildJobShelves({
+    jobButton: (k) => jobButton(k),
+    allJobs: () => presetData || [],
+    onChange: () => buildBoard(),
+  });
   /* ---- saved launches: this form, filled in ahead of time and named ---- */
   // NOT macros. A macro is a program an agent runs; this is the launcher with the
   // boxes already ticked (docs/shadowing.md §saved launches). User scope only, so an
@@ -258,7 +265,7 @@ export function buildLauncher(tile, host) {
     offer.addEventListener('click', () => open(rec.schema.seat.job, rec.schema.seat.prompt));
     offer.hidden = false;
   })();
-  board.append(boardHead, offer, savedRow, grid2, form);
+  board.append(boardHead, offer, savedRow, shelves.wrap, grid2, shelves.add, form);
   host.appendChild(board);
 
   let kind = null;
@@ -269,70 +276,83 @@ export function buildLauncher(tile, host) {
     board.classList.remove('picking');
   };
   cancelBtn.addEventListener('click', closeForm);
+  const jobButton = (k) => {
+    const b = document.createElement('button');
+    b.className = 'ks-btn';
+    b.dataset.kind = k.name;
+    draggableJob(b, k.name); // dropping it on a shelf ADDS it there — the roster's grammar
+    // The kind's own name carries the mark: a job of yours, or one of ours you
+    // replaced, is a fact about THIS tile and belongs on it (js/provenance.js).
+    const kLabel = Object.assign(document.createElement('b'), { textContent: k.label });
+    addProvMark(kLabel, k);
+    b.append(
+      Object.assign(document.createElement('i'), { textContent: k.icon }),
+      kLabel,
+      Object.assign(document.createElement('small'), { textContent: k.blurb }),
+    );
+    b.addEventListener('click', () => {
+      kind = k;
+      // `agent: none` (ronin_catalogs/SESSION_JOBS.md) — a plain terminal. No session_launch_spec to pick,
+      // no brief to compose, so the form drops to the two things that still mean
+      // something: what it is called and where it opens. Manual is not a "mode" here,
+      // it is the only truth available: nothing is sent at all.
+      if (k.agent === false) mode = 'manual';
+      form.classList.toggle('noagent', k.agent === false);
+      // `mcp: always` — born connected (owner's ruling, 2026-08-17): the toggle does
+      // not apply, so it is not offered. The spawn refuses a contradicting launch;
+      // this just keeps the form honest about there being no choice.
+      if (k.mcpAlways) mcpOn = true;
+      mcpBtn.hidden = !!k.mcpAlways;
+      applyMcp();
+      formHead.textContent = `${k.icon} ${k.label} — ${k.ask}`;
+      // textContent + server-vetted http(s) URL only — a catalog line must never
+      // become markup here.
+      creditEl.hidden = !k.credit;
+      if (k.credit) {
+        creditEl.textContent = `powered by ${k.credit.text} ↗`;
+        creditEl.href = k.credit.url;
+        creditEl.title = k.credit.url;
+      } else {
+        // Belt and braces with the [hidden] CSS: a kind with no credit must never
+        // wear the previous kind's.
+        creditEl.textContent = '';
+        creditEl.removeAttribute('href');
+      }
+      nameInp.value = '';
+      what.value = '';
+      seedInp.value = '';
+      injectInp.value = '';
+      sayErr('');
+      fillWhere();
+      fillModels();
+      fillGroups(groupSel);
+      fillRef();
+      applyMode();
+      form.classList.add('open');
+      board.classList.add('picking');
+      // Board-wide, not grid2: a shelved job's button lives in its class's fold.
+      board.querySelectorAll('.ks-btn').forEach((x) => x.classList.toggle('on', x.dataset.kind === k.name));
+      if (!IS_TOUCH) nameInp.focus(); // name first — it is the field you answer first
+    });
+    return b;
+  };
+
   const buildBoard = () => {
     grid2.innerHTML = '';
-    for (const k of presetData || []) {
-      const b = document.createElement('button');
-      b.className = 'ks-btn';
-      b.dataset.kind = k.name;
-      // The kind's own name carries the mark: a job of yours, or one of ours you
-      // replaced, is a fact about THIS tile and belongs on it (js/provenance.js).
-      const kLabel = Object.assign(document.createElement('b'), { textContent: k.label });
-      addProvMark(kLabel, k);
-      b.append(
-        Object.assign(document.createElement('i'), { textContent: k.icon }),
-        kLabel,
-        Object.assign(document.createElement('small'), { textContent: k.blurb }),
-      );
-      b.addEventListener('click', () => {
-        kind = k;
-        // `agent: none` (ronin_catalogs/SESSION_JOBS.md) — a plain terminal. No session_launch_spec to pick,
-        // no brief to compose, so the form drops to the two things that still mean
-        // something: what it is called and where it opens. Manual is not a "mode" here,
-        // it is the only truth available: nothing is sent at all.
-        if (k.agent === false) mode = 'manual';
-        form.classList.toggle('noagent', k.agent === false);
-        // `mcp: always` — born connected (owner's ruling, 2026-08-17): the toggle does
-        // not apply, so it is not offered. The spawn refuses a contradicting launch;
-        // this just keeps the form honest about there being no choice.
-        if (k.mcpAlways) mcpOn = true;
-        mcpBtn.hidden = !!k.mcpAlways;
-        applyMcp();
-        formHead.textContent = `${k.icon} ${k.label} — ${k.ask}`;
-        // textContent + server-vetted http(s) URL only — a catalog line must never
-        // become markup here.
-        creditEl.hidden = !k.credit;
-        if (k.credit) {
-          creditEl.textContent = `powered by ${k.credit.text} ↗`;
-          creditEl.href = k.credit.url;
-          creditEl.title = k.credit.url;
-        } else {
-          // Belt and braces with the [hidden] CSS: a kind with no credit must never
-          // wear the previous kind's.
-          creditEl.textContent = '';
-          creditEl.removeAttribute('href');
-        }
-        nameInp.value = '';
-        what.value = '';
-        seedInp.value = '';
-        injectInp.value = '';
-        sayErr('');
-        fillWhere();
-        fillModels();
-        fillGroups(groupSel);
-        fillRef();
-        applyMode();
-        form.classList.add('open');
-        board.classList.add('picking');
-        grid2.querySelectorAll('.ks-btn').forEach((x) => x.classList.toggle('on', x.dataset.kind === k.name));
-        if (!IS_TOUCH) nameInp.focus(); // name first — it is the field you answer first
-      });
-      grid2.appendChild(b);
-    }
-    if (!(presetData || []).length) grid2.textContent = 'no kinds in ronin_catalogs/SESSION_JOBS.md';
-    grid2.dataset.n = String((presetData || []).length);
-    // The end of the list is where you find out the list is yours to extend.
-    grid2.appendChild(addYourOwn('SESSION_JOBS.md', 'kind'));
+    const all = presetData || [];
+    // The shelves render themselves and answer who they hold; a job on no shelf sits
+    // flat under them, the roster's own answer for the untagged (js/jobclasses.js).
+    const shelved = shelves.render();
+    for (const k of all.filter((x) => !shelved.has(x.name))) grid2.appendChild(jobButton(k));
+    if (!all.length) grid2.textContent = 'no kinds in ronin_catalogs/SESSION_JOBS.md';
+    grid2.dataset.n = String(all.length);
+    // HIDDEN, not gone (owner, 2026-08-21, OPEN_THREADS 4.31): the tile's whole answer
+    // is a file path popped at a person mid-launch — developer-shaped, not owner-shaped.
+    // It stays a consumer so the affordance survives to be redesigned, and one deleted
+    // line brings it back.
+    const own = addYourOwn('SESSION_JOBS.md', 'session job');
+    own.hidden = true;
+    grid2.appendChild(own);
   };
 
   const buildSaved = () => {
@@ -361,7 +381,7 @@ export function buildLauncher(tile, host) {
           sayErr(`"${l.label}" names session_job "${l.session_job}", which is not in the catalog.`);
           return;
         }
-        grid2.querySelector(`.ks-btn[data-kind="${CSS.escape(k.name)}"]`)?.click();
+        board.querySelector(`.ks-btn[data-kind="${CSS.escape(k.name)}"]`)?.click();
         if (l.project_root) whereSel.value = l.project_root;
         if (l.group) {
           if (![...groupSel.options].some((o) => o.value === l.group)) groupSel.add(new Option(l.group, l.group), groupSel.options.length - 1);
@@ -494,7 +514,7 @@ export function buildLauncher(tile, host) {
   // Start. Unknown kinds are silent because catalogs can be user-replaced at runtime.
   const open = (name, promptText = '') => {
     render();
-    const b = grid2.querySelector(`.ks-btn[data-kind="${CSS.escape(name)}"]`);
+    const b = board.querySelector(`.ks-btn[data-kind="${CSS.escape(name)}"]`);
     if (!b) return;
     b.click();
     assistBtn.click();

@@ -29,6 +29,9 @@ import {
   seedUserCatalog,
   isShadowable,
   isValidLaunchName,
+  readJobClasses,
+  writeJobClasses,
+  type JobClass,
   type LaunchField,
 } from '../catalog.js';
 
@@ -240,6 +243,28 @@ export function registerCatalogs(app: express.Express): void {
       res.json(await listSessionJobs());
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
+    }
+  });
+
+  /**
+   * JOB CLASSES — the side manifest that shelves the kind board (src/catalog.ts says
+   * why it is a separate file). Whole-document read and replace: an edit is one
+   * membership toggle and the manifest is small by cap. 400 for anything the write
+   * refuses — the messages are written for the owner, not for a log.
+   */
+  app.get('/api/job-classes', async (_req, res) => {
+    try {
+      res.json({ classes: await readJobClasses() });
+    } catch (e) {
+      res.status(500).json({ error: errMsg(e) });
+    }
+  });
+
+  app.put('/api/job-classes', async (req, res) => {
+    try {
+      res.json({ ok: true, classes: await writeJobClasses((req.body?.classes ?? null) as JobClass[]) });
+    } catch (e) {
+      res.status(400).json({ error: errMsg(e) });
     }
   });
 

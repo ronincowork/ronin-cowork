@@ -57,6 +57,7 @@ const ALLOW = {
   // The two bindings of the store table ARE the place the paths are written down.
   'src/stores.ts': 'the table itself',
   'bin/ronin-store': 'the bash binding of the table',
+  'scripts/ronin-uninstall': 'must work when the install is broken or gone, so it carries the defaults ronin-store would have answered',
   // The gate cannot scan for a pattern it may not contain.
   'scripts/check-place.mjs': 'this file',
   // The contract explains the two roots and recounts the incident by name.

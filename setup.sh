@@ -10,6 +10,20 @@ set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$REPO_DIR"
+
+# The install talks to a log, not to the person. fd 3 is the terminal, kept for the
+# banner at the end and for anything that actually needs them. RONIN_VERBOSE=1 puts the
+# whole transcript back on screen.
+RONIN_SETUP_LOG="${TMPDIR:-/tmp}/ronin-setup.log"
+exec 3>&1
+if [ -z "${RONIN_VERBOSE:-}" ]; then
+  : > "$RONIN_SETUP_LOG" 2>/dev/null || RONIN_SETUP_LOG=/dev/null
+  exec >>"$RONIN_SETUP_LOG" 2>&1
+fi
+out() { printf '%s\n' "$*" >&3; }
+# A failure is the one thing that must reach them, with the log to look at.
+trap 'rc=$?; [ $rc -eq 0 ] || { printf "\n  Setup failed (exit %s). What happened is in:\n    %s\n\n" "$rc" "$RONIN_SETUP_LOG" >&3; }' EXIT
+
 echo "==> Ronin setup in $REPO_DIR"
 
 # --- the runtime: a bundled release, or a developer's checkout ---
@@ -39,7 +53,7 @@ fi
 if command -v tailscale >/dev/null; then
   echo "    tailscale: $(command -v tailscale)"
 else
-  echo "    tailscale: not found (optional — needed for tailnet HTTPS + the microphone)"
+  echo "    tailscale: not found (optional — it is what gives this box an HTTPS address)"
 fi
 
 # --- install deps (checkout only: a bundle arrives with finished node_modules) ---
@@ -496,33 +510,79 @@ if command -v tailscale >/dev/null; then
     'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{process.stdout.write((JSON.parse(d).Self.DNSName||"").replace(/\.$/,""))}catch{}})' 2>/dev/null || true)"
 fi
 
-echo
-echo "Next steps:"
-echo "  1) Keep it running without an active login (Linux):"
-echo "       sudo loginctl enable-linger $USER"
-echo "  2) (Recommended) tailnet HTTPS for remote access + the microphone:"
-if command -v tailscale >/dev/null; then
-  echo "       sudo tailscale serve --bg --https=8443 http://${IP:-<tailnet-ip>}:3006"
-else
-  echo "       install Tailscale, then:"
-  echo "       sudo tailscale serve --bg --https=8443 http://<tailnet-ip>:3006"
-fi
-echo
-# NOT "HTTPS needed for clipboard" — it never was, and saying so sent people looking for a
-# certificate when the answer was a modifier key. Copying out of a tile is the `copy` event
-# plus `clipboardData.setData` (js/layout.js), which works fine on http. What actually needs
-# a secure context is getUserMedia — the 🎤 — and `navigator.clipboard.writeText` in the
-# keypad panel, which falls back to execCommand anyway.
+# Only what is still outstanding on this box: linger is skipped when already on, and the
+# tailscale line is absent when tailscale is not installed.
+# One address, and it has to be live: `tailscale serve` needs sudo this script does not
+# have, so https:// may not exist yet. Ask the machine which door is open.
 OPEN_URL=""
-echo "==> done. Open and bookmark one of these URLs (HTTPS needed for the 🎤 microphone):"
-if [ -n "$FQDN" ]; then
-  echo "      HTTP  (now)          : http://$FQDN:3006   (or http://$IP:3006)"
-  echo "      HTTPS (after step 2) : https://$FQDN:8443"
-  OPEN_URL="http://$FQDN:3006"
-else
-  echo "      HTTP  : http://${IP:-<server-ip-or-localhost>}:3006"
-  echo "      HTTPS : after step 2, run 'tailscale serve status' to see the URL"
-  OPEN_URL="http://127.0.0.1:3006"
+if command -v tailscale >/dev/null 2>&1; then
+  SERVED="$(tailscale serve status 2>/dev/null | grep -oE 'https://[^ ]+' | head -1 || true)"
+  [ -n "$SERVED" ] && OPEN_URL="${SERVED%/}"
+fi
+if [ -z "$OPEN_URL" ]; then
+  if   [ -n "$FQDN" ];    then OPEN_URL="http://$FQDN:3006"
+  elif [ -n "${IP:-}" ];  then OPEN_URL="http://$IP:3006"
+  else                         OPEN_URL="http://127.0.0.1:3006"; fi
+fi
+
+banner() { # $1=url
+  local url="$1"
+  local title=" RONIN COWORK " ver="" mark="人"
+  [ -f "$REPO_DIR/VERSION" ] && ver="$(sed -n 's/^release=//p' "$REPO_DIR/VERSION" 2>/dev/null || true)"
+  [ -n "$ver" ] && ver=" $ver "
+
+  # Visual width, not character count: 人 is double-width and counts as one. Keep
+  # ambiguous-width glyphs (⬡ and friends) out of the frame — they are one column in
+  # some terminals and two in others.
+  local l1="$mark   You're in. Thanks for joining us."
+  local l2="Your agents have a room now — open the door:"
+  local w1=$(( ${#l1} + 1 )) w=0
+  [ "$w1" -gt "$w" ] && w=$w1
+  [ ${#l2} -gt "$w" ] && w=${#l2}
+  [ ${#url} -gt "$w" ] && w=${#url}
+  # A frame that cannot hold its own chrome is a broken frame.
+  local chrome=$(( ${#title} + ${#ver} + 4 ))
+  local inner=$(( w + 6 )); [ "$chrome" -gt "$inner" ] && inner=$chrome
+
+  local i fill="" dashes=$(( inner - ${#title} - ${#ver} - 2 ))
+  for ((i = 0; i < dashes; i++)); do fill="$fill─"; done
+  local bar=""; for ((i = 0; i < inner; i++)); do bar="$bar─"; done
+
+  {
+  printf '\n  ╭─%s%s%s─╮\n' "$title" "$fill" "$ver"
+  printf '  │%*s│\n' "$inner" ""
+  printf '  │   %s%*s│\n' "$l1" $(( inner - 3 - w1 )) ""
+  printf '  │%*s│\n' "$inner" ""
+  printf '  │   %s%*s│\n' "$l2" $(( inner - 3 - ${#l2} )) ""
+  # Bold only for a tty, so a piped transcript stays clean.
+  if [ -t 3 ]; then
+    printf '  │   \033[1m%s\033[0m%*s│\n' "$url" $(( inner - 3 - ${#url} )) ""
+  else
+    printf '  │   %s%*s│\n' "$url" $(( inner - 3 - ${#url} )) ""
+  fi
+  printf '  │%*s│\n' "$inner" ""
+  printf '  ╰%s╯\n\n' "$bar"
+  } >&3
+}
+banner "$OPEN_URL"
+
+LINGER=""
+if command -v loginctl >/dev/null 2>&1; then
+  [ "$(loginctl show-user "$USER" --property=Linger --value 2>/dev/null || echo no)" = "yes" ] || LINGER=1
+fi
+TS=""
+[ -n "${IP:-}" ] && command -v tailscale >/dev/null 2>&1 && TS=1
+
+if [ -n "$LINGER" ] || [ -n "$TS" ]; then
+  out "  To finish, run:"
+  out ""
+  [ -n "$LINGER" ] && out "      sudo loginctl enable-linger $USER"
+  [ -n "$TS" ]     && out "      sudo tailscale serve --bg --https=8443 http://$IP:3006"
+  out ""
+  [ -n "$LINGER" ] && out "  The first keeps Ronin running after you log out."
+  [ -n "$TS" ] && [ -n "$FQDN" ] && out "  The second turns the address above into https://$FQDN:8443."
+  [ -n "$TS" ] && [ -z "$FQDN" ] && out "  The second gives the address above an HTTPS front door."
+  out ""
 fi
 
 # Printed instructions above are the contract. On a local graphical desktop this is
