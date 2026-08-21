@@ -7,6 +7,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { maskEmail, publicState } from '../src/activation/state.js';
 import { EgressRefused } from '../src/activation/transport.js';
 
@@ -34,10 +35,21 @@ test('the state the browser sees carries no secret, only an identifier', () => {
   // The entitlement id identifies and cannot authorize, so it is safe to show.
   assert.equal(view.entitlement_id, 'ent_abc');
   assert.equal(view.email_masked, 'p*****@example.com');
+  assert.equal(view.error_at_stage, null);
 
   // The activation id is not part of the browser's view either: it is the thing the claim
   // secret authenticates against, and there is no reason for a page to hold it.
   assert.ok(!keys.includes('activation_id'));
+});
+
+test('workspace status checks Shiwake only after the owner presses Check status', async () => {
+  const source = await readFile(new URL('../public/js/services-activation.js', import.meta.url), 'utf8');
+  assert.match(source, /Check status/);
+  assert.match(source, /activation\/poll/);
+  assert.equal((source.match(/activation\/poll/g) || []).length, 1,
+    'the Shiwake poll endpoint appears only in the Check status click handler');
+  assert.match(source, /visibilityState[\s\S]*refresh/,
+    'returning to the page may refresh local state without polling Shiwake');
 });
 
 test('EgressRefused exists as its own kind, so a blocked call is not read as a network fault', () => {

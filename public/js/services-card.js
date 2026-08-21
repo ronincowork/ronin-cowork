@@ -26,40 +26,16 @@ const SAY = {
   error: ['Waiting to send', 'Ronin HQ could not be reached. This will retry.'],
 };
 
-/** Stages worth watching: something is expected to change without the person acting. */
-const WATCH = ['requesting', 'awaiting_email', 'verified', 'installing'];
-
 export function servicesCard(container, onChange) {
   const wrap = document.createElement('div');
   wrap.className = 'st-services';
   container.appendChild(wrap);
 
   const line = status('st-status');
-  let timer = null;
-  let backoff = 2000;
-
-  const stop = () => { if (timer) clearTimeout(timer); timer = null; };
-
-  /**
-   * VISIBLE POLLING. It says it is checking, and it says when it will check again, because
-   * a spinner that never resolves and a page that has quietly given up look identical.
-   *
-   * It backs off rather than hammering, and it stops the moment the stage is settled — the
-   * plan is explicit that this must not become an immortal daemon.
-   */
-  async function poll(state) {
-    stop();
-    if (!WATCH.includes(state.stage)) { backoff = 2000; return; }
-    timer = setTimeout(async () => {
-      line.say('checking…', 'busy');
-      const r = await request('/api/services/activation/poll', { method: 'POST' });
-      backoff = Math.min(backoff * 1.6, 30000);
-      render(r.ok ? r.json : null);
-    }, backoff);
-  }
-
+  let installTimer = null;
   function render(state) {
     if (!state) { line.say('could not reach the operator', 'bad'); return; }
+    if (installTimer) clearTimeout(installTimer);
     wrap.replaceChildren();
 
     const [title, blurb] = SAY[state.stage] ?? SAY.not_requested;
@@ -122,7 +98,12 @@ export function servicesCard(container, onChange) {
       }));
     }
 
-    if (state.stage === 'awaiting_email' || state.stage === 'error') {
+    if (state.stage === 'awaiting_email'
+        || (state.stage === 'error' && state.error_at_stage === 'awaiting_email')) {
+      actions.appendChild(nodeOf(button('Check status', {
+        cls: 'services-check',
+        onClick: () => act(line, '/api/services/activation/poll', null),
+      })));
       const resend = button('Resend', {
         onClick: () => act(line, '/api/services/activation/resend', null),
       });
@@ -134,6 +115,7 @@ export function servicesCard(container, onChange) {
       if (state.resend_available_at) {
         const when = new Date(state.resend_available_at);
         if (when > new Date()) {
+          resend.disabled = true;
           // The server owns the cooldown; the page reports it rather than guessing.
           const n = document.createElement('span');
           n.className = 'st-note';
@@ -143,7 +125,15 @@ export function servicesCard(container, onChange) {
       }
     }
 
-    if (state.stage === 'verified' || state.stage === 'error') {
+    if (state.stage === 'error' && state.error_at_stage === 'requesting') {
+      actions.append(nodeOf(button('Change address and try again', {
+        onClick: () => changeAddress(),
+      })), nodeOf(button('Cancel request', {
+        onClick: () => act(line, '/api/services/activation', null, 'DELETE'),
+      })));
+    }
+
+    if (state.stage === 'verified' || (state.stage === 'error' && state.entitled)) {
       // Recovery only. Installation normally starts by itself the moment an entitlement
       // arrives; this is for the case where it failed and somebody wants to try again
       // without another email.
@@ -158,7 +148,10 @@ export function servicesCard(container, onChange) {
     if (state.egress?.length) wrap.appendChild(egressBox(state.egress));
 
     onChange?.(state);
-    void poll(state);
+    document.dispatchEvent(new CustomEvent('ronin:services-state', { detail: state }));
+    // Installing is local work, so a short local read can replace the spinner with its
+    // real outcome without creating another Shiwake poll.
+    if (state.stage === 'installing') installTimer = setTimeout(() => void load(), 3000);
   }
 
   function nodeOf(b) { return b.el ?? b; }
@@ -211,5 +204,5 @@ export function servicesCard(container, onChange) {
   }
 
   void load();
-  return { reload: load, stop };
+  return { reload: load, stop() { if (installTimer) clearTimeout(installTimer); } };
 }

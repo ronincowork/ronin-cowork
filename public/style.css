@@ -6014,4 +6014,17 @@ body {
   cursor: default;
 }
 
+/* Services activation: static while waiting; motion only during a real check/install. */
+.services-state { margin-left: var(--space-4); border: var(--edge) solid var(--line-2); border-radius: var(--radius-pill); background: var(--raise); color: var(--muted-2); padding: var(--space-3) var(--space-6); font: var(--text-2) var(--font-mono); cursor: pointer; }
+.services-state.busy::before { content: '◌'; display: inline-block; margin-right: var(--space-3); animation: services-spin var(--motion-slow) linear infinite; }
+.services-pop { position: fixed; z-index: 50; width: min(360px, calc(100vw - var(--space-8))); border: var(--edge) solid var(--line-2); border-radius: var(--radius-sm); background: var(--panel); box-shadow: var(--shadow-menu); padding: var(--space-7); }
+.services-pop-message { margin: 0 0 var(--space-6); color: var(--muted-2); }
+.services-pop-actions { display: flex; flex-wrap: wrap; gap: var(--space-4); }
+.services-pop-actions button { border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); color: var(--fg); padding: var(--space-3) var(--space-5); cursor: pointer; }
+.services-pop-actions .services-check { border-color: var(--kaki); background: var(--kaki); color: var(--on-strong); }
+.services-pop-actions .services-check:hover { background: var(--kaki-lift); }
+.st-services .services-check { border-color: var(--kaki); background: var(--kaki); color: var(--on-strong); }
+.st-services .services-check:hover { background: var(--kaki-lift); }
+@keyframes services-spin { to { transform: rotate(360deg); } }
+
 }

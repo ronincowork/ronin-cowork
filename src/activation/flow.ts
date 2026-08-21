@@ -10,7 +10,7 @@
  * decoration: the operator holds the claim secret, and a browser that could see it could
  * hand someone else's tab the ability to claim this install's entitlement.
  *
- * POLLING IS HOW THE LOOP CLOSES. The email link is opened wherever the person happens to
+ * A STATUS CHECK IS HOW THE LOOP CLOSES. The email link is opened wherever the person happens to
  * be — a phone, another laptop, a machine on a different network — and never contacts this
  * install. So the install asks HQ, on its own schedule, whether the thing it started has
  * finished. That crosses NAT, survives a closed tab, and survives this process restarting.
@@ -84,10 +84,8 @@ export async function request(email: string): Promise<ActivationState> {
 }
 
 /**
- * POLL / RESUME. Safe to call on operator start, on page open, and on a timer.
- *
- * One natural resume check, not an immortal daemon: the caller decides the cadence, and the
- * plan is explicit that this should poll briefly while someone is watching and then back off.
+ * CHECK / RESUME. Called once for each explicit Check status action. It is deliberately not
+ * run on a timer: an unanswered email must not make this install ping HQ forever.
  */
 export async function poll(): Promise<ActivationState> {
   const state = await readState();

@@ -116,15 +116,15 @@ export function registerServicesActivation(app: express.Express): void {
     } catch (e) { fail(res, e); }
   });
 
-  /** Resume. Called on page open and on the operator's own brief poll — never a daemon. */
+  /** One owner-provoked status check. Page load only reads local state; it never contacts HQ. */
   app.post('/api/services/activation/poll', async (_req, res) => {
     try {
       const state = await poll();
       // THE HANDOFF HAPPENS HERE, automatically. Reaching `verified` is exactly the moment
       // installation should begin; waiting for somebody to press a button would leave a
       // confirmed person looking at a finished flow that had not finished.
-      if (state.stage === 'verified') void startInstall();
-      res.json(publicState(state));
+      if (state.stage === 'verified') await startInstall();
+      res.json(publicState(await readState()));
     } catch (e) { fail(res, e); }
   });
 
@@ -173,18 +173,7 @@ export function registerServicesActivation(app: express.Express): void {
       res.status(409).json({ error: 'There is no entitlement on this machine yet.' });
       return;
     }
-    await writeState({ stage: 'installing', error_at_stage: null, error_message: null });
-    try {
-      const started = await runUpdater('services');
-      res.json({ ok: true, started: true, via: started.via });
-    } catch (e) {
-      // The entitlement is kept. An install that failed is retried without another email,
-      // which is the whole reason the two are separate stages.
-      await writeState({
-        stage: 'error', error_at_stage: 'installing',
-        error_message: 'the installer did not start — you can try again without a new email',
-      });
-      res.status(500).json({ error: 'the installer did not start' });
-    }
+    await startInstall();
+    res.json(publicState(await readState()));
   });
 }
