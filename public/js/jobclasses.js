@@ -65,17 +65,21 @@ export function buildJobShelves({ jobButton, allJobs, onChange }) {
   wrap.className = 'ks-classes';
   const add = document.createElement('form');
   add.className = 'ks-class-add';
+  // SAID "job group" ON THE SURFACE, `job_class` in every internal name (owner,
+  // 2026-08-21: "call it job_scope? and still show it as Job Groups", then the class
+  // ruling) — the display borrows the familiar word, the vocabulary keeps the roster's
+  // `group` unambiguous. KOTOBA § LAUNCHER records the split once.
   const input = document.createElement('input');
   input.type = 'text';
   input.maxLength = 32;
-  input.placeholder = 'new job class';
-  input.setAttribute('aria-label', 'New job class name');
+  input.placeholder = 'new job group';
+  input.setAttribute('aria-label', 'New job group name');
   input.autocapitalize = 'off';
   input.autocomplete = 'off';
   input.spellcheck = false;
   const btn = document.createElement('button');
   btn.type = 'submit';
-  btn.textContent = '＋ class';
+  btn.textContent = '＋ add new job group';
   const msg = document.createElement('span');
   msg.className = 'ks-class-msg';
   add.append(input, btn, msg);

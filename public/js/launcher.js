@@ -347,7 +347,7 @@ export function buildLauncher(tile, host) {
     if (!all.length) grid2.textContent = 'no kinds in ronin_catalogs/SESSION_JOBS.md';
     grid2.dataset.n = String(all.length);
     // The end of the list is where you find out the list is yours to extend.
-    grid2.appendChild(addYourOwn('SESSION_JOBS.md', 'kind'));
+    grid2.appendChild(addYourOwn('SESSION_JOBS.md', 'session job'));
   };
 
   const buildSaved = () => {
