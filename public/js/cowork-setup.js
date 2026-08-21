@@ -179,11 +179,12 @@ export async function buildCoworkSetup(host, onDone) {
   choice.append(wantServices, choiceLabel, serviceFields); servicesCard.append(choice); form.append(servicesCard);
 
   form.append(stage('Then', 'Start your first project', 'project'));
-  const projectCard = card(5, 'What would you like to work on first?', 'Start with one project and its folder. You can add more whenever you need them.');
+  const projectCard = card(5, 'What would you like to work on first?', 'Leave it empty and add projects later from ▣ Roots — or give a folder and RoninCoWork registers it as your first project.');
+  projectCard.querySelector('h2').append(el('span', 'cs-optional', 'Optional'));
   const projectFields = el('div', 'cs-fields');
-  const dirField = inputField('cs-folder', 'Working folder', 'No folder is assumed. Enter the full path to an existing directory on this machine. RoninCoWork will not create or clone it.', { placeholder: 'Enter an absolute path', cls: 'path' }); dirField.wrap.classList.add('full');
+  const dirField = inputField('cs-folder', 'Working folder', 'The full path to an existing directory on this machine. RoninCoWork will not create or clone it.', { placeholder: 'Enter an absolute path', cls: 'path' }); dirField.wrap.classList.add('full');
   const repoFact = el('div', 'cs-detected'); repoFact.append(el('b', null, 'Git repository: '), el('span', null, 'Not checked yet — Git is optional')); dirField.wrap.append(repoFact);
-  const projectField = inputField('cs-project', 'Short name', 'Required, unique, and at most 32 characters. Start with a lowercase letter or number; then use lowercase letters, numbers, hyphens, or underscores.', { placeholder: 'my-app' });
+  const projectField = inputField('cs-project', 'Short name (Optional)', 'Left empty, the folder’s name is used. Lowercase letters, numbers, hyphens or underscores; at most 32 characters.', { placeholder: 'my-app' });
   const remitField = inputField('cs-purpose', 'What are you working on? (Optional)', 'One sentence gives agents useful context.', { placeholder: 'A customer support dashboard' });
   projectFields.append(dirField.wrap, projectField.wrap, remitField.wrap); projectCard.append(projectFields); form.append(projectCard);
 
@@ -195,6 +196,8 @@ export async function buildCoworkSetup(host, onDone) {
   const line = status('cs-status'); reviewFoot.append(save, el('p', 'cs-save-note', 'You can change these choices later.'), line.el); review.append(reviewFoot); reviewShell.append(review);
 
   let repoText = 'Not checked yet — Git is optional'; let inspectTimer;
+  /** The short name a folder earns when none is typed: its basename, said in the name rule. */
+  const deriveName = (dir) => dir.split('/').filter(Boolean).pop()?.toLowerCase().replace(/[^a-z0-9_-]/g, '-').replace(/^[^a-z0-9]+/, '').slice(0, 32) || 'project';
   const updateReview = () => {
     const additions = [...wantAgents].filter(([, box]) => box.checked).map(([id]) => agents.find((a) => a.id === id)?.label || id);
     rr.machine.out.textContent = machineField.input.value.trim() || `Use ${machine.host || 'the hostname'}`;
@@ -203,7 +206,10 @@ export async function buildCoworkSetup(host, onDone) {
     rr.add.li.hidden = additions.length === 0; rr.add.out.textContent = additions.length ? `${additions.join(', ')} — install in visible tiles` : '';
     rr.model.out.textContent = modelField.select.selectedOptions[0]?.textContent || 'No runnable model detected'; rr.mika.out.textContent = mikaField.select.selectedOptions[0]?.textContent || 'No runnable model detected'; rr.cap.out.textContent = capField.select.selectedOptions[0]?.textContent || '';
     rr.services.out.textContent = activationExists ? `Already selected · ${activationStage.replaceAll('_', ' ')}` : wantServices.checked ? `Begin activation${emailField.input.value.trim() ? ` for ${emailField.input.value.trim()}` : ' after you enter an email'}` : 'Not selected — nothing will be sent';
-    rr.gbrain.out.textContent = wantServices.checked && wantGbrain.checked ? 'Add local embeddings model · about 0.3 GB' : 'Not selected'; rr.project.out.textContent = projectField.input.value.trim() || 'Not named yet'; rr.folder.out.textContent = dirField.input.value.trim() || 'Not chosen yet'; rr.repo.out.textContent = repoText; rr.purpose.out.textContent = remitField.input.value.trim() || 'No description yet';
+    rr.gbrain.out.textContent = wantServices.checked && wantGbrain.checked ? 'Add local embeddings model · about 0.3 GB' : 'Not selected';
+    const dirVal = dirField.input.value.trim(); const nameVal = projectField.input.value.trim();
+    rr.project.out.textContent = nameVal || (dirVal ? `Use "${deriveName(dirVal)}" — the folder's name` : 'Skipped — add projects later from ▣ Roots');
+    rr.folder.out.textContent = dirVal || 'None'; rr.repo.out.textContent = repoText; rr.purpose.out.textContent = remitField.input.value.trim() || 'No description yet';
   };
   const inspectDir = () => {
     clearTimeout(inspectTimer); repoText = dirField.input.value.trim() ? 'Checking this folder…' : 'Not checked yet — Git is optional'; repoFact.querySelector('span').textContent = repoText; updateReview();
@@ -218,13 +224,20 @@ export async function buildCoworkSetup(host, onDone) {
   dirField.input.addEventListener('input', inspectDir); wantServices.addEventListener('change', () => { if (!wantServices.checked) wantGbrain.checked = false; updateReview(); });
 
   save.addEventListener('click', async () => {
-    const projectName = projectField.input.value.trim().toLowerCase(); const projectDir = dirField.input.value.trim();
-    if (!/^[a-z0-9][a-z0-9_-]{0,31}$/.test(projectName)) { line.say('Give the first project a valid short name.', 'bad'); projectField.input.focus(); return; }
-    if (!projectDir) { line.say('Choose the existing working folder for your first project.', 'bad'); dirField.input.focus(); return; }
-    if (repoText === 'Folder does not exist') { line.say('The working folder must already exist on this machine.', 'bad'); dirField.input.focus(); return; }
+    // THE PROJECT IS OPTIONAL (owner, 2026-08-21): empty means skipped, never blocked.
+    // A folder is the one thing a project cannot be without; the name derives from the
+    // folder when unsaid. Only a name WITHOUT a folder still asks — dropping typed
+    // input silently would be the bigger lie.
+    const typedName = projectField.input.value.trim().toLowerCase(); const projectDir = dirField.input.value.trim();
+    const wantsProject = Boolean(projectDir);
+    const projectName = typedName || (wantsProject ? deriveName(projectDir) : '');
+    if (!wantsProject && typedName) { line.say('A project needs its working folder — add it, or clear the name to skip.', 'bad'); dirField.input.focus(); return; }
+    if (wantsProject && !/^[a-z0-9][a-z0-9_-]{0,31}$/.test(projectName)) { line.say('The short name: lowercase letters, numbers, hyphens or underscores — or leave it empty.', 'bad'); projectField.input.focus(); return; }
+    if (wantsProject && repoText === 'Folder does not exist') { line.say('The working folder must already exist on this machine.', 'bad'); dirField.input.focus(); return; }
     if (!activationExists && wantServices.checked && (!emailField.input.value.trim() || !emailField.input.validity.valid)) { line.say('Enter the email address for Services confirmation.', 'bad'); emailField.input.focus(); return; }
     save.disabled = true; line.say('Saving…', 'busy');
-    const values = { machineName: machineField.input.value, ownerName: ownerField.input.value, projName: projectName, projDir: projectDir, projRemit: remitField.input.value, model: modelField.select.value, mika: mikaField.select.value, cap: capField.select.value };
+    // A skipped project sends NOTHING: undefined never reaches toRequests' families.
+    const values = { machineName: machineField.input.value, ownerName: ownerField.input.value, projName: wantsProject ? projectName : undefined, projDir: wantsProject ? projectDir : undefined, projRemit: wantsProject ? remitField.input.value : undefined, model: modelField.select.value, mika: mikaField.select.value, cap: capField.select.value };
     const problems = []; let installNote = ''; const landOn = [];
     // 409 is an answer only from the project POST — the project already exists from a
     // previous Save. Any other family answering 409 is a problem worth showing.
@@ -243,7 +256,7 @@ export async function buildCoworkSetup(host, onDone) {
       const installed = await request('/api/install', { method: 'POST', json: { items: picks.map((name) => ({ kind: 'agent', name })) } });
       if (installed.ok && Array.isArray(installed.data)) landOn.push(...installed.data.filter((x) => x.session).map((x) => x.session)); else if (!installed.ok) installNote += ' Agent installs can be retried from Configuration.';
     }
-    if (ctx.modelOpts.length) { const born = await request('/api/launch', { method: 'POST', json: { session_job: schema.seat.job, name: schema.seat.name, project_root: projectName, prompt: schema.seat.prompt } }); if (born.ok && born.data?.name) landOn.push(born.data.name); }
+    if (ctx.modelOpts.length) { const born = await request('/api/launch', { method: 'POST', json: { session_job: schema.seat.job, name: schema.seat.name, ...(wantsProject ? { project_root: projectName } : {}), prompt: schema.seat.prompt } }); if (born.ok && born.data?.name) landOn.push(born.data.name); }
     line.say(`Saved. Opening RoninCoWork…${installNote}`, installNote ? 'bad' : 'ok'); onDone?.({ tiles: landOn });
   });
   updateReview(); inspectDir();
