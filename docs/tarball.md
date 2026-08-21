@@ -48,6 +48,25 @@ concerned.** The public feed is a different door and is not what an entitled box
      `CONTRACT_V`). Selection matches **exactly**, so a contract one too high makes the
      release **invisible rather than erroring** — the same silent shape as the bug above.
    - The command computes the sha256 itself. Do not hand-write it.
+   **Hand it a script, not a one-liner.** A long command wrapped in a paste becomes several
+   shell lines, each running on its own — that cost us four unrelated errors from one paste.
+   Write the steps to a file and run the file:
+
+   ```sh
+   cat > /tmp/pub.sh <<'EOF'
+   #!/usr/bin/env bash
+   set -u
+   SRC=/tmp/svc.tgz                                             # the downloaded artifact
+   DEST=/srv/ronin-artifacts/ronin-services-vX.Y.Z.tar.gz
+   sha256sum "$SRC" || exit 1                                   # compare with SHA256SUMS
+   install -o root -g shiwake -m 640 "$SRC" "$DEST" || exit 1
+   sudo -u shiwake shiwake release publish "$DEST" --version X.Y.Z --contract 1 || exit 1
+   sudo -u shiwake shiwake release list                         # what HQ will now serve
+   sudo -u shiwake shiwake check                                # the store's own checker
+   EOF
+   bash /tmp/pub.sh
+   ```
+
 5. **Verify HQ actually serves it** before believing any of the above:
    ```sh
    curl -fsS -H "Authorization: Bearer $ENTITLEMENT_TOKEN" \
@@ -88,6 +107,23 @@ gh release view --repo ronincowork/ronin-services --json tagName -q .tagName
 curl -fsS -H "Authorization: Bearer $TOK" \
   https://hq.ronincowork.com/v1/services/releases/current?contract_version=1
 ```
+
+## Things that cost us an attempt, once each
+
+Kept here because every one of them looked like something else at the time.
+
+- **Run the copy and the publish as SEPARATE lines, never `a && b`.** Chaining hid a failure
+  once: the copy failed, and the publish ran anyway and reported a second, misleading error
+  about a file it could not read. Each step should be allowed to stop.
+- **A GitHub release page renders assets as they attach.** Mid-upload it genuinely looks
+  unfinished, and the plain source tarball displays as `0 MB` because it is under a
+  megabyte. Neither means a broken build. `sha256sum -c SHA256SUMS` is the answer.
+- **A twenty-minute arm64 job during a release is the tmux build, not the release.** It
+  compiles under QEMU and publishes nothing. Fixed by pinning `branches:` in its trigger;
+  if you ever see it again on a tag, that pin has been lost.
+- **HQ runs on the same box as everything else here.** `hq.ronincowork.com` resolves to a
+  local address, so "the HQ box" is not somewhere else to log into — but the store is owned
+  by another user, and that is the only barrier.
 
 ## Standing rules
 
