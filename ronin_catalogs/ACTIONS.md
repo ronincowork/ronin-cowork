@@ -213,13 +213,26 @@ Say something on a WIPEBOARD — the shared text surface a set of sessions all r
 write, so agents working the same problem talk to each other instead of routing every
 message through the owner. A wipeboard is a markdown file in the wipeboards store
 (`$(ronin-store wipeboards)/<board>.md` — never spell the path) plus a tmux option
-(`@ronin-wipeboards`) saying who is on it. You interact with the FILE — nothing reaches
-into any agent.
+(`@ronin-wipeboards`) saying who is on it. The FILE is the record — but a post is not
+only a file write: **posting also notifies every other session on the wipeboard**, so what
+you say is heard instead of waiting for someone to happen to look.
 ```bash
 tejun-wipeboard <board> read        # the brief + the recent thread — READ BEFORE YOU POST
-tejun-wipeboard <board> post "…"    # append one watermarked entry as your session
+tejun-wipeboard <board> post "…"    # append one watermarked entry as your session, then notify the wipeboard
 tejun-wipeboard <board>             # the roster: who else is on it, and their dials
 ```
+What the notification is, so you can predict it:
+- It is a **pointer, not a copy** — one line naming the wipeboard and you, telling the reader
+  to run `tejun-wipeboard <board> read`. The thread stays in one place, the file.
+- It goes to every member **except you**, through `tejun-send`, so **the dial governs it**:
+  a member dialled 👤 or 👁 is skipped and reported as skipped. That is the correct
+  outcome — they can still read the wipeboard. Never flip a dial to get a notice through.
+- **The append is the post.** Notification happens after, and a delivery that fails
+  (a human draft at that prompt, a dialog open) is reported per-session and is not a
+  failed post. Do not re-post to "make it land": that duplicates the entry. Report the
+  line the tool printed, and if it matters, tell the owner.
+- Nobody else on the wipeboard = nothing sent, and that is not an error.
+
 Rules, all of them about not trampling other people's writing:
 - **Append only.** Posts are added with `>>`; that is the whole concurrency story.
   NEVER rewrite, reorder or delete another agent's post — several agents write this
@@ -230,6 +243,9 @@ Rules, all of them about not trampling other people's writing:
 - Read before posting so you answer what's there instead of talking past it, and
   re-read rather than remembering — the thread moves while you work.
 - Being on a board is not permission to touch a member: control-check as always.
+- **A notice arriving in your pane is the wipeboard speaking, not the owner.** It says so on
+  its face. Read the wipeboard; answer if it concerns you. Never post just to acknowledge —
+  every post notifies everyone, and five "got it"s is how a board turns into noise.
 
 ## send-to-session  (compound action — was wrongly listed as a "steer" macro)
 `action_kind: mechanical` — run it, don't deliberate.

@@ -4,7 +4,7 @@
 #        tejun-wipeboard <board>                  the roster (member + dial) and the file path
 #        tejun-wipeboard <board> add <target>…    tag sessions onto the board + notify them
 #        tejun-wipeboard <board> remove <target>… untag + notify
-#        tejun-wipeboard <board> post <text…>     append one watermarked entry
+#        tejun-wipeboard <board> post <text…>     append one watermarked entry + notify the other members
 #        tejun-wipeboard <board> read [n]         the last n posts (default 20)
 #
 # A <target> is a session (`name` or `@name`) or a whole group (`+group`, `+tag:group`).
@@ -14,8 +14,9 @@
 # are appended with >> and that IS the concurrency story. Membership lives on the
 # session so it dies with the session and can never drift from reality.
 #
-# Vendor-neutral by construction: agents interact with a FILE. Nothing here reaches
-# into any agent CLI's internals.
+# Vendor-neutral by construction: the RECORD is a FILE, and the nudge that says the file
+# moved is tmux keystrokes through tejun-send. Nothing here reaches into any agent CLI's
+# internals — no plugin, no socket, no vendor API.
 set -u
 
 BOARDS_OPT='@ronin-wipeboards'
@@ -253,8 +254,65 @@ case "${1:-}" in
     [ $# -ge 1 ] || usage
     who=$(whoami_session)
     author=${who:+@$who}
+
+    # THE APPEND IS THE POST. It happens first, alone, and its exit decides this command:
+    # a post that reached the file is a post, even if every notification afterwards fails.
+    # (Before 2026-08-21 that was the whole command, and it is why the owner said posts
+    # "go unheard" — the file moved and nobody was told.)
     append_post "$BOARD" "${author:-shell}" "$*" || exit 1
     echo "POSTED to '$BOARD' as ${author:-shell}."
+
+    # …and now the board hears about it. A POINTER, never a copy: the file stays the
+    # record, so the notice names the board and the poster and sends the reader to read.
+    # Copying the text into six panes would fork the thread into seven versions of itself.
+    #
+    # The roster comes from live tmux (membership is a session option, so it dies with the
+    # session) — a member that no longer exists is simply not in this list, and there is no
+    # stale roster to prune. tejun-send re-checks has-session anyway for the race.
+    #
+    # Never the poster: an agent that has just written does not need to be told it wrote.
+    # (Empty `me` — run from a plain shell rather than a session — excludes nobody.)
+    others=$(members | awk -F'\t' -v me="${who:-}" '$1 != me')
+    if [ -z "$others" ]; then
+      # Alone on the board, or on a board nobody is enrolled on. Silence is correct: there
+      # is no one to tell, and an empty roster is not an error — boards are often written
+      # to before the owner enrols anyone.
+      echo "notify: nobody else is on '$BOARD' — post recorded, no one to tell."
+      exit 0
+    fi
+
+    # The mandated control-check, from the roster we already hold: 👤/👁 sessions are on the
+    # board and may READ it, but nothing types into them. Skipping them here is not a
+    # shortcut past tejun-send — it also refuses, and stays the enforcement. Never flip a
+    # dial to get a notification through; a skipped member is a correct outcome to report.
+    #
+    # The notice SAYS WHO IT IS FROM. Text that lands at an agent's prompt with no
+    # watermark reads as the owner typing, and an agent acts on the owner's word — so the
+    # line names the poster and says out loud that the wipeboard sent it, not a person.
+    msg="WIPEBOARD \"$BOARD\" — ${author:-shell} posted (automatic notice from the wipeboard, not the owner). Read it: tejun-wipeboard $BOARD read"
+    while IFS=$'\t' read -r s dial _; do
+      case "$dial" in
+        user) printf '%-24s not notified — dial 👤 (user-controlled); it can read the wipeboard itself\n' "$s"; continue ;;
+        read) printf '%-24s not notified — dial 👁 (watch-only); it can read the wipeboard itself\n' "$s"; continue ;;
+      esac
+      # One call, one verdict, no loop. tejun-send already retries its own Enter once; a
+      # notification that will not land is REPORTED and left alone — re-sending into a
+      # session that is mid-dialog is how a pane gets spammed, and the post is safe in the
+      # file regardless.
+      #
+      # The EXIT CODE decides, not the text: tejun-send's contract is "exit 0 = delivered",
+      # and anything tmux itself mutters on stderr lands in front of the verdict line and
+      # would make a prefix match on DELIVERED read a delivered message as a failure.
+      verdict=$("$SEND" "$s" "$msg" 2>&1); rc=$?
+      if [ $rc -eq 0 ]; then
+        printf '%-24s notified\n' "$s"
+      else
+        printf '%-24s NOT notified — %s\n' "$s" "${verdict##*$'\n'}"
+      fi
+    done <<< "$others"
+    # Exit 0 even when notifications failed: the caller asked to post, and it posted. A
+    # non-zero here would teach macros to retry the POST, which would double the entry in
+    # the file — the exact loss the append-only rule exists to prevent.
     exit 0
     ;;
 
