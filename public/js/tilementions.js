@@ -49,9 +49,9 @@ export function buildTileMentions(tile) {
       row.type = 'button';
       row.className = 'tmention-row';
       row.textContent = session.name;
+      row.title = session.name;
       row.draggable = true;
       row.setAttribute('role', 'menuitem');
-      if (session.name === tile.session) row.classList.add('current');
       row.addEventListener('click', () => insert(session.name));
       row.addEventListener('dragstart', (e) => {
         e.dataTransfer.effectAllowed = 'copy';
