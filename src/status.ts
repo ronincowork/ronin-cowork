@@ -1,5 +1,4 @@
 import { AGENTS } from './agents.js';
-import { capturePane } from './tmux.js';
 
 /**
  * Status probe (terminal view only): classify a session's state from its visible
@@ -71,14 +70,4 @@ export function classifyStatus(text: string): SessionStatus | null {
   const tail = text.replace(/\n+$/, '').split('\n').slice(-SCAN_LINES).join('\n');
   for (const p of STATUS_PATTERNS) if (p.re.test(tail)) return p.status;
   return null;
-}
-
-/** Installed Koshi uses the same classifier over a live pane. Kept in core because the
- * Services tree is assembled later and therefore is invisible to the free-tree dead-code gate. */
-export async function probeStatus(session: string): Promise<SessionStatus | null> {
-  try {
-    return classifyStatus(await capturePane(session, 0));
-  } catch {
-    return null;
-  }
 }
