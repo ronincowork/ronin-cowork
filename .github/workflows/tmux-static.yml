@@ -21,6 +21,14 @@ name: tmux-static
 
 on:
   push:
+    # BRANCHES ONLY, SO A RELEASE TAG CANNOT START THIS. GitHub does not evaluate `paths`
+    # for tag pushes, so with no branch filter every `vX.Y.Z` matched `on: push` and ran
+    # the whole four-platform build — arm64 compiling under QEMU for twenty minutes —
+    # while release.yml, which only downloads the binaries this workflow already
+    # published, finished in ninety seconds. It could never publish anything (the release
+    # job wants a workflow_dispatch with a release_tag), so it cost time and a false
+    # "the release is still building" every single time. Found cutting v1.3.0.
+    branches: ['**']
     paths:
       - 'scripts/tmux-static/**'
       - '.github/workflows/tmux-static.yml'

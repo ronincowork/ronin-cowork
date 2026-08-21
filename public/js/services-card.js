@@ -34,7 +34,14 @@ export function servicesCard(container, onChange) {
   const line = status('st-status');
   let installTimer = null;
   function render(state) {
-    if (!state) { line.say('could not reach the operator', 'bad'); return; }
+    if (!state) {
+      // SAY IT WHERE IT CAN BE SEEN. `line.el` is only mounted on the success path
+      // below, so this branch used to write into a node that was not in the document —
+      // an unreachable operator looked exactly like a card with nothing to show.
+      line.say('could not reach the operator', 'bad');
+      wrap.replaceChildren(line.el);
+      return;
+    }
     if (installTimer) clearTimeout(installTimer);
     wrap.replaceChildren();
 
@@ -91,11 +98,9 @@ export function servicesCard(container, onChange) {
 
       // The action names what it DOES. "Save" would hide an immediate, disclosed account
       // action behind a word that means "write this down".
-      actions.appendChild(button('Send confirmation email', {
+      actions.appendChild(nodeOf(button('Send confirmation email', {
         onClick: () => act(f, '/api/services/activation', { email: email.value.trim() }),
-      }).el ?? button('Send confirmation email', {
-        onClick: () => act(f, '/api/services/activation', { email: email.value.trim() }),
-      }));
+      })));
     }
 
     if (state.stage === 'awaiting_email'
@@ -200,7 +205,12 @@ export function servicesCard(container, onChange) {
 
   async function load() {
     const r = await request('/api/services/activation');
-    render(r.ok ? r.json : null);
+    // `.data`, not `.json` — request.js's contract is { ok, status, data } and has never
+    // carried a `.json`. Reading the wrong name handed render() `undefined` on SUCCESS,
+    // which took the !state branch and returned before the card was ever built: the ⚙
+    // Services card drew nothing at all, and with it went the only UI caller of
+    // POST /api/services/install — the one escape for a box stranded at `verified`.
+    render(r.ok ? r.data : null);
   }
 
   void load();
