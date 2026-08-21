@@ -55,6 +55,99 @@
 - **label:** Stock
 - **blurb:** Ronin as shipped — the dense operational look the palette was tuned for.
 
+## ronin_modern
+- **label:** Ronin Modern
+- **blurb:** The shared Ronin Cowork look from the public landing page and cowork setup — blue-black, persimmon, compact and crisp.
+- **--radius-hair:** 1px
+- **--radius-xs:** 4px
+- **--radius-sm:** 6px
+- **--radius-md:** 8px
+- **--radius-lg:** 10px
+- **--radius-xl:** 12px
+- **--space-1:** 2px
+- **--space-2:** 4px
+- **--space-3:** 6px
+- **--space-4:** 8px
+- **--space-5:** 10px
+- **--space-6:** 12px
+- **--space-7:** 14px
+- **--space-8:** 16px
+- **--space-9:** 20px
+- **--space-10:** 24px
+- **--space-11:** 28px
+- **--space-12:** 34px
+- **--text-1:** 9px
+- **--text-2:** 11px
+- **--text-3:** 12px
+- **--text-4:** 13px
+- **--text-5:** 14px
+- **--text-6:** 15px
+- **--text-7:** 16px
+- **--text-8:** 18px
+- **--text-9:** 20px
+- **--text-10:** 26px
+- **--text-micro:** 10px
+- **--font-ui:** -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif
+- **--font-mono:** ui-monospace, SFMono-Regular, Menlo, monospace
+- **--font-term:** Menlo, 'DejaVu Sans Mono', Consolas, monospace
+- **--edge:** 1px
+- **--edge-2:** 2px
+- **--motion-quick:** 120ms
+- **--motion-settle:** 220ms
+- **--ease-out:** cubic-bezier(.2,.8,.2,1)
+- **dark--bg:** #0b0e14
+- **dark--bg-2:** #0f131c
+- **dark--panel:** #131826
+- **dark--raise:** #1a2233
+- **dark--raise-2:** #263047
+- **dark--well:** #0d1220
+- **dark--line:** #1f2738
+- **dark--line-2:** #2a3247
+- **dark--line-3:** #3a4560
+- **dark--fg-strong:** #d7e3f7
+- **dark--fg:** #c5c8c6
+- **dark--muted:** #6b7488
+- **dark--muted-2:** #8fa3c8
+- **dark--muted-3:** #6f80a0
+- **dark--dim:** #454d61
+- **dark--accent:** #e0af68
+- **dark--accent-2:** #81a2be
+- **dark--ok:** #b5bd68
+- **dark--warn:** #f0c674
+- **dark--bad:** #cc6666
+- **dark--action:** #2f6fd0
+- **dark--kaki:** #c46243
+- **dark--aiiro:** #274a78
+- **dark--on-accent:** #000
+- **dark--term-bg:** #0b0e14
+- **dark--term-fg:** #c5c8c6
+- **light--bg:** #f4f2ec
+- **light--bg-2:** #eae7df
+- **light--panel:** #ffffff
+- **light--raise:** #f1efe8
+- **light--raise-2:** #e6e2d8
+- **light--well:** #f7f5ef
+- **light--line:** #d9d4c8
+- **light--line-2:** #c8c2b2
+- **light--line-3:** #a9a191
+- **light--fg-strong:** #14161c
+- **light--fg:** #2c2e36
+- **light--muted:** #6d7284
+- **light--muted-2:** #5a617a
+- **light--muted-3:** #6d7284
+- **light--dim:** #b0aca0
+- **light--accent:** #a06b1a
+- **light--accent-2:** #3f6a95
+- **light--ok:** #5c7a1d
+- **light--warn:** #9a7b00
+- **light--bad:** #b04343
+- **light--action:** #1f5fc9
+- **light--kaki:** #c46243
+- **light--aiiro:** #274a78
+- **light--on-accent:** #fff
+- **light--term-bg:** #faf8f2
+- **light--term-fg:** #2e302c
+
 ## square
 - **label:** Square
 - **blurb:** Every corner squared. The pro-tool look, no rounding anywhere.
