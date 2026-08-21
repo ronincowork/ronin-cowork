@@ -36,9 +36,12 @@ concerned.** The public feed is a different door and is not what an entitled box
 3. **Tag services**, the same way, from `ronin-services`.
 4. **Register the services release with HQ.** On the HQ box, as the `shiwake` user:
    ```sh
-   shiwake release publish /srv/artifacts/ronin-services-vX.Y.Z.tar.gz \
+   shiwake release publish /srv/ronin-artifacts/ronin-services-vX.Y.Z.tar.gz \
      --version X.Y.Z --contract <N>
    ```
+   - The staging directory on the deployed box is **`/srv/ronin-artifacts`** (root:shiwake,
+     0750). ronin-shiwake's own operations guide still says `/srv/artifacts`, which does not
+     exist there — trust the box, not that line.
    - The artifact must sit **outside HQ's releases directory**, which holds manifests only —
      publish refuses otherwise.
    - `--contract` must equal the number cowork answers (`src/sockets-contract.ts`,
