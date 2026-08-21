@@ -73,8 +73,10 @@ said what.
 problem and the record should be common rather than routed through the owner.
 `wipeboard-post` is append-only: read before posting so you answer what is there, never
 rewrite another agent's words, never edit the Brief, and never enrol anyone — membership
-is the owner's hand. When you need a particular session to *act*, tell it; the board is
-the record, not a summons.
+is the owner's hand. A post notifies every other member, so it is heard rather than waited
+on — which is exactly why you never post merely to acknowledge. Five "got it"s is how a
+board turns into noise. A notice arriving in your own pane is the board speaking, not the
+owner. When you need one particular session to *act*, `+tell` it.
 
 **`+read` / `+readwrite` — catching up on another session.** Read its **transcript**, not
 its pane. A pane is a window: it shows whatever happens to be on screen at the moment you
