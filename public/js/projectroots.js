@@ -137,6 +137,7 @@ export function buildProjectRoots(root, isShowing, tile) {
     const b = document.createElement('div');
     b.className = 'pr-block';
     if (!r.facts?.exists) b.classList.add('gone');
+    if (r.archived) b.classList.add('archived');
 
     const top = document.createElement('div');
     top.className = 'pr-top';
@@ -156,6 +157,9 @@ export function buildProjectRoots(root, isShowing, tile) {
       if (title) c.title = title;
       facts.appendChild(c);
     };
+    if (r.archived) {
+      chip('archived', 'muted', 'Off the new-session picker. Still here, and still launchable by name.');
+    }
     if (!r.facts?.exists) {
       // The one maintenance job that arrives on its own: a directory moved or deleted
       // out from under the catalog. Flagged, never auto-removed.
@@ -185,6 +189,26 @@ export function buildProjectRoots(root, isShowing, tile) {
       editing = editing === r.name ? null : r.name;
       render();
     });
+    const shelve = document.createElement('button');
+    shelve.className = 'pr-ghost';
+    shelve.textContent = r.archived ? 'unarchive' : 'archive';
+    shelve.title = r.archived
+      ? 'Put it back on the new-session picker.'
+      : 'Take it off the new-session picker. It stays on this pane, and sessions already using it are untouched.';
+    shelve.addEventListener('click', async () => {
+      shelve.disabled = true;
+      const res = await request('/api/project-roots/' + encodeURIComponent(r.name), {
+        method: 'PUT',
+        json: { archived: !r.archived },
+      });
+      if (!res.ok) {
+        say('could not archive it — ' + res.message, true);
+        shelve.disabled = false;
+        return;
+      }
+      await loadProjects();
+      await refresh();
+    });
     const drop = document.createElement('button');
     drop.className = 'pr-ghost';
     drop.textContent = 'exclude';
@@ -202,7 +226,7 @@ export function buildProjectRoots(root, isShowing, tile) {
       await loadProjects();
       await refresh();
     });
-    acts.append(edit, drop);
+    acts.append(edit, shelve, drop);
 
     b.prepend(top);
     b.append(facts, acts);
@@ -213,14 +237,18 @@ export function buildProjectRoots(root, isShowing, tile) {
   function render() {
     if (!data) return;
     list.innerHTML = '';
+    const roots = [...data.roots].sort((a, b) => (a.archived ? 1 : 0) - (b.archived ? 1 : 0));
+    const archived = roots.filter((r) => r.archived).length;
+    const live = roots.length - archived;
     count.textContent =
-      data.roots.length + (data.roots.length === 1 ? ' project_root' : ' project_roots') +
+      live + (live === 1 ? ' project_root' : ' project_roots') +
+      (archived ? ` · ${archived} archived` : '') +
       (data.untagged ? ` · ${data.untagged} untagged session${data.untagged === 1 ? '' : 's'}` : '');
-    if (!data.roots.length) {
+    if (!roots.length) {
       say('nothing included yet — ＋ include asks Mika to point Ronin at a directory');
       return;
     }
-    for (const r of data.roots) list.appendChild(block(r));
+    for (const r of roots) list.appendChild(block(r));
   }
 
   addBtn.addEventListener('click', () => {

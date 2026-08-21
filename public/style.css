@@ -3550,6 +3550,13 @@ body {
 }
 .home-group + .home-group { margin-top: var(--space-4); }
 .home-group .home-grp { margin: 0; }
+.home-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.home-group + .home-group { margin-top: var(--space-4); }
+.home-group .home-grp { margin: 0; }
 .home-grp b {
   font-weight: 600;
 }
@@ -3563,6 +3570,46 @@ body {
   height: 1px;
   background: var(--line);
 }
+
+.home-grp.drop-ready {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  outline: var(--edge) dashed var(--accent);
+  outline-offset: calc(-1 * var(--edge));
+}
+.home-group-add {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+  padding: var(--space-5) 0;
+  border-top: var(--edge) solid var(--line);
+  background: var(--panel);
+}
+.home-group-add input {
+  width: 150px;
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-xs);
+  color: var(--fg);
+  background: var(--well);
+  font: inherit;
+}
+.home-group-add button {
+  padding: var(--space-3) var(--space-5);
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-xs);
+  color: var(--fg);
+  background: transparent;
+  cursor: pointer;
+}
+.home-group-add button:hover { border-color: var(--accent); color: var(--accent); }
+.home-group-msg { color: var(--muted); font-size: var(--text-2); }
+.home-row.dragging { opacity: .45; }
 
 .home-grp.drop-ready {
   color: var(--accent);

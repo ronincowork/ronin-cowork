@@ -12,9 +12,11 @@ it.** Two deliberate acts stand between an edit and the grid — the tag, and th
    (`.github/workflows/verify.yml`, `bin/ronin-byoin --gates` — the render check SKIPs
    with its reason: a runner has no live server or browser).
 2. A person merges. Master moving is a record of what is releasable, not a release.
-3. A person pushes a tag `vX.Y.Z`. That is the release act. The release workflow
-   (`.github/workflows/release.yml`) re-runs the checks, builds ONCE with
-   `bin/ronin-build`, and attaches the artifact to a GitHub Release.
+3. A person fetches and checks out `master`, confirms it is current, then pushes a tag
+   `vX.Y.Z` on that commit. That is the release act. The release workflow
+   (`.github/workflows/release.yml`) first refuses any tag whose commit is not on
+   `origin/master`, then re-runs the checks, builds ONCE with `bin/ronin-build`, and
+   attaches the artifact to a GitHub Release.
 
 The build is a **stamp, a prune and a tarball** — there is no compiler in this stack
 (`tsx` runs the TypeScript; the client is native ES modules):

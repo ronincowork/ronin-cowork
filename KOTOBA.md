@@ -105,6 +105,7 @@ one ships a surface; it does not make the repo a thing a session touches.
 |---|---|---|---|
 | **TEJUN** (手順) | cowork | how work is done — macros, actions, tools. **Two kinds of macro: `session_macro` and `workspace_macro`** | § TEJUN |
 | **coworkspace** | cowork | the whole UI — header, tiles, commons, the wipeboard, the dials, the keypad, every button on them | § COWORKSPACE |
+| **cowork_setup** | cowork | the one-time, owner-facing surface that shapes a new coworkspace before it first opens. Always `cowork_setup`, never the bare **setup**, **setup page**, or **first-run page** | `docs/USER_JOURNEY.md` |
 | **DAIKUSAN** | cowork | where files live: the three scopes, and which one a thing belongs to | `DAIKUSAN.md` |
 | **KOTOBA** | cowork | the words it is allowed to use | this file |
 | **SETTEI** (設定) | cowork | the owner's configuration of Ronin — what they have **set** about how this install behaves | § SETTEI |

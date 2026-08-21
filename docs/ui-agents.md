@@ -17,7 +17,12 @@ section rather than a rediscovery.
 2. **Does it paint filled backgrounds?** A fill is the same palette as text, so it inverts
    with everything else — but an agent that fills with a hardcoded RGB leaves a rectangle
    of its own colour inside the pane.
-3. **Where does it keep its settings, and does that file travel?** None of them are in this
+3. **Does it ASK the terminal what colour it is?** Look for `\e]10;?` and `\e]11;?` at the
+   head of its tape. An agent that queries picks its theme **once, at startup**, and is
+   wrong for the rest of the process the moment you flip. Nothing in the palette reaches
+   it, because the decision has already been made — and such an agent usually answers in
+   truecolor, which is unreachable anyway.
+4. **Where does it keep its settings, and does that file travel?** None of them are in this
    repo. A fresh install has the vendor's defaults, not yours (OPEN_THREADS 1.13).
 
 ## Claude Code
@@ -53,7 +58,18 @@ outnumber background ones about **fifty to one**.
 mode, project trust and MCP servers, and nothing about colour. So there is no vendor-side
 answer; the fix had to be ours.
 
-**Handled by Ronin since 2026-08-19** (`--term-cube`, `theme.js` `termCube()`). The cube is
+**IT ALSO ASKS, AND THAT IS THE BIGGER ONE.** At startup Codex emits `\e]10;?` and
+`\e]11;?` — a query for the terminal's own foreground and background — and picks a light or
+dark theme from the answer. Once it has, it paints in **truecolor**. None of that is reachable
+by any palette, so the choice is final for the life of the process.
+
+**The remedy is a restart in the shell you want.** There is no live fix: Ronin answered the
+question truthfully, and the agent only asked once. If Codex ever gains a theme setting,
+pin it and the query stops mattering.
+
+**Handled by Ronin since 2026-08-19** for its CUBE output (`--term-cube`, `theme.js`
+`termCube()`) — which covers a Codex session that started in the dark and uses the cube,
+and does nothing for one that asked and went truecolor. The cube is
 generated arithmetically and mirrored in **CIE L\*** on the light shell, which is what makes
 its output readable on paper:
 
