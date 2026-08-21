@@ -24,8 +24,13 @@ after(async () => {
   await rm(root, { recursive: true, force: true });
 });
 
-test('a fresh store has no classes, and that is the ordinary state, not an error', async () => {
-  assert.deepEqual(await readJobClasses(), []);
+test('a fresh store answers the two shipped shelves, memberships and all', async () => {
+  const fresh = await readJobClasses();
+  assert.deepEqual(fresh.map((c) => c.name), ['developer', 'assistant']);
+  assert.ok(fresh[0].jobs.includes('CutCode'));
+  assert.ok(fresh[1].jobs.includes('PersonalAssistant'));
+  // Neither craft: OddJob and OpenShell sit flat under the shelves, on neither.
+  assert.ok(!fresh.flatMap((c) => c.jobs).includes('OddJob'));
 });
 
 test('the manifest round-trips whole: order, multi-membership, and the empty shelf', async () => {
@@ -66,4 +71,9 @@ test('refusals are loud and nothing half-writes', async () => {
 test('a job the catalog no longer knows stays in the manifest — a stock job may come back', async () => {
   await writeJobClasses([{ name: 'keeps', jobs: ['SomeRetiredJob'] }]);
   assert.deepEqual(await readJobClasses(), [{ name: 'keeps', jobs: ['SomeRetiredJob'] }]);
+});
+
+test('deleting every shelf is a saved decision, never papered over with the defaults', async () => {
+  await writeJobClasses([]);
+  assert.deepEqual(await readJobClasses(), []); // the file exists and says none
 });

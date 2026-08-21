@@ -524,8 +524,24 @@ function jobClassesHeader(): string {
 `;
 }
 
+/**
+ * THE SHIPPED SHELVES (owner, 2026-08-21: "we should have 2 default job classes").
+ * In code, not in a seeded file, so they track releases exactly until the owner first
+ * writes — the moment JOB_CLASSES.md exists, it rules whole, including ruling these
+ * away. OddJob and OpenShell are on neither on purpose: they are neither craft, and
+ * unshelved jobs sit flat under the shelves where both stay one glance away.
+ */
+const DEFAULT_JOB_CLASSES: JobClass[] = [
+  { name: 'developer', jobs: ['RiffOnIt', 'DraftPlan', 'CutCode', 'ChaseBug', 'CheckWork', 'QuarterBack'] },
+  { name: 'assistant', jobs: ['PersonalAssistant', 'MikaAssist'] },
+];
+
 export async function readJobClasses(): Promise<JobClass[]> {
   const raw = await readUserCatalog(JOB_CLASSES_FILE);
+  // ABSENT means the defaults; PRESENT rules whole. An owner who deletes every shelf
+  // gets an empty board back, not our defaults over their decision — the file they
+  // saved is the difference between "never said" and "said none".
+  if (raw === '') return DEFAULT_JOB_CLASSES.map((c) => ({ ...c, jobs: [...c.jobs] }));
   return splitSections(raw, 'user')
     .filter((s) => s.name === s.head) // a heading with a space is prose, never a class
     .map((s) => ({ name: s.name, jobs: splitList(entryValue(s.lines, 'jobs')) }));
