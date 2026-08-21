@@ -22,7 +22,7 @@ import {
   showReceipt,
 } from './home.js';
 import { IS_TOUCH, S } from './state.js';
-import { button, field, status } from './ui.js';
+import { button, field, status, toast } from './ui.js';
 import { addProvMark, addYourOwn } from './provenance.js';
 
 /**
@@ -234,6 +234,30 @@ export function buildLauncher(tile, host) {
   form.append(formHead, creditEl, modeRow, modeSay, nameField.el, whatField.el, formRow, err.el, extrasHead, extras);
   const grid2 = document.createElement('div');
   grid2.className = 'ks-grid';
+  /* ---- job classes: the owner's shelves over this board ---- */
+  // Drawn as collapsible groupings, NAMED classes — the ruling (owner, 2026-08-21):
+  // `group` is the roster's addressing word, and a job class addresses nothing.
+  // Membership lives in the side manifest (src/catalog.ts JOB_CLASSES), never in the
+  // shipped catalog, so an upgrade cannot clobber a shelf and a shelf cannot pin a
+  // house job to a stale entry.
+  const classWrap = document.createElement('div');
+  classWrap.className = 'ks-classes';
+  const classAdd = document.createElement('form');
+  classAdd.className = 'ks-class-add';
+  const classInput = document.createElement('input');
+  classInput.type = 'text';
+  classInput.maxLength = 32;
+  classInput.placeholder = 'new job class';
+  classInput.setAttribute('aria-label', 'New job class name');
+  classInput.autocapitalize = 'off';
+  classInput.autocomplete = 'off';
+  classInput.spellcheck = false;
+  const classBtn = document.createElement('button');
+  classBtn.type = 'submit';
+  classBtn.textContent = '＋ class';
+  const classMsg = document.createElement('span');
+  classMsg.className = 'ks-class-msg';
+  classAdd.append(classInput, classBtn, classMsg);
   /* ---- saved launches: this form, filled in ahead of time and named ---- */
   // NOT macros. A macro is a program an agent runs; this is the launcher with the
   // boxes already ticked (docs/shadowing.md §saved launches). User scope only, so an
@@ -258,7 +282,7 @@ export function buildLauncher(tile, host) {
     offer.addEventListener('click', () => open(rec.schema.seat.job, rec.schema.seat.prompt));
     offer.hidden = false;
   })();
-  board.append(boardHead, offer, savedRow, grid2, form);
+  board.append(boardHead, offer, savedRow, classWrap, grid2, classAdd, form);
   host.appendChild(board);
 
   let kind = null;
@@ -269,68 +293,232 @@ export function buildLauncher(tile, host) {
     board.classList.remove('picking');
   };
   cancelBtn.addEventListener('click', closeForm);
-  const buildBoard = () => {
-    grid2.innerHTML = '';
+  const jobButton = (k) => {
+    const b = document.createElement('button');
+    b.className = 'ks-btn';
+    b.dataset.kind = k.name;
+    // The kind's own name carries the mark: a job of yours, or one of ours you
+    // replaced, is a fact about THIS tile and belongs on it (js/provenance.js).
+    const kLabel = Object.assign(document.createElement('b'), { textContent: k.label });
+    addProvMark(kLabel, k);
+    b.append(
+      Object.assign(document.createElement('i'), { textContent: k.icon }),
+      kLabel,
+      Object.assign(document.createElement('small'), { textContent: k.blurb }),
+    );
+    b.addEventListener('click', () => {
+      kind = k;
+      // `agent: none` (ronin_catalogs/SESSION_JOBS.md) — a plain terminal. No session_launch_spec to pick,
+      // no brief to compose, so the form drops to the two things that still mean
+      // something: what it is called and where it opens. Manual is not a "mode" here,
+      // it is the only truth available: nothing is sent at all.
+      if (k.agent === false) mode = 'manual';
+      form.classList.toggle('noagent', k.agent === false);
+      // `mcp: always` — born connected (owner's ruling, 2026-08-17): the toggle does
+      // not apply, so it is not offered. The spawn refuses a contradicting launch;
+      // this just keeps the form honest about there being no choice.
+      if (k.mcpAlways) mcpOn = true;
+      mcpBtn.hidden = !!k.mcpAlways;
+      applyMcp();
+      formHead.textContent = `${k.icon} ${k.label} — ${k.ask}`;
+      // textContent + server-vetted http(s) URL only — a catalog line must never
+      // become markup here.
+      creditEl.hidden = !k.credit;
+      if (k.credit) {
+        creditEl.textContent = `powered by ${k.credit.text} ↗`;
+        creditEl.href = k.credit.url;
+        creditEl.title = k.credit.url;
+      } else {
+        // Belt and braces with the [hidden] CSS: a kind with no credit must never
+        // wear the previous kind's.
+        creditEl.textContent = '';
+        creditEl.removeAttribute('href');
+      }
+      nameInp.value = '';
+      what.value = '';
+      seedInp.value = '';
+      injectInp.value = '';
+      sayErr('');
+      fillWhere();
+      fillModels();
+      fillGroups(groupSel);
+      fillRef();
+      applyMode();
+      form.classList.add('open');
+      board.classList.add('picking');
+      // Board-wide, not grid2: a shelved job's button lives in its class's fold.
+      board.querySelectorAll('.ks-btn').forEach((x) => x.classList.toggle('on', x.dataset.kind === k.name));
+      if (!IS_TOUCH) nameInp.focus(); // name first — it is the field you answer first
+    });
+    return b;
+  };
+
+  /* Which shelves are folded — a per-device viewing preference, like the tile layout,
+   * so it lives in this browser and never in the manifest. */
+  const FOLD_KEY = 'ronin.jobClassesClosed';
+  const foldedClasses = () => {
+    try {
+      const v = JSON.parse(localStorage.getItem(FOLD_KEY) || '[]');
+      return Array.isArray(v) ? v : [];
+    } catch (_) {
+      return [];
+    }
+  };
+  const rememberFold = (name, open) => {
+    try {
+      const closed = new Set(foldedClasses());
+      if (open) closed.delete(name); else closed.add(name);
+      localStorage.setItem(FOLD_KEY, JSON.stringify([...closed]));
+    } catch (_) {
+      /* storage denied — the fold simply does not persist */
+    }
+  };
+
+  let jobClasses = [];
+  const saveClasses = async (next) => {
+    const r = await request('/api/job-classes', { method: 'PUT', json: { classes: next } });
+    if (!r.ok) {
+      toast(r.message, false);
+      return false;
+    }
+    jobClasses = r.data.classes;
+    buildBoard();
+    return true;
+  };
+  void (async () => {
+    const r = await request('/api/job-classes');
+    if (r.ok && Array.isArray(r.data.classes) && r.data.classes.length) {
+      jobClasses = r.data.classes;
+      buildBoard();
+    }
+  })();
+  classAdd.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    // The roster's own group-name rule (js/roster.js cleanGroup) — one rule, two boards.
+    const name = String(classInput.value || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 32);
+    if (!name) {
+      classMsg.textContent = 'use letters, digits, - or _';
+      classInput.focus();
+      return;
+    }
+    if (jobClasses.some((c) => c.name === name)) {
+      classMsg.textContent = `"${name}" already exists`;
+      return;
+    }
+    classMsg.textContent = '';
+    if (await saveClasses([...jobClasses, { name, jobs: [] }])) classInput.value = '';
+  });
+
+  /** Which jobs sit on ONE shelf — a multi-toggle in the job menu's own clothes
+   * (js/widgets.js openJobMenu: same anchoring, same dismissal grammar), staying open
+   * across clicks because shelving is several toggles in a row. */
+  const openClassEditor = (anchor, className) => {
+    document.querySelector('.job-menu')?.remove();
+    const m = document.createElement('div');
+    m.className = 'job-menu';
+    const cls = () => jobClasses.find((c) => c.name === className);
     for (const k of presetData || []) {
       const b = document.createElement('button');
-      b.className = 'ks-btn';
-      b.dataset.kind = k.name;
-      // The kind's own name carries the mark: a job of yours, or one of ours you
-      // replaced, is a fact about THIS tile and belongs on it (js/provenance.js).
-      const kLabel = Object.assign(document.createElement('b'), { textContent: k.label });
-      addProvMark(kLabel, k);
+      b.type = 'button';
+      b.className = 'job-opt' + (cls()?.jobs.includes(k.name) ? ' on' : '');
       b.append(
         Object.assign(document.createElement('i'), { textContent: k.icon }),
-        kLabel,
-        Object.assign(document.createElement('small'), { textContent: k.blurb }),
+        Object.assign(document.createElement('span'), { textContent: k.label }),
       );
-      b.addEventListener('click', () => {
-        kind = k;
-        // `agent: none` (ronin_catalogs/SESSION_JOBS.md) — a plain terminal. No session_launch_spec to pick,
-        // no brief to compose, so the form drops to the two things that still mean
-        // something: what it is called and where it opens. Manual is not a "mode" here,
-        // it is the only truth available: nothing is sent at all.
-        if (k.agent === false) mode = 'manual';
-        form.classList.toggle('noagent', k.agent === false);
-        // `mcp: always` — born connected (owner's ruling, 2026-08-17): the toggle does
-        // not apply, so it is not offered. The spawn refuses a contradicting launch;
-        // this just keeps the form honest about there being no choice.
-        if (k.mcpAlways) mcpOn = true;
-        mcpBtn.hidden = !!k.mcpAlways;
-        applyMcp();
-        formHead.textContent = `${k.icon} ${k.label} — ${k.ask}`;
-        // textContent + server-vetted http(s) URL only — a catalog line must never
-        // become markup here.
-        creditEl.hidden = !k.credit;
-        if (k.credit) {
-          creditEl.textContent = `powered by ${k.credit.text} ↗`;
-          creditEl.href = k.credit.url;
-          creditEl.title = k.credit.url;
-        } else {
-          // Belt and braces with the [hidden] CSS: a kind with no credit must never
-          // wear the previous kind's.
-          creditEl.textContent = '';
-          creditEl.removeAttribute('href');
+      b.title = k.remit || k.blurb || '';
+      b.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const c = cls();
+        if (!c) return;
+        const jobs = c.jobs.includes(k.name) ? c.jobs.filter((j) => j !== k.name) : [...c.jobs, k.name];
+        if (await saveClasses(jobClasses.map((x) => (x.name === className ? { ...x, jobs } : x)))) {
+          b.classList.toggle('on', jobs.includes(k.name));
         }
-        nameInp.value = '';
-        what.value = '';
-        seedInp.value = '';
-        injectInp.value = '';
-        sayErr('');
-        fillWhere();
-        fillModels();
-        fillGroups(groupSel);
-        fillRef();
-        applyMode();
-        form.classList.add('open');
-        board.classList.add('picking');
-        grid2.querySelectorAll('.ks-btn').forEach((x) => x.classList.toggle('on', x.dataset.kind === k.name));
-        if (!IS_TOUCH) nameInp.focus(); // name first — it is the field you answer first
       });
-      grid2.appendChild(b);
+      m.appendChild(b);
     }
-    if (!(presetData || []).length) grid2.textContent = 'no kinds in ronin_catalogs/SESSION_JOBS.md';
-    grid2.dataset.n = String((presetData || []).length);
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'job-opt none';
+    del.textContent = `✕ delete "${className}"`;
+    del.title = 'Remove this shelf — the jobs on it are untouched';
+    del.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (await saveClasses(jobClasses.filter((x) => x.name !== className))) m.remove();
+    });
+    m.appendChild(del);
+    document.body.appendChild(m);
+    const a = anchor.getBoundingClientRect();
+    const w = m.offsetWidth;
+    const h = m.offsetHeight;
+    m.style.left = Math.round(Math.max(4, Math.min(a.left, window.innerWidth - w - 4))) + 'px';
+    m.style.top = Math.round(a.bottom + 4 + h > window.innerHeight ? Math.max(4, a.top - h - 4) : a.bottom + 4) + 'px';
+    setTimeout(() => {
+      const away = () => {
+        m.remove();
+        document.removeEventListener('click', away);
+        document.removeEventListener('keydown', esc, true);
+      };
+      const esc = (e) => {
+        if (e.key !== 'Escape') return;
+        e.stopPropagation();
+        away();
+      };
+      document.addEventListener('click', away);
+      document.addEventListener('keydown', esc, true);
+    }, 0);
+  };
+
+  const classShelf = (c, members) => {
+    const d = document.createElement('details');
+    d.className = 'ks-class';
+    d.open = !foldedClasses().includes(c.name);
+    const sum = document.createElement('summary');
+    sum.append(
+      Object.assign(document.createElement('b'), { textContent: c.name }),
+      Object.assign(document.createElement('span'), { className: 'ks-class-n', textContent: String(members.length) }),
+    );
+    const edit = document.createElement('button');
+    edit.type = 'button';
+    edit.className = 'ks-class-edit';
+    edit.textContent = '✎';
+    edit.title = `Choose which jobs are shelved under "${c.name}"`;
+    edit.addEventListener('click', (e) => {
+      e.preventDefault(); // a button inside <summary> must not toggle the fold
+      e.stopPropagation();
+      openClassEditor(edit, c.name);
+    });
+    sum.appendChild(edit);
+    const grid = document.createElement('div');
+    grid.className = 'ks-grid';
+    for (const k of members) grid.appendChild(jobButton(k));
+    d.append(sum, grid);
+    d.addEventListener('toggle', () => rememberFold(c.name, d.open));
+    return d;
+  };
+
+  const buildBoard = () => {
+    grid2.innerHTML = '';
+    classWrap.innerHTML = '';
+    const all = presetData || [];
+    const byName = new Map(all.map((k) => [k.name, k]));
+    const shelved = new Set();
+    for (const c of jobClasses) {
+      // A name the catalog no longer knows renders nowhere and stays in the manifest —
+      // the manifest is the owner's, and a stock job may come back (src/catalog.ts).
+      const members = c.jobs.map((n) => byName.get(n)).filter(Boolean);
+      members.forEach((k) => shelved.add(k.name));
+      classWrap.appendChild(classShelf(c, members));
+    }
+    // A job on no shelf sits flat under the shelves, the roster's own answer — with a
+    // heading only once shelves exist, because until then flat IS the whole board.
+    const loose = all.filter((k) => !shelved.has(k.name));
+    if (jobClasses.length && loose.length) {
+      classWrap.appendChild(Object.assign(document.createElement('div'), { className: 'ks-loose-h', textContent: 'unclassed' }));
+    }
+    for (const k of loose) grid2.appendChild(jobButton(k));
+    if (!all.length) grid2.textContent = 'no kinds in ronin_catalogs/SESSION_JOBS.md';
+    grid2.dataset.n = String(all.length);
     // The end of the list is where you find out the list is yours to extend.
     grid2.appendChild(addYourOwn('SESSION_JOBS.md', 'kind'));
   };
@@ -361,7 +549,7 @@ export function buildLauncher(tile, host) {
           sayErr(`"${l.label}" names session_job "${l.session_job}", which is not in the catalog.`);
           return;
         }
-        grid2.querySelector(`.ks-btn[data-kind="${CSS.escape(k.name)}"]`)?.click();
+        board.querySelector(`.ks-btn[data-kind="${CSS.escape(k.name)}"]`)?.click();
         if (l.project_root) whereSel.value = l.project_root;
         if (l.group) {
           if (![...groupSel.options].some((o) => o.value === l.group)) groupSel.add(new Option(l.group, l.group), groupSel.options.length - 1);
@@ -494,7 +682,7 @@ export function buildLauncher(tile, host) {
   // Start. Unknown kinds are silent because catalogs can be user-replaced at runtime.
   const open = (name, promptText = '') => {
     render();
-    const b = grid2.querySelector(`.ks-btn[data-kind="${CSS.escape(name)}"]`);
+    const b = board.querySelector(`.ks-btn[data-kind="${CSS.escape(name)}"]`);
     if (!b) return;
     b.click();
     assistBtn.click();
