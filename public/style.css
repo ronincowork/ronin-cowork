@@ -880,9 +880,6 @@ body {
 .tile-head button.checkout.branch {
   color: var(--fg-strong);
 }
-.tile-head button.checkout.repo {
-  color: var(--muted);
-}
 .tile-head button.checkout.unset {
   border-style: dashed;
   color: var(--muted);

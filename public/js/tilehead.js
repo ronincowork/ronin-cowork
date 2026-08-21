@@ -121,10 +121,9 @@ const HEADER = () => (rows ??= [
                  : 'Not marked — click to say what this session is doing';
     } },
 
-  // THE CHECKOUTS — branch first, because it is the fact that changes while work moves.
-  // Both open the ladder, where every branch/repo pair is written out. With one checkout
-  // the button says the value; with several it says the count rather than picking one and
-  // falsely presenting it as THE branch or repository.
+  // THE CHECKOUTS — one button, because branch and repository are one paired fact rather
+  // than two controls. One checkout says its branch; several say how many. The ladder it
+  // opens writes every branch beside its repository without spending a second header slot.
   { key: 'branchBtn', cls: 'checkout branch', needs: 'session michi',
     help: 'Branches this session is working on',
     quiet: { session: 'Branches — no session in this tile yet',
@@ -133,30 +132,11 @@ const HEADER = () => (rows ??= [
     read: (t, el) => {
       const repos = t.tegami?.repos || [];
       const branches = repos.map((x) => x.branch).filter(Boolean);
-      const unique = [...new Set(branches)];
-      // Show the branch NAMES, not merely how many there are. Two repos on `dev` are one
-      // useful reading; two different branches are both useful readings and CSS trims the
-      // far edge only if the tile is genuinely out of room.
-      el.textContent = unique.length ? '⑂ ' + unique.join(' · ') : '⑂ ?';
-      el.classList.toggle('unset', !branches.length);
-      return branches.length
-        ? clampTip('Branches: ' + repos.map((x) => `${x.branch || '(detached)'} — ${x.repo}`).join(' · ')) + '. Opens the ladder.'
-        : 'No branch listed yet. The session keeps its repos list current in TEGAMI.';
-    } },
-
-  { key: 'repoBtn', cls: 'checkout repo', needs: 'session michi',
-    help: 'Repositories this session is working in',
-    quiet: { session: 'Repositories — no session in this tile yet',
-      michi: 'Repositories — michi is not installed, so TEGAMI checkout data is unavailable' },
-    on: (t) => t.toggleLadder(),
-    read: (t, el) => {
-      const repos = t.tegami?.repos || [];
-      const short = (v) => v.replace(/^.*[/:]([^/]+\/[^/]+?)(\.git)?$/, '$1');
-      el.textContent = repos.length === 1 ? short(repos[0].repo) : repos.length ? `▣ ${repos.length}` : '▣ ?';
+      el.textContent = repos.length === 1 ? '⑂ ' + (branches[0] || '?') : repos.length ? '⑂ ' + repos.length : '⑂ ?';
       el.classList.toggle('unset', !repos.length);
       return repos.length
-        ? clampTip('Repositories: ' + repos.map((x) => short(x.repo)).join(' · ')) + '. Opens the ladder.'
-        : 'No repository listed yet. The session keeps its repos list current in TEGAMI.';
+        ? clampTip('Branches: ' + repos.map((x) => `${x.branch || '(detached)'} — ${x.repo}`).join(' · ')) + '. Opens the ladder.'
+        : 'No branch listed yet. The session keeps its repos list current in TEGAMI.';
     } },
 
   { grow: true },
