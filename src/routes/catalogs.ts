@@ -126,6 +126,18 @@ export function registerCatalogs(app: express.Express): void {
     }
   });
 
+  /** cowork_setup asks about a directory before it becomes a root. This is a live,
+   * read-only fact check; existence and Git identity are never stored as answers. */
+  app.get('/api/project-roots/inspect', async (req, res) => {
+    const dir = String(req.query.dir ?? '').trim();
+    if (!dir) return res.status(400).json({ error: 'A directory is required.' });
+    try {
+      res.json(await repoFacts({ name: 'candidate', dir, remit: '', match: [], archived: false }));
+    } catch (e) {
+      res.status(500).json({ error: errMsg(e) });
+    }
+  });
+
   // Include a directory — the whole point of the catalog. Arbitrary absolute paths at any
   // depth are first-class forever; Ronin does not manage the user's filesystem.
   app.post('/api/project-roots', async (req, res) => {

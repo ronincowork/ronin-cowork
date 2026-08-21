@@ -222,7 +222,7 @@ export function build() {
   // copies it to opened tabs) and read as a clone; `?tiles=,` is state.js's one-shot
   // directive — two slots, no sessions — consumed at boot and stripped from the address.
   //
-  // `location.pathname`, not `location.href`: href would carry `?setup` into a tab that is
+  // `location.pathname`, not `location.href`: href could carry workspace directives into a tab that is
   // not asking for the first-run flow.
   key('newtabbtn', () => window.open(location.pathname + '?tiles=,', '_blank'));
 

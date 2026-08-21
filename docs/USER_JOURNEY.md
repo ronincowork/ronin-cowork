@@ -126,12 +126,11 @@ An absent agent Ronin cannot install has no working control and says why.
 
 **Handoff belief:** “This is my Cowork, on my machine, shaped by choices I can change.”
 
-**Current state:** the one-page interaction is the live `?setup` implementation, but its
-form is written and organized for someone who already understands Ronin’s machinery. The
-next job is to redesign `cowork_setup` for a first-time, non-technical owner: plain questions,
-clear consequences, strong defaults, optional detail, and an honest preview of what their
-answers shape. The Shiwake activation contract above remains required; a `firstrun.js` that
-only stores the email locally is a regression.
+**Current state:** the first-time, non-technical interaction is live at `/cowork-setup`.
+It separates shaping the coworkspace from starting the first project, reports measured
+machine and agent facts, and keeps a live **When you save** review beside the form. There
+are no query-string aliases or legacy setup renderer. The Shiwake activation contract above
+remains required; a form that only stores the email locally is a regression.
 
 ### 5 · `cowork`: immediate post-Save state
 
@@ -184,17 +183,16 @@ the ungated feed, and a misleading seam-test skip message. Those defects were cl
 why the final gate remains a real foreign-machine walk rather than test-suite success alone.
 
 The complete owner-visible activation and installation loop is maintained in the Services
-repository's activation guide. In the workspace, **Check status** is the
-kakiiro action: it performs one Shiwake poll. There is no eternal background polling and no
+repository's activation guide. In the workspace, the Services status control sits beside the
+Ronin identity in the header. Opening that control does not contact Shiwake. Its kakiiro
+**Check status** action performs one Shiwake poll. There is no background polling and no
 spinner while nothing is happening; spinners appear only while checking or installing.
 
 ## What remains
 
-1. Redesign the live `cowork_setup` form for a first-time, non-technical owner without
-   regressing Shiwake activation, disclosure, measured agent facts, or wanted/needed intent.
-2. Implement the immediate post-Save Cowork tiles and their direct route into useful work.
-3. Walk the real install command and all five surfaces on a clean machine that is not ours.
-4. Record every defect from that walk here until it is closed; then move stable behavior into
+1. Implement the immediate post-Save Cowork tiles and their direct route into useful work.
+2. Walk the real install command and all five surfaces on a clean machine that is not ours.
+3. Record every defect from that walk here until it is closed; then move stable behavior into
    the owning implementation docs.
 
 ## Verification

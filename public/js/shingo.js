@@ -113,13 +113,7 @@ export function makeChip(onTap) {
 export function buildLadder(t) {
   const box = document.createElement('div');
   box.className = 'shingo-ladder';
-  if (!t || !t.ladder || !t.ladder.length) {
-    const empty = document.createElement('div');
-    empty.className = 'sl-empty';
-    empty.textContent = 'no ladder up yet';
-    box.appendChild(empty);
-    return box;
-  }
+  if (!t) return box;
 
   // Parked, in the agent's own words. Sits above the objective because it changes what
   // the whole ladder below it means: those statuses are true, they are just not moving.
@@ -128,6 +122,32 @@ export function buildLadder(t) {
     sr.className = 'sl-side';
     sr.textContent = '↳ ' + t.ladder_state.replace(/_/g, ' ') + ' — the ladder below is held, not stale';
     box.appendChild(sr);
+  }
+
+  // WHERE THIS WORK LANDS. Branch is first and visually strongest because it is the
+  // coordinate that changes during ordinary work; repo is the stable context beneath it.
+  if (t.repos?.length) {
+    const checkout = document.createElement('div');
+    checkout.className = 'sl-checkout';
+    for (const item of t.repos) {
+      const line = document.createElement('div');
+      line.className = 'sl-checkout-line';
+      if (item.branch) {
+        const branch = document.createElement('strong');
+        branch.className = 'sl-branch';
+        branch.textContent = '⑂ ' + item.branch;
+        line.appendChild(branch);
+      }
+      if (item.repo) {
+        const repo = document.createElement('span');
+        repo.className = 'sl-repo';
+        repo.textContent = item.repo.replace(/^.*[/:]([^/]+\/[^/]+?)(\.git)?$/, '$1');
+        repo.title = item.repo;
+        line.appendChild(repo);
+      }
+      checkout.appendChild(line);
+    }
+    box.appendChild(checkout);
   }
 
   if (t.objective || t.session_job) {
@@ -143,6 +163,17 @@ export function buildLadder(t) {
     }
     ob.append(t.objective || '');
     box.appendChild(ob);
+  }
+
+  // Checkout facts remain useful before the session has drawn a ladder. The branch and
+  // repo header buttons open this panel, so returning early above would make both buttons
+  // open a panel that hid the very values they name.
+  if (!t.ladder?.length) {
+    const empty = document.createElement('div');
+    empty.className = 'sl-empty';
+    empty.textContent = 'no ladder up yet';
+    box.appendChild(empty);
+    return box;
   }
 
   /**

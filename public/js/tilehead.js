@@ -54,10 +54,11 @@
  * reading the header left to right — and then, past メ, left to right inside its drop.
  */
 import { CONTROL_POSITIONS, makeDial, makeGauge, setInert } from './widgets.js';
-import { makeChip } from './shingo.js';
+import { clampTip, makeChip } from './shingo.js';
 import { buildTileMacros } from './tilemacros.js';
 import { buildTileMore } from './tilemore.js';
 import { buildTileDocs } from './tiledocs.js';
+import { buildTileMentions } from './tilementions.js';
 import { isCoarse } from './tiledrop.js';
 import { S, SELECT_MOD, serviceMissing } from './state.js';
 import { jobIcon } from './home.js';
@@ -121,6 +122,24 @@ const HEADER = () => (rows ??= [
                  : 'Not marked — click to say what this session is doing';
     } },
 
+  // THE CHECKOUTS — one button, because branch and repository are one paired fact rather
+  // than two controls. One checkout says its branch; several say how many. The ladder it
+  // opens writes every branch beside its repository without spending a second header slot.
+  { key: 'branchBtn', cls: 'checkout branch', needs: 'session michi',
+    help: 'Branches this session is working on',
+    quiet: { session: 'Branches — no session in this tile yet',
+      michi: 'Branches — michi is not installed, so TEGAMI checkout data is unavailable' },
+    on: (t) => t.toggleLadder(),
+    read: (t, el) => {
+      const repos = t.tegami?.repos || [];
+      const branches = repos.map((x) => x.branch).filter(Boolean);
+      el.textContent = repos.length === 1 ? '⑂ ' + (branches[0] || '?') : repos.length ? '⑂ ' + repos.length : '⑂ ?';
+      el.classList.toggle('unset', !repos.length);
+      return repos.length
+        ? clampTip('Branches: ' + repos.map((x) => `${x.branch || '(detached)'} — ${x.repo}`).join(' · ')) + '. Opens the ladder.'
+        : 'No branch listed yet. The session keeps its repos list current in TEGAMI.';
+    } },
+
   { grow: true },
 
   // ⛩ IS THE COMMONS, EVERYWHERE (owner's ruling 2026-08-17). It was メ here and き in
@@ -139,6 +158,11 @@ const HEADER = () => (rows ??= [
   { key: 'menuBtn', cls: 'menu', text: '⛩',
     help: '⌃⇧C — the CoWorking Commons: roster, new session, wipeboard, docs, roots, hotwords. Opens over this tile; ✕ comes back.',
     on: (t) => t.toggleHome('sessions') },
+
+  { key: 'mentionBtn', needs: 'session',
+    widget: (t) => buildTileMentions(t),
+    help: 'Mention another session — choose a name to add it to the message box',
+    quiet: 'Mentions — no session in this tile yet' },
 
   // THE TEGAMI TORII IS GONE (owner's ruling 2026-08-17, reaffirmed after the objection
   // below was put to him). It opened `/tegami/raw` — the letter verbatim — and it was the

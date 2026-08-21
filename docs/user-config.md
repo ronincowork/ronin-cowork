@@ -25,17 +25,20 @@ src/settei.ts                     the assembled record the ⚙ Configuration tab
 | `machine.name` · `machine.where` | what this box is called, and where it is | `PUT /api/settei/machine` | none |
 | `agents.sessions.default` · `agents.jobs` | how work gets a model | `PUT /api/settei/agents` | none |
 | `gbrain.enabled` | whether the owner turned gbrain on | `PUT /api/settei/gbrain` | none |
-| `services.*` | the subscription: entitlement id, email, verified, terms | `PUT /api/settei/services` | none |
 | `koshi` | which outlet each koshi job asks | the 目 Koshi tab | none |
 | `auth` | the login record — scrypt params **and the session signing secret** | `bin/ronin-passwd` | none |
 | `passkeys` | registered authenticators, and the one-shot recovery code | `/api/passkey/*` | none |
 
 **The file has two kinds of tenant.** The sections above the line — owner, machine,
-sessions, agents, gbrain, services, setup — are **settei's typed half**, and the assembled
+sessions, agents, gbrain, setup — are **settei's typed half**, and the assembled
 record (`docs/settei.md`) includes them. The last three — `koshi`, `auth`, `passkeys` —
 share the file and are **not settei**: `koshi` is 目's wiring, and `auth`/`passkeys` are
 credentials the record must never carry. Same storage, different tenants; the file is not
 the object.
+
+Services activation is not a `ronin.json` tenant. Its non-secret state is the activation
+aggregate in the config store and its bearer token is in the `services_secrets` store.
+Older `ronin.json.services` keys are inert residue from the retired pasted-code flow.
 
 **Most sections have no bus option, and that is the rule working rather than an exception
 to it.** Nothing in `bin/` or `ronin_bin/` parses an outlet choice, a machine name or an

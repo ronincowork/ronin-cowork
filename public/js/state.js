@@ -185,7 +185,7 @@ function syncTitle() {
  * ONE STATE, THREE SCOPES — first answer wins:
  *
  *   1. `?tiles=a,b,c[&layout=n]` — a one-shot directive: a URL tells THIS tab what to
- *      show. Same shape as `?setup` (main.js): consumed into the tab's own memory and
+ *      show. Consumed into the tab's own memory and
  *      stripped from the address, so a refresh keeps it and a bookmark never replays
  *      it. It exists so the landing can choose what greets a person coming out of
  *      setup (wip/buildouts/TILE_CONTROL.md in ronin-lab).

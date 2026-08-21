@@ -106,6 +106,30 @@ services_installed_release() {
   [ -n "$HOME_DIR" ] && sed -n 's/^release=//p' "$HOME_DIR/services/VERSION" 2>/dev/null || true
 }
 
+# Copy the services store into a serving tree. ONE implementation, two callers — the
+# services install below and the carry-forward into a cowork candidate. Two loops drifted
+# once already and both dropped the same directory.
+#
+# WHAT TRAVELS: every service (a directory carrying a register entry) AND the shared code
+# they import. `_lib/` carries no register.js ON PURPOSE — install-contract.md calls it
+# "the same trick: shared code, not a service" — so a register-only filter silently left it
+# behind, and gbrain and koshi_weights, which both `import ../_lib/install-runner.js`, then
+# died at load with ERR_MODULE_NOT_FOUND. The assembler logs that and carries on, so the
+# roster came up short with nothing said. Underscore means shared, and shared code travels.
+place_services() {
+  local dest="$1" d name
+  mkdir -p "$dest"
+  for d in "$HOME_DIR/services"/*/; do
+    name="$(basename "$d")"
+    case "$name" in
+      _*) ;; # shared code — no register entry by design, and the services import it
+      *) { [ -f "$d/register.js" ] || [ -f "$d/register.ts" ]; } || continue ;;
+    esac
+    rm -rf "${dest:?}/$name"
+    cp -r "$d" "$dest/$name"
+  done
+}
+
 # --- the release feeds (gh when it is there, curl for a public repo) ---
 have_gh() { command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; }
 
@@ -326,13 +350,7 @@ if [ "$PACKAGE" = "services" ]; then
   rm -rf "$HOME_DIR/services.old"
   say "stored: $HOME_DIR/services ($VER)"
   # Into the serving tree, where the assembler discovers them at boot.
-  mkdir -p "$HOME_DIR/current/src/services"
-  for d in "$HOME_DIR/services"/*/; do
-    { [ -f "$d/register.js" ] || [ -f "$d/register.ts" ]; } || continue
-    name="$(basename "$d")"
-    rm -rf "${HOME_DIR:?}/current/src/services/$name"
-    cp -r "$d" "$HOME_DIR/current/src/services/$name"
-  done
+  place_services "$HOME_DIR/current/src/services"
   say "placed into current/src/services/ — discovery finds them at the next start"
   if unit_serves_home; then
     restart_and_gate
@@ -379,11 +397,7 @@ ln -sfn "$HOME_DIR/.env" "$TARGET/.env"
 # home's, the release dir is disposable, and the candidate gates as The Works —
 # a cowork release that breaks the installed services never becomes the serving one.
 if [ -d "$HOME_DIR/services" ]; then
-  mkdir -p "$TARGET/src/services"
-  for d in "$HOME_DIR/services"/*/; do
-    { [ -f "$d/register.js" ] || [ -f "$d/register.ts" ]; } || continue
-    cp -r "$d" "$TARGET/src/services/$(basename "$d")"
-  done
+  place_services "$TARGET/src/services"
   say "carried services forward ($(services_installed_release)) — the candidate gates as The Works"
 fi
 

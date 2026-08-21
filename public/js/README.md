@@ -62,6 +62,7 @@ written contract those modules enforce.
 | `ansi.js` | 12 | `ANSI_RE` — its own module so the tape's pure logic loads outside a browser |
 | `tiledrop.js` | 244 | TOUCH ONLY — `collapseTileHead`, `makeDrop`: the one-row phone header |
 | `tilemacros.js` | 231 | `buildTileMacros` — the ⚡ button on a tile head; the `preview:` macros as teaching cards, prefills `+name: `, never runs |
+| `tilementions.js` | — | `buildTileMentions` — the @ button on a tile head; click or drag a live session name into the composer |
 | `tilemore.js` | 158 | DESKTOP ONLY — `buildTileMore`: メ on a tile head and the controls it drops in one strip; `fitDropToTile`, shared by every drop off that header |
 | `tiledocs.js` | 126 | `buildTileDocs` — 📄 on a tile head: THIS session's listed docs, read off the letter the tile already holds, opened over the tile |
 | `voice.js` | 181 | dictation: `makeClipRecorder` + `wireDictation` (the 🎤 on the tile's compose box) |

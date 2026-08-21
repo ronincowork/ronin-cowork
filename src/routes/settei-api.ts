@@ -38,7 +38,6 @@ import {
   writeGbrainSection,
   writeMachineSection,
   writeOwner,
-  writeServicesSection,
 } from '../user-config.js';
 
 const errMsg = (e: unknown): string => String((e as Error)?.message ?? e);
@@ -119,21 +118,6 @@ const FAMILY_WRITERS: Record<string, (body: Record<string, unknown>) => Promise<
     return { ok: true };
   },
 
-  /**
-   * THE SUBSCRIPTION. The id arrives as a code the owner pastes from the verification
-   * email (owner, 2026-08-17) — chosen over the install polling us, which would have
-   * added an outbound destination. **This writer records; it does not verify.** The id
-   * gates nothing on this box, so a wrong one costs a wrong line in a record.
-   */
-  services: async (body) => {
-    await writeServicesSection({
-      entitlement: str(body.entitlement) ?? null,
-      email: str(body.email) ?? null,
-      verified: str(body.verified) ?? null,
-      terms: str(body.terms) ?? null,
-    });
-    return { ok: true };
-  },
 };
 
 export function registerSettei(app: express.Express): void {

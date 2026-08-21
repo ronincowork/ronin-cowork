@@ -27,7 +27,7 @@ import { registerLaunch } from './routes/launch.js';
 import { registerPasskeyLogin, registerPasskeyManage } from './routes/passkey-api.js';
 import { registerSessions } from './routes/sessions-api.js';
 import { startTomodachiSender } from './activation/tomodachi.js';
-import { registerServicesActivation } from './routes/services-activation-api.js';
+import { registerServicesActivation, resumeInstallWatch } from './routes/services-activation-api.js';
 import { registerSettei } from './routes/settei-api.js';
 import { stampFreshInstall } from './user-config.js';
 import { registerUpdate } from './routes/update-api.js';
@@ -41,7 +41,7 @@ import { checkTmuxServerCgroup } from './host-guard.js';
 // THE ASSEMBLER BLOCK — the one place in core a service is named (check-kyokai's
 // exception, and on split day this block becomes discovery over the installed-services
 // store; docs/connector-contract.md is the contract, sockets-contract.ts its shape).
-import { sockets, startBootHooks, stopBootHooks, mountServiceRoutes, noteService } from './sockets.js';
+import { sockets, startBootHooks, stopBootHooks, mountServiceRoutes, noteService, noteServiceFailure } from './sockets.js';
 import type { ServiceRegistration } from './sockets-contract.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -165,6 +165,10 @@ app.get('/vendor/xterm.css', (_req, res) => res.sendFile(path.join(NM, '@xterm/x
 app.get('/vendor/xterm.js', (_req, res) => res.sendFile(path.join(NM, '@xterm/xterm/lib/xterm.js')));
 app.get('/vendor/addon-fit.js', (_req, res) => res.sendFile(path.join(NM, '@xterm/addon-fit/lib/addon-fit.js')));
 
+// cowork_setup is a first-class companion surface, not a mode smuggled into the
+// workspace URL. It runs the same client because both surfaces share the live APIs.
+app.get('/cowork-setup', (_req, res) => res.sendFile(path.join(PUBLIC, 'index.html')));
+
 /**
  * NEVER LET A BROWSER RUN A STALE CLIENT.
  *
@@ -269,6 +273,9 @@ if (fs.existsSync(SERVICES_DIR)) {
       services.push({ name: typeof mod.name === 'string' ? mod.name : dir, register: mod.register });
     } catch (e) {
       console.error(`[services] ${dir} failed to load and is OFF: ${(e as Error).message}`);
+      // Logged AND recorded: the activation watcher asks whether the install actually
+      // delivered, and a console line cannot be asked.
+      noteServiceFailure(dir, (e as Error).message);
     }
   }
 }
@@ -277,6 +284,10 @@ for (const s of services) {
   s.register(sockets);
 }
 mountServiceRoutes(app);
+
+// AFTER the assembler, never before: an install that finished by restarting us is waiting
+// on a verdict, and the roster just built above is the evidence for it.
+void resumeInstallWatch();
 
 
 

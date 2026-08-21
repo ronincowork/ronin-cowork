@@ -119,7 +119,7 @@ known. `⚙` = edit it in the ⚙ Configuration view unless another editor is na
 
 | Looking for | It lives | Known / edited |
 |---|---|---|
-| the entitlement id, email, terms | `ronin.json` `services` | typed · pasted code, recorded never verified · ⚙ |
+| Services activation, entitlement id, masked email, terms | activation state in the config store | written by the Shiwake request and poll flow · read by ⚙; SETTEI cannot edit it |
 | gbrain on or off | `ronin.json` `gbrain.enabled` | typed · ⚙ |
 | which services are registered | nowhere — the install's roster per read | found · `observed.ronin.services` |
 | what a selection still needs | nowhere — `needed[]` in the answer | derived · the registry's `requires` **and the want list**, judged per read; met items do not exist |
@@ -156,14 +156,14 @@ A genuinely fresh install says so itself; nothing is ever inferred.
 - `stampFreshInstall()` writes `setup.pending = true` at first operator boot, the
   moment `ronin.json` does not exist. No route can set or re-arm it.
 - Every page load asks `GET /api/settei/setup` — one section, no scans — and routes a
-  pending install to the setup view. `?setup` remains the deliberate way back in.
+  pending install to the setup view. `/cowork-setup` remains the deliberate way back in.
 - Save calls `PUT /api/settei/setup`: pending clears, `completed_at` stamps. An install
   that predates the key has no setup section and stays quiet forever — absence means
   do-not-show.
 
 ## The setup view
 
-`public/js/firstrun.js`. Every askable leaf is declared once and no view may know a
+`public/js/cowork-setup.js`. Every askable leaf is declared once and no view may know a
 field the declaration does not say — that declaration is the registry (above), served
 with the answer and read through the shared vocabulary (`public/js/settei-schema.js`).
 There is no client-side field list. It asks in order, teaches as it asks, and ends. Setup is complete at Save — the

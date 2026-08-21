@@ -43,7 +43,11 @@ import { roninIdentity } from './routes/version.js';
 import { listProjectRoots } from './project-roots.js';
 import { storeDir } from './stores.js';
 import { AGENTS, listAgentAvailability } from './agents.js';
-import { publicState, readState as readServicesActivation } from './activation/state.js';
+import {
+  publicState,
+  readState as readServicesActivation,
+  type ActivationState,
+} from './activation/state.js';
 import {
   readAgentsSection,
   readMachineSection,
@@ -282,7 +286,6 @@ async function readSet(): Promise<Record<string, unknown>> {
   const machine = await readMachineSection();
   const agents = await readAgentsSection();
   const gbrain = await readSection<Record<string, unknown>>('gbrain', {});
-  const services = await readSection<Record<string, unknown>>('services', {});
   const setup = await readSetupSection();
   const roots = await listProjectRoots();
 
@@ -318,15 +321,41 @@ async function readSet(): Promise<Record<string, unknown>> {
       stamped_at: setup.stamped_at ?? null,
       completed_at: setup.completed_at ?? null,
     },
-    services: {
-      selected: activation.stage !== 'not_requested' && activation.stage !== 'cancelled',
-      entitlement: services.entitlement ?? null,
-      email: services.email ?? null,
-      verified: services.verified ?? null,
-      terms: services.terms ?? null,
-      activation: publicState(activation),
-    },
+    services: setteiServices(activation),
   };
+}
+
+/**
+ * SETTEI'S VIEW OF SERVICES, derived from the activation aggregate and nowhere else.
+ *
+ * The old implementation also read `ronin.json.services.{entitlement,email,verified,terms}`.
+ * Those fields came from a superseded flow where a person pasted an unverified code from an
+ * email. They are not evidence of an entitlement and are deliberately ignored on upgraded
+ * installs. Shiwake confirmation reaches this record only through activation polling.
+ */
+export function setteiServices(activation: ActivationState) {
+  return {
+    selected: activation.stage !== 'not_requested' && activation.stage !== 'cancelled',
+    activation: publicState(activation),
+  };
+}
+
+type PublicActivation = ReturnType<typeof publicState>;
+
+/** The standing subscription line. Identity follows Shiwake's durable activation result. */
+export function servicesSubscription(activation: PublicActivation): string {
+  if (activation.entitlement_id) {
+    return `services: ${activation.entitlement_id}`
+      + (activation.verified_at ? `, verified ${activation.verified_at}` : '');
+  }
+  if (activation.stage === 'requesting' || activation.stage === 'awaiting_email'
+      || activation.stage === 'address_changed') {
+    return 'free cowork: Services confirmation pending';
+  }
+  if (activation.stage === 'expired' || activation.stage === 'error') {
+    return 'free cowork: Services activation needs attention';
+  }
+  return 'free cowork: no entitlement recorded';
 }
 
 /** The half the box answers for itself. Nothing here is written down.
@@ -406,6 +435,7 @@ async function computeStatus(
   const keys = observed.keys as Record<string, boolean>;
   const projects = set.projects as SetteiProject[];
   const services = set.services as Record<string, unknown>;
+  const servicesActivation = services.activation as PublicActivation;
   const max = (set.sessions as Record<string, number>).max;
   const running = await liveCount();
 
@@ -531,9 +561,7 @@ async function computeStatus(
       : (set.setup as { completed_at: string | null }).completed_at
         ? `first run finished ${(set.setup as { completed_at: string }).completed_at}`
         : 'not applicable — this install predates the first-run surface',
-    subscription: services.entitlement
-      ? `services — ${String(services.entitlement)}${services.verified ? `, verified ${String(services.verified)}` : ''}`
-      : 'free cowork — no entitlement recorded',
+    subscription: servicesSubscription(servicesActivation),
   };
 }
 

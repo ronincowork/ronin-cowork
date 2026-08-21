@@ -313,33 +313,6 @@ export const writeWantedSection = (list: Array<{ kind: string; name: string }>):
   });
 
 /**
- * THE SUBSCRIPTION — the id, the address it is bound to, when the round trip closed, and
- * which terms were accepted.
- *
- * **The id is not a key.** It authorises nothing and gates nothing on this box; it rides
- * outward on usage drops so the collector can match usage to the account that accepted
- * the terms, and the collector treats it as a claim to match rather than as proof.
- * Anything that can read the config store can read it, which is exactly why it must never
- * become a credential.
- *
- * The email is recorded beside it by ruling (owner, 2026-08-17): a subscription you
- * cannot identify is a support ticket waiting to happen.
- */
-export const writeServicesSection = (v: {
-  entitlement?: string | null;
-  email?: string | null;
-  verified?: string | null;
-  terms?: string | null;
-}): Promise<void> =>
-  updateConfig((doc) => {
-    const s = ((doc.services ?? {}) as Record<string, unknown>) || {};
-    for (const k of ['entitlement', 'email', 'verified', 'terms'] as const) {
-      if (v[k] !== undefined) s[k] = v[k] === null ? null : String(v[k]).trim().slice(0, 200);
-    }
-    doc.services = s;
-  });
-
-/**
  * HAS THIS BOX BEEN THROUGH FIRST RUN? — and the answer must never be inferred.
  *
  * THE REGRESSION THIS EXISTS TO PREVENT (2026-08-17): a first-load surface gated on

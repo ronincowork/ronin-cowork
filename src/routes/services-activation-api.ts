@@ -12,7 +12,7 @@
 import type express from 'express';
 import { readEgress } from '../activation/egress.js';
 import { listReceipts, sendDuePackets } from '../activation/tomodachi.js';
-import { listServices } from '../sockets.js';
+import { listServices, listServiceFailures } from '../sockets.js';
 import {
   cancel, changeAddress, FlowError, poll, request, resend, isEntitled,
 } from '../activation/flow.js';
@@ -54,14 +54,47 @@ async function startInstall(): Promise<void> {
 const INSTALL_TIMEOUT_MS = 10 * 60_000;
 const INSTALL_POLL_MS = 5_000;
 
+/**
+ * IS THE ROSTER WHOLE? Not "is it non-empty".
+ *
+ * `listServices().length > 0` was the old test, and it answered a different question than
+ * the one being asked. A services release that half-loads — one shared directory missing,
+ * two services dead at import — leaves five of seven registered, and five is more than
+ * zero, so the flow stamped `installed` over a broken install and said nothing. The
+ * assembler is the only thing that knows a service was THERE and did not load; it records
+ * that now (src/sockets.ts), and this reads it.
+ *
+ * Whole means: something loaded, and nothing that tried to load failed. A free build has
+ * neither and is never in this flow — installing is only reached with an entitlement.
+ */
+function rosterVerdict(): { whole: boolean; loaded: string[]; failed: { name: string; reason: string }[] } {
+  const loaded = listServices();
+  const failed = listServiceFailures();
+  return { whole: loaded.length > 0 && failed.length === 0, loaded, failed };
+}
+
 async function watchForServices(now = () => Date.now()): Promise<void> {
   const deadline = now() + INSTALL_TIMEOUT_MS;
   while (now() < deadline) {
     await new Promise((r) => setTimeout(r, INSTALL_POLL_MS));
-    // The roster is the authority. A service is installed when it is there.
-    if (listServices().length > 0) {
+    const { whole, failed } = rosterVerdict();
+    if (whole) {
       await writeState({
         stage: 'installed', error_at_stage: null, error_message: null,
+      }).catch(() => {});
+      return;
+    }
+    // A SHORT ROSTER IS AN ANSWER, and a fast one. Discovery runs once per boot, so a
+    // service that failed to load in THIS process will not recover in this process —
+    // waiting out the ten minutes would only delay the same news. Name the casualties:
+    // "Services installed" while gbrain is dead is the failure this whole flow exists
+    // to prevent.
+    if (failed.length > 0) {
+      await writeState({
+        stage: 'error', error_at_stage: 'installing',
+        error_message: `Services installed but did not all start: ${failed.map((f) => f.name).join(', ')}. `
+          + 'Your entitlement is safe — retrying needs no new email. The reason is in the '
+          + 'journal (journalctl --user -u ronin.service).',
       }).catch(() => {});
       return;
     }
@@ -76,6 +109,23 @@ async function watchForServices(now = () => Date.now()): Promise<void> {
       + 'retrying needs no new email. The updater log is in the journal '
       + '(journalctl --user -u "ronin-update-*").',
   }).catch(() => {});
+}
+
+/**
+ * RESUME AFTER THE RESTART THAT THE INSTALL ITSELF CAUSES.
+ *
+ * A successful services install ends by restarting ronin.service, which kills the very
+ * process doing the watching. Nothing then wrote the outcome, so the record sat at
+ * `installing` for good: the ten-minute timeout cannot fire in a process that no longer
+ * exists, and the person was left on a spinner that outlived its install.
+ *
+ * So the new process picks the watch back up at boot. It is also the first process that
+ * can see the truth — the roster it just assembled IS the install's result.
+ */
+export async function resumeInstallWatch(): Promise<void> {
+  const s = await readState().catch(() => null);
+  if (s?.stage !== 'installing') return;
+  void watchForServices();
 }
 
 function fail(res: express.Response, e: unknown): void {

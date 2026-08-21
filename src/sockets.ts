@@ -89,6 +89,17 @@ export function noteService(name: string): void {
 export function listServices(): string[] {
   return [...serviceNames];
 }
+/** Services that were THERE but did not load — a directory carrying a register entry whose
+ * import threw. The assembler logs each one and carries on, which is right for the grid and
+ * wrong for anyone asking "did the install work?": a short roster is indistinguishable from
+ * a small one unless the shortfall is recorded. It is recorded here, by name and reason. */
+const serviceFailures = new Map<string, string>();
+export function noteServiceFailure(name: string, reason: string): void {
+  serviceFailures.set(name, reason);
+}
+export function listServiceFailures(): { name: string; reason: string }[] {
+  return [...serviceFailures].map(([name, reason]) => ({ name, reason }));
+}
 export async function collectRowFields(session: string): Promise<RowFields> {
   const out: RowFields = {};
   for (const cb of rowContribs) {

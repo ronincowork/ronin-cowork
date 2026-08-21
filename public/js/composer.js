@@ -17,6 +17,7 @@
  */
 import { IS_TOUCH, S } from './state.js';
 import { CAN_RECORD, wireDictation } from './voice.js';
+import { MENTION_MIME } from './tilementions.js';
 
 /**
  * @param {HTMLElement} body
@@ -138,6 +139,24 @@ export function buildComposer(body, hooks) {
     }
   }
   ta.addEventListener('input', grow);
+  ta.addEventListener('dragover', (e) => {
+    if (!e.dataTransfer.types.includes(MENTION_MIME)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    wrap.classList.add('mention-ready');
+  });
+  ta.addEventListener('dragleave', () => wrap.classList.remove('mention-ready'));
+  ta.addEventListener('drop', (e) => {
+    const name = e.dataTransfer.getData(MENTION_MIME);
+    if (!name) return;
+    e.preventDefault();
+    wrap.classList.remove('mention-ready');
+    const start = ta.selectionStart;
+    const lead = start > 0 && !/\s/.test(ta.value[start - 1]) ? ' ' : '';
+    ta.setRangeText(`${lead}@${name} `, start, ta.selectionEnd, 'end');
+    grow();
+    ta.focus();
+  });
   ta.addEventListener('focus', () => {
     hooks.activate();
     // TOUCH: typing is the way back to the pane. The ladder and the letter cover

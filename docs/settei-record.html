@@ -140,8 +140,11 @@
                 "stamped_at": null,                <span class="c">  no route can re-arm it. Absent section = predates the key</span>
                 "completed_at": null },
 
-  "services": { "entitlement": null, "email": null,     <span class="c">← PUT /api/settei/services · records, never verifies;</span>
-                "verified": null, "terms": null }        <span class="c">  the id is not a key and gates nothing on this machine</span>
+  "services": { "selected": true,                 <span class="c">← derived from the activation stage, never written through SETTEI</span>
+                "activation": {
+                  "stage": "verified", "email_masked": "g***@example.com",
+                  "entitlement_id": "ent_abc", "terms_version": "2026-08-01",
+                  "verified_at": "2026-08-20T12:00:00Z" } }
 }</pre>
   </div>
 </section>
@@ -223,12 +226,9 @@
 
   <div class="rec derived">
     <div class="rec-hd"><span class="nm"><span class="prov">needed</span> — needed − present</span><span class="life">the ⚙ rows and the seat's reading list render exactly this</span></div>
-<pre><span class="c">// The registry's requires, judged against `found` per read. Unmet items render as</span>
-<span class="c">// tasks; met items DO NOT EXIST — satisfying one clears it with no write anywhere.</span>
-[
-  { "leaf": "services", "needs": "the verified email",
-    "how": "click the link in the services email, paste the code" }
-]</pre>
+<pre><span class="c">// Services is absent here by design. Its activation aggregate owns request,</span>
+<span class="c">// confirmation, entitlement, and install. SETTEI cannot create a Services task.</span>
+[]</pre>
   </div>
 </section>
 
@@ -248,7 +248,7 @@
       <tr><td>agents.sessions.default</td><td>typed</td><td>PUT /api/settei/agents</td><td class="v"><b>S ⚙</b></td></tr>
       <tr><td>agents.jobs</td><td>typed</td><td>PUT /api/settei/agents</td><td class="v"><b>S ⚙</b></td></tr>
       <tr><td>gbrain.enabled</td><td>typed</td><td>PUT /api/settei/gbrain</td><td class="v"><b>S ⚙</b></td></tr>
-      <tr><td>services.*</td><td>typed</td><td>PUT /api/settei/services</td><td class="v"><b>S ⚙</b></td></tr>
+      <tr><td>services.activation</td><td>referenced, system-owned</td><td>Shiwake request + authenticated poll</td><td class="v"><b>S ⚙</b></td></tr>
       <tr><td>setup.*</td><td>typed (by the system)</td><td>stampFreshInstall() · PUT /api/settei/setup</td><td class="v">admission rule for <b>S</b></td></tr>
       <tr><td>machine &amp; os &amp; runtime</td><td>found</td><td>DMI · os-release · process</td><td class="v"><b>S ⚙</b> as facts</td></tr>
       <tr><td>agents (installed)</td><td>found</td><td>the login-shell probe</td><td class="v"><b>S ⚙</b> · gates 新's offer</td></tr>
