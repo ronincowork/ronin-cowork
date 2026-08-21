@@ -23,7 +23,10 @@ test('the old first-run entry delegates to cowork_setup', async () => {
 
 test('cowork_setup owns the canonical route and the old name only redirects', async () => {
   const source = await readFile(new URL('../public/js/main.js', import.meta.url), 'utf8');
-  assert.match(source, /has\('cowork_setup'\)/);
-  assert.match(source, /history\.replaceState\([^\n]+\?cowork_setup/);
+  const server = await readFile(new URL('../src/index.ts', import.meta.url), 'utf8');
+  assert.match(server, /app\.get\('\/cowork_setup'/);
+  assert.match(source, /pathname === '\/cowork_setup'/);
+  assert.match(source, /history\.replaceState\([^\n]+'\/cowork_setup'/);
+  assert.match(source, /location\.href = '\/\?' \+ q/);
   assert.match(source, /has\('setup'\)/);
 });

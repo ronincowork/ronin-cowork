@@ -26,7 +26,7 @@ optionally with `&layout=1|2|4`.
 
 - Honored **above both storages**, written into the tab's sessionStorage, then stripped
   from the address (`history.replaceState`) — so a refresh keeps it and a bookmark never
-  replays it. Same one-shot pattern as `?cowork_setup` (main.js's first-run routing).
+  replays it. `cowork_setup` exits through this directive when it opens the workspace.
 - **The comma structure declares the grid**: `?tiles=claude` is one tile, `?tiles=,` a
   blank two, `?tiles=,,,` a blank four. An explicit `&layout=` overrides.
 - The device still rules how many tiles *show*: a phone forces a single tile regardless

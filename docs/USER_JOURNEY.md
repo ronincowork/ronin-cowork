@@ -126,10 +126,10 @@ An absent agent Ronin cannot install has no working control and says why.
 
 **Handoff belief:** “This is my Cowork, on my machine, shaped by choices I can change.”
 
-**Current state:** the first-time, non-technical interaction is live at `?cowork_setup`.
+**Current state:** the first-time, non-technical interaction is live at `/cowork_setup`.
 It separates shaping the coworkspace from starting the first project, reports measured
 machine and agent facts, and keeps a live **When you save** review beside the form. The old
-`?setup` spelling exists only as a compatibility redirect. The Shiwake activation contract
+`?setup` and `?cowork_setup` spellings exist only as compatibility redirects. The Shiwake activation contract
 above remains required; a form that only stores the email locally is a regression.
 
 ### 5 · `cowork`: immediate post-Save state

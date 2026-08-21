@@ -48,17 +48,15 @@ export async function init() {
   //      section and stays quiet forever — and so does a failed read, because a wrong
   //      answer must cost a missing page, never the product.
   //
-  // `?cowork_setup` is the deliberate way back in — the surface keeps its real name in
-  // the address bar. `?setup` is accepted only as an old-link compatibility redirect.
+  // `/cowork_setup` is the deliberate way back in. The old query spellings are accepted
+  // only as compatibility redirects to that first-class companion-page path.
   {
     const query = new URLSearchParams(location.search);
-    const legacy = query.has('setup');
-    const wants = legacy || query.has('cowork_setup');
+    const legacy = query.has('setup') || query.has('cowork_setup');
+    const wants = location.pathname === '/cowork_setup' || legacy;
     const s = wants ? null : await request('/api/settei/setup');
     if (wants || (s?.ok && s.data.pending === true)) {
-      if (legacy || !query.has('cowork_setup')) {
-        history.replaceState(null, '', `${location.pathname}?cowork_setup`);
-      }
+      if (location.pathname !== '/cowork_setup') history.replaceState(null, '', '/cowork_setup');
       const host = document.createElement('div');
       document.body.replaceChildren(host);
       await buildFirstRun(host, (landing) => {
@@ -70,7 +68,7 @@ export async function init() {
         // never replays it. Empty is a real answer and means one empty tile — the commons,
         // where ＋ New lives.
         const q = new URLSearchParams({ tiles: (landing?.tiles ?? []).join(',') });
-        location.href = location.pathname + '?' + q;
+        location.href = '/?' + q;
       });
       return;
     }
