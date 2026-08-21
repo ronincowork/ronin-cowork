@@ -48,12 +48,12 @@ export async function init() {
   //      section and stays quiet forever — and so does a failed read, because a wrong
   //      answer must cost a missing page, never the product.
   //
-  // `/cowork_setup` is the deliberate way back in: one surface, one route, one name.
+  // `/cowork-setup` is the deliberate way back in: one surface, one route, one name.
   {
-    const wants = location.pathname === '/cowork_setup';
+    const wants = location.pathname === '/cowork-setup';
     const s = wants ? null : await request('/api/settei/setup');
     if (wants || (s?.ok && s.data.pending === true)) {
-      if (location.pathname !== '/cowork_setup') history.replaceState(null, '', '/cowork_setup');
+      if (location.pathname !== '/cowork-setup') history.replaceState(null, '', '/cowork-setup');
       const host = document.createElement('div');
       document.body.replaceChildren(host);
       await buildCoworkSetup(host, (landing) => {

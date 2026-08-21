@@ -1,7 +1,7 @@
 # cowork_setup
 
 `cowork_setup` is RoninCoWork's first conversation with a new owner. Its only deliberate
-local route is `/cowork_setup`. It has no query-string aliases or legacy renderer.
+local route is `/cowork-setup`. It has no query-string aliases or legacy renderer.
 
 The page first shapes the coworkspace, then starts the first project. It is one readable,
 collapsible form rather than a wizard. The sticky **When you save** panel is a live account
@@ -51,7 +51,7 @@ the shared identity.
 
 ## Proof
 
-The implementation is `public/js/cowork-setup.js`, served at `/cowork_setup` by
+The implementation is `public/js/cowork-setup.js`, served at `/cowork-setup` by
 `src/index.ts` and entered through `public/js/main.js`.
 `tests/cowork-setup.test.ts` protects its content, live data dependencies, Save wiring, and
 canonical route. Repository verification also renders desktop Chromium and phone WebKit,

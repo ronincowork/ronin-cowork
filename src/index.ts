@@ -167,7 +167,7 @@ app.get('/vendor/addon-fit.js', (_req, res) => res.sendFile(path.join(NM, '@xter
 
 // cowork_setup is a first-class companion surface, not a mode smuggled into the
 // workspace URL. It runs the same client because both surfaces share the live APIs.
-app.get('/cowork_setup', (_req, res) => res.sendFile(path.join(PUBLIC, 'index.html')));
+app.get('/cowork-setup', (_req, res) => res.sendFile(path.join(PUBLIC, 'index.html')));
 
 /**
  * NEVER LET A BROWSER RUN A STALE CLIENT.

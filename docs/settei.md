@@ -156,7 +156,7 @@ A genuinely fresh install says so itself; nothing is ever inferred.
 - `stampFreshInstall()` writes `setup.pending = true` at first operator boot, the
   moment `ronin.json` does not exist. No route can set or re-arm it.
 - Every page load asks `GET /api/settei/setup` — one section, no scans — and routes a
-  pending install to the setup view. `/cowork_setup` remains the deliberate way back in.
+  pending install to the setup view. `/cowork-setup` remains the deliberate way back in.
 - Save calls `PUT /api/settei/setup`: pending clears, `completed_at` stamps. An install
   that predates the key has no setup section and stays quiet forever — absence means
   do-not-show.

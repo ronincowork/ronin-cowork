@@ -18,9 +18,9 @@ test('cowork_setup is the live two-stage companion page, not the legacy renderer
 test('cowork_setup owns one path with no legacy mapping', async () => {
   const source = await readFile(new URL('../public/js/main.js', import.meta.url), 'utf8');
   const server = await readFile(new URL('../src/index.ts', import.meta.url), 'utf8');
-  assert.match(server, /app\.get\('\/cowork_setup'/);
-  assert.match(source, /pathname === '\/cowork_setup'/);
-  assert.match(source, /history\.replaceState\([^\n]+'\/cowork_setup'/);
+  assert.match(server, /app\.get\('\/cowork-setup'/);
+  assert.match(source, /pathname === '\/cowork-setup'/);
+  assert.match(source, /history\.replaceState\([^\n]+'\/cowork-setup'/);
   assert.match(source, /location\.href = '\/\?' \+ q/);
   assert.match(source, /from '\.\/cowork-setup\.js'/);
   assert.doesNotMatch(source, /has\('setup'\)|has\('cowork_setup'\)|firstrun/);
