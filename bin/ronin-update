@@ -397,11 +397,7 @@ ln -sfn "$HOME_DIR/.env" "$TARGET/.env"
 # home's, the release dir is disposable, and the candidate gates as The Works —
 # a cowork release that breaks the installed services never becomes the serving one.
 if [ -d "$HOME_DIR/services" ]; then
-  mkdir -p "$TARGET/src/services"
-  for d in "$HOME_DIR/services"/*/; do
-    { [ -f "$d/register.js" ] || [ -f "$d/register.ts" ]; } || continue
-    cp -r "$d" "$TARGET/src/services/$(basename "$d")"
-  done
+  place_services "$TARGET/src/services"
   say "carried services forward ($(services_installed_release)) — the candidate gates as The Works"
 fi
 

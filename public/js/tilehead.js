@@ -133,7 +133,11 @@ const HEADER = () => (rows ??= [
     read: (t, el) => {
       const repos = t.tegami?.repos || [];
       const branches = repos.map((x) => x.branch).filter(Boolean);
-      el.textContent = branches.length === 1 ? '⑂ ' + branches[0] : branches.length ? '⑂ ' + branches.length : '⑂ ?';
+      const unique = [...new Set(branches)];
+      // Show the branch NAMES, not merely how many there are. Two repos on `dev` are one
+      // useful reading; two different branches are both useful readings and CSS trims the
+      // far edge only if the tile is genuinely out of room.
+      el.textContent = unique.length ? '⑂ ' + unique.join(' · ') : '⑂ ?';
       el.classList.toggle('unset', !branches.length);
       return branches.length
         ? clampTip('Branches: ' + repos.map((x) => `${x.branch || '(detached)'} — ${x.repo}`).join(' · ')) + '. Opens the ladder.'
