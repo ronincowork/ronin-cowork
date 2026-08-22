@@ -190,11 +190,12 @@ BOARD=$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]'); shift
 
 # Members of $BOARD, one 'name<TAB>dial<TAB>session_task' per line, quarterbacks first.
 # On a shared surface the other agents need to know which voice is coordinating them —
-# that used to be a hand-set 人 (@ronin-lead), then the session's job, and is now its
-# ROLE, which is the better answer because a role cannot change mid-session. The TASK is
-# what is printed beside each name, because "what is each of these doing?" is the question
-# a shared board asks. Names, not icons: this is a readout for agents, and a word beats an
-# emoji when the reader is parsing lines. '-' where nobody has said.
+# that used to be a hand-set 人 (@ronin-lead), then the session's job, briefly its role,
+# and is its TASK (R33: quarterbacking is a task a session moves into and back out of),
+# read fresh from the letter on every call and never remembered. The TASK is also what is
+# printed beside each name, because "what is each of these doing?" is the question a
+# shared wipeboard asks. Names, not icons: this is a readout for agents, and a word beats
+# an emoji when the reader is parsing lines. '-' where nobody has said.
 members() {
   # The union view, decided once: a team wipeboard's members are the team's sessions
   # (field 3), a custom one's are the enrolled (field 2). Same question, one answer.
@@ -206,11 +207,11 @@ members() {
   }
   while IFS=$SEP read -r name boards teams dial role task; do
     on_board "$boards" "$teams" || continue
-    [ "${role:-}" = quarterback ] && printf '%s\t%s\t%s\n' "$name" "${dial:-write}" "${task:-quarterback}"
+    [ "${task:-}" = QuarterBack ] && printf '%s\t%s\t%s\n' "$name" "${dial:-write}" "${task:-QuarterBack}"
   done < <(roster)
   while IFS=$SEP read -r name boards teams dial role task; do
     on_board "$boards" "$teams" || continue
-    [ "${role:-}" = quarterback ] || printf '%s\t%s\t%s\n' "$name" "${dial:-write}" "${task:--}"
+    [ "${task:-}" = QuarterBack ] || printf '%s\t%s\t%s\n' "$name" "${dial:-write}" "${task:--}"
   done < <(roster)
 }
 

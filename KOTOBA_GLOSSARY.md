@@ -55,7 +55,7 @@ learn in order to use Ronin should cost them a second language first.
 | `session_roster` | **the roster** | The **⌂ Roster** tab: every session on the machine. The session list, full stop. **Never "the board."** |
 | `session_launch` | **launch** | The **＋ New** tab. Where a session is born. |
 | `task_family` | **Family** | The session_tasks presented under one job role. A task can be in several families, so a Family is an association rather than a box it lives in. |
-| `job_role` | **job role** | Who a session is — Developer, QuarterBack, PersonalAssistant. It organizes the ＋ New board into sections, and it also gives the session its own reading and launch defaults. A task may sit on several roles. **Fixed once the session is running.** **Not the roster's Groups** — those address sessions (KOTOBA § LAUNCHER). |
+| `job_role` | **job role** | Who a session is — Developer, QuarterBack, PersonalAssistant. It organizes the ＋ New board into sections, and it also gives the session its own reading and launch defaults. A task may sit on several roles. **Fixed once the session is running.** **Not the roster's Teams** — those address sessions (KOTOBA § LAUNCHER). |
 | `wipeboard` | **wipeboard** | The **▤ Wipeboard** tab and the file behind it. Our own coinage and it stays — *wipe* is right for a surface many hands write on and erase. Every **Team** has its own wipeboard automatically — say **team wipeboard**; membership is the team's and is never managed separately. A **custom wipeboard** is the owner-made secondary kind. Alias **whiteboard** only, because voice-to-text hears it that way. **Never "the board."** |
 | Brief | **Brief** | Your statement of what a wipeboard is for. Agents never edit it. |
 | `MDEDIT` | **the Docs tab** | The **▧ Docs** tab: the documents each session is working on, opened and edited in the tile. **MDEDIT is ours and never reaches a user's face**; on screen it is just *Docs*. Say *list a doc*, never *track* or *attach*. There is no file browser by design — ask the session to show you a file (`+show_file`). |
@@ -72,7 +72,7 @@ learn in order to use Ronin should cost them a second language first.
 | House term | Plain English | One line |
 |---|---|---|
 | dial (`@ronin-control`) | **Control** | Per session: you-only 👤, read 👁, read-and-write 🤖. Only the owner flips it. |
-| `session_team` (`@ronin-tags`) | **Team** | A set of sessions that work together, addressable as one. A session may be on several teams. **Not a role's Family** — a team groups sessions, a family groups tasks. ⚠ The code still says `group`/`@ronin-tags`/`+tag:` — the word is ruled, the sweep is not done (KOTOBA § OPEN R32). |
+| `session_team` (`@ronin-tags`) | **Team** | A set of sessions that work together, addressable as one. A session may be on several teams, and every team has its own wipeboard. **Not a role's Family** — a team groups sessions, a family groups tasks. The code sweep landed 2026-08-22; `@ronin-tags` and the `tags` code fields stay as internal seams (KOTOBA R32). |
 | note (`@ronin_note`) | **Note** | The owner's one line about a session. |
 | `session_task` (in the letter) | **what it's doing** | The task's icon, drawn beside every session in the roster and the tile picker. Set at launch; the session changes it itself as its work changes, and so can you. A session with no task shows no icon. |
 | — | **Status · Ladder · Macros · Detach · Kill session** | The rest of the per-session menu. Already plain. |
@@ -183,12 +183,20 @@ test · shadowing · the session directory · build-out doc · handoff · `lande
 - **`job_class` is promoted to `job_role`, inside and out** (2026-08-22) — the shelf
   that addressed nothing now carries reading and launch defaults, so it earns a real
   name on both faces.
+- **`QuarterBack` is a task, not a role** (2026-08-22) — `developer` is the role;
+  quarterbacking is something a Developer does for a while and stops doing. So who
+  coordinates a team can change during the day, and every surface reads it fresh. The
+  token keeps its verb+object exception, beside `OddJob`.
 - **`group` is retired as a house term; the words are Team and Family** (2026-08-22) —
   *group* goes back to ordinary English and means nothing in particular. A **Team**
   (`session_team`) is a set of collaborating sessions; a **Family** (`task_family`) is the
   set of tasks under a job role. Both many-to-many, and the axes do not overlap. Spelled
   compound internally because a bare `family` already collides with settei's write family
-  and Node's address family. **The `session_team` code sweep is not done** — see § OPEN 4.
+  and Node's address family. **The `session_team` sweep landed 2026-08-22** (the
+  WIPEBOARD_TEAMS build-out): `tejun-team`, `+team:`, a saved-launch `team:` field, and
+  one wipeboard per team. The `@ronin-tags` spelling, the `tags` code/API fields and
+  TOMODACHI's `tag_groups` key stay as internal seams, mapped in KOTOBA R32; the retired
+  spellings are read on input, never taught.
 - **pane is retired from house vocabulary entirely** (2026-08-22) — tmux's word for
   tmux's own object, nothing more; our representations, browser and backend, are the
   tile. Code sweep: OPEN_THREADS 4.33.
@@ -213,11 +221,13 @@ test · shadowing · the session directory · build-out doc · handoff · `lande
    had to describe it. Splitting the axis supplied both: a session has a **role** and a
    **task**, and the board says so.
 
-3a. **`session_team` is ruled but not swept.** The public word is **Team**; the code
-   still says `@ronin-tags`, `tejun-group`, `+tag:`/`+group:` and a saved-launch `group`
-   field. Renaming those breaks addressing under running sessions and changes a shipped
-   tool's name, so it wants its own pass with the owner's go. Named here rather than left
-   as mixed public vocabulary.
+3a. **CLOSED — the `session_team` sweep landed with the owner's go.** (2026-08-22, the
+   WIPEBOARD_TEAMS build-out.) The tool is `tejun-team` (the old name forwards), the
+   invocation is `+team:` (old spellings read, never taught), the saved-launch field is
+   `team:` (`group:` still read), and every user-facing surface says Team. What stays is
+   deliberate and mapped: `@ronin-tags` itself (live sessions carry it), the `tags`
+   code/API fields, and TOMODACHI's `tag_groups` wire key — internal seams, same pattern
+   as `cowork_stats` under Stats. KOTOBA R32 records both halves.
 
 3. **Run this list against real co-working vocabulary** (owner). Where a real co-working
    word exists for a thing we have, take it — **but only where the mechanism matches.**

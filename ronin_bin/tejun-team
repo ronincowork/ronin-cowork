@@ -23,10 +23,11 @@ SESSION_STORE="$("$STORE" session 2>/dev/null)"
 # birth and nothing may change it afterwards.
 #
 # This used to be a fourth tmux column, @ronin-lead — the teams a session was hand-marked
-# as leading. That is retired: the coordinator of a team is the member whose ROLE is
-# `quarterback`. Since the schema cut that is a better answer than it was: a role cannot
-# change mid-session, so who runs a team cannot drift the way a mark read off a moving
-# `session_job` could.
+# as leading. That is retired: the coordinator of a team is the member whose TASK is
+# `QuarterBack` — a session_TASK, by the owner's ruling of 2026-08-22 (KOTOBA R33). It
+# spent one day as a role, which would have settled it at birth; as a task it MIGRATES,
+# so who quarterbacks a team is read off the letter on every call and never remembered.
+# A session that stops coordinating stops being the answer, which is the truth.
 axes_of() {
   local key row stamped created
   [ -n "${SESSION_STORE:-}" ] || return 0
@@ -86,7 +87,7 @@ if [ $# -eq 0 ]; then
       n = split($2, t, ",")
       for (i = 1; i <= n; i++) { gsub(/^[ \t]+|[ \t]+$/, "", t[i])
         if (t[i] != "") { c[t[i]]++; seen[t[i]] = 1
-          if ($4 == "quarterback") qb[t[i]] = (qb[t[i]] == "" ? $1 : qb[t[i]] " + " $1) } }
+          if ($5 == "QuarterBack") qb[t[i]] = (qb[t[i]] == "" ? $1 : qb[t[i]] " + " $1) } }
     }
     END { for (g in seen) printf "%s\037%d\037%s\n", g, c[g], qb[g]; if (loose) printf "\001untagged\037%d\037\n", loose }' \
     | sort)
@@ -112,7 +113,7 @@ found=0
 # question being asked. Neither is a permission: the dial still decides who may drive whom.
 while IFS=$SEP read -r name tags dial role task; do
   has_team "${tags:-}" "$G" || continue
-  [ "${role:-}" = quarterback ] || continue
+  [ "${task:-}" = QuarterBack ] || continue
   found=1
   printf '%-24s %-8s %-18s %s\n' "$name" "${dial:-write}" "$role" "${task:--}"
 done < <(roster)
@@ -120,7 +121,7 @@ done < <(roster)
 while IFS=$SEP read -r name tags dial role task; do
   # exact tag match, not substring: 'kojin' must not match 'kojinsa'
   has_team "${tags:-}" "$G" || continue
-  [ "${role:-}" = quarterback ] && continue   # already printed, at the head
+  [ "${task:-}" = QuarterBack ] && continue   # already printed, at the head
   found=1
   printf '%-24s %-8s %-18s %s\n' "$name" "${dial:-write}" "${role:--}" "${task:--}"
 done < <(roster)

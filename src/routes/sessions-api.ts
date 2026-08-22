@@ -1,7 +1,7 @@
 /**
  * PER-SESSION ROUTES — everything addressed to one live session by name: end it, tag
  * it, dial it, read its gauge, its ladder, its tape state, and type into it. The
- * session list itself and the launchers live in routes/launch.ts; boards in
+ * session list itself and the launchers live in routes/launch.ts; wipeboards in
  * routes/wipeboards-api.ts.
  */
 import fs from 'node:fs';
@@ -241,7 +241,7 @@ export function registerSessions(app: express.Express): void {
    *
    * It used to answer with a `leaders` map too, off `@ronin-lead` — who coordinates each
    * group, hand-set by the owner. That option is retired: coordinating is a `job_role`
-   * (`QuarterBack`), and the session says so in its own letter.
+   * (`QuarterBack`), and the session says so in its own letter — a task, so it migrates.
    */
   app.get('/api/groups', async (_req, res) => {
     try {

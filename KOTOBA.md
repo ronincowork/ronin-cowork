@@ -302,7 +302,7 @@ project_root (required)  ×  job_role (optional, fixed)  ×  session_task (optio
 |---|---|---|---|
 | **the three axes** | system_scope | `project_root` (where) · `job_role` (who it is) · `session_task` (what it is doing now) — **one token, every surface**: the launcher sets them, TEGAMI carries them, the boot shelf reads by them, OBOERU matches on them, TOMODACHI counts by them. Defined here once; § OBOERU and § TOMODACHI use it and do not redefine it | `co-working/user_repo/README/OBOERU.md` |
 | **job_role** | user_scope definition · session_scope selection | the durable hat a session wears — Developer, QuarterBack, PersonalAssistant. **Optional, and FIXED for the life of the session**: chosen at birth, carried in TEGAMI, and refused by every ordinary write afterwards. Owns which `session_task`s sit on its shelf, its own reading level, and launch defaults that apply across all of them. Blank is valid and means no role reading. The promoted successor to `job_class` and the surface's "Job Group" | `ronin_catalogs/job_roles/` |
-| **session_task** | system_scope definition · session_scope selection | what a session is doing **right now** — `RiffOnIt`, `DraftPlan`, `CutCode`, `ChaseBug`, `CheckWork`, `OddJob`, `Atarashi`, `OpenShell`. **Optional and MUTABLE**: the session changes it with `write_tegami`, the owner changes it from the tile, and a committed change injects that task's reading into the running session. Blank is valid and means no task reading and no mark. The direct successor to `session_job` — see § SESSION TASKS, whose directory is the count | `ronin_catalogs/session_tasks/` |
+| **session_task** | system_scope definition · session_scope selection | what a session is doing **right now** — `RiffOnIt`, `DraftPlan`, `CutCode`, `ChaseBug`, `CheckWork`, `QuarterBack`, `OddJob`, `Atarashi`, `OpenShell`. **Optional and MUTABLE**: the session changes it with `write_tegami`, the owner changes it from the tile, and a committed change injects that task's reading into the running session. Blank is valid and means no task reading and no mark. The direct successor to `session_job` — see § SESSION TASKS, whose directory is the count | `ronin_catalogs/session_tasks/` |
 | **definition file** | system_scope | one role or task per FILE, named by its token — `job_roles/developer.md`, `session_tasks/CutCode.md`. The merged stock ⊕ user directory IS the manifest; there is no second generated file to drift from | `docs/shadowing.md` |
 | **whole-definition shadowing** | system_scope | a user file of the same token replaces that one house definition **whole** — never field by field, or neither file would tell the truth. A new token adds; `- **hidden:** yes` withdraws a house definition without deleting shipped files. Provenance (`stock` · `user` · `shadowed`) rides every row so a surface can say **ours**, **yours**, or **yours replacing ours** | `docs/shadowing.md` |
 | **launch cascade** | system_scope | `system < job_role < session_task < explicit launch`. Higher layers override only fields they actually STATE; absence inherits, and an explicit `off` is a value rather than an absence. Resolution produces one complete validated profile before any tmux session exists | `src/launch-profile.ts` |
@@ -346,13 +346,16 @@ the owner's store may add to it or shadow any of it.)*
 | **CutCode** | system_scope | build from an approved plan doc | `ronin_catalogs/session_tasks/CutCode.md` |
 | **ChaseBug** | system_scope | chase a fault to its cause and fix the cause | `ronin_catalogs/session_tasks/ChaseBug.md` |
 | **CheckWork** | system_scope | read-only findings work — a session's output or a sweep of the code; the target is the prompt's job, not the `session_task`'s | `ronin_catalogs/session_tasks/CheckWork.md` |
+| **QuarterBack** | system_scope | coordinates other sessions — dispatch, unblock, report upward. A quarterback reads the field, calls the play and does not run it. **Still bound by every dial**: a 👤 session is invisible to it. A TASK, not a role (owner, 2026-08-22): a Developer moves into quarterbacking and back out again, so **the coordinator of a team is a value that MIGRATES**. Its token is a ruled exception to verb+object — see R33 | `ronin_catalogs/session_tasks/QuarterBack.md` |
 | **OddJob** | system_scope | does the one task asked and nothing around it — the escape hatch, for work that fits no other kind. No plan, no sweep, no tidying on the way past | `ronin_catalogs/session_tasks/OddJob.md` |
 | **Atarashi** (新) | system_scope | icon **新**, label **setup** — the label is what a person reads. The setup seat: the first session on a new install, finishing what the cowork_setup form could not (is the project directory what they meant, does a repository need cloning). Reads `GET /api/settei` at start — `needed[]` is its reading list, `set` is what the owner already answered and is never re-asked. Launched by the form's Save and by ⚙'s "start your setup session"; not a standing assistant — that is the `mikaassist` job_role | `ronin_catalogs/session_tasks/Atarashi.md` |
 | **OpenShell** | system_scope | **`agent: none`** — opens a session and launches nothing, leaving the tile at a shell prompt. Every field describing an agent is *absent* rather than blanked: no model, no posture, no opening, no ack, no permissions | `ronin_catalogs/session_tasks/OpenShell.md` |
 
-**The three that were never acts are now roles.** `QuarterBack`, `PersonalAssistant` and
-`MikaAssist` were the entries that had to pretend to be acts to get a launcher button.
-Each is a **`job_role`** now, launched with a blank `session_task` — see § JOB ROLES.
+**The two that were never acts are now roles.** `PersonalAssistant` and `MikaAssist` were
+the entries that had to pretend to be acts to get a launcher button. Each is a
+**`job_role`** now, launched with a blank `session_task` — see § JOB ROLES.
+`QuarterBack` was briefly a third and is not: coordinating is something a Developer *does
+for a while*, which is a task (owner, 2026-08-22 — R33).
 
 **The grammar: verb + object.** A bare `plan` or `review` is ambiguous because it is a noun
 as often as a verb; a compound reads as a command. **Display** in CamelCase, **token** is
@@ -370,6 +373,12 @@ the lowercase run-on — `+riffonit:`, `+draftplan:`, `+cutcode:`, `+chasebug:`,
   task where the object has no name yet, and finding out what "it" is *is* the session.
 - **`OddJob`** — a noun compound, because the escape hatch is the one slot that must **not**
   read as a command. It is the absence of a specific instruction, not one of them.
+- **`QuarterBack`** — a noun, and the owner's own word: *"I want to call this my quarter
+  back."* It was `WatchCrew`, which obeyed the grammar and was still wrong — "watch" reads
+  as *observe* on a board where `CheckWork` is the one that observes, and this job is the
+  opposite of watching. Ruled an exception rather than renamed (R33), because the
+  alternative was a token nobody would say out loud for a thing the owner already has a
+  word for.
 
 **`CheckWork` covers both targets.** A session's work and a sweep of the code are the same
 posture, differing only in what the prompt points at. Two `session_task`s would be one
@@ -382,7 +391,6 @@ distinction wearing two names.
 | Term | Scope | Means | Record |
 |---|---|---|---|
 | **developer** | user_scope | the ordinary coding hat: RiffOnIt · DraftPlan · CutCode · ChaseBug · CheckWork. Ships as a house role so a fresh board is useful before the owner customizes it | `ronin_catalogs/job_roles/developer.md` |
-| **quarterback** | user_scope | coordinates other sessions — dispatch, unblock, report upward. The orchestrator, and **still bound by every dial**: a 👤 session is invisible to it. **The one that proved the axis**: it was always a role wearing an act's name, and the owner's own word — *"I want to call this my quarter back."* Launches with a blank `session_task` | `ronin_catalogs/job_roles/quarterback.md` |
 | **personalassistant** | user_scope | icon **🎩**. The OWNER's own assistant — **powered by gbrain, and says so**: brain-first (search before answering, capture on request), one confirmation per outside connection. Names and credits gbrain by the owner's ruling — *"we're not trying to steal their stuff without saying what it is"* — with the repo cited in the remit; without the gbrain `ronin_service` it degrades to a plain assistant. Carries the `mcp: always` **lock**. Reading arrives from `role/personalassistant/` on the session-boot shelf. Ruled owner 2026-08-16; **gbrain is a proper name** (§ OPEN — the bare word `brain` stays retired) | `ronin_catalogs/job_roles/personalassistant.md` |
 | **mikaassist** | user_scope | icon **ミ**. RONIN's own business, not the owner's work — a helpful assistant, defaulting to help, plus the four mika_macros. Carries `dir: {install}` and `cap: exempt`. **She has no invocation token** — you do not type `+mikaassist:`, you type one of her four mika_macros and Ronin brings her. See § MIKA | `docs/mika.md` |
 
@@ -714,9 +722,9 @@ see the `commons_tab` row.
 | **dial** (`@ronin-control`) | system_scope | 👤 user / 👁 read / 🤖 write; owner-only to flip; enforced by the shim. Defaults to write, so it rarely bites — but **no role is exempt**, `QuarterBack` included. A dial with an exception is not a dial | `docs/session-control-dials.md` |
 | **shim** | system_scope | `bin/shim/tmux`, `bin/shim/systemctl` on PATH — vendor-neutral enforcement of dials and host guards | `docs/session-control-dials.md` |
 | **control-check** | system_scope | read the dial before touching a session — every session, every role, reading as well as writing | `ronin_catalogs/ACTIONS.md` |
-| **session_team** (`@ronin-tags`) | system_scope | **a roster-scoped set of collaborating sessions, addressable as one** — surface word **Team**. Owner-set, multi-valued; addressing, not decoration (`+tag:`). A session may join several teams. **`group` is RETIRED as a house term** (owner, 2026-08-22) and returns to ordinary English, where it may be used loosely and means nothing in particular. **Not a `task_family`** — a team groups sessions, a family associates tasks with a role, and the two axes do not overlap. ⚠**The rename is VOCABULARY ONLY so far**: the tmux option is still `@ronin-tags`, the tool is still `tejun-group`, the invocation is still `+tag:`/`+group:` and the saved-launch field is still `group` — see § OPEN R32 | `CLAUDE.local.md` |
+| **session_team** (`@ronin-tags`) | system_scope | **a roster-scoped set of collaborating sessions, addressable as one** — surface word **Team**. Owner-set, multi-valued; addressing, not decoration (`+tag:`). A session may join several teams. **`group` is RETIRED as a house term** (owner, 2026-08-22) and returns to ordinary English, where it may be used loosely and means nothing in particular. **Not a `task_family`** — a team groups sessions, a family associates tasks with a role, and the two axes do not overlap. **The code sweep landed 2026-08-22** (the WIPEBOARD_TEAMS build-out): the tool is `tejun-team` (`tejun-group` forwards), the invocation is `+team:` (retired spellings read on input, never taught), the saved-launch field is `team:` (`group:` still read), and **every team has its own wipeboard** — membership derived, never copied (`docs/wipeboards.md`). What stays is deliberate, R32 maps it: the `@ronin-tags` spelling (live sessions carry it), the `tags` code and API fields, TOMODACHI's `tag_groups` key — internal seams, the `cowork_stats` pattern | `CLAUDE.local.md` |
 | **note** (`@ronin_note`) | system_scope | the owner's one line about a session | `src/status.ts` |
-| **session_task**, the mark | system_scope | what a session is DOING, held in its **letter** (`Tegami.session_task`) — seeded at birth with the task it was launched as, changed by the session with `write_tegami` or by the owner from the tile. The definition's `icon:` is drawn wherever sessions are listed; a blank task draws no mark. **The letter's axis half is cowork's; the ladder half is michi's.** **⚠ RETIRED: the leader 人 (`@ronin-lead`)** — it named only who coordinated a group, had to be hand-set, and was a second thing to maintain that the work already implied. The coordinator is the session whose `job_role` is `quarterback` 🏈 | `src/tegami.ts` · `ronin_catalogs/session_tasks/` |
+| **session_task**, the mark | system_scope | what a session is DOING, held in its **letter** (`Tegami.session_task`) — seeded at birth with the task it was launched as, changed by the session with `write_tegami` or by the owner from the tile. The definition's `icon:` is drawn wherever sessions are listed; a blank task draws no mark. **The letter's axis half is cowork's; the ladder half is michi's.** **⚠ RETIRED: the leader 人 (`@ronin-lead`)** — it named only who coordinated a group, had to be hand-set, and was a second thing to maintain that the work already implied. The coordinator is the session whose `session_task` is `QuarterBack` 🏈 — which MIGRATES, so it is read fresh rather than remembered | `src/tegami.ts` · `ronin_catalogs/session_tasks/` |
 | **▥ Hotwords** | system_scope | the commons tab. The dictation glossary itself belongs to KOE — see § KOE | `ronin_catalogs/HOTWORDS.md` |
 | **ghost text** | system_scope | text typed into a tile's prompt but not submitted; never type over it | `ronin_catalogs/ACTIONS.md` |
 
@@ -961,8 +969,8 @@ projection" describes the settler better.
 **R10 · CLOSED — a koshi is an agent doing an internal job for Ronin.** Owner, 2026-08-13.
 The umbrella over `koshi_monitor`, `koshi_reaper` and whatever follows.
 Narrowed by R31 — a koshi is one model call over a closed question, and never authors. The two old uses are retired: the form-fill helper is not
-a koshi, and "a tile running `orchestrating`" was a session with a role all along —
-`quarterback`. `system_scope`, not `dev_scope`; it ships. See § KOSHI.
+a koshi, and "a tile running `orchestrating`" was a session with a task all along —
+`QuarterBack`. `system_scope`, not `dev_scope`; it ships. See § KOSHI.
 
 **R11 · "the hopper" is not the word you use.** You called it "the WIP directory" and
 weren't sure that was its name. If the owner doesn't reach for the house word, the house
@@ -1015,12 +1023,43 @@ session_job                       →  session_task
 job_class / surface "Job Group"   →  job_role
 ```
 
+**One row of this ruling was reversed the same day, and the reversal is the better proof.**
+`QuarterBack` was promoted to a role alongside `PersonalAssistant` and `MikaAssist`, and
+the owner ruled it back to a task (R33): a Developer *moves into* quarterbacking. The axis
+survived its first hard case — the test is "what do you stay while your task changes", and
+applying it honestly cost this ruling one of its own examples.
+
 There are three axes: `project_root` (required, where) · `job_role` (optional, fixed, who)
 · `session_task` (optional, mutable, what it is doing now). **This was cut without a
 migration layer** (owner, same day): there were no users to carry, so the old schema and
 every caller went in one change rather than behind aliases. See § LAUNCHER.
 
 **R18 · DISSOLVED.** No michi names survive, so there is no shape rule to agree.
+
+**R33 · `QuarterBack` is a `session_task`, and its token keeps the verb+object
+exception.** Owner, 2026-08-22, reversing one row of the same day's own cut. It had been
+promoted to a `job_role` on the theory that coordinating is who a session IS. It is not:
+**`developer` is the role, and quarterbacking is a task a Developer moves into and back
+out of.** The test the axis was given holds — a role is what you stay while your task
+changes — and coordinating fails it, because a session stops coordinating and carries on.
+
+**What that costs, and it is worth saying rather than discovering.** The coordinator of a
+team is a MIGRATING value again. When it was a role, "who runs this team" was settled at
+birth and could not drift; as a task it can be true at 10am and false at noon, so every
+reader of it — `tejun-team`, the wipeboard roster, TOMODACHI's `led` — reads it fresh
+rather than remembering it. That is a real loss the ruling accepts on purpose: the truth
+is that coordination moves, and a field that could not move was flattering the reader.
+
+**The token stays `QuarterBack`**, ruled an exception to verb+object beside `OddJob` and
+`RiffOnIt`. The gerund `Quarterbacking` is unavailable — gerunds are michi's, and a
+session_task that read like a michi name is the exact collision § OVERLAP exists to
+prevent. The verb+object candidate was **`CallPlays`**, which is honest (KOTOBA's own
+prose already defines the posture as *"reads the field, calls the play and does not run
+it"*) and was still refused: the owner has a word for this seat and says it out loud, the
+public site already describes *running as quarterback* in prose, and a token nobody
+pronounces is a token that gets re-invented in conversation. The exception is cheaper than
+the translation. **`CallPlays` is the standing alternative if the owner would rather the
+grammar held without exception.**
 
 **R32 · `group` is retired as a house term; the words are `session_team` and
 `task_family`.** Owner, 2026-08-22. *"group stops being a house term and returns to
@@ -1038,15 +1077,18 @@ address `family`. So the terms are **`session_team`** and **`task_family`**, and
 surfaces say **Team** and **Family** — the plain-English half KOTOBA has always required
 of anything a person reads.
 
-**What has moved, and what has not.** `task_family` is DONE: it is the role definition's
-key, the API field, the board's ✎ editor and the check. `session_team` is ruled but not yet
-swept, because its blast radius reaches things a rename breaks under running sessions —
-the `@ronin-tags` tmux option (live sessions lose their addressing), the shipped
-`tejun-group` tool and its `TOOLS.md`/`ACTIONS.md` rows, the `+tag:`/`+group:` lookup
-macros agents already type, the saved-launch `group` field, and TOMODACHI's `tag_groups`
-count. That is a cut of its own and it wants the owner's go, not a silent rename inside
-this one. Until it lands, the vocabulary above is the ruling and the code is the
-exception, said out loud rather than left as mixed public vocabulary.
+**Both halves are DONE.** `task_family` first: the role definition's key, the API field,
+the board's ✎ editor and the check. `session_team` landed the same day with the owner's
+explicit go, as its own cut (the WIPEBOARD_TEAMS build-out): `tejun-group` is renamed
+`tejun-team` with the old name forwarding, the lookups speak `+team:` and still read the
+retired spellings (input only, never taught — an agent's old habit answers, hearing the
+new word back), the saved-launch field writes `team:` and still reads `group:`, and each
+team owns its wipeboard with membership derived from the team (`docs/wipeboards.md`).
+**What deliberately did NOT move**, because a rename there breaks addressing under
+running sessions or a pinned packet shape, held as mapped internal seams — the
+`cowork_stats` pattern: the `@ronin-tags` option spelling, the `tags` identifiers and
+API fields in code, and TOMODACHI's `tag_groups` count. The vocabulary and the code now
+agree, with the seams named instead of silent.
 
 **R19 · ANSWERED BY R17's REVERSAL, and the answer is that they were two facts.** The
 question was what to do about a `session_job` that migrates when two surfaces were

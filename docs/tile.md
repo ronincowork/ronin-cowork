@@ -355,7 +355,7 @@ Behind メ.
 The session's memberships, stored on the tmux session itself (`@ronin-tags`). The point is
 **addressing, not decoration** — "the kojinsa group" resolves to a session list, so a
 coordinator can be pointed at a set instead of at named members one by one. Agents resolve
-the same names with `ronin_bin/tejun-group`. The button lights when the session is in any.
+the same names with `ronin_bin/tejun-team`. The button lights when the session is in any.
 
 ### ⛽ The context gauge
 
