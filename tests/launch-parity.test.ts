@@ -186,3 +186,47 @@ test('a blank role stays legal for both, and omits only its own reading', async 
   assert.ok(!books.includes('ROLE_BOOK.md'), 'no role, no role reading');
   assert.ok(books.includes('TASK_BOOK.md') && books.includes('ROOT_BOOK.md'), 'and nothing else is lost');
 });
+
+test('a stock task board keeps a stated order, and OpenShell is never in the middle of it', async () => {
+  // REGRESSION, 2026-08-22. The combined catalog had FILE order; a directory has none, so
+  // `order:` is the replacement — and it shipped unpopulated, which sorted the board
+  // alphabetically and moved `open shell` from the end into the middle of the loose tail.
+  // The one button that hands you a bare shell landing where a habitual click goes is how
+  // "New session dumps me to a shell" happens without a single line of launch code being
+  // wrong. Order is a launch fact, not decoration.
+  const { listSessionTasks } = await import('../src/definitions.js');
+  const tasks = await listSessionTasks();
+  const names = tasks.map((t) => t.name);
+  assert.deepEqual(names, [
+    'RiffOnIt', 'DraftPlan', 'CutCode', 'ChaseBug', 'CheckWork', 'OddJob', 'Atarashi', 'OpenShell',
+  ]);
+  assert.equal(names[names.length - 1], 'OpenShell', 'the agentless one sits last, away from the rest');
+});
+
+test('every stock definition states its order, so no board is sorted by accident', async () => {
+  const { readDefinitions } = await import('../src/definitions.js');
+  for (const kind of ['job_roles', 'session_tasks'] as const) {
+    for (const d of await readDefinitions(kind)) {
+      if (d.origin !== 'stock') continue; // the owner's own may take the unordered tail
+      assert.ok(d.has('order'), `${kind}/${d.name}.md ships without \`order:\` — the board would sort itself`);
+      assert.ok(Number.isFinite(Number(d.get('order'))), `${kind}/${d.name}.md has a non-numeric order`);
+    }
+  }
+});
+
+test('an ordinary assisted launch starts an agent with both axes and the full brief', async () => {
+  // THE RELEASE-BLOCKER SHAPE, asserted end to end at the mechanism: what an ordinary
+  // Commons click resolves to must be an AGENT launch, on nonblank axes, carrying the
+  // compiled reading list. A launch that quietly resolved agentless, or lost an axis on
+  // the way through, would be born a bare shell with a blank letter — which is a valid
+  // launch for `OpenShell` and the tile picker, and a bug for anything else.
+  const r = await resolveForm(commonsForm(), new Set());
+  assert.equal(r.agent, true, 'an ordinary launch starts a CLI');
+  assert.ok(r.cmd, 'and has a command to start');
+  assert.ok(r.launchAgent, 'and stamps which CLI it started');
+  assert.equal(r.job_role, 'developer');
+  assert.equal(r.session_task, 'DraftPlan');
+  assert.ok(r.project_root, 'a session is always born somewhere');
+  assert.match(r.brief, /Read first:/, 'the Build Brief carries its reading list');
+  assert.ok(reading(r.brief).length >= 4, 'all four levels, not a bare prompt');
+});

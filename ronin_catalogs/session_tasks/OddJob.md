@@ -9,6 +9,7 @@ the owner shelves it on one.
 
 - **icon:** •
 - **label:** odd job
+- **order:** 60
 - **blurb:** anything that isn't one of the above
 - **ask:** what do you want done?
 - **remit:** Does one stated task that fits no other kind — the escape hatch

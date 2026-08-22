@@ -562,6 +562,63 @@ async function checkJourneys(page, label, jsErrors) {
     const focusOnName = await page.evaluate(() => document.activeElement?.classList?.contains('ks-name'));
     if (!launched && focusOnName) ok(`${label}: launch with no name refuses locally — focus lands on the name, nothing sent`);
     else bad(`${label}: launch validation broken — sent=${launched} focusOnName=${focusOnName}`);
+
+    // 6b — THE PAYLOAD, which is the half a refusal cannot prove. Still not a real spawn:
+    // the body is read off the request the page WOULD have sent and the send is aborted,
+    // so this stays a gate that spawns nothing.
+    //
+    // REGRESSION, 2026-08-22: a Commons launch that reaches the server naming NEITHER axis
+    // falls through to `launch_bare` and is born a bare shell with a blank letter — no
+    // agent, no reading, and a role it can never acquire afterwards. That is a correct
+    // outcome for the tile picker and for `OpenShell`, and a silent failure for every
+    // ordinary click, so the axes have to be proven ON THE WIRE rather than in the form.
+    // THE BODY IS CAUGHT IN THE PAGE, not on the wire, and that is deliberate. Playwright
+    // route interception has to answer the request somehow: an abort is a network failure
+    // and a non-2xx is a "Failed to load resource" — and the browser logs BOTH to the
+    // console, which this gate's own no-JS-errors check then fails on. Standing in for
+    // `fetch` inside the page hands back a synthetic Response, so nothing leaves the
+    // browser, nothing spawns, and no console entry is written. What is captured is the
+    // exact serialized body the client built, which is what the regression is about.
+    await page.evaluate(() => {
+      window.__launchBody = null;
+      window.__fetchWas = window.fetch;
+      window.fetch = (url, init) => {
+        if (String(url).includes('/api/launch') && init?.method === 'POST') {
+          window.__launchBody = init.body;
+          return Promise.resolve(
+            new Response(JSON.stringify({ error: 'smoke gate — read and refused, never spawned' }), {
+              status: 409,
+              headers: { 'content-type': 'application/json' },
+            }),
+          );
+        }
+        return window.__fetchWas(url, init);
+      };
+    });
+    const pick = page.locator('.tile.active .ks-btn[data-task]:not([data-task=""])').first();
+    if ((await pick.count()) === 0) {
+      console.log('  note — no task button on the board; the launch-payload journey skipped');
+    } else {
+      await pick.click();
+      await page.waitForTimeout(400); // the pick asks the server what it resolves to
+      await page.evaluate(() => {
+        const t = document.querySelector('.tile.active .ks-form textarea');
+        if (t) { t.value = 'smoke — never sent'; t.dispatchEvent(new Event('input', { bubbles: true })); }
+        const n = document.querySelector('.tile.active .ks-name');
+        if (n) n.value = 'zz_smoke_never_spawns';
+      });
+      await page.locator('.tile.active .home-go').click();
+      await page.waitForTimeout(600);
+      const sent = await page.evaluate(() => {
+        try { return JSON.parse(window.__launchBody ?? 'null'); } catch { return 'unparseable'; }
+      });
+      if (sent && sent !== 'unparseable' && (sent.job_role || sent.session_task) && sent.project_root) {
+        ok(`${label}: an ordinary launch names its axes on the wire (role="${sent.job_role}" task="${sent.session_task}")`);
+      } else {
+        bad(`${label}: launch payload lost its axes — a body naming neither is born a bare shell. Sent: ${JSON.stringify(sent)}`);
+      }
+    }
+    await page.evaluate(() => { if (window.__fetchWas) window.fetch = window.__fetchWas; });
     // Put the form and the panel away so later probes meet the terminal again.
     await page.evaluate(() => {
       [...document.querySelectorAll('.tile.active .ks-form button')].find((b) => b.textContent === 'Cancel')?.click();

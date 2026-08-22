@@ -4,6 +4,7 @@ Plan a known piece of work as a doc. No code yet — the plan is the whole outpu
 
 - **icon:** 🗺
 - **label:** draft plan
+- **order:** 20
 - **blurb:** plan a piece of work as a doc — no code yet
 - **ask:** what are you planning?
 - **remit:** Thinks it through and writes the plan — never cuts code

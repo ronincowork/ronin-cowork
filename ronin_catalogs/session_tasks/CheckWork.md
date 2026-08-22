@@ -5,6 +5,7 @@ same posture, differing only in what the prompt points at.
 
 - **icon:** 🔎
 - **label:** check work
+- **order:** 50
 - **blurb:** read-only findings work — a session's output, or a sweep of the code
 - **ask:** whose work or which paths, and what matters?
 - **remit:** Judges work already done — a session's output or a sweep of the code — and reports; changes nothing

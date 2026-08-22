@@ -4,6 +4,7 @@ Chase a fault to its cause and fix the cause.
 
 - **icon:** 🐞
 - **label:** chase bug
+- **order:** 40
 - **blurb:** chase a fault to its cause and fix the cause
 - **ask:** what is broken, and how do you see it?
 - **remit:** Chases a fault to its cause before changing anything

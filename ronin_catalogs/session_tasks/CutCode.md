@@ -5,6 +5,7 @@ does not acknowledge first — the go-ahead already happened when the plan was a
 
 - **icon:** ✂
 - **label:** cut code
+- **order:** 30
 - **blurb:** build from an approved plan doc
 - **ask:** which doc / what to cut?
 - **remit:** Builds from an approved plan — the plan is the contract

@@ -5,6 +5,7 @@ name yet — finding out what "it" is *is* the session.
 
 - **icon:** 💭
 - **label:** riff on it
+- **order:** 10
 - **blurb:** work out what a thing is and what we mean by it
 - **ask:** what are we trying to pin down?
 - **remit:** Works out what a thing *is* — produces a definition, not a plan

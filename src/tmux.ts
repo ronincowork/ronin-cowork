@@ -366,11 +366,6 @@ export async function teamsInPlay(): Promise<string[]> {
   return [...new Set((await listSessions()).flatMap((s) => s.tags))].sort();
 }
 
-/** The sessions on one team, by name. Empty means no such team — or nobody left on it. */
-export async function teamMembers(team: string): Promise<string[]> {
-  return (await listSessions()).filter((s) => s.tags.includes(team)).map((s) => s.name);
-}
-
 /**
  * tmux user option holding the CUSTOM WIPEBOARDS a session is on — comma-separated,
  * exactly like TAGS_OPT and for exactly the same reason: membership lives on the
