@@ -522,45 +522,49 @@ PORT="$(ronin_port "$REPO_DIR")"
 OPEN_URL="$(ronin_open_url "$REPO_DIR" "$PORT")"
 ronin_banner "$REPO_DIR" "$OPEN_URL" >&3
 
-# Only what is still outstanding on this box. Each step carries its own number AND its
-# own sentence, built in the same breath: a static ordinal outliving the step it names
-# is how "The second" came to be printed with no first, on every box that already had
-# linger enabled and so skipped step one.
+# Only what is still outstanding on this box — and no prose dressed as a numbered
+# step. A person at this prompt needs exactly three things: run this, here is the
+# gap so you know what to copy, here is where you end up. (Owner, 2026-08-22: "copy
+# and paste this line, put it in, and you will be good to go — then the new URL.")
 SERVED_ALREADY="$(ronin_served_url "$PORT")"
-STEP_CMD=(); STEP_WHY=(); NSTEPS=0
+STEP_CMD=(); NSTEPS=0
 if command -v loginctl >/dev/null 2>&1 &&
    [ "$(loginctl show-user "$USER" --property=Linger --value 2>/dev/null || echo no)" != "yes" ]; then
   STEP_CMD[$NSTEPS]="sudo loginctl enable-linger $USER"
-  STEP_WHY[$NSTEPS]="Keep Ronin running after you log out."
   NSTEPS=$(( NSTEPS + 1 ))
 fi
 # Nothing to ask for when serve already points at THIS install: the address in the box
 # above is that mapping. Asking anyway is what put a second, different door on a box
 # that already had one, and left the banner naming the other.
+WANT_SERVE=""
 if [ -z "$SERVED_ALREADY" ] && [ -n "${IP:-}" ] && command -v tailscale >/dev/null 2>&1; then
   STEP_CMD[$NSTEPS]="sudo tailscale serve --bg --https=8443 http://$IP:$PORT"
-  if [ -n "${FQDN:-}" ]; then
-    STEP_WHY[$NSTEPS]="Give it an HTTPS door at https://$FQDN:8443."
-  else
-    STEP_WHY[$NSTEPS]="Give it an HTTPS door."
-  fi
   NSTEPS=$(( NSTEPS + 1 ))
+  WANT_SERVE=1
 fi
 
+if [ "$NSTEPS" = 1 ]; then
+  out "  One more step. Copy and paste this line, and you're good to go:"
+elif [ "$NSTEPS" -gt 1 ]; then
+  out "  Two more steps. Copy and paste each line, one at a time:"
+fi
 if [ "$NSTEPS" -gt 0 ]; then
-  out "  To finish:"
   out ""
   s=0
   while [ "$s" -lt "$NSTEPS" ]; do
-    out "    $(( s + 1 ))  ${STEP_WHY[$s]}"
-    out "       ${STEP_CMD[$s]}"
+    out "      ${STEP_CMD[$s]}"
     out ""
     s=$(( s + 1 ))
   done
-  out "  Then:  ronin-welcome    — the box again, with the address that answers."
+  if [ -n "$WANT_SERVE" ] && [ -n "${FQDN:-}" ]; then
+    out "  When that's done, your door is:"
+    out ""
+    out "      https://$FQDN:8443"
+  else
+    out "  When that's done, run  ronin-welcome  to see your address."
+  fi
   out ""
 fi
-
 
 # Printed instructions above are the contract. On a local graphical desktop this is
 # merely a convenience: wait for /api/health to answer 200, then ask the OS to open
