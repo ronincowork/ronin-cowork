@@ -80,10 +80,10 @@ if tmux has-session -t mika 2>/dev/null; then
   exec tejun-send mika "$msg"
 fi
 
-# Not up. Born through /api/launch like every other session — the job_role carries her
+# Not up. Born through /api/launch like every other session — the session_task carries her
 # dial, her posture and her opening, and `cap: exempt` is why this works at a full box.
 out=$(api -X POST "$url/api/launch" -H 'content-type: application/json' \
-  -d "{\"job_role\":\"mikaassist\",\"name\":\"mika\",\"mode\":\"assisted\",\"tags\":[\"mika\"],\"prompt\":\"$(esc "$msg")\"}")
+  -d "{\"family_role\":\"assistant\",\"session_task\":\"MikaAssist\",\"name\":\"mika\",\"mode\":\"assisted\",\"tags\":[\"mika\"],\"prompt\":\"$(esc "$msg")\"}")
 
 case "$out" in
   '') echo "STUCK: could not reach Ronin at $url." >&2; exit 5 ;;

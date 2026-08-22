@@ -17,7 +17,7 @@ STORE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../bin" && pwd)/ronin-store"
 [ -x "$STORE" ] || STORE=ronin-store
 SESSION_STORE="$("$STORE" session 2>/dev/null)"
 
-# A session's two axes out of its own letter, as 'job_role\tsession_task' — empty fields
+# A session's two axes out of its own letter, as 'family_role\tsession_task' — empty fields
 # when it has no letter or has not said. Both live in TEGAMI: the TASK because the session
 # may change it as the work changes (`write_tegami`), the ROLE because it was fixed at
 # birth and nothing may change it afterwards.
@@ -51,11 +51,11 @@ try:
 except Exception:
     raise SystemExit
 say = lambda k: d[k].strip() if isinstance(d.get(k), str) else ""
-print("%s\t%s" % (say("job_role"), say("session_task")))
+print("%s\t%s" % (say("family_role"), say("session_task")))
 PY
 }
 
-# name·tags·dial·job_role·session_task for every real session, viewers dropped.
+# name·tags·dial·family_role·session_task for every real session, viewers dropped.
 #
 # SEP is \x1f (unit separator), NOT a tab. Tab is an IFS *whitespace* character, so bash
 # collapses a RUN of them into one delimiter: an untagged session emitted as

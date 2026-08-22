@@ -32,11 +32,12 @@ a file at the tier that teaches it.
 
 ## T0 — the brief
 
-The one composed first message (`src/spawn.ts`): the session_job's posture, the opening
-template, the session it was pointed at (catch-up route included), the one-off inject,
-the ack rule. Inlined because inlining is the only guarantee of being read; never longer
-than a screen; everything durable is a pointer to T1. Manual mode bypasses all of it —
-the owner's text, byte for byte.
+The one composed first message (`src/spawn.ts`): the family_role's posture and then the
+session_task's — additive, who first and then what — the opening template, the session
+it was pointed at (catch-up route included), the one-off inject, the ack rule. Inlined
+because inlining is the only guarantee of being read; never longer than a screen;
+everything durable is a pointer to T1. Manual mode bypasses all of it — the owner's
+text, byte for byte.
 
 ## T1 — always-taught
 
@@ -47,32 +48,39 @@ The `Read first:` list in every assisted brief — a directory listing of the bo
 | File | Static / generated | What it is |
 |---|---|---|
 | `KOTOBA_GLOSSARY.md` | static | the vocabulary — the same words meaning the same things |
-| `REQUIRED_ABILITIES.md` | static | the abilities every session uses: session macros, other sessions (dial, RIREKI read, guarded send, owner-only fork), measuring this machine |
+| `REQUIRED_ABILITIES.md` | static | the abilities every session uses: session macros, other sessions (dial, RIREKI read, guarded send), the `forkit`/new-session versus internal-spawn routing rule, measuring this machine |
 | `SHELVES.md` | generated rosters (ruled 2026-08-20; the current file is the static seed) | the map — which shelf answers which question, and what is on each. Prose is authored; the per-shelf rosters fill at birth from the resolved shelves, store included |
 | `SESSION_MACROS.md` | generated at each birth | the live `+macro:` roster from the resolved catalog, and the compile-first routing rule |
 
 Generated files exist because a checked-in list describes stock, not this machine, the
 moment the owner customizes anything. Admission test for T1: would every assisted
-session — every root, every job — plausibly use it? The owner extends T1 by dropping a
+session — every root, every role, every task — plausibly use it? The owner extends T1 by dropping a
 file in their store's `all/`; a stock-named file is replaced whole.
 
 ## T2 — scoped-taught
 
 Identical delivery — files in the birth reading list — but only for sessions in scope.
 **There is no pull and no trigger the session acts on: the trigger is the launch.**
-Three facts fixed at spawn select the levels:
+Four facts fixed at spawn select the levels:
 
 | Level | Selected by | Who stocks it |
 |---|---|---|
 | `<service>_connected/` — any level matching the pattern | the launch's MCP toggle | cowork ships none — a connected **service makes and seeds its own** (gbrain's setup makes `gbrain_connected/` and seeds six readings), so the level is signed by its service |
 | `root/<project_root>/` | the root picked at launch | the owner only — stock cannot know a machine's directories |
-| `job/<session_job>/` | the session_job picked at launch | stock may ship (job names are shipped); the owner adds |
+| `role/<family_role>/` | the family_role picked at launch — fixed for the session's life | stock ships none today; the owner fills it |
+| `task/<session_task>/` | the session_task the session is doing **now** | stock may ship (task names are shipped); the owner adds |
 
 The toggle governs both halves of a connection (owner's ruling, 2026-08-17): launched
-off, a session gets neither a service's tools nor a word about them. The job level is
-where "abilities we know THIS job always uses" live — the job shelf names the ability
-and its guard tool; the procedure stays in the catalog, uncopied. A T2 file that would
-help every session is mis-shelved and belongs up a tier.
+off, a session gets neither a service's tools nor a word about them. The role and task
+levels are where "abilities we know THIS hat, or THIS kind of work, always uses" live —
+the shelf names the ability and its guard tool; the procedure stays in the catalog,
+uncopied. **The two add up rather than override**: a blank axis omits only its own level.
+And they differ in one way that matters — role is fixed at birth, so `role/<family_role>/`
+is read once and never re-sent, while a committed `session_task` change injects the new
+`task/<session_task>/` list into the running session (`src/task-watch.ts`). The house
+ships no role level at all today; `ensureShelf` creates it so it is findable, and what
+goes on it is the owner's. A T2 file that would help every session
+is mis-shelved and belongs up a tier.
 
 ## T3 — indexed. T4 — delivered. T5 — sought.
 
@@ -87,10 +95,12 @@ every time.
 
 ## One pyramid, instantiated per session
 
-A session receives the pyramid instantiated for `project_root` × `session_job` × the
-MCP choice. The job bends it hardest: T0 differs entirely by job (posture, dial, ack
-are job constants), T1 never differs (that is its definition), T2 carries the job's own
-always-taught material, T3–T5 are one house-wide body of knowledge.
+A session receives the pyramid instantiated for `project_root` × `family_role` ×
+`session_task` × the MCP choice. The two session axes bend it hardest: T0 differs by both
+(the postures add, and dial, ack and the rest resolve through the cascade — system <
+family_role < session_task < this launch), T1 never differs (that is its definition), T2
+carries each axis' own always-taught material, T3–T5 are one house-wide body of
+knowledge.
 
 ## The routing table
 
@@ -100,7 +110,7 @@ always-taught material, T3–T5 are one house-wide body of knowledge.
 | what a `+name:` means | `tejun <name>` — compile, execute, report | a remembered workflow |
 | whether a capability exists | the catalogs, via the map | improvising with tmux |
 | how to do a compiled step | it arrived in the compile | searching |
-| anything about another session | dial first, then `tejun-rireki` / `tejun-send` | `capture-pane`, `send-keys` |
+| anything about another session | dial first; `tejun-rireki <session> since` first, with the durable record authoritative; then `tejun-send` | pane capture only when there is no tape or live prompt state is unknowable, and report the fallback; raw `send-keys` |
 | how the house does a domain | the SOP shelf, by book | inventing a process |
 | what is true on this machine | run the named tool | any document |
 | where anything else is | `SHELVES.md` (already read) | — |

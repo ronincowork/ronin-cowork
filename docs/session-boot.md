@@ -10,7 +10,7 @@ Put a file on the shelf and new sessions read it. That is the whole feature.
 | `all/` | every session, always |
 | `<service>_connected/` (e.g. `gbrain_connected/`) | only sessions launched with MCP on — how a connected session learns what it is connected to, signed by the service that seeded it |
 | `root/<project_root>/` | only sessions working in that directory |
-| `role/<job_role>/` | only sessions wearing that hat — read once, at birth, because a role cannot change |
+| `role/<family_role>/` | only sessions wearing that hat — read once, at birth, because a role cannot change |
 | `task/<session_task>/` | only sessions doing that kind of work — **re-delivered when the task changes** |
 
 The levels are **additive, not a hierarchy**. A `developer` session cutting `CutCode` in
@@ -19,7 +19,7 @@ happens, *who* is doing it and *what* they are doing now are three independent q
 so the same bug-chasing habits apply in every repo, the same repo notes apply to every
 task, and a role's standing instructions apply across every task it wears.
 
-**Role reading is birth-only; task reading is not.** A `job_role` cannot change while the
+**Role reading is birth-only; task reading is not.** A `family_role` cannot change while the
 session lives, so its level is read once and never re-sent. A `session_task` can, and when
 it does, Ronin hands that task's level to the running session — once, whether the agent
 re-marked itself or the owner did (`src/task-watch.ts`).

@@ -46,6 +46,11 @@ run_gate() {  # run_gate <label> <cmd...>
     ok_ "$label"
   else
     bad_ "$label" "$label"
+    # NAME THE FAILING ITEMS FIRST, then the tail. The tail alone is a summary — for
+    # check-tests it is the TAP footer, which counts the failures and names none of
+    # them. PR #26 (2026-08-22) went red seven times with "fail 2" and no way to read
+    # WHICH two from the CI log; a red run that cannot say what is red gets merged red.
+    printf '%s\n' "$out" | grep -E '^not ok|✗' | head -20 | sed 's/^/          /'
     printf '%s\n' "$out" | sed 's/^/          /' | tail -12
   fi
 }

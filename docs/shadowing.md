@@ -38,7 +38,7 @@ file happens to define every stock name.
 
 | Catalog | Shape | Rule |
 |---|---|---|
-| `job_roles/` | one file per role | whole-definition, by filename |
+| `family_roles/` | one file per role | whole-definition, by filename |
 | `session_tasks/` | one file per task | whole-definition, by filename |
 | `MACROS.md` | `## name` blocks | entry-merge |
 | `ACTIONS.md` | `## name` blocks | entry-merge |

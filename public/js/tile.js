@@ -367,7 +367,7 @@ export class Tile {
    *
    * NOT JUST A RE-LABEL: the server hands it to the task observer, which delivers the
    * new task's reading into the session exactly once (src/task-watch.ts), whoever
-   * authored it. THE TASK ONLY — `job_role` is birth-fixed and has no menu.
+   * authored it. THE TASK ONLY — `family_role` is birth-fixed and has no menu.
    *
    * The list is updated locally before the ws poll gets there, so the mark moves under
    * your finger; the poll then confirms it, and would correct it if the write lost a race.

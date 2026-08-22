@@ -101,7 +101,7 @@ const expand = (p: string) => (p.startsWith('~') ? path.join(os.homedir(), p.sli
  * No user file = no roots. Empty list, no throw: that is a fresh install, and the tab
  * renders it as "none yet" rather than an error.
  *
- * `project_root` is the REQUIRED one of the three universal axes — with `job_role` (who
+ * `project_root` is the REQUIRED one of the three universal axes — with `family_role` (who
  * the session is) and `session_task` (what it is doing now), in src/definitions.ts. The
  * same keys scope a memory.
  */

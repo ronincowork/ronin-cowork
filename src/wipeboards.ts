@@ -67,7 +67,7 @@ export interface Board {
 }
 
 const STUB = (name: string) =>
-  `# wipeboard: ${name}\n\n## Brief\n\n_(the owner writes what this board is for here)_\n`;
+  `# wipeboard: ${name}\n\n## Brief\n\n_(the owner writes what this wipeboard is for here)_\n`;
 
 /** The stub a TEAM wipeboard materializes with — it says whose it is and how membership
  * works, because the first reader arrives with no enrolment step behind them. */

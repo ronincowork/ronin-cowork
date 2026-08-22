@@ -24,8 +24,8 @@ import { tabs as makeTabs } from './ui.js';
 
 // `other` is a real bucket, not a gap: a session whose letter names no job still has
 // to be drawable, or it silently vanishes from a chart that claims to show everything.
-const TASKS = ['RiffOnIt', 'DraftPlan', 'CutCode', 'ChaseBug', 'CheckWork', 'QuarterBack', 'OddJob', 'Atarashi', 'OpenShell', 'other'];
-const ROLES = ['developer', 'personalassistant', 'mikaassist', 'other'];
+const TASKS = ['RiffOnIt', 'DraftPlan', 'CutCode', 'ChaseBug', 'CheckWork', 'QuarterBack', 'OddJob', 'Atarashi', 'PersonalAssistant', 'OpenShell', 'MikaAssist', 'other'];
+const ROLES = ['developer', 'assistant', 'extra', 'other'];
 const WINDOWS = [
   ['today', 'Today'],
   ['week', 'This week'],

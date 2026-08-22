@@ -29,8 +29,9 @@ import { expandLookup } from '../lookup.js';
 import { readCtxLine } from '../ctx.js';
 import { count } from '../counts.js';
 import { announceTeamChanges } from './wipeboards-api.js';
-import { readJobRole, readSessionTask, writeSessionTask } from '../tegami.js';
+import { readFamilyRole, readSessionTask, writeSessionTask } from '../tegami.js';
 import { observeTaskChange, taskDeliveryFault } from '../task-watch.js';
+import { listSessionTasks } from '../definitions.js';
 import { emitSessionEnd } from '../sockets.js';
 
 export function registerSessions(app: express.Express): void {
@@ -181,7 +182,7 @@ export function registerSessions(app: express.Express): void {
    * fixed are untouched, and a session that is re-marked must not thereby acquire a
    * different dial.
    *
-   * `job_role` is READ-ONLY here, and there is no POST for it at all. It is birth-fixed;
+   * `family_role` is READ-ONLY here, and there is no POST for it at all. It is birth-fixed;
    * the seed is its only writer. A route to change it would be the one door that made the
    * immutability rule a suggestion.
    *
@@ -194,6 +195,65 @@ export function registerSessions(app: express.Express): void {
    * the edit would not re-parse, and the caller wants to know its change did not land
    * rather than that the server broke.
    */
+  /**
+   * `family_role` HAS A DOOR, AND IT IS READ-ONLY ON PURPOSE.
+   *
+   * There was no route here at all, which meant an attempt to set a role got Express's
+   * own 404 — an opaque routing failure that reads as "Ronin is broken" rather than as
+   * "Ronin refuses". The owner hit exactly that (2026-08-22). A rule the product means to
+   * enforce has to SAY so; a missing route says nothing.
+   *
+   * 405 rather than 403 or 409, and the distinction is the point: 403 implies a
+   * permission somebody could be granted, 409 implies a state that could be resolved.
+   * Neither is true. The role is birth-fixed for everyone including Ronin — the seed is
+   * its only writer — so GET is the complete set of things you may do to it, and `Allow`
+   * says so in the protocol's own words.
+   *
+   * The message also catches the near-miss that prompted this: a value that is a
+   * `session_task` posted at the role axis. That is wrong twice over, and saying which
+   * axis it belongs to is more use than saying no.
+   */
+  app.get('/api/sessions/:name/family_role', async (req, res) => {
+    const { name } = req.params;
+    if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
+    if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
+    res.json({ family_role: await readFamilyRole(name) });
+  });
+
+  app.all('/api/sessions/:name/family_role', async (req, res) => {
+    const wanted = String(req.body?.family_role ?? req.body?.value ?? '').trim();
+    const isATask = wanted
+      ? (await listSessionTasks()).some((t) => t.name.toLowerCase() === wanted.toLowerCase())
+      : false;
+    res.set('Allow', 'GET');
+    res.status(405).json({
+      error:
+        'A family_role is fixed at birth and cannot be changed in a live session — not by an ' +
+        'agent, not from the tile, and not here. The seed is its only writer. If the role ' +
+        'is genuinely wrong, that is a new session rather than a new value.' +
+        (isATask
+          ? ` "${wanted}" is a session_task in any case, not a family_role: post it to ` +
+            `/api/sessions/${encodeURIComponent(req.params.name)}/session_task, which is the axis that moves.`
+          : ''),
+      family_role: await readFamilyRole(req.params.name).catch(() => ''),
+    });
+  });
+
+  /**
+   * THE RETIRED KEY, refused by name. `session_job` was split into `family_role` and
+   * `session_task` on 2026-08-22 and there is no compatibility reader — but a caller
+   * still using it deserves to be told that, rather than getting the same blank 404 a
+   * typo gets. 410 is the honest code: this door existed, and it is gone.
+   */
+  app.all('/api/sessions/:name/session_job', (req, res) => {
+    res.status(410).json({
+      error:
+        'session_job is retired. It was split on 2026-08-22 into `family_role` — who the ' +
+        'session is, fixed at birth and read-only — and `session_task`, what it is doing ' +
+        `now, which you change at /api/sessions/${encodeURIComponent(req.params.name)}/session_task.`,
+    });
+  });
+
   app.get('/api/sessions/:name/session_task', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
@@ -204,7 +264,7 @@ export function registerSessions(app: express.Express): void {
     // surface that shows the mark can show why it is only half true.
     res.json({
       session_task: await readSessionTask(name),
-      job_role: await readJobRole(name),
+      family_role: await readFamilyRole(name),
       delivery: await taskDeliveryFault(name),
     });
   });
@@ -212,12 +272,17 @@ export function registerSessions(app: express.Express): void {
   app.post('/api/sessions/:name/session_task', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
-    if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
-    if (req.body?.job_role !== undefined) {
+    // THE ROLE GUARD COMES BEFORE THE SESSION LOOKUP, deliberately. Naming an immutable
+    // axis is wrong about the REQUEST, not about the session — so it must answer the same
+    // way whether or not the session happens to exist, and it must not be reachable only
+    // by callers who guessed a live name. It also keeps this refusal and the 405 on
+    // /family_role saying the same thing in the same order.
+    if (req.body?.family_role !== undefined) {
       return res.status(400).json({
-        error: 'A job_role is fixed at birth and cannot be changed in a live session.',
+        error: 'A family_role is fixed at birth and cannot be changed in a live session.',
       });
     }
+    if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
     const task = String(req.body?.session_task ?? '').trim().slice(0, 64);
     try {
       const saved = await writeSessionTask(name, task);
@@ -240,7 +305,7 @@ export function registerSessions(app: express.Express): void {
    * is no group registry to drift out of date.
    *
    * It used to answer with a `leaders` map too, off `@ronin-lead` — who coordinates each
-   * group, hand-set by the owner. That option is retired: coordinating is a `job_role`
+   * group, hand-set by the owner. That option is retired: coordinating is a `family_role`
    * (`QuarterBack`), and the session says so in its own letter — a task, so it migrates.
    */
   app.get('/api/groups', async (_req, res) => {

@@ -16,7 +16,7 @@ same name replaces ours whole; a new name sits beside it.
 | `all/` | every session, always |
 | `<service>_connected/` | only sessions launched with MCP on — a connected service makes and seeds its own signed level (gbrain's setup makes `gbrain_connected/`) |
 | `root/<project_root>/` | only sessions working in that directory |
-| `role/<job_role>/` | only sessions wearing that hat — read once, at birth, because a role cannot change |
+| `role/<family_role>/` | only sessions wearing that hat — read once, at birth, because a role cannot change |
 | `task/<session_task>/` | only sessions doing that kind of work — **re-delivered when the task changes** |
 
 A `developer` session cutting `CutCode` in `ronin_cowork` reads all of its levels. Nothing

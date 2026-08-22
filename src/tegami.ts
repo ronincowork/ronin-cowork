@@ -3,7 +3,7 @@
  *
  * TWO FIELDS, TWO AUTHORITIES, one record:
  *
- *   job_role      WHO the session is. Seeded at birth from the button the owner pressed,
+ *   family_role      WHO the session is. Seeded at birth from the button the owner pressed,
  *                 and then IMMUTABLE — `write_tegami` preserves it and refuses an
  *                 attempted change, and no live-session control offers to change it.
  *                 A session does not stop being a Developer halfway through.
@@ -128,7 +128,7 @@ function seedShell(
 > At the end of a turn, consider updating it with \`write_tegami\`. Not keeping it current is
 > poor quality.
 >
-> YOUR **job_role** is already set below, and it does not change. It is WHO you are for
+> YOUR **family_role** is already set below, and it does not change. It is WHO you are for
 > this whole session — the hat the owner started you in. \`write_tegami\` preserves it and
 > refuses an attempted change, so do not try to edit it; if the role is genuinely wrong,
 > that is a new session, not a new value.
@@ -166,7 +166,7 @@ ${tasks}
 
 \`\`\`json
 { "objective": "",
-  "job_role": ${JSON.stringify(role)},
+  "family_role": ${JSON.stringify(role)},
   "session_task": ${JSON.stringify(task)},
   "repos": ${JSON.stringify(checkout.repo || checkout.branch ? [checkout] : [])},
   "ladder": [] }
@@ -217,7 +217,7 @@ export async function seedTegami(
  * it reads as blank on both axes — which is correct: it is a letter from a schema that no
  * longer exists, and inventing a task from it would be reading a fact nobody wrote.
  */
-async function readAxis(name: string, key: 'job_role' | 'session_task'): Promise<string> {
+async function readAxis(name: string, key: 'family_role' | 'session_task'): Promise<string> {
   try {
     const text = await fs.readFile(tegamiPath(await sessionKey(name)), 'utf8');
     const fenced = text.match(/```(?:json)?\s*\n([\s\S]*?)\n```/);
@@ -233,7 +233,7 @@ async function readAxis(name: string, key: 'job_role' | 'session_task'): Promise
 export const readSessionTask = (name: string): Promise<string> => readAxis(name, 'session_task');
 
 /** WHO the session is — birth-fixed, and never written by anything after the seed. */
-export const readJobRole = (name: string): Promise<string> => readAxis(name, 'job_role');
+export const readFamilyRole = (name: string): Promise<string> => readAxis(name, 'family_role');
 
 /**
  * THE OWNER'S HAND ON THE TASK — set what a session is doing, from the tile.
@@ -245,10 +245,10 @@ export const readJobRole = (name: string): Promise<string> => readAxis(name, 'jo
  * until the agent notices makes the mark decoration. So: two writers, one field, the
  * owner's hand last.
  *
- * **IT TOUCHES ONE KEY, and `job_role` is not it.** The role is birth-fixed; this route
+ * **IT TOUCHES ONE KEY, and `family_role` is not it.** The role is birth-fixed; this route
  * cannot change it, `write_tegami` refuses to change it, and there is no live-session
  * control that offers to. That is the whole of the immutability rule on this side: the
- * only writer that ever sets `job_role` is the seed.
+ * only writer that ever sets `family_role` is the seed.
  *
  * **SURGICAL, not a rewrite.** It replaces the `session_task` VALUE inside the fenced
  * block and touches nothing else — the ladder, `docs`, `at`, `objective`, the agent's
@@ -388,7 +388,7 @@ export async function writeGate(name: string, gate: string): Promise<boolean> {
 }
 
 /** A session, plus both axes out of its letter. */
-export type SessionWithAxes = SessionInfo & { job_role: string; session_task: string };
+export type SessionWithAxes = SessionInfo & { family_role: string; session_task: string };
 
 /**
  * Every producer of a client-facing session list runs through here — `/api/sessions`,
@@ -404,7 +404,7 @@ export async function withAxes(list: SessionInfo[]): Promise<SessionWithAxes[]> 
   return Promise.all(
     list.map(async (s) => ({
       ...s,
-      job_role: await readJobRole(s.name),
+      family_role: await readFamilyRole(s.name),
       session_task: await readSessionTask(s.name),
     })),
   );

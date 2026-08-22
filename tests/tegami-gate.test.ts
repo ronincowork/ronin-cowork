@@ -19,7 +19,7 @@ const exec = promisify(execFile);
 async function letter(name: string, ladder: string): Promise<string> {
   const file = tegamiPath(await sessionKey(name));
   await fs.mkdir(path.dirname(file), { recursive: true });
-  await fs.writeFile(file, ['# TEGAMI', '', '```json', `{ "objective": "keep me",`, `  "job_role": "developer",`, `  "session_task": "CutCode",`, `  "ladder": ${ladder} }`, '```', ''].join('\n'));
+  await fs.writeFile(file, ['# TEGAMI', '', '```json', `{ "objective": "keep me",`, `  "family_role": "developer",`, `  "session_task": "CutCode",`, `  "ladder": ${ladder} }`, '```', ''].join('\n'));
   return file;
 }
 const bodyOf = async (f: string) => JSON.parse((await fs.readFile(f, 'utf8')).match(/```json\n([\s\S]*?)\n```/)![1]);
@@ -30,7 +30,7 @@ test('an empty ladder takes the gate, and nothing else in the letter moves', asy
   const b = await bodyOf(f);
   assert.deepEqual(b.ladder, [{ gate: 'The agent never came up.', status: 'ACTIVE' }]);
   assert.equal(b.objective, 'keep me'); // the session's own words survive
-  assert.equal(b.job_role, 'developer');
+  assert.equal(b.family_role, 'developer');
   assert.equal(b.session_task, 'CutCode');
 });
 
@@ -74,7 +74,7 @@ test('a birth letter records the actual launch checkout as an editable repos lis
   const body = await bodyOf(file!);
   assert.deepEqual(body.repos, [checkout]);
   // BOTH AXES ARE SEEDED, and a blank one would be written as '' rather than omitted.
-  assert.equal(body.job_role, 'developer');
+  assert.equal(body.family_role, 'developer');
   assert.equal(body.session_task, 'CutCode');
 });
 
@@ -85,6 +85,6 @@ test('a seeded letter carries a blank axis as an empty string, never as a missin
   const file = await seedTegami('blank_role_seed', '', 'OddJob');
   assert.ok(file);
   const body = await bodyOf(file!);
-  assert.equal(body.job_role, '');
+  assert.equal(body.family_role, '');
   assert.equal(body.session_task, 'OddJob');
 });

@@ -5,7 +5,7 @@
  * Three questions, all asked from the running code's point of view:
  *
  *   1. SURFACING. Does every bare `## name` entry in a stock catalog — and every stock
- *      DEFINITION FILE in `job_roles/` and `session_tasks/` — actually come out of the
+ *      DEFINITION FILE in `family_roles/` and `session_tasks/` — actually come out of the
  *      reader that serves it? The readers drop what they cannot use, and silence is the
  *      failure mode. A dropped stock entry FAILS the check. (A user file on this box
  *      can legitimately hide one; the message says so when that is the likely cause.)
@@ -26,7 +26,7 @@ import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { STOCK_DIR, splitSections, readEntries } from '../src/catalog.js';
-import { listJobRoles, listSessionTasks, type DefinitionKind } from '../src/definitions.js';
+import { listFamilyRoles, listSessionTasks, type DefinitionKind } from '../src/definitions.js';
 import { resolveLaunchProfile, type LaunchProfile } from '../src/launch-profile.js';
 import { findDefinition } from '../src/definitions.js';
 import { listMacros } from '../src/macros.js';
@@ -149,26 +149,26 @@ async function surfacingDefinitions(
  * mistake the many-to-many membership makes easy to write.
  */
 async function definitionsResolve(): Promise<void> {
-  const roles = await listJobRoles();
+  const roles = await listFamilyRoles();
   const tasks = await listSessionTasks();
-  const inSomeFamily = new Set(roles.flatMap((r) => r.task_family));
+  const inSomeFamily = new Set(roles.flatMap((r) => r.session_tasks));
   const pairs: [string, string][] = [
     ...roles.map((r) => [r.name, ''] as [string, string]),
-    ...roles.flatMap((r) => r.task_family.map((tk) => [r.name, tk] as [string, string])),
+    ...roles.flatMap((r) => r.session_tasks.map((tk) => [r.name, tk] as [string, string])),
     // A loose task is launched with a blank role, and that combination is a button too.
     ...tasks.filter((tk) => !inSomeFamily.has(tk.name)).map((tk) => ['', tk.name] as [string, string]),
   ];
   for (const [role, task] of pairs) {
     const [roleDef, taskDef] = await Promise.all([
-      findDefinition('job_roles', role),
+      findDefinition('family_roles', role),
       findDefinition('session_tasks', task),
     ]);
     if (role && !roleDef) {
-      fail(`job_roles/: "${role}" is listed but does not resolve`);
+      fail(`family_roles/: "${role}" is listed but does not resolve`);
       continue;
     }
     if (task && !taskDef) {
-      fail(`job_roles/${role}.md: its task_family names "${task}", which is not a session_task on this box`);
+      fail(`family_roles/${role}.md: its session_tasks names "${task}", which is not a session_task on this box`);
       continue;
     }
     let profile: LaunchProfile;
@@ -189,7 +189,7 @@ async function definitionsResolve(): Promise<void> {
 
 const FILES = ['MACROS.md', 'ACTIONS.md', 'TOOLS.md', 'PROJECT_ROOTS.md'];
 
-await surfacingDefinitions('job_roles', listJobRoles);
+await surfacingDefinitions('family_roles', listFamilyRoles);
 await surfacingDefinitions('session_tasks', listSessionTasks);
 await definitionsResolve();
 await surfacing('MACROS.md', listMacros);

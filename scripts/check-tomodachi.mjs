@@ -80,7 +80,7 @@ ok(`${HOSTILE.length} hostile inputs × ${KINDS.length} kinds — nothing surviv
 // The other half: a house noun MUST survive, or the sanitiser is just a shredder.
 const survives = [
   ['session_task', 'CutCode'],
-  ['job_role', 'developer'],
+  ['family_role', 'developer'],
   ['dial', 'write'],
   ['macro', 'forkit'],
   ['lock', 'unlocked'],
@@ -93,7 +93,7 @@ ok('house nouns pass through unchanged');
 
 if (term('macro', 'my-own-macro') !== 'custom') fail("an unknown macro must become 'custom'");
 if (term('session_task', 'Whatever') !== 'other') fail("an unknown task must become 'other'");
-if (term('job_role', 'whatever') !== 'other') fail("an unknown role must become 'other'");
+if (term('family_role', 'whatever') !== 'other') fail("an unknown role must become 'other'");
 if (term('session_task', null) !== null) fail('null in, null out');
 ok('unknown → custom / other; null → null');
 
@@ -111,7 +111,7 @@ const defs = (kind) => {
     .join('\n');
 };
 const kotoba = readFileSync(path.join(REPO, 'KOTOBA.md'), 'utf8');
-const haystack = kotoba + '\n' + defs('session_tasks') + '\n' + defs('job_roles');
+const haystack = kotoba + '\n' + defs('session_tasks') + '\n' + defs('family_roles');
 
 // Two categories are deliberately NOT house vocabulary, so KOTOBA does not index them
 // and checking them against it would be theatre: `model` is vendor model names, `client`

@@ -1,7 +1,7 @@
 /**
  * THE LETTER'S TWO AXES — one fixed, one moving, and the delivery that rides the moving one.
  *
- * `job_role` is seeded at birth and never written again; `session_task` is written by the
+ * `family_role` is seeded at birth and never written again; `session_task` is written by the
  * session (`write_tegami`) and by the owner (the tile), and a committed change hands that
  * task's reading to the running session exactly once.
  *
@@ -20,7 +20,7 @@ const shelf = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-axes-shelf-'));
 process.env.RONIN_SESSION_DIR = root;
 process.env.RONIN_SESSION_BOOT_DIR = shelf;
 
-const { seedTegami, readJobRole, readSessionTask, writeSessionTask, tegamiPath } =
+const { seedTegami, readFamilyRole, readSessionTask, writeSessionTask, tegamiPath } =
   await import('../src/tegami.js');
 const { observeTaskChange, markTaskDelivered, taskDeliveryFault } = await import('../src/task-watch.js');
 type Sender = import('../src/task-watch.js').Sender;
@@ -59,51 +59,51 @@ async function validateBlock(block: unknown, previous: unknown): Promise<{ out: 
 test('the task changes twice and the role stays byte-for-byte fixed', async () => {
   await seedTegami('axes_move', 'developer', 'RiffOnIt');
 
-  assert.equal(await readJobRole('axes_move'), 'developer');
+  assert.equal(await readFamilyRole('axes_move'), 'developer');
   assert.equal(await readSessionTask('axes_move'), 'RiffOnIt');
 
   assert.equal(await writeSessionTask('axes_move', 'DraftPlan'), 'DraftPlan');
   assert.equal(await readSessionTask('axes_move'), 'DraftPlan');
-  assert.equal(await readJobRole('axes_move'), 'developer', 'a task change must not touch the role');
+  assert.equal(await readFamilyRole('axes_move'), 'developer', 'a task change must not touch the role');
 
   assert.equal(await writeSessionTask('axes_move', 'CutCode'), 'CutCode');
   assert.equal(await readSessionTask('axes_move'), 'CutCode');
-  assert.equal(await readJobRole('axes_move'), 'developer');
+  assert.equal(await readFamilyRole('axes_move'), 'developer');
 
   // Blank is a real value and must stay reachable: it clears the mark without clearing
   // the role, and without becoming "has no letter".
   assert.equal(await writeSessionTask('axes_move', ''), '');
   assert.equal(await readSessionTask('axes_move'), '');
-  assert.equal(await readJobRole('axes_move'), 'developer');
+  assert.equal(await readFamilyRole('axes_move'), 'developer');
 });
 
 test('a letter seeded outside a launch carries a blank role rather than an invented one', async () => {
   await seedTegami('axes_noborn', '', 'OddJob');
-  assert.equal(await readJobRole('axes_noborn'), '');
+  assert.equal(await readFamilyRole('axes_noborn'), '');
   // And the owner's hand on the task still cannot mint a role.
   await writeSessionTask('axes_noborn', 'CheckWork');
-  assert.equal(await readJobRole('axes_noborn'), '');
+  assert.equal(await readFamilyRole('axes_noborn'), '');
 });
 
-test('write_tegami carries job_role through a whole-block save, byte for byte', async () => {
-  const previous = { objective: 'old', job_role: 'developer', session_task: 'RiffOnIt', ladder: [] };
+test('write_tegami carries family_role through a whole-block save, byte for byte', async () => {
+  const previous = { objective: 'old', family_role: 'developer', session_task: 'RiffOnIt', ladder: [] };
   const saved = await validateBlock({ objective: 'coordinate the cut', session_task: 'CheckWork', ladder: [] }, previous);
   assert.equal(saved.code, 0, saved.err);
   const body = JSON.parse(saved.out);
-  assert.equal(body.job_role, 'developer', 'a save that never mentions the role must not blank it');
+  assert.equal(body.family_role, 'developer', 'a save that never mentions the role must not blank it');
   assert.equal(body.session_task, 'CheckWork', 'and the task it DID name moves');
   assert.equal(body.objective, 'coordinate the cut');
 });
 
-test('write_tegami refuses a block that names job_role at all', async () => {
-  const previous = { objective: 'old', job_role: 'developer', session_task: 'RiffOnIt', ladder: [] };
+test('write_tegami refuses a block that names family_role at all', async () => {
+  const previous = { objective: 'old', family_role: 'developer', session_task: 'RiffOnIt', ladder: [] };
   // Even naming the value it already holds is refused: the rule is that the key is not
   // the session's to write, not that the value must not differ. A tool that accepted a
   // matching value would be teaching agents to send it.
   for (const role of ['developer', 'personalassistant']) {
-    const r = await validateBlock({ objective: 'x', job_role: role, session_task: 'CutCode', ladder: [] }, previous);
-    assert.notEqual(r.code, 0, `naming job_role: ${role} must be refused`);
-    assert.match(r.err + r.out, /"job_role" is fixed for the life of this session/);
+    const r = await validateBlock({ objective: 'x', family_role: role, session_task: 'CutCode', ladder: [] }, previous);
+    assert.notEqual(r.code, 0, `naming family_role: ${role} must be refused`);
+    assert.match(r.err + r.out, /"family_role" is fixed for the life of this session/);
     assert.match(r.err + r.out, /a new session, not a new value/);
     assert.equal(r.out.trim(), '', 'a refused save emits no block, so nothing can be written');
   }
@@ -134,7 +134,7 @@ test('a committed task change delivers its reading once, and a repeat scrape del
   assert.match(sent[0].text, /session_task is now CutCode/);
   assert.match(sent[0].text, /HOW_WE_CUT\.md/, 'the new task shelf, resolved at the moment of the change');
   assert.doesNotMatch(sent[0].text, /SESSION_MACROS|SHELVES/, 'birth reading is not re-sent');
-  assert.match(sent[0].text, /job_role and your project_root have not changed/);
+  assert.match(sent[0].text, /family_role and your project_root have not changed/);
   assert.doesNotMatch(sent[0].text, /\n/, 'one line — sendText types the text then Enter');
 
   // And again: the same value is not a transition.

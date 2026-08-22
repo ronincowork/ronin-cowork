@@ -25,8 +25,12 @@ lists the macros that exist.
 ## Macro versus native agent capability
 
 Explicit macro syntax wins over a similarly named native capability. A Ronin macro must be
-run through TEJUN; an ordinary request to delegate may use the agent CLI's native tools.
-Do not translate a macro into something that merely sounds equivalent.
+run through TEJUN. The plain words **fork it** and **new session** also select Ronin's
+`forkit` workflow absolutely: they mean a visible tmux session, never an internal
+sub-agent. Conversely, **spawn it** and **spawn an agent** select the agent CLI's native
+sub-agent machinery. An ordinary request to delegate that uses neither vocabulary may
+use whichever is best without asking the owner to route it. Do not translate a macro or
+one of these explicit phrases into something that merely sounds equivalent.
 
 ## Session macros on the tile
 

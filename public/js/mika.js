@@ -20,9 +20,9 @@ import { showFailure } from './errors.js';
  * agent-side path — same decision, two callers, and neither can make a second one
  * because /api/launch refuses a name that already exists.
  *
- * NO NEW ENDPOINT. She is born through /api/launch like every session, and the
- * `MikaAssist` entry in SESSION_JOBS.md carries her dial, posture and opening. The only
- * thing about her the server knows is `cap: exempt` in that catalog — she is started
+ * NO NEW ENDPOINT. She is born through /api/launch like every session, and
+ * `ronin_catalogs/session_tasks/MikaAssist.md` carries her dial, posture and opening. The
+ * only thing about her the server knows is `cap: exempt` in that definition — she is started
  * even at the session max, because blocking somebody who is asking for help is rude.
  */
 
@@ -54,7 +54,8 @@ export async function askMika(tile, ask) {
       const r = await request('/api/launch', {
         method: 'POST',
         json: {
-          job_role: 'mikaassist',
+          family_role: 'assistant',
+          session_task: 'MikaAssist',
           name: MIKA,
           mode: 'assisted',
           tags: [MIKA],

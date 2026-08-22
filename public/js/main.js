@@ -97,7 +97,7 @@ export async function init() {
   guard('session event stream', connectEvents); // births & deaths push over this
   guard('load macros', loadMacros); // macro forms for the home panels
   guard('load projects', loadProjects); // PROJECT_ROOTS.md — WHERE a spawn happens
-  guard('load presets', loadPresets); // SESSION_JOBS.md — what a session is for, and who it is
+  guard('load presets', loadPresets); // family_roles/ + session_tasks/ — who a session is, and what it is doing
   guard('load saved launches', loadSavedLaunches); // SAVED_LAUNCHES.md — user scope, often empty
   guard('refresh home panels', refreshHome);
   // Mark the first tile active but don't grab the keyboard on load (avoids the

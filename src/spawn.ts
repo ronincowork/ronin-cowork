@@ -29,7 +29,7 @@ export interface SpawnForm {
    * WHO the session is, and it does not change again. Optional: a blank role is a real
    * launch, not a gap, and it simply contributes no role reading and no role defaults.
    */
-  job_role?: string;
+  family_role?: string;
   /**
    * WHAT it is doing right now. Optional and mutable — the session rewrites it with
    * `write_tegami` and the owner rewrites it from the tile, and either write injects the
@@ -98,7 +98,7 @@ export interface Resolved {
   dial: Dial;
   lifecycle: string;
   /** Both axes as resolved, either possibly ''. These are what TEGAMI is seeded with. */
-  job_role: string;
+  family_role: string;
   session_task: string;
   /** Never '' — a session must be born somewhere, and the resolver refuses otherwise. */
   project_root: string;
@@ -224,7 +224,7 @@ export async function resolveForm(
   referenceDir?: string,
 ): Promise<Resolved> {
   const [roleDef, taskDef, roots, launchSpecs, agentsSet] = await Promise.all([
-    findDefinition('job_roles', form.job_role ?? ''),
+    findDefinition('family_roles', form.family_role ?? ''),
     findDefinition('session_tasks', form.session_task ?? ''),
     listProjectRoots(),
     listSessionLaunchSpecs(),
@@ -232,8 +232,8 @@ export async function resolveForm(
   ]);
   // A NAMED axis that does not resolve is a refusal, never a silent blank. Blank and
   // wrong are different launches, and only one of them is what the caller asked for.
-  if (form.job_role && !roleDef) {
-    throw new Error(`Unknown job_role "${form.job_role}" (see ronin_catalogs/job_roles/).`);
+  if (form.family_role && !roleDef) {
+    throw new Error(`Unknown family_role "${form.family_role}" (see ronin_catalogs/family_roles/).`);
   }
   if (form.session_task && !taskDef) {
     throw new Error(`Unknown session_task "${form.session_task}" (see ronin_catalogs/session_tasks/).`);
@@ -306,7 +306,7 @@ export async function resolveForm(
   // name a command explicitly. So the field said one thing and the box did another.
   //
   // It sits BETWEEN the install default and the explicit pick, which is the cascade's own
-  // order — system < job_role < session_task < this launch. The bias is a model NAME and
+  // order — system < family_role < session_task < this launch. The bias is a model NAME and
   // is matched against the launch table's own model column, never turned into a command
   // string here: the table is the one place a provider is a row and a model is a column.
   // The owner's default provider is preferred when two of them offer the same name, so
@@ -335,7 +335,7 @@ export async function resolveForm(
   // hand-built request) is refused rather than silently connected or disconnected.
   if (askedOff && profile.mcpAlways) {
     throw new Error(
-      `${profile.job_role || profile.session_task} is born connected (\`mcp: always\`) — ` +
+      `${profile.family_role || profile.session_task} is born connected (\`mcp: always\`) — ` +
         'it cannot be launched with MCP off.',
     );
   }
@@ -358,7 +358,7 @@ export async function resolveForm(
   if (mcpOffWanted) cmd = `${cmd} ${spec!.mcpOff}`;
 
   return {
-    name: wanted || slugName(profile.session_task || profile.job_role, form.prompt, taken),
+    name: wanted || slugName(profile.session_task || profile.family_role, form.prompt, taken),
     // The profile's own `dir:` WINS over the project_root's, because it is a constant of
     // the launch — the same category as its dial, and a launch must not be able to leave
     // it to chance. Exactly one definition carries one (`mikaassist`, `{install}`): she
@@ -369,7 +369,7 @@ export async function resolveForm(
     tags: (form.tags ?? []).filter(Boolean).slice(0, 16),
     dial: profile.dial,
     lifecycle: profile.lifecycle,
-    job_role: profile.job_role,
+    family_role: profile.family_role,
     session_task: profile.session_task,
     project_root: root.name,
     mode: form.mode === 'manual' ? 'manual' : 'assisted',
@@ -382,7 +382,7 @@ export async function resolveForm(
           root,
           form,
           referenceDir,
-          await bootFiles(root.name, profile.job_role, profile.session_task, !mcpOffWanted),
+          await bootFiles(root.name, profile.family_role, profile.session_task, !mcpOffWanted),
         )
       : '',
     agent,
@@ -411,7 +411,7 @@ export async function appendLedger(form: SpawnForm, resolved: Resolved, ok: bool
       LEDGER,
       JSON.stringify({
         ts: new Date().toISOString(),
-        job_role: form.job_role ?? '',
+        family_role: form.family_role ?? '',
         session_task: form.session_task ?? '',
         mode: form.mode ?? 'assisted',
         intent: form.prompt,

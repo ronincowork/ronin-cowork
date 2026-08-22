@@ -6,8 +6,8 @@
 > changes it from the tile, and a committed change injects that task's reading into the
 > running session. A blank task is valid and means no task reading and no mark.
 >
-> The other axis a launch picks is the **`job_role`** — who the session is, fixed for its
-> life. See `../job_roles/README.md`. Neither owns the other: a role's definition lists
+> The other axis a launch picks is the **`family_role`** — who the session is, fixed for its
+> life. See `../family_roles/README.md`. Neither owns the other: a role's definition lists
 > which tasks sit on its shelf, and a task never names a role.
 
 **One file per task, named by its token.** `CutCode.md` defines `CutCode`. The merged
@@ -29,7 +29,7 @@ where it differs from its role, and a role states one only where it differs from
 system:
 
 ```text
-system default  <  job_role  <  session_task  <  explicit choice on this launch
+system default  <  family_role  <  session_task  <  explicit choice on this launch
 ```
 
 Absence means inherit. An explicit `off` is a value, not an absence. `mcp: always` is a
@@ -52,9 +52,9 @@ in full: `docs/shadowing.md`.
 a michi. If two tasks differ only in what the prompt says, they are one task.*
 
 *A session **migrates**: `RiffOnIt` → `DraftPlan` → `CutCode` is one session changing what
-it is doing, not three sessions. Its `job_role` does not move with it.*
+it is doing, not three sessions. Its `family_role` does not move with it.*
 
 *Forking is not a task. Where a session came from is its **origin**, not its purpose.*
 
 *`OddJob`, `Atarashi` and `OpenShell` sit on no role shelf. They launch with a blank
-`job_role`, which is a first-class state and not a gap.*
+`family_role`, which is a first-class state and not a gap.*

@@ -253,7 +253,7 @@ async function writeCatalogFile(file: string, text: string): Promise<void> {
 
 /**
  * SAVED_LAUNCHES — a named binding of the launcher that already exists:
- * `job_role` × `session_task` × `project_root` × group × mode, as a pressable tile.
+ * `family_role` × `session_task` × `project_root` × group × mode, as a pressable tile.
  *
  * The owner's words are what this is: *"organize these tiles under new sessions to be
  * like, okay, I have ronin and watch crew."* (Quoted as said; `watch crew` has since been
@@ -274,7 +274,7 @@ export interface SavedLaunchInfo {
   label: string;
   /** Both launch axes are saved, and either may be blank — a saved launch of a role
    *  with no task is exactly as legal as the launch it was saved from. */
-  job_role: string;
+  family_role: string;
   session_task: string;
   project_root: string;
   group: string;
@@ -291,7 +291,7 @@ export async function listSavedLaunches(): Promise<SavedLaunchInfo[]> {
       origin: e.origin,
       shadowed: e.shadowed,
       label: e.get('label') || e.name,
-      job_role: e.get('job_role'),
+      family_role: e.get('family_role'),
       session_task: e.get('session_task'),
       project_root: e.get('project_root'),
       // The team the session is born into. `group:` is the retired spelling, read from
@@ -302,7 +302,7 @@ export async function listSavedLaunches(): Promise<SavedLaunchInfo[]> {
     }))
     // A saved launch naming NEITHER axis cannot fill the form it exists to fill — but
     // one naming only a role is a blank-task launch, which is a real thing to save.
-    .filter((l) => l.job_role || l.session_task);
+    .filter((l) => l.family_role || l.session_task);
 }
 
 /** A saved-launch handle: one lowercase word, the `##` heading, the whole shortcut. */
@@ -310,7 +310,7 @@ export const isValidLaunchName = (n: string) => /^[a-z0-9][a-z0-9_-]*$/.test(n) 
 
 // `team` is the documented field (KOTOBA R32); `group:` in an existing file is still
 // read — see listSavedLaunches — but a save always writes the word that exists.
-const LAUNCH_FIELDS = ['label', 'job_role', 'session_task', 'project_root', 'team', 'mode', 'prompt'] as const;
+const LAUNCH_FIELDS = ['label', 'family_role', 'session_task', 'project_root', 'team', 'mode', 'prompt'] as const;
 export type LaunchField = (typeof LAUNCH_FIELDS)[number];
 
 /**
@@ -323,7 +323,7 @@ export type LaunchField = (typeof LAUNCH_FIELDS)[number];
  */
 export async function saveLaunch(name: string, fields: Partial<Record<LaunchField, string>>): Promise<void> {
   if (!isValidLaunchName(name)) throw new Error(`"${name}" is not a valid handle (lowercase letters, digits, - and _).`);
-  if (!fields.job_role && !fields.session_task) throw new Error('A saved launch needs a job_role or a session_task.');
+  if (!fields.family_role && !fields.session_task) throw new Error('A saved launch needs a family_role or a session_task.');
   const file = 'SAVED_LAUNCHES.md';
   await seedUserCatalog(file);
   const raw = await readUserCatalog(file);

@@ -3,7 +3,7 @@
  *
  * The resolved launch profile fixes the constants: the dial the session is born on, its
  * lifecycle, whether it acknowledges before acting. They come from the cascade —
- * system < job_role < session_task < this launch (`src/launch-profile.ts`). The user picks
+ * system < family_role < session_task < this launch (`src/launch-profile.ts`). The user picks
  * project_root / session_launch_spec / tags. Nothing here calls a model — the smart fill populates this form,
  * it does not perform it. Order matters: create -> tag -> DIAL -> reply, so the
  * session is addressable and correctly locked from its first breath; the CLI
@@ -37,7 +37,7 @@ import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFiel
 
 /* ---------- ONE door to a new session: POST /api/launch ----------
  * Two variants, chosen by what the body carries — never two endpoints:
- *   launch_job    a job_role and/or a session_task + prompt   the ＋ New tab
+ *   launch_job    a family_role and/or a session_task + prompt   the ＋ New tab
  *   launch_bare   a name and nothing else                     the tile picker
  *
  * EITHER AXIS CLAIMS THE CATALOG VARIANT, and that is the change the three-axis model
@@ -56,11 +56,11 @@ import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFiel
 export function registerLaunch(app: express.Express): void {
   // launch_job — the catalog variant.
   app.post('/api/launch', async (req, res, next) => {
-    const jobRole = String(req.body?.job_role ?? '').trim();
+    const familyRole = String(req.body?.family_role ?? '').trim();
     const sessionTask = String(req.body?.session_task ?? '').trim();
-    if (!jobRole && !sessionTask) return next();
+    if (!familyRole && !sessionTask) return next();
     const form: SpawnForm = {
-      job_role: jobRole,
+      family_role: familyRole,
       session_task: sessionTask,
       prompt: String(req.body?.prompt ?? '').trim(),
       name: String(req.body?.name ?? '').trim() || undefined,
@@ -143,14 +143,14 @@ export function registerLaunch(app: express.Express): void {
       // and has expected this stamp since it was written, guessing until today.
       await setLaunchStamp(resolved.name, resolved.launchAgent);
       // BOTH AXES, SET MECHANICALLY. The button the owner pressed IS who this session is
-      // and what it is for, so the letter is written with `job_role` and `session_task`
+      // and what it is for, so the letter is written with `family_role` and `session_task`
       // already filled rather than left for the agent to guess at facts that were never
       // in doubt. The TASK is the session's from here — `write_tegami` is how it says the
       // work has changed — and the ROLE is nobody's: this seed is its only writer. We
       // never overwrite a letter that exists. See src/tegami.ts.
       await seedTegami(
         resolved.name,
-        resolved.job_role,
+        resolved.family_role,
         resolved.session_task,
         await checkoutAt(resolved.dir),
       );
@@ -177,13 +177,13 @@ export function registerLaunch(app: express.Express): void {
     count('born', {
       name: resolved.name,
       born: resolved.mode === 'manual' ? 'manual' : 'assisted',
-      role: resolved.job_role,
+      role: resolved.family_role,
       task: resolved.session_task,
     });
     // THE LAUNCH SOCKET: services that care about a birth hear it here (fire-and-forget).
     emitSessionBorn({
       name: resolved.name,
-      role: resolved.job_role,
+      role: resolved.family_role,
       task: resolved.session_task,
       root: resolved.project_root,
       cmd: resolved.cmd,
@@ -193,7 +193,7 @@ export function registerLaunch(app: express.Express): void {
       ok: true,
       name: resolved.name,
       receipt: {
-        job_role: resolved.job_role,
+        family_role: resolved.family_role,
         session_task: resolved.session_task,
         mode: resolved.mode,
         project_root: resolved.project_root,

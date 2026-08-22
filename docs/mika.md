@@ -99,7 +99,7 @@ chosen to die.
 The implementation is one field in the catalog and one condition in code:
 
 ```markdown
-- **cap:** exempt          # ronin_catalogs/job_roles/mikaassist.md
+- **cap:** exempt          # ronin_catalogs/session_tasks/MikaAssist.md
 ```
 
 ```ts
@@ -107,7 +107,7 @@ if (opts.agent !== false && !opts.exempt) await assertUnderMax();   // src/tmux.
 ```
 
 It lives in the catalog rather than in code for the reason every other launch constant
-does: **nothing in `src/` may name a session_job**, or the catalog stops being the answer
+does: **nothing in `src/` may name a session_task**, or the catalog stops being the answer
 to what a session is.
 
 ## What she is made of
@@ -116,7 +116,7 @@ Six things, and five of them are data:
 
 | | |
 |---|---|
-| `ronin_catalogs/job_roles/mikaassist.md` | her definition — icon ミ, her posture, her opening, `cap: exempt`, `dir: {install}` |
+| `ronin_catalogs/session_tasks/MikaAssist.md` | her definition — icon ミ, her posture, her opening, `cap: exempt`, `dir: {install}` |
 | `ronin_catalogs/MIKA_MACROS.md` | her four jobs |
 | `ronin_catalogs/ACTIONS.md` | `propose-and-confirm` |
 | `ronin_catalogs/TOOLS.md` | the `mika` row |

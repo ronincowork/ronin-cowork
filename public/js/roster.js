@@ -174,7 +174,7 @@ export function buildRoster(tile, host) {
     jb.dataset.job = s.session_task || ''; // so style can reach one mark — see style.css
     jb.textContent = mark;
     jb.title = mark
-      ? [s.session_task, s.job_role && `(${s.job_role})`].filter(Boolean).join(' ')
+      ? [s.session_task, s.family_role && `(${s.family_role})`].filter(Boolean).join(' ')
       : 'has not said what it is doing yet';
     r.appendChild(jb);
     // The name takes the slack (`minmax(0, 1fr)`), so the spacer `.grow` that used to

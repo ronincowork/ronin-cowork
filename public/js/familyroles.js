@@ -47,7 +47,7 @@ export function draggableTask(b, name) {
 
 /* Which sections are folded — a per-device viewing preference, like the tile layout,
  * so it lives in this browser and never in a definition file. */
-const FOLD_KEY = 'ronin.jobRolesClosed';
+const FOLD_KEY = 'ronin.familyRolesClosed';
 const foldedRoles = () => {
   try {
     const v = JSON.parse(localStorage.getItem(FOLD_KEY) || '[]');
@@ -71,7 +71,7 @@ const rememberFold = (name, open) => {
  * @param {(task: object, role: object) => HTMLElement} deps.taskButton  a task, launched inside a role
  * @param {(role: object) => HTMLElement} deps.roleButton  the role's own blank-task launch
  * @param {() => object[]} deps.allTasks  the session_task rows as the launcher holds them
- * @param {() => object[]} deps.allRoles  the job_role rows as the launcher holds them
+ * @param {() => object[]} deps.allRoles  the family_role rows as the launcher holds them
  * @param {() => void} deps.onChange  rebuild the board (sections AND the loose tail)
  * @returns {{wrap: HTMLElement, render: () => Set<string>}}
  */
@@ -80,9 +80,9 @@ export function buildRoleSections({ taskButton, roleButton, allTasks, allRoles, 
   wrap.className = 'ks-classes';
 
   const save = async (role, tasks) => {
-    const r = await request(`/api/job-roles/${encodeURIComponent(role)}/task_family`, {
+    const r = await request(`/api/family-roles/${encodeURIComponent(role)}/session_tasks`, {
       method: 'PUT',
-      json: { task_family: tasks },
+      json: { session_tasks: tasks },
     });
     if (!r.ok) {
       toast(r.message, false);
@@ -99,7 +99,7 @@ export function buildRoleSections({ taskButton, roleButton, allTasks, allRoles, 
     document.querySelector('.job-menu')?.remove();
     const m = document.createElement('div');
     m.className = 'job-menu';
-    const current = () => (allRoles().find((r) => r.name === role.name)?.task_family ?? []);
+    const current = () => (allRoles().find((r) => r.name === role.name)?.session_tasks ?? []);
     for (const k of allTasks()) {
       const b = document.createElement('button');
       b.type = 'button';
@@ -185,7 +185,7 @@ export function buildRoleSections({ taskButton, roleButton, allTasks, allRoles, 
       e.preventDefault();
       d.classList.remove('drop-ready');
       const name = e.dataTransfer.getData(DRAG_TYPE);
-      const now = allRoles().find((r) => r.name === role.name)?.task_family ?? [];
+      const now = allRoles().find((r) => r.name === role.name)?.session_tasks ?? [];
       if (!name || now.includes(name)) return;
       await save(role.name, [...now, name]);
     });
@@ -200,16 +200,16 @@ export function buildRoleSections({ taskButton, roleButton, allTasks, allRoles, 
     for (const role of allRoles()) {
       // A token the definitions no longer know renders nowhere and stays in the file —
       // the file is the owner's, and a stock task may come back.
-      const members = (role.task_family ?? []).map((n) => byName.get(n)).filter(Boolean);
+      const members = (role.session_tasks ?? []).map((n) => byName.get(n)).filter(Boolean);
       members.forEach((k) => shelved.add(k.name));
       wrap.appendChild(section(role, members));
     }
-    // A LOOSE TASK — on no role's shelf — launches with a blank job_role, which is a real
+    // A LOOSE TASK — on no role's shelf — launches with a blank family_role, which is a real
     // launch and not a leftover. It sits flat under the sections, the roster's own answer
     // for the untagged, with a heading only once sections exist.
     if (allRoles().length && shelved.size < tasks.length) {
       wrap.appendChild(
-        Object.assign(document.createElement('div'), { className: 'ks-loose-h', textContent: 'no job role' }),
+        Object.assign(document.createElement('div'), { className: 'ks-loose-h', textContent: 'no role' }),
       );
     }
     return shelved;

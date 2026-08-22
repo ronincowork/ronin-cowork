@@ -405,7 +405,7 @@ export async function setWipeboards(name: string, boards: string[]): Promise<str
  * without one taking its place here.
  *
  * What a session is DOING lives in its LETTER: `Tegami.session_task`, and who it IS lives
- * beside it as `Tegami.job_role`. The task is the one the session
+ * beside it as `Tegami.family_role`. The task is the one the session
  * itself keeps current with `write_tegami` as it migrates. That is michi's field, michi
  * puts the whole letter on every roster row through the ROW socket, and the client reads
  * the mark off `tegami.session_task`. A tmux option beside it would be a second copy of

@@ -54,9 +54,9 @@ export async function loadProjects() {
   tiles.forEach((t) => t.renderHome());
 }
 
-/* ---------- the launcher board: job_role × session_task × project_root ----------
+/* ---------- the launcher board: family_role × session_task × project_root ----------
  * The three universal axes — the same keys that scope a memory. Both catalog axes are
- * read live from ronin_catalogs/job_roles/ and ronin_catalogs/session_tasks/, never
+ * read live from ronin_catalogs/family_roles/ and ronin_catalogs/session_tasks/, never
  * hardcoded here.
  *
  * WHAT THE LAUNCH IS ACTUALLY BORN WITH IS NOT ON THESE ROWS. A dial, a permissions mode,
@@ -68,19 +68,19 @@ export async function loadProjects() {
  * The user picks project_root, session_launch_spec and group; the server assembles the
  * brief and performs the spawn.
  */
-export let roleData = null; // /api/job-roles
+export let roleData = null; // /api/family-roles
 export let taskData = null; // /api/session-tasks
 
 export async function loadPresets() {
-  const [roles, tasks] = await Promise.all([request('/api/job-roles'), request('/api/session-tasks')]);
+  const [roles, tasks] = await Promise.all([request('/api/family-roles'), request('/api/session-tasks')]);
   if (roles.ok && Array.isArray(roles.data)) roleData = roles.data;
   if (tasks.ok && Array.isArray(tasks.data)) taskData = tasks.data;
   tiles.forEach((t) => t.renderHome());
 }
 
 /** The resolved profile for one pick — the server's cascade, never a copy of it. */
-export async function launchProfile(jobRole, sessionTask) {
-  const q = new URLSearchParams({ job_role: jobRole || '', session_task: sessionTask || '' });
+export async function launchProfile(familyRole, sessionTask) {
+  const q = new URLSearchParams({ family_role: familyRole || '', session_task: sessionTask || '' });
   const r = await request(`/api/launch-profile?${q}`);
   return r.ok ? r.data : null;
 }
@@ -148,7 +148,7 @@ export function showReceipt(name, receipt) {
     // BOTH AXES ON THE RECEIPT, and a blank one is simply absent from it: the receipt
     // exists so a wrong fill is visible immediately, and "no task" is a fill that can be
     // wrong just as "CutCode" can.
-    receipt.job_role,
+    receipt.family_role,
     receipt.session_task,
     receipt.project_root,
     // No cmd = an `agent: none` kind: say so, rather than leaving a gap the reader

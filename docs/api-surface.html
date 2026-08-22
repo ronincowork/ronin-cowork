@@ -171,7 +171,7 @@
       <text class="t sm" x="310" y="88">/api/launch · /api/sessions · /api/home</text>
       <text class="t sm" x="310" y="105">/api/sessions/:name/{note,tags,control,ctx,send}</text>
       <text class="t sm" x="310" y="122">/api/wipeboards*</text>
-      <text class="t sm" x="310" y="139">/api/settei*  ·  /api/{macros,agents,session-jobs}</text>
+      <text class="t sm" x="310" y="139">/api/settei*  ·  /api/{macros,agents,session-tasks}</text>
       <text class="t sm" x="310" y="156">/api/project-roots*  ·  /api/saved-launches*</text>
       <text class="t sm" x="310" y="173">/api/passkey*  ·  /api/version  ·  /api/update/*</text>
       <text class="t sm" x="310" y="190">/api/file  (the ▧ Docs editor)</text>
@@ -278,7 +278,7 @@
   <div class="table-scroll"><table>
     <thead><tr><th style="width:38%">Endpoint</th><th>What it does</th></tr></thead>
     <tbody>
-      <tr><td class="p"><span class="v w">POST</span> /api/launch</td><td><b>Two variants on one path</b>, chosen by what the body carries: <code>launch_job</code> (session_job + prompt — the full catalog fill) and <code>launch_bare</code> (a name and nothing else — the tile picker). Express walks them in order.</td></tr>
+      <tr><td class="p"><span class="v w">POST</span> /api/launch</td><td><b>Two variants on one path</b>, chosen by what the body carries: <code>launch_job</code> (a <code>family_role</code> and/or a <code>session_task</code> + prompt — the full catalog fill, claimed by a body naming <b>either</b> axis) and <code>launch_bare</code> (a name and nothing else — the tile picker). Express walks them in order.</td></tr>
       <tr><td class="p"><span class="v">GET</span> /api/sessions</td><td>The plain session list.</td></tr>
       <tr><td class="p"><span class="v">GET</span> /api/home</td><td>The roster rows — <b>and where services contribute fields</b> through the ROW socket.</td></tr>
       <tr><td class="p"><span class="v">GET</span> /api/session-max</td><td>The owner's cap, with <code>live</code> riding along so one row is one round-trip.</td></tr>
@@ -299,7 +299,10 @@
       <tr><td class="p"><span class="v w">DELETE</span> /api/project-roots/:name</td><td>Exclude it. Nothing on disk is touched.</td></tr>
       <tr><td class="p"><span class="v">GET</span> /api/session-launch-specs</td><td>Every <code>provider · model</code> a session can be born on, in table order.</td></tr>
       <tr><td class="p"><span class="v">GET</span> /api/agents</td><td>Which agent CLIs are present on <b>this</b> machine — the fact that decides whether Setup asks "use it?" or "install it?".</td></tr>
-      <tr><td class="p"><span class="v">GET</span> /api/session-jobs</td><td>The session_job catalog.</td></tr>
+      <tr><td class="p"><span class="v">GET</span> /api/family-roles</td><td>The <code>family_role</code> catalog — merged stock &oplus; user, provenance on every row. Each role carries its own <code>session_tasks:</code>, and that is what the board's sections are built from.</td></tr>
+      <tr><td class="p"><span class="v">GET</span> /api/session-tasks</td><td>The <code>session_task</code> catalog. A task in no role's family is <b>loose</b>, and the board draws it in the blank-role tail — a real launch, not a leftover.</td></tr>
+      <tr><td class="p"><span class="v w">PUT</span> /api/family-roles/:name/session_tasks</td><td>Set a role's task family, and nothing else — the one board edit that already existed as a Job Group shelf. Creating a role, deleting one and authoring a task belong to the next build-out. 400 names what it refused.</td></tr>
+      <tr><td class="p"><span class="v">GET</span> /api/launch-profile</td><td>The <b>resolved</b> profile for one <code>(family_role, session_task)</code> pair, so the form never re-implements the cascade. It must be a pair and not a row: <code>mcpAlways</code> is true for <code>personalassistant</code> with a blank task and false for <code>developer</code> &times; <code>CutCode</code>. Either half may be blank.</td></tr>
       <tr><td class="p"><span class="v">GET</span> /api/saved-launches</td><td>Pre-filled launcher forms. User scope only — empty is the normal fresh state.</td></tr>
       <tr><td class="p"><span class="v w">POST</span> /api/saved-launches</td><td>Save one.</td></tr>
       <tr><td class="p"><span class="v w">DELETE</span> /api/saved-launches/:name</td><td>Drop one.</td></tr>
@@ -336,7 +339,9 @@
       <tr><td class="p"><span class="v">GET</span> · <span class="v w">POST</span> /api/sessions/:name/project-root</td><td>The directory this session serves. Sessions born outside the launcher report as untagged rather than guessed at.</td></tr>
       <tr><td class="p"><span class="v">GET</span> · <span class="v w">POST</span> /api/sessions/:name/note</td><td>The session's note.</td></tr>
       <tr><td class="p"><span class="v">GET</span> · <span class="v w">POST</span> /api/sessions/:name/tags</td><td>Its tags.</td></tr>
-      <tr><td class="p"><span class="v">GET</span> · <span class="v w">POST</span> /api/sessions/:name/session_job</td><td>What it is doing, read from and written to its <b>letter</b>. This is the owner's hand on a field the session normally keeps itself — a re-label and nothing else: no brief re-sent, dial and permissions untouched. Not validated against the catalog, on purpose.</td></tr>
+      <tr><td class="p"><span class="v">GET</span> · <span class="v w">POST</span> /api/sessions/:name/session_task</td><td>What it is doing <b>now</b>, read from and written to its <b>letter</b>. The owner's hand on a field the session normally keeps itself — dial and permissions untouched — but no longer a bare re-label: a committed change injects that task's reading into the running session, through the same observer the agent's own change goes through. GET also carries <code>delivery</code>, the split-state readout, present only when the mark moved and its reading did not land. A body naming <code>family_role</code> is refused 400 <i>before</i> the session lookup, because that is wrong about the request rather than the session.</td></tr>
+      <tr><td class="p"><span class="v">GET</span> /api/sessions/:name/family_role</td><td>Who the session <b>is</b>. GET only — every other method answers <b>405</b> with <code>Allow: GET</code>, because the role is fixed at birth and the seed is its only writer. If the value sent is in fact a <code>session_task</code>, the refusal says so and points at the axis that moves.</td></tr>
+      <tr><td class="p"><span class="v w">ALL</span> /api/sessions/:name/session_job</td><td><b>410 — retired.</b> Split on 2026-08-22 into <code>family_role</code> and <code>session_task</code>, with no compatibility reader. Gone rather than missing, so a caller on the old vocabulary is told what replaced it instead of getting the 404 a typo gets. <i>The removed collection route <code>/api/job-roles</code> is a plain 404 by contrast: a session's own axis refuses out loud, a deleted collection simply does not exist.</i></td></tr>
       <tr><td class="p"><span class="v">GET</span> /api/groups</td><td>Every group in play with its members — derived per call, so there is no registry to drift.</td></tr>
       <tr><td class="p"><span class="v">GET</span> · <span class="v w">POST</span> /api/sessions/:name/control</td><td>The dial: 👤 user · 👁 read · 🤖 agent.</td></tr>
       <tr><td class="p"><span class="v">GET</span> /api/sessions/:name/ctx</td><td>The context gauge.</td></tr>
@@ -395,7 +400,7 @@
   <div class="table-scroll"><table>
     <thead><tr><th style="width:38%">Endpoint</th><th>What it does</th></tr></thead>
     <tbody>
-      <tr><td class="p"><span class="v">GET</span> /api/sessions/:name/tegami</td><td>The parsed ladder — objective, session_job, rungs, legs, marker, docs.</td></tr>
+      <tr><td class="p"><span class="v">GET</span> /api/sessions/:name/tegami</td><td>The parsed ladder — objective, family_role, session_task, rungs, legs, marker, docs.</td></tr>
       <tr><td class="p"><span class="v">GET</span> /api/sessions/:name/tegami/raw</td><td>The letter verbatim: the markdown shell and the JSON block exactly as the agent left them.</td></tr>
     </tbody>
   </table></div>

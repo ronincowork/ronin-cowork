@@ -150,15 +150,15 @@ export function buildLadder(t) {
     box.appendChild(checkout);
   }
 
-  if (t.objective || t.session_task || t.job_role) {
+  if (t.objective || t.session_task || t.family_role) {
     const ob = document.createElement('div');
     ob.className = 'sl-obj';
-    if (t.job_role) {
+    if (t.family_role) {
       // WHO this session is. Birth-fixed, so it is drawn first and never changes under
       // the reader — it is the context the moving task sits inside.
       const role = document.createElement('span');
       role.className = 'sl-role';
-      role.textContent = t.job_role;
+      role.textContent = t.family_role;
       ob.appendChild(role);
     }
     if (t.session_task) {

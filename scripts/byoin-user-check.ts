@@ -14,10 +14,12 @@
  * it beside ronin-doctor, and `docs/test-protocols.md` is the page that says when to
  * run BYOIN. Empty or absent stores are a clean pass — a fresh box is not a finding.
  *
- * TOLERANT OF THE READER GENERATION on purpose: the role/task split moves the task
- * readers from src/catalog.ts (listSessionJobs) to src/definitions.ts (listSessionTasks
- * / listJobRoles). This check probes for whichever exists at run time and validates the
- * user stores against it, so it is true on either side of that migration.
+ * THE RETIRED-CUSTOMIZATION CHECK IS THE POINT OF THIS FILE, NOT AN EXTRA. The role/task
+ * split moved the readers to src/definitions.ts and deleted the old ones outright — no
+ * alias, no dual-read, by the cutover rule. So an owner who wrote a `SESSION_JOBS.md`, a
+ * `JOB_CLASSES.md`, or a `job/<name>/` boot shelf still HAS those files and nothing reads
+ * them any more. That is the exact silence this check exists to break: their work did not
+ * fail, it went dark, and only a named finding tells them where to move it.
  */
 import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
@@ -51,8 +53,23 @@ async function probe(rel: string): Promise<Record<string, unknown> | null> {
 // Per-file required fields, mirroring what each reader drops entries over. A file not
 // named here gets the generic parse check only.
 const REQUIRED: Record<string, { keys: string[]; unless?: (e: { get: (k: string) => string }) => boolean }> = {
-  'SESSION_JOBS.md': { keys: ['opening'], unless: (e) => e.get('agent').toLowerCase() === 'none' },
   'MACROS.md': { keys: ['label', 'blurb'] },
+};
+
+/**
+ * User-store files the cut RETIRED. Nothing reads these; the owner's content is intact and
+ * unreachable. Each names what replaced it, because "this is dead" without "put it here"
+ * is only half a remedy.
+ */
+const RETIRED: Record<string, { was: string; now: string }> = {
+  'SESSION_JOBS.md': {
+    was: 'the combined session_job catalog',
+    now: 'one file per task in session_tasks/<name>.md — see ronin_catalogs/session_tasks/README.md',
+  },
+  'JOB_CLASSES.md': {
+    was: 'the Job Group manifest',
+    now: 'one file per role in family_roles/<name>.md, each carrying its own `session_tasks:` — see ronin_catalogs/family_roles/README.md',
+  },
 };
 
 async function checkCatalogFile(dir: string, file: string, label: string): Promise<void> {
@@ -89,14 +106,14 @@ async function checkCatalogFile(dir: string, file: string, label: string): Promi
 async function checkDefinitionsSurface(catalogsDir: string): Promise<void> {
   const defs = await probe('../src/definitions.js');
   if (defs && typeof defs.listSessionTasks === 'function') {
-    // New generation: session_tasks/ and job_roles/ are directories of one file per
-    // definition, in the repo and in your store alike.
-    for (const kind of ['session_tasks', 'job_roles'] as const) {
+    // session_tasks/ and family_roles/ are directories of one file per definition, in the
+    // repo and in your store alike.
+    for (const kind of ['session_tasks', 'family_roles'] as const) {
       const dir = path.join(catalogsDir, kind);
       if (!(await exists(dir))) continue;
       const listed = (await (kind === 'session_tasks'
         ? (defs.listSessionTasks as () => Promise<{ name: string }[]>)()
-        : (defs.listJobRoles as () => Promise<{ name: string }[]>)()
+        : (defs.listFamilyRoles as () => Promise<{ name: string }[]>)()
       ).catch(() => [] as { name: string }[])).map((r) => r.name.toLowerCase());
       for (const f of await mdFiles(dir)) {
         if (f.toLowerCase() === 'readme.md') continue;
@@ -109,23 +126,33 @@ async function checkDefinitionsSurface(catalogsDir: string): Promise<void> {
           );
       }
     }
-    return;
   }
-  const cat = await probe('../src/catalog.js');
-  if (cat && typeof cat.listSessionJobs === 'function' && (await exists(path.join(catalogsDir, 'SESSION_JOBS.md')))) {
-    // Old generation: one SESSION_JOBS.md, user entries merged over stock.
-    const served = ((await (cat.listSessionJobs as () => Promise<{ name: string }[]>)()) ?? []).map((e) =>
-      e.name.toLowerCase(),
+}
+
+/* ---- 2b · what the cut retired: your files are still there, and nothing reads them ---- */
+
+async function checkRetired(catalogsDir: string): Promise<void> {
+  for (const [file, { was, now }] of Object.entries(RETIRED)) {
+    if (!(await exists(path.join(catalogsDir, file)))) continue;
+    looked++;
+    find(
+      `${file} (yours): RETIRED — this was ${was}, and no reader has looked at it since the family_role/session_task split. Your entries are intact and unreachable`,
+      `move each entry to ${now}, then delete the old file. Nothing converts it for you: the cut ships no compatibility reader on purpose`,
     );
-    const raw = await readFile(path.join(catalogsDir, 'SESSION_JOBS.md'), 'utf8');
-    for (const s of splitSections(raw, 'user').filter((x) => x.head === x.name)) {
-      if (entryValue(s.lines, 'hidden').toLowerCase() === 'yes') continue;
-      if (!served.includes(s.name.toLowerCase()))
-        find(
-          `SESSION_JOBS.md (yours): your entry "${s.name}" does not surface from the reader`,
-          `the usual cause is a missing \`opening:\` on an agent kind — see the format header in ronin_catalogs/SESSION_JOBS.md`,
-        );
-    }
+  }
+
+  // The boot shelf's old level. `ensureShelf` now makes role/ and task/, so a leftover
+  // job/ sits beside them looking live.
+  const jobShelf = path.join(storeDir('session_boot'), 'job');
+  const shelves = (await readdir(jobShelf, { withFileTypes: true }).catch(() => [])).filter((e) => e.isDirectory());
+  if (shelves.length) {
+    looked++;
+    find(
+      `session_boot store: job/ is RETIRED and still holds ${shelves.length} shelf(s) — ${shelves
+        .map((e) => e.name)
+        .join(', ')}. No session has been given this reading since the split`,
+      `a shelf named for work moves to task/<session_task>/; one named for who the session IS moves to role/<family_role>/. Both levels already exist beside it, and they ADD UP rather than override — then delete job/`,
+    );
   }
 }
 
@@ -157,9 +184,13 @@ async function checkShadowStore(id: string, stockDir: string): Promise<void> {
 
 const catalogsDir = storeDir('catalogs');
 if (await exists(catalogsDir)) {
-  for (const f of await mdFiles(catalogsDir)) await checkCatalogFile(catalogsDir, f, `${f} (yours)`);
+  for (const f of await mdFiles(catalogsDir)) {
+    if (f in RETIRED) continue; // reported by checkRetired; validating it against a dead reader would mislead
+    await checkCatalogFile(catalogsDir, f, `${f} (yours)`);
+  }
   await checkDefinitionsSurface(catalogsDir);
 }
+await checkRetired(catalogsDir);
 await checkShadowStore('sops', 'ronin_sops');
 await checkShadowStore('library', 'ronin_library');
 await checkShadowStore('session_boot', 'ronin_session_boot');
