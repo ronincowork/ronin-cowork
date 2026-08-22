@@ -17,7 +17,7 @@ the <name> macro", "/<name>". **Never require a marker** to recognise a macro.
 **Every macro here is one of two classes, and its `class:` line says which** (KOTOBA):
 
 - **`session_macro.lookup`** — a read-only question Ronin already holds the answer to.
-  One command (`tejun-group`, `tejun-wipeboard`), no compile, no step tracking; sent
+  One command (`tejun-team`, `tejun-wipeboard`), no compile, no step tracking; sent
   through Ronin it arrives already resolved, so never re-run one to confirm.
 - **`session_macro.workflow`** — a recipe of cataloged actions you perform: compile it
   (`ronin_bin/tejun <name>`) or step through it (`tejun-step start <name>`), execute in
@@ -277,43 +277,43 @@ no manifest line, no PR. It just goes away.
 
 Contrast with `land`: land RECORDS (README + manifest + PR) then dies; delete just dies.
 
-## tag
+## team
 - **class:** session_macro.lookup
-- **label:** Who is in this group
-- **blurb:** Name a group of sessions and get back who is in it right now, with each one's permission dial. It only looks the name up — it never tags anything, and it sends the members nothing.
-Aliases: group
-Owner names a GROUP and expects you to know who is in it: `+tag: ronin` — "the ronin
-group" is now the set we are talking about. **Read-only: this NEVER tags anything.**
+- **label:** Who is on this team
+- **blurb:** Name a team of sessions and get back who is on it right now, with each one's permission dial. It only looks the name up — it never tags anything, and it sends the members nothing.
+Aliases: tag, group (retired spellings, read but never taught)
+Owner names a TEAM and expects you to know who is on it: `+team: ronin` — "the ronin
+team" is now the set we are talking about. **Read-only: this NEVER tags anything.**
 Tagging is the owner's hand in the Ronin UI (🏷 on the tile header), or a macro's at
-birth; `+tag:` only resolves a name to its members.
+birth; `+team:` only resolves a name to its members.
 
-Params: `group` (the tag name; bare `+tag` with no arg = list every group in play).
+Params: `team` (the team name; bare `+team` with no arg = list every team in play).
 
-**Sent through Ronin, this arrives ALREADY ANSWERED.** The server resolves the group
+**Sent through Ronin, this arrives ALREADY ANSWERED.** The server resolves the team
 at send time, so what lands in the pane is the roster itself ("→ resolved by Ronin (no
-lookup needed): the ronin group is 3 sessions — …"). When you see that, the lookup is
+lookup needed): the ronin team is 3 sessions — …"). When you see that, the lookup is
 DONE: report it and stop. Do not compile this macro, do not re-run the tool to confirm
 it, do not go hunting the session list — that is exactly the busywork the expansion
-exists to remove. The steps below are the FALLBACK, for a `+tag:` typed straight into a
+exists to remove. The steps below are the FALLBACK, for a `+team:` typed straight into a
 pane (which Ronin never sees) or when the expansion is unavailable.
 
 | # | Action | With |
 |---|---|---|
-| 1 | group-roster | `tejun-group <group>` — members + each one's dial. No arg: `tejun-group` lists the groups |
-| 2 | report-outcome | the members with their dials, and that this set is now what "<group>" means in this conversation |
+| 1 | team-roster | `tejun-team <team>` — members + each one's dial. No arg: `tejun-team` lists the teams |
+| 2 | report-outcome | the members with their dials, and that this set is now what "<team>" means in this conversation |
 
-Report: the member sessions and their dials, in one short block — then STOP. `+tag:` on
+Report: the member sessions and their dials, in one short block — then STOP. `+team:` on
 its own is a lookup, not an instruction to go do something to them; wait for what the
 owner wants done with the set.
 
 **Re-resolve, never remember.** Membership changes when sessions are born, get tagged,
-or die, so run `tejun-group` again at the start of any later fan-out over the group —
+or die, so run `tejun-team` again at the start of any later fan-out over the team —
 a list carried in your head goes stale silently, which is the whole failure this macro
 exists to prevent. And each member still needs its own control-check before you touch
 it: the roster reports the dial, it does not grant anything.
 
-If the name matches nothing, say so and show what groups DO exist (`tejun-group`) —
-never guess at a near-match, `kojin` and `kojinsa` are different groups.
+If the name matches nothing, say so and show what teams DO exist (`tejun-team`) —
+never guess at a near-match, `kojin` and `kojinsa` are different teams.
 
 ## wipeboard
 - **class:** session_macro.lookup
@@ -324,8 +324,10 @@ Owner names a WIPEBOARD and expects you to know what it is and who is on it:
 `+wipeboard: parserwork`. A wipeboard is a shared text surface — one markdown file
 several sessions all read and append to — so agents on the same problem talk to each
 other instead of every message going through the owner. **Read-only: this NEVER enrols
-anyone.** Membership is the owner's hand (the ▤ Wipeboard tab in Ronin), same as
-tagging; `+wipeboard:` only resolves a name to its brief, its roster and its path.
+anyone.** A TEAM wipeboard's membership is the team's — it follows the tags, and there
+is no enrolment at all; a CUSTOM wipeboard's membership is the owner's hand (the
+▤ Wipeboard tab in Ronin). `+wipeboard:` only resolves a name to its brief, its roster
+and its path.
 
 Params: `wipeboard` (the wipeboard's name; bare `+wipeboard` with no arg = list every wipeboard in play).
 
@@ -353,7 +355,7 @@ append only, never rewrite another agent's post, never edit the Brief.
 Owner wants THIS session to say something to ANOTHER one:
 `+tell: page_capture the login work is on hold, stay off it for now`. The owner's words for
 what it is: *"I can tell my agent to talk to another agent."* One message, one session,
-delivered or refused — it is not a fan-out over a group and it is not a conversation.
+delivered or refused — it is not a fan-out over a team and it is not a conversation.
 
 Params: `session` (who to reach — the first word after the colon), `message` (everything
 after that; send the owner's words unless he asks you to put it your own way).

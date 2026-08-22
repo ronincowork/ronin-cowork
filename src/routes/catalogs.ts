@@ -337,10 +337,14 @@ export function registerCatalogs(app: express.Express): void {
     const name = String(req.body?.name ?? '').trim().toLowerCase();
     if (!isValidLaunchName(name)) return res.status(400).json({ error: 'Handle: lowercase letters, digits, - and _.' });
     const fields: Partial<Record<LaunchField, string>> = {};
-    for (const k of ['label', 'job_role', 'session_task', 'project_root', 'group', 'mode', 'prompt'] as LaunchField[]) {
+    for (const k of ['label', 'job_role', 'session_task', 'project_root', 'team', 'mode', 'prompt'] as LaunchField[]) {
       const v = (req.body as Record<string, unknown>)?.[k];
       if (typeof v === 'string') fields[k] = v.trim().slice(0, 500);
     }
+    // `group` is the retired spelling of the team field — read from an old caller,
+    // never written back: the saved block says `team:` either way.
+    const legacy = (req.body as Record<string, unknown>)?.group;
+    if (!fields.team && typeof legacy === 'string') fields.team = legacy.trim().slice(0, 500);
     try {
       await saveLaunch(name, fields);
       res.json({ ok: true });

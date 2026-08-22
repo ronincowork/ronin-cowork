@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+# tejun-team — resolve a team name to its sessions (TEJUN team-roster).
+# Usage: tejun-team [team]          no arg = list every team in play
+#
+# A "team" (KOTOBA: session_team) is just the sessions carrying the same tag in
+# @ronin-tags — there is no team object to create or clean up, and a tag dies with its
+# session. This reads tmux directly (not the Ronin HTTP API) so it still answers when
+# Ronin isn't running. Read-only: it reports each member's dial but changes nothing,
+# and never tags anything. `tejun-group` is the retired name and forwards here.
+set -u
+
+VIEWER_PREFIX="grid_"   # browser viewer sessions — never on a team
+
+# Where the session record lives on THIS machine. Asked, never spelled — same resolver
+# read_tegami and write_tegami use, so a moved store moves all three together.
+STORE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../bin" && pwd)/ronin-store"
+[ -x "$STORE" ] || STORE=ronin-store
+SESSION_STORE="$("$STORE" session 2>/dev/null)"
+
+# A session's two axes out of its own letter, as 'job_role\tsession_task' — empty fields
+# when it has no letter or has not said. Both live in TEGAMI: the TASK because the session
+# may change it as the work changes (`write_tegami`), the ROLE because it was fixed at
+# birth and nothing may change it afterwards.
+#
+# This used to be a fourth tmux column, @ronin-lead — the teams a session was hand-marked
+# as leading. That is retired: the coordinator of a team is the member whose ROLE is
+# `quarterback`. Since the schema cut that is a better answer than it was: a role cannot
+# change mid-session, so who runs a team cannot drift the way a mark read off a moving
+# `session_job` could.
+axes_of() {
+  local key row stamped created
+  [ -n "${SESSION_STORE:-}" ] || return 0
+  row=$(tmux list-sessions -F '#{session_name}	#{@ronin-key}	#{session_created}' 2>/dev/null \
+        | awk -F'\t' -v n="$1" '$1==n {print; exit}')
+  [ -n "$row" ] || return 0
+  stamped=$(printf '%s' "$row" | cut -f2); created=$(printf '%s' "$row" | cut -f3)
+  if [ -n "${stamped// /}" ]; then key="$stamped"
+  elif [ -n "${created// /}" ]; then key="$1-$created"
+  else key="$1"; fi
+  python3 - "$SESSION_STORE/$key/tegami.md" <<'PY' 2>/dev/null
+import json, re, sys
+try:
+    t = open(sys.argv[1]).read()
+except OSError:
+    raise SystemExit
+m = re.search(r"```(?:json)?\s*\n(.*?)\n```", t, re.S)
+raw = m.group(1) if m else t[t.find("{"):t.rfind("}") + 1]
+try:
+    d = json.loads(raw)
+except Exception:
+    raise SystemExit
+say = lambda k: d[k].strip() if isinstance(d.get(k), str) else ""
+print("%s\t%s" % (say("job_role"), say("session_task")))
+PY
+}
+
+# name·tags·dial·job_role·session_task for every real session, viewers dropped.
+#
+# SEP is \x1f (unit separator), NOT a tab. Tab is an IFS *whitespace* character, so bash
+# collapses a RUN of them into one delimiter: an untagged session emitted as
+# `name<TAB><TAB>write` read back as tags="write", and every such session then matched a
+# team called "write". \x1f is not whitespace, so an empty field stays an empty field.
+# Nothing in a name, tag, dial, role or task can contain it.
+SEP=$'\x1f'
+roster() {
+  while IFS=$SEP read -r name tags dial; do
+    # axes_of answers 'role<TAB>task'; the tab becomes a SEP so both are fields here.
+    printf '%s%s%s%s%s%s%s\n' "$name" "$SEP" "$tags" "$SEP" "$dial" "$SEP" \
+      "$(axes_of "$name" | tr '\t' "$SEP")"
+  done < <(tmux list-sessions -F "#{session_name}${SEP}#{@ronin-tags}${SEP}#{@ronin-control}" 2>/dev/null \
+    | grep -v "^${VIEWER_PREFIX}")
+}
+
+# Does $1 (a comma list) contain the exact team $2?
+has_team() { case ",${1// /}," in *",${2},"*) return 0 ;; *) return 1 ;; esac; }
+
+if [ $# -eq 0 ]; then
+  # Every team in play + its size. Sessions with no tags are reported as loose, so
+  # "not in the list" never silently means "I forgot to tag it".
+  #
+  # A team's quarterback is named beside it. Unlike the old lead, coordinating implies
+  # MEMBERSHIP: a quarterback is tagged into the team it runs like anyone else, so a
+  # team can no longer exist by virtue of somebody leading an empty one.
+  out=$(roster | awk -F'\037' '
+    { if ($2 == "") { loose++; next }
+      n = split($2, t, ",")
+      for (i = 1; i <= n; i++) { gsub(/^[ \t]+|[ \t]+$/, "", t[i])
+        if (t[i] != "") { c[t[i]]++; seen[t[i]] = 1
+          if ($4 == "quarterback") qb[t[i]] = (qb[t[i]] == "" ? $1 : qb[t[i]] " + " $1) } }
+    }
+    END { for (g in seen) printf "%s\037%d\037%s\n", g, c[g], qb[g]; if (loose) printf "\001untagged\037%d\037\n", loose }' \
+    | sort)
+  [ -n "$out" ] || { echo "NO-TEAMS: no session carries a tag yet (owner tags them in the Ronin UI)"; exit 3; }
+  printf '%s\n' "$out" | while IFS=$SEP read -r g n qb; do
+    case "$g" in
+      $'\001untagged') printf '%-24s %s session(s), on no team\n' '(untagged)' "$n" ;;
+      *) if [ -n "${qb:-}" ]; then
+           printf '%-24s %s session(s), quarterbacked by %s\n' "$g" "$n" "$qb"
+         else
+           printf '%-24s %s session(s)\n' "$g" "$n"
+         fi ;;
+    esac
+  done
+  exit 0
+fi
+
+G=$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')
+found=0
+# The quarterback goes first, then the rest — the same order the owner sees in the Ronin
+# session list. Every member's ROLE and TASK are printed ('-' where nobody has said),
+# because on a team roster "who are these and what is each of them doing?" is the
+# question being asked. Neither is a permission: the dial still decides who may drive whom.
+while IFS=$SEP read -r name tags dial role task; do
+  has_team "${tags:-}" "$G" || continue
+  [ "${role:-}" = quarterback ] || continue
+  found=1
+  printf '%-24s %-8s %-18s %s\n' "$name" "${dial:-write}" "$role" "${task:--}"
+done < <(roster)
+
+while IFS=$SEP read -r name tags dial role task; do
+  # exact tag match, not substring: 'kojin' must not match 'kojinsa'
+  has_team "${tags:-}" "$G" || continue
+  [ "${role:-}" = quarterback ] && continue   # already printed, at the head
+  found=1
+  printf '%-24s %-8s %-18s %s\n' "$name" "${dial:-write}" "${role:--}" "${task:--}"
+done < <(roster)
+
+[ "$found" = 1 ] || { echo "NO-TEAM: nothing is tagged '$G' — run 'tejun-team' to see the teams that exist"; exit 3; }

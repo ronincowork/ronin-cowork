@@ -189,7 +189,12 @@ export function registerWipeboards(app: express.Express): void {
   app.put('/api/wipeboards/:name/brief', async (req, res) => {
     const { name } = req.params;
     if (!isValidBoardName(name)) return res.status(400).json({ error: 'Invalid board name.' });
-    if (!(await boardExists(name))) return res.status(404).json({ error: 'No such wipeboard.' });
+    if (!(await boardExists(name))) {
+      // Writing a Brief is authoring, so it MAY materialize a team wipeboard — with
+      // the team stub, so the file says whose it is even before the brief lands.
+      if (!(await isTeamBoard(name))) return res.status(404).json({ error: 'No such wipeboard.' });
+      await ensureBoard(name, teamStub(name));
+    }
     try {
       await setBrief(name, String(req.body?.brief ?? '').slice(0, 8000));
       res.json({ ok: true });

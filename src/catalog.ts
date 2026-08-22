@@ -294,7 +294,9 @@ export async function listSavedLaunches(): Promise<SavedLaunchInfo[]> {
       job_role: e.get('job_role'),
       session_task: e.get('session_task'),
       project_root: e.get('project_root'),
-      group: e.get('group'),
+      // The team the session is born into. `group:` is the retired spelling, read from
+      // files written before R32; the wire field keeps its name (an internal seam).
+      group: e.get('team') || e.get('group'),
       mode: (e.get('mode').toLowerCase() === 'assisted' ? 'assisted' : 'manual') as SavedLaunchInfo['mode'],
       prompt: e.get('prompt'),
     }))
@@ -306,7 +308,9 @@ export async function listSavedLaunches(): Promise<SavedLaunchInfo[]> {
 /** A saved-launch handle: one lowercase word, the `##` heading, the whole shortcut. */
 export const isValidLaunchName = (n: string) => /^[a-z0-9][a-z0-9_-]*$/.test(n) && n.length <= 32;
 
-const LAUNCH_FIELDS = ['label', 'job_role', 'session_task', 'project_root', 'group', 'mode', 'prompt'] as const;
+// `team` is the documented field (KOTOBA R32); `group:` in an existing file is still
+// read — see listSavedLaunches — but a save always writes the word that exists.
+const LAUNCH_FIELDS = ['label', 'job_role', 'session_task', 'project_root', 'team', 'mode', 'prompt'] as const;
 export type LaunchField = (typeof LAUNCH_FIELDS)[number];
 
 /**

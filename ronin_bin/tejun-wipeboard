@@ -1,18 +1,20 @@
 #!/usr/bin/env bash
 # tejun-wipeboard — a shared text surface a set of sessions can all read and write.
-# Usage: tejun-wipeboard                          every board in play, with member counts
-#        tejun-wipeboard <board>                  the roster (member + dial) and the file path
-#        tejun-wipeboard <board> add <target>…    tag sessions onto the board + notify them
-#        tejun-wipeboard <board> remove <target>… untag + notify
-#        tejun-wipeboard <board> post <text…>     append one watermarked entry + notify the other members
-#        tejun-wipeboard <board> read [n]         the last n posts (default 20)
+# Usage: tejun-wipeboard                              every wipeboard in play, with member counts
+#        tejun-wipeboard <wipeboard>                  the roster (member + dial) and the file path
+#        tejun-wipeboard <wipeboard> add <target>…    enrol sessions on a CUSTOM wipeboard + notify them
+#        tejun-wipeboard <wipeboard> remove <target>… unenrol + notify
+#        tejun-wipeboard <wipeboard> post <text…>     append one watermarked entry + notify the other members
+#        tejun-wipeboard <wipeboard> read [n]         the last n posts (default 20)
 #
-# A <target> is a session (`name` or `@name`) or a whole group (`+group`, `+tag:group`).
+# A <target> is a session (`name` or `@name`) or a whole team (`+team:name`, `+name`).
 #
-# A wipeboard is TWO things and nothing else: a markdown file, and a tmux user option
-# (@ronin-wipeboards) naming who is on it. No database, no daemon, no locking — posts
-# are appended with >> and that IS the concurrency story. Membership lives on the
-# session so it dies with the session and can never drift from reality.
+# TWO KINDS (docs/wipeboards.md). A TEAM wipeboard exists because its team does: same
+# name, membership READ OFF THE TEAM (@ronin-tags) at every answer — nothing enrolled,
+# nothing that can drift, so `add`/`remove` refuse and point at the Roster's tags. A
+# CUSTOM wipeboard is enrolled by hand in @ronin-wipeboards, which lives on the session
+# and dies with it. Either way the record is a markdown file: no database, no daemon,
+# no locking — posts are appended with >> and that IS the concurrency story.
 #
 # Vendor-neutral by construction: the RECORD is a FILE, and the nudge that says the file
 # moved is tmux keystrokes through tejun-send. Nothing here reaches into any agent CLI's
@@ -37,7 +39,7 @@ OWNER_NAME="$(tmux show-option -s -qv @ronin-owner 2>/dev/null || true)"
 [ -n "$OWNER_NAME" ] || OWNER_NAME="$(id -un 2>/dev/null || echo owner)"
 OWNER="user: $OWNER_NAME"
 
-usage() { echo "usage: tejun-wipeboard [board [add|remove|post|read] …]" >&2; exit 2; }
+usage() { echo "usage: tejun-wipeboard [wipeboard [add|remove|post|read] …]" >&2; exit 2; }
 
 # Where the session record lives on THIS machine. Asked, never spelled — the same
 # resolver read_tegami and write_tegami use, so a moved store moves all of them together.
@@ -76,19 +78,21 @@ print("%s\t%s" % (say("job_role"), say("session_task")))
 PY
 }
 
-# name·boards·dial·job_role·session_task for every real session, viewers dropped.
+# name·boards·teams·dial·job_role·session_task for every real session, viewers dropped.
 #
 # SEP is \x1f (unit separator), NOT a tab. Tab is an IFS *whitespace* character, so bash
-# collapses a RUN of them into one delimiter: a session on no board emitted as
+# collapses a RUN of them into one delimiter: a session on no wipeboard emitted as
 # `name<TAB><TAB>write` read back with boards="write". \x1f is not whitespace, so an
-# empty field stays an empty field. Nothing in a name, board, dial or job contains it.
+# empty field stays an empty field. Nothing in a name, wipeboard, team, dial or task
+# contains it. TEAMS ride along because membership is the union: a team wipeboard's
+# members are read off @ronin-tags, a custom one's off @ronin-wipeboards.
 SEP=$'\x1f'
 roster() {
-  while IFS=$SEP read -r name boards dial; do
+  while IFS=$SEP read -r name boards teams dial; do
     # axes_of answers 'role<TAB>task'; the tab becomes a SEP so both are fields here.
-    printf '%s%s%s%s%s%s%s\n' "$name" "$SEP" "$boards" "$SEP" "$dial" "$SEP" \
+    printf '%s%s%s%s%s%s%s%s%s\n' "$name" "$SEP" "$boards" "$SEP" "$teams" "$SEP" "$dial" "$SEP" \
       "$(axes_of "$name" | tr '\t' "$SEP")"
-  done < <(tmux list-sessions -F "#{session_name}${SEP}#{${BOARDS_OPT}}${SEP}#{@ronin-control}" 2>/dev/null \
+  done < <(tmux list-sessions -F "#{session_name}${SEP}#{${BOARDS_OPT}}${SEP}#{@ronin-tags}${SEP}#{@ronin-control}" 2>/dev/null \
     | grep -v "^${VIEWER_PREFIX}")
 }
 
@@ -97,6 +101,15 @@ boards_of() { tmux show-options -t "$1" -qv "$BOARDS_OPT" 2>/dev/null | tr -d '\
 
 # Is $1 a member of board $2? Exact match, so 'plan' never matches 'planning'.
 has_board() { case ",$(boards_of "$1" | tr -d ' ')," in *",$2,"*) return 0 ;; *) return 1 ;; esac; }
+
+# Does a live team bear this name? Then it is a TEAM wipeboard: the team is the
+# membership and @ronin-wipeboards is not consulted for it (docs/wipeboards.md).
+is_team_board() {
+  while IFS=$SEP read -r _ _ teams _; do
+    case ",${teams// /}," in *",$1,"*) return 0 ;; esac
+  done < <(roster)
+  return 1
+}
 
 # Join stdin lines into "a, b, c".
 commas() { tr '\n' ',' | sed 's/,$//; s/,/, /g'; }
@@ -113,16 +126,22 @@ whoami_session() {
     | grep -v "^${VIEWER_PREFIX}" | head -1
 }
 
-# Create the file with its Brief stub if this board has never been written to.
+# Create the file with its Brief stub if this wipeboard has never been written to.
+# A team wipeboard's stub says whose it is and how membership works — its first reader
+# arrives with no enrolment step behind them. Same text the server writes.
 ensure_file() {
   local f; f=$(path_of "$1")
   [ -e "$f" ] && return 0
   mkdir -p "$DIR" || return 1
-  {
-    printf '# wipeboard: %s\n\n' "$1"
-    printf '## Brief\n\n'
-    printf '_(the owner writes what this board is for here)_\n'
-  } > "$f"
+  if is_team_board "$1"; then
+    printf '# wipeboard: %s\n\n## Brief\n\nThe %s team'"'"'s wipeboard — membership follows the team.\n' "$1" "$1" > "$f"
+  else
+    {
+      printf '# wipeboard: %s\n\n' "$1"
+      printf '## Brief\n\n'
+      printf '_(the owner writes what this wipeboard is for here)_\n'
+    } > "$f"
+  fi
 }
 
 # One watermarked entry. `>>` is the whole concurrency story: O_APPEND writes from
@@ -134,20 +153,34 @@ append_post() {
   printf '\n### %s · %s\n%s\n' "$author" "$(date +%H:%M)" "$text" >> "$f"
 }
 
-# ---- no args: every board in play -------------------------------------------------
+# ---- no args: every wipeboard in play ---------------------------------------------
 if [ $# -eq 0 ]; then
-  counts=$(roster | awk -F'\t' '
+  ros=$(roster)
+  # Teams first as a fact, not an ordering: each live team IS a wipeboard, file or not,
+  # and a team WINS its name — an old enrolment on it is superseded, not double-listed.
+  teams=$(printf '%s\n' "$ros" | awk -F'\037' '
+    { n = split($3, t, ",")
+      for (i = 1; i <= n; i++) { gsub(/^[ \t]+|[ \t]+$/, "", t[i]); if (t[i] != "") c[t[i]]++ } }
+    END { for (k in c) printf "%s\t%d\n", k, c[k] }' | sort)
+  counts=$(printf '%s\n' "$ros" | awk -F'\037' '
     { n = split($2, b, ",")
       for (i = 1; i <= n; i++) { gsub(/^[ \t]+|[ \t]+$/, "", b[i]); if (b[i] != "") c[b[i]]++ } }
     END { for (k in c) printf "%s\t%d\n", k, c[k] }' | sort)
-  # A board with a file but no live members still exists — it just has nobody on it.
+  # A custom wipeboard with a file but no live members still exists — nobody is on it.
   files=$(ls "$DIR" 2>/dev/null | sed -n 's/\.md$//p' | sort)
-  all=$(printf '%s\n%s\n' "$(printf '%s\n' "$counts" | cut -f1)" "$files" | grep -v '^$' | sort -u)
-  [ -n "$all" ] || { echo "NO-BOARDS: no wipeboard exists yet — 'tejun-wipeboard <name> add <session>' starts one"; exit 3; }
+  team_names=$(printf '%s\n' "$teams" | cut -f1)
+  customs=$(printf '%s\n%s\n' "$(printf '%s\n' "$counts" | cut -f1)" "$files" | grep -v '^$' | sort -u \
+    | grep -vxF -f <(printf '%s\n' "$team_names") 2>/dev/null || true)
+  [ -n "$team_names$customs" ] || { echo "NO-WIPEBOARDS: none in play yet — a team's exists the moment the team does; 'tejun-wipeboard <name> add <session>' starts a custom one"; exit 3; }
+  while IFS=$'\t' read -r b n; do
+    [ -n "$b" ] || continue
+    printf '%-24s %-7s %s member(s)\n' "$b" team "$n"
+  done <<< "$teams"
   while read -r b; do
+    [ -n "$b" ] || continue
     n=$(printf '%s\n' "$counts" | awk -F'\t' -v b="$b" '$1 == b { print $2 }')
-    printf '%-24s %s member(s)\n' "$b" "${n:-0}"
-  done <<< "$all"
+    printf '%-24s %-7s %s member(s)\n' "$b" custom "${n:-0}"
+  done <<< "$customs"
   exit 0
 fi
 
@@ -163,27 +196,36 @@ BOARD=$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]'); shift
 # a shared board asks. Names, not icons: this is a readout for agents, and a word beats an
 # emoji when the reader is parsing lines. '-' where nobody has said.
 members() {
-  while IFS=$SEP read -r name boards dial role task; do
-    case ",${boards// /}," in *",${BOARD},"*) ;; *) continue ;; esac
+  # The union view, decided once: a team wipeboard's members are the team's sessions
+  # (field 3), a custom one's are the enrolled (field 2). Same question, one answer.
+  local mode=custom
+  is_team_board "$BOARD" && mode=team
+  on_board() {
+    if [ "$mode" = team ]; then case ",${2// /}," in *",${BOARD},"*) return 0 ;; *) return 1 ;; esac
+    else case ",${1// /}," in *",${BOARD},"*) return 0 ;; *) return 1 ;; esac; fi
+  }
+  while IFS=$SEP read -r name boards teams dial role task; do
+    on_board "$boards" "$teams" || continue
     [ "${role:-}" = quarterback ] && printf '%s\t%s\t%s\n' "$name" "${dial:-write}" "${task:-quarterback}"
   done < <(roster)
-  while IFS=$SEP read -r name boards dial role task; do
-    case ",${boards// /}," in *",${BOARD},"*) ;; *) continue ;; esac
+  while IFS=$SEP read -r name boards teams dial role task; do
+    on_board "$boards" "$teams" || continue
     [ "${role:-}" = quarterback ] || printf '%s\t%s\t%s\n' "$name" "${dial:-write}" "${task:--}"
   done < <(roster)
 }
 
-# Expand one target into session names: '+g' / '+tag:g' / '+group:g' = a group.
+# Expand one target into session names: '+t' / '+team:t' = a whole team. The retired
+# spellings '+tag:t' / '+group:t' are still read — input only, never taught.
 expand_target() {
   local t="$1"
   case "$t" in
     +*)
-      local g="${t#+}"; g="${g#tag:}"; g="${g#group:}"; g=$(printf '%s' "$g" | tr '[:upper:]' '[:lower:]')
+      local g="${t#+}"; g="${g#team:}"; g="${g#tag:}"; g="${g#group:}"; g=$(printf '%s' "$g" | tr '[:upper:]' '[:lower:]')
       local found=0
       while IFS=$'\t' read -r name tags _; do
         case ",${tags// /}," in *",${g},"*) printf '%s\n' "$name"; found=1 ;; esac
       done < <(tmux list-sessions -F '#{session_name}	#{@ronin-tags}	x' 2>/dev/null | grep -v "^${VIEWER_PREFIX}")
-      [ "$found" = 1 ] || echo "NO-GROUP:$g" >&2
+      [ "$found" = 1 ] || echo "NO-TEAM:$g" >&2
       ;;
     *) printf '%s\n' "${t#@}" ;;
   esac
@@ -192,7 +234,9 @@ expand_target() {
 case "${1:-}" in
   # ---- roster ---------------------------------------------------------------------
   '')
-    ensure_file "$BOARD" >/dev/null 2>&1
+    # No ensure_file on a team wipeboard: file-existence is what arms the tag-change
+    # notices (docs/wipeboards.md), and a QUESTION must not start the conversation.
+    is_team_board "$BOARD" || ensure_file "$BOARD" >/dev/null 2>&1
     rows=$(members)
     printf 'file: %s\n' "$(path_of "$BOARD")"
     if [ -z "$rows" ]; then
@@ -203,13 +247,19 @@ case "${1:-}" in
     exit 0
     ;;
 
-  # ---- add / remove ---------------------------------------------------------------
+  # ---- add / remove — CUSTOM wipeboards only --------------------------------------
   add|remove)
     verb="$1"; shift
     [ $# -ge 1 ] || usage
+    # A team wipeboard has no enrolment to edit: membership IS the team, and the way
+    # onto it is the way onto the team. Refusing here is the answer, not a failure.
+    if is_team_board "$BOARD"; then
+      echo "TEAM-WIPEBOARD: '$BOARD' membership is the team's — the owner tags sessions in the Ronin UI (⌂ Roster, or the tile's 🏷)"
+      exit 2
+    fi
     ensure_file "$BOARD" || { echo "NO-DIR: cannot create $DIR"; exit 1; }
     targets=$(for t in "$@"; do expand_target "$t"; done | awk 'NF && !seen[$0]++')
-    [ -n "$targets" ] || { echo "NO-TARGETS: nothing matched — 'tejun-group' lists the groups that exist"; exit 3; }
+    [ -n "$targets" ] || { echo "NO-TARGETS: nothing matched — 'tejun-team' lists the teams that exist"; exit 3; }
     past=$([ "$verb" = add ] && echo added || echo removed)
     # Who is doing the enrolling. Membership is the owner's hand by design, but the
     # tool can be run from a pane — say which it was rather than assume.
@@ -326,7 +376,15 @@ case "${1:-}" in
     shift
     n=${1:-20}
     f=$(path_of "$BOARD")
-    [ -e "$f" ] || { echo "NO-BOARD: '$BOARD' has never been written to ($f)"; exit 3; }
+    if [ ! -e "$f" ]; then
+      # A team wipeboard is real before its file is — it exists because the team does,
+      # and the file appears with the first post. Not an error, an empty thread.
+      if is_team_board "$BOARD"; then
+        echo "EMPTY: the '$BOARD' team's wipeboard has no posts yet — 'tejun-wipeboard $BOARD post <text>' starts the thread ($f)"
+        exit 0
+      fi
+      echo "NO-WIPEBOARD: '$BOARD' has never been written to ($f)"; exit 3
+    fi
     # Everything down to the last n post headers — the Brief always comes with it, since
     # a thread read without the brief is a conversation with no subject.
     awk -v n="$n" '

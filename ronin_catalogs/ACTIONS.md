@@ -42,7 +42,7 @@ substitute for it.
 Create a detached named tmux session in a working directory.
 ```bash
 tmux new-session -d -s <name> -c <dir>
-tmux set-option -t <name> @ronin-tags '<group>[,<group>…]'   # optional, see group-roster
+tmux set-option -t <name> @ronin-tags '<team>[,<team>…]'   # optional, see team-roster
 ```
 Fails if `<name>` exists — check first with `tmux has-session -t <name> 2>/dev/null`.
 
@@ -55,9 +55,9 @@ same shape as a locked dial:
 2. Ask: "raise the max in the Roster tab, or end a session, then tell me to proceed."
 3. Wait. Do not retry, do not rename, and do not reach for `/usr/bin/tmux` — going around
    the shim is a deliberate, visible act and this is not an occasion for one.
-Stamp the GROUP at birth whenever the macro knows it: a session tagged when it is
-created is addressable (`tejun-group <group>`) from its first breath, and nobody has to
-remember to label it later. Use a group that already exists — `tejun-group` lists them —
+Stamp the TEAM at birth whenever the macro knows it: a session tagged when it is
+created is addressable (`tejun-team <team>`) from its first breath, and nobody has to
+remember to label it later. Use a team that already exists — `tejun-team` lists them —
 rather than coining a near-duplicate.
 
 ## session-launch — born on all three axes, through the one door
@@ -237,18 +237,18 @@ tmux capture-pane -p -e -t <name> -S -300
 Skim for: current task, last agent report, pending questions, errors. Combine with
 status-probe for current state. Requires dial ≥ `read`.
 
-## group-roster
+## team-roster
 `action_kind: mechanical` — run it, don't deliberate.
-> **Tool: `tejun-group [group]`** (TOOLS.md)
-Resolve a GROUP NAME to the sessions in it — so work can be addressed to a set
-("the kojinsa group") instead of member sessions named one by one, and so a
-coordinator picks up a member born after it was briefed. A group is nothing but
-the sessions carrying the same tag in `@ronin-tags`; there is no group object.
+> **Tool: `tejun-team [team]`** (TOOLS.md)
+Resolve a TEAM NAME to the sessions on it — so work can be addressed to a set
+("the kojinsa team") instead of member sessions named one by one, and so a
+coordinator picks up a member born after it was briefed. A team is nothing but
+the sessions carrying the same tag in `@ronin-tags`; there is no team object.
 ```bash
-tejun-group kojinsa      # members of one group, one session per line + dial
-tejun-group              # every group in play, with counts
+tejun-team kojinsa      # members of one team, one session per line + dial
+tejun-team              # every team in play, with counts
 ```
-Use it BEFORE fanning out over "a group" — never work from a remembered list, the
+Use it BEFORE fanning out over "a team" — never work from a remembered list, the
 membership changes when sessions are born, tagged, or die. Each member still needs
 its own control-check before you touch it (the roster reports the dial; it does not
 grant anything). Tagging is the OWNER's job in the Ronin UI, or a macro's at birth
