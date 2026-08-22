@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
 # tejun-recall — the memories a session should be handed (TEJUN memory-recall).
-# Usage: tejun-recall [--project_root X] [--session_job X]
+# Usage: tejun-recall [--project_root X] [--job_role X] [--session_task X]
 #                     [--inline] [--budget N] [--list]
 #
 #   (default)  matching file paths, one per line, ordered and deduped
 #   --inline   the composed text Ronin pastes into a boot brief, budget-guarded
 #   --list     summary + scope per match, for a human or the UI
 #
-# A memory matches when all two axes match (equal, or "*"), where the project axis
-# also accepts a project root's `memory:` keys as aliases. Missing axis key = the
-# memory is malformed: reported on stderr, never silently matched.
+# A memory matches when all three axes match (equal, or "*"), where the project axis
+# also accepts a project root's `memory:` keys as aliases. THE TWO CONTEXTUAL AXES ADD
+# RATHER THAN OVERRIDE: a memory scoped to `job_role: developer` with `session_task: "*"`
+# reaches that role whatever it is doing today, which is what stops a role's standing
+# knowledge going stale the moment the session moves on (KOTOBA R19). Missing axis key =
+# the memory is malformed: reported on stderr, never silently matched.
 set -u
 
 # Where Ronin keeps things on THIS machine — asked, never spelled. See docs/stores.md.
@@ -26,14 +29,15 @@ ROOTS_MD="$("$RSTORE" catalogs)/PROJECT_ROOTS.md"
 # grown into a doc, not a reason to grow the number.
 BUDGET=2600
 MODE=paths
-P_ROOT=""; S_JOB=""
+P_ROOT=""; J_ROLE=""; S_TASK=""
 
 die() { echo "$1"; exit "$2"; }
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --project_root|--project-root) P_ROOT="${2:-}"; shift 2 ;;
-    --session_job|--session-job)   S_JOB="${2:-}"; shift 2 ;;
+    --job_role|--job-role)         J_ROLE="${2:-}"; shift 2 ;;
+    --session_task|--session-task) S_TASK="${2:-}"; shift 2 ;;
     --budget) BUDGET="${2:-2000}"; shift 2 ;;
     --inline) MODE=inline; shift ;;
     --list)   MODE=list; shift ;;
@@ -49,6 +53,37 @@ set -- "$STORE"/*.md
 # Axes of the asking session, when not stated (same inference as tejun-remember):
 # resolve the grouped viewer (grid_*) back to the real session it mirrors.
 opt() { tmux show-options -qv -t "$1" "$2" 2>/dev/null; }
+# The session's own axes come out of its LETTER, not from a tmux option: `job_role` and
+# `session_task` live in TEGAMI and nothing mirrors them into tmux (src/tmux.ts says why —
+# a second copy is the one that drifts). '' for either when there is no letter or the
+# session has not said.
+axes_of() {
+  local key row stamped created store
+  store="$("$RSTORE" session 2>/dev/null)"
+  [ -n "${store:-}" ] || return 0
+  row=$(tmux list-sessions -F '#{session_name}\t#{@ronin-key}\t#{session_created}' 2>/dev/null \
+        | awk -F'\t' -v n="$1" '$1==n {print; exit}')
+  [ -n "$row" ] || return 0
+  stamped=$(printf '%s' "$row" | cut -f2); created=$(printf '%s' "$row" | cut -f3)
+  if [ -n "${stamped// /}" ]; then key="$stamped"
+  elif [ -n "${created// /}" ]; then key="$1-$created"
+  else key="$1"; fi
+  python3 - "$store/$key/tegami.md" <<'PYAXES' 2>/dev/null
+import json, re, sys
+try:
+    t = open(sys.argv[1]).read()
+except OSError:
+    raise SystemExit
+m = re.search(r"```(?:json)?\s*\n(.*?)\n```", t, re.S)
+raw = m.group(1) if m else t[t.find("{"):t.rfind("}") + 1]
+try:
+    d = json.loads(raw)
+except Exception:
+    raise SystemExit
+say = lambda k: d[k].strip() if isinstance(d.get(k), str) else ""
+print("%s\t%s" % (say("job_role"), say("session_task")))
+PYAXES
+}
 me=$(tmux display-message -p '#{session_name}' 2>/dev/null || true)
 case "$me" in
   grid_*) grp=$(tmux display-message -p '#{session_group}' 2>/dev/null || true)
@@ -56,7 +91,11 @@ case "$me" in
 esac
 if [ -n "$me" ]; then
   [ -n "$P_ROOT" ] || P_ROOT=$(opt "$me" @ronin-project_root)
-  [ -n "$S_JOB" ]  || S_JOB=$(opt "$me" @ronin-session_job)
+  if [ -z "$J_ROLE" ] || [ -z "$S_TASK" ]; then
+    IFS=$'\t' read -r _role _task < <(axes_of "$me"; echo)
+    [ -n "$J_ROLE" ] || J_ROLE="${_role:-}"
+    [ -n "$S_TASK" ] || S_TASK="${_task:-}"
+  fi
 fi
 if [ -z "$P_ROOT" ] && [ -r "$ROOTS_MD" ]; then
   P_ROOT=$(awk -v pwd="$PWD" -v home="$HOME" '
@@ -79,7 +118,8 @@ if [ -n "$P_ROOT" ] && [ -r "$ROOTS_MD" ]; then
   KEYS="$KEYS $extra"
 fi
 
-awk -v mode="$MODE" -v budget="$BUDGET" -v want_root="${P_ROOT:-}" -v want_job="${S_JOB:-}" -v keys=" $KEYS " '
+awk -v mode="$MODE" -v budget="$BUDGET" -v want_root="${P_ROOT:-}" -v want_role="${J_ROLE:-}" \
+    -v want_task="${S_TASK:-}" -v keys=" $KEYS " '
   function val(line,   v) { v = line; sub(/^[a-z_]+:[ \t]*/, "", v); gsub(/^"|"$/, "", v)
                             gsub(/^[ \t]+|[ \t]+$/, "", v); return v }
   # An axis matches on equality or a wildcard on either side (an unknown asking value
@@ -99,22 +139,22 @@ awk -v mode="$MODE" -v budget="$BUDGET" -v want_root="${P_ROOT:-}" -v want_job="
     # README) — skip it. Frontmatter that is MISSING an axis is a different thing:
     # a broken memory, and silence there would hide a rule from every session.
     if (!fmdone) return
-    if (!have_root || !have_job) {
-      printf "MALFORMED %s: missing an axis key (project_root/session_job)\n", cur > "/dev/stderr"
+    if (!have_root || !have_role || !have_task) {
+      printf "MALFORMED %s: missing an axis key (project_root/job_role/session_task)\n", cur > "/dev/stderr"
       return
     }
-    if (!project_ok(m_root) || !axis_ok(m_job, want_job)) return
-    rank = (m_root == "*" && m_job == "*") ? 0 : (m_root != "*" ? 1 : 2)
+    if (!project_ok(m_root) || !axis_ok(m_role, want_role) || !axis_ok(m_task, want_task)) return
+    rank = (m_root == "*" && m_role == "*" && m_task == "*") ? 0 : (m_root != "*" ? 1 : 2)
     n_hit++
     hit_rank[n_hit] = rank; hit_file[n_hit] = cur; hit_sum[n_hit] = m_sum
     hit_kind[n_hit] = m_kind_of; hit_body[n_hit] = m_body
-    hit_scope[n_hit] = m_root " · " m_job
+    hit_scope[n_hit] = m_root " · " m_role " · " m_task
   }
   FNR == 1 {
     if (NR > 1) flush()
     cur = FILENAME          # flush() runs while FILENAME is already the NEXT file
-    infm = 0; fmdone = 0; m_body = ""; m_sum = ""; m_root = ""; m_job = ""
-    m_tags = ""; m_kind_of = ""; have_root = have_job = 0
+    infm = 0; fmdone = 0; m_body = ""; m_sum = ""; m_root = ""; m_role = ""; m_task = ""
+    m_tags = ""; m_kind_of = ""; have_root = have_role = have_task = 0
   }
   FNR == 1 && /^---[ \t]*$/ { infm = 1; next }
   infm && /^---[ \t]*$/     { infm = 0; fmdone = 1; next }
@@ -122,7 +162,8 @@ awk -v mode="$MODE" -v budget="$BUDGET" -v want_root="${P_ROOT:-}" -v want_job="
     if (/^summary:/)      m_sum = val($0)
     else if (/^memory_kind:/) m_kind_of = val($0)
     else if (/^project_root:/) { m_root = val($0); have_root = 1 }
-    else if (/^session_job:/)   { m_job = val($0); have_job = 1 }
+    else if (/^job_role:/)     { m_role = val($0); have_role = 1 }
+    else if (/^session_task:/) { m_task = val($0); have_task = 1 }
     else if (/^tags:/)         { m_tags = val($0); gsub(/[][]/, "", m_tags) }
     next
   }

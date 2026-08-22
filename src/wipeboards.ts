@@ -69,13 +69,22 @@ export interface Board {
 const STUB = (name: string) =>
   `# wipeboard: ${name}\n\n## Brief\n\n_(the owner writes what this board is for here)_\n`;
 
-/** Create the file with its Brief stub if this board has never been written to. */
-export async function ensureBoard(name: string): Promise<void> {
+/** The stub a TEAM wipeboard materializes with — it says whose it is and how membership
+ * works, because the first reader arrives with no enrolment step behind them. */
+export const teamStub = (team: string): string =>
+  `# wipeboard: ${team}\n\n## Brief\n\nThe ${team} team's wipeboard — membership follows the team.\n`;
+
+/** Create the file with its Brief stub if this board has never been written to.
+ * Returns whether this call created it — a TEAM wipeboard materializing is the moment
+ * its members get their one join notice, and only the creator knows the moment. */
+export async function ensureBoard(name: string, stub?: string): Promise<boolean> {
   await mkdir(WIPEBOARD_DIR, { recursive: true });
   try {
     await stat(boardPath(name));
+    return false;
   } catch {
-    await writeFile(boardPath(name), STUB(name), 'utf8');
+    await writeFile(boardPath(name), stub ?? STUB(name), 'utf8');
+    return true;
   }
 }
 
@@ -194,4 +203,18 @@ export function joinNotice(name: string, file: string, members: string[]): strin
 
 export function leaveNotice(name: string, file: string): string {
   return `You've been removed from wipeboard "${name}" — stop posting to ${file}.`;
+}
+
+/** The TEAM flavor of the join notice: same rules, but it says membership follows the
+ * team, so nobody goes looking for an enrolment that does not exist. */
+export function teamJoinNotice(team: string, file: string, members: string[]): string {
+  return (
+    `You're on the "${team}" team, which has a wipeboard — ${file}. Read it, and append your own posts as ` +
+    `"### @<your session> · HH:MM" (>> append, never rewrite another agent's post, never edit the Brief). ` +
+    `Membership follows the team. On it: ${members.length ? members.join(', ') : 'nobody else yet'}.`
+  );
+}
+
+export function teamLeaveNotice(team: string, file: string): string {
+  return `You've left the "${team}" team — its wipeboard (${file}) is no longer yours to post to.`;
 }

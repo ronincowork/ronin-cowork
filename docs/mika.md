@@ -99,7 +99,7 @@ chosen to die.
 The implementation is one field in the catalog and one condition in code:
 
 ```markdown
-- **cap:** exempt          # ronin_catalogs/SESSION_JOBS.md, on MikaAssist
+- **cap:** exempt          # ronin_catalogs/job_roles/mikaassist.md
 ```
 
 ```ts
@@ -116,7 +116,7 @@ Six things, and five of them are data:
 
 | | |
 |---|---|
-| `ronin_catalogs/SESSION_JOBS.md` | the `MikaAssist` entry — icon ミ, her posture, her opening, `cap: exempt` |
+| `ronin_catalogs/job_roles/mikaassist.md` | her definition — icon ミ, her posture, her opening, `cap: exempt`, `dir: {install}` |
 | `ronin_catalogs/MIKA_MACROS.md` | her four jobs |
 | `ronin_catalogs/ACTIONS.md` | `propose-and-confirm` |
 | `ronin_catalogs/TOOLS.md` | the `mika` row |

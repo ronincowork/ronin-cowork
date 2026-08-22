@@ -23,18 +23,16 @@ import {
   type RootField,
 } from '../project-roots.js';
 import {
-  listSessionJobs,
   listSavedLaunches,
   saveLaunch,
   removeLaunch,
   seedUserCatalog,
   isShadowable,
   isValidLaunchName,
-  readJobClasses,
-  writeJobClasses,
-  type JobClass,
   type LaunchField,
 } from '../catalog.js';
+import { findDefinition, listJobRoles, listSessionTasks, writeTaskFamily } from '../definitions.js';
+import { resolveLaunchProfile } from '../launch-profile.js';
 
 // fs errors carry absolute paths (`ENOENT: open '/home/…'`); the browser gets the
 // fault, never the box's layout.
@@ -247,33 +245,77 @@ export function registerCatalogs(app: express.Express): void {
     }
   });
 
-  // The other universal axis: session_job (what a session is for, and therefore who).
-  // Same contract as /api/project-roots — the markdown IS the catalog.
-  app.get('/api/session-jobs', async (_req, res) => {
+  /**
+   * THE OTHER TWO AXES — `job_role` (who a session is) and `session_task` (what it is
+   * doing now). Same contract as /api/project-roots: the markdown IS the catalog, merged
+   * stock ⊕ user at request time, provenance on every row.
+   *
+   * The role rows carry their own `task_family:` — the session_tasks presented under
+   * that role, which is what the board's sections are built from. A task in no role's
+   * family is a LOOSE task and the board draws it in the blank-role tail: a real launch,
+   * not a leftover. Family is association, so the same task may sit in several.
+   */
+  app.get('/api/job-roles', async (_req, res) => {
     try {
-      res.json(await listSessionJobs());
+      res.json(await listJobRoles());
+    } catch (e) {
+      res.status(500).json({ error: errMsg(e) });
+    }
+  });
+
+  app.get('/api/session-tasks', async (_req, res) => {
+    try {
+      res.json(await listSessionTasks());
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }
   });
 
   /**
-   * JOB CLASSES — the side manifest that shelves the kind board (src/catalog.ts says
-   * why it is a separate file). Whole-document read and replace: an edit is one
-   * membership toggle and the manifest is small by cap. 400 for anything the write
-   * refuses — the messages are written for the owner, not for a log.
+   * SET A ROLE'S TASK FAMILY — the tasks presented under it, and nothing else.
+   *
+   * Creating a role, deleting one, and authoring a task all belong to the next build-out.
+   * This is the one board edit that already existed as a Job Group shelf and had to keep
+   * working: drag a task onto a role, or toggle it in the ✎ editor.
+   *
+   * 400 for anything the write refuses, with the message written for the owner: an
+   * unknown task, too many in one family, or a definition that would not read back.
    */
-  app.get('/api/job-classes', async (_req, res) => {
+  app.put('/api/job-roles/:name/task_family', async (req, res) => {
+    const list = req.body?.task_family;
+    if (!Array.isArray(list)) return res.status(400).json({ error: 'Send { task_family: [...] }.' });
     try {
-      res.json({ classes: await readJobClasses() });
+      res.json({ ok: true, task_family: await writeTaskFamily(req.params.name, list as string[]) });
     } catch (e) {
-      res.status(500).json({ error: errMsg(e) });
+      res.status(400).json({ error: errMsg(e) });
     }
   });
 
-  app.put('/api/job-classes', async (req, res) => {
+  /**
+   * THE RESOLVED PROFILE for one (role, task) pair — what the ＋ New form asks for when
+   * the pick changes, so the client never re-implements the cascade.
+   *
+   * It has to be a PAIR and not a row: `mcpAlways` is true for `personalassistant` with a
+   * blank task and false for `developer` with `CutCode`, so no per-row field could answer
+   * it. Either half may be blank; both blank is a legal question with a system-default
+   * answer, which is exactly what the form needs before anything is picked.
+   *
+   * 400 on a refusal, with the cascade's own message — a locked `mcp:` contradicted, an
+   * agentless launch handed agent fields, an illegal `dir:`. The form shows it at pick
+   * time rather than at launch time, which is where the owner can still do something
+   * about it.
+   */
+  app.get('/api/launch-profile', async (req, res) => {
+    const role = String(req.query?.job_role ?? '').trim();
+    const task = String(req.query?.session_task ?? '').trim();
     try {
-      res.json({ ok: true, classes: await writeJobClasses((req.body?.classes ?? null) as JobClass[]) });
+      const [roleDef, taskDef] = await Promise.all([
+        findDefinition('job_roles', role),
+        findDefinition('session_tasks', task),
+      ]);
+      if (role && !roleDef) return res.status(404).json({ error: `Unknown job_role "${role}".` });
+      if (task && !taskDef) return res.status(404).json({ error: `Unknown session_task "${task}".` });
+      res.json(resolveLaunchProfile(roleDef, taskDef));
     } catch (e) {
       res.status(400).json({ error: errMsg(e) });
     }
@@ -295,10 +337,14 @@ export function registerCatalogs(app: express.Express): void {
     const name = String(req.body?.name ?? '').trim().toLowerCase();
     if (!isValidLaunchName(name)) return res.status(400).json({ error: 'Handle: lowercase letters, digits, - and _.' });
     const fields: Partial<Record<LaunchField, string>> = {};
-    for (const k of ['label', 'session_job', 'project_root', 'group', 'mode', 'prompt'] as LaunchField[]) {
+    for (const k of ['label', 'job_role', 'session_task', 'project_root', 'team', 'mode', 'prompt'] as LaunchField[]) {
       const v = (req.body as Record<string, unknown>)?.[k];
       if (typeof v === 'string') fields[k] = v.trim().slice(0, 500);
     }
+    // `group` is the retired spelling of the team field — read from an old caller,
+    // never written back: the saved block says `team:` either way.
+    const legacy = (req.body as Record<string, unknown>)?.group;
+    if (!fields.team && typeof legacy === 'string') fields.team = legacy.trim().slice(0, 500);
     try {
       await saveLaunch(name, fields);
       res.json({ ok: true });

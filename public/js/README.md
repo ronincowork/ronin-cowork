@@ -1,5 +1,7 @@
 # `public/js/` — the client, in modules
 
+**test_protocols:** changed anything here? run `bin/ronin-byoin` and read the verdict — `docs/test-protocols.md` is the page.
+
 Native ES modules. **No bundler, no build step, no TypeScript.** `index.html` loads
 `js/main.js` with `type="module"`; the browser fetches the rest. `express.static` already
 serves this directory, so a change here is live on reload — same as it always was.

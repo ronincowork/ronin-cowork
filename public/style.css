@@ -856,9 +856,9 @@ body {
    massive. The owner's call, looking at all nine: "they're all fine, except for the
    football". One more step down for this mark only.
 
-   Keyed on the session_job NAME rather than the character, because the character is the
-   catalog's to change and a rule matching on 🏈 would go stale the moment it did. The
-   coupling is real either way: rename `QuarterBack` in SESSION_JOBS.md and this stops
+   Keyed on the NAME rather than the character, because the character is the definition's
+   to change and a rule matching on 🏈 would go stale the moment it did. The coupling is
+   real either way: rename `QuarterBack` in ronin_catalogs/session_tasks/ and this stops
    applying — the mark simply returns to the common size, which is a visible nudge rather
    than a broken layout. Everything the mark IS still comes from the catalog; this tunes
    only how big one of them is drawn. */
@@ -3172,15 +3172,68 @@ body {
   min-height: 0;
   flex: 1;
 }
+/* THE LISTING — teams in the roster's own dress (.home-group / .home-grp are reused on
+ * purpose: "the same recognizable listing style" is the ask, not a lookalike), with the
+ * wipeboard-only rows beneath. A heading that opens something is a button; it keeps the
+ * roster look and gains the hand. */
+.wb-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+button.wb-door {
+  border: 0;
+  background: none;
+  width: 100%;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+.wb-sess {
+  padding: var(--space-2) var(--space-5);
+  color: var(--fg);
+  font-size: var(--text-3);
+}
+.wb-customs {
+  margin-top: var(--space-6);
+}
+button.wb-sess:hover,
+button.wb-door:hover b {
+  color: var(--fg-strong);
+}
+.wb-add {
+  align-self: flex-start;
+  margin: var(--space-2) var(--space-4);
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--raise);
+  color: var(--fg-strong);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-3);
+  cursor: pointer;
+}
+.wb-title {
+  color: var(--fg-strong);
+  font-size: var(--text-4);
+}
+.wb-kind {
+  color: var(--muted);
+  font-size: var(--text-2);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.wb-follow {
+  color: var(--muted);
+  font-size: var(--text-2);
+}
 .wb-head {
   display: flex;
   gap: var(--space-3);
   align-items: center;
   flex: 0 0 auto;
-}
-.wb-head select {
-  flex: 1;
-  min-width: 0;
 }
 .wb-head button {
   border: var(--edge) solid var(--line);
@@ -3410,9 +3463,17 @@ body {
     border-color: var(--accent);
   }
 }
-/* ---- JOB CLASSES: the owner's shelves over the kind board (js/launcher.js).
-   Drawn as collapsible groupings, named classes — `group` stays the roster's
-   addressing word. Membership lives in the JOB_CLASSES.md side manifest. ---- */
+/* THE BLANK-TASK LAUNCH — first button in every role section: this role, nothing named
+   yet. Dashed, because it is the section's own affordance rather than one of the tasks
+   shelved on it, and a reader scanning a fold should be able to tell them apart without
+   reading a word. Every role has exactly one, including roles the owner invents. */
+.ks-btn-role {
+  border-style: dashed;
+}
+/* ---- JOB ROLES: the sections of the ＋ New board (js/jobroles.js). Drawn as the same
+   collapsible groupings the Job Group shelves were — `group` stays the roster's
+   addressing word. Membership lives in each role's own definition file now
+   (ronin_catalogs/job_roles/), which is what promoted a shelf into a role. ---- */
 .ks-classes {
   display: flex;
   flex-direction: column;
@@ -3568,7 +3629,7 @@ body {
   }
 }
 
-/* The session's MARK: the icon of its session_job, before the name on every row. It
+/* The session's MARK: the icon of its session_task, before the name on every row. It
    replaced the 人 leader mark, which sat here and named only who was in charge. Fixed
    width so the names stay in a column whether or not a row is marked — an unmarked
    session is a real state and must not shove the list sideways. */
@@ -3830,7 +3891,7 @@ body {
    It is the LAST track on purpose: the most clip-prone reading on the row, and at the
    right edge a clip runs into the row's own padding rather than into another column. */
 .home-row {
-  --hr-mark: 1.35em; /* the session_job glyph — the same width `.home-job` already held */
+  --hr-mark: 1.35em; /* the session_task glyph — the same width `.home-job` already held */
   --hr-shingo: 132px;
   --hr-status: 70px;
   --hr-ctx: 48px;
@@ -4352,7 +4413,7 @@ body {
   .ks-extras { flex-direction: column; }
 }
 
-/* A session_job with `agent: none` — a plain terminal (ronin_catalogs/SESSION_JOBS.md).
+/* A launch resolving `agent: none` — a plain terminal (ronin_catalogs/session_tasks/).
    Everything that only makes sense when an agent is being briefed goes away: the
    mode toggle, the prompt box, the optional wording, and the brain picker. What is
    left is the name, where it opens, and which group it joins. Placed after the
@@ -5200,6 +5261,19 @@ body {
   letter-spacing: 0.06em;
   color: var(--accent-2);
 }
+/* WHO the session is — birth-fixed, so it is drawn before the task it is doing and never
+   moves under the reader. Quieter than the task chip beside it: the task is what changed
+   and is what the eye should land on. */
+.shingo-ladder .sl-role {
+  display: inline-block;
+  margin-right: var(--space-4);
+  padding: 0 var(--space-3);
+  border: var(--edge) dashed var(--line);
+  border-radius: var(--radius-xs);
+  font-size: var(--text-micro);
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
 .shingo-ladder .sl-checkout {
   padding-bottom: var(--space-3);
   margin-bottom: var(--space-3);
@@ -5398,9 +5472,11 @@ body {
   overflow: auto;
   font-variant-numeric: tabular-nums;
 }
-/* The seven session_jobs get a stable colour each, so the same job is the same colour
-   in every chart. Base16 siblings of the app's own accents; --bad is never used
-   categorically, so red keeps meaning "wrong". */
+/* The session_tasks get a stable colour each, so the same task is the same colour in
+   every chart. Base16 siblings of the app's own accents; --bad is never used
+   categorically, so red keeps meaning "wrong". `QuarterBack` spent one day as a job_role
+   and is a task again (R33), so it is back in this list — and back in the birth-to-death
+   chart, because a session genuinely does move into and out of coordinating. */
 .desk-stats {
   --k-RiffOnIt: #b294bb;
   --k-DraftPlan: #81a2be;
@@ -5409,6 +5485,8 @@ body {
   --k-CheckWork: var(--ok);
   --k-QuarterBack: #de935f;
   --k-OddJob: #707a91;
+  --k-Atarashi: #b5bd68;
+  --k-OpenShell: #8e6f9e;
   --k-other: #5a6376;
 }
 .td-head {

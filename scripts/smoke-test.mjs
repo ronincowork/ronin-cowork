@@ -40,7 +40,7 @@ async function main() {
   }
 
   // 2. create — POST /api/sessions was retired 2026-08-10 (54b994e): /api/launch is
-  // the one door, and a body with a name and no session_job is the bare variant.
+  // the one door, and a body with a name and neither launch axis is the bare variant.
   const c = await fetch(`${BASE}/api/launch`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },

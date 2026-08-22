@@ -183,8 +183,8 @@ export class TermView {
    * Tape-fed tiles must NOT come through here. Their content is already in a plain
    * scrollable div, so iOS scrolls it natively with real momentum and rubber banding.
    * Hijacking the gesture to hand-roll `scrollLines` in 16px steps replaces that with a
-   * discrete jump and a full re-render per step, which is exactly the "scrolls like
-   * shit" — it was never latency, it was us doing the scrolling badly.
+   * discrete jump and a full re-render per step, which is exactly the reported "scrolling
+   * feels broken" — it was never latency, it was us doing the scrolling badly.
    *
    * @param {{isLocked: () => boolean, overHome: (el: EventTarget) => boolean,
    *          sendRaw: (d: string) => void, activate: () => void}} hooks

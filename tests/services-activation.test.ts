@@ -127,7 +127,7 @@ test('the states an install can end in are exactly: installed, or an error that 
 /**
  * THE ROSTER MUST BE WHOLE, NOT MERELY NON-EMPTY.
  *
- * Found on the dogfood walk, from the real v1.2.0 tarball. `bin/ronin-update` copied only
+ * Found walking a real install, from the real v1.2.0 tarball. `bin/ronin-update` copied only
  * directories carrying a register entry, which silently left `_lib/` behind — shared code
  * by design, and imported by both gbrain and koshi_weights. Those two then died at import
  * with ERR_MODULE_NOT_FOUND, the assembler logged them and carried on, and five of seven

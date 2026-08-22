@@ -150,15 +150,23 @@ export function buildLadder(t) {
     box.appendChild(checkout);
   }
 
-  if (t.objective || t.session_job) {
+  if (t.objective || t.session_task || t.job_role) {
     const ob = document.createElement('div');
     ob.className = 'sl-obj';
-    if (t.session_job) {
-      // What this SESSION is doing. It migrates — riffing becomes planning becomes
+    if (t.job_role) {
+      // WHO this session is. Birth-fixed, so it is drawn first and never changes under
+      // the reader — it is the context the moving task sits inside.
+      const role = document.createElement('span');
+      role.className = 'sl-role';
+      role.textContent = t.job_role;
+      ob.appendChild(role);
+    }
+    if (t.session_task) {
+      // What this SESSION is DOING. It migrates — riffing becomes planning becomes
       // cutting code — so it is kept current rather than stamped at birth.
       const job = document.createElement('span');
       job.className = 'sl-job';
-      job.textContent = t.session_job;
+      job.textContent = t.session_task;
       ob.appendChild(job);
     }
     ob.append(t.objective || '');

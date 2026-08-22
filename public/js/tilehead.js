@@ -61,7 +61,7 @@ import { buildTileDocs } from './tiledocs.js';
 import { buildTileMentions } from './tilementions.js';
 import { isCoarse } from './tiledrop.js';
 import { S, SELECT_MOD, serviceMissing } from './state.js';
-import { jobIcon } from './home.js';
+import { taskIcon } from './home.js';
 
 export const DIAL_TITLE =
   'Who may touch this session: 👤 owner only · 👁 outside agents watch · 🤖 outside agents type. Yours to turn; agents never flip it.';
@@ -112,11 +112,11 @@ const HEADER = () => (rows ??= [
     // mark — it is the honest reading, drawn so it can be seen and pressed.
     read: (t, el) => {
       const s = S.sessions.find((x) => x.name === t.session);
-      const job = (s && s.session_job) || '';
+      const job = (s && s.session_task) || '';
       // The job NAME on the element, so style can reach ONE mark: glyphs differ in how
       // heavily their font draws them (style.css, `[data-job=…]`).
       el.dataset.job = job;
-      el.textContent = jobIcon(s) || '?';
+      el.textContent = taskIcon(s) || '?';
       el.classList.toggle('unset', !job);
       return job ? `${job} — click to change what this session is doing`
                  : 'Not marked — click to say what this session is doing';
@@ -193,19 +193,19 @@ const HEADER = () => (rows ??= [
   // at all, and dimming it would hide the six explanations of why its contents are dim.
   { key: 'moreBtn', hosts: true,
     widget: () => buildTileMore(),
-    help: "This session's other controls — 🔒 lock, 🏷 groups, ⛽ context, 🎛 control, 📄 docs, 📝 note, 🗑 kill" },
+    help: "This session's other controls — 🔒 lock, 🏷 teams, ⛽ context, 🎛 control, 📄 docs, 📝 note, 🗑 kill" },
 
   { key: 'lockEl', cls: 'lock', text: '🔒', drop: true, help: lockedTitle,
     on: (t) => t.flipLock() },
 
   { key: 'tagBtn', cls: 'tags', text: '🏷', drop: true, modal: true, needs: 'session',
-    help: 'Groups this session belongs to',
-    quiet: 'Groups — no session in this tile yet',
+    help: 'Teams this session is on',
+    quiet: 'Teams — no session in this tile yet',
     on: (t) => t.openTags(),
     read: (t, el) => {
       const tags = S.sessions.find((x) => x.name === t.session)?.tags || [];
       el.classList.toggle('has-tags', !!tags.length);
-      return tags.length ? 'Groups: ' + tags.join(', ') : 'Groups (none yet)';
+      return tags.length ? 'Teams: ' + tags.join(', ') : 'Teams (none yet)';
     } },
 
   // Hidden until there is a reading — a plain shell pane has no context, and that is fine.

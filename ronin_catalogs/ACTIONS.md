@@ -42,7 +42,7 @@ substitute for it.
 Create a detached named tmux session in a working directory.
 ```bash
 tmux new-session -d -s <name> -c <dir>
-tmux set-option -t <name> @ronin-tags '<group>[,<group>…]'   # optional, see group-roster
+tmux set-option -t <name> @ronin-tags '<team>[,<team>…]'   # optional, see team-roster
 ```
 Fails if `<name>` exists — check first with `tmux has-session -t <name> 2>/dev/null`.
 
@@ -55,10 +55,58 @@ same shape as a locked dial:
 2. Ask: "raise the max in the Roster tab, or end a session, then tell me to proceed."
 3. Wait. Do not retry, do not rename, and do not reach for `/usr/bin/tmux` — going around
    the shim is a deliberate, visible act and this is not an occasion for one.
-Stamp the GROUP at birth whenever the macro knows it: a session tagged when it is
-created is addressable (`tejun-group <group>`) from its first breath, and nobody has to
-remember to label it later. Use a group that already exists — `tejun-group` lists them —
+Stamp the TEAM at birth whenever the macro knows it: a session tagged when it is
+created is addressable (`tejun-team <team>`) from its first breath, and nobody has to
+remember to label it later. Use a team that already exists — `tejun-team` lists them —
 rather than coining a near-duplicate.
+
+## session-launch — born on all three axes, through the one door
+`action_kind: mechanical` — run it, don't deliberate.
+
+**Use this, not `session-create`, whenever the new session runs an AGENT.** It is the
+same door the ＋ New board presses (`POST /api/launch`), and it does create, tag, dial,
+CLI launch and brief delivery in ONE call — so there is nothing to type at a pane and
+nothing to wait for a prompt to appear.
+
+It is also the ONLY way a new session gets a **`job_role`**. The role is stamped at birth
+and immutable afterwards, so a session hand-rolled with `tmux new-session` has a blank
+role for its entire life and no tool can repair it. That was measured: forks made the old
+way carried no role at all and could only ever self-set a task.
+
+```bash
+curl -sS -X POST http://127.0.0.1:${PORT:-3006}/api/launch \
+  -H 'content-type: application/json' \
+  -d '{"job_role":"<role>","session_task":"<task>","name":"<name>",
+       "project_root":"<root>","tags":["<team>"],"prompt":"<what it is told>"}'
+```
+
+**The axes, and what each may be left out of.** `project_root` is required and omitting it
+selects the top active root. `job_role` and `session_task` may each be blank, and blank is
+a real launch — but **an agent-launching fork must RESOLVE them deliberately rather than
+omit them by accident** (owner, 2026-08-22). The receipt names what was actually resolved;
+read it back and report it.
+
+**THE MODEL — leave it out unless the owner named one.** Omit `cmd` and the launch resolves
+it through the cascade: the `model:` bias of the selected task, else of the role, else the
+install's own default. Passing `cmd` is the explicit pick and beats all of them. It must be
+a real `session_launch_spec` cell from the launch table (`ronin_catalogs/PROJECT_ROOTS.md`),
+never a command you composed — a hand-typed command matches no table row, so the launch
+cannot honor an MCP-off choice for it.
+
+**IT DELIVERS THE WHOLE BUILD BRIEF, which is the other half of why this is the door.** An
+assisted launch composes the posture, the reading list — `all/` + `root/<project_root>/` +
+`role/<job_role>/` + `task/<session_task>/`, plus any connected level when the brain is on
+— the task's opening template with your prompt in it, and the acknowledgement rule. A
+session made with `tmux new-session` gets NONE of that: no reading list, no posture, no
+letter, and no role, ever.
+
+The response carries `receipt` — `job_role`, `session_task`, `project_root`, `dial`,
+`cmd`, `mcp`. A launch that refuses answers 400 with the reason written for the owner (an
+unknown axis, a locked `mcp:` contradicted, an agentless launch handed a command); report
+the reason, do not retry around it.
+
+**No `run-command`, no `wait-ready`, no `send-prompt` after this.** The brief rode in on
+the CLI's own command line. Adding a typed prompt on top double-briefs the session.
 
 ## run-command
 `action_kind: mechanical` — run it, don't deliberate.
@@ -134,7 +182,7 @@ execute from.
 ## read-letter — read the ladder a session is keeping
 `action_kind: mechanical` — run it, don't deliberate.
 > **Tool: `read_tegami`** (TOOLS.md)
-Your own letter — objective, session_job, the ladder, and where on it you are.
+Your own letter — objective, job_role, session_task, the ladder, and where on it you are.
 ```bash
 read_tegami                     # your letter, as written
 read_tegami --json              # just the block, for a machine
@@ -151,7 +199,7 @@ Your letter is the one file that outlives your pane, so it is written for whoeve
 reads it next — the owner in the tile, or the session that inherits the work.
 ```bash
 write_tegami <<'JSON'           # replaces YOUR ladder; the block and nothing else
-{ "objective": "...", "session_job": "...", "ladder": [ … ] }
+{ "objective": "...", "job_role": "...", "session_task": "...", "ladder": [ … ] }
 JSON
 write_tegami --session <name> --at 2.3    # another session's position, ONLY the position
 ```
@@ -189,18 +237,18 @@ tmux capture-pane -p -e -t <name> -S -300
 Skim for: current task, last agent report, pending questions, errors. Combine with
 status-probe for current state. Requires dial ≥ `read`.
 
-## group-roster
+## team-roster
 `action_kind: mechanical` — run it, don't deliberate.
-> **Tool: `tejun-group [group]`** (TOOLS.md)
-Resolve a GROUP NAME to the sessions in it — so work can be addressed to a set
-("the kojinsa group") instead of member sessions named one by one, and so a
-coordinator picks up a member born after it was briefed. A group is nothing but
-the sessions carrying the same tag in `@ronin-tags`; there is no group object.
+> **Tool: `tejun-team [team]`** (TOOLS.md)
+Resolve a TEAM NAME to the sessions on it — so work can be addressed to a set
+("the kojinsa team") instead of member sessions named one by one, and so a
+coordinator picks up a member born after it was briefed. A team is nothing but
+the sessions carrying the same tag in `@ronin-tags`; there is no team object.
 ```bash
-tejun-group kojinsa      # members of one group, one session per line + dial
-tejun-group              # every group in play, with counts
+tejun-team kojinsa      # members of one team, one session per line + dial
+tejun-team              # every team in play, with counts
 ```
-Use it BEFORE fanning out over "a group" — never work from a remembered list, the
+Use it BEFORE fanning out over "a team" — never work from a remembered list, the
 membership changes when sessions are born, tagged, or die. Each member still needs
 its own control-check before you touch it (the roster reports the dial; it does not
 grant anything). Tagging is the OWNER's job in the Ronin UI, or a macro's at birth
@@ -208,22 +256,22 @@ grant anything). Tagging is the OWNER's job in the Ronin UI, or a macro's at bir
 
 ## wipeboard-post
 `action_kind: mechanical` — run it, don't deliberate.
-> **Tool: `tejun-wipeboard <board> post <text>`** (TOOLS.md)
+> **Tool: `tejun-wipeboard <wipeboard> post <text>`** (TOOLS.md)
 Say something on a WIPEBOARD — the shared text surface a set of sessions all read and
 write, so agents working the same problem talk to each other instead of routing every
 message through the owner. A wipeboard is a markdown file in the wipeboards store
-(`$(ronin-store wipeboards)/<board>.md` — never spell the path) plus a tmux option
+(`$(ronin-store wipeboards)/<wipeboard>.md` — never spell the path) plus a tmux option
 (`@ronin-wipeboards`) saying who is on it. The FILE is the record — but a post is not
 only a file write: **posting also notifies every other session on the wipeboard**, so what
 you say is heard instead of waiting for someone to happen to look.
 ```bash
-tejun-wipeboard <board> read        # the brief + the recent thread — READ BEFORE YOU POST
-tejun-wipeboard <board> post "…"    # append one watermarked entry as your session, then notify the wipeboard
-tejun-wipeboard <board>             # the roster: who else is on it, and their dials
+tejun-wipeboard <wipeboard> read    # the brief + the recent thread — READ BEFORE YOU POST
+tejun-wipeboard <wipeboard> post "…"  # append one watermarked entry as your session, then notify the wipeboard
+tejun-wipeboard <wipeboard>         # the roster: who else is on it, and their dials
 ```
 What the notification is, so you can predict it:
 - It is a **pointer, not a copy** — one line naming the wipeboard and you, telling the reader
-  to run `tejun-wipeboard <board> read`. The thread stays in one place, the file.
+  to run `tejun-wipeboard <wipeboard> read`. The thread stays in one place, the file.
 - It goes to every member **except you**, through `tejun-send`, so **the dial governs it**:
   a member dialled 👤 or 👁 is skipped and reported as skipped. That is the correct
   outcome — they can still read the wipeboard. Never flip a dial to get a notice through.
@@ -237,15 +285,17 @@ Rules, all of them about not trampling other people's writing:
 - **Append only.** Posts are added with `>>`; that is the whole concurrency story.
   NEVER rewrite, reorder or delete another agent's post — several agents write this
   file at once and an edit-in-place loses somebody's words.
-- **Never edit the `## Brief`.** It is the owner's statement of what the board is for.
-- **You do not enrol anyone**, including yourself. Membership is the owner's hand
-  (the ▤ Wipeboard tab), exactly like tagging. You post; you don't manage the roster.
+- **Never edit the `## Brief`.** It is the owner's statement of what the wipeboard is for.
+- **You do not enrol anyone**, including yourself. A TEAM wipeboard's membership IS
+  the team — it follows the tags, and there is nothing to enrol; a CUSTOM wipeboard's
+  membership is the owner's hand (the ▤ Wipeboard tab). You post; you don't manage
+  the roster either way.
 - Read before posting so you answer what's there instead of talking past it, and
   re-read rather than remembering — the thread moves while you work.
-- Being on a board is not permission to touch a member: control-check as always.
+- Being on a wipeboard is not permission to touch a member: control-check as always.
 - **A notice arriving in your pane is the wipeboard speaking, not the owner.** It says so on
   its face. Read the wipeboard; answer if it concerns you. Never post just to acknowledge —
-  every post notifies everyone, and five "got it"s is how a board turns into noise.
+  every post notifies everyone, and five "got it"s is how a wipeboard turns into noise.
 
 ## send-to-session  (compound action — was wrongly listed as a "steer" macro)
 `action_kind: mechanical` — run it, don't deliberate.
@@ -370,7 +420,7 @@ what a document can tell you.
 `action_kind: mechanical` — run it, don't deliberate.
 > **Tool: `tejun-recall`** (TOOLS.md)
 Sessions are mortal; what they learned is not. This hands you the memories matched to
-what this session IS — its `project_root` and its `session_job`, read off the session
+what this session IS — its `project_root`, its `job_role` and its `session_task`, read off the session
 itself — ordered universal-first, then this project, then cross-project.
 ```bash
 tejun-recall            # one file path per line, deduped

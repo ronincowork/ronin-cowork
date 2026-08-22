@@ -186,12 +186,13 @@ export const SETTEI_SCHEMA = {
       aside: "Mika is Ronin's own helpful assistant",
       hint: 'Mika is Ronin’s own assistant — she explains the house and runs small errands. She does not need your best model, and using one is how a helper gets expensive.',
       options: 'models',
-      from: 'set.agents.jobs.MikaAssist',
+      from: 'set.agents.jobs.mikaassist',
       seed: 'models:light',
       shape: 'provider-model',
-      // Keyed by the session_job's own name — the token the launcher, memory and
-      // counting already share, so nothing has to translate it.
-      lands: { family: 'agents', key: 'jobs.MikaAssist' },
+      // Keyed by the job_role's own token — the one the launcher, memory and counting
+      // already share, so nothing has to translate it. It was `MikaAssist` while she was
+      // a session_job; she is a role now, and the key follows the token.
+      lands: { family: 'agents', key: 'jobs.mikaassist' },
       omit: 'blank',
     },
     {
@@ -238,7 +239,8 @@ export const SETTEI_SCHEMA = {
       ['Live status ladders', 'Every agent shows its plan and how far through it is — on the tile and in the roster. Stop asking how it is going.'],
       ['Readable transcripts', 'Tiles become real text instead of a terminal mirror. Select it, copy it, scroll back through it — on your phone too.'],
       ['Voice', 'Talk to a session instead of typing at it, and have it read back to you.'],
-      ['Usage statistics', 'What every session spent, by model, over time.'],
+      // "Stats" — the one word every surface uses (owner, 2026-08-22, KOTOBA cowork_stats).
+      ['Stats', 'What every session spent, by model, over time.'],
       ['gbrain', 'A memory your agents search before they answer, and write to as they work.'],
     ],
     terms: [
@@ -269,12 +271,16 @@ export const SETTEI_SCHEMA = {
   ],
 
   /** The seat the reading list is handed to. Every surface launches exactly this —
-   * the brief itself lives on the seat's shelf (ronin_session_boot/job/Atarashi/) and
+   * the brief itself lives on the seat's shelf (ronin_session_boot/task/Atarashi/) and
    * is READ AT SEAT START, never composed at Save: a session born now and one born
-   * three weeks from now read the same fresh truth. */
+   * three weeks from now read the same fresh truth.
+   *
+   * A TASK WITH NO ROLE, deliberately. The setup seat exists only while an install is
+   * being finished; it wears no durable hat, and giving it one would be inventing a role
+   * nobody asked for. */
   seat: {
-    job: 'Atarashi',
+    session_task: 'Atarashi',
     name: 'setup',
-    prompt: 'Finish what setup still needs. Your job shelf says how: read GET /api/settei at start — needed[] is your reading list, and set is what the owner already answered; never re-ask it.',
+    prompt: 'Finish what setup still needs. Your task shelf says how: read GET /api/settei at start — needed[] is your reading list, and set is what the owner already answered; never re-ask it.',
   },
 };

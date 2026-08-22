@@ -1,16 +1,27 @@
 /**
- * THE LETTER'S ROLE HALF — cowork's, because a role is set at birth and a ladder is not.
+ * THE LETTER'S AXIS HALF — cowork's, because the axes are set at birth and a ladder is not.
  *
- * `session_job` is what a session IS DOING. It is fixed mechanically the moment the
- * session is launched — the owner pressed a button on the ＋ New session board and that
- * button IS the role — and the session may change it afterwards with `write_tegami`.
- * Neither of those is a MICHI concern: michi is the ladder, and a session has a role
+ * TWO FIELDS, TWO AUTHORITIES, one record:
+ *
+ *   job_role      WHO the session is. Seeded at birth from the button the owner pressed,
+ *                 and then IMMUTABLE — `write_tegami` preserves it and refuses an
+ *                 attempted change, and no live-session control offers to change it.
+ *                 A session does not stop being a Developer halfway through.
+ *   session_task  WHAT it is doing right now. Seeded at birth and MUTABLE by two writers:
+ *                 the session itself with `write_tegami`, and the owner from the tile.
+ *                 A committed change injects that task's reading into the running
+ *                 session (`src/task-watch.ts`).
+ *
+ * Blanks are stored as empty strings and are never inferred from each other: a session
+ * with a role and no task is a real, ordinary launch.
+ *
+ * Neither is a MICHI concern: michi is the ladder, and a session has a role and a task
  * whether or not it ever puts a ladder up.
  *
  * So the letter has two halves with different owners, in one file:
  *
- *   cowork (here)  seed the file at birth with `session_job` already filled; read the
- *                  role back out for the roster. Nothing else in the block is parsed.
+ *   cowork (here)  seed the file at birth with both axes already filled; read them back
+ *                  out for the roster. Nothing else in the block is parsed.
  *   michi          the ladder, `at`, `ladder_state`, `docs`, the SHINGO chip, `quietMs`,
  *                  the `/api/sessions/:name/tegami` routes, and the sweep.
  *
@@ -26,7 +37,7 @@
  * **Seeding is safe against michi.** `michi/tegami.ts`'s own `seedTegami` writes with
  * `flag: 'wx'` and treats EEXIST as success, returning the existing path. So on a build
  * with michi, we seed first and its seed steps aside onto the file we wrote — same
- * shell, same shape, plus a role it would have left blank. Nothing in the services repo
+ * shell, same shape, plus the axes it would have left blank. Nothing in the services repo
  * has to change for this to be correct. (When it is next touched, michi's seed half is
  * dead code and should go; its `addBirthLines` still names the file, which is why we do
  * not add a birth line of our own and double-brief every session on a services install.)
@@ -36,7 +47,7 @@ import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { RIREKI_DIR, sessionKey } from './session-dir.js';
-import { listSessionJobs } from './catalog.js';
+import { listSessionTasks } from './definitions.js';
 import type { SessionInfo } from './tmux.js';
 
 const exec = promisify(execFile);
@@ -67,16 +78,20 @@ export function tegamiPath(key: string): string {
 }
 
 /**
- * The role lines, READ FROM THE CATALOG — never restated here.
+ * The task lines, READ FROM THE DEFINITIONS — never restated here.
  *
- * `ronin_catalogs/SESSION_JOBS.md` is the authority on what a kind is. A second copy in
+ * `ronin_catalogs/session_tasks/` is the authority on what a task is. A second copy in
  * this file would be correct exactly until someone edited one of them, and the whole
  * point of a letter that teaches at the moment of use is that what it teaches is
- * current. If the catalog cannot be read we print no list at all rather than a stale one.
+ * current. If the directory cannot be read we print no list at all rather than a stale one.
+ *
+ * TASKS ONLY, and roles deliberately not: this list exists so a session can pick its NEXT
+ * value, and the role is the one field it may not change. Listing roles here would be an
+ * invitation to do the one thing the letter refuses.
  */
-async function roleLines(): Promise<string> {
+async function taskLines(): Promise<string> {
   try {
-    const rows = (await listSessionJobs())
+    const rows = (await listSessionTasks())
       .filter((k) => k.name && k.remit)
       .map((k) => `> \`${k.name}\` — ${k.remit}`);
     return rows.length ? rows.join('\n') + '\n>' : '';
@@ -88,13 +103,22 @@ async function roleLines(): Promise<string> {
 /**
  * The file a newborn session finds waiting for it.
  *
- * `session_job` is filled, not blank: the launcher already knows what it launched, and
- * making the session guess a fact the owner stated is how a roster ends up showing
- * "unknown" for sessions nobody was ever unsure about. The ladder is michi's and is
- * seeded EMPTY here — a gate we cannot service (no chip, no monitor) would light every
- * tile amber waiting on a go-ahead nobody is watching for.
+ * Both axes are filled from the launch rather than left blank: the launcher already knows
+ * what it launched, and making the session guess a fact the owner stated is how a roster
+ * ends up showing "unknown" for sessions nobody was ever unsure about. Either may be
+ * legitimately empty, and an empty one is written as `""` rather than omitted — a key
+ * that is present and empty says "asked and answered none", which is the truth.
+ *
+ * The ladder is michi's and is seeded EMPTY here — a gate we cannot service (no chip, no
+ * monitor) would light every tile amber waiting on a go-ahead nobody is watching for.
  */
-function seedShell(name: string, job: string, checkout: TegamiCheckout, roles: string): string {
+function seedShell(
+  name: string,
+  role: string,
+  task: string,
+  checkout: TegamiCheckout,
+  tasks: string,
+): string {
   return `# TEGAMI — ${name}
 > **This file is your ladder, and it is a good way to communicate that you understand your
 > role, the input you need from the user, and your planned phases and legs.** What you keep
@@ -104,17 +128,24 @@ function seedShell(name: string, job: string, checkout: TegamiCheckout, roles: s
 > At the end of a turn, consider updating it with \`write_tegami\`. Not keeping it current is
 > poor quality.
 >
-> YOUR **session_job** is already set below — it is the button the owner pressed to start
-> you, so it is a statement of what you were asked for, not a guess. Change it when the work
-> changes: a session that finishes planning and starts building has changed job, not become
-> a new session. It is the SESSION's job, not the agent's: same binary, different work.
+> YOUR **job_role** is already set below, and it does not change. It is WHO you are for
+> this whole session — the hat the owner started you in. \`write_tegami\` preserves it and
+> refuses an attempted change, so do not try to edit it; if the role is genuinely wrong,
+> that is a new session, not a new value.
+>
+> YOUR **session_task** is already set below — it is the button the owner pressed to start
+> you, so it is a statement of what you were asked for, not a guess. **Change it when the
+> work changes**: a session that finishes planning and starts building has changed task,
+> not become a new session, and not changed role either. It is the SESSION's task, not the
+> agent's: same binary, different work. When you change it, Ronin hands you that task's own
+> reading — so re-marking yourself is how you get told what the new work needs.
 >
 > YOUR **repos** list is started from the checkout the new-session box put you in. It is
 > not limited to that project_root: add, remove, or change entries as you work across other
 > repositories. Keep every branch current. The branch is the important live coordinate:
 > it tells the owner where this session's work is landing.
 >
-${roles}
+${tasks}
 > YOUR **ladder** — the rungs, and which one you are on. Phases hold legs. Name a phase
 > before you know its legs; a phase with nothing under it yet is normal. Leave out what you
 > cannot see: a short ladder is a true ladder, and a guessed one is a lie. Statuses are
@@ -135,7 +166,8 @@ ${roles}
 
 \`\`\`json
 { "objective": "",
-  "session_job": ${JSON.stringify(job)},
+  "job_role": ${JSON.stringify(role)},
+  "session_task": ${JSON.stringify(task)},
   "repos": ${JSON.stringify(checkout.repo || checkout.branch ? [checkout] : [])},
   "ladder": [] }
 \`\`\`
@@ -154,13 +186,14 @@ ${roles}
  */
 export async function seedTegami(
   name: string,
-  job: string,
+  role: string,
+  task: string,
   checkout: TegamiCheckout = { repo: '', branch: '' },
 ): Promise<string | null> {
   try {
     const file = tegamiPath(await sessionKey(name));
     await fs.mkdir(path.dirname(file), { recursive: true });
-    await fs.writeFile(file, seedShell(name, job, checkout, await roleLines()), { flag: 'wx' });
+    await fs.writeFile(file, seedShell(name, role, task, checkout, await taskLines()), { flag: 'wx' });
     return file;
   } catch (e) {
     if ((e as NodeJS.ErrnoException)?.code === 'EEXIST') return tegamiPath(await sessionKey(name));
@@ -172,28 +205,38 @@ export async function seedTegami(
 }
 
 /**
- * The role a session says it is doing, or '' when it has not said.
+ * One axis out of a session's letter, or '' when it has not said.
  *
  * Deliberately a KEYHOLE read: it pulls the json block and takes one string out of it.
  * A malformed block, a missing file, a letter written by a future michi with keys we
  * have never heard of — all read as '' and none read as an error. The block belongs to
  * the agent and to michi; being unable to parse the rest of it is the normal case here,
  * not a fault, and the roster's job is to draw a blank rather than to complain.
+ *
+ * There is NO legacy key to fall back to. `session_job` is retired, and a letter carrying
+ * it reads as blank on both axes — which is correct: it is a letter from a schema that no
+ * longer exists, and inventing a task from it would be reading a fact nobody wrote.
  */
-export async function readRole(name: string): Promise<string> {
+async function readAxis(name: string, key: 'job_role' | 'session_task'): Promise<string> {
   try {
     const text = await fs.readFile(tegamiPath(await sessionKey(name)), 'utf8');
     const fenced = text.match(/```(?:json)?\s*\n([\s\S]*?)\n```/);
     const raw = fenced ? fenced[1] : text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1);
-    const job = (JSON.parse(raw) as { session_job?: unknown }).session_job;
-    return typeof job === 'string' ? job.trim() : '';
+    const v = (JSON.parse(raw) as Record<string, unknown>)[key];
+    return typeof v === 'string' ? v.trim() : '';
   } catch {
     return '';
   }
 }
 
+/** WHAT the session is doing now — the mark, and the mutable axis. */
+export const readSessionTask = (name: string): Promise<string> => readAxis(name, 'session_task');
+
+/** WHO the session is — birth-fixed, and never written by anything after the seed. */
+export const readJobRole = (name: string): Promise<string> => readAxis(name, 'job_role');
+
 /**
- * THE OWNER'S HAND ON THE ROLE — set what a session is doing, from the tile.
+ * THE OWNER'S HAND ON THE TASK — set what a session is doing, from the tile.
  *
  * The session writes this field itself with `write_tegami`, and normally should: it is
  * the party that knows the work changed. But the owner is looking at the tile and can
@@ -202,7 +245,12 @@ export async function readRole(name: string): Promise<string> {
  * until the agent notices makes the mark decoration. So: two writers, one field, the
  * owner's hand last.
  *
- * **SURGICAL, not a rewrite.** It replaces the `session_job` VALUE inside the fenced
+ * **IT TOUCHES ONE KEY, and `job_role` is not it.** The role is birth-fixed; this route
+ * cannot change it, `write_tegami` refuses to change it, and there is no live-session
+ * control that offers to. That is the whole of the immutability rule on this side: the
+ * only writer that ever sets `job_role` is the seed.
+ *
+ * **SURGICAL, not a rewrite.** It replaces the `session_task` VALUE inside the fenced
  * block and touches nothing else — the ladder, `docs`, `at`, `objective`, the agent's
  * own spacing and every key we have never heard of survive byte for byte. Re-serialising
  * the block from a parse would silently reformat an agent's file, and would drop any key
@@ -210,7 +258,8 @@ export async function readRole(name: string): Promise<string> {
  * guest in it.
  *
  * Three refusals, all of which leave the file exactly as found:
- *   · no letter at all → seed one carrying this role (a session born outside Ronin)
+ *   · no letter at all → seed one carrying this task and a blank role (a session born
+ *     outside Ronin never had a role to preserve, and inventing one would be a lie)
  *   · no json block → refuse. The letter is malformed or hand-mangled, and guessing
  *     where the payload starts is how you destroy a ladder.
  *   · the edit would not re-parse → refuse. Checked before anything is written.
@@ -220,8 +269,8 @@ export async function readRole(name: string): Promise<string> {
  * that is true of `write_tegami` against itself today, and a lock is not worth the
  * machinery for a field a human changes by hand a few times a day.
  */
-export async function writeRole(name: string, job: string): Promise<string | null> {
-  const clean = job.trim();
+export async function writeSessionTask(name: string, task: string): Promise<string | null> {
+  const clean = task.trim();
   const file = tegamiPath(await sessionKey(name));
   let text: string;
   try {
@@ -229,22 +278,22 @@ export async function writeRole(name: string, job: string): Promise<string | nul
   } catch {
     // No letter — a session Ronin never launched. Marking it is a reasonable thing to
     // want, so seeding one is the honest way to grant it, not a silent failure.
-    return (await seedTegami(name, clean)) ? clean : null;
+    return (await seedTegami(name, '', clean)) ? clean : null;
   }
   const block = text.match(/```(?:json)?\s*\n([\s\S]*?)\n```/);
   if (!block) return null;
   const body = block[1];
-  const key = /"session_job"\s*:\s*"(?:[^"\\]|\\.)*"/;
+  const key = /"session_task"\s*:\s*"(?:[^"\\]|\\.)*"/;
   const next = key.test(body)
-    ? body.replace(key, `"session_job": ${JSON.stringify(clean)}`)
-    : body.replace(/\{/, `{ "session_job": ${JSON.stringify(clean)},`);
+    ? body.replace(key, `"session_task": ${JSON.stringify(clean)}`)
+    : body.replace(/\{/, `{ "session_task": ${JSON.stringify(clean)},`);
   try {
     JSON.parse(next); // the guard: never leave a letter the tile cannot read
   } catch {
     return null;
   }
   const out = text.slice(0, block.index! ) + block[0].replace(body, next) + text.slice(block.index! + block[0].length);
-  const tmp = `${file}.job`;
+  const tmp = `${file}.task`;
   await fs.writeFile(tmp, out, 'utf8');
   await fs.rename(tmp, file);
   return clean;
@@ -289,7 +338,7 @@ export async function parkBrief(name: string, text: string): Promise<string | nu
  * IT IS NEVER TYPED INTO THE TILE. Writing an explanation into the pane is the exact sin
  * this whole buildout exists to end; this writes the file the tile already reads.
  *
- * SURGICAL AND TIMID, the same discipline as `writeRole` above and for the same reason: a
+ * SURGICAL AND TIMID, the same discipline as `writeSessionTask` above and for the same reason: a
  * letter is the session's own words and Ronin is a guest in it. It replaces the `ladder`
  * VALUE and nothing else, and it refuses outright unless the ladder is empty or is a single
  * gate — the only two states this can honestly own. The moment an agent has put a real
@@ -338,15 +387,25 @@ export async function writeGate(name: string, gate: string): Promise<boolean> {
   return true;
 }
 
-/** A session, plus the role out of its letter. */
-export type SessionWithRole = SessionInfo & { session_job: string };
+/** A session, plus both axes out of its letter. */
+export type SessionWithAxes = SessionInfo & { job_role: string; session_task: string };
 
 /**
  * Every producer of a client-facing session list runs through here — `/api/sessions`,
  * `/api/home`, and both ws pushes — so the mark can never be present on one surface and
  * missing on another. One letter read per session per list; the same cost michi's row
  * field already pays, on lists that are already a tmux round trip.
+ *
+ * BOTH AXES RIDE THE LIST, and they are drawn differently: the TASK is the mark (its
+ * icon, on every surface that lists sessions), and the ROLE is context (the session's
+ * details, where it does not compete with a mark that changes).
  */
-export async function withRoles(list: SessionInfo[]): Promise<SessionWithRole[]> {
-  return Promise.all(list.map(async (s) => ({ ...s, session_job: await readRole(s.name) })));
+export async function withAxes(list: SessionInfo[]): Promise<SessionWithAxes[]> {
+  return Promise.all(
+    list.map(async (s) => ({
+      ...s,
+      job_role: await readJobRole(s.name),
+      session_task: await readSessionTask(s.name),
+    })),
+  );
 }

@@ -1,7 +1,7 @@
 /**
  * PER-SESSION ROUTES — everything addressed to one live session by name: end it, tag
  * it, dial it, read its gauge, its ladder, its tape state, and type into it. The
- * session list itself and the launchers live in routes/launch.ts; boards in
+ * session list itself and the launchers live in routes/launch.ts; wipeboards in
  * routes/wipeboards-api.ts.
  */
 import fs from 'node:fs';
@@ -28,7 +28,9 @@ import { isValidRootName, listProjectRoots } from '../project-roots.js';
 import { expandLookup } from '../lookup.js';
 import { readCtxLine } from '../ctx.js';
 import { count } from '../counts.js';
-import { readRole, writeRole } from '../tegami.js';
+import { announceTeamChanges } from './wipeboards-api.js';
+import { readJobRole, readSessionTask, writeSessionTask } from '../tegami.js';
+import { observeTaskChange, taskDeliveryFault } from '../task-watch.js';
 import { emitSessionEnd } from '../sockets.js';
 
 export function registerSessions(app: express.Express): void {
@@ -131,10 +133,10 @@ export function registerSessions(app: express.Express): void {
     }
   });
 
-  // Group tags (@ronin-tags): a session's memberships, stored on the session itself.
-  // The point of these is ADDRESSING, not decoration — "the kojinsa group" resolves to a
+  // Team tags (@ronin-tags): a session's teams, stored on the session itself.
+  // The point of these is ADDRESSING, not decoration — "the kojinsa team" resolves to a
   // session list, so a coordinator can be pointed at a set instead of named members one
-  // by one. Agents get the same answer from `ronin_bin/tejun-group` without going through HTTP.
+  // by one. Agents get the same answer from `ronin_bin/tejun-team` without going through HTTP.
   app.get('/api/sessions/:name/tags', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
@@ -150,48 +152,84 @@ export function registerSessions(app: express.Express): void {
     const list = Array.isArray(body) ? body.map(String) : String(body ?? '').split(',');
     try {
       count('tag.set');
-      res.json({ ok: true, tags: await setTags(name, list.slice(0, 16)) });
+      // The tag write IS the membership event for a team wipeboard, so the join/leave
+      // notices fire here — for teams whose wipeboard file exists (docs/wipeboards.md).
+      const before = await getTags(name);
+      const tags = await setTags(name, list.slice(0, 16));
+      const notices = await announceTeamChanges(name, before, tags);
+      res.json({ ok: true, tags, notices });
     } catch (e) {
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }
   });
 
   /**
-   * `session_job` — what this session is DOING, read from and written to its LETTER.
+   * THE TWO AXES OUT OF A SESSION'S LETTER — and only one of them has a door in.
    *
-   * The session keeps this current itself (`write_tegami`) and usually should. This is
-   * the OWNER's hand on the same field, from the tile: you can see the agent is not doing
-   * what its mark says, so you say so. It is a re-LABEL and nothing else — no brief is
-   * re-sent, and the dial and permissions the launch fixed are untouched. A session that
-   * is re-marked must not thereby acquire a different dial.
+   * `session_task` is what this session is DOING. The session keeps it current itself
+   * (`write_tegami`) and usually should. The POST is the OWNER's hand on the same field,
+   * from the tile: you can see the agent is not doing what its mark says, so you say so.
    *
-   * Not validated against the catalog on purpose: `SESSION_JOBS.md` is the owner's to
+   * IT IS NOT MERELY A RE-LABEL ANY MORE. A committed task change means the session
+   * should be reading that task's shelf, so this route writes the letter and then hands
+   * off to the SAME observer the agent's own `write_tegami` goes through
+   * (`src/task-watch.ts`). One injection implementation, reached two ways — a second one
+   * in this route is exactly how the owner's change and the agent's change would drift
+   * into behaving differently.
+   *
+   * What it still does NOT do is re-launch anything: the dial and permissions the launch
+   * fixed are untouched, and a session that is re-marked must not thereby acquire a
+   * different dial.
+   *
+   * `job_role` is READ-ONLY here, and there is no POST for it at all. It is birth-fixed;
+   * the seed is its only writer. A route to change it would be the one door that made the
+   * immutability rule a suggestion.
+   *
+   * Not validated against the definitions on purpose: `session_tasks/` is the owner's to
    * extend or shadow, and a name with no icon still draws as its own text. '' clears the
-   * mark back to "has not said", which is a real state and must stay reachable.
+   * mark back to "has not said", which is a real state and must stay reachable — and it
+   * injects no reading, because a blank task has none.
    *
    * 409, not 500, when the letter cannot be written: it means the file is malformed or
    * the edit would not re-parse, and the caller wants to know its change did not land
    * rather than that the server broke.
    */
-  app.get('/api/sessions/:name/session_job', async (req, res) => {
+  app.get('/api/sessions/:name/session_task', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
     if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
-    res.json({ session_job: await readRole(name) });
+    // `delivery` is the split-state readout: present only when this session's task
+    // changed and its reading did NOT land (a closed dial, a prompt that would not take
+    // input). A changed mark with undelivered reading must never pass silently, so the
+    // surface that shows the mark can show why it is only half true.
+    res.json({
+      session_task: await readSessionTask(name),
+      job_role: await readJobRole(name),
+      delivery: await taskDeliveryFault(name),
+    });
   });
 
-  app.post('/api/sessions/:name/session_job', async (req, res) => {
+  app.post('/api/sessions/:name/session_task', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
     if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
-    const job = String(req.body?.session_job ?? '').trim().slice(0, 64);
+    if (req.body?.job_role !== undefined) {
+      return res.status(400).json({
+        error: 'A job_role is fixed at birth and cannot be changed in a live session.',
+      });
+    }
+    const task = String(req.body?.session_task ?? '').trim().slice(0, 64);
     try {
-      const saved = await writeRole(name, job);
+      const saved = await writeSessionTask(name, task);
       if (saved === null) {
         return res.status(409).json({ error: "This session's letter could not be written — it has no readable json block." });
       }
-      count('session_job.set', { job: saved || null });
-      res.json({ ok: true, session_job: saved });
+      count('session_task.set', { task: saved || null });
+      // The owner authored it; the observer delivers it. Fire-and-forget so the tile's
+      // mark updates at once — a failed delivery is recorded and retried by the watcher
+      // rather than held against this request.
+      void observeTaskChange(name);
+      res.json({ ok: true, session_task: saved });
     } catch (e) {
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }
@@ -202,8 +240,8 @@ export function registerSessions(app: express.Express): void {
    * is no group registry to drift out of date.
    *
    * It used to answer with a `leaders` map too, off `@ronin-lead` — who coordinates each
-   * group, hand-set by the owner. That option is retired: coordinating is a `session_job`
-   * (`QuarterBack`), and the session says so in its own letter.
+   * group, hand-set by the owner. That option is retired: coordinating is a `job_role`
+   * (`QuarterBack`), and the session says so in its own letter — a task, so it migrates.
    */
   app.get('/api/groups', async (_req, res) => {
     try {

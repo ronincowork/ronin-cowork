@@ -17,7 +17,7 @@ the <name> macro", "/<name>". **Never require a marker** to recognise a macro.
 **Every macro here is one of two classes, and its `class:` line says which** (KOTOBA):
 
 - **`session_macro.lookup`** — a read-only question Ronin already holds the answer to.
-  One command (`tejun-group`, `tejun-wipeboard`), no compile, no step tracking; sent
+  One command (`tejun-team`, `tejun-wipeboard`), no compile, no step tracking; sent
   through Ronin it arrives already resolved, so never re-run one to confirm.
 - **`session_macro.workflow`** — a recipe of cataloged actions you perform: compile it
   (`ronin_bin/tejun <name>`) or step through it (`tejun-step start <name>`), execute in
@@ -65,7 +65,7 @@ who need opposite things, so it carries two separate pieces of writing:
   the always-visible blurb explains what it does for somebody who has never heard of it. No
   jargon a newcomer would not have, and **true about what the macro actually does** rather
   than evocative — a destructive macro's blurb must say so plainly instead of sounding
-  inviting. Same two keys, same job, as the kind buttons in `SESSION_JOBS.md`.
+  inviting. Same two keys, same job, as the launcher buttons in `ronin_catalogs/session_tasks/`.
 
 **Both are required on every entry** — `check:catalogs` fails a stock entry missing either —
 and **no human surface may fall back to the instruction.** Showing *"Owner-invoked only —
@@ -138,20 +138,71 @@ PROPOSE it ("I'd like to fork X into its own session") and wait for the go-ahead
 Unannounced sessions are untrackable for the human until the UI reveals them. Spin the current conversation's active topic out into its own agent
 session, so the origin session stays on its track. (The breakout pattern, first performed manually 2026-08-05.)
 
-Params: `topic` (short slug), `dir` (working directory for the new session; default:
-current repo root), `group` (which group the new session joins; default: the origin
-session's own groups, so a fork stays addressable with its parent — `tejun-group` lists
-what exists. Ask the owner if the origin has none).
+Params: `topic` (short slug), `dir` (working directory; default: current repo root),
+`team` (which team the new session joins; default: the origin session's own teams, so a
+fork stays addressable with its parent. Ask the owner if the origin has none),
+`job_role` (default: **the origin session's own role**), `session_task` (default:
+`DraftPlan`), `model` (default: **omit it** — the cascade answers).
+
+**Use the same launch contract the ＋ New form uses. Do not rebuild it.** Forks were
+starting from a bare `tmux new-session` and then typing a CLI at it, which is a second,
+bespoke launch path — and it arrives with **zero Build Brief**: no reading list, no
+posture, no letter, and no role. `session-launch` is the canonical pipeline, and the fork
+gets the whole compiled brief from it: all-session reading + the project_root's + the
+job_role's + the session_task's, and then the handoff and its understanding gate on top.
+
+**A FORK THAT LAUNCHES AN AGENT RESOLVES ITS AXES DELIBERATELY** (owner, 2026-08-22).
+Forks used to be born through raw `tmux new-session`, which never touches the letter — so
+they carried a blank `job_role` FOREVER, since the role is stamped at birth and immutable,
+and could only ever self-set a task later. Measured on `explainer_library` and
+`wipeboard_groups`, both of which did exactly that. `session-launch` is the fix: it is the
+one door, and it is the only thing that can stamp a role.
+
+**The two axes default differently, and the asymmetry is the point.**
+
+- **`job_role` is INHERITED from the origin**, because a fork continues the same kind of
+  work under the same hat — a fork is an origin, not a change of identity. It is
+  **immutable**, so a wrong one cannot be repaired: if the origin's own role is blank,
+  do NOT pass blank through. **ASK the owner which role the fork wears**, and say why you
+  are asking. That is the one question this macro is allowed to add.
+- **`session_task` DEFAULTS to `DraftPlan`**, because a fork's first act is to read a
+  handoff, understand it and plan — which is what `DraftPlan` is. It is **mutable** and
+  self-correcting: a wrong task costs one `write_tegami`, and re-marking hands the session
+  the new task's reading automatically. So it may default silently where the role may not.
+
+**The model is the third field to resolve, and the honest default is to say nothing.**
+Omit it and the cascade answers — the task's `model:` bias, else the role's, else the
+install default. Pass one only when the owner named one; an explicit model beats every
+layer. It must be a real cell from the launch table, never a command you composed.
+
+State both resolved axes in the report. The owner is one glance from seeing a wrong
+role and one kill from fixing it, which is only true if the report says what was chosen.
 
 | # | Action | With |
 |---|---|---|
-| 1 | write-handoff-doc | a wip handoff doc (location per the documents SOP) — distill THIS conversation's context on the topic: goal in the owner's words, constraints, verification, definition of done |
-| 2 | session-create | name `<topic>`, cwd `<dir>`, tags `<group>` |
-| 3 | run-command | `claude` |
-| 4 | wait-ready | claude pattern |
-| 5 | send-prompt | **READ AND REPORT UNDERSTANDING FIRST — never "read this and execute it".** A fork starts by proving it understood, not by working: "Read <handoff path>. Then report back, in your own words: what the job is, what you will NOT do (in particular: NO code, NO builds, NO commits until the owner says go), and anything in the brief that is unclear or looks wrong. Do not act on it yet — wait for the owner. Follow CLAUDE.md and CLAUDE.local.md conventions strictly." Add, for planning topics, what the eventual deliverable is: "when the owner gives the go-ahead, the output is a wip build-out plan per the documents SOP — a plan, not code." |
-| 6 | confirm-started | the fork has ACKNOWLEDGED — it reported its understanding and is waiting, not working |
-| 7 | report-outcome | session name, topic, handoff doc path, how to open it |
+| 1 | read-letter | your OWN letter — the `job_role` you will pass on, and your teams |
+| 2 | write-handoff-doc | a wip handoff doc (location per the documents SOP) — distill THIS conversation's context on the topic: goal in the owner's words, constraints, verification, definition of done |
+| 3 | propose-and-confirm | ONLY when the origin's `job_role` is blank: name the role you would give the fork and wait for the yes |
+| 4 | session-launch | name `<topic>`, `job_role` `<role>`, `session_task` `<task>`, `project_root`/dir `<dir>`, tags `<team>`, `cmd` only if the owner named a model, and the prompt below |
+| 5 | confirm-started | the fork has ACKNOWLEDGED — it reported its understanding and is waiting, not working |
+| 6 | report-outcome | session name, topic, resolved `job_role` + `session_task`, handoff doc path, how to open it |
+
+**The prompt for step 4** — READ AND REPORT UNDERSTANDING FIRST, never "read this and
+execute it". A fork starts by proving it understood, not by working: *"Read <handoff
+path>. Then report back, in your own words: what the job is, what you will NOT do (in
+particular: NO code, NO builds, NO commits until the owner says go), and anything in the
+brief that is unclear or looks wrong. Do not act on it yet — wait for the owner. Follow
+CLAUDE.md and CLAUDE.local.md conventions strictly."* Add, for planning topics, what the
+eventual deliverable is: *"when the owner gives the go-ahead, the output is a wip build-out
+plan per the documents SOP — a plan, not code."*
+
+Do NOT type that prompt into the pane. It rides in on `session-launch` as part of the
+compiled Build Brief, and the resolved task's own `ack:` rule adds the report-first
+instruction on top of it.
+
+**Afterwards the fork owns its own task.** When its work moves on — plan approved, cutting
+begins — it re-marks itself with `write_tegami` and Ronin hands it that task's reading,
+once. Its `job_role` does not move with it, and nothing can change it.
 
 Report: session name, one-line topic, where the handoff doc lives. **A macro's result
 must be shown, not just performed** — until the UI auto-splits the panel on fork
@@ -226,43 +277,43 @@ no manifest line, no PR. It just goes away.
 
 Contrast with `land`: land RECORDS (README + manifest + PR) then dies; delete just dies.
 
-## tag
+## team
 - **class:** session_macro.lookup
-- **label:** Who is in this group
-- **blurb:** Name a group of sessions and get back who is in it right now, with each one's permission dial. It only looks the name up — it never tags anything, and it sends the members nothing.
-Aliases: group
-Owner names a GROUP and expects you to know who is in it: `+tag: ronin` — "the ronin
-group" is now the set we are talking about. **Read-only: this NEVER tags anything.**
+- **label:** Who is on this team
+- **blurb:** Name a team of sessions and get back who is on it right now, with each one's permission dial. It only looks the name up — it never tags anything, and it sends the members nothing.
+Aliases: tag, group (retired spellings, read but never taught)
+Owner names a TEAM and expects you to know who is on it: `+team: ronin` — "the ronin
+team" is now the set we are talking about. **Read-only: this NEVER tags anything.**
 Tagging is the owner's hand in the Ronin UI (🏷 on the tile header), or a macro's at
-birth; `+tag:` only resolves a name to its members.
+birth; `+team:` only resolves a name to its members.
 
-Params: `group` (the tag name; bare `+tag` with no arg = list every group in play).
+Params: `team` (the team name; bare `+team` with no arg = list every team in play).
 
-**Sent through Ronin, this arrives ALREADY ANSWERED.** The server resolves the group
+**Sent through Ronin, this arrives ALREADY ANSWERED.** The server resolves the team
 at send time, so what lands in the pane is the roster itself ("→ resolved by Ronin (no
-lookup needed): the ronin group is 3 sessions — …"). When you see that, the lookup is
+lookup needed): the ronin team is 3 sessions — …"). When you see that, the lookup is
 DONE: report it and stop. Do not compile this macro, do not re-run the tool to confirm
 it, do not go hunting the session list — that is exactly the busywork the expansion
-exists to remove. The steps below are the FALLBACK, for a `+tag:` typed straight into a
+exists to remove. The steps below are the FALLBACK, for a `+team:` typed straight into a
 pane (which Ronin never sees) or when the expansion is unavailable.
 
 | # | Action | With |
 |---|---|---|
-| 1 | group-roster | `tejun-group <group>` — members + each one's dial. No arg: `tejun-group` lists the groups |
-| 2 | report-outcome | the members with their dials, and that this set is now what "<group>" means in this conversation |
+| 1 | team-roster | `tejun-team <team>` — members + each one's dial. No arg: `tejun-team` lists the teams |
+| 2 | report-outcome | the members with their dials, and that this set is now what "<team>" means in this conversation |
 
-Report: the member sessions and their dials, in one short block — then STOP. `+tag:` on
+Report: the member sessions and their dials, in one short block — then STOP. `+team:` on
 its own is a lookup, not an instruction to go do something to them; wait for what the
 owner wants done with the set.
 
 **Re-resolve, never remember.** Membership changes when sessions are born, get tagged,
-or die, so run `tejun-group` again at the start of any later fan-out over the group —
+or die, so run `tejun-team` again at the start of any later fan-out over the team —
 a list carried in your head goes stale silently, which is the whole failure this macro
 exists to prevent. And each member still needs its own control-check before you touch
 it: the roster reports the dial, it does not grant anything.
 
-If the name matches nothing, say so and show what groups DO exist (`tejun-group`) —
-never guess at a near-match, `kojin` and `kojinsa` are different groups.
+If the name matches nothing, say so and show what teams DO exist (`tejun-team`) —
+never guess at a near-match, `kojin` and `kojinsa` are different teams.
 
 ## wipeboard
 - **class:** session_macro.lookup
@@ -273,8 +324,10 @@ Owner names a WIPEBOARD and expects you to know what it is and who is on it:
 `+wipeboard: parserwork`. A wipeboard is a shared text surface — one markdown file
 several sessions all read and append to — so agents on the same problem talk to each
 other instead of every message going through the owner. **Read-only: this NEVER enrols
-anyone.** Membership is the owner's hand (the ▤ Wipeboard tab in Ronin), same as
-tagging; `+wipeboard:` only resolves a name to its brief, its roster and its path.
+anyone.** A TEAM wipeboard's membership is the team's — it follows the tags, and there
+is no enrolment at all; a CUSTOM wipeboard's membership is the owner's hand (the
+▤ Wipeboard tab in Ronin). `+wipeboard:` only resolves a name to its brief, its roster
+and its path.
 
 Params: `wipeboard` (the wipeboard's name; bare `+wipeboard` with no arg = list every wipeboard in play).
 
@@ -302,7 +355,7 @@ append only, never rewrite another agent's post, never edit the Brief.
 Owner wants THIS session to say something to ANOTHER one:
 `+tell: page_capture the login work is on hold, stay off it for now`. The owner's words for
 what it is: *"I can tell my agent to talk to another agent."* One message, one session,
-delivered or refused — it is not a fan-out over a group and it is not a conversation.
+delivered or refused — it is not a fan-out over a team and it is not a conversation.
 
 Params: `session` (who to reach — the first word after the colon), `message` (everything
 after that; send the owner's words unless he asks you to put it your own way).

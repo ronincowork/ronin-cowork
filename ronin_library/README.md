@@ -1,5 +1,7 @@
 # ronin_library — the reference shelf
 
+**test_protocols:** changed anything here? run `bin/ronin-byoin` and read the verdict — `docs/test-protocols.md` is the page.
+
 The longer reading an action or macro sends an agent to. The catalogs say **what you can
 do**; the library holds the **reference a catalog entry points at** — a format, a worked
 method, a set of locations.

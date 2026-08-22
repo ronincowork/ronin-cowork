@@ -24,7 +24,8 @@ import { tabs as makeTabs } from './ui.js';
 
 // `other` is a real bucket, not a gap: a session whose letter names no job still has
 // to be drawable, or it silently vanishes from a chart that claims to show everything.
-const JOBS = ['RiffOnIt', 'DraftPlan', 'CutCode', 'ChaseBug', 'CheckWork', 'QuarterBack', 'OddJob', 'other'];
+const TASKS = ['RiffOnIt', 'DraftPlan', 'CutCode', 'ChaseBug', 'CheckWork', 'QuarterBack', 'OddJob', 'Atarashi', 'OpenShell', 'other'];
+const ROLES = ['developer', 'personalassistant', 'mikaassist', 'other'];
 const WINDOWS = [
   ['today', 'Today'],
   ['week', 'This week'],
@@ -34,12 +35,12 @@ const WINDOWS = [
 /** Named for the thing you would go and try, not for the internal counter. */
 const CAPS = [
   ['forks', 'forks'],
-  ['groups', 'groups'],
+  ['groups', 'teams'],
   // `led` (@ronin-lead) was here until the 人 was retired. A cap is "the thing you would
   // go and try", and there is nothing to go and try any more — a session's coordinator is
-  // its session_job now, which the job chart above already counts.
-  ['board_posts', 'board posts'],
-  ['board_reads', 'board reads'],
+  // its session_task now, which the task chart above already counts.
+  ['board_posts', 'wipeboard posts'],
+  ['board_reads', 'wipeboard reads'],
   ['voice', 'voice'],
   ['pad', 'pad'],
   ['copy', 'copy panel'],
@@ -134,7 +135,7 @@ export function buildStats(root) {
     if (!total) return null;
     const mek = el('div', 'td-mek');
     const axis = el('div', 'td-mekaxis');
-    for (const birth of JOBS) {
+    for (const birth of TASKS) {
       const ends = nested[birth];
       if (!ends) continue;
       const n = sumOf(ends);
@@ -142,7 +143,7 @@ export function buildStats(root) {
       const colEl = el('div', 'td-mekcol');
       colEl.style.flex = `${n} 1 0`;
       colEl.title = `${birth} — ${n}`;
-      for (const end of JOBS) {
+      for (const end of TASKS) {
         if (!ends[end]) continue;
         const seg = el('div', 'td-seg');
         seg.style.height = `${(ends[end] / n) * 100}%`;
@@ -158,7 +159,7 @@ export function buildStats(root) {
       axis.appendChild(a);
     }
     const legend = el('div', 'td-legend');
-    for (const j of JOBS) {
+    for (const j of TASKS) {
       const s = el('span', null);
       const i = el('i');
       i.style.background = `var(--k-${j})`;
@@ -252,12 +253,12 @@ export function buildStats(root) {
       sessCard,
       card('Active days', `${s.active_days ?? 0} / ${d.days}`),
       card('Live now', String(s.alive ?? 0), `peak ${s.peak ?? 0}`),
-      card('Groups', String(s.tag_groups ?? 0)),
+      card('Teams', String(s.tag_groups ?? 0)),
     );
     body.appendChild(cards);
 
     // sessions
-    const mek = marimekko(s.by_job_birth_end || {});
+    const mek = marimekko(s.by_task_birth_end || {});
     const migN = sumOf(s.migrations);
     const migNote = migN
       ? el(
@@ -266,14 +267,17 @@ export function buildStats(root) {
           `${migN} migrated · ${Object.entries(s.migrations).map(([k, v]) => `${k.replace('>', '→')} ${v}`).join(' · ')}`,
         )
       : null;
-    const mekPanel = mek ? panel('Job at birth × job at death', mek, true) : null;
+    const mekPanel = mek ? panel('Task at birth × task at death', mek, true) : null;
     if (mekPanel && migNote) mekPanel.appendChild(migNote);
 
     body.appendChild(
       section(
         'Sessions',
         `${s.started ?? 0} started`,
-        sumOf(s.by_job_now) ? panel('Doing right now', bars(s.by_job_now, JOBS)) : null,
+        sumOf(s.by_task_now) ? panel('Doing right now', bars(s.by_task_now, TASKS)) : null,
+        // The role is a census and never a migration: it cannot change while a session
+        // lives, so there is no birth-vs-now pair for it and no arrow to draw.
+        sumOf(s.by_role) ? panel('Who they are', bars(s.by_role, ROLES)) : null,
         mekPanel,
         sumOf(s.born) ? panel('Born', bars(s.born, ['assisted', 'manual', 'fork', 'macro', 'hand'])) : null,
         sumOf(s.end) ? panel('Ended', bars(s.end, ['harakiri', 'deleted', 'cold', 'archived'])) : null,

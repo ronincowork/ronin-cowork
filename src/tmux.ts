@@ -153,7 +153,7 @@ export async function sessionExists(name: string): Promise<boolean> {
 export interface CreateOpts {
   agent?: boolean;
   /**
-   * `cap: exempt` in SESSION_JOBS.md — create it even at the max. It still COUNTS
+   * `cap: exempt` in the resolved launch profile — create it even at the max. It still COUNTS
    * afterwards, so the NEXT spawn is the one refused; this exempts the spawn, never the
    * census. Nothing is evicted to make room.
    *
@@ -180,7 +180,7 @@ export interface CreateOpts {
 export async function createSession(name: string, dir?: string, opts: CreateOpts = {}): Promise<void> {
   // THE SESSION MAX, guarded here rather than at the route, because `/api/launch` has two
   // handlers — launch_job falls through to launch_bare when the body carries no
-  // session_job — and a check in the first one is bypassed by omitting a field. Both
+  // launch axis — and a check in the first one is bypassed by omitting a field. Both
   // funnel through this function. Note it execs new-session TWICE (below, and again
   // without -c on failure); guarding the execs would be two edits and one future bug.
   //
@@ -357,10 +357,23 @@ export async function setTags(name: string, tags: string[]): Promise<string[]> {
 }
 
 /**
- * tmux user option holding the WIPEBOARDS a session is on — comma-separated, exactly
- * like TAGS_OPT and for exactly the same reason: membership lives on the session, so it
- * dies with the session and no roster can ever drift from reality. The file half of a
- * wipeboard lives in src/wipeboards.ts; this is the "who is on it" half.
+ * TEAMS IN PLAY — every session_team with at least one live member. A team is nothing
+ * but the sessions carrying the same tag (see TAGS_OPT); this is the one derivation,
+ * shared so every answer to "the <name> team" is the same answer. Team wipeboards lean
+ * on it: where a live team bears a wipeboard's name, the team IS the membership.
+ */
+export async function teamsInPlay(): Promise<string[]> {
+  return [...new Set((await listSessions()).flatMap((s) => s.tags))].sort();
+}
+
+/**
+ * tmux user option holding the CUSTOM WIPEBOARDS a session is on — comma-separated,
+ * exactly like TAGS_OPT and for exactly the same reason: membership lives on the
+ * session, so it dies with the session and no roster can ever drift from reality. The
+ * file half of a wipeboard lives in src/wipeboards.ts; this is the "who is on it" half
+ * — for CUSTOM boards only. A TEAM wipeboard stores no membership anywhere: its members
+ * are the team (teamMembers above), and where a live team bears a board's name this
+ * option is not consulted for it. See docs/wipeboards.md.
  *
  * Board names obey the tag rules (lowercase, boring, typeable), so parseTags cleans both.
  */
@@ -388,13 +401,14 @@ export async function setWipeboards(name: string, boards: string[]): Promise<str
 }
 
 /**
- * NO OPTION HOLDS `session_job`, deliberately — and `@ronin-lead` (the 人) is retired
+ * NO OPTION HOLDS EITHER LAUNCH AXIS, deliberately — and `@ronin-lead` (the 人) is retired
  * without one taking its place here.
  *
- * What a session is DOING lives in its LETTER: `Tegami.session_job`, which the session
+ * What a session is DOING lives in its LETTER: `Tegami.session_task`, and who it IS lives
+ * beside it as `Tegami.job_role`. The task is the one the session
  * itself keeps current with `write_tegami` as it migrates. That is michi's field, michi
  * puts the whole letter on every roster row through the ROW socket, and the client reads
- * the mark off `tegami.session_job`. A tmux option beside it would be a second copy of
+ * the mark off `tegami.session_task`. A tmux option beside it would be a second copy of
  * one fact, drifting the moment an agent re-marked itself in the file — and cowork
  * storing a service's data is exactly the seam KYOKAI exists to hold.
  *

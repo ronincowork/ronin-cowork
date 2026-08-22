@@ -1,5 +1,7 @@
 # Adding macros & actions (TEJUN)
 
+**test_protocols:** changed anything here? run `bin/ronin-byoin` and read the verdict — `docs/test-protocols.md` is the page.
+
 Entry point for the whole system: `../reading-list/TEJUN.md`. This file: the choreography for
 extending the two catalogs that live here.
 

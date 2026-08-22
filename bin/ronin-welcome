@@ -37,5 +37,5 @@ case "$URL" in
   https://*) ;;
   *) printf '  Still HTTP. For an HTTPS door (the 🎤 microphone needs one):\n'
      [ -n "$RONIN_IP" ] &&
-       printf '      sudo tailscale serve --bg --https=8443 http://%s:%s\n\n' "$RONIN_IP" "$PORT" ;;
+       printf '      sudo tailscale serve --bg --https=8443 http://%s:%s >/dev/null\n\n' "$RONIN_IP" "$PORT" ;;
 esac

@@ -1,5 +1,7 @@
 # ronin_sops — how this house goes about things
 
+**test_protocols:** changed anything here? run `bin/ronin-byoin` and read the verdict — `docs/test-protocols.md` is the page.
+
 An **SOP** is the standard way this install approaches an area of work: source control,
 data, getting a thing deployed. **Not the only way and not the right way** — the way, so
 every session goes about it the same, and the_owner has one file to change when they want
@@ -12,7 +14,7 @@ prescriptive. **The difference is who fetches it:**
 
 | | fetched by | arrives | written for |
 |---|---|---|---|
-| **`ronin_sops/`** | the **situation** — nothing names it until one arises | when someone goes looking | a person, relayed by the agent |
+| **`ronin_sops/`** | the **situation** — nothing names it until one arises | when someone goes looking | whoever the SOP's own `Voice:` header names — a person (relay) or the agent itself (§ Voice, below) |
 | **`ronin_library/`** | the **machinery** — an action names it, `ronin_bin/tejun` inlines it at compile | mid-task, unasked | the agent, mid-step |
 
 **An action never leads to an SOP.** An SOP may point at an action — its `> Tool:` header

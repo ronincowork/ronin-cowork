@@ -201,8 +201,14 @@ export function buildHome(tile) {
     /* THE GBRAIN HAND-OFF, which now arrives from another surface. gbrain moved to the
      * admin_desk (js/desk.js) and its "ask this of a PersonalAssistant" button still has
      * to land in ＋ New — which is the commons', and stays the commons'. So the desk asks
-     * the tile, the tile asks here, and the launcher never learns it has two callers. */
-    askPersonalAssistant: (prompt) => { showPane('new'); launcher.open('PersonalAssistant', prompt); },
+     * the tile, the tile asks here, and the launcher never learns it has two callers.
+     *
+     * IT NAMES THE job_role TOKEN, not the old session_job. `PersonalAssistant` was a
+     * kind on the combined catalog; since the schema cut it is the `personalassistant`
+     * ROLE, launched with a blank task, and the launcher resolves the name against the
+     * live definitions rather than by hunting the board. Awaited because that resolution
+     * asks the server what the pick resolves to. */
+    askPersonalAssistant: (prompt) => { showPane('new'); void launcher.open('personalassistant', prompt); },
   };
 }
 

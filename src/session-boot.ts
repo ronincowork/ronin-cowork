@@ -13,7 +13,7 @@
  *   - it lives in a catalog, so changing what a session reads means editing a catalog
  *     line rather than putting a file somewhere;
  *   - there was exactly one level. Nothing could apply to EVERY session, or to every
- *     session doing a particular kind of work;
+ *     session wearing a particular hat, or doing a particular kind of work;
  *   - and the user had nowhere of their own to add to it.
  *
  * A shelf answers all four, and it does it by holding files rather than names of files.
@@ -26,8 +26,8 @@
  *                             it wholesale. Near-empty on purpose.
  *   <session_boot store>/     YOURS, outside every repo. Survives upgrade AND uninstall.
  *
- * FOUR LEVELS — three from the axes a session already knows about itself, and one from
- * the launch's own MCP choice (owner's ruling, 2026-08-17):
+ * FIVE LEVELS — one universal, three from the axes a session already knows about itself,
+ * and one from the launch's own MCP choice (owner's ruling, 2026-08-17):
  *
  *   all/                  every session, always
  *   <service>_connected/  only sessions launched with MCP on — how a connected session
@@ -37,15 +37,26 @@
  *                         the level is signed by its service (owner's ruling,
  *                         2026-08-20) and the free build never names a vendor
  *   root/<project_root>/  only sessions working in that directory
- *   job/<session_job>/    only sessions doing that kind of work
+ *   role/<job_role>/      only sessions wearing that hat — the STRONG role prompt, and
+ *                         the reason a role is more than a shelf on a board
+ *   task/<session_task>/  only sessions doing that kind of work
  *
- * They are ADDITIVE, not a hierarchy — a CutCode session in ronin_cowork reads all of its
- * levels, and nothing overrides anything. `where` and `what for` are independent: the same
- * bug-chasing habits apply in every repo, and the same repo notes apply to every job.
+ * They are ADDITIVE, not a hierarchy — a `developer` session cutting `CutCode` in
+ * ronin_cowork reads all of its levels, and nothing overrides anything. `where`, `who` and
+ * `what now` are independent: the same bug-chasing habits apply in every repo, the same
+ * repo notes apply to every task, and a role's standing instructions apply across every
+ * task it wears.
  *
- * ONE ASYMMETRY: stock may ship `job/` folders but never `root/` ones. The jobs are
- * shipped, so we know their names; a project_root is the owner's alone and no install can
- * know it in advance.
+ * A BLANK AXIS OMITS ONLY ITS OWN LEVEL. A launch with no role reads no `role/` and every
+ * other level exactly as before. Root never omits its level, because root is required.
+ *
+ * ROLE READING IS BIRTH-ONLY, and task reading is not. The role cannot change while the
+ * session lives, so there is never anything to re-deliver; the task can, and a committed
+ * change injects the new `task/` list into the running session (`src/task-watch.ts`).
+ *
+ * ONE ASYMMETRY: stock may ship `role/` and `task/` folders but never `root/` ones. The
+ * roles and tasks are shipped, so we know their names; a project_root is the owner's alone
+ * and no install can know it in advance.
  *
  * SHADOWING is by filename within a level: your `all/SHELVES.md` replaces ours whole.
  * Across levels there is no shadowing, because they are answering different questions.
@@ -63,8 +74,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const STOCK = path.join(__dirname, '..', 'ronin_session_boot');
 const SESSION_MACROS_TEMPLATE = path.join(STOCK, 'SESSION_MACROS.md');
 
-/** The three levels, in reading order. `root` and `job` take the session's own value. */
-export type Level = 'all' | 'root' | 'job';
+/** The levels, in reading order. `root`, `role` and `task` take the session's own value. */
+export type Level = 'all' | 'root' | 'role' | 'task';
 
 const userShelf = () => storeDir('session_boot');
 
@@ -122,7 +133,8 @@ export async function ensureShelf(roots: string[] = []): Promise<void> {
   const dirs = [
     path.join(base, 'all'),
     path.join(base, 'root'),
-    path.join(base, 'job'),
+    path.join(base, 'role'),
+    path.join(base, 'task'),
     ...roots.map((r) => path.join(base, 'root', r)),
   ];
   await Promise.all(dirs.map((d) => mkdir(d, { recursive: true }).catch(() => {})));
@@ -186,15 +198,23 @@ async function connectedLevels(base: string): Promise<string[]> {
 }
 
 /**
- * What this session should read, in reading order: `all`, then its root's, then its job's,
- * stock before the owner's at each level.
+ * What this session should read, in reading order: `all`, then its root's, then its
+ * role's, then its task's — stock before the owner's at each level.
+ *
+ * ROLE BEFORE TASK, matching the brief's own order and the cascade's: who you are is
+ * stated before what you are doing this hour.
  *
  * Deduplicated BY FILENAME, last writer winning, which is what makes the shadow work: your
  * `all/SHELVES.md` displaces ours because yours is read second. Across levels the same
  * name would also collapse — deliberate, and the reason a file meant for one root should
  * not be given a name that stock already uses.
  */
-export async function bootFiles(projectRoot: string, sessionJob: string, mcpOn = true): Promise<string[]> {
+export async function bootFiles(
+  projectRoot: string,
+  jobRole: string,
+  sessionTask: string,
+  mcpOn = true,
+): Promise<string[]> {
   const user = userShelf();
   const dirs: string[] = [path.join(STOCK, 'all'), path.join(user, 'all')];
   // The connected shelves ride the launch's own MCP choice: off means no tools AND no
@@ -202,11 +222,36 @@ export async function bootFiles(projectRoot: string, sessionJob: string, mcpOn =
   if (mcpOn) dirs.push(...(await connectedLevels(STOCK)), ...(await connectedLevels(user)));
   // Stock cannot have a root/ — it does not know the owner's directories.
   if (projectRoot) dirs.push(path.join(user, 'root', projectRoot));
-  if (sessionJob) dirs.push(path.join(STOCK, 'job', sessionJob), path.join(user, 'job', sessionJob));
+  // A blank axis contributes NOTHING rather than contributing an empty level.
+  if (jobRole) dirs.push(path.join(STOCK, 'role', jobRole), path.join(user, 'role', jobRole));
+  if (sessionTask) dirs.push(path.join(STOCK, 'task', sessionTask), path.join(user, 'task', sessionTask));
 
   const byName = new Map<string, string>();
   for (const dir of dirs) for (const f of await filesIn(dir)) byName.set(path.basename(f), f);
   // Generated last, so the live catalog's macro reading is always the file handed over.
   byName.set('SESSION_MACROS.md', await sessionMacrosReading());
+  return [...byName.values()];
+}
+
+/**
+ * JUST THE TASK LEVEL — what a session must read because its `session_task` just changed.
+ *
+ * Deliberately NOT `bootFiles`. A task change is not a rebirth: the `all/`, root and role
+ * levels were read once at birth and have not changed, and re-sending them would teach a
+ * running session nothing while burying the one thing that IS new. Role reading in
+ * particular is birth-only by ruling, because a role cannot change.
+ *
+ * Resolved at the moment of the change rather than remembered from the launch, for the
+ * same reason the shelf holds files rather than names of them: the owner may have put a
+ * book on `task/CutCode/` since this session was born, and the session that switches to
+ * CutCode tonight should get it.
+ */
+export async function taskFiles(sessionTask: string): Promise<string[]> {
+  if (!sessionTask) return []; // a blank task has no reading, and that is not a failure
+  const user = userShelf();
+  const byName = new Map<string, string>();
+  for (const dir of [path.join(STOCK, 'task', sessionTask), path.join(user, 'task', sessionTask)]) {
+    for (const f of await filesIn(dir)) byName.set(path.basename(f), f);
+  }
   return [...byName.values()];
 }

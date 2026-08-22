@@ -3,20 +3,41 @@ import { request } from './request.js';
 import { field } from './ui.js';
 import { IS_TOUCH, S } from './state.js';
 
+/**
+ * ▤ WIPEBOARD — teams first (owner ruling 2026-08-22; the WIPEBOARD_TEAMS build-out).
+ *
+ * The DEFAULT view is the team listing, in the roster's own style: every team IS a
+ * wipeboard, membership follows the team, and the ordinary path has nothing to create
+ * and nobody to enrol. Picking a team opens its wipeboard. Custom wipeboards keep the
+ * old machinery whole — create by name, enrol by hand — folded beneath the teams as
+ * the secondary path. Two views, one pane: the listing, or one open wipeboard.
+ */
 export function buildWipeboard(tile, root, isShowing) {
-  let name = null; // which board this TILE is watching (each tile can watch its own)
+  let name = null; // the open wipeboard; null = the listing (each tile watches its own)
+  let kind = 'custom'; // of the open wipeboard — 'team' derives its members, 'custom' enrols
   let mtime = 0; // only re-render the thread when the file actually moved
   let memSig = ''; // ditto for the member row — see renderMembers
+  let listSig = ''; // ditto for the listing — a 2s poll must not eat a mid-tap rebuild
   let briefDirty = false; // never clobber a brief the owner is mid-edit
+
+  /* ---------- the LISTING ---------- */
+  const listWrap = document.createElement('div');
+  listWrap.className = 'wb-list';
+
+  /* ---------- the OPEN WIPEBOARD ---------- */
+  const boardWrap = document.createElement('div');
+  boardWrap.hidden = true;
 
   const head = document.createElement('div');
   head.className = 'wb-head';
-  const pick = document.createElement('select');
-  pick.title = 'Which wipeboard to watch';
-  const addBtn = document.createElement('button');
-  addBtn.textContent = '＋ board';
-  addBtn.title = 'Start a new wipeboard';
-  head.append(pick, addBtn);
+  const back = document.createElement('button');
+  back.textContent = '‹ wipeboards';
+  back.title = 'Back to the wipeboard listing';
+  const title = document.createElement('b');
+  title.className = 'wb-title';
+  const kindNote = document.createElement('span');
+  kindNote.className = 'wb-kind';
+  head.append(back, title, kindNote);
 
   // -- brief: the owner's "what this is and what's to be discussed" --
   const briefWrap = document.createElement('div');
@@ -27,9 +48,9 @@ export function buildWipeboard(tile, root, isShowing) {
   briefH.title = 'Show / hide the brief';
   const brief = document.createElement('textarea');
   brief.rows = 3;
-  brief.placeholder = 'what this board is for, and what is to be discussed';
+  brief.placeholder = 'what this wipeboard is for, and what is to be discussed';
   brief.spellcheck = false;
-  const briefField = field(brief, { label: 'board brief' });
+  const briefField = field(brief, { label: 'wipeboard brief' });
   briefWrap.append(briefH, briefField.el);
   // On a phone the brief starts collapsed — the thread is what you came for, and the
   // keyboard eats half the screen. Desktop keeps it open, exactly as before.
@@ -46,17 +67,18 @@ export function buildWipeboard(tile, root, isShowing) {
     });
     if (!r.ok) {
       // The text stays, the flag stays dirty, and the failure is IN the thread area:
-      // a brief that silently never landed is the board lying to its members.
+      // a brief that silently never landed is the wipeboard lying to its members.
       briefDirty = true;
       empty('brief not saved — ' + r.message + ' (your text is still in the box)');
       return;
     }
     briefDirty = false;
-    mtime = 0; // force a re-read so the pane shows what actually landed
+    mtime = 0; // force a re-read so the tile shows what actually landed
   });
 
-  // -- members: chips with ×, and a picker offering groups AND individual sessions.
-  // Add and remove are equal citizens — that was an explicit ask.
+  // -- members: chips. On a CUSTOM wipeboard, × and a picker — add and remove are
+  // equal citizens, an explicit ask. On a TEAM wipeboard, neither: membership is the
+  // team's, and the row says where it is edited instead of pretending to edit it.
   const memRow = document.createElement('div');
   memRow.className = 'wb-mem';
 
@@ -69,13 +91,14 @@ export function buildWipeboard(tile, root, isShowing) {
   composeRow.className = 'wb-compose';
   const say = document.createElement('textarea');
   say.rows = 1;
-  say.placeholder = 'say something to everyone on this board';
+  say.placeholder = 'say something to everyone on this wipeboard';
   say.spellcheck = false;
-  const sayField = field(say, { label: 'post to this board' });
+  const sayField = field(say, { label: 'post to this wipeboard' });
   const post = document.createElement('button');
   post.textContent = 'Post';
   composeRow.append(sayField.el, post);
-  root.append(head, briefWrap, memRow, thread, composeRow);
+  boardWrap.append(head, briefWrap, memRow, thread, composeRow);
+  root.append(listWrap, boardWrap);
 
   const empty = (msg) => {
     thread.innerHTML = '';
@@ -85,27 +108,100 @@ export function buildWipeboard(tile, root, isShowing) {
     thread.appendChild(e);
   };
 
-  const fillPicker = (boards) => {
-    const cur = pick.value;
-    pick.innerHTML = '';
-    pick.add(new Option('— wipeboard —', ''));
-    for (const b of boards) pick.add(new Option(`${b.name} (${b.members})`, b.name));
-    pick.value = [...pick.options].some((o) => o.value === cur) ? cur : name || '';
+  /* ---------- listing render ---------- */
+
+  // One block per team, roster-style: the heading is the door. Sessions come off
+  // S.sessions tags — the same truth the roster draws, so the two can never disagree.
+  const teamBlock = (team, members) => {
+    const block = document.createElement('div');
+    block.className = 'home-group';
+    const h = document.createElement('button');
+    h.type = 'button';
+    h.className = 'home-grp wb-door';
+    h.title = `Open the ${team.name} team's wipeboard`;
+    h.append(
+      Object.assign(document.createElement('b'), { textContent: team.name }),
+      Object.assign(document.createElement('span'), { textContent: String(members.length) }),
+    );
+    h.addEventListener('click', () => open(team.name, 'team'));
+    block.appendChild(h);
+    for (const s of members) {
+      const row = document.createElement('div');
+      row.className = 'wb-sess';
+      row.textContent = s.name;
+      block.appendChild(row);
+    }
+    return block;
   };
 
-  const loadBoards = async () => {
+  const renderList = async () => {
     const r = await request('/api/wipeboards', { cache: 'no-store' });
-    if (!r.ok) return [];
-    fillPicker(r.data.boards || []);
-    return r.data.boards || [];
+    if (!r.ok) return; // network blips ride the poll; the listing stays
+    const boards = r.data.boards || [];
+    const teams = boards.filter((b) => b.kind === 'team');
+    const customs = boards.filter((b) => b.kind !== 'team');
+    const bySess = (t) => S.sessions.filter((s) => (s.tags || []).includes(t));
+    const sig = JSON.stringify([boards, S.sessions.map((s) => [s.name, s.tags])]);
+    if (sig === listSig) return; // nothing moved — leave the DOM (and any tap) alone
+    listSig = sig;
+    listWrap.innerHTML = '';
+    for (const t of teams) listWrap.appendChild(teamBlock(t, bySess(t.name)));
+    if (!teams.length) {
+      const e = document.createElement('div');
+      e.className = 'wb-empty';
+      e.textContent =
+        'no teams yet — tag sessions in the ⌂ Roster and each team gets its own wipeboard';
+      listWrap.appendChild(e);
+    }
+    // Custom wipeboards: the secondary path, capability whole. house lives here too.
+    const cWrap = document.createElement('div');
+    cWrap.className = 'home-group wb-customs';
+    const ch = document.createElement('div');
+    ch.className = 'home-grp';
+    ch.append(
+      Object.assign(document.createElement('b'), { textContent: 'custom wipeboards' }),
+      Object.assign(document.createElement('span'), { textContent: String(customs.length) }),
+    );
+    cWrap.appendChild(ch);
+    for (const b of customs) {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'wb-sess wb-door';
+      row.textContent = `${b.name} (${b.members})`;
+      row.title = `Open the custom wipeboard "${b.name}"`;
+      row.addEventListener('click', () => open(b.name, 'custom'));
+      cWrap.appendChild(row);
+    }
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'wb-add';
+    add.textContent = '＋ wipeboard';
+    add.title = 'Start a custom wipeboard — a team already has one automatically';
+    add.addEventListener('click', async () => {
+      const raw = prompt('Name the wipeboard (letters, digits, - _):');
+      if (raw == null) return;
+      const n = raw.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+      if (!n) return;
+      const r2 = await request('/api/wipeboards', { method: 'POST', json: { name: n } });
+      if (!r2.ok) {
+        listSig = '';
+        alert('could not start a wipeboard — ' + r2.message);
+        return;
+      }
+      open(n, 'custom');
+    });
+    cWrap.appendChild(add);
+    listWrap.appendChild(cWrap);
   };
+
+  /* ---------- open-wipeboard render ---------- */
 
   const renderMembers = (members) => {
     // Rebuild ONLY when membership actually changed. refresh() runs every 2s, and this
-    // row holds a native <select>; blowing it away mid-poll closed the picker the instant
-    // the owner opened it — the list flashed up and could never be clicked. Membership is
-    // not in the file, so the mtime guard below does not cover it; this is its own.
-    const sig = members.map((m) => `${m.name}:${m.control}`).join(',');
+    // row can hold a native <select>; blowing it away mid-poll closed the picker the
+    // instant the owner opened it. Membership is not in the file, so the mtime guard
+    // does not cover it; this is its own.
+    const sig = kind + ':' + members.map((m) => `${m.name}:${m.control}`).join(',');
     if (sig === memSig) return;
     memSig = sig;
     memRow.innerHTML = '';
@@ -113,43 +209,57 @@ export function buildWipeboard(tile, root, isShowing) {
       const chip = document.createElement('span');
       chip.className = 'wb-chip';
       chip.append(Object.assign(document.createElement('b'), { textContent: m.name }));
-      // The dial travels with the member: a 👁/👤 session is ON the board but was never
-      // typed into, and the chip is where you see that without opening it.
+      // The dial travels with the member: a 👁/👤 session is ON the wipeboard but was
+      // never typed into, and the chip is where you see that without opening it.
       if (m.control !== 'write') {
         chip.append(
           Object.assign(document.createElement('i'), {
             textContent: m.control === 'user' ? '👤' : '👁',
-            title: 'On the board, but not notified — its dial is not 🤖',
+            title: 'On the wipeboard, but not notified — its dial is not 🤖',
           }),
         );
       }
-      const x = document.createElement('button');
-      x.textContent = '×';
-      x.title = 'Remove ' + m.name + ' from this board';
-      x.addEventListener('click', async () => {
-        x.disabled = true;
-        const r = await request(
-          '/api/wipeboards/' + encodeURIComponent(name) + '/members/' + encodeURIComponent(m.name),
-          { method: 'DELETE' },
-        );
-        if (!r.ok) {
-          empty('could not remove ' + m.name + ' — ' + r.message);
-          x.disabled = false;
-          return;
-        }
-        mtime = 0;
-        await refresh();
-      });
-      chip.appendChild(x);
+      if (kind === 'custom') {
+        const x = document.createElement('button');
+        x.textContent = '×';
+        x.title = 'Remove ' + m.name + ' from this wipeboard';
+        x.addEventListener('click', async () => {
+          x.disabled = true;
+          const r = await request(
+            '/api/wipeboards/' + encodeURIComponent(name) + '/members/' + encodeURIComponent(m.name),
+            { method: 'DELETE' },
+          );
+          if (!r.ok) {
+            empty('could not remove ' + m.name + ' — ' + r.message);
+            x.disabled = false;
+            return;
+          }
+          mtime = 0;
+          await refresh();
+        });
+        chip.appendChild(x);
+      }
       memRow.appendChild(chip);
     }
-    // The picker: groups first (a set in one pick), then individual sessions.
+    if (kind === 'team') {
+      // No picker and no ×: the one line says where membership IS edited, so the
+      // absence reads as the design rather than as a missing control.
+      memRow.appendChild(
+        Object.assign(document.createElement('span'), {
+          className: 'wb-follow',
+          textContent: 'membership follows the team — tag sessions in the ⌂ Roster',
+        }),
+      );
+      return;
+    }
+    // The picker: teams first (a set in one pick — a COPY of its membership now,
+    // which is the one place that copy is legitimate), then individual sessions.
     const on = new Set(members.map((m) => m.name));
     const plus = document.createElement('select');
     plus.className = 'wb-plus';
     plus.add(new Option('＋ add…', ''));
-    const groups = [...new Set(S.sessions.flatMap((s) => s.tags || []))].sort();
-    for (const g of groups) plus.add(new Option('+' + g + ' (group)', 'g:' + g));
+    const teams = [...new Set(S.sessions.flatMap((s) => s.tags || []))].sort();
+    for (const g of teams) plus.add(new Option('+' + g + ' (team)', 'g:' + g));
     for (const s of S.sessions) if (!on.has(s.name)) plus.add(new Option('@' + s.name, 's:' + s.name));
     plus.addEventListener('change', async () => {
       const v = plus.value;
@@ -157,14 +267,14 @@ export function buildWipeboard(tile, root, isShowing) {
       plus.disabled = true;
       const r = await request('/api/wipeboards/' + encodeURIComponent(name) + '/members', {
         method: 'POST',
-        json: v.startsWith('g:') ? { group: v.slice(2) } : { session: v.slice(2) },
+        json: v.startsWith('g:') ? { team: v.slice(2) } : { session: v.slice(2) },
       });
       if (!r.ok) {
         empty('could not add — ' + r.message);
       } else {
         // Say plainly who was told and who wasn't — a silently-unnotified member is
-        // exactly the confusion this board exists to remove. The thread area carries
-        // it; the next refresh replaces it with the thread.
+        // exactly the confusion this wipeboard exists to remove. The thread area
+        // carries it; the next refresh replaces it with the thread.
         const quiet = Object.entries(r.data.results || {}).filter(([, v2]) => !/^notified$/.test(v2));
         if (quiet.length) empty(quiet.map(([k, v2]) => `${k}: ${v2}`).join(' · '));
         mtime = 0;
@@ -184,9 +294,9 @@ export function buildWipeboard(tile, root, isShowing) {
     for (const p of posts) {
       const d = document.createElement('div');
       // Three kinds, visually distinct: an agent's post, the owner's steer, and a
-      // system line for a roster change. A steer must never read as an agent's post.
-      const kind = p.author === 'system' ? 'sys' : p.author.startsWith('@') ? 'agent' : 'owner';
-      d.className = 'wb-post ' + kind;
+      // system line for a membership change. A steer must never read as an agent's post.
+      const k = p.author === 'system' ? 'sys' : p.author.startsWith('@') ? 'agent' : 'owner';
+      d.className = 'wb-post ' + k;
       const h = document.createElement('div');
       h.className = 'wb-who';
       h.append(
@@ -208,9 +318,11 @@ export function buildWipeboard(tile, root, isShowing) {
     if (!r.ok) {
       // Network blips ride the 2s poll — the thread stays; a real answer that says
       // "no" replaces it, exactly as before.
-      if (r.kind !== 'network') empty(r.message || 'could not read this board');
+      if (r.kind !== 'network') empty(r.message || 'could not read this wipeboard');
       return;
     }
+    kind = r.data.kind === 'team' ? 'team' : 'custom';
+    kindNote.textContent = kind === 'team' ? 'team wipeboard' : 'custom wipeboard';
     renderMembers(r.data.members || []);
     if (r.data.mtime === mtime) return; // file hasn't moved — leave the DOM (and any selection) alone
     mtime = r.data.mtime;
@@ -218,33 +330,27 @@ export function buildWipeboard(tile, root, isShowing) {
     renderThread(r.data.posts || []);
   };
 
-  pick.addEventListener('change', async () => {
-    name = pick.value || null;
+  const open = (n, k) => {
+    name = n;
+    kind = k;
     mtime = 0;
-    memSig = ''; // different board — the row must rebuild even if the names match
+    memSig = ''; // a different wipeboard — the row must rebuild even if the names match
     briefDirty = false;
-    if (!name) {
-      brief.value = '';
-      memRow.innerHTML = '';
-      empty('pick a wipeboard, or start one with ＋');
-      return;
-    }
-    await refresh();
-  });
+    brief.value = '';
+    memRow.innerHTML = '';
+    title.textContent = n;
+    listWrap.hidden = true;
+    boardWrap.hidden = false;
+    empty('reading…');
+    void refresh();
+  };
 
-  addBtn.addEventListener('click', async () => {
-    const raw = prompt('Name the wipeboard (letters, digits, - _):');
-    if (raw == null) return;
-    const n = raw.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
-    if (!n) return;
-    const r = await request('/api/wipeboards', { method: 'POST', json: { name: n } });
-    if (!r.ok) {
-      empty('could not start a wipeboard — ' + r.message);
-      return;
-    }
-    await loadBoards();
-    pick.value = n;
-    pick.dispatchEvent(new Event('change'));
+  back.addEventListener('click', () => {
+    name = null;
+    listSig = '';
+    boardWrap.hidden = true;
+    listWrap.hidden = false;
+    void renderList();
   });
 
   const sendPost = async () => {
@@ -276,15 +382,13 @@ export function buildWipeboard(tile, root, isShowing) {
 
   // Poll only while this pane is actually on screen; a tile on another tab costs nothing.
   setInterval(() => {
-    if (isShowing()) void refresh();
+    if (!isShowing()) return;
+    void (name ? refresh() : renderList());
   }, 2000);
 
-  empty('pick a wipeboard, or start one with ＋');
   return {
     enter() {
-      void loadBoards().then(() => {
-        if (name) void refresh();
-      });
+      void (name ? refresh() : renderList());
     },
   };
 }

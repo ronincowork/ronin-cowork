@@ -60,9 +60,14 @@ parse_bad=""
 for f in public/js/*.js; do node --check "$f" >/dev/null 2>&1 || parse_bad="$parse_bad $(basename "$f")"; done
 [ -z "$parse_bad" ] && ok_ "parse — every client module" || bad_ "parse —$parse_bad" "parse"
 
-# THE GATES, read out of package.json's verify chain rather than listed again here.
-for g in $(sed -n 's/.*"verify": "\(.*\)".*/\1/p' package.json | grep -o 'scripts/[a-z-]*\.mjs' | sort -u); do
-  name="$(basename "$g" .mjs)"
+# THE byoin_checks, read out of package.json's verify chain rather than listed again
+# here. EVERY scripts/* token in the chain is taken, whatever its extension — the old
+# pattern matched only .mjs and silently dropped check-catalogs.ts from BYOIN and CI
+# for as long as it existed (found 2026-08-22, the drift this file's header promises to
+# prevent). A token this loop does not know how to run is now a FAIL naming itself,
+# never a silent omission.
+for g in $(sed -n 's/.*"verify": "\(.*\)".*/\1/p' package.json | grep -o 'scripts/[a-zA-Z0-9._-]*' | sort -u); do
+  name="$(basename "$g")"; name="${name%.*}"
   # The render gate is the one that needs a browser; it gets the honest-skip treatment.
   #
   # THE GATE DECIDES, BY ITS EXIT CODE — 2 means "I could not find a browser to run", any
@@ -85,7 +90,11 @@ for g in $(sed -n 's/.*"verify": "\(.*\)".*/\1/p' package.json | grep -o 'script
     fi
     continue
   fi
-  run_gate "$name" node "$g"
+  case "$g" in
+    *.mjs) run_gate "$name" node "$g" ;;
+    *.ts)  run_gate "$name" npx tsx "$g" ;;
+    *)     bad_ "$name — the verify chain names $g and BYOIN does not know how to run it" "$name" ;;
+  esac
 done
 
 run_gate "tsc" npx tsc --noEmit
@@ -114,6 +123,17 @@ else
   skip_ "ronin-doctor — not executable"
 fi
 
+# byoin_user_check — the third-party user's test: does YOUR customization of this
+# install (catalog shadows, sops/library/session_boot stores) still surface, or has a
+# reader silently dropped it? Machine half on purpose: a CI runner has no user stores.
+uc_out="$(npx tsx "$ROOT/scripts/byoin-user-check.ts" 2>&1)"; uc_rc=$?
+if [ $uc_rc -eq 0 ]; then
+  printf '%s\n' "$uc_out" | sed -n 's/^  ok    //p' | head -1 | { read -r line; ok_ "${line:-byoin_user_check}"; }
+else
+  bad_ "byoin_user_check" "byoin_user_check"
+  printf '%s\n' "$uc_out" | sed 's/^/        /'
+fi
+
 if [ -x "$ROOT/bin/ronin-store" ]; then
   echo "  ——    stores on this machine:"
   "$ROOT/bin/ronin-store" --all | sed 's/^/          /'
@@ -126,5 +146,5 @@ if [ "$FAIL" -eq 0 ]; then
   exit 0
 fi
 echo "BYOIN: $FAIL outstanding —$failed_names"
-echo "        Each names its own remedy above. docs/byoin.md is the roster."
+echo "        Each names its own remedy above. docs/test-protocols.md is the contract."
 exit 1

@@ -109,12 +109,12 @@ one ships a surface; it does not make the repo a thing a session touches.
 | **DAIKUSAN** | cowork | where files live: the three scopes, and which one a thing belongs to | `DAIKUSAN.md` |
 | **KOTOBA** | cowork | the words it is allowed to use | this file |
 | **SETTEI** (設定) | cowork | the owner's configuration of Ronin — what they have **set** about how this install behaves | § SETTEI |
-| **AGERU** (上げる) | cowork | the one door out — every packet that leaves, and the log that proves those are the only ones **[planned]** | § AGERU |
+| **AGERU** (上げる) | cowork | the one door out — every packet that leaves, and the log that proves those are the only ones. **The door is live** (`src/activation/transport.ts`: one allowlisted client, the egress record, the activation and stats sends); the review-outbox surface stays **[planned]** | § AGERU |
 | **TOMODACHI** (友達) + **SOROBAN** (算盤) | services | how it gets counted, and the contract counting obeys | § TOMODACHI |
 | **MICHI** (道) + **TEGAMI** (手紙) + **SHINGO** (信号) | services | where it is on the way, and the one file it keeps | § LADDER · § TEGAMI |
 | **OBOERU** (覚える) | services | what it remembers across its own death | § OBOERU |
 | **RIREKI** (履歴) | services | the record of every byte it emitted | § RIREKI |
-| **KOE** (声) | services | voice to text and text to voice **[planned]** | § KOE |
+| **KOE** (声) | services | voice to text (live — `/api/transcribe`, hotwords attached) and text to voice (**[planned]**) | § KOE |
 | **KOSHI** | services | Ronin's own agents, doing the house's internal jobs | § KOSHI |
 
 ## § THE GROUND — the words underneath everything else
@@ -142,8 +142,10 @@ copy and a source tree at once. It now names one thing.
 | **ronin_install** | system_scope | one deployed copy on a ronin_machine — the code plus what `setup.sh` put in place: `node_modules/`, the units in `~/.config/systemd/user/`, the statusLine registration | `docs/repo-to-operator.md` |
 | **ronin_operator** | system_scope | the processes actually serving the grid — memory copies taken at start. A restart replaces the operator and touches the install not at all | `docs/repo-to-operator.md` |
 | **BYOKI** (病気) | system_scope | the operator differing from the repo. A condition to detect, never an event that announces itself | `docs/repo-to-operator.md` · § OPEN R22 |
-| **BYOIN** (病院) | system_scope | **the whole health check** — every `byoin_check` over the repo plus every readout over the machine, behind one command (`bin/ronin-byoin`). BYOKI is the condition; BYOIN is where you go to have it looked for, and it looks for more than that one illness | `docs/byoin.md` |
-| **byoin_check** | system_scope | **one repo-side test inside BYOIN**: reads the tree, fails the build, same answer on every machine, lives in `package.json`'s `verify` chain (parse, check-modules, check-docs, check-kotoba, check-kyokai, check-dead, check-stores, check-place, check-tomodachi, check-src, check-tests, stores-map, tsc, smoke-ui). **Never "gate"** — a gate is a ladder rung (§ LADDER) and nothing else; ruled R30. `libexec/ronin-gate` and the `--gates` flag keep their pre-ruling filenames | `docs/byoin.md` |
+| **BYOIN** (病院) | system_scope | **the whole health check, and the umbrella term for every kind of test in the house** (owner, 2026-08-22: distinctions are spelled `byoin_*`) — every `byoin_check` over the repo plus every readout over the machine, behind one command (`bin/ronin-byoin`). BYOKI is the condition; BYOIN is where you go to have it looked for, and it looks for more than that one illness | `docs/test-protocols.md` |
+| **byoin_check** | system_scope | **one repo-side test inside BYOIN — the system developer's test, ours, building Ronin**: reads the tree, fails the build, same answer on every machine, lives in `package.json`'s `verify` chain (parse, check-modules, check-docs, check-kotoba, check-kyokai, check-dead, check-stores, check-place, check-tomodachi, check-src, check-tests, stores-map, tsc, smoke-ui). **Never "gate"** — a gate is a ladder rung (§ LADDER) and nothing else; ruled R30. `libexec/ronin-gate` and the `--gates` flag keep their pre-ruling filenames | `docs/test-protocols.md` |
+| **byoin_user_check** | system_scope | **one install-side test inside BYOIN — the third-party user's test**: reads THIS machine's user stores (catalog shadows, sops/library/session_boot shadows, the job-classes manifest) through the same readers the server uses, and turns what today silently vanishes — a half-written session_job, a dead link in a user catalog — into a named finding with its remedy. Only meaningful on a live install, so it lives in BYOIN's machine half and never in CI. The counterpart of `byoin_check`, which tests our tree; this tests their customization | `scripts/byoin-user-check.ts` · `docs/test-protocols.md` |
+| **test_protocols** | system_scope | the house’s testing arrangement, behind one pointer: who runs what, when. **Two audiences, two terms, one command** — a developer of Ronin runs the `byoin_check`s (`bin/ronin-byoin --gates`) before landing work on dev; a third-party install’s own agents run full BYOIN — `byoin_check`s plus `byoin_user_check` — after maintenance, an update, or any customization of the user stores (a new session_task, skin, macro, SOP shadow). Always the one command with one verdict, never a hand-rolled sequence of individual checks. Every agent-facing shelf README carries a single line pointing here | `docs/test-protocols.md` |
 
 Two of those hops are skipped today. **The steps, and what to do to make a change real, are in
 `docs/repo-to-operator.md`** — not here.
@@ -184,25 +186,28 @@ RIREKI's tape off disk. A file is the connection.
 | Term | Scope | Means | Record |
 |---|---|---|---|
 | **the_owner** | system_scope | **the person whose install it is** — the only one who flips a dial, tags a session, edits a Brief, or writes a universal memory. **Agents propose; the_owner decides.** The one word for a person in this house: `user` is a scope and never a human (R16) | `docs/session-control-dials.md` |
-| **owner_agent** | system_scope | an agent the_owner launched to do **their own work** — in a tile, on one of their project_roots. The ordinary case, and what every catalog, SOP and library page is written for | `ronin_catalogs/SESSION_JOBS.md` |
+| **owner_agent** | system_scope | an agent the_owner launched to do **their own work** — in a tile, on one of their project_roots. The ordinary case, and what every catalog, SOP and library page is written for | `ronin_catalogs/session_tasks/` |
 | **ronin_developer** | system_scope | **the person building Ronin itself** — the cowork and services repos, not the work Ronin is used for. A ROLE, not a person: the same human is usually both, often within the hour, and the hat that is on decides which rules apply (`dev_scope` docs and the byoin_checks are theirs; the catalogs are the_owner's) | `CLAUDE.md` |
 | **developer_agent** | system_scope | an agent working on **Ronin's own code**, wearing the ronin_developer's hat. Reads `CLAUDE.md` and this file; obeys the byoin_checks; its output is a PR, never a change to a tenant's install | `CLAUDE.md` |
 | **user** | system_scope | **A SCOPE, NEVER A PERSON** (R16, closed 2026-08-14) — `user_scope`, `ronin_user_root`, "the user's own catalogs" meaning *that scope's*. For a human, say **the_owner** | `DAIKUSAN.md` |
 | **agent** | system_scope | the genus: the CLI running in a tile — claude, codex, a shell script. Ronin never reaches inside one; **vendor neutrality is the thesis**. Three roles wear it: **owner_agent** (their work), **developer_agent** (Ronin's own code), **koshi** (the house's internal jobs) | `reading-list/TEJUN.md` |
 | **session** | system_scope | a tmux session: **the unit of work and the unit of addressing.** One agent, one job, one name. Mortal — nothing of value may live only in a tile | `docs/architecture.md` |
-| **pane** | system_scope | the tmux terminal a tile shows. **Machinery only** — legal where tmux's own meaning is what is being described, and nowhere else. The word a person reads is **tile**, § COWORKSPACE | `docs/rireki.md` |
+| **pane** | system_scope | **tmux's word, not ours — retired from house vocabulary** (owner, 2026-08-22). It names only tmux's own object inside the tmux server, the thing `pipe-pane` attaches to. Our representations of it — browser AND backend — are the **tile**. Legal only when literally speaking about tmux's object; anywhere our own structure is called a pane, the name is wrong and the sweep has a thread (ronin-lab OPEN_THREADS 4.33) | `docs/rireki.md` |
 | **system** | system_scope | the installed Ronin — code and stock catalogs, i.e. the **ronin_install**. Not a loose adjective for "Ronin-ish"; the running copy is the **ronin_operator**, and the product in the abstract is **Ronin** | `DAIKUSAN.md` |
 
-**tile and pane are one thing from two sides, and only one of them is the word.** A pane is
-the tmux terminal the agent's process actually runs in; a tile is that pane rendered in the
-coworkspace. **Say tile.** In docs, tooltips, site copy, a session's own prose, and anything
-an agent writes — tile, always.
+**pane is tmux's word for tmux's object, and that is the whole of it** (owner, 2026-08-22,
+strengthening 2026-08-10/13). The pane exists inside the tmux server; everything OURS that
+touches or shows one — the browser cell, the backend's handle on it, the registries and
+comments around both — is the **tile**. Say tile in docs, tooltips, site copy, code, a
+session's own prose, and anything an agent writes.
 
-**`pane` survives in exactly one place: where tmux's own mechanism is the subject.** RIREKI
-tapes *per pane* and faucet B is *exactly one per pane* — those sentences are about tmux and
-would become false if reworded. That is the whole exemption. It is not a license to say
-*pane* because it feels more technical; if a tile could be substituted without making the
-sentence wrong, the sentence was supposed to say tile.
+**`pane` survives only where tmux's own object is literally the subject.** RIREKI's
+recorder pipes *a pane* and faucet B is *exactly one per pane* — those sentences are about
+tmux and would become false if reworded. That is the whole exemption. It is not a license
+to say *pane* because it feels more technical; if *tile* could be substituted without
+making the sentence wrong, the sentence was supposed to say tile. Our code that named its
+OWN structures pane (`panes.js`, "the null pane") is misnamed — the rename sweep is
+ronin-lab OPEN_THREADS 4.33.
 
 **The 1:many is real and unhandled** — a two-pane session has two tapes and one name. That
 is a gap in the machinery, not a reason to reach for the word. See § NUANCE.
@@ -231,10 +236,10 @@ is a gap in the machinery, not a reason to reach for the word. See § NUANCE.
 | **read-letter · write-letter** | system_scope | the two actions over a session's own TEGAMI: read the ladder as written (`read_tegami`), or set it / point at the rung being worked (`write_tegami`). Cataloged 2026-08-14 — the tools had implemented no action since MICHI shipped, which is why they sat outside TEJUN | `ronin_catalogs/ACTIONS.md` |
 | **`run:`** | system_scope | the macro key choosing delivery (owner, 2026-08-14): absent or `whole` = the full blob at once, the default; `stepped` = compile arms the step tracker and hands one step at a time. Any macro can be stepped on demand via `tejun-step start` | `ronin_catalogs/MACROS.md` |
 | **`preview:`** | system_scope | the macro key choosing DISPLAY (owner, 2026-08-17): absent = not on the tile's ⚡ drop, the default; `yes` = drawn there as one of the four teaching cards, drawn from the same entry's `label:`/`blurb:`. **Display only — an unpreviewed macro still runs**, and opt-in because the drop teaches nothing when it holds a dozen | `ronin_catalogs/MACROS.md` |
-| **`instruction` vs `label:`/`blurb:`** | system_scope | the two halves every macro entry is written in, for two readers who need opposite things (owner, 2026-08-17: *"we need to split out the description and the agent instruction into two different things because they don't overlap, and the macro should carry both"*). **`instruction`** = the prose under the `## name` heading, addressed to the AGENT about to run the recipe and opening with the rule it must not break; served under that name on `/api/macros` since the rename from `description`, whose name is what invited a human surface to render it. **`label:`** (plain-words headline, never the `+name:` spelling) + **`blurb:`** (one or two sentences, always visible, true about what the macro does) = what a PERSON reads to decide whether they want it. Required on EVERY macro, not only previewed ones — `scripts/check-catalogs.ts` fails a stock entry missing either — and **no human surface may fall back to `instruction`**. Same two keys, same job, as `SESSION_JOBS.md`'s kind buttons | `ronin_catalogs/MACROS.md` · `src/macros.ts` |
+| **`instruction` vs `label:`/`blurb:`** | system_scope | the two halves every macro entry is written in, for two readers who need opposite things (owner, 2026-08-17: *"we need to split out the description and the agent instruction into two different things because they don't overlap, and the macro should carry both"*). **`instruction`** = the prose under the `## name` heading, addressed to the AGENT about to run the recipe and opening with the rule it must not break; served under that name on `/api/macros` since the rename from `description`, whose name is what invited a human surface to render it. **`label:`** (plain-words headline, never the `+name:` spelling) + **`blurb:`** (one or two sentences, always visible, true about what the macro does) = what a PERSON reads to decide whether they want it. Required on EVERY macro, not only previewed ones — `scripts/check-catalogs.ts` fails a stock entry missing either — and **no human surface may fall back to `instruction`**. Same two keys, same job, as a `session_tasks/` definition's launcher buttons | `ronin_catalogs/MACROS.md` · `src/macros.ts` |
 | **invocation** | system_scope | `+<name>: <args>` — the `+` marks a macro line; bare `<name>:` also works; never *required* to recognize one | `reading-list/TEJUN.md` |
 | **harakiri** | system_scope | a session ends itself; refuses to end another | `ronin_catalogs/ACTIONS.md` |
-| **forkit** | system_scope | spin the current topic into its own session; the work leaves with it | `ronin_catalogs/MACROS.md` |
+| **forkit** | system_scope | spin the current topic into its own **visible Ronin tmux session**; the work leaves with it. The owner's `forkit`, plain **fork it**, and **new session** all select this workflow absolutely and may never be satisfied by an internal sub-agent. **Spawn it** and **spawn an agent** select the agent CLI's internal sub-agent machinery instead. Delegation using neither vocabulary remains the agent's judgment and adds no confirmation step | `ronin_catalogs/MACROS.md` · `ronin_session_boot/SESSION_MACROS.md` |
 | **tell** | system_scope | the macro for one session messaging another (`+tell: <session> <message>`) — control-check, then `tejun-send`, then report the verdict. It COMPOSES the send-to-session action, which is plumbing and not invocable itself; the reply lands in the other session's tile, never relayed back | `ronin_catalogs/MACROS.md` |
 
 ### § SCRIPTS — the genus, and why most of them are not tools
@@ -287,92 +292,128 @@ it mean anything is the document behind it, plus a tool where the work needs one
 
 ## § LAUNCHER — how sessions are born
 
+**Three axes, and a session is born on all three.**
+
+```text
+project_root (required)  ×  job_role (optional, fixed)  ×  session_task (optional, mutable)
+```
+
 | Term | Scope | Means | Record |
 |---|---|---|---|
-| **session_job** | system_scope | what a session is doing right now; fixes icon, dial, permissions and opening prompt: `RiffOnIt`, `DraftPlan`, `CutCode`, `ChaseBug`, `CheckWork`, `QuarterBack`, `OddJob`, `OpenShell`, `PersonalAssistant`, and `MikaAssist` — see § SESSION JOBS | `ronin_catalogs/SESSION_JOBS.md` |
-| **the two axes** | system_scope | `project_root` (where) · `session_job` (what it is doing) — **one token, every surface**: the launcher sets them, OBOERU matches on them, TOMODACHI counts by them. Defined here once; § OBOERU uses it, and does not redefine it | `co-working/user_repo/README/OBOERU.md` |
+| **the three axes** | system_scope | `project_root` (where) · `job_role` (who it is) · `session_task` (what it is doing now) — **one token, every surface**: the launcher sets them, TEGAMI carries them, the boot shelf reads by them, OBOERU matches on them, TOMODACHI counts by them. Defined here once; § OBOERU and § TOMODACHI use it and do not redefine it | `co-working/user_repo/README/OBOERU.md` |
+| **job_role** | user_scope definition · session_scope selection | the durable hat a session wears — Developer, QuarterBack, PersonalAssistant. **Optional, and FIXED for the life of the session**: chosen at birth, carried in TEGAMI, and refused by every ordinary write afterwards. Owns which `session_task`s sit on its shelf, its own reading level, and launch defaults that apply across all of them. Blank is valid and means no role reading. The promoted successor to `job_class` and the surface's "Job Group" | `ronin_catalogs/job_roles/` |
+| **session_task** | system_scope definition · session_scope selection | what a session is doing **right now** — `RiffOnIt`, `DraftPlan`, `CutCode`, `ChaseBug`, `CheckWork`, `QuarterBack`, `OddJob`, `Atarashi`, `OpenShell`. **Optional and MUTABLE**: the session changes it with `write_tegami`, the owner changes it from the tile, and a committed change injects that task's reading into the running session. Blank is valid and means no task reading and no mark. The direct successor to `session_job` — see § SESSION TASKS, whose directory is the count | `ronin_catalogs/session_tasks/` |
+| **definition file** | system_scope | one role or task per FILE, named by its token — `job_roles/developer.md`, `session_tasks/CutCode.md`. The merged stock ⊕ user directory IS the manifest; there is no second generated file to drift from | `docs/shadowing.md` |
+| **whole-definition shadowing** | system_scope | a user file of the same token replaces that one house definition **whole** — never field by field, or neither file would tell the truth. A new token adds; `- **hidden:** yes` withdraws a house definition without deleting shipped files. Provenance (`stock` · `user` · `shadowed`) rides every row so a surface can say **ours**, **yours**, or **yours replacing ours** | `docs/shadowing.md` |
+| **launch cascade** | system_scope | `system < job_role < session_task < explicit launch`. Higher layers override only fields they actually STATE; absence inherits, and an explicit `off` is a value rather than an absence. Resolution produces one complete validated profile before any tmux session exists | `src/launch-profile.ts` |
+| **cascading / locked / inapplicable** | system_scope | what a launch field may do. **Cascading**: `session_launch_spec` · `dial` · `permissions` · `lifecycle` · `mcp` · `cap` · `agent` · `dir` · `posture` · `opening` · `ack` · `model`. **Locked**: `mcp: always` — a lower layer may not contradict it. **Inapplicable**: `agent: none` voids model, permissions, posture, opening and ack, and a layer that states one alongside it is refused rather than half-honored | `src/launch-profile.ts` |
+| **task_family** | system_scope | **the set of `session_task`s presented under one `job_role`** — surface word **Family**. `- **task_family:** A, B, C` in the role's definition, and the role owns it: a task never names a role. **ASSOCIATION, NOT OWNERSHIP** — the same task may sit in several role families, so adding it to one never removes it from another. **Compound, and that is forced**: a bare `family` is already the settei registry's write family (`PUT /api/settei/:family`) and Node's own address family, which is the *project*/*user*/*board* defect exactly. **Not a `session_team`** — a team groups SESSIONS and is addressable; a family associates TASKS with a role and addresses nothing (owner, 2026-08-22) | `ronin_catalogs/job_roles/` |
+| **`order:`** | system_scope | a role's board position. A directory has no file order, so display order is stated or it is not stable; roles without one follow the ordered ones, by label | `ronin_catalogs/job_roles/` |
 | **opening prompt / ack rule** | system_scope | the birth instruction; "report back in your own words what you understand this job to be" | `src/spawn.ts` |
-| **`mcp_off`** | system_scope | **[proposed]** the launch-table key holding a provider's own "launch with no MCP servers" flags, appended to the cell's cmd when a launch turns MCP off — the ＋ New form's toggle, carried per session like the dial. DATA, never a code path: cowork names no CLI flag and no MCP server; a provider declaring none is refused rather than launched connected. *MCP* is the protocol's own name, not a coinage | `ronin_catalogs/PROJECT_ROOTS.md` · `src/spawn.ts` |
-| **`lifecycle:`** | system_scope | the catalog key mapping an session_job to its michi name. ⚠R2 | `ronin_catalogs/SESSION_JOBS.md` |
-| **job_class** | user_scope | a shelf the owner invents to organize the ＋ New board's session_jobs — drawn as a collapsible grouping, NAMED class in every internal name by ruling (owner, 2026-08-21: *"we should not be using groups"*): `group` is the roster's addressing word (`+tag:` resolves to live members) and a job_class addresses NOTHING — no API resolves one, no behavior branches on one. The SURFACE says **"job group"** (＋ add new job group; owner, same day) — the display borrows the familiar word, the vocabulary keeps the roster's `group` unambiguous, and this row is the one place the split is told. A job may sit on several shelves; membership lives in the JOB_CLASSES.md side manifest in the catalogs store, never in the shipped catalog, so an upgrade cannot clobber a shelf and a shelf cannot pin a house job to a stale entry | `src/catalog.ts` (JOB_CLASSES) |
+| **`mcp_off`** | system_scope | **[proposed]** the launch-table key holding a provider's own "launch with no MCP servers" flags, appended to the cell's cmd when a launch resolves MCP off — the ＋ New form's toggle, carried per session like the dial. DATA, never a code path: cowork names no CLI flag and no MCP server; a provider declaring none refuses a launch that ASKED for off, and merely degrades a launch that only defaulted to it. *MCP* is the protocol's own name, not a coinage | `ronin_catalogs/PROJECT_ROOTS.md` · `src/spawn.ts` |
+| **`lifecycle:`** | system_scope | the definition key mapping a role or task to its michi name. ⚠R2 | `ronin_catalogs/session_tasks/` |
 
-**The act/state split.** An session_job is an **act** (`DraftPlan`); a michi is the **state**
-it starts the session in (`designing`). The `session_job`s are verb+object and the michi are
-gerunds, so no string appears in both catalogs — see § OVERLAP item 1.
+**`project_root` is required, and omission is not a third answer.** A session must be born
+somewhere: that directory is where the provider's project files are found and where the
+agent process starts. A launch that names no root gets the top active one, exactly as
+before. There is no "no project root" option, and a box with no active root is not
+launchable as a configured session — the surface says so and points at ⚙. `dir: {install}`
+may override the working directory for a house seat, and the launch still resolves a root
+so the contract has one answer rather than a missing axis.
+
+**The act/state split.** A `session_task` is an **act** (`DraftPlan`); a michi is the
+**state** it starts the session in (`designing`). The tasks are verb+object and the michi
+are gerunds, so no string appears in both catalogs — see § OVERLAP item 1.
+
+**A role is not an act, and that is why it is a separate axis.** A Developer may RiffOnIt,
+DraftPlan, CutCode, ChaseBug or CheckWork without becoming a different agent. It may
+change its `session_task`; it may not turn its `job_role` from Developer into
+PersonalAssistant halfway through. This supersedes R17, which had ruled the two were one
+thing — see § OPEN.
 
 ---
 
-## § SESSION JOBS — the ten
+## § SESSION TASKS — the catalog's set
+
+*(No count in this heading, on evidence: "the eight" missed OpenShell's row, "the ten"
+missed Atarashi's. `ronin_catalogs/session_tasks/` is the count — one file per task, and
+the owner's store may add to it or shadow any of it.)*
 
 | Term | Scope | Means | Record |
 |---|---|---|---|
-| **RiffOnIt** | system_scope | works out what a thing *is* and what we mean by it — produces a definition, never a plan and never code | `ronin_catalogs/SESSION_JOBS.md` |
-| **DraftPlan** | system_scope | plan a known piece of work as a doc — no code yet | `ronin_catalogs/SESSION_JOBS.md` |
-| **CutCode** | system_scope | build from an approved plan doc | `ronin_catalogs/SESSION_JOBS.md` |
-| **ChaseBug** | system_scope | chase a fault to its cause and fix the cause | `ronin_catalogs/SESSION_JOBS.md` |
-| **CheckWork** | system_scope | read-only findings work — a session's output or a sweep of the code; the target is the prompt's job, not the `session_job`'s | `ronin_catalogs/SESSION_JOBS.md` |
-| **QuarterBack** | system_scope | coordinates other sessions — dispatch, unblock, report upward. The orchestrator, and **still bound by every dial**: a 👤 session is invisible to it | `ronin_catalogs/SESSION_JOBS.md` |
-| **OddJob** | system_scope | does the one task asked and nothing around it — the escape hatch, for work that fits no other kind. No plan, no sweep, no tidying on the way past | `ronin_catalogs/SESSION_JOBS.md` |
-| **OpenShell** | system_scope | **`agent: none`** — opens a session and launches nothing, leaving the pane at a shell prompt. Every field describing an agent is *absent* rather than blanked: no model, no posture, no opening, no ack, no permissions. (Row added 2026-08-14 — the heading counted it as the eighth while the table had never listed it) | `ronin_catalogs/SESSION_JOBS.md` |
-| **PersonalAssistant** | system_scope | icon **🎩**. The OWNER's own assistant — **powered by gbrain, and says so**: brain-first (search before answering, capture on request), one confirmation per outside connection. Names and credits gbrain by the owner's ruling — *"we're not trying to steal their stuff without saying what it is"* — with the repo cited in the remit; without the gbrain `ronin_service` it degrades to a plain assistant. Reading arrives from `job/PersonalAssistant/` on the session-boot shelf. Ruled owner 2026-08-16; **gbrain is a proper name** (§ OPEN — the bare word `brain` stays retired) | `ronin_catalogs/SESSION_JOBS.md` |
-| **MikaAssist** | system_scope | icon **ミ**. RONIN's own business, not the owner's work — a helpful assistant, defaulting to help, plus the four mika_macros. See § MIKA. | `docs/mika.md` |
+| **RiffOnIt** | system_scope | works out what a thing *is* and what we mean by it — produces a definition, never a plan and never code | `ronin_catalogs/session_tasks/RiffOnIt.md` |
+| **DraftPlan** | system_scope | plan a known piece of work as a doc — no code yet | `ronin_catalogs/session_tasks/DraftPlan.md` |
+| **CutCode** | system_scope | build from an approved plan doc | `ronin_catalogs/session_tasks/CutCode.md` |
+| **ChaseBug** | system_scope | chase a fault to its cause and fix the cause | `ronin_catalogs/session_tasks/ChaseBug.md` |
+| **CheckWork** | system_scope | read-only findings work — a session's output or a sweep of the code; the target is the prompt's job, not the `session_task`'s | `ronin_catalogs/session_tasks/CheckWork.md` |
+| **QuarterBack** | system_scope | coordinates other sessions — dispatch, unblock, report upward. A quarterback reads the field, calls the play and does not run it. **Still bound by every dial**: a 👤 session is invisible to it. A TASK, not a role (owner, 2026-08-22): a Developer moves into quarterbacking and back out again, so **the coordinator of a team is a value that MIGRATES**. Its token is a ruled exception to verb+object — see R33 | `ronin_catalogs/session_tasks/QuarterBack.md` |
+| **OddJob** | system_scope | does the one task asked and nothing around it — the escape hatch, for work that fits no other kind. No plan, no sweep, no tidying on the way past | `ronin_catalogs/session_tasks/OddJob.md` |
+| **Atarashi** (新) | system_scope | icon **新**, label **setup** — the label is what a person reads. The setup seat: the first session on a new install, finishing what the cowork_setup form could not (is the project directory what they meant, does a repository need cloning). Reads `GET /api/settei` at start — `needed[]` is its reading list, `set` is what the owner already answered and is never re-asked. Launched by the form's Save and by ⚙'s "start your setup session"; not a standing assistant — that is the `mikaassist` job_role | `ronin_catalogs/session_tasks/Atarashi.md` |
+| **OpenShell** | system_scope | **`agent: none`** — opens a session and launches nothing, leaving the tile at a shell prompt. Every field describing an agent is *absent* rather than blanked: no model, no posture, no opening, no ack, no permissions | `ronin_catalogs/session_tasks/OpenShell.md` |
+
+**The two that were never acts are now roles.** `PersonalAssistant` and `MikaAssist` were
+the entries that had to pretend to be acts to get a launcher button. Each is a
+**`job_role`** now, launched with a blank `session_task` — see § JOB ROLES.
+`QuarterBack` was briefly a third and is not: coordinating is something a Developer *does
+for a while*, which is a task (owner, 2026-08-22 — R33).
 
 **The grammar: verb + object.** A bare `plan` or `review` is ambiguous because it is a noun
 as often as a verb; a compound reads as a command. **Display** in CamelCase, **token** is
 the lowercase run-on — `+riffonit:`, `+draftplan:`, `+cutcode:`, `+chasebug:`, `+checkwork:`,
-`+quarterback:`, `+oddjob:`. No separator to mistype, and it survives being typed into a pane.
+`+oddjob:`. No separator to mistype, and it survives being typed into a tile.
 
-**Five of them sit outside the grammar, for stated reasons:**
+**Some sit outside the grammar, for stated reasons (no count here either):**
 
+- **`Atarashi`** — outside the grammar AND outside English, the only kind that is: 新,
+  "new", the seat that exists only while an install is. A person never reads the name —
+  the definition's `label: setup` is the button, and the seat is launched for them rather
+  than picked from a list.
 - **`RiffOnIt`** — riff takes a preposition, so verb+object fights the word. It keeps the
   exception because it still reads as a command. The unnamed `It` is exact: this is the one
-  kind where the object has no name yet, and finding out what "it" is *is* the session.
+  task where the object has no name yet, and finding out what "it" is *is* the session.
 - **`OddJob`** — a noun compound, because the escape hatch is the one slot that must **not**
   read as a command. It is the absence of a specific instruction, not one of them.
 - **`QuarterBack`** — a noun, and the owner's own word: *"I want to call this my quarter
-  back."* It was `WatchCrew`, which obeyed the grammar and was still wrong — "watch" reads as
-  *observe* on a list where `CheckWork` is the one that observes, and the job is the opposite
-  of watching. A quarterback reads the field, calls the play and does not run it, which is the
-  posture exactly. **The one name here that is a role rather than an act**, and it earns that:
-  it is the only kind defined by its relation to other sessions rather than by its own output.
-- **`MikaAssist`** — `OddJob`'s reason, pointed the other way: she is the one session doing
-  **the house's** business rather than the owner's, so a command-shaped name would misfile
-  her among the eight that take instructions. **She also has no invocation token** — you do
-  not type `+mikaassist:`, you type one of her four mika_macros and Ronin brings her.
-  **[planned]**
-- **`PersonalAssistant`** — `QuarterBack`'s reason: a role, not an act, defined by its
-  relation to the owner rather than by one output. The owner's own words (2026-08-16):
-  *"I would call that personal assistant."* Token `+personalassistant:`. Not `MikaAssist`'s
-  twin: Mika does the house's business, this seat does the owner's.
-
-**A kind is the session's current role, not a birth mark.** A session is launched as one
-and **migrates** — `RiffOnIt` → `DraftPlan` → `CutCode` is one session changing what it is
-doing, not three sessions. Nothing about a kind is fixed at birth except where it started.
-
-**A kind is also a MARK, and it lives in the LETTER.** `session_job` is a field of TEGAMI:
-seeded at birth with the button the owner pressed (`src/tegami.ts` — mechanical, because
-the launcher already knows), and changed by the session itself with `write_tegami` as the
-work changes. Its catalog `icon:` is then drawn on every surface that lists sessions — the
-⌂ Roster, the tile header, the ⚡ targets. **This is the half of the letter that is
-COWORK's**, not michi's: a session has a role whether or not it ever puts a ladder up, so
-the mark works on a build with no michi, where the ladder and the SHINGO chip are absent.
-It replaced the hand-set 人 leader mark — see § THE GROUND.
-
-**A kind and a michi are different questions.** The kind is *what the session is doing*;
-the michi is *the plan it is working* — phases and legs. A `RiffOnIt` session may have no
-plan at all; `DraftPlan` produces one; `CutCode` works through the one `DraftPlan` wrote.
-
-**A fork is an origin, not a kind.** It says where a session came from; a fork can start as
-any of the owner's eight. It takes no launcher slot, and it is never `MikaAssist` —
-the house's own seat is not somewhere the owner's work forks into.
+  back."* It was `WatchCrew`, which obeyed the grammar and was still wrong — "watch" reads
+  as *observe* on a board where `CheckWork` is the one that observes, and this job is the
+  opposite of watching. Ruled an exception rather than renamed (R33), because the
+  alternative was a token nobody would say out loud for a thing the owner already has a
+  word for.
 
 **`CheckWork` covers both targets.** A session's work and a sweep of the code are the same
-posture, differing only in what the prompt points at. Two `session_job`s would be one distinction
-wearing two names.
+posture, differing only in what the prompt points at. Two `session_task`s would be one
+distinction wearing two names.
 
-**Outstanding to make the catalogs agree with this file:** `co-working/user_repo/wip/buildouts/` becomes the
-plans directory and `ronin_catalogs/{SESSION_JOBS,MACROS,ACTIONS}.md` take the new tokens — prose
-only, since no code hardcodes a session_job.
+---
+
+## § JOB ROLES — who a session is
+
+| Term | Scope | Means | Record |
+|---|---|---|---|
+| **developer** | user_scope | the ordinary coding hat: RiffOnIt · DraftPlan · CutCode · ChaseBug · CheckWork. Ships as a house role so a fresh board is useful before the owner customizes it | `ronin_catalogs/job_roles/developer.md` |
+| **personalassistant** | user_scope | icon **🎩**. The OWNER's own assistant — **powered by gbrain, and says so**: brain-first (search before answering, capture on request), one confirmation per outside connection. Names and credits gbrain by the owner's ruling — *"we're not trying to steal their stuff without saying what it is"* — with the repo cited in the remit; without the gbrain `ronin_service` it degrades to a plain assistant. Carries the `mcp: always` **lock**. Reading arrives from `role/personalassistant/` on the session-boot shelf. Ruled owner 2026-08-16; **gbrain is a proper name** (§ OPEN — the bare word `brain` stays retired) | `ronin_catalogs/job_roles/personalassistant.md` |
+| **mikaassist** | user_scope | icon **ミ**. RONIN's own business, not the owner's work — a helpful assistant, defaulting to help, plus the four mika_macros. Carries `dir: {install}` and `cap: exempt`. **She has no invocation token** — you do not type `+mikaassist:`, you type one of her four mika_macros and Ronin brings her. See § MIKA | `docs/mika.md` |
+
+**A role is fixed; a task migrates.** A session is launched into a role and stays in it.
+Within that role it migrates — `RiffOnIt` → `DraftPlan` → `CutCode` is one session changing
+what it is doing, not three sessions. **A committed task change injects that task's reading
+into the running session**, once, whether the agent or the owner authored it; role reading
+is birth-only, because the role did not change.
+
+**A fork is an origin, not a role and not a task.** It says where a session came from; a
+fork can start in any role. It takes no launcher slot, and it is never `mikaassist` — the
+house's own seat is not somewhere the owner's work forks into.
+
+**The task is a MARK, and it lives in the LETTER.** `session_task` is a field of TEGAMI:
+seeded at birth with the button the owner pressed (`src/tegami.ts` — mechanical, because
+the launcher already knows), and changed by the session itself with `write_tegami` as the
+work changes. Its definition's `icon:` is then drawn on every surface that lists sessions —
+the ⌂ Roster, the tile header, the ⚡ targets. **This is the half of the letter that is
+COWORK's**, not michi's: a session has a task whether or not it ever puts a ladder up, so
+the mark works on a build with no michi, where the ladder and the SHINGO chip are absent.
+It replaced the hand-set 人 leader mark — see § THE GROUND. **`job_role` rides the same
+letter and is not a mark**: it is stable context, shown in the session's details rather
+than competing with the changing task icon.
 
 ---
 
@@ -446,6 +487,7 @@ useful to the_owner than an invented one.
 | Term | Scope | Means | Record |
 |---|---|---|---|
 | **TOMODACHI** | system_scope | the usage dashboard in the commons + the daily drop | `co-working/user_repo/wip/buildouts/TOMODACHI.md` |
+| **cowork_stats** | system_scope | **the one user-facing name for TOMODACHI's surface, alias "Stats"** (owner, 2026-08-22): every surface says **Stats** — the tab, the Services card, site copy — and `cowork_stats` is the internal spelling. Ends the two-words drift ("Stats" on the tab, "Usage statistics" on the card); TOMODACHI itself never reaches a user's face | `public/js/stats.js` |
 | **SOROBAN** (算盤) | system_scope | the counting contract: every readout uses one of six mechanisms, and a new counter picks one rather than inventing a seventh | `docs/soroban.md` |
 | **tally** | system_scope | +1 on an action; sums across days | `docs/soroban.md` |
 | **gauge** | system_scope | a sampled level, last reading wins. ⚠R6 | `docs/soroban.md` |
@@ -453,7 +495,7 @@ useful to the_owner than an invented one.
 | **ledger** | system_scope | a row per entity, sealed at death | `docs/soroban.md` |
 | **diff** | system_scope | an event inferred from two snapshots | `docs/soroban.md` |
 | **derived** | system_scope | recomputed at render, stored nowhere | `docs/soroban.md` |
-| **drop** | system_scope | the daily post of one day's counts to a directory. Not "telemetry", not "upload", not "sync". **The sending moves to AGERU** — TOMODACHI composes an `ageru_packet` into the outbox and calls nobody **[planned]** | `co-working/user_repo/wip/buildouts/AGERU.md` |
+| **drop** | system_scope | the daily post of one day's counts to a directory. Not "telemetry", not "upload", not "sync". **The sending goes through the AGERU transport today** (`src/activation/tomodachi.ts` — `sendDuePackets`, receipts kept); the reviewable outbox surface stays **[planned]** | `co-working/user_repo/wip/buildouts/AGERU.md` |
 | **install id** | user_scope | a uuid identifying an *install*, minted once; deliberately never a user id and never joined to one | `co-working/user_repo/wip/buildouts/TOMODACHI.md` |
 | **born / ended** | system_scope | how a session started, and how it stopped | `co-working/user_repo/wip/buildouts/TOMODACHI.md` |
 | **stop** | system_scope | the plan funnel's milestone noun: `planned` · `launched` · `p{n}_started` · `p{n}_leg` · `p{n}_closed` · `landed`; monotonic. ⚠R7 **[proposed]** | `co-working/user_repo/wip/buildouts/TOMODACHI.md` |
@@ -507,7 +549,7 @@ that install ever sent. This binds the collector, not just the client.
 | **OBOERU** | system_scope | the memory system: durable cross-session lessons, so a lesson outlives the session that learned it **[planned]** | `co-working/user_repo/wip/buildouts/MEMORY.md` |
 | **memory** | user_scope | one short markdown file whose frontmatter says who it is for | `co-working/user_repo/wip/buildouts/MEMORY.md` D2 |
 | **the store** | user_scope | where memories live — one store, outside every repo; the axes do the partitioning | `co-working/user_repo/wip/buildouts/MEMORY.md` D1 |
-| **the match** | system_scope | a memory reaches a session when both of **the two axes** (§ LAUNCHER) agree: `project_root` **and** `session_job` | `co-working/user_repo/README/OBOERU.md` |
+| **the match** | system_scope | a memory reaches a session when its axes agree with **the three axes** (§ LAUNCHER): `project_root` is required and must match; `job_role` and `session_task` match when the memory names one. The two contextual axes ADD rather than override — a memory scoped to a role reaches every task worn under it | `co-working/user_repo/README/OBOERU.md` |
 | **universal memory** | system_scope | both axes `"*"` — matches every session. `tejun-remember` refuses to write one by design; only the owner can, from the commons | `co-working/user_repo/wip/buildouts/MEMORY.md` D4 |
 | **remember / recall** | system_scope | `tejun-remember` writes one, `tejun-recall` returns the ~20 lines a session gets at birth. Cataloged as `remember-lesson` / `recall-memories` (2026-08-14) **[planned]** | `co-working/user_repo/wip/buildouts/MEMORY.md` D4–D5 |
 
@@ -518,14 +560,15 @@ that install ever sent. This binds the collector, not just the client.
 | Term | Scope | Means | Record |
 |---|---|---|---|
 | **RIREKI** | system_scope | the umbrella for the whole record: capture, storage, render and the consumers | `docs/rireki.md` |
-| **tape** | session_scope | **every byte a pane emitted, never interpreted.** Per-pane | `docs/rireki.md` |
-| **recorder** | system_scope | the standalone tmux applet that writes the tape, with or without Ronin running | `libexec/rireki/` |
+| **r_tape** (was `tape`) | session_scope | **every byte a pane emitted, never interpreted** — the bytes out of faucet B, per pane (pane rightly: tmux's object is the granularity `pipe-pane` gives). The `r_` spelling is the ruling (owner, 2026-08-22): bare *tape* was generic enough to collide, and RIREKI's two durable artifacts now wear its initial. Code still spells `tape` — the rename sweep is ronin-lab OPEN_THREADS 4.33 | `docs/rireki.md` |
+| **recorder** | system_scope | the standalone tmux applet that writes the r_tape, with or without Ronin running | `libexec/rireki/` |
 | **ring** | system_scope | the 64MB per-pane ceiling: oldest whole segments drop as new ones arrive | `src/services/rireki/rireki.ts` |
-| **scroll** | session_scope | **what those bytes settled into** — a pane's settled transcript on disk, line-numbered. Derived from the tape, disposable, rebuildable from it | `src/services/rireki/scroll.ts` |
-| **settle / the settler** | system_scope | turning tape bytes into scroll lines, **once per pane** on the janitor's clock, never per client | `src/services/rireki/scroll.ts` |
+| **r_scroll** (was `scroll`) | session_scope | **what those bytes settled into** — the settled transcript on disk, line-numbered, our digest of the r_tape. Derived, disposable, rebuildable from it. Same `r_` ruling and the same pending sweep | `src/services/rireki/scroll.ts` |
+| **settle / the settler** | system_scope | turning r_tape bytes into r_scroll lines, **once per pane** on the janitor's clock, never per client | `src/services/rireki/scroll.ts` |
 | **decoder** | system_scope | one per agent (Claude's and Codex's are built): a signature table naming each line's kind. The only vendor-aware part — decoders **decorate, never delete** | `src/services/rireki/decode.ts` |
 | **lens** | system_scope | the read-side projection (`shown` vs `derived`). ⚠R9 | `src/services/rireki/lens.ts` |
-| **faucet A / B** | system_scope | attach paints pictures (unlimited clients); `pipe-pane` emits bytes (**exactly one per pane**, the recorder's, forever). The tape records B | `docs/rireki.md` |
+| **faucet A / B** | system_scope | attach paints pictures (unlimited clients); `pipe-pane` emits bytes (**exactly one per pane**, the recorder's, forever). The r_tape records B | `docs/rireki.md` |
+| **r_render** | — | **does not exist, recorded so nobody coins it** (owner asked, 2026-08-22): the render is the tile's ephemeral paint — attach paints faucet A live, the tape view paints the r_scroll — and nothing durable is written. RIREKI's artifacts are exactly two: r_tape and r_scroll | — |
 | **tape-fed tile** | system_scope | 🔓 unlocked, rendered from the record rather than from an attachment | `docs/rireki.md` |
 
 **tape ≠ scroll.** Both were being called "the tape". Tape is raw and authoritative; scroll
@@ -563,7 +606,7 @@ by that rule and are deleted rather than annotated, per this file's housekeeping
 
 **KOSHI is `system_scope`, and R10 is closed by it.** The two old uses — an in-process
 form-fill helper, and "a tile running `orchestrating`" — are gone. The second was never a
-koshi at all: a tile running work is a session with a `session_job`, which is
+koshi at all: a tile running work is a session with a `session_task`, which is
 `QuarterBack`. ⚠ **The kanji is unruled** — every other name on the list carries one and this
 one never has. Not invented here; see § OPEN R23.
 
@@ -579,7 +622,7 @@ machinery, which is why she is not filed under KOSHI. **[planned]**
 | Term | Scope | Means | Record |
 |---|---|---|---|
 | **MIKA** | system_scope | the house's **helpful assistant** — help first, and Ronin's own admin. Four requests and no more: `system_help` (the default), `new_session`, `project_root`, `system_config`. | `docs/mika.md` |
-| **`MikaAssist`** | system_scope | her `session_job` — the ninth, icon **ミ**. Outside the verb+object grammar for `OddJob`'s reason: she is the one session not doing the owner's work at all. | § SESSION JOBS |
+| **`mikaassist`** | system_scope | her `job_role`, icon **ミ**. A ROLE and never an act, for `QuarterBack`'s reason: she is the one session not doing the owner's work at all, so a command-shaped name would misfile her among the tasks. She launches with a blank `session_task` | § JOB ROLES |
 | **mika_macro** | system_scope | one of her four, re-addressed to her tile from wherever it was typed. Defined in § TEJUN. | `ronin_catalogs/MIKA_MACROS.md` |
 | **spawn-or-inject** | system_scope | her workspace_macro: a live `mika` session takes the request, else one is born and takes it. **She is a singleton** — two Mikas would both write the catalog. | `docs/mika.md` |
 
@@ -613,7 +656,7 @@ for MIKA the question § OPEN R23 leaves open for KOSHI.
 
 | Term | Scope | Means | Record |
 |---|---|---|---|
-| **KOE** | system_scope | the voice surface, both directions: speech to text going in, spoken summaries coming back. **[planned]** | `ronin_catalogs/HOTWORDS.md` |
+| **KOE** | system_scope | the voice surface, both directions: speech to text going in (live — the tile mic through `/api/transcribe`, hotwords attached), spoken summaries coming back (**[planned]**) | `ronin_catalogs/HOTWORDS.md` |
 | **hotwords** | system_scope | the dictation glossary — the words dictation keeps mishearing, sent along with the voice. **Two things in two systems:** the *tab* is coworkspace like every UI surface; `src/services/koe/hotwords.ts` and the stock list are KOE's. **Two FILES too:** the shipped stock list, and the owner's own in the catalogs store — which is SETTEI, and is the one every write lands in | `ronin_catalogs/HOTWORDS.md` |
 | **`koshi_koe`** | system_scope | the koshi job doing the work. **KOE is the surface, `koshi_koe` is the worker** — not two names for one thing **[planned]** | § KOSHI |
 
@@ -666,22 +709,22 @@ see the `commons_tab` row.
 | **session_commons** | system_scope | the shared surface inside a tile, when no session is showing — **one per tile, and about sessions**. **Four** commons_tabs behind one strip — ⌂ Roster · ＋ New session · ▤ Wipeboard · ▧ Docs. It held ten until 2026-08-18, when the six about the install left for the `admin_desk`. Alias: **the commons**. Was `coworking_commons` until 2026-08-18; renamed when the desk was ruled, because the old name said which app it was in and the new one says what it is about | `docs/gbrain.md` |
 | **commons_tab** | system_scope | one section of the session_commons, reached from its tab strip: **⌂ Roster · ＋ New session · ▤ Wipeboard · ▧ Docs**, and only those four. The other six left for the `admin_desk` on 2026-08-18; **a desk row is not a commons_tab** — it is a nav row with a `glyph` and a bare `label`, where a tab is one string carrying both. Alias: **tab**, prose only — bare *tab* is a common word and is not the term. **Never a "pane" or "panel"** — pane already means the tmux terminal a tile shows, and panel adds a second word for a tab. See § THE GROUND | `docs/gbrain.md` |
 | **admin_desk** | system_scope | what a tile shows when the owner asks it for **the machine** rather than a session: everything about **this install** (⚙ Configuration · ▣ Roots · ▥ Hotwords · 目 Koshi · gbrain · ▦ Stats) and **this app** (appearance · release & update · log out). A sibling of the session_commons in the same tile machinery — same overlay, same ✕ back to the terminal — reached from the bar's ⚙ the way ⛩ reaches the commons. **Drawn where it is asked for**, which is the whole point: the six rooms it takes over are install-level and were being drawn in every sessionless tile whether or not anyone wanted them. Alias: **the desk**. **ADMIN, not INSTALL** (owner, 2026-08-18: *"we call it Install Desk but really it is an Admin Desk. (logout etc.)"*) — *install* describes the box, and half of what the desk holds is not about the box: logging out is an account, appearance is a preference. *Admin* is what you are doing at it. The word was also already loose in the tree: `commons.js`, `events.js` and `tile.js` each called the **commons** "the admin pane", which it is not — the commons is about sessions. Those comments say commons now, and admin means this. Never a "commons" (that word is tile-scoped) and never a "panel" | `public/js/desk.js` · `public/js/tiledesk.js` |
-| **session_launch** | system_scope | the commons' **＋ New** tab — where a session is born with a `project_root`, a `session_job` and an opening prompt. Alias: **launch**. One door: `launch_job` (the catalog fill) · `launch_bare` (a name alone) | `docs/commons.md` |
+| **session_launch** | system_scope | the commons' **＋ New** tab — where a session is born on the three axes — a required `project_root`, an optional `job_role`, an optional `session_task` — and an opening prompt. Alias: **launch**. One door: `launch_job` (the catalog fill; claims any body naming a role or a task) · `launch_bare` (a name alone) | `docs/commons.md` |
 | **session_roster** | system_scope | the commons' **⌂ Roster** tab — every session on the ronin_machine. The session list, full stop; the macro forms beside it were removed 2026-08-09. Alias: **the roster**. Never "the board" | `docs/commons.md` |
 | **locked 🔒 / unlocked 🔓** | system_scope | locked = *this view is attached to the live tmux session*; unlocked = *the session is still running, this view is not attached to it* | `docs/LOCKED-VS-UNLOCKED.md` |
 | **compose overlay / copy sheet / ⛽ context gauge** | system_scope | the mobile input box, the touch copy panel, the context readout | `docs/context-gauge.md` |
 | **▦ the keypad** | system_scope | the physical macropad driving Ronin by hand — the one surface that is hardware | `co-working/user_repo/README/KEYPAD_README.md` |
 | **pad key** | user_scope | one key bound to a send; sends reaching the server are group-expanded like any other | `co-working/user_repo/README/KEYPAD_README.md` |
-| **wipeboard** | user_scope | the commons' **▤ Wipeboard** tab and the file behind it — one markdown file a set of sessions all read and append to; append-only, watermarked posts. **Alias: whiteboard** only, because voice-to-text hears it that way. **Never "the board"** | `docs/wipeboards.md` |
+| **wipeboard** | user_scope | the commons' **▤ Wipeboard** tab and the file behind it — one markdown file a set of sessions all read and append to; append-only, watermarked posts. **Two kinds** (owner, 2026-08-22): a **team wipeboard** exists because its `session_team` exists — same name as the team, membership derived from the team at every read, file materialized on first post, no create step — and a **custom wipeboard** is owner-made by name with enrolled members, the secondary path. Where a live team bears a name, the team wins it. `house` is neither a team nor a team wipeboard — it stays the seeded install-wide custom board. **Alias: whiteboard** only, because voice-to-text hears it that way. **Never "the board"** | `docs/wipeboards.md` |
 | **▧ Docs** | user_scope | the commons tab where the owner opens a session's documents. **The tab is cowork; the list behind it is TEGAMI's — see § TEGAMI, MDEDIT.** There is deliberately **no file browser**: a document is reachable because a session listed it, and the way to reach an unlisted one is to ask the session for it (`+show_file`) | `docs/mdedit.md` |
 | **Brief** | system_scope | the owner's statement of what a wipeboard is for. **Agents never edit it** | `docs/wipeboards.md` |
-| **membership** (`@ronin-wipeboards`) | system_scope | lives on the *session*, not in the file, so a roster can never drift from reality | `src/tmux.ts` |
+| **membership** (`@ronin-wipeboards`) | system_scope | who is on a **custom** wipeboard — lives on the *session*, not in the file, so a roster can never drift from reality. A **team wipeboard** stores no membership at all: its members ARE the team (`@ronin-tags`), resolved at read time — the same no-drift rule taken one step further, and the copy-at-a-moment that used to pass for "adding a group to a board" is gone with it. Where a live team bears a board's name, the team is the answer and this option is not consulted | `docs/wipeboards.md` |
 | **dial** (`@ronin-control`) | system_scope | 👤 user / 👁 read / 🤖 write; owner-only to flip; enforced by the shim. Defaults to write, so it rarely bites — but **no role is exempt**, `QuarterBack` included. A dial with an exception is not a dial | `docs/session-control-dials.md` |
 | **shim** | system_scope | `bin/shim/tmux`, `bin/shim/systemctl` on PATH — vendor-neutral enforcement of dials and host guards | `docs/session-control-dials.md` |
 | **control-check** | system_scope | read the dial before touching a session — every session, every role, reading as well as writing | `ronin_catalogs/ACTIONS.md` |
-| **tag / group** (`@ronin-tags`) | system_scope | owner-set, multi-valued; addressing, not decoration (`+tag:`) | `CLAUDE.local.md` |
+| **session_team** (`@ronin-tags`) | system_scope | **a roster-scoped set of collaborating sessions, addressable as one** — surface word **Team**. Owner-set, multi-valued; addressing, not decoration (`+tag:`). A session may join several teams. **`group` is RETIRED as a house term** (owner, 2026-08-22) and returns to ordinary English, where it may be used loosely and means nothing in particular. **Not a `task_family`** — a team groups sessions, a family associates tasks with a role, and the two axes do not overlap. **The code sweep landed 2026-08-22** (the WIPEBOARD_TEAMS build-out): the tool is `tejun-team` (`tejun-group` forwards), the invocation is `+team:` (retired spellings read on input, never taught), the saved-launch field is `team:` (`group:` still read), and **every team has its own wipeboard** — membership derived, never copied (`docs/wipeboards.md`). What stays is deliberate, R32 maps it: the `@ronin-tags` spelling (live sessions carry it), the `tags` code and API fields, TOMODACHI's `tag_groups` key — internal seams, the `cowork_stats` pattern | `CLAUDE.local.md` |
 | **note** (`@ronin_note`) | system_scope | the owner's one line about a session | `src/status.ts` |
-| **session_job**, the mark | system_scope | what a session is DOING, held in its **letter** (`Tegami.session_job`) — seeded at birth with the job it was launched as, changed by the session with `write_tegami`. The catalog's `icon:` is drawn wherever sessions are listed. **The letter's role half is cowork's; the ladder half is michi's.** **⚠ RETIRED: the leader 人 (`@ronin-lead`)** — it named only who coordinated a group, had to be hand-set, and was a second thing to maintain that the job already implied. The coordinator is the session whose job is `QuarterBack` 🏈 | `src/tegami.ts` · `ronin_catalogs/SESSION_JOBS.md` |
+| **session_task**, the mark | system_scope | what a session is DOING, held in its **letter** (`Tegami.session_task`) — seeded at birth with the task it was launched as, changed by the session with `write_tegami` or by the owner from the tile. The definition's `icon:` is drawn wherever sessions are listed; a blank task draws no mark. **The letter's axis half is cowork's; the ladder half is michi's.** **⚠ RETIRED: the leader 人 (`@ronin-lead`)** — it named only who coordinated a group, had to be hand-set, and was a second thing to maintain that the work already implied. The coordinator is the session whose `session_task` is `QuarterBack` 🏈 — which MIGRATES, so it is read fresh rather than remembered | `src/tegami.ts` · `ronin_catalogs/session_tasks/` |
 | **▥ Hotwords** | system_scope | the commons tab. The dictation glossary itself belongs to KOE — see § KOE | `ronin_catalogs/HOTWORDS.md` |
 | **ghost text** | system_scope | text typed into a tile's prompt but not submitted; never type over it | `ronin_catalogs/ACTIONS.md` |
 
@@ -703,7 +746,7 @@ kind of thing it is.**
 | Term | Scope | Means | **The test** | Record |
 |---|---|---|---|---|
 | **SETTEI** | system_scope | the owner's configuration of Ronin | **You SET it** — a value, a list, a mapping, a credential — through one of Ronin's own configuring surfaces | `docs/user-config.md` |
-| **user_customization** | system_scope | the owner's extensions to TEJUN — their own session_jobs, macros, actions, tools | **You AUTHOR it** — a recipe | `reading-list/TEJUN.md` |
+| **user_customization** | system_scope | the owner's extensions to TEJUN — their own job_roles, session_tasks, macros, actions, tools | **You AUTHOR it** — a recipe | `reading-list/TEJUN.md` |
 
 A hotword list is a list you **set**; a macro is a recipe you **write**. The old test could
 not tell them apart and put both in the wrong drawer.
@@ -797,7 +840,7 @@ somewhere else. Ronin has no address of its own; it asks. Record: `docs/stores.m
 | **ronin_store** | system_scope | one declared location under one of the two roots — a row in the store table, resolved at runtime. **Never a path spelled by hand.** `bin/ronin-store <id>` prints one, `--all` prints the table | `docs/stores.md` |
 | **ronin_library** | system_scope | the shipped reference shelf — the longer reading an action or macro sends an agent to, fetched by the MACHINERY (`- **library:** <name>`, inlined at compile). Ships in cowork, starts near-empty and grows one screened piece at a time; the owner's own library (the `library` store, user scope) shadows it file-for-file, so the shipped way of working is a default, never a prescription | `ronin_library/README.md` |
 | **ronin_sops** | system_scope | the shipped standard operating procedures — how a house goes about a domain, one SOP per file, fetched by the SITUATION and never by the machinery. **The pair test: if you can name the action that would cite it, it is library.** Starts near-empty like the library; the owner's own `sops` store shadows it file-for-file — a `user_customization` you author, like a macro | `ronin_sops/README.md` |
-| **ronin_session_boot** | system_scope | the shipped **session boot shelf** — what a NEW SESSION reads before anything else. Named for booting a *session*, never the application. Three levels that ADD UP rather than override: `all/` (every session) · `root/<project_root>/` · `job/<session_job>/`; the owner's `session_boot` store shadows it file-for-file. Stock may ship `job/` but never `root/` — the jobs ship, the owner's directories do not. Replaced the project_root's `read:` field, which stored literal paths and went stale in silence | `docs/session-boot.md` |
+| **ronin_session_boot** | system_scope | the shipped **session boot shelf** — what a NEW SESSION reads before anything else. Named for booting a *session*, never the application. Levels that ADD UP rather than override: `all/` (every session) · `<service>_connected/` · `root/<project_root>/` · `role/<job_role>/` · `task/<session_task>/`; the owner's `session_boot` store shadows it file-for-file. Stock may ship `role/` and `task/` but never `root/` — the roles and tasks ship, the owner's directories do not. Replaced the project_root's `read:` field, which stored literal paths and went stale in silence | `docs/session-boot.md` |
 | **ronin_bin** | system_scope | **everything an agent types, and nothing else** — every `tejun*` plus `write_tegami`/`read_tegami` (moved out of `bin/` 2026-08-14). On PATH via setup.sh, behind `bin/shim` and ahead of `bin/`. A **tool** is the subset that also implements a cataloged action. The fifth shelf: ronin_session_boot · ronin_catalogs · ronin_library · ronin_sops · ronin_bin | `ronin_bin/README.md` |
 | **SHELVES** | system_scope | the one page that says the four shelves exist and what each answers, so an agent can *find* a catalog, a library page or an SOP without any of them being pasted at it. Names **no individual entry**, so adding one never dates it. Owner, 2026-08-15: the name is `SHELVES`, it lives in `docs/`, and it is a file rather than lines in a brief. It reaches a session through the **boot shelf** — `ronin_session_boot/all/` symlinks it, and `buildBrief` lists that level at spawn — so every session is handed it, and no pointer is written down anywhere to go stale | `docs/SHELVES.md` |
 | **libexec** | system_scope | executables **the machine invokes and nobody types** — `ronin-gate` (ExecStartPost), `rireki/` (the tmux applet), `koshi` (the job process), `ronin-may-spawn`, `ronin-claim` (the git hooks). The Unix split `bin` (a person types it) vs `libexec` (a program invokes it), adopted 2026-08-14. NOT on PATH | § SCRIPTS |
@@ -860,7 +903,7 @@ archive` (the delete modes), `end` (TOMODACHI's ledger). ⚠R8
 
 **3 · "gauge" names two things.** ⚠R6
 
-**4 · The overlap that is deliberate.** `project_root` and `session_job` are used verbatim by
+**4 · The overlap that is deliberate.** `project_root`, `job_role` and `session_task` are used verbatim by
 the launcher, OBOERU's match and TOMODACHI's dimensions. One token, every surface — which
 is what R17's merge protected.
 
@@ -926,7 +969,7 @@ projection" describes the settler better.
 **R10 · CLOSED — a koshi is an agent doing an internal job for Ronin.** Owner, 2026-08-13.
 The umbrella over `koshi_monitor`, `koshi_reaper` and whatever follows.
 Narrowed by R31 — a koshi is one model call over a closed question, and never authors. The two old uses are retired: the form-fill helper is not
-a koshi, and "a tile running `orchestrating`" was a session with a `session_job` all along —
+a koshi, and "a tile running `orchestrating`" was a session with a task all along —
 `QuarterBack`. `system_scope`, not `dev_scope`; it ships. See § KOSHI.
 
 **R11 · "the hopper" is not the word you use.** You called it "the WIP directory" and
@@ -966,20 +1009,98 @@ rules that bind them: the catalogs, SOPs and library are written for the first; 
 the byoin_checks and every `dev_scope` row are the second's. The hat that is on decides which
 applies, and a tenant only ever has the first.
 
-**R17 · CLOSED — it did not.** The role catalog is deleted and its remits were
-carried into the seven `session_job`s; the `session_job` *is* the role. The two axes are now two:
-`project_root` (where) and `session_job` (what it is doing). The third axis is dropped from
-OBOERU and TOMODACHI too (owner, 2026-08-10) — neither is built, so it cost nothing.
+**R17 · REOPENED AND REVERSED — the role came back, and this time it carries reading.**
+Owner, 2026-08-22. The 2026-08-10 ruling deleted a role catalog and declared the
+`session_job` to be both act and role. The new evidence was the launch board itself: the
+Job Groups were independently organizing the acts, a job could sit on several of them, and
+a strong role reading plainly applied across several acts. So `session_job` is renamed to
+**`session_task`** — the row already said "what a session is doing right now", so it is
+renamed rather than reinterpreted — and the Job Group machinery is promoted whole into
+**`job_role`**, gaining a reading level and launch defaults it never had as `job_class`.
+
+```text
+session_job                       →  session_task
+job_class / surface "Job Group"   →  job_role
+```
+
+**One row of this ruling was reversed the same day, and the reversal is the better proof.**
+`QuarterBack` was promoted to a role alongside `PersonalAssistant` and `MikaAssist`, and
+the owner ruled it back to a task (R33): a Developer *moves into* quarterbacking. The axis
+survived its first hard case — the test is "what do you stay while your task changes", and
+applying it honestly cost this ruling one of its own examples.
+
+There are three axes: `project_root` (required, where) · `job_role` (optional, fixed, who)
+· `session_task` (optional, mutable, what it is doing now). **This was cut without a
+migration layer** (owner, same day): there were no users to carry, so the old schema and
+every caller went in one change rather than behind aliases. See § LAUNCHER.
 
 **R18 · DISSOLVED.** No michi names survive, so there is no shape rule to agree.
 
-**R19 · A migrating `session_job` is no longer a key.** They now change mid-session, and two
-surfaces were promised a fixed value: **OBOERU** matches once at birth, so a session that
-becomes `CutCode` holds memories matched against the `session_job` it used to be; **TOMODACHI**
-counts by `session_job`, so a session with three has no single value to count and needs
-job-at-birth and job-now as separate fields. The plan is unaffected — a michi survives a
-role change, it is the same plan either way. Worth noting the gain: migration becomes a
-countable event, which is a truer funnel than `stop` (⚠R7).
+**R33 · `QuarterBack` is a `session_task`, and its token keeps the verb+object
+exception.** Owner, 2026-08-22, reversing one row of the same day's own cut. It had been
+promoted to a `job_role` on the theory that coordinating is who a session IS. It is not:
+**`developer` is the role, and quarterbacking is a task a Developer moves into and back
+out of.** The test the axis was given holds — a role is what you stay while your task
+changes — and coordinating fails it, because a session stops coordinating and carries on.
+
+**What that costs, and it is worth saying rather than discovering.** The coordinator of a
+team is a MIGRATING value again. When it was a role, "who runs this team" was settled at
+birth and could not drift; as a task it can be true at 10am and false at noon, so every
+reader of it — `tejun-team`, the wipeboard roster, TOMODACHI's `led` — reads it fresh
+rather than remembering it. That is a real loss the ruling accepts on purpose: the truth
+is that coordination moves, and a field that could not move was flattering the reader.
+
+**The token stays `QuarterBack`**, ruled an exception to verb+object beside `OddJob` and
+`RiffOnIt`. The gerund `Quarterbacking` is unavailable — gerunds are michi's, and a
+session_task that read like a michi name is the exact collision § OVERLAP exists to
+prevent. The verb+object candidate was **`CallPlays`**, which is honest (KOTOBA's own
+prose already defines the posture as *"reads the field, calls the play and does not run
+it"*) and was still refused: the owner has a word for this seat and says it out loud, the
+public site already describes *running as quarterback* in prose, and a token nobody
+pronounces is a token that gets re-invented in conversation. The exception is cheaper than
+the translation. **`CallPlays` is the standing alternative if the owner would rather the
+grammar held without exception.**
+
+**R32 · `group` is retired as a house term; the words are `session_team` and
+`task_family`.** Owner, 2026-08-22. *"group stops being a house term and returns to
+ordinary/general language. Codify team for a roster-scoped set of collaborating sessions.
+Codify family for the set of session_tasks presented under a job_role."* The axes are
+strict and do not overlap: **a team groups SESSIONS; a family associates TASKS with a
+role.** Both are many-to-many — a session may join several teams, a task may appear in
+several families — so neither is exclusive ownership.
+
+**Spelled compound, and the ruling's own logic requires it.** `group` is being retired
+precisely because it read as English; a bare `team` and a bare `family` would inherit that
+defect on day one, and `family` inherits it *already* — `settei-registry.ts` has a write
+`family`, `PUT /api/settei/:family` is a live route parameter, and Node's `os` reports an
+address `family`. So the terms are **`session_team`** and **`task_family`**, and the
+surfaces say **Team** and **Family** — the plain-English half KOTOBA has always required
+of anything a person reads.
+
+**Both halves are DONE.** `task_family` first: the role definition's key, the API field,
+the board's ✎ editor and the check. `session_team` landed the same day with the owner's
+explicit go, as its own cut (the WIPEBOARD_TEAMS build-out): `tejun-group` is renamed
+`tejun-team` with the old name forwarding, the lookups speak `+team:` and still read the
+retired spellings (input only, never taught — an agent's old habit answers, hearing the
+new word back), the saved-launch field writes `team:` and still reads `group:`, and each
+team owns its wipeboard with membership derived from the team (`docs/wipeboards.md`).
+**What deliberately did NOT move**, because a rename there breaks addressing under
+running sessions or a pinned packet shape, held as mapped internal seams — the
+`cowork_stats` pattern: the `@ronin-tags` option spelling, the `tags` identifiers and
+API fields in code, and TOMODACHI's `tag_groups` count. The vocabulary and the code now
+agree, with the seams named instead of silent.
+
+**R19 · ANSWERED BY R17's REVERSAL, and the answer is that they were two facts.** The
+question was what to do about a `session_job` that migrates when two surfaces were
+promised a fixed value. Splitting the axis settles it: **`job_role` is the fixed one** —
+seeded at birth, immutable through every ordinary write — and **`session_task` is the
+moving one**. **OBOERU** now matches on a required root plus whichever contextual axes a
+memory names, so a memory scoped to a role reaches every task worn under it and stops
+going stale the moment the session moves on. **TOMODACHI** still needs task-at-birth and
+task-now as separate fields, because the task genuinely does change; the role does not,
+so it needs only one. The plan is unaffected — a michi survives a task change, it is the
+same plan either way. The gain stands: migration is a countable event, which is a truer
+funnel than `stop` (⚠R7).
 
 
 ---
@@ -1093,7 +1214,7 @@ caught early**, and resolved the cheap way it proposed: the directory was rename
 *"Gate is already on the user interface. It's a part of the tegami. We're not changing
 that."* The repo-side sense — a check that reads the tree and fails the build — is now
 **`byoin_check`** (§ THE GROUND, beside BYOIN): the owner's own frame, "the sub tests
-within BYOIN". `docs/byoin.md` carries the term; `libexec/ronin-gate` and `--gates` keep
+within BYOIN". `docs/test-protocols.md` carries the term; `libexec/ronin-gate` and `--gates` keep
 their pre-ruling filenames (an installed unit names the first). Line 61's preamble was
 right that *gate* had escaped; this closes it.
 
@@ -1119,7 +1240,7 @@ machinery and cowork must run alone.
 3. **She defaults to `system_help`.** Not "refuse and point" and not "offer to spawn" — help
    is the floor she falls back to, and the long reading list that makes it good is a later
    pass, not a blocker.
-4. **She is a helpful assistant, and that goes in her `session_job`** — the posture, where
+4. **She is a helpful assistant, and that goes in her `job_role`** — the posture, where
    an agent's manner is already specified, rather than a new field or a doc nobody reads.
 
 **R32 · CLOSED — the map is `docs/SHELVES.md`, and the boot shelf delivers it.** Owner,
