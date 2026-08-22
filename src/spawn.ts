@@ -51,11 +51,16 @@ export interface SpawnForm {
   cmd?: string;
   /**
    * MCP on or off for THIS session — a mechanical pick like the cmd, present in both
-   * modes. Default true: the CLI's own config applies, untouched. False appends the
-   * provider's declared `mcp_off` flags to the cmd, so the session launches with no
-   * MCP servers at all; a provider that declares none REFUSES the launch rather than
-   * silently launching connected. Ronin never learns what was disconnected — the
-   * flags are catalog data, the servers are the CLI's own business.
+   * modes. True: the CLI's own config applies, untouched. False appends the provider's
+   * declared `mcp_off` flags to the cmd, so the session launches with no MCP servers at
+   * all; a provider that declares none REFUSES the launch rather than silently launching
+   * connected. Ronin never learns what was disconnected — the flags are catalog data,
+   * the servers are the CLI's own business.
+   *
+   * **Absent means "whatever the session_job says"** — the kind's `mcp:` default, which is
+   * off for every ordinary kind (owner, 2026-08-22). Only an explicit true or false here
+   * overrides the catalog, so a caller that has no opinion cannot accidentally connect a
+   * session by staying silent.
    */
   mcp?: boolean;
   tags?: string[];
@@ -252,25 +257,40 @@ export async function resolveForm(
   // provider too until 2026-08-17, for a roster column the owner then cut to the model
   // alone; the mcp_off flags are what is left, and they were always the load-bearing use.
   const spec = launchSpecs.find((b) => b.cmd === cmd);
-  const mcpOffWanted = agent && form.mcp === false;
+  // The launch's own say, and failing that the kind's default from the catalog. A kind
+  // marked `mcp: always` is connected whatever anyone asked; the contradicting ask is
+  // caught below rather than quietly overridden.
+  const mcpWanted = kind.mcpAlways ? true : (form.mcp ?? kind.mcpDefault);
+  // Somebody ASKED for off, as against off being merely what this kind defaults to. The
+  // two are refused differently below, and only this one is a promise Ronin made.
+  const askedOff = agent && form.mcp === false;
+  let mcpOffWanted = agent && !mcpWanted;
   // A kind marked `mcp: always` is BORN connected (owner's ruling, 2026-08-17): the
   // launcher never offers the toggle for it, and a launch that asks anyway (a macro, a
   // hand-built request) is refused rather than silently connected or disconnected.
-  if (mcpOffWanted && kind.mcpAlways) {
+  if (askedOff && kind.mcpAlways) {
     throw new Error(
       `${kind.name} is born connected (\`mcp: always\` in ronin_catalogs/SESSION_JOBS.md) — ` +
         'it cannot be launched with MCP off.',
     );
   }
-  if (mcpOffWanted) {
-    if (!spec?.mcpOff) {
+  if (mcpOffWanted && !spec?.mcpOff) {
+    // Asked for and undeliverable is a broken promise: refuse, rather than launch a
+    // session the receipt would call disconnected.
+    if (askedOff) {
       throw new Error(
         'This launch command declares no `mcp_off:` flags in the launch table, ' +
           'so it cannot be launched with MCP off (see ronin_catalogs/PROJECT_ROOTS.md).',
       );
     }
-    cmd = `${cmd} ${spec.mcpOff}`;
+    // Merely the kind's default, and this provider cannot do it. Since 2026-08-22 that
+    // default is off for every ordinary kind, so refusing here would leave a box whose
+    // launch table has no `mcp_off:` row — or that fell through to the bare fallback cmd —
+    // unable to launch ANYTHING. The launch goes ahead connected and the receipt says
+    // `mcp: true`, which is the truth; a default may degrade, a promise may not.
+    mcpOffWanted = false;
   }
+  if (mcpOffWanted) cmd = `${cmd} ${spec!.mcpOff}`;
 
   return {
     name: wanted || slugName(kind.name, form.prompt, taken),

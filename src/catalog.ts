@@ -242,6 +242,17 @@ export interface SessionJobInfo {
    */
   mcpAlways: boolean;
   /**
+   * Which way the ＋ New form's gbrain toggle opens for this kind — `- **mcp:**` in the
+   * catalog. **False unless the entry says otherwise** (`off`, or the field absent), by
+   * the owner's ruling of 2026-08-22: an ordinary session is born with no MCP servers,
+   * and the owner turns the brain on for the launch that wants it. `on` opens it on;
+   * `always` opens it on and removes the choice (see `mcpAlways`).
+   *
+   * A DEFAULT, not a lock: the form's toggle and an explicit `mcp:` in the launch body
+   * both override it. It is what a launch that says nothing gets.
+   */
+  mcpDefault: boolean;
+  /**
    * Where this kind ALWAYS works, whatever project_root is picked — `- **dir:**` in the
    * catalog. Empty for every ordinary kind, because the directory is the project_root's
    * to supply and a kind that named one would be naming a machine.
@@ -261,6 +272,7 @@ export async function listSessionJobs(): Promise<SessionJobInfo[]> {
   return (await readEntries('SESSION_JOBS.md'))
     .map((e) => {
       const dial = e.get('dial').toLowerCase();
+      const mcp = e.get('mcp').toLowerCase();
       return {
         name: e.name,
         origin: e.origin,
@@ -280,7 +292,8 @@ export async function listSessionJobs(): Promise<SessionJobInfo[]> {
         opening: e.get('opening'),
         agent: e.get('agent').toLowerCase() !== 'none',
         capExempt: e.get('cap').toLowerCase() === 'exempt',
-        mcpAlways: e.get('mcp').toLowerCase() === 'always',
+        mcpAlways: mcp === 'always',
+        mcpDefault: mcp === 'always' || mcp === 'on',
         dir: e.get('dir'),
         credit: parseCredit(e.get('credit')),
       };

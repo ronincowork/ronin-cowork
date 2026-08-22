@@ -92,12 +92,16 @@ One sentence in, a filled form out. Match it against the `match:` words in
 
 **Assisted mode only.** In manual mode what the owner typed IS the prompt, byte for byte.
 
-**MCP defaults ON and you never flip it on your own initiative.** Propose off only when
-the owner's sentence asked for it — "without the brain", "no connectors", "offline",
-"work alone" — and say what off means when you propose it: the session launches with no
-MCP servers at all (no shared memory, no connectors), via the provider's own `mcp_off:`
-flags from the launch table. A provider that declares none refuses the launch; report
-the refusal, do not work around it.
+**MCP defaults to whatever the `session_job` says, and you never flip it on your own
+initiative.** That is `- **mcp:**` in `SESSION_JOBS.md`: off for every ordinary kind,
+`always` for `PersonalAssistant`, which cannot be launched off at all. So the honest
+proposal is to send no `mcp:` and let the kind answer. Propose **on** only when the
+owner's sentence asked for the brain — "look it up", "remember this", "use gbrain" — and
+**off** only when it asked for solitude: "without the brain", "no connectors", "offline",
+"work alone". Say what off means when you propose it: the session launches with no MCP
+servers at all (no shared memory, no connectors), via the provider's own `mcp_off:` flags
+from the launch table. A provider that declares none refuses a launch that ASKED for off;
+report the refusal, do not work around it.
 
 ## system_config
 - **class:** mika_macro

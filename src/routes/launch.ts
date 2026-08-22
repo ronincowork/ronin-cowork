@@ -55,8 +55,11 @@ export function registerLaunch(app: express.Express): void {
       mode: req.body?.mode === 'manual' ? 'manual' : 'assisted',
       project_root: String(req.body?.project_root ?? '').trim() || undefined,
       cmd: String(req.body?.cmd ?? '').trim() || undefined,
-      // Only an explicit false turns MCP off — absent means the CLI's own config applies.
-      mcp: req.body?.mcp !== false,
+      // Only an explicit boolean is an opinion. Absent hands the choice to the
+      // session_job's `mcp:` default (off for every ordinary kind, owner 2026-08-22)
+      // rather than meaning "on", so a caller with nothing to say cannot connect a
+      // session by omission.
+      mcp: typeof req.body?.mcp === 'boolean' ? req.body.mcp : undefined,
       tags: Array.isArray(req.body?.tags) ? req.body.tags.map(String) : [],
       seed: Array.isArray(req.body?.seed) ? req.body.seed.map(String) : [],
       inject: String(req.body?.inject ?? '').trim() || undefined,

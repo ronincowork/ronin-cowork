@@ -119,12 +119,17 @@ export function buildLauncher(tile, host) {
   const groupSel = document.createElement('select');
   groupSel.title = 'Group the new session joins (tag)';
   // MCP on/off for THIS session — a mechanical pick like the model, live in both
-  // modes. On (default): the CLI's own config applies, untouched. Off: the session
-  // launches with no MCP servers at all — no shared memory, no connectors — via the
-  // provider's own declared flags (`mcp_off:` in the launch table). Ronin neither
-  // knows nor cares what was disconnected; a provider declaring no flags is refused
-  // at launch rather than launched connected.
-  let mcpOn = true;
+  // modes. On: the CLI's own config applies, untouched. Off: the session launches with
+  // no MCP servers at all — no shared memory, no connectors — via the provider's own
+  // declared flags (`mcp_off:` in the launch table). Ronin neither knows nor cares what
+  // was disconnected.
+  //
+  // WHICH WAY IT OPENS IS THE session_job'S, not this file's: `mcp:` in
+  // ronin_catalogs/SESSION_JOBS.md, read below when a kind is picked. Off for every
+  // ordinary kind (owner, 2026-08-22); on and unofferable for PersonalAssistant, whose
+  // whole job is the brain. This initial value is only what the row holds before any
+  // kind has been chosen, and the form is not startable in that state.
+  let mcpOn = false;
   // The label says gbrain — the owner's ruling: "MCP" means nothing to a person, the
   // brain is the thing being switched. The tooltip tells the whole truth: off means NO
   // MCP servers at all, so any other connector the CLI is wired with goes with it.
@@ -298,10 +303,13 @@ export function buildLauncher(tile, host) {
       // it is the only truth available: nothing is sent at all.
       if (k.agent === false) mode = 'manual';
       form.classList.toggle('noagent', k.agent === false);
+      // The kind's own `mcp:` default decides which way the toggle opens — a fresh pick
+      // is a fresh answer, so choosing another kind re-reads it rather than carrying the
+      // last kind's state over.
+      mcpOn = !!k.mcpDefault;
       // `mcp: always` — born connected (owner's ruling, 2026-08-17): the toggle does
       // not apply, so it is not offered. The spawn refuses a contradicting launch;
       // this just keeps the form honest about there being no choice.
-      if (k.mcpAlways) mcpOn = true;
       mcpBtn.hidden = !!k.mcpAlways;
       applyMcp();
       formHead.textContent = `${k.icon} ${k.label} — ${k.ask}`;
@@ -473,7 +481,7 @@ export function buildLauncher(tile, host) {
         // substitute one for it (src/spawn.ts resolveForm).
         cmd: bare ? '' : modelSel.value,
         // Mechanical like the cmd, so it rides in BOTH modes; meaningless without an
-        // agent, so a bare kind sends nothing and the server default (on) applies.
+        // agent, so a bare kind sends nothing and the session_job's own default applies.
         mcp: bare ? undefined : mcpOn,
         tags: groupSel.value && groupSel.value !== NEWGRP ? [groupSel.value] : [],
         seed:

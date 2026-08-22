@@ -52,7 +52,8 @@ prompt) · `remit` (one line: what this session is, for humans and Koshi) · `po
 working usually deserves; the project or the launch may override) · `match` (intent
 words) · `dial` · `permissions` · `lifecycle` (the michi it starts in) · `ack` ·
 `opening` · `agent` (omit it for an agent job; `none` means no CLI is launched at all) ·
-`cap` (omit it, or `exempt` — see below) · `dir` (omit it, or the sentinel `{install}`).
+`cap` (omit it, or `exempt` — see below) · `dir` (omit it, or the sentinel `{install}`) ·
+`mcp` (`off` · `on` · `always` — see below).
 
 **`dir: {install}` — a kind that always works in Ronin's own directory.** Omit it and the
 directory is the `project_root`'s to supply, which is right for every kind that does the
@@ -71,6 +72,24 @@ It exempts the *spawn*, never the *census*: she counts the moment she exists, so
 NEXT session is the one refused. Nothing is evicted to make room and no session is ever
 chosen to die.
 
+**`mcp:` — is this kind born with a brain?** The ＋ New form carries one toggle, **gbrain
+on / gbrain off**, and this field is the state it opens on. Three values:
+
+- **`off`** (and omitted) — the toggle starts **off**: the session launches with no MCP
+  servers at all, through the provider's own declared `mcp_off:` flags. This is every
+  ordinary kind, by the owner's ruling of 2026-08-22. A session cutting code from an
+  approved plan has no business in the owner's memory, and a connection nobody asked for
+  is a connection nobody audited.
+- **`on`** — the toggle starts on, for a kind whose work usually wants the brain but can
+  honestly be done without it. Nothing carries it today; it exists so a kind can say so
+  in one line rather than by patching the launcher.
+- **`always`** — born connected, and the toggle is not offered at all: a launch that asks
+  for MCP off is refused. One kind carries it, `PersonalAssistant`.
+
+**A default, not a lock.** `off` and `on` are each one click from the other on the form,
+and a macro or a hand-built `POST /api/launch` may send `mcp:` either way; a request that
+says nothing gets this field. Only `always` refuses.
+
 ## RiffOnIt
 - **icon:** 💭
 - **label:** riff on it
@@ -82,6 +101,7 @@ chosen to die.
 - **match:** riff, define, what is, concept, vocabulary, think about, explore
 - **dial:** write
 - **permissions:** default
+- **mcp:** off
 - **lifecycle:** none
 - **ack:** yes
 - **opening:** Work out what this is: {prompt}. Definition first — what it is, what it is not, and where we are using one word for two things. Argue with me rather than agreeing; produce a definition, not a plan.
@@ -97,6 +117,7 @@ chosen to die.
 - **match:** plan, design, think, scope, spec, draft
 - **dial:** write
 - **permissions:** default
+- **mcp:** off
 - **lifecycle:** designing
 - **ack:** yes
 - **opening:** Plan this: {prompt}. Write the plan as a wip build-out doc per the documents SOP (default wip/buildouts/<TOPIC>.md) — goal in the owner's words, legs, constraints, verification, definition of done. A plan, not code.
@@ -112,6 +133,7 @@ chosen to die.
 - **match:** build, cut, code, implement, fix, wire
 - **dial:** write
 - **permissions:** bypass
+- **mcp:** off
 - **lifecycle:** coding
 - **ack:** no
 - **opening:** Cut code from the plan doc: {prompt}. Work leg by leg, verify each leg before the next, delete finished items from the doc, and commit + push verified work per CLAUDE.local.md.
@@ -127,6 +149,7 @@ chosen to die.
 - **match:** debug, bug, broken, crash, fault, regression, why, diagnose, repro
 - **dial:** write
 - **permissions:** bypass
+- **mcp:** off
 - **lifecycle:** debug
 - **ack:** yes
 - **opening:** Chase this: {prompt}. Reproduce it first and say how; find the cause before you change anything; fix the cause, not the symptom; then show the original repro is gone. If the cause turns out to be somewhere the owner did not expect, say so before fixing.
@@ -142,6 +165,7 @@ chosen to die.
 - **match:** review, check, judge, evaluate, watch, audit, sweep, scan, security, lint
 - **dial:** read
 - **permissions:** default
+- **mcp:** off
 - **lifecycle:** review
 - **ack:** yes
 - **opening:** Check this and report: {prompt}. Read-only — control-check before touching anything, never write into what you are checking, and bring findings to the owner rather than fixing them yourself. Whether the target is a session's work or a body of code is the prompt's business, not a different kind of session.
@@ -157,6 +181,7 @@ chosen to die.
 - **match:** quarterback, qb, manage, coordinate, dispatch, lead, unblock, watch over
 - **dial:** read
 - **permissions:** default
+- **mcp:** off
 - **lifecycle:** orchestrating
 - **ack:** yes
 - **opening:** You are coordinating {prompt}. Catch up on each member with tejun-peek, then report where each one stands. Dispatch the next piece of work, unblock what is stuck, and bring the owner what is his to decide. Control-check before touching any session — a dial you cannot write to is the owner's to flip, not yours.
@@ -172,6 +197,7 @@ chosen to die.
 - **match:** —
 - **dial:** write
 - **permissions:** default
+- **mcp:** off
 - **lifecycle:** none
 - **ack:** yes
 - **opening:** {prompt}
@@ -187,6 +213,7 @@ chosen to die.
 - **match:** setup, first run, get me started, clone, my project is
 - **dial:** write
 - **permissions:** default
+- **mcp:** off
 - **lifecycle:** none
 - **ack:** yes
 - **opening:** {prompt}
@@ -230,6 +257,7 @@ chosen to die.
 - **match:** help, how do i, mika, add a repo, project root, new session, settings, my name is, what is
 - **dial:** write
 - **permissions:** default
+- **mcp:** off
 - **ack:** no
 - **cap:** exempt
 - **dir:** {install}
@@ -240,6 +268,16 @@ chosen to die.
 *Ten entries: nine for the owner's work, and one for the house's own. A kind earns
 its place by fixing constants a launch must not guess — a dial, a posture, a michi. If
 two kinds differ only in what the prompt says, they are one kind.*
+
+*Every other kind carries `mcp: off` (owner, 2026-08-22), and the toggle now opens the
+way its kind says rather than always opening on. The brain is the assistant's whole job
+and nobody else's default: a coder cutting from an approved plan, a checker reading
+read-only, a planner writing a doc — none of them asked for the owner's memory, and a
+session born connected to it is one nobody decided to connect. The field is a **default**,
+so the click that turns it on is still there on the form for the launch that wants it.
+A kind whose provider declares no `mcp_off:` flags cannot be launched off; it launches
+connected and the receipt says so, because a box that could launch nothing would be the
+worse failure.*
 
 *`PersonalAssistant` carries `mcp: always` (owner, 2026-08-17): it is born connected —
 the launch toggle is not offered for it and a contradicting launch is refused, because an
