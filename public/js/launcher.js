@@ -257,7 +257,7 @@ export function buildLauncher(tile, host) {
   form.append(formHead, creditEl, modeRow, modeSay, nameField.el, whatField.el, formRow, err.el, extrasHead, extras);
   const grid2 = document.createElement('div');
   grid2.className = 'ks-grid';
-  /* ---- job roles: the sections of this board (js/familyroles.js) ---- */
+  /* ---- family roles: the sections of this board (js/familyroles.js) ---- */
   const shelves = buildRoleSections({
     taskButton: (k, role) => taskButton(k, role),
     roleButton: (role) => roleButton(role),

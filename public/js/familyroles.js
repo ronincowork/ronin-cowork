@@ -209,7 +209,7 @@ export function buildRoleSections({ taskButton, roleButton, allTasks, allRoles, 
     // for the untagged, with a heading only once sections exist.
     if (allRoles().length && shelved.size < tasks.length) {
       wrap.appendChild(
-        Object.assign(document.createElement('div'), { className: 'ks-loose-h', textContent: 'no job role' }),
+        Object.assign(document.createElement('div'), { className: 'ks-loose-h', textContent: 'no role' }),
       );
     }
     return shelved;
