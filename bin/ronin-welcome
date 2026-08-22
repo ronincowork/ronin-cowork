@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# ronin-welcome — draw the arrival box again, with whatever address is live NOW.
+#
+#   ronin-welcome
+#
+# setup.sh prints the box once, at the end of an install, and at that moment the
+# only address that exists is HTTP over the tailnet: `tailscale serve` needs a
+# sudo the installer does not have. The HTTPS door arrives a minute later, when
+# the operator runs the command setup.sh printed — and tailscale answers that
+# with its own output, after which the box has scrolled away.
+#
+# So this exists to be run after that step: same box, same code path, the real
+# address. It reads the machine and reports; it changes nothing.
+set -uo pipefail
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$HERE/.." && pwd)"
+# shellcheck source=../libexec/ronin-banner.sh
+. "$ROOT/libexec/ronin-banner.sh"
+
+if command -v tailscale >/dev/null 2>&1; then
+  RONIN_IP="$(tailscale ip -4 2>/dev/null | head -1 || true)"
+  NODE_BIN="$ROOT/vendor/node/bin/node"
+  [ -x "$NODE_BIN" ] || NODE_BIN="$(command -v node || true)"
+  if [ -n "$NODE_BIN" ]; then
+    RONIN_FQDN="$(tailscale status --json 2>/dev/null | "$NODE_BIN" -e \
+      'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{process.stdout.write((JSON.parse(d).Self.DNSName||"").replace(/\.$/,""))}catch{}})' 2>/dev/null || true)"
+  fi
+fi
+export RONIN_IP="${RONIN_IP:-}" RONIN_FQDN="${RONIN_FQDN:-}"
+
+PORT="$(ronin_port "$ROOT")"
+URL="$(ronin_open_url "$ROOT" "$PORT")"
+ronin_banner "$ROOT" "$URL"
+
+case "$URL" in
+  https://*) ;;
+  *) printf '  Still HTTP. For an HTTPS door (the 🎤 microphone needs one):\n'
+     [ -n "$RONIN_IP" ] &&
+       printf '      sudo tailscale serve --bg --https=8443 http://%s:%s\n\n' "$RONIN_IP" "$PORT" ;;
+esac
