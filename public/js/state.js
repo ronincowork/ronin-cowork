@@ -107,7 +107,7 @@ export const tiles = [];
 //           locally. Typed text parks locally until Enter sends the whole parcel;
 //           command keys (^C, Esc, arrows, Tab…) still go straight through.
 // Desktop stays on the attach mirror by default — it works, and it is not being
-// moved until dogfooding says so. Touch is FIXED unlocked: locked is a shit show on a
+// moved until daily use says so. Touch is FIXED unlocked: locked is unusable on a
 // phone (every scroll gesture round-trips through tmux copy-mode), so the phone always
 // reads the tape and the lock button is hidden there entirely.
 //

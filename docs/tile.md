@@ -78,8 +78,8 @@ The socket sits beside both and is owned by neither (`public/js/tilewire.js`).
 
 **Lock is a property of a tile.** `S.locked` is only the default a *new* tile is born with.
 It used to be one global, so flipping it reconnected all four at once. Touch is fixed
-unlocked (`locked = !IS_TOUCH`) and the button is hidden there entirely — locked is a shit
-show on a phone, where every scroll gesture round-trips through tmux copy-mode.
+unlocked (`locked = !IS_TOUCH`) and the button is hidden there entirely — locked is
+unusable on a phone, where every scroll gesture round-trips through tmux copy-mode.
 
 ---
 

@@ -9,7 +9,7 @@ const lib = path.resolve('libexec/ronin-banner.sh');
 
 /**
  * The installer's closing address is the one thing a person keeps, so it is worth a
- * consumer-side test. Found on the dogfood walk, 2026-08-21: a v1.3.2 install printed
+ * consumer-side test. Found walking a real install, 2026-08-21: a v1.3.2 install printed
  * `https://<box>.ts.net` in the banner and then, in the same breath, told the operator
  * to create a DIFFERENT door on :8443 — because the banner asked `tailscale serve
  * status` which mapping existed, and the step below it only asked whether tailscale was
