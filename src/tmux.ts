@@ -357,10 +357,28 @@ export async function setTags(name: string, tags: string[]): Promise<string[]> {
 }
 
 /**
- * tmux user option holding the WIPEBOARDS a session is on — comma-separated, exactly
- * like TAGS_OPT and for exactly the same reason: membership lives on the session, so it
- * dies with the session and no roster can ever drift from reality. The file half of a
- * wipeboard lives in src/wipeboards.ts; this is the "who is on it" half.
+ * TEAMS IN PLAY — every session_team with at least one live member. A team is nothing
+ * but the sessions carrying the same tag (see TAGS_OPT); this is the one derivation,
+ * shared so every answer to "the <name> team" is the same answer. Team wipeboards lean
+ * on it: where a live team bears a wipeboard's name, the team IS the membership.
+ */
+export async function teamsInPlay(): Promise<string[]> {
+  return [...new Set((await listSessions()).flatMap((s) => s.tags))].sort();
+}
+
+/** The sessions on one team, by name. Empty means no such team — or nobody left on it. */
+export async function teamMembers(team: string): Promise<string[]> {
+  return (await listSessions()).filter((s) => s.tags.includes(team)).map((s) => s.name);
+}
+
+/**
+ * tmux user option holding the CUSTOM WIPEBOARDS a session is on — comma-separated,
+ * exactly like TAGS_OPT and for exactly the same reason: membership lives on the
+ * session, so it dies with the session and no roster can ever drift from reality. The
+ * file half of a wipeboard lives in src/wipeboards.ts; this is the "who is on it" half
+ * — for CUSTOM boards only. A TEAM wipeboard stores no membership anywhere: its members
+ * are the team (teamMembers above), and where a live team bears a board's name this
+ * option is not consulted for it. See docs/wipeboards.md.
  *
  * Board names obey the tag rules (lowercase, boring, typeable), so parseTags cleans both.
  */

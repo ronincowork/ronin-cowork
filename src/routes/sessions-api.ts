@@ -28,6 +28,7 @@ import { isValidRootName, listProjectRoots } from '../project-roots.js';
 import { expandLookup } from '../lookup.js';
 import { readCtxLine } from '../ctx.js';
 import { count } from '../counts.js';
+import { announceTeamChanges } from './wipeboards-api.js';
 import { readJobRole, readSessionTask, writeSessionTask } from '../tegami.js';
 import { observeTaskChange, taskDeliveryFault } from '../task-watch.js';
 import { emitSessionEnd } from '../sockets.js';
@@ -151,7 +152,12 @@ export function registerSessions(app: express.Express): void {
     const list = Array.isArray(body) ? body.map(String) : String(body ?? '').split(',');
     try {
       count('tag.set');
-      res.json({ ok: true, tags: await setTags(name, list.slice(0, 16)) });
+      // The tag write IS the membership event for a team wipeboard, so the join/leave
+      // notices fire here — for teams whose wipeboard file exists (docs/wipeboards.md).
+      const before = await getTags(name);
+      const tags = await setTags(name, list.slice(0, 16));
+      const notices = await announceTeamChanges(name, before, tags);
+      res.json({ ok: true, tags, notices });
     } catch (e) {
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }

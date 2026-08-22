@@ -30,6 +30,7 @@ import { classifyStatus, type SessionStatus } from '../status.js';
 import { scanContext, scanModel } from '../ctx.js';
 
 import { count } from '../counts.js';
+import { announceTeamChanges } from './wipeboards-api.js';
 import { markTaskDelivered } from '../task-watch.js';
 import { checkoutAt, parkBrief, seedTegami, withAxes, writeGate } from '../tegami.js';
 import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFields } from '../sockets.js';
@@ -125,7 +126,12 @@ export function registerLaunch(app: express.Express): void {
         exempt: resolved.capExempt,
         argv: launch.argv,
       });
-      if (resolved.tags.length) await setTags(resolved.name, resolved.tags);
+      if (resolved.tags.length) {
+        await setTags(resolved.name, resolved.tags);
+        // Born onto a team whose wipeboard is already a conversation? Then the newborn
+        // is told, same as any tag change — and a failed notice never costs a launch.
+        await announceTeamChanges(resolved.name, [], resolved.tags).catch(() => {});
+      }
       // The project_root the session serves, written at birth — the one moment tagging
       // reliably happens. Two shipped tools (tejun-recall, tejun-remember) read this to
       // scope a memory and nothing used to set it.
