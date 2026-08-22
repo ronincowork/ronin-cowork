@@ -160,7 +160,8 @@ export function buildRoster(tile, host) {
     // The session's MARK: the icon of the session_task in its LETTER, on every row. It
     // replaced the 人, which named only who was in charge, had to be set by hand, and
     // left every other row blank — the job is what actually differs between two
-    // sessions on this board, and the coordinator is the one whose job is QuarterBack.
+    // sessions on this board, and the coordinator is the one whose TASK is QuarterBack —
+    // which migrates, so it is read off the letter on every list rather than remembered.
     //
     // READ-ONLY here, and that is the point: the session writes its own session_task
     // with write_tegami as it migrates, so the roster shows what the session says it is

@@ -10,7 +10,7 @@
  * FROM INSIDE a role launches with both axes set.
  *
  * TWO BUTTONS PER SECTION, and the first one is the new part. Every role is launchable
- * with a BLANK task: that is how `quarterback`, `personalassistant` and `mikaassist`
+ * with a BLANK task: that is how `personalassistant` and `mikaassist`
  * start, and any role the owner invents has to be able to start the same way. A section
  * whose tasks are all you could press would make the role a folder again.
  *

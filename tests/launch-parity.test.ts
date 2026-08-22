@@ -198,7 +198,8 @@ test('a stock task board keeps a stated order, and OpenShell is never in the mid
   const tasks = await listSessionTasks();
   const names = tasks.map((t) => t.name);
   assert.deepEqual(names, [
-    'RiffOnIt', 'DraftPlan', 'CutCode', 'ChaseBug', 'CheckWork', 'OddJob', 'Atarashi', 'OpenShell',
+    'RiffOnIt', 'DraftPlan', 'CutCode', 'ChaseBug', 'CheckWork', 'QuarterBack',
+    'OddJob', 'Atarashi', 'OpenShell',
   ]);
   assert.equal(names[names.length - 1], 'OpenShell', 'the agentless one sits last, away from the rest');
 });
@@ -229,4 +230,33 @@ test('an ordinary assisted launch starts an agent with both axes and the full br
   assert.ok(r.project_root, 'a session is always born somewhere');
   assert.match(r.brief, /Read first:/, 'the Build Brief carries its reading list');
   assert.ok(reading(r.brief).length >= 4, 'all four levels, not a bare prompt');
+});
+
+test('QuarterBack is a session_task in the developer family, and not a job_role', async () => {
+  // OWNER RULING, 2026-08-22 (KOTOBA R33), reversing one row of the same day's own cut.
+  // Coordinating is not who a session IS — a Developer moves into quarterbacking and back
+  // out of it, which is the definition of a task. The axis test is "what do you stay while
+  // your task changes", and applying it honestly cost the cut one of its own examples.
+  const { listSessionTasks, listJobRoles } = await import('../src/definitions.js');
+  const tasks = await listSessionTasks();
+  const roles = await listJobRoles();
+
+  assert.ok(tasks.some((t) => t.name === 'QuarterBack'), 'QuarterBack is a session_task');
+  assert.ok(!roles.some((r) => r.name === 'quarterback'), 'and is no longer a job_role');
+
+  const developer = roles.find((r) => r.name === 'developer');
+  assert.ok(developer, 'developer is the role it belongs under');
+  assert.ok(
+    developer!.task_family.includes('QuarterBack'),
+    'a Developer moves into quarterbacking, so it is in that family',
+  );
+
+  // AND IT MIGRATES, which is the cost the ruling accepts. When it was a role, "who runs
+  // this team" was settled at birth and could not drift; as a task it can be true at 10am
+  // and false at noon, so nothing may stamp it once and remember it.
+  const qb = await resolveForm(commonsForm({ session_task: 'QuarterBack' }), new Set());
+  assert.equal(qb.session_task, 'QuarterBack');
+  assert.equal(qb.job_role, 'developer', 'the role underneath is unchanged by the task');
+  assert.equal(qb.dial, 'read', 'a coordinator watches: the task states its own dial');
+  assert.equal(qb.lifecycle, 'orchestrating');
 });

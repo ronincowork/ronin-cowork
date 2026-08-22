@@ -8,7 +8,7 @@ Loose by design: it launches with a blank `job_role`.
 
 - **icon:** 新
 - **label:** setup
-- **order:** 70
+- **order:** 80
 - **blurb:** finishes what the setup page could not
 - **ask:** what is left to set up?
 - **remit:** The first session on a new install — takes the owner's setup answers and finishes the parts a form cannot do

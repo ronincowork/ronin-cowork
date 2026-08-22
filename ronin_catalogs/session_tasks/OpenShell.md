@@ -16,7 +16,7 @@ Loose by design: it launches with a blank `job_role`.
 
 - **icon:** ❯
 - **label:** open shell
-- **order:** 80
+- **order:** 90
 - **blurb:** a terminal and nothing else — no agent is launched
 - **ask:** name it and say where it opens
 - **remit:** A plain terminal for the owner's own hands — no agent, no brief

@@ -42,7 +42,7 @@ import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFiel
  *
  * EITHER AXIS CLAIMS THE CATALOG VARIANT, and that is the change the three-axis model
  * forced. A role launched with a blank task is an ordinary launch — it is how
- * `quarterback`, `personalassistant` and `mikaassist` start — so the presence of a task
+ * `personalassistant` and `mikaassist` start — so the presence of a task
  * can no longer be the discriminator. A body naming neither is not a catalog launch at
  * all and falls through rather than being guessed at.
  * Express walks them in order; the first hands on what is not its shape.

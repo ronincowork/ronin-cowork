@@ -858,11 +858,11 @@ body {
 
    Keyed on the NAME rather than the character, because the character is the definition's
    to change and a rule matching on 🏈 would go stale the moment it did. The coupling is
-   real either way: rename `quarterback` in ronin_catalogs/job_roles/ and this stops
+   real either way: rename `QuarterBack` in ronin_catalogs/session_tasks/ and this stops
    applying — the mark simply returns to the common size, which is a visible nudge rather
    than a broken layout. Everything the mark IS still comes from the catalog; this tunes
    only how big one of them is drawn. */
-.tile-head button.job[data-job='quarterback'] {
+.tile-head button.job[data-job='QuarterBack'] {
   font-size: var(--text-1);
 }
 .tile-head button.checkout {
@@ -5474,17 +5474,18 @@ button.wb-door:hover b {
 }
 /* The session_tasks get a stable colour each, so the same task is the same colour in
    every chart. Base16 siblings of the app's own accents; --bad is never used
-   categorically, so red keeps meaning "wrong". `QuarterBack` left this list with the
-   schema cut — it is a job_role now, and roles are counted as a census rather than
-   charted through a birth-to-death migration. */
+   categorically, so red keeps meaning "wrong". `QuarterBack` spent one day as a job_role
+   and is a task again (R33), so it is back in this list — and back in the birth-to-death
+   chart, because a session genuinely does move into and out of coordinating. */
 .desk-stats {
   --k-RiffOnIt: #b294bb;
   --k-DraftPlan: #81a2be;
   --k-CutCode: var(--accent);
   --k-ChaseBug: #8abeb7;
   --k-CheckWork: var(--ok);
+  --k-QuarterBack: #de935f;
   --k-OddJob: #707a91;
-  --k-Atarashi: #de935f;
+  --k-Atarashi: #b5bd68;
   --k-OpenShell: #8e6f9e;
   --k-other: #5a6376;
 }

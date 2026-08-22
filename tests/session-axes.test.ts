@@ -86,21 +86,21 @@ test('a letter seeded outside a launch carries a blank role rather than an inven
 });
 
 test('write_tegami carries job_role through a whole-block save, byte for byte', async () => {
-  const previous = { objective: 'old', job_role: 'quarterback', session_task: 'RiffOnIt', ladder: [] };
+  const previous = { objective: 'old', job_role: 'developer', session_task: 'RiffOnIt', ladder: [] };
   const saved = await validateBlock({ objective: 'coordinate the cut', session_task: 'CheckWork', ladder: [] }, previous);
   assert.equal(saved.code, 0, saved.err);
   const body = JSON.parse(saved.out);
-  assert.equal(body.job_role, 'quarterback', 'a save that never mentions the role must not blank it');
+  assert.equal(body.job_role, 'developer', 'a save that never mentions the role must not blank it');
   assert.equal(body.session_task, 'CheckWork', 'and the task it DID name moves');
   assert.equal(body.objective, 'coordinate the cut');
 });
 
 test('write_tegami refuses a block that names job_role at all', async () => {
-  const previous = { objective: 'old', job_role: 'quarterback', session_task: 'RiffOnIt', ladder: [] };
+  const previous = { objective: 'old', job_role: 'developer', session_task: 'RiffOnIt', ladder: [] };
   // Even naming the value it already holds is refused: the rule is that the key is not
   // the session's to write, not that the value must not differ. A tool that accepted a
   // matching value would be teaching agents to send it.
-  for (const role of ['developer', 'quarterback']) {
+  for (const role of ['developer', 'personalassistant']) {
     const r = await validateBlock({ objective: 'x', job_role: role, session_task: 'CutCode', ladder: [] }, previous);
     assert.notEqual(r.code, 0, `naming job_role: ${role} must be refused`);
     assert.match(r.err + r.out, /"job_role" is fixed for the life of this session/);
