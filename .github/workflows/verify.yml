@@ -1,4 +1,10 @@
-# CI tier 1 — the byoin_checks, on every pull request and every push to master.
+# CI tier 1 — the byoin_checks, on every pull request, every push to dev or master,
+# and by hand (workflow_dispatch).
+#
+# WHY dev PUSHES TOO (owner, 2026-08-22, after PR #26): agents integrate continuously
+# on dev, but CI used to look only at the PR — so between PRs, a red dev was invisible
+# to everyone, and the first anyone heard of it was seven failing runs on the next PR.
+# A check that only speaks during review is working against the arrangement it guards.
 #
 # WHY --gates AND NOT `npm run verify`: verify ends in the render check, which needs a
 # live server and a real browser. A runner has neither, so `ronin-byoin --gates` SKIPs
@@ -13,7 +19,8 @@ on:
   pull_request:
     branches: [master]
   push:
-    branches: [master]
+    branches: [master, dev]
+  workflow_dispatch:
 
 jobs:
   byoin:
