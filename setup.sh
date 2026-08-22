@@ -538,7 +538,9 @@ fi
 # that already had one, and left the banner naming the other.
 WANT_SERVE=""
 if [ -z "$SERVED_ALREADY" ] && [ -n "${IP:-}" ] && command -v tailscale >/dev/null 2>&1; then
-  STEP_CMD[$NSTEPS]="sudo tailscale serve --bg --https=8443 http://$IP:$PORT"
+  # tailscale's success chatter (the proxy tree, the disable hint) says nothing the
+# line above has not already said better — stdout is dropped, errors still speak.
+  STEP_CMD[$NSTEPS]="sudo tailscale serve --bg --https=8443 http://$IP:$PORT >/dev/null"
   NSTEPS=$(( NSTEPS + 1 ))
   WANT_SERVE=1
 fi
