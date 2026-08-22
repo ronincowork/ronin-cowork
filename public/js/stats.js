@@ -35,12 +35,12 @@ const WINDOWS = [
 /** Named for the thing you would go and try, not for the internal counter. */
 const CAPS = [
   ['forks', 'forks'],
-  ['groups', 'groups'],
+  ['groups', 'teams'],
   // `led` (@ronin-lead) was here until the 人 was retired. A cap is "the thing you would
   // go and try", and there is nothing to go and try any more — a session's coordinator is
   // its session_task now, which the task chart above already counts.
-  ['board_posts', 'board posts'],
-  ['board_reads', 'board reads'],
+  ['board_posts', 'wipeboard posts'],
+  ['board_reads', 'wipeboard reads'],
   ['voice', 'voice'],
   ['pad', 'pad'],
   ['copy', 'copy panel'],
@@ -253,7 +253,7 @@ export function buildStats(root) {
       sessCard,
       card('Active days', `${s.active_days ?? 0} / ${d.days}`),
       card('Live now', String(s.alive ?? 0), `peak ${s.peak ?? 0}`),
-      card('Groups', String(s.tag_groups ?? 0)),
+      card('Teams', String(s.tag_groups ?? 0)),
     );
     body.appendChild(cards);
 

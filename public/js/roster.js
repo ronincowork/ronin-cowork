@@ -104,14 +104,14 @@ export function buildRoster(tile, host) {
   const groupInput = document.createElement('input');
   groupInput.type = 'text';
   groupInput.maxLength = 32;
-  groupInput.placeholder = 'group name';
-  groupInput.setAttribute('aria-label', 'New group name');
+  groupInput.placeholder = 'team name';
+  groupInput.setAttribute('aria-label', 'New team name');
   groupInput.autocapitalize = 'off';
   groupInput.autocomplete = 'off';
   groupInput.spellcheck = false;
   const groupButton = document.createElement('button');
   groupButton.type = 'submit';
-  groupButton.textContent = '＋ Group';
+  groupButton.textContent = '＋ Team';
   const groupMessage = document.createElement('span');
   groupMessage.className = 'home-group-msg';
   groupAdd.append(groupInput, groupButton, groupMessage);
@@ -361,7 +361,7 @@ export function buildRoster(tile, host) {
         const block = document.createElement('div');
         block.className = 'home-group';
         list.appendChild(block);
-        heading('no group', loose.length, block, false);
+        heading('no team', loose.length, block, false);
         for (const s of loose) block.appendChild(rowFor(s));
       }
     }

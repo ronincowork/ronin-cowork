@@ -3172,15 +3172,68 @@ body {
   min-height: 0;
   flex: 1;
 }
+/* THE LISTING — teams in the roster's own dress (.home-group / .home-grp are reused on
+ * purpose: "the same recognizable listing style" is the ask, not a lookalike), with the
+ * wipeboard-only rows beneath. A heading that opens something is a button; it keeps the
+ * roster look and gains the hand. */
+.wb-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+button.wb-door {
+  border: 0;
+  background: none;
+  width: 100%;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+.wb-sess {
+  padding: var(--space-2) var(--space-5);
+  color: var(--fg);
+  font-size: var(--text-3);
+}
+.wb-customs {
+  margin-top: var(--space-6);
+}
+button.wb-sess:hover,
+button.wb-door:hover b {
+  color: var(--fg-strong);
+}
+.wb-add {
+  align-self: flex-start;
+  margin: var(--space-2) var(--space-4);
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--raise);
+  color: var(--fg-strong);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-3);
+  cursor: pointer;
+}
+.wb-title {
+  color: var(--fg-strong);
+  font-size: var(--text-4);
+}
+.wb-kind {
+  color: var(--muted);
+  font-size: var(--text-2);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.wb-follow {
+  color: var(--muted);
+  font-size: var(--text-2);
+}
 .wb-head {
   display: flex;
   gap: var(--space-3);
   align-items: center;
   flex: 0 0 auto;
-}
-.wb-head select {
-  flex: 1;
-  min-width: 0;
 }
 .wb-head button {
   border: var(--edge) solid var(--line);

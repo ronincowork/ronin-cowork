@@ -55,15 +55,15 @@ export function buildLauncher(tile, host) {
   const fillGroups = (sel) => {
     const cur = sel.value;
     sel.innerHTML = '';
-    sel.add(new Option('— group —', ''));
+    sel.add(new Option('— team —', ''));
     for (const g of [...new Set(S.sessions.flatMap((x) => x.tags || []))].sort()) sel.add(new Option(g, g));
-    sel.add(new Option('＋ new group…', NEWGRP));
+    sel.add(new Option('＋ new team…', NEWGRP));
     sel.value = [...sel.options].some((o) => o.value === cur) ? cur : '';
   };
   const wireNewGroup = (sel) =>
     sel.addEventListener('change', () => {
       if (sel.value !== NEWGRP) return;
-      const g = (prompt('New group name (letters, digits, - _):') || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+      const g = (prompt('New team name (letters, digits, - _):') || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
       if (g) {
         sel.add(new Option(g, g), sel.options.length - 1);
         sel.value = g;
@@ -134,7 +134,7 @@ export function buildLauncher(tile, host) {
   modelSel.className = 'ks-model'; // hidden for an agentless launch — there is no session_launch_spec to pick
   modelSel.title = 'Which session_launch_spec to launch';
   const groupSel = document.createElement('select');
-  groupSel.title = 'Group the new session joins (tag)';
+  groupSel.title = 'Team the new session joins (tag)';
   // MCP on/off for THIS session — a mechanical pick like the model, live in both
   // modes. On: the CLI's own config applies, untouched. Off: the session launches with
   // no MCP servers at all — no shared memory, no connectors — via the provider's own

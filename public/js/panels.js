@@ -95,20 +95,20 @@ export function buildNotePanel() {
 export function buildTagPanel() {
   let current = null;
   let list = [];
-  const dlg = sheet({ id: 'tagsheet', cls: 'tg-card', label: 'Session groups', onClose: () => (current = null) });
+  const dlg = sheet({ id: 'tagsheet', cls: 'tg-card', label: 'Session teams', onClose: () => (current = null) });
   dlg.card.innerHTML = `<div class="tg-bar"><span class="tg-title"></span>
         <button class="tg-save">Save</button><button class="tg-close">Close</button></div>
       <div class="tg-chips"></div>
-      <input class="tg-input" type="text" placeholder="add a group (letters, digits, - _)" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <input class="tg-input" type="text" placeholder="add a team (letters, digits, - _)" autocapitalize="off" autocorrect="off" spellcheck="false">
       <div class="tg-known"></div>
-      <div class="tg-hint">Agents resolve these with <code>tejun-group &lt;name&gt;</code>.</div>`;
+      <div class="tg-hint">Agents resolve these with <code>tejun-team &lt;name&gt;</code>.</div>`;
   const title = dlg.card.querySelector('.tg-title');
   const msg = status('tg-msg');
   title.after(msg.el);
   const chips = dlg.card.querySelector('.tg-chips');
   const known = dlg.card.querySelector('.tg-known');
   const inp = dlg.card.querySelector('.tg-input');
-  const inpField = field(inp, { label: 'add a group' });
+  const inpField = field(inp, { label: 'add a team' });
   // field() wraps in place: put the wrapper where the input was.
   dlg.card.insertBefore(inpField.el, known);
 
@@ -125,7 +125,7 @@ export function buildTagPanel() {
     if (!list.length) {
       const em = document.createElement('span');
       em.className = 'tg-empty';
-      em.textContent = 'in no group';
+      em.textContent = 'on no team';
       chips.appendChild(em);
     }
     list.forEach((t, i) => {
