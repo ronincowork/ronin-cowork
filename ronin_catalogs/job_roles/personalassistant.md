@@ -17,7 +17,7 @@ trade jobs. Its reading arrives from this role's own level of the session-boot s
 - **icon:** 🎩
 - **label:** Personal Assistant
 - **order:** 30
-- **session_tasks:** —
+- **task_family:** —
 - **blurb:** your own assistant — powered by gbrain
 - **ask:** what do you need?
 - **credit:** [gbrain](https://github.com/garrytan/gbrain)

@@ -54,6 +54,7 @@ learn in order to use Ronin should cost them a second language first.
 |---|---|---|
 | `session_roster` | **the roster** | The **⌂ Roster** tab: every session on the machine. The session list, full stop. **Never "the board."** |
 | `session_launch` | **launch** | The **＋ New** tab. Where a session is born. |
+| `task_family` | **Family** | The session_tasks presented under one job role. A task can be in several families, so a Family is an association rather than a box it lives in. |
 | `job_role` | **job role** | Who a session is — Developer, QuarterBack, PersonalAssistant. It organizes the ＋ New board into sections, and it also gives the session its own reading and launch defaults. A task may sit on several roles. **Fixed once the session is running.** **Not the roster's Groups** — those address sessions (KOTOBA § LAUNCHER). |
 | `wipeboard` | **wipeboard** | The **▤ Wipeboard** tab and the file behind it. Our own coinage and it stays — *wipe* is right for a surface many hands write on and erase. Alias **whiteboard** only, because voice-to-text hears it that way. **Never "the board."** |
 | Brief | **Brief** | Your statement of what a wipeboard is for. Agents never edit it. |
@@ -71,7 +72,7 @@ learn in order to use Ronin should cost them a second language first.
 | House term | Plain English | One line |
 |---|---|---|
 | dial (`@ronin-control`) | **Control** | Per session: you-only 👤, read 👁, read-and-write 🤖. Only the owner flips it. |
-| tag / group (`@ronin-tags`) | **Groups** | Labels used to address a set of sessions at once. The addressing kind — not the ＋ New board's *job groups*. |
+| `session_team` (`@ronin-tags`) | **Team** | A set of sessions that work together, addressable as one. A session may be on several teams. **Not a role's Family** — a team groups sessions, a family groups tasks. ⚠ The code still says `group`/`@ronin-tags`/`+tag:` — the word is ruled, the sweep is not done (KOTOBA § OPEN R32). |
 | note (`@ronin_note`) | **Note** | The owner's one line about a session. |
 | `session_task` (in the letter) | **what it's doing** | The task's icon, drawn beside every session in the roster and the tile picker. Set at launch; the session changes it itself as its work changes, and so can you. A session with no task shows no icon. |
 | — | **Status · Ladder · Macros · Detach · Kill session** | The rest of the per-session menu. Already plain. |
@@ -181,7 +182,13 @@ test · shadowing · the session directory · build-out doc · handoff · `lande
   may be aliased to *board*.
 - **`job_class` is promoted to `job_role`, inside and out** (2026-08-22) — the shelf
   that addressed nothing now carries reading and launch defaults, so it earns a real
-  name on both faces. `group` stays the roster's addressing word, unambiguous as ever.
+  name on both faces.
+- **`group` is retired as a house term; the words are Team and Family** (2026-08-22) —
+  *group* goes back to ordinary English and means nothing in particular. A **Team**
+  (`session_team`) is a set of collaborating sessions; a **Family** (`task_family`) is the
+  set of tasks under a job role. Both many-to-many, and the axes do not overlap. Spelled
+  compound internally because a bare `family` already collides with settei's write family
+  and Node's address family. **The `session_team` code sweep is not done** — see § OPEN 4.
 - **pane is retired from house vocabulary entirely** (2026-08-22) — tmux's word for
   tmux's own object, nothing more; our representations, browser and backend, are the
   tile. Code sweep: OPEN_THREADS 4.33.
@@ -205,6 +212,12 @@ test · shadowing · the session directory · build-out doc · handoff · `lande
    was that `session_job`'s values read fine but the category had no word, so the launcher
    had to describe it. Splitting the axis supplied both: a session has a **role** and a
    **task**, and the board says so.
+
+3a. **`session_team` is ruled but not swept.** The public word is **Team**; the code
+   still says `@ronin-tags`, `tejun-group`, `+tag:`/`+group:` and a saved-launch `group`
+   field. Renaming those breaks addressing under running sessions and changes a shipped
+   tool's name, so it wants its own pass with the owner's go. Named here rather than left
+   as mixed public vocabulary.
 
 3. **Run this list against real co-working vocabulary** (owner). Where a real co-working
    word exists for a thing we have, take it — **but only where the mechanism matches.**

@@ -151,12 +151,12 @@ async function surfacingDefinitions(
 async function definitionsResolve(): Promise<void> {
   const roles = await listJobRoles();
   const tasks = await listSessionTasks();
-  const shelved = new Set(roles.flatMap((r) => r.session_tasks));
+  const inSomeFamily = new Set(roles.flatMap((r) => r.task_family));
   const pairs: [string, string][] = [
     ...roles.map((r) => [r.name, ''] as [string, string]),
-    ...roles.flatMap((r) => r.session_tasks.map((tk) => [r.name, tk] as [string, string])),
+    ...roles.flatMap((r) => r.task_family.map((tk) => [r.name, tk] as [string, string])),
     // A loose task is launched with a blank role, and that combination is a button too.
-    ...tasks.filter((tk) => !shelved.has(tk.name)).map((tk) => ['', tk.name] as [string, string]),
+    ...tasks.filter((tk) => !inSomeFamily.has(tk.name)).map((tk) => ['', tk.name] as [string, string]),
   ];
   for (const [role, task] of pairs) {
     const [roleDef, taskDef] = await Promise.all([
@@ -168,7 +168,7 @@ async function definitionsResolve(): Promise<void> {
       continue;
     }
     if (task && !taskDef) {
-      fail(`job_roles/${role}.md: shelves "${task}", which is not a session_task on this box`);
+      fail(`job_roles/${role}.md: its task_family names "${task}", which is not a session_task on this box`);
       continue;
     }
     let profile: LaunchProfile;

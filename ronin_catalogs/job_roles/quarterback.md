@@ -15,7 +15,7 @@ something it is doing this hour.
 - **icon:** 🏈
 - **label:** QuarterBack
 - **order:** 20
-- **session_tasks:** —
+- **task_family:** —
 - **blurb:** coordinate other sessions — dispatch, unblock, report upward
 - **ask:** which group or sessions?
 - **remit:** Coordinates other sessions — dispatch, unblock, report upward

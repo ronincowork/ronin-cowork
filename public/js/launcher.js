@@ -349,7 +349,7 @@ export function buildLauncher(tile, host) {
    * form's notice line at PICK time, which is while the owner can still do something
    * about it.
    */
-  const choose = async (role, task) => {
+  const choose = async (role, task, promptText = '') => {
     const profile = await launchProfile(role?.name, task?.name);
     if (!profile) {
       sayErr('this combination cannot be launched — see the definition files it names');
@@ -392,7 +392,10 @@ export function buildLauncher(tile, host) {
       creditEl.removeAttribute('href');
     }
     nameInp.value = '';
-    what.value = '';
+    // A caller that brought words keeps them. `open()` has already put them in the box
+    // synchronously (see below); re-setting here is what stops this reset from taking
+    // them back out on the way past.
+    what.value = promptText;
     seedInp.value = '';
     injectInp.value = '';
     sayErr('');
@@ -616,13 +619,19 @@ export function buildLauncher(tile, host) {
     const task = (taskData || []).find((k) => k.name === name);
     const role = task ? null : (roleData || []).find((r) => r.name === name);
     if (!task && !role) return;
-    // A task reached this way is launched on whichever role shelves it, if exactly one
-    // does — otherwise blank, because guessing between two roles would silently pick a
-    // reading list the caller never asked for.
-    const owners = task ? (roleData || []).filter((r) => (r.session_tasks ?? []).includes(name)) : [];
-    await choose(role ?? (owners.length === 1 ? owners[0] : null), task ?? null);
-    assistBtn.click();
+    // THE WORDS GO IN FIRST, before anything is awaited. Resolving the pick asks the
+    // server what the pair resolves to, and a hand-off arriving from another surface
+    // must not show an empty box for the length of a round trip — the caller's request
+    // is the one thing it already knows. `choose` carries it through rather than
+    // clearing it. (smoke-ui's gbrain journey reads the box the moment the button is
+    // pressed, which is exactly the moment a person looks at it.)
     what.value = promptText;
+    // A task reached this way is launched on whichever role's family holds it, if exactly
+    // one does — otherwise blank, because guessing between two roles would silently pick
+    // a reading list the caller never asked for.
+    const owners = task ? (roleData || []).filter((r) => (r.task_family ?? []).includes(name)) : [];
+    await choose(role ?? (owners.length === 1 ? owners[0] : null), task ?? null, promptText);
+    assistBtn.click();
     what.focus();
   };
 

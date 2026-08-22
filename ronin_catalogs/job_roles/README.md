@@ -15,10 +15,20 @@
 **Format.** `- **key:** value` lines; everything else is prose. The filename is the token.
 `README.md` is this page and is never a definition.
 
-**The role owns membership, and a task never names a role.** `- **session_tasks:** A, B, C`
-is the whole link. A task may sit on several shelves; moving one between roles edits only
-these files. `- **session_tasks:** —` is a role with no tasks of its own, which is
-ordinary: it launches with a blank task.
+**THE TASK FAMILY — the set of session_tasks presented under this role.** Surface word
+**Family**; `task_family` in every internal name, because a bare `family` is already the
+settei registry's write family and Node's own address family, which is exactly the
+collision KOTOBA's spelling law exists to prevent (owner, 2026-08-22).
+
+`- **task_family:** A, B, C` is the whole link, and the role owns it — a task never names
+a role. **Family is ASSOCIATION, not exclusive ownership**: a task may appear in several
+role families, and moving one between roles edits only these files.
+`- **task_family:** —` is a role with an empty family, which is ordinary: it launches with
+a blank task.
+
+**A family is not a team.** A `session_team` is a roster-scoped set of collaborating
+SESSIONS, addressable as one; a task family associates TASKS with a role and addresses
+nothing. The axes are strict and do not overlap.
 
 **`order:`** is the board position. A directory has no file order, so display order is
 stated or it is not stable. Roles without an `order:` follow the ordered ones, by label.

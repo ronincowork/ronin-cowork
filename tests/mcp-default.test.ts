@@ -17,16 +17,16 @@ import assert from 'node:assert/strict';
 import { findDefinition, listJobRoles, listSessionTasks } from '../src/definitions.js';
 import { resolveLaunchProfile } from '../src/launch-profile.js';
 
-/** Every button the board draws: each role blank, each role × its shelved tasks, and
- *  every loose task on its own. The same set `scripts/check-catalogs.ts` resolves. */
+/** Every button the board draws: each role blank, each role × its task family, and every
+ *  loose task on its own. The same set `scripts/check-catalogs.ts` resolves. */
 async function everyPair(): Promise<[string, string][]> {
   const roles = await listJobRoles();
   const tasks = await listSessionTasks();
-  const shelved = new Set(roles.flatMap((r) => r.session_tasks));
+  const inSomeFamily = new Set(roles.flatMap((r) => r.task_family));
   return [
     ...roles.map((r) => [r.name, ''] as [string, string]),
-    ...roles.flatMap((r) => r.session_tasks.map((t) => [r.name, t] as [string, string])),
-    ...tasks.filter((t) => !shelved.has(t.name)).map((t) => ['', t.name] as [string, string]),
+    ...roles.flatMap((r) => r.task_family.map((t) => [r.name, t] as [string, string])),
+    ...tasks.filter((t) => !inSomeFamily.has(t.name)).map((t) => ['', t.name] as [string, string]),
   ];
 }
 

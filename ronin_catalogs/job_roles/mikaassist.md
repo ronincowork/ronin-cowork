@@ -22,7 +22,7 @@ out of.
 - **icon:** ミ
 - **label:** Mika Assist
 - **order:** 40
-- **session_tasks:** —
+- **task_family:** —
 - **blurb:** get help with Ronin itself — sessions, project roots, settings, how any of it works
 - **ask:** what do you need?
 - **remit:** Ronin's own helpful assistant — answers questions about the house and does its four jobs

@@ -14,7 +14,7 @@ shelf, listed at the moment of the launch. The house ships none.
 - **icon:** 🛠
 - **label:** Developer
 - **order:** 10
-- **session_tasks:** RiffOnIt, DraftPlan, CutCode, ChaseBug, CheckWork
+- **task_family:** RiffOnIt, DraftPlan, CutCode, ChaseBug, CheckWork
 - **blurb:** build, plan, debug and review — the coding hat
 - **ask:** what are you working on?
 - **remit:** Works on the owner's code — the durable hat behind riffing, planning, cutting, chasing and checking

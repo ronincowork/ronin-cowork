@@ -158,7 +158,7 @@ export async function findDefinition(kind: DefinitionKind, token: string): Promi
 /**
  * A comma list, with the em dash read as an empty list rather than as a member.
  *
- * `- **session_tasks:** —` and `- **match:** —` are how a definition says "none" in a
+ * `- **task_family:** —` and `- **match:** —` are how a definition says "none" in a
  * file a person reads. Without this the dash became a match word that could never match
  * and a task named `—` that could never resolve.
  */
@@ -198,8 +198,18 @@ interface Row {
 }
 
 export interface JobRoleRow extends Row {
-  /** Which tasks sit on this role's shelf, in the order the definition lists them. */
-  session_tasks: string[];
+  /**
+   * THE TASK FAMILY — the session_tasks presented under this role, in the order the
+   * definition lists them. Surface word **Family**.
+   *
+   * `task_family` and never a bare `family`: the settei registry already has a write
+   * family and Node's own `os` has an address family, and a term that reads as English
+   * is the defect KOTOBA's spelling law exists to prevent (owner, 2026-08-22).
+   *
+   * ASSOCIATION, NOT OWNERSHIP. A task may appear in several role families; a role's
+   * definition is simply where the association is written down.
+   */
+  task_family: string[];
 }
 
 export interface SessionTaskRow extends Row {
@@ -229,7 +239,7 @@ const row = (d: Definition): Row => ({
 export async function listJobRoles(): Promise<JobRoleRow[]> {
   return (await readDefinitions('job_roles')).map((d) => ({
     ...row(d),
-    session_tasks: splitDefinitionList(d.get('session_tasks')),
+    task_family: splitDefinitionList(d.get('task_family')),
   }));
 }
 
@@ -240,32 +250,33 @@ export async function listSessionTasks(): Promise<SessionTaskRow[]> {
   }));
 }
 
-/* ---------- the one write: which tasks sit on a role's shelf ---------- */
+/* ---------- the one write: a role's task family ---------- */
 
 /** A task token is a definition filename's stem — word characters and hyphens. */
 const isValidToken = (s: string): boolean => /^[\w-]{1,64}$/.test(s);
 
 /**
- * MOVE A TASK BETWEEN ROLES — the promoted board interaction, and the ONLY write this
- * module offers.
+ * MOVE A TASK BETWEEN ROLE FAMILIES — the promoted board interaction, and the ONLY write
+ * this module offers.
  *
  * Creating or deleting a role, and authoring a task, are the next build-out's. This is
- * membership and nothing else: the interaction the old Job Group shelves already had,
- * kept working against the new storage.
+ * the family and nothing else: the interaction the old Job Group shelves already had,
+ * kept working against the new storage. Family is association rather than ownership, so
+ * adding a task here never removes it from another role.
  *
  * EDITING A STOCK ROLE SHADOWS IT WHOLE, and that is a real consequence rather than an
  * implementation detail. Membership used to live in a side manifest precisely so a shelf
  * edit could not stop a house role tracking upgrades; the ruling of 2026-08-22 moved
- * membership into the role definition, so the first time the owner re-shelves a task
+ * the family into the role definition, so the first time the owner re-shelves a task
  * under `developer`, their `developer.md` becomes the definition and ours stops applying
  * to them. The surface says so — provenance turns to **yours replacing ours** — because
  * the alternative is an upgrade quietly changing a board the owner arranged.
  *
  * The file is COPIED, not regenerated: every other field, every line of prose and every
  * key this version has never heard of survives byte for byte. Only the
- * `- **session_tasks:** …` line is replaced, or appended when there was not one.
+ * `- **task_family:** …` line is replaced, or appended when there was not one.
  */
-export async function writeRoleMembership(role: string, tasks: string[]): Promise<string[]> {
+export async function writeTaskFamily(role: string, tasks: string[]): Promise<string[]> {
   const def = await findDefinition('job_roles', role);
   if (!def) throw new Error(`"${role}" is not a job_role on this box.`);
   const clean = [...new Set(tasks.map((t) => String(t).trim()).filter(Boolean))];
@@ -277,11 +288,11 @@ export async function writeRoleMembership(role: string, tasks: string[]): Promis
   for (const t of clean) if (!known.has(t)) throw new Error(`"${t}" is not a session_task on this box.`);
 
   const raw = await readFile(def.file, 'utf8');
-  const line = `- **session_tasks:** ${clean.length ? clean.join(', ') : '—'}`;
+  const line = `- **task_family:** ${clean.length ? clean.join(', ') : '—'}`;
   const lines = raw.split('\n');
-  const at = lines.findIndex((l) => /^-\s*\*\*session_tasks:\*\*/i.test(l.trim()));
+  const at = lines.findIndex((l) => /^-\s*\*\*task_family:\*\*/i.test(l.trim()));
   if (at === -1) {
-    // No membership line yet: put it after the last key line, so it lands among the
+    // No family line yet: put it after the last key line, so it lands among the
     // fields rather than in the middle of the prose that explains them.
     let last = -1;
     for (let i = 0; i < lines.length; i++) if (isKeyLine(lines[i])) last = i;
@@ -300,5 +311,5 @@ export async function writeRoleMembership(role: string, tasks: string[]): Promis
   // that would render empty on the next request.
   const back = await findDefinition('job_roles', role);
   if (!back) throw new Error(`Refused: "${role}" does not read back after the edit.`);
-  return splitDefinitionList(back.get('session_tasks'));
+  return splitDefinitionList(back.get('task_family'));
 }

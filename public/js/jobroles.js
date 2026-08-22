@@ -80,9 +80,9 @@ export function buildRoleSections({ taskButton, roleButton, allTasks, allRoles, 
   wrap.className = 'ks-classes';
 
   const save = async (role, tasks) => {
-    const r = await request(`/api/job-roles/${encodeURIComponent(role)}/session_tasks`, {
+    const r = await request(`/api/job-roles/${encodeURIComponent(role)}/task_family`, {
       method: 'PUT',
-      json: { session_tasks: tasks },
+      json: { task_family: tasks },
     });
     if (!r.ok) {
       toast(r.message, false);
@@ -92,14 +92,14 @@ export function buildRoleSections({ taskButton, roleButton, allTasks, allRoles, 
     return true;
   };
 
-  /** Which tasks sit on ONE role — a multi-toggle in the task menu's own clothes
+  /** ONE role's task family — a multi-toggle in the task menu's own clothes
    * (js/widgets.js openJobMenu: same anchoring, same dismissal grammar), staying open
    * across clicks because shelving is several toggles in a row. */
   const openEditor = (anchor, role) => {
     document.querySelector('.job-menu')?.remove();
     const m = document.createElement('div');
     m.className = 'job-menu';
-    const current = () => (allRoles().find((r) => r.name === role.name)?.session_tasks ?? []);
+    const current = () => (allRoles().find((r) => r.name === role.name)?.task_family ?? []);
     for (const k of allTasks()) {
       const b = document.createElement('button');
       b.type = 'button';
@@ -157,7 +157,7 @@ export function buildRoleSections({ taskButton, roleButton, allTasks, allRoles, 
     edit.type = 'button';
     edit.className = 'ks-class-edit';
     edit.textContent = '✎';
-    edit.title = `Choose which session_tasks are shelved under "${role.label || role.name}" — also where a task leaves a role`;
+    edit.title = `Choose this role's Family — the session_tasks presented under "${role.label || role.name}", and where one leaves it`;
     edit.addEventListener('click', (e) => {
       e.preventDefault(); // a button inside <summary> must not toggle the fold
       e.stopPropagation();
@@ -185,7 +185,7 @@ export function buildRoleSections({ taskButton, roleButton, allTasks, allRoles, 
       e.preventDefault();
       d.classList.remove('drop-ready');
       const name = e.dataTransfer.getData(DRAG_TYPE);
-      const now = allRoles().find((r) => r.name === role.name)?.session_tasks ?? [];
+      const now = allRoles().find((r) => r.name === role.name)?.task_family ?? [];
       if (!name || now.includes(name)) return;
       await save(role.name, [...now, name]);
     });
@@ -200,7 +200,7 @@ export function buildRoleSections({ taskButton, roleButton, allTasks, allRoles, 
     for (const role of allRoles()) {
       // A token the definitions no longer know renders nowhere and stays in the file —
       // the file is the owner's, and a stock task may come back.
-      const members = (role.session_tasks ?? []).map((n) => byName.get(n)).filter(Boolean);
+      const members = (role.task_family ?? []).map((n) => byName.get(n)).filter(Boolean);
       members.forEach((k) => shelved.add(k.name));
       wrap.appendChild(section(role, members));
     }

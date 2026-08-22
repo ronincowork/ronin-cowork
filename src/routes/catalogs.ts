@@ -31,7 +31,7 @@ import {
   isValidLaunchName,
   type LaunchField,
 } from '../catalog.js';
-import { findDefinition, listJobRoles, listSessionTasks, writeRoleMembership } from '../definitions.js';
+import { findDefinition, listJobRoles, listSessionTasks, writeTaskFamily } from '../definitions.js';
 import { resolveLaunchProfile } from '../launch-profile.js';
 
 // fs errors carry absolute paths (`ENOENT: open '/home/…'`); the browser gets the
@@ -250,9 +250,10 @@ export function registerCatalogs(app: express.Express): void {
    * doing now). Same contract as /api/project-roots: the markdown IS the catalog, merged
    * stock ⊕ user at request time, provenance on every row.
    *
-   * The role rows carry their own `session_tasks:` membership, which is what the board's
-   * sections are built from. A task appearing in no role's list is a LOOSE task and the
-   * board draws it in the blank-role tail — a real launch, not a leftover.
+   * The role rows carry their own `task_family:` — the session_tasks presented under
+   * that role, which is what the board's sections are built from. A task in no role's
+   * family is a LOOSE task and the board draws it in the blank-role tail: a real launch,
+   * not a leftover. Family is association, so the same task may sit in several.
    */
   app.get('/api/job-roles', async (_req, res) => {
     try {
@@ -271,20 +272,20 @@ export function registerCatalogs(app: express.Express): void {
   });
 
   /**
-   * MOVE A TASK BETWEEN ROLES — membership, and nothing else.
+   * SET A ROLE'S TASK FAMILY — the tasks presented under it, and nothing else.
    *
    * Creating a role, deleting one, and authoring a task all belong to the next build-out.
    * This is the one board edit that already existed as a Job Group shelf and had to keep
    * working: drag a task onto a role, or toggle it in the ✎ editor.
    *
    * 400 for anything the write refuses, with the message written for the owner: an
-   * unknown task, too many on one shelf, or a definition that would not read back.
+   * unknown task, too many in one family, or a definition that would not read back.
    */
-  app.put('/api/job-roles/:name/session_tasks', async (req, res) => {
-    const list = req.body?.session_tasks;
-    if (!Array.isArray(list)) return res.status(400).json({ error: 'Send { session_tasks: [...] }.' });
+  app.put('/api/job-roles/:name/task_family', async (req, res) => {
+    const list = req.body?.task_family;
+    if (!Array.isArray(list)) return res.status(400).json({ error: 'Send { task_family: [...] }.' });
     try {
-      res.json({ ok: true, session_tasks: await writeRoleMembership(req.params.name, list as string[]) });
+      res.json({ ok: true, task_family: await writeTaskFamily(req.params.name, list as string[]) });
     } catch (e) {
       res.status(400).json({ error: errMsg(e) });
     }

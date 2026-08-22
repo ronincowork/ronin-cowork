@@ -540,8 +540,14 @@ async function checkJourneys(page, label, jsErrors) {
     console.log('  note — no session_tasks in the catalog; the launch-validation journey skipped');
   } else {
     let launched = false;
+    // A SPAWN IS A POST TO EXACTLY `/api/launch`, and the match has to say so. It used to
+    // be `url().includes('/api/launch')`, which caught any route sharing the prefix —
+    // and the launcher now GETs `/api/launch-profile` on every pick to ask the server
+    // what the pair resolves to (src/launch-profile.ts), so a read was being counted as
+    // a session being spawned. Exact pathname + method is strictly STRONGER: it still
+    // catches every real spawn, including the bare variant, and nothing else.
     const sniff = (req) => {
-      if (req.url().includes('/api/launch')) launched = true;
+      if (req.method() === 'POST' && new URL(req.url()).pathname === '/api/launch') launched = true;
     };
     page.on('request', sniff);
     await kindBtn.click();

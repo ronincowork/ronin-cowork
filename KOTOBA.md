@@ -307,6 +307,7 @@ project_root (required)  ×  job_role (optional, fixed)  ×  session_task (optio
 | **whole-definition shadowing** | system_scope | a user file of the same token replaces that one house definition **whole** — never field by field, or neither file would tell the truth. A new token adds; `- **hidden:** yes` withdraws a house definition without deleting shipped files. Provenance (`stock` · `user` · `shadowed`) rides every row so a surface can say **ours**, **yours**, or **yours replacing ours** | `docs/shadowing.md` |
 | **launch cascade** | system_scope | `system < job_role < session_task < explicit launch`. Higher layers override only fields they actually STATE; absence inherits, and an explicit `off` is a value rather than an absence. Resolution produces one complete validated profile before any tmux session exists | `src/launch-profile.ts` |
 | **cascading / locked / inapplicable** | system_scope | what a launch field may do. **Cascading**: `session_launch_spec` · `dial` · `permissions` · `lifecycle` · `mcp` · `cap` · `agent` · `dir` · `posture` · `opening` · `ack` · `model`. **Locked**: `mcp: always` — a lower layer may not contradict it. **Inapplicable**: `agent: none` voids model, permissions, posture, opening and ack, and a layer that states one alongside it is refused rather than half-honored | `src/launch-profile.ts` |
+| **task_family** | system_scope | **the set of `session_task`s presented under one `job_role`** — surface word **Family**. `- **task_family:** A, B, C` in the role's definition, and the role owns it: a task never names a role. **ASSOCIATION, NOT OWNERSHIP** — the same task may sit in several role families, so adding it to one never removes it from another. **Compound, and that is forced**: a bare `family` is already the settei registry's write family (`PUT /api/settei/:family`) and Node's own address family, which is the *project*/*user*/*board* defect exactly. **Not a `session_team`** — a team groups SESSIONS and is addressable; a family associates TASKS with a role and addresses nothing (owner, 2026-08-22) | `ronin_catalogs/job_roles/` |
 | **`order:`** | system_scope | a role's board position. A directory has no file order, so display order is stated or it is not stable; roles without one follow the ordered ones, by label | `ronin_catalogs/job_roles/` |
 | **opening prompt / ack rule** | system_scope | the birth instruction; "report back in your own words what you understand this job to be" | `src/spawn.ts` |
 | **`mcp_off`** | system_scope | **[proposed]** the launch-table key holding a provider's own "launch with no MCP servers" flags, appended to the cell's cmd when a launch resolves MCP off — the ＋ New form's toggle, carried per session like the dial. DATA, never a code path: cowork names no CLI flag and no MCP server; a provider declaring none refuses a launch that ASKED for off, and merely degrades a launch that only defaulted to it. *MCP* is the protocol's own name, not a coinage | `ronin_catalogs/PROJECT_ROOTS.md` · `src/spawn.ts` |
@@ -713,7 +714,7 @@ see the `commons_tab` row.
 | **dial** (`@ronin-control`) | system_scope | 👤 user / 👁 read / 🤖 write; owner-only to flip; enforced by the shim. Defaults to write, so it rarely bites — but **no role is exempt**, `QuarterBack` included. A dial with an exception is not a dial | `docs/session-control-dials.md` |
 | **shim** | system_scope | `bin/shim/tmux`, `bin/shim/systemctl` on PATH — vendor-neutral enforcement of dials and host guards | `docs/session-control-dials.md` |
 | **control-check** | system_scope | read the dial before touching a session — every session, every role, reading as well as writing | `ronin_catalogs/ACTIONS.md` |
-| **tag / group** (`@ronin-tags`) | system_scope | owner-set, multi-valued; addressing, not decoration (`+tag:`) | `CLAUDE.local.md` |
+| **session_team** (`@ronin-tags`) | system_scope | **a roster-scoped set of collaborating sessions, addressable as one** — surface word **Team**. Owner-set, multi-valued; addressing, not decoration (`+tag:`). A session may join several teams. **`group` is RETIRED as a house term** (owner, 2026-08-22) and returns to ordinary English, where it may be used loosely and means nothing in particular. **Not a `task_family`** — a team groups sessions, a family associates tasks with a role, and the two axes do not overlap. ⚠**The rename is VOCABULARY ONLY so far**: the tmux option is still `@ronin-tags`, the tool is still `tejun-group`, the invocation is still `+tag:`/`+group:` and the saved-launch field is still `group` — see § OPEN R32 | `CLAUDE.local.md` |
 | **note** (`@ronin_note`) | system_scope | the owner's one line about a session | `src/status.ts` |
 | **session_task**, the mark | system_scope | what a session is DOING, held in its **letter** (`Tegami.session_task`) — seeded at birth with the task it was launched as, changed by the session with `write_tegami` or by the owner from the tile. The definition's `icon:` is drawn wherever sessions are listed; a blank task draws no mark. **The letter's axis half is cowork's; the ladder half is michi's.** **⚠ RETIRED: the leader 人 (`@ronin-lead`)** — it named only who coordinated a group, had to be hand-set, and was a second thing to maintain that the work already implied. The coordinator is the session whose `job_role` is `quarterback` 🏈 | `src/tegami.ts` · `ronin_catalogs/session_tasks/` |
 | **▥ Hotwords** | system_scope | the commons tab. The dictation glossary itself belongs to KOE — see § KOE | `ronin_catalogs/HOTWORDS.md` |
@@ -1020,6 +1021,32 @@ migration layer** (owner, same day): there were no users to carry, so the old sc
 every caller went in one change rather than behind aliases. See § LAUNCHER.
 
 **R18 · DISSOLVED.** No michi names survive, so there is no shape rule to agree.
+
+**R32 · `group` is retired as a house term; the words are `session_team` and
+`task_family`.** Owner, 2026-08-22. *"group stops being a house term and returns to
+ordinary/general language. Codify team for a roster-scoped set of collaborating sessions.
+Codify family for the set of session_tasks presented under a job_role."* The axes are
+strict and do not overlap: **a team groups SESSIONS; a family associates TASKS with a
+role.** Both are many-to-many — a session may join several teams, a task may appear in
+several families — so neither is exclusive ownership.
+
+**Spelled compound, and the ruling's own logic requires it.** `group` is being retired
+precisely because it read as English; a bare `team` and a bare `family` would inherit that
+defect on day one, and `family` inherits it *already* — `settei-registry.ts` has a write
+`family`, `PUT /api/settei/:family` is a live route parameter, and Node's `os` reports an
+address `family`. So the terms are **`session_team`** and **`task_family`**, and the
+surfaces say **Team** and **Family** — the plain-English half KOTOBA has always required
+of anything a person reads.
+
+**What has moved, and what has not.** `task_family` is DONE: it is the role definition's
+key, the API field, the board's ✎ editor and the check. `session_team` is ruled but not yet
+swept, because its blast radius reaches things a rename breaks under running sessions —
+the `@ronin-tags` tmux option (live sessions lose their addressing), the shipped
+`tejun-group` tool and its `TOOLS.md`/`ACTIONS.md` rows, the `+tag:`/`+group:` lookup
+macros agents already type, the saved-launch `group` field, and TOMODACHI's `tag_groups`
+count. That is a cut of its own and it wants the owner's go, not a silent rename inside
+this one. Until it lands, the vocabulary above is the ruling and the code is the
+exception, said out loud rather than left as mixed public vocabulary.
 
 **R19 · ANSWERED BY R17's REVERSAL, and the answer is that they were two facts.** The
 question was what to do about a `session_job` that migrates when two surfaces were
