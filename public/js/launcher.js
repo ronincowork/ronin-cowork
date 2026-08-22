@@ -4,7 +4,7 @@
  *
  * Extracted from commons.js with the roster, for the same reason: starting work is a
  * room, and the shell mounts rooms. The board, the form, the saved launches and the
- * group picker moved together — they are one workflow with one piece of state (`kind`).
+ * group picker moved together — they are one workflow with one piece of state (`pick`).
  *
  * A launch goes straight through with no confirm screen, which is only honest if the
  * result is visible and undoable at the same speed it fired — that is the receipt
@@ -15,21 +15,38 @@
  */
 import { request } from './request.js';
 import {
+  launchProfile,
+  loadPresets,
   launchSpecData,
-  presetData,
   projectData,
+  roleData,
   savedLaunchData,
   showReceipt,
+  taskData,
 } from './home.js';
 import { IS_TOUCH, S } from './state.js';
 import { button, field, status } from './ui.js';
-import { buildJobShelves, draggableJob } from './jobclasses.js';
+import { buildRoleSections, draggableTask } from './jobroles.js';
 import { addProvMark, addYourOwn } from './provenance.js';
 
 /**
+ * THE PICK IS A PAIR, and that is the shape everything below follows.
+ *
+ * A launch chooses a `job_role` (who, fixed for the session's life) and a `session_task`
+ * (what it is doing now, mutable) — and either may be blank. Pressing a task inside a
+ * role section picks both; pressing a role's own button picks the role with a blank
+ * task; pressing a loose task picks the task with a blank role.
+ *
+ * WHAT THE LAUNCH IS BORN WITH IS ASKED FOR, NEVER COMPUTED HERE. The dial, the
+ * permissions, whether the brain is on, whether an agent is launched at all — those come
+ * out of the cascade (system < role < task < this launch), so they are true of the PAIR
+ * and of no single button. `launchProfile()` asks the server the moment the pick changes.
+ * A second cascade in this file would be correct exactly until somebody edited one of
+ * them, which is the whole reason there is an endpoint for it.
+ *
  * @param {object} tile  a launched session opens in this tile
  * @param {HTMLElement} host  the null pane (`.home-null`)
- * @returns {{render: () => void, open: (kind: string, prompt?: string) => void}}
+ * @returns {{render: () => void, open: (task: string, prompt?: string) => void}}
  */
 export function buildLauncher(tile, host) {
   // Which group the new session is born into. Tagging at birth is the only kind that
@@ -60,14 +77,14 @@ export function buildLauncher(tile, host) {
   const boardHead = document.createElement('div');
   boardHead.className = 'ks-head';
   boardHead.textContent = 'put a session out to work';
-  // The spawn form: which kind you pressed, then the two things only you can answer —
-  // what the work is, and where it happens. Hidden until a kind is chosen.
+  // The spawn form: which pair you pressed, then the two things only you can answer —
+  // what the work is, and where it happens. Hidden until something is chosen.
   const form = document.createElement('div');
   form.className = 'ks-form';
   const formHead = document.createElement('div');
   formHead.className = 'ks-form-h';
-  // Credit, when the kind runs on somebody else's work (`credit:` in the catalog): a REAL
-  // anchor on the opened form — never inside the kind button, where an anchor nested in a
+  // Credit, when the launch runs on somebody else's work (`credit:` in a definition): a REAL
+  // anchor on the opened form — never inside the button, where an anchor nested in a
   // button is invalid HTML, an axe violation the smoke gate fails on, and a stolen tap on
   // the phone. Here it is its own line with its own tap target.
   const creditEl = document.createElement('a');
@@ -108,13 +125,13 @@ export function buildLauncher(tile, host) {
   const whatField = field(what, { label: 'what this session is told' });
   const formRow = document.createElement('div');
   formRow.className = 'home-ctl';
-  // The two universal axes, chosen independently: project_root (where) and
-  // session_job (what for — the button you pressed — and therefore who the agent
-  // is; the kind carries the posture, there is no separate role to pick).
+  // The third axis, and the required one: project_root (where the session is born). The
+  // other two are the board's own buttons above. It is never blank — omitting it selects
+  // the top active root server-side, exactly as this picker does here.
   const whereSel = document.createElement('select');
   whereSel.title = 'project_root — where the work happens (sets the directory + reading list)';
   const modelSel = document.createElement('select');
-  modelSel.className = 'ks-model'; // hidden for an agentless kind — there is no session_launch_spec to pick
+  modelSel.className = 'ks-model'; // hidden for an agentless launch — there is no session_launch_spec to pick
   modelSel.title = 'Which session_launch_spec to launch';
   const groupSel = document.createElement('select');
   groupSel.title = 'Group the new session joins (tag)';
@@ -124,11 +141,11 @@ export function buildLauncher(tile, host) {
   // declared flags (`mcp_off:` in the launch table). Ronin neither knows nor cares what
   // was disconnected.
   //
-  // WHICH WAY IT OPENS IS THE session_job'S, not this file's: `mcp:` in
-  // ronin_catalogs/SESSION_JOBS.md, read below when a kind is picked. Off for every
-  // ordinary kind (owner, 2026-08-22); on and unofferable for PersonalAssistant, whose
-  // whole job is the brain. This initial value is only what the row holds before any
-  // kind has been chosen, and the form is not startable in that state.
+  // WHICH WAY IT OPENS IS THE RESOLVED PROFILE'S, not this file's: the cascade's `mcp:`,
+  // fetched when the pick changes. Off for every ordinary launch (owner, 2026-08-22); on
+  // and unofferable under `personalassistant`, whose whole job is the brain. This initial
+  // value is only what the row holds before anything has been picked, and the form is not
+  // startable in that state.
   let mcpOn = false;
   // The label says gbrain — the owner's ruling: "MCP" means nothing to a person, the
   // brain is the thing being switched. The tooltip tells the whole truth: off means NO
@@ -194,7 +211,7 @@ export function buildLauncher(tile, host) {
         : 'Say it in plain terms and Koshi your AI admin will handle the rest; the below selections are optional.';
     what.placeholder =
       mode === 'manual'
-        ? (kind && kind.ask) || 'exactly what you want said to the agent'
+        ? (pick && (pick.task || pick.role)?.ask) || 'exactly what you want said to the agent'
         : 'Describe in plain terms what this session should do and cover…';
     nameInp.placeholder =
       mode === 'manual' ? 'session name (required)' : 'session name (optional — named from your text)';
@@ -240,11 +257,15 @@ export function buildLauncher(tile, host) {
   form.append(formHead, creditEl, modeRow, modeSay, nameField.el, whatField.el, formRow, err.el, extrasHead, extras);
   const grid2 = document.createElement('div');
   grid2.className = 'ks-grid';
-  /* ---- job classes: the owner's shelves over this board (js/jobclasses.js) ---- */
-  const shelves = buildJobShelves({
-    jobButton: (k) => jobButton(k),
-    allJobs: () => presetData || [],
-    onChange: () => buildBoard(),
+  /* ---- job roles: the sections of this board (js/jobroles.js) ---- */
+  const shelves = buildRoleSections({
+    taskButton: (k, role) => taskButton(k, role),
+    roleButton: (role) => roleButton(role),
+    allTasks: () => taskData || [],
+    allRoles: () => roleData || [],
+    // A membership edit changes which section a button is in, so the whole board is
+    // rebuilt from the server's answer rather than patched in place.
+    onChange: () => void refreshRoles(),
   });
   /* ---- saved launches: this form, filled in ahead of time and named ---- */
   // NOT macros. A macro is a program an agent runs; this is the launcher with the
@@ -267,100 +288,150 @@ export function buildLauncher(tile, host) {
     if (!rec || !(rec.needed ?? []).length || !(rec.status?.agents?.usable ?? []).length) return;
     offer.textContent = '新 start your setup session';
     offer.title = rec.needed.map((n) => n.needs).join(' · ');
-    offer.addEventListener('click', () => open(rec.schema.seat.job, rec.schema.seat.prompt));
+    offer.addEventListener('click', () => open(rec.schema.seat.session_task, rec.schema.seat.prompt));
     offer.hidden = false;
   })();
-  board.append(boardHead, offer, savedRow, shelves.wrap, grid2, shelves.add, form);
+  // No `＋ add new` row: inventing a job_role is authoring, and authoring is the next
+  // build-out. This board organizes the roles that exist.
+  board.append(boardHead, offer, savedRow, shelves.wrap, grid2, form);
   host.appendChild(board);
 
-  let kind = null;
+  // THE PICK: which role, which task, and what the cascade says they resolve to. All
+  // three move together — `profile` is never left describing a previous pick, because
+  // every path that changes role or task goes through `choose()`.
+  let pick = null; // { role, task, profile } — role and task may each be null
   const closeForm = () => {
-    kind = null;
+    pick = null;
     sayErr('');
     form.classList.remove('open');
     board.classList.remove('picking');
   };
   cancelBtn.addEventListener('click', closeForm);
-  const jobButton = (k) => {
+  /**
+   * ONE BUTTON, whichever axis it names. `role` and `task` are the two halves of the
+   * pick; either may be null, and both never are (a button that picked neither would be
+   * the bare launcher, which is the tile's own picker and not this board).
+   */
+  const axisButton = ({ role, task }) => {
+    const face = task || role; // the more specific half is what the button shows
     const b = document.createElement('button');
-    b.className = 'ks-btn';
-    b.dataset.kind = k.name;
-    draggableJob(b, k.name); // dropping it on a shelf ADDS it there — the roster's grammar
-    // The kind's own name carries the mark: a job of yours, or one of ours you
-    // replaced, is a fact about THIS tile and belongs on it (js/provenance.js).
-    const kLabel = Object.assign(document.createElement('b'), { textContent: k.label });
-    addProvMark(kLabel, k);
+    b.className = 'ks-btn' + (task ? '' : ' ks-btn-role');
+    b.dataset.role = role?.name ?? '';
+    b.dataset.task = task?.name ?? '';
+    // Only a TASK is draggable: dropping it on a role shelves it there. A role is the
+    // shelf, and a shelf is not a thing you drop onto another shelf.
+    if (task) draggableTask(b, task.name);
+    // The name carries the mark: a definition of yours, or one of ours you replaced, is
+    // a fact about THIS button and belongs on it (js/provenance.js).
+    const kLabel = Object.assign(document.createElement('b'), { textContent: face.label });
+    addProvMark(kLabel, face);
     b.append(
-      Object.assign(document.createElement('i'), { textContent: k.icon }),
+      Object.assign(document.createElement('i'), { textContent: face.icon }),
       kLabel,
-      Object.assign(document.createElement('small'), { textContent: k.blurb }),
+      Object.assign(document.createElement('small'), { textContent: face.blurb }),
     );
-    b.addEventListener('click', () => {
-      kind = k;
-      // `agent: none` (ronin_catalogs/SESSION_JOBS.md) — a plain terminal. No session_launch_spec to pick,
-      // no brief to compose, so the form drops to the two things that still mean
-      // something: what it is called and where it opens. Manual is not a "mode" here,
-      // it is the only truth available: nothing is sent at all.
-      if (k.agent === false) mode = 'manual';
-      form.classList.toggle('noagent', k.agent === false);
-      // The kind's own `mcp:` default decides which way the toggle opens — a fresh pick
-      // is a fresh answer, so choosing another kind re-reads it rather than carrying the
-      // last kind's state over.
-      mcpOn = !!k.mcpDefault;
-      // `mcp: always` — born connected (owner's ruling, 2026-08-17): the toggle does
-      // not apply, so it is not offered. The spawn refuses a contradicting launch;
-      // this just keeps the form honest about there being no choice.
-      mcpBtn.hidden = !!k.mcpAlways;
-      applyMcp();
-      formHead.textContent = `${k.icon} ${k.label} — ${k.ask}`;
-      // textContent + server-vetted http(s) URL only — a catalog line must never
-      // become markup here.
-      creditEl.hidden = !k.credit;
-      if (k.credit) {
-        creditEl.textContent = `powered by ${k.credit.text} ↗`;
-        creditEl.href = k.credit.url;
-        creditEl.title = k.credit.url;
-      } else {
-        // Belt and braces with the [hidden] CSS: a kind with no credit must never
-        // wear the previous kind's.
-        creditEl.textContent = '';
-        creditEl.removeAttribute('href');
-      }
-      nameInp.value = '';
-      what.value = '';
-      seedInp.value = '';
-      injectInp.value = '';
-      sayErr('');
-      fillWhere();
-      fillModels();
-      fillGroups(groupSel);
-      fillRef();
-      applyMode();
-      form.classList.add('open');
-      board.classList.add('picking');
-      // Board-wide, not grid2: a shelved job's button lives in its class's fold.
-      board.querySelectorAll('.ks-btn').forEach((x) => x.classList.toggle('on', x.dataset.kind === k.name));
-      if (!IS_TOUCH) nameInp.focus(); // name first — it is the field you answer first
-    });
+    b.addEventListener('click', () => void choose(role, task));
     return b;
+  };
+
+  /** A task, launched inside a role — both axes set. */
+  const taskButton = (task, role) => axisButton({ role: role ?? null, task });
+  /** A role with a BLANK task: this hat, nothing named yet. Every role has one. */
+  const roleButton = (role) => axisButton({ role, task: null });
+
+  /**
+   * Take the pick, ask the server what it resolves to, and dress the form in the answer.
+   *
+   * The profile is fetched rather than read off the button because the answer belongs to
+   * the PAIR: `personalassistant` with a blank task is born connected, and the same role
+   * is not a different button when a task is added to it. A refusal from the cascade — a
+   * locked `mcp:` contradicted, an agentless launch handed agent fields — lands on the
+   * form's notice line at PICK time, which is while the owner can still do something
+   * about it.
+   */
+  const choose = async (role, task) => {
+    const profile = await launchProfile(role?.name, task?.name);
+    if (!profile) {
+      sayErr('this combination cannot be launched — see the definition files it names');
+      return;
+    }
+    pick = { role, task, profile };
+    const face = task || role;
+    // `agent: none` — a plain terminal. No session_launch_spec to pick, no brief to
+    // compose, so the form drops to the two things that still mean something: what it is
+    // called and where it opens. Manual is not a "mode" here, it is the only truth
+    // available: nothing is sent at all.
+    if (!profile.agent) mode = 'manual';
+    form.classList.toggle('noagent', !profile.agent);
+    // The resolved `mcp:` default decides which way the toggle opens — a fresh pick is a
+    // fresh answer, so choosing again re-reads it rather than carrying the last one over.
+    mcpOn = !!profile.mcpDefault;
+    // `mcp: always` — born connected (owner's ruling, 2026-08-17): the toggle does not
+    // apply, so it is not offered. The spawn refuses a contradicting launch; this just
+    // keeps the form honest about there being no choice.
+    mcpBtn.hidden = !!profile.mcpAlways;
+    applyMcp();
+    // BOTH AXES IN THE HEADING, so the owner can see they picked a pair. A blank task
+    // reads as the role alone, which is what a blank-task launch is.
+    formHead.textContent = task
+      ? `${task.icon} ${role ? `${role.label} · ` : ''}${task.label} — ${task.ask}`
+      : `${role.icon} ${role.label} — ${role.ask}`;
+    // textContent + server-vetted http(s) URL only — a definition line must never become
+    // markup here. The credit is the FACE's: a task's own if it has one, else the role's,
+    // because the button is what the owner pressed.
+    const credit = face.credit || role?.credit;
+    creditEl.hidden = !credit;
+    if (credit) {
+      creditEl.textContent = `powered by ${credit.text} ↗`;
+      creditEl.href = credit.url;
+      creditEl.title = credit.url;
+    } else {
+      // Belt and braces with the [hidden] CSS: a pick with no credit must never wear the
+      // previous pick's.
+      creditEl.textContent = '';
+      creditEl.removeAttribute('href');
+    }
+    nameInp.value = '';
+    what.value = '';
+    seedInp.value = '';
+    injectInp.value = '';
+    sayErr('');
+    fillWhere();
+    fillModels();
+    fillGroups(groupSel);
+    fillRef();
+    applyMode();
+    form.classList.add('open');
+    board.classList.add('picking');
+    // Board-wide, not grid2: a shelved task's button lives in its role's fold.
+    board.querySelectorAll('.ks-btn').forEach((x) =>
+      x.classList.toggle('on', x.dataset.role === (role?.name ?? '') && x.dataset.task === (task?.name ?? '')),
+    );
+    if (!IS_TOUCH) nameInp.focus(); // name first — it is the field you answer first
   };
 
   const buildBoard = () => {
     grid2.innerHTML = '';
-    const all = presetData || [];
-    // The shelves render themselves and answer who they hold; a job on no shelf sits
-    // flat under them, the roster's own answer for the untagged (js/jobclasses.js).
+    const all = taskData || [];
+    // The sections render themselves and answer which tasks they hold; a task on no role
+    // sits flat under them and launches with a BLANK job_role (js/jobroles.js).
     const shelved = shelves.render();
-    for (const k of all.filter((x) => !shelved.has(x.name))) grid2.appendChild(jobButton(k));
-    if (!all.length) grid2.textContent = 'no kinds in ronin_catalogs/SESSION_JOBS.md';
+    for (const k of all.filter((x) => !shelved.has(x.name))) grid2.appendChild(taskButton(k, null));
+    if (!all.length) grid2.textContent = 'no session_tasks in ronin_catalogs/session_tasks/';
     grid2.dataset.n = String(all.length);
     // HIDDEN, not gone (owner, 2026-08-21, OPEN_THREADS 4.31): the tile's whole answer
     // is a file path popped at a person mid-launch — developer-shaped, not owner-shaped.
     // It stays a consumer so the affordance survives to be redesigned, and one deleted
     // line brings it back.
-    const own = addYourOwn('SESSION_JOBS.md', 'session job');
+    const own = addYourOwn('session_tasks/', 'session task');
     own.hidden = true;
     grid2.appendChild(own);
+  };
+
+  /** Re-read the role rows after a membership edit, then redraw the board from them. */
+  const refreshRoles = async () => {
+    await loadPresets();
+    buildBoard();
   };
 
   const buildSaved = () => {
@@ -377,19 +448,29 @@ export function buildLauncher(tile, host) {
       b.className = 'ks-saved-btn';
       b.textContent = l.label;
       addProvMark(b, l);
-      b.title = [l.session_job, l.project_root && `▣ ${l.project_root}`, l.group && `🏷 ${l.group}`, l.mode]
+      b.title = [
+        l.job_role,
+        l.session_task,
+        l.project_root && `▣ ${l.project_root}`,
+        l.group && `🏷 ${l.group}`,
+        l.mode,
+      ]
         .filter(Boolean)
         .join(' · ');
       // It FILLS THE FORM and stops — the same discipline as the tile's ⚡ menu. A
       // saved launch that started a session on one tap would be a button that spawns
       // an agent by accident, and the form is where you check what you are about to do.
-      b.addEventListener('click', () => {
-        const k = (presetData || []).find((p) => p.name === l.session_job);
-        if (!k) {
-          sayErr(`"${l.label}" names session_job "${l.session_job}", which is not in the catalog.`);
+      b.addEventListener('click', async () => {
+        // A saved launch names tokens, not buttons: it is resolved against the current
+        // definitions rather than by hunting the board, so a saved launch of a role with
+        // a blank task fills the form even though no single button is that pair.
+        const role = l.job_role ? (roleData || []).find((r) => r.name === l.job_role) : null;
+        const task = l.session_task ? (taskData || []).find((k) => k.name === l.session_task) : null;
+        if ((l.job_role && !role) || (l.session_task && !task)) {
+          sayErr(`"${l.label}" names ${l.job_role && !role ? `job_role "${l.job_role}"` : `session_task "${l.session_task}"`}, which is not in the catalog.`);
           return;
         }
-        board.querySelector(`.ks-btn[data-kind="${CSS.escape(k.name)}"]`)?.click();
+        await choose(role ?? null, task ?? null);
         if (l.project_root) whereSel.value = l.project_root;
         if (l.group) {
           if (![...groupSel.options].some((o) => o.value === l.group)) groupSel.add(new Option(l.group, l.group), groupSel.options.length - 1);
@@ -449,13 +530,13 @@ export function buildLauncher(tile, host) {
     }
   });
   startBtn.addEventListener('click', async () => {
-    if (!kind || startBtn.disabled) return; // disabled == in flight: two taps, one session
+    if (!pick || startBtn.disabled) return; // disabled == in flight: two taps, one session
     const wantName = nameInp.value.trim().replace(/^[_-]+|[_-]+$/g, '');
     if (mode === 'manual' && !wantName) {
       nameInp.focus(); // required in manual — see the SpawnForm.name note
       return;
     }
-    const bare = kind.agent === false; // no agent: there is nothing to say to it
+    const bare = !pick.profile.agent; // no agent: there is nothing to say to it
     const text = what.value.trim();
     if (!bare && !text) {
       what.focus();
@@ -469,19 +550,23 @@ export function buildLauncher(tile, host) {
     const r = await request('/api/launch', {
       method: 'POST',
       json: {
-        session_job: kind.name,
+        // BOTH AXES, and a blank one is sent as '' rather than omitted — the server
+        // routes on "does this body name either axis", and an explicit blank is the
+        // owner saying "no role" rather than the client having forgotten to ask.
+        job_role: pick.role?.name ?? '',
+        session_task: pick.task?.name ?? '',
         mode,
         prompt: text,
-        name: wantName, // empty (assisted only) = derive it from the kind + prompt
+        name: wantName, // empty (assisted only) = derive it from the pick + prompt
 
         project_root: whereSel.value,
         // Manual sends only the mechanical picks. Seed and inject are all
         // WORDING — in manual mode they would be text we put in your mouth.
-        // An agentless kind sends no command at all; the server refuses to
-        // substitute one for it (src/spawn.ts resolveForm).
+        // An agentless launch sends no command at all; the server REFUSES one rather
+        // than dropping it (src/spawn.ts resolveForm).
         cmd: bare ? '' : modelSel.value,
         // Mechanical like the cmd, so it rides in BOTH modes; meaningless without an
-        // agent, so a bare kind sends nothing and the session_job's own default applies.
+        // agent, so a bare pick sends nothing and the resolved default applies.
         mcp: bare ? undefined : mcpOn,
         tags: groupSel.value && groupSel.value !== NEWGRP ? [groupSel.value] : [],
         seed:
@@ -513,18 +598,29 @@ export function buildLauncher(tile, host) {
     // rather than measured off the DOM: the grid also carries the "add your own" tile,
     // so childElementCount has not equalled the catalog length since provenance landed,
     // and comparing them rebuilt the board on every single refresh.
-    if (presetData && grid2.dataset.n !== String(presetData.length)) buildBoard();
+    if (taskData && grid2.dataset.n !== String(taskData.length)) buildBoard();
     if (savedRow.dataset.n !== String((savedLaunchData || []).length)) buildSaved();
   };
 
-  // Service-owned Commons rooms can hand a task to an existing kind without growing
-  // a second launcher. It fills this form and stops; the owner still reads and presses
-  // Start. Unknown kinds are silent because catalogs can be user-replaced at runtime.
-  const open = (name, promptText = '') => {
+  /**
+   * Service-owned Commons rooms, and the setup offer, hand work to an existing definition
+   * without growing a second launcher. It fills this form and stops; the owner still
+   * reads and presses Start.
+   *
+   * The name is looked up as a TASK first and then as a ROLE, so one entry point serves
+   * both (`Atarashi` is a task; a room wanting an assistant names `personalassistant`).
+   * An unknown name is silent, because definitions can be user-replaced at runtime.
+   */
+  const open = async (name, promptText = '') => {
     render();
-    const b = board.querySelector(`.ks-btn[data-kind="${CSS.escape(name)}"]`);
-    if (!b) return;
-    b.click();
+    const task = (taskData || []).find((k) => k.name === name);
+    const role = task ? null : (roleData || []).find((r) => r.name === name);
+    if (!task && !role) return;
+    // A task reached this way is launched on whichever role shelves it, if exactly one
+    // does — otherwise blank, because guessing between two roles would silently pick a
+    // reading list the caller never asked for.
+    const owners = task ? (roleData || []).filter((r) => (r.session_tasks ?? []).includes(name)) : [];
+    await choose(role ?? (owners.length === 1 ? owners[0] : null), task ?? null);
     assistBtn.click();
     what.value = promptText;
     what.focus();

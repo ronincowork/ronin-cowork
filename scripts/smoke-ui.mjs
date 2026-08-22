@@ -537,7 +537,7 @@ async function checkJourneys(page, label, jsErrors) {
   await page.waitForTimeout(300);
   const kindBtn = page.locator('.tile.active .ks-btn').first();
   if ((await kindBtn.count()) === 0) {
-    console.log('  note — no session_jobs in the catalog; the launch-validation journey skipped');
+    console.log('  note — no session_tasks in the catalog; the launch-validation journey skipped');
   } else {
     let launched = false;
     const sniff = (req) => {

@@ -1,8 +1,9 @@
 /**
  * Spawn a new session from a filled form — the mechanical executor.
  *
- * The session_job fixes the constants: the dial the session is born on, its
- * lifecycle, whether it acknowledges before acting. The user picks
+ * The resolved launch profile fixes the constants: the dial the session is born on, its
+ * lifecycle, whether it acknowledges before acting. They come from the cascade —
+ * system < job_role < session_task < this launch (`src/launch-profile.ts`). The user picks
  * project_root / session_launch_spec / tags. Nothing here calls a model — the smart fill populates this form,
  * it does not perform it. Order matters: create -> tag -> DIAL -> reply, so the
  * session is addressable and correctly locked from its first breath; the CLI
@@ -29,34 +30,44 @@ import { classifyStatus, type SessionStatus } from '../status.js';
 import { scanContext, scanModel } from '../ctx.js';
 
 import { count } from '../counts.js';
-import { checkoutAt, parkBrief, seedTegami, withRoles, writeGate } from '../tegami.js';
+import { markTaskDelivered } from '../task-watch.js';
+import { checkoutAt, parkBrief, seedTegami, withAxes, writeGate } from '../tegami.js';
 import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFields } from '../sockets.js';
 
 /* ---------- ONE door to a new session: POST /api/launch ----------
  * Two variants, chosen by what the body carries — never two endpoints:
- *   launch_job    a session_job + prompt      the ＋ New tab, the full catalog fill
- *   launch_bare   a name and nothing else     the tile picker
+ *   launch_job    a job_role and/or a session_task + prompt   the ＋ New tab
+ *   launch_bare   a name and nothing else                     the tile picker
+ *
+ * EITHER AXIS CLAIMS THE CATALOG VARIANT, and that is the change the three-axis model
+ * forced. A role launched with a blank task is an ordinary launch — it is how
+ * `quarterback`, `personalassistant` and `mikaassist` start — so the presence of a task
+ * can no longer be the discriminator. A body naming neither is not a catalog launch at
+ * all and falls through rather than being guessed at.
  * Express walks them in order; the first hands on what is not its shape.
  *
  * There was a third, launch_quick (a name plus a cmd/prompt/tags/dir), fed by the
  * Roster's own Start row. The owner removed that launcher on 2026-08-12 — one
  * launcher, and it is ＋ New session — which left the route with no caller, so it
- * went too. A body carrying cmd/prompt/tags/dir but no session_job now lands on
+ * went too. A body carrying cmd/prompt/tags/dir but neither launch axis now lands on
  * launch_bare: the session is created under that name and the extras are ignored.
  */
 export function registerLaunch(app: express.Express): void {
   // launch_job — the catalog variant.
   app.post('/api/launch', async (req, res, next) => {
-    if (!String(req.body?.session_job ?? '').trim()) return next();
+    const jobRole = String(req.body?.job_role ?? '').trim();
+    const sessionTask = String(req.body?.session_task ?? '').trim();
+    if (!jobRole && !sessionTask) return next();
     const form: SpawnForm = {
-      session_job: String(req.body?.session_job ?? '').trim(),
+      job_role: jobRole,
+      session_task: sessionTask,
       prompt: String(req.body?.prompt ?? '').trim(),
       name: String(req.body?.name ?? '').trim() || undefined,
       mode: req.body?.mode === 'manual' ? 'manual' : 'assisted',
       project_root: String(req.body?.project_root ?? '').trim() || undefined,
       cmd: String(req.body?.cmd ?? '').trim() || undefined,
-      // Only an explicit boolean is an opinion. Absent hands the choice to the
-      // session_job's `mcp:` default (off for every ordinary kind, owner 2026-08-22)
+      // Only an explicit boolean is an opinion. Absent hands the choice to the resolved
+      // profile's `mcp:` default (off for every ordinary launch, owner 2026-08-22)
       // rather than meaning "on", so a caller with nothing to say cannot connect a
       // session by omission.
       mcp: typeof req.body?.mcp === 'boolean' ? req.body.mcp : undefined,
@@ -68,8 +79,8 @@ export function registerLaunch(app: express.Express): void {
     // Manual adds no wording of ours — including the name. You name it.
     if (form.mode === 'manual' && !form.name) return res.status(400).json({ error: 'Name the session.' });
     // What the session is for is checked AFTER the resolve, because whether it is
-    // required depends on the session_job: it is the agent's first message, and an
-    // `agent: none` kind has no agent to tell. See below.
+    // required depends on the resolved profile: it is the agent's first message, and an
+    // `agent: none` launch has no agent to tell. See below.
 
     let resolved;
     let launch: { argv: string[]; parked: boolean } = { argv: [], parked: false };
@@ -86,14 +97,14 @@ export function registerLaunch(app: express.Express): void {
     } catch (e) {
       return res.status(400).json({ error: String((e as Error)?.message ?? e) });
     }
-    // The prompt IS the agent's first message, so an agent job cannot start without one.
+    // The prompt IS the agent's first message, so an agent launch cannot start without one.
     // A plain terminal needs only a name — demanding a sentence nobody will ever read
     // would be a form asking a question it then throws away.
     if (resolved.agent && !form.prompt) return res.status(400).json({ error: 'Say what the session is for.' });
 
     // The session max is NOT checked here. It lives in createSession(), which both launch
     // handlers funnel through — a check in this handler alone is bypassed by posting a body
-    // with no session_job, which falls through to launch_bare.
+    // naming neither axis, which falls through to launch_bare.
     if (!isValidName(resolved.name)) return res.status(400).json({ error: 'Could not derive a session name.' });
     if (await sessionExists(resolved.name)) return res.status(409).json({ error: `Session "${resolved.name}" already exists.` });
 
@@ -125,12 +136,22 @@ export function registerLaunch(app: express.Express): void {
       // model alone now — but for RIREKI, which picks a tape decoder from `@ronin-agent`
       // and has expected this stamp since it was written, guessing until today.
       await setLaunchStamp(resolved.name, resolved.launchAgent);
-      // THE ROLE, SET MECHANICALLY. The button the owner pressed IS what this session is
-      // for, so the letter is written with `session_job` already filled rather than left
-      // for the agent to guess at a fact that was never in doubt. The session owns it
-      // from here — `write_tegami` is how it says the work has changed — and we never
-      // overwrite a letter that exists. See src/tegami.ts.
-      await seedTegami(resolved.name, resolved.session_job, await checkoutAt(resolved.dir));
+      // BOTH AXES, SET MECHANICALLY. The button the owner pressed IS who this session is
+      // and what it is for, so the letter is written with `job_role` and `session_task`
+      // already filled rather than left for the agent to guess at facts that were never
+      // in doubt. The TASK is the session's from here — `write_tegami` is how it says the
+      // work has changed — and the ROLE is nobody's: this seed is its only writer. We
+      // never overwrite a letter that exists. See src/tegami.ts.
+      await seedTegami(
+        resolved.name,
+        resolved.job_role,
+        resolved.session_task,
+        await checkoutAt(resolved.dir),
+      );
+      // THE BIRTH BASELINE for the task observer: this task's reading is already in the
+      // brief, so it is recorded as delivered and the first tick does not send it again
+      // (src/task-watch.ts).
+      await markTaskDelivered(resolved.name, resolved.session_task);
       await setControl(resolved.name, resolved.dial);
     } catch (e) {
       void appendLedger(form, resolved, false);
@@ -147,15 +168,27 @@ export function registerLaunch(app: express.Express): void {
     // TOMODACHI: how it was born and what job it was launched as. `born` is the launcher
     // mode here; a forkit-spawned session is marked by the macro, and anything Ronin never
     // spawned shows up as `hand` at the next census — the absence being the datum.
-    count('born', { name: resolved.name, born: resolved.mode === 'manual' ? 'manual' : 'assisted', job: resolved.session_job });
+    count('born', {
+      name: resolved.name,
+      born: resolved.mode === 'manual' ? 'manual' : 'assisted',
+      role: resolved.job_role,
+      task: resolved.session_task,
+    });
     // THE LAUNCH SOCKET: services that care about a birth hear it here (fire-and-forget).
-    emitSessionBorn({ name: resolved.name, job: resolved.session_job, root: resolved.project_root, cmd: resolved.cmd });
+    emitSessionBorn({
+      name: resolved.name,
+      role: resolved.job_role,
+      task: resolved.session_task,
+      root: resolved.project_root,
+      cmd: resolved.cmd,
+    });
 
     res.json({
       ok: true,
       name: resolved.name,
       receipt: {
-        session_job: resolved.session_job,
+        job_role: resolved.job_role,
+        session_task: resolved.session_task,
         mode: resolved.mode,
         project_root: resolved.project_root,
         dir: resolved.dir,
@@ -198,7 +231,7 @@ export function registerLaunch(app: express.Express): void {
 
   app.get('/api/sessions', async (_req, res) => {
     try {
-      res.json(await withRoles(await listSessions()));
+      res.json(await withAxes(await listSessions()));
     } catch (e) {
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }
@@ -218,7 +251,7 @@ export function registerLaunch(app: express.Express): void {
   // those born after a restart.
   app.get('/api/home', async (_req, res) => {
     try {
-      const list = await withRoles(await listSessions());
+      const list = await withAxes(await listSessions());
       const out = await Promise.all(
         list.map(async (s) => {
           let status: SessionStatus | null = null;

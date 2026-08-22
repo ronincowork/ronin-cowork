@@ -13,7 +13,8 @@ export const CONTRACT_V = 1;
 export interface BornInfo {
   name: string;
   key?: string; // @ronin-key (<name>-<created-epoch>) — when the caller has it resolved
-  job?: string; // session_job token, when the launcher set one
+  role?: string; // job_role token — WHO the session is, fixed at birth
+  task?: string; // session_task token — WHAT it is doing at birth; either may be blank
   root?: string; // project_root dir, when known
   cmd?: string; // what was started in the pane
 }

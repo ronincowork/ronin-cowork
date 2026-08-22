@@ -54,46 +54,65 @@ export async function loadProjects() {
   tiles.forEach((t) => t.renderHome());
 }
 
-/* ---------- the launcher board: session_job x project_root ----------
- * The three universal axes — the same keys that scope a memory. The session_jobs
- * you can start (buildout / cutcode / review / audit / manage / fork / other) are
- * read live from ronin_catalogs/SESSION_JOBS.md, never hardcoded here. The session_job
- * fixes what a launch must not leave to chance (the dial the session is born on,
- * its lifecycle, whether it acknowledges before acting); the user picks
- * project_root, session_launch_spec and group; the server assembles the brief and
- * performs the spawn. Spec: co-working/user_repo/wip/buildouts/MACRO_LAUNCHER.md.
+/* ---------- the launcher board: job_role × session_task × project_root ----------
+ * The three universal axes — the same keys that scope a memory. Both catalog axes are
+ * read live from ronin_catalogs/job_roles/ and ronin_catalogs/session_tasks/, never
+ * hardcoded here.
+ *
+ * WHAT THE LAUNCH IS ACTUALLY BORN WITH IS NOT ON THESE ROWS. A dial, a permissions mode,
+ * whether the brain is on — those come from the CASCADE (system < role < task < this
+ * launch), so they are true of a PAIR and not of a row. The form asks
+ * `/api/launch-profile` for the resolved answer when the pick changes rather than
+ * re-implementing the cascade here: one cascade, in one language, in src/launch-profile.ts.
+ *
+ * The user picks project_root, session_launch_spec and group; the server assembles the
+ * brief and performs the spawn.
  */
-export let presetData = null; // /api/session-jobs
+export let roleData = null; // /api/job-roles
+export let taskData = null; // /api/session-tasks
 
 export async function loadPresets() {
-  const r = await request('/api/session-jobs');
-  if (r.ok && Array.isArray(r.data)) presetData = r.data;
+  const [roles, tasks] = await Promise.all([request('/api/job-roles'), request('/api/session-tasks')]);
+  if (roles.ok && Array.isArray(roles.data)) roleData = roles.data;
+  if (tasks.ok && Array.isArray(tasks.data)) taskData = tasks.data;
   tiles.forEach((t) => t.renderHome());
+}
+
+/** The resolved profile for one pick — the server's cascade, never a copy of it. */
+export async function launchProfile(jobRole, sessionTask) {
+  const q = new URLSearchParams({ job_role: jobRole || '', session_task: sessionTask || '' });
+  const r = await request(`/api/launch-profile?${q}`);
+  return r.ok ? r.data : null;
 }
 
 /**
  * The mark a session wears wherever sessions are listed — the ⌂ Roster, the tile header's
  * picker, the ⚡ macro targets. This is what replaced the hand-set 人: it says what the
- * session IS rather than who outranks whom, and the coordinator is simply the session
- * whose job is `QuarterBack` 🏈.
+ * session is DOING rather than who outranks whom.
  *
- * **It comes off the LETTER, and it is on every session list.** `session_job` is a field
+ * **IT IS THE TASK, NEVER THE ROLE.** The two axes are drawn differently on purpose: the
+ * task changes as the work moves, so it is the live mark; the role is stable context and
+ * belongs in the session's details, where it does not compete with a mark that moves. A
+ * session with a role and no task shows no mark, and that is correct — it has not said
+ * what it is doing.
+ *
+ * **It comes off the LETTER, and it is on every session list.** `session_task` is a field
  * of the session's own TEGAMI, filled mechanically at birth with the button the owner
  * pressed and changed by the session itself with `write_tegami` — "a session that
- * finishes planning and starts building has changed job, not become a new session". The
- * server reads it back onto every list it serves (`src/tegami.ts`, `withRoles`), so the
+ * finishes planning and starts building has changed task, not become a new session". The
+ * server reads it back onto every list it serves (`src/tegami.ts`, `withAxes`), so the
  * roster, the tile header and the ⚡ targets cannot disagree, and no second copy exists
  * anywhere to drift from the file.
  *
- * The role half of the letter is COWORK's — a session has a role whether or not it ever
+ * The axis half of the letter is COWORK's — a session has a task whether or not it ever
  * puts a ladder up — so this works on a build with no michi, where `s.tegami` and the
  * SHINGO chip are absent entirely.
  *
- * '' whenever nobody has said, and callers draw nothing rather than guessing: a session
- * Ronin never launched has no letter, and the gap is the honest answer.
+ * '' whenever nobody has said, and callers draw nothing rather than guessing.
  */
-export const jobIcon = (s) =>
-  (s?.session_job && (presetData || []).find((k) => k.name === s.session_job)?.icon) || '';
+export const taskIcon = (s) =>
+  (s?.session_task && (taskData || []).find((k) => k.name === s.session_task)?.icon) || '';
+
 
 export async function loadMacros() {
   const r = await request('/api/macros');
@@ -115,7 +134,7 @@ export const STATUS_LABEL = { ready: 'ready', thinking: 'thinking…', 'awaiting
 
 /**
  * KOSHI_DASHI — the receipt for a spawn. It says what the session was actually born
- * with (mode, job, root, spec, dial, groups) and carries a kill next to it: wrong
+ * with (mode, role, task, root, spec, dial, groups) and carries a kill next to it: wrong
  * fill, one tap, gone. The price of launching with no confirm screen.
  */
 export function showReceipt(name, receipt) {
@@ -126,7 +145,11 @@ export function showReceipt(name, receipt) {
   const dialIcon = { user: '👤', read: '👁', write: '🤖' }[receipt.dial] || '';
   const bits = [
     receipt.mode === 'manual' ? 'manual' : 'assisted',
-    receipt.session_job,
+    // BOTH AXES ON THE RECEIPT, and a blank one is simply absent from it: the receipt
+    // exists so a wrong fill is visible immediately, and "no task" is a fill that can be
+    // wrong just as "CutCode" can.
+    receipt.job_role,
+    receipt.session_task,
     receipt.project_root,
     // No cmd = an `agent: none` kind: say so, rather than leaving a gap the reader
     // has to interpret as "the session_launch_spec field failed to fill".

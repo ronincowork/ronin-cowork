@@ -61,7 +61,7 @@ import { buildTileDocs } from './tiledocs.js';
 import { buildTileMentions } from './tilementions.js';
 import { isCoarse } from './tiledrop.js';
 import { S, SELECT_MOD, serviceMissing } from './state.js';
-import { jobIcon } from './home.js';
+import { taskIcon } from './home.js';
 
 export const DIAL_TITLE =
   'Who may touch this session: 👤 owner only · 👁 outside agents watch · 🤖 outside agents type. Yours to turn; agents never flip it.';
@@ -112,11 +112,11 @@ const HEADER = () => (rows ??= [
     // mark — it is the honest reading, drawn so it can be seen and pressed.
     read: (t, el) => {
       const s = S.sessions.find((x) => x.name === t.session);
-      const job = (s && s.session_job) || '';
+      const job = (s && s.session_task) || '';
       // The job NAME on the element, so style can reach ONE mark: glyphs differ in how
       // heavily their font draws them (style.css, `[data-job=…]`).
       el.dataset.job = job;
-      el.textContent = jobIcon(s) || '?';
+      el.textContent = taskIcon(s) || '?';
       el.classList.toggle('unset', !job);
       return job ? `${job} — click to change what this session is doing`
                  : 'Not marked — click to say what this session is doing';

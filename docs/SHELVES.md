@@ -49,8 +49,9 @@ that did not ask. The_owner's copy of any name wins whole. `ronin_sops/README.md
 
 `ls ronin_catalogs/ "$(bin/ronin-store catalogs)"`. Stock today: `MACROS.md` (the
 `+name:` workflows the_owner invokes), `ACTIONS.md` (the cataloged procedures macros are
-made of), `TOOLS.md` (the executables that implement actions, with usage), `SESSION_JOBS.md`
-(the kinds of session and their constants), `PROJECT_ROOTS.md` (the launch table),
+made of), `TOOLS.md` (the executables that implement actions, with usage), `job_roles/`
+(who a session is) and `session_tasks/` (what it is doing — one file each),
+`PROJECT_ROOTS.md` (the launch table),
 `MIKA_MACROS.md` (the house assistant's jobs), `SKINS.md`. Extending any of it starts at
 `ronin_catalogs/README.md` — the action exists before the macro, the tool after the action.
 
@@ -67,7 +68,8 @@ vocabulary), `REQUIRED_ABILITIES.md` (the abilities every session uses — read 
 improvising anything), `SESSION_MACROS.md` (the live `+macro:` roster, generated at your
 birth). Scoped levels reach only the sessions they apply to: `<service>_connected/`
 (e.g. `gbrain_connected/` — a connected service seeds its own reading, read only by
-sessions launched with MCP on), `root/<project_root>/`, `job/<session_job>/`.
+sessions launched with MCP on), `root/<project_root>/`, `role/<job_role>/`,
+`task/<session_task>/`.
 `docs/session-boot.md`.
 
 ## The tools — what you run
@@ -76,12 +78,15 @@ sessions launched with MCP on), `root/<project_root>/`, `job/<session_job>/`.
 `ronin_catalogs/TOOLS.md` — read the row, not the source. Prefer the tool over
 performing its action by hand: it encodes the safety steps.
 
-## The two axes
+## The three axes
 
-Every session is fixed by two things, and the rest is looked up from them:
-**`project_root`** — where the work happens (`ronin_catalogs/PROJECT_ROOTS.md`) ×
-**`session_job`** — what the session is for, and therefore who it is
-(`ronin_catalogs/SESSION_JOBS.md`).
+Every session is fixed by three things, and the rest is looked up from them:
+**`project_root`** — where the work happens, and the one that is REQUIRED
+(`ronin_catalogs/PROJECT_ROOTS.md`) × **`job_role`** — who the session is, fixed for its
+whole life (`ronin_catalogs/job_roles/`) × **`session_task`** — what it is doing right
+now, and yours to change as the work moves (`ronin_catalogs/session_tasks/`).
+
+Either of the last two may be blank, and blank is a real answer rather than a gap.
 
 ## The short routing rules
 

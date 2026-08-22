@@ -54,7 +54,7 @@ export async function askMika(tile, ask) {
       const r = await request('/api/launch', {
         method: 'POST',
         json: {
-          session_job: 'MikaAssist',
+          job_role: 'mikaassist',
           name: MIKA,
           mode: 'assisted',
           tags: [MIKA],

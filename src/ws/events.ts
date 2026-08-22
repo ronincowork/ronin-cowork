@@ -7,7 +7,7 @@
  */
 import { type WebSocket } from 'ws';
 import { listSessions } from '../tmux.js';
-import { withRoles } from '../tegami.js';
+import { withAxes } from '../tegami.js';
 
 const eventClients = new Set<WebSocket>();
 
@@ -18,7 +18,7 @@ export function handleEvents(ws: WebSocket): void {
   ws.on('error', drop);
   // Snapshot on connect so a fresh page starts current without a separate fetch.
   void listSessions()
-    .then(withRoles)
+    .then(withAxes)
     .then((list) => {
       if (ws.readyState === ws.OPEN) ws.send(JSON.stringify({ t: 'sessions', list }));
     })
@@ -31,15 +31,17 @@ export function startSessionsBroadcast(): void {
   setInterval(() => {
     if (eventClients.size === 0) return;
     listSessions()
-      .then(withRoles)
+      .then(withAxes)
       .then((list) => {
-        // The watched string carries the ROLE as well as the name. Membership is not the
-        // only thing the client draws off this list any more: a session that re-marks
-        // itself (`write_tegami`) changes its mark on every picker and tile header, and
-        // a poll watching names alone would hold the old icon until something was born
-        // or died. Still a push only when something actually changed — attach and note
-        // flapping stay deliberately unwatched.
-        const names = list.map((s) => `${s.name}\t${s.session_job}`).join('\n');
+        // The watched string carries the SESSION_TASK as well as the name. Membership is
+        // not the only thing the client draws off this list any more: a session that
+        // re-marks itself (`write_tegami`) changes its mark on every picker and tile
+        // header, and a poll watching names alone would hold the old icon until something
+        // was born or died. The `job_role` is deliberately NOT watched — it cannot change
+        // while a session lives, so a change in it is not a thing that can happen. Still a
+        // push only when something actually changed — attach and note flapping stay
+        // deliberately unwatched.
+        const names = list.map((s) => `${s.name}\t${s.session_task}`).join('\n');
         if (names === lastSessionNames) return;
         lastSessionNames = names;
         const msg = JSON.stringify({ t: 'sessions', list });

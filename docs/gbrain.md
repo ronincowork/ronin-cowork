@@ -60,7 +60,7 @@ absent.
 | piece | what | where |
 |---|---|---|
 | **the toggle** | ＋ New session: **gbrain on** (the CLI's own config applies) / **gbrain off** (no MCP servers at all, every other connector included). The label says gbrain by the owner's ruling. Per launch; relaunch to change. The Codex exception is recorded below | `public/js/launcher.js` · `src/spawn.ts` |
-| **`mcp:` (the session_job key)** | **which way the toggle opens, per kind — off for every ordinary kind** (owner, 2026-08-22): the brain is something the owner turns ON for the launch that wants it. `on` opens it on; `always` opens it on and withdraws the choice (`PersonalAssistant`). A default, not a lock — the form and an explicit `mcp:` in the launch body both override it; only `always` refuses | `ronin_catalogs/SESSION_JOBS.md` · `src/catalog.ts` · `src/spawn.ts` |
+| **`mcp:` (the cascading key)** | **which way the toggle opens for a resolved launch — off for every ordinary one** (owner, 2026-08-22): the brain is something the owner turns ON for the launch that wants it. `on` opens it on; `always` opens it on and withdraws the choice (the `personalassistant` role). It cascades system < job_role < session_task, so it is true of a PAIR and not of a button. A default, not a lock — the form and an explicit `mcp:` in the launch body both override it; only `always` refuses | `ronin_catalogs/job_roles/` · `src/launch-profile.ts` · `src/spawn.ts` |
 | **`mcp_off:`** | the launch-table key holding a provider's declared "no MCP" flags, appended to the cell's command when the toggle is off. A launch that ASKED for off and finds none declared is refused; a kind merely defaulting off degrades to connected and the receipt says so, or a box with no such row could launch nothing at all. A declared flag still needs an end-to-end proof that it worked | `ronin_catalogs/PROJECT_ROOTS.md` · `src/project-roots.ts` |
 | **`credit:`** | the session_job key — one markdown link, text and href — rendered on the opened launch form as a real anchor (*powered by gbrain ↗*). Never inside the kind button: an anchor in a button is nested-interactive, which the axe gate fails | `src/catalog.ts` · `public/js/launcher.js` |
 
@@ -84,7 +84,7 @@ partition. A capture from one connected session can be recalled by another.
 
 ## 🎩 PersonalAssistant — the kind that names it
 
-The owner's own assistant (`ronin_catalogs/SESSION_JOBS.md`): brain-first — search gbrain
+The owner's own assistant (`ronin_catalogs/job_roles/personalassistant.md`): brain-first — search gbrain
 before answering, capture what the owner asks to keep, one confirmation per anything that
 opens an outside connection. **It credits gbrain by name and link, by the owner's ruling.**
 On an install without gbrain it still launches and degrades to a plain assistant — the

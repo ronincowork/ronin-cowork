@@ -54,7 +54,7 @@ learn in order to use Ronin should cost them a second language first.
 |---|---|---|
 | `session_roster` | **the roster** | The **⌂ Roster** tab: every session on the machine. The session list, full stop. **Never "the board."** |
 | `session_launch` | **launch** | The **＋ New** tab. Where a session is born. |
-| `job_class` | **job group** | A shelf you invent to organize the ＋ New board's session jobs; a job may sit on several. The surface says *job group* (＋ add new); `job_class` is the internal name and never reaches a user's face. **Not the roster's Groups** — those address sessions; a job group addresses nothing (KOTOBA § LAUNCHER). |
+| `job_role` | **job role** | Who a session is — Developer, QuarterBack, PersonalAssistant. It organizes the ＋ New board into sections, and it also gives the session its own reading and launch defaults. A task may sit on several roles. **Fixed once the session is running.** **Not the roster's Groups** — those address sessions (KOTOBA § LAUNCHER). |
 | `wipeboard` | **wipeboard** | The **▤ Wipeboard** tab and the file behind it. Our own coinage and it stays — *wipe* is right for a surface many hands write on and erase. Alias **whiteboard** only, because voice-to-text hears it that way. **Never "the board."** |
 | Brief | **Brief** | Your statement of what a wipeboard is for. Agents never edit it. |
 | `MDEDIT` | **the Docs tab** | The **▧ Docs** tab: the documents each session is working on, opened and edited in the tile. **MDEDIT is ours and never reaches a user's face**; on screen it is just *Docs*. Say *list a doc*, never *track* or *attach*. There is no file browser by design — ask the session to show you a file (`+show_file`). |
@@ -73,7 +73,7 @@ learn in order to use Ronin should cost them a second language first.
 | dial (`@ronin-control`) | **Control** | Per session: you-only 👤, read 👁, read-and-write 🤖. Only the owner flips it. |
 | tag / group (`@ronin-tags`) | **Groups** | Labels used to address a set of sessions at once. The addressing kind — not the ＋ New board's *job groups*. |
 | note (`@ronin_note`) | **Note** | The owner's one line about a session. |
-| `session_job` (in the letter) | **what it's doing** | The job's icon, drawn beside every session in the roster and the tile picker. Set at launch; the session changes it itself as its work changes. |
+| `session_task` (in the letter) | **what it's doing** | The task's icon, drawn beside every session in the roster and the tile picker. Set at launch; the session changes it itself as its work changes, and so can you. A session with no task shows no icon. |
 | — | **Status · Ladder · Macros · Detach · Kill session** | The rest of the per-session menu. Already plain. |
 
 ## § PROGRESS AND HISTORY
@@ -97,8 +97,8 @@ learn in order to use Ronin should cost them a second language first.
 | TEJUN (手順) | **macros** | The UI says Macros. A user never needs the word TEJUN. |
 | macro | **macro** | A saved instruction you would otherwise have typed to your agent. |
 | invocation | **typing a macro** | `+name: what you want`. That is the whole syntax. |
-| `session_job` | ⚠ **none settled — see § OPEN 2** | What a session is doing now. The values read plainly on their own (RiffOnIt, CutCode, CheckWork, …); the *category* has no user word. The set lives in `ronin_catalogs/SESSION_JOBS.md` — the catalog is the count. |
-| forkit | **fork** | Split the current topic into its own session. |
+| `session_task` | **task** | What a session is doing now. The values read plainly on their own (RiffOnIt, CutCode, CheckWork, …). The set lives in `ronin_catalogs/session_tasks/` — one file per task, and the directory is the count. |
+| forkit | **fork** | Split the current topic into a visible Ronin session. “Fork it” and “new session” mean this; “spawn an agent” means an internal sub-agent. |
 | harakiri | **harakiri** | A session ends itself. Kept — it is a word people know. |
 
 ## § THE DOOR OUT
@@ -172,15 +172,16 @@ test · shadowing · the session directory · build-out doc · handoff · `lande
 - **`UCHI` is retired; the word is `commons`** (2026-08-13).
 - **legs stay** (2026-08-10) — no rename to *step*; *step* is `tejun-step`.
 - **harakiri stays** (2026-08-10) — a word people already know.
-- **`session_job` is the surviving term** (2026-08-10) — `agent_role` is dead; a single
-  common word is not a term.
+- **`session_job` is split into `job_role` and `session_task`** (2026-08-22) — the
+  2026-08-10 ruling that made one term do both jobs is reversed. A single common word is
+  still not a term, which is why neither new one is bare *role* or *task*.
 - **`ronin_service`, alias Services, is the paid unit** (2026-08-10) — never module,
   plug-in, extension or applet.
 - **There is no bare "board"** (2026-08-10) — the roster and the wipeboard, and neither
   may be aliased to *board*.
-- **The internals say `job_class`; the surface says "job group"** (2026-08-21) — `group`
-  is the roster's addressing word and stays unambiguous; KOTOBA § LAUNCHER is the one
-  place the split is told.
+- **`job_class` is promoted to `job_role`, inside and out** (2026-08-22) — the shelf
+  that addressed nothing now carries reading and launch defaults, so it earns a real
+  name on both faces. `group` stays the roster's addressing word, unambiguous as ever.
 - **pane is retired from house vocabulary entirely** (2026-08-22) — tmux's word for
   tmux's own object, nothing more; our representations, browser and backend, are the
   tile. Code sweep: OPEN_THREADS 4.33.
@@ -200,9 +201,10 @@ test · shadowing · the session directory · build-out doc · handoff · `lande
    written by us, in front of a user today. Recommend ruling **AI admin** in rather than
    inventing anything. Nothing coined, only noticed.
 
-2. **`session_job` has no user word for the category.** The values are fine; the *class*
-   has none, so the launcher describes it (*"pick what it is for"*). That may be correct —
-   worth ruling it correct rather than leaving it unnoticed.
+2. **CLOSED — the category has a user word now: *task*.** (2026-08-22.) The open item
+   was that `session_job`'s values read fine but the category had no word, so the launcher
+   had to describe it. Splitting the axis supplied both: a session has a **role** and a
+   **task**, and the board says so.
 
 3. **Run this list against real co-working vocabulary** (owner). Where a real co-working
    word exists for a thing we have, take it — **but only where the mechanism matches.**

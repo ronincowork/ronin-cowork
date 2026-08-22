@@ -57,7 +57,7 @@ export interface MacroInfo {
    * ruling — that one is addressed to the agent and opens with a prohibition, which teaches a
    * person nothing. **Never fall back to `instruction` when this is empty**; see
    * public/js/tilemacros.js for what an entry with no blurb renders instead.
-   * Same two keys, same meaning, as SESSION_JOBS.md's `label:`/`blurb:` kind buttons.
+   * Same two keys, same meaning, as a session_task definition's `label:`/`blurb:` buttons.
    */
   blurb: string;
 }

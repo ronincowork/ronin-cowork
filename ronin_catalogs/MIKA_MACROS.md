@@ -82,20 +82,27 @@ both be shelved — rename one on the way in (plans-README.md), and say that you
 ## new_session
 - **class:** mika_macro
 One sentence in, a filled form out. Match it against the `match:` words in
-`SESSION_JOBS.md` and in the owner's `PROJECT_ROOTS.md`.
+`ronin_catalogs/session_tasks/`, `ronin_catalogs/job_roles/` and the owner's
+`PROJECT_ROOTS.md`.
+
+**Both catalog axes are optional, and a blank one is a real answer.** `job_role` is who
+the session is and does not change once it is running; `session_task` is what it is doing
+now and does. Propose a role with a blank task when the sentence asks for a standing seat
+("be my assistant", "coordinate these") and a task with a blank role when it asks for one
+piece of work that fits no hat. Never invent a task to fill the slot.
 
 | # | Action | With |
 |---|---|---|
-| 1 | propose-and-confirm | `session_job`, `project_root`, session_launch_spec, MCP on/off, the name you would give it. As a form, not prose |
+| 1 | propose-and-confirm | `job_role`, `session_task`, `project_root`, session_launch_spec, MCP on/off, the name you would give it. As a form, not prose |
 | 2 | session-create | On a yes: `POST /api/launch` does create, tag, dial, CLI and brief in one call (`mcp: false` when the owner asked for off) |
 | 3 | report-outcome | The name, and that it is in the grid |
 
 **Assisted mode only.** In manual mode what the owner typed IS the prompt, byte for byte.
 
-**MCP defaults to whatever the `session_job` says, and you never flip it on your own
-initiative.** That is `- **mcp:**` in `SESSION_JOBS.md`: off for every ordinary kind,
-`always` for `PersonalAssistant`, which cannot be launched off at all. So the honest
-proposal is to send no `mcp:` and let the kind answer. Propose **on** only when the
+**MCP defaults to whatever the resolved launch profile says, and you never flip it on
+your own initiative.** That is `- **mcp:**` cascading system < role < task: off for every
+ordinary launch, and `always` on the `personalassistant` role, which cannot be launched
+off at all. So the honest proposal is to send no `mcp:` and let the cascade answer. Propose **on** only when the
 owner's sentence asked for the brain — "look it up", "remember this", "use gbrain" — and
 **off** only when it asked for solitude: "without the brain", "no connectors", "offline",
 "work alone". Say what off means when you propose it: the session launches with no MCP

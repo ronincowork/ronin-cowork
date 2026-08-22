@@ -134,7 +134,7 @@ execute from.
 ## read-letter — read the ladder a session is keeping
 `action_kind: mechanical` — run it, don't deliberate.
 > **Tool: `read_tegami`** (TOOLS.md)
-Your own letter — objective, session_job, the ladder, and where on it you are.
+Your own letter — objective, job_role, session_task, the ladder, and where on it you are.
 ```bash
 read_tegami                     # your letter, as written
 read_tegami --json              # just the block, for a machine
@@ -151,7 +151,7 @@ Your letter is the one file that outlives your pane, so it is written for whoeve
 reads it next — the owner in the tile, or the session that inherits the work.
 ```bash
 write_tegami <<'JSON'           # replaces YOUR ladder; the block and nothing else
-{ "objective": "...", "session_job": "...", "ladder": [ … ] }
+{ "objective": "...", "job_role": "...", "session_task": "...", "ladder": [ … ] }
 JSON
 write_tegami --session <name> --at 2.3    # another session's position, ONLY the position
 ```
@@ -370,7 +370,7 @@ what a document can tell you.
 `action_kind: mechanical` — run it, don't deliberate.
 > **Tool: `tejun-recall`** (TOOLS.md)
 Sessions are mortal; what they learned is not. This hands you the memories matched to
-what this session IS — its `project_root` and its `session_job`, read off the session
+what this session IS — its `project_root`, its `job_role` and its `session_task`, read off the session
 itself — ordered universal-first, then this project, then cross-project.
 ```bash
 tejun-recall            # one file path per line, deduped

@@ -16,15 +16,17 @@ STORE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../bin" && pwd)/ronin-store"
 [ -x "$STORE" ] || STORE=ronin-store
 SESSION_STORE="$("$STORE" session 2>/dev/null)"
 
-# A session's session_job, out of its own letter — '' when it has no letter or has not
-# said. The role lives in TEGAMI because the session may change it as the work changes
-# (`write_tegami`); it is seeded at birth with the job the owner launched it as.
+# A session's two axes out of its own letter, as 'job_role\tsession_task' — empty fields
+# when it has no letter or has not said. Both live in TEGAMI: the TASK because the session
+# may change it as the work changes (`write_tegami`), the ROLE because it was fixed at
+# birth and nothing may change it afterwards.
 #
 # This used to be a fourth tmux column, @ronin-lead — the groups a session was hand-marked
-# as leading. That is retired: the coordinator of a group is the member whose job is
-# QuarterBack, so "who runs this?" is answered by the same field that answers "what is
-# everyone doing?", and there is no second thing to set.
-job_of() {
+# as leading. That is retired: the coordinator of a group is the member whose ROLE is
+# `quarterback`. Since the schema cut that is a better answer than it was: a role cannot
+# change mid-session, so who runs a group cannot drift the way a mark read off a moving
+# `session_job` could.
+axes_of() {
   local key row stamped created
   [ -n "${SESSION_STORE:-}" ] || return 0
   row=$(tmux list-sessions -F '#{session_name}	#{@ronin-key}	#{session_created}' 2>/dev/null \
@@ -43,25 +45,27 @@ except OSError:
 m = re.search(r"```(?:json)?\s*\n(.*?)\n```", t, re.S)
 raw = m.group(1) if m else t[t.find("{"):t.rfind("}") + 1]
 try:
-    j = json.loads(raw).get("session_job", "")
+    d = json.loads(raw)
 except Exception:
     raise SystemExit
-if isinstance(j, str):
-    print(j.strip())
+say = lambda k: d[k].strip() if isinstance(d.get(k), str) else ""
+print("%s\t%s" % (say("job_role"), say("session_task")))
 PY
 }
 
-# name·tags·dial·session_job for every real session, viewers dropped.
+# name·tags·dial·job_role·session_task for every real session, viewers dropped.
 #
 # SEP is \x1f (unit separator), NOT a tab. Tab is an IFS *whitespace* character, so bash
 # collapses a RUN of them into one delimiter: an untagged session emitted as
 # `name<TAB><TAB>write` read back as tags="write", and every such session then matched a
 # group called "write". \x1f is not whitespace, so an empty field stays an empty field.
-# Nothing in a name, tag, dial or job can contain it.
+# Nothing in a name, tag, dial, role or task can contain it.
 SEP=$'\x1f'
 roster() {
   while IFS=$SEP read -r name tags dial; do
-    printf '%s%s%s%s%s%s%s\n' "$name" "$SEP" "$tags" "$SEP" "$dial" "$SEP" "$(job_of "$name")"
+    # axes_of answers 'role<TAB>task'; the tab becomes a SEP so both are fields here.
+    printf '%s%s%s%s%s%s%s\n' "$name" "$SEP" "$tags" "$SEP" "$dial" "$SEP" \
+      "$(axes_of "$name" | tr '\t' "$SEP")"
   done < <(tmux list-sessions -F "#{session_name}${SEP}#{@ronin-tags}${SEP}#{@ronin-control}" 2>/dev/null \
     | grep -v "^${VIEWER_PREFIX}")
 }
@@ -73,15 +77,15 @@ if [ $# -eq 0 ]; then
   # Every group in play + its size. Sessions with no tags are reported as loose, so
   # "not in the list" never silently means "I forgot to tag it".
   #
-  # A group's QuarterBack is named beside it. Unlike the old lead, coordinating implies
-  # MEMBERSHIP: a QuarterBack is tagged into the group it runs like anyone else, so a
+  # A group's quarterback is named beside it. Unlike the old lead, coordinating implies
+  # MEMBERSHIP: a quarterback is tagged into the group it runs like anyone else, so a
   # group can no longer exist by virtue of somebody leading an empty one.
   out=$(roster | awk -F'\037' '
     { if ($2 == "") { loose++; next }
       n = split($2, t, ",")
       for (i = 1; i <= n; i++) { gsub(/^[ \t]+|[ \t]+$/, "", t[i])
         if (t[i] != "") { c[t[i]]++; seen[t[i]] = 1
-          if ($4 == "QuarterBack") qb[t[i]] = (qb[t[i]] == "" ? $1 : qb[t[i]] " + " $1) } }
+          if ($4 == "quarterback") qb[t[i]] = (qb[t[i]] == "" ? $1 : qb[t[i]] " + " $1) } }
     }
     END { for (g in seen) printf "%s\037%d\037%s\n", g, c[g], qb[g]; if (loose) printf "\001untagged\037%d\037\n", loose }' \
     | sort)
@@ -101,23 +105,23 @@ fi
 
 G=$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')
 found=0
-# The QuarterBack goes first, then the rest — the same order the owner sees in the Ronin
-# session list. Every member's job is printed ('-' where nobody has said), because on a
-# group roster "what is each of these doing?" is the question being asked. The job is a
-# label, not a permission: the dial still decides who may drive whom.
-while IFS=$SEP read -r name tags dial job; do
+# The quarterback goes first, then the rest — the same order the owner sees in the Ronin
+# session list. Every member's ROLE and TASK are printed ('-' where nobody has said),
+# because on a group roster "who are these and what is each of them doing?" is the
+# question being asked. Neither is a permission: the dial still decides who may drive whom.
+while IFS=$SEP read -r name tags dial role task; do
   has_group "${tags:-}" "$G" || continue
-  [ "${job:-}" = QuarterBack ] || continue
+  [ "${role:-}" = quarterback ] || continue
   found=1
-  printf '%-24s %-8s %s\n' "$name" "${dial:-write}" "$job"
+  printf '%-24s %-8s %-18s %s\n' "$name" "${dial:-write}" "$role" "${task:--}"
 done < <(roster)
 
-while IFS=$SEP read -r name tags dial job; do
+while IFS=$SEP read -r name tags dial role task; do
   # exact tag match, not substring: 'kojin' must not match 'kojinsa'
   has_group "${tags:-}" "$G" || continue
-  [ "${job:-}" = QuarterBack ] && continue   # already printed, at the head
+  [ "${role:-}" = quarterback ] && continue   # already printed, at the head
   found=1
-  printf '%-24s %-8s %s\n' "$name" "${dial:-write}" "${job:--}"
+  printf '%-24s %-8s %-18s %s\n' "$name" "${dial:-write}" "${role:--}" "${task:--}"
 done < <(roster)
 
 [ "$found" = 1 ] || { echo "NO-GROUP: nothing is tagged '$G' — run 'tejun-group' to see the groups that exist"; exit 3; }

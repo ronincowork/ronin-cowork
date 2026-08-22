@@ -12,8 +12,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const STOCK_DIR = path.join(__dirname, '..', 'ronin_catalogs');
 
 /**
- * Shared reader for the `## name` catalogs (SESSION_JOBS.md here; MACROS.md through
- * macros.ts), and the resolution rule every reader shares (DAIKUSAN's stock/custom law,
+ * Shared reader for the `## name` catalogs (MACROS.md through macros.ts, ACTIONS.md,
+ * TOOLS.md, SAVED_LAUNCHES.md), and the resolution rule every reader shares (DAIKUSAN's stock/custom law,
  * generalized — see docs/shadowing.md):
  *
  *   resolve(<NAME>.md) = entries(ronin_catalogs/<NAME>.md)          ← stock, file order
@@ -180,129 +180,6 @@ function parseCredit(v: string): { text: string; url: string } | undefined {
   return m ? { text: m[1], url: m[2] } : undefined;
 }
 
-/* ---------- session_job: what this session is for ---------- */
-
-export interface SessionJobInfo {
-  name: string;
-  /** Which scope defined this entry — `user` means shadowed or added, never shipped. */
-  origin: Origin;
-  /** Yours, standing in a shipped entry's place — "changed", not "added". */
-  shadowed: boolean;
-  icon: string;
-  label: string;
-  blurb: string;
-  ask: string;
-  /** One line: what this session is. */
-  remit: string;
-  /** How it behaves — inlined into the boot brief, so it must stay short. */
-  posture: string;
-  /** Bias only; the project's default or an explicit pick wins. */
-  model: string;
-  match: string[];
-  /** The @ronin-control dial the session is BORN with — a constant of the kind. */
-  dial: 'user' | 'read' | 'write';
-  permissions: string;
-  lifecycle: string;
-  /** Report understanding and wait, rather than starting work. */
-  ack: boolean;
-  /** First-message template; `{prompt}` is what the user typed. */
-  opening: string;
-  /**
-   * Is an agent CLI launched at all? `- **agent:** none` in the catalog means NO: the
-   * session is created and nothing whatever is typed into the pane — a plain terminal.
-   * Every field that describes an agent (model, posture, opening, ack, permissions) is
-   * meaningless for such an entry and is absent from it, which is why the filter below
-   * lets an agentless entry through without an `opening`.
-   */
-  agent: boolean;
-  /**
-   * Is this kind refused when the box is at its session max? `- **cap:** exempt` means
-   * NO — it is created anyway, and it still COUNTS, so the next spawn is the one that is
-   * refused. One kind carries this today (`MikaAssist`): blocking somebody who is asking
-   * for help is rude, and the roster must still show one honest figure.
-   *
-   * It lives in the catalog rather than in code for the reason every other constant does:
-   * nothing in `src/` may name a session_job, or the catalog stops being the answer.
-   */
-  capExempt: boolean;
-  /**
-   * Whose work powers this kind, when it is somebody else's — `- **credit:** [text](url)`,
-   * one markdown link. Rendered by the launcher as a real anchor on the OPENED FORM, never
-   * inside the kind button (an anchor in a button is nested-interactive: invalid HTML, an
-   * axe violation our own smoke gate fails on, and a stolen tap on the phone). Absent for
-   * kinds that are wholly ours, which is most of them.
-   */
-  credit?: { text: string; url: string };
-  /**
-   * Born connected — `- **mcp:** always`. The launch toggle does not apply to this kind:
-   * the launcher does not offer it, and the spawn REFUSES a launch that asks for MCP off
-   * (owner's ruling, 2026-08-17 — a PersonalAssistant without its brain is not a
-   * degraded assistant, it is a different kind). Absent for every ordinary kind, where
-   * the toggle is the owner's per-launch choice.
-   */
-  mcpAlways: boolean;
-  /**
-   * Which way the ＋ New form's gbrain toggle opens for this kind — `- **mcp:**` in the
-   * catalog. **False unless the entry says otherwise** (`off`, or the field absent), by
-   * the owner's ruling of 2026-08-22: an ordinary session is born with no MCP servers,
-   * and the owner turns the brain on for the launch that wants it. `on` opens it on;
-   * `always` opens it on and removes the choice (see `mcpAlways`).
-   *
-   * A DEFAULT, not a lock: the form's toggle and an explicit `mcp:` in the launch body
-   * both override it. It is what a launch that says nothing gets.
-   */
-  mcpDefault: boolean;
-  /**
-   * Where this kind ALWAYS works, whatever project_root is picked — `- **dir:**` in the
-   * catalog. Empty for every ordinary kind, because the directory is the project_root's
-   * to supply and a kind that named one would be naming a machine.
-   *
-   * The one legal value is the sentinel **`{install}`**, resolved to this Ronin's own
-   * directory at launch (`REPO_ROOT`). `MikaAssist` carries it: she works on Ronin's own
-   * business, so she must start where Ronin's documents and catalogs are. Without it she
-   * was born in the service user's home with nothing to read.
-   *
-   * A literal path here would be a machine named in a shipped file, which JUSHO forbids.
-   * The sentinel is the whole vocabulary, and it stays that way.
-   */
-  dir: string;
-}
-
-export async function listSessionJobs(): Promise<SessionJobInfo[]> {
-  return (await readEntries('SESSION_JOBS.md'))
-    .map((e) => {
-      const dial = e.get('dial').toLowerCase();
-      const mcp = e.get('mcp').toLowerCase();
-      return {
-        name: e.name,
-        origin: e.origin,
-        shadowed: e.shadowed,
-        icon: e.get('icon'),
-        label: e.get('label') || e.name,
-        blurb: e.get('blurb'),
-        ask: e.get('ask'),
-        remit: e.get('remit'),
-        posture: e.get('posture'),
-        model: e.get('model'),
-        match: splitList(e.get('match')),
-        dial: (dial === 'user' || dial === 'read' ? dial : 'write') as SessionJobInfo['dial'],
-        permissions: e.get('permissions') || 'default',
-        lifecycle: e.get('lifecycle'),
-        ack: /^y/i.test(e.get('ack')),
-        opening: e.get('opening'),
-        agent: e.get('agent').toLowerCase() !== 'none',
-        capExempt: e.get('cap').toLowerCase() === 'exempt',
-        mcpAlways: mcp === 'always',
-        mcpDefault: mcp === 'always' || mcp === 'on',
-        dir: e.get('dir'),
-        credit: parseCredit(e.get('credit')),
-      };
-    })
-    // An agent job with no opening template is a half-written entry and is dropped.
-    // An AGENTLESS entry has no opening because there is nobody to send one to.
-    .filter((p) => p.opening || !p.agent);
-}
-
 /* ---------- the write path: making a catalog yours ---------- */
 
 /**
@@ -314,7 +191,6 @@ export async function listSessionJobs(): Promise<SessionJobInfo[]> {
  * has never seen this repo. The button is the convenience.
  */
 const SHADOWABLE: Record<string, string> = {
-  'SESSION_JOBS.md': 'a kind of session — what it is for, and therefore who',
   'MACROS.md': 'a workflow an agent runs when you type +name:',
   'ACTIONS.md': 'a primitive step macros are composed from',
   'TOOLS.md': 'an executable of yours that implements an action',
@@ -377,7 +253,7 @@ async function writeCatalogFile(file: string, text: string): Promise<void> {
 
 /**
  * SAVED_LAUNCHES — a named binding of the launcher that already exists:
- * `session_job` × `project_root` × group × mode, as a pressable tile.
+ * `job_role` × `session_task` × `project_root` × group × mode, as a pressable tile.
  *
  * The owner's words are what this is: *"organize these tiles under new sessions to be
  * like, okay, I have ronin and watch crew."* (Quoted as said; `watch crew` has since been
@@ -396,7 +272,10 @@ export interface SavedLaunchInfo {
   shadowed: boolean;
   /** What the tile says. Falls back to the handle. */
   label: string;
-  session_job: string;
+  /** Both launch axes are saved, and either may be blank — a saved launch of a role
+   *  with no task is exactly as legal as the launch it was saved from. */
+  job_role: string;
+  session_task: string;
   project_root: string;
   group: string;
   /** `manual` (your words, untouched) or `assisted`. Anything else reads as manual. */
@@ -412,20 +291,22 @@ export async function listSavedLaunches(): Promise<SavedLaunchInfo[]> {
       origin: e.origin,
       shadowed: e.shadowed,
       label: e.get('label') || e.name,
-      session_job: e.get('session_job'),
+      job_role: e.get('job_role'),
+      session_task: e.get('session_task'),
       project_root: e.get('project_root'),
       group: e.get('group'),
       mode: (e.get('mode').toLowerCase() === 'assisted' ? 'assisted' : 'manual') as SavedLaunchInfo['mode'],
       prompt: e.get('prompt'),
     }))
-    // A saved launch that names no session_job cannot fill the form it exists to fill.
-    .filter((l) => l.session_job);
+    // A saved launch naming NEITHER axis cannot fill the form it exists to fill — but
+    // one naming only a role is a blank-task launch, which is a real thing to save.
+    .filter((l) => l.job_role || l.session_task);
 }
 
 /** A saved-launch handle: one lowercase word, the `##` heading, the whole shortcut. */
 export const isValidLaunchName = (n: string) => /^[a-z0-9][a-z0-9_-]*$/.test(n) && n.length <= 32;
 
-const LAUNCH_FIELDS = ['label', 'session_job', 'project_root', 'group', 'mode', 'prompt'] as const;
+const LAUNCH_FIELDS = ['label', 'job_role', 'session_task', 'project_root', 'group', 'mode', 'prompt'] as const;
 export type LaunchField = (typeof LAUNCH_FIELDS)[number];
 
 /**
@@ -438,7 +319,7 @@ export type LaunchField = (typeof LAUNCH_FIELDS)[number];
  */
 export async function saveLaunch(name: string, fields: Partial<Record<LaunchField, string>>): Promise<void> {
   if (!isValidLaunchName(name)) throw new Error(`"${name}" is not a valid handle (lowercase letters, digits, - and _).`);
-  if (!fields.session_job) throw new Error('A saved launch needs a session_job.');
+  if (!fields.job_role && !fields.session_task) throw new Error('A saved launch needs a job_role or a session_task.');
   const file = 'SAVED_LAUNCHES.md';
   await seedUserCatalog(file);
   const raw = await readUserCatalog(file);
@@ -479,120 +360,4 @@ export async function removeLaunch(name: string): Promise<void> {
   while (from > 0 && lines[from - 1].trim() === '') from--;
   lines.splice(from, end - from);
   await writeCatalogFile('SAVED_LAUNCHES.md', lines.join('\n'));
-}
-
-/* ---------- job classes: the owner's shelving of the ＋ New kind board ---------- */
-
-/**
- * JOB_CLASSES — the side manifest that shelves the launcher's session jobs, and nothing
- * else.
- *
- * ITS OWN FILE, NOT A SHADOW, and the separation is the ruling (owner, 2026-08-21):
- * classes must not be clobbered by updates, and house jobs must not be shadowed into
- * staleness. A class line written into the shipped SESSION_JOBS.md dies at the next
- * release; a stock entry shadowed whole just to carry a tag stops tracking upgrades. So
- * membership lives in the one layer the owner owns — `<catalogs store>/JOB_CLASSES.md` —
- * keyed by job NAME, and the stock catalog is never edited and never shadowed for it.
- * Owner-authored jobs class through the same manifest: one place to look, one file.
- *
- * THE WORD IS CLASS, AND THAT IS A RULING TOO (owner, 2026-08-21: "we should not be
- * using groups"): `group` in this house is the roster's ADDRESSING word — a session's
- * `+tag:` memberships a coordinator resolves to live members. A job class organizes the
- * ＋ New board and addresses NOTHING: nothing resolves one to members over an API and no
- * behavior may branch on a class's name. The UI still draws them as collapsible
- * groupings — the presentation is grouped, the vocabulary is class.
- *
- * A job may carry several classes (the personal trainer sits in `personal` AND
- * `health`); a class is a shelf, not a type.
- *
- * The format is the house entry format, read by the same splitter every catalog uses:
- * one `## <class>` per class, `- **jobs:** name, name` under it, file order = board
- * order. A class with no jobs line is a real, EMPTY class — unlike the roster's derived
- * groups there is a file here, so a class survives being emptied and dies only by
- * deletion. A job named here that the catalog no longer knows renders nowhere and stays
- * in the file: the manifest is the owner's, and a stock job may come back.
- */
-export interface JobClass {
-  name: string;
-  jobs: string[];
-}
-
-const JOB_CLASSES_FILE = 'JOB_CLASSES.md';
-/** The roster's group-name rule (js/roster.js cleanGroup), enforced server-side. */
-const isValidClassName = (s: string): boolean => /^[a-z0-9][a-z0-9_-]{0,31}$/.test(s);
-/** A job name is a catalog heading's first word — word characters and hyphens. */
-const isValidJobName = (s: string): boolean => /^[\w-]{1,64}$/.test(s);
-
-function jobClassesHeader(): string {
-  return `# JOB_CLASSES — how the launcher shelves your session jobs (user scope)
-
-> **Ronin made this file; Ronin never replaces it.** It lives outside every repo, an
-> upgrade cannot touch it, and an uninstall leaves it. Hand-edit it freely.
->
-> One \`## <class>\` block per job class, \`- **jobs:** name, name\` under it. File
-> order is display order on the ＋ New board; a block with no jobs line is an empty
-> class waiting for members, and a job may appear in several classes. Job classes
-> organize that board and address nothing — the roster's session groups are the
-> addressing kind (\`+tag:\`).
-`;
-}
-
-/**
- * THE SHIPPED SHELVES (owner, 2026-08-21). In code, not in a seeded file, so they track
- * releases exactly until the owner first writes — the moment JOB_CLASSES.md exists, it
- * rules whole, including ruling these away. Every stock job is on a shelf: an unshelved
- * job renders in the flat tail, which cannot fold, and a default that cannot fold
- * defeats the shelves (owner, same day, on seeing exactly that).
- */
-const DEFAULT_JOB_CLASSES: JobClass[] = [
-  { name: 'developer', jobs: ['RiffOnIt', 'DraftPlan', 'CutCode', 'ChaseBug', 'CheckWork', 'QuarterBack'] },
-  { name: 'assistant', jobs: ['PersonalAssistant', 'MikaAssist'] },
-  { name: 'extra', jobs: ['OddJob', 'Atarashi', 'OpenShell'] },
-];
-
-export async function readJobClasses(): Promise<JobClass[]> {
-  const raw = await readUserCatalog(JOB_CLASSES_FILE);
-  // ABSENT means the defaults; PRESENT rules whole. An owner who deletes every shelf
-  // gets an empty board back, not our defaults over their decision — the file they
-  // saved is the difference between "never said" and "said none".
-  if (raw === '') return DEFAULT_JOB_CLASSES.map((c) => ({ ...c, jobs: [...c.jobs] }));
-  return splitSections(raw, 'user')
-    .filter((s) => s.name === s.head) // a heading with a space is prose, never a class
-    .map((s) => ({ name: s.name, jobs: splitList(entryValue(s.lines, 'jobs')) }));
-}
-
-/**
- * Replace the manifest whole. Board edits are single membership toggles, so the client
- * sends the full next state; the file is small by cap, and per-entry surgery
- * (saveLaunch's shape) would buy nothing here but a second code path.
- */
-export async function writeJobClasses(classes: JobClass[]): Promise<JobClass[]> {
-  if (!Array.isArray(classes)) throw new Error('Send { classes: [{ name, jobs }] }.');
-  if (classes.length > 32) throw new Error('Refused: more than 32 job classes.');
-  const seen = new Set<string>();
-  const clean: JobClass[] = classes.map((g) => {
-    const name = String(g?.name ?? '').trim();
-    if (!isValidClassName(name)) {
-      throw new Error(`"${name}" is not a class name — lowercase letters, digits, - and _, at most 32.`);
-    }
-    if (seen.has(name)) throw new Error(`Class "${name}" appears twice.`);
-    seen.add(name);
-    const jobs = [...new Set((Array.isArray(g?.jobs) ? g.jobs : []).map((j) => String(j).trim()).filter(Boolean))];
-    for (const j of jobs) if (!isValidJobName(j)) throw new Error(`"${j}" is not a job name.`);
-    if (jobs.length > 64) throw new Error(`Class "${name}" holds more than 64 jobs.`);
-    return { name, jobs };
-  });
-
-  const text = [
-    jobClassesHeader(),
-    ...clean.flatMap((g) => ['', `## ${g.name}`, ...(g.jobs.length ? [`- **jobs:** ${g.jobs.join(', ')}`] : [])]),
-    '',
-  ].join('\n');
-  // Parse the RESULT before committing it — the same refusal saveLaunch makes: a
-  // manifest we could not read back is never written.
-  if (splitSections(text, 'user').filter((s) => s.name === s.head).length !== clean.length) {
-    throw new Error('Refused: the manifest would not read back whole.');
-  }
-  await writeCatalogFile(JOB_CLASSES_FILE, text);
-  return clean;
 }

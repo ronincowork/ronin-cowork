@@ -164,7 +164,7 @@ michi is absent — the one way that question is asked anywhere in the client.
 ### The mark — what this session is doing
 
 The job button. Reads `session_job` off the session list, which carries it for every session.
-Click it to change it: a popover of the `SESSION_JOBS.md` catalog, plus *not marked*, which
+Click it to change it: a popover of the `ronin_catalogs/session_tasks/` definitions, plus *not marked*, which
 is a real state and stays reachable.
 
 **`?` when nobody has said, not blank.** It was blank first, on the argument that a made-up

@@ -13,7 +13,7 @@
  * tile's own 🏷 opens.
  */
 import { request } from './request.js';
-import { STATUS_LABEL, homeData, homeFault, jobIcon } from './home.js';
+import { STATUS_LABEL, homeData, homeFault, taskIcon } from './home.js';
 import { S, tiles } from './state.js';
 import { clampTip, humanAge } from './shingo.js';
 
@@ -157,22 +157,24 @@ export function buildRoster(tile, host) {
       r.classList.add('dragging');
     });
     r.addEventListener('dragend', () => r.classList.remove('dragging'));
-    // The session's MARK: the icon of the session_job in its LETTER, on every row. It
+    // The session's MARK: the icon of the session_task in its LETTER, on every row. It
     // replaced the 人, which named only who was in charge, had to be set by hand, and
     // left every other row blank — the job is what actually differs between two
     // sessions on this board, and the coordinator is the one whose job is QuarterBack.
     //
-    // READ-ONLY here, and that is the point: the session writes its own session_job
+    // READ-ONLY here, and that is the point: the session writes its own session_task
     // with write_tegami as it migrates, so the roster shows what the session says it is
     // doing. A click-to-change on this glyph would put the owner's hand on a field the
     // letter hands to the agent — and then two writers would race over one line.
     // Blank until the session has written its letter; nothing is guessed on its behalf.
     const jb = document.createElement('span');
-    const mark = jobIcon(s);
+    const mark = taskIcon(s);
     jb.className = 'home-job' + (mark ? '' : ' off');
-    jb.dataset.job = s.session_job || ''; // so style can reach one mark — see style.css
+    jb.dataset.job = s.session_task || ''; // so style can reach one mark — see style.css
     jb.textContent = mark;
-    jb.title = mark ? s.session_job : 'has not said what it is doing yet';
+    jb.title = mark
+      ? [s.session_task, s.job_role && `(${s.job_role})`].filter(Boolean).join(' ')
+      : 'has not said what it is doing yet';
     r.appendChild(jb);
     // The name takes the slack (`minmax(0, 1fr)`), so the spacer `.grow` that used to
     // shove the readings rightwards is gone with the flex row it existed to stretch —

@@ -65,7 +65,7 @@ who need opposite things, so it carries two separate pieces of writing:
   the always-visible blurb explains what it does for somebody who has never heard of it. No
   jargon a newcomer would not have, and **true about what the macro actually does** rather
   than evocative — a destructive macro's blurb must say so plainly instead of sounding
-  inviting. Same two keys, same job, as the kind buttons in `SESSION_JOBS.md`.
+  inviting. Same two keys, same job, as the launcher buttons in `ronin_catalogs/session_tasks/`.
 
 **Both are required on every entry** — `check:catalogs` fails a stock entry missing either —
 and **no human surface may fall back to the instruction.** Showing *"Owner-invoked only —

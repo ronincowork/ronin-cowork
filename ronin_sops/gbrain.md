@@ -32,7 +32,7 @@ choice (owner, 2026-08-17). It cannot be flipped mid-session; that is a relaunch
 never proposes off on its own initiative — only when the owner's words asked for it.
 
 **🎩 PersonalAssistant has no toggle: it is born connected** (`mcp: always`,
-`ronin_catalogs/SESSION_JOBS.md`) — the form does not offer off and the spawn refuses it.
+`ronin_catalogs/job_roles/`) — the form does not offer off and the spawn refuses it.
 
 ## What you may do with the brain
 

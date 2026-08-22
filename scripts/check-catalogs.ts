@@ -4,9 +4,9 @@
  *
  * Three questions, all asked from the running code's point of view:
  *
- *   1. SURFACING. Does every bare `## name` entry in a stock catalog actually come out
- *      of the reader that serves it? The readers drop what they cannot use — a session
- *      job with no `opening` simply vanishes from the launcher — and silence is the
+ *   1. SURFACING. Does every bare `## name` entry in a stock catalog — and every stock
+ *      DEFINITION FILE in `job_roles/` and `session_tasks/` — actually come out of the
+ *      reader that serves it? The readers drop what they cannot use, and silence is the
  *      failure mode. A dropped stock entry FAILS the check. (A user file on this box
  *      can legitimately hide one; the message says so when that is the likely cause.)
  *
@@ -22,10 +22,13 @@
  * Uses the SAME parser and readers as the server (src/catalog.ts, src/macros.ts,
  * src/project-roots.ts) — a check with its own parser would drift, silently.
  */
-import { readFile, stat } from 'node:fs/promises';
+import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { STOCK_DIR, splitSections, readEntries, listSessionJobs } from '../src/catalog.js';
+import { STOCK_DIR, splitSections, readEntries } from '../src/catalog.js';
+import { listJobRoles, listSessionTasks, type DefinitionKind } from '../src/definitions.js';
+import { resolveLaunchProfile, type LaunchProfile } from '../src/launch-profile.js';
+import { findDefinition } from '../src/definitions.js';
 import { listMacros } from '../src/macros.js';
 import { listSessionLaunchSpecs } from '../src/project-roots.js';
 
@@ -113,9 +116,82 @@ async function deadLinks(file: string): Promise<void> {
   }
 }
 
-const FILES = ['SESSION_JOBS.md', 'MACROS.md', 'ACTIONS.md', 'TOOLS.md', 'PROJECT_ROOTS.md'];
+/**
+ * THE DEFINITION DIRECTORIES — the same surfacing question, asked of files rather than of
+ * `## name` blocks. A stock `.md` that the reader will not return is either malformed (no
+ * key lines at all) or hidden, and both are worth naming.
+ */
+async function surfacingDefinitions(
+  kind: DefinitionKind,
+  served: () => Promise<{ name: string }[]>,
+): Promise<void> {
+  const want = (await readdir(path.join(STOCK_DIR, kind)))
+    .filter((f) => f.endsWith('.md') && f !== 'README.md')
+    .map((f) => f.replace(/\.md$/, ''));
+  const got = new Set((await served()).map((e) => e.name));
+  for (const name of want) {
+    if (!got.has(name)) {
+      fail(
+        `${kind}/${name}.md: does not surface from its reader — ` +
+          `malformed (no \`- **key:** value\` lines), or hidden by a user file on this box`,
+      );
+    }
+  }
+}
 
-await surfacing('SESSION_JOBS.md', listSessionJobs);
+/**
+ * EVERY SHIPPED COMBINATION RESOLVES. The cascade refuses contradictions
+ * (`src/launch-profile.ts`), and a refusal we shipped is a launch button that cannot be
+ * pressed. So every role is resolved blank, every role × each task on its shelf, and every
+ * task on its own — which is exactly the set of buttons the board draws.
+ *
+ * It also catches a task shelved on a role it cannot legally sit with, which is the one
+ * mistake the many-to-many membership makes easy to write.
+ */
+async function definitionsResolve(): Promise<void> {
+  const roles = await listJobRoles();
+  const tasks = await listSessionTasks();
+  const shelved = new Set(roles.flatMap((r) => r.session_tasks));
+  const pairs: [string, string][] = [
+    ...roles.map((r) => [r.name, ''] as [string, string]),
+    ...roles.flatMap((r) => r.session_tasks.map((tk) => [r.name, tk] as [string, string])),
+    // A loose task is launched with a blank role, and that combination is a button too.
+    ...tasks.filter((tk) => !shelved.has(tk.name)).map((tk) => ['', tk.name] as [string, string]),
+  ];
+  for (const [role, task] of pairs) {
+    const [roleDef, taskDef] = await Promise.all([
+      findDefinition('job_roles', role),
+      findDefinition('session_tasks', task),
+    ]);
+    if (role && !roleDef) {
+      fail(`job_roles/: "${role}" is listed but does not resolve`);
+      continue;
+    }
+    if (task && !taskDef) {
+      fail(`job_roles/${role}.md: shelves "${task}", which is not a session_task on this box`);
+      continue;
+    }
+    let profile: LaunchProfile;
+    try {
+      profile = resolveLaunchProfile(roleDef, taskDef);
+    } catch (e) {
+      fail(`launch profile ${role || '(no role)'} × ${task || '(no task)'}: ${String((e as Error).message)}`);
+      continue;
+    }
+    // A profile that launches an agent with no first message is a button that starts a
+    // session and tells it nothing — the old "an agent job with no opening" filter, now
+    // asked of the resolved pair instead of of one catalog entry.
+    if (profile.agent && !profile.opening) {
+      fail(`launch profile ${role || '(no role)'} × ${task || '(no task)'}: launches an agent with no \`opening:\``);
+    }
+  }
+}
+
+const FILES = ['MACROS.md', 'ACTIONS.md', 'TOOLS.md', 'PROJECT_ROOTS.md'];
+
+await surfacingDefinitions('job_roles', listJobRoles);
+await surfacingDefinitions('session_tasks', listSessionTasks);
+await definitionsResolve();
 await surfacing('MACROS.md', listMacros);
 await surfacing('ACTIONS.md', () => readEntries('ACTIONS.md'));
 await surfacing('TOOLS.md', () => readEntries('TOOLS.md'));

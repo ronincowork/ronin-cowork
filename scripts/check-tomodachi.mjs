@@ -9,7 +9,7 @@
  *      KOTOBA.md. The list is code (see record.ts on why), and this is what keeps
  *      the code honest to the house vocabulary.
  */
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
@@ -79,7 +79,8 @@ ok(`${HOSTILE.length} hostile inputs × ${KINDS.length} kinds — nothing surviv
 
 // The other half: a house noun MUST survive, or the sanitiser is just a shredder.
 const survives = [
-  ['session_job', 'CutCode'],
+  ['session_task', 'CutCode'],
+  ['job_role', 'developer'],
   ['dial', 'write'],
   ['macro', 'forkit'],
   ['lock', 'unlocked'],
@@ -91,14 +92,26 @@ for (const [kind, value] of survives) {
 ok('house nouns pass through unchanged');
 
 if (term('macro', 'my-own-macro') !== 'custom') fail("an unknown macro must become 'custom'");
-if (term('session_job', 'Whatever') !== 'other') fail("an unknown job must become 'other'");
-if (term('session_job', null) !== null) fail('null in, null out');
+if (term('session_task', 'Whatever') !== 'other') fail("an unknown task must become 'other'");
+if (term('job_role', 'whatever') !== 'other') fail("an unknown role must become 'other'");
+if (term('session_task', null) !== null) fail('null in, null out');
 ok('unknown → custom / other; null → null');
 
 /* ---- 2. KOTOBA is the authority ---- */
+// The two definition DIRECTORIES, not one catalog file: since the schema cut, a role and
+// a task are each one file and the filename is the token. Both the NAMES and the TEXT go
+// into the haystack — the names because a token is a filename here, and the text because
+// the prose the old combined catalog carried (the launch modes, the field notes) moved
+// into each directory's README rather than disappearing.
+const defs = (kind) => {
+  const dir = path.join(REPO, 'ronin_catalogs', kind);
+  return readdirSync(dir)
+    .filter((f) => f.endsWith('.md'))
+    .map((f) => `${f.replace(/\.md$/, '')}\n${readFileSync(path.join(dir, f), 'utf8')}`)
+    .join('\n');
+};
 const kotoba = readFileSync(path.join(REPO, 'KOTOBA.md'), 'utf8');
-const jobs = readFileSync(path.join(REPO, 'ronin_catalogs', 'SESSION_JOBS.md'), 'utf8');
-const haystack = kotoba + jobs;
+const haystack = kotoba + '\n' + defs('session_tasks') + '\n' + defs('job_roles');
 
 // Two categories are deliberately NOT house vocabulary, so KOTOBA does not index them
 // and checking them against it would be theatre: `model` is vendor model names, `client`
@@ -106,7 +119,12 @@ const haystack = kotoba + jobs;
 // value pass on an incidental substring match elsewhere in the file is not.
 const EXEMPT_KINDS = new Set(['model', 'client']);
 // Bucket words we coined for the payload rather than nouns the house speaks.
-const EXEMPT = new Set(['other', 'custom', 'root', 'job', 'root+job', 'universal', 'hit', 'empty']);
+const EXEMPT = new Set([
+  'other', 'custom', 'hit', 'empty',
+  // OBOERU's scope buckets — coined for the payload, and combinations of axis names
+  // rather than nouns the house speaks in their own right.
+  'root', 'role', 'task', 'root+role', 'root+task', 'root+role+task', 'universal',
+]);
 // Tab ids that are house surface names but not yet indexed. `stats` is registered with
 // @kotoba (see the kotoba wipeboard); `hotwords` predates TOMODACHI. Remove from this list
 // as KOTOBA gains the rows — that is the point of it being a list rather than a shrug.
@@ -116,7 +134,9 @@ for (const [kind, values] of Object.entries(VOCAB)) {
   if (EXEMPT_KINDS.has(kind)) continue;
   for (const v of values) {
     if (EXEMPT.has(v) || PENDING_KOTOBA.has(v)) continue;
-    if (!haystack.includes(v)) fail(`VOCAB.${kind} has '${v}', which appears in neither KOTOBA.md nor SESSION_JOBS.md`);
+    if (!haystack.includes(v)) {
+      fail(`VOCAB.${kind} has '${v}', which is neither in KOTOBA.md nor a definition filename`);
+    }
   }
 }
 ok('every allow-list literal is a documented house noun');

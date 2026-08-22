@@ -45,10 +45,11 @@ STORE_BIN="$(cd "$(dirname "${BASH_SOURCE[0]}")/../bin" && pwd)/ronin-store"
 [ -x "$STORE_BIN" ] || STORE_BIN=ronin-store
 SESSION_STORE="$("$STORE_BIN" session 2>/dev/null)"
 
-# A session's session_job, out of its own letter — '' when it has no letter or has not
-# said. The role lives in TEGAMI because the session may change it as the work changes
-# (`write_tegami`); it is seeded at birth with the job the owner launched it as.
-job_of() {
+# A session's two axes out of its own letter, as 'job_role\tsession_task' — empty fields
+# when it has no letter or has not said. Both live in TEGAMI: the TASK because the session
+# may change it as the work changes (`write_tegami`), the ROLE because it was fixed at
+# birth and nothing may change it afterwards.
+axes_of() {
   local key row stamped created
   [ -n "${SESSION_STORE:-}" ] || return 0
   row=$(tmux list-sessions -F '#{session_name}	#{@ronin-key}	#{session_created}' 2>/dev/null \
@@ -67,15 +68,15 @@ except OSError:
 m = re.search(r"```(?:json)?\s*\n(.*?)\n```", t, re.S)
 raw = m.group(1) if m else t[t.find("{"):t.rfind("}") + 1]
 try:
-    j = json.loads(raw).get("session_job", "")
+    d = json.loads(raw)
 except Exception:
     raise SystemExit
-if isinstance(j, str):
-    print(j.strip())
+say = lambda k: d[k].strip() if isinstance(d.get(k), str) else ""
+print("%s\t%s" % (say("job_role"), say("session_task")))
 PY
 }
 
-# name·boards·dial·session_job for every real session, viewers dropped.
+# name·boards·dial·job_role·session_task for every real session, viewers dropped.
 #
 # SEP is \x1f (unit separator), NOT a tab. Tab is an IFS *whitespace* character, so bash
 # collapses a RUN of them into one delimiter: a session on no board emitted as
@@ -84,7 +85,9 @@ PY
 SEP=$'\x1f'
 roster() {
   while IFS=$SEP read -r name boards dial; do
-    printf '%s%s%s%s%s%s%s\n' "$name" "$SEP" "$boards" "$SEP" "$dial" "$SEP" "$(job_of "$name")"
+    # axes_of answers 'role<TAB>task'; the tab becomes a SEP so both are fields here.
+    printf '%s%s%s%s%s%s%s\n' "$name" "$SEP" "$boards" "$SEP" "$dial" "$SEP" \
+      "$(axes_of "$name" | tr '\t' "$SEP")"
   done < <(tmux list-sessions -F "#{session_name}${SEP}#{${BOARDS_OPT}}${SEP}#{@ronin-control}" 2>/dev/null \
     | grep -v "^${VIEWER_PREFIX}")
 }
@@ -152,19 +155,21 @@ BOARD=$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]'); shift
 [[ "$BOARD" =~ $NAME_RE ]] && [ ${#BOARD} -le 32 ] \
   || { echo "BAD-NAME: '$BOARD' — lowercase letters, digits, - and _ only (max 32)"; exit 2; }
 
-# Members of $BOARD, one 'name<TAB>dial<TAB>session_job' per line, QuarterBacks first.
+# Members of $BOARD, one 'name<TAB>dial<TAB>session_task' per line, quarterbacks first.
 # On a shared surface the other agents need to know which voice is coordinating them —
-# that used to be a hand-set 人 (@ronin-lead) and is now simply the session's job. The
-# job NAME is printed, not its icon: this is a readout for agents, and a word beats an
+# that used to be a hand-set 人 (@ronin-lead), then the session's job, and is now its
+# ROLE, which is the better answer because a role cannot change mid-session. The TASK is
+# what is printed beside each name, because "what is each of these doing?" is the question
+# a shared board asks. Names, not icons: this is a readout for agents, and a word beats an
 # emoji when the reader is parsing lines. '-' where nobody has said.
 members() {
-  while IFS=$SEP read -r name boards dial job; do
+  while IFS=$SEP read -r name boards dial role task; do
     case ",${boards// /}," in *",${BOARD},"*) ;; *) continue ;; esac
-    [ "${job:-}" = QuarterBack ] && printf '%s\t%s\t%s\n' "$name" "${dial:-write}" "$job"
+    [ "${role:-}" = quarterback ] && printf '%s\t%s\t%s\n' "$name" "${dial:-write}" "${task:-quarterback}"
   done < <(roster)
-  while IFS=$SEP read -r name boards dial job; do
+  while IFS=$SEP read -r name boards dial role task; do
     case ",${boards// /}," in *",${BOARD},"*) ;; *) continue ;; esac
-    [ "${job:-}" = QuarterBack ] || printf '%s\t%s\t%s\n' "$name" "${dial:-write}" "${job:--}"
+    [ "${role:-}" = quarterback ] || printf '%s\t%s\t%s\n' "$name" "${dial:-write}" "${task:--}"
   done < <(roster)
 }
 
