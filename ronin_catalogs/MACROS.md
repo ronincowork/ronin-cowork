@@ -138,20 +138,71 @@ PROPOSE it ("I'd like to fork X into its own session") and wait for the go-ahead
 Unannounced sessions are untrackable for the human until the UI reveals them. Spin the current conversation's active topic out into its own agent
 session, so the origin session stays on its track. (The breakout pattern, first performed manually 2026-08-05.)
 
-Params: `topic` (short slug), `dir` (working directory for the new session; default:
-current repo root), `group` (which group the new session joins; default: the origin
-session's own groups, so a fork stays addressable with its parent — `tejun-group` lists
-what exists. Ask the owner if the origin has none).
+Params: `topic` (short slug), `dir` (working directory; default: current repo root),
+`team` (which team the new session joins; default: the origin session's own teams, so a
+fork stays addressable with its parent. Ask the owner if the origin has none),
+`job_role` (default: **the origin session's own role**), `session_task` (default:
+`DraftPlan`), `model` (default: **omit it** — the cascade answers).
+
+**Use the same launch contract the ＋ New form uses. Do not rebuild it.** Forks were
+starting from a bare `tmux new-session` and then typing a CLI at it, which is a second,
+bespoke launch path — and it arrives with **zero Build Brief**: no reading list, no
+posture, no letter, and no role. `session-launch` is the canonical pipeline, and the fork
+gets the whole compiled brief from it: all-session reading + the project_root's + the
+job_role's + the session_task's, and then the handoff and its understanding gate on top.
+
+**A FORK THAT LAUNCHES AN AGENT RESOLVES ITS AXES DELIBERATELY** (owner, 2026-08-22).
+Forks used to be born through raw `tmux new-session`, which never touches the letter — so
+they carried a blank `job_role` FOREVER, since the role is stamped at birth and immutable,
+and could only ever self-set a task later. Measured on `explainer_library` and
+`wipeboard_groups`, both of which did exactly that. `session-launch` is the fix: it is the
+one door, and it is the only thing that can stamp a role.
+
+**The two axes default differently, and the asymmetry is the point.**
+
+- **`job_role` is INHERITED from the origin**, because a fork continues the same kind of
+  work under the same hat — a fork is an origin, not a change of identity. It is
+  **immutable**, so a wrong one cannot be repaired: if the origin's own role is blank,
+  do NOT pass blank through. **ASK the owner which role the fork wears**, and say why you
+  are asking. That is the one question this macro is allowed to add.
+- **`session_task` DEFAULTS to `DraftPlan`**, because a fork's first act is to read a
+  handoff, understand it and plan — which is what `DraftPlan` is. It is **mutable** and
+  self-correcting: a wrong task costs one `write_tegami`, and re-marking hands the session
+  the new task's reading automatically. So it may default silently where the role may not.
+
+**The model is the third field to resolve, and the honest default is to say nothing.**
+Omit it and the cascade answers — the task's `model:` bias, else the role's, else the
+install default. Pass one only when the owner named one; an explicit model beats every
+layer. It must be a real cell from the launch table, never a command you composed.
+
+State both resolved axes in the report. The owner is one glance from seeing a wrong
+role and one kill from fixing it, which is only true if the report says what was chosen.
 
 | # | Action | With |
 |---|---|---|
-| 1 | write-handoff-doc | a wip handoff doc (location per the documents SOP) — distill THIS conversation's context on the topic: goal in the owner's words, constraints, verification, definition of done |
-| 2 | session-create | name `<topic>`, cwd `<dir>`, tags `<group>` |
-| 3 | run-command | `claude` |
-| 4 | wait-ready | claude pattern |
-| 5 | send-prompt | **READ AND REPORT UNDERSTANDING FIRST — never "read this and execute it".** A fork starts by proving it understood, not by working: "Read <handoff path>. Then report back, in your own words: what the job is, what you will NOT do (in particular: NO code, NO builds, NO commits until the owner says go), and anything in the brief that is unclear or looks wrong. Do not act on it yet — wait for the owner. Follow CLAUDE.md and CLAUDE.local.md conventions strictly." Add, for planning topics, what the eventual deliverable is: "when the owner gives the go-ahead, the output is a wip build-out plan per the documents SOP — a plan, not code." |
-| 6 | confirm-started | the fork has ACKNOWLEDGED — it reported its understanding and is waiting, not working |
-| 7 | report-outcome | session name, topic, handoff doc path, how to open it |
+| 1 | read-letter | your OWN letter — the `job_role` you will pass on, and your teams |
+| 2 | write-handoff-doc | a wip handoff doc (location per the documents SOP) — distill THIS conversation's context on the topic: goal in the owner's words, constraints, verification, definition of done |
+| 3 | propose-and-confirm | ONLY when the origin's `job_role` is blank: name the role you would give the fork and wait for the yes |
+| 4 | session-launch | name `<topic>`, `job_role` `<role>`, `session_task` `<task>`, `project_root`/dir `<dir>`, tags `<team>`, `cmd` only if the owner named a model, and the prompt below |
+| 5 | confirm-started | the fork has ACKNOWLEDGED — it reported its understanding and is waiting, not working |
+| 6 | report-outcome | session name, topic, resolved `job_role` + `session_task`, handoff doc path, how to open it |
+
+**The prompt for step 4** — READ AND REPORT UNDERSTANDING FIRST, never "read this and
+execute it". A fork starts by proving it understood, not by working: *"Read <handoff
+path>. Then report back, in your own words: what the job is, what you will NOT do (in
+particular: NO code, NO builds, NO commits until the owner says go), and anything in the
+brief that is unclear or looks wrong. Do not act on it yet — wait for the owner. Follow
+CLAUDE.md and CLAUDE.local.md conventions strictly."* Add, for planning topics, what the
+eventual deliverable is: *"when the owner gives the go-ahead, the output is a wip build-out
+plan per the documents SOP — a plan, not code."*
+
+Do NOT type that prompt into the pane. It rides in on `session-launch` as part of the
+compiled Build Brief, and the resolved task's own `ack:` rule adds the report-first
+instruction on top of it.
+
+**Afterwards the fork owns its own task.** When its work moves on — plan approved, cutting
+begins — it re-marks itself with `write_tegami` and Ronin hands it that task's reading,
+once. Its `job_role` does not move with it, and nothing can change it.
 
 Report: session name, one-line topic, where the handoff doc lives. **A macro's result
 must be shown, not just performed** — until the UI auto-splits the panel on fork

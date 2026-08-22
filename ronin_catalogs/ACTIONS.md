@@ -60,6 +60,54 @@ created is addressable (`tejun-group <group>`) from its first breath, and nobody
 remember to label it later. Use a group that already exists — `tejun-group` lists them —
 rather than coining a near-duplicate.
 
+## session-launch — born on all three axes, through the one door
+`action_kind: mechanical` — run it, don't deliberate.
+
+**Use this, not `session-create`, whenever the new session runs an AGENT.** It is the
+same door the ＋ New board presses (`POST /api/launch`), and it does create, tag, dial,
+CLI launch and brief delivery in ONE call — so there is nothing to type at a pane and
+nothing to wait for a prompt to appear.
+
+It is also the ONLY way a new session gets a **`job_role`**. The role is stamped at birth
+and immutable afterwards, so a session hand-rolled with `tmux new-session` has a blank
+role for its entire life and no tool can repair it. That was measured: forks made the old
+way carried no role at all and could only ever self-set a task.
+
+```bash
+curl -sS -X POST http://127.0.0.1:${PORT:-3006}/api/launch \
+  -H 'content-type: application/json' \
+  -d '{"job_role":"<role>","session_task":"<task>","name":"<name>",
+       "project_root":"<root>","tags":["<team>"],"prompt":"<what it is told>"}'
+```
+
+**The axes, and what each may be left out of.** `project_root` is required and omitting it
+selects the top active root. `job_role` and `session_task` may each be blank, and blank is
+a real launch — but **an agent-launching fork must RESOLVE them deliberately rather than
+omit them by accident** (owner, 2026-08-22). The receipt names what was actually resolved;
+read it back and report it.
+
+**THE MODEL — leave it out unless the owner named one.** Omit `cmd` and the launch resolves
+it through the cascade: the `model:` bias of the selected task, else of the role, else the
+install's own default. Passing `cmd` is the explicit pick and beats all of them. It must be
+a real `session_launch_spec` cell from the launch table (`ronin_catalogs/PROJECT_ROOTS.md`),
+never a command you composed — a hand-typed command matches no table row, so the launch
+cannot honor an MCP-off choice for it.
+
+**IT DELIVERS THE WHOLE BUILD BRIEF, which is the other half of why this is the door.** An
+assisted launch composes the posture, the reading list — `all/` + `root/<project_root>/` +
+`role/<job_role>/` + `task/<session_task>/`, plus any connected level when the brain is on
+— the task's opening template with your prompt in it, and the acknowledgement rule. A
+session made with `tmux new-session` gets NONE of that: no reading list, no posture, no
+letter, and no role, ever.
+
+The response carries `receipt` — `job_role`, `session_task`, `project_root`, `dial`,
+`cmd`, `mcp`. A launch that refuses answers 400 with the reason written for the owner (an
+unknown axis, a locked `mcp:` contradicted, an agentless launch handed a command); report
+the reason, do not retry around it.
+
+**No `run-command`, no `wait-ready`, no `send-prompt` after this.** The brief rode in on
+the CLI's own command line. Adding a typed prompt on top double-briefs the session.
+
 ## run-command
 `action_kind: mechanical` — run it, don't deliberate.
 Type a command into a session and run it.

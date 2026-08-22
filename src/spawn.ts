@@ -300,7 +300,22 @@ export async function resolveForm(
   const defaultCmd = dflt?.provider && dflt?.model
     ? launchSpecs.find((s) => s.provider === dflt.provider && s.model === dflt.model)?.cmd
     : undefined;
-  let cmd = agent ? form.cmd || defaultCmd || 'claude' : '';
+  // THE `model:` BIAS, RESOLVED — and until 2026-08-22 it was decorative. Every definition
+  // carried one ("which model this way of working usually deserves"), the cascade resolved
+  // one, and nothing whatever read it: the install default won every launch that did not
+  // name a command explicitly. So the field said one thing and the box did another.
+  //
+  // It sits BETWEEN the install default and the explicit pick, which is the cascade's own
+  // order — system < job_role < session_task < this launch. The bias is a model NAME and
+  // is matched against the launch table's own model column, never turned into a command
+  // string here: the table is the one place a provider is a row and a model is a column.
+  // The owner's default provider is preferred when two of them offer the same name, so
+  // biasing toward `sonnet` on a Codex box stays on Codex.
+  const biasCmd = profile.model
+    ? (launchSpecs.find((s) => s.model === profile.model && s.provider === dflt?.provider)
+        ?? launchSpecs.find((s) => s.model === profile.model))?.cmd
+    : undefined;
+  let cmd = agent ? form.cmd || biasCmd || defaultCmd || 'claude' : '';
   // The row this cmd came out of, matched BEFORE the MCP-off flags are appended below —
   // appending changes the very string the match is on, and looking it up afterwards would
   // find nothing for exactly the launches that asked for something unusual. It carried the
