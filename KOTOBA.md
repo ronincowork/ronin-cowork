@@ -190,19 +190,22 @@ RIREKI's tape off disk. A file is the connection.
 | **user** | system_scope | **A SCOPE, NEVER A PERSON** (R16, closed 2026-08-14) — `user_scope`, `ronin_user_root`, "the user's own catalogs" meaning *that scope's*. For a human, say **the_owner** | `DAIKUSAN.md` |
 | **agent** | system_scope | the genus: the CLI running in a tile — claude, codex, a shell script. Ronin never reaches inside one; **vendor neutrality is the thesis**. Three roles wear it: **owner_agent** (their work), **developer_agent** (Ronin's own code), **koshi** (the house's internal jobs) | `reading-list/TEJUN.md` |
 | **session** | system_scope | a tmux session: **the unit of work and the unit of addressing.** One agent, one job, one name. Mortal — nothing of value may live only in a tile | `docs/architecture.md` |
-| **pane** | system_scope | the tmux terminal a tile shows. **Machinery only** — legal where tmux's own meaning is what is being described, and nowhere else. The word a person reads is **tile**, § COWORKSPACE | `docs/rireki.md` |
+| **pane** | system_scope | **tmux's word, not ours — retired from house vocabulary** (owner, 2026-08-22). It names only tmux's own object inside the tmux server, the thing `pipe-pane` attaches to. Our representations of it — browser AND backend — are the **tile**. Legal only when literally speaking about tmux's object; anywhere our own structure is called a pane, the name is wrong and the sweep has a thread (ronin-lab OPEN_THREADS 4.33) | `docs/rireki.md` |
 | **system** | system_scope | the installed Ronin — code and stock catalogs, i.e. the **ronin_install**. Not a loose adjective for "Ronin-ish"; the running copy is the **ronin_operator**, and the product in the abstract is **Ronin** | `DAIKUSAN.md` |
 
-**tile and pane are one thing from two sides, and only one of them is the word.** A pane is
-the tmux terminal the agent's process actually runs in; a tile is that pane rendered in the
-coworkspace. **Say tile.** In docs, tooltips, site copy, a session's own prose, and anything
-an agent writes — tile, always.
+**pane is tmux's word for tmux's object, and that is the whole of it** (owner, 2026-08-22,
+strengthening 2026-08-10/13). The pane exists inside the tmux server; everything OURS that
+touches or shows one — the browser cell, the backend's handle on it, the registries and
+comments around both — is the **tile**. Say tile in docs, tooltips, site copy, code, a
+session's own prose, and anything an agent writes.
 
-**`pane` survives in exactly one place: where tmux's own mechanism is the subject.** RIREKI
-tapes *per pane* and faucet B is *exactly one per pane* — those sentences are about tmux and
-would become false if reworded. That is the whole exemption. It is not a license to say
-*pane* because it feels more technical; if a tile could be substituted without making the
-sentence wrong, the sentence was supposed to say tile.
+**`pane` survives only where tmux's own object is literally the subject.** RIREKI's
+recorder pipes *a pane* and faucet B is *exactly one per pane* — those sentences are about
+tmux and would become false if reworded. That is the whole exemption. It is not a license
+to say *pane* because it feels more technical; if *tile* could be substituted without
+making the sentence wrong, the sentence was supposed to say tile. Our code that named its
+OWN structures pane (`panes.js`, "the null pane") is misnamed — the rename sweep is
+ronin-lab OPEN_THREADS 4.33.
 
 **The 1:many is real and unhandled** — a two-pane session has two tapes and one name. That
 is a gap in the machinery, not a reason to reach for the word. See § NUANCE.
@@ -455,6 +458,7 @@ useful to the_owner than an invented one.
 | Term | Scope | Means | Record |
 |---|---|---|---|
 | **TOMODACHI** | system_scope | the usage dashboard in the commons + the daily drop | `co-working/user_repo/wip/buildouts/TOMODACHI.md` |
+| **cowork_stats** | system_scope | **the one user-facing name for TOMODACHI's surface, alias "Stats"** (owner, 2026-08-22): every surface says **Stats** — the tab, the Services card, site copy — and `cowork_stats` is the internal spelling. Ends the two-words drift ("Stats" on the tab, "Usage statistics" on the card); TOMODACHI itself never reaches a user's face | `public/js/stats.js` |
 | **SOROBAN** (算盤) | system_scope | the counting contract: every readout uses one of six mechanisms, and a new counter picks one rather than inventing a seventh | `docs/soroban.md` |
 | **tally** | system_scope | +1 on an action; sums across days | `docs/soroban.md` |
 | **gauge** | system_scope | a sampled level, last reading wins. ⚠R6 | `docs/soroban.md` |
@@ -527,14 +531,15 @@ that install ever sent. This binds the collector, not just the client.
 | Term | Scope | Means | Record |
 |---|---|---|---|
 | **RIREKI** | system_scope | the umbrella for the whole record: capture, storage, render and the consumers | `docs/rireki.md` |
-| **tape** | session_scope | **every byte a pane emitted, never interpreted.** Per-pane | `docs/rireki.md` |
-| **recorder** | system_scope | the standalone tmux applet that writes the tape, with or without Ronin running | `libexec/rireki/` |
+| **r_tape** (was `tape`) | session_scope | **every byte a pane emitted, never interpreted** — the bytes out of faucet B, per pane (pane rightly: tmux's object is the granularity `pipe-pane` gives). The `r_` spelling is the ruling (owner, 2026-08-22): bare *tape* was generic enough to collide, and RIREKI's two durable artifacts now wear its initial. Code still spells `tape` — the rename sweep is ronin-lab OPEN_THREADS 4.33 | `docs/rireki.md` |
+| **recorder** | system_scope | the standalone tmux applet that writes the r_tape, with or without Ronin running | `libexec/rireki/` |
 | **ring** | system_scope | the 64MB per-pane ceiling: oldest whole segments drop as new ones arrive | `src/services/rireki/rireki.ts` |
-| **scroll** | session_scope | **what those bytes settled into** — a pane's settled transcript on disk, line-numbered. Derived from the tape, disposable, rebuildable from it | `src/services/rireki/scroll.ts` |
-| **settle / the settler** | system_scope | turning tape bytes into scroll lines, **once per pane** on the janitor's clock, never per client | `src/services/rireki/scroll.ts` |
+| **r_scroll** (was `scroll`) | session_scope | **what those bytes settled into** — the settled transcript on disk, line-numbered, our digest of the r_tape. Derived, disposable, rebuildable from it. Same `r_` ruling and the same pending sweep | `src/services/rireki/scroll.ts` |
+| **settle / the settler** | system_scope | turning r_tape bytes into r_scroll lines, **once per pane** on the janitor's clock, never per client | `src/services/rireki/scroll.ts` |
 | **decoder** | system_scope | one per agent (Claude's and Codex's are built): a signature table naming each line's kind. The only vendor-aware part — decoders **decorate, never delete** | `src/services/rireki/decode.ts` |
 | **lens** | system_scope | the read-side projection (`shown` vs `derived`). ⚠R9 | `src/services/rireki/lens.ts` |
-| **faucet A / B** | system_scope | attach paints pictures (unlimited clients); `pipe-pane` emits bytes (**exactly one per pane**, the recorder's, forever). The tape records B | `docs/rireki.md` |
+| **faucet A / B** | system_scope | attach paints pictures (unlimited clients); `pipe-pane` emits bytes (**exactly one per pane**, the recorder's, forever). The r_tape records B | `docs/rireki.md` |
+| **r_render** | — | **does not exist, recorded so nobody coins it** (owner asked, 2026-08-22): the render is the tile's ephemeral paint — attach paints faucet A live, the tape view paints the r_scroll — and nothing durable is written. RIREKI's artifacts are exactly two: r_tape and r_scroll | — |
 | **tape-fed tile** | system_scope | 🔓 unlocked, rendered from the record rather than from an attachment | `docs/rireki.md` |
 
 **tape ≠ scroll.** Both were being called "the tape". Tape is raw and authoritative; scroll

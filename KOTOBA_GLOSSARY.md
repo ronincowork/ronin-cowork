@@ -39,7 +39,7 @@ learn in order to use Ronin should cost them a second language first.
 | Ronin | **Ronin** | The product. The one word anyone learns on purpose. |
 | `coworkspace` | **the coworkspace** | The whole UI — every tile, panel, tab and button in it. Say *the coworkspace* for the lot, *a tile* for one cell, *the commons* for a tile with no session in it. |
 | tile | **tile** | One cell of the coworkspace, showing one session. The public word for the terminal you look at. |
-| ~~pane~~ | **tile** | **Not a house word — tmux's.** A pane is the tmux terminal a tile shows, and the word survives only where tmux's own mechanism is the subject of the sentence (RIREKI tapes *per pane*). If *tile* could be substituted without making the sentence wrong, it was supposed to say tile (KOTOBA § COWORKSPACE). |
+| ~~pane~~ | **tile** | **Not a house word — tmux's, retired from ours** (owner, 2026-08-22). A pane exists only inside the tmux server (the thing `pipe-pane` attaches to); everything OURS that touches or shows one — browser and backend alike — is the **tile**. The word survives only where tmux's own object is literally the subject (the recorder pipes *a pane*). Our code that misnamed its own structures pane is being swept (OPEN_THREADS 4.33). |
 | session | **session** | One agent, one job, one name. Keeps running when you close the tab. |
 | agent | **agent** | The CLI in a tile — `claude`, `codex`, `pi`, a shell script. |
 | `session_commons` | **the commons** | The shared surface inside a tile when no session is showing — one per tile, and about sessions. Already plain English. (Was `coworking_commons` until 2026-08-18.) |
@@ -88,7 +88,7 @@ learn in order to use Ronin should cost them a second language first.
 | TEGAMI (手紙) | ⚠ **none — see § OPEN 1** | The one file a session keeps about its own work. Still reaching a user's face. |
 | RIREKI (履歴) | ⚠ **two words on screen — see § OPEN 6** | Everything a pane printed, written to disk as it happens. The tape view says *the recording*; the Services card says *Readable transcripts*. One must win. |
 | OBOERU (覚える) | **memory** | Notes that outlive the session that wrote them. |
-| TOMODACHI (友達) | **Stats** *(tab)* · see § OPEN 6 | What your sessions have been doing — counts, not content. The Services card says *Usage statistics*; the tab says *Stats*. |
+| TOMODACHI (友達) | **Stats** | What your sessions have been doing — counts, not content. **Ruled 2026-08-22:** every surface says *Stats*; the internal spelling is `cowork_stats`; the card's "Usage statistics" is renamed. TOMODACHI never reaches a user's face. |
 
 ## § HOW WORK IS ASKED FOR
 
@@ -131,8 +131,8 @@ and each maps to a house name:
 |---|---|
 | **Live status ladders** | MICHI + SHINGO + koshi |
 | **Readable transcripts** | RIREKI — see § OPEN 6 for the word |
+| **Stats** | TOMODACHI + SOROBAN (`cowork_stats` — ruled 2026-08-22, was "Usage statistics") |
 | **Voice** | KOE |
-| **Usage statistics** | TOMODACHI + SOROBAN |
 | **gbrain** | gbrain — a proper name, the vendor's, credited on the card |
 
 ---
@@ -143,8 +143,9 @@ A user never meets these, so they never need an English word. Listed so nobody h
 translates one and creates a second vocabulary.
 
 **Counting:** SOROBAN · tally · gauge · census · ledger · diff · derived · drop · install id
-**The recording machinery:** tape · scroll · recorder · ring · settler · decoder · lens ·
-faucet A / faucet B
+**The recording machinery:** r_tape · r_scroll · recorder · ring · settler · decoder · lens ·
+faucet A / faucet B *(r_tape and r_scroll are RIREKI's two durable artifacts — there is no
+r_render; the tile's paint is ephemeral)*
 **Files and layout:** DAIKUSAN · system_scope · user_scope · session_scope · the upgrade
 test · shadowing · the session directory · build-out doc · handoff · `landed/`
 **Plumbing:** shim · control-check · viewer session · scrape · compile · step tracker ·
@@ -180,6 +181,13 @@ test · shadowing · the session directory · build-out doc · handoff · `lande
 - **The internals say `job_class`; the surface says "job group"** (2026-08-21) — `group`
   is the roster's addressing word and stays unambiguous; KOTOBA § LAUNCHER is the one
   place the split is told.
+- **pane is retired from house vocabulary entirely** (2026-08-22) — tmux's word for
+  tmux's own object, nothing more; our representations, browser and backend, are the
+  tile. Code sweep: OPEN_THREADS 4.33.
+- **RIREKI's durable artifacts spell with its initial: `r_tape` and `r_scroll`**
+  (2026-08-22) — and there is no r_render; the tile's paint is ephemeral.
+- **TOMODACHI's surface unifies on `cowork_stats`, alias "Stats"** (2026-08-22) — every
+  surface says Stats; "Usage statistics" is renamed.
 
 ## § OPEN — @kotoba rules, nothing coined here
 
@@ -213,8 +221,8 @@ test · shadowing · the session directory · build-out doc · handoff · `lande
    WHAT is connected. To rule: does the *pattern* get a glossary row, and does the
    SETTEI-scope service switch need a distinct on-screen word from the per-session toggle?
 
-6. **RIREKI and TOMODACHI each have two user words on screen** (found 2026-08-22). RIREKI:
-   the tape view's *the recording* vs the Services card's *Readable transcripts*. TOMODACHI:
-   the tab's *Stats* vs the card's *Usage statistics*. This file's rule cannot pick between
-   two UI words — that is exactly a collision, and @kotoba rules it. Until ruled, each
-   surface keeps its own word and neither spreads.
+6. **RIREKI has two user words on screen** (found 2026-08-22). The tape view's *the
+   recording* vs the Services card's *Readable transcripts*. This file's rule cannot pick
+   between two UI words — @kotoba rules it. Until ruled, each surface keeps its own word
+   and neither spreads. *(TOMODACHI's half of this item was ruled the same day:
+   `cowork_stats`, alias Stats — see § RULED.)*

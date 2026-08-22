@@ -238,7 +238,8 @@ export const SETTEI_SCHEMA = {
       ['Live status ladders', 'Every agent shows its plan and how far through it is — on the tile and in the roster. Stop asking how it is going.'],
       ['Readable transcripts', 'Tiles become real text instead of a terminal mirror. Select it, copy it, scroll back through it — on your phone too.'],
       ['Voice', 'Talk to a session instead of typing at it, and have it read back to you.'],
-      ['Usage statistics', 'What every session spent, by model, over time.'],
+      // "Stats" — the one word every surface uses (owner, 2026-08-22, KOTOBA cowork_stats).
+      ['Stats', 'What every session spent, by model, over time.'],
       ['gbrain', 'A memory your agents search before they answer, and write to as they work.'],
     ],
     terms: [
