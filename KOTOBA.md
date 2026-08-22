@@ -109,12 +109,12 @@ one ships a surface; it does not make the repo a thing a session touches.
 | **DAIKUSAN** | cowork | where files live: the three scopes, and which one a thing belongs to | `DAIKUSAN.md` |
 | **KOTOBA** | cowork | the words it is allowed to use | this file |
 | **SETTEI** (設定) | cowork | the owner's configuration of Ronin — what they have **set** about how this install behaves | § SETTEI |
-| **AGERU** (上げる) | cowork | the one door out — every packet that leaves, and the log that proves those are the only ones **[planned]** | § AGERU |
+| **AGERU** (上げる) | cowork | the one door out — every packet that leaves, and the log that proves those are the only ones. **The door is live** (`src/activation/transport.ts`: one allowlisted client, the egress record, the activation and stats sends); the review-outbox surface stays **[planned]** | § AGERU |
 | **TOMODACHI** (友達) + **SOROBAN** (算盤) | services | how it gets counted, and the contract counting obeys | § TOMODACHI |
 | **MICHI** (道) + **TEGAMI** (手紙) + **SHINGO** (信号) | services | where it is on the way, and the one file it keeps | § LADDER · § TEGAMI |
 | **OBOERU** (覚える) | services | what it remembers across its own death | § OBOERU |
 | **RIREKI** (履歴) | services | the record of every byte it emitted | § RIREKI |
-| **KOE** (声) | services | voice to text and text to voice **[planned]** | § KOE |
+| **KOE** (声) | services | voice to text (live — `/api/transcribe`, hotwords attached) and text to voice (**[planned]**) | § KOE |
 | **KOSHI** | services | Ronin's own agents, doing the house's internal jobs | § KOSHI |
 
 ## § THE GROUND — the words underneath everything else
@@ -289,7 +289,7 @@ it mean anything is the document behind it, plus a tool where the work needs one
 
 | Term | Scope | Means | Record |
 |---|---|---|---|
-| **session_job** | system_scope | what a session is doing right now; fixes icon, dial, permissions and opening prompt: `RiffOnIt`, `DraftPlan`, `CutCode`, `ChaseBug`, `CheckWork`, `QuarterBack`, `OddJob`, `OpenShell`, `PersonalAssistant`, and `MikaAssist` — see § SESSION JOBS | `ronin_catalogs/SESSION_JOBS.md` |
+| **session_job** | system_scope | what a session is doing right now; fixes icon, dial, permissions and opening prompt: `RiffOnIt`, `DraftPlan`, `CutCode`, `ChaseBug`, `CheckWork`, `QuarterBack`, `OddJob`, `Atarashi`, `OpenShell`, `PersonalAssistant`, and `MikaAssist` — see § SESSION JOBS, whose catalog is the count | `ronin_catalogs/SESSION_JOBS.md` |
 | **the two axes** | system_scope | `project_root` (where) · `session_job` (what it is doing) — **one token, every surface**: the launcher sets them, OBOERU matches on them, TOMODACHI counts by them. Defined here once; § OBOERU uses it, and does not redefine it | `co-working/user_repo/README/OBOERU.md` |
 | **opening prompt / ack rule** | system_scope | the birth instruction; "report back in your own words what you understand this job to be" | `src/spawn.ts` |
 | **`mcp_off`** | system_scope | **[proposed]** the launch-table key holding a provider's own "launch with no MCP servers" flags, appended to the cell's cmd when a launch turns MCP off — the ＋ New form's toggle, carried per session like the dial. DATA, never a code path: cowork names no CLI flag and no MCP server; a provider declaring none is refused rather than launched connected. *MCP* is the protocol's own name, not a coinage | `ronin_catalogs/PROJECT_ROOTS.md` · `src/spawn.ts` |
@@ -302,7 +302,10 @@ gerunds, so no string appears in both catalogs — see § OVERLAP item 1.
 
 ---
 
-## § SESSION JOBS — the ten
+## § SESSION JOBS — the catalog's set
+
+*(No count in this heading, on evidence: "the eight" missed OpenShell's row, "the ten"
+missed Atarashi's. `ronin_catalogs/SESSION_JOBS.md` is the count.)*
 
 | Term | Scope | Means | Record |
 |---|---|---|---|
@@ -313,6 +316,7 @@ gerunds, so no string appears in both catalogs — see § OVERLAP item 1.
 | **CheckWork** | system_scope | read-only findings work — a session's output or a sweep of the code; the target is the prompt's job, not the `session_job`'s | `ronin_catalogs/SESSION_JOBS.md` |
 | **QuarterBack** | system_scope | coordinates other sessions — dispatch, unblock, report upward. The orchestrator, and **still bound by every dial**: a 👤 session is invisible to it | `ronin_catalogs/SESSION_JOBS.md` |
 | **OddJob** | system_scope | does the one task asked and nothing around it — the escape hatch, for work that fits no other kind. No plan, no sweep, no tidying on the way past | `ronin_catalogs/SESSION_JOBS.md` |
+| **Atarashi** (新) | system_scope | icon **新**, label **setup** — the label is what a person reads. The setup seat: the first session on a new install, finishing what the cowork_setup form could not (is the project directory what they meant, does a repository need cloning). Reads `GET /api/settei` at start — `needed[]` is its reading list, `set` is what the owner already answered and is never re-asked. Launched by the form's Save and by ⚙'s "start your setup session"; not a standing assistant — that is MikaAssist. (Row added 2026-08-22 — the second time the heading's count outlived the table) | `ronin_catalogs/SESSION_JOBS.md` |
 | **OpenShell** | system_scope | **`agent: none`** — opens a session and launches nothing, leaving the pane at a shell prompt. Every field describing an agent is *absent* rather than blanked: no model, no posture, no opening, no ack, no permissions. (Row added 2026-08-14 — the heading counted it as the eighth while the table had never listed it) | `ronin_catalogs/SESSION_JOBS.md` |
 | **PersonalAssistant** | system_scope | icon **🎩**. The OWNER's own assistant — **powered by gbrain, and says so**: brain-first (search before answering, capture on request), one confirmation per outside connection. Names and credits gbrain by the owner's ruling — *"we're not trying to steal their stuff without saying what it is"* — with the repo cited in the remit; without the gbrain `ronin_service` it degrades to a plain assistant. Reading arrives from `job/PersonalAssistant/` on the session-boot shelf. Ruled owner 2026-08-16; **gbrain is a proper name** (§ OPEN — the bare word `brain` stays retired) | `ronin_catalogs/SESSION_JOBS.md` |
 | **MikaAssist** | system_scope | icon **ミ**. RONIN's own business, not the owner's work — a helpful assistant, defaulting to help, plus the four mika_macros. See § MIKA. | `docs/mika.md` |
@@ -322,7 +326,12 @@ as often as a verb; a compound reads as a command. **Display** in CamelCase, **t
 the lowercase run-on — `+riffonit:`, `+draftplan:`, `+cutcode:`, `+chasebug:`, `+checkwork:`,
 `+quarterback:`, `+oddjob:`. No separator to mistype, and it survives being typed into a pane.
 
-**Five of them sit outside the grammar, for stated reasons:**
+**Some sit outside the grammar, for stated reasons (no count here either):**
+
+- **`Atarashi`** — outside the grammar AND outside English, the only kind that is: 新,
+  "new", the seat that exists only while an install is. A person never reads the name —
+  the catalog's `label: setup` is the button, and the seat is launched for them rather
+  than picked from a list.
 
 - **`RiffOnIt`** — riff takes a preposition, so verb+object fights the word. It keeps the
   exception because it still reads as a command. The unnamed `It` is exact: this is the one
@@ -453,7 +462,7 @@ useful to the_owner than an invented one.
 | **ledger** | system_scope | a row per entity, sealed at death | `docs/soroban.md` |
 | **diff** | system_scope | an event inferred from two snapshots | `docs/soroban.md` |
 | **derived** | system_scope | recomputed at render, stored nowhere | `docs/soroban.md` |
-| **drop** | system_scope | the daily post of one day's counts to a directory. Not "telemetry", not "upload", not "sync". **The sending moves to AGERU** — TOMODACHI composes an `ageru_packet` into the outbox and calls nobody **[planned]** | `co-working/user_repo/wip/buildouts/AGERU.md` |
+| **drop** | system_scope | the daily post of one day's counts to a directory. Not "telemetry", not "upload", not "sync". **The sending goes through the AGERU transport today** (`src/activation/tomodachi.ts` — `sendDuePackets`, receipts kept); the reviewable outbox surface stays **[planned]** | `co-working/user_repo/wip/buildouts/AGERU.md` |
 | **install id** | user_scope | a uuid identifying an *install*, minted once; deliberately never a user id and never joined to one | `co-working/user_repo/wip/buildouts/TOMODACHI.md` |
 | **born / ended** | system_scope | how a session started, and how it stopped | `co-working/user_repo/wip/buildouts/TOMODACHI.md` |
 | **stop** | system_scope | the plan funnel's milestone noun: `planned` · `launched` · `p{n}_started` · `p{n}_leg` · `p{n}_closed` · `landed`; monotonic. ⚠R7 **[proposed]** | `co-working/user_repo/wip/buildouts/TOMODACHI.md` |
@@ -613,7 +622,7 @@ for MIKA the question § OPEN R23 leaves open for KOSHI.
 
 | Term | Scope | Means | Record |
 |---|---|---|---|
-| **KOE** | system_scope | the voice surface, both directions: speech to text going in, spoken summaries coming back. **[planned]** | `ronin_catalogs/HOTWORDS.md` |
+| **KOE** | system_scope | the voice surface, both directions: speech to text going in (live — the tile mic through `/api/transcribe`, hotwords attached), spoken summaries coming back (**[planned]**) | `ronin_catalogs/HOTWORDS.md` |
 | **hotwords** | system_scope | the dictation glossary — the words dictation keeps mishearing, sent along with the voice. **Two things in two systems:** the *tab* is coworkspace like every UI surface; `src/services/koe/hotwords.ts` and the stock list are KOE's. **Two FILES too:** the shipped stock list, and the owner's own in the catalogs store — which is SETTEI, and is the one every write lands in | `ronin_catalogs/HOTWORDS.md` |
 | **`koshi_koe`** | system_scope | the koshi job doing the work. **KOE is the surface, `koshi_koe` is the worker** — not two names for one thing **[planned]** | § KOSHI |
 
