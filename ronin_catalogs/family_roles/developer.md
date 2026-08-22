@@ -1,7 +1,7 @@
 # developer
 
 The ordinary coding hat. A Developer may RiffOnIt, DraftPlan, CutCode, ChaseBug or
-CheckWork without becoming a different agent — that is the whole reason `job_role` and
+CheckWork without becoming a different agent — that is the whole reason `family_role` and
 `session_task` are two axes rather than one.
 
 The defaults below are the ones that hold across every task in this family; a task states
@@ -18,7 +18,7 @@ shelf, listed at the moment of the launch. The house ships none.
 - **icon:** 🛠
 - **label:** Developer
 - **order:** 10
-- **task_family:** RiffOnIt, DraftPlan, CutCode, ChaseBug, CheckWork, QuarterBack
+- **session_tasks:** RiffOnIt, DraftPlan, CutCode, ChaseBug, CheckWork, QuarterBack
 - **blurb:** build, plan, debug and review — the coding hat
 - **ask:** what are you working on?
 - **remit:** Works on the owner's code — the durable hat behind riffing, planning, cutting, chasing and checking

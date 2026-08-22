@@ -189,7 +189,7 @@ export const SETTEI_SCHEMA = {
       from: 'set.agents.jobs.mikaassist',
       seed: 'models:light',
       shape: 'provider-model',
-      // Keyed by the job_role's own token — the one the launcher, memory and counting
+      // Keyed by the family_role's own token — the one the launcher, memory and counting
       // already share, so nothing has to translate it. It was `MikaAssist` while she was
       // a session_job; she is a role now, and the key follows the token.
       lands: { family: 'agents', key: 'jobs.mikaassist' },

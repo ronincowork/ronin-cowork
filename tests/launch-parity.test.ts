@@ -71,7 +71,7 @@ type SpawnForm = import('../src/spawn.js').SpawnForm;
 
 /** What the ＋ New form posts: the axes, the picks, and the owner's words. */
 const commonsForm = (over: Partial<SpawnForm> = {}): SpawnForm => ({
-  job_role: 'developer',
+  family_role: 'developer',
   session_task: 'DraftPlan',
   project_root: 'alpha',
   prompt: 'Work out the shape of the thing.',
@@ -89,7 +89,7 @@ const forkitForm = (over: Partial<SpawnForm> = {}): SpawnForm =>
 
 /** Everything the mechanism decides. A caller may pick these; it may never compute them. */
 const mechanism = (r: Awaited<ReturnType<typeof resolveForm>>) => ({
-  job_role: r.job_role,
+  family_role: r.family_role,
   session_task: r.session_task,
   project_root: r.project_root,
   dir: r.dir,
@@ -180,8 +180,8 @@ test('a blank role stays legal for both, and omits only its own reading', async 
   // The general blank-session model is preserved: it is only an agent-launching FORK that
   // must resolve its axes deliberately, and that is the macro's rule rather than a
   // refusal in the mechanism.
-  const blank = await resolveForm(commonsForm({ job_role: '' }), new Set());
-  assert.equal(blank.job_role, '');
+  const blank = await resolveForm(commonsForm({ family_role: '' }), new Set());
+  assert.equal(blank.family_role, '');
   const books = reading(blank.brief);
   assert.ok(!books.includes('ROLE_BOOK.md'), 'no role, no role reading');
   assert.ok(books.includes('TASK_BOOK.md') && books.includes('ROOT_BOOK.md'), 'and nothing else is lost');
@@ -199,14 +199,16 @@ test('a stock task board keeps a stated order, and OpenShell is never in the mid
   const names = tasks.map((t) => t.name);
   assert.deepEqual(names, [
     'RiffOnIt', 'DraftPlan', 'CutCode', 'ChaseBug', 'CheckWork', 'QuarterBack',
-    'OddJob', 'Atarashi', 'OpenShell',
+    'OddJob', 'Atarashi', 'PersonalAssistant', 'OpenShell', 'MikaAssist',
   ]);
-  assert.equal(names[names.length - 1], 'OpenShell', 'the agentless one sits last, away from the rest');
+  // OpenShell sits in the `extra` family and near the end — what matters is that it is
+  // not among the buttons that start work, which is where alphabetical order had put it.
+  assert.ok(names.indexOf('OpenShell') > names.indexOf('CheckWork'));
 });
 
 test('every stock definition states its order, so no board is sorted by accident', async () => {
   const { readDefinitions } = await import('../src/definitions.js');
-  for (const kind of ['job_roles', 'session_tasks'] as const) {
+  for (const kind of ['family_roles', 'session_tasks'] as const) {
     for (const d of await readDefinitions(kind)) {
       if (d.origin !== 'stock') continue; // the owner's own may take the unordered tail
       assert.ok(d.has('order'), `${kind}/${d.name}.md ships without \`order:\` — the board would sort itself`);
@@ -225,29 +227,29 @@ test('an ordinary assisted launch starts an agent with both axes and the full br
   assert.equal(r.agent, true, 'an ordinary launch starts a CLI');
   assert.ok(r.cmd, 'and has a command to start');
   assert.ok(r.launchAgent, 'and stamps which CLI it started');
-  assert.equal(r.job_role, 'developer');
+  assert.equal(r.family_role, 'developer');
   assert.equal(r.session_task, 'DraftPlan');
   assert.ok(r.project_root, 'a session is always born somewhere');
   assert.match(r.brief, /Read first:/, 'the Build Brief carries its reading list');
   assert.ok(reading(r.brief).length >= 4, 'all four levels, not a bare prompt');
 });
 
-test('QuarterBack is a session_task in the developer family, and not a job_role', async () => {
+test('QuarterBack is a session_task in the developer family, and not a family_role', async () => {
   // OWNER RULING, 2026-08-22 (KOTOBA R33), reversing one row of the same day's own cut.
   // Coordinating is not who a session IS — a Developer moves into quarterbacking and back
   // out of it, which is the definition of a task. The axis test is "what do you stay while
   // your task changes", and applying it honestly cost the cut one of its own examples.
-  const { listSessionTasks, listJobRoles } = await import('../src/definitions.js');
+  const { listSessionTasks, listFamilyRoles } = await import('../src/definitions.js');
   const tasks = await listSessionTasks();
-  const roles = await listJobRoles();
+  const roles = await listFamilyRoles();
 
   assert.ok(tasks.some((t) => t.name === 'QuarterBack'), 'QuarterBack is a session_task');
-  assert.ok(!roles.some((r) => r.name === 'quarterback'), 'and is no longer a job_role');
+  assert.ok(!roles.some((r) => r.name === 'quarterback'), 'and is no longer a family_role');
 
   const developer = roles.find((r) => r.name === 'developer');
   assert.ok(developer, 'developer is the role it belongs under');
   assert.ok(
-    developer!.task_family.includes('QuarterBack'),
+    developer!.session_tasks.includes('QuarterBack'),
     'a Developer moves into quarterbacking, so it is in that family',
   );
 
@@ -256,7 +258,7 @@ test('QuarterBack is a session_task in the developer family, and not a job_role'
   // and false at noon, so nothing may stamp it once and remember it.
   const qb = await resolveForm(commonsForm({ session_task: 'QuarterBack' }), new Set());
   assert.equal(qb.session_task, 'QuarterBack');
-  assert.equal(qb.job_role, 'developer', 'the role underneath is unchanged by the task');
+  assert.equal(qb.family_role, 'developer', 'the role underneath is unchanged by the task');
   assert.equal(qb.dial, 'read', 'a coordinator watches: the task states its own dial');
   assert.equal(qb.lifecycle, 'orchestrating');
 });

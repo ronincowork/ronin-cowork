@@ -1,15 +1,15 @@
 /**
- * THE TWO DEFINITION DIRECTORIES — `job_roles/` and `session_tasks/`.
+ * THE TWO DEFINITION DIRECTORIES — `family_roles/` and `session_tasks/`.
  *
- * A launch picks three axes: a required `project_root`, an optional `job_role` (who the
+ * A launch picks three axes: a required `project_root`, an optional `family_role` (who the
  * session is, fixed for its life) and an optional `session_task` (what it is doing now,
  * mutable). The last two are defined here, and they share one storage law.
  *
  * ONE FILE PER THING, rather than one growing markdown document. That is what makes a
  * role or a task the unit of ownership:
  *
- *   ronin_catalogs/job_roles/<token>.md          ours, replaced on upgrade
- *   <catalogs store>/job_roles/<token>.md        yours, survives upgrade AND uninstall
+ *   ronin_catalogs/family_roles/<token>.md          ours, replaced on upgrade
+ *   <catalogs store>/family_roles/<token>.md        yours, survives upgrade AND uninstall
  *
  *   ronin_catalogs/session_tasks/<token>.md      ours
  *   <catalogs store>/session_tasks/<token>.md    yours
@@ -45,7 +45,7 @@ import { STOCK_DIR, entryValue, isKeyLine, type Origin } from './catalog.js';
 import { storeDir } from './stores.js';
 
 /** The two directories, and the only two. Each is a token in its own right. */
-export type DefinitionKind = 'job_roles' | 'session_tasks';
+export type DefinitionKind = 'family_roles' | 'session_tasks';
 
 export interface Definition {
   /** The token — the filename without `.md`. Never the `#` heading. */
@@ -158,7 +158,7 @@ export async function findDefinition(kind: DefinitionKind, token: string): Promi
 /**
  * A comma list, with the em dash read as an empty list rather than as a member.
  *
- * `- **task_family:** —` and `- **match:** —` are how a definition says "none" in a
+ * `- **session_tasks:** —` and `- **match:** —` are how a definition says "none" in a
  * file a person reads. Without this the dash became a match word that could never match
  * and a task named `—` that could never resolve.
  */
@@ -197,19 +197,19 @@ interface Row {
   credit?: { text: string; url: string };
 }
 
-export interface JobRoleRow extends Row {
+export interface FamilyRoleRow extends Row {
   /**
    * THE TASK FAMILY — the session_tasks presented under this role, in the order the
    * definition lists them. Surface word **Family**.
    *
-   * `task_family` and never a bare `family`: the settei registry already has a write
+   * `session_tasks` and never a bare `family`: the settei registry already has a write
    * family and Node's own `os` has an address family, and a term that reads as English
    * is the defect KOTOBA's spelling law exists to prevent (owner, 2026-08-22).
    *
    * ASSOCIATION, NOT OWNERSHIP. A task may appear in several role families; a role's
    * definition is simply where the association is written down.
    */
-  task_family: string[];
+  session_tasks: string[];
 }
 
 export interface SessionTaskRow extends Row {
@@ -236,10 +236,10 @@ const row = (d: Definition): Row => ({
   credit: credit(d.get('credit')),
 });
 
-export async function listJobRoles(): Promise<JobRoleRow[]> {
-  return (await readDefinitions('job_roles')).map((d) => ({
+export async function listFamilyRoles(): Promise<FamilyRoleRow[]> {
+  return (await readDefinitions('family_roles')).map((d) => ({
     ...row(d),
-    task_family: splitDefinitionList(d.get('task_family')),
+    session_tasks: splitDefinitionList(d.get('session_tasks')),
   }));
 }
 
@@ -274,11 +274,11 @@ const isValidToken = (s: string): boolean => /^[\w-]{1,64}$/.test(s);
  *
  * The file is COPIED, not regenerated: every other field, every line of prose and every
  * key this version has never heard of survives byte for byte. Only the
- * `- **task_family:** …` line is replaced, or appended when there was not one.
+ * `- **session_tasks:** …` line is replaced, or appended when there was not one.
  */
-export async function writeTaskFamily(role: string, tasks: string[]): Promise<string[]> {
-  const def = await findDefinition('job_roles', role);
-  if (!def) throw new Error(`"${role}" is not a job_role on this box.`);
+export async function writeRoleTasks(role: string, tasks: string[]): Promise<string[]> {
+  const def = await findDefinition('family_roles', role);
+  if (!def) throw new Error(`"${role}" is not a family_role on this box.`);
   const clean = [...new Set(tasks.map((t) => String(t).trim()).filter(Boolean))];
   for (const t of clean) if (!isValidToken(t)) throw new Error(`"${t}" is not a session_task name.`);
   if (clean.length > 64) throw new Error(`A role may shelve at most 64 tasks; "${role}" was given ${clean.length}.`);
@@ -288,9 +288,9 @@ export async function writeTaskFamily(role: string, tasks: string[]): Promise<st
   for (const t of clean) if (!known.has(t)) throw new Error(`"${t}" is not a session_task on this box.`);
 
   const raw = await readFile(def.file, 'utf8');
-  const line = `- **task_family:** ${clean.length ? clean.join(', ') : '—'}`;
+  const line = `- **session_tasks:** ${clean.length ? clean.join(', ') : '—'}`;
   const lines = raw.split('\n');
-  const at = lines.findIndex((l) => /^-\s*\*\*task_family:\*\*/i.test(l.trim()));
+  const at = lines.findIndex((l) => /^-\s*\*\*session_tasks:\*\*/i.test(l.trim()));
   if (at === -1) {
     // No family line yet: put it after the last key line, so it lands among the
     // fields rather than in the middle of the prose that explains them.
@@ -299,7 +299,7 @@ export async function writeTaskFamily(role: string, tasks: string[]): Promise<st
     lines.splice(last + 1, 0, line);
   } else lines[at] = line;
 
-  const dir = path.join(storeDir('catalogs'), 'job_roles');
+  const dir = path.join(storeDir('catalogs'), 'family_roles');
   const target = path.join(dir, `${role}.md`);
   await mkdir(dir, { recursive: true });
   const tmp = `${target}.tmp-${process.pid}`;
@@ -309,7 +309,7 @@ export async function writeTaskFamily(role: string, tasks: string[]): Promise<st
   // Read the RESULT back through the ordinary reader before reporting success — the same
   // refusal every catalog write makes. A definition we could not read back is a board
   // that would render empty on the next request.
-  const back = await findDefinition('job_roles', role);
+  const back = await findDefinition('family_roles', role);
   if (!back) throw new Error(`Refused: "${role}" does not read back after the edit.`);
-  return splitDefinitionList(back.get('task_family'));
+  return splitDefinitionList(back.get('session_tasks'));
 }

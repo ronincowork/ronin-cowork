@@ -37,7 +37,7 @@ export function startSessionsBroadcast(): void {
         // not the only thing the client draws off this list any more: a session that
         // re-marks itself (`write_tegami`) changes its mark on every picker and tile
         // header, and a poll watching names alone would hold the old icon until something
-        // was born or died. The `job_role` is deliberately NOT watched — it cannot change
+        // was born or died. The `family_role` is deliberately NOT watched — it cannot change
         // while a session lives, so a change in it is not a thing that can happen. Still a
         // push only when something actually changed — attach and note flapping stay
         // deliberately unwatched.

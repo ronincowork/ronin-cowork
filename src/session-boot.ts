@@ -37,7 +37,7 @@
  *                         the level is signed by its service (owner's ruling,
  *                         2026-08-20) and the free build never names a vendor
  *   root/<project_root>/  only sessions working in that directory
- *   role/<job_role>/      only sessions wearing that hat — the STRONG role prompt, and
+ *   role/<family_role>/      only sessions wearing that hat — the STRONG role prompt, and
  *                         the reason a role is more than a shelf on a board
  *   task/<session_task>/  only sessions doing that kind of work
  *
@@ -211,7 +211,7 @@ async function connectedLevels(base: string): Promise<string[]> {
  */
 export async function bootFiles(
   projectRoot: string,
-  jobRole: string,
+  familyRole: string,
   sessionTask: string,
   mcpOn = true,
 ): Promise<string[]> {
@@ -223,7 +223,7 @@ export async function bootFiles(
   // Stock cannot have a root/ — it does not know the owner's directories.
   if (projectRoot) dirs.push(path.join(user, 'root', projectRoot));
   // A blank axis contributes NOTHING rather than contributing an empty level.
-  if (jobRole) dirs.push(path.join(STOCK, 'role', jobRole), path.join(user, 'role', jobRole));
+  if (familyRole) dirs.push(path.join(STOCK, 'role', familyRole), path.join(user, 'role', familyRole));
   if (sessionTask) dirs.push(path.join(STOCK, 'task', sessionTask), path.join(user, 'task', sessionTask));
 
   const byName = new Map<string, string>();

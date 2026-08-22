@@ -131,7 +131,7 @@ export async function taskChangeMessage(task: string, files: string[]): Promise<
   const parts = [`Your session_task is now ${task}.`];
   if (remit) parts.push(`${remit}.`);
   if (files.length) parts.push(`Read first: ${files.join(', ')}.`);
-  parts.push('Your job_role and your project_root have not changed.');
+  parts.push('Your family_role and your project_root have not changed.');
   return parts.join(' ').replace(/\s+/g, ' ');
 }
 

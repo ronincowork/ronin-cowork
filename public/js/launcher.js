@@ -26,13 +26,13 @@ import {
 } from './home.js';
 import { IS_TOUCH, S } from './state.js';
 import { button, field, status } from './ui.js';
-import { buildRoleSections, draggableTask } from './jobroles.js';
+import { buildRoleSections, draggableTask } from './familyroles.js';
 import { addProvMark, addYourOwn } from './provenance.js';
 
 /**
  * THE PICK IS A PAIR, and that is the shape everything below follows.
  *
- * A launch chooses a `job_role` (who, fixed for the session's life) and a `session_task`
+ * A launch chooses a `family_role` (who, fixed for the session's life) and a `session_task`
  * (what it is doing now, mutable) — and either may be blank. Pressing a task inside a
  * role section picks both; pressing a role's own button picks the role with a blank
  * task; pressing a loose task picks the task with a blank role.
@@ -257,7 +257,7 @@ export function buildLauncher(tile, host) {
   form.append(formHead, creditEl, modeRow, modeSay, nameField.el, whatField.el, formRow, err.el, extrasHead, extras);
   const grid2 = document.createElement('div');
   grid2.className = 'ks-grid';
-  /* ---- job roles: the sections of this board (js/jobroles.js) ---- */
+  /* ---- job roles: the sections of this board (js/familyroles.js) ---- */
   const shelves = buildRoleSections({
     taskButton: (k, role) => taskButton(k, role),
     roleButton: (role) => roleButton(role),
@@ -291,7 +291,7 @@ export function buildLauncher(tile, host) {
     offer.addEventListener('click', () => open(rec.schema.seat.session_task, rec.schema.seat.prompt));
     offer.hidden = false;
   })();
-  // No `＋ add new` row: inventing a job_role is authoring, and authoring is the next
+  // No `＋ add new` row: inventing a family_role is authoring, and authoring is the next
   // build-out. This board organizes the roles that exist.
   board.append(boardHead, offer, savedRow, shelves.wrap, grid2, form);
   host.appendChild(board);
@@ -417,7 +417,7 @@ export function buildLauncher(tile, host) {
     grid2.innerHTML = '';
     const all = taskData || [];
     // The sections render themselves and answer which tasks they hold; a task on no role
-    // sits flat under them and launches with a BLANK job_role (js/jobroles.js).
+    // sits flat under them and launches with a BLANK family_role (js/familyroles.js).
     const shelved = shelves.render();
     for (const k of all.filter((x) => !shelved.has(x.name))) grid2.appendChild(taskButton(k, null));
     if (!all.length) grid2.textContent = 'no session_tasks in ronin_catalogs/session_tasks/';
@@ -452,7 +452,7 @@ export function buildLauncher(tile, host) {
       b.textContent = l.label;
       addProvMark(b, l);
       b.title = [
-        l.job_role,
+        l.family_role,
         l.session_task,
         l.project_root && `▣ ${l.project_root}`,
         l.group && `🏷 ${l.group}`,
@@ -467,10 +467,10 @@ export function buildLauncher(tile, host) {
         // A saved launch names tokens, not buttons: it is resolved against the current
         // definitions rather than by hunting the board, so a saved launch of a role with
         // a blank task fills the form even though no single button is that pair.
-        const role = l.job_role ? (roleData || []).find((r) => r.name === l.job_role) : null;
+        const role = l.family_role ? (roleData || []).find((r) => r.name === l.family_role) : null;
         const task = l.session_task ? (taskData || []).find((k) => k.name === l.session_task) : null;
-        if ((l.job_role && !role) || (l.session_task && !task)) {
-          sayErr(`"${l.label}" names ${l.job_role && !role ? `job_role "${l.job_role}"` : `session_task "${l.session_task}"`}, which is not in the catalog.`);
+        if ((l.family_role && !role) || (l.session_task && !task)) {
+          sayErr(`"${l.label}" names ${l.family_role && !role ? `family_role "${l.family_role}"` : `session_task "${l.session_task}"`}, which is not in the catalog.`);
           return;
         }
         await choose(role ?? null, task ?? null);
@@ -556,7 +556,7 @@ export function buildLauncher(tile, host) {
         // BOTH AXES, and a blank one is sent as '' rather than omitted — the server
         // routes on "does this body name either axis", and an explicit blank is the
         // owner saying "no role" rather than the client having forgotten to ask.
-        job_role: pick.role?.name ?? '',
+        family_role: pick.role?.name ?? '',
         session_task: pick.task?.name ?? '',
         mode,
         prompt: text,
@@ -629,7 +629,7 @@ export function buildLauncher(tile, host) {
     // A task reached this way is launched on whichever role's family holds it, if exactly
     // one does — otherwise blank, because guessing between two roles would silently pick
     // a reading list the caller never asked for.
-    const owners = task ? (roleData || []).filter((r) => (r.task_family ?? []).includes(name)) : [];
+    const owners = task ? (roleData || []).filter((r) => (r.session_tasks ?? []).includes(name)) : [];
     await choose(role ?? (owners.length === 1 ? owners[0] : null), task ?? null, promptText);
     assistBtn.click();
     what.focus();

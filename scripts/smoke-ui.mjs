@@ -612,8 +612,8 @@ async function checkJourneys(page, label, jsErrors) {
       const sent = await page.evaluate(() => {
         try { return JSON.parse(window.__launchBody ?? 'null'); } catch { return 'unparseable'; }
       });
-      if (sent && sent !== 'unparseable' && (sent.job_role || sent.session_task) && sent.project_root) {
-        ok(`${label}: an ordinary launch names its axes on the wire (role="${sent.job_role}" task="${sent.session_task}")`);
+      if (sent && sent !== 'unparseable' && (sent.family_role || sent.session_task) && sent.project_root) {
+        ok(`${label}: an ordinary launch names its axes on the wire (role="${sent.family_role}" task="${sent.session_task}")`);
       } else {
         bad(`${label}: launch payload lost its axes — a body naming neither is born a bare shell. Sent: ${JSON.stringify(sent)}`);
       }

@@ -82,10 +82,10 @@ both be shelved — rename one on the way in (plans-README.md), and say that you
 ## new_session
 - **class:** mika_macro
 One sentence in, a filled form out. Match it against the `match:` words in
-`ronin_catalogs/session_tasks/`, `ronin_catalogs/job_roles/` and the owner's
+`ronin_catalogs/session_tasks/`, `ronin_catalogs/family_roles/` and the owner's
 `PROJECT_ROOTS.md`.
 
-**Both catalog axes are optional, and a blank one is a real answer.** `job_role` is who
+**Both catalog axes are optional, and a blank one is a real answer.** `family_role` is who
 the session is and does not change once it is running; `session_task` is what it is doing
 now and does. Propose a role with a blank task when the sentence asks for a standing seat
 ("be my assistant", "coordinate these") and a task with a blank role when it asks for one
@@ -93,7 +93,7 @@ piece of work that fits no hat. Never invent a task to fill the slot.
 
 | # | Action | With |
 |---|---|---|
-| 1 | propose-and-confirm | `job_role`, `session_task`, `project_root`, session_launch_spec, MCP on/off, the name you would give it. As a form, not prose |
+| 1 | propose-and-confirm | `family_role`, `session_task`, `project_root`, session_launch_spec, MCP on/off, the name you would give it. As a form, not prose |
 | 2 | session-create | On a yes: `POST /api/launch` does create, tag, dial, CLI and brief in one call (`mcp: false` when the owner asked for off) |
 | 3 | report-outcome | The name, and that it is in the grid |
 

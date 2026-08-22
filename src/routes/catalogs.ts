@@ -31,7 +31,7 @@ import {
   isValidLaunchName,
   type LaunchField,
 } from '../catalog.js';
-import { findDefinition, listJobRoles, listSessionTasks, writeTaskFamily } from '../definitions.js';
+import { findDefinition, listFamilyRoles, listSessionTasks, writeRoleTasks } from '../definitions.js';
 import { resolveLaunchProfile } from '../launch-profile.js';
 
 // fs errors carry absolute paths (`ENOENT: open '/home/…'`); the browser gets the
@@ -246,18 +246,18 @@ export function registerCatalogs(app: express.Express): void {
   });
 
   /**
-   * THE OTHER TWO AXES — `job_role` (who a session is) and `session_task` (what it is
+   * THE OTHER TWO AXES — `family_role` (who a session is) and `session_task` (what it is
    * doing now). Same contract as /api/project-roots: the markdown IS the catalog, merged
    * stock ⊕ user at request time, provenance on every row.
    *
-   * The role rows carry their own `task_family:` — the session_tasks presented under
+   * The role rows carry their own `session_tasks:` — the session_tasks presented under
    * that role, which is what the board's sections are built from. A task in no role's
    * family is a LOOSE task and the board draws it in the blank-role tail: a real launch,
    * not a leftover. Family is association, so the same task may sit in several.
    */
-  app.get('/api/job-roles', async (_req, res) => {
+  app.get('/api/family-roles', async (_req, res) => {
     try {
-      res.json(await listJobRoles());
+      res.json(await listFamilyRoles());
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }
@@ -281,11 +281,11 @@ export function registerCatalogs(app: express.Express): void {
    * 400 for anything the write refuses, with the message written for the owner: an
    * unknown task, too many in one family, or a definition that would not read back.
    */
-  app.put('/api/job-roles/:name/task_family', async (req, res) => {
-    const list = req.body?.task_family;
-    if (!Array.isArray(list)) return res.status(400).json({ error: 'Send { task_family: [...] }.' });
+  app.put('/api/family-roles/:name/session_tasks', async (req, res) => {
+    const list = req.body?.session_tasks;
+    if (!Array.isArray(list)) return res.status(400).json({ error: 'Send { session_tasks: [...] }.' });
     try {
-      res.json({ ok: true, task_family: await writeTaskFamily(req.params.name, list as string[]) });
+      res.json({ ok: true, session_tasks: await writeRoleTasks(req.params.name, list as string[]) });
     } catch (e) {
       res.status(400).json({ error: errMsg(e) });
     }
@@ -306,14 +306,14 @@ export function registerCatalogs(app: express.Express): void {
    * about it.
    */
   app.get('/api/launch-profile', async (req, res) => {
-    const role = String(req.query?.job_role ?? '').trim();
+    const role = String(req.query?.family_role ?? '').trim();
     const task = String(req.query?.session_task ?? '').trim();
     try {
       const [roleDef, taskDef] = await Promise.all([
-        findDefinition('job_roles', role),
+        findDefinition('family_roles', role),
         findDefinition('session_tasks', task),
       ]);
-      if (role && !roleDef) return res.status(404).json({ error: `Unknown job_role "${role}".` });
+      if (role && !roleDef) return res.status(404).json({ error: `Unknown family_role "${role}".` });
       if (task && !taskDef) return res.status(404).json({ error: `Unknown session_task "${task}".` });
       res.json(resolveLaunchProfile(roleDef, taskDef));
     } catch (e) {
@@ -337,7 +337,7 @@ export function registerCatalogs(app: express.Express): void {
     const name = String(req.body?.name ?? '').trim().toLowerCase();
     if (!isValidLaunchName(name)) return res.status(400).json({ error: 'Handle: lowercase letters, digits, - and _.' });
     const fields: Partial<Record<LaunchField, string>> = {};
-    for (const k of ['label', 'job_role', 'session_task', 'project_root', 'team', 'mode', 'prompt'] as LaunchField[]) {
+    for (const k of ['label', 'family_role', 'session_task', 'project_root', 'team', 'mode', 'prompt'] as LaunchField[]) {
       const v = (req.body as Record<string, unknown>)?.[k];
       if (typeof v === 'string') fields[k] = v.trim().slice(0, 500);
     }

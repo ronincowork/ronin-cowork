@@ -16,7 +16,7 @@
  *
  * TOLERANT OF THE READER GENERATION on purpose: the role/task split moves the task
  * readers from src/catalog.ts (listSessionJobs) to src/definitions.ts (listSessionTasks
- * / listJobRoles). This check probes for whichever exists at run time and validates the
+ * / listFamilyRoles). This check probes for whichever exists at run time and validates the
  * user stores against it, so it is true on either side of that migration.
  */
 import { readFile, readdir, stat } from 'node:fs/promises';
@@ -89,14 +89,14 @@ async function checkCatalogFile(dir: string, file: string, label: string): Promi
 async function checkDefinitionsSurface(catalogsDir: string): Promise<void> {
   const defs = await probe('../src/definitions.js');
   if (defs && typeof defs.listSessionTasks === 'function') {
-    // New generation: session_tasks/ and job_roles/ are directories of one file per
+    // New generation: session_tasks/ and family_roles/ are directories of one file per
     // definition, in the repo and in your store alike.
-    for (const kind of ['session_tasks', 'job_roles'] as const) {
+    for (const kind of ['session_tasks', 'family_roles'] as const) {
       const dir = path.join(catalogsDir, kind);
       if (!(await exists(dir))) continue;
       const listed = (await (kind === 'session_tasks'
         ? (defs.listSessionTasks as () => Promise<{ name: string }[]>)()
-        : (defs.listJobRoles as () => Promise<{ name: string }[]>)()
+        : (defs.listFamilyRoles as () => Promise<{ name: string }[]>)()
       ).catch(() => [] as { name: string }[])).map((r) => r.name.toLowerCase());
       for (const f of await mdFiles(dir)) {
         if (f.toLowerCase() === 'readme.md') continue;

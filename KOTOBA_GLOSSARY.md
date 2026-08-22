@@ -54,8 +54,8 @@ learn in order to use Ronin should cost them a second language first.
 |---|---|---|
 | `session_roster` | **the roster** | The **⌂ Roster** tab: every session on the machine. The session list, full stop. **Never "the board."** |
 | `session_launch` | **launch** | The **＋ New** tab. Where a session is born. |
-| `task_family` | **Family** | The session_tasks presented under one job role. A task can be in several families, so a Family is an association rather than a box it lives in. |
-| `job_role` | **job role** | Who a session is — Developer, QuarterBack, PersonalAssistant. It organizes the ＋ New board into sections, and it also gives the session its own reading and launch defaults. A task may sit on several roles. **Fixed once the session is running.** **Not the roster's Teams** — those address sessions (KOTOBA § LAUNCHER). |
+| `session_tasks` | **Family** | The session_tasks presented under one job role. A task can be in several families, so a Family is an association rather than a box it lives in. |
+| `family_role` | **role** | What a session IS, and the family of tasks it may do — Developer, Assistant, Extra. One thing, not two: the role is the shelf and the shelf is the role. It sections the ＋ New board and gives the session its reading and launch defaults. **Fixed once the session is running.** **Not the roster's Teams** — a team is who you work with and can change; a role is what you are and cannot (KOTOBA R34). |
 | `wipeboard` | **wipeboard** | The **▤ Wipeboard** tab and the file behind it. Our own coinage and it stays — *wipe* is right for a surface many hands write on and erase. Every **Team** has its own wipeboard automatically — say **team wipeboard**; membership is the team's and is never managed separately. A **custom wipeboard** is the owner-made secondary kind. Alias **whiteboard** only, because voice-to-text hears it that way. **Never "the board."** |
 | Brief | **Brief** | Your statement of what a wipeboard is for. Agents never edit it. |
 | `MDEDIT` | **the Docs tab** | The **▧ Docs** tab: the documents each session is working on, opened and edited in the tile. **MDEDIT is ours and never reaches a user's face**; on screen it is just *Docs*. Say *list a doc*, never *track* or *attach*. There is no file browser by design — ask the session to show you a file (`+show_file`). |
@@ -72,7 +72,7 @@ learn in order to use Ronin should cost them a second language first.
 | House term | Plain English | One line |
 |---|---|---|
 | dial (`@ronin-control`) | **Control** | Per session: you-only 👤, read 👁, read-and-write 🤖. Only the owner flips it. |
-| `session_team` (`@ronin-tags`) | **Team** | A set of sessions that work together, addressable as one. A session may be on several teams, and every team has its own wipeboard. **Not a role's Family** — a team groups sessions, a family groups tasks. The code sweep landed 2026-08-22; `@ronin-tags` and the `tags` code fields stay as internal seams (KOTOBA R32). |
+| `session_team` (`@ronin-tags`) | **Team** | A set of sessions that work together, addressable as one. A session may be on several teams, and every team has its own wipeboard. **A team is composition, never a type** (owner, 2026-08-22, superseding): it may mix any family_roles and any tasks, and being on a team never implies its members share anything but the work. The code sweep landed 2026-08-22; `@ronin-tags` and the `tags` code fields stay as internal seams (KOTOBA R32). |
 | note (`@ronin_note`) | **Note** | The owner's one line about a session. |
 | `session_task` (in the letter) | **what it's doing** | The task's icon, drawn beside every session in the roster and the tile picker. Set at launch; the session changes it itself as its work changes, and so can you. A session with no task shows no icon. |
 | — | **Status · Ladder · Macros · Detach · Kill session** | The rest of the per-session menu. Already plain. |
@@ -173,14 +173,17 @@ test · shadowing · the session directory · build-out doc · handoff · `lande
 - **`UCHI` is retired; the word is `commons`** (2026-08-13).
 - **legs stay** (2026-08-10) — no rename to *step*; *step* is `tejun-step`.
 - **harakiri stays** (2026-08-10) — a word people already know.
-- **`session_job` is split into `job_role` and `session_task`** (2026-08-22) — the
+- **`job_role` and `task_family` become one word, `family_role`** (2026-08-22) — they
+  were two names for one thing: a session's type IS the family of tasks it may perform.
+  A session is a `family_role` + a `session_task`. KOTOBA R34.
+- **`session_job` is split into `family_role` and `session_task`** (2026-08-22) — the
   2026-08-10 ruling that made one term do both jobs is reversed. A single common word is
   still not a term, which is why neither new one is bare *role* or *task*.
 - **`ronin_service`, alias Services, is the paid unit** (2026-08-10) — never module,
   plug-in, extension or applet.
 - **There is no bare "board"** (2026-08-10) — the roster and the wipeboard, and neither
   may be aliased to *board*.
-- **`job_class` is promoted to `job_role`, inside and out** (2026-08-22) — the shelf
+- **`job_class` is promoted to `family_role`, inside and out** (2026-08-22) — the shelf
   that addressed nothing now carries reading and launch defaults, so it earns a real
   name on both faces.
 - **`QuarterBack` is a task, not a role** (2026-08-22) — `developer` is the role;
@@ -189,7 +192,7 @@ test · shadowing · the session directory · build-out doc · handoff · `lande
   token keeps its verb+object exception, beside `OddJob`.
 - **`group` is retired as a house term; the words are Team and Family** (2026-08-22) —
   *group* goes back to ordinary English and means nothing in particular. A **Team**
-  (`session_team`) is a set of collaborating sessions; a **Family** (`task_family`) is the
+  (`session_team`) is a set of collaborating sessions; a **Family** (`session_tasks`) is the
   set of tasks under a job role. Both many-to-many, and the axes do not overlap. Spelled
   compound internally because a bare `family` already collides with settei's write family
   and Node's address family. **The `session_team` sweep landed 2026-08-22** (the

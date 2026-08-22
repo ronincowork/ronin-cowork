@@ -141,7 +141,7 @@ session, so the origin session stays on its track. (The breakout pattern, first 
 Params: `topic` (short slug), `dir` (working directory; default: current repo root),
 `team` (which team the new session joins; default: the origin session's own teams, so a
 fork stays addressable with its parent. Ask the owner if the origin has none),
-`job_role` (default: **the origin session's own role**), `session_task` (default:
+`family_role` (default: **the origin session's own role**), `session_task` (default:
 `DraftPlan`), `model` (default: **omit it** — the cascade answers).
 
 **Use the same launch contract the ＋ New form uses. Do not rebuild it.** Forks were
@@ -149,18 +149,18 @@ starting from a bare `tmux new-session` and then typing a CLI at it, which is a 
 bespoke launch path — and it arrives with **zero Build Brief**: no reading list, no
 posture, no letter, and no role. `session-launch` is the canonical pipeline, and the fork
 gets the whole compiled brief from it: all-session reading + the project_root's + the
-job_role's + the session_task's, and then the handoff and its understanding gate on top.
+family_role's + the session_task's, and then the handoff and its understanding gate on top.
 
 **A FORK THAT LAUNCHES AN AGENT RESOLVES ITS AXES DELIBERATELY** (owner, 2026-08-22).
 Forks used to be born through raw `tmux new-session`, which never touches the letter — so
-they carried a blank `job_role` FOREVER, since the role is stamped at birth and immutable,
+they carried a blank `family_role` FOREVER, since the role is stamped at birth and immutable,
 and could only ever self-set a task later. Measured on `explainer_library` and
 `wipeboard_groups`, both of which did exactly that. `session-launch` is the fix: it is the
 one door, and it is the only thing that can stamp a role.
 
 **The two axes default differently, and the asymmetry is the point.**
 
-- **`job_role` is INHERITED from the origin**, because a fork continues the same kind of
+- **`family_role` is INHERITED from the origin**, because a fork continues the same kind of
   work under the same hat — a fork is an origin, not a change of identity. It is
   **immutable**, so a wrong one cannot be repaired: if the origin's own role is blank,
   do NOT pass blank through. **ASK the owner which role the fork wears**, and say why you
@@ -180,12 +180,12 @@ role and one kill from fixing it, which is only true if the report says what was
 
 | # | Action | With |
 |---|---|---|
-| 1 | read-letter | your OWN letter — the `job_role` you will pass on, and your teams |
+| 1 | read-letter | your OWN letter — the `family_role` you will pass on, and your teams |
 | 2 | write-handoff-doc | a wip handoff doc (location per the documents SOP) — distill THIS conversation's context on the topic: goal in the owner's words, constraints, verification, definition of done |
-| 3 | propose-and-confirm | ONLY when the origin's `job_role` is blank: name the role you would give the fork and wait for the yes |
-| 4 | session-launch | name `<topic>`, `job_role` `<role>`, `session_task` `<task>`, `project_root`/dir `<dir>`, tags `<team>`, `cmd` only if the owner named a model, and the prompt below |
+| 3 | propose-and-confirm | ONLY when the origin's `family_role` is blank: name the role you would give the fork and wait for the yes |
+| 4 | session-launch | name `<topic>`, `family_role` `<role>`, `session_task` `<task>`, `project_root`/dir `<dir>`, tags `<team>`, `cmd` only if the owner named a model, and the prompt below |
 | 5 | confirm-started | the fork has ACKNOWLEDGED — it reported its understanding and is waiting, not working |
-| 6 | report-outcome | session name, topic, resolved `job_role` + `session_task`, handoff doc path, how to open it |
+| 6 | report-outcome | session name, topic, resolved `family_role` + `session_task`, handoff doc path, how to open it |
 
 **The prompt for step 4** — READ AND REPORT UNDERSTANDING FIRST, never "read this and
 execute it". A fork starts by proving it understood, not by working: *"Read <handoff
@@ -202,7 +202,7 @@ instruction on top of it.
 
 **Afterwards the fork owns its own task.** When its work moves on — plan approved, cutting
 begins — it re-marks itself with `write_tegami` and Ronin hands it that task's reading,
-once. Its `job_role` does not move with it, and nothing can change it.
+once. Its `family_role` does not move with it, and nothing can change it.
 
 Report: session name, one-line topic, where the handoff doc lives. **A macro's result
 must be shown, not just performed** — until the UI auto-splits the panel on fork

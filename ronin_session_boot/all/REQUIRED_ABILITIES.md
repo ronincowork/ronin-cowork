@@ -22,11 +22,13 @@ to you beside this file.
 dial: that is the owner's hand.** A refusal is an answer — report it and ask, do not
 retry or work around. `docs/session-control-dials.md`.
 
-**Read one:** `tejun-rireki <session> since` — everything since the owner's last
-message, from the durable tape, answering even for a session with no tile open and when
-Ronin is not running. `tejun-rireki <session> text` for the recent tail. This is the
-normal route; `tejun-peek <session>` (recent pane output) is the fallback and readiness
-check for a session with no tape — never a substitute for one.
+**Read one:** always begin with `tejun-rireki <session> since` — everything since the
+owner's last message. RIREKI's durable tape/scroll is the authority: it answers with no
+tile open and even when Ronin is not running. `tejun-rireki <session> text` reads the
+recent tape tail. Use `tejun-peek <session>` (recent tmux output) only when RIREKI says
+there is no tape, or when the live prompt state is otherwise unknowable. If you use
+that fallback, say explicitly that pane capture was needed because the durable record
+could not answer.
 
 **Message one:** `tejun-send <session> <message...>` — one targeted message, one
 verdict: `DELIVERED` / `DENIED` (dial) / `BLOCKED` (a human's draft at that prompt) /
@@ -40,6 +42,13 @@ initiative — if a fork seems right, propose it and wait. When the owner invoke
 compile first (`tejun forkit`): the shape is a handoff document, a new session, an
 understanding report, and a stop until the owner says go.
 
+**The owner's words route two different kinds of delegation.** `forkit`, **fork it**, and
+**new session** are absolute: create a visible Ronin tmux session through the `forkit`
+workflow — rostered, addressable and recorded — never substitute an internal sub-agent.
+**Spawn it** and **spawn an agent** mean the agent CLI's own internal sub-agent machinery,
+not a tmux session. For ordinary delegation that uses neither vocabulary, choose freely;
+internal sub-agents should stay quick and need no extra owner confirmation.
+
 ## This machine
 
 Facts about the box are **measured, never remembered** — nothing written down about a
@@ -51,8 +60,9 @@ by hand.
 ## When something here is absent
 
 Say what is true. If these tools are not on PATH, Ronin Services is not installed here —
-report that and stop; do not improvise with raw tmux. If a session has no tape, say so
-and fall back to `tejun-peek`. If a dial refuses, that is the owner's standing word.
+report that and stop; do not improvise with raw tmux. If a session has no tape, say so,
+fall back to `tejun-peek`, and report that fallback explicitly. If a dial refuses, that
+is the owner's standing word.
 
 Full procedures live where everything does: compile the macro (`tejun <name>`), or read
 the rows in `ronin_catalogs/TOOLS.md` and `ronin_catalogs/ACTIONS.md`.

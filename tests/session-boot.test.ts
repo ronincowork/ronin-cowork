@@ -28,7 +28,7 @@ test('every assisted session is handed the session macro routing guide', async (
     for (const macro of active) assert.match(guide, new RegExp(`\\+${macro.name}:`));
 
     const profile = {
-      job_role: '',
+      family_role: '',
       session_task: 'CheckWork',
       label: 'Checker',
       posture: [],
@@ -87,7 +87,7 @@ test('every assisted session is handed the required abilities', async () => {
 
 test('a referenced session is caught up on through the tape, pane peek as fallback', () => {
   const profile = {
-    job_role: '',
+    family_role: '',
     session_task: 'CheckWork',
     label: 'Checker',
     posture: [],
@@ -142,7 +142,7 @@ test('a service-signed *_connected level rides the MCP toggle', async () => {
 });
 
 test('manual sessions remain exactly manual', () => {
-  const profile = { job_role: '', session_task: 'OpenShell', posture: [] } as unknown as LaunchProfile;
+  const profile = { family_role: '', session_task: 'OpenShell', posture: [] } as unknown as LaunchProfile;
   const form: SpawnForm = {
     session_task: profile.session_task,
     prompt: '  owner text only  ',

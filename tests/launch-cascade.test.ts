@@ -1,5 +1,5 @@
 /**
- * THE CASCADE — `system < job_role < session_task < explicit launch`.
+ * THE CASCADE — `system < family_role < session_task < explicit launch`.
  *
  * These are the rules the owner ruled on 2026-08-22, asserted one at a time rather than
  * through the stock definitions, so a change to what the house ships can never quietly
@@ -51,7 +51,7 @@ test('absence inherits, and the last layer to state a field wins', async () => {
 
 test('the system answers when both axes are blank, and blank is a legal launch', () => {
   const p = resolveLaunchProfile(undefined, undefined);
-  assert.equal(p.job_role, '');
+  assert.equal(p.family_role, '');
   assert.equal(p.session_task, '');
   assert.equal(p.dial, 'write');
   assert.equal(p.permissions, 'default');

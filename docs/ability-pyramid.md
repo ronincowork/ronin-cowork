@@ -47,7 +47,7 @@ The `Read first:` list in every assisted brief — a directory listing of the bo
 | File | Static / generated | What it is |
 |---|---|---|
 | `KOTOBA_GLOSSARY.md` | static | the vocabulary — the same words meaning the same things |
-| `REQUIRED_ABILITIES.md` | static | the abilities every session uses: session macros, other sessions (dial, RIREKI read, guarded send, owner-only fork), measuring this machine |
+| `REQUIRED_ABILITIES.md` | static | the abilities every session uses: session macros, other sessions (dial, RIREKI read, guarded send), the `forkit`/new-session versus internal-spawn routing rule, measuring this machine |
 | `SHELVES.md` | generated rosters (ruled 2026-08-20; the current file is the static seed) | the map — which shelf answers which question, and what is on each. Prose is authored; the per-shelf rosters fill at birth from the resolved shelves, store included |
 | `SESSION_MACROS.md` | generated at each birth | the live `+macro:` roster from the resolved catalog, and the compile-first routing rule |
 
@@ -100,7 +100,7 @@ always-taught material, T3–T5 are one house-wide body of knowledge.
 | what a `+name:` means | `tejun <name>` — compile, execute, report | a remembered workflow |
 | whether a capability exists | the catalogs, via the map | improvising with tmux |
 | how to do a compiled step | it arrived in the compile | searching |
-| anything about another session | dial first, then `tejun-rireki` / `tejun-send` | `capture-pane`, `send-keys` |
+| anything about another session | dial first; `tejun-rireki <session> since` first, with the durable record authoritative; then `tejun-send` | pane capture only when there is no tape or live prompt state is unknowable, and report the fallback; raw `send-keys` |
 | how the house does a domain | the SOP shelf, by book | inventing a process |
 | what is true on this machine | run the named tool | any document |
 | where anything else is | `SHELVES.md` (already read) | — |

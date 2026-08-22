@@ -203,12 +203,13 @@ export function buildHome(tile) {
      * to land in ＋ New — which is the commons', and stays the commons'. So the desk asks
      * the tile, the tile asks here, and the launcher never learns it has two callers.
      *
-     * IT NAMES THE job_role TOKEN, not the old session_job. `PersonalAssistant` was a
-     * kind on the combined catalog; since the schema cut it is the `personalassistant`
-     * ROLE, launched with a blank task, and the launcher resolves the name against the
-     * live definitions rather than by hunting the board. Awaited because that resolution
-     * asks the server what the pick resolves to. */
-    askPersonalAssistant: (prompt) => { showPane('new'); void launcher.open('personalassistant', prompt); },
+     * IT NAMES THE session_task TOKEN. `PersonalAssistant` was a kind on the combined
+     * catalog, spent a day as a `job_role`, and is a TASK again in the `assistant` family
+     * (KOTOBA R34) — every former session_job is a session_task. The launcher resolves the
+     * name against the live definitions rather than by hunting the board, and launches it
+     * on the family that holds it. Awaited because that resolution asks the server what
+     * the pick resolves to. */
+    askPersonalAssistant: (prompt) => { showPane('new'); void launcher.open('PersonalAssistant', prompt); },
   };
 }
 

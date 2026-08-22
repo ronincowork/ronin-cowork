@@ -2,7 +2,7 @@
  * THE CASCADE — one complete, validated launch profile, resolved before any tmux session
  * exists.
  *
- *   system default  <  job_role  <  session_task  <  explicit choice on this launch
+ *   system default  <  family_role  <  session_task  <  explicit choice on this launch
  *
  * Neither axis owns a launch field exclusively, and that is the whole ruling (owner,
  * 2026-08-22). Both a role and a task may state defaults; the task wins over the role,
@@ -77,7 +77,7 @@ const INSTALL_SENTINEL = '{install}';
 
 export interface LaunchProfile {
   /** '' when the launch chose no role. A blank role is a first-class state. */
-  job_role: string;
+  family_role: string;
   /** '' when the launch chose no task. */
   session_task: string;
   /** Is a CLI launched at all? False for `agent: none` — a plain terminal. */
@@ -106,7 +106,7 @@ export interface LaunchProfile {
 }
 
 interface Layer {
-  level: 'job_role' | 'session_task';
+  level: 'family_role' | 'session_task';
   def: Definition;
 }
 
@@ -133,7 +133,7 @@ export function resolveLaunchProfile(
   task: Definition | undefined,
 ): LaunchProfile {
   const layers: Layer[] = [];
-  if (role) layers.push({ level: 'job_role', def: role });
+  if (role) layers.push({ level: 'family_role', def: role });
   if (task) layers.push({ level: 'session_task', def: task });
 
   // ---- LOCKED: `mcp: always` may not be contradicted from anywhere ----
@@ -186,7 +186,7 @@ export function resolveLaunchProfile(
   const posture = layers.map((l) => l.def.get('posture').trim()).filter(Boolean);
 
   return {
-    job_role: role?.name ?? '',
+    family_role: role?.name ?? '',
     session_task: task?.name ?? '',
     agent,
     model: agent ? pick(layers, 'model') : '',

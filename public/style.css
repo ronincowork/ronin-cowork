@@ -3470,10 +3470,10 @@ button.wb-door:hover b {
 .ks-btn-role {
   border-style: dashed;
 }
-/* ---- JOB ROLES: the sections of the ＋ New board (js/jobroles.js). Drawn as the same
+/* ---- FAMILY ROLES: the sections of the ＋ New board (js/familyroles.js). Drawn as the same
    collapsible groupings the Job Group shelves were — `group` stays the roster's
    addressing word. Membership lives in each role's own definition file now
-   (ronin_catalogs/job_roles/), which is what promoted a shelf into a role. ---- */
+   (ronin_catalogs/family_roles/), which is what promoted a shelf into a role. ---- */
 .ks-classes {
   display: flex;
   flex-direction: column;
@@ -5474,7 +5474,7 @@ button.wb-door:hover b {
 }
 /* The session_tasks get a stable colour each, so the same task is the same colour in
    every chart. Base16 siblings of the app's own accents; --bad is never used
-   categorically, so red keeps meaning "wrong". `QuarterBack` spent one day as a job_role
+   categorically, so red keeps meaning "wrong". `QuarterBack` spent one day as a family_role
    and is a task again (R33), so it is back in this list — and back in the birth-to-death
    chart, because a session genuinely does move into and out of coordinating. */
 .desk-stats {
