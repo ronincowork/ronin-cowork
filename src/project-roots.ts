@@ -1,4 +1,4 @@
-import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rename, stat, writeFile } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
@@ -438,22 +438,53 @@ const git = async (dir: string, args: string[]) => {
  * stored remote goes stale silently, a read one is never wrong.
  */
 export async function repoFacts(root: ProjectRootInfo): Promise<RootFacts> {
-  const out: RootFacts = { name: root.name, dir: root.dir, exists: false };
+  // Expand HERE, not only at catalog parse: the inspect route hands a TYPED dir
+  // straight in, and un-expanded `~/lab` reported "Folder does not exist" for a folder
+  // that exists (owner, 2026-08-21). Idempotent for the already-expanded catalog roots.
+  const dir = expand(root.dir);
+  const out: RootFacts = { name: root.name, dir, exists: false };
   try {
-    out.exists = (await stat(root.dir)).isDirectory();
+    out.exists = (await stat(dir)).isDirectory();
   } catch {
     return out;
   }
   try {
     // Inside a repo, but only THIS directory's own repo — a checkout nested in
     // another repo must not inherit its parent's remote.
-    if ((await git(root.dir, ['rev-parse', '--show-toplevel'])) !== root.dir) return out;
+    if ((await git(dir, ['rev-parse', '--show-toplevel'])) !== dir) return out;
     out.repo = {
-      remote: await git(root.dir, ['remote', 'get-url', 'origin']).catch(() => ''),
-      branch: await git(root.dir, ['branch', '--show-current']).catch(() => ''),
+      remote: await git(dir, ['remote', 'get-url', 'origin']).catch(() => ''),
+      branch: await git(dir, ['branch', '--show-current']).catch(() => ''),
     };
   } catch {
     // Not a repo. That is a legal shape for a project_root — `~/lab` is one.
   }
   return out;
+}
+
+/**
+ * Directory suggestions for a path being typed — the selection half of the folder
+ * field (owner, 2026-08-21: "the working folder has got to be a selection option").
+ * The prefix's last segment filters its parent's listing; `~` expands; only real
+ * directories come back, and dotted ones only once the typed segment says so. Empty
+ * input suggests the home directory's own folders — the place a person starts.
+ */
+export async function suggestDirs(prefixRaw: string): Promise<string[]> {
+  const prefix = expand(String(prefixRaw ?? '').trim() || '~/');
+  const endsSep = prefix.endsWith(path.sep);
+  const parent = endsSep ? prefix : path.dirname(prefix);
+  const frag = endsSep ? '' : path.basename(prefix);
+  let entries;
+  try {
+    entries = await readdir(parent, { withFileTypes: true });
+  } catch {
+    return []; // an unreadable or half-typed parent suggests nothing, never errors
+  }
+  return entries
+    .filter((d) => d.isDirectory())
+    .map((d) => d.name)
+    .filter((n) => n.startsWith(frag) && (frag.startsWith('.') || !n.startsWith('.')))
+    .sort()
+    .slice(0, 20)
+    .map((n) => path.join(parent, n));
 }

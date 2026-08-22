@@ -18,6 +18,7 @@ import {
   upsertProjectRoot,
   removeProjectRoot,
   repoFacts,
+  suggestDirs,
   isValidRootName,
   type RootField,
 } from '../project-roots.js';
@@ -136,6 +137,16 @@ export function registerCatalogs(app: express.Express): void {
     if (!dir) return res.status(400).json({ error: 'A directory is required.' });
     try {
       res.json(await repoFacts({ name: 'candidate', dir, remit: '', match: [], archived: false }));
+    } catch (e) {
+      res.status(500).json({ error: errMsg(e) });
+    }
+  });
+
+  // The folder field's selection half: real subdirectories matching what is typed so
+  // far, for a datalist. Local operator, owner's own disk — same trust as inspect.
+  app.get('/api/project-roots/suggest', async (req, res) => {
+    try {
+      res.json({ dirs: await suggestDirs(String(req.query.prefix ?? '')) });
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }

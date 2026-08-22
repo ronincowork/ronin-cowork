@@ -510,80 +510,57 @@ if command -v tailscale >/dev/null; then
     'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{process.stdout.write((JSON.parse(d).Self.DNSName||"").replace(/\.$/,""))}catch{}})' 2>/dev/null || true)"
 fi
 
-# Only what is still outstanding on this box: linger is skipped when already on, and the
-# tailscale line is absent when tailscale is not installed.
-# One address, and it has to be live: `tailscale serve` needs sudo this script does not
-# have, so https:// may not exist yet. Ask the machine which door is open.
-OPEN_URL=""
-if command -v tailscale >/dev/null 2>&1; then
-  SERVED="$(tailscale serve status 2>/dev/null | grep -oE 'https://[^ ]+' | head -1 || true)"
-  [ -n "$SERVED" ] && OPEN_URL="${SERVED%/}"
+
+# The box, and the address it names, are shared with bin/ronin-welcome, so redrawing
+# it after `tailscale serve` runs cannot drift from what was printed here. One
+# implementation of "which door is open", and it asks the machine rather than
+# assuming: serve needs a sudo this script does not have.
+# shellcheck source=libexec/ronin-banner.sh
+. "$REPO_DIR/libexec/ronin-banner.sh"
+export RONIN_IP="${IP:-}" RONIN_FQDN="${FQDN:-}"
+PORT="$(ronin_port "$REPO_DIR")"
+OPEN_URL="$(ronin_open_url "$REPO_DIR" "$PORT")"
+ronin_banner "$REPO_DIR" "$OPEN_URL" >&3
+
+# Only what is still outstanding on this box. Each step carries its own number AND its
+# own sentence, built in the same breath: a static ordinal outliving the step it names
+# is how "The second" came to be printed with no first, on every box that already had
+# linger enabled and so skipped step one.
+SERVED_ALREADY="$(ronin_served_url "$PORT")"
+STEP_CMD=(); STEP_WHY=(); NSTEPS=0
+if command -v loginctl >/dev/null 2>&1 &&
+   [ "$(loginctl show-user "$USER" --property=Linger --value 2>/dev/null || echo no)" != "yes" ]; then
+  STEP_CMD[$NSTEPS]="sudo loginctl enable-linger $USER"
+  STEP_WHY[$NSTEPS]="Keep Ronin running after you log out."
+  NSTEPS=$(( NSTEPS + 1 ))
 fi
-if [ -z "$OPEN_URL" ]; then
-  if   [ -n "$FQDN" ];    then OPEN_URL="http://$FQDN:3006"
-  elif [ -n "${IP:-}" ];  then OPEN_URL="http://$IP:3006"
-  else                         OPEN_URL="http://127.0.0.1:3006"; fi
-fi
-
-banner() { # $1=url
-  local url="$1"
-  local title=" RONIN COWORK " ver="" mark="人"
-  [ -f "$REPO_DIR/VERSION" ] && ver="$(sed -n 's/^release=//p' "$REPO_DIR/VERSION" 2>/dev/null || true)"
-  [ -n "$ver" ] && ver=" $ver "
-
-  # Visual width, not character count: 人 is double-width and counts as one. Keep
-  # ambiguous-width glyphs (⬡ and friends) out of the frame — they are one column in
-  # some terminals and two in others.
-  local l1="$mark   You're in. Thanks for joining us."
-  local l2="Your agents have a room now — open the door:"
-  local w1=$(( ${#l1} + 1 )) w=0
-  [ "$w1" -gt "$w" ] && w=$w1
-  [ ${#l2} -gt "$w" ] && w=${#l2}
-  [ ${#url} -gt "$w" ] && w=${#url}
-  # A frame that cannot hold its own chrome is a broken frame.
-  local chrome=$(( ${#title} + ${#ver} + 4 ))
-  local inner=$(( w + 6 )); [ "$chrome" -gt "$inner" ] && inner=$chrome
-
-  local i fill="" dashes=$(( inner - ${#title} - ${#ver} - 2 ))
-  for ((i = 0; i < dashes; i++)); do fill="$fill─"; done
-  local bar=""; for ((i = 0; i < inner; i++)); do bar="$bar─"; done
-
-  {
-  printf '\n  ╭─%s%s%s─╮\n' "$title" "$fill" "$ver"
-  printf '  │%*s│\n' "$inner" ""
-  printf '  │   %s%*s│\n' "$l1" $(( inner - 3 - w1 )) ""
-  printf '  │%*s│\n' "$inner" ""
-  printf '  │   %s%*s│\n' "$l2" $(( inner - 3 - ${#l2} )) ""
-  # Bold only for a tty, so a piped transcript stays clean.
-  if [ -t 3 ]; then
-    printf '  │   \033[1m%s\033[0m%*s│\n' "$url" $(( inner - 3 - ${#url} )) ""
+# Nothing to ask for when serve already points at THIS install: the address in the box
+# above is that mapping. Asking anyway is what put a second, different door on a box
+# that already had one, and left the banner naming the other.
+if [ -z "$SERVED_ALREADY" ] && [ -n "${IP:-}" ] && command -v tailscale >/dev/null 2>&1; then
+  STEP_CMD[$NSTEPS]="sudo tailscale serve --bg --https=8443 http://$IP:$PORT"
+  if [ -n "${FQDN:-}" ]; then
+    STEP_WHY[$NSTEPS]="Give it an HTTPS door at https://$FQDN:8443."
   else
-    printf '  │   %s%*s│\n' "$url" $(( inner - 3 - ${#url} )) ""
+    STEP_WHY[$NSTEPS]="Give it an HTTPS door."
   fi
-  printf '  │%*s│\n' "$inner" ""
-  printf '  ╰%s╯\n\n' "$bar"
-  } >&3
-}
-banner "$OPEN_URL"
-
-LINGER=""
-if command -v loginctl >/dev/null 2>&1; then
-  [ "$(loginctl show-user "$USER" --property=Linger --value 2>/dev/null || echo no)" = "yes" ] || LINGER=1
+  NSTEPS=$(( NSTEPS + 1 ))
 fi
-TS=""
-[ -n "${IP:-}" ] && command -v tailscale >/dev/null 2>&1 && TS=1
 
-if [ -n "$LINGER" ] || [ -n "$TS" ]; then
-  out "  To finish, run:"
+if [ "$NSTEPS" -gt 0 ]; then
+  out "  To finish:"
   out ""
-  [ -n "$LINGER" ] && out "      sudo loginctl enable-linger $USER"
-  [ -n "$TS" ]     && out "      sudo tailscale serve --bg --https=8443 http://$IP:3006"
-  out ""
-  [ -n "$LINGER" ] && out "  The first keeps Ronin running after you log out."
-  [ -n "$TS" ] && [ -n "$FQDN" ] && out "  The second turns the address above into https://$FQDN:8443."
-  [ -n "$TS" ] && [ -z "$FQDN" ] && out "  The second gives the address above an HTTPS front door."
+  s=0
+  while [ "$s" -lt "$NSTEPS" ]; do
+    out "    $(( s + 1 ))  ${STEP_WHY[$s]}"
+    out "       ${STEP_CMD[$s]}"
+    out ""
+    s=$(( s + 1 ))
+  done
+  out "  Then:  ronin-welcome    — the box again, with the address that answers."
   out ""
 fi
+
 
 # Printed instructions above are the contract. On a local graphical desktop this is
 # merely a convenience: wait for /api/health to answer 200, then ask the OS to open

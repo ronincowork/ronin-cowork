@@ -150,6 +150,8 @@ export const SETTEI_SCHEMA = {
       hint: 'One line. Agents read it to know what they have been put in front of.',
       placeholder: 'The browser grid of live tmux sessions',
       lands: { family: 'project', key: 'remit' },
+      // Blank never lands: a remit-only body must not summon the project family.
+      omit: 'blank',
     },
     {
       id: 'projDir',
