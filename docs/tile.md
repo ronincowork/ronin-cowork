@@ -52,7 +52,7 @@ same `needs` string, and both dim the control the same way.
 
 **The mark is cowork's, even though it lives in the TEGAMI.** The letter has two halves with
 different owners in one file (`src/tegami.ts`): cowork seeds the file at birth with
-`session_job` already filled and reads the role back for the roster; **michi** owns the
+`family_role` and `session_task` already filled and reads both back for the roster; **michi** owns the
 ladder, `at`, `ladder_state`, `docs`, the SHINGO chip, `quietMs`, the `/tegami` routes and
 the sweep. A role is set at birth and a ladder is not. So the `?` button works on a free
 install; the chip beside it does not.
@@ -163,7 +163,7 @@ michi is absent — the one way that question is asked anywhere in the client.
 
 ### The mark — what this session is doing
 
-The job button. Reads `session_job` off the session list, which carries it for every session.
+The task button. Reads `session_task` off the session list, which carries it for every session.
 Click it to change it: a popover of the `ronin_catalogs/session_tasks/` definitions, plus *not marked*, which
 is a real state and stays reachable.
 
@@ -171,13 +171,21 @@ is a real state and stays reachable.
 mark is worse than an empty square. That was wrong in the only way that counts: an empty
 button is invisible among six others, so nobody learns there is a question to answer.
 
-Setting it is a **re-label and nothing else** — no brief is re-sent, the dial is untouched.
 It writes the same field the agent maintains with `write_tegami`, surgically: the
-`session_job` value inside the fenced block changes and the ladder, `docs`, `at`, `objective`
+`session_task` value inside the fenced block changes and the ladder, `docs`, `at`, `objective`
 and every key this version has never heard of survive byte for byte. The owner is simply the
 other writer, for when an agent never re-marked itself or was redirected mid-flight.
 
-`POST /api/sessions/:name/session_job` → 409 if the letter has no readable json block.
+**It is no longer only a re-label.** The dial and permissions are still untouched and no
+brief is re-sent — but a committed change hands the session that task's own reading
+(`task/<session_task>/`), through the same observer the agent's own `write_tegami` change
+goes through, so there is one implementation and not a second one in the route. When the
+mark moved and its reading did not land, GET carries a `delivery` fault: a changed mark
+with undelivered reading is a split state and must not pass silently.
+
+`POST /api/sessions/:name/session_task` → 409 if the letter has no readable json block.
+A body naming `family_role` is refused 400 — that axis is fixed at birth, and
+`/api/sessions/:name/family_role` answers 405 with `Allow: GET` for the same reason.
 
 ### ⛩ The torii — the Commons
 

@@ -189,9 +189,11 @@ export const SETTEI_SCHEMA = {
       from: 'set.agents.jobs.mikaassist',
       seed: 'models:light',
       shape: 'provider-model',
-      // Keyed by the family_role's own token — the one the launcher, memory and counting
-      // already share, so nothing has to translate it. It was `MikaAssist` while she was
-      // a session_job; she is a role now, and the key follows the token.
+      // Keyed by her own catalog token — the one the launcher, memory and counting
+      // already share, so nothing has to translate it. `MikaAssist` was a session_job and
+      // is a session_task in the `assistant` family (R34); the token never changed, so the
+      // settings key did not either. `jobs.` is the stored prefix and stays: renaming it
+      // would move the owner's saved value for no gain.
       lands: { family: 'agents', key: 'jobs.mikaassist' },
       omit: 'blank',
     },

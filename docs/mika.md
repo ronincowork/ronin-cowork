@@ -107,7 +107,7 @@ if (opts.agent !== false && !opts.exempt) await assertUnderMax();   // src/tmux.
 ```
 
 It lives in the catalog rather than in code for the reason every other launch constant
-does: **nothing in `src/` may name a session_job**, or the catalog stops being the answer
+does: **nothing in `src/` may name a session_task**, or the catalog stops being the answer
 to what a session is.
 
 ## What she is made of
