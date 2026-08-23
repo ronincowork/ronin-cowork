@@ -29,8 +29,22 @@ says go.
 *Recorded 2026-08-23T17:36Z. Facts only. Everything below this section is the plan; this
 is where the work actually stands.*
 
-**Base:** branch `dev`, HEAD `989daa5`. Workspace Kit frozen at `18d9b35` (an ancestor).
-Nothing of this slice is committed.
+**Base:** branch `dev`. Workspace Kit frozen at `18d9b35` (an ancestor).
+
+**COMMITTED at `4dac240`** (2026-08-23, "New Team: the canonical draft, server-backed
+preflight, and Stage 1") — the five owned files plus this document, six paths, authorized
+and scoped by the owner as one step of a serialized queue. **Not pushed. Not merged.**
+`master` is owner-controlled and a PR is not permission to merge.
+
+**The slice is INERT as committed.** Its route registration and view registration live in
+shared files (`src/index.ts`, `public/js/main.js`, `public/index.html`) that carry four
+Eyes' work and were deliberately NOT staged. Until those land, `check-dead` will report
+`registerLaunchPreflight` as an export nothing references — verified by test, not inferred.
+That is expected, not a regression.
+
+*(This section is committed one step behind the code it describes: `4dac240` carried the
+slice, and the correction recording that fact is the follow-up commit. If you are resuming
+and this line is the newest thing here, nothing has happened since.)*
 
 ### Completed behaviour
 
