@@ -84,6 +84,32 @@ The old lock button and its global flip are retired. The Output selector changes
 tile and is compact on touch; Locked remains available there, with tmux copy-mode's normal
 round-trip scrolling tradeoff.
 
+The six choices are contracts, not degrees on an unnamed “detail” slider:
+
+| Output | What the tile shows | Produced by |
+|---|---|---|
+| **Locked** | The attached live tmux terminal, including its active screen and interaction | tmux/xterm |
+| **Terminal Mirror** | Every settled RIREKI record, including recognized terminal chrome | mechanical projection |
+| **Detailed** | Terminal Mirror without positively identified spinner and input-box chrome | mechanical projection |
+| **Condensed** | Dialogue and ordinary text, with adjacent thinking/tool/result/code records represented as compact activity groups | mechanical projection |
+| **Conversation** | Positively identified owner and agent dialogue; non-dialogue work is represented as activity rather than silently presented as speech | mechanical projection using the session's decoder |
+| **Agent Summary** | Persistent, authored accounts of closed transcript ranges | one-shot `koshi_kaki` calls |
+
+Unknown content is retained by Detailed and Condensed. Conversation is deliberately stricter:
+only content mechanically identified as dialogue is rendered as dialogue, while recognized work
+becomes an activity row. This keeps provider-specific recognition inside RIREKI's decoder rather
+than scattering Claude/Codex guesses through the browser.
+
+Agent Summary has two session policies. **On demand** writes when the owner asks for a summary.
+**Keep current** watches for a quiet, settled boundary and then makes another one-shot Kaki call;
+it runs whether or not anybody is viewing the tile. The stored chunks therefore remain ready for
+a later reader. This cut does not include KOE or voice playback.
+
+The five record-fed Outputs are also service reads, not browser-only presentations. RIREKI exposes
+the four mechanical projections through `GET /api/sessions/:name/render?view=...`; Koshi exposes
+the fifth through `GET` and `POST /api/sessions/:name/kaki`. A future tool-using reader such as KOE
+can call those authenticated routes without recreating the browser's filtering rules.
+
 ---
 
 ## The header, left to right
