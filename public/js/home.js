@@ -111,7 +111,7 @@ export async function launchProfile(sessionRole) {
  * '' whenever nobody has said, and callers draw nothing rather than guessing.
  */
 export const taskIcon = (s) =>
-  (s?.session_role && (taskData || []).find((k) => k.name === s.session_role)?.icon) || '';
+  (s?.session_role && (roleData || []).find((k) => k.name === s.session_role)?.icon) || '';
 
 
 export async function loadMacros() {

@@ -1,7 +1,7 @@
 <!--
   Before you open this: run the gates.
 
-      bin/ronin-byoin
+      bin/ronin-byoin --gates
 
   CI runs the same set (`--gates`), so a red PR here is a fault you could have
   seen locally in seconds. The pre-push hook runs it for you when hooks are
@@ -14,7 +14,8 @@
 
 ## Gates
 
-- [ ] `bin/ronin-byoin` — green, or every remaining line is a SKIP I can explain
+- [ ] `bin/ronin-byoin --gates` — green, with its browser-UI SKIPs understood
+- [ ] if UI-affecting: `bin/ronin-byoin --ui` — green, or its SKIPs named below
 - [ ] any SKIP named below, with what it means was **not** checked
 
 <!--

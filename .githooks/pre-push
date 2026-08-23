@@ -20,8 +20,9 @@
 # shared tree. Blocking everyone's push on one live page fault is how a guard gets
 # switched off for good.
 #
-# So: a render failure WARNS and lets the push through, named out loud. Every other gate
-# blocks. CI enforces the same set, because its runner has no browser and skips it too.
+# So: fast mode names both browser checks as SKIPs without launching them. Every check
+# it does run blocks on failure. CI enforces the same fast set. UI-affecting work gets
+# rendered proof once with `bin/ronin-byoin --ui` before landing.
 #
 # FAILS OPEN when it cannot judge: no byoin on disk means this is not a cowork checkout.
 #
@@ -38,30 +39,10 @@ OUT="$("$BYOIN" --gates 2>&1)"; RC=$?
 printf '%s\n' "$OUT"
 [ "$RC" = 0 ] && exit 0
 
-# Which gates failed? The verdict line names them: "BYOIN: N gate(s) failed — a b c"
+# Which checks failed? The verdict line names them: "BYOIN: N gate(s) failed — a b c"
 FAILED="$(printf '%s\n' "$OUT" | sed -n 's/^BYOIN: .*gate(s) failed — //p' | tail -1)"
 BLOCKING=""
-for g in $FAILED; do
-  case "$g" in
-    smoke-ui | visual-ui) ;;                  # the page, not the tree
-    *) BLOCKING="$BLOCKING $g" ;;
-  esac
-done
-
-if [ -z "$BLOCKING" ] && [ -n "$FAILED" ]; then
-  cat >&2 <<MSG
-
-  ─────────────────────────────────────────────────────────────────────────
-  PUSHED ANYWAY — the only failure is the render check ($FAILED).
-
-  That is about the running page, not the tree you are pushing, and CI skips
-  it for want of a browser. It is still real: THE PAGE HAS NOT BEEN LOOKED AT.
-  If it is your break, fix it. If it is not, make sure whoever owns it knows.
-  ─────────────────────────────────────────────────────────────────────────
-
-MSG
-  exit 0
-fi
+for g in $FAILED; do BLOCKING="$BLOCKING $g"; done
 
 cat >&2 <<MSG
 
@@ -69,7 +50,7 @@ cat >&2 <<MSG
   PUSH REFUSED —$BLOCKING
 
   CI runs the same gates, so this is a red PR you can avoid right now. Each
-  failure names its own remedy above; docs/byoin.md is the roster. A SKIP is
+  failure names its own remedy above; docs/test-protocols.md is the contract. A SKIP is
   not a failure — read the line, it says what was not checked and why.
 
   If you meant to push anyway (work in progress, a branch nobody reviews):

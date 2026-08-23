@@ -4,12 +4,16 @@ Written for the agent about to test, whichever vendor's binary it runs in. There
 test command in this house:
 
 ```
-bin/ronin-byoin           # every check, then every readout, then one verdict
-bin/ronin-byoin --gates   # the repo half only — for a machine with no live install
+bin/ronin-byoin           # every repo check, every readout, then one verdict
+bin/ronin-byoin --gates   # fast repo checks; no browser UI or live-machine readouts
+bin/ronin-byoin --ui      # every repo check, including browser UI; no readouts
 ```
 
-Run it **once, when the work is done**. It may take a couple of minutes; it may sit
-quiet while the render check drives a browser. Wait for it. Do not assemble your own
+Run the mode appropriate to the work **once, when the work is done**. `--gates` is the
+ordinary developer/pre-push/PR mode. Run `--ui` when a change can affect rendered UI,
+browser journeys, layout, or visual composition. Full BYOIN is for an installed box
+and includes both repo tiers before its machine readouts. UI modes may take a couple
+of minutes and sit quiet while a browser is driven. Wait for them. Do not assemble your own
 sequence of `scripts/check-*` calls, `tsc` runs and test files — every one of those is
 already inside BYOIN, it keeps going past failures instead of hiding the second one
 behind the first, and a hand-rolled sequence is exactly the drift this arrangement
@@ -20,9 +24,9 @@ check while diagnosing a failure BYOIN already named.
 
 **Developers of Ronin** — sessions changing this repository. The `byoin_check`s (the
 repo half) are yours: they read the tree, fail the build, and answer the same on every
-machine. Run BYOIN before landing work on `dev`; the pre-push hook runs it again
-mechanically, and CI runs `--gates` on every PR to `master`. Landing work and testing
-it are the same single call.
+machine. Run `bin/ronin-byoin --gates` before landing work on `dev`; the pre-push hook
+runs that fast tier again mechanically, and CI runs it on every PR to `master`. For UI
+work, run `bin/ronin-byoin --ui` before landing as the additional rendered proof.
 
 **Agents on an install** — sessions maintaining, updating, or **customizing** a
 third-party box: a new session task, a skin, a macro, an SOP shadow, any shadow
@@ -39,7 +43,7 @@ update, run BYOIN and read the verdict.
 - **FAIL** — the named thing is wrong; each failure carries its own remedy or the
   first lines of its output. Fix, run BYOIN again.
 - **SKIP is not a pass.** A skip line says something was *not checked at all* and why
-  (usually: no headless browser on this machine). Read it; do not report a skipped
+  (for example, fast mode omits browser UI, or no headless browser is available). Read it; do not report a skipped
   check as verified.
 
 The check roster is not kept anywhere by hand — BYOIN reads it out of `package.json`'s

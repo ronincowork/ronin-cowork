@@ -6,10 +6,9 @@
 # to everyone, and the first anyone heard of it was seven failing runs on the next PR.
 # A check that only speaks during review is working against the arrangement it guards.
 #
-# WHY --gates AND NOT `npm run verify`: verify ends in the render check, which needs a
-# live server and a real browser. A runner has neither, so `ronin-byoin --gates` SKIPs
-# that one check WITH ITS REASON and passes the rest. A skip that says why is the design
-# working; a chain that always fails on a runner is a check nobody runs.
+# WHY --gates: it is the explicit fast repository tier. It does not launch smoke-ui or
+# visual-ui and names both as SKIPs WITH THEIR REASON. UI-affecting work must carry a
+# separate local `bin/ronin-byoin --ui` verdict until tier 2 below exists.
 #
 # Tier 2 — a real render check on a runner (tmux + Playwright + a started server + a
 # seeded session) — is a separate, later piece of work. Not this file.
