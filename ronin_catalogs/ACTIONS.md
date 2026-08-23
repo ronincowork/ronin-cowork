@@ -254,48 +254,84 @@ its own control-check before you touch it (the roster reports the dial; it does 
 grant anything). Tagging is the OWNER's job in the Ronin UI, or a macro's at birth
 (`session-create`); do not re-tag other people's sessions to suit your task.
 
+## wipeboard-check
+`action_kind: mechanical` — run it, don't deliberate.
+> **Tool: `tejun-wipeboard`** (TOOLS.md)
+Find out what has been said to you. One command, no arguments:
+
+```bash
+tejun-wipeboard
+```
+
+It resolves which session you are, which wipeboards you are on, and prints everything you
+have not read — oldest first, wipeboard by wipeboard — then records that you have read it.
+**You never manage ids, timestamps, cursors, pages or files.** Run it when a notice tells
+you something landed, and run it when you want to know whether anything did.
+
+- **Nothing unread** answers in one line, and costs almost nothing. Run it freely.
+- **On no wipeboard** is an ordinary answer, not a problem.
+- Your own posts are never handed back to you.
+- Your read is recorded **mechanically**. There is nothing to acknowledge and nothing to
+  confirm — see the rule against "got it" posts below.
+- If the tool says `CURSOR-FAILED`, those posts will simply arrive again next time. Nothing
+  was lost; do not try to re-read them by hand.
+
+History is a different, explicit command, and it changes nothing:
+`tejun-wipeboard <wipeboard> read [n]` · `tejun-wipeboard <wipeboard> find <text>` ·
+`tejun-wipeboard boards`.
+
 ## wipeboard-post
 `action_kind: mechanical` — run it, don't deliberate.
-> **Tool: `tejun-wipeboard <wipeboard> post <text>`** (TOOLS.md)
-Say something on a WIPEBOARD — the shared text surface a set of sessions all read and
-write, so agents working the same problem talk to each other instead of routing every
-message through the owner. A wipeboard is a markdown file in the wipeboards store
-(`$(ronin-store wipeboards)/<wipeboard>.md` — never spell the path) plus a tmux option
-(`@ronin-wipeboards`) saying who is on it. The FILE is the record — but a post is not
-only a file write: **posting also notifies every other session on the wipeboard**, so what
-you say is heard instead of waiting for someone to happen to look.
+> **Tool: `tejun-wipeboard <wipeboard> post [--to …] <text>`** (TOOLS.md)
+Say something on a WIPEBOARD — where the sessions on a team talk to each other instead of
+routing every message through the owner. Posting also **interrupts** the other members, so
+what you say is heard instead of waiting for someone to look.
+
 ```bash
-tejun-wipeboard <wipeboard> read    # the brief + the recent thread — READ BEFORE YOU POST
-tejun-wipeboard <wipeboard> post "…"  # append one watermarked entry as your session, then notify the wipeboard
-tejun-wipeboard <wipeboard>         # the roster: who else is on it, and their dials
+tejun-wipeboard <wipeboard> post "…"                    # interrupts everyone else on it
+tejun-wipeboard <wipeboard> post --to @alpha,@beta "…"  # interrupts only those two
+tejun-wipeboard <wipeboard> post --to none "…"          # interrupts nobody
 ```
-What the notification is, so you can predict it:
-- It is a **pointer, not a copy** — one line naming the wipeboard and you, telling the reader
-  to run `tejun-wipeboard <wipeboard> read`. The thread stays in one place, the file.
-- It goes to every member **except you**, through `tejun-send`, so **the dial governs it**:
-  a member dialled 👤 or 👁 is skipped and reported as skipped. That is the correct
-  outcome — they can still read the wipeboard. Never flip a dial to get a notice through.
-- **The append is the post.** Notification happens after, and a delivery that fails
-  (a human draft at that prompt, a dialog open) is reported per-session and is not a
-  failed post. Do not re-post to "make it land": that duplicates the entry. Report the
-  line the tool printed, and if it matters, tell the owner.
+
+**A WIPEBOARD IS NOT A RECORD.** Posts are delivered and then cleared — once the readers a
+post was for have read it, or once it ages out. Never put something there you will need
+later: that belongs in your TEGAMI, a `docs/` page, or a commit message.
+
+**Address it to whoever has to act on it; leave it open only when everyone has to.** That
+choice is the whole difference between a wipeboard that stays useful and one nobody reads.
+But be clear what addressing does: it decides **who is interrupted, not who may read.**
+Everyone on the wipeboard still receives the post when they next check, so an addressed
+post is not private. If you need a genuinely private exchange, ask the owner for a
+wipeboard with two members on it.
+
+What the interruption is, so you can predict it:
+- A **pointer, not a copy** — one line naming the wipeboard and you, telling the reader to
+  run `tejun-wipeboard`. The thread stays in one place.
+- It never goes to you, and **the dial governs it**: a member dialled 👤 or 👁 is skipped
+  and reported as skipped. That is the correct outcome — they still get the post when they
+  check. Never flip a dial to get a notice through.
+- **The post is the post.** Notification happens after, and a delivery that fails is
+  reported per-session and is not a failed post. Do not re-post to "make it land": that
+  duplicates it. Report the line the tool printed.
 - Nobody else on the wipeboard = nothing sent, and that is not an error.
+- The tool tells you who it did **not** interrupt. Read that line; it is how you learn what
+  your posts are doing to other people's attention.
 
 Rules, all of them about not trampling other people's writing:
-- **Append only.** Posts are added with `>>`; that is the whole concurrency story.
-  NEVER rewrite, reorder or delete another agent's post — several agents write this
-  file at once and an edit-in-place loses somebody's words.
+- **Never rewrite, reorder or delete another agent's post.** Several agents write at once.
+  Clearing posts is the machine's job on a rule, and it is the only thing that removes one.
 - **Never edit the `## Brief`.** It is the owner's statement of what the wipeboard is for.
-- **You do not enrol anyone**, including yourself. A TEAM wipeboard's membership IS
-  the team — it follows the tags, and there is nothing to enrol; a CUSTOM wipeboard's
-  membership is the owner's hand (the ▤ Wipeboard tab). You post; you don't manage
-  the roster either way.
-- Read before posting so you answer what's there instead of talking past it, and
-  re-read rather than remembering — the thread moves while you work.
+- **You do not enrol anyone**, including yourself. A TEAM wipeboard's membership IS the
+  team; a CUSTOM wipeboard's is the owner's hand. You post; you don't manage the roster.
+- **Read before posting** (`tejun-wipeboard`) so you answer what is there instead of
+  talking past it.
 - Being on a wipeboard is not permission to touch a member: control-check as always.
-- **A notice arriving in your pane is the wipeboard speaking, not the owner.** It says so on
-  its face. Read the wipeboard; answer if it concerns you. Never post just to acknowledge —
-  every post notifies everyone, and five "got it"s is how a wipeboard turns into noise.
+- **A notice in your pane is the wipeboard speaking, not the owner.** It says so on its
+  face. Read; answer if it concerns you. **Never post just to acknowledge** — your read is
+  already recorded, and five "got it"s costs five agents an interruption each and tells
+  them nothing.
+- **Be brief.** Everything you write is something several agents must read. There is no
+  length limit, which is exactly why this is a rule and not a check.
 
 ## send-to-session  (compound action — was wrongly listed as a "steer" macro)
 `action_kind: mechanical` — run it, don't deliberate.

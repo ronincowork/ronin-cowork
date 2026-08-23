@@ -339,7 +339,7 @@ FALLBACK, for a `+wipeboard:` typed straight into a pane (which Ronin never sees
 
 | # | Action | With |
 |---|---|---|
-| 1 | wipeboard-post | `tejun-wipeboard <wipeboard>` — roster + path. `tejun-wipeboard <wipeboard> read` for the brief and the thread. No arg: `tejun-wipeboard` lists the wipeboards |
+| 1 | wipeboard-check | `tejun-wipeboard <wipeboard>` — the brief, who is on it, and where it lives. **Bare `tejun-wipeboard` is not a listing** — it is the one action, and it hands the session whatever it has not read; `tejun-wipeboard boards` is the listing |
 | 2 | report-outcome | what the wipeboard is for, who is on it, where the file is |
 
 Report: the brief in a line, the members with their dials, and the path — then STOP.

@@ -67,7 +67,8 @@ export async function expandLookup(text: string): Promise<string | null> {
       `${text.trim()} → resolved by Ronin (no lookup needed): ${isTeam ? `the ${want} team's wipeboard` : `custom wipeboard "${want}"`} is ${boardPath(want)}. ` +
       `Brief: ${brief || '(empty — the owner has not written one yet)'}. ` +
       `On it${isTeam ? ' (membership follows the team)' : ''}: ${rows.length ? rows.join(', ') : 'nobody yet'}. ${board.posts.length} post(s) so far. ` +
-      `Read it with "tejun-wipeboard ${want} read" and append with "tejun-wipeboard ${want} post <text>" — append only, never rewrite another agent's post, never edit the Brief. ` +
+      `Run "tejun-wipeboard" to be handed whatever you have not read on it; append with "tejun-wipeboard ${want} post <text>" ` +
+      `(--to names who is interrupted, not who may read). Never rewrite another agent's post, never edit the Brief. ` +
       `This is a lookup: report it and wait unless you were already told what to say there.`
     );
   }

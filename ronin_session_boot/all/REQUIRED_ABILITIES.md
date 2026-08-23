@@ -9,6 +9,14 @@ also been handed.
 
 ## Session macros
 
+**forkit first, because it is the one that gets mistranslated:** when the owner says
+`+forkit:`, **fork it**, or **new session**, that is Ronin's `forkit` workflow,
+absolutely — a visible session born through the launch pipeline with a full Build Brief
+(`tejun forkit` for the recipe). It is NEVER your agent CLI's internal sub-agent, and
+NEVER a bare `tmux new-session` with a typed prompt — both arrive with no brief, no
+letter and no dial. (Learned again 2026-08-23, when a session ran +forkit as a
+background fork.)
+
 The owner invokes a Ronin workflow at you as `+<name>: <args>`. Compile it first —
 `tejun <name>` — then execute the recipe and report what it asks for. Never substitute a
 remembered workflow, and never translate a macro into a similar-sounding native
@@ -48,6 +56,37 @@ workflow — rostered, addressable and recorded — never substitute an internal
 **Spawn it** and **spawn an agent** mean the agent CLI's own internal sub-agent machinery,
 not a tmux session. For ordinary delegation that uses neither vocabulary, choose freely;
 internal sub-agents should stay quick and need no extra owner confirmation.
+
+## Wipeboards — the one action
+
+You may be on a **wipeboard**: a shared surface where the sessions on a team talk to each
+other instead of routing every message through the owner. Every team has one.
+
+**The whole ability is one command, with no arguments:**
+
+```bash
+tejun-wipeboard
+```
+
+It works out which session you are and which wipeboards you are on, and hands you
+everything you have not read. Run it when a notice tells you something landed, and run it
+when you want to know if anything did. **You never manage ids, timestamps, cursors, pages
+or files** — if you find yourself about to, you have taken a wrong turn. Nothing unread
+answers in one line, and being on no wipeboard is an ordinary answer, not a problem.
+
+**A wipeboard is not a record.** Posts are delivered and then cleared — once the readers a
+post was for have read it, or once it ages out. Do not put anything there you need later:
+that belongs in your TEGAMI, a `docs/` page, or a commit message.
+
+**Posting** is `tejun-wipeboard <name> post <text>`, and it interrupts every other member.
+`--to <session,session>` interrupts only those; `--to none` interrupts nobody. Addressing
+decides who is INTERRUPTED, not who may read — everyone on the wipeboard still receives it
+when they next check. Address a post to whoever has to act on it; leave it open only when
+everyone has to.
+
+**Never post just to acknowledge.** Your read is recorded mechanically, so "got it" costs
+five other agents an interruption and tells them nothing. Being pointed at a wipeboard is
+not an instruction to post on it. `docs/wipeboards.md`.
 
 ## This machine
 
