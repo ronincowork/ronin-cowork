@@ -23,19 +23,108 @@ import {
   appendPost,
   boardExists,
   boardPath,
+  dropCursor,
   ensureBoard,
   isValidBoardName,
   joinNotice,
   leaveNotice,
   listBoardFiles,
   ownerAuthor,
+  postNotice,
   readBoard,
+  reapBoard,
+  reapPosts,
   setBrief,
   teamJoinNotice,
   teamLeaveNotice,
   teamStub,
+  unreadFor,
+  type Post,
 } from '../wipeboards.js';
+import { sessionKey } from '../session-dir.js';
+import { listTeamRosters } from '../team-rosters.js';
+import { readWipeboardSettings } from '../user-config.js';
 import { count } from '../counts.js';
+
+/**
+ * Every live member of a wipeboard WITH the durable session key its cursor is filed
+ * under. The reaper needs both: the name to match an addressee, the key to find the
+ * cursor. Membership stays derived — this resolves it fresh, it never stores it.
+ */
+async function memberKeys(board: string): Promise<{ name: string; key: string }[]> {
+  const out: { name: string; key: string }[] = [];
+  for (const m of await boardMembers(board)) out.push({ name: m.name, key: await sessionKey(m.name) });
+  return out;
+}
+
+/**
+ * Retire what has been delivered, then remove the wipeboard itself if nothing points at
+ * it any more. Called inline on every read and every post — that is what keeps the house
+ * rule of no daemon and no timer, and it is cheap because the TTL keeps the directory
+ * small. Never throws into a request: a wipeboard that could not be swept is not an
+ * error the caller can do anything about.
+ */
+async function sweep(board: string): Promise<void> {
+  try {
+    const { ttlMs, graceMs } = await readWipeboardSettings(board);
+    await reapPosts(board, { members: await memberKeys(board), ttlMs, graceMs });
+    const sessions = await listSessions();
+    const rosters = await listTeamRosters();
+    await reapBoard(board, {
+      teamMembers: sessions.filter((s) => s.tags.includes(board)).map((s) => s.name),
+      enrolled: (await Promise.all(
+        sessions.map(async (s) => ((await getWipeboards(s.name)).includes(board) ? s.name : '')),
+      )).filter(Boolean),
+      // The roster's `wipeboard:` TOKEN, never its name — a roster may point somewhere
+      // else, and matching the name would remove a wipeboard a living team is using.
+      rosterPointsAtIt: rosters.some((r) => r.wipeboard === board),
+    });
+  } catch {
+    /* a sweep that could not run is not a caller's problem */
+  }
+}
+
+/** The audience a post was aimed at, off the request body. Absent = everyone. */
+function audienceOf(body: unknown): { to: string[]; silent: boolean } {
+  const b = (body ?? {}) as Record<string, unknown>;
+  if (b.silent === true) return { to: [], silent: true };
+  const raw = Array.isArray(b.to) ? b.to : typeof b.to === 'string' ? String(b.to).split(',') : [];
+  return { to: raw.map((t) => String(t).trim()).filter(Boolean), silent: false };
+}
+
+/**
+ * Tell the wipeboard's members that something landed. A POINTER, never a copy: the notice
+ * names the wipeboard and the poster and sends the reader to the one action.
+ *
+ * Addressing filters the INTERRUPT, not the post — everyone still receives it on their
+ * next check. The dial is law throughout: a 👤/👁 member is never typed into, that
+ * refusal is reported rather than worked around, and no dial is ever flipped.
+ */
+async function fanOut(board: string, post: Post, from: string): Promise<Record<string, string>> {
+  const results: Record<string, string> = {};
+  if (post.silent) return results;
+  const at = (s: string) => (s.startsWith('@') ? s.slice(1) : s);
+  const aimed = post.to.length ? new Set(post.to.map(at)) : null;
+  const notice = postNotice(board, post.author);
+  let unaddressed = 0;
+  for (const m of await boardMembers(board)) {
+    if (at(m.name) === at(from)) continue; // never the poster
+    if (aimed && !aimed.has(at(m.name))) {
+      unaddressed++;
+      continue;
+    }
+    if (m.control !== 'write') {
+      results[m.name] = 'not notified (dial is not 🤖) — it gets this on its next check';
+      continue;
+    }
+    const { started } = await sendText(m.name, notice);
+    results[m.name] = started ? 'notified' : 'the pane did not react';
+  }
+  // Say who was deliberately not told. The poster learning what its post DID is half of
+  // why addressing reduces noise rather than just moving it.
+  if (unaddressed) results['(not addressed)'] = `${unaddressed} other(s) — they see it when they check`;
+  return results;
+}
 
 /** Does a live team bear this name? Then the board is a TEAM wipeboard and the team is
  * its membership; @ronin-wipeboards is not consulted for it. See docs/wipeboards.md. */
@@ -139,12 +228,40 @@ export function registerWipeboards(app: express.Express): void {
         // A team wipeboard is real before its file is: it exists because the team does,
         // and the tile can open it. The file materializes on first post.
         return res.json({
-          name, brief: '', posts: [], mtime: 0, file: boardPath(name),
-          members: await boardMembers(name), kind: 'team',
+          name, brief: '', posts: [], newest: '', file: boardPath(name),
+          members: await boardMembers(name), kind: 'team', more: false,
+        });
+      }
+      // Retire what has been delivered before answering — inline, so there is no daemon.
+      await sweep(name);
+      if (!(await boardExists(name))) {
+        // The sweep removed it: nothing pointed at it any more. An ordinary outcome.
+        return res.json({
+          name, brief: '', posts: [], newest: '', file: boardPath(name),
+          members: [], kind: team ? 'team' : 'custom', reaped: true,
         });
       }
       const [board, members] = await Promise.all([readBoard(name), boardMembers(name)]);
-      res.json({ ...board, file: boardPath(name), members, kind: team ? 'team' : 'custom' });
+      const since = String(req.query.since ?? '');
+      const limit = Math.max(0, Math.min(500, Number(req.query.limit ?? 0) || 0));
+      let posts = since ? board.posts.filter((p) => p.id > since) : board.posts;
+      // A page is the NEWEST n — the tab loads what is current and pulls older on scroll.
+      const older = limit && posts.length > limit;
+      if (limit) posts = posts.slice(-limit);
+      res.json({
+        name: board.name,
+        brief: board.brief,
+        posts,
+        /** The newest post id, or ''. Replaces `mtime`: a directory of posts has no file
+         *  mtime, and a derived one would only exist to humour a client we also own. */
+        newest: board.posts.length ? board.posts[board.posts.length - 1].id : '',
+        file: boardPath(name),
+        members,
+        kind: team ? 'team' : 'custom',
+        /** Older posts exist beyond this page, or have cleared. The tab says so rather
+         *  than letting a thread silently shorten itself, which reads as data loss. */
+        more: older,
+      });
     } catch (e) {
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }
@@ -166,8 +283,15 @@ export function registerWipeboards(app: express.Express): void {
       // enrolled, so nothing else has ever told them this wipeboard exists. This is
       // the JOIN notice, not a post echo; owner posts stay unannounced as ever.
       const born = team && (await ensureBoard(name, teamStub(name)));
-      await appendPost(name, String(req.body?.author ?? '').trim() || (await ownerAuthor()), text);
-      const results: Record<string, string> = {};
+      const author = String(req.body?.author ?? '').trim() || (await ownerAuthor());
+      const { to, silent } = audienceOf(req.body);
+      const post = await appendPost(name, author, text, { to, silent });
+      // THE OWNER'S LINE NOW REACHES THE MEMBERS. It used to stay silent on the reasoning
+      // that the owner already has the tile dials — but the dial route is one-to-one and
+      // this is the broadcast case: "if the owner types a message, then all agents should
+      // see that" (owner, 2026-08-23). Same one tejun-send fan-out, never a second path.
+      const results: Record<string, string> = await fanOut(name, post, author);
+      await sweep(name);
       if (born) {
         const members = await boardMembers(name);
         const roll = members.map((m) => m.name);
@@ -180,7 +304,29 @@ export function registerWipeboards(app: express.Express): void {
           results[m.name] = started ? 'notified' : 'the pane did not react';
         }
       }
-      res.json({ ok: true, results });
+      res.json({ ok: true, id: post.id, results });
+    } catch (e) {
+      res.status(500).json({ error: String((e as Error)?.message ?? e) });
+    }
+  });
+
+  /**
+   * WHAT ONE SESSION HAS NOT READ — the shape behind the one action.
+   *
+   * OWNER-SCOPE, not session-scope. The browser is the owner, so it may ask about any
+   * session; that is exactly why it is READ-ONLY and never advances a cursor. No
+   * agent-facing path reaches another session's cursor — a session reads only its own
+   * unread and advances only its own, the same asymmetry write_tegami already has.
+   */
+  app.get('/api/wipeboards/:name/unread', async (req, res) => {
+    const { name } = req.params;
+    const session = String(req.query.session ?? '').trim();
+    if (!isValidBoardName(name)) return res.status(400).json({ error: 'Invalid board name.' });
+    if (!isValidName(session)) return res.status(400).json({ error: 'Name a session.' });
+    try {
+      if (!(await boardExists(name))) return res.json({ name, session, posts: [] });
+      const posts = await unreadFor(name, await sessionKey(session), `@${session}`);
+      res.json({ name, session, posts });
     } catch (e) {
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }
@@ -250,6 +396,9 @@ export function registerWipeboards(app: express.Express): void {
       const result = (await sessionExists(session))
         ? await setMembership(name, session, false)
         : 'session is gone — nothing to untag';
+      // Its cursor goes with it: a member that has left must not hold a post back from
+      // reaping, and a rejoin should see what is currently on the wipeboard.
+      await dropCursor(name, await sessionKey(session)).catch(() => {});
       res.json({ ok: true, result, members: await boardMembers(name) });
     } catch (e) {
       res.status(500).json({ error: String((e as Error)?.message ?? e) });

@@ -415,3 +415,41 @@ export async function assertUnderMax(): Promise<void> {
   const live = await liveCount();
   if (live >= max) throw new AtSessionMax(max, live);
 }
+
+/* ---------------------------------------------------------------- WIPEBOARD FLUIDITY */
+
+/**
+ * HOW LONG A POST LIVES. SETTEI, because it is a thing the owner has SET about how this
+ * install behaves — not a recipe and not code.
+ *
+ * A wipeboard is a transport, not a record (owner, 2026-08-23): "once everyone has seen
+ * the message, there's really no need to keep it". Two numbers say how fluid that is —
+ * the GRACE after every required reader has read a post, and the TTL that retires it
+ * whoever read it. `ttl_hours: 0` means never reap on age; read-reaping still runs.
+ *
+ * A single wipeboard may override both by name, which is how one noisy surface can be
+ * made shorter-lived than the house default without a second mechanism.
+ *
+ * NO TMUX BUS COPY, deliberately. `@ronin-session-max` and `@ronin-owner` are published
+ * onto the server bus because a zero-dependency bash tool needs them without a second
+ * JSON parser. `tejun-wipeboard` is not that: it runs `src/wipeboard-cli.ts` through tsx
+ * and reads this file directly, so a published copy would be a second home for one fact
+ * with nothing reading it. The owner edits `ronin.json`; there is no writer here until
+ * a surface asks for one.
+ */
+const DEFAULT_TTL_HOURS = 48;
+const DEFAULT_GRACE_MINUTES = 60;
+
+/** A number the owner typed, floored to non-negative; anything else is the default. */
+const hours = (v: unknown, fallback: number): number => {
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(n) && n >= 0 ? n : fallback;
+};
+
+export async function readWipeboardSettings(board?: string): Promise<{ ttlMs: number; graceMs: number }> {
+  const sec = await readSection<Record<string, unknown>>('wipeboard', {});
+  const per = (board && (sec[board] as Record<string, unknown> | undefined)) || {};
+  const ttlH = hours(per.ttl_hours ?? sec.ttl_hours, DEFAULT_TTL_HOURS);
+  const graceM = hours(per.grace_minutes ?? sec.grace_minutes, DEFAULT_GRACE_MINUTES);
+  return { ttlMs: ttlH * 3600_000, graceMs: graceM * 60_000 };
+}
