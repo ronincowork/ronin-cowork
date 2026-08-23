@@ -858,7 +858,7 @@ body {
 
    Keyed on the NAME rather than the character, because the character is the definition's
    to change and a rule matching on 🏈 would go stale the moment it did. The coupling is
-   real either way: rename `QuarterBack` in ronin_catalogs/session_tasks/ and this stops
+   real either way: rename `QuarterBack` in ronin_catalogs/session_roles/ and this stops
    applying — the mark simply returns to the common size, which is a visible nudge rather
    than a broken layout. Everything the mark IS still comes from the catalog; this tunes
    only how big one of them is drawn. */
@@ -3470,10 +3470,10 @@ button.wb-door:hover b {
 .ks-btn-role {
   border-style: dashed;
 }
-/* ---- FAMILY ROLES: the sections of the ＋ New board (js/familyroles.js). Drawn as the same
+/* ---- FAMILY ROLES: the sections of the ＋ New board (js/rolefamilies.js). Drawn as the same
    collapsible groupings the Job Group shelves were — `group` stays the roster's
    addressing word. Membership lives in each role's own definition file now
-   (ronin_catalogs/family_roles/), which is what promoted a shelf into a role. ---- */
+   (ronin_catalogs/role_families/), which is what promoted a shelf into a role. ---- */
 .ks-classes {
   display: flex;
   flex-direction: column;
@@ -3629,7 +3629,7 @@ button.wb-door:hover b {
   }
 }
 
-/* The session's MARK: the icon of its session_task, before the name on every row. It
+/* The session's MARK: the icon of its session_role, before the name on every row. It
    replaced the 人 leader mark, which sat here and named only who was in charge. Fixed
    width so the names stay in a column whether or not a row is marked — an unmarked
    session is a real state and must not shove the list sideways. */
@@ -3891,7 +3891,7 @@ button.wb-door:hover b {
    It is the LAST track on purpose: the most clip-prone reading on the row, and at the
    right edge a clip runs into the row's own padding rather than into another column. */
 .home-row {
-  --hr-mark: 1.35em; /* the session_task glyph — the same width `.home-job` already held */
+  --hr-mark: 1.35em; /* the session_role glyph — the same width `.home-job` already held */
   --hr-shingo: 132px;
   --hr-status: 70px;
   --hr-ctx: 48px;
@@ -4413,7 +4413,7 @@ button.wb-door:hover b {
   .ks-extras { flex-direction: column; }
 }
 
-/* A launch resolving `agent: none` — a plain terminal (ronin_catalogs/session_tasks/).
+/* A launch resolving `agent: none` — a plain terminal (ronin_catalogs/session_roles/).
    Everything that only makes sense when an agent is being briefed goes away: the
    mode toggle, the prompt box, the optional wording, and the brain picker. What is
    left is the name, where it opens, and which group it joins. Placed after the
@@ -5472,9 +5472,9 @@ button.wb-door:hover b {
   overflow: auto;
   font-variant-numeric: tabular-nums;
 }
-/* The session_tasks get a stable colour each, so the same task is the same colour in
+/* The session_roles get a stable colour each, so the same task is the same colour in
    every chart. Base16 siblings of the app's own accents; --bad is never used
-   categorically, so red keeps meaning "wrong". `QuarterBack` spent one day as a family_role
+   categorically, so red keeps meaning "wrong". `QuarterBack` spent one day as a role_family
    and is a task again (R33), so it is back in this list — and back in the birth-to-death
    chart, because a session genuinely does move into and out of coordinating. */
 .desk-stats {

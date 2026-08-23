@@ -155,6 +155,14 @@ export const STORES: readonly Store[] = [
     when: 'first boot (the house board) or first board made',
   },
   {
+    id: 'team_rosters',
+    root: 'user',
+    rel: 'team_rosters',
+    what: "the durable record of each team — its team_role, objective and defaults; membership is never stored here (it lives on the sessions)",
+    createdBy: "cowork's `src/team-rosters.ts`",
+    when: 'first team roster written',
+  },
+  {
     id: 'catalogs',
     root: 'user',
     rel: 'catalogs',

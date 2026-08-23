@@ -3,7 +3,7 @@
  *
  * The resolved launch profile fixes the constants: the dial the session is born on, its
  * lifecycle, whether it acknowledges before acting. They come from the cascade —
- * system < family_role < session_task < this launch (`src/launch-profile.ts`). The user picks
+ * system < team_roster < session_role < this launch (`src/launch-profile.ts`). The user picks
  * project_root / session_launch_spec / tags. Nothing here calls a model — the smart fill populates this form,
  * it does not perform it. Order matters: create -> tag -> DIAL -> reply, so the
  * session is addressable and correctly locked from its first breath; the CLI
@@ -31,21 +31,20 @@ import { scanContext, scanModel } from '../ctx.js';
 
 import { count } from '../counts.js';
 import { announceTeamChanges } from './wipeboards-api.js';
-import { markTaskDelivered } from '../task-watch.js';
-import { checkoutAt, parkBrief, seedTegami, withAxes, writeGate } from '../tegami.js';
+import { markRoleDelivered } from '../role-watch.js';
+import { checkoutAt, deriveTeams, parkBrief, seedTegami, withAxes, writeGate } from '../tegami.js';
 import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFields } from '../sockets.js';
 
 /* ---------- ONE door to a new session: POST /api/launch ----------
  * Two variants, chosen by what the body carries — never two endpoints:
- *   launch_job    a family_role and/or a session_task + prompt   the ＋ New tab
- *   launch_bare   a name and nothing else                     the tile picker
+ *   launch_job    a session_role (and/or a team) + prompt   the ＋ New tab
+ *   launch_bare   a name and nothing else                   the tile picker
  *
- * EITHER AXIS CLAIMS THE CATALOG VARIANT, and that is the change the three-axis model
- * forced. A role launched with a blank task is an ordinary launch — it is how
- * `personalassistant` and `mikaassist` start — so the presence of a task
- * can no longer be the discriminator. A body naming neither is not a catalog launch at
- * all and falls through rather than being guessed at.
- * Express walks them in order; the first hands on what is not its shape.
+ * A body naming a `session_role` or a `team` is the catalog variant; one naming neither
+ * is not a catalog launch at all and falls through rather than being guessed at. The
+ * RETIRED axis keys are refused by name below — a caller still sending `role_family` or
+ * `session_task` deserves to be told the model moved, not a bare session with its words
+ * ignored. Express walks the handlers in order; the first hands on what is not its shape.
  *
  * There was a third, launch_quick (a name plus a cmd/prompt/tags/dir), fed by the
  * Roster's own Start row. The owner removed that launcher on 2026-08-12 — one
@@ -56,12 +55,22 @@ import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFiel
 export function registerLaunch(app: express.Express): void {
   // launch_job — the catalog variant.
   app.post('/api/launch', async (req, res, next) => {
-    const familyRole = String(req.body?.family_role ?? '').trim();
-    const sessionTask = String(req.body?.session_task ?? '').trim();
-    if (!familyRole && !sessionTask) return next();
+    // The retired keys, refused by name (410-shaped, but a launch is a POST that never
+    // existed per-key, so 400 with the teaching text is the honest shape here).
+    if (req.body?.role_family !== undefined || req.body?.family_role !== undefined || req.body?.session_task !== undefined) {
+      return res.status(400).json({
+        error:
+          'This launch names a retired axis. The model moved on 2026-08-23 (R35): a session is ' +
+          'a mutable `session_role` born onto an optional `team` — there is no per-session ' +
+          'role_family, and `session_task` is now `session_role`.',
+      });
+    }
+    const sessionRole = String(req.body?.session_role ?? '').trim();
+    const team = String(req.body?.team ?? '').trim();
+    if (!sessionRole && !team) return next();
     const form: SpawnForm = {
-      family_role: familyRole,
-      session_task: sessionTask,
+      session_role: sessionRole,
+      team: team || undefined,
       prompt: String(req.body?.prompt ?? '').trim(),
       name: String(req.body?.name ?? '').trim() || undefined,
       mode: req.body?.mode === 'manual' ? 'manual' : 'assisted',
@@ -142,22 +151,22 @@ export function registerLaunch(app: express.Express): void {
       // model alone now — but for RIREKI, which picks a tape decoder from `@ronin-agent`
       // and has expected this stamp since it was written, guessing until today.
       await setLaunchStamp(resolved.name, resolved.launchAgent);
-      // BOTH AXES, SET MECHANICALLY. The button the owner pressed IS who this session is
-      // and what it is for, so the letter is written with `family_role` and `session_task`
-      // already filled rather than left for the agent to guess at facts that were never
-      // in doubt. The TASK is the session's from here — `write_tegami` is how it says the
-      // work has changed — and the ROLE is nobody's: this seed is its only writer. We
-      // never overwrite a letter that exists. See src/tegami.ts.
+      // THE AXIS AND THE TEAMS BLOCK, SET MECHANICALLY. The button the owner pressed IS
+      // what this session is for, so the letter is written with `session_role` already
+      // filled — and the derived `teams` block rendered from the birth tags — rather
+      // than left for the agent to guess at facts that were never in doubt. The role is
+      // the session's from here (`write_tegami`); the teams block is the machinery's.
+      // We never overwrite a letter that exists. See src/tegami.ts.
       await seedTegami(
         resolved.name,
-        resolved.family_role,
-        resolved.session_task,
+        resolved.session_role,
         await checkoutAt(resolved.dir),
+        await deriveTeams(resolved.tags),
       );
       // THE BIRTH BASELINE for the task observer: this task's reading is already in the
       // brief, so it is recorded as delivered and the first tick does not send it again
-      // (src/task-watch.ts).
-      await markTaskDelivered(resolved.name, resolved.session_task);
+      // (src/role-watch.ts).
+      await markRoleDelivered(resolved.name, resolved.session_role);
       await setControl(resolved.name, resolved.dial);
     } catch (e) {
       void appendLedger(form, resolved, false);
@@ -177,14 +186,13 @@ export function registerLaunch(app: express.Express): void {
     count('born', {
       name: resolved.name,
       born: resolved.mode === 'manual' ? 'manual' : 'assisted',
-      role: resolved.family_role,
-      task: resolved.session_task,
+      role: resolved.session_role,
     });
     // THE LAUNCH SOCKET: services that care about a birth hear it here (fire-and-forget).
     emitSessionBorn({
       name: resolved.name,
-      role: resolved.family_role,
-      task: resolved.session_task,
+      role: resolved.session_role,
+      team: resolved.team,
       root: resolved.project_root,
       cmd: resolved.cmd,
     });
@@ -193,8 +201,9 @@ export function registerLaunch(app: express.Express): void {
       ok: true,
       name: resolved.name,
       receipt: {
-        family_role: resolved.family_role,
-        session_task: resolved.session_task,
+        session_role: resolved.session_role,
+        team: resolved.team,
+        team_role: resolved.team_role,
         mode: resolved.mode,
         project_root: resolved.project_root,
         dir: resolved.dir,

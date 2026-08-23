@@ -38,8 +38,8 @@ file happens to define every stock name.
 
 | Catalog | Shape | Rule |
 |---|---|---|
-| `family_roles/` | one file per role | whole-definition, by filename |
-| `session_tasks/` | one file per task | whole-definition, by filename |
+| `role_families/` | one file per role | whole-definition, by filename |
+| `session_roles/` | one file per task | whole-definition, by filename |
 | `MACROS.md` | `## name` blocks | entry-merge |
 | `ACTIONS.md` | `## name` blocks | entry-merge |
 | `TOOLS.md` | a table | same rule, keyed on the tool name in column 1 |

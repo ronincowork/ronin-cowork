@@ -2,7 +2,7 @@
  * A FORK IS BORN ON THE AXES, AND THE MACRO IS WHERE THAT IS WRITTEN DOWN.
  *
  * Forks used to be created with raw `tmux new-session`. That never touches the letter, so
- * a fork carried a blank `family_role` for its entire life — and because the role is stamped
+ * a fork carried a blank `role_family` for its entire life — and because the role is stamped
  * at birth and immutable, nothing could repair it afterwards. Measured on two real
  * sessions (`explainer_library`, `wipeboard_groups`), both of which ended up self-setting
  * only a task. The owner ruled it out on 2026-08-22: a fork that launches an agent must
@@ -55,14 +55,14 @@ test('forkit launches through the one door, not by hand-rolling tmux', async () 
 
 test('forkit resolves both launch axes, and says how each defaults', async () => {
   const text = await forkit();
-  assert.match(text, /`family_role`/, 'the role is a parameter');
-  assert.match(text, /`session_task`/, 'the task is a parameter');
+  assert.match(text, /`role_family`/, 'the role is a parameter');
+  assert.match(text, /`session_role`/, 'the task is a parameter');
 
   // THE ASYMMETRY IS THE RULING. The role is inherited because it cannot be repaired
   // later; the task may default because it can.
-  assert.match(text, /family_role` is INHERITED from the origin/i);
+  assert.match(text, /role_family` is INHERITED from the origin/i);
   assert.match(text, /immutable/i, 'the reason the role may not be guessed');
-  assert.match(text, /session_task` DEFAULTS to `DraftPlan`/i);
+  assert.match(text, /session_role` DEFAULTS to `DraftPlan`/i);
   assert.match(text, /mutable/i, 'the reason the task may be');
 
   // A blank origin role must become a QUESTION, never a blank passed through — that is
@@ -71,7 +71,7 @@ test('forkit resolves both launch axes, and says how each defaults', async () =>
   assert.match(text, /propose-and-confirm/, 'and it asks through the action that waits for a yes');
 
   // Both resolved values reach the owner, or a wrong role is invisible until much later.
-  assert.match(text, /resolved `family_role` \+ `session_task`/);
+  assert.match(text, /resolved `role_family` \+ `session_role`/);
 });
 
 test('forkit says team, and no longer says group', async () => {
@@ -99,7 +99,7 @@ test('forkit reuses the canonical launch contract and gets the whole Build Brief
   assert.match(text, /Do not rebuild it/i, 'no second bespoke launch implementation');
   assert.match(text, /zero Build Brief/i, 'and the measured reason a bare tmux session is wrong');
   // The four reading levels the compiled brief carries. A fork made the old way got none.
-  assert.match(text, /all-session reading \+ the project_root's \+ the\s+family_role's \+ the session_task's/);
+  assert.match(text, /all-session reading \+ the project_root's \+ the\s+role_family's \+ the session_role's/);
   assert.match(text, /understanding gate/i);
 });
 
@@ -114,7 +114,7 @@ test('forkit leaves the model to the cascade unless the owner named one', async 
 test('a fork owns its task afterwards, and never its role', async () => {
   const text = await forkit();
   assert.match(text, /re-marks itself with `write_tegami` and Ronin hands it that task's reading/);
-  assert.match(text, /`family_role` does not move with it, and nothing can change it/);
+  assert.match(text, /`role_family` does not move with it, and nothing can change it/);
 });
 
 test('forkit is still owner-invoked only', async () => {

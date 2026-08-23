@@ -14,12 +14,14 @@
  * it beside ronin-doctor, and `docs/test-protocols.md` is the page that says when to
  * run BYOIN. Empty or absent stores are a clean pass — a fresh box is not a finding.
  *
- * THE RETIRED-CUSTOMIZATION CHECK IS THE POINT OF THIS FILE, NOT AN EXTRA. The role/task
- * split moved the readers to src/definitions.ts and deleted the old ones outright — no
- * alias, no dual-read, by the cutover rule. So an owner who wrote a `SESSION_JOBS.md`, a
- * `JOB_CLASSES.md`, or a `job/<name>/` boot shelf still HAS those files and nothing reads
- * them any more. That is the exact silence this check exists to break: their work did not
- * fail, it went dark, and only a named finding tells them where to move it.
+ * THE RETIRED-CUSTOMIZATION CHECK IS THE POINT OF THIS FILE, NOT AN EXTRA. Two cuts in
+ * two days moved the readers — the role/task split (2026-08-22), then the teams cut
+ * (R35, 2026-08-23: `session_tasks/` → `session_roles/`, `family_roles/` →
+ * `role_families/`, the `task/` shelf level → `role/`) — each outright, no alias, no
+ * dual-read, by the cutover rule. An owner who customized under any earlier shape still
+ * HAS those files and nothing reads them any more. That is the exact silence this check
+ * exists to break: their work did not fail, it went dark, and only a named finding
+ * tells them where to move it.
  */
 import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
@@ -64,11 +66,23 @@ const REQUIRED: Record<string, { keys: string[]; unless?: (e: { get: (k: string)
 const RETIRED: Record<string, { was: string; now: string }> = {
   'SESSION_JOBS.md': {
     was: 'the combined session_job catalog',
-    now: 'one file per task in session_tasks/<name>.md — see ronin_catalogs/session_tasks/README.md',
+    now: 'one file per session_role in session_roles/<name>.md — see ronin_catalogs/session_roles/README.md',
   },
   'JOB_CLASSES.md': {
     was: 'the Job Group manifest',
-    now: 'one file per role in family_roles/<name>.md, each carrying its own `session_tasks:` — see ronin_catalogs/family_roles/README.md',
+    now: 'one file per family in role_families/<name>.md, each carrying its own `session_roles:` — see ronin_catalogs/role_families/README.md',
+  },
+};
+
+/** Retired user-store DIRECTORIES — a whole directory the readers stopped looking at. */
+const RETIRED_DIRS: Record<string, { was: string; now: string }> = {
+  session_tasks: {
+    was: 'the session_task definitions (2026-08-22 generation)',
+    now: 'session_roles/<name>.md — the same one-file-per-definition law, renamed by R35',
+  },
+  family_roles: {
+    was: 'the family_role definitions (2026-08-22 generation)',
+    now: 'role_families/<name>.md — presentation-only shelves under R35; identity fields have no home, they died with the session axis',
   },
 };
 
@@ -105,15 +119,15 @@ async function checkCatalogFile(dir: string, file: string, label: string): Promi
 
 async function checkDefinitionsSurface(catalogsDir: string): Promise<void> {
   const defs = await probe('../src/definitions.js');
-  if (defs && typeof defs.listSessionTasks === 'function') {
-    // session_tasks/ and family_roles/ are directories of one file per definition, in the
+  if (defs && typeof defs.listSessionRoles === 'function') {
+    // session_roles/ and role_families/ are directories of one file per definition, in the
     // repo and in your store alike.
-    for (const kind of ['session_tasks', 'family_roles'] as const) {
+    for (const kind of ['session_roles', 'role_families'] as const) {
       const dir = path.join(catalogsDir, kind);
       if (!(await exists(dir))) continue;
-      const listed = (await (kind === 'session_tasks'
-        ? (defs.listSessionTasks as () => Promise<{ name: string }[]>)()
-        : (defs.listFamilyRoles as () => Promise<{ name: string }[]>)()
+      const listed = (await (kind === 'session_roles'
+        ? (defs.listSessionRoles as () => Promise<{ name: string }[]>)()
+        : (defs.listRoleFamilies as () => Promise<{ name: string }[]>)()
       ).catch(() => [] as { name: string }[])).map((r) => r.name.toLowerCase());
       for (const f of await mdFiles(dir)) {
         if (f.toLowerCase() === 'readme.md') continue;
@@ -136,22 +150,36 @@ async function checkRetired(catalogsDir: string): Promise<void> {
     if (!(await exists(path.join(catalogsDir, file)))) continue;
     looked++;
     find(
-      `${file} (yours): RETIRED — this was ${was}, and no reader has looked at it since the family_role/session_task split. Your entries are intact and unreachable`,
+      `${file} (yours): RETIRED — this was ${was}, and no reader has looked at it since the role_family/session_role split. Your entries are intact and unreachable`,
       `move each entry to ${now}, then delete the old file. Nothing converts it for you: the cut ships no compatibility reader on purpose`,
     );
   }
 
-  // The boot shelf's old level. `ensureShelf` now makes role/ and task/, so a leftover
-  // job/ sits beside them looking live.
-  const jobShelf = path.join(storeDir('session_boot'), 'job');
-  const shelves = (await readdir(jobShelf, { withFileTypes: true }).catch(() => [])).filter((e) => e.isDirectory());
-  if (shelves.length) {
+  for (const [dir, { was, now }] of Object.entries(RETIRED_DIRS)) {
+    const entries = await mdFiles(path.join(catalogsDir, dir));
+    if (!entries.length) continue;
     looked++;
     find(
-      `session_boot store: job/ is RETIRED and still holds ${shelves.length} shelf(s) — ${shelves
+      `${dir}/ (yours): RETIRED — this was ${was}, and no reader has looked at it since the teams cut. ${entries.length} file(s) intact and unreachable`,
+      `move each definition to ${now}, then delete the old directory`,
+    );
+  }
+
+  // The boot shelf's old levels. `ensureShelf` now makes role/ (keyed by session_role)
+  // and team_role/; a leftover job/ or task/ sits beside them looking live.
+  for (const [old, remedy] of [
+    ['job', 'a shelf named for work moves to role/<session_role>/; team context belongs on team_role/<team_role>/'],
+    ['task', 'the level was renamed: move each shelf to role/<session_role>/ — same keys, same law (R35)'],
+  ] as const) {
+    const shelfDir = path.join(storeDir('session_boot'), old);
+    const shelves = (await readdir(shelfDir, { withFileTypes: true }).catch(() => [])).filter((e) => e.isDirectory());
+    if (!shelves.length) continue;
+    looked++;
+    find(
+      `session_boot store: ${old}/ is RETIRED and still holds ${shelves.length} shelf(s) — ${shelves
         .map((e) => e.name)
-        .join(', ')}. No session has been given this reading since the split`,
-      `a shelf named for work moves to task/<session_task>/; one named for who the session IS moves to role/<family_role>/. Both levels already exist beside it, and they ADD UP rather than override — then delete job/`,
+        .join(', ')}. No session has been given this reading since the cut`,
+      `${remedy} — then delete ${old}/`,
     );
   }
 }

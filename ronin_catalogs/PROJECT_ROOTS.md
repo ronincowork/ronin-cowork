@@ -12,9 +12,9 @@ first use, and untouched by any upgrade (`DAIKUSAN.md`, the three scopes). Addin
 here would put your directories in a file the next upgrade overwrites.
 
 A **`project_root`** is *where* the work happens — one of the two universal axes
-(`project_root` · `family_role` · `session_task`) used everywhere: spawn forms, memory
-frontmatter, macros. See `ronin_catalogs/family_roles/` for who a session is and
-`ronin_catalogs/session_tasks/` for what it is doing — the required axis is this one,
+(`project_root` · `role_family` · `session_role`) used everywhere: spawn forms, memory
+frontmatter, macros. See `ronin_catalogs/role_families/` for who a session is and
+`ronin_catalogs/session_roles/` for what it is doing — the required axis is this one,
 it is. One lookup fixes: where to work (`dir`), what a cold agent reads first (`read`),
 and which memories it recalls (`memory`). A root never chooses a model — sessions have
 ONE default (`agents.sessions.default`, set in ⚙ Configuration), and every launch may
@@ -65,7 +65,7 @@ family and IDs are recorded in the [official OpenAI model catalog](https://devel
 |---|---|---|---|
 | `openai` | `codex --model gpt-5.6-sol --dangerously-bypass-approvals-and-sandbox` | `codex --model gpt-5.6-terra --dangerously-bypass-approvals-and-sandbox` | `codex --model gpt-5.6-luna --dangerously-bypass-approvals-and-sandbox` |
 
-- **mcp_off:** `-c mcp_servers={}`
+- **mcp_off:** `-c mcp_servers.gbrain.enabled=false`
 
 The first column, `gpt-5.6-sol`, is Ronin's OpenAI default. Every cell names the complete
 command, so selecting another column launches that exact model rather than inheriting

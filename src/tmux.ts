@@ -14,8 +14,10 @@ export interface SessionInfo {
   created: number;
   /** Whether this session has a post-it note attached (stored as a tmux user option). */
   hasNote: boolean;
-  /** Groups this session belongs to (see TAGS_OPT). Empty = ungrouped. */
+  /** Teams this session belongs to (see TAGS_OPT). Empty = a rōnin. */
   tags: string[];
+  /** Teams this session is DESIGNATED to lead (see LEAD_OPT). Always ⊆ its teams. */
+  leads: string[];
 }
 
 /** tmux user option holding a session's post-it note. Lives and dies with the session. */
@@ -35,6 +37,16 @@ const URL_OPT = '@ronin-url';
  * "tags" in code; "group" is only the user- and agent-facing word for a set of them.
  */
 const TAGS_OPT = '@ronin-tags';
+
+/**
+ * THE 人, UN-RETIRED (owner, 2026-08-23, R35). `@ronin-lead` holds the teams this
+ * session is hand-marked as LEADING — a designation, never a derivation. It was retired
+ * on the theory that the work already implied the coordinator (the QuarterBack); the
+ * owner has since separated the two facts — the secretary can be team lead — so the
+ * designation returns to the option that was built for it. Comma-separated team names,
+ * beside the tags and dying with the session, exactly like membership.
+ */
+const LEAD_OPT = '@ronin-lead';
 
 /** Tags are addresses an agent types, so keep them boring: lowercase, no separators. */
 const TAG_RE = /^[a-z0-9][a-z0-9_-]*$/;
@@ -107,13 +119,13 @@ export async function listSessions(): Promise<SessionInfo[]> {
     const { stdout } = await pexec('tmux', [
       'list-sessions',
       '-F',
-      `#{session_name}\t#{session_windows}\t#{?session_attached,1,0}\t#{session_created}\t#{?${NOTE_OPT},1,0}\t#{${TAGS_OPT}}`,
+      `#{session_name}\t#{session_windows}\t#{?session_attached,1,0}\t#{session_created}\t#{?${NOTE_OPT},1,0}\t#{${TAGS_OPT}}\t#{${LEAD_OPT}}`,
     ]);
     return stdout
       .split('\n')
       .filter(Boolean)
       .map((line) => {
-        const [name, windows, attached, created, hasNote, tags] = line.split('\t');
+        const [name, windows, attached, created, hasNote, tags, leads] = line.split('\t');
         return {
           name,
           windows: Number(windows) || 0,
@@ -121,6 +133,7 @@ export async function listSessions(): Promise<SessionInfo[]> {
           created: Number(created) || 0,
           hasNote: hasNote === '1',
           tags: parseTags(tags),
+          leads: parseTags(leads),
         };
       })
       .filter((s) => !s.name.startsWith(config.viewerPrefix))
@@ -356,8 +369,29 @@ export async function setTags(name: string, tags: string[]): Promise<string[]> {
   return clean;
 }
 
+/** Read the teams a session is designated to lead (empty array if none). */
+export async function getLeads(name: string): Promise<string[]> {
+  try {
+    const { stdout } = await pexec('tmux', ['show-options', '-t', exactPane(name), '-qv', LEAD_OPT]);
+    return parseTags(stdout);
+  } catch {
+    return [];
+  }
+}
+
+/** Set (or, when empty, clear) the teams a session leads. Returns what was stored. */
+export async function setLeads(name: string, teams: string[]): Promise<string[]> {
+  const clean = parseTags(teams.join(','));
+  if (clean.length) {
+    await pexec('tmux', ['set-option', '-t', exactPane(name), LEAD_OPT, clean.join(',')]);
+  } else {
+    await pexec('tmux', ['set-option', '-t', exactPane(name), '-u', LEAD_OPT]).catch(() => {});
+  }
+  return clean;
+}
+
 /**
- * TEAMS IN PLAY — every session_team with at least one live member. A team is nothing
+ * TEAMS IN PLAY — every team with at least one live member. A team is nothing
  * but the sessions carrying the same tag (see TAGS_OPT); this is the one derivation,
  * shared so every answer to "the <name> team" is the same answer. Team wipeboards lean
  * on it: where a live team bears a wipeboard's name, the team IS the membership.
@@ -401,19 +435,14 @@ export async function setWipeboards(name: string, boards: string[]): Promise<str
 }
 
 /**
- * NO OPTION HOLDS EITHER LAUNCH AXIS, deliberately — and `@ronin-lead` (the 人) is retired
- * without one taking its place here.
- *
- * What a session is DOING lives in its LETTER: `Tegami.session_task`, and who it IS lives
- * beside it as `Tegami.family_role`. The task is the one the session
- * itself keeps current with `write_tegami` as it migrates. That is michi's field, michi
- * puts the whole letter on every roster row through the ROW socket, and the client reads
- * the mark off `tegami.session_task`. A tmux option beside it would be a second copy of
- * one fact, drifting the moment an agent re-marked itself in the file — and cowork
- * storing a service's data is exactly the seam KYOKAI exists to hold.
- *
- * The launcher's job still travels: `emitSessionBorn({ job })` hands it to whoever is
- * listening at birth, which is how the letter gets seeded knowing what it is for.
+ * NO OPTION HOLDS THE SESSION_ROLE, deliberately. What a session is DOING lives in its
+ * LETTER: `Tegami.session_role`, kept current by the session itself with `write_tegami`
+ * as it migrates. Michi puts the whole letter on every roster row through the ROW
+ * socket, and the client reads the mark off `tegami.session_role`. A tmux option beside
+ * it would be a second copy of one fact, drifting the moment an agent re-marked itself
+ * in the file. (Membership and leadership are the OPPOSITE case: they are session-borne
+ * facts with no letter authority — the letter's `teams` block is derived FROM the
+ * options — so TAGS_OPT and LEAD_OPT are the one home each has.)
  */
 
 /**

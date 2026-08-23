@@ -54,8 +54,10 @@ learn in order to use Ronin should cost them a second language first.
 |---|---|---|
 | `session_roster` | **the roster** | The **⌂ Roster** tab: every session on the machine. The session list, full stop. **Never "the board."** |
 | `session_launch` | **launch** | The **＋ New** tab. Where a session is born. |
-| `session_tasks` | **Family** | The session_tasks presented under one job role. A task can be in several families, so a Family is an association rather than a box it lives in. |
-| `family_role` | **role** | What a session IS, and the family of tasks it may do — Developer, Assistant, Extra. One thing, not two: the role is the shelf and the shelf is the role. It sections the ＋ New board and gives the session its reading and launch defaults. **Fixed once the session is running.** **Not the roster's Teams** — a team is who you work with and can change; a role is what you are and cannot (KOTOBA R34). |
+| `role_family` | **Family** | A shelf on the ＋ New board grouping session roles for viewing — Developer, Assistant, Extra — and a template when you build a team. Presentation only (R35): a family never rides a launch and is not a fact about any session. Its `default_lead_role` is pinned first as the suggested first launch for a new team. |
+| `team_roster` | **Team roster** | The team's durable record: what the team is (`team_role`), what it is for (objective), and the defaults a launch into it inherits. It never lists members — who is on a team is read off the live sessions, always. |
+| `team_role` | **team role** | What a TEAM is — development, health & fitness, admin. It belongs to the team, never to a session: a session on two teams wears each contextually. Changeable, and a change reaches members lazily on their next letter reread. |
+| `team_lead` (`@ronin-lead`) | **team lead · 人** | The one designation: this session leads that team. Set by hand — the secretary can be team lead — never inferred from what a session is doing. A team may have none, one, or several. |
 | `wipeboard` | **wipeboard** | The **▤ Wipeboard** tab and the file behind it. Our own coinage and it stays — *wipe* is right for a surface many hands write on and erase. Every **Team** has its own wipeboard automatically — say **team wipeboard**; membership is the team's and is never managed separately. A **custom wipeboard** is the owner-made secondary kind. Alias **whiteboard** only, because voice-to-text hears it that way. **Never "the board."** |
 | Brief | **Brief** | Your statement of what a wipeboard is for. Agents never edit it. |
 | `MDEDIT` | **the Docs tab** | The **▧ Docs** tab: the documents each session is working on, opened and edited in the tile. **MDEDIT is ours and never reaches a user's face**; on screen it is just *Docs*. Say *list a doc*, never *track* or *attach*. There is no file browser by design — ask the session to show you a file (`+show_file`). |
@@ -72,9 +74,9 @@ learn in order to use Ronin should cost them a second language first.
 | House term | Plain English | One line |
 |---|---|---|
 | dial (`@ronin-control`) | **Control** | Per session: you-only 👤, read 👁, read-and-write 🤖. Only the owner flips it. |
-| `session_team` (`@ronin-tags`) | **Team** | A set of sessions that work together, addressable as one. A session may be on several teams, and every team has its own wipeboard. **A team is composition, never a type** (owner, 2026-08-22, superseding): it may mix any family_roles and any tasks, and being on a team never implies its members share anything but the work. The code sweep landed 2026-08-22; `@ronin-tags` and the `tags` code fields stay as internal seams (KOTOBA R32). |
+| team (`@ronin-tags`) | **Team** | A set of sessions that work together, addressable as one — the organizing unit of the whole space (R35). A session may be on several teams, every team has its own wipeboard under its roster, and anyone may move a session between teams. A session on no team is a **rōnin**, which is an ordinary state. `session_team` is the retired spelling. |
 | note (`@ronin_note`) | **Note** | The owner's one line about a session. |
-| `session_task` (in the letter) | **what it's doing** | The task's icon, drawn beside every session in the roster and the tile picker. Set at launch; the session changes it itself as its work changes, and so can you. A session with no task shows no icon. |
+| `session_role` (in the letter) | **what it's doing** | The role's icon, drawn beside every session in the roster and the tile picker. Set at launch; the session changes it itself as its work changes, and so can you. A session with no session_role shows no icon. |
 | — | **Status · Ladder · Macros · Detach · Kill session** | The rest of the per-session menu. Already plain. |
 
 ## § PROGRESS AND HISTORY
@@ -98,7 +100,7 @@ learn in order to use Ronin should cost them a second language first.
 | TEJUN (手順) | **macros** | The UI says Macros. A user never needs the word TEJUN. |
 | macro | **macro** | A saved instruction you would otherwise have typed to your agent. |
 | invocation | **typing a macro** | `+name: what you want`. That is the whole syntax. |
-| `session_task` | **task** | What a session is doing now. The values read plainly on their own (RiffOnIt, CutCode, CheckWork, …). The set lives in `ronin_catalogs/session_tasks/` — one file per task, and the directory is the count. |
+| `session_role` | **role** | What a session is doing now. The values read plainly on their own (RiffOnIt, CutCode, CheckWork, …). The set lives in `ronin_catalogs/session_roles/` — one file per role, and the directory is the count. |
 | forkit | **fork** | Split the current topic into a visible Ronin session. “Fork it” and “new session” mean this; “spawn an agent” means an internal sub-agent. |
 | harakiri | **harakiri** | A session ends itself. Kept — it is a word people know. |
 
@@ -173,6 +175,13 @@ test · shadowing · the session directory · build-out doc · handoff · `lande
 - **`UCHI` is retired; the word is `commons`** (2026-08-13).
 - **legs stay** (2026-08-10) — no rename to *step*; *step* is `tejun-step`.
 - **harakiri stays** (2026-08-10) — a word people already know.
+- **The teams cut** (2026-08-23, R35) — the team is the organizing concept. `session_task`
+  becomes `session_role`; the immutable `family_role` axis is DISMANTLED (identity lives
+  on the team's roster as its `team_role`, worn contextually, never on a session);
+  `role_family` survives as the New Session shelf, presentation only; `session_team` is a
+  retired spelling; the 人 (`@ronin-lead`) is UN-RETIRED as the hand-set `team_lead`
+  designation — the secretary can be team lead. Membership has little to absolutely no
+  rules: anyone may move a session between teams.
 - **`job_role` and `task_family` become one word, `family_role`** (2026-08-22) — they
   were two names for one thing: a session's type IS the family of tasks it may perform.
   A session is a `family_role` + a `session_task`. KOTOBA R34.

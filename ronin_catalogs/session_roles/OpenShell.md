@@ -12,7 +12,7 @@ is the mechanical constants that still mean something for a terminal.
 owner may touch a session, and a terminal the owner opened for their own hands is the one
 session no outside agent should type into or even read.
 
-Loose by design: it launches with a blank `family_role`.
+Loose by design: it launches with a blank `role_family`.
 
 - **icon:** ❯
 - **label:** open shell

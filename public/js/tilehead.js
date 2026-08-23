@@ -112,7 +112,7 @@ const HEADER = () => (rows ??= [
     // mark — it is the honest reading, drawn so it can be seen and pressed.
     read: (t, el) => {
       const s = S.sessions.find((x) => x.name === t.session);
-      const job = (s && s.session_task) || '';
+      const job = (s && s.session_role) || '';
       // The job NAME on the element, so style can reach ONE mark: glyphs differ in how
       // heavily their font draws them (style.css, `[data-job=…]`).
       el.dataset.job = job;

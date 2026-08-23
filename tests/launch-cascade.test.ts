@@ -1,13 +1,16 @@
 /**
- * THE CASCADE — `system < family_role < session_task < explicit launch`.
+ * THE RESOLUTION — `system < session_role definition < explicit launch`.
  *
- * These are the rules the owner ruled on 2026-08-22, asserted one at a time rather than
- * through the stock definitions, so a change to what the house ships can never quietly
- * change what the cascade MEANS. The stock combinations are checked separately, by
- * `scripts/check-catalogs.ts` and `tests/mcp-default.test.ts`.
+ * ONE definition layer (R35, 2026-08-23): the old role_family layer was dismantled with
+ * the session identity axis, so the resolver takes one definition and the system
+ * answers underneath it. The rules are asserted one at a time rather than through the
+ * stock definitions, so a change to what the house ships can never quietly change what
+ * resolution MEANS. The stock set is checked separately, by `scripts/check-catalogs.ts`
+ * and `tests/mcp-default.test.ts`.
  *
- * Four classes of field, and there is a test for each: cascading (the last layer to state
- * it wins), additive (posture), locked (`mcp: always`), inapplicable (`agent: none`).
+ * The team layer of the launch cascade is CONTEXT (root, repos, branch, reading), never
+ * a definition field — it is resolved in `src/spawn.ts` and covered by
+ * `tests/launch-parity.test.ts` and `tests/session-boot.test.ts`.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -29,30 +32,18 @@ const def = (name: string, fields: Record<string, string>): Definition => ({
   has: (k: string) => (fields[k] ?? '') !== '',
 });
 
-test('absence inherits, and the last layer to state a field wins', async () => {
-  const role = def('developer', { dial: 'write', permissions: 'default', lifecycle: 'coding', model: 'sonnet' });
+test('absence inherits from the system, and a stated field wins', async () => {
   const task = def('CheckWork', { dial: 'read', opening: '{prompt}' });
-
-  const both = resolveLaunchProfile(role, task);
-  assert.equal(both.dial, 'read', 'the task states dial, so the task wins');
-  assert.equal(both.permissions, 'default', 'the task is silent, so the role stands');
-  assert.equal(both.lifecycle, 'coding', 'the task is silent, so the role stands');
-  assert.equal(both.model, 'sonnet');
-
-  const roleAlone = resolveLaunchProfile(role, undefined);
-  assert.equal(roleAlone.dial, 'write', 'with no task, the role is the top layer');
-
-  const taskAlone = resolveLaunchProfile(undefined, task);
-  assert.equal(taskAlone.dial, 'read');
-  assert.equal(taskAlone.permissions, 'default', 'the system default, with no role to state one');
-  assert.equal(taskAlone.lifecycle, '', 'nothing states it, and the system says none');
-  assert.equal(taskAlone.model, '', 'a bias nobody stated is no bias');
+  const p = resolveLaunchProfile(task);
+  assert.equal(p.dial, 'read', 'the definition states dial, so it wins');
+  assert.equal(p.permissions, 'default', 'silence falls through to the system');
+  assert.equal(p.lifecycle, '', 'nothing states it, and the system says none');
+  assert.equal(p.model, '', 'a bias nobody stated is no bias');
 });
 
-test('the system answers when both axes are blank, and blank is a legal launch', () => {
-  const p = resolveLaunchProfile(undefined, undefined);
-  assert.equal(p.family_role, '');
-  assert.equal(p.session_task, '');
+test('the system answers when the session_role is blank, and blank is a legal launch', () => {
+  const p = resolveLaunchProfile(undefined);
+  assert.equal(p.session_role, '');
   assert.equal(p.dial, 'write');
   assert.equal(p.permissions, 'default');
   assert.equal(p.agent, true);
@@ -63,48 +54,28 @@ test('the system answers when both axes are blank, and blank is a legal launch',
   assert.equal(p.dir, '');
 });
 
-test('an explicit off overrides an inherited on — it is a value, not an absence', () => {
-  const role = def('assistantish', { mcp: 'on' });
-  const task = def('CutCode', { mcp: 'off' });
-  assert.equal(resolveLaunchProfile(role, undefined).mcpDefault, true);
-  assert.equal(resolveLaunchProfile(role, task).mcpDefault, false, 'the task states off, and off is a value');
-  // And the other way round, so this is not an accident of which value is falsy.
-  assert.equal(resolveLaunchProfile(def('r', { mcp: 'off' }), def('t', { mcp: 'on' })).mcpDefault, true);
+test('an explicit off is a value, not an absence', () => {
+  assert.equal(resolveLaunchProfile(def('t', { mcp: 'on' })).mcpDefault, true);
+  assert.equal(resolveLaunchProfile(def('t', { mcp: 'off' })).mcpDefault, false, 'off is a value');
 });
 
-test('posture is additive: the role is stated, then the task, and neither displaces the other', () => {
-  const role = def('developer', { label: 'Developer', posture: 'You work on the owner’s code.' });
-  const task = def('ChaseBug', { posture: 'Reproduce first.', opening: '{prompt}' });
-  const p = resolveLaunchProfile(role, task);
-  assert.deepEqual(p.posture, ['You work on the owner’s code.', 'Reproduce first.']);
-  // WHO before WHAT, and the label names the durable half.
-  assert.equal(p.label, 'Developer');
-  assert.equal(resolveLaunchProfile(undefined, task).label, 'ChaseBug', 'with no role, the task names itself');
+test('posture and label are the definition’s own', () => {
+  const task = def('ChaseBug', { label: 'Chase bug', posture: 'Reproduce first.', opening: '{prompt}' });
+  const p = resolveLaunchProfile(task);
+  assert.deepEqual(p.posture, ['Reproduce first.']);
+  assert.equal(p.label, 'Chase bug');
+  assert.equal(resolveLaunchProfile(def('Bare', {}))?.label, 'Bare', 'no label means the token names itself');
 });
 
-test('`mcp: always` is a lock — no layer may contradict it, and the message names both files', () => {
-  const lock = def('personalassistant', { mcp: 'always' });
-  assert.equal(resolveLaunchProfile(lock, undefined).mcpAlways, true);
-  assert.equal(resolveLaunchProfile(lock, undefined).mcpDefault, true);
-
-  assert.throws(
-    () => resolveLaunchProfile(lock, def('CutCode', { mcp: 'off' })),
-    (e: Error) => /born connected/.test(e.message)
-      && e.message.includes('/definitions/personalassistant.md')
-      && e.message.includes('/definitions/CutCode.md'),
-  );
-  // A task that AGREES is not a contradiction, and must not be refused.
-  assert.equal(resolveLaunchProfile(lock, def('Ask', { mcp: 'always' })).mcpAlways, true);
+test('`mcp: always` is a lock, and it opens the default on', () => {
+  const lock = def('PersonalAssistant', { mcp: 'always' });
+  assert.equal(resolveLaunchProfile(lock).mcpAlways, true);
+  assert.equal(resolveLaunchProfile(lock).mcpDefault, true);
 });
 
-test('`agent: none` voids a lower layer and REFUSES a higher one', () => {
-  const role = def('developer', { dial: 'write', model: 'sonnet', permissions: 'bypass', opening: 'go: {prompt}', ack: 'yes' });
+test('`agent: none` refuses agent-only fields stated beside it', () => {
   const shell = def('OpenShell', { agent: 'none', dial: 'user' });
-
-  // The role is BELOW the layer that declared agentless: it could not have known, so its
-  // agent-only fields are dropped in silence. This is what lets OpenShell be shelved
-  // anywhere without the shelf's ordinary defaults blowing it up.
-  const p = resolveLaunchProfile(role, shell);
+  const p = resolveLaunchProfile(shell);
   assert.equal(p.agent, false);
   assert.equal(p.model, '');
   assert.equal(p.permissions, '');
@@ -113,31 +84,28 @@ test('`agent: none` voids a lower layer and REFUSES a higher one', () => {
   assert.deepEqual(p.posture, []);
   assert.equal(p.dial, 'user', 'a field that still means something for a terminal survives');
 
-  // A layer AT OR ABOVE the declaring one is asserting an agent for a launch that has
-  // none. That is a contradiction somebody wrote down, so it is refused by name.
+  // A definition asserting an agent field beside `agent: none` is a contradiction
+  // somebody wrote down, so it is refused by name.
   assert.throws(
-    () => resolveLaunchProfile(def('terminalist', { agent: 'none' }), def('CutCode', { model: 'opus' })),
-    (e: Error) => /launches no agent/.test(e.message) && e.message.includes('/definitions/CutCode.md'),
+    () => resolveLaunchProfile(def('Broken', { agent: 'none', model: 'opus' })),
+    (e: Error) => /launches no agent/.test(e.message) && e.message.includes('/definitions/Broken.md'),
   );
-  // Self-contradiction in one file is the same refusal.
-  assert.throws(() => resolveLaunchProfile(undefined, def('Broken', { agent: 'none', model: 'opus' })), /launches no agent/);
 });
 
 test('`dir:` takes the install sentinel and nothing else', () => {
-  assert.equal(resolveLaunchProfile(def('mikaassist', { dir: '{install}' }), undefined).dir, '{install}');
+  assert.equal(resolveLaunchProfile(def('MikaAssist', { dir: '{install}' })).dir, '{install}');
   assert.throws(
-    () => resolveLaunchProfile(def('bad', { dir: '/home/someone/ronin' }), undefined),
+    () => resolveLaunchProfile(def('bad', { dir: '/home/someone/ronin' })),
     (e: Error) => /is not legal/.test(e.message) && e.message.includes('/definitions/bad.md'),
   );
 });
 
-test('cap and the remaining constants cascade like everything else', () => {
-  assert.equal(resolveLaunchProfile(def('mikaassist', { cap: 'exempt' }), undefined).capExempt, true);
-  assert.equal(resolveLaunchProfile(def('r', { cap: 'exempt' }), def('t', {})).capExempt, true);
-  assert.equal(resolveLaunchProfile(undefined, undefined).capExempt, false);
+test('cap and the remaining constants resolve like everything else', () => {
+  assert.equal(resolveLaunchProfile(def('MikaAssist', { cap: 'exempt' })).capExempt, true);
+  assert.equal(resolveLaunchProfile(undefined).capExempt, false);
   // `lifecycle: none` is how a definition says "no michi", and it resolves to blank
   // rather than to the literal word.
-  assert.equal(resolveLaunchProfile(undefined, def('t', { lifecycle: 'none' })).lifecycle, '');
-  assert.equal(resolveLaunchProfile(undefined, def('t', { ack: 'yes' })).ack, true);
-  assert.equal(resolveLaunchProfile(def('r', { ack: 'yes' }), def('t', { ack: 'no' })).ack, false);
+  assert.equal(resolveLaunchProfile(def('t', { lifecycle: 'none' })).lifecycle, '');
+  assert.equal(resolveLaunchProfile(def('t', { ack: 'yes' })).ack, true);
+  assert.equal(resolveLaunchProfile(def('t', { ack: 'no' })).ack, false);
 });

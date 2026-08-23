@@ -182,7 +182,7 @@ The seat is the registry's own (`schema.seat`): **新 Atarashi**, launched from 
 when an agent CLI exists, and offered as **"start your setup session"** in ⚙ and on
 the ＋ New board whenever an agent is found and the list is non-empty. Every launch
 hands over a one-line pointer and nothing else — **the seat reads `GET /api/settei`
-itself at start** (its shelf, `ronin_session_boot/task/Atarashi/00_ATARASHI.md`, says
+itself at start** (its shelf, `ronin_session_boot/role/Atarashi/00_ATARASHI.md`, says
 so), so a session born at Save and one born three weeks later read the same fresh
 truth, and nothing is composed, parked, or stale. The seat asks rather than assumes,
 touches nothing outside the project directory unannounced, and stops

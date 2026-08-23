@@ -23,7 +23,7 @@
 import { createSession, deleteSession, fetchSessions } from './api.js';
 import { request } from './request.js';
 import { toast } from './ui.js';
-import { taskData, refreshHome } from './home.js';
+import { roleData, refreshHome } from './home.js';
 import { IS_TOUCH, NEW, S, saveState, serviceMissing, tiles } from './state.js';
 import { buildHome } from './commons.js';
 import { installDesk } from './tiledesk.js';
@@ -361,13 +361,13 @@ export class Tile {
 
   /** 🏷 shows how many groups this session is in — the label an agent can address it by. */
   /**
-   * Set what this session is doing, by hand — `session_task` in its TEGAMI, the same
+   * Set what this session is doing, by hand — `session_role` in its TEGAMI, the same
    * field the agent maintains with `write_tegami`. The owner is the other writer, for an
    * agent that has not re-marked itself; the dial and permissions are untouched.
    *
    * NOT JUST A RE-LABEL: the server hands it to the task observer, which delivers the
-   * new task's reading into the session exactly once (src/task-watch.ts), whoever
-   * authored it. THE TASK ONLY — `family_role` is birth-fixed and has no menu.
+   * new task's reading into the session exactly once (src/role-watch.ts), whoever
+   * authored it. THE SESSION_ROLE ONLY — teams have their own controls.
    *
    * The list is updated locally before the ws poll gets there, so the mark moves under
    * your finger; the poll then confirms it, and would correct it if the write lost a race.
@@ -376,17 +376,17 @@ export class Tile {
     if (!this.session) return;
     const session = this.session;
     const cur = S.sessions.find((x) => x.name === session);
-    openJobMenu(anchor, taskData || [], (cur && cur.session_task) || '', async (job) => {
-      const r = await request('/api/sessions/' + encodeURIComponent(session) + '/session_task', {
+    openJobMenu(anchor, roleData || [], (cur && cur.session_role) || '', async (job) => {
+      const r = await request('/api/sessions/' + encodeURIComponent(session) + '/session_role', {
         method: 'POST',
-        json: { session_task: job },
+        json: { session_role: job },
       });
       if (!r.ok) {
         toast(`could not set the task — ${r.message}`, false);
         return;
       }
       const live = S.sessions.find((x) => x.name === session);
-      if (live) live.session_task = r.data.session_task ?? job;
+      if (live) live.session_role = r.data.session_role ?? job;
       tiles.forEach((t) => {
         t.syncHeader();
         t.refreshOptions();

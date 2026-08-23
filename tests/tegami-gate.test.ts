@@ -19,7 +19,7 @@ const exec = promisify(execFile);
 async function letter(name: string, ladder: string): Promise<string> {
   const file = tegamiPath(await sessionKey(name));
   await fs.mkdir(path.dirname(file), { recursive: true });
-  await fs.writeFile(file, ['# TEGAMI', '', '```json', `{ "objective": "keep me",`, `  "family_role": "developer",`, `  "session_task": "CutCode",`, `  "ladder": ${ladder} }`, '```', ''].join('\n'));
+  await fs.writeFile(file, ['# TEGAMI', '', '```json', `{ "objective": "keep me",`, `  "role_family": "developer",`, `  "session_role": "CutCode",`, `  "ladder": ${ladder} }`, '```', ''].join('\n'));
   return file;
 }
 const bodyOf = async (f: string) => JSON.parse((await fs.readFile(f, 'utf8')).match(/```json\n([\s\S]*?)\n```/)![1]);
@@ -30,8 +30,8 @@ test('an empty ladder takes the gate, and nothing else in the letter moves', asy
   const b = await bodyOf(f);
   assert.deepEqual(b.ladder, [{ gate: 'The agent never came up.', status: 'ACTIVE' }]);
   assert.equal(b.objective, 'keep me'); // the session's own words survive
-  assert.equal(b.family_role, 'developer');
-  assert.equal(b.session_task, 'CutCode');
+  assert.equal(b.role_family, 'developer');
+  assert.equal(b.session_role, 'CutCode');
 });
 
 test("a real ladder is the agent's words and is refused, untouched", async () => {
@@ -69,22 +69,22 @@ test('a birth letter records the actual launch checkout as an editable repos lis
     branch: 'feature/tegami',
   });
 
-  const file = await seedTegami('checkout_seed', 'developer', 'CutCode', checkout);
+  const file = await seedTegami('checkout_seed', 'CutCode', checkout);
   assert.ok(file);
   const body = await bodyOf(file!);
   assert.deepEqual(body.repos, [checkout]);
-  // BOTH AXES ARE SEEDED, and a blank one would be written as '' rather than omitted.
-  assert.equal(body.family_role, 'developer');
-  assert.equal(body.session_task, 'CutCode');
+  // The axis is seeded, and the derived teams block starts present (empty = a ronin).
+  assert.equal(body.session_role, 'CutCode');
+  assert.deepEqual(body.teams, []);
 });
 
 test('a seeded letter carries a blank axis as an empty string, never as a missing key', async () => {
-  // A launch with no role is ordinary — a loose task, or the tile's own picker. The key
-  // is present and empty because "asked and answered none" is a fact, and a reader must
+  // A launch with no session_role is ordinary — the tile's own picker. The key is
+  // present and empty because "asked and answered none" is a fact, and a reader must
   // not have to tell it apart from a letter written by a schema that had no such key.
-  const file = await seedTegami('blank_role_seed', '', 'OddJob');
+  const file = await seedTegami('blank_role_seed', '');
   assert.ok(file);
   const body = await bodyOf(file!);
-  assert.equal(body.family_role, '');
-  assert.equal(body.session_task, 'OddJob');
+  assert.equal(body.session_role, '');
+  assert.deepEqual(body.teams, [], 'a ronin: on no team, and the block says so');
 });

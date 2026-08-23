@@ -32,9 +32,10 @@ a file at the tier that teaches it.
 
 ## T0 — the brief
 
-The one composed first message (`src/spawn.ts`): the family_role's posture and then the
-session_task's — additive, who first and then what — the opening template, the session
-it was pointed at (catch-up route included), the one-off inject, the ack rule. Inlined
+The one composed first message (`src/spawn.ts`): the session_role's posture, the team
+context when the session is born onto one (the roster's objective, its wipeboard), the
+opening template, the session it was pointed at (catch-up route included), the one-off
+inject, the ack rule. Inlined
 because inlining is the only guarantee of being read; never longer than a screen;
 everything durable is a pointer to T1. Manual mode bypasses all of it — the owner's
 text, byte for byte.
@@ -67,19 +68,19 @@ Four facts fixed at spawn select the levels:
 |---|---|---|
 | `<service>_connected/` — any level matching the pattern | the launch's MCP toggle | cowork ships none — a connected **service makes and seeds its own** (gbrain's setup makes `gbrain_connected/` and seeds six readings), so the level is signed by its service |
 | `root/<project_root>/` | the root picked at launch | the owner only — stock cannot know a machine's directories |
-| `role/<family_role>/` | the family_role picked at launch — fixed for the session's life | stock ships none today; the owner fills it |
-| `task/<session_task>/` | the session_task the session is doing **now** | stock may ship (task names are shipped); the owner adds |
+| `role/<session_role>/` | the session_role the session is doing **now** | stock may ship (the roles are shipped); the owner adds |
+| `team_role/<team_role>/` | the team_role of the team the session is BORN onto — the team's own build brief | stock ships none; the owner authors team_roles |
 
 The toggle governs both halves of a connection (owner's ruling, 2026-08-17): launched
 off, a session gets neither a service's tools nor a word about them. The role and task
 levels are where "abilities we know THIS hat, or THIS kind of work, always uses" live —
 the shelf names the ability and its guard tool; the procedure stays in the catalog,
 uncopied. **The two add up rather than override**: a blank axis omits only its own level.
-And they differ in one way that matters — role is fixed at birth, so `role/<family_role>/`
-is read once and never re-sent, while a committed `session_task` change injects the new
-`task/<session_task>/` list into the running session (`src/task-watch.ts`). The house
-ships no role level at all today; `ensureShelf` creates it so it is findable, and what
-goes on it is the owner's. A T2 file that would help every session
+And they differ in one way that matters — team reading is birth-only ("if you join
+later, let's not go back and redo it" — R35), while a committed `session_role` change
+injects the new `role/<session_role>/` list into the running session
+(`src/role-watch.ts`). The house ships no team_role level today; `ensureShelf` creates
+it so it is findable, and what goes on it is the owner's. A T2 file that would help every session
 is mis-shelved and belongs up a tier.
 
 ## T3 — indexed. T4 — delivered. T5 — sought.
@@ -95,11 +96,11 @@ every time.
 
 ## One pyramid, instantiated per session
 
-A session receives the pyramid instantiated for `project_root` × `family_role` ×
-`session_task` × the MCP choice. The two session axes bend it hardest: T0 differs by both
-(the postures add, and dial, ack and the rest resolve through the cascade — system <
-family_role < session_task < this launch), T1 never differs (that is its definition), T2
-carries each axis' own always-taught material, T3–T5 are one house-wide body of
+A session receives the pyramid instantiated for `project_root` × `session_role` × its
+birth team × the MCP choice. The session_role bends it hardest: T0 differs by it (its
+posture, and dial, ack and the rest resolve through the cascade — system < team_roster <
+session_role < this launch), T1 never differs (that is its definition), T2 carries the
+role's and the team_role's own always-taught material, T3–T5 are one house-wide body of
 knowledge.
 
 ## The routing table

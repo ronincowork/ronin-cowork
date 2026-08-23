@@ -28,8 +28,7 @@ test('every assisted session is handed the session macro routing guide', async (
     for (const macro of active) assert.match(guide, new RegExp(`\\+${macro.name}:`));
 
     const profile = {
-      family_role: '',
-      session_task: 'CheckWork',
+      session_role: 'CheckWork',
       label: 'Checker',
       posture: [],
       opening: '{prompt}',
@@ -37,7 +36,7 @@ test('every assisted session is handed the session macro routing guide', async (
       agent: true,
     } as LaunchProfile;
     const form: SpawnForm = {
-      session_task: profile.session_task,
+      session_role: profile.session_role,
       prompt: 'Review the installer.',
       mode: 'assisted',
     };
@@ -87,8 +86,7 @@ test('every assisted session is handed the required abilities', async () => {
 
 test('a referenced session is caught up on through the tape, pane peek as fallback', () => {
   const profile = {
-    family_role: '',
-    session_task: 'CheckWork',
+    session_role: 'CheckWork',
     label: 'Checker',
     posture: [],
     opening: '{prompt}',
@@ -96,7 +94,7 @@ test('a referenced session is caught up on through the tape, pane peek as fallba
     agent: true,
   } as LaunchProfile;
   const form: SpawnForm = {
-    session_task: profile.session_task,
+    session_role: profile.session_role,
     prompt: 'Review the login work.',
     mode: 'assisted',
     reference: 'login_fix',
@@ -142,9 +140,9 @@ test('a service-signed *_connected level rides the MCP toggle', async () => {
 });
 
 test('manual sessions remain exactly manual', () => {
-  const profile = { family_role: '', session_task: 'OpenShell', posture: [] } as unknown as LaunchProfile;
+  const profile = { session_role: 'OpenShell', posture: [] } as unknown as LaunchProfile;
   const form: SpawnForm = {
-    session_task: profile.session_task,
+    session_role: profile.session_role,
     prompt: '  owner text only  ',
     mode: 'manual',
   };
@@ -152,34 +150,34 @@ test('manual sessions remain exactly manual', () => {
   assert.equal(buildBrief(profile, undefined, form, undefined, ['/stock/SESSION_MACROS.md']), 'owner text only');
 });
 
-test('a blank axis omits only its own level, and role reading comes before task reading', async () => {
+test('a blank axis omits only its own level, and role reading comes before team_role reading', async () => {
   const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-session-boot-test-'));
   const oldShelf = process.env.RONIN_SESSION_BOOT_DIR;
   const oldCache = process.env.RONIN_SESSION_BOOT_CACHE_DIR;
   process.env.RONIN_SESSION_BOOT_DIR = path.join(temp, 'shelf');
   process.env.RONIN_SESSION_BOOT_CACHE_DIR = path.join(temp, 'generated');
   try {
-    await mkdir(path.join(temp, 'shelf', 'role', 'developer'), { recursive: true });
-    await writeFile(path.join(temp, 'shelf', 'role', 'developer', 'ROLE_BOOK.md'), '# who');
-    await mkdir(path.join(temp, 'shelf', 'task', 'CutCode'), { recursive: true });
-    await writeFile(path.join(temp, 'shelf', 'task', 'CutCode', 'TASK_BOOK.md'), '# what');
+    await mkdir(path.join(temp, 'shelf', 'role', 'CutCode'), { recursive: true });
+    await writeFile(path.join(temp, 'shelf', 'role', 'CutCode', 'ROLE_BOOK.md'), '# what');
+    await mkdir(path.join(temp, 'shelf', 'team_role', 'development'), { recursive: true });
+    await writeFile(path.join(temp, 'shelf', 'team_role', 'development', 'TEAM_BOOK.md'), '# whose team');
 
-    const both = (await bootFiles('', 'developer', 'CutCode', false)).map((f) => path.basename(f));
-    assert.ok(both.includes('ROLE_BOOK.md'), 'a named role reads its own level');
-    assert.ok(both.includes('TASK_BOOK.md'), 'a named task reads its own level');
-    // WHO before WHAT — the same order the brief and the cascade use.
-    assert.ok(both.indexOf('ROLE_BOOK.md') < both.indexOf('TASK_BOOK.md'));
+    const both = (await bootFiles('', 'CutCode', 'development', false)).map((f) => path.basename(f));
+    assert.ok(both.includes('ROLE_BOOK.md'), 'a named session_role reads its own level');
+    assert.ok(both.includes('TEAM_BOOK.md'), 'a team_role launch reads the team_role level');
+    // WHAT before WHOSE TEAM — the brief states the work, then the team context.
+    assert.ok(both.indexOf('ROLE_BOOK.md') < both.indexOf('TEAM_BOOK.md'));
 
-    const roleOnly = (await bootFiles('', 'developer', '', false)).map((f) => path.basename(f));
+    const roleOnly = (await bootFiles('', 'CutCode', '', false)).map((f) => path.basename(f));
     assert.ok(roleOnly.includes('ROLE_BOOK.md'));
-    assert.ok(!roleOnly.includes('TASK_BOOK.md'), 'a blank task reads no task level');
+    assert.ok(!roleOnly.includes('TEAM_BOOK.md'), 'a ronin launch reads no team_role level');
 
-    const taskOnly = (await bootFiles('', '', 'CutCode', false)).map((f) => path.basename(f));
-    assert.ok(taskOnly.includes('TASK_BOOK.md'));
-    assert.ok(!taskOnly.includes('ROLE_BOOK.md'), 'a blank role reads no role level');
+    const teamOnly = (await bootFiles('', '', 'development', false)).map((f) => path.basename(f));
+    assert.ok(teamOnly.includes('TEAM_BOOK.md'));
+    assert.ok(!teamOnly.includes('ROLE_BOOK.md'), 'a blank session_role reads no role level');
 
     const neither = (await bootFiles('', '', '', false)).map((f) => path.basename(f));
-    assert.ok(!neither.includes('ROLE_BOOK.md') && !neither.includes('TASK_BOOK.md'));
+    assert.ok(!neither.includes('ROLE_BOOK.md') && !neither.includes('TEAM_BOOK.md'));
     // The universal level is untouched by either axis being blank.
     assert.ok(neither.includes('SESSION_MACROS.md'));
   } finally {

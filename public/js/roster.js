@@ -157,13 +157,12 @@ export function buildRoster(tile, host) {
       r.classList.add('dragging');
     });
     r.addEventListener('dragend', () => r.classList.remove('dragging'));
-    // The session's MARK: the icon of the session_task in its LETTER, on every row. It
-    // replaced the 人, which named only who was in charge, had to be set by hand, and
-    // left every other row blank — the job is what actually differs between two
-    // sessions on this board, and the coordinator is the one whose TASK is QuarterBack —
-    // which migrates, so it is read off the letter on every list rather than remembered.
+    // The session's MARK: the icon of the session_role in its LETTER, on every row.
+    // The coordinator is a separate fact now — the 人 is BACK (R35): a team's lead is
+    // the hand-set designation on the session, never derived from this mark, and the
+    // teams surfaces read it off `leads`. The mark says what the session is DOING.
     //
-    // READ-ONLY here, and that is the point: the session writes its own session_task
+    // READ-ONLY here, and that is the point: the session writes its own session_role
     // with write_tegami as it migrates, so the roster shows what the session says it is
     // doing. A click-to-change on this glyph would put the owner's hand on a field the
     // letter hands to the agent — and then two writers would race over one line.
@@ -171,10 +170,10 @@ export function buildRoster(tile, host) {
     const jb = document.createElement('span');
     const mark = taskIcon(s);
     jb.className = 'home-job' + (mark ? '' : ' off');
-    jb.dataset.job = s.session_task || ''; // so style can reach one mark — see style.css
+    jb.dataset.job = s.session_role || ''; // so style can reach one mark — see style.css
     jb.textContent = mark;
     jb.title = mark
-      ? [s.session_task, s.family_role && `(${s.family_role})`].filter(Boolean).join(' ')
+      ? [s.session_role, s.leads?.length ? `人 leads ${s.leads.join(', ')}` : ''].filter(Boolean).join(' · ')
       : 'has not said what it is doing yet';
     r.appendChild(jb);
     // The name takes the slack (`minmax(0, 1fr)`), so the spacer `.grow` that used to

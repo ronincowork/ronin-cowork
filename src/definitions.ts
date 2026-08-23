@@ -1,18 +1,22 @@
 /**
- * THE TWO DEFINITION DIRECTORIES — `family_roles/` and `session_tasks/`.
+ * THE THREE DEFINITION DIRECTORIES — `role_families/`, `session_roles/` and
+ * `team_roles/`.
  *
- * A launch picks three axes: a required `project_root`, an optional `family_role` (who the
- * session is, fixed for its life) and an optional `session_task` (what it is doing now,
- * mutable). The last two are defined here, and they share one storage law.
+ * A launch picks a required `project_root`, an optional `session_role` (what the session
+ * is doing now, mutable), and optionally a TEAM to be born onto. A `role_family` is not
+ * a launch axis any more (R35, 2026-08-23): it is the New Session board's grouping of
+ * session_roles — presentation, and a Build-Team template. A `team_role` is the TEAM's
+ * defining role, named by a team's roster; its definition here carries the shelf reading
+ * every session spawned into such a team gets at birth. All three share one storage law.
  *
  * ONE FILE PER THING, rather than one growing markdown document. That is what makes a
  * role or a task the unit of ownership:
  *
- *   ronin_catalogs/family_roles/<token>.md          ours, replaced on upgrade
- *   <catalogs store>/family_roles/<token>.md        yours, survives upgrade AND uninstall
+ *   ronin_catalogs/role_families/<token>.md          ours, replaced on upgrade
+ *   <catalogs store>/role_families/<token>.md        yours, survives upgrade AND uninstall
  *
- *   ronin_catalogs/session_tasks/<token>.md      ours
- *   <catalogs store>/session_tasks/<token>.md    yours
+ *   ronin_catalogs/session_roles/<token>.md      ours
+ *   <catalogs store>/session_roles/<token>.md    yours
  *
  * The merged directory IS the manifest. There is no second generated file, so there is
  * nothing to drift from — the same reason the session-boot shelf lists a directory rather
@@ -44,8 +48,8 @@ import path from 'node:path';
 import { STOCK_DIR, entryValue, isKeyLine, type Origin } from './catalog.js';
 import { storeDir } from './stores.js';
 
-/** The two directories, and the only two. Each is a token in its own right. */
-export type DefinitionKind = 'family_roles' | 'session_tasks';
+/** The three directories, and the only three. Each is a token in its own right. */
+export type DefinitionKind = 'role_families' | 'session_roles' | 'team_roles';
 
 export interface Definition {
   /** The token — the filename without `.md`. Never the `#` heading. */
@@ -158,7 +162,7 @@ export async function findDefinition(kind: DefinitionKind, token: string): Promi
 /**
  * A comma list, with the em dash read as an empty list rather than as a member.
  *
- * `- **session_tasks:** —` and `- **match:** —` are how a definition says "none" in a
+ * `- **session_roles:** —` and `- **match:** —` are how a definition says "none" in a
  * file a person reads. Without this the dash became a match word that could never match
  * and a task named `—` that could never resolve.
  */
@@ -197,22 +201,26 @@ interface Row {
   credit?: { text: string; url: string };
 }
 
-export interface FamilyRoleRow extends Row {
+export interface RoleFamilyRow extends Row {
   /**
-   * THE TASK FAMILY — the session_tasks presented under this role, in the order the
-   * definition lists them. Surface word **Family**.
+   * THE FAMILY — the session_roles presented under this shelf, in the order the
+   * definition lists them, except that the `default_lead_role` is PINNED FIRST.
    *
-   * `session_tasks` and never a bare `family`: the settei registry already has a write
-   * family and Node's own `os` has an address family, and a term that reads as English
-   * is the defect KOTOBA's spelling law exists to prevent (owner, 2026-08-22).
-   *
-   * ASSOCIATION, NOT OWNERSHIP. A task may appear in several role families; a role's
-   * definition is simply where the association is written down.
+   * ASSOCIATION, NOT OWNERSHIP. A session_role may appear in several families; a
+   * family's definition is simply where the association is written down. Presentation
+   * only: nothing about a family rides a launch or a letter (R35).
    */
-  session_tasks: string[];
+  session_roles: string[];
+  /**
+   * The one session_role this family pins first — the suggested first launch when
+   * building a team from this family, and the role whose launch carries the
+   * team-building SOP. `default_` because it is a pin and a default, NEVER the
+   * `team_lead` designation on a live session; nothing may derive one from the other.
+   */
+  default_lead_role: string;
 }
 
-export interface SessionTaskRow extends Row {
+export interface SessionRoleRow extends Row {
   /** Intent words, for the smart fill. */
   match: string[];
 }
@@ -236,15 +244,25 @@ const row = (d: Definition): Row => ({
   credit: credit(d.get('credit')),
 });
 
-export async function listFamilyRoles(): Promise<FamilyRoleRow[]> {
-  return (await readDefinitions('family_roles')).map((d) => ({
-    ...row(d),
-    session_tasks: splitDefinitionList(d.get('session_tasks')),
-  }));
+export async function listRoleFamilies(): Promise<RoleFamilyRow[]> {
+  return (await readDefinitions('role_families')).map((d) => {
+    const roles = splitDefinitionList(d.get('session_roles'));
+    const lead = d.get('default_lead_role').trim();
+    // THE PIN IS THE READER'S, so drag/drop reordering cannot drift it: the lead is
+    // presented first wherever it sits in the stored list. A lead not in the family at
+    // all is reported by check-catalogs; here it simply does not pin.
+    const pinned = lead && roles.includes(lead) ? [lead, ...roles.filter((r) => r !== lead)] : roles;
+    return { ...row(d), session_roles: pinned, default_lead_role: lead };
+  });
 }
 
-export async function listSessionTasks(): Promise<SessionTaskRow[]> {
-  return (await readDefinitions('session_tasks')).map((d) => ({
+/** The team_role definitions — each one's reading shelf is `team_role/<name>/`. */
+export async function listTeamRoles(): Promise<Row[]> {
+  return (await readDefinitions('team_roles')).map(row);
+}
+
+export async function listSessionRoles(): Promise<SessionRoleRow[]> {
+  return (await readDefinitions('session_roles')).map((d) => ({
     ...row(d),
     match: splitDefinitionList(d.get('match')),
   }));
@@ -274,23 +292,33 @@ const isValidToken = (s: string): boolean => /^[\w-]{1,64}$/.test(s);
  *
  * The file is COPIED, not regenerated: every other field, every line of prose and every
  * key this version has never heard of survives byte for byte. Only the
- * `- **session_tasks:** …` line is replaced, or appended when there was not one.
+ * `- **session_roles:** …` line is replaced, or appended when there was not one.
  */
 export async function writeRoleTasks(role: string, tasks: string[]): Promise<string[]> {
-  const def = await findDefinition('family_roles', role);
-  if (!def) throw new Error(`"${role}" is not a family_role on this box.`);
+  const def = await findDefinition('role_families', role);
+  if (!def) throw new Error(`"${role}" is not a role_family on this box.`);
   const clean = [...new Set(tasks.map((t) => String(t).trim()).filter(Boolean))];
-  for (const t of clean) if (!isValidToken(t)) throw new Error(`"${t}" is not a session_task name.`);
+  for (const t of clean) if (!isValidToken(t)) throw new Error(`"${t}" is not a session_role name.`);
+  // THE PIN MAY NOT BE ORPHANED IN SILENCE. A family's default_lead_role is pinned
+  // first on its shelf; a board edit that dropped it would un-pin the lead as a side
+  // effect of a drag. Removing the lead is a deliberate act: clear the field first.
+  const lead = def.get('default_lead_role').trim();
+  if (lead && !clean.includes(lead)) {
+    throw new Error(
+      `"${lead}" is ${role}'s default_lead_role — it stays pinned on this shelf. ` +
+        `Clear the \`default_lead_role:\` line in ${def.file} first if you mean to remove it.`,
+    );
+  }
   if (clean.length > 64) throw new Error(`A role may shelve at most 64 tasks; "${role}" was given ${clean.length}.`);
   // Every named task must exist. A shelf pointing at nothing draws nothing, and a board
   // edit that silently loses a button is worse than one that says no.
-  const known = new Set((await readDefinitions('session_tasks')).map((d) => d.name));
-  for (const t of clean) if (!known.has(t)) throw new Error(`"${t}" is not a session_task on this box.`);
+  const known = new Set((await readDefinitions('session_roles')).map((d) => d.name));
+  for (const t of clean) if (!known.has(t)) throw new Error(`"${t}" is not a session_role on this box.`);
 
   const raw = await readFile(def.file, 'utf8');
-  const line = `- **session_tasks:** ${clean.length ? clean.join(', ') : '—'}`;
+  const line = `- **session_roles:** ${clean.length ? clean.join(', ') : '—'}`;
   const lines = raw.split('\n');
-  const at = lines.findIndex((l) => /^-\s*\*\*session_tasks:\*\*/i.test(l.trim()));
+  const at = lines.findIndex((l) => /^-\s*\*\*session_roles:\*\*/i.test(l.trim()));
   if (at === -1) {
     // No family line yet: put it after the last key line, so it lands among the
     // fields rather than in the middle of the prose that explains them.
@@ -299,7 +327,7 @@ export async function writeRoleTasks(role: string, tasks: string[]): Promise<str
     lines.splice(last + 1, 0, line);
   } else lines[at] = line;
 
-  const dir = path.join(storeDir('catalogs'), 'family_roles');
+  const dir = path.join(storeDir('catalogs'), 'role_families');
   const target = path.join(dir, `${role}.md`);
   await mkdir(dir, { recursive: true });
   const tmp = `${target}.tmp-${process.pid}`;
@@ -309,7 +337,7 @@ export async function writeRoleTasks(role: string, tasks: string[]): Promise<str
   // Read the RESULT back through the ordinary reader before reporting success — the same
   // refusal every catalog write makes. A definition we could not read back is a board
   // that would render empty on the next request.
-  const back = await findDefinition('family_roles', role);
+  const back = await findDefinition('role_families', role);
   if (!back) throw new Error(`Refused: "${role}" does not read back after the edit.`);
-  return splitDefinitionList(back.get('session_tasks'));
+  return splitDefinitionList(back.get('session_roles'));
 }

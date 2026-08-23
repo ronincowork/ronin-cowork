@@ -21,7 +21,7 @@ import { showFailure } from './errors.js';
  * because /api/launch refuses a name that already exists.
  *
  * NO NEW ENDPOINT. She is born through /api/launch like every session, and
- * `ronin_catalogs/session_tasks/MikaAssist.md` carries her dial, posture and opening. The
+ * `ronin_catalogs/session_roles/MikaAssist.md` carries her dial, posture and opening. The
  * only thing about her the server knows is `cap: exempt` in that definition — she is started
  * even at the session max, because blocking somebody who is asking for help is rude.
  */
@@ -54,8 +54,7 @@ export async function askMika(tile, ask) {
       const r = await request('/api/launch', {
         method: 'POST',
         json: {
-          family_role: 'assistant',
-          session_task: 'MikaAssist',
+          session_role: 'MikaAssist',
           name: MIKA,
           mode: 'assisted',
           tags: [MIKA],

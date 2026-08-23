@@ -171,7 +171,7 @@ else:
 # "docs" is in this list for the same reason "at" is: this path rebuilds the whole block
 # from a fixed set of keys, so a key missing from it is a key this switch DELETES. A
 # session saying "back in ten minutes" must not lose its doc list to say it.
-block = json.dumps({k: d[k] for k in ("objective", "family_role", "session_task", "repos", "ladder_state", "ladder", "docs", "at") if k in d},
+block = json.dumps({k: d[k] for k in ("objective", "session_role", "teams", "repos", "ladder_state", "ladder", "docs", "at") if k in d},
                    indent=2, ensure_ascii=False)
 tmp = src + ".sw"
 open(tmp, "w").write(text[:m.start(1)] + block + text[m.end(1):])
@@ -255,7 +255,7 @@ if docs:
 else:
     d.pop("docs", None)   # absent means empty; an empty list is a key that says nothing
 
-block = json.dumps({k: d[k] for k in ("objective", "family_role", "session_task", "repos", "ladder_state", "ladder", "docs", "at") if k in d},
+block = json.dumps({k: d[k] for k in ("objective", "session_role", "teams", "repos", "ladder_state", "ladder", "docs", "at") if k in d},
                    indent=2, ensure_ascii=False)
 # Beside, then rename: the tab may read this file at any moment and a half-written block
 # reads as "no ladder" for exactly as long as the write takes.
@@ -361,7 +361,7 @@ if d.get("at"):
 
 # Titles, objective and role are copied through exactly as the agent left it — a monitor
 # that tidied a title would be authoring, which is not its job.
-block = json.dumps({k: d[k] for k in ("objective", "family_role", "session_task", "repos", "side_road", "ladder", "docs", "at") if k in d},
+block = json.dumps({k: d[k] for k in ("objective", "session_role", "teams", "repos", "side_road", "ladder", "docs", "at") if k in d},
                    indent=2, ensure_ascii=False)
 open(tmp, "w").write(text[:m.start(1)] + block + text[m.end(1):])
 os.replace(tmp, src)
@@ -377,6 +377,34 @@ FILE="$DIR/tegami.md"
 BODY=$(cat)
 [ -n "${BODY// /}" ] || die "write_tegami: nothing on stdin. Send the json block."
 
+# THE TEAMS DERIVATION — tags in, roster facts out, fresh on every save. The letter's
+# "teams" block is machinery-owned (R35): one entry per team this session is on, with
+# the team_role and objective read from the team_rosters store at this moment. That is
+# how a changed team objective reaches an agent on its next reread — no push, no
+# injection, just a derivation that is never stale by more than one save. Exact-match
+# tag read, same discipline as key_of: show-options -t prefix-matches and must not be
+# trusted with a bare name.
+TEAM_TAGS=$(tmux list-sessions -F '#{session_name}	#{@ronin-tags}' 2>/dev/null   | awk -F'	' -v n="$NAME" '$1==n {print $2; exit}')
+RONIN_TEAMS_JSON=$(python3 - "$("$STORE" team_rosters 2>/dev/null || true)" "$TEAM_TAGS" <<'TEAMS'
+import json, os, re, sys
+roster_dir, raw = sys.argv[1], sys.argv[2]
+out = []
+for team in [t.strip() for t in raw.split(",") if t.strip()]:
+    entry = {"team": team, "team_role": "", "objective": ""}
+    try:
+        text = open(os.path.join(roster_dir, team + ".md")).read()
+        for key in ("team_role", "objective"):
+            m = re.search(r"^-\s*\*\*%s:\*\*\s*(.*)$" % key, text, re.M)
+            if m and m.group(1).strip() not in ("", "—", "-"):
+                entry[key] = m.group(1).strip()
+    except OSError:
+        pass  # a tag-only team has no roster yet; membership is real all the same
+    out.append(entry)
+print(json.dumps(out))
+TEAMS
+) || RONIN_TEAMS_JSON="[]"
+export RONIN_TEAMS_JSON
+
 # Validate the shape and normalise the spacing, so what lands on disk is what the tile
 # will read. Rejects rather than silently dropping: an unknown key is either a typo or a
 # word we retired, and both are worth being told about.
@@ -386,7 +414,7 @@ PREV=$(awk '/^```/{f=!f; if(f) next; else exit} f' "$FILE" 2>/dev/null)
 PREVF=$(mktemp); printf '%s' "${PREV:-{\}}" > "$PREVF"
 BLOCK=$(printf '%s' "$BODY" | python3 -c '
 import json, sys
-ALLOWED   = {"objective", "session_task", "repos", "ladder_state", "ladder"}
+ALLOWED   = {"objective", "session_role", "repos", "ladder_state", "ladder"}
 # What is happening to the ladder AS A WHOLE — not a rung. Absent means "on_track", so
 # nothing has to be migrated and the normal case costs nobody a keystroke.
 #
@@ -408,13 +436,17 @@ if not isinstance(d, dict):
 NOT_YOURS = {
     "at": "\"at\" is not yours to write.\n"
           "  It is the pointer a monitor keeps at whichever rung is being worked on now.\n"
-          "  You own objective, session_task and ladder, including every status. Drop \"at\"\n"
+          "  You own objective, session_role and ladder, including every status. Drop \"at\"\n"
           "  and save again; whatever it holds is carried through for you.",
-    "family_role": "\"family_role\" is fixed for the life of this session.\n"
-          "  It is WHO you are — the hat the owner started you in — and it was set at birth.\n"
-          "  Your session_task is the one that moves: change that when the work changes.\n"
-          "  Drop \"family_role\" from the block and save again; it is carried through unchanged.\n"
-          "  If the role is genuinely wrong, that is a new session, not a new value.",
+    "teams": "\"teams\" is not yours to write.\n"
+          "  It is DERIVED — one entry per team you are on, read from your tags and the\n"
+          "  team rosters — and this tool regenerates it on every save, so a fresh team\n"
+          "  objective reaches you by rereading your letter. Membership itself is your\n"
+          "  tags; leadership is the owner-set 人. Drop \"teams\" and save again.",
+    "role_family": "\"role_family\" is retired (R35, 2026-08-23).\n"
+          "  A session has no identity axis of its own any more: identity is the TEAM\"s\n"
+          "  team_role, on the team roster, worn contextually. Your session_role is the\n"
+          "  axis that moves; your teams block below shows the rest. Drop \"role_family\".",
     "docs": "\"docs\" is not written in the block.\n"
             "  Your doc list has two verbs of its own, so that rewriting your ladder can\n"
             "  never drop it by forgetting to include it:\n"
@@ -428,7 +460,8 @@ if extra:
     if blocked and len(blocked) == len(extra):
         sys.exit("write_tegami: " + "\n\nwrite_tegami: ".join(NOT_YOURS[k] for k in blocked))
     sys.exit("write_tegami: unknown key(s): " + ", ".join(extra) +
-             "\n  A TEGAMI holds: objective, session_task, repos, ladder, and ladder_state when you are off it."
+             "\n  A TEGAMI holds: objective, session_role, repos, ladder, and ladder_state when you are off it."
+             "\n  (\"teams\" is machinery-derived; membership lives in your tags.)"
              "\n  asks / blocked / decided / handoff / plan / side_ladder / v were removed —"
              "\n  nothing reads them. Questions for the owner are a GATE rung; everything else"
              "\n  belongs in your plan doc or on a wipeboard.")
@@ -512,14 +545,22 @@ if at is not None and shape(prev.get("ladder")) != shape(ladder):
     at = None
     print("write_tegami: note — the ladder shape changed, so the pointer was cleared.",
           file=sys.stderr)
-# `family_role` IS CARRIED THROUGH, NEVER TAKEN FROM THE BLOCK — the same contract as "at"
-# and "docs", and the reason is the strongest of the three: the role is birth-fixed, so
-# the only correct value is whatever the letter already held. A block that NAMED one was
-# refused above; this is what makes a block that did not name one preserve it byte for
-# byte instead of blanking it.
+# "teams" IS DERIVED, NEVER TAKEN FROM THE BLOCK — the same contract as "at" and "docs"
+# but stronger: it is regenerated fresh on every save, from the tags this session
+# carries and the team rosters those tags name. That is what makes a changed team
+# objective reach the agent on its next reread, with no push and no injection. The
+# sources arrive from bash via RONIN_TEAMS_JSON (computed right before this runs);
+# an empty derivation is an empty list — a ronin, which is an ordinary state.
+import os as _os
+try:
+    _teams = json.loads(_os.environ.get("RONIN_TEAMS_JSON") or "[]")
+    if not isinstance(_teams, list):
+        _teams = []
+except Exception:
+    _teams = []
 out = {"objective": d.get("objective", ""),
-       "family_role": prev.get("family_role") if isinstance(prev.get("family_role"), str) else "",
-       "session_task": d.get("session_task", ""),
+       "session_role": d.get("session_role", ""),
+       "teams": _teams,
        "repos": repos}
 ls_ = (d.get("ladder_state") or "").strip().lower()
 if ls_ and ls_ != "on_track":

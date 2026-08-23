@@ -10,19 +10,21 @@ Put a file on the shelf and new sessions read it. That is the whole feature.
 | `all/` | every session, always |
 | `<service>_connected/` (e.g. `gbrain_connected/`) | only sessions launched with MCP on — how a connected session learns what it is connected to, signed by the service that seeded it |
 | `root/<project_root>/` | only sessions working in that directory |
-| `role/<family_role>/` | only sessions wearing that hat — read once, at birth, because a role cannot change |
-| `task/<session_task>/` | only sessions doing that kind of work — **re-delivered when the task changes** |
+| `role/<session_role>/` | only sessions doing that kind of work — **re-delivered when the session_role changes** |
+| `team_role/<team_role>/` | only sessions born onto a team whose roster names that team_role — the team's own build brief, read once |
 
-The levels are **additive, not a hierarchy**. A `developer` session cutting `CutCode` in
-`ronin_cowork` reads all of its levels and nothing overrides anything — *where* the work
-happens, *who* is doing it and *what* they are doing now are three independent questions,
-so the same bug-chasing habits apply in every repo, the same repo notes apply to every
-task, and a role's standing instructions apply across every task it wears.
+The levels are **additive, not a hierarchy**. A session cutting `CutCode` on a
+`development` team in `ronin_cowork` reads all of its levels and nothing overrides
+anything — *where* the work happens, *what* it is doing now and *whose team* it is on
+are independent questions, so the same bug-chasing habits apply in every repo, the same
+repo notes apply to every session_role, and a team_role's standing brief applies across
+every role its team raises.
 
-**Role reading is birth-only; task reading is not.** A `family_role` cannot change while the
-session lives, so its level is read once and never re-sent. A `session_task` can, and when
-it does, Ronin hands that task's level to the running session — once, whether the agent
-re-marked itself or the owner did (`src/task-watch.ts`).
+**Team reading is birth-only; session_role reading is not.** A birth team's `team_role`
+reading arrives once ("if you join later, let's not go back and redo it" — R35). A
+`session_role` moves, and when it does, Ronin hands that role's level to the running
+session — once, whether the agent re-marked itself or the owner did
+(`src/role-watch.ts`).
 
 The connected level makes the launch toggle govern both halves of a connection (owner's
 ruling, 2026-08-17): a session launched with MCP off gets neither the tools nor the

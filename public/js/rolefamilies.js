@@ -1,31 +1,34 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * JOB ROLES — the sections of the ＋ New board, and now rather more than sections.
+ * ROLE FAMILIES — the sections of the ＋ New board, and DELIBERATELY nothing more.
  *
- * These were the owner's Job Group shelves: collapsible groupings that organized the
- * board and addressed nothing. The ruling of 2026-08-22 promoted them (KOTOBA § JOB
- * ROLES). Everything the interaction already did survives — ordering, folding, drag and
- * drop, a task on several shelves at once, membership the owner owns — and a role now
- * also carries its own reading level and its own launch defaults, so picking a task
- * FROM INSIDE a role launches with both axes set.
+ * These were the owner's Job Group shelves, briefly promoted to a session axis, and
+ * demoted again by R35 (2026-08-23): **a family is PRESENTATION** — it groups the
+ * session_role buttons for viewing and seeds a Build-Team template, and it never rides
+ * a launch, a letter, or a session. Everything the interaction always did survives —
+ * ordering, folding, drag and drop, a role on several shelves at once, membership the
+ * owner owns.
  *
- * TWO BUTTONS PER SECTION, and the first one is the new part. Every role is launchable
- * with a BLANK task: that is how `personalassistant` and `mikaassist`
- * start, and any role the owner invents has to be able to start the same way. A section
- * whose tasks are all you could press would make the role a folder again.
+ * THE PIN: a family's `default_lead_role` is presented FIRST in its section (the reader
+ * pins it — src/definitions.ts), because it is the suggested first launch when a team
+ * is built from this shelf. A pin is a default, never the `team_lead` designation on a
+ * live session.
  *
- * THE ROSTER'S OWN GRAMMAR, on purpose (js/roster.js): dragging a task onto a role ADDS
- * it there — `copy`, never a move, because a task may sit on several roles — and the ✎
- * editor is the same multi-toggle the drag cannot express: it is where membership is
- * REMOVED, and it is what keeps every edit reachable on touch.
+ * ONE BUTTON PER MEMBER, no blank-family launch: a family is not launchable, because a
+ * family is not an axis. `PersonalAssistant` and `MikaAssist` are ordinary
+ * session_roles with their own buttons.
  *
- * NO CREATE, NO DELETE, DELIBERATELY. Authoring a role — inventing one, naming it,
- * giving it a reading shelf — is the next build-out. This module edits membership of
- * roles that exist, which is board organization; it does not mint vocabulary.
+ * THE ROSTER'S OWN GRAMMAR, on purpose (js/roster.js): dragging a role onto a family
+ * ADDS it there — `copy`, never a move — and the ✎ editor is the same multi-toggle the
+ * drag cannot express: it is where membership is REMOVED, and what keeps every edit
+ * reachable on touch. An edit that would orphan the pinned `default_lead_role` is
+ * refused by the server, naming the fix.
  *
- * EDITING A HOUSE ROLE SHADOWS IT (src/definitions.ts): membership lives in the role
- * definition now, so the first re-shelving makes the owner's `developer.md` the
- * definition and ours stops applying. The provenance mark on the section says so.
+ * NO CREATE, NO DELETE, DELIBERATELY. Authoring a family is the next build-out.
+ *
+ * EDITING A HOUSE FAMILY SHADOWS IT (src/definitions.ts): the first re-shelving makes
+ * the owner's `developer.md` the definition and ours stops applying. The provenance
+ * mark on the section says so.
  */
 import { request } from './request.js';
 import { toast } from './ui.js';
@@ -47,7 +50,7 @@ export function draggableTask(b, name) {
 
 /* Which sections are folded — a per-device viewing preference, like the tile layout,
  * so it lives in this browser and never in a definition file. */
-const FOLD_KEY = 'ronin.familyRolesClosed';
+const FOLD_KEY = 'ronin.roleFamilysClosed';
 const foldedRoles = () => {
   try {
     const v = JSON.parse(localStorage.getItem(FOLD_KEY) || '[]');
@@ -69,20 +72,19 @@ const rememberFold = (name, open) => {
 /**
  * @param {object} deps
  * @param {(task: object, role: object) => HTMLElement} deps.taskButton  a task, launched inside a role
- * @param {(role: object) => HTMLElement} deps.roleButton  the role's own blank-task launch
- * @param {() => object[]} deps.allTasks  the session_task rows as the launcher holds them
- * @param {() => object[]} deps.allRoles  the family_role rows as the launcher holds them
+ * @param {() => object[]} deps.allTasks  the session_role rows as the launcher holds them
+ * @param {() => object[]} deps.allRoles  the role_family rows as the launcher holds them
  * @param {() => void} deps.onChange  rebuild the board (sections AND the loose tail)
  * @returns {{wrap: HTMLElement, render: () => Set<string>}}
  */
-export function buildRoleSections({ taskButton, roleButton, allTasks, allRoles, onChange }) {
+export function buildRoleSections({ taskButton, allTasks, allRoles, onChange }) {
   const wrap = document.createElement('div');
   wrap.className = 'ks-classes';
 
   const save = async (role, tasks) => {
-    const r = await request(`/api/family-roles/${encodeURIComponent(role)}/session_tasks`, {
+    const r = await request(`/api/role-families/${encodeURIComponent(role)}/session_roles`, {
       method: 'PUT',
-      json: { session_tasks: tasks },
+      json: { session_roles: tasks },
     });
     if (!r.ok) {
       toast(r.message, false);
@@ -99,7 +101,7 @@ export function buildRoleSections({ taskButton, roleButton, allTasks, allRoles, 
     document.querySelector('.job-menu')?.remove();
     const m = document.createElement('div');
     m.className = 'job-menu';
-    const current = () => (allRoles().find((r) => r.name === role.name)?.session_tasks ?? []);
+    const current = () => (allRoles().find((r) => r.name === role.name)?.session_roles ?? []);
     for (const k of allTasks()) {
       const b = document.createElement('button');
       b.type = 'button';
@@ -157,7 +159,7 @@ export function buildRoleSections({ taskButton, roleButton, allTasks, allRoles, 
     edit.type = 'button';
     edit.className = 'ks-class-edit';
     edit.textContent = '✎';
-    edit.title = `Choose this role's Family — the session_tasks presented under "${role.label || role.name}", and where one leaves it`;
+    edit.title = `Choose this role's Family — the session_roles presented under "${role.label || role.name}", and where one leaves it`;
     edit.addEventListener('click', (e) => {
       e.preventDefault(); // a button inside <summary> must not toggle the fold
       e.stopPropagation();
@@ -166,8 +168,8 @@ export function buildRoleSections({ taskButton, roleButton, allTasks, allRoles, 
     sum.appendChild(edit);
     const grid = document.createElement('div');
     grid.className = 'ks-grid';
-    // THE BLANK-TASK LAUNCH, first and always present: this role, doing nothing named yet.
-    grid.appendChild(roleButton(role));
+    // Members only — a family is not launchable (R35). The default_lead_role arrives
+    // first in `members` because the reader pins it (src/definitions.ts).
     for (const k of members) grid.appendChild(taskButton(k, role));
     d.append(sum, grid);
     d.addEventListener('toggle', () => rememberFold(role.name, d.open));
@@ -185,7 +187,7 @@ export function buildRoleSections({ taskButton, roleButton, allTasks, allRoles, 
       e.preventDefault();
       d.classList.remove('drop-ready');
       const name = e.dataTransfer.getData(DRAG_TYPE);
-      const now = allRoles().find((r) => r.name === role.name)?.session_tasks ?? [];
+      const now = allRoles().find((r) => r.name === role.name)?.session_roles ?? [];
       if (!name || now.includes(name)) return;
       await save(role.name, [...now, name]);
     });
@@ -200,13 +202,12 @@ export function buildRoleSections({ taskButton, roleButton, allTasks, allRoles, 
     for (const role of allRoles()) {
       // A token the definitions no longer know renders nowhere and stays in the file —
       // the file is the owner's, and a stock task may come back.
-      const members = (role.session_tasks ?? []).map((n) => byName.get(n)).filter(Boolean);
+      const members = (role.session_roles ?? []).map((n) => byName.get(n)).filter(Boolean);
       members.forEach((k) => shelved.add(k.name));
       wrap.appendChild(section(role, members));
     }
-    // A LOOSE TASK — on no role's shelf — launches with a blank family_role, which is a real
-    // launch and not a leftover. It sits flat under the sections, the roster's own answer
-    // for the untagged, with a heading only once sections exist.
+    // A LOOSE session_role — on no family's shelf — is a real button and not a leftover.
+    // It sits flat under the sections, with a heading only once sections exist.
     if (allRoles().length && shelved.size < tasks.length) {
       wrap.appendChild(
         Object.assign(document.createElement('div'), { className: 'ks-loose-h', textContent: 'no role' }),

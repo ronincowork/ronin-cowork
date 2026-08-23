@@ -17,17 +17,12 @@ STORE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../bin" && pwd)/ronin-store"
 [ -x "$STORE" ] || STORE=ronin-store
 SESSION_STORE="$("$STORE" session 2>/dev/null)"
 
-# A session's two axes out of its own letter, as 'family_role\tsession_task' — empty fields
-# when it has no letter or has not said. Both live in TEGAMI: the TASK because the session
-# may change it as the work changes (`write_tegami`), the ROLE because it was fixed at
-# birth and nothing may change it afterwards.
-#
-# This used to be a fourth tmux column, @ronin-lead — the teams a session was hand-marked
-# as leading. That is retired: the coordinator of a team is the member whose TASK is
-# `QuarterBack` — a session_TASK, by the owner's ruling of 2026-08-22 (KOTOBA R33). It
-# spent one day as a role, which would have settled it at birth; as a task it MIGRATES,
-# so who quarterbacks a team is read off the letter on every call and never remembered.
-# A session that stops coordinating stops being the answer, which is the truth.
+# A session's session_role out of its own letter — empty when it has no letter or has
+# not said. It lives in TEGAMI because the session may change it as the work changes
+# (`write_tegami`). The coordinator is a SEPARATE fact: the 人 (`@ronin-lead`) is BACK
+# (R35, 2026-08-23) — leadership is a hand-set per-team designation, never derived from
+# what a session is doing, because the owner can make the secretary the team lead. It
+# rides the tmux column beside the tags and is read fresh on every call.
 axes_of() {
   local key row stamped created
   [ -n "${SESSION_STORE:-}" ] || return 0
@@ -51,11 +46,11 @@ try:
 except Exception:
     raise SystemExit
 say = lambda k: d[k].strip() if isinstance(d.get(k), str) else ""
-print("%s\t%s" % (say("family_role"), say("session_task")))
+print(say("session_role"))
 PY
 }
 
-# name·tags·dial·family_role·session_task for every real session, viewers dropped.
+# name·tags·dial·leads·session_role for every real session, viewers dropped.
 #
 # SEP is \x1f (unit separator), NOT a tab. Tab is an IFS *whitespace* character, so bash
 # collapses a RUN of them into one delimiter: an untagged session emitted as
@@ -64,11 +59,10 @@ PY
 # Nothing in a name, tag, dial, role or task can contain it.
 SEP=$'\x1f'
 roster() {
-  while IFS=$SEP read -r name tags dial; do
-    # axes_of answers 'role<TAB>task'; the tab becomes a SEP so both are fields here.
-    printf '%s%s%s%s%s%s%s\n' "$name" "$SEP" "$tags" "$SEP" "$dial" "$SEP" \
-      "$(axes_of "$name" | tr '\t' "$SEP")"
-  done < <(tmux list-sessions -F "#{session_name}${SEP}#{@ronin-tags}${SEP}#{@ronin-control}" 2>/dev/null \
+  while IFS=$SEP read -r name tags dial leads; do
+    printf '%s%s%s%s%s%s%s%s%s\n' "$name" "$SEP" "$tags" "$SEP" "$dial" "$SEP" "$leads" "$SEP" \
+      "$(axes_of "$name")"
+  done < <(tmux list-sessions -F "#{session_name}${SEP}#{@ronin-tags}${SEP}#{@ronin-control}${SEP}#{@ronin-lead}" 2>/dev/null \
     | grep -v "^${VIEWER_PREFIX}")
 }
 
@@ -79,15 +73,16 @@ if [ $# -eq 0 ]; then
   # Every team in play + its size. Sessions with no tags are reported as loose, so
   # "not in the list" never silently means "I forgot to tag it".
   #
-  # A team's quarterback is named beside it. Unlike the old lead, coordinating implies
-  # MEMBERSHIP: a quarterback is tagged into the team it runs like anyone else, so a
-  # team can no longer exist by virtue of somebody leading an empty one.
+  # A team's leads are named beside it — the 人, the hand-set designation, which
+  # implies MEMBERSHIP: a lead is tagged into the team it runs like anyone else, so a
+  # team cannot exist by virtue of somebody leading an empty one.
   out=$(roster | awk -F'\037' '
     { if ($2 == "") { loose++; next }
       n = split($2, t, ",")
+      m = split($4, l, ","); for (j = 1; j <= m; j++) gsub(/^[ \t]+|[ \t]+$/, "", l[j])
       for (i = 1; i <= n; i++) { gsub(/^[ \t]+|[ \t]+$/, "", t[i])
         if (t[i] != "") { c[t[i]]++; seen[t[i]] = 1
-          if ($5 == "QuarterBack") qb[t[i]] = (qb[t[i]] == "" ? $1 : qb[t[i]] " + " $1) } }
+          for (j = 1; j <= m; j++) if (l[j] == t[i]) qb[t[i]] = (qb[t[i]] == "" ? $1 : qb[t[i]] " + " $1) } }
     }
     END { for (g in seen) printf "%s\037%d\037%s\n", g, c[g], qb[g]; if (loose) printf "\001untagged\037%d\037\n", loose }' \
     | sort)
@@ -96,7 +91,7 @@ if [ $# -eq 0 ]; then
     case "$g" in
       $'\001untagged') printf '%-24s %s session(s), on no team\n' '(untagged)' "$n" ;;
       *) if [ -n "${qb:-}" ]; then
-           printf '%-24s %s session(s), quarterbacked by %s\n' "$g" "$n" "$qb"
+           printf '%-24s %s session(s), led by %s\n' "$g" "$n" "$qb"
          else
            printf '%-24s %s session(s)\n' "$g" "$n"
          fi ;;
@@ -107,23 +102,23 @@ fi
 
 G=$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')
 found=0
-# The quarterback goes first, then the rest — the same order the owner sees in the Ronin
-# session list. Every member's ROLE and TASK are printed ('-' where nobody has said),
-# because on a team roster "who are these and what is each of them doing?" is the
-# question being asked. Neither is a permission: the dial still decides who may drive whom.
-while IFS=$SEP read -r name tags dial role task; do
+# The leads go first, then the rest — the same order a Team View draws. Every member's
+# session_role is printed ('-' where nobody has said), because on a team the question is
+# "who are these and what is each of them doing?". 人 marks the designated leads.
+# Neither is a permission: the dial still decides who may drive whom.
+while IFS=$SEP read -r name tags dial leads task; do
   has_team "${tags:-}" "$G" || continue
-  [ "${task:-}" = QuarterBack ] || continue
+  has_team "${leads:-}" "$G" || continue
   found=1
-  printf '%-24s %-8s %-18s %s\n' "$name" "${dial:-write}" "$role" "${task:--}"
+  printf '%-24s %-8s %-6s %s\n' "$name" "${dial:-write}" '人' "${task:--}"
 done < <(roster)
 
-while IFS=$SEP read -r name tags dial role task; do
+while IFS=$SEP read -r name tags dial leads task; do
   # exact tag match, not substring: 'kojin' must not match 'kojinsa'
   has_team "${tags:-}" "$G" || continue
-  [ "${task:-}" = QuarterBack ] && continue   # already printed, at the head
+  has_team "${leads:-}" "$G" && continue   # already printed, at the head
   found=1
-  printf '%-24s %-8s %-18s %s\n' "$name" "${dial:-write}" "${role:--}" "${task:--}"
+  printf '%-24s %-8s %-6s %s\n' "$name" "${dial:-write}" '-' "${task:--}"
 done < <(roster)
 
 [ "$found" = 1 ] || { echo "NO-TEAM: nothing is tagged '$G' — run 'tejun-team' to see the teams that exist"; exit 3; }

@@ -4,7 +4,7 @@ The escape hatch: one stated task that fits no other. A noun compound on purpose
 slot that must not read as a command, because it is the absence of a specific instruction
 rather than one of them.
 
-Loose by design: it sits on no `family_role` shelf, so it launches with a blank role unless
+Loose by design: it sits on no `role_family` shelf, so it launches with a blank role unless
 the owner shelves it on one.
 
 - **icon:** •

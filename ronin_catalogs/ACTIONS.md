@@ -68,7 +68,7 @@ same door the ＋ New board presses (`POST /api/launch`), and it does create, ta
 CLI launch and brief delivery in ONE call — so there is nothing to type at a pane and
 nothing to wait for a prompt to appear.
 
-It is also the ONLY way a new session gets a **`family_role`**. The role is stamped at birth
+It is also the ONLY way a new session gets a **`role_family`**. The role is stamped at birth
 and immutable afterwards, so a session hand-rolled with `tmux new-session` has a blank
 role for its entire life and no tool can repair it. That was measured: forks made the old
 way carried no role at all and could only ever self-set a task.
@@ -76,12 +76,12 @@ way carried no role at all and could only ever self-set a task.
 ```bash
 curl -sS -X POST http://127.0.0.1:${PORT:-3006}/api/launch \
   -H 'content-type: application/json' \
-  -d '{"family_role":"<role>","session_task":"<task>","name":"<name>",
+  -d '{"role_family":"<role>","session_role":"<task>","name":"<name>",
        "project_root":"<root>","tags":["<team>"],"prompt":"<what it is told>"}'
 ```
 
 **The axes, and what each may be left out of.** `project_root` is required and omitting it
-selects the top active root. `family_role` and `session_task` may each be blank, and blank is
+selects the top active root. `role_family` and `session_role` may each be blank, and blank is
 a real launch — but **an agent-launching fork must RESOLVE them deliberately rather than
 omit them by accident** (owner, 2026-08-22). The receipt names what was actually resolved;
 read it back and report it.
@@ -95,12 +95,12 @@ cannot honor an MCP-off choice for it.
 
 **IT DELIVERS THE WHOLE BUILD BRIEF, which is the other half of why this is the door.** An
 assisted launch composes the posture, the reading list — `all/` + `root/<project_root>/` +
-`role/<family_role>/` + `task/<session_task>/`, plus any connected level when the brain is on
+`role/<role_family>/` + `task/<session_role>/`, plus any connected level when the brain is on
 — the task's opening template with your prompt in it, and the acknowledgement rule. A
 session made with `tmux new-session` gets NONE of that: no reading list, no posture, no
 letter, and no role, ever.
 
-The response carries `receipt` — `family_role`, `session_task`, `project_root`, `dial`,
+The response carries `receipt` — `role_family`, `session_role`, `project_root`, `dial`,
 `cmd`, `mcp`. A launch that refuses answers 400 with the reason written for the owner (an
 unknown axis, a locked `mcp:` contradicted, an agentless launch handed a command); report
 the reason, do not retry around it.
@@ -182,7 +182,7 @@ execute from.
 ## read-letter — read the ladder a session is keeping
 `action_kind: mechanical` — run it, don't deliberate.
 > **Tool: `read_tegami`** (TOOLS.md)
-Your own letter — objective, family_role, session_task, the ladder, and where on it you are.
+Your own letter — objective, role_family, session_role, the ladder, and where on it you are.
 ```bash
 read_tegami                     # your letter, as written
 read_tegami --json              # just the block, for a machine
@@ -199,7 +199,7 @@ Your letter is the one file that outlives your pane, so it is written for whoeve
 reads it next — the owner in the tile, or the session that inherits the work.
 ```bash
 write_tegami <<'JSON'           # replaces YOUR ladder; the block and nothing else
-{ "objective": "...", "family_role": "...", "session_task": "...", "ladder": [ … ] }
+{ "objective": "...", "role_family": "...", "session_role": "...", "ladder": [ … ] }
 JSON
 write_tegami --session <name> --at 2.3    # another session's position, ONLY the position
 ```
@@ -420,7 +420,7 @@ what a document can tell you.
 `action_kind: mechanical` — run it, don't deliberate.
 > **Tool: `tejun-recall`** (TOOLS.md)
 Sessions are mortal; what they learned is not. This hands you the memories matched to
-what this session IS — its `project_root`, its `family_role` and its `session_task`, read off the session
+what this session IS — its `project_root`, its `role_family` and its `session_role`, read off the session
 itself — ordered universal-first, then this project, then cross-project.
 ```bash
 tejun-recall            # one file path per line, deduped

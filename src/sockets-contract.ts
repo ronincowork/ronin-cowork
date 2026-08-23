@@ -7,14 +7,14 @@
  * and that doc wins any argument this file's names start.
  * Bump CONTRACT_V on any breaking change to these shapes. */
 
-export const CONTRACT_V = 1;
+export const CONTRACT_V = 2;
 
 /** What a session birth looks like to a LAUNCH hook. */
 export interface BornInfo {
   name: string;
   key?: string; // @ronin-key (<name>-<created-epoch>) — when the caller has it resolved
-  role?: string; // family_role token — WHO the session is, fixed at birth
-  task?: string; // session_task token — WHAT it is doing at birth; either may be blank
+  role?: string; // session_role token — WHAT it is doing at birth; may be blank
+  team?: string; // the team it was born onto, when the launch named one; may be blank
   root?: string; // project_root dir, when known
   cmd?: string; // what was started in the pane
 }

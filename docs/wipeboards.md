@@ -28,10 +28,15 @@ has a wipeboard of the same name, automatically:
   on first post (or first Brief), with a stub naming the team.
 - **A session on several teams is on several team wipeboards.** That is what multi-valued
   tags mean, and no membership is duplicated to achieve it.
-- **A team is composition, not a type.** It may mix any `family_role`s and any
-  `session_task`s — a quarterbacking developer, a shell, an assistant, all on one team —
-  and being on a team never implies its members share anything but the work. That is why
-  the rosters print each member's own task beside its name instead of assuming one.
+- **A team is composition, and it carries the type.** Its `team_role` and objective live
+  on its **team_roster** — the durable record ABOVE the wipeboard, linked by token
+  (R35) — and its members may mix any `session_role`s: a quarterbacking developer, a
+  shell, an assistant, all on one team. Being on a team never implies its members share
+  anything but the work, which is why the readouts print each member's own session_role
+  beside its name instead of assuming one, with the designated leads (人) first.
+- **A board with no roster is a custom board, and therefore not a team** — that absence
+  is the whole distinction, and dissolving a team deletes only the roster: the board
+  reverts to custom, because nothing on a button deletes a file.
 - **The team wins its name.** A custom wipeboard cannot be created with a live team's
   name. Naming a team after an existing custom wipeboard **adopts the file**: the thread
   continues, and membership authority switches from the option to the team.

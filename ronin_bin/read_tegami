@@ -107,6 +107,45 @@ STORE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../bin" && pwd)/ronin-store"
 FILE="$("$STORE" session)/$(key_of "$NAME")/tegami.md"
 [ -f "$FILE" ] || die "read_tegami: @$NAME has no letter yet — Ronin seeds one within a minute."
 
+# READ-REPAIR THE TEAMS BLOCK (R35). The letter's "teams" key is machinery-derived —
+# team name, team_role, objective per team — and a reread is exactly the moment the
+# owner said a fresh team objective should arrive. So the derivation happens here too:
+# tags + rosters in, and when the stored value differs the file is quietly brought
+# current before it is shown. Failure is silence; a read must never break on a repair.
+TEAM_TAGS=$(tmux list-sessions -F '#{session_name}	#{@ronin-tags}' 2>/dev/null   | awk -F'	' -v n="$NAME" '$1==n {print $2; exit}')
+python3 - "$FILE" "$("$STORE" team_rosters 2>/dev/null || true)" "$TEAM_TAGS" <<'REPAIR' 2>/dev/null || true
+import json, os, re, sys
+src, roster_dir, raw = sys.argv[1], sys.argv[2], sys.argv[3]
+teams = []
+for team in [t.strip() for t in raw.split(",") if t.strip()]:
+    entry = {"team": team, "team_role": "", "objective": ""}
+    try:
+        text = open(os.path.join(roster_dir, team + ".md")).read()
+        for key in ("team_role", "objective"):
+            m = re.search(r"^-\s*\*\*%s:\*\*\s*(.*)$" % key, text, re.M)
+            if m and m.group(1).strip() not in ("", "—", "-"):
+                entry[key] = m.group(1).strip()
+    except OSError:
+        pass
+    teams.append(entry)
+text = open(src).read()
+m = re.search(r"```(?:json)?\s*\n([\s\S]*?)\n```", text)
+if not m:
+    sys.exit(0)
+d = json.loads(m.group(1))
+if d.get("teams") == teams:
+    sys.exit(0)
+d["teams"] = teams
+order = ("objective", "session_role", "teams", "repos", "ladder_state", "ladder", "docs", "at")
+block = json.dumps({k: d[k] for k in order if k in d}, indent=2, ensure_ascii=False)
+extra = {k: v for k, v in d.items() if k not in order}
+if extra:
+    sys.exit(0)  # keys this tool does not know: repairing would drop them, so leave it
+tmp = src + ".teams"
+open(tmp, "w").write(text[:m.start(1)] + block + text[m.end(1):])
+os.replace(tmp, src)
+REPAIR
+
 if [ "$MODE" = rungs ]; then
   # The flat, numbered list of markable positions. A phase is a grouping, not a place to
   # stand, so it is shown for context but never numbered.
