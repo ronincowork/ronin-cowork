@@ -20,6 +20,10 @@
          still the absolute /vendor path shared by live and staging) so every app rule
          outranks vendor rules by layer order rather than by accident of load order. -->
     <link rel="stylesheet" href="style.css" />
+    <!-- Feature stylesheet for the Team destination (Eye 2). Namespaced .tw-*; it adds to
+         the global sheet and redefines nothing in it. -->
+    <link rel="stylesheet" href="team-workspace.css" />
+    <link rel="stylesheet" href="new-team.css" />
   </head>
   <body>
     <header id="bar">
@@ -75,6 +79,8 @@
     </div>
     <div id="viewhost">
       <main id="grid" class="layout-4" data-layout="4"></main>
+      <section id="new-team-view" hidden></section>
+      <section id="agent-config-view" hidden></section>
     </div>
 
     <!-- /vendor stays absolute: served from node_modules, shared by live and staging.
