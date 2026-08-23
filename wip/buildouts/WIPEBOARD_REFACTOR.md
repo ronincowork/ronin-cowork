@@ -5,7 +5,7 @@
 > page is not a second copy of it and never restates it. When the last leg lands, this
 > file is deleted.
 >
-> **Last updated 2026-08-23 19:15 UTC.** `bin/ronin-byoin --gates` clean (16 ok, 2 SKIP —
+> **Last updated 2026-08-23 20:05 UTC.** `bin/ronin-byoin --gates` clean (16 ok, 2 SKIP —
 > both browser checks, which fast mode does not run). Work stays on `dev`.
 
 ## Where it stands
@@ -20,15 +20,14 @@ None. Nothing waits on anyone.
 
 ## Next action
 
-**Discoverability (leg 1).**
+**API route coverage (leg 1)** — the last untested surface.
 
 ## Legs
 
 | # | Leg | Ends when |
 |---|---|---|
-| 1 | **Discoverability.** A wipeboard section in `ronin_session_boot/all/REQUIRED_ABILITIES.md`; `ACTIONS.md` (`wipeboard-check`, and `wipeboard-post` gaining the addressee doctrine); the `TOOLS.md` row; `MACROS.md`'s `+wipeboard:` recipe; `src/lookup.ts` | a session born from the shelf reaches the one action without being told |
-| 2 | **Coverage.** Automated tests for `src/wipeboard-cli.ts` and the API — today only the storage core and the roster-id resolution are on the unit floor | the verdict/exit table and every route asserted in `tests/` |
-| 3 | **Full BYOIN on the box**, then land and delete this file | one verdict, no SKIP read as a pass |
+| 1 | **API coverage.** `src/routes/wipeboards-api.ts` has no automated test. The storage core, the roster-id resolution and the CLI now do | every route asserted, including that `unread` never advances a cursor |
+| 2 | **Full BYOIN on the box**, then land and delete this file | one verdict, no SKIP read as a pass |
 
 ## Deferred by the owner — the ▤ tab
 
@@ -44,15 +43,14 @@ updates). Known, accepted, and not worth fixing into a surface that is being rep
 
 ## Known defects, in the order they will bite
 
-1. **`src/lookup.ts:70` teaches the superseded commands.** The `+wipeboard:` expansion
-   still says `tejun-wipeboard <name> read` / `post`. Both still work, so this is wrong
-   guidance rather than a break. Leg 1.
-2. **No automated coverage of the CLI or the API.** The 38 assertions cover
-   `src/wipeboards.ts` only, in temp stores, with no tmux. The CLI was verified by hand
-   through the `RONIN_SESSION` / `RONIN_BOARDS` / `RONIN_MEMBERS` seams; that is not in
-   any gate. Leg 2.
-3. **No browser verification has been run at all**, and none can be until the new UI. See
+1. **No automated coverage of the API.** 50 assertions now cover the storage core, the
+   roster-id resolution and the CLI — `src/routes/wipeboards-api.ts` is the gap. Leg 1.
+2. **No browser verification has been run at all**, and none can be until the new UI. See
    the deferral above.
+3. **`tests/wipeboard-cli.test.ts` is slow** — it spawns the shipped entry through tsx per
+   case, adding roughly twenty seconds to `check-tests`. Deliberate: driving the real
+   entry is what makes it a test of what ships rather than of a copy. Worth revisiting if
+   the unit floor gets much slower.
 
 ## Standing rule — master is owner-controlled
 

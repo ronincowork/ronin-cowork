@@ -167,7 +167,16 @@ export async function ensureBoard(name: string, stub?: string): Promise<boolean>
   if (await boardExists(name)) return false;
   await mkdir(postsDir(name), { recursive: true });
   await mkdir(readDir(name), { recursive: true });
-  await atomicWrite(briefPath(name), stub ?? STUB(name));
+  // WHOEVER CREATES IT, IT SAYS WHOSE IT IS. A wipeboard a roster points at gets the
+  // team stub even when the caller did not know to ask for one — a post straight to the
+  // roster's id creates it just as a roster opening does, and its first reader arrives
+  // with no enrolment step behind them either way.
+  let text = stub;
+  if (!text) {
+    const team = await teamOfBoard(name).catch(() => null);
+    text = team ? teamStub(team) : STUB(name);
+  }
+  await atomicWrite(briefPath(name), text);
   return true;
 }
 
