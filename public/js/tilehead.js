@@ -60,26 +60,12 @@ import { buildTileMore } from './tilemore.js';
 import { buildTileDocs } from './tiledocs.js';
 import { buildTileMentions } from './tilementions.js';
 import { isCoarse } from './tiledrop.js';
-import { S, SELECT_MOD, serviceMissing } from './state.js';
+import { S, serviceMissing } from './state.js';
 import { taskIcon } from './home.js';
+import { makeOutput } from './output.js';
 
 export const DIAL_TITLE =
   'Who may touch this session: 👤 owner only · 👁 outside agents watch · 🤖 outside agents type. Yours to turn; agents never flip it.';
-
-/**
- * A FUNCTION, not a const — rule 3 in js/README.md: never reference an imported binding at
- * module top level. It also HAS to be one now: the sentence names a key, and the key is not
- * the same on every machine. This said "On a Mac, Option+drag" and said nothing at all to a
- * Windows or Linux laptop, where the key is Shift (see SELECT_MOD in state.js).
- *
- * It also used to send people to 🔓 as the way to copy. That is still true and still the
- * nicest answer, but it is not the FIRST one: holding the modifier copies in place out of a
- * live TUI, and a reader who does not know the key is exactly who is reading this tooltip.
- */
-export const lockedTitle = () =>
-  '🔒 LOCKED — attached live, in lockstep.  ⚠ TO COPY: hold ' +
-  SELECT_MOD +
-  ' and drag, then ⌘C / Ctrl-C. A plain drag goes to tmux; 🔓 selects like a web page.';
 
 /**
  * THE HEADER, left to right. One row per control; see the file header for the columns.
@@ -89,7 +75,9 @@ export const lockedTitle = () =>
  * cached, so the table is still built exactly once however many tiles ask for it.
  */
 let rows = null;
-const HEADER = () => (rows ??= [
+const HEADER = () => {
+  if (rows) return rows;
+  rows = [
   { key: 'dot', tag: 'span', cls: 'dot off',
     help: 'Connection: green = attached, grey = disconnected' },
 
@@ -193,10 +181,12 @@ const HEADER = () => (rows ??= [
   // at all, and dimming it would hide the six explanations of why its contents are dim.
   { key: 'moreBtn', hosts: true,
     widget: () => buildTileMore(),
-    help: "This session's other controls — 🔒 lock, 🏷 teams, ⛽ context, 🎛 control, 📄 docs, 📝 note, 🗑 kill" },
+    help: "This session's other controls — Output, 🏷 teams, ⛽ context, 🎛 control, 📄 docs, 📝 note, 🗑 kill" },
 
-  { key: 'lockEl', cls: 'lock', text: '🔒', drop: true, help: lockedTitle,
-    on: (t) => t.flipLock() },
+  { key: 'outputEl', drop: true, widget: (t) => {
+    return makeOutput(t);
+  },
+    help: 'Output — live terminal or one of RIREKI’s unlocked views' },
 
   { key: 'tagBtn', cls: 'tags', text: '🏷', drop: true, modal: true, needs: 'session',
     help: 'Teams this session is on',
@@ -270,7 +260,9 @@ const HEADER = () => (rows ??= [
     help: 'Kill session (ends it + its viewers)',
     quiet: 'Kill session — no session in this tile yet',
     on: (t) => t.kill() },
-]);
+  ];
+  return rows;
+};
 
 /** Is this row live, and if not, why not? '' when live. */
 function quietReason(row, tile) {

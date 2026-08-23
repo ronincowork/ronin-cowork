@@ -87,7 +87,7 @@ export class TileWire {
    * Locked rides the attach mirror (the original pipeline, untouched). Unlocked rides
    * the recorded stream: seed = recent history, then the live pane output.
    */
-  open({ session, locked, cols, rows, tapeAt }) {
+  open({ session, locked, output, cols, rows, tapeAt }) {
     this.wantOpen = true;
     this.session = session;
     this.clearRetry();
@@ -97,7 +97,7 @@ export class TileWire {
     const url =
       `${proto}://${location.host}/pty?session=${encodeURIComponent(session)}` +
       `&cols=${cols}&rows=${rows}` +
-      (locked ? '' : '&mode=stream' + (tapeAt ? `&seg=${tapeAt.seg}&off=${tapeAt.off}` : ''));
+      (locked ? '' : '&mode=stream&view=' + encodeURIComponent(output || 'terminal_mirror') + (tapeAt ? `&seg=${tapeAt.seg}&off=${tapeAt.off}` : ''));
     const ws = new WebSocket(url);
     ws.binaryType = 'arraybuffer';
     this.ws = ws;

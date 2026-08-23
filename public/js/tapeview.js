@@ -31,7 +31,7 @@ const TRIM_LOW = 3000000; // trim down to this
 export class TapeView {
   /**
    * @param {HTMLElement} body  the tile body to mount into
-   * @param {{onMore: () => void}} hooks  onMore: ask the server for the chunk above
+   * @param {{onMore: () => void, onSummaryNow?: () => void, onSummaryPolicy?: (string) => void}} hooks
    */
   constructor(body, hooks) {
     this.onMore = hooks.onMore;
@@ -53,6 +53,19 @@ export class TapeView {
     this.tframe = document.createElement('div');
     this.tframe.className = 'tframe';
     this.el.append(this.ttext, this.tframe);
+
+    this.kakiControls = document.createElement('div');
+    this.kakiControls.className = 'kaki-controls';
+    const now = document.createElement('button');
+    now.type = 'button'; now.textContent = 'Summarize now';
+    now.addEventListener('click', () => hooks.onSummaryNow?.());
+    this.kakiPolicy = document.createElement('select');
+    this.kakiPolicy.setAttribute('aria-label', 'Summary production');
+    this.kakiPolicy.add(new Option('On demand', 'on_demand'));
+    this.kakiPolicy.add(new Option('Keep current', 'keep_current'));
+    this.kakiPolicy.addEventListener('change', () => hooks.onSummaryPolicy?.(this.kakiPolicy.value));
+    this.kakiControls.append(now, this.kakiPolicy);
+    this.el.prepend(this.kakiControls);
 
     this.el.addEventListener('scroll', () => this.onScroll(), { passive: true });
     // At the LITERAL top, a further wheel-up changes nothing, so no scroll event fires
@@ -81,6 +94,22 @@ export class TapeView {
 
     body.appendChild(this.el);
     body.appendChild(this.jump);
+  }
+
+  setMode(mode) {
+    this.mode = mode;
+    this.kakiControls.classList.toggle('show', mode === 'agent_summary');
+  }
+
+  setSummaryPolicy(policy) { this.kakiPolicy.value = policy === 'keep_current' ? 'keep_current' : 'on_demand'; }
+
+  setSummary(text, note = '') {
+    const wasAtBottom = this.atBottom();
+    this.ttext.textContent = text || note || 'No summary has been written yet.';
+    this.tframe.textContent = '';
+    this.lastFold = null;
+    this.tapeChars = this.ttext.textContent.length;
+    this.follow(wasAtBottom);
   }
 
   /**

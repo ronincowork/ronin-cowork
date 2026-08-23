@@ -61,6 +61,7 @@ export const S = {
   padPanel: null, // Work Louder pad panel { open, close, isOpen, hit } — all devices (owner override)
   padAsk: null, // ask-on-press prompt for pad macros { open(bind), isOpen }
   locked: !IS_TOUCH, // DEFAULT for a NEW tile only — the switch itself is per-tile now
+  output: IS_TOUCH ? 'terminal_mirror' : 'locked',
   // THE SWITCH, service half: true when the operator reports no 🔓 stream handler
   // (cowork alone — no record service). Every tile is then born 🔒, stays 🔒, and the
   // lock button is inert and opaque: the surface says "not plugged in", not "broken".

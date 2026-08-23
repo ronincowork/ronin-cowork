@@ -44,7 +44,7 @@ same `needs` string, and both dim the control the same way.
 | ⛩ commons | — | always (individual tabs gate: `koe` · `counting` · `koshi`) |
 | ⚡ macros | — | always |
 | メ the drop | — | always — it is a container, and it holds 🔒, which needs no session |
-| 🔒/🔓 lock | rireki's stream handler | inert and opaque; every tile born 🔒 and stays 🔒 |
+| Output | rireki's stream handler | contains Locked only |
 | 🏷 groups | — | always |
 | 📄 docs | `michi` | inert and opaque, saying so; the doc list is TEGAMI data |
 | 📝 note | — | always |
@@ -60,7 +60,7 @@ install; the chip beside it does not.
 
 ---
 
-## The two views
+## The six Outputs
 
 The tile composes one or the other. Neither knows the other exists.
 
@@ -77,10 +77,12 @@ hardware-accelerated momentum scrolling for free.
 
 The socket sits beside both and is owned by neither (`public/js/tilewire.js`).
 
-**Lock is a property of a tile.** `S.locked` is only the default a *new* tile is born with.
-It used to be one global, so flipping it reconnected all four at once. Touch is fixed
-unlocked (`locked = !IS_TOUCH`) and the button is hidden there entirely — locked is
-unusable on a phone, where every scroll gesture round-trips through tmux copy-mode.
+**Output is a property of a tile.** Locked attaches the live terminal. Terminal Mirror, Detailed,
+Condensed, Conversation and Agent Summary are record-fed views registered by Ronin Services.
+Bare cowork offers Locked only. `S.locked` remains a compatibility alias for transport choice.
+The old lock button and its global flip are retired. The Output selector changes only its
+tile and is compact on touch; Locked remains available there, with tmux copy-mode's normal
+round-trip scrolling tradeoff.
 
 ---
 

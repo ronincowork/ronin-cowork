@@ -4885,6 +4885,25 @@ button.wb-door:hover b {
    terminal. That is the entire reason scrolling feels like a page here: the OS
    scrolls it, with momentum and rubber-banding, and nothing re-renders per tick.
    🔒 Locked keeps xterm, where a live positioned screen genuinely needs one. */
+.tile select.output {
+  width: 148px;
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-xs);
+  color: var(--fg);
+  background: var(--surface);
+  font: var(--text-2)/1.2 var(--font-mono);
+  padding: var(--space-1) var(--space-2);
+}
+@media (pointer: coarse) {
+  .tile select.output { width: 44px; height: 40px; padding: 0; flex: 0 0 44px; }
+}
+.kaki-controls { display: none; gap: var(--space-3); align-items: center; margin-bottom: var(--space-4); }
+.kaki-controls.show { display: flex; }
+.kaki-controls button, .kaki-controls select {
+  border: var(--edge) solid var(--term-tape-line-2); border-radius: var(--radius-xs);
+  background: var(--term-tape-bg); color: var(--term-tape-fg); padding: var(--space-2) var(--space-3);
+  font: var(--text-2) var(--font-mono);
+}
 .tile .tape {
   display: none;
 }

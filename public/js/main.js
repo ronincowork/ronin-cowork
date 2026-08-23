@@ -24,6 +24,7 @@ export async function init() {
     if (v.ok && v.data.stream === false) {
       S.streamOff = true;
       S.locked = true;
+      S.output = 'locked';
     }
     if (v.ok && Array.isArray(v.data.services)) S.services = v.data.services;
     // A failed read means an old operator or an unreachable server — the first reads
