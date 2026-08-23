@@ -44,15 +44,25 @@ test('ensureBoard creates once and says so — the created flag is the join-noti
 /* ---------------------------------------------------------------- identity and order */
 
 test('ids are distinct and lexically ordered under concurrent writers', async () => {
+  // FOUR HUNDRED, deliberately. Concurrent writers are floored to the same millisecond,
+  // so an id differs from its neighbour only by two bytes of randomness — 65536 values.
+  // At this width a birthday collision is near-certain, which is what makes this a test
+  // of the EEXIST retry rather than a test of luck. At 200 it was a coin toss and the
+  // full suite duly failed once under load (2026-08-23) while passing alone five times.
+  const N = 400;
   await W.ensureBoard('rush');
   const posts = await Promise.all(
-    Array.from({ length: 200 }, (_, i) => W.appendPost('rush', `@w${i % 8}`, `post ${i}`)),
+    Array.from({ length: N }, (_, i) => W.appendPost('rush', `@w${i % 8}`, `post ${i}`)),
   );
   const ids = posts.map((p) => p.id);
-  assert.equal(new Set(ids).size, 200, 'two hundred writers, two hundred distinct ids');
+  assert.equal(new Set(ids).size, N, `${N} writers, ${N} distinct ids`);
   const stored = (await W.readPosts('rush')).map((p) => p.id);
   assert.deepEqual(stored, [...stored].sort(), 'lexical sort is the order on disk');
-  assert.equal(stored.length, 200, 'nothing was lost and nothing overwrote anything');
+  assert.equal(stored.length, N, 'nothing was lost and nothing overwrote anything');
+  // Every post is intact — a clobbered name would leave a file whose text belongs to
+  // the loser, which a count alone would not catch.
+  const texts = new Set((await W.readPosts('rush')).map((p) => p.text));
+  assert.equal(texts.size, N, 'every distinct post body survived');
 });
 
 test('ids stay monotonic within a wipeboard even if the clock moves backwards', async () => {
@@ -325,14 +335,20 @@ test('the house wipeboard is never removed', async () => {
 
 test('writing the Brief cannot lose a post — the Brief is not in the thread any more', async () => {
   await W.ensureBoard('race');
+  const briefs = ['rewritten under a hundred concurrent posts', 'and again'];
   await Promise.all([
     ...Array.from({ length: 100 }, (_, i) => W.appendPost('race', '@a', `post ${i}`)),
-    W.setBrief('race', 'rewritten under a hundred concurrent posts'),
-    W.setBrief('race', 'and again'),
+    ...briefs.map((b) => W.setBrief('race', b)),
   ]);
   const board = await W.readBoard('race');
+  // THE CONTRACT: rewriting the Brief cannot cost a post. It used to be able to — the
+  // Brief lived in the same file as the thread and was written whole.
   assert.equal(board.posts.length, 100, 'every post survived the Brief rewrites');
-  assert.equal(board.brief, 'and again');
+  // And the contract stops there. Two Brief writes racing have NO ordering between them,
+  // so which one wins is not a promise this module makes; what IS promised is that the
+  // winner is whole. Asserting a winner asserted an ordering concurrency never offered,
+  // and duly failed about one run in eight.
+  assert.ok(briefs.includes(board.brief), `the Brief is one whole value, not a torn mix: ${board.brief}`);
 });
 
 test('no partial post is ever observable — temp files are never listed as posts', async () => {

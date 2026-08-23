@@ -1,4 +1,4 @@
-import { mkdir, readFile, readdir, rename, rm, stat, unlink, writeFile } from 'node:fs/promises';
+import { link, mkdir, readFile, readdir, rename, rm, stat, unlink, writeFile } from 'node:fs/promises';
 import { randomBytes } from 'node:crypto';
 import path from 'node:path';
 import { readOwner } from './user-config.js';
@@ -117,6 +117,28 @@ function briefOf(raw: string): string {
  * target, then rename(2), which is atomic on one filesystem. Every write in this module
  * goes through here — a post, a cursor, the Brief.
  */
+/**
+ * Create a file that must NOT already exist — atomically, and refusing to clobber.
+ *
+ * `rename(2)` is atomic but it OVERWRITES, which is wrong for a post: two writers that
+ * mint the same id would silently leave one post instead of two. `link(2)` is atomic and
+ * fails with EEXIST rather than replacing, so the winner keeps the name and the loser is
+ * told to pick another. Throws EEXIST for the caller to retry.
+ *
+ * Found by the unit floor under load, 2026-08-23: ids are floored to the same millisecond
+ * for concurrent writers, so they differ only by two bytes of randomness — a birthday
+ * collision at a hundred-odd concurrent posts is likely, not theoretical.
+ */
+async function atomicCreate(file: string, body: string): Promise<void> {
+  const tmp = path.join(path.dirname(file), `.tmp-${randomBytes(6).toString('hex')}`);
+  await writeFile(tmp, body, 'utf8');
+  try {
+    await link(tmp, file); // EEXIST here means somebody else took the name
+  } finally {
+    await unlink(tmp).catch(() => {});
+  }
+}
+
 async function atomicWrite(file: string, body: string): Promise<void> {
   const tmp = path.join(path.dirname(file), `.tmp-${randomBytes(6).toString('hex')}`);
   await writeFile(tmp, body, 'utf8');
@@ -236,13 +258,23 @@ export async function appendPost(
   opts: { to?: string[]; silent?: boolean } = {},
 ): Promise<Post> {
   await ensureBoard(name);
-  const id = await nextId(name);
   const { at, time } = stampOf(new Date());
   const to = (opts.to ?? []).map((t) => (t.startsWith('@') ? t : '@' + t));
   const silent = opts.silent === true;
   const body = text.replace(/\s+$/, '');
-  await atomicWrite(path.join(postsDir(name), `${id}.md`), `${postHeader(author, at, to, silent)}\n${body}\n`);
-  return { id, author, time, at, to, silent, text: body };
+  const contents = `${postHeader(author, at, to, silent)}\n${body}\n`;
+  // CLAIM A NAME, DO NOT ASSUME ONE. Concurrent writers are floored to the same
+  // millisecond, so two can mint the same id; the one that gets EEXIST mints another.
+  // Nothing is lost and nothing is overwritten, which is the whole concurrency story.
+  for (let attempt = 0; ; attempt++) {
+    const id = await nextId(name);
+    try {
+      await atomicCreate(path.join(postsDir(name), `${id}.md`), contents);
+      return { id, author, time, at, to, silent, text: body };
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException)?.code !== 'EEXIST' || attempt >= 50) throw e;
+    }
+  }
 }
 
 /**
