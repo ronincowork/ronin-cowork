@@ -9,6 +9,101 @@
 > fact — `src/wipeboards.ts`, `ronin_bin/tejun-wipeboard`, `public/js/wipeboard.js` and the
 > rest — were read out of the working tree and are checkable today.
 
+---
+
+## CURRENT STATE / RESUME HERE
+
+**As of 2026-08-23 17:36 UTC. `dev` @ `989daa5`, pushed, working tree clean for every file
+below. `bin/ronin-byoin --gates`: clean, 16 ok, 2 skipped.**
+
+### Completed behaviour
+
+- `tejun-wipeboard` (bare) — resolves the calling session, resolves its wipeboards
+  (tags + enrolments), prints everything unread oldest-first per wipeboard, excludes the
+  caller's own posts, then advances each cursor. Verified by hand end to end.
+- Nothing unread → `nothing unread — N wipeboards, all caught up`, exit 0.
+  On no wipeboard → `nothing unread — you are on no wipeboard`, exit 0.
+- `tejun-wipeboard boards` · `<name>` · `<name> read [n]` · `<name> find <text>` ·
+  `<name> post [--to a,b|none] <text>`. `read`/`find`/`boards` move no cursor.
+- Posts: one file per post, id `<epoch-ms>-<4hex>` = the filename, monotonic per wipeboard
+  against a backwards clock. Header `### @a → @b, @c · YYYY-MM-DD HH:MM`; `→ (no notice)`
+  for silent. Unparseable audience parses as everyone.
+- Cursors: `read/<session-key>`, one per session per wipeboard. Read count derived, never
+  stored. High-water advances past everything **examined**, not everything printed.
+- Reaper: read-reap on required readers + grace, TTL backstop, dead-cursor sweep. Runs
+  inline on check and on post — no daemon, no timer.
+- Lifecycle: whole-wipeboard removal on all six conditions; roster matched on its
+  `wipeboard:` **token**; an owner-written Brief keeps the wipeboard permanently; `house`
+  never removed.
+- Verdicts confirmed by hand: `BAD-ADDRESSEE` exit 2 on empty `--to` (nothing posted),
+  `BAD-NAME` exit 2, `NO-WIPEBOARD` exit 3, `NO-SESSION` exit 3.
+
+### Files I own (all committed in `989daa5`)
+
+| File | State |
+|---|---|
+| `src/wipeboards.ts` | rewritten whole |
+| `src/wipeboard-cli.ts` | new — the one action lives here |
+| `tests/wipeboards.test.ts` | rewritten whole — 33 assertions |
+| `ronin_bin/tejun-wipeboard` | reduced to a 30-line tsx wrapper (was 402) |
+
+### Shared seams I touched — other workstreams read these
+
+| Seam | What I changed | Consequence for others |
+|---|---|---|
+| `src/routes/wipeboards-api.ts` | rewired to the new core; `mtime` → `newest`; added `GET /:name/unread`; addressed fan-out; inline sweep | imported by `src/index.ts`, `routes/launch.ts`, `routes/sessions-api.ts` (via `announceTeamChanges`, unchanged in signature) |
+| `src/user-config.ts` | appended `readWipeboardSettings` + two private helpers. **Nothing existing altered** | imported by auth, tmux, index, settei, passkey, koshi |
+| `boardExists()` semantics | now true only for a **directory** | `routes/teams-api.ts` (`wipeboard_exists`) and `routes/launch-preflight.ts` (`adoptsWipeboard`) now report **false** for every legacy `.md` wipeboard. Affects New Team / preflight |
+| `boardPath()` | returns a **directory**, not a `.md` file | `src/lookup.ts` prints it in `+wipeboard:` output |
+
+### Uncommitted
+
+**None of mine.** The working tree carries other agents' uncommitted work (workspace-kit,
+league, customize, new-team, agent-config, settei/passkey) — untouched by me and not staged
+in `989daa5`.
+
+### Verification actually run
+
+- `npx tsx --test tests/wipeboards.test.ts` — **33/33 pass**. Target: `src/wipeboards.ts`
+  only, in a temp store, no tmux. Does **not** cover `src/wipeboard-cli.ts`, the API, or
+  the tab.
+- `bin/ronin-byoin --gates` — clean, 16 ok, **2 SKIP** (`smoke-ui`, `visual-ui`; fast mode
+  drives no browser). A SKIP is not a pass: no browser verification has been run at all.
+- Hand smoke of the CLI against temp stores using the `RONIN_SESSION` / `RONIN_BOARDS` /
+  `RONIN_MEMBERS` seams. Not automated, not in the gate.
+
+### Known failures and limitations
+
+1. **The ▤ Wipeboard tab is broken against the new server.** `public/js/wipeboard.js:327`
+   compares `r.data.mtime`, which the API no longer returns. Traced: first poll renders,
+   `mtime` becomes `undefined`, every later poll early-returns on
+   `undefined === undefined` — **the thread renders once and then never updates.** Known
+   and accepted cost of cutting clean; it is the next action.
+2. **`src/lookup.ts:70` teaches the old commands** — the `+wipeboard:` expansion still says
+   `tejun-wipeboard <name> read` / `post`. Both still work, so this is wrong guidance, not
+   a break.
+3. **No automated coverage of the CLI, the API, or the tab.** Only the storage core is on
+   the unit floor.
+4. **Live store on this box:** a new-format house wipeboard (a directory, empty) sits
+   alongside six legacy single-file wipeboards — five-eyes, gbrain_service, gbrain_settei,
+   house, migration, new_gh_user. **The new code does not see any of the six.** This is the owner's accepted
+   fresh-start loss; the files are untouched on disk.
+5. **`docs/wipeboards.md`, KOTOBA, the glossary and the three catalogs still describe the
+   old model.** No vocabulary work has been done.
+6. **D1–D13 are unruled.** The code implements the recommended answer on each. D13
+   (roster token vs name) is implemented for the **lifecycle rule only**; the membership
+   predicate still matches on name, deliberately left alone.
+
+### Blocker
+
+None. Nothing is waiting on anyone.
+
+### Single next action
+
+Update `public/js/wipeboard.js` to the new payload: `mtime` → `newest`, add paging via
+`?since=`/`?limit=`, render the cleared line, add the addressee field to the compose row.
+Then `bin/ronin-byoin --ui`, which is the first browser verification this work will have had.
+
 ## Goal — the owner's words
 
 > "Every team will have a wipeboard. That's the 80/20. There could be additional
