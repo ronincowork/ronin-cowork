@@ -23,10 +23,12 @@ import {
   appendPost,
   boardExists,
   highWater,
+  ensureRosterBoard,
   listBoardFiles,
   postHeader,
   readBoard,
   reapPosts,
+  teamOfBoard,
   unreadFor,
   writeCursor,
   type Post,
@@ -75,7 +77,11 @@ async function myBoards(session: string): Promise<string[]> {
   }
   const sessions = await listSessions().catch(() => []);
   const me = sessions.find((s) => s.name === session);
-  const teams = me?.tags ?? [];
+  // A TEAM TALKS ON ITS ROSTER'S WIPEBOARD ID, not on a wipeboard that happens to share
+  // its name (owner, 2026-08-23). The roster implies the wipeboard, so it is made here
+  // if it does not exist yet — a new team's wipeboard opens empty rather than missing.
+  const teams: string[] = [];
+  for (const t of me?.tags ?? []) teams.push(await ensureRosterBoard(t));
   const custom = await getWipeboards(session).catch((): string[] => []);
   return [...new Set([...teams, ...custom])].sort();
 }
@@ -87,9 +93,11 @@ async function membersOf(board: string): Promise<{ name: string; key: string }[]
     return Promise.all(names.map(async (n) => ({ name: n, key: await sessionKey(n) })));
   }
   const sessions = await listSessions().catch(() => []);
+  // Through the roster's id, so the reaper counts the team that actually talks here.
+  const team = (await teamOfBoard(board)) ?? board;
   const out: { name: string; key: string }[] = [];
   for (const s of sessions) {
-    const on = s.tags.includes(board) || (await getWipeboards(s.name).catch((): string[] => [])).includes(board);
+    const on = s.tags.includes(team) || (await getWipeboards(s.name).catch((): string[] => [])).includes(board);
     if (on) out.push({ name: s.name, key: await sessionKey(s.name) });
   }
   return out;
@@ -169,10 +177,11 @@ async function boards(): Promise<number> {
   if (!names.length) return die("NO-WIPEBOARDS: none yet — a team's exists the moment the team does", 3);
   const sessions = await listSessions().catch(() => []);
   for (const n of names) {
-    const team = sessions.filter((s) => s.tags.includes(n)).length;
-    const kind = team ? 'team' : 'custom';
+    const team = (await teamOfBoard(n)) ?? (sessions.some((s) => s.tags.includes(n)) ? n : null);
+    const live = team ? sessions.filter((s) => s.tags.includes(team)).length : 0;
     const posts = (await readBoard(n)).posts.length;
-    out(`${n.padEnd(24)} ${kind.padEnd(7)} ${posts} post(s)`);
+    const whose = team ? `team ${team}` : 'custom';
+    out(`${n.padEnd(24)} ${whose.padEnd(20)} ${live} member(s)  ${posts} post(s)`);
   }
   return 0;
 }

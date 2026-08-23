@@ -5,8 +5,8 @@
 > page is not a second copy of it and never restates it. When the last leg lands, this
 > file is deleted.
 >
-> **Last updated 2026-08-23 17:52 UTC.** `dev` @ `fe958a7`, pushed. `bin/ronin-byoin
-> --gates` clean (16 ok, 2 SKIP — both browser checks, which fast mode does not run).
+> **Last updated 2026-08-23 19:15 UTC.** `bin/ronin-byoin --gates` clean (16 ok, 2 SKIP —
+> both browser checks, which fast mode does not run). Work stays on `dev`.
 
 ## Where it stands
 
@@ -20,33 +20,39 @@ None. Nothing waits on anyone.
 
 ## Next action
 
-**Update `public/js/wipeboard.js` to the new payload**, then run `bin/ronin-byoin --ui`.
+**Discoverability (leg 1).**
 
 ## Legs
 
 | # | Leg | Ends when |
 |---|---|---|
-| 1 | **The ▤ tab.** `mtime` → `newest`; paging via `?since=`/`?limit=`; the cleared line; the addressee field on the compose row | `bin/ronin-byoin --ui` green — the first browser verification this work will have had |
-| 2 | **Discoverability.** A wipeboard section in `ronin_session_boot/all/REQUIRED_ABILITIES.md`; `ACTIONS.md` (`wipeboard-check`, and `wipeboard-post` gaining the addressee doctrine); the `TOOLS.md` row; `MACROS.md`'s `+wipeboard:` recipe; `src/lookup.ts` | a session born from the shelf reaches the one action without being told |
-| 3 | **Coverage.** Automated tests for `src/wipeboard-cli.ts` and the API — today only the storage core is on the unit floor | the verdict/exit table and every route asserted in `tests/` |
-| 4 | **Full BYOIN on the box**, then land and delete this file | one verdict, no SKIP read as a pass |
+| 1 | **Discoverability.** A wipeboard section in `ronin_session_boot/all/REQUIRED_ABILITIES.md`; `ACTIONS.md` (`wipeboard-check`, and `wipeboard-post` gaining the addressee doctrine); the `TOOLS.md` row; `MACROS.md`'s `+wipeboard:` recipe; `src/lookup.ts` | a session born from the shelf reaches the one action without being told |
+| 2 | **Coverage.** Automated tests for `src/wipeboard-cli.ts` and the API — today only the storage core and the roster-id resolution are on the unit floor | the verdict/exit table and every route asserted in `tests/` |
+| 3 | **Full BYOIN on the box**, then land and delete this file | one verdict, no SKIP read as a pass |
+
+## Deferred by the owner — the ▤ tab
+
+**2026-08-23:** the tab is not touched until the new UI lands, because it will not have
+this shape. *"When you open the whiteboard for a team page, it should just be the
+whiteboard. There should be none of this other shit where it was like the team brief and
+selecting which whiteboard to look at."* Opening a team shows **that team's wipeboard and
+nothing else** — no brief panel, no wipeboard picker. Done then, directly, not now.
+
+Until then `public/js/wipeboard.js` stays broken against the server (it compares
+`r.data.mtime`, which the API no longer sends: the thread renders once and then never
+updates). Known, accepted, and not worth fixing into a surface that is being replaced.
 
 ## Known defects, in the order they will bite
 
-1. **The ▤ Wipeboard tab is broken against the new server.** `public/js/wipeboard.js:327`
-   compares `r.data.mtime`, which the API no longer sends. Traced: the first poll renders,
-   `mtime` becomes `undefined`, and every later poll early-returns on
-   `undefined === undefined` — **the thread renders once and then never updates.** The
-   accepted cost of cutting clean rather than shimming. Leg 1.
-2. **`src/lookup.ts:70` teaches the superseded commands.** The `+wipeboard:` expansion
+1. **`src/lookup.ts:70` teaches the superseded commands.** The `+wipeboard:` expansion
    still says `tejun-wipeboard <name> read` / `post`. Both still work, so this is wrong
-   guidance rather than a break. Leg 2.
-3. **No automated coverage of the CLI or the API.** The 33 assertions cover
-   `src/wipeboards.ts` only, in a temp store, with no tmux. The CLI was verified by hand
+   guidance rather than a break. Leg 1.
+2. **No automated coverage of the CLI or the API.** The 38 assertions cover
+   `src/wipeboards.ts` only, in temp stores, with no tmux. The CLI was verified by hand
    through the `RONIN_SESSION` / `RONIN_BOARDS` / `RONIN_MEMBERS` seams; that is not in
-   any gate. Leg 3.
-4. **No browser verification has been run at all.** Both UI checks have only ever SKIPped.
-   Leg 1.
+   any gate. Leg 2.
+3. **No browser verification has been run at all**, and none can be until the new UI. See
+   the deferral above.
 
 ## Standing rule — master is owner-controlled
 
@@ -72,11 +78,11 @@ Recorded because these changed under other people's code, not because they are u
 
 ## On this box
 
-The live wipeboards store holds a new-format house wipeboard (a directory, empty) beside
-six legacy single-file wipeboards — five-eyes, gbrain_service, gbrain_settei, house,
-migration, new_gh_user. **The new code does not see the six.** That is the owner's accepted
-fresh-start loss (2026-08-23: *"if some agents lost their messaging, tough shit"*). The
-files are untouched on disk; removing one is the owner's own `rm`, never the machine's.
+Clean. The six stale single-file wipeboards were **deleted on the owner's instruction**
+(2026-08-23: *"this smells bad and should be cleaned up. Don't keep this shit laying
+around. Just kill it."*) — five-eyes (667 KB, 194 posts), new_gh_user, gbrain_service,
+gbrain_settei, house and migration. The store now holds only new-format wipeboards. The
+five-eyes team had already cut over to its new one before the deletion.
 
 ## Decisions the owner has not ruled
 
@@ -97,4 +103,4 @@ because anything waits on them.
 | D10 | `--to a,b` / `--to none` / absent; empty `--to` refused | yes |
 | D11 | An addressed post reaps on its addressees | yes |
 | D12 | The compose row gets an addressee field | **not built** — leg 1 |
-| **D13** | **The one worth a ruling.** A roster's `wipeboard:` token may name a wipeboard other than the team's own name, but `isTeamBoard()` matches on the **name**, so a roster pointing elsewhere yields a wipeboard with empty derived membership | implemented for the **lifecycle rule only**, where a wrong deletion is unrecoverable. The membership predicate still matches on name — another workstream's surface, deliberately left alone |
+| **D13** | **RULED 2026-08-23 and built.** *"Every team roster should have a whiteboard ID, and that whiteboard ID should match with a single whiteboard. I don't care what the names are."* | the roster's id is the identity everywhere — membership, the reaper and the lifecycle all resolve through it. A roster with no wipeboard on disk gets one made, and it opens empty. A team with no roster keeps a wipeboard of its own name |

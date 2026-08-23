@@ -22,6 +22,7 @@ import { sendText } from '../send.js';
 import {
   appendPost,
   boardExists,
+  teamOfBoard,
   boardPath,
   dropCursor,
   ensureBoard,
@@ -71,12 +72,17 @@ async function sweep(board: string): Promise<void> {
     const sessions = await listSessions();
     const rosters = await listTeamRosters();
     await reapBoard(board, {
-      teamMembers: sessions.filter((s) => s.tags.includes(board)).map((s) => s.name),
+      teamMembers: await (async () => {
+        const t = await teamBehind(board);
+        return t ? sessions.filter((s) => s.tags.includes(t)).map((s) => s.name) : [];
+      })(),
       enrolled: (await Promise.all(
         sessions.map(async (s) => ((await getWipeboards(s.name)).includes(board) ? s.name : '')),
       )).filter(Boolean),
       // The roster's `wipeboard:` TOKEN, never its name — a roster may point somewhere
       // else, and matching the name would remove a wipeboard a living team is using.
+      // A roster's wipeboard is never removed: the roster implies it, and it must open
+      // even when empty. This is the same id match teamBehind() uses.
       rosterPointsAtIt: rosters.some((r) => r.wipeboard === board),
     });
   } catch {
@@ -126,9 +132,20 @@ async function fanOut(board: string, post: Post, from: string): Promise<Record<s
   return results;
 }
 
-/** Does a live team bear this name? Then the board is a TEAM wipeboard and the team is
- * its membership; @ronin-wipeboards is not consulted for it. See docs/wipeboards.md. */
-const isTeamBoard = async (name: string): Promise<boolean> => (await teamsInPlay()).includes(name);
+/**
+ * Whose wipeboard is this? THE ROSTER'S WIPEBOARD ID DECIDES, not the name (owner,
+ * 2026-08-23) — a roster may point its wipeboard anywhere, and matching on the name sent
+ * such a team to a wipeboard it was not a member of. A tag-only team with no roster
+ * behind it still owns a wipeboard of its own name; it has no roster to carry an id.
+ * Returns the TEAM NAME, or null for a custom wipeboard.
+ */
+async function teamBehind(board: string): Promise<string | null> {
+  const owned = await teamOfBoard(board);
+  if (owned) return owned;
+  return (await teamsInPlay()).includes(board) ? board : null;
+}
+
+const isTeamBoard = async (name: string): Promise<boolean> => (await teamBehind(name)) !== null;
 
 /**
  * Sessions currently on a board, with their dials — derived, never a stored roster.
@@ -138,10 +155,12 @@ const isTeamBoard = async (name: string): Promise<boolean> => (await teamsInPlay
  */
 async function boardMembers(board: string): Promise<{ name: string; control: Control }[]> {
   const sessions = await listSessions();
-  const team = sessions.some((s) => s.tags.includes(board));
+  // The team is found through the roster's wipeboard id, so members are the sessions
+  // tagged into THAT TEAM — which is not necessarily the wipeboard's own name.
+  const team = await teamBehind(board);
   const out: { name: string; control: Control }[] = [];
   for (const s of sessions) {
-    const on = team ? s.tags.includes(board) : (await getWipeboards(s.name)).includes(board);
+    const on = team ? s.tags.includes(team) : (await getWipeboards(s.name)).includes(board);
     if (on) out.push({ name: s.name, control: await getControl(s.name) });
   }
   return out;

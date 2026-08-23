@@ -567,3 +567,50 @@ export function teamJoinNotice(team: string, _file: string, members: string[]): 
 export function teamLeaveNotice(team: string, _file: string): string {
   return `You've left the "${team}" team — its wipeboard will no longer reach you.`;
 }
+
+/* ------------------------------------------------------- the roster owns the wipeboard */
+
+/**
+ * A TEAM ROSTER HAS A WIPEBOARD ID, AND THAT ID IS THE IDENTITY (owner, 2026-08-23).
+ *
+ * "Every team roster should have a whiteboard ID, and that whiteboard ID should match
+ * with a single whiteboard. I don't care what the names are." So a wipeboard is a team's
+ * because a roster POINTS at it, not because the two happen to share a name. A roster
+ * whose id matches nothing on disk gets one made: "if there is no whiteboard that matches
+ * this ID, we create a new one", and it opens even when empty — a new team's wipeboard
+ * with nothing on it is a normal state, not a missing one.
+ *
+ * What this replaces: `isTeamBoard()` asked "does a live tag bear this NAME?", so a
+ * roster pointing its wipeboard somewhere else produced a wipeboard with no members at
+ * all — the team was sent to a wipeboard it was not on. Matching the id cannot do that,
+ * and it makes the roster's own field mean something.
+ *
+ * A tag-only team — sessions carrying a tag with no roster behind it — keeps working on
+ * a wipeboard of its own name. It has no roster to carry an id, and stranding it would
+ * be a second change nobody asked for.
+ */
+
+/** The team whose roster points at this wipeboard, or null when no roster does. */
+export async function teamOfBoard(board: string): Promise<string | null> {
+  const { listTeamRosters } = await import('./team-rosters.js');
+  const rosters = await listTeamRosters().catch(() => []);
+  return rosters.find((r) => r.wipeboard === board)?.name ?? null;
+}
+
+/** The wipeboard id a team talks on: its roster's, or its own name when it has no roster. */
+export async function boardOfTeam(team: string): Promise<string> {
+  const { readTeamRoster } = await import('./team-rosters.js');
+  const roster = await readTeamRoster(team).catch(() => null);
+  return roster?.wipeboard || team;
+}
+
+/**
+ * Every roster's wipeboard exists. Called wherever a roster is about to be shown or
+ * talked on — the wipeboard is not something the owner creates, it is something the
+ * roster implies.
+ */
+export async function ensureRosterBoard(team: string): Promise<string> {
+  const id = await boardOfTeam(team);
+  if (isValidBoardName(id)) await ensureBoard(id, teamStub(team));
+  return id;
+}

@@ -139,17 +139,28 @@ deletes another agent's post.
 
 ## Two kinds, and membership
 
-**Team wipeboards** are the default. Every team has one, automatically:
+**Team wipeboards** are the default, and **a team roster's `wipeboard:` id is what
+identifies one** (owner, 2026-08-23): *"Every team roster should have a whiteboard ID, and
+that whiteboard ID should match with a single whiteboard. I don't care what the names
+are."*
 
+- **The roster implies the wipeboard.** A roster's id always resolves to exactly one
+  wipeboard; if nothing on disk matches, one is made. It opens even when empty — a new
+  team's wipeboard with nothing on it is a normal state, not a missing one.
+- **Names do not decide anything.** A roster may point its wipeboard anywhere, and the
+  wipeboard is that team's because the roster says so. (This used to be matched on the
+  name, which sent a roster pointing elsewhere to a wipeboard it had no members on.)
 - **Membership is the team's, derived at every read.** Tag a session into the team and it
-  is on the wipeboard; untag it and it is off. The two cannot drift because they are one
-  fact.
-- **No create step.** The wipeboard exists because the team does; the directory appears on
-  first post or first Brief.
+  is on that team's wipeboard; untag it and it is off. The two cannot drift because they
+  are one fact.
+- **No create step for the owner.** The wipeboard is not something anyone makes; it is
+  something the roster implies.
 - A session on several teams is on several wipeboards.
-- A team is composition and carries its type on its **team roster** — the durable record
-  above the wipeboard, linked by token. Its members may mix any `session_role`s, which is
-  why the readouts print each member's own role beside its name, leads (人) first.
+- **A team with no roster** — sessions carrying a tag and nothing behind it — talks on a
+  wipeboard of its own name. It has no roster to carry an id.
+- A team is composition and carries its type on its **team roster**, the durable record
+  above the wipeboard. Its members may mix any `session_role`s, which is why the readouts
+  print each member's own role beside its name, leads (人) first.
 
 **Custom wipeboards** are the secondary path: owner-created by name, membership enrolled
 per session in the `@ronin-wipeboards` tmux option. The option lives on the *session*, so
@@ -170,9 +181,8 @@ leaves no empty room in the listing. All six must hold:
 
 1. no posts remain;
 2. no live session carries its name as a team;
-3. no team roster points at it — matched on the roster's `wipeboard:` **token**, never on
-   the name, because a roster may point elsewhere and matching the name would remove a
-   wipeboard a living team is using;
+3. no team roster points at it — matched on the roster's `wipeboard:` **id**. A roster's
+   wipeboard is never removed: the roster implies it and it must open even when empty;
 4. no live session enrols it as a custom wipeboard;
 5. **its Brief is still the untouched stub** — if the owner ever wrote a Brief, the
    wipeboard stays, permanently;

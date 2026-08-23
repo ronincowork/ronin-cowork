@@ -388,3 +388,64 @@ test('legacy single-file wipeboards are ignored, never read, never listed', asyn
   // and the owner's file is still on disk — removing it is their own rm
   assert.ok((await fs.stat(path.join(root, 'legacy.md'))).isFile());
 });
+
+/* --------------------------------------------- the roster's wipeboard id is the identity */
+
+/**
+ * "Every team roster should have a whiteboard ID, and that whiteboard ID should match
+ * with a single whiteboard. I don't care what the names are." (owner, 2026-08-23)
+ *
+ * These need a team_rosters store, so they set one up beside the wipeboards store.
+ */
+const rosterStore = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-rosters-test-'));
+process.env.RONIN_TEAM_ROSTERS_DIR = rosterStore;
+
+const writeRoster = (team: string, wipeboard: string) =>
+  fs.writeFile(
+    path.join(rosterStore, `${team}.md`),
+    `# ${team}\n\n- **team_role:** development\n- **objective:** x\n- **wipeboard:** ${wipeboard}\n- **state:** active\n`,
+  );
+
+test('a roster names its wipeboard by id, and the id need not be the team name', async () => {
+  await writeRoster('alpha', 'shared-notes');
+  assert.equal(await W.boardOfTeam('alpha'), 'shared-notes');
+  assert.equal(await W.teamOfBoard('shared-notes'), 'alpha');
+});
+
+test('a team with no roster still talks on a wipeboard of its own name', async () => {
+  assert.equal(await W.boardOfTeam('tagonly'), 'tagonly', 'no roster, no id — its own name');
+  assert.equal(await W.teamOfBoard('tagonly'), null, 'and nothing claims it');
+});
+
+test('a roster implies its wipeboard — it is made if it does not exist, and opens empty', async () => {
+  await writeRoster('beta', 'beta-talk');
+  assert.equal(await W.boardExists('beta-talk'), false);
+  const id = await W.ensureRosterBoard('beta');
+  assert.equal(id, 'beta-talk');
+  assert.equal(await W.boardExists('beta-talk'), true, 'a new team gets one spawned to match');
+  const board = await W.readBoard('beta-talk');
+  assert.equal(board.posts.length, 0, 'empty is a normal state, not a missing one');
+  assert.match(board.brief, /beta team's wipeboard/, 'and it says whose it is');
+});
+
+test('ensureRosterBoard is idempotent and never replaces what is there', async () => {
+  await writeRoster('gamma', 'gamma-talk');
+  await W.ensureRosterBoard('gamma');
+  await W.appendPost('gamma-talk', '@a', 'said something');
+  await W.setBrief('gamma-talk', 'the owner wrote this');
+  await W.ensureRosterBoard('gamma');
+  const board = await W.readBoard('gamma-talk');
+  assert.equal(board.posts.length, 1, 'the thread survived');
+  assert.equal(board.brief, 'the owner wrote this', 'and so did the Brief');
+});
+
+test("a roster's wipeboard is never removed, however quiet the team goes", async () => {
+  await writeRoster('delta', 'delta-talk');
+  await W.ensureRosterBoard('delta');
+  // No members, no posts, stub Brief — every other condition for removal holds.
+  assert.equal(
+    await W.reapBoard('delta-talk', { teamMembers: [], enrolled: [], rosterPointsAtIt: true }),
+    false,
+  );
+  assert.equal(await W.boardExists('delta-talk'), true);
+});
