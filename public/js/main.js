@@ -12,6 +12,7 @@ import { setLayout } from './viewport.js';
 import { installTips } from './tips.js';
 import { buildCoworkSetup } from './cowork-setup.js';
 import { installServicesStatus } from './services-activation.js';
+import { createWorkspace } from './workspace.js';
 
 export async function init() {
   // Ask the operator which optional surfaces are plugged in BEFORE the grid is built,
@@ -72,6 +73,16 @@ export async function init() {
     }
   }
 
+
+  const viewhost = document.getElementById('viewhost');
+  if (!viewhost) throw new Error('workspace ViewHost is missing');
+  const workspace = createWorkspace(viewhost);
+  S.workspace = workspace;
+  workspace.register('sessions', {
+    el: document.getElementById('grid'),
+    title: () => 'tmux ronin',
+  });
+  workspace.start();
 
   guard('build the grid', build);
   guard('services activation status', installServicesStatus);

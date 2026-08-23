@@ -1403,6 +1403,21 @@ body {
 }
 
 /* ---- grid ---- */
+#viewhost {
+  flex: 1 1 auto;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+#viewhost > [data-workspace-view] {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+#viewhost > [data-workspace-view][hidden] {
+  display: none;
+}
 #grid {
   flex: 1 1 auto;
   display: grid;
