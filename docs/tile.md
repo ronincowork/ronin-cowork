@@ -44,7 +44,7 @@ same `needs` string, and both dim the control the same way.
 | ⛩ commons | — | always (individual tabs gate: `koe` · `counting` · `koshi`) |
 | ⚡ macros | — | always |
 | メ the drop | — | always — it is a container, and it holds 🔒, which needs no session |
-| 🔒/🔓 lock | rireki's stream handler | inert and opaque; every tile born 🔒 and stays 🔒 |
+| Output | rireki's stream handler | contains Locked only |
 | 🏷 groups | — | always |
 | 📄 docs | `michi` | inert and opaque, saying so; the doc list is TEGAMI data |
 | 📝 note | — | always |
@@ -60,7 +60,7 @@ install; the chip beside it does not.
 
 ---
 
-## The two views
+## The six Outputs
 
 The tile composes one or the other. Neither knows the other exists.
 
@@ -77,10 +77,38 @@ hardware-accelerated momentum scrolling for free.
 
 The socket sits beside both and is owned by neither (`public/js/tilewire.js`).
 
-**Lock is a property of a tile.** `S.locked` is only the default a *new* tile is born with.
-It used to be one global, so flipping it reconnected all four at once. Touch is fixed
-unlocked (`locked = !IS_TOUCH`) and the button is hidden there entirely — locked is
-unusable on a phone, where every scroll gesture round-trips through tmux copy-mode.
+**Output is a property of a tile.** Locked attaches the live terminal. Terminal Mirror, Detailed,
+Condensed, Conversation and Agent Summary are record-fed views registered by Ronin Services.
+Bare cowork offers Locked only. `S.locked` remains a compatibility alias for transport choice.
+The old lock button and its global flip are retired. The Output selector changes only its
+tile and is compact on touch; Locked remains available there, with tmux copy-mode's normal
+round-trip scrolling tradeoff.
+
+The six choices are contracts, not degrees on an unnamed “detail” slider:
+
+| Output | What the tile shows | Produced by |
+|---|---|---|
+| **Locked** | The attached live tmux terminal, including its active screen and interaction | tmux/xterm |
+| **Terminal Mirror** | Every settled RIREKI record, including recognized terminal chrome | mechanical projection |
+| **Detailed** | Terminal Mirror without positively identified spinner and input-box chrome | mechanical projection |
+| **Condensed** | Dialogue and ordinary text, with adjacent thinking/tool/result/code records represented as compact activity groups | mechanical projection |
+| **Conversation** | Positively identified owner and agent dialogue; non-dialogue work is represented as activity rather than silently presented as speech | mechanical projection using the session's decoder |
+| **Agent Summary** | Persistent, authored accounts of closed transcript ranges | one-shot `koshi_kaki` calls |
+
+Unknown content is retained by Detailed and Condensed. Conversation is deliberately stricter:
+only content mechanically identified as dialogue is rendered as dialogue, while recognized work
+becomes an activity row. This keeps provider-specific recognition inside RIREKI's decoder rather
+than scattering Claude/Codex guesses through the browser.
+
+Agent Summary has two session policies. **On demand** writes when the owner asks for a summary.
+**Keep current** watches for a quiet, settled boundary and then makes another one-shot Kaki call;
+it runs whether or not anybody is viewing the tile. The stored chunks therefore remain ready for
+a later reader. This cut does not include KOE or voice playback.
+
+The five record-fed Outputs are also service reads, not browser-only presentations. RIREKI exposes
+the four mechanical projections through `GET /api/sessions/:name/render?view=...`; Koshi exposes
+the fifth through `GET` and `POST /api/sessions/:name/kaki`. A future tool-using reader such as KOE
+can call those authenticated routes without recreating the browser's filtering rules.
 
 ---
 

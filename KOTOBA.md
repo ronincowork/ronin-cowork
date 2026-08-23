@@ -582,8 +582,9 @@ that install ever sent. This binds the collector, not just the client.
 | **decoder** | system_scope | one per agent (Claude's and Codex's are built): a signature table naming each line's kind. The only vendor-aware part — decoders **decorate, never delete** | `src/services/rireki/decode.ts` |
 | **lens** | system_scope | the read-side projection (`shown` vs `derived`). ⚠R9 | `src/services/rireki/lens.ts` |
 | **faucet A / B** | system_scope | attach paints pictures (unlimited clients); `pipe-pane` emits bytes (**exactly one per pane**, the recorder's, forever). The r_tape records B | `docs/rireki.md` |
-| **r_render** | — | **does not exist, recorded so nobody coins it** (owner asked, 2026-08-22): the render is the tile's ephemeral paint — attach paints faucet A live, the tape view paints the r_scroll — and nothing durable is written. RIREKI's artifacts are exactly two: r_tape and r_scroll | — |
-| **tape-fed tile** | system_scope | 🔓 unlocked, rendered from the record rather than from an attachment | `docs/rireki.md` |
+| **r_kaki** | session_scope | persistent, append-only summaries written by `koshi_kaki`, each tied to an exact r_scroll build and line range. Model-produced and potentially paid, so never rebuilt merely because Ronin restarts | `src/services/koshi/kaki.ts` |
+| **r_render** | — | **does not exist**: Locked is live paint and the five unlocked Outputs are ephemeral projections over r_scroll/r_kaki | — |
+| **record-fed tile** | system_scope | any unlocked Output, rendered from RIREKI rather than a tmux attachment | `docs/rireki.md` |
 
 **tape ≠ scroll.** Both were being called "the tape". Tape is raw and authoritative; scroll
 is interpreted and throwaway. If you keep one distinction from this section, keep that one.
@@ -611,12 +612,12 @@ hid that.
 | **pace** | system_scope | how keen a self-paced incarnation is — `relaxed` · `steady` · `keen` scale the whole cadence table, never one row | `src/services/koshi/koshi-model.ts` |
 | **目 Koshi** | system_scope | the commons tab where the owner sets which model each koshi job asks. The one place a koshi is configured, and it is configuration, not definition | `docs/commons.md` |
 
-**The jobs today:** `koshi_monitor` · `koshi_reaper`. The list grows; the naming rule does
+**The jobs today:** `koshi_monitor` · `koshi_kaki`; `koshi_reaper` is named but unbuilt. The naming rule does
 not — a new one is `koshi_<job>` or it is not a koshi.
 
-**The line that keeps the set clean (R31):** a koshi is **one stateless model call over a
-closed question, and it never authors.** Work that authors is MIKA's — § MIKA. Two jobs left
-by that rule and are deleted rather than annotated, per this file's housekeeping.
+**The line that keeps the set clean (R31):** a koshi job is bounded house work, not an
+interactive tile session. `koshi_kaki` is one stateless call over a mechanically bounded RIREKI
+range and authors only the derived r_kaki chunk; it never changes the source session.
 
 **KOSHI is `system_scope`, and R10 is closed by it.** The two old uses — an in-process
 form-fill helper, and "a tile running `orchestrating`" — are gone. The second was never a
@@ -981,8 +982,8 @@ and `deleted` is dropped as merely their parent.
 projection" describes the settler better.
 
 **R10 · CLOSED — a koshi is an agent doing an internal job for Ronin.** Owner, 2026-08-13.
-The umbrella over `koshi_monitor`, `koshi_reaper` and whatever follows.
-Narrowed by R31 — a koshi is one model call over a closed question, and never authors. The two old uses are retired: the form-fill helper is not
+The umbrella over `koshi_monitor`, `koshi_kaki`, `koshi_reaper` and whatever follows.
+Narrowed by R31 — a koshi job is bounded house work, not an interactive tile session. The two old uses are retired: the form-fill helper is not
 a koshi, and "a tile running `orchestrating`" was a session with a task all along —
 `QuarterBack`. `system_scope`, not `dev_scope`; it ships. See § KOSHI.
 
@@ -1301,11 +1302,11 @@ their pre-ruling filenames (an installed unit names the first). Line 61's preamb
 right that *gate* had escaped; this closes it.
 
 **R31 · CLOSED — MIKA is a second family, and KOSHI is clean.** Owner, 2026-08-14. **A
-koshi is one stateless model call over a closed question, and it never authors.** Two jobs
+koshi job is bounded house work, not an interactive tile session.** Two jobs
 that had been filed under the umbrella broke that rule — filling a launch form and answering
 a question about the house are both authoring — so either the laws bent or the word stopped
-meaning anything. They are gone, deleted rather than annotated. KOSHI is `koshi_monitor` and
-`koshi_reaper`.
+meaning anything. They are gone, deleted rather than annotated. KOSHI includes `koshi_monitor`,
+`koshi_kaki`, and the named-but-unbuilt `koshi_reaper`.
 
 MIKA takes that work as a **seated agent**: `MikaAssist`, four `mika_macro`s, spawn-or-inject,
 and the law *propose, never write*. She is cowork — her macros operate on cowork's own

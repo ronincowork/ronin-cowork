@@ -61,6 +61,7 @@ export const S = {
   padPanel: null, // Work Louder pad panel { open, close, isOpen, hit } — all devices (owner override)
   padAsk: null, // ask-on-press prompt for pad macros { open(bind), isOpen }
   locked: !IS_TOUCH, // DEFAULT for a NEW tile only — the switch itself is per-tile now
+  output: IS_TOUCH ? 'terminal_mirror' : 'locked',
   // THE SWITCH, service half: true when the operator reports no 🔓 stream handler
   // (cowork alone — no record service). Every tile is then born 🔒, stays 🔒, and the
   // lock button is inert and opaque: the surface says "not plugged in", not "broken".
@@ -73,6 +74,7 @@ export const S = {
   lastSelection: '', // last non-empty terminal selection (see below)
   tagPanel: null, // session-groups editor { open(session), close } — all devices
   sessPicker: null, // pad-key session switcher { open, close, isOpen, move, commit }
+  workspace: null, // AppShell runtime; the one writer for destination/workspace state
 };
 
 // Which service owns which optional commons pane. A pane not listed is core and always
@@ -135,8 +137,10 @@ export const tiles = [];
  *   2. No single tile or step can take the whole page down.
  */
 export function saveState() {
-  const sessions = JSON.stringify(tiles.map((t) => t.session || ''));
-  const layout = String(grid.dataset.layout || TILE_COUNT);
+  const map = tiles.map((t) => t.session || '');
+  const layoutNumber = Number(grid.dataset.layout || TILE_COUNT);
+  const sessions = JSON.stringify(map);
+  const layout = String(layoutNumber);
   // sessionStorage is this TAB's own truth — per tab, survives refresh. localStorage is
   // only the seed a brand-new tab starts from (the most recent save, anywhere). One
   // shared copy used to be the whole state, so tabs clobbered each other and a refresh
@@ -149,6 +153,10 @@ export function saveState() {
   }
   localStorage.setItem(LS_SESSIONS, sessions);
   localStorage.setItem(LS_LAYOUT, layout);
+  S.workspace?.patchState({
+    focusedSession: S.active?.session || '',
+    sessions: { map, layout: layoutNumber },
+  });
   syncTitle();
 }
 
@@ -213,7 +221,13 @@ export function loadState() {
     params.delete('layout');
     const rest = params.toString();
     history.replaceState(null, '', location.pathname + (rest ? '?' + rest : '') + location.hash);
-    return { map, layout };
+    const directed = { map, layout };
+    S.workspace?.patchState({ sessions: directed });
+    return directed;
+  }
+  const workspaceSessions = S.workspace?.state?.sessions;
+  if (Array.isArray(workspaceSessions?.map) && workspaceSessions.map.length) {
+    return { map: workspaceSessions.map, layout: Number(workspaceSessions.layout) || TILE_COUNT };
   }
   const read = (store) => {
     const raw = store.getItem(LS_SESSIONS);
@@ -234,7 +248,9 @@ export function loadState() {
     /* storage denied — fall through to the seed */
   }
   if (!state) state = read(localStorage);
-  return state || { map: [], layout: TILE_COUNT };
+  const loaded = state || { map: [], layout: TILE_COUNT };
+  S.workspace?.patchState({ sessions: loaded });
+  return loaded;
 }
 
 /* ---------- server calls ---------- */

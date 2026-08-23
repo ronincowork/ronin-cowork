@@ -29,13 +29,14 @@ import { buildHome } from './commons.js';
 import { installDesk } from './tiledesk.js';
 import { guard } from './errors.js';
 import { buildLadder } from './shingo.js';
-import { buildTileHead, lockedTitle, syncTileHead } from './tilehead.js';
+import { buildTileHead, syncTileHead } from './tilehead.js';
 import { openJobMenu } from './widgets.js';
 import { dvrStep } from './dvr.js';
 import { TapeView } from './tapeview.js';
 import { TermView } from './termview.js';
 import { TileWire } from './tilewire.js';
 import { buildComposer } from './composer.js';
+import { refreshKaki, setKakiPolicy } from './output.js';
 
 export class Tile {
   constructor(index) {
@@ -45,8 +46,10 @@ export class Tile {
     this.strip = null; // the thin bar showing this.pending over the tile
     this.composer = null; // the unlocked tile's text entry (built on first use)
     this.tapeAt = null; // last tape offset seen — the resume point on reconnect
+    this.kakiTimer = null;
     // THIS TILE's transport. `S.locked` is only the default a new tile is born with.
-    this.locked = S.locked;
+    this.output = S.streamOff ? 'locked' : (S.output || (S.locked ? 'locked' : 'terminal_mirror'));
+    this.locked = this.output === 'locked';
 
     // The header — the picker, the dials, the chip, the buttons. Construction only;
     // every callback in it lands back here.
@@ -57,7 +60,11 @@ export class Tile {
 
     // 🔓 THE UNLOCKED VIEW — mounted first, so the tape sits under the panel and the
     // terminal in the stack, exactly as before.
-    this.tape = new TapeView(this.body, { onMore: () => this.wire.send({ t: 'more' }) });
+    this.tape = new TapeView(this.body, {
+      onMore: () => this.wire.send({ t: 'more' }),
+      onSummaryNow: () => void this.refreshKaki(true, true),
+      onSummaryPolicy: (policy) => void this.setKakiPolicy(policy),
+    });
 
     // Home panel (the default state of a sessionless tile — and where a tile lands
     // when its session dies). Overlays the terminal; hidden while connected.
@@ -140,15 +147,7 @@ export class Tile {
     });
     this.select.addEventListener('pointerdown', () => this.activate());
     this.select.addEventListener('change', () => this.onSelect());
-    // The lock sits on the TILE, because a tile is what it acts on.
-    if (S.streamOff) {
-      // No record service on this install: the 🔓 view is off and the switch is
-      // inert — visible but opaque, on every device, so it reads as "not plugged
-      // in" rather than missing. Touch keeps the button (there is nothing to hide
-      // it FOR: fixed-unlocked needs the tape, and there is no tape).
-      this.lockEl.classList.add('off');
-    } else if (IS_TOUCH) this.lockEl.style.display = 'none'; // phone is fixed-unlocked
-    this.syncLock();
+    this.syncOutput();
 
     this.ro = new ResizeObserver(() => this.doFit());
     this.ro.observe(this.body);
@@ -395,16 +394,6 @@ export class Tile {
     });
   }
 
-  /** 🔒 — wrapped, because a throw from a click lands on the window handler, which can
-   *  REPORT it but not repair anything; a bug in the flip would cost the pane it flips. */
-  flipLock() {
-    guard('lock flip', () => {
-      if (S.streamOff) return; // no record service: the switch is decoration
-      this.activate();
-      this.setLocked(!this.locked);
-    });
-  }
-
   openNote() {
     if (S.notePanel) S.notePanel.open(this.session);
   }
@@ -519,8 +508,10 @@ export class Tile {
       this.tapeAt = m.mode === 'tape' && m.seg != null ? { seg: m.seg, off: m.off } : null;
       this.tape.setAltNote(m.mode === 'tape' && m.provenance === 'derived', m.partial);
     } else if (m.t === 'lines') {
+      if (this.output === 'agent_summary') return;
       this.tape.appendRecs(m.recs || [], !!m.reset);
     } else if (m.t === 'frame') {
+      if (this.output === 'agent_summary') return;
       this.tape.setFrame(m.text || '');
     } else if (m.t === 'older') {
       this.tape.prepend(m.recs || [], m.atTop);
@@ -531,50 +522,37 @@ export class Tile {
     }
   }
 
-  /**
-   * Flip THIS tile's transport and reconnect only this tile.
-   *
-   * Locked reconnects the attach mirror; unlocked reconnects the tape-fed transcript.
-   * Parked text is discarded on a flip — it is visible in the strip, so nothing vanishes
-   * silently. `S.locked` follows as the default the NEXT tile is born with, so the switch
-   * still feels like it remembers what you prefer without acting on panes you did not
-   * touch.
-   */
-  setLocked(on) {
-    // With no record service there is nothing behind 🔓 — the tile stays locked no
-    // matter who asks (the inert button, a saved default, a future caller).
-    this.locked = S.streamOff ? true : !!on;
+  /** Change this tile's Output and reopen its viewer against the named server projection. */
+  setOutput(value) {
+    const previous = this.output;
+    const allowed = new Set(['locked', 'terminal_mirror', 'detailed', 'condensed', 'conversation', 'agent_summary']);
+    this.output = S.streamOff || !allowed.has(value) ? 'locked' : value;
+    this.locked = this.output === 'locked';
+    S.output = this.output;
     S.locked = this.locked;
     this.pending = '';
     this.renderPending();
-    this.syncLock();
-    if (this.session && this.wire.wantOpen) this.connect(this.session);
+    this.syncOutput();
+    if (this.tape) this.tape.setMode(this.output);
+    if (this.kakiTimer) clearInterval(this.kakiTimer);
+    this.kakiTimer = this.output === 'agent_summary'
+      ? setInterval(() => void this.refreshKaki(false), 5000)
+      : null;
+    if (this.session && this.wire.wantOpen && previous !== this.output) this.connect(this.session);
     saveState();
   }
 
-  /** The switch shows this tile's own state, in this tile's own head. */
-  syncLock() {
-    if (!this.lockEl) return;
-    this.lockEl.textContent = this.locked ? '🔒' : '🔓';
-    this.lockEl.classList.toggle('armed', !this.locked);
-    /**
-     * Say what the two modes ARE, not what they are called.
-     *
-     * "Locked/Unlocked" tells you nothing on its own, and the two obvious glosses are
-     * both wrong. "Unlocked streams the terminal" is wrong because nothing streams from
-     * tmux — the bytes come off a recording. "Unlocked has no tmux connection" is worse:
-     * it reads as though the terminal is not running, when the session is live either
-     * way. What actually differs is whether THIS VIEW is attached, and the consequence
-     * a reader needs is the LAG that follows from not being.
-     *
-     * The other thing people assume about a recording and should not is that it is
-     * read-only, so it says plainly that typing still reaches the terminal. No "click
-     * to lock" — the button is a button, and they can try it.
-     */
-    this.lockEl.title = this.locked
-      ? lockedTitle()
-      : '🔓 UNLOCKED — the session is still running in tmux; this view is not attached to it. You are reading what that terminal painted, captured byte by byte as it went, so the text can lag the live pane. Scrolling is instant and stays in your browser, typing still goes to the real terminal, and the text SELECTS AND COPIES like any web page.';
-    if (S.streamOff) this.lockEl.title = 'The unlocked view is off — no record service is installed.';
+  syncOutput() {
+    // The widget comes back as {el} like every built control — resolve it the same way
+    // syncTileHead does, so this works whichever shape landed on the key.
+    const sel = this.outputEl?.el ?? this.outputEl;
+    if (!sel || !sel.options) return;
+    sel.value = this.output;
+    for (const option of [...sel.options])
+      if ((S.streamOff && option.value !== 'locked') || (option.value === 'agent_summary' && serviceMissing('koshi'))) option.remove();
+    sel.title = S.streamOff
+      ? 'Output — Locked only. Ronin Services is not installed.'
+      : 'Output — choose the live terminal or a RIREKI view';
   }
 
   /**
@@ -676,6 +654,7 @@ export class Tile {
 
     this.term.reset();
     this.tapeMode = !this.locked;
+    this.tape.setMode(this.output);
     this.tape.reset(this.tapeMode);
     this.setComposer(this.tapeMode);
     this.el.classList.toggle('tape-on', this.tapeMode);
@@ -685,12 +664,24 @@ export class Tile {
     this.wire.open({
       session,
       locked: this.locked,
+      output: this.output,
       cols: this.term.cols,
       rows: this.term.rows,
       tapeAt: this.tapeAt,
     });
 
+    if (this.output === 'agent_summary') void this.refreshKaki(true);
+
     saveState();
+  }
+
+  async refreshKaki(create, force = false) {
+    return refreshKaki(this, request, create, force);
+  }
+
+  async setKakiPolicy(policy) {
+    const r = await setKakiPolicy(this, request, policy);
+    if (r && !r.ok) toast('could not change summary production — ' + r.message, false);
   }
 
   doFit() {

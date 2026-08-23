@@ -55,6 +55,7 @@ written contract those modules enforce.
 | `shingo.js` | 289 | SHINGO 信号 — the session ladder: header chip, unrolled ladder, the letter |
 | `tile.js` | 695 | `class Tile` — one cell of the coworkspace: a header, a mount point, and the view it composes |
 | `tilehead.js` | 343 | `buildTileHead` — the cell's chrome, one table and a loop: dot, picker, chip, mark, ⛩ ⚡ メ, and the seven メ drops |
+| `output.js` | — | the six Output names and the per-tile selector |
 | `tapeview.js` | 305 | **RIREKI's client render** — the 🔓 view: transcript, folds, live frame, scroll anchoring, paging |
 | `tapefold.js` | 98 | `groupRecs` — the fold rule, pure (tested: `tests/tape-fold.test.js`) |
 | `termview.js` | 250 | the 🔒 view — the untouched `tmux attach` xterm mirror, and touch drag-scroll |
@@ -83,7 +84,7 @@ The rule is nothing over 700 lines — and it is MECHANICAL now (`check-modules`
 build), because the written-only version was crossed within a week of being written.
 `tile.js` was, at 1,270, and was split on 2026-08-13 to
 the shape the owner ruled: a tile is one CELL of the coworkspace — header, dials, a mount
-point — that composes one of two views, with the socket beside both.
+point — that composes Locked or one of five record-fed Outputs, with the socket beside them.
 
 That split was not about the line count. The tape half of `tile.js` was **RIREKI's
 client-side render squatting in the coworkspace**: KOTOBA has RIREKI covering "capture,
@@ -151,9 +152,9 @@ npm run stage           # copy this client to public-staging/, served at /stagin
 the same server and sessions so **Glen** can look at it on his Mac and iPhone while his
 working UI stays up. That human look is currently the only render check that exists.
 
-The phone surface is the one that matters most for a client change: touch is fixed-unlocked
-(`locked = !IS_TOUCH`), so it is the only one that renders through the tape view, and it is
-where 2026-08-08 went dark first. Nothing on this box exercises it.
+The phone surface is the one that matters most for a client change: its compact Output
+selector can choose the live terminal or any record-fed view supplied by Ronin Services.
+It is where 2026-08-08 went dark first. Nothing on this box exercises it.
 
 `npm run smoke` is the *other* test — it checks the pipe with no browser. It passed the
 entire time the screen was blank on 2026-08-08, so it is necessary and not sufficient.
