@@ -7,15 +7,15 @@ independently managed Ronin sessions—one per product destination:
 
 1. **League** — discover Teams, inspect optional rosters, manage membership, and begin a
    New Team.
-2. **Team** — work with one Team through the default three-pane workbench or Team-scoped
+2. **Team** — work with one Team through the default three-Surface workbench or Team-scoped
    Sessions mode.
 3. **Customize** — discover and author the recipes that change how Ronin works.
 4. **New Team** — define a Team, build its proposed session roster, and launch it.
-5. **Agent Configuration** — configure one proposed Team session in a compact,
-   terminal-forward surface.
+5. **Agent Configuration** — configure one proposed Team session through configuration
+   and resolved-profile preview Surfaces, with no terminal dependency.
 
 The five sessions share the contracts in `wip/buildouts/WORKSPACE_KIT.md`. They do not each
-invent a shell, cards, panes, terminal lifecycle, Team projection, or launch payload.
+invent a shell, cards, Surfaces, Tile lifecycle, Team projection, or launch payload.
 
 Each Eye also receives the reviewed interactive HTML artifact:
 
@@ -36,7 +36,7 @@ authorize five simultaneous rewrites before the Workspace Kit foundation is read
 
 The current application boots directly into a global one/two/four Tile grid. Tile owns too
 many concerns, global session events mutate that grid directly, and Commons/Configuration
-borrow terminal-shaped hosts. Five Eyes moves the grid beneath a view shell and makes
+borrow Tile-shaped hosts. Five Eyes moves the grid beneath a view shell and makes
 Sessions mode one Team-scoped option.
 
 The `session_teams` and role/session-role/lead refactor now establishes the domain vocabulary these
@@ -57,6 +57,8 @@ The stable constraints are:
   wipeboard link and lifecycle state. It may exist with zero live members.
 - A `team_roster` never stores members or a lead pointer. Membership and leadership remain
   derived from live sessions.
+- A Team may have no lead. Null, empty and unclassified states are valid and never trigger
+  a forced launch, assignment, classification or configuration workflow.
 
 ## Settled experience contract
 
@@ -64,10 +66,11 @@ The following decisions are frozen for rollout unless the owner explicitly reope
 
 ### Application and browser tabs
 
-- There is one application header, without repeated destination and pane headers.
-- Every new browser tab starts at League.
-- League/Home returns the current tab to League.
-- `＋` beside League/Home opens a new League tab.
+- There is one application header, without repeated destination and Surface headers.
+- Sessions remains the default for new browser tabs on `dev`. Every new browser tab starts
+  at League only after the explicit cutover gate.
+- League/Home returns the current tab to League once League is registered.
+- `＋` opens a new Sessions tab until cutover, then a new League tab.
 - Selecting a Team opens it in the current tab and makes the Team name the browser-tab
   title.
 - The right-side `Teams` control lists Team names and switches the current tab directly.
@@ -89,32 +92,33 @@ The following decisions are frozen for rollout unless the owner explicitly reope
 
 Team has two modes in the application header:
 
-1. **Team** — default workbench with focused terminal, central session Kanban and right
-   ChannelPane.
-2. **Sessions** — current-style one/two/four terminal grid constrained to the selected
-   Team, including a real Team Commons tile.
+1. **Team** — default workbench with a focused terminal Tile, central session Kanban and
+   right Channel Surface.
+2. **Sessions** — current-style one/two/four terminal Tile grid constrained to the selected
+   Team, including a Team Commons Surface that is not a Tile.
 
 The Team workbench contract is:
 
-- default `40 / 20 / 40` terminal/Kanban/channel ratio;
-- Kanban plus one working pane uses `40 / 60`;
-- terminal plus channel with Kanban collapsed uses `50 / 50`;
-- all three regions can collapse;
-- left and right panes have bounded resizing and restore their prior width;
+- default `40 / 20 / 40` terminal Tile/Kanban/Channel Surface ratio;
+- Kanban plus one working Surface uses `40 / 60`;
+- terminal Tile plus Channel Surface with Kanban collapsed uses `50 / 50`;
+- all three Surfaces can collapse;
+- terminal Tile and Channel Surfaces have bounded resizing and restore their prior width;
 - phone layouts use swipe/stack composition rather than small drag handles.
 
 The Kanban has no redundant roster header. Its SessionCards show `session_role` mark, SHINGO
 position and age, agent/model and working state, and a short recent status. Clicking a card
-focuses that session's terminal. The final card adds an existing Unassigned session or
+focuses that session's terminal Tile. The final card adds an existing Unassigned session or
 raises a new session.
 
-The focused terminal has no identity header. A compact actions rail preserves macros,
+The focused terminal Tile has no identity header. A compact actions rail preserves macros,
 terminal mode/lock, Team membership, Control, note and destructive/more actions. The old
 status light and context-gauge bowl are removed.
 
-The right ChannelPane contains `Chat`, `Wipeboard`, `Docs`, and `Team Config`. Wipeboard is
-only agent-to-agent chronological conversation. Team Config owns the brief, roots,
-repositories, branches and roster editing.
+The right Channel Surface contains the `Chat`, `Wipeboard`, `Docs`, and `Team Configuration`
+services. Chat is empty and inert: no transcript, composer or protocol is implied. Wipeboard
+is only agent-to-agent chronological conversation. Team Configuration owns the brief,
+roots, repositories, branches and roster editing.
 
 ### Commons and Configuration
 
@@ -129,7 +133,7 @@ New Team is explicitly two-stage:
 1. define the Team—Team name, `team_role`, objective/brief, roots, repositories and Team
    defaults;
 2. build the roster—one or many proposed sessions, each selected through `role_family` and
-   its applicable `session_role` configuration, including the lead.
+   its applicable `session_role` configuration, with an optional lead designation.
 
 The current fixture communicates only this boundary. The New Team Eye owns the detailed
 interaction, validation and launch design.
@@ -143,8 +147,8 @@ One foundation owner lands and browser-reviews:
 - AppShell, ViewHost, routes, history and document-title behavior;
 - versioned per-tab workspace state and legacy Tile-state migration;
 - view lifecycle and teardown rules;
-- Pane, Card, standard states and named layouts;
-- shared terminal-host contract;
+- Surface, Card, standard states and named layouts;
+- the seam consumed by the Team-owned terminal Tile host;
 - full-workspace Commons and Configuration extraction.
 
 No Eye implements a substitute foundation locally.
@@ -156,7 +160,7 @@ The landed Team/role work publishes:
 - durable `team_roster` identity and persistence semantics;
 - membership read/write API and many-to-many behavior;
 - `Unassigned` derivation;
-- `team_role` and lead semantics;
+- `team_role` and optional-lead semantics;
 - `team_role`, `role_family`, and mutable `session_role` vocabulary;
 - Team brief/root/repository ownership;
 - create/edit/rename/archive/dissolve behavior for a Team with zero live members.
@@ -178,22 +182,23 @@ sessionBelongsToTeam(session, team)
 Birth, death, join, leave and retag events update the store. Active views decide how to
 render the change; events do not directly attach or detach global tiles.
 
-### Gate D — Terminal host
+### Gate D — Terminal Tile host
 
-The Team Eye, working against Workspace Kit, publishes one host:
+The Team Eye, working against Workspace Kit, publishes one terminal Tile host:
 
 ```text
 mount(session) · switchSession(session) · park() · destroy() · fit() · send(text)
 ```
 
 It defines socket, xterm/tape/composer, focus, observer, keyboard and cleanup ownership.
-Team Sessions and Agent Configuration consume it.
+Team Sessions and the focused Team terminal Tile consume it. Agent Configuration has zero
+dependency on it.
 
 ### Gate E — Team draft and launch profile
 
 New Team owns one canonical draft/controller shared with Agent Configuration. It must
 represent Team-level defaults and one-or-many session seats without confusing `team_role`,
-lead, `role_family`, `session_role`, provider/model, project root, permissions,
+optional lead, `session_role`, provider/model, project root, permissions,
 MCP/loadout settings or opening direction.
 
 The gate also settles preflight, name collisions, session limits, launch order, partial
@@ -208,17 +213,14 @@ visible.
 
 ## Five session charters
 
-### Eye 1 — League and application shell
+### Eye 1 — League and application integration
 
-Owns:
+Consumes the separately owned Workspace Kit and owns:
 
-- route registry, AppShell/ViewHost integration and global navigation;
-- browser history, title policy and per-tab persistence;
-- legacy workspace migration;
+- League registration with AppShell/ViewHost and global-navigation content;
 - canonical session store and Team selectors;
 - LeagueBoard and Team/session membership interactions;
-- Commons and Configuration extraction;
-- compatibility route for the existing terminal grid during rollout.
+- compatibility route for the existing terminal Tile grid during rollout.
 
 Must deliver:
 
@@ -226,28 +228,25 @@ Must deliver:
 - Unassigned behavior and explicit many-to-many drag/drop semantics;
 - loading, empty, stale, failure and zero-Team states;
 - deterministic behavior when Teams or sessions appear/disappear;
-- a route adapter through which other Eyes register views.
 
 Must not own terminal internals, customization APIs or launch orchestration.
 
 ### Eye 2 — Team workspace
 
-Owns both Team modes and the terminal host as one workstream.
+Owns both Team modes and the terminal Tile host as one workstream.
 
 Must deliver:
 
 - `40/20/40` WorkbenchLayout with collapse, bounded resize and persistence;
-- focused terminal selection from Kanban SessionCards;
+- focused terminal Tile selection from Kanban SessionCards;
 - SessionCard readings and current-status hierarchy;
-- ChannelPane with Chat, Wipeboard, Docs and Team Config adapters;
-- Team-scoped one/two/four Sessions mode and Commons tile;
-- terminal-host lifecycle and compact focused-session actions rail;
+- Channel Surface with empty Chat plus Wipeboard, Docs and Team Configuration service adapters;
+- Team-scoped one/two/four Sessions mode and Commons Surface;
+- terminal Tile-host lifecycle and compact focused-session actions rail;
 - removal of the old status light, context gauge and gauge-only support code;
 - membership-change fallback behavior in both modes.
 
-Open product question owned here: define Chat as focused-terminal interaction, terminal
-transcript, Team fan-out, or persisted/native conversation. Geometry is settled; protocol
-is not.
+Chat is not an open implementation question in this rollout. It remains empty and inert.
 
 Must not create a second Team store or launch profile.
 
@@ -276,7 +275,7 @@ Must deliver:
 - detailed two-stage flow and transition between Team definition and roster building;
 - `team_role`, Team name, brief/objective, root/repository defaults and validation;
 - one-or-many session-seat editor driven by `role_family` and applicable `session_role`;
-- lead invariant and per-seat override behavior;
+- optional-lead selection and per-seat override behavior;
 - canonical Team draft and reusable non-DOM launch-profile controller;
 - batch preflight, ordered launch, receipts, partial-failure and retry behavior;
 - precise point at which the new Team becomes visible/selectable in League;
@@ -292,12 +291,12 @@ Owns the compact editor for one proposed Team session/seat.
 Must deliver:
 
 - precise v1 meaning of agent configuration;
-- field precedence from system through `role_family`, `session_role` and explicit
-  per-seat overrides;
-- CompactTerminalLayout with ordinary session-management chrome removed;
+- field precedence from system through `session_role` and explicit per-seat overrides;
+  `role_family` is presentation and contributes no precedence layer;
+- AgentConfigurationLayout with configuration and resolved-profile preview Surfaces;
 - resolved-profile summary, validation and preview/apply/revert behavior;
 - exact round-trip agreement with Eye 4's Team draft/controller;
-- terminal preview through Eye 2's host contract;
+- zero dependency on Eye 2's terminal Tile host;
 - explicit exclusions for vendor CLI configuration and new named-loadout persistence if
   those remain outside v1.
 
@@ -308,11 +307,11 @@ launch schema.
 
 | Shared seam | Exclusive owner |
 |---|---|
-| startup, routes, history, titles, workspace persistence | Eye 1 |
-| Commons/Configuration extraction | Eye 1 |
+| startup, routes, history, titles, workspace persistence | Workspace Kit owner |
+| Commons/Configuration extraction | Workspace Kit owner |
 | session store and Team selectors | Eye 1 |
-| broad shell/layout CSS and shared primitives | Workspace Kit / Eye 1 integration |
-| terminal host and terminal lifecycle | Eye 2 |
+| broad shell/layout CSS and shared primitives | Workspace Kit owner |
+| terminal Tile host and Tile lifecycle | Eye 2 |
 | Team workbench and Sessions-mode CSS | Eye 2 |
 | customization APIs/editors | Eye 3 |
 | Team draft/controller and batch launch API | Eye 4 |
@@ -340,8 +339,8 @@ verification journeys. No session starts an uncoordinated shared-file refactor.
 
 ### Phase 2 — Land shared gates
 
-- Eye 1 lands shell registration and Team projection.
-- Eye 2 lands terminal-host contract and a compatibility adapter.
+- Workspace Kit owner lands shell registration; Eye 1 lands Team projection and League integration.
+- Eye 2 lands the terminal Tile-host contract and a compatibility adapter.
 - Eyes 4 and 5 freeze the Team draft/profile schema, with Eye 4 owning implementation.
 - Eye 3 freezes the Customize v1 capability matrix.
 
@@ -369,7 +368,7 @@ Review the system as one application:
 - Team switching and document titles;
 - live membership changes across League, Team and Unassigned;
 - focused-session and Sessions-slot fallback;
-- repeated terminal navigation without resource duplication;
+- repeated terminal Tile navigation without resource duplication;
 - Commons/Configuration full-workspace behavior;
 - responsive and keyboard behavior;
 - launch receipts/failure recovery and configuration precedence;
@@ -391,12 +390,12 @@ design/acceptance review, not a replacement test harness.
 The integrated acceptance journeys cover:
 
 - direct entry, refresh, history and per-tab restore for all five destinations;
-- migration of existing one/two/four terminal state;
+- migration of existing one/two/four Tile state;
 - global League roster show/hide and full-card Team navigation;
 - many-to-many membership, removal and Unassigned behavior;
 - `40/20/40`, `40/60`, `50/50`, resize, collapse and mobile composition;
 - Teams larger than four and membership changes while both Team modes are open;
-- one terminal host with no duplicate sockets/listeners/observers/polls;
+- one terminal Tile host with no duplicate sockets/listeners/observers/polls;
 - no inherited Commons session header, status light or context gauge;
 - Team definition plus one/many roster seats;
 - preflight, successful launch, collision, capacity refusal, partial failure, retry and
@@ -413,7 +412,7 @@ The rollout may begin when:
 - Workspace Kit passes its ready-to-unleash gate;
 - the accepted Team-domain contract is linked and reflected here;
 - each Eye has one exclusive charter and shared-file boundary;
-- Team projection, terminal host and Team draft each have exactly one owner;
+- Team projection, terminal Tile host and Team draft each have exactly one owner;
 - remaining product questions are named and assigned rather than hidden in fixtures;
 - the existing coworkspace remains usable during incremental integration;
 - the owner approves these two rewritten build-outs.
