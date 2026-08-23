@@ -74,8 +74,13 @@ the owner's gbrain server and registering it with each CLI remains the gbrain `r
 The shared-access path has been proved: Claude and Codex sessions concurrently read and
 wrote one PGLite database through one HTTP server. The inverse claim has not. In particular,
 Codex merges `-c mcp_servers={}` with its user configuration rather than replacing the
-configured servers, so the current OpenAI `mcp_off` row leaves gbrain enabled. **Until an
-end-to-end launch exposes zero MCP tools, “gbrain off” is a known broken claim for Codex.**
+configured servers — **proven end-to-end 2026-08-23** when the owner's gbrain-off codex
+launch still tried to start the gbrain client. The row now uses
+`-c mcp_servers.gbrain.enabled=false`, verified via `codex mcp list` (gbrain reports
+`disabled`). The honest limit stays recorded: codex 0.148 has no global "no MCP at all"
+switch, so off disables the named gbrain server and any OTHER server a user has added to
+codex themselves rides through. An owner with more codex servers extends the flags in
+their own launch-table copy.
 The launch receipt records what Ronin requested, not what the CLI actually exposed.
 
 One more boundary is deliberate: this is per-session *access*, not per-session data. Every

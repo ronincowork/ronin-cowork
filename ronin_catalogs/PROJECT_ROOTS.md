@@ -65,7 +65,7 @@ family and IDs are recorded in the [official OpenAI model catalog](https://devel
 |---|---|---|---|
 | `openai` | `codex --model gpt-5.6-sol --dangerously-bypass-approvals-and-sandbox` | `codex --model gpt-5.6-terra --dangerously-bypass-approvals-and-sandbox` | `codex --model gpt-5.6-luna --dangerously-bypass-approvals-and-sandbox` |
 
-- **mcp_off:** `-c mcp_servers={}`
+- **mcp_off:** `-c mcp_servers.gbrain.enabled=false`
 
 The first column, `gpt-5.6-sol`, is Ronin's OpenAI default. Every cell names the complete
 command, so selecting another column launches that exact model rather than inheriting
