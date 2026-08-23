@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # RONIN BYOIN (病院) — the whole health check, in one command.
 #
-#   bin/ronin-byoin           every gate, then every readout, then one verdict
-#   bin/ronin-byoin --gates   the repo only (no readouts, no live machine)
+#   bin/ronin-byoin           every repo check, then every readout, then one verdict
+#   bin/ronin-byoin --gates   fast repo checks (no browser UI, no live machine)
+#   bin/ronin-byoin --ui      every repo check, including browser UI; no readouts
 #
 # BYOKI (病気) is the condition — what is running is not what is written. BYOIN is where
 # you go to have it looked for, and it looks for more than that one illness: the gates ask
@@ -26,8 +27,13 @@ set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
-GATES_ONLY=0
-[ "${1:-}" = "--gates" ] && GATES_ONLY=1
+MODE="full"
+case "${1:-}" in
+  "") ;;
+  --gates) MODE="gates" ;;
+  --ui) MODE="ui" ;;
+  *) echo "usage: bin/ronin-byoin [--gates|--ui]" >&2; exit 2 ;;
+esac
 
 PASS=0; FAIL=0; SKIP=0
 failed_names=""
@@ -73,6 +79,12 @@ for f in public/js/*.js; do node --check "$f" >/dev/null 2>&1 || parse_bad="$par
 # never a silent omission.
 for g in $(sed -n 's/.*"verify": "\(.*\)".*/\1/p' package.json | grep -o 'scripts/[a-zA-Z0-9._-]*' | sort -u); do
   name="$(basename "$g")"; name="${name%.*}"
+  # Fast repository verification deliberately omits browser UI, but says so in
+  # the verdict. Full BYOIN and --ui still run the same complete package roster.
+  if [ "$MODE" = "gates" ] && { [ "$name" = "smoke-ui" ] || [ "$name" = "visual-ui" ]; }; then
+    skip_ "$name — fast repo mode does not drive browser UI; run bin/ronin-byoin --ui"
+    continue
+  fi
   # The render gate is the one that needs a browser; it gets the honest-skip treatment.
   #
   # THE GATE DECIDES, BY ITS EXIT CODE — 2 means "I could not find a browser to run", any
@@ -104,7 +116,7 @@ done
 
 run_gate "tsc" npx tsc --noEmit
 
-if [ "$GATES_ONLY" = 1 ]; then
+if [ "$MODE" != "full" ]; then
   echo ""
   [ "$FAIL" -eq 0 ] && { echo "BYOIN: the repo is clean ($PASS ok, $SKIP skipped)."; exit 0; }
   echo "BYOIN: $FAIL gate(s) failed —$failed_names"

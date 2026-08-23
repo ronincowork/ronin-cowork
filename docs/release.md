@@ -9,8 +9,8 @@ it.** Two deliberate acts stand between an edit and the grid — the tag, and th
 ## Cutting a release (the producing half)
 
 1. Work lands on `dev`; a PR to `master` runs the byoin_checks in CI
-   (`.github/workflows/verify.yml`, `bin/ronin-byoin --gates` — the render check SKIPs
-   with its reason: a runner has no live server or browser).
+   (`.github/workflows/verify.yml`, `bin/ronin-byoin --gates` — browser UI is explicitly
+   outside this fast tier and each omitted check is named as a SKIP).
 2. A person merges. Master moving is a record of what is releasable, not a release.
 3. A person fetches and checks out `master`, confirms it is current, then pushes a tag
    `vX.Y.Z` on that commit. That is the release act. The release workflow
