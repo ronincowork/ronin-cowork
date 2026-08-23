@@ -26,37 +26,38 @@
  *                             it wholesale. Near-empty on purpose.
  *   <session_boot store>/     YOURS, outside every repo. Survives upgrade AND uninstall.
  *
- * FIVE LEVELS — one universal, three from the axes a session already knows about itself,
- * and one from the launch's own MCP choice (owner's ruling, 2026-08-17):
+ * FIVE LEVELS — one universal, two from the session's own launch, one from the team it
+ * is born onto, and one from the launch's own MCP choice (owner's ruling, 2026-08-17):
  *
- *   all/                  every session, always
- *   <service>_connected/  only sessions launched with MCP on — how a connected session
- *                         learns what it is connected to. Cowork ships NO such folder
- *                         and matches the pattern only: a connected service makes and
- *                         seeds its own (gbrain's setup makes gbrain_connected/), so
- *                         the level is signed by its service (owner's ruling,
- *                         2026-08-20) and the free build never names a vendor
- *   root/<project_root>/  only sessions working in that directory
- *   role/<family_role>/      only sessions wearing that hat — the STRONG role prompt, and
- *                         the reason a role is more than a shelf on a board
- *   task/<session_task>/  only sessions doing that kind of work
+ *   all/                    every session, always
+ *   <service>_connected/    only sessions launched with MCP on — how a connected session
+ *                           learns what it is connected to. Cowork ships NO such folder
+ *                           and matches the pattern only: a connected service makes and
+ *                           seeds its own (gbrain's setup makes gbrain_connected/), so
+ *                           the level is signed by its service (owner's ruling,
+ *                           2026-08-20) and the free build never names a vendor
+ *   root/<project_root>/    only sessions working in that directory
+ *   role/<session_role>/    only sessions doing that kind of work
+ *   team_role/<team_role>/  only sessions born onto a team whose roster names that
+ *                           team_role — the team_role's own build brief and reading list
+ *                           (R35, 2026-08-23)
  *
- * They are ADDITIVE, not a hierarchy — a `developer` session cutting `CutCode` in
- * ronin_cowork reads all of its levels, and nothing overrides anything. `where`, `who` and
- * `what now` are independent: the same bug-chasing habits apply in every repo, the same
- * repo notes apply to every task, and a role's standing instructions apply across every
- * task it wears.
+ * They are ADDITIVE, not a hierarchy — nothing overrides anything. `where`, `what now`
+ * and `whose team` are independent: the same bug-chasing habits apply in every repo, the
+ * same repo notes apply to every session_role, and a team_role's standing brief applies
+ * across every role its team raises.
  *
- * A BLANK AXIS OMITS ONLY ITS OWN LEVEL. A launch with no role reads no `role/` and every
- * other level exactly as before. Root never omits its level, because root is required.
+ * A BLANK AXIS OMITS ONLY ITS OWN LEVEL. A launch with no session_role reads no `role/`,
+ * a rōnin launch (no team) reads no `team_role/`, and every other level exactly as
+ * before. Root never omits its level, because root is required.
  *
- * ROLE READING IS BIRTH-ONLY, and task reading is not. The role cannot change while the
- * session lives, so there is never anything to re-deliver; the task can, and a committed
- * change injects the new `task/` list into the running session (`src/task-watch.ts`).
+ * TEAM_ROLE READING IS BIRTH-ONLY (owner's ruling, 2026-08-23: "if you join later, let's
+ * not go back and redo it"), and session_role reading is not: a committed `session_role`
+ * change injects the new `role/` list into the running session (`src/role-watch.ts`).
  *
- * ONE ASYMMETRY: stock may ship `role/` and `task/` folders but never `root/` ones. The
- * roles and tasks are shipped, so we know their names; a project_root is the owner's alone
- * and no install can know it in advance.
+ * ONE ASYMMETRY: stock may ship `role/` and `team_role/` folders but never `root/` ones.
+ * The session_roles are shipped, so we know their names; a project_root is the owner's
+ * alone and no install can know it in advance.
  *
  * SHADOWING is by filename within a level: your `all/SHELVES.md` replaces ours whole.
  * Across levels there is no shadowing, because they are answering different questions.
@@ -74,8 +75,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const STOCK = path.join(__dirname, '..', 'ronin_session_boot');
 const SESSION_MACROS_TEMPLATE = path.join(STOCK, 'SESSION_MACROS.md');
 
-/** The levels, in reading order. `root`, `role` and `task` take the session's own value. */
-export type Level = 'all' | 'root' | 'role' | 'task';
+/** The levels, in reading order. `root`, `role` and `team_role` take the launch's own value. */
+export type Level = 'all' | 'root' | 'role' | 'team_role';
 
 const userShelf = () => storeDir('session_boot');
 
@@ -134,7 +135,7 @@ export async function ensureShelf(roots: string[] = []): Promise<void> {
     path.join(base, 'all'),
     path.join(base, 'root'),
     path.join(base, 'role'),
-    path.join(base, 'task'),
+    path.join(base, 'team_role'),
     ...roots.map((r) => path.join(base, 'root', r)),
   ];
   await Promise.all(dirs.map((d) => mkdir(d, { recursive: true }).catch(() => {})));
@@ -146,7 +147,7 @@ export async function ensureShelf(roots: string[] = []): Promise<void> {
  * README.md is NOT excluded, and that took a bug to settle: a doc genuinely called
  * README.md is ordinary content — the first thing you would put on a root's shelf — and
  * skipping it silently dropped one. A shelf's own explainer instead lives at the SHELF
- * ROOT, one level above `all/`, `root/` and `job/`, where nothing ever scans.
+ * ROOT, one level above `all/`, `root/` and `role/`, where nothing ever scans.
  */
 async function filesIn(dir: string): Promise<string[]> {
   let names: string[];
@@ -199,10 +200,7 @@ async function connectedLevels(base: string): Promise<string[]> {
 
 /**
  * What this session should read, in reading order: `all`, then its root's, then its
- * role's, then its task's — stock before the owner's at each level.
- *
- * ROLE BEFORE TASK, matching the brief's own order and the cascade's: who you are is
- * stated before what you are doing this hour.
+ * session_role's, then its team_role's — stock before the owner's at each level.
  *
  * Deduplicated BY FILENAME, last writer winning, which is what makes the shadow work: your
  * `all/SHELVES.md` displaces ours because yours is read second. Across levels the same
@@ -211,8 +209,8 @@ async function connectedLevels(base: string): Promise<string[]> {
  */
 export async function bootFiles(
   projectRoot: string,
-  familyRole: string,
-  sessionTask: string,
+  sessionRole: string,
+  teamRole: string,
   mcpOn = true,
 ): Promise<string[]> {
   const user = userShelf();
@@ -223,8 +221,8 @@ export async function bootFiles(
   // Stock cannot have a root/ — it does not know the owner's directories.
   if (projectRoot) dirs.push(path.join(user, 'root', projectRoot));
   // A blank axis contributes NOTHING rather than contributing an empty level.
-  if (familyRole) dirs.push(path.join(STOCK, 'role', familyRole), path.join(user, 'role', familyRole));
-  if (sessionTask) dirs.push(path.join(STOCK, 'task', sessionTask), path.join(user, 'task', sessionTask));
+  if (sessionRole) dirs.push(path.join(STOCK, 'role', sessionRole), path.join(user, 'role', sessionRole));
+  if (teamRole) dirs.push(path.join(STOCK, 'team_role', teamRole), path.join(user, 'team_role', teamRole));
 
   const byName = new Map<string, string>();
   for (const dir of dirs) for (const f of await filesIn(dir)) byName.set(path.basename(f), f);
@@ -234,23 +232,24 @@ export async function bootFiles(
 }
 
 /**
- * JUST THE TASK LEVEL — what a session must read because its `session_task` just changed.
+ * JUST THE SESSION_ROLE LEVEL — what a session must read because its `session_role` just
+ * changed.
  *
- * Deliberately NOT `bootFiles`. A task change is not a rebirth: the `all/`, root and role
- * levels were read once at birth and have not changed, and re-sending them would teach a
- * running session nothing while burying the one thing that IS new. Role reading in
- * particular is birth-only by ruling, because a role cannot change.
+ * Deliberately NOT `bootFiles`. A role change is not a rebirth: the `all/`, root and
+ * team_role levels were read once at birth and have not changed, and re-sending them
+ * would teach a running session nothing while burying the one thing that IS new.
+ * Team_role reading in particular is birth-only by ruling.
  *
  * Resolved at the moment of the change rather than remembered from the launch, for the
  * same reason the shelf holds files rather than names of them: the owner may have put a
- * book on `task/CutCode/` since this session was born, and the session that switches to
+ * book on `role/CutCode/` since this session was born, and the session that switches to
  * CutCode tonight should get it.
  */
-export async function taskFiles(sessionTask: string): Promise<string[]> {
-  if (!sessionTask) return []; // a blank task has no reading, and that is not a failure
+export async function roleFiles(sessionRole: string): Promise<string[]> {
+  if (!sessionRole) return []; // a blank session_role has no reading, not a failure
   const user = userShelf();
   const byName = new Map<string, string>();
-  for (const dir of [path.join(STOCK, 'task', sessionTask), path.join(user, 'task', sessionTask)]) {
+  for (const dir of [path.join(STOCK, 'role', sessionRole), path.join(user, 'role', sessionRole)]) {
     for (const f of await filesIn(dir)) byName.set(path.basename(f), f);
   }
   return [...byName.values()];

@@ -1,7 +1,7 @@
 /**
  * WHEN A SESSION'S TASK CHANGES, IT GETS THAT TASK'S READING — once, and through one path.
  *
- * Changing `session_task` used to be a relabel: the icon on the roster changed and
+ * Changing `session_role` used to be a relabel: the icon on the roster changed and
  * nothing else did. That made the mark decoration. A task is a statement about what the
  * session is doing, and the house has a shelf of reading for each one — so a session that
  * moves from `RiffOnIt` to `CutCode` should be handed `task/CutCode/`, at the moment it
@@ -11,8 +11,8 @@
  * rather than a few lines in the POST route:
  *
  *   agent-authored   `write_tegami` commits a new value; the poll below sees it.
- *   owner-authored   `POST /api/sessions/:name/session_task` writes the letter and then
- *                    calls `observeTaskChange` — the same function the poll calls.
+ *   owner-authored   `POST /api/sessions/:name/session_role` writes the letter and then
+ *                    calls `observeRoleChange` — the same function the poll calls.
  *
  * A second injection implementation in the route is exactly how the owner's change and
  * the agent's change drift into behaving differently, and nobody would notice until one
@@ -22,7 +22,7 @@
  * reading were read at birth and have not changed. Role reading is birth-only by ruling —
  * a role cannot change while the session lives, so there is nothing to re-deliver.
  *
- * DELIVERED-ONCE IS A FILE, not a variable. `<session store>/task-delivered.json` records
+ * DELIVERED-ONCE IS A FILE, not a variable. `<session store>/role-delivered.json` records
  * which task was last delivered, so a re-scrape injects nothing, a restart of cowork does
  * not re-send what already landed, and the record dies with the session directory it
  * lives in.
@@ -54,8 +54,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { RIREKI_DIR, sessionKey } from './session-dir.js';
-import { readSessionTask } from './tegami.js';
-import { taskFiles } from './session-boot.js';
+import { readSessionRole } from './tegami.js';
+import { roleFiles } from './session-boot.js';
 import { findDefinition } from './definitions.js';
 import { getControl, listSessions } from './tmux.js';
 import { sendText } from './send.js';
@@ -82,7 +82,7 @@ interface Delivery {
 }
 
 const recordPath = async (name: string): Promise<string> =>
-  path.join(RIREKI_DIR, await sessionKey(name), 'task-delivered.json');
+  path.join(RIREKI_DIR, await sessionKey(name), 'role-delivered.json');
 
 async function readRecord(name: string): Promise<Delivery | null> {
   try {
@@ -102,7 +102,7 @@ async function writeRecord(name: string, d: Delivery): Promise<void> {
   } catch (e) {
     // A record we could not write means the next tick re-delivers. Loud, because that is
     // the failure that turns "exactly once" into "every three seconds".
-    console.error(`[ronin] task-watch: could not record delivery for ${name}:`, e);
+    console.error(`[ronin] role-watch: could not record delivery for ${name}:`, e);
   }
 }
 
@@ -113,7 +113,7 @@ async function writeRecord(name: string, d: Delivery): Promise<void> {
  * reading is already in the brief: the session has been told, so the record must say
  * delivered or the first tick would tell it again.
  */
-export async function markTaskDelivered(name: string, task: string): Promise<void> {
+export async function markRoleDelivered(name: string, task: string): Promise<void> {
   await writeRecord(name, { task, ok: true, tries: 0, at: new Date().toISOString() });
 }
 
@@ -125,13 +125,13 @@ export async function markTaskDelivered(name: string, task: string): Promise<voi
  * ONE LINE, always: `sendText` types the text and then Enter, so an embedded newline
  * would submit half a message (the same rule src/lookup.ts follows).
  */
-export async function taskChangeMessage(task: string, files: string[]): Promise<string> {
-  const def = await findDefinition('session_tasks', task);
+export async function roleChangeMessage(task: string, files: string[]): Promise<string> {
+  const def = await findDefinition('session_roles', task);
   const remit = def?.get('remit') ?? '';
-  const parts = [`Your session_task is now ${task}.`];
+  const parts = [`Your session_role is now ${task}.`];
   if (remit) parts.push(`${remit}.`);
   if (files.length) parts.push(`Read first: ${files.join(', ')}.`);
-  parts.push('Your family_role and your project_root have not changed.');
+  parts.push('Your teams and your project_root have not changed.');
   return parts.join(' ').replace(/\s+/g, ' ');
 }
 
@@ -167,8 +167,8 @@ const houseSender: Sender = async (name, text) => {
  * `reset` is the owner re-posting the same task after a failure — it clears the attempt
  * count so a delivery the watcher had given up on is tried again.
  */
-export async function observeTaskChange(name: string, reset = true, send: Sender = houseSender): Promise<void> {
-  const task = await readSessionTask(name);
+export async function observeRoleChange(name: string, reset = true, send: Sender = houseSender): Promise<void> {
+  const task = await readSessionRole(name);
   const record = await readRecord(name);
 
   // First sight: write down where things stand and send nothing. See the header.
@@ -189,8 +189,8 @@ export async function observeTaskChange(name: string, reset = true, send: Sender
 
   const tries = (changed || reset ? 0 : record.tries) + 1;
   try {
-    const files = await taskFiles(task);
-    await send(name, await taskChangeMessage(task, files));
+    const files = await roleFiles(task);
+    await send(name, await roleChangeMessage(task, files));
     await writeRecord(name, { task, ok: true, tries, at: new Date().toISOString() });
   } catch (e) {
     // A closed dial, a prompt that would not accept input, a session that went away
@@ -198,12 +198,12 @@ export async function observeTaskChange(name: string, reset = true, send: Sender
     // this is retried.
     const error = String((e as Error)?.message ?? e).trim();
     await writeRecord(name, { task, ok: false, tries, error, at: new Date().toISOString() });
-    console.error(`[ronin] task-watch: ${name} → ${task} not delivered (try ${tries}/${MAX_TRIES}): ${error}`);
+    console.error(`[ronin] role-watch: ${name} → ${task} not delivered (try ${tries}/${MAX_TRIES}): ${error}`);
   }
 }
 
 /** What the tile can show about a delivery that did not land. Null when all is well. */
-export async function taskDeliveryFault(name: string): Promise<Delivery | null> {
+export async function roleDeliveryFault(name: string): Promise<Delivery | null> {
   const d = await readRecord(name);
   return d && !d.ok ? d : null;
 }
@@ -217,10 +217,10 @@ export async function taskDeliveryFault(name: string): Promise<Delivery | null> 
  * page nobody is looking at when nobody is looking; this exists to deliver reading to an
  * agent, which is worth doing at 3am with every tab closed.
  */
-export function startTaskWatch(send: Sender = houseSender): void {
+export function startRoleWatch(send: Sender = houseSender): void {
   setInterval(() => {
     void (async () => {
-      for (const s of await listSessions()) await observeTaskChange(s.name, false, send);
-    })().catch((e) => console.error('[ronin] task-watch:', e));
+      for (const s of await listSessions()) await observeRoleChange(s.name, false, send);
+    })().catch((e) => console.error('[ronin] role-watch:', e));
   }, EVERY_MS);
 }

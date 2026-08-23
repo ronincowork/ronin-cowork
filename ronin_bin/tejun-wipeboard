@@ -47,10 +47,8 @@ STORE_BIN="$(cd "$(dirname "${BASH_SOURCE[0]}")/../bin" && pwd)/ronin-store"
 [ -x "$STORE_BIN" ] || STORE_BIN=ronin-store
 SESSION_STORE="$("$STORE_BIN" session 2>/dev/null)"
 
-# A session's two axes out of its own letter, as 'family_role\tsession_task' — empty fields
-# when it has no letter or has not said. Both live in TEGAMI: the TASK because the session
-# may change it as the work changes (`write_tegami`), the ROLE because it was fixed at
-# birth and nothing may change it afterwards.
+# A session's session_role out of its own letter — empty when it has no letter or has
+# not said. It lives in TEGAMI because the session may change it as the work changes.
 axes_of() {
   local key row stamped created
   [ -n "${SESSION_STORE:-}" ] || return 0
@@ -74,11 +72,11 @@ try:
 except Exception:
     raise SystemExit
 say = lambda k: d[k].strip() if isinstance(d.get(k), str) else ""
-print("%s\t%s" % (say("family_role"), say("session_task")))
+print(say("session_role"))
 PY
 }
 
-# name·boards·teams·dial·family_role·session_task for every real session, viewers dropped.
+# name·boards·teams·dial·leads·session_role for every real session, viewers dropped.
 #
 # SEP is \x1f (unit separator), NOT a tab. Tab is an IFS *whitespace* character, so bash
 # collapses a RUN of them into one delimiter: a session on no wipeboard emitted as
@@ -88,11 +86,10 @@ PY
 # members are read off @ronin-tags, a custom one's off @ronin-wipeboards.
 SEP=$'\x1f'
 roster() {
-  while IFS=$SEP read -r name boards teams dial; do
-    # axes_of answers 'role<TAB>task'; the tab becomes a SEP so both are fields here.
-    printf '%s%s%s%s%s%s%s%s%s\n' "$name" "$SEP" "$boards" "$SEP" "$teams" "$SEP" "$dial" "$SEP" \
-      "$(axes_of "$name" | tr '\t' "$SEP")"
-  done < <(tmux list-sessions -F "#{session_name}${SEP}#{${BOARDS_OPT}}${SEP}#{@ronin-tags}${SEP}#{@ronin-control}" 2>/dev/null \
+  while IFS=$SEP read -r name boards teams dial leads; do
+    printf '%s%s%s%s%s%s%s%s%s%s%s\n' "$name" "$SEP" "$boards" "$SEP" "$teams" "$SEP" "$dial" "$SEP" "$leads" "$SEP" \
+      "$(axes_of "$name")"
+  done < <(tmux list-sessions -F "#{session_name}${SEP}#{${BOARDS_OPT}}${SEP}#{@ronin-tags}${SEP}#{@ronin-control}${SEP}#{@ronin-lead}" 2>/dev/null \
     | grep -v "^${VIEWER_PREFIX}")
 }
 
@@ -188,14 +185,14 @@ BOARD=$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]'); shift
 [[ "$BOARD" =~ $NAME_RE ]] && [ ${#BOARD} -le 32 ] \
   || { echo "BAD-NAME: '$BOARD' — lowercase letters, digits, - and _ only (max 32)"; exit 2; }
 
-# Members of $BOARD, one 'name<TAB>dial<TAB>session_task' per line, quarterbacks first.
+# Members of $BOARD, one 'name<TAB>dial<TAB>session_role' per line, the LEADS first.
 # On a shared surface the other agents need to know which voice is coordinating them —
-# that used to be a hand-set 人 (@ronin-lead), then the session's job, briefly its role,
-# and is its TASK (R33: quarterbacking is a task a session moves into and back out of),
-# read fresh from the letter on every call and never remembered. The TASK is also what is
-# printed beside each name, because "what is each of these doing?" is the question a
-# shared wipeboard asks. Names, not icons: this is a readout for agents, and a word beats
-# an emoji when the reader is parsing lines. '-' where nobody has said.
+# and that is the 人 again (@ronin-lead), BACK by R35 (2026-08-23): a hand-set per-team
+# designation, never derived from what a session is doing, read fresh on every call.
+# The session_role is what is printed beside each name, because "what is each of these
+# doing?" is the question a shared wipeboard asks. Names, not icons: this is a readout
+# for agents, and a word beats an emoji when the reader is parsing lines. '-' where
+# nobody has said.
 members() {
   # The union view, decided once: a team wipeboard's members are the team's sessions
   # (field 3), a custom one's are the enrolled (field 2). Same question, one answer.
@@ -205,13 +202,14 @@ members() {
     if [ "$mode" = team ]; then case ",${2// /}," in *",${BOARD},"*) return 0 ;; *) return 1 ;; esac
     else case ",${1// /}," in *",${BOARD},"*) return 0 ;; *) return 1 ;; esac; fi
   }
-  while IFS=$SEP read -r name boards teams dial role task; do
+  leads_board() { case ",${1// /}," in *",${BOARD},"*) return 0 ;; *) return 1 ;; esac; }
+  while IFS=$SEP read -r name boards teams dial leads task; do
     on_board "$boards" "$teams" || continue
-    [ "${task:-}" = QuarterBack ] && printf '%s\t%s\t%s\n' "$name" "${dial:-write}" "${task:-QuarterBack}"
+    leads_board "${leads:-}" && printf '%s\t%s\t%s\n' "$name" "${dial:-write}" "${task:--}"
   done < <(roster)
-  while IFS=$SEP read -r name boards teams dial role task; do
+  while IFS=$SEP read -r name boards teams dial leads task; do
     on_board "$boards" "$teams" || continue
-    [ "${task:-}" = QuarterBack ] || printf '%s\t%s\t%s\n' "$name" "${dial:-write}" "${task:--}"
+    leads_board "${leads:-}" || printf '%s\t%s\t%s\n' "$name" "${dial:-write}" "${task:--}"
   done < <(roster)
 }
 

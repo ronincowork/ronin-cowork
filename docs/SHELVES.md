@@ -49,8 +49,8 @@ that did not ask. The_owner's copy of any name wins whole. `ronin_sops/README.md
 
 `ls ronin_catalogs/ "$(bin/ronin-store catalogs)"`. Stock today: `MACROS.md` (the
 `+name:` workflows the_owner invokes), `ACTIONS.md` (the cataloged procedures macros are
-made of), `TOOLS.md` (the executables that implement actions, with usage), `family_roles/`
-(who a session is) and `session_tasks/` (what it is doing — one file each),
+made of), `TOOLS.md` (the executables that implement actions, with usage), `role_families/`
+(who a session is) and `session_roles/` (what it is doing — one file each),
 `PROJECT_ROOTS.md` (the launch table),
 `MIKA_MACROS.md` (the house assistant's jobs), `SKINS.md`. Extending any of it starts at
 `ronin_catalogs/README.md` — the action exists before the macro, the tool after the action.
@@ -68,8 +68,8 @@ vocabulary), `REQUIRED_ABILITIES.md` (the abilities every session uses — read 
 improvising anything), `SESSION_MACROS.md` (the live `+macro:` roster, generated at your
 birth). Scoped levels reach only the sessions they apply to: `<service>_connected/`
 (e.g. `gbrain_connected/` — a connected service seeds its own reading, read only by
-sessions launched with MCP on), `root/<project_root>/`, `role/<family_role>/`,
-`task/<session_task>/`.
+sessions launched with MCP on), `root/<project_root>/`, `role/<session_role>/`,
+`task/<session_role>/`.
 `docs/session-boot.md`.
 
 ## The tools — what you run
@@ -78,15 +78,16 @@ sessions launched with MCP on), `root/<project_root>/`, `role/<family_role>/`,
 `ronin_catalogs/TOOLS.md` — read the row, not the source. Prefer the tool over
 performing its action by hand: it encodes the safety steps.
 
-## The three axes
+## The axes
 
-Every session is fixed by three things, and the rest is looked up from them:
+Every session is fixed by two things, plus the team it may be born onto:
 **`project_root`** — where the work happens, and the one that is REQUIRED
-(`ronin_catalogs/PROJECT_ROOTS.md`) × **`family_role`** — who the session is, fixed for its
-whole life (`ronin_catalogs/family_roles/`) × **`session_task`** — what it is doing right
-now, and yours to change as the work moves (`ronin_catalogs/session_tasks/`).
+(`ronin_catalogs/PROJECT_ROOTS.md`) × **`session_role`** — what it is doing right now,
+and yours to change as the work moves (`ronin_catalogs/session_roles/`). A TEAM adds
+context on top — its roster's defaults and its `team_role` reading — and none is a
+rōnin, which is ordinary (R35).
 
-Either of the last two may be blank, and blank is a real answer rather than a gap.
+The session_role may be blank, and blank is a real answer rather than a gap.
 
 ## The short routing rules
 

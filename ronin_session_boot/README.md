@@ -16,17 +16,18 @@ same name replaces ours whole; a new name sits beside it.
 | `all/` | every session, always |
 | `<service>_connected/` | only sessions launched with MCP on — a connected service makes and seeds its own signed level (gbrain's setup makes `gbrain_connected/`) |
 | `root/<project_root>/` | only sessions working in that directory |
-| `role/<family_role>/` | only sessions wearing that hat — read once, at birth, because a role cannot change |
-| `task/<session_task>/` | only sessions doing that kind of work — **re-delivered when the task changes** |
+| `role/<session_role>/` | only sessions doing that kind of work — **re-delivered when the session_role changes** |
+| `team_role/<team_role>/` | only sessions born onto a team whose roster names that team_role — the team's build brief, read once (R35: a later join is not re-briefed) |
 
-A `developer` session cutting `CutCode` in `ronin_cowork` reads all of its levels. Nothing
-overrides anything — *where* the work happens, *who* is doing it and *what* they are doing
-now are three independent questions.
+A session cutting `CutCode` on a `development` team in `ronin_cowork` reads all of its
+levels. Nothing overrides anything — *where* the work happens, *what* it is doing now and
+*whose team* it is on are independent questions.
 
-**A blank axis omits only its own level.** A launch with no role reads no role level and
-everything else exactly as before. Root never omits its level, because root is required.
+**A blank axis omits only its own level.** A launch with no session_role reads no role
+level, a rōnin launch reads no team_role level, and everything else exactly as before.
+Root never omits its level, because root is required.
 
-**Stock has no `root/` and no connected folder, and cannot.** The roles and tasks ship, so
+**Stock has no `root/` and no connected folder, and cannot.** The session_roles ship, so
 we know their names; your project roots are yours alone, and a connected level is the
 seeding service's own act — an empty one nothing seeded would claim a connection that does
 not exist.

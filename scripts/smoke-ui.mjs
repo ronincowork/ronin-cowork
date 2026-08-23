@@ -537,7 +537,7 @@ async function checkJourneys(page, label, jsErrors) {
   await page.waitForTimeout(300);
   const kindBtn = page.locator('.tile.active .ks-btn').first();
   if ((await kindBtn.count()) === 0) {
-    console.log('  note — no session_tasks in the catalog; the launch-validation journey skipped');
+    console.log('  note — no session_roles in the catalog; the launch-validation journey skipped');
   } else {
     let launched = false;
     // A SPAWN IS A POST TO EXACTLY `/api/launch`, and the match has to say so. It used to
@@ -567,11 +567,11 @@ async function checkJourneys(page, label, jsErrors) {
     // the body is read off the request the page WOULD have sent and the send is aborted,
     // so this stays a gate that spawns nothing.
     //
-    // REGRESSION, 2026-08-22: a Commons launch that reaches the server naming NEITHER axis
+    // REGRESSION, 2026-08-22: a Commons launch that reaches the server naming NO axis
     // falls through to `launch_bare` and is born a bare shell with a blank letter — no
-    // agent, no reading, and a role it can never acquire afterwards. That is a correct
-    // outcome for the tile picker and for `OpenShell`, and a silent failure for every
-    // ordinary click, so the axes have to be proven ON THE WIRE rather than in the form.
+    // agent, no reading. That is a correct outcome for the tile picker and for
+    // `OpenShell`, and a silent failure for every ordinary click, so the axis has to be
+    // proven ON THE WIRE rather than in the form.
     // THE BODY IS CAUGHT IN THE PAGE, not on the wire, and that is deliberate. Playwright
     // route interception has to answer the request somehow: an abort is a network failure
     // and a non-2xx is a "Failed to load resource" — and the browser logs BOTH to the
@@ -612,10 +612,10 @@ async function checkJourneys(page, label, jsErrors) {
       const sent = await page.evaluate(() => {
         try { return JSON.parse(window.__launchBody ?? 'null'); } catch { return 'unparseable'; }
       });
-      if (sent && sent !== 'unparseable' && (sent.family_role || sent.session_task) && sent.project_root) {
-        ok(`${label}: an ordinary launch names its axes on the wire (role="${sent.family_role}" task="${sent.session_task}")`);
+      if (sent && sent !== 'unparseable' && sent.session_role && sent.project_root) {
+        ok(`${label}: an ordinary launch names its axis on the wire (session_role="${sent.session_role}")`);
       } else {
-        bad(`${label}: launch payload lost its axes — a body naming neither is born a bare shell. Sent: ${JSON.stringify(sent)}`);
+        bad(`${label}: launch payload lost its axis — a body naming none is born a bare shell. Sent: ${JSON.stringify(sent)}`);
       }
     }
     await page.evaluate(() => { if (window.__fetchWas) window.fetch = window.__fetchWas; });

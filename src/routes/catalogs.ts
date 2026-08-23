@@ -31,7 +31,7 @@ import {
   isValidLaunchName,
   type LaunchField,
 } from '../catalog.js';
-import { findDefinition, listFamilyRoles, listSessionTasks, writeRoleTasks } from '../definitions.js';
+import { findDefinition, listRoleFamilies, listSessionRoles, listTeamRoles, writeRoleTasks } from '../definitions.js';
 import { resolveLaunchProfile } from '../launch-profile.js';
 
 // fs errors carry absolute paths (`ENOENT: open '/home/…'`); the browser gets the
@@ -246,46 +246,59 @@ export function registerCatalogs(app: express.Express): void {
   });
 
   /**
-   * THE OTHER TWO AXES — `family_role` (who a session is) and `session_task` (what it is
-   * doing now). Same contract as /api/project-roots: the markdown IS the catalog, merged
-   * stock ⊕ user at request time, provenance on every row.
+   * THE DEFINITION CATALOGS — `role_family` (a New Session grouping of session_roles —
+   * presentation, never a session fact), `session_role` (what a session is doing now),
+   * and `team_role` (a TEAM's defining role, with its own reading shelf). Same contract
+   * as /api/project-roots: the markdown IS the catalog, merged stock ⊕ user at request
+   * time, provenance on every row.
    *
-   * The role rows carry their own `session_tasks:` — the session_tasks presented under
-   * that role, which is what the board's sections are built from. A task in no role's
-   * family is a LOOSE task and the board draws it in the blank-role tail: a real launch,
-   * not a leftover. Family is association, so the same task may sit in several.
+   * The family rows carry their own `session_roles:` — presented under that shelf with
+   * the `default_lead_role` pinned first. A session_role in no family is LOOSE and the
+   * board draws it in the tail: a real launch, not a leftover. Family is association,
+   * so the same role may sit in several.
    */
-  app.get('/api/family-roles', async (_req, res) => {
+  app.get('/api/role-families', async (_req, res) => {
     try {
-      res.json(await listFamilyRoles());
+      res.json(await listRoleFamilies());
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }
   });
 
-  app.get('/api/session-tasks', async (_req, res) => {
+  app.get('/api/session-roles', async (_req, res) => {
     try {
-      res.json(await listSessionTasks());
+      res.json(await listSessionRoles());
+    } catch (e) {
+      res.status(500).json({ error: errMsg(e) });
+    }
+  });
+
+  // The team_role definitions — Build Team's picker. A roster may also name a
+  // team_role with no definition here: the reading shelf is then simply empty.
+  app.get('/api/team-roles', async (_req, res) => {
+    try {
+      res.json(await listTeamRoles());
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }
   });
 
   /**
-   * SET A ROLE'S TASK FAMILY — the tasks presented under it, and nothing else.
+   * SET A FAMILY'S SESSION_ROLES — the roles presented under it, and nothing else.
    *
-   * Creating a role, deleting one, and authoring a task all belong to the next build-out.
-   * This is the one board edit that already existed as a Job Group shelf and had to keep
-   * working: drag a task onto a role, or toggle it in the ✎ editor.
+   * Creating a family, deleting one, and authoring a session_role all belong to the next
+   * build-out. This is the one board edit that already existed as a Job Group shelf and
+   * had to keep working: drag a role onto a family, or toggle it in the ✎ editor.
    *
    * 400 for anything the write refuses, with the message written for the owner: an
-   * unknown task, too many in one family, or a definition that would not read back.
+   * unknown role, too many in one family, a definition that would not read back — or an
+   * edit that would orphan the family's pinned `default_lead_role`.
    */
-  app.put('/api/family-roles/:name/session_tasks', async (req, res) => {
-    const list = req.body?.session_tasks;
-    if (!Array.isArray(list)) return res.status(400).json({ error: 'Send { session_tasks: [...] }.' });
+  app.put('/api/role-families/:name/session_roles', async (req, res) => {
+    const list = req.body?.session_roles;
+    if (!Array.isArray(list)) return res.status(400).json({ error: 'Send { session_roles: [...] }.' });
     try {
-      res.json({ ok: true, session_tasks: await writeRoleTasks(req.params.name, list as string[]) });
+      res.json({ ok: true, session_roles: await writeRoleTasks(req.params.name, list as string[]) });
     } catch (e) {
       res.status(400).json({ error: errMsg(e) });
     }
@@ -306,16 +319,18 @@ export function registerCatalogs(app: express.Express): void {
    * about it.
    */
   app.get('/api/launch-profile', async (req, res) => {
-    const role = String(req.query?.family_role ?? '').trim();
-    const task = String(req.query?.session_task ?? '').trim();
+    // The retired axis, refused by name: a form still asking with role_family is asking
+    // a question the model no longer has (R35).
+    if (req.query?.role_family !== undefined) {
+      return res.status(400).json({
+        error: 'role_family is retired (R35, 2026-08-23) — a launch profile is resolved from the session_role alone.',
+      });
+    }
+    const task = String(req.query?.session_role ?? '').trim();
     try {
-      const [roleDef, taskDef] = await Promise.all([
-        findDefinition('family_roles', role),
-        findDefinition('session_tasks', task),
-      ]);
-      if (role && !roleDef) return res.status(404).json({ error: `Unknown family_role "${role}".` });
-      if (task && !taskDef) return res.status(404).json({ error: `Unknown session_task "${task}".` });
-      res.json(resolveLaunchProfile(roleDef, taskDef));
+      const taskDef = await findDefinition('session_roles', task);
+      if (task && !taskDef) return res.status(404).json({ error: `Unknown session_role "${task}".` });
+      res.json(resolveLaunchProfile(taskDef));
     } catch (e) {
       res.status(400).json({ error: errMsg(e) });
     }
@@ -337,7 +352,7 @@ export function registerCatalogs(app: express.Express): void {
     const name = String(req.body?.name ?? '').trim().toLowerCase();
     if (!isValidLaunchName(name)) return res.status(400).json({ error: 'Handle: lowercase letters, digits, - and _.' });
     const fields: Partial<Record<LaunchField, string>> = {};
-    for (const k of ['label', 'family_role', 'session_task', 'project_root', 'team', 'mode', 'prompt'] as LaunchField[]) {
+    for (const k of ['label', 'role_family', 'session_role', 'project_root', 'team', 'mode', 'prompt'] as LaunchField[]) {
       const v = (req.body as Record<string, unknown>)?.[k];
       if (typeof v === 'string') fields[k] = v.trim().slice(0, 500);
     }

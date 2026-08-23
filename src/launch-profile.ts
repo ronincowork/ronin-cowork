@@ -2,14 +2,15 @@
  * THE CASCADE — one complete, validated launch profile, resolved before any tmux session
  * exists.
  *
- *   system default  <  family_role  <  session_task  <  explicit choice on this launch
+ *   system default  <  team_roster  <  session_role  <  explicit choice on this launch
  *
- * Neither axis owns a launch field exclusively, and that is the whole ruling (owner,
- * 2026-08-22). Both a role and a task may state defaults; the task wins over the role,
- * the role wins over the system, and the launch's own explicit pick wins over all three
- * wherever the field is not locked. The last step is `resolveForm`'s, in `src/spawn.ts` —
- * this module deliberately stops short of it, so the cascade is testable without a
- * machine.
+ * ONE definition layer (R35, 2026-08-23): the old role_family layer was dismantled with
+ * the session axis — a family is presentation on the New Session board, and its launch
+ * constants moved into each session_role definition. The team layer contributes CONTEXT
+ * (root, repos, branch — resolved in `src/spawn.ts` from the roster) and never a
+ * definition field, so this module resolves the one definition against the system and
+ * stops there; the launch's own explicit pick is `resolveForm`'s last step. That split
+ * is what keeps the cascade testable without a machine.
  *
  * ABSENCE MEANS INHERIT, AND ONLY ABSENCE. `- **mcp:** off` is a real value that overrides
  * an inherited `on`; there is no way to spell "inherit" as a value, because a field you
@@ -21,11 +22,10 @@
  *   CASCADING    model · dial · permissions · lifecycle · mcp · cap · agent · dir ·
  *                ack · opening. The last layer to state it wins.
  *
- *   ADDITIVE     posture, and the boot shelf's reading levels. A role's posture and its
- *                task's posture are BOTH true of the session, so the task's does not
- *                displace the role's — it follows it. This is the inline half of the
- *                same rule the shelf obeys: `role/` and `task/` add up rather than
- *                override (src/session-boot.ts).
+ *   ADDITIVE     the boot shelf's reading levels: `role/<session_role>/` and
+ *                `team_role/<team_role>/` add up rather than override
+ *                (src/session-boot.ts). Posture is a single statement now — the one
+ *                definition's — but stays an array so the brief's shape is stable.
  *
  *   LOCKED       `mcp: always`. A layer may not contradict it and neither may the launch.
  *                `personalassistant` carries it: an assistant defined by its brain must
@@ -76,10 +76,8 @@ const AGENT_ONLY = ['model', 'permissions', 'posture', 'opening', 'ack'] as cons
 const INSTALL_SENTINEL = '{install}';
 
 export interface LaunchProfile {
-  /** '' when the launch chose no role. A blank role is a first-class state. */
-  family_role: string;
-  /** '' when the launch chose no task. */
-  session_task: string;
+  /** '' when the launch chose no session_role. Blank is a first-class state. */
+  session_role: string;
   /** Is a CLI launched at all? False for `agent: none` — a plain terminal. */
   agent: boolean;
   /** Bias only; the launch's explicit pick wins. Empty when inapplicable. */
@@ -91,9 +89,9 @@ export interface LaunchProfile {
   ack: boolean;
   /** First-message template; `{prompt}` is what the owner typed. */
   opening: string;
-  /** Role posture then task posture, in that order — additive, never overriding. */
+  /** The definition's posture, when it states one. */
   posture: string[];
-  /** Who the brief addresses: the role's label if there is a role, else the task's. */
+  /** Who the brief addresses: the session_role's label. */
   label: string;
   /** Born even at the session max. It still counts once it is. */
   capExempt: boolean;
@@ -106,7 +104,7 @@ export interface LaunchProfile {
 }
 
 interface Layer {
-  level: 'family_role' | 'session_task';
+  level: 'session_role';
   def: Definition;
 }
 
@@ -122,19 +120,15 @@ function pick(layers: Layer[], key: string): string {
 }
 
 /**
- * Resolve a role and a task into one profile, or refuse.
+ * Resolve one session_role definition into one profile, or refuse.
  *
- * Either may be undefined — a blank role, a blank task, or both. Blank contributes
+ * It may be undefined — a blank session_role is a real launch. Blank contributes
  * nothing at all rather than contributing a blank: the layer simply is not there, so
- * everything below it stands.
+ * the system's answers stand.
  */
-export function resolveLaunchProfile(
-  role: Definition | undefined,
-  task: Definition | undefined,
-): LaunchProfile {
+export function resolveLaunchProfile(task: Definition | undefined): LaunchProfile {
   const layers: Layer[] = [];
-  if (role) layers.push({ level: 'family_role', def: role });
-  if (task) layers.push({ level: 'session_task', def: task });
+  if (task) layers.push({ level: 'session_role', def: task });
 
   // ---- LOCKED: `mcp: always` may not be contradicted from anywhere ----
   const isAlways = (l: Layer) => /^always$/i.test(l.def.get('mcp'));
@@ -182,12 +176,10 @@ export function resolveLaunchProfile(
 
   const dial = pick(layers, 'dial').toLowerCase();
   const mcp = pick(layers, 'mcp').toLowerCase();
-  // Additive, and role first: the durable hat is stated before what it is doing today.
   const posture = layers.map((l) => l.def.get('posture').trim()).filter(Boolean);
 
   return {
-    family_role: role?.name ?? '',
-    session_task: task?.name ?? '',
+    session_role: task?.name ?? '',
     agent,
     model: agent ? pick(layers, 'model') : '',
     dial: (dial === 'user' || dial === 'read' ? dial : 'write') as Dial,
@@ -199,7 +191,7 @@ export function resolveLaunchProfile(
     ack: agent ? /^y/i.test(pick(layers, 'ack')) : false,
     opening: agent ? pick(layers, 'opening') : '',
     posture: agent ? posture : [],
-    label: (role?.get('label') || role?.name || task?.get('label') || task?.name) ?? '',
+    label: (task?.get('label') || task?.name) ?? '',
     capExempt: /^exempt$/i.test(pick(layers, 'cap')),
     mcpAlways: mcp === 'always',
     // `always` opens it on and removes the choice; `on` opens it on; everything else,

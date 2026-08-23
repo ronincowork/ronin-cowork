@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 # tejun-recall — the memories a session should be handed (TEJUN memory-recall).
-# Usage: tejun-recall [--project_root X] [--family_role X] [--session_task X]
+# Usage: tejun-recall [--project_root X] [--session_role X]
 #                     [--inline] [--budget N] [--list]
 #
 #   (default)  matching file paths, one per line, ordered and deduped
 #   --inline   the composed text Ronin pastes into a boot brief, budget-guarded
 #   --list     summary + scope per match, for a human or the UI
 #
-# A memory matches when all three axes match (equal, or "*"), where the project axis
-# also accepts a project root's `memory:` keys as aliases. THE TWO CONTEXTUAL AXES ADD
-# RATHER THAN OVERRIDE: a memory scoped to `family_role: developer` with `session_task: "*"`
-# reaches that role whatever it is doing today, which is what stops a role's standing
-# knowledge going stale the moment the session moves on (KOTOBA R19). Missing axis key =
-# the memory is malformed: reported on stderr, never silently matched.
+# A memory matches when both axes match (equal, or "*"), where the project axis also
+# accepts a project root's `memory:` keys as aliases. TWO AXES (R35, 2026-08-23): where
+# you work and what you are doing; the old role_family axis died with the session
+# identity it scoped. A memory scoped `session_role: CutCode` with `project_root: "*"`
+# reaches that kind of work in every repo. Missing axis key = the memory is malformed:
+# reported on stderr, never silently matched.
 set -u
 
 # Where Ronin keeps things on THIS machine — asked, never spelled. See docs/stores.md.
@@ -29,15 +29,14 @@ ROOTS_MD="$("$RSTORE" catalogs)/PROJECT_ROOTS.md"
 # grown into a doc, not a reason to grow the number.
 BUDGET=2600
 MODE=paths
-P_ROOT=""; J_ROLE=""; S_TASK=""
+P_ROOT=""; S_TASK=""
 
 die() { echo "$1"; exit "$2"; }
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --project_root|--project-root) P_ROOT="${2:-}"; shift 2 ;;
-    --family_role|--job-role)         J_ROLE="${2:-}"; shift 2 ;;
-    --session_task|--session-task) S_TASK="${2:-}"; shift 2 ;;
+    --session_role|--session-task) S_TASK="${2:-}"; shift 2 ;;
     --budget) BUDGET="${2:-2000}"; shift 2 ;;
     --inline) MODE=inline; shift ;;
     --list)   MODE=list; shift ;;
@@ -53,10 +52,8 @@ set -- "$STORE"/*.md
 # Axes of the asking session, when not stated (same inference as tejun-remember):
 # resolve the grouped viewer (grid_*) back to the real session it mirrors.
 opt() { tmux show-options -qv -t "$1" "$2" 2>/dev/null; }
-# The session's own axes come out of its LETTER, not from a tmux option: `family_role` and
-# `session_task` live in TEGAMI and nothing mirrors them into tmux (src/tmux.ts says why —
-# a second copy is the one that drifts). '' for either when there is no letter or the
-# session has not said.
+# The session's own axis comes out of its LETTER, not from a tmux option (src/tmux.ts
+# says why — a second copy is the one that drifts). '' when it has not said.
 axes_of() {
   local key row stamped created store
   store="$("$RSTORE" session 2>/dev/null)"
@@ -81,7 +78,7 @@ try:
 except Exception:
     raise SystemExit
 say = lambda k: d[k].strip() if isinstance(d.get(k), str) else ""
-print("%s\t%s" % (say("family_role"), say("session_task")))
+print(say("session_role"))
 PYAXES
 }
 me=$(tmux display-message -p '#{session_name}' 2>/dev/null || true)
@@ -91,11 +88,7 @@ case "$me" in
 esac
 if [ -n "$me" ]; then
   [ -n "$P_ROOT" ] || P_ROOT=$(opt "$me" @ronin-project_root)
-  if [ -z "$J_ROLE" ] || [ -z "$S_TASK" ]; then
-    IFS=$'\t' read -r _role _task < <(axes_of "$me"; echo)
-    [ -n "$J_ROLE" ] || J_ROLE="${_role:-}"
-    [ -n "$S_TASK" ] || S_TASK="${_task:-}"
-  fi
+  [ -n "$S_TASK" ] || S_TASK=$(axes_of "$me")
 fi
 if [ -z "$P_ROOT" ] && [ -r "$ROOTS_MD" ]; then
   P_ROOT=$(awk -v pwd="$PWD" -v home="$HOME" '
@@ -118,7 +111,7 @@ if [ -n "$P_ROOT" ] && [ -r "$ROOTS_MD" ]; then
   KEYS="$KEYS $extra"
 fi
 
-awk -v mode="$MODE" -v budget="$BUDGET" -v want_root="${P_ROOT:-}" -v want_role="${J_ROLE:-}" \
+awk -v mode="$MODE" -v budget="$BUDGET" -v want_root="${P_ROOT:-}" \
     -v want_task="${S_TASK:-}" -v keys=" $KEYS " '
   function val(line,   v) { v = line; sub(/^[a-z_]+:[ \t]*/, "", v); gsub(/^"|"$/, "", v)
                             gsub(/^[ \t]+|[ \t]+$/, "", v); return v }
@@ -139,22 +132,22 @@ awk -v mode="$MODE" -v budget="$BUDGET" -v want_root="${P_ROOT:-}" -v want_role=
     # README) — skip it. Frontmatter that is MISSING an axis is a different thing:
     # a broken memory, and silence there would hide a rule from every session.
     if (!fmdone) return
-    if (!have_root || !have_role || !have_task) {
-      printf "MALFORMED %s: missing an axis key (project_root/family_role/session_task)\n", cur > "/dev/stderr"
+    if (!have_root || !have_task) {
+      printf "MALFORMED %s: missing an axis key (project_root/session_role)\n", cur > "/dev/stderr"
       return
     }
-    if (!project_ok(m_root) || !axis_ok(m_role, want_role) || !axis_ok(m_task, want_task)) return
-    rank = (m_root == "*" && m_role == "*" && m_task == "*") ? 0 : (m_root != "*" ? 1 : 2)
+    if (!project_ok(m_root) || !axis_ok(m_task, want_task)) return
+    rank = (m_root == "*" && m_task == "*") ? 0 : (m_root != "*" ? 1 : 2)
     n_hit++
     hit_rank[n_hit] = rank; hit_file[n_hit] = cur; hit_sum[n_hit] = m_sum
     hit_kind[n_hit] = m_kind_of; hit_body[n_hit] = m_body
-    hit_scope[n_hit] = m_root " · " m_role " · " m_task
+    hit_scope[n_hit] = m_root " · " m_task
   }
   FNR == 1 {
     if (NR > 1) flush()
     cur = FILENAME          # flush() runs while FILENAME is already the NEXT file
-    infm = 0; fmdone = 0; m_body = ""; m_sum = ""; m_root = ""; m_role = ""; m_task = ""
-    m_tags = ""; m_kind_of = ""; have_root = have_role = have_task = 0
+    infm = 0; fmdone = 0; m_body = ""; m_sum = ""; m_root = ""; m_task = ""
+    m_tags = ""; m_kind_of = ""; have_root = have_task = 0
   }
   FNR == 1 && /^---[ \t]*$/ { infm = 1; next }
   infm && /^---[ \t]*$/     { infm = 0; fmdone = 1; next }
@@ -162,8 +155,7 @@ awk -v mode="$MODE" -v budget="$BUDGET" -v want_root="${P_ROOT:-}" -v want_role=
     if (/^summary:/)      m_sum = val($0)
     else if (/^memory_kind:/) m_kind_of = val($0)
     else if (/^project_root:/) { m_root = val($0); have_root = 1 }
-    else if (/^family_role:/)     { m_role = val($0); have_role = 1 }
-    else if (/^session_task:/) { m_task = val($0); have_task = 1 }
+    else if (/^session_role:/) { m_task = val($0); have_task = 1 }
     else if (/^tags:/)         { m_tags = val($0); gsub(/[][]/, "", m_tags) }
     next
   }

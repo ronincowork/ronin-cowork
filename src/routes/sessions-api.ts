@@ -9,6 +9,7 @@ import type express from 'express';
 import {
   type Control,
   getControl,
+  getLeads,
   getNote,
   getProjectRoot,
   getTags,
@@ -18,6 +19,7 @@ import {
   sessionExists,
   sessionOfPane,
   setControl,
+  setLeads,
   setNote,
   setProjectRoot,
   setTags,
@@ -29,9 +31,10 @@ import { expandLookup } from '../lookup.js';
 import { readCtxLine } from '../ctx.js';
 import { count } from '../counts.js';
 import { announceTeamChanges } from './wipeboards-api.js';
-import { readFamilyRole, readSessionTask, writeSessionTask } from '../tegami.js';
-import { observeTaskChange, taskDeliveryFault } from '../task-watch.js';
-import { listSessionTasks } from '../definitions.js';
+import { readSessionRole, writeSessionRole, writeTeams } from '../tegami.js';
+import { teamsSopPath } from '../spawn.js';
+import { observeRoleChange, roleDeliveryFault } from '../role-watch.js';
+import { listSessionRoles } from '../definitions.js';
 import { emitSessionEnd } from '../sockets.js';
 
 export function registerSessions(app: express.Express): void {
@@ -157,6 +160,13 @@ export function registerSessions(app: express.Express): void {
       // notices fire here — for teams whose wipeboard file exists (docs/wipeboards.md).
       const before = await getTags(name);
       const tags = await setTags(name, list.slice(0, 16));
+      // Leadership implies membership, so a team this session no longer belongs to is a
+      // team it no longer leads — the designation follows the tag out.
+      const leads = await getLeads(name);
+      const keptLeads = leads.filter((t) => tags.includes(t));
+      if (keptLeads.length !== leads.length) await setLeads(name, keptLeads);
+      // The letter's derived teams block follows membership, at the moment it changes.
+      await writeTeams(name, tags).catch(() => {});
       const notices = await announceTeamChanges(name, before, tags);
       res.json({ ok: true, tags, notices });
     } catch (e) {
@@ -167,14 +177,14 @@ export function registerSessions(app: express.Express): void {
   /**
    * THE TWO AXES OUT OF A SESSION'S LETTER — and only one of them has a door in.
    *
-   * `session_task` is what this session is DOING. The session keeps it current itself
+   * `session_role` is what this session is DOING. The session keeps it current itself
    * (`write_tegami`) and usually should. The POST is the OWNER's hand on the same field,
    * from the tile: you can see the agent is not doing what its mark says, so you say so.
    *
    * IT IS NOT MERELY A RE-LABEL ANY MORE. A committed task change means the session
    * should be reading that task's shelf, so this route writes the letter and then hands
    * off to the SAME observer the agent's own `write_tegami` goes through
-   * (`src/task-watch.ts`). One injection implementation, reached two ways — a second one
+   * (`src/role-watch.ts`). One injection implementation, reached two ways — a second one
    * in this route is exactly how the owner's change and the agent's change would drift
    * into behaving differently.
    *
@@ -182,79 +192,40 @@ export function registerSessions(app: express.Express): void {
    * fixed are untouched, and a session that is re-marked must not thereby acquire a
    * different dial.
    *
-   * `family_role` is READ-ONLY here, and there is no POST for it at all. It is birth-fixed;
-   * the seed is its only writer. A route to change it would be the one door that made the
-   * immutability rule a suggestion.
-   *
-   * Not validated against the definitions on purpose: `session_tasks/` is the owner's to
+   * Not validated against the definitions on purpose: `session_roles/` is the owner's to
    * extend or shadow, and a name with no icon still draws as its own text. '' clears the
    * mark back to "has not said", which is a real state and must stay reachable — and it
-   * injects no reading, because a blank task has none.
+   * injects no reading, because a blank session_role has none.
    *
    * 409, not 500, when the letter cannot be written: it means the file is malformed or
    * the edit would not re-parse, and the caller wants to know its change did not land
    * rather than that the server broke.
    */
   /**
-   * `family_role` HAS A DOOR, AND IT IS READ-ONLY ON PURPOSE.
+   * THE RETIRED AXES, refused by name — three generations of one door, each pointing at
+   * what replaced it, because a caller on old vocabulary deserves better than the blank
+   * 404 a typo gets. 410 is the honest code: these doors existed, and they are gone.
    *
-   * There was no route here at all, which meant an attempt to set a role got Express's
-   * own 404 — an opaque routing failure that reads as "Ronin is broken" rather than as
-   * "Ronin refuses". The owner hit exactly that (2026-08-22). A rule the product means to
-   * enforce has to SAY so; a missing route says nothing.
-   *
-   * 405 rather than 403 or 409, and the distinction is the point: 403 implies a
-   * permission somebody could be granted, 409 implies a state that could be resolved.
-   * Neither is true. The role is birth-fixed for everyone including Ronin — the seed is
-   * its only writer — so GET is the complete set of things you may do to it, and `Allow`
-   * says so in the protocol's own words.
-   *
-   * The message also catches the near-miss that prompted this: a value that is a
-   * `session_task` posted at the role axis. That is wrong twice over, and saying which
-   * axis it belongs to is more use than saying no.
+   *   session_job    split on 2026-08-22 into a role axis and a task axis;
+   *   family_role    the immutable session axis that split created — DISMANTLED on
+   *                  2026-08-23 (R35): identity moved off the session onto the TEAM's
+   *                  roster, contextual per team, never a session attribute;
+   *   session_task   renamed `session_role` in the same ruling.
    */
-  app.get('/api/sessions/:name/family_role', async (req, res) => {
-    const { name } = req.params;
-    if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
-    if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
-    res.json({ family_role: await readFamilyRole(name) });
-  });
-
-  app.all('/api/sessions/:name/family_role', async (req, res) => {
-    const wanted = String(req.body?.family_role ?? req.body?.value ?? '').trim();
-    const isATask = wanted
-      ? (await listSessionTasks()).some((t) => t.name.toLowerCase() === wanted.toLowerCase())
-      : false;
-    res.set('Allow', 'GET');
-    res.status(405).json({
-      error:
-        'A family_role is fixed at birth and cannot be changed in a live session — not by an ' +
-        'agent, not from the tile, and not here. The seed is its only writer. If the role ' +
-        'is genuinely wrong, that is a new session rather than a new value.' +
-        (isATask
-          ? ` "${wanted}" is a session_task in any case, not a family_role: post it to ` +
-            `/api/sessions/${encodeURIComponent(req.params.name)}/session_task, which is the axis that moves.`
-          : ''),
-      family_role: await readFamilyRole(req.params.name).catch(() => ''),
+  for (const retired of ['session_job', 'family_role', 'session_task', 'role_family']) {
+    app.all(`/api/sessions/:name/${retired}`, (req, res) => {
+      res.status(410).json({
+        error:
+          `${retired} is retired (R35, 2026-08-23). A session has ONE axis of its own — ` +
+          '`session_role`, what it is doing now, at ' +
+          `/api/sessions/${encodeURIComponent(req.params.name)}/session_role — and its teams. ` +
+          "Identity is the TEAM'S: a `team_role` lives on a team's roster (/api/team-rosters), " +
+          'never on a session.',
+      });
     });
-  });
+  }
 
-  /**
-   * THE RETIRED KEY, refused by name. `session_job` was split into `family_role` and
-   * `session_task` on 2026-08-22 and there is no compatibility reader — but a caller
-   * still using it deserves to be told that, rather than getting the same blank 404 a
-   * typo gets. 410 is the honest code: this door existed, and it is gone.
-   */
-  app.all('/api/sessions/:name/session_job', (req, res) => {
-    res.status(410).json({
-      error:
-        'session_job is retired. It was split on 2026-08-22 into `family_role` — who the ' +
-        'session is, fixed at birth and read-only — and `session_task`, what it is doing ' +
-        `now, which you change at /api/sessions/${encodeURIComponent(req.params.name)}/session_task.`,
-    });
-  });
-
-  app.get('/api/sessions/:name/session_task', async (req, res) => {
+  app.get('/api/sessions/:name/session_role', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
     if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
@@ -263,61 +234,148 @@ export function registerSessions(app: express.Express): void {
     // input). A changed mark with undelivered reading must never pass silently, so the
     // surface that shows the mark can show why it is only half true.
     res.json({
-      session_task: await readSessionTask(name),
-      family_role: await readFamilyRole(name),
-      delivery: await taskDeliveryFault(name),
+      session_role: await readSessionRole(name),
+      delivery: await roleDeliveryFault(name),
     });
   });
 
-  app.post('/api/sessions/:name/session_task', async (req, res) => {
+  app.post('/api/sessions/:name/session_role', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
-    // THE ROLE GUARD COMES BEFORE THE SESSION LOOKUP, deliberately. Naming an immutable
-    // axis is wrong about the REQUEST, not about the session — so it must answer the same
-    // way whether or not the session happens to exist, and it must not be reachable only
-    // by callers who guessed a live name. It also keeps this refusal and the 405 on
-    // /family_role saying the same thing in the same order.
-    if (req.body?.family_role !== undefined) {
+    // A RETIRED KEY IN THE BODY IS REFUSED BEFORE THE SESSION LOOKUP, deliberately:
+    // it is wrong about the REQUEST, not about the session, so it answers the same way
+    // whether or not the session exists.
+    if (req.body?.role_family !== undefined || req.body?.family_role !== undefined) {
       return res.status(400).json({
-        error: 'A family_role is fixed at birth and cannot be changed in a live session.',
+        error:
+          'role_family is retired (R35, 2026-08-23) — a session has no identity axis of its own. ' +
+          "Identity is the TEAM'S team_role, on its roster.",
       });
     }
     if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
-    const task = String(req.body?.session_task ?? '').trim().slice(0, 64);
+    const task = String(req.body?.session_role ?? '').trim().slice(0, 64);
     try {
-      const saved = await writeSessionTask(name, task);
+      const saved = await writeSessionRole(name, task);
       if (saved === null) {
         return res.status(409).json({ error: "This session's letter could not be written — it has no readable json block." });
       }
-      count('session_task.set', { task: saved || null });
+      count('session_role.set', { task: saved || null });
       // The owner authored it; the observer delivers it. Fire-and-forget so the tile's
       // mark updates at once — a failed delivery is recorded and retried by the watcher
       // rather than held against this request.
-      void observeTaskChange(name);
-      res.json({ ok: true, session_task: saved });
+      void observeRoleChange(name);
+      res.json({ ok: true, session_role: saved });
     } catch (e) {
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }
   });
 
   /**
-   * Every group in play, with its members. Derived from the sessions each call — there
-   * is no group registry to drift out of date.
+   * EVERY LIVE TEAM, with members and leads. Derived from the sessions each call — there
+   * is no membership registry to drift out of date, and the roster never holds one.
    *
-   * It used to answer with a `leaders` map too, off `@ronin-lead` — who coordinates each
-   * group, hand-set by the owner. That option is retired: coordinating is a `family_role`
-   * (`QuarterBack`), and the session says so in its own letter — a task, so it migrates.
+   * The `leaders` map is BACK (R35, 2026-08-23, un-retiring the 人): who coordinates a
+   * team is the hand-set `@ronin-lead` designation, never derived from what a session
+   * is doing — the secretary can be team lead. `/api/groups` is the retired spelling.
    */
-  app.get('/api/groups', async (_req, res) => {
+  app.get('/api/teams', async (_req, res) => {
     try {
-      const groups: Record<string, string[]> = {};
+      const teams: Record<string, string[]> = {};
+      const leaders: Record<string, string[]> = {};
       for (const s of await listSessions()) {
-        for (const t of s.tags) (groups[t] ||= []).push(s.name);
+        for (const t of s.tags) (teams[t] ||= []).push(s.name);
+        for (const t of s.leads) (leaders[t] ||= []).push(s.name);
       }
-      res.json({ groups });
+      res.json({ teams, leaders });
     } catch (e) {
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }
+  });
+
+  /**
+   * ONE TEAM'S LIVE HALF — the members with what a view needs per card: dial,
+   * session_role, lead flag. The durable half is /api/team-rosters/:name; a team can be
+   * real in either half alone (a roster with no live members, a tag with no roster).
+   */
+  app.get('/api/teams/:name/live', async (req, res) => {
+    const { name } = req.params;
+    try {
+      const members = (await listSessions()).filter((s) => s.tags.includes(name));
+      res.json({
+        team: name,
+        members: await Promise.all(
+          members.map(async (s) => ({
+            name: s.name,
+            dial: await getControl(s.name),
+            session_role: await readSessionRole(s.name),
+            team_lead: s.leads.includes(name),
+          })),
+        ),
+      });
+    } catch (e) {
+      res.status(500).json({ error: String((e as Error)?.message ?? e) });
+    }
+  });
+
+  /**
+   * THE 人 — designate (or clear) the teams this session LEADS. Owner-shaped but not
+   * owner-gated: membership and leadership are deliberately rule-free (owner,
+   * 2026-08-23 — "little to absolutely no rules; put it there, see what happens").
+   *
+   * LEADING IMPLIES MEMBERSHIP: designating a lead tags the session into the team if it
+   * is not already on it. And a NEWLY-led session is handed the team-building SOP —
+   * route 2 of its delivery, the same reading a default_lead_role launch gets at birth —
+   * because leadership is designated, not derived, and whoever actually leads must get
+   * the reading whichever way they came to it. Delivery obeys the dial and a refusal is
+   * reported, not swallowed.
+   */
+  app.post('/api/sessions/:name/team_lead', async (req, res) => {
+    const { name } = req.params;
+    if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
+    if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
+    const body = req.body?.teams;
+    const wanted = (Array.isArray(body) ? body.map(String) : String(body ?? '').split(','))
+      .map((t) => t.trim())
+      .filter(Boolean)
+      .slice(0, 16);
+    try {
+      const before = await getLeads(name);
+      const tagsBefore = await getTags(name);
+      const missing = wanted.filter((t) => !tagsBefore.includes(t));
+      let tags = tagsBefore;
+      if (missing.length) {
+        tags = await setTags(name, [...tagsBefore, ...missing].slice(0, 16));
+        await announceTeamChanges(name, tagsBefore, tags).catch(() => {});
+      }
+      const leads = await setLeads(name, wanted);
+      await writeTeams(name, tags).catch(() => {});
+      count('lead.set', { n: leads.length });
+      // Route 2 of the SOP: the newly-led get the reading, one message, dial obeyed.
+      const fresh = leads.filter((t) => !before.includes(t));
+      let delivered: string | null = null;
+      if (fresh.length) {
+        const control = await getControl(name);
+        if (control === 'write') {
+          const msg =
+            `You are now the team_lead of ${fresh.map((t) => `"${t}"`).join(', ')}. ` +
+            `Read first: ${teamsSopPath()} — how to raise supporting sessions and place them into your team.`;
+          const sent = await sendText(name, msg).catch(() => null);
+          delivered = sent?.started ? 'delivered' : 'not delivered — the prompt was not accepting input';
+        } else {
+          delivered = `not delivered — "${name}" is dial ${control}; flip it to 🤖 and re-designate to hand over the reading`;
+        }
+      }
+      res.json({ ok: true, team_lead: leads, tags, delivery: delivered });
+    } catch (e) {
+      res.status(500).json({ error: String((e as Error)?.message ?? e) });
+    }
+  });
+
+  app.get('/api/sessions/:name/team_lead', async (req, res) => {
+    const { name } = req.params;
+    if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
+    if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
+    res.json({ team_lead: await getLeads(name) });
   });
 
   // Control dial (@ronin-control): user / read / write — who may drive this session.

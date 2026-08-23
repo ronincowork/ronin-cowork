@@ -191,7 +191,7 @@ export const SETTEI_SCHEMA = {
       shape: 'provider-model',
       // Keyed by her own catalog token — the one the launcher, memory and counting
       // already share, so nothing has to translate it. `MikaAssist` was a session_job and
-      // is a session_task in the `assistant` family (R34); the token never changed, so the
+      // is a session_role in the `assistant` family (R34); the token never changed, so the
       // settings key did not either. `jobs.` is the stored prefix and stays: renaming it
       // would move the owner's saved value for no gain.
       lands: { family: 'agents', key: 'jobs.mikaassist' },
@@ -281,7 +281,7 @@ export const SETTEI_SCHEMA = {
    * being finished; it wears no durable hat, and giving it one would be inventing a role
    * nobody asked for. */
   seat: {
-    session_task: 'Atarashi',
+    session_role: 'Atarashi',
     name: 'setup',
     prompt: 'Finish what setup still needs. Your task shelf says how: read GET /api/settei at start — needed[] is your reading list, and set is what the owner already answered; never re-ask it.',
   },

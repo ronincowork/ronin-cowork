@@ -269,7 +269,7 @@ export async function buildCoworkSetup(host, onDone) {
       const installed = await request('/api/install', { method: 'POST', json: { items: picks.map((name) => ({ kind: 'agent', name })) } });
       if (installed.ok && Array.isArray(installed.data)) landOn.push(...installed.data.filter((x) => x.session).map((x) => x.session)); else if (!installed.ok) installNote += ' Agent installs can be retried from Configuration.';
     }
-    if (ctx.modelOpts.length) { const born = await request('/api/launch', { method: 'POST', json: { session_task: schema.seat.session_task, name: schema.seat.name, ...(wantsProject ? { project_root: projectName } : {}), prompt: schema.seat.prompt } }); if (born.ok && born.data?.name) landOn.push(born.data.name); }
+    if (ctx.modelOpts.length) { const born = await request('/api/launch', { method: 'POST', json: { session_role: schema.seat.session_role, name: schema.seat.name, ...(wantsProject ? { project_root: projectName } : {}), prompt: schema.seat.prompt } }); if (born.ok && born.data?.name) landOn.push(born.data.name); }
     line.say(`Saved. Opening RoninCoWork…${installNote}`, installNote ? 'bad' : 'ok'); onDone?.({ tiles: landOn });
   });
   updateReview(); inspectDir();

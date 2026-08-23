@@ -1,19 +1,23 @@
 /**
- * THE LETTER'S AXIS HALF — cowork's, because the axes are set at birth and a ladder is not.
+ * THE LETTER'S AXIS HALF — cowork's, because the axis is set at birth and a ladder is not.
  *
- * TWO FIELDS, TWO AUTHORITIES, one record:
+ * ONE SESSION-AUTHORED AXIS, plus one derived block:
  *
- *   family_role      WHO the session is. Seeded at birth from the button the owner pressed,
- *                 and then IMMUTABLE — `write_tegami` preserves it and refuses an
- *                 attempted change, and no live-session control offers to change it.
- *                 A session does not stop being a Developer halfway through.
- *   session_task  WHAT it is doing right now. Seeded at birth and MUTABLE by two writers:
- *                 the session itself with `write_tegami`, and the owner from the tile.
- *                 A committed change injects that task's reading into the running
- *                 session (`src/task-watch.ts`).
+ *   session_role  WHAT the session is doing right now. Seeded at birth and MUTABLE by two
+ *                 writers: the session itself with `write_tegami`, and the owner from the
+ *                 tile. A committed change injects that role's reading into the running
+ *                 session (`src/role-watch.ts`).
+ *   teams         DERIVED, machinery-owned, ADDITIVE — one entry per team the session is
+ *                 on: the team's name, its `team_role`, and its objective, read from the
+ *                 tags and the team_rosters store. Never authored by the agent
+ *                 (`write_tegami` refuses it and regenerates it), refreshed at birth, on
+ *                 a tag change, and on every whole-letter save — so a changed team
+ *                 objective reaches the session on its next reread, lazily, with no push.
  *
- * Blanks are stored as empty strings and are never inferred from each other: a session
- * with a role and no task is a real, ordinary launch.
+ * There is NO identity axis on the session any more (R35, 2026-08-23): the old
+ * `family_role` was dismantled with the teams cut. A session's identity, where it has
+ * one, is contextual — the `team_role` of whichever team you are looking at it through —
+ * and it lives on the roster only. A blank is stored as an empty string.
  *
  * Neither is a MICHI concern: michi is the ladder, and a session has a role and a task
  * whether or not it ever puts a ladder up.
@@ -47,7 +51,8 @@ import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { RIREKI_DIR, sessionKey } from './session-dir.js';
-import { listSessionTasks } from './definitions.js';
+import { listSessionRoles } from './definitions.js';
+import { readTeamRoster } from './team-rosters.js';
 import type { SessionInfo } from './tmux.js';
 
 const exec = promisify(execFile);
@@ -78,26 +83,47 @@ export function tegamiPath(key: string): string {
 }
 
 /**
- * The task lines, READ FROM THE DEFINITIONS — never restated here.
+ * The session_role lines, READ FROM THE DEFINITIONS — never restated here.
  *
- * `ronin_catalogs/session_tasks/` is the authority on what a task is. A second copy in
- * this file would be correct exactly until someone edited one of them, and the whole
- * point of a letter that teaches at the moment of use is that what it teaches is
+ * `ronin_catalogs/session_roles/` is the authority on what a session_role is. A second
+ * copy in this file would be correct exactly until someone edited one of them, and the
+ * whole point of a letter that teaches at the moment of use is that what it teaches is
  * current. If the directory cannot be read we print no list at all rather than a stale one.
- *
- * TASKS ONLY, and roles deliberately not: this list exists so a session can pick its NEXT
- * value, and the role is the one field it may not change. Listing roles here would be an
- * invitation to do the one thing the letter refuses.
  */
 async function taskLines(): Promise<string> {
   try {
-    const rows = (await listSessionTasks())
+    const rows = (await listSessionRoles())
       .filter((k) => k.name && k.remit)
       .map((k) => `> \`${k.name}\` — ${k.remit}`);
     return rows.length ? rows.join('\n') + '\n>' : '';
   } catch {
     return '';
   }
+}
+
+/** One derived teams entry — the letter's window onto a roster. */
+export interface TeamEntry {
+  team: string;
+  team_role: string;
+  objective: string;
+}
+
+/**
+ * THE TEAMS BLOCK, DERIVED — tags in, roster facts out.
+ *
+ * The authority never moves: membership lives on the session (its tags), the
+ * `team_role` and objective live on the team's roster, and this join is computed fresh
+ * every time it is asked for. A team with no roster file is still a team — it renders
+ * with blank role and objective, because membership is real whether or not the durable
+ * record has been written yet.
+ */
+export async function deriveTeams(tags: string[]): Promise<TeamEntry[]> {
+  return Promise.all(
+    tags.map(async (team) => {
+      const r = await readTeamRoster(team).catch(() => null);
+      return { team, team_role: r?.team_role ?? '', objective: r?.objective ?? '' };
+    }),
+  );
 }
 
 /**
@@ -115,8 +141,8 @@ async function taskLines(): Promise<string> {
 function seedShell(
   name: string,
   role: string,
-  task: string,
   checkout: TegamiCheckout,
+  teams: TeamEntry[],
   tasks: string,
 ): string {
   return `# TEGAMI — ${name}
@@ -128,17 +154,18 @@ function seedShell(
 > At the end of a turn, consider updating it with \`write_tegami\`. Not keeping it current is
 > poor quality.
 >
-> YOUR **family_role** is already set below, and it does not change. It is WHO you are for
-> this whole session — the hat the owner started you in. \`write_tegami\` preserves it and
-> refuses an attempted change, so do not try to edit it; if the role is genuinely wrong,
-> that is a new session, not a new value.
->
-> YOUR **session_task** is already set below — it is the button the owner pressed to start
+> YOUR **session_role** is already set below — it is the button the owner pressed to start
 > you, so it is a statement of what you were asked for, not a guess. **Change it when the
-> work changes**: a session that finishes planning and starts building has changed task,
-> not become a new session, and not changed role either. It is the SESSION's task, not the
-> agent's: same binary, different work. When you change it, Ronin hands you that task's own
-> reading — so re-marking yourself is how you get told what the new work needs.
+> work changes**: a session that finishes planning and starts building has changed its
+> session_role, not become a new session. It is the SESSION's role, not the agent's: same
+> binary, different work. When you change it, Ronin hands you that role's own reading — so
+> re-marking yourself is how you get told what the new work needs.
+>
+> YOUR **teams** block is DERIVED and not yours to write: one entry per team you are on —
+> the team's name, its team_role, and its objective, read live from the team rosters.
+> \`write_tegami\` regenerates it on every save and a tag change refreshes it, so reread
+> your letter to see a team objective that moved. A session on no team is a rōnin, which
+> is an ordinary state and not a gap.
 >
 > YOUR **repos** list is started from the checkout the new-session box put you in. It is
 > not limited to that project_root: add, remove, or change entries as you work across other
@@ -166,8 +193,8 @@ ${tasks}
 
 \`\`\`json
 { "objective": "",
-  "family_role": ${JSON.stringify(role)},
-  "session_task": ${JSON.stringify(task)},
+  "session_role": ${JSON.stringify(role)},
+  "teams": ${JSON.stringify(teams)},
   "repos": ${JSON.stringify(checkout.repo || checkout.branch ? [checkout] : [])},
   "ladder": [] }
 \`\`\`
@@ -187,13 +214,13 @@ ${tasks}
 export async function seedTegami(
   name: string,
   role: string,
-  task: string,
   checkout: TegamiCheckout = { repo: '', branch: '' },
+  teams: TeamEntry[] = [],
 ): Promise<string | null> {
   try {
     const file = tegamiPath(await sessionKey(name));
     await fs.mkdir(path.dirname(file), { recursive: true });
-    await fs.writeFile(file, seedShell(name, role, task, checkout, await taskLines()), { flag: 'wx' });
+    await fs.writeFile(file, seedShell(name, role, checkout, teams, await taskLines()), { flag: 'wx' });
     return file;
   } catch (e) {
     if ((e as NodeJS.ErrnoException)?.code === 'EEXIST') return tegamiPath(await sessionKey(name));
@@ -217,7 +244,7 @@ export async function seedTegami(
  * it reads as blank on both axes — which is correct: it is a letter from a schema that no
  * longer exists, and inventing a task from it would be reading a fact nobody wrote.
  */
-async function readAxis(name: string, key: 'family_role' | 'session_task'): Promise<string> {
+async function readAxis(name: string, key: 'session_role'): Promise<string> {
   try {
     const text = await fs.readFile(tegamiPath(await sessionKey(name)), 'utf8');
     const fenced = text.match(/```(?:json)?\s*\n([\s\S]*?)\n```/);
@@ -229,11 +256,8 @@ async function readAxis(name: string, key: 'family_role' | 'session_task'): Prom
   }
 }
 
-/** WHAT the session is doing now — the mark, and the mutable axis. */
-export const readSessionTask = (name: string): Promise<string> => readAxis(name, 'session_task');
-
-/** WHO the session is — birth-fixed, and never written by anything after the seed. */
-export const readFamilyRole = (name: string): Promise<string> => readAxis(name, 'family_role');
+/** WHAT the session is doing now — the mark, and the one session-authored axis. */
+export const readSessionRole = (name: string): Promise<string> => readAxis(name, 'session_role');
 
 /**
  * THE OWNER'S HAND ON THE TASK — set what a session is doing, from the tile.
@@ -245,12 +269,11 @@ export const readFamilyRole = (name: string): Promise<string> => readAxis(name, 
  * until the agent notices makes the mark decoration. So: two writers, one field, the
  * owner's hand last.
  *
- * **IT TOUCHES ONE KEY, and `family_role` is not it.** The role is birth-fixed; this route
- * cannot change it, `write_tegami` refuses to change it, and there is no live-session
- * control that offers to. That is the whole of the immutability rule on this side: the
- * only writer that ever sets `family_role` is the seed.
+ * **IT TOUCHES ONE KEY.** The `teams` block beside it is machinery-owned and derived;
+ * this write leaves it exactly as found (a tag change is what refreshes it, through
+ * `writeTeams` below).
  *
- * **SURGICAL, not a rewrite.** It replaces the `session_task` VALUE inside the fenced
+ * **SURGICAL, not a rewrite.** It replaces the `session_role` VALUE inside the fenced
  * block and touches nothing else — the ladder, `docs`, `at`, `objective`, the agent's
  * own spacing and every key we have never heard of survive byte for byte. Re-serialising
  * the block from a parse would silently reformat an agent's file, and would drop any key
@@ -269,7 +292,7 @@ export const readFamilyRole = (name: string): Promise<string> => readAxis(name, 
  * that is true of `write_tegami` against itself today, and a lock is not worth the
  * machinery for a field a human changes by hand a few times a day.
  */
-export async function writeSessionTask(name: string, task: string): Promise<string | null> {
+export async function writeSessionRole(name: string, task: string): Promise<string | null> {
   const clean = task.trim();
   const file = tegamiPath(await sessionKey(name));
   let text: string;
@@ -278,15 +301,15 @@ export async function writeSessionTask(name: string, task: string): Promise<stri
   } catch {
     // No letter — a session Ronin never launched. Marking it is a reasonable thing to
     // want, so seeding one is the honest way to grant it, not a silent failure.
-    return (await seedTegami(name, '', clean)) ? clean : null;
+    return (await seedTegami(name, clean)) ? clean : null;
   }
   const block = text.match(/```(?:json)?\s*\n([\s\S]*?)\n```/);
   if (!block) return null;
   const body = block[1];
-  const key = /"session_task"\s*:\s*"(?:[^"\\]|\\.)*"/;
+  const key = /"session_role"\s*:\s*"(?:[^"\\]|\\.)*"/;
   const next = key.test(body)
-    ? body.replace(key, `"session_task": ${JSON.stringify(clean)}`)
-    : body.replace(/\{/, `{ "session_task": ${JSON.stringify(clean)},`);
+    ? body.replace(key, `"session_role": ${JSON.stringify(clean)}`)
+    : body.replace(/\{/, `{ "session_role": ${JSON.stringify(clean)},`);
   try {
     JSON.parse(next); // the guard: never leave a letter the tile cannot read
   } catch {
@@ -338,7 +361,7 @@ export async function parkBrief(name: string, text: string): Promise<string | nu
  * IT IS NEVER TYPED INTO THE TILE. Writing an explanation into the pane is the exact sin
  * this whole buildout exists to end; this writes the file the tile already reads.
  *
- * SURGICAL AND TIMID, the same discipline as `writeSessionTask` above and for the same reason: a
+ * SURGICAL AND TIMID, the same discipline as `writeSessionRole` above and for the same reason: a
  * letter is the session's own words and Ronin is a guest in it. It replaces the `ladder`
  * VALUE and nothing else, and it refuses outright unless the ladder is empty or is a single
  * gate — the only two states this can honestly own. The moment an agent has put a real
@@ -387,8 +410,8 @@ export async function writeGate(name: string, gate: string): Promise<boolean> {
   return true;
 }
 
-/** A session, plus both axes out of its letter. */
-export type SessionWithAxes = SessionInfo & { family_role: string; session_task: string };
+/** A session, plus its axis out of its letter. */
+export type SessionWithAxes = SessionInfo & { session_role: string };
 
 /**
  * Every producer of a client-facing session list runs through here — `/api/sessions`,
@@ -396,16 +419,63 @@ export type SessionWithAxes = SessionInfo & { family_role: string; session_task:
  * missing on another. One letter read per session per list; the same cost michi's row
  * field already pays, on lists that are already a tmux round trip.
  *
- * BOTH AXES RIDE THE LIST, and they are drawn differently: the TASK is the mark (its
- * icon, on every surface that lists sessions), and the ROLE is context (the session's
- * details, where it does not compete with a mark that changes).
+ * THE MARK RIDES THE LIST: the session_role's icon, on every surface that lists
+ * sessions. Team context is not read here — it is contextual per team, and the surfaces
+ * that need it ask the teams routes.
  */
 export async function withAxes(list: SessionInfo[]): Promise<SessionWithAxes[]> {
   return Promise.all(
     list.map(async (s) => ({
       ...s,
-      family_role: await readFamilyRole(s.name),
-      session_task: await readSessionTask(s.name),
+      session_role: await readSessionRole(s.name),
     })),
   );
+}
+
+/**
+ * REFRESH THE LETTER'S DERIVED TEAMS BLOCK — the machinery's own write.
+ *
+ * Called when membership changes (the tags route) and at birth via the seed; the third
+ * refresher is `write_tegami` itself, which regenerates the block on every whole-letter
+ * save. Surgical exactly like `writeSessionRole`: it replaces the `teams` VALUE inside
+ * the fenced block and touches nothing else. A letter with no block, or none at all, is
+ * left alone — the agent's own next save will carry the fresh derivation.
+ */
+export async function writeTeams(name: string, tags: string[]): Promise<boolean> {
+  const file = tegamiPath(await sessionKey(name));
+  let text: string;
+  try {
+    text = await fs.readFile(file, 'utf8');
+  } catch {
+    return false;
+  }
+  const block = text.match(/```(?:json)?\s*\n([\s\S]*?)\n```/);
+  if (!block) return false;
+  const body = block[1];
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(body) as Record<string, unknown>;
+  } catch {
+    return false;
+  }
+  const teams = await deriveTeams(tags);
+  parsed['teams'] = teams;
+  // Re-serialise ONLY via targeted replacement where possible; the teams value is
+  // machinery data, so replacing its serialized form is safe. When the key is absent we
+  // insert it after the opening brace.
+  const key = /"teams"\s*:\s*(\[[^\]]*(?:\{[^}]*\}[^\]]*)*\])/;
+  const value = JSON.stringify(teams);
+  const next = key.test(body)
+    ? body.replace(key, `"teams": ${value}`)
+    : body.replace(/\{/, `{ "teams": ${value},`);
+  try {
+    JSON.parse(next);
+  } catch {
+    return false;
+  }
+  const out = text.slice(0, block.index!) + block[0].replace(body, next) + text.slice(block.index! + block[0].length);
+  const tmp = `${file}.teams`;
+  await fs.writeFile(tmp, out, 'utf8');
+  await fs.rename(tmp, file);
+  return true;
 }

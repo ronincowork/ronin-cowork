@@ -1,11 +1,13 @@
 import { appendFile, mkdir } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { REPO_ROOT } from './config.js';
 import { bootFiles, ensureShelf } from './session-boot.js';
 import { listProjectRoots, listSessionLaunchSpecs, type ProjectRootInfo } from './project-roots.js';
 import { readAgentsSection } from './user-config.js';
 import { storeDir } from './stores.js';
-import { findDefinition } from './definitions.js';
+import { findDefinition, listRoleFamilies } from './definitions.js';
+import { readTeamRoster, type TeamRoster } from './team-rosters.js';
 import { resolveLaunchProfile, type Dial, type LaunchProfile } from './launch-profile.js';
 
 /**
@@ -26,19 +28,21 @@ import { resolveLaunchProfile, type Dial, type LaunchProfile } from './launch-pr
  */
 export interface SpawnForm {
   /**
-   * WHO the session is, and it does not change again. Optional: a blank role is a real
-   * launch, not a gap, and it simply contributes no role reading and no role defaults.
-   */
-  family_role?: string;
-  /**
-   * WHAT it is doing right now. Optional and mutable — the session rewrites it with
-   * `write_tegami` and the owner rewrites it from the tile, and either write injects the
-   * new task's reading into the running session.
+   * WHAT the session is doing right now. Optional and mutable — the session rewrites it
+   * with `write_tegami` and the owner rewrites it from the tile, and either write
+   * injects the new role's reading into the running session.
    *
-   * A launch naming NEITHER axis is not a catalog launch at all; the route hands it to
-   * `launch_bare` instead of guessing which one was meant.
+   * A launch naming no session_role is not a catalog launch at all; the route hands it
+   * to `launch_bare` instead of guessing.
    */
-  session_task?: string;
+  session_role?: string;
+  /**
+   * THE TEAM this session is born onto — an existing team's name, or absent for a
+   * rōnin (a session on no team, which is first-class). Joining rides the ordinary tag
+   * machinery; what the team adds at birth is CONTEXT: its roster's root as the
+   * project_root default, its team_role's reading shelf, and its objective in the brief.
+   */
+  team?: string;
   prompt: string;
   /**
    * What the session is called. MANDATORY in manual mode: manual means Ronin adds
@@ -97,9 +101,12 @@ export interface Resolved {
   tags: string[];
   dial: Dial;
   lifecycle: string;
-  /** Both axes as resolved, either possibly ''. These are what TEGAMI is seeded with. */
-  family_role: string;
-  session_task: string;
+  /** The axis as resolved, possibly ''. This is what TEGAMI is seeded with. */
+  session_role: string;
+  /** The team joined at birth, '' for a rōnin — and its roster's team_role, for the
+   *  reading level. */
+  team: string;
+  team_role: string;
   /** Never '' — a session must be born somewhere, and the resolver refuses otherwise. */
   project_root: string;
   mode: 'manual' | 'assisted';
@@ -144,6 +151,7 @@ export function buildBrief(
   form: SpawnForm,
   referenceDir?: string,
   boot: string[] = [],
+  roster?: TeamRoster | null,
 ): string {
   // MANUAL: what the owner typed, byte for byte. No posture, no reading list, no
   // opening template, no ack rule. If this ever grows a "just one helpful line",
@@ -151,12 +159,17 @@ export function buildBrief(
   if (form.mode === 'manual') return form.prompt.trim();
 
   const parts: string[] = [];
-  // WHO FIRST, THEN WHAT. The postures are ADDITIVE (src/launch-profile.ts): a role's
-  // posture and its task's posture are both true of this session, so the task's follows
-  // the role's rather than displacing it. `profile.label` names the role when there is
-  // one, because that is the durable answer to "who are you"; with no role it names the
-  // task, which is the old wording exactly.
   if (profile.posture.length) parts.push(`You are the ${profile.label}. ${profile.posture.join(' ')}`);
+  // THE TEAM, before the reading: who you work with and what that team is for. The
+  // objective comes from the roster — the durable half — and the wipeboard is the
+  // team's own conversation surface. A rōnin launch has no line here at all.
+  if (roster) {
+    const bits = [`You are born onto team "${roster.name}"`];
+    if (roster.team_role) bits[0] += ` (team_role: ${roster.team_role})`;
+    if (roster.objective) bits.push(`its objective: ${roster.objective}`);
+    bits.push(`its wipeboard is "${roster.wipeboard}" (tejun-wipeboard ${roster.wipeboard})`);
+    parts.push(bits.join('. ') + '.');
+  }
   // THE SESSION BOOT SHELF, listed at this instant rather than remembered. This replaced
   // the project_root's `read:` — a stored list of literal paths that went stale in silence
   // the moment a file moved. Nothing is written down now, so nothing can be wrong: a file
@@ -218,35 +231,75 @@ function profileDir(profile: LaunchProfile): string {
   return profile.dir === '{install}' ? REPO_ROOT : '';
 }
 
+/**
+ * The birth reading list, plus THE TEAM-BUILDING SOP for a lead launch.
+ *
+ * A session_role that is some family's `default_lead_role` is the coordinating kind of
+ * work, and its launch carries `ronin_sops/teams.md` — how to raise supporting sessions
+ * and place them into a team. Route 1 of two: route 2 is the `team_lead` designation on
+ * a live session (routes/teams-api.ts), because leadership is designated, not derived,
+ * and whoever actually leads must get the reading whichever way they came to it.
+ * The owner's sops store shadows the shipped page file-for-file, same as every SOP.
+ */
+async function bootReading(
+  projectRoot: string,
+  sessionRole: string,
+  teamRole: string,
+  mcpOn: boolean,
+): Promise<string[]> {
+  const files = await bootFiles(projectRoot, sessionRole, teamRole, mcpOn);
+  if (sessionRole && (await listRoleFamilies()).some((f) => f.default_lead_role === sessionRole)) {
+    files.push(teamsSopPath());
+  }
+  return files;
+}
+
+/** The teams SOP — the owner's shadow when it exists, else the shipped page. */
+export function teamsSopPath(): string {
+  const user = path.join(storeDir('sops'), 'teams.md');
+  return existsSync(user) ? user : path.join(REPO_ROOT, 'ronin_sops', 'teams.md');
+}
+
 export async function resolveForm(
   form: SpawnForm,
   taken: Set<string>,
   referenceDir?: string,
 ): Promise<Resolved> {
-  const [roleDef, taskDef, roots, launchSpecs, agentsSet] = await Promise.all([
-    findDefinition('family_roles', form.family_role ?? ''),
-    findDefinition('session_tasks', form.session_task ?? ''),
+  const [taskDef, roots, launchSpecs, agentsSet] = await Promise.all([
+    findDefinition('session_roles', form.session_role ?? ''),
     listProjectRoots(),
     listSessionLaunchSpecs(),
     readAgentsSection(),
   ]);
   // A NAMED axis that does not resolve is a refusal, never a silent blank. Blank and
   // wrong are different launches, and only one of them is what the caller asked for.
-  if (form.family_role && !roleDef) {
-    throw new Error(`Unknown family_role "${form.family_role}" (see ronin_catalogs/family_roles/).`);
+  if (form.session_role && !taskDef) {
+    throw new Error(`Unknown session_role "${form.session_role}" (see ronin_catalogs/session_roles/).`);
   }
-  if (form.session_task && !taskDef) {
-    throw new Error(`Unknown session_task "${form.session_task}" (see ronin_catalogs/session_tasks/).`);
+  // THE TEAM resolves through its ROSTER — the durable record. A named team with no
+  // roster is refused rather than silently joined: being born ONTO a team is a launch
+  // fact and deserves the durable half to exist; joining a tag-only team afterwards is
+  // the tags route's ordinary business.
+  const roster = form.team ? await readTeamRoster(form.team) : null;
+  if (form.team && !roster) {
+    throw new Error(
+      `Team "${form.team}" has no roster on this box. Create it first (POST /api/team-rosters), ` +
+        'or launch without a team and tag the session afterwards.',
+    );
   }
   // THE CASCADE, and every refusal it makes happens here — before a session exists.
-  const profile = resolveLaunchProfile(roleDef, taskDef);
+  const profile = resolveLaunchProfile(taskDef);
 
-  // PROJECT_ROOT IS REQUIRED, and omission is not a third answer: it selects the top
-  // ACTIVE root, exactly as the launcher's picker does. An archived root stays
-  // resolvable BY NAME (a name that used to launch must never stop meaning what it
-  // meant); it is only the default that skips them.
+  // PROJECT_ROOT IS REQUIRED, and omission is not a third answer: first the launch's
+  // own say, then the TEAM's default (the roster is the context a team launch inherits),
+  // then the top ACTIVE root, exactly as the launcher's picker does. An archived root
+  // stays resolvable BY NAME (a name that used to launch must never stop meaning what
+  // it meant); it is only the defaults that skip them.
   const active = roots.filter((r) => !r.archived);
-  const root = form.project_root ? roots.find((r) => r.name === form.project_root) : active[0];
+  const rosterRoot = roster?.project_root ? roots.find((r) => r.name === roster.project_root) : undefined;
+  const root = form.project_root
+    ? roots.find((r) => r.name === form.project_root)
+    : (rosterRoot && !rosterRoot.archived ? rosterRoot : active[0]);
   if (form.project_root && !root) {
     throw new Error(`Unknown project_root "${form.project_root}" (see your PROJECT_ROOTS.md).`);
   }
@@ -306,7 +359,7 @@ export async function resolveForm(
   // name a command explicitly. So the field said one thing and the box did another.
   //
   // It sits BETWEEN the install default and the explicit pick, which is the cascade's own
-  // order — system < family_role < session_task < this launch. The bias is a model NAME and
+  // order — system < role_family < session_role < this launch. The bias is a model NAME and
   // is matched against the launch table's own model column, never turned into a command
   // string here: the table is the one place a provider is a row and a model is a column.
   // The owner's default provider is preferred when two of them offer the same name, so
@@ -335,7 +388,7 @@ export async function resolveForm(
   // hand-built request) is refused rather than silently connected or disconnected.
   if (askedOff && profile.mcpAlways) {
     throw new Error(
-      `${profile.family_role || profile.session_task} is born connected (\`mcp: always\`) — ` +
+      `${profile.session_role} is born connected (\`mcp: always\`) — ` +
         'it cannot be launched with MCP off.',
     );
   }
@@ -358,7 +411,7 @@ export async function resolveForm(
   if (mcpOffWanted) cmd = `${cmd} ${spec!.mcpOff}`;
 
   return {
-    name: wanted || slugName(profile.session_task || profile.family_role, form.prompt, taken),
+    name: wanted || slugName(profile.session_role || form.team || 'session', form.prompt, taken),
     // The profile's own `dir:` WINS over the project_root's, because it is a constant of
     // the launch — the same category as its dial, and a launch must not be able to leave
     // it to chance. Exactly one definition carries one (`mikaassist`, `{install}`): she
@@ -366,11 +419,17 @@ export async function resolveForm(
     // root was picked.
     dir: profileDir(profile) || root.dir || '',
     cmd,
-    tags: (form.tags ?? []).filter(Boolean).slice(0, 16),
+    // Born onto a team = tagged into it, through the same membership the roster derives
+    // from. The team rides FIRST so a truncated list can never drop the birth team.
+    tags: [...(roster ? [roster.name] : []), ...(form.tags ?? [])]
+      .filter(Boolean)
+      .filter((t, i, a) => a.indexOf(t) === i)
+      .slice(0, 16),
     dial: profile.dial,
     lifecycle: profile.lifecycle,
-    family_role: profile.family_role,
-    session_task: profile.session_task,
+    session_role: profile.session_role,
+    team: roster?.name ?? '',
+    team_role: roster?.team_role ?? '',
     project_root: root.name,
     mode: form.mode === 'manual' ? 'manual' : 'assisted',
     // The shelf follows the toggle (owner's ruling, 2026-08-17): a session launched with
@@ -382,7 +441,8 @@ export async function resolveForm(
           root,
           form,
           referenceDir,
-          await bootFiles(root.name, profile.family_role, profile.session_task, !mcpOffWanted),
+          await bootReading(root.name, profile.session_role, roster?.team_role ?? '', !mcpOffWanted),
+          roster,
         )
       : '',
     agent,
@@ -411,8 +471,8 @@ export async function appendLedger(form: SpawnForm, resolved: Resolved, ok: bool
       LEDGER,
       JSON.stringify({
         ts: new Date().toISOString(),
-        family_role: form.family_role ?? '',
-        session_task: form.session_task ?? '',
+        session_role: form.session_role ?? '',
+        team: form.team ?? '',
         mode: form.mode ?? 'assisted',
         intent: form.prompt,
         picks: {

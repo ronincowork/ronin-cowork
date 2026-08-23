@@ -1,9 +1,11 @@
 /**
- * THE LETTER'S TWO AXES — one fixed, one moving, and the delivery that rides the moving one.
+ * THE LETTER'S AXIS AND ITS DERIVED BLOCK — the one session-authored axis, the
+ * machinery-owned teams block, and the delivery that rides the axis.
  *
- * `family_role` is seeded at birth and never written again; `session_task` is written by the
- * session (`write_tegami`) and by the owner (the tile), and a committed change hands that
- * task's reading to the running session exactly once.
+ * `session_role` is written by the session (`write_tegami`) and by the owner (the
+ * tile), and a committed change hands that role's reading to the running session
+ * exactly once. `teams` is derived — never the agent's to write — and the shipped
+ * validator refuses it while regenerating it on every save (R35, 2026-08-23).
  *
  * The store root is redirected per the env contract in src/stores.ts so this test never
  * touches a real session.
@@ -20,10 +22,10 @@ const shelf = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-axes-shelf-'));
 process.env.RONIN_SESSION_DIR = root;
 process.env.RONIN_SESSION_BOOT_DIR = shelf;
 
-const { seedTegami, readFamilyRole, readSessionTask, writeSessionTask, tegamiPath } =
+const { seedTegami, readSessionRole, writeSessionRole, writeTeams, tegamiPath } =
   await import('../src/tegami.js');
-const { observeTaskChange, markTaskDelivered, taskDeliveryFault } = await import('../src/task-watch.js');
-type Sender = import('../src/task-watch.js').Sender;
+const { observeRoleChange, markRoleDelivered, roleDeliveryFault } = await import('../src/role-watch.js');
+type Sender = import('../src/role-watch.js').Sender;
 const { sessionKey } = await import('../src/session-dir.js');
 
 const REPO = path.join(path.dirname(new URL(import.meta.url).pathname), '..');
@@ -56,95 +58,97 @@ async function validateBlock(block: unknown, previous: unknown): Promise<{ out: 
   });
 }
 
-test('the task changes twice and the role stays byte-for-byte fixed', async () => {
-  await seedTegami('axes_move', 'developer', 'RiffOnIt');
+test('the session_role changes twice, and blank stays a reachable value', async () => {
+  await seedTegami('axes_move', 'RiffOnIt');
+  assert.equal(await readSessionRole('axes_move'), 'RiffOnIt');
 
-  assert.equal(await readFamilyRole('axes_move'), 'developer');
-  assert.equal(await readSessionTask('axes_move'), 'RiffOnIt');
+  assert.equal(await writeSessionRole('axes_move', 'DraftPlan'), 'DraftPlan');
+  assert.equal(await readSessionRole('axes_move'), 'DraftPlan');
 
-  assert.equal(await writeSessionTask('axes_move', 'DraftPlan'), 'DraftPlan');
-  assert.equal(await readSessionTask('axes_move'), 'DraftPlan');
-  assert.equal(await readFamilyRole('axes_move'), 'developer', 'a task change must not touch the role');
+  assert.equal(await writeSessionRole('axes_move', 'CutCode'), 'CutCode');
+  assert.equal(await readSessionRole('axes_move'), 'CutCode');
 
-  assert.equal(await writeSessionTask('axes_move', 'CutCode'), 'CutCode');
-  assert.equal(await readSessionTask('axes_move'), 'CutCode');
-  assert.equal(await readFamilyRole('axes_move'), 'developer');
-
-  // Blank is a real value and must stay reachable: it clears the mark without clearing
-  // the role, and without becoming "has no letter".
-  assert.equal(await writeSessionTask('axes_move', ''), '');
-  assert.equal(await readSessionTask('axes_move'), '');
-  assert.equal(await readFamilyRole('axes_move'), 'developer');
+  // Blank is a real value and must stay reachable: it clears the mark without
+  // becoming "has no letter".
+  assert.equal(await writeSessionRole('axes_move', ''), '');
+  assert.equal(await readSessionRole('axes_move'), '');
 });
 
-test('a letter seeded outside a launch carries a blank role rather than an invented one', async () => {
-  await seedTegami('axes_noborn', '', 'OddJob');
-  assert.equal(await readFamilyRole('axes_noborn'), '');
-  // And the owner's hand on the task still cannot mint a role.
-  await writeSessionTask('axes_noborn', 'CheckWork');
-  assert.equal(await readFamilyRole('axes_noborn'), '');
+test('the letter carries a derived teams block, and a membership change refreshes it', async () => {
+  await seedTegami('axes_teams', 'CutCode', { repo: '', branch: '' }, [
+    { team: 'alpha', team_role: 'development', objective: 'ship the cut' },
+  ]);
+  const file = tegamiPath(await sessionKey('axes_teams'));
+  let block = JSON.parse((await fs.readFile(file, 'utf8')).match(/```(?:json)?\s*\n([\s\S]*?)\n```/)![1]);
+  assert.deepEqual(block.teams, [{ team: 'alpha', team_role: 'development', objective: 'ship the cut' }]);
+
+  // Membership moved: the machinery's own write re-derives (rosters absent here, so a
+  // tag-only team renders with blank role and objective — membership is real anyway).
+  assert.equal(await writeTeams('axes_teams', ['alpha', 'beta']), true);
+  block = JSON.parse((await fs.readFile(file, 'utf8')).match(/```(?:json)?\s*\n([\s\S]*?)\n```/)![1]);
+  assert.deepEqual(block.teams.map((t: { team: string }) => t.team), ['alpha', 'beta']);
+  assert.equal(await readSessionRole('axes_teams'), 'CutCode', 'the axis is untouched by a teams refresh');
 });
 
-test('write_tegami carries family_role through a whole-block save, byte for byte', async () => {
-  const previous = { objective: 'old', family_role: 'developer', session_task: 'RiffOnIt', ladder: [] };
-  const saved = await validateBlock({ objective: 'coordinate the cut', session_task: 'CheckWork', ladder: [] }, previous);
-  assert.equal(saved.code, 0, saved.err);
-  const body = JSON.parse(saved.out);
-  assert.equal(body.family_role, 'developer', 'a save that never mentions the role must not blank it');
-  assert.equal(body.session_task, 'CheckWork', 'and the task it DID name moves');
-  assert.equal(body.objective, 'coordinate the cut');
+test('write_tegami refuses a block that names teams — the derived key is not the agent’s', async () => {
+  const previous = { objective: 'old', session_role: 'RiffOnIt', teams: [], ladder: [] };
+  const r = await validateBlock(
+    { objective: 'x', teams: [{ team: 'alpha' }], session_role: 'CutCode', ladder: [] },
+    previous,
+  );
+  assert.notEqual(r.code, 0, 'naming teams must be refused');
+  assert.match(r.err + r.out, /"teams" is not yours to write/);
+  assert.match(r.err + r.out, /DERIVED/);
+  assert.equal(r.out.trim(), '', 'a refused save emits no block, so nothing can be written');
 });
 
-test('write_tegami refuses a block that names family_role at all', async () => {
-  const previous = { objective: 'old', family_role: 'developer', session_task: 'RiffOnIt', ladder: [] };
-  // Even naming the value it already holds is refused: the rule is that the key is not
-  // the session's to write, not that the value must not differ. A tool that accepted a
-  // matching value would be teaching agents to send it.
-  for (const role of ['developer', 'personalassistant']) {
-    const r = await validateBlock({ objective: 'x', family_role: role, session_task: 'CutCode', ladder: [] }, previous);
-    assert.notEqual(r.code, 0, `naming family_role: ${role} must be refused`);
-    assert.match(r.err + r.out, /"family_role" is fixed for the life of this session/);
-    assert.match(r.err + r.out, /a new session, not a new value/);
-    assert.equal(r.out.trim(), '', 'a refused save emits no block, so nothing can be written');
-  }
+test('write_tegami refuses the retired role_family key with the R35 teaching text', async () => {
+  const previous = { objective: 'old', session_role: 'RiffOnIt', ladder: [] };
+  const r = await validateBlock(
+    { objective: 'x', role_family: 'developer', session_role: 'CutCode', ladder: [] },
+    previous,
+  );
+  assert.notEqual(r.code, 0);
+  assert.match(r.err + r.out, /"role_family" is retired \(R35/);
+  assert.equal(r.out.trim(), '');
 });
 
 test('a committed task change delivers its reading once, and a repeat scrape delivers nothing', async () => {
-  // A recording sender in place of the pane. The seam is `Sender` (src/task-watch.ts):
+  // A recording sender in place of the pane. The seam is `Sender` (src/role-watch.ts):
   // everything above it is the decision to deliver, everything below it is a tmux pane,
   // and only the first half is what this test is about.
   const sent: { name: string; text: string }[] = [];
   const record: Sender = async (name, text) => void sent.push({ name, text });
 
-  await fs.mkdir(path.join(shelf, 'task', 'CutCode'), { recursive: true });
-  await fs.writeFile(path.join(shelf, 'task', 'CutCode', 'HOW_WE_CUT.md'), '# how');
+  await fs.mkdir(path.join(shelf, 'role', 'CutCode'), { recursive: true });
+  await fs.writeFile(path.join(shelf, 'role', 'CutCode', 'HOW_WE_CUT.md'), '# how');
 
-  await seedTegami('axes_inject', 'developer', 'RiffOnIt');
-  await markTaskDelivered('axes_inject', 'RiffOnIt');
+  await seedTegami('axes_inject', 'RiffOnIt');
+  await markRoleDelivered('axes_inject', 'RiffOnIt');
 
   // Nothing changed: the observer must be silent, however often it is asked.
-  await observeTaskChange('axes_inject', true, record);
-  await observeTaskChange('axes_inject', true, record);
+  await observeRoleChange('axes_inject', true, record);
+  await observeRoleChange('axes_inject', true, record);
   assert.equal(sent.length, 0, 'a re-scrape injects nothing');
 
-  await writeSessionTask('axes_inject', 'CutCode');
-  await observeTaskChange('axes_inject', true, record);
+  await writeSessionRole('axes_inject', 'CutCode');
+  await observeRoleChange('axes_inject', true, record);
   assert.equal(sent.length, 1, 'exactly one message for one transition');
   assert.equal(sent[0].name, 'axes_inject');
-  assert.match(sent[0].text, /session_task is now CutCode/);
+  assert.match(sent[0].text, /session_role is now CutCode/);
   assert.match(sent[0].text, /HOW_WE_CUT\.md/, 'the new task shelf, resolved at the moment of the change');
   assert.doesNotMatch(sent[0].text, /SESSION_MACROS|SHELVES/, 'birth reading is not re-sent');
-  assert.match(sent[0].text, /family_role and your project_root have not changed/);
+  assert.match(sent[0].text, /teams and your project_root have not changed/);
   assert.doesNotMatch(sent[0].text, /\n/, 'one line — sendText types the text then Enter');
 
   // And again: the same value is not a transition.
-  await observeTaskChange('axes_inject', true, record);
-  await observeTaskChange('axes_inject', false, record);
+  await observeRoleChange('axes_inject', true, record);
+  await observeRoleChange('axes_inject', false, record);
   assert.equal(sent.length, 1);
 
   // A blank task updates the record and injects nothing — there is no reading to hand over.
-  await writeSessionTask('axes_inject', '');
-  await observeTaskChange('axes_inject', true, record);
+  await writeSessionRole('axes_inject', '');
+  await observeRoleChange('axes_inject', true, record);
   assert.equal(sent.length, 1);
 });
 
@@ -153,17 +157,17 @@ test('the OWNER-authored change goes through the same observer, and both writers
   const record: Sender = async (_n, text) => void sent.push(text);
 
   // AGENT-AUTHORED: the value lands in the letter by some other hand than the route's,
-  // and the POLL is what notices — `reset: false`, exactly as `startTaskWatch` calls it.
-  await seedTegami('axes_agent', 'developer', 'RiffOnIt');
-  await markTaskDelivered('axes_agent', 'RiffOnIt');
-  await writeSessionTask('axes_agent', 'CutCode');
-  await observeTaskChange('axes_agent', false, record);
+  // and the POLL is what notices — `reset: false`, exactly as `startRoleWatch` calls it.
+  await seedTegami('axes_agent', 'RiffOnIt');
+  await markRoleDelivered('axes_agent', 'RiffOnIt');
+  await writeSessionRole('axes_agent', 'CutCode');
+  await observeRoleChange('axes_agent', false, record);
 
   // OWNER-AUTHORED: the route writes the letter, then calls the same function.
-  await seedTegami('axes_owner', 'developer', 'RiffOnIt');
-  await markTaskDelivered('axes_owner', 'RiffOnIt');
-  await writeSessionTask('axes_owner', 'CutCode');
-  await observeTaskChange('axes_owner', true, record);
+  await seedTegami('axes_owner', 'RiffOnIt');
+  await markRoleDelivered('axes_owner', 'RiffOnIt');
+  await writeSessionRole('axes_owner', 'CutCode');
+  await observeRoleChange('axes_owner', true, record);
 
   assert.equal(sent.length, 2);
   assert.equal(sent[0], sent[1], 'one path, so the two writers deliver the identical message');
@@ -176,26 +180,26 @@ test('a failed delivery is not recorded as delivered, and is retried', async () 
     if (attempts < 3) throw new Error('the prompt was not accepting input');
   };
 
-  await seedTegami('axes_fail', 'developer', 'RiffOnIt');
-  await markTaskDelivered('axes_fail', 'RiffOnIt');
-  await writeSessionTask('axes_fail', 'CutCode');
+  await seedTegami('axes_fail', 'RiffOnIt');
+  await markRoleDelivered('axes_fail', 'RiffOnIt');
+  await writeSessionRole('axes_fail', 'CutCode');
 
-  await observeTaskChange('axes_fail', false, flaky);
+  await observeRoleChange('axes_fail', false, flaky);
   assert.equal(attempts, 1);
-  let fault = await taskDeliveryFault('axes_fail');
+  let fault = await roleDeliveryFault('axes_fail');
   assert.ok(fault, 'a failure is visible rather than swallowed');
   assert.equal(fault!.task, 'CutCode');
   assert.match(fault!.error!, /not accepting input/);
 
   // The poll retries it, because the record does not claim it landed.
-  await observeTaskChange('axes_fail', false, flaky);
+  await observeRoleChange('axes_fail', false, flaky);
   assert.equal(attempts, 2);
-  await observeTaskChange('axes_fail', false, flaky);
+  await observeRoleChange('axes_fail', false, flaky);
   assert.equal(attempts, 3);
-  assert.equal(await taskDeliveryFault('axes_fail'), null, 'a delivery that lands clears the fault');
+  assert.equal(await roleDeliveryFault('axes_fail'), null, 'a delivery that lands clears the fault');
 
   // And having landed, it is not sent again.
-  await observeTaskChange('axes_fail', false, flaky);
+  await observeRoleChange('axes_fail', false, flaky);
   assert.equal(attempts, 3);
 });
 
@@ -206,31 +210,31 @@ test('automatic retries stop at the cap, and re-posting the task starts them aga
     throw new Error('👤 owner-only');
   };
 
-  await seedTegami('axes_capped', 'developer', 'RiffOnIt');
-  await markTaskDelivered('axes_capped', 'RiffOnIt');
-  await writeSessionTask('axes_capped', 'CutCode');
+  await seedTegami('axes_capped', 'RiffOnIt');
+  await markRoleDelivered('axes_capped', 'RiffOnIt');
+  await writeSessionRole('axes_capped', 'CutCode');
 
   // The poll passes `reset: false` — that is what makes the cap a cap.
-  for (let i = 0; i < 8; i++) await observeTaskChange('axes_capped', false, dead);
+  for (let i = 0; i < 8; i++) await observeRoleChange('axes_capped', false, dead);
   assert.equal(attempts, 3, 'a dial the owner deliberately closed is not hammered forever');
-  assert.ok(await taskDeliveryFault('axes_capped'), 'and it stays visible');
+  assert.ok(await roleDeliveryFault('axes_capped'), 'and it stays visible');
 
   // The owner re-posting the same task is an explicit ask, and clears the count.
-  await observeTaskChange('axes_capped', true, dead);
+  await observeRoleChange('axes_capped', true, dead);
   assert.equal(attempts, 4);
 });
 
 test('first sight of a session is a baseline, never a transition', async () => {
   const sent: string[] = [];
   const record: Sender = async (_n, text) => void sent.push(text);
-  // No `markTaskDelivered`: this is a session already running when the observer first
+  // No `markRoleDelivered`: this is a session already running when the observer first
   // looked, which is what every session is the first time cowork restarts.
-  await seedTegami('axes_first', 'developer', 'CutCode');
-  await observeTaskChange('axes_first', false, record);
+  await seedTegami('axes_first', 'CutCode');
+  await observeRoleChange('axes_first', false, record);
   assert.equal(sent.length, 0, 'an observer cannot observe a change it was not present for');
   // From then on it behaves normally.
-  await writeSessionTask('axes_first', 'CheckWork');
-  await observeTaskChange('axes_first', false, record);
+  await writeSessionRole('axes_first', 'CheckWork');
+  await observeRoleChange('axes_first', false, record);
   assert.equal(sent.length, 1);
-  assert.match(sent[0], /session_task is now CheckWork/);
+  assert.match(sent[0], /session_role is now CheckWork/);
 });

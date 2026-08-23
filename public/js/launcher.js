@@ -19,23 +19,19 @@ import {
   loadPresets,
   launchSpecData,
   projectData,
-  roleData,
+  familyData,
   savedLaunchData,
   showReceipt,
-  taskData,
+  roleData,
 } from './home.js';
 import { IS_TOUCH, S } from './state.js';
 import { button, field, status } from './ui.js';
-import { buildRoleSections, draggableTask } from './familyroles.js';
+import { buildRoleSections, draggableTask } from './rolefamilies.js';
 import { addProvMark, addYourOwn } from './provenance.js';
 
 /**
- * THE PICK IS A PAIR, and that is the shape everything below follows.
- *
- * A launch chooses a `family_role` (who, fixed for the session's life) and a `session_task`
- * (what it is doing now, mutable) — and either may be blank. Pressing a task inside a
- * role section picks both; pressing a role's own button picks the role with a blank
- * task; pressing a loose task picks the task with a blank role.
+ * THE PICK IS ONE BUTTON — a `session_role`. The family shelf it sat under is
+ * PRESENTATION (R35): it decorates the form's heading and never rides the launch.
  *
  * WHAT THE LAUNCH IS BORN WITH IS ASKED FOR, NEVER COMPUTED HERE. The dial, the
  * permissions, whether the brain is on, whether an agent is launched at all — those come
@@ -257,12 +253,11 @@ export function buildLauncher(tile, host) {
   form.append(formHead, creditEl, modeRow, modeSay, nameField.el, whatField.el, formRow, err.el, extrasHead, extras);
   const grid2 = document.createElement('div');
   grid2.className = 'ks-grid';
-  /* ---- family roles: the sections of this board (js/familyroles.js) ---- */
+  /* ---- family roles: the sections of this board (js/rolefamilies.js) ---- */
   const shelves = buildRoleSections({
     taskButton: (k, role) => taskButton(k, role),
-    roleButton: (role) => roleButton(role),
-    allTasks: () => taskData || [],
-    allRoles: () => roleData || [],
+    allTasks: () => roleData || [],
+    allRoles: () => familyData || [],
     // A membership edit changes which section a button is in, so the whole board is
     // rebuilt from the server's answer rather than patched in place.
     onChange: () => void refreshRoles(),
@@ -288,10 +283,10 @@ export function buildLauncher(tile, host) {
     if (!rec || !(rec.needed ?? []).length || !(rec.status?.agents?.usable ?? []).length) return;
     offer.textContent = '新 start your setup session';
     offer.title = rec.needed.map((n) => n.needs).join(' · ');
-    offer.addEventListener('click', () => open(rec.schema.seat.session_task, rec.schema.seat.prompt));
+    offer.addEventListener('click', () => open(rec.schema.seat.session_role, rec.schema.seat.prompt));
     offer.hidden = false;
   })();
-  // No `＋ add new` row: inventing a family_role is authoring, and authoring is the next
+  // No `＋ add new` row: inventing a role_family is authoring, and authoring is the next
   // build-out. This board organizes the roles that exist.
   board.append(boardHead, offer, savedRow, shelves.wrap, grid2, form);
   host.appendChild(board);
@@ -334,10 +329,9 @@ export function buildLauncher(tile, host) {
     return b;
   };
 
-  /** A task, launched inside a role — both axes set. */
+  /** A session_role button, shown inside its family's shelf (or loose). The family is
+   *  PRESENTATION: it decorates the heading and never rides the launch (R35). */
   const taskButton = (task, role) => axisButton({ role: role ?? null, task });
-  /** A role with a BLANK task: this hat, nothing named yet. Every role has one. */
-  const roleButton = (role) => axisButton({ role, task: null });
 
   /**
    * Take the pick, ask the server what it resolves to, and dress the form in the answer.
@@ -350,7 +344,7 @@ export function buildLauncher(tile, host) {
    * about it.
    */
   const choose = async (role, task, promptText = '') => {
-    const profile = await launchProfile(role?.name, task?.name);
+    const profile = await launchProfile(task?.name);
     if (!profile) {
       sayErr('this combination cannot be launched — see the definition files it names');
       return;
@@ -415,18 +409,18 @@ export function buildLauncher(tile, host) {
 
   const buildBoard = () => {
     grid2.innerHTML = '';
-    const all = taskData || [];
+    const all = roleData || [];
     // The sections render themselves and answer which tasks they hold; a task on no role
-    // sits flat under them and launches with a BLANK family_role (js/familyroles.js).
+    // sits flat under them — loose, and every bit as launchable (js/rolefamilies.js).
     const shelved = shelves.render();
     for (const k of all.filter((x) => !shelved.has(x.name))) grid2.appendChild(taskButton(k, null));
-    if (!all.length) grid2.textContent = 'no session_tasks in ronin_catalogs/session_tasks/';
+    if (!all.length) grid2.textContent = 'no session_roles in ronin_catalogs/session_roles/';
     grid2.dataset.n = String(all.length);
     // HIDDEN, not gone (owner, 2026-08-21, OPEN_THREADS 4.31): the tile's whole answer
     // is a file path popped at a person mid-launch — developer-shaped, not owner-shaped.
     // It stays a consumer so the affordance survives to be redesigned, and one deleted
     // line brings it back.
-    const own = addYourOwn('session_tasks/', 'session task');
+    const own = addYourOwn('session_roles/', 'session task');
     own.hidden = true;
     grid2.appendChild(own);
   };
@@ -452,8 +446,7 @@ export function buildLauncher(tile, host) {
       b.textContent = l.label;
       addProvMark(b, l);
       b.title = [
-        l.family_role,
-        l.session_task,
+        l.session_role,
         l.project_root && `▣ ${l.project_root}`,
         l.group && `🏷 ${l.group}`,
         l.mode,
@@ -464,16 +457,16 @@ export function buildLauncher(tile, host) {
       // saved launch that started a session on one tap would be a button that spawns
       // an agent by accident, and the form is where you check what you are about to do.
       b.addEventListener('click', async () => {
-        // A saved launch names tokens, not buttons: it is resolved against the current
-        // definitions rather than by hunting the board, so a saved launch of a role with
-        // a blank task fills the form even though no single button is that pair.
-        const role = l.family_role ? (roleData || []).find((r) => r.name === l.family_role) : null;
-        const task = l.session_task ? (taskData || []).find((k) => k.name === l.session_task) : null;
-        if ((l.family_role && !role) || (l.session_task && !task)) {
-          sayErr(`"${l.label}" names ${l.family_role && !role ? `family_role "${l.family_role}"` : `session_task "${l.session_task}"`}, which is not in the catalog.`);
+        // A saved launch names a token, not a button: it is resolved against the
+        // current definitions rather than by hunting the board. (A pre-R35 saved launch
+        // may still carry a role_family field; it is presentation-era data and ignored.)
+        const task = l.session_role ? (roleData || []).find((k) => k.name === l.session_role) : null;
+        if (l.session_role && !task) {
+          sayErr(`"${l.label}" names session_role "${l.session_role}", which is not in the catalog.`);
           return;
         }
-        await choose(role ?? null, task ?? null);
+        const shelf = task ? (familyData || []).find((r) => (r.session_roles ?? []).includes(task.name)) : null;
+        await choose(shelf ?? null, task ?? null);
         if (l.project_root) whereSel.value = l.project_root;
         if (l.group) {
           if (![...groupSel.options].some((o) => o.value === l.group)) groupSel.add(new Option(l.group, l.group), groupSel.options.length - 1);
@@ -553,11 +546,9 @@ export function buildLauncher(tile, host) {
     const r = await request('/api/launch', {
       method: 'POST',
       json: {
-        // BOTH AXES, and a blank one is sent as '' rather than omitted — the server
-        // routes on "does this body name either axis", and an explicit blank is the
-        // owner saying "no role" rather than the client having forgotten to ask.
-        family_role: pick.role?.name ?? '',
-        session_task: pick.task?.name ?? '',
+        // THE AXIS. The family the button sat under is presentation and is not sent —
+        // a launch is a session_role (and optionally a team), nothing else (R35).
+        session_role: pick.task?.name ?? '',
         mode,
         prompt: text,
         name: wantName, // empty (assisted only) = derive it from the pick + prompt
@@ -601,7 +592,7 @@ export function buildLauncher(tile, host) {
     // rather than measured off the DOM: the grid also carries the "add your own" tile,
     // so childElementCount has not equalled the catalog length since provenance landed,
     // and comparing them rebuilt the board on every single refresh.
-    if (taskData && grid2.dataset.n !== String(taskData.length)) buildBoard();
+    if (roleData && grid2.dataset.n !== String(roleData.length)) buildBoard();
     if (savedRow.dataset.n !== String((savedLaunchData || []).length)) buildSaved();
   };
 
@@ -616,9 +607,8 @@ export function buildLauncher(tile, host) {
    */
   const open = async (name, promptText = '') => {
     render();
-    const task = (taskData || []).find((k) => k.name === name);
-    const role = task ? null : (roleData || []).find((r) => r.name === name);
-    if (!task && !role) return;
+    const task = (roleData || []).find((k) => k.name === name);
+    if (!task) return;
     // THE WORDS GO IN FIRST, before anything is awaited. Resolving the pick asks the
     // server what the pair resolves to, and a hand-off arriving from another surface
     // must not show an empty box for the length of a round trip — the caller's request
@@ -626,11 +616,10 @@ export function buildLauncher(tile, host) {
     // clearing it. (smoke-ui's gbrain journey reads the box the moment the button is
     // pressed, which is exactly the moment a person looks at it.)
     what.value = promptText;
-    // A task reached this way is launched on whichever role's family holds it, if exactly
-    // one does — otherwise blank, because guessing between two roles would silently pick
-    // a reading list the caller never asked for.
-    const owners = task ? (roleData || []).filter((r) => (r.session_tasks ?? []).includes(name)) : [];
-    await choose(role ?? (owners.length === 1 ? owners[0] : null), task ?? null, promptText);
+    // The family shown in the heading is whichever shelf holds it, if exactly one does —
+    // pure presentation either way (R35).
+    const owners = (familyData || []).filter((r) => (r.session_roles ?? []).includes(name));
+    await choose(owners.length === 1 ? owners[0] : null, task, promptText);
     assistBtn.click();
     what.focus();
   };

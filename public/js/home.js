@@ -54,33 +54,33 @@ export async function loadProjects() {
   tiles.forEach((t) => t.renderHome());
 }
 
-/* ---------- the launcher board: family_role × session_task × project_root ----------
- * The three universal axes — the same keys that scope a memory. Both catalog axes are
- * read live from ronin_catalogs/family_roles/ and ronin_catalogs/session_tasks/, never
- * hardcoded here.
+/* ---------- the launcher board: session_role × team × project_root ----------
+ * A `role_family` is PRESENTATION (R35, 2026-08-23): it groups the session_role buttons
+ * into shelves and seeds a Build-Team template, and contributes nothing to the launch.
+ * Both catalogs are read live — ronin_catalogs/role_families/ for the shelves,
+ * ronin_catalogs/session_roles/ for the buttons — never hardcoded here.
  *
- * WHAT THE LAUNCH IS ACTUALLY BORN WITH IS NOT ON THESE ROWS. A dial, a permissions mode,
- * whether the brain is on — those come from the CASCADE (system < role < task < this
- * launch), so they are true of a PAIR and not of a row. The form asks
- * `/api/launch-profile` for the resolved answer when the pick changes rather than
- * re-implementing the cascade here: one cascade, in one language, in src/launch-profile.ts.
+ * WHAT THE LAUNCH IS ACTUALLY BORN WITH IS NOT ON THESE ROWS. A dial, a permissions
+ * mode, whether the brain is on — those come from the resolved profile
+ * (`/api/launch-profile?session_role=…`), asked when the pick changes rather than
+ * re-implemented here: one cascade, in one language, in src/launch-profile.ts.
  *
- * The user picks project_root, session_launch_spec and group; the server assembles the
+ * The user picks project_root, session_launch_spec and team; the server assembles the
  * brief and performs the spawn.
  */
-export let roleData = null; // /api/family-roles
-export let taskData = null; // /api/session-tasks
+export let familyData = null; // /api/role-families — the shelves
+export let roleData = null; // /api/session-roles — the buttons
 
 export async function loadPresets() {
-  const [roles, tasks] = await Promise.all([request('/api/family-roles'), request('/api/session-tasks')]);
+  const [families, roles] = await Promise.all([request('/api/role-families'), request('/api/session-roles')]);
+  if (families.ok && Array.isArray(families.data)) familyData = families.data;
   if (roles.ok && Array.isArray(roles.data)) roleData = roles.data;
-  if (tasks.ok && Array.isArray(tasks.data)) taskData = tasks.data;
   tiles.forEach((t) => t.renderHome());
 }
 
 /** The resolved profile for one pick — the server's cascade, never a copy of it. */
-export async function launchProfile(familyRole, sessionTask) {
-  const q = new URLSearchParams({ family_role: familyRole || '', session_task: sessionTask || '' });
+export async function launchProfile(sessionRole) {
+  const q = new URLSearchParams({ session_role: sessionRole || '' });
   const r = await request(`/api/launch-profile?${q}`);
   return r.ok ? r.data : null;
 }
@@ -96,7 +96,7 @@ export async function launchProfile(familyRole, sessionTask) {
  * session with a role and no task shows no mark, and that is correct — it has not said
  * what it is doing.
  *
- * **It comes off the LETTER, and it is on every session list.** `session_task` is a field
+ * **It comes off the LETTER, and it is on every session list.** `session_role` is a field
  * of the session's own TEGAMI, filled mechanically at birth with the button the owner
  * pressed and changed by the session itself with `write_tegami` — "a session that
  * finishes planning and starts building has changed task, not become a new session". The
@@ -111,7 +111,7 @@ export async function launchProfile(familyRole, sessionTask) {
  * '' whenever nobody has said, and callers draw nothing rather than guessing.
  */
 export const taskIcon = (s) =>
-  (s?.session_task && (taskData || []).find((k) => k.name === s.session_task)?.icon) || '';
+  (s?.session_role && (taskData || []).find((k) => k.name === s.session_role)?.icon) || '';
 
 
 export async function loadMacros() {
@@ -148,8 +148,8 @@ export function showReceipt(name, receipt) {
     // BOTH AXES ON THE RECEIPT, and a blank one is simply absent from it: the receipt
     // exists so a wrong fill is visible immediately, and "no task" is a fill that can be
     // wrong just as "CutCode" can.
-    receipt.family_role,
-    receipt.session_task,
+    receipt.session_role,
+    receipt.team ? `⛺ ${receipt.team}` : '',
     receipt.project_root,
     // No cmd = an `agent: none` kind: say so, rather than leaving a gap the reader
     // has to interpret as "the session_launch_spec field failed to fill".

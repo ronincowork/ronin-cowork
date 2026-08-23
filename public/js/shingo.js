@@ -150,23 +150,23 @@ export function buildLadder(t) {
     box.appendChild(checkout);
   }
 
-  if (t.objective || t.session_task || t.family_role) {
+  if (t.objective || t.session_role || (t.teams ?? []).length) {
     const ob = document.createElement('div');
     ob.className = 'sl-obj';
-    if (t.family_role) {
-      // WHO this session is. Birth-fixed, so it is drawn first and never changes under
-      // the reader — it is the context the moving task sits inside.
-      const role = document.createElement('span');
-      role.className = 'sl-role';
-      role.textContent = t.family_role;
-      ob.appendChild(role);
+    for (const entry of t.teams ?? []) {
+      // The TEAMS this session is on — contextual identity, derived from the rosters
+      // (R35): the team's name, and its team_role when the roster states one.
+      const team = document.createElement('span');
+      team.className = 'sl-role';
+      team.textContent = entry.team_role ? `${entry.team} · ${entry.team_role}` : entry.team;
+      ob.appendChild(team);
     }
-    if (t.session_task) {
+    if (t.session_role) {
       // What this SESSION is DOING. It migrates — riffing becomes planning becomes
       // cutting code — so it is kept current rather than stamped at birth.
       const job = document.createElement('span');
       job.className = 'sl-job';
-      job.textContent = t.session_task;
+      job.textContent = t.session_role;
       ob.appendChild(job);
     }
     ob.append(t.objective || '');

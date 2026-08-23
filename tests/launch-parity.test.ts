@@ -58,21 +58,28 @@ process.env.RONIN_LEDGER_DIR = path.join(temp, 'ledger');
 for (const [level, name, book] of [
   ['all', '', 'ALL_BOOK.md'],
   ['root', 'alpha', 'ROOT_BOOK.md'],
-  ['role', 'developer', 'ROLE_BOOK.md'],
-  ['task', 'DraftPlan', 'TASK_BOOK.md'],
+  ['role', 'DraftPlan', 'ROLE_BOOK.md'],
+  ['team_role', 'development', 'TEAM_BOOK.md'],
 ] as const) {
   const dir = path.join(temp, 'shelf', level, name);
   await fs.mkdir(dir, { recursive: true });
   await fs.writeFile(path.join(dir, book), `# ${book}`);
 }
 
+// A team roster, so the team layer has context to contribute.
+process.env.RONIN_TEAM_ROSTERS_DIR = path.join(temp, 'team_rosters');
+await fs.mkdir(path.join(temp, 'team_rosters'), { recursive: true });
+await fs.writeFile(
+  path.join(temp, 'team_rosters', 'scratchteam.md'),
+  ['# scratchteam', '', '- **team_role:** development', '- **objective:** prove the parity', '- **project_root:** beta', '- **state:** active', ''].join('\n'),
+);
+
 const { resolveForm } = await import('../src/spawn.js');
 type SpawnForm = import('../src/spawn.js').SpawnForm;
 
 /** What the ＋ New form posts: the axes, the picks, and the owner's words. */
 const commonsForm = (over: Partial<SpawnForm> = {}): SpawnForm => ({
-  family_role: 'developer',
-  session_task: 'DraftPlan',
+  session_role: 'DraftPlan',
   project_root: 'alpha',
   prompt: 'Work out the shape of the thing.',
   mode: 'assisted',
@@ -85,12 +92,11 @@ const commonsForm = (over: Partial<SpawnForm> = {}): SpawnForm => ({
  * second launch implementation growing, and this test is where it shows up.
  */
 const forkitForm = (over: Partial<SpawnForm> = {}): SpawnForm =>
-  commonsForm({ tags: ['scratchteam'], ...over });
+  commonsForm({ team: 'scratchteam', ...over });
 
 /** Everything the mechanism decides. A caller may pick these; it may never compute them. */
 const mechanism = (r: Awaited<ReturnType<typeof resolveForm>>) => ({
-  family_role: r.family_role,
-  session_task: r.session_task,
+  session_role: r.session_role,
   project_root: r.project_root,
   dir: r.dir,
   cmd: r.cmd,
@@ -122,16 +128,21 @@ test('equivalent specs from Commons and forkit resolve to the same launch', asyn
   assert.deepEqual(mechanism(fromForkit), mechanism(fromCommons));
 });
 
-test('and to the same reading list — all + root + role + task, compiled once', async () => {
+test('and to the same reading list — all + root + role, compiled once', async () => {
   const fromCommons = await resolveForm(commonsForm(), new Set());
   const fromForkit = await resolveForm(forkitForm({ prompt: commonsForm().prompt }), new Set());
 
   const books = reading(fromCommons.brief);
-  // The four levels a fork used to get NONE of.
-  for (const book of ['ALL_BOOK.md', 'ROOT_BOOK.md', 'ROLE_BOOK.md', 'TASK_BOOK.md']) {
+  // The levels a fork used to get NONE of.
+  for (const book of ['ALL_BOOK.md', 'ROOT_BOOK.md', 'ROLE_BOOK.md']) {
     assert.ok(books.includes(book), `the Build Brief must carry ${book}`);
   }
-  assert.deepEqual(reading(fromForkit.brief), books);
+  // The team layer is forkit's own INPUT (team inheritance), so its team_role reading
+  // arrives on top of the shared list — additive, and the only difference.
+  const forkBooks = reading(fromForkit.brief);
+  for (const book of [...books, 'TEAM_BOOK.md']) {
+    assert.ok(forkBooks.includes(book), `the forked Build Brief must carry ${book}`);
+  }
 });
 
 test("forkit's own inputs change its words and nothing about the mechanism", async () => {
@@ -142,21 +153,24 @@ test("forkit's own inputs change its words and nothing about the mechanism", asy
   );
   // The handoff prompt and the team are INPUTS. They must reach the brief and the tags…
   assert.match(forked.brief, /wip\/handoffs\/TOPIC\.md/);
+  assert.match(forked.brief, /born onto team "scratchteam"/);
+  assert.match(forked.brief, /prove the parity/, "the roster's objective rides the brief");
   assert.deepEqual(forked.tags, ['scratchteam']);
   assert.deepEqual(plain.tags, []);
-  // …and must not move a single thing the mechanism decides.
-  assert.deepEqual(mechanism(forked), mechanism(plain));
-  assert.deepEqual(reading(forked.brief), reading(plain.brief));
+  // …and must not move a single thing the mechanism decides except the team itself.
+  assert.deepEqual({ ...mechanism(forked) }, { ...mechanism(plain) });
 });
 
-test('project_root defaulting is the mechanism\'s, for both callers alike', async () => {
+test('project_root defaulting is the mechanism\'s — top active root, or the TEAM\'s', async () => {
   // Omit it and the TOP ACTIVE root is selected — the same rule the ＋ New picker shows.
-  // A fork that resolved its own directory would be the divergence this forbids.
   const commons = await resolveForm(commonsForm({ project_root: undefined }), new Set());
-  const forkit = await resolveForm(forkitForm({ project_root: undefined }), new Set());
   assert.equal(commons.project_root, 'alpha');
-  assert.equal(forkit.project_root, 'alpha');
-  assert.deepEqual(mechanism(forkit), mechanism(commons));
+  // A TEAM launch inherits the roster's root instead: the team is the context.
+  const forkit = await resolveForm(forkitForm({ project_root: undefined }), new Set());
+  assert.equal(forkit.project_root, 'beta', "the roster's project_root seeds the launch");
+  // And an explicit pick still beats it — a default, never a constraint.
+  const explicit = await resolveForm(forkitForm({ project_root: 'alpha' }), new Set());
+  assert.equal(explicit.project_root, 'alpha');
 });
 
 test('the model cascade is the mechanism\'s: blank inherits, explicit wins, identically', async () => {
@@ -176,15 +190,16 @@ test('the model cascade is the mechanism\'s: blank inherits, explicit wins, iden
   assert.equal(f2.cmd, c2.cmd, 'and both callers get the identical resolved command');
 });
 
-test('a blank role stays legal for both, and omits only its own reading', async () => {
-  // The general blank-session model is preserved: it is only an agent-launching FORK that
-  // must resolve its axes deliberately, and that is the macro's rule rather than a
-  // refusal in the mechanism.
-  const blank = await resolveForm(commonsForm({ family_role: '' }), new Set());
-  assert.equal(blank.family_role, '');
-  const books = reading(blank.brief);
-  assert.ok(!books.includes('ROLE_BOOK.md'), 'no role, no role reading');
-  assert.ok(books.includes('TASK_BOOK.md') && books.includes('ROOT_BOOK.md'), 'and nothing else is lost');
+test('a ronin launch is legal, and a named team with no roster is refused out loud', async () => {
+  // No team at all — a ronin — reads no team_role level and is an ordinary launch.
+  const ronin = await resolveForm(commonsForm(), new Set());
+  assert.equal(ronin.team, '');
+  assert.ok(!reading(ronin.brief).includes('TEAM_BOOK.md'), 'no team, no team_role reading');
+  // A team the durable half has never heard of is a refusal, never a silent join.
+  await assert.rejects(
+    () => resolveForm(commonsForm({ team: 'ghosts' }), new Set()),
+    /has no roster/,
+  );
 });
 
 test('a stock task board keeps a stated order, and OpenShell is never in the middle of it', async () => {
@@ -194,8 +209,8 @@ test('a stock task board keeps a stated order, and OpenShell is never in the mid
   // The one button that hands you a bare shell landing where a habitual click goes is how
   // "New session dumps me to a shell" happens without a single line of launch code being
   // wrong. Order is a launch fact, not decoration.
-  const { listSessionTasks } = await import('../src/definitions.js');
-  const tasks = await listSessionTasks();
+  const { listSessionRoles } = await import('../src/definitions.js');
+  const tasks = await listSessionRoles();
   const names = tasks.map((t) => t.name);
   assert.deepEqual(names, [
     'RiffOnIt', 'DraftPlan', 'CutCode', 'ChaseBug', 'CheckWork', 'QuarterBack',
@@ -208,7 +223,7 @@ test('a stock task board keeps a stated order, and OpenShell is never in the mid
 
 test('every stock definition states its order, so no board is sorted by accident', async () => {
   const { readDefinitions } = await import('../src/definitions.js');
-  for (const kind of ['family_roles', 'session_tasks'] as const) {
+  for (const kind of ['role_families', 'session_roles'] as const) {
     for (const d of await readDefinitions(kind)) {
       if (d.origin !== 'stock') continue; // the owner's own may take the unordered tail
       assert.ok(d.has('order'), `${kind}/${d.name}.md ships without \`order:\` — the board would sort itself`);
@@ -217,7 +232,7 @@ test('every stock definition states its order, so no board is sorted by accident
   }
 });
 
-test('an ordinary assisted launch starts an agent with both axes and the full brief', async () => {
+test('an ordinary assisted launch starts an agent with its axis and the full brief', async () => {
   // THE RELEASE-BLOCKER SHAPE, asserted end to end at the mechanism: what an ordinary
   // Commons click resolves to must be an AGENT launch, on nonblank axes, carrying the
   // compiled reading list. A launch that quietly resolved agentless, or lost an axis on
@@ -227,38 +242,33 @@ test('an ordinary assisted launch starts an agent with both axes and the full br
   assert.equal(r.agent, true, 'an ordinary launch starts a CLI');
   assert.ok(r.cmd, 'and has a command to start');
   assert.ok(r.launchAgent, 'and stamps which CLI it started');
-  assert.equal(r.family_role, 'developer');
-  assert.equal(r.session_task, 'DraftPlan');
+  assert.equal(r.session_role, 'DraftPlan');
   assert.ok(r.project_root, 'a session is always born somewhere');
   assert.match(r.brief, /Read first:/, 'the Build Brief carries its reading list');
-  assert.ok(reading(r.brief).length >= 4, 'all four levels, not a bare prompt');
+  assert.ok(reading(r.brief).length >= 3, 'the levels, not a bare prompt');
 });
 
-test('QuarterBack is a session_task in the developer family, and not a family_role', async () => {
-  // OWNER RULING, 2026-08-22 (KOTOBA R33), reversing one row of the same day's own cut.
-  // Coordinating is not who a session IS — a Developer moves into quarterbacking and back
-  // out of it, which is the definition of a task. The axis test is "what do you stay while
-  // your task changes", and applying it honestly cost the cut one of its own examples.
-  const { listSessionTasks, listFamilyRoles } = await import('../src/definitions.js');
-  const tasks = await listSessionTasks();
-  const roles = await listFamilyRoles();
+test('QuarterBack is a session_role, pinned as the developer family\'s default lead', async () => {
+  // R33: coordinating is work a session moves into and out of. R35 adds the pin: the
+  // developer family suggests QuarterBack first when a team is built from its shelf —
+  // a default, never the team_lead designation, which is the owner's hand on a live
+  // session and may land on the secretary instead.
+  const { listSessionRoles, listRoleFamilies } = await import('../src/definitions.js');
+  const tasks = await listSessionRoles();
+  const roles = await listRoleFamilies();
 
-  assert.ok(tasks.some((t) => t.name === 'QuarterBack'), 'QuarterBack is a session_task');
-  assert.ok(!roles.some((r) => r.name === 'quarterback'), 'and is no longer a family_role');
+  assert.ok(tasks.some((t) => t.name === 'QuarterBack'), 'QuarterBack is a session_role');
+  assert.ok(!roles.some((r) => r.name === 'quarterback'), 'and not a family');
 
   const developer = roles.find((r) => r.name === 'developer');
-  assert.ok(developer, 'developer is the role it belongs under');
-  assert.ok(
-    developer!.session_tasks.includes('QuarterBack'),
-    'a Developer moves into quarterbacking, so it is in that family',
-  );
+  assert.ok(developer, 'developer is the shelf it sits on');
+  assert.equal(developer!.default_lead_role, 'QuarterBack');
+  assert.equal(developer!.session_roles[0], 'QuarterBack', 'the pin presents it first');
 
-  // AND IT MIGRATES, which is the cost the ruling accepts. When it was a role, "who runs
-  // this team" was settled at birth and could not drift; as a task it can be true at 10am
-  // and false at noon, so nothing may stamp it once and remember it.
-  const qb = await resolveForm(commonsForm({ session_task: 'QuarterBack' }), new Set());
-  assert.equal(qb.session_task, 'QuarterBack');
-  assert.equal(qb.family_role, 'developer', 'the role underneath is unchanged by the task');
-  assert.equal(qb.dial, 'read', 'a coordinator watches: the task states its own dial');
+  const qb = await resolveForm(commonsForm({ session_role: 'QuarterBack' }), new Set());
+  assert.equal(qb.session_role, 'QuarterBack');
+  assert.equal(qb.dial, 'read', 'a coordinator watches: the definition states its own dial');
   assert.equal(qb.lifecycle, 'orchestrating');
+  // A default_lead_role launch carries the team-building SOP — route 1 of its delivery.
+  assert.match(qb.brief, /teams\.md/, 'the lead reading rides the brief');
 });

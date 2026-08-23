@@ -5,7 +5,7 @@
  * Three questions, all asked from the running code's point of view:
  *
  *   1. SURFACING. Does every bare `## name` entry in a stock catalog — and every stock
- *      DEFINITION FILE in `family_roles/` and `session_tasks/` — actually come out of the
+ *      DEFINITION FILE in `role_families/` and `session_roles/` — actually come out of the
  *      reader that serves it? The readers drop what they cannot use, and silence is the
  *      failure mode. A dropped stock entry FAILS the check. (A user file on this box
  *      can legitimately hide one; the message says so when that is the likely cause.)
@@ -26,7 +26,7 @@ import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { STOCK_DIR, splitSections, readEntries } from '../src/catalog.js';
-import { listFamilyRoles, listSessionTasks, type DefinitionKind } from '../src/definitions.js';
+import { listRoleFamilies, listSessionRoles, listTeamRoles, type DefinitionKind } from '../src/definitions.js';
 import { resolveLaunchProfile, type LaunchProfile } from '../src/launch-profile.js';
 import { findDefinition } from '../src/definitions.js';
 import { listMacros } from '../src/macros.js';
@@ -140,57 +140,56 @@ async function surfacingDefinitions(
 }
 
 /**
- * EVERY SHIPPED COMBINATION RESOLVES. The cascade refuses contradictions
+ * EVERY SHIPPED BUTTON RESOLVES. The cascade refuses contradictions
  * (`src/launch-profile.ts`), and a refusal we shipped is a launch button that cannot be
- * pressed. So every role is resolved blank, every role × each task on its shelf, and every
- * task on its own — which is exactly the set of buttons the board draws.
- *
- * It also catches a task shelved on a role it cannot legally sit with, which is the one
- * mistake the many-to-many membership makes easy to write.
+ * pressed. A family is presentation (R35) and contributes nothing to a launch, so the
+ * button set is simply every session_role — but each family's shelf is still checked:
+ * every member it names must exist, and its `default_lead_role`, when stated, must be
+ * in its own family (the pin has nothing to pin to otherwise).
  */
 async function definitionsResolve(): Promise<void> {
-  const roles = await listFamilyRoles();
-  const tasks = await listSessionTasks();
-  const inSomeFamily = new Set(roles.flatMap((r) => r.session_tasks));
-  const pairs: [string, string][] = [
-    ...roles.map((r) => [r.name, ''] as [string, string]),
-    ...roles.flatMap((r) => r.session_tasks.map((tk) => [r.name, tk] as [string, string])),
-    // A loose task is launched with a blank role, and that combination is a button too.
-    ...tasks.filter((tk) => !inSomeFamily.has(tk.name)).map((tk) => ['', tk.name] as [string, string]),
-  ];
-  for (const [role, task] of pairs) {
-    const [roleDef, taskDef] = await Promise.all([
-      findDefinition('family_roles', role),
-      findDefinition('session_tasks', task),
-    ]);
-    if (role && !roleDef) {
-      fail(`family_roles/: "${role}" is listed but does not resolve`);
-      continue;
+  const families = await listRoleFamilies();
+  const tasks = await listSessionRoles();
+  for (const f of families) {
+    for (const tk of f.session_roles) {
+      if (!(await findDefinition('session_roles', tk))) {
+        fail(`role_families/${f.name}.md: its session_roles names "${tk}", which is not a session_role on this box`);
+      }
     }
-    if (task && !taskDef) {
-      fail(`family_roles/${role}.md: its session_tasks names "${task}", which is not a session_task on this box`);
-      continue;
+    if (f.default_lead_role && !f.session_roles.includes(f.default_lead_role)) {
+      fail(
+        `role_families/${f.name}.md: its default_lead_role "${f.default_lead_role}" is not in its own family — the pin has nothing to pin to`,
+      );
     }
+  }
+  for (const tk of tasks) {
+    const taskDef = await findDefinition('session_roles', tk.name);
     let profile: LaunchProfile;
     try {
-      profile = resolveLaunchProfile(roleDef, taskDef);
+      profile = resolveLaunchProfile(taskDef);
     } catch (e) {
-      fail(`launch profile ${role || '(no role)'} × ${task || '(no task)'}: ${String((e as Error).message)}`);
+      fail(`launch profile ${tk.name}: ${String((e as Error).message)}`);
       continue;
     }
     // A profile that launches an agent with no first message is a button that starts a
-    // session and tells it nothing — the old "an agent job with no opening" filter, now
-    // asked of the resolved pair instead of of one catalog entry.
+    // session and tells it nothing.
     if (profile.agent && !profile.opening) {
-      fail(`launch profile ${role || '(no role)'} × ${task || '(no task)'}: launches an agent with no \`opening:\``);
+      fail(`launch profile ${tk.name}: launches an agent with no \`opening:\``);
     }
+  }
+  // The blank launch profile resolves too — a bare team launch has no session_role.
+  try {
+    resolveLaunchProfile(undefined);
+  } catch (e) {
+    fail(`launch profile (blank): ${String((e as Error).message)}`);
   }
 }
 
 const FILES = ['MACROS.md', 'ACTIONS.md', 'TOOLS.md', 'PROJECT_ROOTS.md'];
 
-await surfacingDefinitions('family_roles', listFamilyRoles);
-await surfacingDefinitions('session_tasks', listSessionTasks);
+await surfacingDefinitions('role_families', listRoleFamilies);
+await surfacingDefinitions('session_roles', listSessionRoles);
+await surfacingDefinitions('team_roles', listTeamRoles);
 await definitionsResolve();
 await surfacing('MACROS.md', listMacros);
 await surfacing('ACTIONS.md', () => readEntries('ACTIONS.md'));

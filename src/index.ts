@@ -26,6 +26,7 @@ import { registerCatalogs } from './routes/catalogs.js';
 import { registerLaunch } from './routes/launch.js';
 import { registerPasskeyLogin, registerPasskeyManage } from './routes/passkey-api.js';
 import { registerSessions } from './routes/sessions-api.js';
+import { registerTeams } from './routes/teams-api.js';
 import { startTomodachiSender } from './activation/tomodachi.js';
 import { registerServicesActivation, resumeInstallWatch } from './routes/services-activation-api.js';
 import { registerSettei } from './routes/settei-api.js';
@@ -35,7 +36,7 @@ import { registerVersion } from './routes/version.js';
 import { registerWipeboards } from './routes/wipeboards-api.js';
 import { seedHouseBoard } from './wipeboards.js';
 import { handleEvents, startSessionsBroadcast } from './ws/events.js';
-import { startTaskWatch } from './task-watch.js';
+import { startRoleWatch } from './role-watch.js';
 import { handlePty } from './ws/pty.js';
 import { originAllowed, allowedOrigins } from './ws/origin.js';
 import { checkTmuxServerCgroup } from './host-guard.js';
@@ -235,7 +236,8 @@ app.get('/api/health', (_req, res) =>
 
 registerPasskeyManage(app); // /api/passkey/{list,register-options,register,remove} — BEHIND the gate on purpose
 registerLaunch(app); // /api/launch (both variants), /api/sessions, /api/home, session-max, owner — src/routes/launch.ts
-registerCatalogs(app); // /api/macros, /api/hotwords*, /api/project-roots*, /api/session-launch-specs, /api/family-roles*, /api/session-tasks, /api/launch-profile — src/routes/catalogs.ts
+registerCatalogs(app); // /api/macros, /api/hotwords*, /api/project-roots*, /api/session-launch-specs, /api/role-families*, /api/session-roles, /api/team-roles, /api/launch-profile — src/routes/catalogs.ts
+registerTeams(app); // /api/team-rosters* — the durable half of every team — src/routes/teams-api.ts
 registerVersion(app); // /api/version — release string, or the commit this process started from — src/routes/version.ts
 registerUpdate(app); // /api/update/* — the ⚙ gear's check + run, press-only — src/routes/update-api.ts
 registerSettei(app); // /api/settei — the install record, and writes BY NAME only — src/routes/settei-api.ts
@@ -424,8 +426,8 @@ if (removed) console.log(`[tmux-ronin] cleaned up ${removed} stale viewer sessio
 await startBootHooks();
 startSessionsBroadcast(); // the /events membership poll, on the same boot clock as before
 // The task-change observer. Deliberately NOT gated on a browser: a session that re-marks
-// itself with every tab closed still has reading owed to it (src/task-watch.ts).
-startTaskWatch();
+// itself with every tab closed still has reading owed to it (src/role-watch.ts).
+startRoleWatch();
 // The house board — the one board every install has, seeded once and then the user's.
 void seedHouseBoard().catch((e) => console.error('[tmux-ronin] house board seed failed:', e));
 

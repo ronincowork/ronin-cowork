@@ -25,7 +25,6 @@ import { tabs as makeTabs } from './ui.js';
 // `other` is a real bucket, not a gap: a session whose letter names no job still has
 // to be drawable, or it silently vanishes from a chart that claims to show everything.
 const TASKS = ['RiffOnIt', 'DraftPlan', 'CutCode', 'ChaseBug', 'CheckWork', 'QuarterBack', 'OddJob', 'Atarashi', 'PersonalAssistant', 'OpenShell', 'MikaAssist', 'other'];
-const ROLES = ['developer', 'assistant', 'extra', 'other'];
 const WINDOWS = [
   ['today', 'Today'],
   ['week', 'This week'],
@@ -38,7 +37,7 @@ const CAPS = [
   ['groups', 'teams'],
   // `led` (@ronin-lead) was here until the 人 was retired. A cap is "the thing you would
   // go and try", and there is nothing to go and try any more — a session's coordinator is
-  // its session_task now, which the task chart above already counts.
+  // its session_role now, which the task chart above already counts.
   ['board_posts', 'wipeboard posts'],
   ['board_reads', 'wipeboard reads'],
   ['voice', 'voice'],
@@ -277,7 +276,6 @@ export function buildStats(root) {
         sumOf(s.by_task_now) ? panel('Doing right now', bars(s.by_task_now, TASKS)) : null,
         // The role is a census and never a migration: it cannot change while a session
         // lives, so there is no birth-vs-now pair for it and no arrow to draw.
-        sumOf(s.by_role) ? panel('Who they are', bars(s.by_role, ROLES)) : null,
         mekPanel,
         sumOf(s.born) ? panel('Born', bars(s.born, ['assisted', 'manual', 'fork', 'macro', 'hand'])) : null,
         sumOf(s.end) ? panel('Ended', bars(s.end, ['harakiri', 'deleted', 'cold', 'archived'])) : null,
