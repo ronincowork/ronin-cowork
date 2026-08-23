@@ -1,0 +1,103 @@
+/* LEAGUE — feature CSS, owned by Eye 1 and scoped to the League destination.
+ *
+ * NOT IN THE GLOBAL SHEET, by instruction: nothing here edits public/style.css, and no
+ * rule outside #league is written. It rides the `app` layer so it sits above the Kit's
+ * primitives exactly as any feature composition does, and it extends its own classes
+ * rather than reselecting a `wk-` primitive.
+ *
+ * COLOUR IS SPELLED ONCE, the same rule the global sheet lives under: every colour here
+ * is a var() over a foundation token, never a literal. Note honestly that
+ * scripts/check-css.mjs reads public/style.css ALONE, so this file is not covered by
+ * that gate — it follows the rule because the rule is right, not because it is checked.
+ *
+ * WHERE FEATURE CSS SHOULD LIVE IS STILL UNRULED. This location is Eye 1's assumption,
+ * taken from the existing layered-import pattern; four Eyes reached the same seam and
+ * the first stylesheet written decides it for the rest.
+ */
+@layer app {
+
+  #league { width: 100%; height: 100%; min-width: 0; min-height: 0; }
+  #league .league-surface { border: 0; background: transparent; }
+
+  /* The board: one region, so the toolbar spans it rather than asking the frozen
+     layout for a second surface it does not have. */
+  #league .wk-league-board [data-surface='cards'] {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+    gap: var(--space-6);
+    align-content: start;
+  }
+
+  #league .league-toolbar {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  #league .league-rosters {
+    border: var(--edge) solid var(--line);
+    border-radius: var(--radius-pill);
+    background: var(--raise);
+    color: var(--fg);
+    font: inherit;
+    padding: var(--space-3) var(--space-5);
+    cursor: pointer;
+  }
+  #league .league-rosters:hover { border-color: var(--kaki); }
+
+  /* A unit is the card plus its roster — two separate objects, stacked. */
+  #league .league-team { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+  #league .league-team-card { min-height: 8rem; }
+
+  /* The holding area is an ordinary card: no dashed border, no special emphasis. It
+     simply does not navigate, which the primitive expresses by drawing an <article>. */
+  #league .league-team-card.wk-card:not(button) { cursor: default; }
+
+  #league .league-members { display: grid; gap: var(--space-2); }
+  #league .wk-league-board[data-rosters='hidden'] .league-members { display: none; }
+
+  #league .league-member {
+    display: grid;
+    grid-template-columns: 1.4rem minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border: var(--edge) solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--raise);
+    min-width: 0;
+  }
+  #league .league-member b {
+    grid-column: 2;
+    color: var(--fg-strong);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #league .league-member small { grid-column: 2; color: var(--muted); font-size: var(--text-2); }
+  #league .league-member-mark { grid-row: span 2; color: var(--muted-2); text-align: center; }
+
+  #league .league-lead {
+    margin-left: var(--space-3);
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-pill);
+    background: var(--aiiro-lift);
+    color: var(--on-strong);
+    font-size: var(--text-2);
+  }
+
+  #league .league-empty {
+    margin: 0;
+    padding: var(--space-4);
+    color: var(--dim);
+    font-size: var(--text-2);
+    text-align: center;
+  }
+
+  /* Phone: one column, and nothing depends on a drag handle — membership arrives in a
+     later leg by a control that serves touch and keyboard alike. */
+  @media (max-width: 680px) {
+    #league .wk-league-board [data-surface='cards'] { grid-template-columns: 1fr; }
+  }
+
+}
