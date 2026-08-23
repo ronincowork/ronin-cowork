@@ -10,13 +10,31 @@
  * inventing one. Moving it is a one-line change in `index.html`.
  */
 
+/* THE HTML `hidden` CONTRACT, and it is load-bearing for every OTHER destination.
+ *
+ * `hidden` is not a strong hide: the UA sheet expresses it as `[hidden] { display: none }`,
+ * and ANY author rule that sets `display` beats it — author styles win over UA styles
+ * outright, specificity never enters into it. So a plain `.tw-view { display: flex }`
+ * silently un-hides this destination the moment the shell hides it, which it does at
+ * registration and on every `leave()`.
+ *
+ * That is not a cosmetic bug. A hidden-but-displayed `.tw-view` keeps its box, pushes the
+ * Sessions grid sideways, and — because `.tw-rail` had the same fault — puts a 42px button
+ * on top of the compatibility destination that swallows the owner's clicks. Measured before
+ * this rule existed: `elementFromPoint` over the Sessions grid returned `button.tw-rail`.
+ *
+ * Every rule below that sets `display` on an element this feature may hide is therefore
+ * exempted here, once, at the top. Add a `display` to a `.tw-*` rule and add it here too. */
+.tw-view[hidden], .tw-rails[hidden], .tw-rail[hidden], .tw-actions[hidden],
+.tw-cards[hidden], .tw-config[hidden], .tw-config-row[hidden],
+.tw-placeholder[hidden], .tw-splitter[hidden] { display: none; }
+
 .tw-view { display: flex; height: 100%; min-height: 0; gap: 8px; }
 .tw-view > .wk-workbench-layout { flex: 1 1 auto; min-width: 0; position: relative; }
 
 /* The expand rails — this feature's chrome, because the frozen layout hides a collapsed
  * surface outright and a hidden region can carry no control of its own. */
 .tw-rails { display: flex; flex-direction: column; gap: 8px; flex: 0 0 auto; }
-.tw-rails[hidden] { display: none; }
 .tw-rail {
   width: 42px; min-height: 96px; display: flex; flex-direction: column; align-items: center;
   justify-content: center; gap: 8px; padding: 10px 4px; cursor: pointer;

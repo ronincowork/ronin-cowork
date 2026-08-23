@@ -88,6 +88,36 @@ identity `gosmond3` is not attribution, so the handoff is the only record of who
 Nothing in this plan requires a `master` action. This Eye has run no git write command at
 all.
 
+### Fix applied after the first commit — the HTML `hidden` contract
+
+**2026-08-23, named staging gate fix.** The committed snapshot failed at `/staging`: a
+hidden `main.tw-view` still participated in layout, so a hidden `.tw-rail` sat on top of the
+Sessions destination and swallowed clicks, and the fingerprinted tile moved from
+`x=8 w=690` to `x=912 w=236`.
+
+**Cause, in this Eye's own CSS:** `hidden` is expressed by the UA sheet as
+`[hidden] { display: none }`, and *any* author rule setting `display` beats it — author
+styles win over UA styles outright, specificity is not involved. `.tw-view { display: flex }`
+and `.tw-rail { … display: flex … }` therefore un-hid this destination whenever the shell
+hid it, which it does at registration and on every `leave()`. Two rules, one fault; only
+`.tw-rails` had been guarded.
+
+**Fix:** one exemption block at the top of `public/team-workspace.css` listing every
+`.tw-*` element this feature may hide. No shared file touched.
+
+**Verified against the actual failure mechanism**, before and after, by serving `public/`
+statically and driving chromium:
+
+| | before | after |
+|---|---|---|
+| hidden `.tw-view` computed display | `flex`, box 1321×627 | `none`, box 0×0 |
+| hidden `.tw-rail` computed display | `flex`, box 42 wide | `none`, box 0×0 |
+| `elementFromPoint` over the Sessions grid | **`button.tw-rail`** | no `.tw-*` element |
+| tile/home | displaced | `x=6 w=691` (the 2px offset is the static server's failbar, absent a backend) |
+
+Team destination re-checked after the fix and unchanged: 40/19/40, 49/0/49 collapsed,
+collapse and reopen both working — so the guard does not disturb the visible case.
+
 ### Current blocker
 
 **None technical.** Holding by instruction: root is integrating centrally, owned files are to
