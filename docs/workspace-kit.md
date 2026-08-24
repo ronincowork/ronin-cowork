@@ -126,7 +126,8 @@ bin/ronin-byoin --ui      # repository checks plus browser and visual evidence
 bin/ronin-byoin           # installed-box verification and machine readouts
 ```
 
-Run the one mode appropriate to the change; do not assemble hand-rolled sequences.
+Ordinary Kit legs use direct dogfood and scoped diagnostic evidence, not BYOIN. One
+designated integrator runs the appropriate mode once on the exact release candidate.
 `scripts/check-workspace-kit.mjs` rejects feature-local Team projections, terminal hosts,
 primitive copies and layout drift. `scripts/check-css.mjs` guards CSS. Staging
 `scripts/smoke-ui.mjs` owns dev-only workspace/skin evidence; default live smoke must not
@@ -166,10 +167,9 @@ registry-derived five-room Commons.
 7. Implement shared foundation first; touch features only for explicitly authorized minimal
    compatibility proof.
 8. Check CSS governance and prove Sessions remains reachable with 1/2/4 Tiles unchanged.
-9. Run the one declared BYOIN mode. For unlanded views, populate the staging directory
-   mounted by the running service and use declared staging smoke evidence.
-10. Read the whole verdict. Stop on an owned red; identify unrelated baseline failures.
-    Never report SKIP as verified.
+9. Use direct dogfood and scoped diagnostics. For unlanded views, use the declared staging
+   target without turning that evidence into a per-leg BYOIN run.
+10. Leave candidate-wide BYOIN to the designated integrator; never report a SKIP as proof.
 11. Stage exact owned paths/hunks, inspect `git diff --cached --check` and the whole cached
     patch, then commit/push only when authorized.
 12. Handoff hash or uncommitted state, verification verdict, exact paths, migration steps,

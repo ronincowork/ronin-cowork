@@ -159,14 +159,9 @@ parsing, CSS checks, and the repository chain. Verified behavior includes:
 - Kit-owned desktop/phone board geometry;
 - coexistence with the Sessions one/two/four raw Tile grid.
 
-For future League UI work, run only:
-
-```text
-bin/ronin-byoin --ui
-```
-
-Run it once when the bounded work is ready. Read the final verdict; a SKIP is not a pass.
-Do not assemble a hand-written sequence. `docs/test-protocols.md` is the contract.
+For future League work, ordinary legs use direct dogfood and scoped diagnostic evidence;
+they do not run BYOIN. One designated integrator runs the appropriate mode once on the
+exact `dev → master` candidate. `docs/test-protocols.md` is the current contract.
 
 ## Known limits
 
@@ -207,8 +202,8 @@ Do not assemble a hand-written sequence. `docs/test-protocols.md` is the contrac
    - Team and dotted cards navigate through the Kit contract;
    - Sessions and its one/two/four raw Tile grid still work.
 8. Check desktop, tablet, and phone without adding feature-local board geometry.
-9. When bounded UI work is ready, run `bin/ronin-byoin --ui` once. Report SKIPs as
-   unverified.
+9. Record scoped evidence for the leg. Leave BYOIN to the designated release-candidate
+   integrator; report any diagnostic gap honestly.
 10. If a later assignment authorizes landing, stage only named League paths, verify the
     staged list, and commit/push only `dev`. Documentation-only work authorizes none of
     those actions.

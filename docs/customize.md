@@ -163,7 +163,10 @@ Not established:
 - There is no current visual acceptance; the owner's “awful and not release-ready” verdict controls.
 - No test was run for this documentation-only pass, by assignment.
 
-On resumption, verification is governed only by `docs/test-protocols.md`: use the declared `bin/ronin-byoin` command in the mode the completed leg earns, capture one verdict, and run no hand-rolled sequence. A SKIP is unverified. Never repoint the owner-facing service or start another Ronin against the live tmux server for UI evidence.
+On resumption, verification is governed only by `docs/test-protocols.md`: ordinary work uses
+direct dogfood and scoped diagnostic evidence, not BYOIN. The designated integrator owns
+the one exact-candidate verdict. Never repoint the owner-facing service or start another
+Ronin against the live tmux server for UI evidence.
 
 ## Known limits and blocked decisions
 
@@ -188,7 +191,7 @@ On resumption, verification is governed only by `docs/test-protocols.md`: use th
 7. Choose one bounded leg. Prefer visual hierarchy only if ownership is explicit; otherwise take the smallest read-path prerequisite assigned by `view_mgr`.
 8. Obtain a named seam assignment before editing shared server or shell paths. Never bundle parser, route, malformed-data, or saved-launch policy work by assumption.
 9. Edit only approved paths. Preserve the Sessions 1/2/4 raw Tile grid and every other destination.
-10. Verify the completed leg with the declared BYOIN command; report its exact verdict and every SKIP.
+10. Record direct dogfood and scoped diagnostic evidence; leave BYOIN to the designated release integrator.
 11. Stage only owned/approved paths and inspect the staged path list. Commit and push verified work only to `dev`. Never touch `master`, merge a PR, enable auto-merge, repoint the service, or treat a PR as release authorization.
 12. Delete completed work from this README, refresh verification, and leave the successor one bounded next action—not a historical diary.
 

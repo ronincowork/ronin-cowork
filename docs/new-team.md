@@ -212,8 +212,9 @@ the KISS commit was not pushed as part of that assignment.
 7. Keep members derived from session tags and out of `team_roster`.
 8. Preserve null versus stated empty/false values.
 9. Use only the named preflight, roster, launch, and lead API contracts.
-10. When implementation is complete, run only `bin/ronin-byoin --ui`.
-11. Treat a skip as unverified and a failure as a blocker.
+10. Use direct dogfood and scoped diagnostic evidence; do not run BYOIN for the dev leg.
+11. The designated integrator runs one appropriate BYOIN mode on the exact release
+    candidate and treats every SKIP as unverified.
 12. Stage owned exact hunks and inspect the staged path list before committing.
 
 ## Exact dogfood checklist

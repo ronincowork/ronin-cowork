@@ -1,6 +1,6 @@
 # `public/js/` — the client, in modules
 
-**test_protocols:** changed anything here? run `bin/ronin-byoin` and read the verdict — `docs/test-protocols.md` is the page.
+**test_protocols:** ordinary dev work does not run BYOIN; the integrator runs it once at the `dev → master` boundary — `docs/test-protocols.md` is the contract.
 
 Native ES modules. **No bundler, no build step, no TypeScript.** `index.html` loads
 `js/main.js` with `type="module"`; the browser fetches the rest. `express.static` already
@@ -129,12 +129,12 @@ bug this split exists to prevent.
 
 ## Verifying a change
 
-**Run the render gate, and ask the machine whether it can.** `npm run smoke:ui` drives two
-passes — desktop and phone — and `npm run verify` ends in it. Whether a browser exists here
-today is a fact about the box, not about this file: `bin/ronin-doctor` answers it by
-launching one, `bin/ronin-byoin` gives one verdict. This paragraph used to assert there was
-no browser; that was true when written and false from 2026-08-13, which is exactly why the
-question now goes to a tool.
+Ordinary client development uses the running dev UI for direct dogfood and the smallest
+scoped diagnostic evidence needed for the leg. It does not run BYOIN around commits,
+pushes, or service restarts. At the release boundary, the designated integrator chooses the
+appropriate one-time BYOIN mode for the exact candidate; `--ui` drives desktop and phone
+rendering. Whether a browser exists is a fact about that verification host, and a browser
+SKIP remains unverified. `docs/test-protocols.md` is the cadence contract.
 
 **A passing gate is not "the change is right."** It says the page loaded, threw nothing, and
 painted a live pane. The phone pass is Safari's engine at phone geometry — not a device, so

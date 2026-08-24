@@ -1,14 +1,14 @@
-# CI tier 1 — the byoin_checks, on every pull request, every push to dev or master,
-# and by hand (workflow_dispatch).
+# CI tier 1 — the byoin_checks at the release boundary: a pull request to master,
+# or an explicit workflow_dispatch.
 #
-# WHY dev PUSHES TOO (owner, 2026-08-22, after PR #26): agents integrate continuously
-# on dev, but CI used to look only at the PR — so between PRs, a red dev was invisible
-# to everyone, and the first anyone heard of it was seven failing runs on the next PR.
-# A check that only speaks during review is working against the arrangement it guards.
+# WHY NOT DEV PUSHES (owner, 2026-08-24): dev is the continuous dogfood lane. Running
+# the umbrella gate after every micro-step made the gate slower and more disruptive than
+# the work. The designated integrator runs the complete local release-candidate check
+# once, then this isolated runner checks the dev-to-master PR.
 #
-# WHY --gates: it is the explicit fast repository tier. It does not launch smoke-ui or
-# visual-ui and names both as SKIPs WITH THEIR REASON. UI-affecting work must carry a
-# separate local `bin/ronin-byoin --ui` verdict until tier 2 below exists.
+# WHY --gates: it is the isolated repository tier. It does not launch smoke-ui or
+# visual-ui and names both as SKIPs WITH THEIR REASON. The designated integrator supplies
+# the appropriate one-time local candidate verdict; ordinary contributors do not.
 #
 # Tier 2 — a real render check on a runner (tmux + Playwright + a started server + a
 # seeded session) — is a separate, later piece of work. Not this file.
@@ -17,8 +17,6 @@ name: verify
 on:
   pull_request:
     branches: [master]
-  push:
-    branches: [master, dev]
   workflow_dispatch:
 
 jobs:

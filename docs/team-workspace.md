@@ -191,9 +191,9 @@ BYOIN: the repo is clean (17 ok, 2 skipped).
 ```
 
 The two fast-tier skips were its browser checks by definition; the separate UI run had
-already executed them. Future rendered Team changes require `bin/ronin-byoin --ui`. Run
-the declared command once after the leg is complete; do not assemble a hand-written test
-sequence. A SKIP is not a pass.
+already executed them. That is historical evidence, not the current dev cadence. Future
+Team legs use direct dogfood and scoped diagnosis; the designated integrator runs one
+appropriate BYOIN mode on the exact release candidate. A SKIP remains unverified.
 
 ## Known limits
 
@@ -236,8 +236,8 @@ While implementing:
 Before reporting completion:
 
 14. Confirm the diff contains no unrelated path.
-15. Run the mode required by `docs/test-protocols.md`; rendered Team work uses UI BYOIN.
-16. Read the exit code and report every SKIP as unverified.
+15. Record direct dogfood and scoped diagnostic evidence; do not run BYOIN in the dev loop.
+16. Leave the one candidate-wide BYOIN verdict to the designated integrator.
 17. If landing is authorized, stage only owned paths, inspect the staged path list, commit
     and push only `dev`. Documentation-only work does not itself authorize git writes.
 
@@ -258,7 +258,7 @@ Use the current checkout, not another serving tree:
 9. Remove the focused member's Team tag or end it; confirm honest fallback.
 10. Open Chat; confirm it is empty and inert.
 11. Open Sessions and exercise raw 1/2/4 Tile layouts; confirm Team did not alter them.
-12. Finish with declared UI BYOIN and record any browser SKIP as unverified.
+12. Finish with scoped rendered evidence; the designated integrator owns candidate BYOIN.
 
 If a journey requires Team to reproduce Kit or Tile behavior, stop. That is a missing
 shared contract, not permission for a local repair.

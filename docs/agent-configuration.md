@@ -163,15 +163,10 @@ loses this local editing context; durable per-view draft persistence is not impl
 
 ## Verification contract
 
-Use only the command declared by `docs/test-protocols.md`:
-
-- `bin/ronin-byoin --gates` before landing ordinary repository work.
-- `bin/ronin-byoin --ui` for this destination because it changes rendered UI, browser flow,
-  layout and visual composition.
-
-Run the appropriate BYOIN mode once after a finished implementation leg. Do not assemble a
-hand-written sequence of checks. A SKIP is unverified, not a pass. The pre-push and PR tier
-does not substitute for the required rendered proof.
+Follow `docs/test-protocols.md`. Ordinary implementation legs use direct dogfood and scoped
+diagnostic evidence and do not run BYOIN before commits or pushes. One designated integrator
+runs the appropriate BYOIN mode once on the exact `dev → master` release candidate. A SKIP
+in that verdict is unverified, not a pass.
 
 No verification was run for this documentation-only refresh because the assignment
 explicitly prohibited tests. No current rendered verdict is claimed here.
@@ -226,8 +221,8 @@ Do these in order; stop rather than guessing when a required ruling is missing.
    their own contracts; never build a browser-side cascade as a shortcut.
 9. After each completed implementation leg, update this README by deleting the finished
    checklist item and stale limitation. Do not accumulate another historical diary.
-10. When the final UI-affecting leg is complete, run the project-declared BYOIN mode only,
-    read the single verdict, and report every SKIP as unverified.
+10. Record scoped rendered evidence for the leg; the designated integrator owns the single
+    release-candidate BYOIN verdict and reports every SKIP as unverified.
 11. Stage only owned/explicitly authorized paths. Commit and push verified work to `dev`
     only. Never merge or push `master`; a PR is not authorization to merge.
 12. Once the whole destination meets its definition of done, delete this build-out file in
