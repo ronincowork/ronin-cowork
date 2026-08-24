@@ -19,29 +19,10 @@
   #league { width: 100%; height: 100%; min-width: 0; min-height: 0; }
   #league .league-surface { border: 0; background: transparent; }
 
-  /* The board: one region, so the toolbar spans it rather than asking the frozen
-     layout for a second surface it does not have. */
-  #league .wk-league-board [data-surface='cards'] {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
-    gap: var(--space-6);
-    align-content: start;
-  }
-
+  /* The toolbar occupies the Kit board's full row. Its control chrome is the Kit's. */
   #league .league-toolbar {
     grid-column: 1 / -1;
-    display: flex;
     justify-content: flex-end;
-  }
-
-  #league .league-rosters {
-    border: var(--edge) solid var(--line);
-    border-radius: var(--radius-pill);
-    background: var(--raise);
-    color: var(--fg);
-    font: inherit;
-    padding: var(--space-3) var(--space-5);
-    cursor: pointer;
   }
   #league .league-rosters:hover { border-color: var(--kaki); }
 
@@ -92,12 +73,6 @@
     color: var(--dim);
     font-size: var(--text-2);
     text-align: center;
-  }
-
-  /* Phone: one column, and nothing depends on a drag handle — membership arrives in a
-     later leg by a control that serves touch and keyboard alike. */
-  @media (max-width: 680px) {
-    #league .wk-league-board [data-surface='cards'] { grid-template-columns: 1fr; }
   }
 
 }

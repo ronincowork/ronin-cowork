@@ -8,12 +8,11 @@
  * nothing in the global sheet is touched.
  *
  * WHAT THIS SLICE DOES NOT DO, by instruction: no membership drag/drop and no
- * membership write. Bubbles are read-only. The board also re-reads on every enter()
- * rather than subscribing to session events — a live subscription is a later leg, and
- * this is the honest smaller thing rather than a second /events socket.
+ * membership write. Bubbles are read-only. The Team controller owns refresh and
+ * projection; League calls it at the view boundary and subscribes only to repaint.
  */
 import { createBoard } from './league-board.js';
-import { refreshTeams } from './team-controller.js';
+import { refreshTeams, subscribe } from './team-controller.js';
 
 const STYLE_ID = 'league-css';
 
@@ -31,6 +30,7 @@ export function createLeagueView() {
   const host = document.createElement('main');
   host.id = 'league';
   let board = null;
+  let unsubscribe = () => {};
 
   /** Null is the default and a real answer: rosters start shown. */
   const visible = (context) => context?.viewState?.('league')?.rostersVisible !== false;
@@ -47,10 +47,13 @@ export function createLeagueView() {
     mount(_viewhost, context) {
       ensureStyle();
       board = createBoard({
-        navigate: (id, options) => context.navigate(id, options),
+        context,
         rostersVisible: visible(context),
       });
       host.append(board.el);
+      // Controller notifications are repaint signals only. Refresh ownership stays at
+      // the view boundary below; a subscription never fetches or opens another socket.
+      unsubscribe = subscribe(() => draw(context));
       // ONE delegated handler for the whole board, wired at mount and never at enter,
       // so repeated navigation cannot multiply listeners.
       host.addEventListener('click', (event) => {
@@ -70,6 +73,8 @@ export function createLeagueView() {
     },
 
     destroy() {
+      unsubscribe();
+      unsubscribe = () => {};
       host.replaceChildren();
       board = null;
     },

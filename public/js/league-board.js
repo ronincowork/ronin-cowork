@@ -15,7 +15,7 @@
  * write. Bubbles are read-only in this slice.
  */
 import { WorkspaceKit } from './workspace-kit.js';
-import { UNASSIGNED, leadsTeam, membersOfTeam, rostersLoaded, teamsFromState } from './team-controller.js';
+import { UNASSIGNED, leadsTeam, membersOfTeam, rostersLoaded, teamByName, teamsFromState } from './team-controller.js';
 import { S, serviceMissing } from './state.js';
 
 // Reached inside function bodies, never at module top level: a top-level destructure of
@@ -72,7 +72,7 @@ function roster(team) {
 }
 
 /** One unit: the navigable Team card, plus its separate roster beneath it. */
-function unit(team, navigate) {
+function unit(team, context) {
   const wrap = el('section', 'league-team');
   wrap.dataset.team = team.name;
   const members = membersOfTeam(team.name);
@@ -82,22 +82,27 @@ function unit(team, navigate) {
   // structural here, not a suppressed click handler.
   const navigable = !team.holding;
   const eyebrow = team.holding ? 'Holding area' : members.length ? 'Active Team' : 'Resting Team';
-  const meta = [eyebrow, `${members.length}`];
+  const metadata = kit().primitives.createMetadata({ rows: [
+    ['State', eyebrow],
+    ['Sessions', `${members.length}`],
+    ['Team role', (team.team_role || '').trim()],
+    ['Roster', !team.durable && !team.holding ? 'Not recorded' : ''],
+  ] });
   // team_role renders as its own text and is never fetched: the house ships no
   // definitions for it by design (ronin_catalogs/team_roles/README.md), so a lookup
   // would cost a request to learn nothing. Blank draws as absent.
-  if ((team.team_role || '').trim()) meta.push(team.team_role.trim());
-  if (!team.durable && !team.holding) meta.push('no roster');
-
   const card = kit().primitives.createCard({
     className: 'league-team-card',
     heading: team.holding ? 'Unassigned' : team.name,
     summary: team.holding
       ? 'Live sessions that carry no Team membership.'
       : (team.objective || '').trim(),
-    metadata: meta,
-    action: navigable ? () => navigate('team', { param: team.name }) : undefined,
+    action: navigable ? () => {
+      const { navigateWorkspace, workspaceTarget } = kit().contract;
+      navigateWorkspace(context, workspaceTarget('team', team.name));
+    } : undefined,
   });
+  card.metadata.replaceWith(metadata.el);
   wrap.append(card.el, roster(team));
   return wrap;
 }
@@ -106,8 +111,8 @@ function unit(team, navigate) {
  * Build the board into a Surface, so loading / empty / stale / failed come from the
  * Kit's own state vocabulary rather than a second one invented here.
  */
-export function createBoard({ navigate, rostersVisible }) {
-  const { createCard, createSurface, setSurfaceState } = kit().primitives;
+export function createBoard({ context, rostersVisible }) {
+  const { createAction, createActionBar, createCard, createSurface, setSurfaceState } = kit().primitives;
   const surface = createSurface({ label: 'League' });
   surface.el.classList.add('league-surface');
   const board = kit().layouts.createLeagueBoard();
@@ -120,28 +125,29 @@ export function createBoard({ navigate, rostersVisible }) {
 
     // ONE control for every card together. There are no per-Team disclosure buttons —
     // the reviewed fixture removes its own at load, and the contract forbids them.
-    const bar = el('div', 'league-toolbar');
-    const toggle = el('button', 'league-rosters');
-    toggle.type = 'button';
-    toggle.textContent = visible ? 'Hide rosters' : 'Show rosters';
+    const bar = createActionBar({ className: 'league-toolbar', label: 'League controls' });
+    const toggle = createAction({ className: 'league-rosters', label: visible ? 'Hide rosters' : 'Show rosters' }).el;
     toggle.dataset.leagueRosters = '';
     bar.append(toggle);
-    cards.append(bar);
+    cards.append(bar.el);
 
     const teams = teamsFromState();
     // Zero Teams and no live sessions is a real, correct state on a fresh box: the
     // creation card alone, which is the right face for it rather than an error.
-    const real = teams.filter((t) => !t.holding);
+    const real = teams.filter((t) => !t.holding).map((team) => teamByName(team.name));
     const holding = teams.find((t) => t.holding);
-    for (const t of real) cards.append(unit(t, navigate));
-    if (holding && membersOfTeam(UNASSIGNED).length) cards.append(unit(holding, navigate));
+    for (const t of real) cards.append(unit(t, context));
+    if (holding && membersOfTeam(UNASSIGNED).length) cards.append(unit(holding, context));
 
     const dotted = createCard({
       className: 'league-new',
       variant: 'dotted',
       heading: 'New Team',
       summary: 'Define the Team, then build its session roster.',
-      action: () => navigate('new-team'),
+      action: () => {
+        const { navigateWorkspace, workspaceTarget } = kit().contract;
+        navigateWorkspace(context, workspaceTarget('new-team'));
+      },
     });
     cards.append(dotted.el);
 
