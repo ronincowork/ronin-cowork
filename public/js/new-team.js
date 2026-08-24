@@ -25,11 +25,11 @@ import {
   createDraft,
   finalizeTeamName,
   isValidTeamName,
-  rosterBody,
   sanitizeTeamName,
 } from './new-team-draft.js';
 import { capacityNote, preflight, teamNotes } from './new-team-preflight.js';
 import { registerTeamDraft, selectDraftSeat, subscribeTeamDraft } from './team-draft-controller.js';
+import { ensureRoster, launchDraft } from './new-team-launch.js';
 
 const node = (tag, className, text) => {
   const el = document.createElement(tag);
@@ -49,11 +49,12 @@ const debounce = (fn, ms) => {
 };
 
 export function createNewTeamView(kit) {
-  const { createSurface, createCard, createAction, createForm, createField, createNotice } = kit.primitives;
+  const { createSurface, createCard, createAction, createActionBar, createMetadata, createForm, createField, createNotice } = kit.primitives;
   const { navigateWorkspace, workspaceTarget } = kit.contract;
   let draft = registerTeamDraft(createDraft());
   let lastPreflight = null;
   let context = null;
+  let busy = false;
   const saveDraft = () => context?.patchViewState('new-team', { draft });
   subscribeTeamDraft(() => saveDraft());
 
@@ -148,17 +149,23 @@ export function createNewTeamView(kit) {
   const rosterNotice = createNotice({
     kind: 'info',
     message:
-      'A Team with no sessions is complete and valid — create it and raise sessions when you want them. Raising them from here arrives in a later slice; the draft and dry run that it needs are landing first.',
+      'A Team with no sessions is complete and valid. Add one or more proposed sessions, check them against the real launch resolver, then raise them in order.',
   });
   roster.content.append(rosterEyebrow, rosterHeading, rosterNotice.el, rosterBody_);
   const addSeat = createAction({ label: 'Add proposed session' });
-  roster.content.append(addSeat.el);
+  const checkSeats = createAction({ label: 'Check seats' });
+  const launchSeats = createAction({ label: 'Create Team and raise sessions', kind: 'primary' });
+  const rosterActions = createActionBar({ label: 'Roster actions', actions: [addSeat, checkSeats, launchSeats] });
+  roster.content.append(rosterActions.el);
 
   /* ---------------- the transaction region ---------------- */
 
   const transaction = createSurface({ className: 'nt-transaction', label: 'Team transaction' });
   const txNotice = createNotice();
-  transaction.content.append(txNotice.el);
+  const receipt = node('div', 'nt-receipt');
+  const openTeam = createAction({ label: 'Open Team' });
+  openTeam.el.hidden = true;
+  transaction.content.append(txNotice.el, receipt, openTeam.el);
   transaction.el.hidden = true;
 
   const el = kit.layouts.createNewTeamLayout(definition.el, roster.el, transaction.el);
@@ -178,7 +185,10 @@ export function createNewTeamView(kit) {
 
   const paintNotes = () => {
     adoption.replaceChildren();
-    const notes = [...teamNotes(lastPreflight?.team), capacityNote(lastPreflight?.capacity)].filter(Boolean);
+    const teamReading = draft.roster_created && lastPreflight?.team
+      ? { ...lastPreflight.team, name_available: true }
+      : lastPreflight?.team;
+    const notes = [...teamNotes(teamReading), capacityNote(lastPreflight?.capacity)].filter(Boolean);
     for (const n of notes) {
       const p = node('p', 'wk-notice', n.text);
       p.dataset.kind = n.kind;
@@ -189,24 +199,108 @@ export function createNewTeamView(kit) {
   const paintRoster = () => {
     rosterBody_.replaceChildren();
     for (const seat of draft.seats) {
+      const outcome = seat.outcome;
+      const verdict = lastPreflight?.seats?.find((candidate) => candidate.seat_id === seat.seat_id);
       const card = createCard({
         heading: seat.name || seat.session_role || 'Proposed session',
         summary: seat.prompt || 'No brief yet.',
-        metadata: [seat.mode],
-        action: () => {
+        metadata: [seat.mode, verdict ? `preflight ${verdict.verdict}` : null, outcome?.status].filter(Boolean),
+        warning: verdict?.verdict === 'refuse' || outcome?.status === 'refused' || outcome?.status === 'skipped',
+      });
+      if (verdict?.reasons?.length) {
+        card.el.append(node('p', 'nt-seat-reasons', verdict.reasons.map((reason) => reason.message).join(' ')));
+      } else if (verdict?.resolved) {
+        const reading = createMetadata({ rows: [
+          ['Resolved name', verdict.resolved.name], ['Project root', verdict.resolved.project_root],
+          ['Command', verdict.resolved.cmd], ['Control', verdict.resolved.dial],
+          ['MCP', String(verdict.resolved.mcp)],
+        ] });
+        card.el.append(reading.el);
+      }
+      const edit = createAction({ label: 'Edit session' });
+      edit.el.addEventListener('click', () => {
           selectDraftSeat(draft, seat.seat_id);
           navigateWorkspace(context, workspaceTarget('agent-config', seat.seat_id));
-        },
       });
+      const lead = node('label', 'nt-lead-choice');
+      const radio = node('input');
+      radio.type = 'radio';
+      radio.name = 'nt-lead';
+      radio.checked = draft.lead_seat_id === seat.seat_id;
+      radio.addEventListener('click', (event) => event.stopPropagation());
+      radio.addEventListener('change', () => { draft.lead_seat_id = seat.seat_id; saveDraft(); paintRoster(); });
+      lead.append(radio, document.createTextNode(' Designate as lead'));
+      const clearLead = createAction({ label: 'No lead' });
+      clearLead.el.addEventListener('click', (event) => {
+        event.stopPropagation();
+        draft.lead_seat_id = null;
+        saveDraft();
+        paintRoster();
+      });
+      const remove = createAction({ label: 'Remove proposal', kind: 'danger' });
+      remove.el.disabled = outcome?.status === 'born';
+      remove.el.addEventListener('click', () => {
+        draft.seats = draft.seats.filter((candidate) => candidate.seat_id !== seat.seat_id);
+        if (draft.lead_seat_id === seat.seat_id) draft.lead_seat_id = null;
+        saveDraft();
+        paintRoster();
+        paintReceipt();
+      });
+      const actions = createActionBar({ label: 'Proposed session actions', actions: [edit, remove] });
+      card.el.append(lead);
+      if (draft.lead_seat_id === seat.seat_id) card.el.append(clearLead.el);
+      card.el.append(actions.el);
       rosterBody_.append(card.el);
     }
+    launchSeats.setDisabled(busy || !draft.seats.length || !canCreateTeam(draft));
+    checkSeats.setDisabled(busy || !draft.seats.length);
+  };
+
+  const paintReceipt = () => {
+    receipt.replaceChildren();
+    const tx = draft.transaction;
+    if (!tx && !draft.seats.some((seat) => seat.outcome)) {
+      transaction.el.hidden = true;
+      return;
+    }
+    transaction.el.hidden = false;
+    const summary = createMetadata({ rows: [
+      ['Team', draft.team.name],
+      ['Roster', tx?.roster?.status],
+      ['Completed', tx?.completed_at],
+    ] });
+    receipt.append(summary.el);
+    for (const seat of draft.seats) {
+      const outcome = seat.outcome;
+      if (!outcome) continue;
+      const row = node('article', 'nt-receipt-seat');
+      row.dataset.status = outcome.status;
+      row.append(node('h3', null, outcome.session_name || seat.name || seat.session_role || 'Proposed session'));
+      const meta = createMetadata({ rows: [
+        ['Status', outcome.status], ['Mode', outcome.receipt?.mode],
+        ['Role', outcome.receipt?.session_role], ['Project root', outcome.receipt?.project_root],
+        ['Command', outcome.receipt?.cmd], ['Control', outcome.receipt?.dial],
+        ['MCP', outcome.receipt ? String(outcome.receipt.mcp) : null], ['Reason', outcome.error],
+      ] });
+      row.append(meta.el);
+      if (outcome.status !== 'born') {
+        const retry = createAction({ label: 'Retry this seat' });
+        retry.el.addEventListener('click', () => void runLaunch([seat.seat_id]));
+        row.append(retry.el);
+      }
+      receipt.append(row);
+    }
+    const lead = tx?.lead;
+    if (lead) receipt.append(node('p', 'nt-lead-receipt',
+      `Lead: ${lead.status}${lead.session_name ? ` · ${lead.session_name}` : ''}${lead.delivery ? ` · ${lead.delivery}` : ''}${lead.error ? ` · ${lead.error}` : ''}`));
+    openTeam.el.hidden = !draft.roster_created;
   };
 
   const paintName = () => {
     const name = draft.team.name;
     if (!name) return nameField.setValidation('', '');
     if (!isValidTeamName(name)) return nameField.setValidation('invalid', 'Lowercase letters, digits, _ and - only.');
-    if (lastPreflight?.team && !lastPreflight.team.name_available) {
+    if (!draft.roster_created && lastPreflight?.team && !lastPreflight.team.name_available) {
       return nameField.setValidation('invalid', `"${name}" already has a roster.`);
     }
     nameField.setValidation('valid', '');
@@ -231,9 +325,16 @@ export function createNewTeamView(kit) {
       return;
     }
     lastPreflight = result;
-    if (!lastPreflight.team.name_available) createBtn.disabled = true;
+    for (const verdict of result.seats ?? []) {
+      draft.seats = draft.seats.map((seat) => seat.seat_id === verdict.seat_id ? { ...seat, resolved: verdict.resolved } : seat);
+    }
+    saveDraft();
+    if (!draft.roster_created && !lastPreflight.team.name_available) createBtn.disabled = true;
+    createBtn.textContent = lastPreflight.team.adopts_sessions?.length ? 'Adopt Team roster' : 'Create Team';
+    createBtn.hidden = draft.roster_created;
     paintName();
     paintNotes();
+    paintRoster();
   };
 
   const refreshSoon = debounce(refresh, 250);
@@ -259,6 +360,22 @@ export function createNewTeamView(kit) {
   }
   rootSelect.addEventListener('change', () => { readTeam(); refreshSoon(); });
   addSeat.el.addEventListener('click', () => { draft.seats.push(createSeat()); saveDraft(); paintRoster(); });
+  checkSeats.el.addEventListener('click', () => void refresh());
+
+  const runLaunch = async (seatIds = null) => {
+    if (busy || !canCreateTeam(draft)) return;
+    busy = true;
+    paintRoster();
+    transaction.el.hidden = false;
+    txNotice.set('info', 'Checking the roster, then raising sessions in order…');
+    await launchDraft(draft, { seatIds, persist: () => { saveDraft(); paintRoster(); paintReceipt(); } });
+    busy = false;
+    txNotice.set('', '');
+    paintRoster();
+    paintReceipt();
+  };
+  launchSeats.el.addEventListener('click', () => void runLaunch());
+  openTeam.el.addEventListener('click', () => navigateWorkspace(context, workspaceTarget('team', draft.team.name)));
 
   createBtn.addEventListener('click', async () => {
     readTeam();
@@ -266,7 +383,7 @@ export function createNewTeamView(kit) {
     createBtn.disabled = true;
     transaction.el.hidden = false;
     txNotice.set('info', `Creating "${draft.team.name}"…`);
-    const r = await request('/api/team-rosters', { method: 'POST', json: rosterBody(draft.team) });
+    const r = await ensureRoster(draft);
     if (!r.ok) {
       txNotice.set('failed', `Could not create the Team — ${r.message}`);
       createBtn.disabled = false;
@@ -275,7 +392,6 @@ export function createNewTeamView(kit) {
     // THE TEAM IS REAL FROM HERE, with zero seats and no lead, and it is visible in League
     // from this moment (owner, 2026-08-23). The draft records that so the transaction
     // survives a re-render and the create cannot be pressed twice.
-    draft.roster_created = true;
     draft.transaction = { team: draft.team.name, created_at: new Date().toISOString(), seats: [] };
     saveDraft();
     const adopted = lastPreflight?.team?.adopts_sessions?.length ?? 0;
@@ -283,7 +399,8 @@ export function createNewTeamView(kit) {
       'success',
       `Team "${draft.team.name}" exists${adopted ? ` and arrived with ${adopted} member${adopted === 1 ? '' : 's'} already tagged into it` : ' with no members yet, which is a normal state'}. It is in League now.`,
     );
-    rosterNotice.set('info', 'The Team is created. Raising its sessions arrives in the next slice.');
+    rosterNotice.set('success', 'The durable Team roster exists. You can raise the proposed sessions now or return later.');
+    paintReceipt();
   });
 
   const loadOptions = async () => {
@@ -308,9 +425,15 @@ export function createNewTeamView(kit) {
       const stored = nextContext.viewState('new-team')?.draft;
       if (stored && typeof stored === 'object') draft = registerTeamDraft(stored);
       else registerTeamDraft(draft);
+      nameInput.value = draft.team.name ?? '';
+      roleInput.value = draft.team.team_role ?? '';
+      objectiveInput.value = draft.team.objective ?? '';
+      reposInput.value = (draft.team.repos ?? []).join(', ');
+      branchInput.value = draft.team.branch ?? '';
+      boardInput.value = draft.team.wipeboard ?? '';
       paintRoster();
-      void loadOptions();
-      void refresh();
+      paintReceipt();
+      void loadOptions().then(() => { rootSelect.value = draft.team.project_root ?? ''; return refresh(); });
     },
     /** The draft is the view's, and it survives leaving and coming back within this tab.
      *  It is NOT shared across browser tabs — the workspace record is per-browser-tab, so

@@ -972,35 +972,8 @@ written decides it for everyone. That question, and the parallel one about where
 stylesheet lives, are unasked structural questions this plan does not settle and should not
 be read as settling.
 
-1. **Reconcile vocabulary and precedence.** Report D1–D16 to @view_mgr and
-   @eye_agent_config; get the Eye 5 precedence line in `FIVE_EYES.md` corrected before
-   anything is frozen.
-2. **Freeze the canonical draft** (Gate E) with Eye 5 — the schema above, its Eye 5 contract,
-   and the three-valued `mcp`.
-3. **Build the preflight route — Eye 4 owns it.** It belongs beside the door it dry-runs:
-   `src/routes/launch.ts` already registers `POST /api/launch`, so the natural home is there
-   or a sibling `src/routes/launch-preflight.ts` [planned]. Named concretely as a starting
-   point, not a requirement — the implementer may place it better, but a successor should not
-   have to rediscover where it goes. Settled 2026-08-23: @eye_league declined on
-   charter grounds (Eye 1 *"must not own … launch orchestration"*, and League writes exactly
-   one route in v1), and @eye_agent_config accepted that it rides this build-out. It is the
-   dry-run resolve, and the dry-run resolve is Gate E's, which is mine. No longer an open
-   question.
-4. **NewTeamLayout composition** against Workspace Kit's form / card / notice / validation
-   primitives. No local geometry.
-5. **Stage 1** — form, team preflight, adoption preview, roster create, League visibility.
-6. **Stage 2** — seat editor, family shelves with the pin, per-seat preflight, Eye 5 handoff.
-7. **The controller** — non-DOM, ordered, no rollback, halt-on-429, retry by `seat_id`.
-8. **Team receipt and retry.**
-9. **Blank / partial / unclassified pass** across every surface, including sort order.
-10. **Draft persistence** — a partial draft survives navigation and refresh **within its own
-    browser tab**. The workspace record is *per-browser-tab* by kit contract
-    (`WORKSPACE_KIT.md:116`), so a draft is not visible in a second tab and two tabs can hold
-    two independent drafts. That is the correct behaviour and not a limitation to design
-    around — but it must be stated, because "my draft is gone" and "my draft is in the other
-    tab" are the same experience to the owner. See D12 for the slot this is blocked on.
-
-Legs 4–10 do not start before Workspace Kit's ready-to-unleash gate and Gates B, C and E.
+The functional legs are cut. What remains is owner dogfood and approval; this build-out is
+deleted only when that review lands.
 
 ---
 

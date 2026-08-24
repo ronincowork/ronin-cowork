@@ -99,6 +99,7 @@ export function createSeat(overrides = {}) {
 export function createDraft(overrides = {}) {
   return {
     draft_version: DRAFT_VERSION,
+    draft_id: overrides.draft_id ?? `team-draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     team: { ...TEAM_DEFAULTS, ...(overrides.team ?? {}) },
     seats: Array.isArray(overrides.seats) ? overrides.seats : [],
     /** null is valid at every moment, for an empty Team and a staffed one alike. */
