@@ -104,7 +104,7 @@ Agent Configuration owns:
 - `public/js/agent-config.js` — view lifecycle, Check/Apply/Revert and draft integration.
 - `public/js/agent-config-fields.js` — eleven controls, unset round-trip and field reasons.
 - `public/js/agent-config-preview.js` — composed brief and resolved-value display.
-- `wip/buildouts/AGENT_CONFIGURATION.md` — this handoff.
+- `docs/agent-configuration.md` — this persistent implementation and resume contract.
 
 Committed foundation and integration seams consumed but **not owned** here:
 

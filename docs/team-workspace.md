@@ -79,7 +79,7 @@ durable metadata.
 - `public/js/team-view.js` — Team composition, readings, Kanban selection, and lifecycle.
 - `public/css/team-workspace.css` — Team-specific Kanban, notice, placeholder, and
   configuration presentation.
-- `wip/buildouts/TEAM_WORKSPACE.md` — this README and resume contract.
+- `docs/team-workspace.md` — this persistent implementation and resume contract.
 
 Registration in `public/js/main.js` and the stylesheet link in `public/index.html` are
 shared integration seams. Do not edit them as Team-only cleanup.

@@ -1,4 +1,4 @@
-# Customize Ronin — current build-out README
+# Customize Ronin — current operational README
 
 ## Status
 
@@ -93,7 +93,7 @@ Counts and section rollups come only from successful reads. They remain absent w
 - `public/js/customize-rail.js` — three-section, ten-resource matrix.
 - `public/js/customize-resources.js` — reads, states, cards, counts, provenance.
 - `public/js/customize-handoff.js` — guided handoff and read-only/deferred endings.
-- `wip/buildouts/CUSTOMIZE_RONIN.md` — this restart document.
+- `docs/customize.md` — this persistent implementation and resume contract.
 
 Shared seams consumed but not owned:
 

@@ -185,7 +185,7 @@ Do not assemble a hand-written sequence. `docs/test-protocols.md` is the contrac
 
 1. Confirm the branch is `dev`; never touch or merge to `master` without a fresh explicit
    owner instruction naming that release action.
-2. Read this file, `wip/buildouts/WORKSPACE_KIT.md`'s **HARDENING MIGRATION**, and
+2. Read this file, `docs/workspace-kit.md`'s consumer rules, and
    `docs/test-protocols.md` from the current tree.
 3. Inspect `git status`; preserve every unrelated dirty path. League owns only the three
    files listed above.

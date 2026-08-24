@@ -156,8 +156,7 @@ registry-derived five-room Commons.
 ## Exact resume checklist
 
 1. Confirm branch `dev`; never touch or merge `master` without explicit authority.
-2. Read this file, `wip/buildouts/FIVE_EYES.md`, `docs/test-protocols.md`, and the target
-   consumer/build-out completely.
+2. Read this file, `docs/test-protocols.md`, and the target consumer document completely.
 3. Inspect `git status`, current diff, recent history, and the canonical files above.
 4. Record unrelated dirty baseline. If exact hunk isolation is unsafe, stop.
 5. State the smallest foundation leg and named consumers. If reviewed contracts do not

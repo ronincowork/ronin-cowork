@@ -2,7 +2,7 @@
 /**
  * CUSTOMIZE — the resource model, and the ONE place the v1 capability matrix is encoded.
  *
- * The matrix is the authority (wip/buildouts/CUSTOMIZE_RONIN.md): each resource is
+ * The matrix is the authority (docs/customize.md): each resource is
  * exactly one of DIRECT EDITOR, GUIDED AGENT HANDOFF or READ-ONLY, and a resource earns a
  * direct editor only where a typed, validating write API already exists. Two do. The rest
  * are handoff or read-only, and this file is where that ruling lives so a view cannot

@@ -12,7 +12,7 @@
  * of the cascade: `resolveForm` itself, the same function `POST /api/launch` calls, so a
  * preflight that passes and a launch that fails is a bug rather than a difference of
  * opinion. New Team owns this route and Agent Configuration consumes its answer; neither
- * builds a second resolver (`wip/buildouts/NEW_TEAM.md` § Preflight).
+ * builds a second resolver (`docs/new-team.md` § The single KISS create/raise transaction).
  *
  * WHAT IT CREATES: no session, and no roster. What it DOES touch, said plainly rather
  * than glossed: `resolveForm` calls `ensureShelf`, which mkdirs one shelf directory per

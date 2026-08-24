@@ -204,7 +204,7 @@ the KISS commit was not pushed as part of that assignment.
 ## Exact resume checklist
 
 1. Work on `dev`, never `master`.
-2. Read this file and `wip/buildouts/WORKSPACE_KIT.md` completely.
+2. Read this file and `docs/workspace-kit.md` completely.
 3. Inspect status, current history, and every owned file; trust the tree over handoffs.
 4. Preserve unrelated dirty work.
 5. Confirm required Kit contracts exist; stop rather than substitute.
