@@ -14,18 +14,6 @@
 import { createBoard } from './league-board.js';
 import { refreshTeams, subscribe } from './team-controller.js';
 
-const STYLE_ID = 'league-css';
-
-/** Link the feature sheet once. League owns its own CSS; the global sheet is not edited. */
-function ensureStyle() {
-  if (document.getElementById(STYLE_ID)) return;
-  const link = document.createElement('link');
-  link.id = STYLE_ID;
-  link.rel = 'stylesheet';
-  link.href = 'css/league.css'; // relative, so this page also works under /staging/
-  document.head.append(link);
-}
-
 export function createLeagueView() {
   const host = document.createElement('main');
   host.id = 'league';
@@ -45,7 +33,6 @@ export function createLeagueView() {
     title: () => 'League',
 
     mount(_viewhost, context) {
-      ensureStyle();
       board = createBoard({
         context,
         rostersVisible: visible(context),

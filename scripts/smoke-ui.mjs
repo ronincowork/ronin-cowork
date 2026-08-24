@@ -94,7 +94,10 @@ async function openPage(browser, contextOpts) {
   const keep = (s) => !BENIGN.some((re) => re.test(s));
   page.on('pageerror', (e) => keep(e.message) && jsErrors.push(e.message));
   page.on('console', (m) => {
-    if (m.type() === 'error' && keep(m.text())) jsErrors.push('console: ' + m.text().slice(0, 200));
+    if (m.type() === 'error' && keep(m.text())) {
+      const source = m.location().url;
+      jsErrors.push('console: ' + m.text().slice(0, 200) + (source ? ` @ ${source}` : ''));
+    }
   });
   page.on('requestfailed', (r) => netFails.push(`${r.url()} :: ${r.failure()?.errorText}`));
   return { page, jsErrors, netFails };
@@ -426,15 +429,102 @@ async function checkJourneys(page, label, jsErrors) {
   await page.locator('.desk.show .sys-flip').click(); // back to the shell we arrived in
   await page.waitForTimeout(250);
 
-  // Put it back: this probe shares a browser profile with the ones after it, and a squared
-  // shell is not the state they were written against.
-  await page.locator('.desk.show .sys-skin', { hasText: 'Stock' }).first().click();
-  await page.waitForTimeout(200);
-
-  // ⚙ TOGGLES, and the tile comes back — the lesson ⛩ already learned (js/tile.js).
+  // ⚙ TOGGLES, and the tile comes back — verify this before the skin composition proof,
+  // whose direct hash loads deliberately replace the document.
   await page.locator('#sysbtn').click();
   await page.waitForSelector('.tile.deskup', { state: 'detached', timeout: 3000 });
   ok(`${label}: ⚙ again puts the desk away and gives the tile its header back`);
+
+  // WORKSPACE SKIN ACCEPTANCE — the three shipped Team-oriented consumers have no skin
+  // path of their own. Drive the canonical skin module, visit the real registered views,
+  // and read computed feature/Foundation geometry. These comparisons deliberately span
+  // every shipped skin axis: shape, space/type, surface colour and font. A feature literal
+  // that pins one of those roles makes the corresponding rendered comparison stay equal.
+  const setShippedSkin = async (name) => {
+    const expected = await page.evaluate(async (wanted) => {
+    const { listSkins, setSkin } = await import('./js/skins.js');
+    const skin = (await listSkins()).find((entry) => entry.name === wanted);
+    if (!skin) throw new Error(`shipped skin missing: ${wanted}`);
+    setSkin(skin);
+      const shell = document.documentElement.dataset.theme;
+      return { ...skin.tokens, ...(shell === 'light' ? skin.light : skin.dark) };
+    }, name);
+    if (Object.keys(expected).length) {
+      await page.waitForFunction((tokens) => {
+        const style = getComputedStyle(document.documentElement);
+        return Object.entries(tokens).every(([token, value]) => style.getPropertyValue(token).trim() === value);
+      }, expected, { timeout: 5000 });
+    }
+  };
+  const workspaceSkinReadings = async (name) => {
+    const readings = {};
+    for (const [view, route, targets] of [
+      ['League', '#/league', { shape: '.league-new', surface: '.league-surface', feature: '.league-new', backdrop: true }],
+      ['Team', '#/team', { shape: '.tw-kanban', surface: '.tw-kanban', feature: '.tw-cards' }],
+      ['New Team', '#/new-team', { shape: '.nt-definition', surface: '.nt-definition', feature: '.nt-definition h2' }],
+    ]) {
+      await page.goto(URL_.replace(/#.*$/, '') + route, { waitUntil: 'networkidle', timeout: 30_000 });
+      const root = `[data-workspace-view="${view.toLowerCase().replace(' ', '-')}"]:not([hidden])`;
+      for (const selector of new Set([targets.shape, targets.surface, targets.feature])) {
+        await page.waitForSelector(`${root} ${selector}:not([hidden])`, { timeout: 5000 });
+      }
+      await setShippedSkin(name);
+      await page.waitForTimeout(150);
+      readings[view] = await page.locator(root).evaluate((node, selected) => {
+        const shapeStyle = getComputedStyle(node.querySelector(selected.shape));
+        let surfaceNode = node.querySelector(selected.surface);
+        let surfaceStyle = getComputedStyle(surfaceNode);
+        if (selected.backdrop) {
+          while (surfaceNode.parentElement && surfaceStyle.backgroundColor === 'rgba(0, 0, 0, 0)') {
+            surfaceNode = surfaceNode.parentElement;
+            surfaceStyle = getComputedStyle(surfaceNode);
+          }
+        }
+        const featureStyle = getComputedStyle(node.querySelector(selected.feature));
+        return {
+          radius: shapeStyle.borderRadius,
+          surface: surfaceStyle.backgroundColor,
+          font: featureStyle.fontFamily,
+          spacing: [featureStyle.padding, featureStyle.marginTop, featureStyle.marginBottom].join('|'),
+          type: featureStyle.fontSize,
+        };
+      }, targets);
+    }
+    return readings;
+  };
+  await setShippedSkin('stock');
+  const stockRadius = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--radius-md').trim());
+  const workspaceSkins = {};
+  for (const name of ['square', 'soft', 'tight', 'roomy', 'paper', 'mono']) {
+    workspaceSkins[name] = await workspaceSkinReadings(name);
+  }
+  for (const view of ['League', 'Team', 'New Team']) {
+    const proof = workspaceSkins;
+    const changed = {
+      radius: proof.square[view].radius !== proof.soft[view].radius,
+      spaceOrType: proof.tight[view].spacing !== proof.roomy[view].spacing
+        || proof.tight[view].type !== proof.roomy[view].type,
+      surface: proof.roomy[view].surface !== proof.paper[view].surface,
+      font: proof.paper[view].font !== proof.mono[view].font,
+    };
+    if (Object.values(changed).every(Boolean)) {
+      ok(`${label}: ${view} inherits skin tokens for radius, space/type, surface and font`);
+    } else {
+      bad(`${label}: ${view} skin inheritance incomplete — ${JSON.stringify({ changed, proof: Object.fromEntries(Object.entries(proof).map(([skin, byView]) => [skin, byView[view]])) })}`);
+    }
+  }
+  await setShippedSkin('stock');
+  const stockRestored = await page.evaluate(async (expected) => {
+    const { currentSkin } = await import('./js/skins.js');
+    return currentSkin() === 'stock'
+      && getComputedStyle(document.documentElement).getPropertyValue('--radius-md').trim() === expected;
+  }, stockRadius);
+  if (stockRestored) ok(`${label}: workspace skin proof restores canonical Stock state and tokens`);
+  else bad(`${label}: workspace skin proof did not restore canonical Stock state and tokens`);
+  await page.goto(URL_.replace(/#.*$/, '') + '#/sessions', { waitUntil: 'networkidle', timeout: 30_000 });
+
+  // Stock was restored through the same module before returning to Sessions: this probe
+  // shares a browser profile with the ones after it, so no skin state may leak onward.
 
   // 4 — the Commons strip is a real tablist: arrows move focus along it, Enter lands
   // the focused room. (Activation stays deliberate — focus alone must not open a room.)

@@ -5,14 +5,8 @@
  * primitives exactly as any feature composition does, and it extends its own classes
  * rather than reselecting a `wk-` primitive.
  *
- * COLOUR IS SPELLED ONCE, the same rule the global sheet lives under: every colour here
- * is a var() over a foundation token, never a literal. Note honestly that
- * scripts/check-css.mjs reads public/style.css ALONE, so this file is not covered by
- * that gate — it follows the rule because the rule is right, not because it is checked.
- *
- * WHERE FEATURE CSS SHOULD LIVE IS STILL UNRULED. This location is Eye 1's assumption,
- * taken from the existing layered-import pattern; four Eyes reached the same seam and
- * the first stylesheet written decides it for the rest.
+ * Every visual value reaches the shared token sheet, and the canonical CSS gate checks
+ * this file beside every other shipped feature sheet.
  */
 @layer app {
 
@@ -28,18 +22,16 @@
 
   /* A unit is the card plus its roster — two separate objects, stacked. */
   #league .league-team { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
-  #league .league-team-card { min-height: 8rem; }
-
   /* The holding area is an ordinary card: no dashed border, no special emphasis. It
      simply does not navigate, which the primitive expresses by drawing an <article>. */
-  #league .league-team-card.wk-card:not(button) { cursor: default; }
+  #league .league-team-card:not(button) { cursor: default; }
 
   #league .league-members { display: grid; gap: var(--space-2); }
-  #league .wk-league-board[data-rosters='hidden'] .league-members { display: none; }
+  #league [data-rosters='hidden'] .league-members { display: none; }
 
   #league .league-member {
     display: grid;
-    grid-template-columns: 1.4rem minmax(0, 1fr);
+    grid-template-columns: var(--space-9) minmax(0, 1fr);
     align-items: center;
     gap: var(--space-3);
     padding: var(--space-3) var(--space-4);

@@ -119,7 +119,7 @@ preflight rendering — and only then multi-launch and receipts, in that order.
 
 `src/routes/launch-preflight.ts` (302) · `public/js/new-team-draft.js` (208) ·
 `public/js/new-team-preflight.js` (82) · `public/js/new-team.js` (287) ·
-`public/new-team.css` (54)
+`public/css/new-team.css` (54)
 
 ### Shared seams touched — additive only, all declared before editing
 

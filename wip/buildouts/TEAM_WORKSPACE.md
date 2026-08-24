@@ -34,7 +34,7 @@ placeholder present with no socket; the Kanban's `failed` state exercised. No pa
 ### Files this Eye owns
 
 - `public/js/team-view.js` — 279 lines, sha256 `d94d6926a8b39837…`
-- `public/team-workspace.css` — 71 lines, sha256 `fbb7810be8b9e4ba…`
+- `public/css/team-workspace.css` — 71 lines, sha256 `fbb7810be8b9e4ba…`
 
 Both are **untracked** (`??`). Byte-copies are held outside the repo for restore.
 
@@ -111,7 +111,7 @@ and `.tw-rail { … display: flex … }` therefore un-hid this destination whene
 hid it, which it does at registration and on every `leave()`. Two rules, one fault; only
 `.tw-rails` had been guarded.
 
-**Fix:** one exemption block at the top of `public/team-workspace.css` listing every
+**Fix:** one exemption block at the top of `public/css/team-workspace.css` listing every
 `.tw-*` element this feature may hide. No shared file touched.
 
 **Verified against the actual failure mechanism**, before and after, by serving `public/`

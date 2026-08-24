@@ -1,0 +1,18 @@
+/* Team destination — feature composition only; Workspace Kit owns its foundation. */
+@layer app {
+  .tw-cards[hidden], .tw-config[hidden], .tw-config-row[hidden],
+  .tw-placeholder[hidden] { display: none; }
+
+  .tw-placeholder { padding: var(--space-8); display: flex; flex-direction: column; gap: var(--space-4); color: var(--muted); }
+  .tw-placeholder-head { color: var(--fg-strong); }
+
+  .tw-cards { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4); }
+  .tw-cards [data-inert='true'] { cursor: default; }
+
+  .tw-note { padding: var(--space-6) var(--space-7); color: var(--muted); font-size: var(--text-3); }
+  .tw-config { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-6) var(--space-7); }
+  .tw-config-head { margin-top: var(--space-3); color: var(--fg-strong); }
+  .tw-config-row { display: flex; gap: var(--space-5); font-size: var(--text-3); }
+  .tw-config-key { flex: 0 0 34%; color: var(--muted); }
+  .tw-config-value { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+}
