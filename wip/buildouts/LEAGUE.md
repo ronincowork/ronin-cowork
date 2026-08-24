@@ -71,11 +71,11 @@ slices centrally.**
 
 ### Verification actually run, and against what target
 
-- `check-modules` **exit 0**, zero findings naming League or `teams-store` — reachable, not
+- `check-modules` **exit 0**, zero findings naming League or `team-controller` — reachable, not
   orphaned. `check-docs` **exit 0**. `tsc`, `check-dead`, `check-css` pass for these files.
 - `bin/ronin-byoin --ui` **did not test this slice, and cannot as invoked.** It targets
   `defaultUrl` → the live box at `100.101.235.17:3006`, which runs from a **different
-  checkout**. Confirmed: that server 404s on `js/league-view.js`, `js/teams-store.js` and
+  checkout**. Confirmed: that server 404s on `js/league-view.js`, `js/team-controller.js` and
   `css/league.css`, and its `main.js` contains zero League references. An earlier
   measurement in this document's history correlated `--ui` failures with League
   registration; **that correlation is spurious** and is retracted.

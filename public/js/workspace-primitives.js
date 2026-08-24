@@ -64,6 +64,37 @@ function createCard(options = {}) {
   return { el, heading, summary, metadata, setState };
 }
 
+function createAction(options = {}) {
+  const el = node('button', `wk-action${options.className ? ` ${options.className}` : ''}`, options.label ?? '');
+  el.type = 'button';
+  if (options.title) el.title = options.title;
+  if (options.kind) el.dataset.kind = options.kind;
+  el.disabled = !!options.disabled;
+  if (options.action) el.addEventListener('click', options.action);
+  return { el, setDisabled: (on = true) => { el.disabled = !!on; } };
+}
+
+function createActionBar(options = {}) {
+  const el = node('div', `wk-action-bar${options.className ? ` ${options.className}` : ''}`);
+  if (options.label) el.setAttribute('aria-label', options.label);
+  const append = (...actions) => el.append(...actions.map((action) => action?.el ?? action).filter((action) => action instanceof Node));
+  append(...(options.actions || []));
+  return { el, append };
+}
+
+function createMetadata(options = {}) {
+  const el = node('dl', `wk-metadata${options.className ? ` ${options.className}` : ''}`);
+  const set = (rows = []) => {
+    el.replaceChildren();
+    for (const [label, value] of rows) {
+      if (value === null || value === undefined || value === '') continue;
+      el.append(node('dt', 'wk-metadata-key', label), node('dd', 'wk-metadata-value', value));
+    }
+  };
+  set(options.rows);
+  return { el, set };
+}
+
 /** A reserved surface is valid while empty; it promises geometry, not a workflow. */
 function createReservedSurface(label = 'Reserved') {
   const surface = createSurface({ label });
@@ -250,6 +281,9 @@ export const WorkspacePrimitives = Object.freeze({
   setSurfaceState,
   createSurface,
   createCard,
+  createAction,
+  createActionBar,
+  createMetadata,
   createReservedSurface,
   channelServices: CHANNEL_SERVICES,
   createChannelSurface,

@@ -15,7 +15,7 @@
  * write. Bubbles are read-only in this slice.
  */
 import { WorkspaceKit } from './workspace-kit.js';
-import { UNASSIGNED, leadsTeam, membersOfTeam, rostersLoaded, teamsFromState } from './teams-store.js';
+import { UNASSIGNED, leadsTeam, membersOfTeam, rostersLoaded, teamsFromState } from './team-controller.js';
 import { S, serviceMissing } from './state.js';
 
 // Reached inside function bodies, never at module top level: a top-level destructure of

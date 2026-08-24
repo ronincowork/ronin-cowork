@@ -10,6 +10,20 @@ models.
 It is infrastructure, not a sixth product view. The kit supplies the stage and interaction
 contracts; each Five Eye supplies its feature data and behavior.
 
+## HARDENING LADDER — owner-authorized 2026-08-24
+
+- **Leg 2 · Team foundation:** publish the one terminal Tile host/lifecycle adapter over the
+  existing Tile machinery, typed Team workspace state/navigation, explicit Workbench responsive
+  geometry, and Channel-service mount/enter/leave/destroy lifecycle; migrate Team only far enough
+  to prove those contracts; run BYOIN, commit and push.
+- **Leg 3 · New Team foundation:** publish the explicit New Team layout contract and typed
+  draft/seat navigation handoff, migrate New Team as its compatibility proof, and fix only the
+  prerequisite Team-name/preflight/catalog route drift identified by the convergence audit; add
+  enforcement guards, run BYOIN, commit and push.
+
+Each leg deletes its completed line from this ladder after its verified commit. Visual polish and
+unfinished feature workflows remain outside this hardening pass.
+
 The reviewed fixture is `../ronin-lab/concepts/five-eyes.html`, available at
 `http://100.101.235.17:8099/five-eyes.html`; its reviewed artifact commit is `f9510ef`. It
 is a durable visual contract and browser-review tool, not production code or a source of

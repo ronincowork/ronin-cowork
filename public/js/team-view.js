@@ -22,7 +22,7 @@
  * rather than by forking it. The Kit stays untouched.
  */
 import { WorkspaceKit } from './workspace-kit.js';
-import { request } from './request.js';
+import { membersOfTeam, refreshTeams, subscribe, teamByName } from './team-controller.js';
 
 const SURFACES = ['terminalTile', 'kanban', 'channels'];
 /** The reviewed artifact's bounds are pixels; the frozen layout clamps percent (25–60). */
@@ -58,6 +58,7 @@ export function createTeamView() {
   let ctx = null;
   let team = '';
   let loaded = ''; // the team whose roster reading is currently drawn
+  let unsubscribe = null;
 
   /* ---------- the three surfaces ---------- */
   const terminalTile = createSurface({ label: 'Focused session', className: 'tw-terminal' });
@@ -238,22 +239,20 @@ export function createTeamView() {
       return;
     }
     setSurfaceState(kanban.el, 'loading', 'Reading the Team…');
-    const [liveRes, rosterRes] = await Promise.all([
-      request(`/api/teams/${encodeURIComponent(name)}/live`, { cache: 'no-store' }),
-      request(`/api/team-rosters/${encodeURIComponent(name)}`, { cache: 'no-store' }),
-    ]);
+    const result = await refreshTeams();
     if (team !== name) return; // the destination moved while this was in flight
     loaded = name;
-    if (!liveRes.ok) {
-      setSurfaceState(kanban.el, 'failed', `Could not read this Team — ${liveRes.message}`);
+    if (!result.live.ok) {
+      setSurfaceState(kanban.el, 'failed', `Could not read this Team — ${result.live.message}`);
       renderCards([]);
-      renderConfig(rosterRes.ok ? rosterRes.data : null, []);
+      renderConfig(null, []);
       return;
     }
-    const members = liveRes.data?.members || [];
+    const members = membersOfTeam(name);
+    const roster = teamByName(name);
     setSurfaceState(kanban.el, members.length ? null : 'empty', members.length ? '' : 'No live sessions on this Team.');
     renderCards(members);
-    renderConfig(rosterRes.ok ? rosterRes.data : null, members);
+    renderConfig(roster.durable ? roster : null, members);
   }
 
   return {
@@ -262,6 +261,13 @@ export function createTeamView() {
     title: ({ param }) => param || 'Team',
     mount: (_host, context) => {
       ctx = context;
+      unsubscribe = subscribe(() => {
+        if (!team) return;
+        const members = membersOfTeam(team);
+        const roster = teamByName(team);
+        renderCards(members);
+        renderConfig(roster.durable ? roster : null, members);
+      });
     },
     enter: (context) => {
       ctx = context;
@@ -275,5 +281,6 @@ export function createTeamView() {
       // Nothing to tear down in this slice: no socket, no timer, no observer. Recorded so
       // the next author knows the absence is deliberate rather than forgotten.
     },
+    destroy: () => { unsubscribe?.(); unsubscribe = null; },
   };
 }

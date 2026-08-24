@@ -1,0 +1,11 @@
+/* Workspace Kit interaction primitives added after the frozen base sheet. */
+@layer app {
+  .wk-action-bar { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
+  .wk-action { min-height: 2.25rem; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); color: var(--fg); padding: var(--space-3) var(--space-5); font: inherit; cursor: pointer; }
+  .wk-action[data-kind='primary'] { border-color: var(--kaki); background: var(--kaki); color: var(--on-strong); }
+  .wk-action[data-kind='danger'] { border-color: var(--bad); color: var(--bad-soft); }
+  .wk-action:disabled { opacity: .5; cursor: default; }
+  .wk-metadata { display: grid; grid-template-columns: minmax(7rem, auto) minmax(0, 1fr); gap: var(--space-3) var(--space-5); margin: 0; }
+  .wk-metadata-key { color: var(--muted); }
+  .wk-metadata-value { min-width: 0; margin: 0; color: var(--fg); overflow-wrap: anywhere; }
+}

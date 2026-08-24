@@ -13,8 +13,7 @@
  * this is the honest smaller thing rather than a second /events socket.
  */
 import { createBoard } from './league-board.js';
-import { loadRosters } from './teams-store.js';
-import { fetchSessions } from './api.js';
+import { refreshTeams } from './team-controller.js';
 
 const STYLE_ID = 'league-css';
 
@@ -66,7 +65,7 @@ export function createLeagueView() {
       draw(context);
       // The durable half and the live half, then one redraw. A failed fetch keeps the
       // last good board and says so through the Surface's stale state.
-      await Promise.allSettled([loadRosters(), fetchSessions()]);
+      await refreshTeams();
       draw(context);
     },
 
