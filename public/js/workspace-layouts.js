@@ -48,6 +48,7 @@ function createWorkbenchLayout(terminalTile = null, kanban = null, channels = nu
       .join('-');
   };
   el.dataset.open = 'terminalTile-kanban-channels';
+  el.dataset.responsive = 'workbench';
   setWidths();
   return { el, setCollapsed, setWidths };
 }

@@ -12,10 +12,6 @@ contracts; each Five Eye supplies its feature data and behavior.
 
 ## HARDENING LADDER — owner-authorized 2026-08-24
 
-- **Leg 2 · Team foundation:** publish the one terminal Tile host/lifecycle adapter over the
-  existing Tile machinery, typed Team workspace state/navigation, explicit Workbench responsive
-  geometry, and Channel-service mount/enter/leave/destroy lifecycle; migrate Team only far enough
-  to prove those contracts; run BYOIN, commit and push.
 - **Leg 3 · New Team foundation:** publish the explicit New Team layout contract and typed
   draft/seat navigation handoff, migrate New Team as its compatibility proof, and fix only the
   prerequisite Team-name/preflight/catalog route drift identified by the convergence audit; add

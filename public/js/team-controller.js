@@ -40,7 +40,9 @@ export function unassignedSessions() {
 }
 export function membersOfTeam(team) {
   if (team === UNASSIGNED) return unassignedSessions();
-  return sessions().filter((s) => sessionBelongsToTeam(s, team)).sort(blankLast('session_role'));
+  return sessions().filter((s) => sessionBelongsToTeam(s, team))
+    .map((session) => ({ ...session, team_lead: leadsTeam(session, team) }))
+    .sort(blankLast('session_role'));
 }
 export function teamByName(name) {
   const roster = rosters.find((row) => row.name === name && row.state !== 'archived');

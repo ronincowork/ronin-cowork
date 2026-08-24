@@ -1,4 +1,5 @@
 /* Extraction seams for rooms that still have compatibility Tile hosts on dev. */
+import { createTerminalTileHost } from './terminal-tile-host.js';
 
 function createRoomWorkspaceView(options = {}) {
   const el = options.el || document.createElement('main');
@@ -25,4 +26,5 @@ export const WorkspaceAdapters = Object.freeze({
   createRoomWorkspaceView,
   createCommonsWorkspaceView,
   createConfigurationWorkspaceView,
+  createTerminalTileHost,
 });

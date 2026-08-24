@@ -51,8 +51,10 @@ export function createTeamView() {
   // Resolved INSIDE the factory, never at module top level: a top-level read of an imported
   // binding is the load-order fragility public/js/README.md rule 4 forbids, and the module
   // gate enforces it.
-  const { createSurface, createCard, createChannelSurface, setSurfaceState } = WorkspaceKit.primitives;
+  const { createSurface, createCard, createChannelSurface, createAction, createActionBar, createMetadata, setSurfaceState } = WorkspaceKit.primitives;
   const { createWorkbenchLayout } = WorkspaceKit.layouts;
+  const { createTerminalTileHost } = WorkspaceKit.adapters;
+  const { teamWorkspaceState } = WorkspaceKit.contract;
 
   const root = el('main', 'tw-view');
   let ctx = null;
@@ -63,42 +65,40 @@ export function createTeamView() {
   /* ---------- the three surfaces ---------- */
   const terminalTile = createSurface({ label: 'Focused session', className: 'tw-terminal' });
   const kanban = createSurface({ label: 'Team sessions', className: 'tw-kanban' });
-  const channels = createChannelSurface({ label: 'Team channels' });
+  const wipeboard = el('p', 'tw-note', 'The Team wipeboard thread arrives with its own slice. The Brief is Team Configuration’s and never appears here.');
+  const docs = el('p', 'tw-note', 'The Team’s working documents arrive with their own slice.');
+  const config = el('div', 'tw-config');
+  const service = (node) => ({ el: node, mount: () => {}, enter: () => {}, leave: () => {}, destroy: () => {} });
+  const channels = createChannelSurface({
+    label: 'Team channels',
+    services: { wipeboard: service(wipeboard), docs: service(docs), 'team-configuration': service(config) },
+  });
+  const terminalHost = createTerminalTileHost({ mode: 'reduced' });
 
   // The focused Tile carries ONE piece of identity — the @session label on its rail
   // (owner's ruling) — and no second header. There is no session yet in this slice, so it
   // states that plainly rather than drawing a fake one.
-  const actions = el('div', 'tw-actions');
-  const collapseLeft = el('button', 'tw-collapse', '«');
-  collapseLeft.type = 'button';
-  collapseLeft.title = 'Hide the focused session';
+  const actions = createActionBar({ className: 'tw-actions', label: 'Focused session actions' });
+  const collapseLeft = createAction({ className: 'tw-collapse', label: '«', title: 'Hide the focused session' }).el;
   const label = el('span', 'tw-session-label', '—');
   actions.append(collapseLeft, label, el('span', 'tw-grow'));
   for (const [mark, title] of [['⚡', 'Session macros'], ['🏷', 'Teams'], ['🎛', 'Control'], ['📝', 'Note'], ['メ', 'More']]) {
-    const b = el('button', 'tw-action', mark);
-    b.type = 'button';
-    b.title = `${title} — arrives with the terminal host`;
-    b.disabled = true;
-    actions.append(b);
+    actions.append(createAction({ className: 'tw-action', label: mark, title: `${title} — arrives with the terminal host`, disabled: true }));
   }
   terminalTile.controls.hidden = false;
-  terminalTile.controls.append(actions);
+  terminalTile.controls.append(actions.el);
   const placeholder = el('div', 'tw-placeholder');
   placeholder.append(
     el('p', 'tw-placeholder-head', 'Terminal Tile'),
-    el('p', null, 'The terminal host is a later gate. This Surface is the reserved geometry for it — no socket is opened and no session is attached.'),
+    el('p', null, 'Select a Team session to mount it here. Leaving this destination parks and closes its transport.'),
   );
-  terminalTile.content.append(placeholder);
+  terminalTile.content.append(placeholder, terminalHost.el);
 
-  const collapseRight = el('button', 'tw-collapse', '»');
-  collapseRight.type = 'button';
-  collapseRight.title = 'Hide the Team channels';
+  const collapseRight = createAction({ className: 'tw-collapse', label: '»', title: 'Hide the Team channels' }).el;
   channels.controls.hidden = false;
   channels.controls.append(collapseRight);
 
-  const collapseKanban = el('button', 'tw-collapse', '⌃');
-  collapseKanban.type = 'button';
-  collapseKanban.title = 'Hide the Team sessions';
+  const collapseKanban = createAction({ className: 'tw-collapse', label: '⌃', title: 'Hide the Team sessions' }).el;
   kanban.controls.hidden = false;
   kanban.controls.append(collapseKanban);
   const cards = el('div', 'tw-cards');
@@ -107,11 +107,8 @@ export function createTeamView() {
   /* ---------- Channel services: read-only in this slice ---------- */
   // Chat is reserved by the Kit and this file adds NOTHING to it — no composer, no fetch,
   // no timer. Its emptiness is the owner's ruling, not an unfinished state.
-  const wipeboard = el('p', 'tw-note', 'The Team wipeboard thread arrives with its own slice. The Brief is Team Configuration’s and never appears here.');
-  channels.services.get('wipeboard').append(wipeboard);
-  channels.services.get('docs').append(el('p', 'tw-note', 'The Team’s working documents arrive with their own slice.'));
-  const config = el('div', 'tw-config');
-  channels.services.get('team-configuration').append(config);
+  // Service DOM and lifecycle are mounted by ChannelSurface above; feature code supplies
+  // content only and never owns a second tab/service engine.
 
   /* ---------- geometry ---------- */
   const workbench = createWorkbenchLayout(terminalTile.el, kanban.el, channels.el);
@@ -192,10 +189,14 @@ export function createTeamView() {
         summary: m.summary || '',
         metadata: readings,
         mark: m.mark || null,
+        selected: terminalHost.session === m.name,
+        action: () => {
+          terminalHost.switchSession(m.name);
+          placeholder.hidden = true;
+          ctx?.patchState({ focusedSession: m.name });
+          renderCards(members);
+        },
       });
-      // Selection arrives with the terminal host; a card that cannot focus anything yet
-      // must not pretend to be pressable.
-      card.el.dataset.inert = 'true';
       cards.append(card.el);
     }
     const add = createCard({ heading: '＋ Add team member', summary: 'Existing session or a new one — arrives with its own slice.', variant: 'dotted' });
@@ -214,15 +215,12 @@ export function createTeamView() {
       return;
     }
     config.append(el('p', 'tw-config-head', roster.name));
-    for (const [k, v] of [
+    const metadata = createMetadata({ className: 'tw-config-metadata', rows: [
       ['Team role', roster.team_role], ['Objective', roster.objective], ['Project root', roster.project_root],
       ['Repositories', (roster.repos || []).join(', ')], ['Branch', roster.branch], ['Wipeboard', roster.wipeboard],
       ['State', roster.state],
-    ]) {
-      const row = el('div', 'tw-config-row');
-      row.append(el('span', 'tw-config-key', k), el('span', 'tw-config-value', v || '—'));
-      config.append(row);
-    }
+    ] });
+    config.append(metadata.el);
     const roster_ = el('p', 'tw-config-head', `Live roster · ${live.length}`);
     config.append(roster_);
     for (const m of live) config.append(el('div', 'tw-config-row', `${m.name}${m.team_lead ? ' · 人' : ''}`));
@@ -261,6 +259,7 @@ export function createTeamView() {
     title: ({ param }) => param || 'Team',
     mount: (_host, context) => {
       ctx = context;
+      channels.mount(context);
       unsubscribe = subscribe(() => {
         if (!team) return;
         const members = membersOfTeam(team);
@@ -272,15 +271,20 @@ export function createTeamView() {
     enter: (context) => {
       ctx = context;
       team = context.param || context.state?.team || '';
-      const stored = context.state?.widths || {};
+      const typed = teamWorkspaceState(context.state);
+      const stored = typed.widths;
       applyWidths({ left: Number(stored.left) || 40, right: Number(stored.right) || 40 });
-      for (const s of SURFACES) setCollapsed(s, !!context.state?.surfaces?.[s], false);
+      for (const s of SURFACES) setCollapsed(s, typed.surfaces[s], false);
+      const eligible = membersOfTeam(team).some((member) => member.name === typed.focusedSession);
+      if (eligible) { terminalHost.switchSession(typed.focusedSession); placeholder.hidden = true; }
+      else { terminalHost.park(); placeholder.hidden = false; }
+      channels.enter(context);
       if (team !== loaded) void load(team);
     },
     leave: () => {
-      // Nothing to tear down in this slice: no socket, no timer, no observer. Recorded so
-      // the next author knows the absence is deliberate rather than forgotten.
+      terminalHost.park();
+      channels.leave();
     },
-    destroy: () => { unsubscribe?.(); unsubscribe = null; },
+    destroy: () => { unsubscribe?.(); unsubscribe = null; terminalHost.destroy(); channels.destroy(); },
   };
 }

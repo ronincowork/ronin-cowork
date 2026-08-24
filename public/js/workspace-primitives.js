@@ -119,7 +119,9 @@ function createChannelSurface(options = {}) {
     const service = node('div', 'wk-channel-service');
     service.setAttribute('role', 'tabpanel');
     service.dataset.service = id;
-    if (options.services?.[id] instanceof Node) service.append(options.services[id]);
+    const mounted = options.services?.[id];
+    if (mounted?.el instanceof Node) service.append(mounted.el);
+    else if (mounted instanceof Node) service.append(mounted);
     // No transcript, composer, protocol or prompt is implied by the Chat tab.
     if (id === 'chat' && !service.childNodes.length) service.dataset.reserved = '';
     button.addEventListener('click', () => select(id));
@@ -140,7 +142,19 @@ function createChannelSurface(options = {}) {
     return id;
   };
   select(options.selected);
-  return { ...surface, tabs, services, select };
+  const invoke = (hook, context) => {
+    for (const id of CHANNEL_SERVICES) {
+      const mounted = options.services?.[id];
+      if (mounted && !(mounted instanceof Node)) mounted[hook]?.(services.get(id), context);
+    }
+  };
+  return {
+    ...surface, tabs, services, select,
+    mount: (context) => invoke('mount', context),
+    enter: (context) => invoke('enter', context),
+    leave: () => invoke('leave'),
+    destroy: () => invoke('destroy'),
+  };
 }
 
 function createExplorerRail(options = {}) {

@@ -1,5 +1,14 @@
 # TEAM WORKSPACE — Eye 2: the Team destination and the terminal host
 
+## WORKSPACE KIT HARDENING DELTA — 2026-08-24
+
+Team now consumes the Kit-owned `TerminalTileHost` lifecycle and the existing `Tile`
+transport/render stack rather than reserving a feature-local placeholder. Session-card selection
+switches that host; leaving parks it; destroying tears down its wire, observer and timers. Team
+also consumes the shared Team controller, typed Team workspace state, shared actions/metadata,
+explicit Workbench responsive geometry, and Channel-service lifecycle hooks. Feature behavior
+beyond this compatibility proof remains on Team's own ladder.
+
 ## CURRENT STATE / RESUME HERE
 
 **As at 2026-08-23T17:36Z. Repo HEAD `989daa5`.** Facts only; the reasoning is below.

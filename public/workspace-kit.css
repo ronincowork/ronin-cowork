@@ -8,4 +8,16 @@
   .wk-metadata { display: grid; grid-template-columns: minmax(7rem, auto) minmax(0, 1fr); gap: var(--space-3) var(--space-5); margin: 0; }
   .wk-metadata-key { color: var(--muted); }
   .wk-metadata-value { min-width: 0; margin: 0; color: var(--fg); overflow-wrap: anywhere; }
+  .wk-terminal-host { width: 100%; height: 100%; min-width: 0; min-height: 0; }
+  .wk-terminal-host > .tile { width: 100%; height: 100%; }
+  .wk-terminal-host[data-mode='reduced'] .tile-head { display: none; }
+  .wk-league-board [data-surface='cards'] { grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); }
+  .wk-workbench-layout { grid-template-columns: var(--wk-left, 40%) minmax(12rem, 1fr) var(--wk-right, 40%); }
+  .wk-workbench-layout[data-open='kanban-channels'], .wk-workbench-layout[data-open='terminalTile-kanban'] { grid-template-columns: 40% 60%; }
+  .wk-workbench-layout[data-open='terminalTile-channels'] { grid-template-columns: 50% 50%; }
+  @media (max-width: 680px) {
+    .wk-league-board [data-surface='cards'] { grid-template-columns: 1fr; }
+    .wk-workbench-layout[data-responsive='workbench'] { display: flex; flex-direction: column; overflow: auto; scroll-snap-type: y proximity; }
+    .wk-workbench-layout[data-responsive='workbench'] > .wk-layout-surface { flex: 1 0 80%; scroll-snap-align: start; }
+  }
 }
