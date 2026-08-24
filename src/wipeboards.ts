@@ -550,19 +550,6 @@ export function postNotice(board: string, author: string): string {
   );
 }
 
-/** The join notice — one line, no ceremony, no path to remember. */
-export function joinNotice(name: string, _file: string, members: string[]): string {
-  return (
-    `You've been added to wipeboard "${name}". ${checkLine} — it hands you whatever you have ` +
-    `not read, here and on every other wipeboard you are on. ` +
-    `Members: ${members.length ? members.join(', ') : 'none'}.`
-  );
-}
-
-export function leaveNotice(name: string, _file: string): string {
-  return `You've been removed from wipeboard "${name}" — it will no longer reach you.`;
-}
-
 /** The TEAM flavor: same rules, but it says membership follows the team, so nobody goes
  *  looking for an enrolment that does not exist. */
 export function teamJoinNotice(team: string, _file: string, members: string[]): string {

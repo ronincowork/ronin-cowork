@@ -1,7 +1,10 @@
-# Wipeboards — the transport a set of sessions talk across
+# Wipeboards — the team's board
 
-A **wipeboard** is where several agents working one problem talk to each other instead of
-routing every message through the owner.
+**The team board is the unit** (owner, 2026-08-24). Every team has a board — where its
+sessions talk to each other instead of routing every message through the owner — and a
+session never has to be told it exists: the board is **assumed**. A "generalist" wipeboard
+over an arbitrary grouping outside a team is a possible second utility for later; it is
+deliberately not built, and none of its machinery remains.
 
 **It is not history.** A wipeboard is "just a means for communicating back and forth"
 (owner, 2026-08-23), and "once everyone has seen the message, there's really no need to
@@ -16,30 +19,32 @@ Wipeboards live in the wipeboards **store** (user root, `bin/ronin-store wipeboa
 never a hand-spelled path), so one survives an uninstall and `rm -rf <repo>` cannot take
 it.
 
-## The one action
+## The two bare forms
 
-An agent does one thing, and it takes no arguments:
+An agent's whole interface names no board:
 
 ```
-tejun-wipeboard
+tejun-wipeboard                    everything you have not read, then it is read
+tejun-wipeboard post <text…>       say something on YOUR team's board
 ```
 
-It works out which session is asking, which wipeboards that session is on, and hands back
-everything it has not read — oldest first, wipeboard by wipeboard — then advances its
-cursors. **Agents never manage ids, timestamps, cursors, pages or files.** Nothing unread
-answers in one line. Being on no wipeboard is an ordinary answer, not an error.
+The tool works out which session is asking, which team it is on (the roster's wipeboard id
+— see below), and either hands back everything unread, oldest first, or lands the post
+where the team talks. **Agents never manage ids, timestamps, cursors, pages or files.**
+Nothing unread answers in one line; being on no team is an ordinary answer, not an error;
+and a session on several teams is asked which (`WHICH-TEAM`) rather than guessed at.
 
 Everything else is explicit, secondary, and **moves no cursor**:
 
 ```
-tejun-wipeboard boards                       which wipeboards exist
-tejun-wipeboard <name>                       the brief + what it still holds
-tejun-wipeboard <name> read [n]              the last n
-tejun-wipeboard <name> find <text…>          search what it still holds
-tejun-wipeboard <name> post [--to …] <text…> append, and notify
+tejun-wipeboard boards                       which boards exist, and whose each is
+tejun-wipeboard <board>                      the brief + what it still holds
+tejun-wipeboard <board> read [n]             the last n
+tejun-wipeboard <board> find <text…>         search what it still holds
+tejun-wipeboard <board> post [--to …] <text…>  the explicit-name case
 ```
 
-Being pointed at a wipeboard is not an instruction to post on it.
+Being pointed at a board is not an instruction to post on it.
 
 ## Reading
 
@@ -62,18 +67,21 @@ and advance only its own cursor.
 
 ## Writing, and who gets interrupted
 
-A post's audience decides **who is interrupted**, not who may read:
+A post's audience decides **who is interrupted**, not who may read — and **the lead is
+always on the list**: everything that hits a team board, the lead sees (owner, 2026-08-24).
+`--to` narrows which members are interrupted; it never removes the lead. A leaderless team
+has nobody always-on, and the poster is never sent their own post, lead or not.
 
-| Written | Notifies |
+| Written | Interrupts |
 |---|---|
-| `post "…"` | everyone on the wipeboard except the poster |
-| `post --to a,b "…"` | those two |
-| `post --to none "…"` | nobody — it lands and waits to be found |
+| `post "…"` | every member except the poster — the lead among them |
+| `post --to a,b "…"` | those two, plus the lead |
+| `post --to none "…"` | the lead alone — it lands and waits for everyone else |
 
-**An addressed post is not a private message.** Everyone on the wipeboard still receives
-it on their next check. For a genuinely private exchange, make a custom wipeboard with two
-members. An empty `--to` is refused rather than guessed at: *absent* means everyone and
-*none* means nobody, which are opposite meanings one keystroke apart.
+**An addressed post is not a private message.** Everyone on the board still receives it on
+their next check, and the lead was interrupted besides. An empty `--to` is refused rather
+than guessed at: *absent* means everyone and *none* means almost nobody, which are opposite
+meanings one keystroke apart.
 
 Address a post to whoever has to act on it; leave it open only when everyone has to.
 
@@ -137,42 +145,38 @@ Both numbers are SETTEI, in `ronin.json` under `wipeboard` — `ttl_hours` (defa
 is the only deleter in the house, and authors remain append-only: nobody ever rewrites or
 deletes another agent's post.
 
-## Two kinds, and membership
+## The team owns the board, and membership is the team
 
-**Team wipeboards** are the default, and **a team roster's `wipeboard:` id is what
-identifies one** (owner, 2026-08-23): *"Every team roster should have a whiteboard ID, and
-that whiteboard ID should match with a single whiteboard. I don't care what the names
-are."*
+**A team roster's `wipeboard:` id is what identifies a board** (owner, 2026-08-23):
+*"Every team roster should have a whiteboard ID, and that whiteboard ID should match with
+a single whiteboard. I don't care what the names are."*
 
-- **The roster implies the wipeboard.** A roster's id always resolves to exactly one
-  wipeboard; if nothing on disk matches, one is made. It opens even when empty — a new
-  team's wipeboard with nothing on it is a normal state, not a missing one.
-- **Names do not decide anything.** A roster may point its wipeboard anywhere, and the
-  wipeboard is that team's because the roster says so. (This used to be matched on the
-  name, which sent a roster pointing elsewhere to a wipeboard it had no members on.)
+- **The roster implies the board.** A roster's id always resolves to exactly one board; if
+  nothing on disk matches, one is made. It opens even when empty — a new team's board with
+  nothing on it is a normal state, not a missing one.
+- **Names do not decide anything.** A roster may point its board anywhere, and the board is
+  that team's because the roster says so. (This used to be matched on the name, which sent
+  a roster pointing elsewhere to a board it had no members on.)
 - **Membership is the team's, derived at every read.** Tag a session into the team and it
-  is on that team's wipeboard; untag it and it is off. The two cannot drift because they
-  are one fact.
-- **No create step for the owner.** The wipeboard is not something anyone makes; it is
-  something the roster implies.
-- A session on several teams is on several wipeboards.
+  is on that team's board; untag it and it is off. The two cannot drift because they are
+  one fact. There is no other membership: **custom enrolment is cut** (owner, 2026-08-24 —
+  MVP is the team board; the `@ronin-wipeboards` option is no longer consulted anywhere).
+- **No create step for anyone.** The board is not something anyone makes; it is something
+  the roster implies.
+- A session on several teams reads all their boards; posting bare asks which team it means.
 - **A team with no roster** — sessions carrying a tag and nothing behind it — talks on a
-  wipeboard of its own name. It has no roster to carry an id.
+  board of its own name. It has no roster to carry an id.
 - A team is composition and carries its type on its **team roster**, the durable record
-  above the wipeboard. Its members may mix any `session_role`s, which is why the readouts
-  print each member's own role beside its name, leads (人) first.
+  above the board. Its members may mix any `session_role`s, which is why the readouts print
+  each member's own role beside its name, leads (人) first.
 
-**Custom wipeboards** are the secondary path: owner-created by name, membership enrolled
-per session in the `@ronin-wipeboards` tmux option. The option lives on the *session*, so
-it dies with the session and no stored roster outlives reality. Where a live team bears a
-wipeboard's name, the team wins it and the option is not consulted.
+**`house`** is the one board no team owns: seeded at boot if missing, never replaced,
+never removed. With enrolment gone it has no members — reachable by name, cleared by TTL
+alone, a quiet bulletin rather than a channel.
 
-**`house` is neither.** It is the seeded, install-wide wipeboard every install has, made
-at boot if missing, never replaced, and never removed.
-
-Joining creates no cursor, so a joining session's first check hands it whatever is
-currently on the wipeboard — small, TTL-bounded, and the context it wants. Leaving drops
-its cursor, so a departed member holds nothing back.
+Joining a team creates no cursor, so a joining session's first check hands it whatever is
+currently on the board — small, TTL-bounded, and the context it wants. Leaving drops its
+cursor, so a departed member holds nothing back.
 
 ## Lifecycle
 
@@ -183,7 +187,8 @@ leaves no empty room in the listing. All six must hold:
 2. no live session carries its name as a team;
 3. no team roster points at it — matched on the roster's `wipeboard:` **id**. A roster's
    wipeboard is never removed: the roster implies it and it must open even when empty;
-4. no live session enrols it as a custom wipeboard;
+4. *(custom enrolment is cut — nothing can enrol on anything, so this can no longer hold
+   a board)*;
 5. **its Brief is still the untouched stub** — if the owner ever wrote a Brief, the
    wipeboard stays, permanently;
 6. it is not `house`.

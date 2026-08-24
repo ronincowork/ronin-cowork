@@ -5,7 +5,7 @@
 > page is not a second copy of it and never restates it. When the last leg lands, this
 > file is deleted.
 >
-> **Last updated 2026-08-23 20:05 UTC.** `bin/ronin-byoin --gates` clean (16 ok, 2 SKIP —
+> **Last updated 2026-08-24.** `bin/ronin-byoin --gates` clean (16 ok, 2 SKIP —
 > both browser checks, which fast mode does not run). Work stays on `dev`.
 
 ## Where it stands
@@ -18,16 +18,49 @@ covered yet, and what has not been ruled.
 
 None. Nothing waits on anyone.
 
+## THE RESHAPE — the team board is the unit (owner, 2026-08-24)
+
+The owner's step-back, taken whole rather than crammed onto the old shape:
+
+- **The board is assumed, never discovered.** A session on a team posts with
+  `tejun-wipeboard post <text>` — no board name. "Sessions should just be posting to
+  their whiteboard unless they have an explicit name."
+- **The tool knows the team.** Members and leads are read off the live sessions at every
+  call; the session's letter already carries its teams block. Nothing new is stored.
+- **The lead sees everything that hits a team board.** "`--to`" narrows which members are
+  interrupted; the leads are always interrupted. `--to none` therefore means *leads only*.
+  A leaderless team has nobody always-on; the poster is never sent their own post.
+- **MVP: team boards only.** Custom wipeboards — a board over any grouping outside a
+  team — are CUT for now, machinery deleted, not parked: enrolment (`@ronin-wipeboards`),
+  the create/close/add/remove surfaces, and the custom join/leave notices. A later
+  "generalist wipeboard" is a second utility to design on its own day. `house` stays
+  seeded (read/post by name; no members, so TTL alone clears it).
+- Named-board commands survive for the explicit case (`tejun-wipeboard <board> post …`),
+  because the owner kept "unless they have an explicit name".
+
+Calls made in building this, reversible and flagged:
+- **Bare post on several teams refuses** and names them (`WHICH-TEAM`), rather than
+  guessing or broadcasting to all.
+- **Reaping is unchanged**: the lead being interrupted does not make the lead a required
+  reader of an addressed post.
+
 ## Next action
 
-**API route coverage (leg 1)** — the last untested surface.
+**API coverage (leg 1).**
 
 ## Legs
 
 | # | Leg | Ends when |
 |---|---|---|
-| 1 | **API coverage.** `src/routes/wipeboards-api.ts` has no automated test. The storage core, the roster-id resolution and the CLI now do | every route asserted, including that `unread` never advances a cursor |
+| 1 | **API coverage.** `src/routes/wipeboards-api.ts` has no automated test | every route asserted, including that `unread` never advances a cursor |
 | 2 | **Full BYOIN on the box**, then land and delete this file | one verdict, no SKIP read as a pass |
+
+**The reshape LANDED** (2026-08-24): bare `post` to the team board; leads always
+interrupted (`--to none` = the lead alone; several teams = `WHICH-TEAM`); custom
+machinery deleted — enrolment consultation, the create/close/add/remove routes, the
+custom join/leave notices; the tab's calls to those routes now 404, which the deferral
+already covers. Boot shelf, both actions, TOOLS/MACROS rows, `docs/wipeboards.md` and
+KOTOBA all say the new shape. 54 assertions across the two suites.
 
 ## Deferred by the owner — the ▤ tab
 

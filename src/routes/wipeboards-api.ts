@@ -1,34 +1,20 @@
-/* ---------- WIPEBOARDS — one file, one tag, one tile ----------
- * A shared text surface a set of sessions can all read and write, so several agents
- * working the same problem talk to each other instead of every message routing through
- * the owner. The file half is src/wipeboards.ts, the membership half is the
- * @ronin-wipeboards tmux option (tmux.ts) — this is just the thin REST over both.
- *
- * Touches no pty and no pipe: `ronin_bin/tejun-wipeboard` is the same surface from a shell,
- * and the two are interchangeable. See docs/wipeboards.md.
+/* ---------- WIPEBOARDS — the team's board, over REST ----------
+ * THE TEAM BOARD IS THE UNIT (owner, 2026-08-24): every team has one, membership is the
+ * team's, and the leads see everything that hits it. Custom wipeboards — a board over an
+ * arbitrary grouping outside a team — are CUT for now; a later generalist wipeboard is a
+ * second utility to design on its own day, not a branch in this one. The storage half is
+ * src/wipeboards.ts; `ronin_bin/tejun-wipeboard` is the same surface from a shell.
+ * See docs/wipeboards.md.
  */
 import type express from 'express';
-import {
-  type Control,
-  getControl,
-  getWipeboards,
-  isValidName,
-  listSessions,
-  sessionExists,
-  setWipeboards,
-  teamsInPlay,
-} from '../tmux.js';
+import { type Control, getControl, isValidName, listSessions, sessionExists, teamsInPlay } from '../tmux.js';
 import { sendText } from '../send.js';
 import {
   appendPost,
   boardExists,
-  teamOfBoard,
   boardPath,
-  dropCursor,
   ensureBoard,
   isValidBoardName,
-  joinNotice,
-  leaveNotice,
   listBoardFiles,
   ownerAuthor,
   postNotice,
@@ -38,6 +24,8 @@ import {
   setBrief,
   teamJoinNotice,
   teamLeaveNotice,
+  boardOfTeam,
+  teamOfBoard,
   teamStub,
   unreadFor,
   type Post,
@@ -76,9 +64,8 @@ async function sweep(board: string): Promise<void> {
         const t = await teamBehind(board);
         return t ? sessions.filter((s) => s.tags.includes(t)).map((s) => s.name) : [];
       })(),
-      enrolled: (await Promise.all(
-        sessions.map(async (s) => ((await getWipeboards(s.name)).includes(board) ? s.name : '')),
-      )).filter(Boolean),
+      // Custom enrolment is cut (owner, 2026-08-24) — nothing is enrolled on anything.
+      enrolled: [],
       // The roster's `wipeboard:` TOKEN, never its name — a roster may point somewhere
       // else, and matching the name would remove a wipeboard a living team is using.
       // A roster's wipeboard is never removed: the roster implies it, and it must open
@@ -108,16 +95,23 @@ function audienceOf(body: unknown): { to: string[]; silent: boolean } {
  */
 async function fanOut(board: string, post: Post, from: string): Promise<Record<string, string>> {
   const results: Record<string, string> = {};
-  if (post.silent) return results;
   const at = (s: string) => (s.startsWith('@') ? s.slice(1) : s);
+  // THE LEADS SEE EVERYTHING THAT HITS A TEAM BOARD (owner, 2026-08-24) — `--to` narrows
+  // which members are interrupted, never the leads; `--to none` is the leads alone.
+  const team = await teamBehind(board);
+  const sessions = team ? await listSessions() : [];
+  const leads = new Set(sessions.filter((s) => s.leads.includes(team as string)).map((s) => s.name));
   const aimed = post.to.length ? new Set(post.to.map(at)) : null;
   const notice = postNotice(board, post.author);
   let unaddressed = 0;
   for (const m of await boardMembers(board)) {
     if (at(m.name) === at(from)) continue; // never the poster
-    if (aimed && !aimed.has(at(m.name))) {
-      unaddressed++;
-      continue;
+    if (!leads.has(m.name)) {
+      if (post.silent) continue;
+      if (aimed && !aimed.has(at(m.name))) {
+        unaddressed++;
+        continue;
+      }
     }
     if (m.control !== 'write') {
       results[m.name] = 'not notified (dial is not 🤖) — it gets this on its next check';
@@ -156,36 +150,15 @@ const isTeamBoard = async (name: string): Promise<boolean> => (await teamBehind(
 async function boardMembers(board: string): Promise<{ name: string; control: Control }[]> {
   const sessions = await listSessions();
   // The team is found through the roster's wipeboard id, so members are the sessions
-  // tagged into THAT TEAM — which is not necessarily the wipeboard's own name.
+  // tagged into THAT TEAM — which is not necessarily the wipeboard's own name. Teams
+  // only: custom enrolment is cut (owner, 2026-08-24), so a teamless board has nobody.
   const team = await teamBehind(board);
+  if (!team) return [];
   const out: { name: string; control: Control }[] = [];
   for (const s of sessions) {
-    const on = team ? s.tags.includes(team) : (await getWipeboards(s.name)).includes(board);
-    if (on) out.push({ name: s.name, control: await getControl(s.name) });
+    if (s.tags.includes(team)) out.push({ name: s.name, control: await getControl(s.name) });
   }
   return out;
-}
-
-/**
- * Tag or untag one session and tell it, in that order. The dial is law: a session that
- * is not `write` is still enrolled (membership is the owner's call) but never typed
- * into, and the refusal is reported rather than worked around. Nothing here flips a dial.
- */
-async function setMembership(board: string, session: string, join: boolean): Promise<string> {
-  const cur = await getWipeboards(session);
-  if (join && cur.includes(board)) return 'already a member';
-  if (!join && !cur.includes(board)) return 'not a member';
-  await setWipeboards(session, join ? [...cur, board] : cur.filter((b) => b !== board));
-  // The board hears about every roster change, so members already reading learn who
-  // joined without anyone being messaged twice. (Decision 5 — the one chat-like flourish.)
-  await appendPost(board, 'system', `${await ownerAuthor()} ${join ? 'added' : 'removed'} @${session}`);
-  if ((await getControl(session)) !== 'write') return 'enrolled, not notified (dial is not 🤖)';
-  const file = boardPath(board);
-  const notice = join
-    ? joinNotice(board, file, (await boardMembers(board)).map((m) => m.name))
-    : leaveNotice(board, file);
-  const { started } = await sendText(session, notice);
-  return started ? 'notified' : 'enrolled, but the pane did not react';
 }
 
 export function registerWipeboards(app: express.Express): void {
@@ -194,44 +167,26 @@ export function registerWipeboards(app: express.Express): void {
   // an option claim on a team's name is superseded, not double-listed.
   app.get('/api/wipeboards', async (_req, res) => {
     try {
+      // Every live team's board (through its roster's id — a team's board is real before
+      // its directory is), then any directory no team owns, e.g. `house`. Enrolment is
+      // gone, so an unowned board simply has no members.
       const sessions = await listSessions();
-      const teams = new Map<string, number>();
-      for (const s of sessions) for (const t of s.tags) teams.set(t, (teams.get(t) ?? 0) + 1);
-      const names = new Set(await listBoardFiles());
-      const counts = new Map<string, number>();
-      for (const s of sessions) {
-        for (const b of await getWipeboards(s.name)) {
-          if (teams.has(b)) continue;
-          names.add(b);
-          counts.set(b, (counts.get(b) ?? 0) + 1);
-        }
+      const live = new Map<string, number>(); // team -> member count
+      for (const s of sessions) for (const t of s.tags) live.set(t, (live.get(t) ?? 0) + 1);
+      const rows = new Map<string, { name: string; members: number; kind: 'team' | 'custom'; team?: string }>();
+      for (const [team, members] of live) {
+        const id = await boardOfTeam(team);
+        rows.set(id, { name: id, members, kind: 'team', team });
       }
-      const boards = [
-        ...[...teams.entries()].map(([name, members]) => ({ name, members, kind: 'team' as const })),
-        ...[...names].filter((n) => !teams.has(n)).map((name) => ({ name, members: counts.get(name) ?? 0, kind: 'custom' as const })),
-      ].sort((a, b) => a.name.localeCompare(b.name));
+      for (const n of await listBoardFiles()) {
+        if (rows.has(n)) continue;
+        const team = await teamOfBoard(n);
+        rows.set(n, team
+          ? { name: n, members: live.get(team) ?? 0, kind: 'team', team }
+          : { name: n, members: 0, kind: 'custom' });
+      }
+      const boards = [...rows.values()].sort((a, b) => a.name.localeCompare(b.name));
       res.json({ boards });
-    } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
-    }
-  });
-
-  app.post('/api/wipeboards', async (req, res) => {
-    const name = String(req.body?.name ?? '').trim().toLowerCase();
-    if (!isValidBoardName(name)) {
-      return res.status(400).json({ error: 'Board names are lowercase letters, digits, - and _ (max 32).' });
-    }
-    if (await boardExists(name)) return res.status(409).json({ error: `Wipeboard "${name}" already exists.` });
-    // The team wins its name (owner decision, 2026-08-22): its wipeboard already exists
-    // because the team does, so there is nothing to create and nothing to enroll.
-    if (await isTeamBoard(name)) {
-      return res.status(409).json({ error: `"${name}" is the ${name} team's wipeboard — it exists because the team does. Just open it.` });
-    }
-    try {
-      await ensureBoard(name);
-      const brief = String(req.body?.brief ?? '').trim();
-      if (brief) await setBrief(name, brief);
-      res.json({ ok: true, name });
     } catch (e) {
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }
@@ -368,84 +323,6 @@ export function registerWipeboards(app: express.Express): void {
     }
   });
 
-  // Add a session or a whole team (a COPY of its membership at this moment — custom
-  // boards are the one place that copy is legitimate, and it is said out loud). Add and
-  // remove are equal citizens — an explicit ask.
-  app.post('/api/wipeboards/:name/members', async (req, res) => {
-    const { name } = req.params;
-    if (!isValidBoardName(name)) return res.status(400).json({ error: 'Invalid board name.' });
-    // A team wipeboard has no enrolment to edit: membership is the team's.
-    if (await isTeamBoard(name)) {
-      return res.status(409).json({ error: `"${name}" is a team wipeboard — membership is the team's. Tag sessions in the ⌂ Roster (or the tile's 🏷).` });
-    }
-    if (!(await boardExists(name))) return res.status(404).json({ error: 'No such wipeboard.' });
-    const session = String(req.body?.session ?? '').trim();
-    const team = String(req.body?.team ?? req.body?.group ?? '').trim().toLowerCase();
-    if (!session && !team) return res.status(400).json({ error: 'Name a session or a team.' });
-    try {
-      const targets = session
-        ? [session]
-        : (await listSessions()).filter((s) => s.tags.includes(team)).map((s) => s.name);
-      if (!targets.length) return res.status(404).json({ error: `No team "${team}" — nothing carries that tag.` });
-      const results: Record<string, string> = {};
-      for (const t of targets) {
-        if (!(await sessionExists(t))) {
-          results[t] = 'no such session';
-          continue;
-        }
-        results[t] = await setMembership(name, t, true);
-      }
-      res.json({ ok: true, results, members: await boardMembers(name) });
-    } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
-    }
-  });
-
-  app.delete('/api/wipeboards/:name/members/:session', async (req, res) => {
-    const { name, session } = req.params;
-    if (!isValidBoardName(name)) return res.status(400).json({ error: 'Invalid board name.' });
-    if (!isValidName(session)) return res.status(400).json({ error: 'Invalid session name.' });
-    if (await isTeamBoard(name)) {
-      return res.status(409).json({ error: `"${name}" is a team wipeboard — membership is the team's. Untag the session in the ⌂ Roster (or the tile's 🏷).` });
-    }
-    if (!(await boardExists(name))) return res.status(404).json({ error: 'No such wipeboard.' });
-    try {
-      // A dead session needs no untagging — its membership died with it, which is the
-      // whole point of storing the roster on the session.
-      const result = (await sessionExists(session))
-        ? await setMembership(name, session, false)
-        : 'session is gone — nothing to untag';
-      // Its cursor goes with it: a member that has left must not hold a post back from
-      // reaping, and a rejoin should see what is currently on the wipeboard.
-      await dropCursor(name, await sessionKey(session)).catch(() => {});
-      res.json({ ok: true, result, members: await boardMembers(name) });
-    } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
-    }
-  });
-
-  /**
-   * Close a board: untag every member and tell them — but KEEP the file. Deleting
-   * somebody's transcript on a button press is not KISS, it's just destructive (owner
-   * decision, 2026-08-07). Removing the file is a deliberate `rm` the owner can do.
-   */
-  app.delete('/api/wipeboards/:name', async (req, res) => {
-    const { name } = req.params;
-    if (!isValidBoardName(name)) return res.status(400).json({ error: 'Invalid board name.' });
-    // Closing a team wipeboard would mean untagging the whole team — that is team
-    // editing through the wrong door, and the wipeboard exists as long as the team does.
-    if (await isTeamBoard(name)) {
-      return res.status(409).json({ error: `"${name}" is a team wipeboard — it lives as long as the team. Untag its sessions in the ⌂ Roster to dissolve the team.` });
-    }
-    if (!(await boardExists(name))) return res.status(404).json({ error: 'No such wipeboard.' });
-    try {
-      const results: Record<string, string> = {};
-      for (const m of await boardMembers(name)) results[m.name] = await setMembership(name, m.name, false);
-      res.json({ ok: true, results, file: boardPath(name), kept: true });
-    } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
-    }
-  });
 }
 
 /**

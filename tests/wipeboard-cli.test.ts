@@ -43,7 +43,12 @@ async function run(
         RONIN_TEAM_ROSTERS_DIR: rosters,
         RONIN_SESSION: session,
         RONIN_BOARDS: 'crew',
+        RONIN_TEAMS: 'crew',
         RONIN_MEMBERS: 'alpha,beta,gamma',
+        RONIN_LEADS: '',
+        // Tests never aim keystrokes at the live tmux server: the notify seam reports
+        // instead of sending, and the target arithmetic is what gets asserted.
+        RONIN_NO_NOTIFY: '1',
         ...env,
       },
     });
@@ -171,4 +176,45 @@ test("a roster's wipeboard id decides, and the roster brings its wipeboard up em
   // It carries the team's stub, so a first reader knows whose it is.
   const brief = await fs.readFile(path.join(store, 'squad-talk', 'brief.md'), 'utf8');
   assert.match(brief, /squad team's wipeboard/);
+});
+
+
+/* -------------------------------------------- the team board is the default (2026-08-24) */
+
+test('bare post goes to the team board — no name, no telling', async () => {
+  await fs.writeFile(
+    path.join(rosters, 'crew.md'),
+    '# crew\n\n- **team_role:** development\n- **objective:** x\n- **wipeboard:** crew-board\n- **state:** active\n',
+  );
+  const posted = await run('alpha', ['post', 'no board named, and it lands']);
+  assert.equal(posted.code, 0);
+  assert.match(posted.out, /POSTED to 'crew-board' as @alpha/, "the roster's id, not the team name");
+  assert.equal(await exists(path.join(store, 'crew-board')), true);
+});
+
+test('bare post with no team refuses plainly, and with two teams asks which', async () => {
+  const lone = await run('omega', ['post', 'shouting into the void'], { RONIN_TEAMS: '' });
+  assert.equal(lone.code, 3);
+  assert.match(lone.out, /NO-TEAM/);
+
+  const torn = await run('omega', ['post', 'which one?'], { RONIN_TEAMS: 'crew,squad' });
+  assert.equal(torn.code, 2);
+  assert.match(torn.out, /WHICH-TEAM: you are on crew, squad/);
+});
+
+test('the lead is always interrupted — addressed, open, and even --to none', async () => {
+  const env = { RONIN_LEADS: 'gamma' };
+  const aimed = await run('alpha', ['post', '--to', 'beta', 'for beta, and the lead sees it'], env);
+  assert.match(aimed.out, /beta\s+not notified \(test seam\)/);
+  assert.match(aimed.out, /gamma\s+not notified \(test seam\)/, 'the lead rides every list');
+
+  const parked = await run('alpha', ['post', '--to', 'none', 'parked — the lead still sees it'], env);
+  assert.match(parked.out, /gamma\s+not notified \(test seam\)/, '--to none means the leads alone');
+  assert.doesNotMatch(parked.out, /beta\s+not notified/);
+});
+
+test('the lead posting is not interrupted by their own post', async () => {
+  const r = await run('gamma', ['post', 'the lead speaks'], { RONIN_LEADS: 'gamma' });
+  assert.equal(r.code, 0);
+  assert.doesNotMatch(r.out, /gamma\s+not notified/, 'never the poster, lead or not');
 });

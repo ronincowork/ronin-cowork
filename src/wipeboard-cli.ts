@@ -16,7 +16,7 @@
  * Run it with no tmux and it says so and changes nothing: the cursor is never advanced
  * for output that did not happen.
  */
-import { getWipeboards, listSessions } from './tmux.js';
+import { listSessions } from './tmux.js';
 import { sessionKey } from './session-dir.js';
 import { readWipeboardSettings } from './user-config.js';
 import {
@@ -26,6 +26,7 @@ import {
   ensureRosterBoard,
   listBoardFiles,
   postHeader,
+  postNotice,
   readBoard,
   reapPosts,
   teamOfBoard,
@@ -63,27 +64,40 @@ async function whoami(): Promise<string> {
   return '';
 }
 
+/** The teams this session is on. RONIN_TEAMS is the test seam beside RONIN_SESSION —
+ * the unit floor never shells tmux, and a tool whose main path cannot be exercised
+ * without a live server is a tool whose main path is not covered. */
+async function myTeams(session: string): Promise<string[]> {
+  if (process.env.RONIN_TEAMS !== undefined) {
+    return process.env.RONIN_TEAMS.split(',').map((t) => t.trim()).filter(Boolean);
+  }
+  const sessions = await listSessions().catch(() => []);
+  return sessions.find((s) => s.name === session)?.tags ?? [];
+}
+
 /**
- * Every wipeboard this session is on: its teams, plus anything it is enrolled on.
- *
- * RONIN_BOARDS is the test seam beside RONIN_SESSION. Membership is derived from live
- * tmux and must stay that way in anger — but the unit floor never shells tmux, and a
- * tool whose main path cannot be exercised without a live server is a tool whose main
- * path is not covered.
+ * Every board this session reads: its TEAMS' boards, nothing else (owner, 2026-08-24 —
+ * the team board is the unit; custom enrolment is cut). A team talks on its roster's
+ * wipeboard id, and the roster implies the board — made here if it does not exist yet,
+ * so a new team's board opens empty rather than missing.
  */
 async function myBoards(session: string): Promise<string[]> {
   if (process.env.RONIN_BOARDS !== undefined) {
     return process.env.RONIN_BOARDS.split(',').map((b) => b.trim()).filter(Boolean).sort();
   }
-  const sessions = await listSessions().catch(() => []);
-  const me = sessions.find((s) => s.name === session);
-  // A TEAM TALKS ON ITS ROSTER'S WIPEBOARD ID, not on a wipeboard that happens to share
-  // its name (owner, 2026-08-23). The roster implies the wipeboard, so it is made here
-  // if it does not exist yet — a new team's wipeboard opens empty rather than missing.
   const teams: string[] = [];
-  for (const t of me?.tags ?? []) teams.push(await ensureRosterBoard(t));
-  const custom = await getWipeboards(session).catch((): string[] => []);
-  return [...new Set([...teams, ...custom])].sort();
+  for (const t of await myTeams(session)) teams.push(await ensureRosterBoard(t));
+  return [...new Set(teams)].sort();
+}
+
+/** The sessions DESIGNATED lead (人) of a team — read fresh, never stored. The seam
+ * mirrors the others. */
+async function leadsOf(team: string): Promise<string[]> {
+  if (process.env.RONIN_LEADS !== undefined) {
+    return process.env.RONIN_LEADS.split(',').map((t) => t.trim()).filter(Boolean);
+  }
+  const sessions = await listSessions().catch(() => []);
+  return sessions.filter((s) => s.leads.includes(team)).map((s) => s.name);
 }
 
 /** Live members of one wipeboard, with the key each cursor is filed under. */
@@ -94,11 +108,11 @@ async function membersOf(board: string): Promise<{ name: string; key: string }[]
   }
   const sessions = await listSessions().catch(() => []);
   // Through the roster's id, so the reaper counts the team that actually talks here.
+  // Teams only: custom enrolment is cut (owner, 2026-08-24).
   const team = (await teamOfBoard(board)) ?? board;
   const out: { name: string; key: string }[] = [];
   for (const s of sessions) {
-    const on = s.tags.includes(team) || (await getWipeboards(s.name).catch((): string[] => [])).includes(board);
-    if (on) out.push({ name: s.name, key: await sessionKey(s.name) });
+    if (s.tags.includes(team)) out.push({ name: s.name, key: await sessionKey(s.name) });
   }
   return out;
 }
@@ -219,16 +233,25 @@ async function find(board: string, needle: string): Promise<number> {
 }
 
 /**
- * Post, and say what the post DID. The audience is the writer's call:
- *   (nothing)     everyone on the wipeboard
- *   --to a,b      those two
- *   --to none     nobody — it lands and waits to be found
+ * Post, and say what the post DID.
  *
- * AN EMPTY --to IS REFUSED, never interpreted. Absent means everyone and `none` means
- * nobody: opposite meanings one keystroke apart, and the one place here where being
- * forgiving would be dangerous.
+ * THE BOARD IS ASSUMED (owner, 2026-08-24): `tejun-wipeboard post <text>` goes to YOUR
+ * TEAM'S board, no name needed — a session should not have to be told its board exists.
+ * A name is for the explicit case only. On several teams, the tool refuses and names
+ * them rather than guessing.
+ *
+ * The audience is the writer's call — but it decides who is INTERRUPTED, never who may
+ * read, and THE LEADS ARE ALWAYS ON THE LIST: everything that hits a team board, the
+ * lead sees (owner, 2026-08-24). So:
+ *   (nothing)     every member, leads included
+ *   --to a,b      those, plus the leads
+ *   --to none     the leads alone — it lands and waits for everyone else
+ *
+ * AN EMPTY --to IS REFUSED, never interpreted: absent means everyone and `none` means
+ * almost nobody — opposite meanings one keystroke apart, and the one place here where
+ * being forgiving would be dangerous.
  */
-async function post(board: string, argv: string[]): Promise<number> {
+async function post(named: string | null, argv: string[]): Promise<number> {
   const me = await whoami();
   let to: string[] = [];
   let silent = false;
@@ -244,11 +267,62 @@ async function post(board: string, argv: string[]): Promise<number> {
     words.push(argv[i]);
   }
   const text = words.join(' ').trim();
-  if (!text) return die('usage: tejun-wipeboard <wipeboard> post [--to a,b|none] <text…>', 2);
+  if (!text) return die('usage: tejun-wipeboard post [--to a,b|none] <text…>   (a board name only for a board that is not your team\'s)', 2);
+
+  // Which board. Named wins; otherwise it is the team's, resolved through the roster.
+  let board = named;
+  let team: string | null = named ? await teamOfBoard(named) : null;
+  if (!board) {
+    if (!me) return die('NO-SESSION: not inside a Ronin session — cannot say whose board this goes to', 3);
+    const teams = await myTeams(me);
+    if (!teams.length) return die('NO-TEAM: you are on no team, so there is no board to assume — name one', 3);
+    if (teams.length > 1) {
+      return die(`WHICH-TEAM: you are on ${teams.join(', ')} — say which: tejun-wipeboard <team> post …`, 2);
+    }
+    team = teams[0];
+    board = await ensureRosterBoard(team);
+  }
+
   const author = me ? `@${me}` : 'shell';
   const p = await appendPost(board, author, text, { to, silent });
   out(`POSTED to '${board}' as ${postHeader(author, p.at, p.to, p.silent).replace(/^### /, '').replace(/ · .*$/, '')}`);
+
+  // THE INTERRUPTS. Leads always; then the addressees, or everyone when open. Never the
+  // poster. The dial stays law — tejun-send enforces it and its verdict is reported, not
+  // worked around. A failed notice never fails the post, which is already in the file.
+  const at = (x: string) => (x.startsWith('@') ? x.slice(1) : x);
+  const leads = team ? await leadsOf(team) : [];
+  const members = (await membersOf(board)).map((m) => m.name);
+  const wanted = silent ? [] : to.length ? to.map(at) : members;
+  const targets = [...new Set([...leads, ...wanted])].filter((n) => n !== at(author) && members.includes(n));
+  const skipped = members.filter((n) => n !== at(author) && !targets.includes(n)).length;
+  for (const t of targets) {
+    const verdict = await notify(t, postNotice(board, author));
+    out(`${t.padEnd(24)} ${verdict}`);
+  }
+  if (skipped) out(`${skipped} other(s) on the board were not addressed — they see it when they check`);
   return 0;
+}
+
+/**
+ * One notice to one session, through tejun-send so the dial is enforced and the message
+ * arrives watermarked as the wipeboard, not the owner. RONIN_NO_NOTIFY is the unit
+ * floor's seam: tests never aim keystrokes at the live tmux server.
+ */
+async function notify(session: string, message: string): Promise<string> {
+  if (process.env.RONIN_NO_NOTIFY) return 'not notified (test seam)';
+  const { execFile } = await import('node:child_process');
+  const { promisify } = await import('node:util');
+  const { fileURLToPath } = await import('node:url');
+  const path = await import('node:path');
+  const send = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'ronin_bin', 'tejun-send');
+  try {
+    await promisify(execFile)(send, [session, message]);
+    return 'notified';
+  } catch (e) {
+    const line = String((e as { stdout?: string })?.stdout ?? '').trim().split('\n').pop() ?? '';
+    return `not notified — ${line || 'tejun-send failed'}`;
+  }
 }
 
 /* ------------------------------------------------------------------------------ main */
@@ -257,13 +331,15 @@ const argv = process.argv.slice(2);
 let code = 0;
 if (!argv.length) code = await check();
 else if (argv[0] === 'boards') code = await boards();
+// THE DEFAULT BOARD IS YOUR TEAM'S: `tejun-wipeboard post <text…>` names nothing.
+else if (argv[0] === 'post') code = await post(null, argv.slice(1));
 else {
   const board = argv[0].toLowerCase();
   if (!/^[a-z0-9][a-z0-9_-]{0,31}$/.test(board)) {
     code = die(`BAD-NAME: '${board}' — lowercase letters, digits, - and _ only (max 32)`, 2);
   }
   const verb = argv[1] ?? '';
-  if (verb === 'post') code = await post(board, argv.slice(2));
+  if (verb === 'post') code = await post(board, argv.slice(2));  // the explicit-name case
   else if (verb === 'read') code = await read(board, Number(argv[2] ?? 0) || 0);
   else if (verb === 'find') code = await find(board, argv.slice(2).join(' '));
   else code = await read(board, 0);

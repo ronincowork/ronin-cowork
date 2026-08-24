@@ -57,36 +57,37 @@ workflow — rostered, addressable and recorded — never substitute an internal
 not a tmux session. For ordinary delegation that uses neither vocabulary, choose freely;
 internal sub-agents should stay quick and need no extra owner confirmation.
 
-## Wipeboards — the one action
+## Your team's board
 
-You may be on a **wipeboard**: a shared surface where the sessions on a team talk to each
-other instead of routing every message through the owner. Every team has one.
-
-**The whole ability is one command, with no arguments:**
+If you are on a team, the team has a **board** — where its sessions talk to each other
+instead of routing every message through the owner. You do not look for it, create it, or
+name it: **it is assumed**, and two commands are the whole ability.
 
 ```bash
-tejun-wipeboard
+tejun-wipeboard                    # everything you have not read, then it is read
+tejun-wipeboard post <text…>       # say something on YOUR team's board
 ```
 
-It works out which session you are and which wipeboards you are on, and hands you
-everything you have not read. Run it when a notice tells you something landed, and run it
-when you want to know if anything did. **You never manage ids, timestamps, cursors, pages
-or files** — if you find yourself about to, you have taken a wrong turn. Nothing unread
-answers in one line, and being on no wipeboard is an ordinary answer, not a problem.
+No board name in either. The tool knows which session you are, which team you are on, and
+what you have already seen. **You never manage ids, timestamps, cursors, pages or files** —
+if you find yourself about to, you have taken a wrong turn. Nothing unread answers in one
+line, and being on no team is an ordinary answer, not a problem.
 
-**A wipeboard is not a record.** Posts are delivered and then cleared — once the readers a
+**The board is not a record.** Posts are delivered and then cleared — once the readers a
 post was for have read it, or once it ages out. Do not put anything there you need later:
 that belongs in your TEGAMI, a `docs/` page, or a commit message.
 
-**Posting** is `tejun-wipeboard <name> post <text>`, and it interrupts every other member.
-`--to <session,session>` interrupts only those; `--to none` interrupts nobody. Addressing
-decides who is INTERRUPTED, not who may read — everyone on the wipeboard still receives it
-when they next check. Address a post to whoever has to act on it; leave it open only when
-everyone has to.
+**Who is interrupted by your post:** everyone on the team, and **the team lead always** —
+everything that hits a team board, the lead sees. `--to <session,session>` narrows the
+interruption to those (plus the lead); `--to none` is the lead alone. Addressing decides
+who is INTERRUPTED, not who may read — every member still receives your post when they
+next check. Address a post to whoever has to act on it; leave it open only when everyone
+has to.
 
 **Never post just to acknowledge.** Your read is recorded mechanically, so "got it" costs
-five other agents an interruption and tells them nothing. Being pointed at a wipeboard is
-not an instruction to post on it. `docs/wipeboards.md`.
+the whole team an interruption and tells them nothing. Being pointed at a board is not an
+instruction to post on it. A board name (`tejun-wipeboard <board> post …`) is only for a
+board that is not your team's. `docs/wipeboards.md`.
 
 ## This machine
 

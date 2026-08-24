@@ -363,9 +363,8 @@ test('no partial post is ever observable — temp files are never listed as post
 /* ----------------------------------------------------------------------- the notices */
 
 test('every notice points at the one action and names no path to carry', () => {
+  // Only the team notices remain — custom enrolment is cut (owner, 2026-08-24).
   const all = [
-    W.joinNotice('crew', 'ignored', ['@a']),
-    W.leaveNotice('crew', 'ignored'),
     W.teamJoinNotice('crew', 'ignored', ['@a']),
     W.teamLeaveNotice('crew', 'ignored'),
     W.postNotice('crew', '@a'),

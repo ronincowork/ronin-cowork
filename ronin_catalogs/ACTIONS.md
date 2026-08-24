@@ -263,8 +263,8 @@ Find out what has been said to you. One command, no arguments:
 tejun-wipeboard
 ```
 
-It resolves which session you are, which wipeboards you are on, and prints everything you
-have not read — oldest first, wipeboard by wipeboard — then records that you have read it.
+It resolves which session you are, which team you are on, and prints everything on your
+team's board that you have not read — oldest first — then records that you have read it.
 **You never manage ids, timestamps, cursors, pages or files.** Run it when a notice tells
 you something landed, and run it when you want to know whether anything did.
 
@@ -282,27 +282,30 @@ History is a different, explicit command, and it changes nothing:
 
 ## wipeboard-post
 `action_kind: mechanical` — run it, don't deliberate.
-> **Tool: `tejun-wipeboard <wipeboard> post [--to …] <text>`** (TOOLS.md)
-Say something on a WIPEBOARD — where the sessions on a team talk to each other instead of
-routing every message through the owner. Posting also **interrupts** the other members, so
-what you say is heard instead of waiting for someone to look.
+> **Tool: `tejun-wipeboard post [--to …] <text>`** (TOOLS.md)
+Say something on YOUR TEAM'S BOARD — where the team talks to itself instead of routing
+every message through the owner. **No board name**: the tool knows your team, and a name
+(`tejun-wipeboard <board> post …`) is only for a board that is not your team's. Posting
+also **interrupts**, so what you say is heard instead of waiting for someone to look.
 
 ```bash
-tejun-wipeboard <wipeboard> post "…"                    # interrupts everyone else on it
-tejun-wipeboard <wipeboard> post --to @alpha,@beta "…"  # interrupts only those two
-tejun-wipeboard <wipeboard> post --to none "…"          # interrupts nobody
+tejun-wipeboard post "…"                    # interrupts the team — and the lead, always
+tejun-wipeboard post --to @alpha,@beta "…"  # interrupts those two, plus the lead
+tejun-wipeboard post --to none "…"          # interrupts the lead alone
 ```
+
+**The lead sees everything that hits a team board.** `--to` narrows which members are
+interrupted; it never removes the lead. A leaderless team has nobody always-on.
 
 **A WIPEBOARD IS NOT A RECORD.** Posts are delivered and then cleared — once the readers a
 post was for have read it, or once it ages out. Never put something there you will need
 later: that belongs in your TEGAMI, a `docs/` page, or a commit message.
 
 **Address it to whoever has to act on it; leave it open only when everyone has to.** That
-choice is the whole difference between a wipeboard that stays useful and one nobody reads.
+choice is the whole difference between a board that stays useful and one nobody reads.
 But be clear what addressing does: it decides **who is interrupted, not who may read.**
-Everyone on the wipeboard still receives the post when they next check, so an addressed
-post is not private. If you need a genuinely private exchange, ask the owner for a
-wipeboard with two members on it.
+Everyone on the board still receives the post when they next check, so an addressed post
+is not private — the lead is interrupted besides, always.
 
 What the interruption is, so you can predict it:
 - A **pointer, not a copy** — one line naming the wipeboard and you, telling the reader to
@@ -321,8 +324,9 @@ Rules, all of them about not trampling other people's writing:
 - **Never rewrite, reorder or delete another agent's post.** Several agents write at once.
   Clearing posts is the machine's job on a rule, and it is the only thing that removes one.
 - **Never edit the `## Brief`.** It is the owner's statement of what the wipeboard is for.
-- **You do not enrol anyone**, including yourself. A TEAM wipeboard's membership IS the
-  team; a CUSTOM wipeboard's is the owner's hand. You post; you don't manage the roster.
+- **You do not enrol anyone**, including yourself. A board's membership IS the team —
+  there is nothing to enrol, and no other kind of board to enrol onto (custom boards are
+  cut for now, owner 2026-08-24). You post; the roster is the team's.
 - **Read before posting** (`tejun-wipeboard`) so you answer what is there instead of
   talking past it.
 - Being on a wipeboard is not permission to touch a member: control-check as always.
