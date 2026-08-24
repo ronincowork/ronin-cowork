@@ -31,6 +31,7 @@ import { buildRoster } from './roster.js';
 import { buildLauncher } from './launcher.js';
 import { buildWipeboard } from './wipeboard.js';
 import { buildDocs } from './docs.js';
+import { buildArchives } from './archives.js';
 
 export function buildHome(tile) {
   const el = document.createElement('div');
@@ -140,11 +141,12 @@ export function buildHome(tile) {
   wipePane.className = 'home-wipe';
   const docsPane = document.createElement('div');
   docsPane.className = 'home-docs';
-  el.append(tabs, nullPane, mainPane, wipePane, docsPane);
+  const archivePane = document.createElement('div');
+  el.append(tabs, nullPane, mainPane, archivePane, wipePane, docsPane);
   // Real tab semantics over the strip that already exists (ui.tabs): tablist/tab roles,
   // aria-selected, roving tabindex, arrow keys. Activation stays a click — entering a
   // room starts its fetches, and focus must not do that on its own.
-  const paneEl = { sessions: mainPane, new: nullPane, wipe: wipePane, docs: docsPane };
+  const paneEl = { sessions: mainPane, archives: archivePane, new: nullPane, wipe: wipePane, docs: docsPane };
   const tabBtns = [...tabs.querySelectorAll('button[data-pane]')];
   const strip = makeTabs(tabRow, tabBtns, (b) => paneEl[b.dataset.pane]);
   strip.select(homeTab); // matches the default pane
@@ -156,6 +158,7 @@ export function buildHome(tile) {
     strip.select(tab);
     revealTab(tab);
     if (which === 'sessions') render();
+    if (which === 'archives') void archives.enter();
     if (which === 'wipe') wipe.enter();
     if (which === 'docs') docs.enter();
   };
@@ -175,6 +178,7 @@ export function buildHome(tile) {
   secList.appendChild(h);
   colL.appendChild(secList);
   const roster = buildRoster(tile, secList);
+  const archives = buildArchives(tile, archivePane);
 
   // The ＋ New session room — the koshidashi board, in the null pane.
   const launcher = buildLauncher(tile, nullPane);

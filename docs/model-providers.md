@@ -26,11 +26,14 @@ installer, archive lifecycle, or UI must not spell a provider command itself. Ea
 
 | Field | Command contract |
 |---|---|
-| `get` | Install or update the CLI. The npm global install commands are idempotent and install the current selected package version. Empty means Ronin cannot perform it. |
+| `operations.install` | Shell line used by Ronin's visible installer. Empty means Ronin cannot perform it. |
+| `operations.update` | Either a package-manager shell line or argv for the installed CLI's native updater. |
+| `operations.version` | Args used to read the installed CLI version. |
 | `cmd` | Executable name resolved through the owner's login shell. |
 | `initial` | Whether a new interactive launch accepts the brief positionally. |
-| `lifecycle.sessionIdFlag` | Optional flag for a Ronin-minted new conversation UUID. |
-| `lifecycle.resume` | Arguments before the provider conversation UUID; empty means archive/rehydrate is unsupported. |
+| `operations.session.newIdFlag` | Optional flag for a Ronin-minted new conversation UUID. |
+| `operations.session.resume` | Arguments before the provider conversation UUID. |
+| `operations.session.discovery` | The exact identity-discovery adapter, or `unsupported`. |
 
 Current verified lifecycle syntax:
 
@@ -38,14 +41,21 @@ Current verified lifecycle syntax:
 |---|---|---|---|
 | Claude Code | `claude --session-id <uuid> …` | `claude --resume <uuid>` | yes; exact legacy fallback also exists |
 | Codex | discovered from matching open rollout + writer-lock FDs | `codex resume <uuid>` | yes |
-| Gemini CLI | not verified | not verified | no |
+| Gemini CLI | CLI-managed UUID | `gemini --resume <uuid>` | command verified; identity discovery not yet integrated, so no |
 | Grok CLI | not verified | not verified | no |
 | Hermes | not verified | not verified | no |
 
-“Not verified” is executable behavior: the registry carries an empty lifecycle command and
-archive refuses before stopping tmux. Adding support means verifying the installed CLI's
-own help and a real resume journey, then changing its one registry row and this table in
-the same commit. Do not infer syntax from another provider.
+Upstream command references used for these rows: [Claude CLI and update reference](https://code.claude.com/docs/en/cli-reference),
+[Codex CLI repository](https://github.com/openai/codex), [Gemini CLI reference](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/cli-reference.md),
+and [Hermes CLI reference](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/reference/cli-commands.md).
+They are evidence for maintainers; they are not runtime inputs. Runtime consumers read
+`AGENTS[].operations` only.
+
+“Not verified” and `discovery: unsupported` are executable behavior: archive refuses before
+stopping tmux. Adding support means verifying the installed CLI's own help, locating its
+exact current-session identity without ambiguity, and proving a real resume journey; then
+change its one registry row and this table together. Do not infer syntax from another
+provider.
 
 ## Provider and agent are different axes
 

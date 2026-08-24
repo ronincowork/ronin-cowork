@@ -37,6 +37,7 @@
  * happens to carry `~/.local/bin` and on a fresh install will not.
  * ------------------------------------------------------------------------- */
 import { execFile } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { promisify } from 'node:util';
 
 const pexec = promisify(execFile);
@@ -107,11 +108,18 @@ export interface AgentScreen {
   ready: readonly string[];
 }
 
-export interface AgentLifecycle {
-  /** Optional flag accepted on a new interactive launch before its initial prompt. */
-  sessionIdFlag: string;
-  /** Arguments placed between the executable and provider conversation UUID. */
-  resume: readonly string[];
+export interface AgentOperations {
+  /** Shell line used by Ronin's visible installer. Empty means parked. */
+  install: string;
+  /** Shell line for package-managed updates, or argv after the installed agent binary. */
+  update: { shell: string; argv: readonly string[] };
+  /** argv after the installed binary for a version read. */
+  version: readonly string[];
+  session: {
+    newIdFlag: string;
+    resume: readonly string[];
+    discovery: 'claude-history' | 'codex-fds' | 'unsupported';
+  };
 }
 
 export const AGENTS = [
@@ -120,9 +128,13 @@ export const AGENTS = [
     cmd: 'claude',
     label: 'Claude Code',
     from: 'Anthropic',
-    get: 'npm install -g @anthropic-ai/claude-code',
+    operations: {
+      install: 'npm install -g @anthropic-ai/claude-code',
+      update: { shell: 'npm install -g @anthropic-ai/claude-code@latest', argv: [] },
+      version: ['--version'],
+      session: { newIdFlag: '--session-id', resume: ['--resume'], discovery: 'claude-history' },
+    } as AgentOperations,
     parked: '',
-    lifecycle: { sessionIdFlag: '--session-id', resume: ['--resume'] } as AgentLifecycle,
     // `Usage: claude [options] [command] [prompt]` — `prompt  Your prompt`.
     initial: 'positional' as InitialPrompt,
     // Claude draws `❯ ` and then fills the rest of the line with its own placeholder hint
@@ -135,9 +147,13 @@ export const AGENTS = [
     cmd: 'codex',
     label: 'Codex',
     from: 'OpenAI',
-    get: 'npm install -g @openai/codex',
+    operations: {
+      install: 'npm install -g @openai/codex',
+      update: { shell: 'npm install -g @openai/codex@latest', argv: [] },
+      version: ['--version'],
+      session: { newIdFlag: '', resume: ['resume'], discovery: 'codex-fds' },
+    } as AgentOperations,
     parked: '',
-    lifecycle: { sessionIdFlag: '', resume: ['resume'] } as AgentLifecycle,
     // `Usage: codex [OPTIONS] [PROMPT]` — "Optional user prompt to start the session".
     initial: 'positional' as InitialPrompt,
     // Codex uses `›` for both its input row and its dialog rows, so a NUMBERED › is a
@@ -150,9 +166,13 @@ export const AGENTS = [
     cmd: 'gemini',
     label: 'Gemini CLI',
     from: 'Google',
-    get: 'npm install -g @google/gemini-cli',
+    operations: {
+      install: 'npm install -g @google/gemini-cli',
+      update: { shell: '', argv: ['update'] },
+      version: ['--version'],
+      session: { newIdFlag: '', resume: ['--resume'], discovery: 'unsupported' },
+    } as AgentOperations,
     parked: '',
-    lifecycle: { sessionIdFlag: '', resume: [] } as AgentLifecycle,
     // Positional `query`: "Initial prompt. Runs in interactive mode by default." NEVER
     // `-p`, which is its HEADLESS mode — that would answer and exit, not open a tile.
     initial: 'positional' as InitialPrompt,
@@ -169,17 +189,21 @@ export const AGENTS = [
   },
   // Grok and Hermes are NOT characterised — nobody has read their screens against a real
   // session, so they say nothing rather than guess, and the house rows answer for them.
-  { id: 'grok', cmd: 'grok', label: 'Grok CLI', from: 'xAI', get: 'npm install -g @xai-official/grok', parked: '', lifecycle: { sessionIdFlag: '', resume: [] } as AgentLifecycle, initial: 'positional' as InitialPrompt, screen: { busy: [], asking: [], ready: [] } },
+  { id: 'grok', cmd: 'grok', label: 'Grok CLI', from: 'xAI', operations: { install: 'npm install -g @xai-official/grok', update: { shell: 'npm install -g @xai-official/grok@latest', argv: [] }, version: ['--version'], session: { newIdFlag: '', resume: [], discovery: 'unsupported' } } as AgentOperations, parked: '', initial: 'positional' as InitialPrompt, screen: { busy: [], asking: [], ready: [] } },
   {
     id: 'hermes',
     cmd: 'hermes',
     label: 'Hermes',
     from: 'Nous Research',
-    get: '',
+    operations: {
+      install: '',
+      update: { shell: '', argv: ['update'] },
+      version: ['--version'],
+      session: { newIdFlag: '', resume: ['--resume'], discovery: 'unsupported' },
+    } as AgentOperations,
     // Parked, so nothing ever launches it and its argv shape has never been read.
     initial: 'none' as InitialPrompt,
     parked: "Ronin cannot install this one yet — Nous's own installer needs system packages it has to ask you for, and does not finish without them. Install it from their site and it appears here.",
-    lifecycle: { sessionIdFlag: '', resume: [] } as AgentLifecycle,
     screen: { busy: [], asking: [], ready: [] },
   },
 ] as const;
@@ -232,7 +256,7 @@ export async function listAgentAvailability(): Promise<AgentAvailability[]> {
 
   return AGENTS.map((a) => {
     const where = found.get(a.cmd) ?? '';
-    return { id: a.id, label: a.label, from: a.from, get: a.get, parked: a.parked, cmd: a.cmd, installed: !!where, path: where };
+    return { id: a.id, label: a.label, from: a.from, get: a.operations.install, parked: a.parked, cmd: a.cmd, installed: !!where, path: where };
   });
 }
 
@@ -277,16 +301,27 @@ export async function launchArgv(cmd: string, brief: string): Promise<LaunchArgv
 }
 
 /** Apply provider-owned new-conversation syntax without teaching the launch route flags. */
-export function withProviderSessionId(agent: string, argv: readonly string[], id: string): string[] {
+export function newProviderSession(agent: string, argv: readonly string[]): { argv: string[]; id: string } {
   const spec = AGENTS.find((a) => a.id === agent);
-  if (!spec?.lifecycle.sessionIdFlag) return [...argv];
-  return [argv[0], spec.lifecycle.sessionIdFlag, id, ...argv.slice(1)];
+  const flag = spec?.operations.session.newIdFlag;
+  if (!flag) return { argv: [...argv], id: '' };
+  const id = randomUUID();
+  return { argv: [argv[0], flag, id, ...argv.slice(1)], id };
 }
 
 /** Resolve the installed binary and provider-owned resume syntax from the same registry. */
 export async function resumeAgentArgv(agent: string, id: string): Promise<string[]> {
   const spec = AGENTS.find((a) => a.id === agent);
-  if (!spec?.lifecycle.resume.length) return [];
+  if (!spec?.operations.session.resume.length) return [];
   const launch = await launchArgv(spec.cmd, '');
-  return launch.argv.length ? [launch.argv[0], ...spec.lifecycle.resume, id] : [];
+  return launch.argv.length ? [launch.argv[0], ...spec.operations.session.resume, id] : [];
+}
+
+export function agentSpec(id: string): (typeof AGENTS)[number] | undefined {
+  return AGENTS.find((agent) => agent.id === id);
+}
+
+/** The registry's first supported agent is the install fallback; no caller names it. */
+export function defaultAgentCommand(): string {
+  return AGENTS[0].cmd;
 }

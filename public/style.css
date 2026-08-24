@@ -2061,10 +2061,8 @@ body {
 /* Archived sessions are disk records, not a second kind of live row. The section sits
    after the roster and uses a quieter two-column row: its only primary act is bringing
    the agent back into tmux. */
-.home-archived {
-  margin-top: var(--space-6);
-  padding-top: var(--space-5);
-  border-top: var(--edge) solid var(--line);
+.home-archives {
+  padding: var(--space-5);
 }
 .home-archived-head {
   display: flex;
@@ -2208,6 +2206,7 @@ body {
    `.browsing` toggle while there were only two — see buildHome. ⚙ System left the
    panes for the bar's one sheet, 2026-08-16.) */
 .home-null,
+.home-archives,
 .home-wipe,
 .home-docs {
   display: none;
@@ -2217,6 +2216,9 @@ body {
 }
 .home[data-pane='sessions'] .home-main {
   display: grid;
+}
+.home[data-pane='archives'] .home-archives {
+  display: block;
 }
 .home[data-pane='wipe'] .home-wipe {
   display: flex;

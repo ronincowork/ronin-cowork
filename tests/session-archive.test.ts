@@ -51,13 +51,13 @@ test('legacy provider identity is inferred only from the executable argv', async
 });
 
 test('provider lifecycle syntax comes from the agent registry', async () => {
-  const { AGENTS, withProviderSessionId } = await import('../src/agents.js');
-  const id = '00000000-0000-0000-0000-000000000000';
-  assert.deepEqual(withProviderSessionId('claude', ['/bin/claude', '--model', 'opus', 'brief'], id), [
-    '/bin/claude', '--session-id', id, '--model', 'opus', 'brief',
-  ]);
-  assert.deepEqual(AGENTS.find((agent) => agent.id === 'codex')?.lifecycle.resume, ['resume']);
-  assert.deepEqual(AGENTS.find((agent) => agent.id === 'gemini')?.lifecycle.resume, []);
+  const { AGENTS, newProviderSession } = await import('../src/agents.js');
+  const stamped = newProviderSession('claude', ['/bin/claude', '--model', 'opus', 'brief']);
+  assert.match(stamped.id, /^[0-9a-f-]{36}$/);
+  assert.deepEqual(stamped.argv, ['/bin/claude', '--session-id', stamped.id, '--model', 'opus', 'brief']);
+  assert.deepEqual(AGENTS.find((agent) => agent.id === 'codex')?.operations.session.resume, ['resume']);
+  assert.deepEqual(AGENTS.find((agent) => agent.id === 'gemini')?.operations.session.resume, ['--resume']);
+  assert.equal(AGENTS.find((agent) => agent.id === 'gemini')?.operations.session.discovery, 'unsupported');
 });
 
 test('archive ids cannot escape the archive directory', async () => {

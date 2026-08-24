@@ -22,12 +22,22 @@ The provider and tmux do different halves of the job:
 So this is not tmux serialization and it is not a suspended process. tmux is genuinely
 stopped; provider-native conversation resume is what makes the later process continuous.
 
+## The recording
+
+The session's readable recording is preserved with it. RIREKI's `r_tape` and `r_scroll`
+already live in the session record directory, so archive does not move or duplicate them.
+The manifest preserves the stable session key; rehydrate stamps that same key onto the new
+tmux session, and RIREKI continues against the same tape and scroll. Archive emits no
+`SessionEnd`, specifically so the recording lifecycle does not treat this resumable stop
+as a death. Hard delete emits `SessionEnd` and removes the record directory, including the
+tape and scroll.
+
 - A tile's trash action offers **Archive** or **Hard delete**. Archive writes a private,
   sanitized manifest first, then stops the base tmux session and every grouped viewer.
   Hard delete retains the irreversible behavior: the session-end lifecycle runs and the
   session record directory is removed.
-- The roster lists disk-backed records under **Archived sessions**. They are absent from
-  the live session list and therefore do not count toward the session maximum.
+- The Commons has a separate **Archived** tab listing disk-backed records. They are absent
+  from the Roster and live session list and therefore do not count toward the session maximum.
 - Clicking an archived row recreates tmux, resumes the same provider conversation, restores
   Ronin's tmux metadata, and removes the manifest only after restoration succeeds.
 - Manifests contain Ronin/tmux metadata and the provider conversation UUID. They never store
@@ -83,7 +93,8 @@ thread-writer lock open. Ronin walks the pane process and descendants, intersect
 FD identities, and selects the most recently written exact match. A rollout without its
 matching lock is never accepted.
 
-Provider command syntax is owned once in `src/agents.ts` and documented in
+Provider operation syntax is executable data owned once in `src/agents.ts` and documented in
 `docs/model-providers.md` § One command registry. Archive code discovers conversation
-identity; it does not own install, launch, update, or resume argv. Gemini, Grok, and Hermes
-remain non-archivable until their native resume contracts are verified and added there.
+identity; it does not own install, launch, update, or resume argv. Gemini's resume command
+is registered but its exact live-session identity discovery is not yet integrated; Grok
+and Hermes also remain non-archivable until their full identity contracts are verified.

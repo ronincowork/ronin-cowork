@@ -4,9 +4,10 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { storeDir } from './stores.js';
 import type { Control } from './tmux.js';
+import { AGENTS, agentSpec } from './agents.js';
 
 export const ARCHIVE_DIR = storeDir('archived_sessions');
-export type ResumableProvider = 'claude' | 'codex';
+export type ResumableProvider = string;
 
 /** Durable archive data. It deliberately contains no prompt, transcript, or raw argv. */
 export interface ArchivedSession {
@@ -152,21 +153,11 @@ async function legacyClaudeSessionId(cwd: string, argv: string[]): Promise<strin
   return matches.length === 1 ? matches[0] : '';
 }
 
-export async function providerSessionId(agent: string, cwd: string, pid: number, stamped = ''): Promise<string> {
-  if (UUID.test(stamped)) return stamped;
-  const argv = await argvFromProc(pid);
-  if (!argv.length) return '';
-  if (agent === 'codex') return codexSessionId(pid);
-  if (agent === 'claude') {
-    return idAfter(argv, ['--session-id']) || idAfter(argv, ['--resume', '-r']) || legacyClaudeSessionId(cwd, argv);
-  }
-  return '';
-}
-
 export function providerFromArgv(argv: readonly string[]): ResumableProvider | '' {
   for (const value of argv.slice(0, 2)) {
     const bare = path.basename(value);
-    if (bare === 'claude' || bare === 'codex') return bare;
+    const match = AGENTS.find((agent) => agent.cmd === bare);
+    if (match) return match.id;
   }
   return '';
 }
@@ -178,8 +169,13 @@ export async function providerSessionInfo(
   stampedId = '',
 ): Promise<{ agent: ResumableProvider; id: string } | null> {
   const argv = await argvFromProc(pid);
-  const agent = stampedAgent === 'claude' || stampedAgent === 'codex' ? stampedAgent : providerFromArgv(argv);
-  if (!agent) return null;
-  const id = await providerSessionId(agent, cwd, pid, stampedId);
+  const agent = agentSpec(stampedAgent)?.id || providerFromArgv(argv);
+  const discovery = agent ? agentSpec(agent)?.operations.session.discovery : 'unsupported';
+  if (!agent || discovery === 'unsupported') return null;
+  let id = UUID.test(stampedId) ? stampedId : '';
+  if (!id && discovery === 'codex-fds') id = await codexSessionId(pid);
+  if (!id && discovery === 'claude-history') {
+    id = idAfter(argv, ['--session-id']) || idAfter(argv, ['--resume', '-r']) || await legacyClaudeSessionId(cwd, argv);
+  }
   return id ? { agent, id } : null;
 }

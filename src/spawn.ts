@@ -1,6 +1,7 @@
 import { appendFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
+import { defaultAgentCommand } from './agents.js';
 import { REPO_ROOT } from './config.js';
 import { bootFiles, ensureShelf } from './session-boot.js';
 import { listProjectRoots, listSessionLaunchSpecs, type ProjectRootInfo } from './project-roots.js';
@@ -368,7 +369,7 @@ export async function resolveForm(
     ? (launchSpecs.find((s) => s.model === profile.model && s.provider === dflt?.provider)
         ?? launchSpecs.find((s) => s.model === profile.model))?.cmd
     : undefined;
-  let cmd = agent ? form.cmd || biasCmd || defaultCmd || 'claude' : '';
+  let cmd = agent ? form.cmd || biasCmd || defaultCmd || defaultAgentCommand() : '';
   // The row this cmd came out of, matched BEFORE the MCP-off flags are appended below —
   // appending changes the very string the match is on, and looking it up afterwards would
   // find nothing for exactly the launches that asked for something unusual. It carried the

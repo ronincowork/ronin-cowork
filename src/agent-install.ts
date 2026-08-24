@@ -179,7 +179,7 @@ async function one(
   if (!spec) return said('refused', `no agent called "${item.name}"`);
   // NO COMMAND, NO ATTEMPT. A parked agent carries the sentence saying why, written for
   // a person, so the refusal reads the same here as it does on the row that offered it.
-  if (!spec.get) return said('refused', spec.parked || `nothing installs ${item.name} yet`);
+  if (!spec.operations.install) return said('refused', spec.parked || `nothing installs ${item.name} yet`);
   // MET ITEMS DO NOT EXIST — including here. A box that already has it gets no session,
   // no npm call, and no second copy shadowing the owner's own.
   if (probed.find((p) => p.id === spec.id)?.installed) {
@@ -195,7 +195,7 @@ async function one(
     // a box at its cap must still be able to finish installing what the owner ticked.
     await createSession(session, undefined, { agent: false });
     void collectBirthLines(session, true);
-    await runCommand(session, installLine(spec.get, spec.cmd));
+    await runCommand(session, installLine(spec.operations.install, spec.cmd));
     return said('started', `installing ${spec.label} in ${session}`, session);
   } catch (e) {
     return said('refused', String((e as Error)?.message ?? e));
