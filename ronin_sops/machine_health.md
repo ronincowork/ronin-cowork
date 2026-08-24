@@ -75,16 +75,61 @@ needs at least 👁 on its `@ronin-control` dial, through `tejun-rireki`. **Neve
 — that is the owner's hand, and a refusal is their standing word: report it, do not work
 around it.
 
-## Swap, and why a Ronin box wants it
+## swap
 
-A VM running several agents will have spikes. With swap, a spike is slowness; without it, a
-spike is a killed process chosen by the kernel. Adding a swapfile needs the owner's password
-once — **write the commands out and hand them over; a session does not use `sudo`.** Check
-the filesystem first, since not every one takes a swapfile the same way, and add the entry to
-`/etc/fstab` or it will not survive a reboot.
+**Check first.** One line, and it answers with a fact rather than an impression:
 
-Reboots are the owner's timing too. A reboot ends every session on the box, so it is
-scheduled and never seized — including when a kernel upgrade is waiting.
+```sh
+/usr/sbin/swapon --show     # no output at all means there is none
+```
+
+`ronin-doctor` asks the same question every run and raises a finding when the answer is
+none; `tejun-survey` reports it beside the RAM. If you were sent here by either, this is
+the section they meant.
+
+**What "none" means.** Swap is disk the kernel uses as overflow for memory. When RAM
+fills it writes pages nothing has touched recently out to disk and hands the memory back;
+if those pages are wanted again it reads them in, slower, but nothing is lost. **With no
+swap there is no overflow**, and the kernel's only remaining move is to choose a process
+and kill it. It chooses, not you, and it favours large ones — which on a box running
+agent sessions means one of them dies with somebody's work in it.
+
+Swap does not create memory and it does not fix a leak; something allocating without
+bound just reaches the wall later, with the box crawling on the way there. What it buys
+is the difference between losing an hour of work and noticing the machine is sluggish.
+
+**It is also what makes an idle session cheap.** A session nobody has typed into for
+hours is almost entirely cold pages. With swap those move to disk and the memory comes
+back, and the session is still alive and still addressable when its person returns.
+This is unrelated to archiving a session, which is a **person's decision** to finish with
+one; swap needs no decision from anyone and applies to the sessions you have not
+finished with.
+
+**Before offering it, check all four.** A wrong recommendation here is worse than none:
+
+| Condition | Why |
+|---|---|
+| swap is genuinely absent | never stack a second one on a box that has some |
+| not a container | swap is the host's business, and `/etc/fstab` is not the container's to write |
+| the root filesystem takes a swapfile plainly | `fallocate` is right on ext4 and xfs; other filesystems want their own method |
+| several GB free, with headroom left over | filling the disk to add swap trades one outage for another |
+
+**The steps.** A session does not hold root and does not run these — write them out and
+hand them over. One block, one password:
+
+```sh
+sudo bash -c '
+  fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
+  echo "/swapfile none swap sw 0 0" >> /etc/fstab
+'
+```
+
+`chmod 600` is not optional — a readable swapfile hands out the contents of memory. The
+`/etc/fstab` line is what makes it permanent: **the whole thing is done once, ever**, and
+the kernel brings it back by itself on every reboot. Nothing recurring, nothing scheduled.
+
+Confirm with `swapon --show` and `free -h`, and say the numbers back rather than assuming
+the commands worked.
 
 ## Watch, do not reap
 

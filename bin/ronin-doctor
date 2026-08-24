@@ -435,6 +435,30 @@ else
   find_ "Claude Code is missing a setting Ronin needs — run: hostside/claude-settings.py"
 fi
 
+# ---- the box itself: can it survive a busy hour? ------------------------------------
+#
+# Ronin runs several agent sessions at once and each one runs real work — test suites,
+# builds, browsers. On a box with no swap the kernel has no overflow when memory fills:
+# it picks a process and kills it, and it picks which. On this box that means a session
+# dies with somebody's work in it, without warning. Swap does not create memory; it
+# converts a sudden death into slowness, which is the difference between losing an hour
+# and noticing the box is sluggish.
+#
+# A finding, never an action. Doctor reads; it does not touch the machine, and a
+# swapfile needs root that Ronin does not hold.
+sect "the box"
+if [ ! -r /proc/swaps ]; then
+  note "cannot read /proc/swaps on this system — swap not assessed"
+elif [ "$(awk 'NR>1' /proc/swaps | wc -l)" -gt 0 ]; then
+  ok "swap is configured ($(awk 'NR>1 {t+=$3} END {printf "%.1f GB", t/1048576}' /proc/swaps))"
+elif { command -v systemd-detect-virt >/dev/null 2>&1 && systemd-detect-virt --container --quiet; } ||
+     [ -f /.dockerenv ]; then
+  note "no swap, but this is a container — swap is the host's business, not this install's"
+else
+  ram_gb="$(awk '/^MemTotal:/ {printf "%.0f", $2/1048576; exit}' /proc/meminfo 2>/dev/null)"
+  find_ "NO SWAP on this box (${ram_gb:-?} GB RAM) — when memory fills the kernel kills a process rather than slowing down, and it chooses which. remedy: ronin_sops/machine_health.md § swap"
+fi
+
 # ---- verdict -----------------------------------------------------------------------
 echo ""
 if [ "$FINDINGS" -eq 0 ]; then
