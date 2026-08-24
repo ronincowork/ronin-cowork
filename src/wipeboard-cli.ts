@@ -241,19 +241,23 @@ async function find(board: string, needle: string): Promise<number> {
  * them rather than guessing.
  *
  * The audience is the writer's call — but it decides who is INTERRUPTED, never who may
- * read, and THE LEADS ARE ALWAYS ON THE LIST: everything that hits a team board, the
- * lead sees (owner, 2026-08-24). So:
- *   (nothing)     every member, leads included
+ * read, and THE DEFAULT IS QUIET (owner, 2026-08-24): "it should be the default that
+ * it's only the leader, and if they want to include everyone else, they need to say so"
+ * — the board must be efficient, not a spam machine. Every member still RECEIVES every
+ * post on its next check; interrupts are what this narrows. So:
+ *   (nothing)     the leads alone — the default
  *   --to a,b      those, plus the leads
- *   --to none     the leads alone — it lands and waits for everyone else
+ *   --to all      every member — the explicit loud case
+ *   --to none     nobody at all — it lands and waits to be found
  *
- * AN EMPTY --to IS REFUSED, never interpreted: absent means everyone and `none` means
- * almost nobody — opposite meanings one keystroke apart, and the one place here where
- * being forgiving would be dangerous.
+ * AN EMPTY --to IS REFUSED, never interpreted — one keystroke sits between four
+ * different audiences, and this is the one place where being forgiving would be
+ * dangerous.
  */
 async function post(named: string | null, argv: string[]): Promise<number> {
   const me = await whoami();
   let to: string[] = [];
+  let toAll = false;
   let silent = false;
   const words: string[] = [];
   for (let i = 0; i < argv.length; i++) {
@@ -261,13 +265,14 @@ async function post(named: string | null, argv: string[]): Promise<number> {
       const v = (argv[++i] ?? '').trim();
       if (!v) return die('BAD-ADDRESSEE: --to needs names, or the word none. Leave it off to reach everyone', 2);
       if (v === 'none') silent = true;
+      else if (v === 'all') toAll = true;
       else to = v.split(',').map((t) => t.trim()).filter(Boolean);
       continue;
     }
     words.push(argv[i]);
   }
   const text = words.join(' ').trim();
-  if (!text) return die('usage: tejun-wipeboard post [--to a,b|none] <text…>   (a board name only for a board that is not your team\'s)', 2);
+  if (!text) return die('usage: tejun-wipeboard post [--to a,b|all|none] <text…>   (a board name only for a board that is not your team\'s)', 2);
 
   // Which board. Named wins; otherwise it is the team's, resolved through the roster.
   let board = named;
@@ -287,20 +292,21 @@ async function post(named: string | null, argv: string[]): Promise<number> {
   const p = await appendPost(board, author, text, { to, silent });
   out(`POSTED to '${board}' as ${postHeader(author, p.at, p.to, p.silent).replace(/^### /, '').replace(/ · .*$/, '')}`);
 
-  // THE INTERRUPTS. Leads always; then the addressees, or everyone when open. Never the
-  // poster. The dial stays law — tejun-send enforces it and its verdict is reported, not
-  // worked around. A failed notice never fails the post, which is already in the file.
+  // THE INTERRUPTS — quiet by default. The leads, plus whoever was named; every member
+  // only on an explicit --to all; nobody on --to none. Never the poster. The dial stays
+  // law — tejun-send enforces it and its verdict is reported, not worked around. A
+  // failed notice never fails the post, which is already in the file.
   const at = (x: string) => (x.startsWith('@') ? x.slice(1) : x);
-  const leads = team ? await leadsOf(team) : [];
+  const leads = team && !silent ? await leadsOf(team) : [];
   const members = (await membersOf(board)).map((m) => m.name);
-  const wanted = silent ? [] : to.length ? to.map(at) : members;
+  const wanted = silent ? [] : toAll ? members : to.map(at);
   const targets = [...new Set([...leads, ...wanted])].filter((n) => n !== at(author) && members.includes(n));
   const skipped = members.filter((n) => n !== at(author) && !targets.includes(n)).length;
   for (const t of targets) {
     const verdict = await notify(t, postNotice(board, author));
     out(`${t.padEnd(24)} ${verdict}`);
   }
-  if (skipped) out(`${skipped} other(s) on the board were not addressed — they see it when they check`);
+  if (skipped) out(`${skipped} other(s) on the board were not interrupted — they see it when they check (--to all to reach everyone)`);
   return 0;
 }
 

@@ -95,9 +95,14 @@ function audienceOf(body: unknown): { to: string[]; silent: boolean } {
  */
 async function fanOut(board: string, post: Post, from: string): Promise<Record<string, string>> {
   const results: Record<string, string> = {};
+  if (post.silent) return results; // parked — it lands and waits to be found
   const at = (s: string) => (s.startsWith('@') ? s.slice(1) : s);
-  // THE LEADS SEE EVERYTHING THAT HITS A TEAM BOARD (owner, 2026-08-24) — `--to` narrows
-  // which members are interrupted, never the leads; `--to none` is the leads alone.
+  // THIS IS THE OWNER'S SURFACE, and an owner post interrupts EVERYONE by default —
+  // "if the owner types a message, then all agents should see that" (owner, 2026-08-23).
+  // The AGENT default is the opposite, deliberately: an agent's bare post interrupts the
+  // lead alone (owner, 2026-08-24 — the board must be efficient, not a spam machine),
+  // and that quiet default lives in src/wipeboard-cli.ts. The leads ride every list here
+  // too; `to` narrows the members, never the leads.
   const team = await teamBehind(board);
   const sessions = team ? await listSessions() : [];
   const leads = new Set(sessions.filter((s) => s.leads.includes(team as string)).map((s) => s.name));
@@ -106,12 +111,9 @@ async function fanOut(board: string, post: Post, from: string): Promise<Record<s
   let unaddressed = 0;
   for (const m of await boardMembers(board)) {
     if (at(m.name) === at(from)) continue; // never the poster
-    if (!leads.has(m.name)) {
-      if (post.silent) continue;
-      if (aimed && !aimed.has(at(m.name))) {
-        unaddressed++;
-        continue;
-      }
+    if (!leads.has(m.name) && aimed && !aimed.has(at(m.name))) {
+      unaddressed++;
+      continue;
     }
     if (m.control !== 'write') {
       results[m.name] = 'not notified (dial is not 🤖) — it gets this on its next check';

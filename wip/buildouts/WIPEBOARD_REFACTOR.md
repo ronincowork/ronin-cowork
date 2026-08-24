@@ -55,6 +55,12 @@ Calls made in building this, reversible and flagged:
 | 1 | **API coverage.** `src/routes/wipeboards-api.ts` has no automated test | every route asserted, including that `unread` never advances a cursor |
 | 2 | **Full BYOIN on the box**, then land and delete this file | one verdict, no SKIP read as a pass |
 
+**Quiet by default LANDED** (2026-08-24, second ruling of the day): an agent's bare post
+interrupts **the lead alone** — "the board must be efficient, not a spam machine". `--to`
+adds names, `--to all` is the explicit everyone, `--to none` interrupts nobody. The owner's
+own line from the tab stays loud (D3: "all agents should see that") — the quiet default is
+for agents. Reading is untouched: every member still receives every post on its next check.
+
 **The reshape LANDED** (2026-08-24): bare `post` to the team board; leads always
 interrupted (`--to none` = the lead alone; several teams = `WHICH-TEAM`); custom
 machinery deleted — enrolment consultation, the create/close/add/remove routes, the

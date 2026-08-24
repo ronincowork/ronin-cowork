@@ -91,7 +91,7 @@ test('on no wipeboard is an ordinary answer, not an error', async () => {
 });
 
 test('an addressed post reaches a non-addressee too — addressing filters the interrupt', async () => {
-  await run('alpha', ['crew', 'post', '--to', 'gamma', 'you own the collapse state']);
+  await run('alpha', ['post', '--to', 'gamma', 'you own the collapse state']);
   const beta = await run('beta', []);
   assert.match(beta.out, /you own the collapse state/, 'beta is on the wipeboard, so beta gets it');
   assert.match(beta.out, /→ @gamma/, 'and can see it was aimed elsewhere');
@@ -202,15 +202,27 @@ test('bare post with no team refuses plainly, and with two teams asks which', as
   assert.match(torn.out, /WHICH-TEAM: you are on crew, squad/);
 });
 
-test('the lead is always interrupted — addressed, open, and even --to none', async () => {
+test('QUIET BY DEFAULT — a bare post interrupts the lead alone', async () => {
+  const env = { RONIN_LEADS: 'gamma' };
+  const bare = await run('alpha', ['post', 'plan is up, please riff'], env);
+  assert.equal(bare.code, 0);
+  assert.match(bare.out, /gamma\s+not notified \(test seam\)/, 'the lead is the default list');
+  assert.doesNotMatch(bare.out, /beta\s+not notified/, 'the team is NOT interrupted by default');
+  assert.match(bare.out, /not interrupted — they see it when they check/, 'and the poster is told so');
+});
+
+test('--to widens deliberately: names add to the lead, all reaches everyone, none reaches nobody', async () => {
   const env = { RONIN_LEADS: 'gamma' };
   const aimed = await run('alpha', ['post', '--to', 'beta', 'for beta, and the lead sees it'], env);
   assert.match(aimed.out, /beta\s+not notified \(test seam\)/);
   assert.match(aimed.out, /gamma\s+not notified \(test seam\)/, 'the lead rides every list');
 
-  const parked = await run('alpha', ['post', '--to', 'none', 'parked — the lead still sees it'], env);
-  assert.match(parked.out, /gamma\s+not notified \(test seam\)/, '--to none means the leads alone');
-  assert.doesNotMatch(parked.out, /beta\s+not notified/);
+  const loud = await run('alpha', ['post', '--to', 'all', 'everyone, on purpose'], env);
+  assert.match(loud.out, /beta\s+not notified \(test seam\)/, '--to all is the explicit loud case');
+  assert.match(loud.out, /gamma\s+not notified \(test seam\)/);
+
+  const parked = await run('alpha', ['post', '--to', 'none', 'parked, waits to be found'], env);
+  assert.doesNotMatch(parked.out, /not notified \(test seam\)/, '--to none interrupts nobody at all');
 });
 
 test('the lead posting is not interrupted by their own post', async () => {

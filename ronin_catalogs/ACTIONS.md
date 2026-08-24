@@ -289,23 +289,27 @@ every message through the owner. **No board name**: the tool knows your team, an
 also **interrupts**, so what you say is heard instead of waiting for someone to look.
 
 ```bash
-tejun-wipeboard post "…"                    # interrupts the team — and the lead, always
-tejun-wipeboard post --to @alpha,@beta "…"  # interrupts those two, plus the lead
-tejun-wipeboard post --to none "…"          # interrupts the lead alone
+tejun-wipeboard post "…"                    # interrupts THE LEAD ALONE — the default
+tejun-wipeboard post --to @alpha,@beta "…"  # those two, plus the lead
+tejun-wipeboard post --to all "…"           # everyone — said on purpose
+tejun-wipeboard post --to none "…"          # nobody — it lands and waits to be found
 ```
 
-**The lead sees everything that hits a team board.** `--to` narrows which members are
-interrupted; it never removes the lead. A leaderless team has nobody always-on.
+**Quiet by default** (owner, 2026-08-24): most posts do not need the whole team pulled out
+of its work, so a bare post interrupts only the lead — the board stays efficient instead
+of becoming a spam machine. Widening is deliberate: name who has to act, or say
+`--to all` and mean it. The lead sees everything that hits the board; a leaderless team
+has nobody always-on.
 
 **A WIPEBOARD IS NOT A RECORD.** Posts are delivered and then cleared — once the readers a
 post was for have read it, or once it ages out. Never put something there you will need
 later: that belongs in your TEGAMI, a `docs/` page, or a commit message.
 
-**Address it to whoever has to act on it; leave it open only when everyone has to.** That
+**Interrupt whoever has to act on it; `--to all` only when everyone genuinely does.** That
 choice is the whole difference between a board that stays useful and one nobody reads.
 But be clear what addressing does: it decides **who is interrupted, not who may read.**
 Everyone on the board still receives the post when they next check, so an addressed post
-is not private — the lead is interrupted besides, always.
+is not private — and the lead is interrupted besides, always (except `--to none`).
 
 What the interruption is, so you can predict it:
 - A **pointer, not a copy** — one line naming the wipeboard and you, telling the reader to

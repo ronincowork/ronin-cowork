@@ -77,12 +77,12 @@ line, and being on no team is an ordinary answer, not a problem.
 post was for have read it, or once it ages out. Do not put anything there you need later:
 that belongs in your TEGAMI, a `docs/` page, or a commit message.
 
-**Who is interrupted by your post:** everyone on the team, and **the team lead always** —
-everything that hits a team board, the lead sees. `--to <session,session>` narrows the
-interruption to those (plus the lead); `--to none` is the lead alone. Addressing decides
-who is INTERRUPTED, not who may read — every member still receives your post when they
-next check. Address a post to whoever has to act on it; leave it open only when everyone
-has to.
+**Your post interrupts the team lead, and nobody else — that is the default.** The board
+must stay efficient: most of what you post, the whole team does not need to be pulled out
+of its work for. `--to <session,session>` also interrupts those; `--to all` interrupts
+everyone, and you say it on purpose; `--to none` interrupts nobody — the post lands and
+waits. Addressing decides who is INTERRUPTED, not who may read: every member still
+receives your post when they next check, and the lead sees everything that hits the board.
 
 **Never post just to acknowledge.** Your read is recorded mechanically, so "got it" costs
 the whole team an interruption and tells them nothing. Being pointed at a board is not an
