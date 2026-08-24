@@ -265,6 +265,7 @@ export async function resolveForm(
   form: SpawnForm,
   taken: Set<string>,
   referenceDir?: string,
+  proposedRoster?: TeamRoster,
 ): Promise<Resolved> {
   const [taskDef, roots, launchSpecs, agentsSet] = await Promise.all([
     findDefinition('session_roles', form.session_role ?? ''),
@@ -281,7 +282,7 @@ export async function resolveForm(
   // roster is refused rather than silently joined: being born ONTO a team is a launch
   // fact and deserves the durable half to exist; joining a tag-only team afterwards is
   // the tags route's ordinary business.
-  const roster = form.team ? await readTeamRoster(form.team) : null;
+  const roster = form.team ? (proposedRoster?.name === form.team ? proposedRoster : await readTeamRoster(form.team)) : null;
   if (form.team && !roster) {
     throw new Error(
       `Team "${form.team}" has no roster on this box. Create it first (POST /api/team-rosters), ` +

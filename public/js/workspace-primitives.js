@@ -25,6 +25,7 @@ function createSurface(options = {}) {
   const el = node('section', `wk-surface${options.className ? ` ${options.className}` : ''}`);
   if (options.label) el.setAttribute('aria-label', options.label);
   if (options.collapsible) el.dataset.collapsible = '';
+  if (options.flush) el.dataset.flush = 'true';
   const controls = node('div', 'wk-surface-controls');
   controls.hidden = true;
   const content = node('div', 'wk-surface-content');

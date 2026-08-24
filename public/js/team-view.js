@@ -63,7 +63,7 @@ export function createTeamView() {
   let unsubscribe = null;
 
   /* ---------- the three surfaces ---------- */
-  const terminalTile = createSurface({ label: 'Focused session', className: 'tw-terminal' });
+  const terminalTile = createSurface({ label: 'Focused session', className: 'tw-terminal', flush: true });
   const kanban = createSurface({ label: 'Team sessions', className: 'tw-kanban' });
   const wipeboard = el('p', 'tw-note', 'The Team wipeboard thread arrives with its own slice. The Brief is Team Configuration’s and never appears here.');
   const docs = el('p', 'tw-note', 'The Team’s working documents arrive with their own slice.');

@@ -10,15 +10,28 @@ models.
 It is infrastructure, not a sixth product view. The kit supplies the stage and interaction
 contracts; each Five Eye supplies its feature data and behavior.
 
-## HARDENING LADDER — owner-authorized 2026-08-24
+## HARDENING MIGRATION — landed 2026-08-24
 
-- **Leg 3 · New Team foundation:** publish the explicit New Team layout contract and typed
-  draft/seat navigation handoff, migrate New Team as its compatibility proof, and fix only the
-  prerequisite Team-name/preflight/catalog route drift identified by the convergence audit; add
-  enforcement guards, run BYOIN, commit and push.
-
-Each leg deletes its completed line from this ladder after its verified commit. Visual polish and
-unfinished feature workflows remain outside this hardening pass.
+- Replace imports from the former feature-local Team projection with `team-controller.js`. Call
+  `refreshTeams()` once per refresh boundary, then read `teamsFromState()`,
+  `membersOfTeam(name)` and `teamByName(name)`; subscribe only for repainting.
+- Obtain terminals only from `WorkspaceKit.adapters.createTerminalTileHost({ mode })`.
+  Call `mount`/`switchSession`, `park` on `leave`, and `destroy` on `destroy`; never create
+  `TileWire`, xterm, tape, composer or a resize observer in a feature.
+- Pass Channel services as `{ el, mount, enter, leave, destroy }` entries to
+  `createChannelSurface`. The Surface owns invocation and tab replacement.
+- Build controls and readings with `createAction`, `createActionBar` and `createMetadata`.
+  Use `flush: true` only for content such as a hosted terminal that must reach the edge.
+- Navigate with `workspaceTarget(view, param)` plus `navigateWorkspace(context, target)`;
+  normalize Team state with `teamWorkspaceState`. New Team persists under
+  `viewState('new-team').draft` and hands seats through `team-draft-controller.js`.
+- Keep layout geometry in `workspace-kit.css`: League card grid, Team Workbench states and
+  New Team's wide-left builder each have explicit desktop and phone contracts. Feature CSS
+  may style meaning but must not redefine those geometries.
+- `isCreatableTeamName` is the create/rename/preflight boundary; `isValidTeamName` remains
+  the syntax/read boundary so a legacy roster named `unassigned` remains recoverable.
+- `resolveForm(..., proposedRoster)` is for dry-run resolution only. Real launches omit it
+  and still require a durable roster.
 
 The reviewed fixture is `../ronin-lab/concepts/five-eyes.html`, available at
 `http://100.101.235.17:8099/five-eyes.html`; its reviewed artifact commit is `f9510ef`. It

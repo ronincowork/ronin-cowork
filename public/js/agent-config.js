@@ -25,6 +25,7 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { createSeatFields } from './agent-config-fields.js';
 import { createSeatPreview } from './agent-config-preview.js';
 import { preflight } from './new-team-preflight.js';
+import { changedTeamDraft, selectedDraftSeat } from './team-draft-controller.js';
 
 export function createAgentConfigurationView(kit = WorkspaceKit) {
   const { createSurface } = kit.primitives;
@@ -94,6 +95,7 @@ export function createAgentConfigurationView(kit = WorkspaceKit) {
     if (!draft || !seatId) return;
     const next = fields.seat;
     draft.seats = draft.seats.map((s) => (s.seat_id === seatId ? { ...next, seat_id: seatId } : s));
+    changedTeamDraft();
     applied = { ...next };
     actions.dirty(false);
   });
@@ -130,7 +132,11 @@ export function createAgentConfigurationView(kit = WorkspaceKit) {
     el,
     open,
     title: () => 'Agent Configuration · ronin',
-    enter: () => { if (!draft) configuration.setState('empty', 'No seat selected. Open one from the Team roster.'); },
+    enter: () => {
+      const selected = selectedDraftSeat();
+      if (selected.draft && selected.seatId) open(selected.draft, selected.seatId);
+      else configuration.setState('empty', 'No seat selected. Open one from the Team roster.');
+    },
     leave: () => {},
   };
 }

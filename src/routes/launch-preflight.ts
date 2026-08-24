@@ -37,7 +37,7 @@
  */
 import type express from 'express';
 import { isValidName, listSessions } from '../tmux.js';
-import { isValidTeamName, readTeamRoster } from '../team-rosters.js';
+import { isCreatableTeamName, readTeamRoster, type TeamRoster } from '../team-rosters.js';
 import { boardExists } from '../wipeboards.js';
 import { liveCount, readMax } from '../user-config.js';
 import { resolveForm, type SpawnForm } from '../spawn.js';
@@ -63,8 +63,6 @@ type Verdict = 'ok' | 'warn' | 'refuse';
  * refusal holds whether or not that lands, because a client-side-only guard is the kind
  * that gets bypassed.
  */
-const RESERVED_TEAM_NAMES = new Set(['unassigned']);
-
 /**
  * The seat as the draft holds it. `null` means UNSET and is not the same as empty: only
  * these four fields distinguish the two, because only for these does the server itself
@@ -136,7 +134,7 @@ export function registerLaunchPreflight(app: express.Express): void {
       const seats: DraftSeat[] = Array.isArray(req.body?.seats) ? req.body.seats : [];
 
       // ---- THE TEAM HALF ----
-      const nameValid = isValidTeamName(name) && !RESERVED_TEAM_NAMES.has(name);
+      const nameValid = isCreatableTeamName(name);
       const existing = nameValid ? await readTeamRoster(name) : null;
       const live = await listSessions();
       // Membership is derived from tags, so a name that already has tag-holders arrives
@@ -189,9 +187,19 @@ export function registerLaunchPreflight(app: express.Express): void {
         // against the roster when it exists and against no team when it does not — the
         // team's CONTEXT (root default, team_role reading, objective) is the only thing
         // that differs, and it is reported as unresolved rather than faked.
-        const resolvable = { ...form, team: existing ? name : undefined };
+        const proposedRoster: TeamRoster | undefined = nameValid && !existing ? {
+          name,
+          team_role: String(teamBody.team_role ?? '').trim(),
+          objective: String(teamBody.objective ?? '').trim(),
+          project_root: String(teamBody.project_root ?? '').trim(),
+          repos: Array.isArray(teamBody.repos) ? teamBody.repos.map(String) : [],
+          branch: String(teamBody.branch ?? '').trim(),
+          wipeboard: wipeboardToken,
+          state: 'active',
+        } : undefined;
+        const resolvable = { ...form, team: nameValid ? name : undefined };
         try {
-          resolved = await resolveForm(resolvable as SpawnForm, new Set([...taken, ...claimed]), undefined);
+          resolved = await resolveForm(resolvable as SpawnForm, new Set([...taken, ...claimed]), undefined, proposedRoster);
         } catch (e) {
           reasons.push({ code: 'resolve', field: '', message: errMsg(e) });
         }

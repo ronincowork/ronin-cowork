@@ -21,6 +21,7 @@
 import { request } from './request.js';
 import {
   canCreateTeam,
+  createSeat,
   createDraft,
   finalizeTeamName,
   isValidTeamName,
@@ -28,6 +29,7 @@ import {
   sanitizeTeamName,
 } from './new-team-draft.js';
 import { capacityNote, preflight, teamNotes } from './new-team-preflight.js';
+import { registerTeamDraft, selectDraftSeat, subscribeTeamDraft } from './team-draft-controller.js';
 
 const node = (tag, className, text) => {
   const el = document.createElement(tag);
@@ -47,9 +49,13 @@ const debounce = (fn, ms) => {
 };
 
 export function createNewTeamView(kit) {
-  const { createSurface, createForm, createField, createNotice } = kit.primitives;
-  const draft = createDraft();
+  const { createSurface, createCard, createAction, createForm, createField, createNotice } = kit.primitives;
+  const { navigateWorkspace, workspaceTarget } = kit.contract;
+  let draft = registerTeamDraft(createDraft());
   let lastPreflight = null;
+  let context = null;
+  const saveDraft = () => context?.patchViewState('new-team', { draft });
+  subscribeTeamDraft(() => saveDraft());
 
   /* ---------------- stage 1 — define the Team ---------------- */
 
@@ -129,9 +135,7 @@ export function createNewTeamView(kit) {
   );
 
   const adoption = node('div', 'nt-notes');
-  const createBtn = node('button', 'nt-create', 'Create Team');
-  createBtn.type = 'button';
-  createBtn.disabled = true;
+  const createBtn = createAction({ className: 'nt-create', label: 'Create Team', kind: 'primary', disabled: true }).el;
   form.actions.append(createBtn);
   definition.content.append(eyebrow, heading, form.el, adoption);
 
@@ -147,6 +151,8 @@ export function createNewTeamView(kit) {
       'A Team with no sessions is complete and valid — create it and raise sessions when you want them. Raising them from here arrives in a later slice; the draft and dry run that it needs are landing first.',
   });
   roster.content.append(rosterEyebrow, rosterHeading, rosterNotice.el, rosterBody_);
+  const addSeat = createAction({ label: 'Add proposed session' });
+  roster.content.append(addSeat.el);
 
   /* ---------------- the transaction region ---------------- */
 
@@ -167,6 +173,7 @@ export function createNewTeamView(kit) {
     draft.team.repos = reposInput.value.split(',').map((s) => s.trim()).filter(Boolean);
     draft.team.branch = branchInput.value.trim();
     draft.team.wipeboard = boardInput.value.trim();
+    saveDraft();
   };
 
   const paintNotes = () => {
@@ -176,6 +183,22 @@ export function createNewTeamView(kit) {
       const p = node('p', 'wk-notice', n.text);
       p.dataset.kind = n.kind;
       adoption.append(p);
+    }
+  };
+
+  const paintRoster = () => {
+    rosterBody_.replaceChildren();
+    for (const seat of draft.seats) {
+      const card = createCard({
+        heading: seat.name || seat.session_role || 'Proposed session',
+        summary: seat.prompt || 'No brief yet.',
+        metadata: [seat.mode],
+        action: () => {
+          selectDraftSeat(draft, seat.seat_id);
+          navigateWorkspace(context, workspaceTarget('agent-config', seat.seat_id));
+        },
+      });
+      rosterBody_.append(card.el);
     }
   };
 
@@ -235,6 +258,7 @@ export function createNewTeamView(kit) {
     control.addEventListener('input', () => { readTeam(); });
   }
   rootSelect.addEventListener('change', () => { readTeam(); refreshSoon(); });
+  addSeat.el.addEventListener('click', () => { draft.seats.push(createSeat()); saveDraft(); paintRoster(); });
 
   createBtn.addEventListener('click', async () => {
     readTeam();
@@ -253,6 +277,7 @@ export function createNewTeamView(kit) {
     // survives a re-render and the create cannot be pressed twice.
     draft.roster_created = true;
     draft.transaction = { team: draft.team.name, created_at: new Date().toISOString(), seats: [] };
+    saveDraft();
     const adopted = lastPreflight?.team?.adopts_sessions?.length ?? 0;
     txNotice.set(
       'success',
@@ -278,7 +303,15 @@ export function createNewTeamView(kit) {
   return {
     el,
     title: () => 'New Team',
-    enter: () => { void loadOptions(); void refresh(); },
+    enter: (nextContext) => {
+      context = nextContext;
+      const stored = nextContext.viewState('new-team')?.draft;
+      if (stored && typeof stored === 'object') draft = registerTeamDraft(stored);
+      else registerTeamDraft(draft);
+      paintRoster();
+      void loadOptions();
+      void refresh();
+    },
     /** The draft is the view's, and it survives leaving and coming back within this tab.
      *  It is NOT shared across browser tabs — the workspace record is per-browser-tab, so
      *  two tabs hold two independent drafts. */

@@ -53,8 +53,7 @@ export const RESOURCES = [
     capability: 'handoff', read: '/api/team-roles', dir: 'team_roles',
     blurb: 'What a TEAM is. The house ships none — every one is yours.' },
   { id: 'saved-launches', section: 'people', mark: '↗', label: 'Saved launches',
-    capability: 'deferred', read: null,
-    why: 'The direct editor is deferred by the owner until the retired role_family axis is swept from the saved-launch path (prerequisite P2 — six sites, two files).',
+    capability: 'read-only', read: '/api/saved-launches',
     blurb: 'The launcher form, filled in ahead of time and named.' },
 
   { id: 'skins', section: 'presentation', mark: '◐', label: 'Skins',

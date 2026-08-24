@@ -1,5 +1,13 @@
 # NEW TEAM — Eye 4 build-out
 
+## WORKSPACE KIT HARDENING DELTA — 2026-08-24
+
+New Team now persists its canonical draft in the shell's namespaced state, constructs seats only
+through `createSeat`, and opens Agent Configuration through the typed navigation and shared draft
+controller. Its form action and seat cards use Kit primitives, and its wide-left desktop/stacked
+phone geometry belongs to the Kit stylesheet. Preflight now resolves proposed Team defaults
+without creating a roster; `Unassigned` is rejected through the canonical create-name contract.
+
 ## Goal
 
 > Own Eye 4: New Team. Audit the deliberately incomplete surface and design the two-stage
