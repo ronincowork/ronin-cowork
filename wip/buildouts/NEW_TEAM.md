@@ -46,6 +46,34 @@ That is expected, not a regression.
 slice, and the correction recording that fact is the follow-up commit. If you are resuming
 and this line is the newest thing here, nothing has happened since.)*
 
+### FINAL HANDOFF DELTA — 2026-08-24, at retirement
+
+Read against `dev` HEAD `98890c0`. Only what changed after the section above; everything
+else there still holds.
+
+- **`dev` HAS BEEN PUSHED. The section above says "Not pushed" — that is now false.**
+  `origin/dev` is at `98890c0` and contains `4dac240`. Not pushed by this session; I was
+  instructed not to and did not.
+- **Still NOT merged, and `master` is untouched.** `origin/master` is `818959f`; `4dac240`
+  is on no master branch (checked). `master` remains owner-controlled: no push, no merge,
+  no auto-merge, no release action without a fresh instruction naming it.
+- **Three commits landed after mine**, so the section above's closing line ("if this line is
+  the newest thing here, nothing has happened since") no longer applies: `47cb962`,
+  `a519209`, `98890c0`. The handoff was written against `47cb962`; HEAD had moved two
+  commits past it by the time it was read.
+- **THE SHARED SEAM IS STILL UNCOMMITTED — this is the load-bearing fact for the
+  successor.** `src/index.ts`, `public/js/main.js` and `public/index.html` are all still
+  modified in the working tree, carrying several Eyes' registrations. So the slice remains
+  INERT exactly as described above, and `check-dead` will still name
+  `registerLaunchPreflight` as an unreferenced export. Unchanged, not stale.
+- **No verification was re-run at retirement** — coding, editing, staging and testing were
+  frozen. The last verdicts stand as recorded above and were not re-measured against
+  `98890c0`.
+
+**Single next action for the successor:** get the shared seam committed (it is not one
+session's to land alone), then the roster stage — seat editor over `createSeat`, per-seat
+preflight rendering — and only then multi-launch and receipts, in that order.
+
 ### Completed behaviour
 
 - **`POST /api/launch/preflight`** — server-backed dry run. Calls the real `resolveForm`;

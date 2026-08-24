@@ -114,6 +114,47 @@ owner-facing service. Neither is mine. Only serving this checkout on a spare por
 it — and that carries its own measured cost: a second Ronin ran its janitor against the
 live tmux server and cleaned up ten viewer sessions.
 
+## FINAL HANDOFF DELTA — 2026-08-24, at dev `98890c0`
+
+Supersedes the RESUME HERE section above where they disagree. Read this first.
+
+**The named handoff commit is not tip.** The freeze named `47cb962`; `dev` is now
+`98890c0`, two commits past it (`a519209`, `98890c0`).
+
+**My slice is committed and is an ancestor of HEAD.** `9294446` — "Agent Configuration:
+the seat editor and its preview" — carries exactly four paths: the three owned modules and
+this document. The RESUME section above says "Uncommitted. Everything of mine"; **that is
+now false.** `git diff 9294446 HEAD` over the three modules is empty: nothing has touched
+them since.
+
+**The orphan risk I flagged is closed.** I committed the modules without their
+registration, because `main.js` and `index.html` were shared and out of scope. `d36b440`
+("Wire the Five Eyes preview destinations") landed it: at HEAD, `main.js` carries 3
+`agent-config` references and `index.html` carries the view root. **No successor needs to
+re-add the registration**, and any orphan report naming an `agent-config` module is now a
+regression rather than the expected state.
+
+**Both shared seam files are dirty again in the working tree**, modified by other sessions,
+not by me. The clobber hazard in the RESUME section stands: a whole-file write to `main.js`
+silently drops other sessions' lines, `check-dead` stays green, and only `check-modules`
+catches it as an orphan. **Re-grep before believing a module is at fault.**
+
+**Unchanged and still open** — carried forward, not re-measured, because the freeze stops
+testing:
+
+- **No rendered check has ever looked at this slice.** The reasoning and the measurement
+  method are in the RESUME section; both were true as of 17:36Z on 2026-08-23 and are
+  unverified since. This is the successor's first real gap, not a solved item.
+- **No `stated_by`** — resolved rows show a value, not which layer or file stated it. Still
+  a joint ask with New Team on the existing resolver.
+- **No feature stylesheet**, deliberately. The destination renders on the kit's shared rule
+  and will look wrong in a first-glance review. Known, not a defect to chase.
+- **Draft persistence unsolved** — Apply writes an in-memory draft; a refresh loses typed
+  work.
+
+**Position at handoff.** Branch `dev`. Nothing pushed by this session, no merge, `master`
+untouched by me. Index clean. Idle and awaiting the successor's acknowledgement.
+
 ## Vocabulary — the owner's taxonomy, 2026-08-23
 
 Stated first because a reader meets it before any finding below, and because a successor
