@@ -435,6 +435,47 @@ else
   find_ "Claude Code is missing a setting Ronin needs — run: hostside/claude-settings.py"
 fi
 
+# ---- the steps setup.sh offers once, and nothing re-checked -------------------------
+#
+# setup.sh detects each of these, hands the person a line, and never looks again. An
+# install that predates the offer never saw it at all, and a person can decline or miss
+# it — so the only place these can be caught afterwards is here. Same reasoning as the
+# swap finding below.
+#
+# ONE DEFINITION, NOT A THIRD OPINION: `ronin_served_url` is how setup.sh and
+# ronin-welcome both answer "is a door pointed at this install", so doctor sources the
+# same library rather than asking its own way. Four disagreeing opinions about where a
+# browser lives is a mistake this tree has already made once.
+# shellcheck source=../libexec/ronin-banner.sh
+[ -r "$ROOT/libexec/ronin-banner.sh" ] && . "$ROOT/libexec/ronin-banner.sh"
+
+sect "the install steps"
+
+# LINGER is a genuine fault when it is off. Without it the user manager stops at logout
+# and every --user service goes with it, so the coworkspace is simply absent whenever
+# nobody is signed in — which reads as "Ronin is broken", not "a step was skipped".
+if ! command -v loginctl >/dev/null 2>&1; then
+  note "no loginctl here — linger not assessed"
+elif [ "$(loginctl show-user "$USER" --property=Linger --value 2>/dev/null || echo no)" = "yes" ]; then
+  ok "linger is on — the coworkspace survives logout"
+else
+  find_ "linger is OFF — every --user service stops at logout, so Ronin is absent whenever nobody is signed in. remedy: sudo loginctl enable-linger \$USER"
+fi
+
+# SERVE is a NOTE, deliberately, and not a finding. Reaching the install over the tailnet
+# at http://ip:port is a legitimate arrangement — setup.sh's own banner falls back to
+# exactly that — so an absent `serve` is a fact worth stating and not a fault. A gate
+# that cries wolf gets disabled, and this is the shape of question that would.
+if ! command -v tailscale >/dev/null 2>&1; then
+  note "no tailscale here — no tailnet door to check"
+elif ! served="$(ronin_served_url "$PORT" 2>/dev/null)"; then
+  note "tailscale is present but did not answer — door not assessed"
+elif [ -n "$served" ]; then
+  ok "a tailnet door serves this install — $served"
+else
+  note "no HTTPS tailnet door for port $PORT; reachable over the tailnet by address, or run: sudo tailscale serve --bg --https=8443 http://$HOSTIP:$PORT"
+fi
+
 # ---- the box itself: can it survive a busy hour? ------------------------------------
 #
 # Ronin runs several agent sessions at once and each one runs real work — test suites,
