@@ -78,11 +78,11 @@ written about.
 own vocabulary. So does anything built on it: `ronin_machine`, `@ronin-control`. It is the
 brand, and the brand is the one Japanese word everyone learns on purpose.
 
-**Our internal system names stay ours.** Seventeen, and this is the list — `KOTOBA_GLOSSARY.md`
-repeats it verbatim and may not carry an eighteenth this file does not have:
+**Our internal system names stay ours.** Eighteen, and this is the list — `KOTOBA_GLOSSARY.md`
+repeats it verbatim and may not carry a nineteenth this file does not have:
 
 > **TEJUN · MICHI · TEGAMI · SHINGO · RIREKI · OBOERU · TOMODACHI · SOROBAN · KOSHI · KOE ·
-> DAIKUSAN · KOTOBA · AGERU · JUSHO · BYOIN · SETTEI · KYOKAI**
+> DAIKUSAN · KOTOBA · AGERU · JUSHO · BYOIN · SETTEI · KYOKAI · SHIWAKE**
 
 Useful shorthand between us; a translation tax on anyone else.
 
@@ -139,6 +139,7 @@ copy and a source tree at once. It now names one thing.
 | Term | Scope | What it is | Record |
 |---|---|---|---|
 | **ronin_artifact** | system_scope | **[planned]** a released, versioned copy: tag → build → tarball, published as a **GitHub Release for cowork** and a **hosted archive for services** (a button cannot clone a private repo). Deferred by R22 until the split, which landed 2026-08-14. The package is **`ronin-cowork`** — never `tmux-ronin`, which named the frozen unified repo | `plans/ARTIFACT.md` · `plans/RAMP.md` |
+| **SHIWAKE** (仕分け) | system_scope | **HQ — the house's own service, not part of an install.** The receiving room a ronin_install talks to when it activates and when it fetches an authorized release: it issues the grants, holds the entitlement, and sends the confirmation mail. Deployed as `ronin-shiwake.service` at `hq.ronincowork.com`; it runs on OUR box and never on the user's. **Nothing in cowork or services calls it at runtime** — an install meets HQ at setup and at update, and at no other time. Added to this list 2026-08-24 (owner): the name was load-bearing across a repo, six units, a CLI and a session_boot root while absent from KOTOBA entirely | `ronin-shiwake` (its own repo) · `docs/services-activation.md` |
 | **ronin_install** | system_scope | one deployed copy on a ronin_machine — the code plus what `setup.sh` put in place: `node_modules/`, the units in `~/.config/systemd/user/`, the statusLine registration | `docs/repo-to-operator.md` |
 | **ronin_operator** | system_scope | the processes actually serving the grid — memory copies taken at start. A restart replaces the operator and touches the install not at all | `docs/repo-to-operator.md` |
 | **BYOKI** (病気) | system_scope | the operator differing from the repo. A condition to detect, never an event that announces itself | `docs/repo-to-operator.md` · § OPEN R22 |
