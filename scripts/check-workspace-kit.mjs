@@ -10,8 +10,13 @@ const kit = read('public/js/workspace-kit.js') + read('public/js/workspace-adapt
 const terminal = read('public/js/terminal-tile-host.js');
 const primitives = read('public/js/workspace-primitives.js');
 const newTeam = read('public/js/new-team.js');
+const styles = read('public/workspace-kit.css').replace(/\s+/g, ' ');
 const preflight = read('src/routes/launch-preflight.ts');
 const rosters = read('src/team-rosters.ts');
+const leagueCards = /\.wk-league-board \[data-surface='cards'\] \{[^}]*display: grid;[^}]*grid-template-columns: repeat\(auto-fill, minmax\(17rem, 1fr\)\);[^}]*gap: var\(--space-6\);[^}]*align-content: start;[^}]*\}/;
+const leagueCardsPhone = /@media \(max-width: 680px\) \{[^}]*\.wk-league-board \[data-surface='cards'\] \{[^}]*grid-template-columns: 1fr;[^}]*\}/;
+if (!leagueCards.test(styles)) problems.push('The Kit must own the complete League cards desktop grid geometry.');
+if (!leagueCardsPhone.test(styles)) problems.push('The Kit must own the League cards phone single-column geometry.');
 if (!league.includes("'./team-controller.js'")) problems.push('League must consume the shared Team controller.');
 if (!controller.includes("request('/api/team-rosters'")) problems.push('The Team controller must own durable roster refresh.');
 if (/request\(`?\/api\/teams\//.test(team)) problems.push('Team must not create a feature-local live Team projection.');

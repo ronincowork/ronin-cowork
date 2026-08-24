@@ -25,9 +25,10 @@ contracts; each Five Eye supplies its feature data and behavior.
 - Navigate with `workspaceTarget(view, param)` plus `navigateWorkspace(context, target)`;
   normalize Team state with `teamWorkspaceState`. New Team persists under
   `viewState('new-team').draft` and hands seats through `team-draft-controller.js`.
-- Keep layout geometry in `workspace-kit.css`: League card grid, Team Workbench states and
-  New Team's wide-left builder each have explicit desktop and phone contracts. Feature CSS
-  may style meaning but must not redefine those geometries.
+- Keep layout geometry in `workspace-kit.css`: the League cards region owns `display: grid`,
+  columns, gap, alignment and its phone single-column override; Team Workbench states and
+  New Team's wide-left builder likewise have explicit desktop and phone contracts. Feature
+  CSS may style meaning but must not redefine those geometries.
 - `isCreatableTeamName` is the create/rename/preflight boundary; `isValidTeamName` remains
   the syntax/read boundary so a legacy roster named `unassigned` remains recoverable.
 - `resolveForm(..., proposedRoster)` is for dry-run resolution only. Real launches omit it
