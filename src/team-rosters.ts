@@ -47,6 +47,8 @@ const dir = () => storeDir('team_rosters');
 
 /** A team name obeys the tag rules: lowercase, boring, typeable. */
 export const isValidTeamName = (s: string): boolean => /^[a-z0-9][a-z0-9_-]{0,63}$/.test(s);
+export const isReservedTeamName = (s: string): boolean => s === 'unassigned';
+export const isCreatableTeamName = (s: string): boolean => isValidTeamName(s) && !isReservedTeamName(s);
 
 const fileOf = (name: string): string => path.join(dir(), `${name}.md`);
 
@@ -129,7 +131,7 @@ function render(name: string, r: TeamRoster): string {
  * over a team is a different intent from editing one, and the refusal keeps them apart.
  */
 export async function createTeamRoster(name: string, edit: RosterEdit): Promise<TeamRoster> {
-  if (!isValidTeamName(name)) throw new Error(`"${name}" is not a team name — lowercase, digits, _ and -.`);
+  if (!isCreatableTeamName(name)) throw new Error(`"${name}" is not available as a team name.`);
   if (await readTeamRoster(name)) throw new Error(`Team "${name}" already has a roster — edit it instead.`);
   const roster: TeamRoster = {
     name,
@@ -191,7 +193,7 @@ export async function writeTeamRoster(name: string, edit: RosterEdit): Promise<T
  * members' tags are the callers' to retag — membership is theirs, not this file's.
  */
 export async function renameTeamRoster(from: string, to: string): Promise<TeamRoster> {
-  if (!isValidTeamName(to)) throw new Error(`"${to}" is not a team name — lowercase, digits, _ and -.`);
+  if (!isCreatableTeamName(to)) throw new Error(`"${to}" is not available as a team name.`);
   const existing = await readTeamRoster(from);
   if (!existing) throw new Error(`Team "${from}" has no roster.`);
   if (await readTeamRoster(to)) throw new Error(`Team "${to}" already has a roster.`);

@@ -20,10 +20,11 @@ import {
   sessionExists,
   setControl,
   setLaunchStamp,
+  setProviderSessionId,
   setProjectRoot,
   setTags,
 } from '../tmux.js';
-import { launchArgv } from '../agents.js';
+import { launchArgv, newProviderSession } from '../agents.js';
 import { AtSessionMax, liveCount, readMax, readOwner, writeMax, writeOwner } from '../user-config.js';
 import { resolveForm, appendLedger, type SpawnForm } from '../spawn.js';
 import { classifyStatus, type SessionStatus } from '../status.js';
@@ -130,6 +131,8 @@ export function registerLaunch(app: express.Express): void {
           error: `Could not find ${resolved.cmd.trim().split(/\s+/)[0]} on this machine. Install it from ⚙ Configuration, then launch again.`,
         });
       }
+      const providerSession = newProviderSession(resolved.launchAgent, launch.argv);
+      launch.argv = providerSession.argv;
       await createSession(resolved.name, resolved.dir, {
         agent: resolved.agent,
         exempt: resolved.capExempt,
@@ -151,6 +154,7 @@ export function registerLaunch(app: express.Express): void {
       // model alone now — but for RIREKI, which picks a tape decoder from `@ronin-agent`
       // and has expected this stamp since it was written, guessing until today.
       await setLaunchStamp(resolved.name, resolved.launchAgent);
+      if (providerSession.id) await setProviderSessionId(resolved.name, providerSession.id);
       // THE AXIS AND THE TEAMS BLOCK, SET MECHANICALLY. The button the owner pressed IS
       // what this session is for, so the letter is written with `session_role` already
       // filled — and the derived `teams` block rendered from the birth tags — rather

@@ -63,6 +63,11 @@ const PUB = path.resolve(ROOT, process.argv[2] || 'public');
 const cssPath = path.join(PUB, 'style.css');
 const css = fs.readFileSync(cssPath, 'utf8');
 const problems = [];
+const featureDir = path.join(PUB, 'css');
+const featurePaths = fs.existsSync(featureDir)
+  ? fs.readdirSync(featureDir).filter((file) => file.endsWith('.css')).sort().map((file) => path.join(featureDir, file))
+  : [];
+const shippedPaths = [cssPath, path.join(PUB, 'workspace-kit.css'), ...featurePaths];
 
 // strip comments; keep line structure so reports carry real line numbers
 const noComments = css.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '));
@@ -81,6 +86,68 @@ function block(source, marker) {
     i++;
   }
   return source.slice(start, i - 1);
+}
+
+// --- shipped stylesheet governance ---
+const index = fs.readFileSync(path.join(PUB, 'index.html'), 'utf8');
+const linkedStyles = [...index.matchAll(/<link\s+[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["']/g)].map((match) => match[1]);
+const rootFeatureSheets = fs.readdirSync(PUB).filter((file) => file.endsWith('.css') && !['style.css', 'workspace-kit.css'].includes(file));
+for (const file of rootFeatureSheets) problems.push(`${file} is a feature stylesheet outside public/css/`);
+for (const file of featurePaths) {
+  const href = `css/${path.basename(file)}`;
+  const count = linkedStyles.filter((linked) => linked === href).length;
+  if (count !== 1) problems.push(`${href} must be linked exactly once from index.html (found ${count})`);
+}
+for (const href of linkedStyles.filter((linked) => linked.startsWith('css/'))) {
+  if (!featurePaths.some((file) => `css/${path.basename(file)}` === href)) problems.push(`${href} is linked but is not a canonical public/css feature sheet`);
+}
+const clientModules = fs.readdirSync(path.join(PUB, 'js')).filter((file) => file.endsWith('.js'))
+  .map((file) => fs.readFileSync(path.join(PUB, 'js', file), 'utf8')).join('\n');
+for (const file of featurePaths) {
+  if (clientModules.includes(`css/${path.basename(file)}`)) problems.push(`${path.basename(file)} must be statically linked, not loaded by client JavaScript`);
+}
+
+for (const file of shippedPaths) {
+  if (!fs.existsSync(file)) { problems.push(`missing shipped stylesheet ${path.relative(ROOT, file)}`); continue; }
+  const source = fs.readFileSync(file, 'utf8');
+  const clean = source.replace(/\/\*[\s\S]*?\*\//g, '');
+  for (const [i, line] of clean.split('\n').entries()) {
+    if (/^\s*--[\w-]+\s*:/.test(line)) continue;
+    if (/#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(/.test(line)) {
+      problems.push(`${path.relative(ROOT, file)}:${i + 1} raw colour outside the token sheet: ${line.trim()}`);
+    }
+  }
+}
+
+for (const file of featurePaths) {
+  const source = fs.readFileSync(file, 'utf8');
+  const clean = source.replace(/\/\*[\s\S]*?\*\//g, '').trim();
+  const body = block(clean, '@layer app');
+  const completeLayer = clean.startsWith('@layer app') && body && clean.slice(clean.indexOf(body) + body.length).trim() === '}';
+  if (!completeLayer) problems.push(`${path.relative(ROOT, file)} must contain only one @layer app block`);
+  for (const [i, line] of clean.split('\n').entries()) {
+    if (/^\s*--[\w-]+\s*:/.test(line)) continue;
+    if (/(?<![\w.-])\d+(?:\.\d+)?(?:px|rem|em)\b|var\([^)]*,/.test(line)) {
+      problems.push(`${path.relative(ROOT, file)}:${i + 1} raw visual measurement — use an existing design token: ${line.trim()}`);
+    }
+    const declaration = line.match(/^\s*([\w-]+)\s*:\s*([^;]+);/);
+    if (!declaration) continue;
+    const [, property, value] = declaration;
+    const tokenVisual = /^(?:border-radius|font|font-family|font-size|padding|margin|gap|row-gap|column-gap|color|background|background-color|border-color)$/;
+    const tokenlessValue = value.replace(/var\([^)]*\)/g, '').replace(/\b(?:transparent|currentColor|inherit|initial|unset|none|normal|auto)\b/g, '').replace(/[\s0/.-]/g, '');
+    if (tokenVisual.test(property) && tokenlessValue) {
+      problems.push(`${path.relative(ROOT, file)}:${i + 1} ${property} carries a literal visual role — use an existing design token: ${line.trim()}`);
+    }
+  }
+  if (/(?:data-(?:skin|theme)|skin-[\w-]+|#skin\b)/i.test(body)) {
+    problems.push(`${path.relative(ROOT, file)} must not contain feature-specific skin or theme selectors; skins are token sets only`);
+  }
+  for (const match of body.matchAll(/(^|[}{;])([^{}]*?)\{/g)) {
+    const selector = match[2].trim();
+    if (selector && !selector.startsWith('@') && /\.wk-[\w-]+/.test(selector)) {
+      problems.push(`${path.relative(ROOT, file)} feature selector reaches into Workspace Kit (${selector.slice(0, 80)})`);
+    }
+  }
 }
 
 // --- 1. raw colours outside token definitions ---
@@ -204,7 +271,7 @@ for (const [name, toks] of [['dark', darkTokens], ['light', lightTokens]]) {
   }
 }
 
-console.log(`check-css: ${path.relative(ROOT, cssPath)}, ${lines.length} lines, ${FLOOR.length * 2} contrast pairs`);
+console.log(`check-css: ${shippedPaths.map((file) => path.relative(ROOT, file)).join(', ')}, ${FLOOR.length * 2} contrast pairs`);
 if (problems.length) {
   for (const p of problems) console.log('  ✗ ' + p);
   console.log(`\nFAILED — ${problems.length} problem(s). Colour lives in tokens; primitives and tokens are the gate's to guard.`);

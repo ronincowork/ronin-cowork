@@ -527,10 +527,14 @@ ronin_banner "$REPO_DIR" "$OPEN_URL" >&3
 # gap so you know what to copy, here is where you end up. (Owner, 2026-08-22: "copy
 # and paste this line, put it in, and you will be good to go — then the new URL.")
 SERVED_ALREADY="$(ronin_served_url "$PORT")"
-STEP_CMD=(); NSTEPS=0
+# ONE PASTE, ONE PASSWORD. These are collected as privileged ACTIONS without their own
+# `sudo`, and rendered below as a single `sudo bash -c` block. Three separate sudo lines
+# meant three pastes and three password prompts for what is one decision: "yes, do the
+# root-owned parts of my install" (owner, 2026-08-24).
+STEP_ACT=(); NSTEPS=0
 if command -v loginctl >/dev/null 2>&1 &&
    [ "$(loginctl show-user "$USER" --property=Linger --value 2>/dev/null || echo no)" != "yes" ]; then
-  STEP_CMD[$NSTEPS]="sudo loginctl enable-linger $USER"
+  STEP_ACT[$NSTEPS]="loginctl enable-linger $USER"
   NSTEPS=$(( NSTEPS + 1 ))
 fi
 # Nothing to ask for when serve already points at THIS install: the address in the box
@@ -540,24 +544,63 @@ WANT_SERVE=""
 if [ -z "$SERVED_ALREADY" ] && [ -n "${IP:-}" ] && command -v tailscale >/dev/null 2>&1; then
   # tailscale's success chatter (the proxy tree, the disable hint) says nothing the
 # line above has not already said better — stdout is dropped, errors still speak.
-  STEP_CMD[$NSTEPS]="sudo tailscale serve --bg --https=8443 http://$IP:$PORT >/dev/null"
+  STEP_ACT[$NSTEPS]="tailscale serve --bg --https=8443 http://$IP:$PORT >/dev/null"
   NSTEPS=$(( NSTEPS + 1 ))
   WANT_SERVE=1
 fi
 
+# SWAP, WHERE THERE IS NONE. Ronin runs several agent sessions at once and each runs
+# real work. On a box with no swap the kernel has no overflow when memory fills: it
+# picks a process and kills it, and it chooses which — which on this box means somebody's
+# session dies with their work in it. Swap converts that into slowness instead.
+#
+# OFFERED, NEVER DONE. This is the same contract as the two steps above: we detect the
+# condition and hand over the line; the person runs it. Setup does not hold root.
+#
+# Conditions, all of them, because a wrong offer here is worse than no offer: swap must
+# be genuinely absent, the root filesystem must be one `fallocate` is safe on, there must
+# be room to spare, and we must not be inside a container (where swap is the host's
+# business and /etc/fstab is not ours to write).
+if [ "$OS" = "Linux" ] &&
+   [ -r /proc/swaps ] && [ "$(awk 'NR>1' /proc/swaps | wc -l)" = 0 ] &&
+   ! { command -v systemd-detect-virt >/dev/null 2>&1 && systemd-detect-virt --container --quiet; } &&
+   [ ! -f /.dockerenv ]; then
+  ROOT_FS="$(findmnt -no FSTYPE / 2>/dev/null || echo unknown)"
+  ROOT_FREE_G="$(df -BG --output=avail / 2>/dev/null | tail -1 | tr -dc '0-9')"
+  case "$ROOT_FS" in
+    ext4|xfs)
+      if [ -n "$ROOT_FREE_G" ] && [ "$ROOT_FREE_G" -ge 9 ] && [ ! -e /swapfile ]; then
+        STEP_ACT[$NSTEPS]='fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo "/swapfile none swap sw 0 0" >> /etc/fstab' 
+        NSTEPS=$(( NSTEPS + 1 ))
+        WANT_SWAP=1
+      fi ;;
+  esac
+fi
+
 if [ "$NSTEPS" = 1 ]; then
-  out "  One more step. Copy and paste this line, and you're good to go:"
+  out "  One more step. Copy and paste this, and you're good to go:"
 elif [ "$NSTEPS" -gt 1 ]; then
-  out "  Two more steps. Copy and paste each line, one at a time:"
+  out "  One more step. Copy and paste this whole block — it asks for your password once:"
 fi
 if [ "$NSTEPS" -gt 0 ]; then
   out ""
+  # Each action on its own line inside ONE sudo, so the person reads exactly what will
+  # run as root before they run it. No `set -e`: the actions are independent, and one
+  # failing must not silently skip the others.
+  out "      sudo bash -c '"
   s=0
   while [ "$s" -lt "$NSTEPS" ]; do
-    out "      ${STEP_CMD[$s]}"
-    out ""
+    out "        ${STEP_ACT[$s]}"
     s=$(( s + 1 ))
   done
+  out "      '"
+  out ""
+  if [ -n "${WANT_SWAP:-}" ]; then
+    out "  (The swapfile part is insurance: this box has no swap, so if memory ever fills,"
+    out "   the kernel kills a session instead of slowing down. It is a one-time setup —"
+    out "   the /etc/fstab line brings it back automatically on every reboot.)"
+    out ""
+  fi
   if [ -n "$WANT_SERVE" ] && [ -n "${FQDN:-}" ]; then
     out "  When that's done, your door is:"
     out ""

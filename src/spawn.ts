@@ -1,6 +1,7 @@
 import { appendFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
+import { defaultAgentCommand } from './agents.js';
 import { REPO_ROOT } from './config.js';
 import { bootFiles, ensureShelf } from './session-boot.js';
 import { listProjectRoots, listSessionLaunchSpecs, type ProjectRootInfo } from './project-roots.js';
@@ -264,6 +265,7 @@ export async function resolveForm(
   form: SpawnForm,
   taken: Set<string>,
   referenceDir?: string,
+  proposedRoster?: TeamRoster,
 ): Promise<Resolved> {
   const [taskDef, roots, launchSpecs, agentsSet] = await Promise.all([
     findDefinition('session_roles', form.session_role ?? ''),
@@ -280,7 +282,7 @@ export async function resolveForm(
   // roster is refused rather than silently joined: being born ONTO a team is a launch
   // fact and deserves the durable half to exist; joining a tag-only team afterwards is
   // the tags route's ordinary business.
-  const roster = form.team ? await readTeamRoster(form.team) : null;
+  const roster = form.team ? (proposedRoster?.name === form.team ? proposedRoster : await readTeamRoster(form.team)) : null;
   if (form.team && !roster) {
     throw new Error(
       `Team "${form.team}" has no roster on this box. Create it first (POST /api/team-rosters), ` +
@@ -368,7 +370,7 @@ export async function resolveForm(
     ? (launchSpecs.find((s) => s.model === profile.model && s.provider === dflt?.provider)
         ?? launchSpecs.find((s) => s.model === profile.model))?.cmd
     : undefined;
-  let cmd = agent ? form.cmd || biasCmd || defaultCmd || 'claude' : '';
+  let cmd = agent ? form.cmd || biasCmd || defaultCmd || defaultAgentCommand() : '';
   // The row this cmd came out of, matched BEFORE the MCP-off flags are appended below —
   // appending changes the very string the match is on, and looking it up afterwards would
   // find nothing for exactly the launches that asked for something unusual. It carried the

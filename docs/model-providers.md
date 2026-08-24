@@ -19,6 +19,44 @@ Provider setup has three records with deliberately different contents:
 Account identity is handled by `ronin_sops/accounts.md`. Secret values never cross into
 this document or the launch catalog.
 
+## One command registry
+
+`src/agents.ts` is the single executable registry for agent-provider CLI syntax. A route,
+installer, archive lifecycle, or UI must not spell a provider command itself. Each row owns:
+
+| Field | Command contract |
+|---|---|
+| `operations.install` | Shell line used by Ronin's visible installer. Empty means Ronin cannot perform it. |
+| `operations.update` | Either a package-manager shell line or argv for the installed CLI's native updater. |
+| `operations.version` | Args used to read the installed CLI version. |
+| `cmd` | Executable name resolved through the owner's login shell. |
+| `initial` | Whether a new interactive launch accepts the brief positionally. |
+| `operations.session.newIdFlag` | Optional flag for a Ronin-minted new conversation UUID. |
+| `operations.session.resume` | Arguments before the provider conversation UUID. |
+| `operations.session.discovery` | The exact identity-discovery adapter, or `unsupported`. |
+
+Current verified lifecycle syntax:
+
+| Agent CLI | New conversation identity | Resume | Archive support |
+|---|---|---|---|
+| Claude Code | `claude --session-id <uuid> …` | `claude --resume <uuid>` | yes; exact legacy fallback also exists |
+| Codex | discovered from matching open rollout + writer-lock FDs | `codex resume <uuid>` | yes |
+| Gemini CLI | CLI-managed UUID | `gemini --resume <uuid>` | command verified; identity discovery not yet integrated, so no |
+| Grok CLI | not verified | not verified | no |
+| Hermes | not verified | not verified | no |
+
+Upstream command references used for these rows: [Claude CLI and update reference](https://code.claude.com/docs/en/cli-reference),
+[Codex CLI repository](https://github.com/openai/codex), [Gemini CLI reference](https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/cli-reference.md),
+and [Hermes CLI reference](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/reference/cli-commands.md).
+They are evidence for maintainers; they are not runtime inputs. Runtime consumers read
+`AGENTS[].operations` only.
+
+“Not verified” and `discovery: unsupported` are executable behavior: archive refuses before
+stopping tmux. Adding support means verifying the installed CLI's own help, locating its
+exact current-session identity without ambiguity, and proving a real resume journey; then
+change its one registry row and this table together. Do not infer syntax from another
+provider.
+
 ## Provider and agent are different axes
 
 The **provider** serves inference and bills the request. The **agent CLI** is the

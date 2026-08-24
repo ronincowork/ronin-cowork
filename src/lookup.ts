@@ -10,8 +10,8 @@
  * Sends that don't come through Ronin (you typing into the pane yourself) are untouched
  * — the `tag` macro in MACROS.md is the fallback path for those, and says so.
  */
-import { getControl, getWipeboards, listSessions } from './tmux.js';
-import { boardExists, boardPath, isValidBoardName, listBoardFiles, readBoard } from './wipeboards.js';
+import { getControl, listSessions } from './tmux.js';
+import { boardExists, boardOfTeam, boardPath, isValidBoardName, listBoardFiles, readBoard, teamOfBoard } from './wipeboards.js';
 
 const DIAL_ICON: Record<string, string> = { user: '👤 user', read: '👁 read', write: '🤖 write' };
 
@@ -36,38 +36,46 @@ export async function expandLookup(text: string): Promise<string | null> {
   if (wb) {
     const want = wb[2].toLowerCase();
     if (!want) {
-      // Every wipeboard in play: each live team IS one (file or not, kind `team`), then
-      // the customs — files plus live enrolments, a team superseding any claim on its name.
+      // Every board in play: each live team's (through its roster's id — real before the
+      // directory is), then any directory no team owns, e.g. `house`. Custom enrolment
+      // is cut (owner, 2026-08-24): the team board is the unit.
       const counts = new Map<string, number>();
       for (const s of all) for (const t of s.tags) counts.set(t, (counts.get(t) ?? 0) + 1);
-      const names = new Set(await listBoardFiles());
-      for (const s of all) for (const b of await getWipeboards(s.name)) { if (!counts.has(b)) { names.add(b); } }
-      const customs = [...names].filter((n) => !counts.has(n)).sort();
-      if (!counts.size && !customs.length) return `${text.trim()} → no wipeboard exists yet. Every team has one the moment it exists; the owner can start a custom one in Ronin's ▤ Wipeboard tab. Nothing to look up.`;
-      const lines = [
-        ...[...counts.entries()].sort().map(([t, n]) => `${t} (team, ${n})`),
-        ...customs.map((b) => `${b} (custom)`),
-      ];
+      const teamRows: string[] = [];
+      const owned = new Set<string>();
+      for (const [t, n] of [...counts.entries()].sort()) {
+        const id = await boardOfTeam(t);
+        owned.add(id);
+        teamRows.push(`${id} (the ${t} team's, ${n})`);
+      }
+      const others = (await listBoardFiles()).filter((b) => !owned.has(b)).sort();
+      if (!teamRows.length && !others.length) return `${text.trim()} → no board exists yet. Every team has one the moment it exists. Nothing to look up.`;
+      const lines = [...teamRows, ...others.map((b) => `${b}`)];
       return `${text.trim()} → wipeboards in play, resolved by Ronin (no lookup needed): ${lines.join(', ')}. Ask for one by name — "+wipeboard: <name>" — for its brief and roster.`;
     }
-    const isTeam = teams.includes(want);
-    if (!isValidBoardName(want) || (!isTeam && !(await boardExists(want)))) {
+    // A team's name resolves to its board; a board id resolves to itself.
+    const owner = await teamOfBoard(want);
+    const asTeam = teams.includes(want) ? want : owner && teams.includes(owner) ? owner : null;
+    const boardId = asTeam ? await boardOfTeam(asTeam) : want;
+    const isTeam = asTeam !== null;
+    if (!isValidBoardName(boardId) || (!isTeam && !(await boardExists(boardId)))) {
       const known = [...new Set([...teams, ...(await listBoardFiles())])].sort();
       return `${text.trim()} → there is no wipeboard "${want}".` + (known.length ? ` Wipeboards that exist: ${known.join(', ')}.` : ' No wipeboard exists yet.');
     }
-    // A team wipeboard is real before its file is — empty thread, derived roster.
-    const board = (await boardExists(want)) ? await readBoard(want) : { name: want, brief: '', posts: [] };
+    // A team's board is real before its directory is — empty thread, derived roster.
+    const board = (await boardExists(boardId)) ? await readBoard(boardId) : { name: boardId, brief: '', posts: [] };
     const rows: string[] = [];
     for (const s of all) {
-      const on = isTeam ? s.tags.includes(want) : (await getWipeboards(s.name)).includes(want);
-      if (on) rows.push(`${s.name} [${DIAL_ICON[await getControl(s.name)] ?? '🤖 write'}]`);
+      if (isTeam && s.tags.includes(asTeam as string)) rows.push(`${s.name} [${DIAL_ICON[await getControl(s.name)] ?? '🤖 write'}]`);
     }
     const brief = board.brief.replace(/\s+/g, ' ').trim().replace(/\.$/, '');
     return (
-      `${text.trim()} → resolved by Ronin (no lookup needed): ${isTeam ? `the ${want} team's wipeboard` : `custom wipeboard "${want}"`} is ${boardPath(want)}. ` +
+      `${text.trim()} → resolved by Ronin (no lookup needed): ${isTeam ? `the ${asTeam} team's board` : `board "${boardId}"`} is ${boardPath(boardId)}. ` +
       `Brief: ${brief || '(empty — the owner has not written one yet)'}. ` +
       `On it${isTeam ? ' (membership follows the team)' : ''}: ${rows.length ? rows.join(', ') : 'nobody yet'}. ${board.posts.length} post(s) so far. ` +
-      `Read it with "tejun-wipeboard ${want} read" and append with "tejun-wipeboard ${want} post <text>" — append only, never rewrite another agent's post, never edit the Brief. ` +
+      `Run "tejun-wipeboard" to be handed whatever you have not read; post to your own team's board with "tejun-wipeboard post <text>" ` +
+      `(no name needed — a name is only for a board that is not your team's; --to names who is interrupted, not who may read; the lead always is). ` +
+      `Never rewrite another agent's post, never edit the Brief. ` +
       `This is a lookup: report it and wait unless you were already told what to say there.`
     );
   }

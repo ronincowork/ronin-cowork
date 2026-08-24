@@ -62,10 +62,32 @@ export interface TegamiCheckout {
   branch: string;
 }
 
+/**
+ * GIT'S LOCATION VARIABLES, REMOVED. `GIT_DIR` and its relatives OVERRIDE `-C`, so a
+ * process that inherited them answers about the wrong repository — and git EXPORTS them
+ * to every hook it runs. A session born under a hook (a pre-push gate spawning work, a
+ * wrapper around `git`) therefore recorded the hook's repository in its birth letter
+ * instead of its own checkout, silently and plausibly. Asking about a named directory
+ * must not depend on where the caller happened to be invoked from.
+ */
+const GIT_LOCATION_VARS = [
+  'GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_COMMON_DIR',
+  'GIT_PREFIX', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES',
+  'GIT_NAMESPACE',
+] as const;
+
+export function envWithoutGitLocation(from: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+  const env = { ...from };
+  for (const k of GIT_LOCATION_VARS) delete env[k];
+  return env;
+}
+
 /** The checkout the newborn is actually standing in; absence is a legal non-git root. */
 export async function checkoutAt(dir: string): Promise<TegamiCheckout> {
   const git = async (...args: string[]) =>
-    (await exec('git', ['-C', dir, ...args], { timeout: 2_000 })).stdout.trim();
+    (await exec('git', ['-C', dir, ...args], {
+      timeout: 2_000, env: envWithoutGitLocation(),
+    })).stdout.trim();
   try {
     const top = await git('rev-parse', '--show-toplevel');
     const remote = await git('config', '--get', 'remote.origin.url').catch(() => '');

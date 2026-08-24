@@ -91,6 +91,14 @@ export const STORES: readonly Store[] = [
     when: 'first taped byte, first letter',
   },
   {
+    id: 'archived_sessions',
+    root: 'data',
+    rel: 'archived-sessions',
+    what: 'manifests for resumable sessions whose tmux runtimes are stopped',
+    createdBy: "cowork's session archive routes",
+    when: 'a live session is archived',
+  },
+  {
     id: 'session_boot_cache',
     root: 'data',
     rel: 'session-boot',

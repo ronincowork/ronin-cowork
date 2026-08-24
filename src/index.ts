@@ -24,6 +24,7 @@ import { cleanupViewers, listSessions, publishRoninUrl } from './tmux.js';
 import { publishMax, publishOwner } from './user-config.js';
 import { registerCatalogs } from './routes/catalogs.js';
 import { registerLaunch } from './routes/launch.js';
+import { registerLaunchPreflight } from './routes/launch-preflight.js';
 import { registerPasskeyLogin, registerPasskeyManage } from './routes/passkey-api.js';
 import { registerSessions } from './routes/sessions-api.js';
 import { registerTeams } from './routes/teams-api.js';
@@ -236,6 +237,7 @@ app.get('/api/health', (_req, res) =>
 
 registerPasskeyManage(app); // /api/passkey/{list,register-options,register,remove} — BEHIND the gate on purpose
 registerLaunch(app); // /api/launch (both variants), /api/sessions, /api/home, session-max, owner — src/routes/launch.ts
+registerLaunchPreflight(app); // /api/launch/preflight — the dry run: resolveForm with no session and no roster — src/routes/launch-preflight.ts
 registerCatalogs(app); // /api/macros, /api/hotwords*, /api/project-roots*, /api/session-launch-specs, /api/role-families*, /api/session-roles, /api/team-roles, /api/launch-profile — src/routes/catalogs.ts
 registerTeams(app); // /api/team-rosters* — the durable half of every team — src/routes/teams-api.ts
 registerVersion(app); // /api/version — release string, or the commit this process started from — src/routes/version.ts

@@ -37,7 +37,7 @@
  * here rather than a new code path:
  *
  *   `mechanical`  a command can do it, AND Ronin knows the command. Today that is
- *                 exactly the agent CLIs — `AGENTS[].get` in src/agents.ts is the one
+ *                 exactly the agent CLIs — `AGENTS[].operations.install` in src/agents.ts is the one
  *                 source, and the install operation reads it. "We could shell out to
  *                 something" is not the test; knowing the line is.
  *   `owner`       only the person can: click the link in an email, sign in inside an

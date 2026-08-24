@@ -613,7 +613,7 @@ function computeNeeded(
   // simply produces nothing — the want stays typed, the entry was never stored.
   //
   // A want carries the choke too, and by VERB rather than by row, because the verb is
-  // what says whose hand it takes. `agent` is mechanical because AGENTS[].get is a line
+  // what says whose hand it takes. `agent` is mechanical because AGENTS[].operations.install is a line
   // Ronin holds; `tool` is not, because "install gh" means knowing whether this box is
   // apt, brew or dnf — judgment, so the seat keeps it; a key and an entitled download
   // are the owner's own hands. Adding a mechanical verb later is this table, not a
@@ -622,10 +622,10 @@ function computeNeeded(
     agent: {
       how: (n) => `install the ${n} CLI — it appears in agent installations the moment it lands`,
       // ASK THE ONE SOURCE. `mechanical` means Ronin knows the command, so a PARKED agent
-      // — one whose `get` is empty because its installer does not work — is the owner's
+      // — one whose install operation is empty because its installer does not work — is the owner's
       // hand, not ours. Reading AGENTS here is what stops the landing claiming to install
       // something the operation would refuse.
-      met_by: (n) => (AGENTS.find((a) => a.id === n)?.get ? 'mechanical' : 'owner'),
+      met_by: (n) => (AGENTS.find((a) => a.id === n)?.operations.install ? 'mechanical' : 'owner'),
     },
     service: { how: () => 'install Ronin Services — it registers itself', met_by: () => 'owner' },
     tool: { how: (n) => `install ${n} on the host`, met_by: () => 'agent' },

@@ -9,6 +9,14 @@ also been handed.
 
 ## Session macros
 
+**forkit first, because it is the one that gets mistranslated:** when the owner says
+`+forkit:`, **fork it**, or **new session**, that is Ronin's `forkit` workflow,
+absolutely — a visible session born through the launch pipeline with a full Build Brief
+(`tejun forkit` for the recipe). It is NEVER your agent CLI's internal sub-agent, and
+NEVER a bare `tmux new-session` with a typed prompt — both arrive with no brief, no
+letter and no dial. (Learned again 2026-08-23, when a session ran +forkit as a
+background fork.)
+
 The owner invokes a Ronin workflow at you as `+<name>: <args>`. Compile it first —
 `tejun <name>` — then execute the recipe and report what it asks for. Never substitute a
 remembered workflow, and never translate a macro into a similar-sounding native
@@ -48,6 +56,38 @@ workflow — rostered, addressable and recorded — never substitute an internal
 **Spawn it** and **spawn an agent** mean the agent CLI's own internal sub-agent machinery,
 not a tmux session. For ordinary delegation that uses neither vocabulary, choose freely;
 internal sub-agents should stay quick and need no extra owner confirmation.
+
+## Your team's board
+
+If you are on a team, the team has a **board** — where its sessions talk to each other
+instead of routing every message through the owner. You do not look for it, create it, or
+name it: **it is assumed**, and two commands are the whole ability.
+
+```bash
+tejun-wipeboard                    # everything you have not read, then it is read
+tejun-wipeboard post <text…>       # say something on YOUR team's board
+```
+
+No board name in either. The tool knows which session you are, which team you are on, and
+what you have already seen. **You never manage ids, timestamps, cursors, pages or files** —
+if you find yourself about to, you have taken a wrong turn. Nothing unread answers in one
+line, and being on no team is an ordinary answer, not a problem.
+
+**The board is not a record.** Posts are delivered and then cleared — once the readers a
+post was for have read it, or once it ages out. Do not put anything there you need later:
+that belongs in your TEGAMI, a `docs/` page, or a commit message.
+
+**Your post interrupts the team lead, and nobody else — that is the default.** The board
+must stay efficient: most of what you post, the whole team does not need to be pulled out
+of its work for. `--to <session,session>` also interrupts those; `--to all` interrupts
+everyone, and you say it on purpose; `--to none` interrupts nobody — the post lands and
+waits. Addressing decides who is INTERRUPTED, not who may read: every member still
+receives your post when they next check, and the lead sees everything that hits the board.
+
+**Never post just to acknowledge.** Your read is recorded mechanically, so "got it" costs
+the whole team an interruption and tells them nothing. Being pointed at a board is not an
+instruction to post on it. A board name (`tejun-wipeboard <board> post …`) is only for a
+board that is not your team's. `docs/wipeboards.md`.
 
 ## This machine
 

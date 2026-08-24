@@ -30,6 +30,17 @@ cores() {
   fi
 }
 
+# Swap, in kB, 0 when there is none. A box with none is one memory spike away from the
+# kernel choosing a process to kill, so "none" is a fact worth reporting rather than a
+# blank — `ronin-doctor` turns the same reading into a finding with its remedy.
+swap_k() {
+  if [ -r /proc/meminfo ]; then
+    awk '/^SwapTotal:/ {print $2; exit}' /proc/meminfo
+  else
+    echo 0
+  fi
+}
+
 ram_k() {
   if [ -r /proc/meminfo ]; then
     awk '/^MemTotal:/ {print $2; exit}' /proc/meminfo
@@ -75,6 +86,12 @@ printf '  %-14s %s\n' "kind" "$(kind)"
 printf '  %-14s %s\n' "vendor" "$(vendor || echo '?')"
 printf '  %-14s %s\n' "cores" "$(cores || echo '?')"
 printf '  %-14s %s\n' "RAM" "$(human_k "$(ram_k)")"
+sw_k="$(swap_k)"
+if [ "${sw_k:-0}" -gt 0 ] 2>/dev/null; then
+  printf '  %-14s %s\n' "swap" "$(human_k "$sw_k")"
+else
+  printf '  %-14s %s\n' "swap" "none — a memory spike is an OOM kill, not slowness"
+fi
 
 # The filesystem the WORK is on — not "/", which on many hosts is a different device
 # from the home tree, and would answer a question nobody asked.

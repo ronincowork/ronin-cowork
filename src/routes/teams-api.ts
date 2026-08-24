@@ -16,7 +16,7 @@ import type express from 'express';
 import {
   createTeamRoster,
   deleteTeamRoster,
-  isValidTeamName,
+  isCreatableTeamName,
   listTeamRosters,
   readTeamRoster,
   renameTeamRoster,
@@ -78,7 +78,7 @@ export function registerTeams(app: express.Express): void {
 
   app.post('/api/team-rosters', async (req, res) => {
     const name = String(req.body?.name ?? '').trim();
-    if (!isValidTeamName(name)) {
+    if (!isCreatableTeamName(name)) {
       return res.status(400).json({ error: 'A team name is lowercase letters, digits, _ and - (it is also the tag).' });
     }
     try {

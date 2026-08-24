@@ -43,7 +43,7 @@ let failed = 0;
 const q = (s: string) => `'${s.replace(/'/g, `'\\''`)}'`;
 
 async function proveOne(a: (typeof AGENTS)[number]): Promise<void> {
-  if (!a.get) {
+  if (!a.operations.install) {
     console.log(`  ok    ${a.id} — parked, and the row says why: ${a.parked}`);
     return;
   }
@@ -51,7 +51,7 @@ async function proveOne(a: (typeof AGENTS)[number]): Promise<void> {
   mkdirSync(prefix, { recursive: true });
   // The operation's own preamble (src/agent-install.ts), with the prefix swapped for a
   // throwaway one. Same shape, so what is proven here is what actually runs there.
-  const line = `export npm_config_prefix=${q(prefix)}; export PATH="$PATH:${prefix}/bin"; ${a.get}`;
+  const line = `export npm_config_prefix=${q(prefix)}; export PATH="$PATH:${prefix}/bin"; ${a.operations.install}`;
   const began = Date.now();
   try {
     await run('bash', ['-lc', line], { timeout: 600_000, maxBuffer: 64 * 1024 * 1024 });
@@ -75,7 +75,8 @@ async function proveOne(a: (typeof AGENTS)[number]): Promise<void> {
   }
   let says = '';
   try {
-    const { stdout } = await run('bash', ['-c', `PATH=${q(path.join(prefix, 'bin'))}:"$PATH" ${a.cmd} --version`], { timeout: 120_000 });
+    const version = a.operations.version.map(q).join(' ');
+    const { stdout } = await run('bash', ['-c', `PATH=${q(path.join(prefix, 'bin'))}:"$PATH" ${a.cmd} ${version}`], { timeout: 120_000 });
     says = stdout.trim().split('\n')[0].slice(0, 40);
   } catch {
     says = 'installed, but --version did not answer';
