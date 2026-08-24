@@ -104,12 +104,12 @@ export function createDraft(overrides = {}) {
     seats: Array.isArray(overrides.seats) ? overrides.seats : [],
     /** null is valid at every moment, for an empty Team and a staffed one alike. */
     lead_seat_id: overrides.lead_seat_id ?? null,
-    /** Set once Stage 1 commits. The Team is durable and visible in League from that
-     *  moment — before any seat exists, and whether or not one ever will. */
-    roster_created: overrides.roster_created ?? false,
     transaction: overrides.transaction ?? null,
   };
 }
+
+/** The durable roster identity, not a mutable boolean assertion about `draft.team`. */
+export const committedTeam = (draft) => String(draft?.transaction?.committed_team ?? '');
 
 /**
  * A seat as `/api/launch` would receive it — nulls DROPPED, not defaulted.

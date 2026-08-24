@@ -21,6 +21,7 @@
 import { request } from './request.js';
 import {
   canCreateTeam,
+  committedTeam,
   createSeat,
   createDraft,
   finalizeTeamName,
@@ -134,6 +135,7 @@ export function createNewTeamView(kit) {
     nameField.el, roleField.el, objectiveField.el, rootField.el,
     reposField.el, branchField.el, boardField.el,
   );
+  const teamControls = [nameInput, roleInput, objectiveInput, rootSelect, reposInput, branchInput, boardInput];
 
   const adoption = node('div', 'nt-notes');
   const createBtn = createAction({ className: 'nt-create', label: 'Create Team', kind: 'primary', disabled: true }).el;
@@ -185,15 +187,19 @@ export function createNewTeamView(kit) {
 
   const paintNotes = () => {
     adoption.replaceChildren();
-    const teamReading = draft.roster_created && lastPreflight?.team
+    const teamReading = committedTeam(draft) && lastPreflight?.team
       ? { ...lastPreflight.team, name_available: true }
       : lastPreflight?.team;
     const notes = [...teamNotes(teamReading), capacityNote(lastPreflight?.capacity)].filter(Boolean);
     for (const n of notes) {
-      const p = node('p', 'wk-notice', n.text);
-      p.dataset.kind = n.kind;
-      adoption.append(p);
+      adoption.append(createNotice({ kind: n.kind, message: n.text }).el);
     }
+  };
+
+  const lockDefinition = () => {
+    const locked = !!committedTeam(draft);
+    for (const control of teamControls) control.disabled = locked;
+    createBtn.hidden = locked;
   };
 
   const paintRoster = () => {
@@ -293,14 +299,14 @@ export function createNewTeamView(kit) {
     const lead = tx?.lead;
     if (lead) receipt.append(node('p', 'nt-lead-receipt',
       `Lead: ${lead.status}${lead.session_name ? ` · ${lead.session_name}` : ''}${lead.delivery ? ` · ${lead.delivery}` : ''}${lead.error ? ` · ${lead.error}` : ''}`));
-    openTeam.el.hidden = !draft.roster_created;
+    openTeam.el.hidden = !committedTeam(draft);
   };
 
   const paintName = () => {
     const name = draft.team.name;
     if (!name) return nameField.setValidation('', '');
     if (!isValidTeamName(name)) return nameField.setValidation('invalid', 'Lowercase letters, digits, _ and - only.');
-    if (!draft.roster_created && lastPreflight?.team && !lastPreflight.team.name_available) {
+    if (!committedTeam(draft) && lastPreflight?.team && !lastPreflight.team.name_available) {
       return nameField.setValidation('invalid', `"${name}" already has a roster.`);
     }
     nameField.setValidation('valid', '');
@@ -310,7 +316,7 @@ export function createNewTeamView(kit) {
     readTeam();
     // The button follows exactly ONE condition, because exactly one thing is enforced at
     // creation. Everything else on this form is advisory, and a disabled button is a gate.
-    createBtn.disabled = !canCreateTeam(draft) || draft.roster_created;
+    createBtn.disabled = !canCreateTeam(draft) || !!committedTeam(draft);
     if (!draft.team.name) {
       lastPreflight = null;
       paintName();
@@ -329,9 +335,9 @@ export function createNewTeamView(kit) {
       draft.seats = draft.seats.map((seat) => seat.seat_id === verdict.seat_id ? { ...seat, resolved: verdict.resolved } : seat);
     }
     saveDraft();
-    if (!draft.roster_created && !lastPreflight.team.name_available) createBtn.disabled = true;
+    if (!committedTeam(draft) && !lastPreflight.team.name_available) createBtn.disabled = true;
     createBtn.textContent = lastPreflight.team.adopts_sessions?.length ? 'Adopt Team roster' : 'Create Team';
-    createBtn.hidden = draft.roster_created;
+    lockDefinition();
     paintName();
     paintNotes();
     paintRoster();
@@ -375,13 +381,30 @@ export function createNewTeamView(kit) {
     paintReceipt();
   };
   launchSeats.el.addEventListener('click', () => void runLaunch());
-  openTeam.el.addEventListener('click', () => navigateWorkspace(context, workspaceTarget('team', draft.team.name)));
+  openTeam.el.addEventListener('click', () => navigateWorkspace(context, workspaceTarget('team', committedTeam(draft))));
 
   createBtn.addEventListener('click', async () => {
     readTeam();
     if (!canCreateTeam(draft)) return;
     createBtn.disabled = true;
     transaction.el.hidden = false;
+    txNotice.set('info', `Checking "${draft.team.name}" before its roster is committed…`);
+    const checked = await preflight(draft);
+    if (checked.broken) {
+      txNotice.set('failed', `The dry run could not be reached — ${checked.message}. No Team was created.`);
+      createBtn.disabled = false;
+      return;
+    }
+    lastPreflight = checked;
+    const allRefused = draft.seats.length > 0 && checked.seats.every((seat) => seat.verdict === 'refuse');
+    if (!checked.team?.name_available || allRefused) {
+      txNotice.set('failed', allRefused
+        ? 'No proposed session passed preflight. No Team was created.'
+        : `Team "${draft.team.name}" already has a durable roster. No Team was created.`);
+      createBtn.disabled = false;
+      paintRoster();
+      return;
+    }
     txNotice.set('info', `Creating "${draft.team.name}"…`);
     const r = await ensureRoster(draft);
     if (!r.ok) {
@@ -392,8 +415,9 @@ export function createNewTeamView(kit) {
     // THE TEAM IS REAL FROM HERE, with zero seats and no lead, and it is visible in League
     // from this moment (owner, 2026-08-23). The draft records that so the transaction
     // survives a re-render and the create cannot be pressed twice.
-    draft.transaction = { team: draft.team.name, created_at: new Date().toISOString(), seats: [] };
+    draft.transaction = { ...draft.transaction, created_at: new Date().toISOString(), seats: [] };
     saveDraft();
+    lockDefinition();
     const adopted = lastPreflight?.team?.adopts_sessions?.length ?? 0;
     txNotice.set(
       'success',
@@ -423,7 +447,16 @@ export function createNewTeamView(kit) {
     enter: (nextContext) => {
       context = nextContext;
       const stored = nextContext.viewState('new-team')?.draft;
-      if (stored && typeof stored === 'object') draft = registerTeamDraft(stored);
+      if (stored && typeof stored === 'object') {
+        // One-time persisted-state migration: the old boolean could not prove WHICH Team
+        // was committed. Its transaction did carry the identity, so promote that identity
+        // and retire the boolean before this view can launch anything.
+        if (stored.roster_created && stored.transaction?.team && !stored.transaction.committed_team) {
+          stored.transaction.committed_team = stored.transaction.team;
+        }
+        delete stored.roster_created;
+        draft = registerTeamDraft(stored);
+      }
       else registerTeamDraft(draft);
       nameInput.value = draft.team.name ?? '';
       roleInput.value = draft.team.team_role ?? '';
@@ -433,6 +466,7 @@ export function createNewTeamView(kit) {
       boardInput.value = draft.team.wipeboard ?? '';
       paintRoster();
       paintReceipt();
+      lockDefinition();
       void loadOptions().then(() => { rootSelect.value = draft.team.project_root ?? ''; return refresh(); });
     },
     /** The draft is the view's, and it survives leaving and coming back within this tab.

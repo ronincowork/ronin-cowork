@@ -34,6 +34,22 @@ says go.
 
 ## CURRENT STATE / RESUME HERE
 
+### DOGFOOD REMEDIATION — 2026-08-24
+
+- The whole canonical draft is preflighted before roster creation. A broken preflight or
+  a non-empty draft whose every seat is refused creates no Team.
+- Roster commit proof is `transaction.committed_team`, the immutable Team identity. The
+  seven Team-definition controls lock after commit, and `ensureRoster` refuses a draft
+  whose mutable Team name differs from that identity. Persisted drafts from the prior
+  boolean shape promote their recorded transaction Team once, then delete the boolean.
+- Adoption notices are Workspace Kit `createNotice` instances; New Team does not recreate
+  the Kit's notice class on a bare element.
+- Seat-local launch failures remain ordered and non-transactional: after a legitimate
+  roster commit, HTTP 400/409 refuses that seat and the next seat is still attempted.
+
+The older recovery record below is retained as history; where it conflicts with this
+section or the hardened Workspace Kit migration, this section is current.
+
 *Recorded 2026-08-23T17:36Z. Facts only. Everything below this section is the plan; this
 is where the work actually stands.*
 
@@ -461,8 +477,15 @@ TeamDraft
   team            TeamDefinition
   seats           Seat[]            — [] is valid
   lead_seat_id    string | null     — null is valid, always
-  roster_created  boolean           — has stage 1 been committed
+  transaction     DraftTransaction | null
   outcome         DraftOutcome | null
+
+DraftTransaction
+  committed_team  string            — immutable identity after roster commit
+  roster          status / error
+  lead            designation receipt
+  started_at      string
+  completed_at    string | null
 
 TeamDefinition                       — mirrors the roster's seven durable fields exactly
   name            string             — '' while drafting; ^[a-z0-9][a-z0-9_-]{0,63}$ to create

@@ -1,6 +1,6 @@
 /* Ordered New Team orchestration. No DOM, no second resolver, no rollback. */
 import { request } from './request.js';
-import { bodyOf, rosterBody } from './new-team-draft.js';
+import { bodyOf, committedTeam, rosterBody } from './new-team-draft.js';
 import { preflight } from './new-team-preflight.js';
 
 const now = () => new Date().toISOString();
@@ -10,10 +10,17 @@ const writeOutcome = (draft, seatId, outcome) => {
 };
 
 export async function ensureRoster(draft) {
-  if (draft.roster_created) return { ok: true, existing: true };
+  const committed = committedTeam(draft);
+  if (committed) {
+    if (committed === draft.team.name) return { ok: true, existing: true };
+    return {
+      ok: false, status: 409,
+      message: `This transaction committed Team "${committed}" and cannot launch another Team.`,
+    };
+  }
   const result = await request('/api/team-rosters', { method: 'POST', json: rosterBody(draft.team) });
   if (!result.ok) return result;
-  draft.roster_created = true;
+  draft.transaction = { ...(draft.transaction ?? {}), committed_team: draft.team.name };
   return result;
 }
 
@@ -21,29 +28,48 @@ export async function ensureRoster(draft) {
 export async function launchDraft(draft, { persist = () => {}, seatIds = null } = {}) {
   const wanted = seatIds ? new Set(seatIds) : null;
   const candidates = draft.seats.filter((seat) => !outcomeFor(draft, seat.seat_id)?.session_name && (!wanted || wanted.has(seat.seat_id)));
-  const transaction = draft.transaction = {
+  let transaction = draft.transaction = {
     ...(draft.transaction ?? {}), team: draft.team.name, started_at: now(), completed_at: null,
     lead: draft.transaction?.lead ?? null, error: null,
   };
   persist(draft);
 
-  const roster = await ensureRoster(draft);
-  if (!roster.ok) {
-    transaction.roster = { status: 'refused', http: roster.status, error: roster.message };
-    transaction.completed_at = now();
-    persist(draft);
-    return draft;
-  }
-  transaction.roster = { status: 'created' };
-  persist(draft);
-
-  const checked = await preflight({ ...draft, seats: candidates });
+  // WHOLE DRAFT FIRST. A dry run that cannot answer, or a non-empty draft with no
+  // launchable seat, must not leave an empty durable Team behind as its side effect.
+  const checked = await preflight(draft);
   if (checked.broken) {
     transaction.error = checked.message;
     transaction.completed_at = now();
     persist(draft);
     return draft;
   }
+  const allRefused = draft.seats.length > 0 && checked.seats.every((seat) => seat.verdict === 'refuse');
+  if (allRefused) {
+    for (const seat of candidates) {
+      const verdict = checked.seats.find((item) => item.seat_id === seat.seat_id);
+      writeOutcome(draft, seat.seat_id, {
+        status: 'refused', http: 400,
+        error: verdict?.reasons?.map((reason) => reason.message).join(' ') || 'Preflight refused this seat.',
+        attempted_at: now(),
+      });
+    }
+    transaction.error = 'No proposed session passed preflight. The Team was not created.';
+    transaction.completed_at = now();
+    persist(draft);
+    return draft;
+  }
+
+  const roster = await ensureRoster(draft);
+  transaction = draft.transaction;
+  if (!roster.ok) {
+    transaction.roster = { status: 'refused', http: roster.status, error: roster.message };
+    transaction.completed_at = now();
+    persist(draft);
+    return draft;
+  }
+  transaction.roster = { status: roster.existing ? 'existing' : 'created' };
+  persist(draft);
+
   const verdicts = new Map(checked.seats.map((seat) => [seat.seat_id, seat]));
   let halted = '';
   for (const seat of candidates) {
