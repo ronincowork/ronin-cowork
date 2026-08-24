@@ -55,6 +55,13 @@ Calls made in building this, reversible and flagged:
 | 1 | **API coverage.** `src/routes/wipeboards-api.ts` has no automated test | every route asserted, including that `unread` never advances a cursor |
 | 2 | **Full BYOIN on the box**, then land and delete this file | one verdict, no SKIP read as a pass |
 
+**Create-on-open LANDED** (2026-08-24, third ruling of the day): "should always have a
+board — if there isn't one at team open it should fall back to create one." `GET
+/api/wipeboards/:name` now materializes a team's board instead of answering with a
+phantom, stubbed with the TEAM's name even where the roster's id differs; the post and
+brief routes got the same team-name fix. The team page's own board slice is the team
+workstream's to wire — the server guarantee is in place for it.
+
 **Quiet by default LANDED** (2026-08-24, second ruling of the day): an agent's bare post
 interrupts **the lead alone** — "the board must be efficient, not a spam machine". `--to`
 adds names, `--to all` is the explicit everyone, `--to none` interrupts nobody. The owner's

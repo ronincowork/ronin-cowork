@@ -198,15 +198,14 @@ export function registerWipeboards(app: express.Express): void {
     const { name } = req.params;
     if (!isValidBoardName(name)) return res.status(400).json({ error: 'Invalid board name.' });
     try {
-      const team = await isTeamBoard(name);
+      const team = await teamBehind(name);
       if (!(await boardExists(name))) {
         if (!team) return res.status(404).json({ error: 'No such wipeboard.' });
-        // A team wipeboard is real before its file is: it exists because the team does,
-        // and the tile can open it. The file materializes on first post.
-        return res.json({
-          name, brief: '', posts: [], newest: '', file: boardPath(name),
-          members: await boardMembers(name), kind: 'team', more: false,
-        });
+        // OPENING A TEAM'S BOARD CREATES IT (owner, 2026-08-24: "should always have a
+        // board — if there isn't one at team open it should fall back to create one").
+        // No phantom answers: the surface that opens gets a real, empty board, which is
+        // a normal state — the conversation that has not started yet.
+        await ensureBoard(name, teamStub(team));
       }
       // Retire what has been delivered before answering — inline, so there is no daemon.
       await sweep(name);
@@ -248,17 +247,17 @@ export function registerWipeboards(app: express.Express): void {
   app.post('/api/wipeboards/:name/post', async (req, res) => {
     const { name } = req.params;
     if (!isValidBoardName(name)) return res.status(400).json({ error: 'Invalid board name.' });
-    const team = await isTeamBoard(name);
+    const team = await teamBehind(name);
     if (!team && !(await boardExists(name))) return res.status(404).json({ error: 'No such wipeboard.' });
     const text = String(req.body?.text ?? '').trim();
     if (!text) return res.status(400).json({ error: 'Nothing to post.' });
     try {
       count('board.post');
-      // A team wipeboard materializes on first post. That moment — and only that
-      // moment — sends the current members their join notice: they were never
-      // enrolled, so nothing else has ever told them this wipeboard exists. This is
-      // the JOIN notice, not a post echo; owner posts stay unannounced as ever.
-      const born = team && (await ensureBoard(name, teamStub(name)));
+      // Usually the board already exists — opening the team page creates it (owner,
+      // 2026-08-24). A post reaching an uncreated one still materializes it, stubbed
+      // with the TEAM's name (the roster's id need not be the team's name), and that
+      // birth moment sends the members their one join notice.
+      const born = !!team && (await ensureBoard(name, teamStub(team)));
       const author = String(req.body?.author ?? '').trim() || (await ownerAuthor());
       const { to, silent } = audienceOf(req.body);
       const post = await appendPost(name, author, text, { to, silent });
@@ -312,10 +311,11 @@ export function registerWipeboards(app: express.Express): void {
     const { name } = req.params;
     if (!isValidBoardName(name)) return res.status(400).json({ error: 'Invalid board name.' });
     if (!(await boardExists(name))) {
-      // Writing a Brief is authoring, so it MAY materialize a team wipeboard — with
-      // the team stub, so the file says whose it is even before the brief lands.
-      if (!(await isTeamBoard(name))) return res.status(404).json({ error: 'No such wipeboard.' });
-      await ensureBoard(name, teamStub(name));
+      // Writing a Brief is authoring, so it MAY materialize a team's board — stubbed
+      // with the TEAM's name, so the board says whose it is even before the brief lands.
+      const team = await teamBehind(name);
+      if (!team) return res.status(404).json({ error: 'No such wipeboard.' });
+      await ensureBoard(name, teamStub(team));
     }
     try {
       await setBrief(name, String(req.body?.brief ?? '').slice(0, 8000));
