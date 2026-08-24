@@ -29,6 +29,11 @@ contracts; each Five Eye supplies its feature data and behavior.
   columns, gap, alignment and its phone single-column override; Team Workbench states and
   New Team's wide-left builder likewise have explicit desktop and phone contracts. Feature
   CSS may style meaning but must not redefine those geometries.
+- For the interactive Team composition, call
+  `createWorkbenchLayout(terminalTile, kanban, channels, { managed: true, state, onStateChange })`.
+  Append its `host`, not its inner `el`; call `restore(state)` on entry. The managed host owns
+  outer geometry, Kit action-based collapse/expand rails, bounded pointer and keyboard
+  splitters, phone stacking, and state snapshots. Features supply Surface content only.
 - `isCreatableTeamName` is the create/rename/preflight boundary; `isValidTeamName` remains
   the syntax/read boundary so a legacy roster named `unassigned` remains recoverable.
 - `resolveForm(..., proposedRoster)` is for dry-run resolution only. Real launches omit it
@@ -287,7 +292,7 @@ The frozen code API is:
 createSurface(options)
 createChannelSurface({ services }) → { services, tabs, select }
 channelServices = chat | wipeboard | docs | team-configuration
-createWorkbenchLayout(terminalTile, kanban, channels)
+createWorkbenchLayout(terminalTile, kanban, channels, options?)
 setCollapsed(terminalTile | kanban | channels, on)
 createAgentConfigurationLayout(configuration, preview)
 createSessionGrid(tiles)
@@ -341,6 +346,13 @@ The default Team mode is:
 
 All three Surfaces can collapse. The terminal Tile Surface and Channel Surface are independently
 resizable with bounded splitters.
+
+`options.managed: true` returns `host` around the existing `el` and installs the complete
+interaction contract. `state` accepts the typed `{ widths, surfaces }` workspace fields;
+`onStateChange(snapshot)` persists them, and `restore(state)` reapplies them on entry. The Kit
+constructs every collapse/expand action, owns pointer and keyboard resize lifecycle, and removes
+splitters from the phone stack. Consumers do not add rails, grips, media queries, or control
+chrome around this layout.
 
 Sizing contract:
 

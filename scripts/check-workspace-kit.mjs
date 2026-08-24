@@ -7,6 +7,7 @@ const league = read('public/js/league-view.js') + read('public/js/league-board.j
 const team = read('public/js/team-view.js');
 const controller = read('public/js/team-controller.js');
 const kit = read('public/js/workspace-kit.js') + read('public/js/workspace-adapters.js');
+const layouts = read('public/js/workspace-layouts.js');
 const terminal = read('public/js/terminal-tile-host.js');
 const primitives = read('public/js/workspace-primitives.js');
 const newTeam = read('public/js/new-team.js');
@@ -17,6 +18,13 @@ const leagueCards = /\.wk-league-board \[data-surface='cards'\] \{[^}]*display: 
 const leagueCardsPhone = /@media \(max-width: 680px\) \{[^}]*\.wk-league-board \[data-surface='cards'\] \{[^}]*grid-template-columns: 1fr;[^}]*\}/;
 if (!leagueCards.test(styles)) problems.push('The Kit must own the complete League cards desktop grid geometry.');
 if (!leagueCardsPhone.test(styles)) problems.push('The Kit must own the League cards phone single-column geometry.');
+for (const contract of ['wk-workbench-host', 'wk-workbench-rails', 'wk-workbench-splitter', 'onStateChange', "addEventListener('pointerdown'", "addEventListener('keydown'", 'WorkspacePrimitives.createAction']) {
+  if (!layouts.includes(contract) && !styles.includes(contract)) problems.push(`The Kit managed Workbench contract is missing ${contract}.`);
+}
+for (const geometry of ['.wk-workbench-host {', '.wk-workbench-rails {', '.wk-workbench-splitter {', '.wk-workbench-expand {', '.wk-workbench-collapse {']) {
+  if (!styles.includes(geometry)) problems.push(`The Kit must own managed Workbench geometry for ${geometry}`);
+}
+if (!/@media \(max-width: 680px\) \{.*\.wk-workbench-host \{[^}]*flex-direction: column;/.test(styles)) problems.push('The Kit must own managed Workbench phone composition.');
 if (!league.includes("'./team-controller.js'")) problems.push('League must consume the shared Team controller.');
 if (!controller.includes("request('/api/team-rosters'")) problems.push('The Team controller must own durable roster refresh.');
 if (/request\(`?\/api\/teams\//.test(team)) problems.push('Team must not create a feature-local live Team projection.');
