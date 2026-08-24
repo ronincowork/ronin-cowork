@@ -25,7 +25,7 @@
  *
  * Every rule below that sets `display` on an element this feature may hide is therefore
  * exempted here, once, at the top. Add a `display` to a `.tw-*` rule and add it here too. */
-.tw-view[hidden], .tw-rails[hidden], .tw-rail[hidden], .tw-actions[hidden],
+.tw-view[hidden], .tw-rails[hidden], .tw-rail[hidden],
 .tw-cards[hidden], .tw-config[hidden], .tw-config-row[hidden],
 .tw-placeholder[hidden], .tw-splitter[hidden] { display: none; }
 
@@ -54,15 +54,11 @@
 .wk-workbench-layout[data-open='terminalTile-kanban'] .tw-splitter[data-side='right'],
 .wk-workbench-layout[data-open='kanban'] .tw-splitter { display: none; }
 
-/* The focused Tile's actions rail: one identity label, no second header. */
-.tw-actions { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-bottom: var(--edge) solid var(--line); }
-.tw-grow { flex: 1 1 auto; }
-.tw-session-label { font-size: 12px; opacity: .8; }
-.tw-collapse, .tw-action {
+/* Surface collapse chrome. Tile-owned controls retain their existing styles unchanged. */
+.tw-collapse {
   min-width: 26px; min-height: 24px; padding: 2px 6px; cursor: pointer;
   border: var(--edge) solid var(--line); border-radius: 6px; background: var(--panel);
 }
-.tw-action[disabled] { opacity: .4; cursor: default; }
 .tw-kanban > .wk-surface-controls, .wk-channel-surface > .wk-surface-controls { display: flex; justify-content: flex-end; padding: 4px 6px 0; }
 
 .tw-placeholder { padding: 16px; display: flex; flex-direction: column; gap: 8px; opacity: .75; }

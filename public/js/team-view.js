@@ -51,7 +51,7 @@ export function createTeamView() {
   // Resolved INSIDE the factory, never at module top level: a top-level read of an imported
   // binding is the load-order fragility public/js/README.md rule 4 forbids, and the module
   // gate enforces it.
-  const { createSurface, createCard, createChannelSurface, createAction, createActionBar, createMetadata, setSurfaceState } = WorkspaceKit.primitives;
+  const { createSurface, createCard, createChannelSurface, createAction, createMetadata, setSurfaceState } = WorkspaceKit.primitives;
   const { createWorkbenchLayout } = WorkspaceKit.layouts;
   const { createTerminalTileHost } = WorkspaceKit.adapters;
   const { teamWorkspaceState } = WorkspaceKit.contract;
@@ -73,20 +73,12 @@ export function createTeamView() {
     label: 'Team channels',
     services: { wipeboard: service(wipeboard), docs: service(docs), 'team-configuration': service(config) },
   });
-  const terminalHost = createTerminalTileHost({ mode: 'reduced' });
-
-  // The focused Tile carries ONE piece of identity — the @session label on its rail
-  // (owner's ruling) — and no second header. There is no session yet in this slice, so it
-  // states that plainly rather than drawing a fake one.
-  const actions = createActionBar({ className: 'tw-actions', label: 'Focused session actions' });
+  // Full mode preserves the existing Tile wholesale: its genuine header, controls,
+  // terminal, composer and lifecycle. Team owns only the surrounding Surface chrome.
+  const terminalHost = createTerminalTileHost({ mode: 'full' });
   const collapseLeft = createAction({ className: 'tw-collapse', label: '«', title: 'Hide the focused session' }).el;
-  const label = el('span', 'tw-session-label', '—');
-  actions.append(collapseLeft, label, el('span', 'tw-grow'));
-  for (const [mark, title] of [['⚡', 'Session macros'], ['🏷', 'Teams'], ['🎛', 'Control'], ['📝', 'Note'], ['メ', 'More']]) {
-    actions.append(createAction({ className: 'tw-action', label: mark, title: `${title} — arrives with the terminal host`, disabled: true }));
-  }
   terminalTile.controls.hidden = false;
-  terminalTile.controls.append(actions.el);
+  terminalTile.controls.append(collapseLeft);
   const placeholder = el('div', 'tw-placeholder');
   placeholder.append(
     el('p', 'tw-placeholder-head', 'Terminal Tile'),
