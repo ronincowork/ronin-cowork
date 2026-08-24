@@ -9,18 +9,13 @@ const writeOutcome = (draft, seatId, outcome) => {
   draft.seats = draft.seats.map((seat) => seat.seat_id === seatId ? { ...seat, outcome } : seat);
 };
 
-export async function ensureRoster(draft) {
+async function ensureRoster(draft) {
   const committed = committedTeam(draft);
-  if (committed) {
-    if (committed === draft.team.name) return { ok: true, existing: true };
-    return {
-      ok: false, status: 409,
-      message: `This transaction committed Team "${committed}" and cannot launch another Team.`,
-    };
-  }
+  if (committed) return { ok: true, existing: true };
   const result = await request('/api/team-rosters', { method: 'POST', json: rosterBody(draft.team) });
   if (!result.ok) return result;
-  draft.transaction = { ...(draft.transaction ?? {}), committed_team: draft.team.name };
+  draft.transaction ??= {};
+  draft.transaction.committed_team = draft.team.name;
   return result;
 }
 
@@ -29,14 +24,15 @@ export async function launchDraft(draft, { persist = () => {}, seatIds = null } 
   const wanted = seatIds ? new Set(seatIds) : null;
   const candidates = draft.seats.filter((seat) => !outcomeFor(draft, seat.seat_id)?.session_name && (!wanted || wanted.has(seat.seat_id)));
   let transaction = draft.transaction = {
-    ...(draft.transaction ?? {}), team: draft.team.name, started_at: now(), completed_at: null,
+    ...(draft.transaction ?? {}), started_at: now(), completed_at: null,
     lead: draft.transaction?.lead ?? null, error: null,
   };
   persist(draft);
 
   // WHOLE DRAFT FIRST. A dry run that cannot answer, or a non-empty draft with no
   // launchable seat, must not leave an empty durable Team behind as its side effect.
-  const checked = await preflight(draft);
+  const priorTeam = committedTeam(draft);
+  const checked = await preflight(priorTeam ? { ...draft, team: { ...draft.team, name: priorTeam } } : draft);
   if (checked.broken) {
     transaction.error = checked.message;
     transaction.completed_at = now();
@@ -67,6 +63,9 @@ export async function launchDraft(draft, { persist = () => {}, seatIds = null } 
     persist(draft);
     return draft;
   }
+  // Everything below the roster boundary belongs to the committed transaction. Editable
+  // `draft.team` is allowed to move on toward the next Team and is never read here.
+  const team = committedTeam(draft);
   transaction.roster = { status: roster.existing ? 'existing' : 'created' };
   persist(draft);
 
@@ -88,7 +87,7 @@ export async function launchDraft(draft, { persist = () => {}, seatIds = null } 
       persist(draft);
       continue;
     }
-    const result = await request('/api/launch', { method: 'POST', json: bodyOf(seat, draft.team.name) });
+    const result = await request('/api/launch', { method: 'POST', json: bodyOf(seat, team) });
     if (result.ok) {
       writeOutcome(draft, seat.seat_id, {
         status: 'born', session_name: result.data.name, receipt: result.data.receipt, attempted_at: now(),
@@ -109,7 +108,7 @@ export async function launchDraft(draft, { persist = () => {}, seatIds = null } 
     if (!born) transaction.lead = { status: 'skipped', error: 'The designated lead seat was not born.' };
     else {
       const result = await request(`/api/sessions/${encodeURIComponent(born)}/team_lead`, {
-        method: 'POST', json: { teams: [draft.team.name] },
+        method: 'POST', json: { teams: [team] },
       });
       transaction.lead = result.ok
         ? { status: 'designated', session_name: born, delivery: result.data.delivery }

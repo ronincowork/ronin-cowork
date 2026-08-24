@@ -38,10 +38,15 @@ says go.
 
 - The whole canonical draft is preflighted before roster creation. A broken preflight or
   a non-empty draft whose every seat is refused creates no Team.
-- Roster commit proof is `transaction.committed_team`, the immutable Team identity. The
-  seven Team-definition controls lock after commit, and `ensureRoster` refuses a draft
-  whose mutable Team name differs from that identity. Persisted drafts from the prior
-  boolean shape promote their recorded transaction Team once, then delete the boolean.
+- There is one create/raise transaction. Zero seats creates the durable Team; one or many
+  seats creates it and then raises sessions in order. The duplicate Stage 1 create handler
+  is deleted.
+- Roster commit proof is the single scalar `transaction.committed_team`. Controls remain
+  editable and there is no drift lock, copied Team definition or pre-cutover migration.
+  Retry preflight substitutes that Team name and lets the server read its durable roster;
+  every seat launch, lead designation, receipt and Open Team action uses the same scalar.
+- Membership is never copied into a roster. A seat posts one birth `team` plus zero or more
+  additional `tags`; the live session tags remain the only membership record.
 - Adoption notices are Workspace Kit `createNotice` instances; New Team does not recreate
   the Kit's notice class on a bare element.
 - Seat-local launch failures remain ordered and non-transactional: after a legitimate
