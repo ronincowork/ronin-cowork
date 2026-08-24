@@ -31,7 +31,9 @@ to build a League-local substitute.
 
 ## `#/league` user flow
 
-1. Navigate to `#/league` through the shell or enter that hash directly.
+1. Use the **League** link in the application header to open same-origin `#/league` in a
+   new browser tab. The current Sessions tab—including its one/two/four raw Tile grid—is
+   left untouched. Direct `#/league` entry remains valid.
 2. League renders one board containing:
    - active durable Team rosters, including Teams with zero live members;
    - tag-only Teams derived from live session tags;

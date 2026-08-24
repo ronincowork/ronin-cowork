@@ -669,6 +669,7 @@ body {
   font-family: inherit;
   font-size: inherit;
   color: var(--fg);
+  text-decoration: none;
   line-height: 1;
   cursor: pointer;
 }

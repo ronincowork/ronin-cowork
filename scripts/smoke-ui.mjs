@@ -220,6 +220,27 @@ async function checkDom(page, label) {
  * the seed of the journey layer, not a snapshot suite.
  */
 async function checkJourneys(page, label, jsErrors) {
+  // LEAGUE HAS A DISCOVERABLE SECOND-TAB DOOR. Inspect rather than activate it: the gate
+  // must prove the link contract without replacing or opening away from this Sessions tab.
+  const leagueDoor = await page.locator('#leaguebtn').evaluate((link) => {
+    const target = new URL(link.href, location.href);
+    return {
+      visible: !!(link.offsetWidth || link.offsetHeight || link.getClientRects().length),
+      text: link.textContent.trim(),
+      sameOrigin: target.origin === location.origin,
+      hash: target.hash,
+      target: link.target,
+      rel: [...link.relList],
+    };
+  });
+  if (leagueDoor.visible && leagueDoor.text === 'League' && leagueDoor.sameOrigin
+    && leagueDoor.hash === '#/league' && leagueDoor.target === '_blank'
+    && leagueDoor.rel.includes('noopener')) {
+    ok(`${label}: header League link opens same-origin #/league in a noopener new tab`);
+  } else {
+    bad(`${label}: header League new-tab contract is broken — ${JSON.stringify(leagueDoor)}`);
+  }
+
   // 1 — ⛩ Commons is a DESTINATION, not a menu (owner's ruling 2026-08-17): one press
   // lands on ⌂ Roster, and nothing drops. This probe asserted the popover's open/close
   // truth until then; the popover went with the menu it existed for.
