@@ -27,6 +27,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { HOST_TOOLS, defaultUrl, loadPlaywright, loadAxeSource } from './lib/ui-host.mjs';
+import { PANES } from '../public/js/panes.js';
 
 // Host derivation and the playwright hunt both live in scripts/lib/ui-host.mjs — this
 // script and check-tips need the same two answers, and when each had its own copy they
@@ -233,13 +234,13 @@ async function checkJourneys(page, label, jsErrors) {
   }));
   if (commons.pane === 'sessions' && !commons.menu) ok(`${label}: ⛩ Commons goes straight to ⌂ Roster, and drops nothing`);
   else bad(`${label}: ⛩ Commons landed on "${commons.pane}"${commons.menu ? ' and dropped a menu' : ''}, wanted the roster`);
-  // FOUR, NOT TEN (2026-08-18). The strip carried ten rooms and two kinds of thing —
-  // four about sessions and six about the install — and measured 871px against a 609px
-  // tile. The six are the admin_desk's now; probe 4 counts them there. Both counts are
-  // fed by the one registry (js/panes.js `surface`), which is what stops the two lists
-  // drifting the way the strip and the old き menu did.
-  if (commons.tabs === 4) ok(`${label}: the Commons strip carries its 4 session rooms (registry-fed)`);
-  else bad(`${label}: the Commons strip has ${commons.tabs} rooms, wanted 4`);
+  // The strip once carried ten rooms and two kinds of thing. Install rooms moved to the
+  // admin_desk; Archives later became the fifth session room. The expected count comes
+  // from the same static registry the product renders, so this probe checks DOM convergence
+  // without freezing a second copy of the intended room set.
+  const commonsRooms = PANES.filter((pane) => pane.surface === 'commons').length;
+  if (commons.tabs === commonsRooms) ok(`${label}: the Commons strip carries its ${commonsRooms} session rooms (registry-fed)`);
+  else bad(`${label}: the Commons strip has ${commons.tabs} rooms, wanted ${commonsRooms}`);
 
   // 2 — a strip tab lands its room: ▤ Wipeboard (a core room on every build). The strip
   // is the ONLY way to pick a room now, which is what makes this the probe that has to
