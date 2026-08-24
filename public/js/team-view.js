@@ -2,11 +2,10 @@
 /**
  * THE TEAM DESTINATION — Eye 2's first deployable preview.
  *
- * What this is: the Team workbench as GEOMETRY AND SHELLS. The owner authorized exactly
- * this slice against the frozen Workspace Kit (18d9b35) and held back the rest, so the
- * boundaries below are deliberate and are not "not done yet":
+ * What this is: the Team workbench over the hardened Workspace Kit. Its boundaries are
+ * deliberate:
  *
- *   NO terminal host, NO socket, NO xterm — the terminal Tile is a placeholder Surface.
+ *   Full existing Tiles only — one warm Kit host per live member while this view is entered.
  *   NO Chat protocol — Chat is a reserved Channel service and stays inert (owner's ruling).
  *   NO mutations — Team Configuration READS the roster and offers no write.
  *   NO Sessions mode — Gates C and D remain later work.
@@ -20,6 +19,7 @@
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { membersOfTeam, refreshTeams, subscribe, teamByName } from './team-controller.js';
+import { createWarmTerminalPool } from './team-terminal-pool.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -42,6 +42,7 @@ export function createTeamView() {
   let team = '';
   let loaded = ''; // the team whose roster reading is currently drawn
   let unsubscribe = null;
+  let entered = false;
 
   /* ---------- the three surfaces ---------- */
   const terminalTile = createSurface({ label: 'Focused session', className: 'tw-terminal', flush: true });
@@ -54,15 +55,16 @@ export function createTeamView() {
     label: 'Team channels',
     services: { wipeboard: service(wipeboard), docs: service(docs), 'team-configuration': service(config) },
   });
-  // Full mode preserves the existing Tile wholesale: its genuine header, controls,
-  // terminal, composer and lifecycle. Team owns only the surrounding Surface chrome.
-  const terminalHost = createTerminalTileHost({ mode: 'full' });
   const placeholder = el('div', 'tw-placeholder');
   placeholder.append(
     el('p', 'tw-placeholder-head', 'Terminal Tile'),
-    el('p', null, 'Select a Team session to mount it here. Leaving this destination parks and closes its transport.'),
+    el('p', null, 'Select a Team session to show its warm Tile. Leaving this destination closes every Team transport.'),
   );
-  terminalTile.content.append(placeholder, terminalHost.el);
+  terminalTile.content.append(placeholder);
+  const terminalPool = createWarmTerminalPool({
+    createHost: createTerminalTileHost,
+    container: terminalTile.content,
+  });
 
   const cards = el('div', 'tw-cards');
   kanban.content.append(cards);
@@ -80,6 +82,15 @@ export function createTeamView() {
   });
   root.append(workbench.host);
 
+  function syncTerminalPool(members) {
+    const result = terminalPool.sync(members.map((member) => member.name));
+    if (result.removedActive) {
+      placeholder.hidden = false;
+      ctx?.patchState({ focusedSession: '' });
+    }
+    return result;
+  }
+
   /* ---------- the Kanban's shells ---------- */
   function renderCards(members) {
     cards.replaceChildren();
@@ -90,9 +101,9 @@ export function createTeamView() {
         summary: m.summary || '',
         metadata: readings,
         mark: m.mark || null,
-        selected: terminalHost.session === m.name,
+        selected: terminalPool.active === m.name,
         action: () => {
-          terminalHost.switchSession(m.name);
+          if (!terminalPool.show(m.name)) return;
           placeholder.hidden = true;
           ctx?.patchState({ focusedSession: m.name });
           renderCards(members);
@@ -131,6 +142,7 @@ export function createTeamView() {
   /* ---------- reading ---------- */
   async function load(name) {
     if (!name) {
+      syncTerminalPool([]);
       setSurfaceState(kanban.el, 'empty', 'No Team selected.');
       renderCards([]);
       renderConfig(null, []);
@@ -139,7 +151,7 @@ export function createTeamView() {
     }
     setSurfaceState(kanban.el, 'loading', 'Reading the Team…');
     const result = await refreshTeams();
-    if (team !== name) return; // the destination moved while this was in flight
+    if (!entered || team !== name) return; // the destination moved while this was in flight
     loaded = name;
     if (!result.live.ok) {
       setSurfaceState(kanban.el, 'failed', `Could not read this Team — ${result.live.message}`);
@@ -149,6 +161,7 @@ export function createTeamView() {
     }
     const members = membersOfTeam(name);
     const roster = teamByName(name);
+    syncTerminalPool(members);
     setSurfaceState(kanban.el, members.length ? null : 'empty', members.length ? '' : 'No live sessions on this Team.');
     renderCards(members);
     renderConfig(roster.durable ? roster : null, members);
@@ -162,28 +175,41 @@ export function createTeamView() {
       ctx = context;
       channels.mount(context);
       unsubscribe = subscribe(() => {
-        if (!team) return;
+        if (!entered || !team) return;
         const members = membersOfTeam(team);
         const roster = teamByName(team);
+        syncTerminalPool(members);
         renderCards(members);
         renderConfig(roster.durable ? roster : null, members);
       });
     },
     enter: (context) => {
       ctx = context;
+      entered = true;
+      terminalPool.destroyAll();
       team = context.param || context.state?.team || '';
       const typed = teamWorkspaceState(context.state);
       workbench.restore(typed);
-      const eligible = membersOfTeam(team).some((member) => member.name === typed.focusedSession);
-      if (eligible) { terminalHost.switchSession(typed.focusedSession); placeholder.hidden = true; }
-      else { terminalHost.park(); placeholder.hidden = false; }
+      const members = membersOfTeam(team);
+      syncTerminalPool(members);
+      const eligible = terminalPool.has(typed.focusedSession);
+      if (eligible) { terminalPool.show(typed.focusedSession, false); placeholder.hidden = true; }
+      else placeholder.hidden = false;
       channels.enter(context);
       if (team !== loaded) void load(team);
     },
     leave: () => {
-      terminalHost.park();
+      entered = false;
+      terminalPool.destroyAll();
+      placeholder.hidden = false;
       channels.leave();
     },
-    destroy: () => { unsubscribe?.(); unsubscribe = null; terminalHost.destroy(); channels.destroy(); },
+    destroy: () => {
+      entered = false;
+      unsubscribe?.();
+      unsubscribe = null;
+      terminalPool.destroyAll();
+      channels.destroy();
+    },
   };
 }
