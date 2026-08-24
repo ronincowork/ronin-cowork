@@ -13,9 +13,11 @@
  * tile's own 🏷 opens.
  */
 import { request } from './request.js';
+import { deleteArchivedSession, fetchArchivedSessions, fetchSessions, rehydrateSession } from './api.js';
 import { STATUS_LABEL, homeData, homeFault, taskIcon } from './home.js';
 import { S, tiles } from './state.js';
 import { clampTip, humanAge } from './shingo.js';
+import { toast } from './ui.js';
 
 /**
  * @param {object} tile  rows connect into this tile
@@ -94,6 +96,87 @@ export function buildRoster(tile, host) {
   const list = document.createElement('div');
   list.className = 'home-list';
   host.appendChild(list);
+
+  // ARCHIVED MEANS OFF TMUX. These rows come from the disk-backed archive endpoint,
+  // never from S.sessions, so they cannot accidentally count as running or appear in a
+  // session picker. A click is the explicit boundary that recreates tmux and resumes it.
+  const archived = document.createElement('section');
+  archived.className = 'home-archived';
+  archived.hidden = true;
+  const archivedHead = document.createElement('div');
+  archivedHead.className = 'home-archived-head';
+  const archivedTitle = document.createElement('b');
+  archivedTitle.textContent = 'Archived sessions';
+  const archivedCount = document.createElement('span');
+  archivedHead.append(archivedTitle, archivedCount);
+  const archivedList = document.createElement('div');
+  archivedList.className = 'home-archive-list';
+  archived.append(archivedHead, archivedList);
+  host.appendChild(archived);
+
+  let archiveGeneration = 0;
+  const loadArchived = async () => {
+    const generation = ++archiveGeneration;
+    let rows;
+    try {
+      rows = await fetchArchivedSessions();
+    } catch (e) {
+      if (generation !== archiveGeneration) return;
+      archived.hidden = false;
+      archivedCount.textContent = 'unavailable';
+      archivedList.innerHTML = '<span class="home-empty">archive could not be read</span>';
+      return;
+    }
+    if (generation !== archiveGeneration) return;
+    archived.hidden = !rows.length;
+    archivedCount.textContent = String(rows.length);
+    archivedList.innerHTML = '';
+    for (const item of rows) {
+      const row = document.createElement('div');
+      row.className = 'home-archive-row';
+      const resume = document.createElement('button');
+      resume.type = 'button';
+      resume.className = 'home-archive-resume';
+      const name = document.createElement('b');
+      name.textContent = item.name;
+      const detail = document.createElement('span');
+      detail.textContent = [item.agent, item.archived_at ? humanAge(Date.now() - Date.parse(item.archived_at)) + ' ago' : '']
+        .filter(Boolean).join(' · ');
+      resume.append(name, detail);
+      resume.title = `Rehydrate ${item.name}`;
+      resume.addEventListener('click', async () => {
+        resume.disabled = true;
+        try {
+          const liveName = await rehydrateSession(item.id);
+          await loadArchived();
+          await fetchSessions();
+          tile.connect(liveName);
+        } catch (e) {
+          resume.disabled = false;
+          toast('could not rehydrate it — ' + e.message, false);
+        }
+      });
+      const hard = document.createElement('button');
+      hard.type = 'button';
+      hard.className = 'home-archive-delete';
+      hard.textContent = '🗑';
+      hard.setAttribute('aria-label', `Permanently delete archived session ${item.name}`);
+      hard.title = 'Hard delete this archive';
+      hard.addEventListener('click', async () => {
+        if (!confirm(`Hard delete archived session "${item.name}"? Its saved Ronin record cannot be rehydrated after this.`)) return;
+        hard.disabled = true;
+        try {
+          await deleteArchivedSession(item.id);
+          await loadArchived();
+        } catch (e) {
+          hard.disabled = false;
+          toast('could not hard delete the archive — ' + e.message, false);
+        }
+      });
+      row.append(resume, hard);
+      archivedList.appendChild(row);
+    }
+  };
 
   // A group has no record of its own: it exists when at least one session carries its
   // tag. Keep a newly named, empty group here as a drop target; the first drop makes it
@@ -269,6 +352,7 @@ export function buildRoster(tile, host) {
     // The max line rides the roster's own refresh — no second timer, and it never
     // overwrites the field while it has focus (see loadMax).
     void loadMax();
+    void loadArchived();
     stale.hidden = !homeFault;
     if (homeFault) stale.textContent = '⚠ roster may be stale — ' + homeFault;
     const data = homeData || S.sessions.map((s) => ({ ...s, status: null, ctx: null }));

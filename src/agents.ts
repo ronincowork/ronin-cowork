@@ -107,6 +107,13 @@ export interface AgentScreen {
   ready: readonly string[];
 }
 
+export interface AgentLifecycle {
+  /** Optional flag accepted on a new interactive launch before its initial prompt. */
+  sessionIdFlag: string;
+  /** Arguments placed between the executable and provider conversation UUID. */
+  resume: readonly string[];
+}
+
 export const AGENTS = [
   {
     id: 'claude',
@@ -115,6 +122,7 @@ export const AGENTS = [
     from: 'Anthropic',
     get: 'npm install -g @anthropic-ai/claude-code',
     parked: '',
+    lifecycle: { sessionIdFlag: '--session-id', resume: ['--resume'] } as AgentLifecycle,
     // `Usage: claude [options] [command] [prompt]` — `prompt  Your prompt`.
     initial: 'positional' as InitialPrompt,
     // Claude draws `❯ ` and then fills the rest of the line with its own placeholder hint
@@ -129,6 +137,7 @@ export const AGENTS = [
     from: 'OpenAI',
     get: 'npm install -g @openai/codex',
     parked: '',
+    lifecycle: { sessionIdFlag: '', resume: ['resume'] } as AgentLifecycle,
     // `Usage: codex [OPTIONS] [PROMPT]` — "Optional user prompt to start the session".
     initial: 'positional' as InitialPrompt,
     // Codex uses `›` for both its input row and its dialog rows, so a NUMBERED › is a
@@ -143,6 +152,7 @@ export const AGENTS = [
     from: 'Google',
     get: 'npm install -g @google/gemini-cli',
     parked: '',
+    lifecycle: { sessionIdFlag: '', resume: [] } as AgentLifecycle,
     // Positional `query`: "Initial prompt. Runs in interactive mode by default." NEVER
     // `-p`, which is its HEADLESS mode — that would answer and exit, not open a tile.
     initial: 'positional' as InitialPrompt,
@@ -159,7 +169,7 @@ export const AGENTS = [
   },
   // Grok and Hermes are NOT characterised — nobody has read their screens against a real
   // session, so they say nothing rather than guess, and the house rows answer for them.
-  { id: 'grok', cmd: 'grok', label: 'Grok CLI', from: 'xAI', get: 'npm install -g @xai-official/grok', parked: '', initial: 'positional' as InitialPrompt, screen: { busy: [], asking: [], ready: [] } },
+  { id: 'grok', cmd: 'grok', label: 'Grok CLI', from: 'xAI', get: 'npm install -g @xai-official/grok', parked: '', lifecycle: { sessionIdFlag: '', resume: [] } as AgentLifecycle, initial: 'positional' as InitialPrompt, screen: { busy: [], asking: [], ready: [] } },
   {
     id: 'hermes',
     cmd: 'hermes',
@@ -169,6 +179,7 @@ export const AGENTS = [
     // Parked, so nothing ever launches it and its argv shape has never been read.
     initial: 'none' as InitialPrompt,
     parked: "Ronin cannot install this one yet — Nous's own installer needs system packages it has to ask you for, and does not finish without them. Install it from their site and it appears here.",
+    lifecycle: { sessionIdFlag: '', resume: [] } as AgentLifecycle,
     screen: { busy: [], asking: [], ready: [] },
   },
 ] as const;
@@ -263,4 +274,19 @@ export async function launchArgv(cmd: string, brief: string): Promise<LaunchArgv
   // argument a vendor might read as a file, a flag, or a subcommand.
   if (spec?.initial === 'positional' && brief) return { argv: [bin, ...rest, brief], parked: false };
   return { argv: [bin, ...rest], parked: !!brief };
+}
+
+/** Apply provider-owned new-conversation syntax without teaching the launch route flags. */
+export function withProviderSessionId(agent: string, argv: readonly string[], id: string): string[] {
+  const spec = AGENTS.find((a) => a.id === agent);
+  if (!spec?.lifecycle.sessionIdFlag) return [...argv];
+  return [argv[0], spec.lifecycle.sessionIdFlag, id, ...argv.slice(1)];
+}
+
+/** Resolve the installed binary and provider-owned resume syntax from the same registry. */
+export async function resumeAgentArgv(agent: string, id: string): Promise<string[]> {
+  const spec = AGENTS.find((a) => a.id === agent);
+  if (!spec?.lifecycle.resume.length) return [];
+  const launch = await launchArgv(spec.cmd, '');
+  return launch.argv.length ? [launch.argv[0], ...spec.lifecycle.resume, id] : [];
 }

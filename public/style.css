@@ -2058,6 +2058,104 @@ body {
   flex-direction: column;
   gap: var(--space-1);
 }
+/* Archived sessions are disk records, not a second kind of live row. The section sits
+   after the roster and uses a quieter two-column row: its only primary act is bringing
+   the agent back into tmux. */
+.home-archived {
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: var(--edge) solid var(--line);
+}
+.home-archived-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+  color: var(--muted);
+  font-size: var(--text-2);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.home-archive-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.home-archive-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+}
+.home-archive-resume,
+.home-archive-delete {
+  border: var(--edge) solid transparent;
+  background: transparent;
+  color: var(--fg);
+}
+.home-archive-resume {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  text-align: left;
+}
+.home-archive-resume span {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: var(--text-2);
+}
+.home-archive-delete {
+  width: 40px;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  color: var(--muted);
+}
+.home-archive-row:hover > button,
+.home-archive-row:focus-within > button {
+  background: var(--bg-2);
+  border-color: var(--line);
+}
+.home-archive-delete:hover,
+.home-archive-delete:focus-visible {
+  color: var(--bad);
+}
+
+/* The trash choice states the destructive boundary before either action is taken. */
+.end-session-card {
+  width: min(440px, calc(100vw - 32px));
+  padding: var(--space-7);
+  gap: var(--space-5);
+}
+.end-session-card h2,
+.end-session-card p {
+  margin: 0;
+}
+.end-session-card p {
+  color: var(--muted);
+  line-height: 1.5;
+}
+.end-session-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.end-session-actions button {
+  min-height: 40px;
+  padding: var(--space-3) var(--space-5);
+  border: var(--edge) solid var(--line-2);
+  border-radius: var(--radius-md);
+  background: var(--bg-2);
+  color: var(--fg);
+}
+.end-session-actions .primary {
+  border-color: var(--accent);
+}
+.end-session-actions .danger {
+  color: var(--bad);
+  border-color: var(--bad);
+}
 /* ---- the session max: the roster's top line, above the list it describes ---- */
 .home-maxrow {
   display: flex;

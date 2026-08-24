@@ -19,6 +19,34 @@ Provider setup has three records with deliberately different contents:
 Account identity is handled by `ronin_sops/accounts.md`. Secret values never cross into
 this document or the launch catalog.
 
+## One command registry
+
+`src/agents.ts` is the single executable registry for agent-provider CLI syntax. A route,
+installer, archive lifecycle, or UI must not spell a provider command itself. Each row owns:
+
+| Field | Command contract |
+|---|---|
+| `get` | Install or update the CLI. The npm global install commands are idempotent and install the current selected package version. Empty means Ronin cannot perform it. |
+| `cmd` | Executable name resolved through the owner's login shell. |
+| `initial` | Whether a new interactive launch accepts the brief positionally. |
+| `lifecycle.sessionIdFlag` | Optional flag for a Ronin-minted new conversation UUID. |
+| `lifecycle.resume` | Arguments before the provider conversation UUID; empty means archive/rehydrate is unsupported. |
+
+Current verified lifecycle syntax:
+
+| Agent CLI | New conversation identity | Resume | Archive support |
+|---|---|---|---|
+| Claude Code | `claude --session-id <uuid> …` | `claude --resume <uuid>` | yes; exact legacy fallback also exists |
+| Codex | discovered from matching open rollout + writer-lock FDs | `codex resume <uuid>` | yes |
+| Gemini CLI | not verified | not verified | no |
+| Grok CLI | not verified | not verified | no |
+| Hermes | not verified | not verified | no |
+
+“Not verified” is executable behavior: the registry carries an empty lifecycle command and
+archive refuses before stopping tmux. Adding support means verifying the installed CLI's
+own help and a real resume journey, then changing its one registry row and this table in
+the same commit. Do not infer syntax from another provider.
+
 ## Provider and agent are different axes
 
 The **provider** serves inference and bills the request. The **agent CLI** is the
