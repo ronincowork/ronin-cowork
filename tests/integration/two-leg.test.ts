@@ -22,9 +22,16 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
+import { fileURLToPath } from 'node:url';
 
 const exec = promisify(execFile);
-const SHIWAKE = process.env.SHIWAKE_REPO ?? '/home/glen3/dohyo/ronin-shiwake';
+
+// A SIBLING CHECKOUT, RESOLVED — never one machine's absolute path. This defaulted to
+// `/home/glen3/dohyo/ronin-shiwake`, and `tests/` ships in the tarball (docs/release.md:
+// an install can run its own byoin_checks), so every install carried one person's home
+// directory and skipped here forever without anyone being able to act on the reason.
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const SHIWAKE = process.env.SHIWAKE_REPO ?? path.resolve(HERE, '../../../ronin-shiwake');
 const EMAIL = 'walker@example.com';
 
 let server: ChildProcess | undefined;
@@ -44,8 +51,13 @@ test.before(async () => {
   const port = 8000 + Math.floor(Math.random() * 1000);
   base = `http://127.0.0.1:${port}`;
 
-  server = spawn('npx', ['tsx', 'app/src/main.ts'], {
+  // SPAWN THE REAL PROCESS, NOT AN INTERMEDIARY. Through `npx` the handle is npx, and
+  // `kill()` reached only that — tsx and the server under it were orphaned onto
+  // `systemd --user`, one pair per run, holding a port in this same range. `detached`
+  // makes the child a group leader so the teardown can signal the whole group.
+  server = spawn(path.join(SHIWAKE, 'node_modules/.bin/tsx'), ['app/src/main.ts'], {
     cwd: SHIWAKE,
+    detached: true,
     env: {
       ...process.env,
       SHIWAKE_DATA: dataRoot, SHIWAKE_HOST: '127.0.0.1', SHIWAKE_PORT: String(port),
@@ -78,15 +90,41 @@ test.before(async () => {
   unavailable = 'the SHIWAKE checkout is present but its server did not become ready in 20s';
 });
 
+/**
+ * STOP THE SERVER, AND MEAN IT. Signal the process GROUP (note the negative pid), wait
+ * for the exit, and escalate to SIGKILL for a child that ignores SIGTERM. The old
+ * teardown deleted its data roots successfully and still left the server running — so a
+ * clean-looking /tmp was never evidence that this worked. Only the process table is.
+ */
+async function stopServer(): Promise<void> {
+  const child = server;
+  server = undefined;
+  if (!child?.pid) return;
+  const exited = new Promise<void>((r) => child.once('exit', () => r()));
+  try { process.kill(-child.pid, 'SIGTERM'); } catch { return; }
+  const hard = setTimeout(() => {
+    try { process.kill(-child.pid!, 'SIGKILL'); } catch { /* already gone */ }
+  }, 5_000);
+  hard.unref();
+  await exited;
+  clearTimeout(hard);
+}
+
+// THE CRASH PATH. `after` does not run when the runner dies, and an orphan outlives the
+// suite that made it — so the last word belongs to the process itself.
+process.once('exit', () => {
+  if (server?.pid) { try { process.kill(-server.pid, 'SIGKILL'); } catch { /* gone */ } }
+});
+
 test.after(async () => {
-  server?.kill('SIGTERM');
+  await stopServer();
   if (dataRoot) await fs.rm(dataRoot, { recursive: true, force: true });
   if (userRoot) await fs.rm(userRoot, { recursive: true, force: true });
 });
 
 /** Run one tick of SHIWAKE's mail worker, in its own process, exactly as the timer does. */
 async function drainMail(): Promise<void> {
-  await exec('npx', ['tsx', 'app/src/mail-tick.ts'], {
+  await exec(path.join(SHIWAKE, 'node_modules/.bin/tsx'), ['app/src/mail-tick.ts'], {
     cwd: SHIWAKE,
     env: {
       ...process.env,

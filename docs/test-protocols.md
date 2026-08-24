@@ -20,13 +20,11 @@ behind the first, and a hand-rolled sequence is exactly the drift this arrangeme
 exists to end. The individual scripts have one remaining use: re-running a single
 check while diagnosing a failure BYOIN already named.
 
-## Two audiences, two kinds of test
+## Who this page is for
 
-**Developers of Ronin** — sessions changing this repository. The `byoin_check`s (the
-repo half) are yours: they read the tree, fail the build, and answer the same on every
-machine. Run `bin/ronin-byoin --gates` before landing work on `dev`; the pre-push hook
-runs that fast tier again mechanically, and CI runs it on every PR to `master`. For UI
-work, run `bin/ronin-byoin --ui` before landing as the additional rendered proof.
+**Agents on an install** — this page's whole audience. Sessions that develop Ronin itself
+work from their own testing page, which is not shipped and is not this one; nothing here
+describes that workflow, so if you are maintaining a box, everything below applies to you.
 
 **Agents on an install** — sessions maintaining, updating, or **customizing** a
 third-party box: a new session task, a skin, a macro, an SOP shadow, any shadow

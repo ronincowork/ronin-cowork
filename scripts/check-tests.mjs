@@ -24,23 +24,40 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const TESTS = path.join(ROOT, 'tests');
 
+// THE UNIT FLOOR IS tests/*.test.ts — ONE LEVEL, NEVER A WALK. A recursive walk here
+// swept tests/integration/two-leg.test.ts into every BYOIN run for weeks. That file
+// spawns a real SHIWAKE server, which is the exact thing the contract above forbids a
+// unit test from doing, and its teardown signalled the `npx` intermediary rather than
+// the server — so each run orphaned a wrapper+child pair holding ~30 MB and a port.
+// 362 of them were resident before anyone noticed (OPEN_THREADS 4.34). The recursion
+// was the defect: both this file's header and that test's own header already said it
+// was to be run deliberately, not swept.
 const files = [];
-(function walk(dir) {
-  if (!fs.existsSync(dir)) return;
-  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-    const p = path.join(dir, e.name);
-    if (e.isDirectory()) walk(p);
+const nested = [];
+if (fs.existsSync(TESTS)) {
+  for (const e of fs.readdirSync(TESTS, { withFileTypes: true })) {
+    const p = path.join(TESTS, e.name);
     // .ts for src/, .js for the client's pure cores — public/js has no TypeScript
     // and never will (the no-bundler/no-client-TS ruling), so its tests are plain JS.
-    else if (e.name.endsWith('.test.ts') || e.name.endsWith('.test.js')) files.push(p);
+    if (e.isFile() && (e.name.endsWith('.test.ts') || e.name.endsWith('.test.js'))) files.push(p);
+    else if (e.isDirectory()) {
+      const held = fs.readdirSync(p).filter((n) => n.endsWith('.test.ts') || n.endsWith('.test.js'));
+      if (held.length) nested.push(`tests/${e.name}/ (${held.length})`);
+    }
   }
-})(TESTS);
+}
 
 if (!files.length) {
   console.log('FAILED — tests/ holds no *.test.ts. The unit floor exists now; an empty floor is a gate lying green.');
   process.exit(1);
 }
 
+// NAMED, NEVER SILENT. A gate that quietly stops covering something is worse than one
+// that fails: say what is out of scope and who owns it, so it cannot go dark unnoticed.
+if (nested.length) {
+  console.log(`not the unit floor, not run here: ${nested.join(', ')} — these need a live`);
+  console.log('machine, so they are run deliberately (see each file\'s header) or by CI.');
+}
 console.log(`running ${files.length} test file(s) in tests/`);
 const r = spawnSync('node', ['--import', 'tsx', '--test', ...files], {
   cwd: ROOT,
