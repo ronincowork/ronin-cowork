@@ -10,56 +10,8 @@
  * inventing one. Moving it is a one-line change in `index.html`.
  */
 
-/* THE HTML `hidden` CONTRACT, and it is load-bearing for every OTHER destination.
- *
- * `hidden` is not a strong hide: the UA sheet expresses it as `[hidden] { display: none }`,
- * and ANY author rule that sets `display` beats it — author styles win over UA styles
- * outright, specificity never enters into it. So a plain `.tw-view { display: flex }`
- * silently un-hides this destination the moment the shell hides it, which it does at
- * registration and on every `leave()`.
- *
- * That is not a cosmetic bug. A hidden-but-displayed `.tw-view` keeps its box, pushes the
- * Sessions grid sideways, and — because `.tw-rail` had the same fault — puts a 42px button
- * on top of the compatibility destination that swallows the owner's clicks. Measured before
- * this rule existed: `elementFromPoint` over the Sessions grid returned `button.tw-rail`.
- *
- * Every rule below that sets `display` on an element this feature may hide is therefore
- * exempted here, once, at the top. Add a `display` to a `.tw-*` rule and add it here too. */
-.tw-view[hidden], .tw-rails[hidden], .tw-rail[hidden],
 .tw-cards[hidden], .tw-config[hidden], .tw-config-row[hidden],
-.tw-placeholder[hidden], .tw-splitter[hidden] { display: none; }
-
-.tw-view { display: flex; height: 100%; min-height: 0; gap: 8px; }
-.tw-view > .wk-workbench-layout { flex: 1 1 auto; min-width: 0; position: relative; }
-
-/* The expand rails — this feature's chrome, because the frozen layout hides a collapsed
- * surface outright and a hidden region can carry no control of its own. */
-.tw-rails { display: flex; flex-direction: column; gap: 8px; flex: 0 0 auto; }
-.tw-rail {
-  width: 42px; min-height: 96px; display: flex; flex-direction: column; align-items: center;
-  justify-content: center; gap: 8px; padding: 10px 4px; cursor: pointer;
-  border: var(--edge) solid var(--line); border-radius: var(--radius-lg); background: var(--panel);
-}
-.tw-rail:hover { border-color: var(--aiiro); }
-.tw-rail-label { writing-mode: vertical-rl; text-orientation: mixed; font-size: 11px; opacity: .75; }
-.tw-rail-mark { opacity: .6; }
-
-/* Splitters. Bounded drag lives in the module; this is only the grip. */
-.tw-splitter { position: absolute; top: 0; bottom: 0; width: 10px; cursor: col-resize; touch-action: none; z-index: 2; }
-.tw-splitter[data-side='left'] { left: calc(var(--wk-left, 40%) - 5px); }
-.tw-splitter[data-side='right'] { right: calc(var(--wk-right, 40%) - 5px); }
-.tw-splitter::after { content: ''; position: absolute; inset: 0 4px; border-radius: 2px; background: var(--line); opacity: .45; }
-.tw-splitter:hover::after, .tw-splitter.tw-dragging::after, .tw-splitter:focus-visible::after { background: var(--aiiro); opacity: 1; }
-.wk-workbench-layout[data-open='kanban-channels'] .tw-splitter[data-side='left'],
-.wk-workbench-layout[data-open='terminalTile-kanban'] .tw-splitter[data-side='right'],
-.wk-workbench-layout[data-open='kanban'] .tw-splitter { display: none; }
-
-/* Surface collapse chrome. Tile-owned controls retain their existing styles unchanged. */
-.tw-collapse {
-  min-width: 26px; min-height: 24px; padding: 2px 6px; cursor: pointer;
-  border: var(--edge) solid var(--line); border-radius: 6px; background: var(--panel);
-}
-.tw-kanban > .wk-surface-controls, .wk-channel-surface > .wk-surface-controls { display: flex; justify-content: flex-end; padding: 4px 6px 0; }
+.tw-placeholder[hidden] { display: none; }
 
 .tw-placeholder { padding: 16px; display: flex; flex-direction: column; gap: 8px; opacity: .75; }
 .tw-placeholder-head { font-weight: 600; }
@@ -75,11 +27,3 @@
 .tw-config-row { display: flex; gap: 10px; font-size: 12px; }
 .tw-config-key { flex: 0 0 34%; opacity: .65; }
 .tw-config-value { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
-
-@media (max-width: 680px) {
-  .tw-view { flex-direction: column; }
-  .tw-rails { flex-direction: row; }
-  .tw-rail { width: auto; min-height: 42px; flex: 1 1 auto; }
-  .tw-rail-label { writing-mode: horizontal-tb; }
-  .tw-splitter { display: none; }
-}
