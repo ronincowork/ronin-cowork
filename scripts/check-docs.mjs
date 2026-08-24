@@ -129,6 +129,10 @@ const IGNORE = {
   'docs/settei.md': ['ronin.json'],
   'docs/env.md': ['ronin.json'],
   'docs/wanted-needed.md': ['ronin.json'],
+  // The wipeboard's TTL and grace are SETTEI, so the page that documents them names the
+  // owner's config file for the same reason the five above do: created at runtime in the
+  // config store, real on the box, never a file in this repo.
+  'docs/wipeboards.md': ['ronin.json'],
   // One entry, three reasons — a second `'KOTOBA.md':` key would silently win over this
   // one and orphan whichever comment lost. `app.js` is BUNKAI's dismantled file, named by
   // the row about dismantling it. `ronin.json` and `koshi-outlets.json` are § SETTEI's:

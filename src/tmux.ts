@@ -243,6 +243,20 @@ export async function killSession(name: string): Promise<void> {
   }
 }
 
+async function groupedSessionTargets(name: string): Promise<Set<string>> {
+  const targets = new Set<string>([name]);
+  try {
+    const { stdout } = await pexec('tmux', ['list-sessions', '-F', '#{session_name}\t#{session_group}']);
+    const rows = stdout.split('\n').filter(Boolean).map((line) => {
+      const [sname, group] = line.split('\t');
+      return { sname, group: group || '' };
+    });
+    const self = rows.find((row) => row.sname === name);
+    if (self?.group) for (const row of rows) if (row.group === self.group) targets.add(row.sname);
+  } catch {}
+  return targets;
+}
+
 /**
  * Kill a real session AND every viewer grouped with it. Browser viewers are grouped
  * sessions (created with `new-session -t name`), so they share tmux's session_group;
@@ -257,28 +271,32 @@ export async function killSessionTree(name: string): Promise<void> {
   // Before the kill, while `name` is still meaningful. Never awaited for permission:
   // removeHandoff swallows its own errors precisely so this line cannot block a kill.
   await removeHandoff(name);
-  const targets = new Set<string>([name]);
-  try {
-    const { stdout } = await pexec('tmux', [
-      'list-sessions',
-      '-F',
-      '#{session_name}\t#{session_group}',
-    ]);
-    const rows = stdout
-      .split('\n')
-      .filter(Boolean)
-      .map((line) => {
-        const [sname, group] = line.split('\t');
-        return { sname, group: group || '' };
-      });
-    const self = rows.find((r) => r.sname === name);
-    if (self?.group) {
-      for (const r of rows) if (r.group === self.group) targets.add(r.sname);
-    }
-  } catch {
-    // no server / older tmux without session_group — fall back to killing just `name`
-  }
+  const targets = await groupedSessionTargets(name);
   for (const s of targets) await killSession(s);
+}
+
+/** Stop a session and its grouped viewers without applying deletion lifecycle cleanup. */
+export async function stopSessionTree(name: string): Promise<void> {
+  const targets = await groupedSessionTargets(name);
+  for (const target of targets) await killSession(target);
+  const survivors: string[] = [];
+  for (const target of targets) if (await sessionExists(target)) survivors.push(target);
+  if (survivors.length) throw new Error(`Could not stop tmux session tree: ${survivors.join(', ')}`);
+}
+
+/** Runtime facts that must be captured before tmux is stopped. */
+export async function sessionRuntime(name: string): Promise<{ cwd: string; pid: number; command: string; agent: string }> {
+  const { stdout } = await pexec('tmux', [
+    'display-message', '-p', '-t', exactPane(name),
+    `#{pane_current_path}\t#{pane_pid}\t#{pane_start_command}\t#{${AGENT_OPT}}`,
+  ]);
+  const [cwd, pid, command, agent] = stdout.replace(/\r?\n$/, '').split('\t');
+  return { cwd: cwd || '', pid: Number(pid) || 0, command: command || '', agent: agent || '' };
+}
+
+/** Reattach durable Ronin identity to a newly-created runtime. */
+export async function setSessionKey(name: string, key: string): Promise<void> {
+  await pexec('tmux', ['set-option', '-t', exactPane(name), '@ronin-key', key]);
 }
 
 /**
@@ -526,6 +544,7 @@ export async function projectRootsOfSessions(): Promise<Record<string, string>> 
  * things the house can feel apart and has one word for.
  */
 const AGENT_OPT = '@ronin-agent';
+const PROVIDER_SESSION_OPT = '@ronin-provider-session';
 
 /**
  * Stamp WHICH CLI a session was launched as — called at birth, beside the tags and the
@@ -544,6 +563,22 @@ const AGENT_OPT = '@ronin-agent';
 export async function setLaunchStamp(name: string, agent: string): Promise<void> {
   if (!agent.trim()) return;
   await pexec('tmux', ['set-option', '-t', exactPane(name), AGENT_OPT, agent.trim()]).catch(() => {});
+}
+
+/** Provider conversation UUID, minted by Ronin for new launches when the CLI supports it. */
+export async function setProviderSessionId(name: string, id: string): Promise<void> {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) throw new Error('Invalid provider session id.');
+  await pexec('tmux', ['set-option', '-t', exactPane(name), PROVIDER_SESSION_OPT, id]);
+}
+
+export async function getProviderSessionId(name: string): Promise<string> {
+  try {
+    const { stdout } = await pexec('tmux', ['show-options', '-t', exactPane(name), '-qv', PROVIDER_SESSION_OPT]);
+    const id = stdout.trim();
+    return /^[0-9a-f-]{36}$/i.test(id) ? id : '';
+  } catch {
+    return '';
+  }
 }
 
 /** tmux user option holding a session's control dial (see ronin_catalogs/ACTIONS.md control-check). */

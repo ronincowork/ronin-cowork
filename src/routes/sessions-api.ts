@@ -10,6 +10,8 @@ import {
   type Control,
   getControl,
   getLeads,
+  getWipeboards,
+  getProviderSessionId,
   getNote,
   getProjectRoot,
   getTags,
@@ -23,6 +25,13 @@ import {
   setNote,
   setProjectRoot,
   setTags,
+  setWipeboards,
+  createSession,
+  sessionRuntime,
+  setLaunchStamp,
+  setProviderSessionId,
+  setSessionKey,
+  stopSessionTree,
 } from '../tmux.js';
 import { sendText } from '../send.js';
 import { sessionKey } from '../session-dir.js';
@@ -36,8 +45,113 @@ import { teamsSopPath } from '../spawn.js';
 import { observeRoleChange, roleDeliveryFault } from '../role-watch.js';
 import { listSessionRoles } from '../definitions.js';
 import { emitSessionEnd } from '../sockets.js';
+import { resumeAgentArgv } from '../agents.js';
+import { sessionDir as sessionRecordDir } from '../session-dir.js';
+import {
+  listArchives,
+  readArchive,
+  removeArchive,
+  providerSessionInfo,
+  writeArchive,
+  type ArchivedSession,
+} from '../session-archive.js';
 
 export function registerSessions(app: express.Express): void {
+  const publicArchive = ({ id, name, archived_at, agent }: ArchivedSession) => ({ id, name, archived_at, agent });
+  app.get('/api/archived-sessions', async (_req, res) => {
+    try {
+      res.json((await listArchives()).map(publicArchive));
+    }
+    catch (e) { res.status(500).json({ error: String((e as Error)?.message ?? e) }); }
+  });
+
+  app.post('/api/sessions/:name/archive', async (req, res) => {
+    const { name } = req.params;
+    if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
+    if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
+    try {
+      const key = await sessionKey(name);
+      const runtime = await sessionRuntime(name);
+      const provider = await providerSessionInfo(runtime.agent, runtime.cwd, runtime.pid, await getProviderSessionId(name));
+      // Refuse before writing or stopping anything: an archive that cannot resume is a delete.
+      if (!provider) return res.status(409).json({ error: `Could not identify a resumable ${runtime.agent || 'agent'} conversation.` });
+      const archived: ArchivedSession = {
+        version: 1,
+        id: key,
+        name,
+        key,
+        archived_at: new Date().toISOString(),
+        cwd: runtime.cwd,
+        agent: provider.agent,
+        provider_session_id: provider.id,
+        tags: await getTags(name),
+        leads: await getLeads(name),
+        wipeboards: await getWipeboards(name),
+        note: await getNote(name),
+        control: await getControl(name),
+        project_root: await getProjectRoot(name),
+        session_role: await readSessionRole(name),
+      };
+      await writeArchive(archived); // durable first; tmux remains live on any failure above
+      try {
+        await stopSessionTree(name);  // no handoff removal and no SessionEnd event
+      } catch (e) {
+        if (await sessionExists(name)) await removeArchive(archived.id).catch(() => {});
+        throw e;
+      }
+      count('ended', { name, end: 'archived' });
+      res.json({ ok: true, archived: publicArchive(archived) });
+    } catch (e) {
+      res.status(500).json({ error: String((e as Error)?.message ?? e) });
+    }
+  });
+
+  app.post('/api/archived-sessions/:id/rehydrate', async (req, res) => {
+    try {
+      const archived = await readArchive(req.params.id);
+      if (await sessionExists(archived.name)) {
+        return res.status(409).json({ error: `Session "${archived.name}" already exists.` });
+      }
+      const argv = await resumeAgentArgv(archived.agent, archived.provider_session_id);
+      if (!argv.length) return res.status(409).json({ error: `${archived.agent} cannot be resumed on this machine.` });
+      await createSession(archived.name, archived.cwd, { agent: true, argv });
+      try {
+        await setSessionKey(archived.name, archived.key);
+        await setTags(archived.name, archived.tags);
+        await setLeads(archived.name, archived.leads);
+        await setWipeboards(archived.name, archived.wipeboards);
+        await setNote(archived.name, archived.note);
+        await setProjectRoot(archived.name, archived.project_root);
+        await setLaunchStamp(archived.name, archived.agent);
+        await setProviderSessionId(archived.name, archived.provider_session_id);
+        await setControl(archived.name, archived.control);
+        if (archived.session_role) await writeSessionRole(archived.name, archived.session_role);
+        await writeTeams(archived.name, archived.tags);
+      } catch (e) {
+        await stopSessionTree(archived.name);
+        throw e;
+      }
+      await removeArchive(archived.id); // only after runtime and all metadata are restored
+      res.json({ ok: true, name: archived.name });
+    } catch (e) {
+      const code = (e as NodeJS.ErrnoException)?.code;
+      res.status(code === 'ENOENT' ? 404 : 500).json({ error: code === 'ENOENT' ? 'No such archive.' : String((e as Error)?.message ?? e) });
+    }
+  });
+
+  app.delete('/api/archived-sessions/:id', async (req, res) => {
+    try {
+      const archived = await readArchive(req.params.id);
+      emitSessionEnd(archived.name, archived.key);
+      await fs.promises.rm(sessionRecordDir(archived.key), { recursive: true, force: true });
+      await removeArchive(archived.id);
+      res.json({ ok: true });
+    } catch (e) {
+      const code = (e as NodeJS.ErrnoException)?.code;
+      res.status(code === 'ENOENT' ? 404 : 500).json({ error: code === 'ENOENT' ? 'No such archive.' : String((e as Error)?.message ?? e) });
+    }
+  });
+
   app.delete('/api/sessions/:name', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });

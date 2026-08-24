@@ -187,7 +187,10 @@ export function saveState() {
  */
 function syncTitle() {
   const first = tiles[0] && tiles[0].session;
-  document.title = first ? `${first} · ronin` : 'tmux ronin';
+  // AppShell is the one title owner. The direct write survives only as a pre-Kit fallback
+  // for an early failure before the shell exists.
+  if (S.workspace) S.workspace.refreshTitle();
+  else document.title = first ? `${first} · ronin` : 'tmux ronin';
 }
 /**
  * ONE STATE, THREE SCOPES — first answer wins:
@@ -226,7 +229,9 @@ export function loadState() {
     return directed;
   }
   const workspaceSessions = S.workspace?.state?.sessions;
-  if (Array.isArray(workspaceSessions?.map) && workspaceSessions.map.length) {
+  // An explicitly empty slot map is a complete, valid answer. Falling through here used
+  // to resurrect legacy/localStorage sessions and forced work back into an empty tab.
+  if (Array.isArray(workspaceSessions?.map)) {
     return { map: workspaceSessions.map, layout: Number(workspaceSessions.layout) || TILE_COUNT };
   }
   const read = (store) => {

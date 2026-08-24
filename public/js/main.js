@@ -13,6 +13,12 @@ import { installTips } from './tips.js';
 import { buildCoworkSetup } from './cowork-setup.js';
 import { installServicesStatus } from './services-activation.js';
 import { createWorkspace } from './workspace.js';
+import { createTeamView } from './team-view.js';
+import { WorkspaceKit } from './workspace-kit.js';
+import { createNewTeamView } from './new-team.js';
+import { createLeagueView } from './league-view.js';
+import { createAgentConfigurationView } from './agent-config.js';
+import { installCustomize } from './customize.js';
 
 export async function init() {
   // Ask the operator which optional surfaces are plugged in BEFORE the grid is built,
@@ -76,11 +82,50 @@ export async function init() {
 
   const viewhost = document.getElementById('viewhost');
   if (!viewhost) throw new Error('workspace ViewHost is missing');
-  const workspace = createWorkspace(viewhost);
+  const workspace = createWorkspace(viewhost, {
+    onError: (where, error) => showFailure(`workspace ${where}`, error),
+  });
+  workspace.kit = WorkspaceKit;
   S.workspace = workspace;
+  // The Team destination. Registered beside the compatibility Sessions grid, not over it:
+  // this preview is geometry and readings only — no terminal host, no sockets, no Sessions
+  // mode — so the existing coworkspace stays the working surface until those gates land.
+  guard('register the Team destination', () => workspace.register('team', createTeamView()));
   workspace.register('sessions', {
     el: document.getElementById('grid'),
-    title: () => 'tmux ronin',
+    title: () => tiles[0]?.session ? `${tiles[0].session} · ronin` : 'tmux ronin',
+  });
+  // NEW TEAM — one Surface, no Tile, no Channel services of its own. Registered beside
+  // Sessions rather than replacing it: Sessions remains the default destination on `dev`
+  // until the explicit cutover, so this is reachable and not yet in anybody's way.
+  guard('register the New Team destination', () => {
+    const view = createNewTeamView(WorkspaceKit);
+    const root = document.getElementById('new-team-view');
+    if (!root) throw new Error('New Team root is missing');
+    root.append(view.el);
+    workspace.register('new-team', { el: root, title: view.title, enter: view.enter });
+  });
+  // Customize is a first-class destination on the frozen Kit. Registration failure is
+  // contained here rather than taking the compatibility Sessions grid down with it —
+  // a preview destination must never cost the owner their terminals.
+  guard('register the Customize destination', () => installCustomize(workspace));
+  // League: the Team board. Registered BEFORE start() so a direct #/league entry or a
+  // remembered destination resolves to it rather than falling back to Sessions. Guarded
+  // like its neighbours — a preview destination must never cost the owner their terminals.
+  guard('register the League destination', () => workspace.register('league', createLeagueView()));
+  // AGENT CONFIGURATION — two Surfaces, no Tile, no Channel service. It edits ONE seat of
+  // New Team's canonical draft and owns no schema of its own; a seat reaches it through
+  // `open(draft, seat_id)` rather than being fetched here, because New Team owns the
+  // draft's lifetime. Guarded like its neighbours: a preview destination must never cost
+  // the owner their terminals.
+  guard('register the Agent Configuration destination', () => {
+    const view = createAgentConfigurationView(WorkspaceKit);
+    const root = document.getElementById('agent-config-view');
+    if (!root) throw new Error('Agent Configuration root is missing');
+    root.append(view.el);
+    workspace.register('agent-config', {
+      el: root, title: view.title, enter: view.enter, leave: view.leave,
+    });
   });
   workspace.start();
 

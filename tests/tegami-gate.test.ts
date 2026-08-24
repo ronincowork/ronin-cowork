@@ -12,7 +12,7 @@ import { promisify } from 'node:util';
  * so this test never touches a real session. */
 const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-gate-test-'));
 process.env.RONIN_SESSION_DIR = root;
-const { checkoutAt, seedTegami, writeGate, tegamiPath } = await import('../src/tegami.js');
+const { checkoutAt, seedTegami, writeGate, tegamiPath, envWithoutGitLocation } = await import('../src/tegami.js');
 const { sessionKey } = await import('../src/session-dir.js');
 const exec = promisify(execFile);
 
@@ -61,8 +61,11 @@ test('no letter, or a letter with no json block, is a refusal and not a crash', 
 
 test('a birth letter records the actual launch checkout as an editable repos list', async () => {
   const repo = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-checkout-test-'));
-  await exec('git', ['init', '-b', 'feature/tegami', repo]);
-  await exec('git', ['-C', repo, 'remote', 'add', 'origin', 'git@github.com:ronin/example.git']);
+  // Scrubbed for the same reason checkoutAt scrubs: under a git hook, GIT_DIR would
+  // point these at the REAL repository rather than the temporary one.
+  const gitEnv = { env: envWithoutGitLocation() };
+  await exec('git', ['init', '-b', 'feature/tegami', repo], gitEnv);
+  await exec('git', ['-C', repo, 'remote', 'add', 'origin', 'git@github.com:ronin/example.git'], gitEnv);
   const checkout = await checkoutAt(repo);
   assert.deepEqual(checkout, {
     repo: 'git@github.com:ronin/example.git',

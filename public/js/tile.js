@@ -20,9 +20,10 @@
  * nineteen lines early — threw in this constructor and took the whole UI down on
  * 2026-08-08. Views mount in DOM order: tape, then the commons panel, then xterm.
  */
-import { createSession, deleteSession, fetchSessions } from './api.js';
+import { createSession, fetchSessions } from './api.js';
 import { request } from './request.js';
 import { toast } from './ui.js';
+import { retireSession } from './session-retire.js';
 import { roleData, refreshHome } from './home.js';
 import { IS_TOUCH, NEW, S, saveState, serviceMissing, tiles } from './state.js';
 import { buildHome } from './commons.js';
@@ -629,15 +630,10 @@ export class Tile {
   async kill() {
     const name = this.session;
     if (!name) return;
-    if (!confirm(`Kill tmux session "${name}"? This ends the session and everything running in it.`)) return;
-    try {
-      await deleteSession(name);
-    } catch (e) {
-      toast('could not kill it — ' + e.message, false);
-      return;
-    }
-    this.detach();
-    fetchSessions();
+    retireSession(name, this.index, async () => {
+      this.detach();
+      await fetchSessions();
+    });
   }
 
   connect(session) {

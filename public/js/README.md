@@ -44,6 +44,7 @@ written contract those modules enforce.
 | `home.js` | 158 | THE DATA CACHE — `refreshHome` + the catalog loaders, `homeFault`, `showReceipt` |
 | `commons.js` | 158 | `buildHome` — the control-plane SHELL: tab strip, panes, room mounting |
 | `roster.js` | 258 | the ⌂ Roster room — the session list, the session max, the stale line |
+| `archives.js` | — | the Archived room — stopped, resumable sessions backed by manifests |
 | `launcher.js` | 480 | the ＋ New session room — the koshidashi board, form, saved launches |
 | `wipeboard.js` | 292 | `buildWipeboard` — the ▤ Wipeboard pane |
 | `projectroots.js` | 245 | `buildProjectRoots` — the ▣ Roots pane |

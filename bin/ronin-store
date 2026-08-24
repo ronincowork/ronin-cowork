@@ -23,6 +23,7 @@ set -euo pipefail
 # id | root | rel
 TABLE="\
 session|data|sessions
+archived_sessions|data|archived-sessions
 session_boot_cache|data|session-boot
 bench|data|bench
 telemetry|data|telemetry

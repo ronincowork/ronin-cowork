@@ -27,6 +27,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { HOST_TOOLS, defaultUrl, loadPlaywright, loadAxeSource } from './lib/ui-host.mjs';
+import { PANES } from '../public/js/panes.js';
 
 // Host derivation and the playwright hunt both live in scripts/lib/ui-host.mjs — this
 // script and check-tips need the same two answers, and when each had its own copy they
@@ -94,7 +95,10 @@ async function openPage(browser, contextOpts) {
   const keep = (s) => !BENIGN.some((re) => re.test(s));
   page.on('pageerror', (e) => keep(e.message) && jsErrors.push(e.message));
   page.on('console', (m) => {
-    if (m.type() === 'error' && keep(m.text())) jsErrors.push('console: ' + m.text().slice(0, 200));
+    if (m.type() === 'error' && keep(m.text())) {
+      const source = m.location().url;
+      jsErrors.push('console: ' + m.text().slice(0, 200) + (source ? ` @ ${source}` : ''));
+    }
   });
   page.on('requestfailed', (r) => netFails.push(`${r.url()} :: ${r.failure()?.errorText}`));
   return { page, jsErrors, netFails };
@@ -230,13 +234,13 @@ async function checkJourneys(page, label, jsErrors) {
   }));
   if (commons.pane === 'sessions' && !commons.menu) ok(`${label}: ⛩ Commons goes straight to ⌂ Roster, and drops nothing`);
   else bad(`${label}: ⛩ Commons landed on "${commons.pane}"${commons.menu ? ' and dropped a menu' : ''}, wanted the roster`);
-  // FOUR, NOT TEN (2026-08-18). The strip carried ten rooms and two kinds of thing —
-  // four about sessions and six about the install — and measured 871px against a 609px
-  // tile. The six are the admin_desk's now; probe 4 counts them there. Both counts are
-  // fed by the one registry (js/panes.js `surface`), which is what stops the two lists
-  // drifting the way the strip and the old き menu did.
-  if (commons.tabs === 4) ok(`${label}: the Commons strip carries its 4 session rooms (registry-fed)`);
-  else bad(`${label}: the Commons strip has ${commons.tabs} rooms, wanted 4`);
+  // The strip once carried ten rooms and two kinds of thing. Install rooms moved to the
+  // admin_desk; Archives later became the fifth session room. The expected count comes
+  // from the same static registry the product renders, so this probe checks DOM convergence
+  // without freezing a second copy of the intended room set.
+  const commonsRooms = PANES.filter((pane) => pane.surface === 'commons').length;
+  if (commons.tabs === commonsRooms) ok(`${label}: the Commons strip carries its ${commonsRooms} session rooms (registry-fed)`);
+  else bad(`${label}: the Commons strip has ${commons.tabs} rooms, wanted ${commonsRooms}`);
 
   // 2 — a strip tab lands its room: ▤ Wipeboard (a core room on every build). The strip
   // is the ONLY way to pick a room now, which is what makes this the probe that has to
@@ -426,15 +430,111 @@ async function checkJourneys(page, label, jsErrors) {
   await page.locator('.desk.show .sys-flip').click(); // back to the shell we arrived in
   await page.waitForTimeout(250);
 
-  // Put it back: this probe shares a browser profile with the ones after it, and a squared
-  // shell is not the state they were written against.
+  // Put the shared browser profile back on Stock before this journey leaves Appearance.
   await page.locator('.desk.show .sys-skin', { hasText: 'Stock' }).first().click();
   await page.waitForTimeout(200);
 
-  // ⚙ TOGGLES, and the tile comes back — the lesson ⛩ already learned (js/tile.js).
+  // ⚙ TOGGLES, and the tile comes back — verify this before the skin composition proof,
+  // whose direct hash loads deliberately replace the document.
   await page.locator('#sysbtn').click();
   await page.waitForSelector('.tile.deskup', { state: 'detached', timeout: 3000 });
   ok(`${label}: ⚙ again puts the desk away and gives the tile its header back`);
+
+  if (args.includes('--staging')) {
+  // WORKSPACE SKIN ACCEPTANCE — the three shipped Team-oriented consumers have no skin
+  // path of their own. Drive the canonical skin module, visit the real registered views,
+  // and read computed feature/Foundation geometry. These comparisons deliberately span
+  // every shipped skin axis: shape, space/type, surface colour and font. A feature literal
+  // that pins one of those roles makes the corresponding rendered comparison stay equal.
+  const setShippedSkin = async (name) => {
+    const expected = await page.evaluate(async (wanted) => {
+    const { listSkins, setSkin } = await import('./js/skins.js');
+    const skin = (await listSkins()).find((entry) => entry.name === wanted);
+    if (!skin) throw new Error(`shipped skin missing: ${wanted}`);
+    setSkin(skin);
+      const shell = document.documentElement.dataset.theme;
+      return { ...skin.tokens, ...(shell === 'light' ? skin.light : skin.dark) };
+    }, name);
+    if (Object.keys(expected).length) {
+      await page.waitForFunction((tokens) => {
+        const style = getComputedStyle(document.documentElement);
+        return Object.entries(tokens).every(([token, value]) => style.getPropertyValue(token).trim() === value);
+      }, expected, { timeout: 5000 });
+    }
+  };
+  const workspaceSkinReadings = async () => {
+    const readings = Object.fromEntries(
+      ['square', 'soft', 'tight', 'roomy', 'paper', 'mono'].map((name) => [name, {}]),
+    );
+    for (const [view, route, targets] of [
+      ['League', '#/league', { shape: '.league-new', surface: '.league-surface', feature: '.league-new', backdrop: true }],
+      ['Team', '#/team', { shape: '.tw-kanban', surface: '.tw-kanban', feature: '.tw-cards' }],
+      ['New Team', '#/new-team', { shape: '.nt-definition', surface: '.nt-definition', feature: '.nt-definition h2' }],
+    ]) {
+      await page.goto(URL_.replace(/#.*$/, '') + route, { waitUntil: 'networkidle', timeout: 30_000 });
+      const root = `[data-workspace-view="${view.toLowerCase().replace(' ', '-')}"]:not([hidden])`;
+      for (const selector of new Set([targets.shape, targets.surface, targets.feature])) {
+        await page.waitForSelector(`${root} ${selector}:not([hidden])`, { timeout: 5000 });
+      }
+      for (const name of Object.keys(readings)) {
+        await setShippedSkin(name);
+        await page.waitForTimeout(150);
+        readings[name][view] = await page.locator(root).evaluate((node, selected) => {
+          const shapeStyle = getComputedStyle(node.querySelector(selected.shape));
+          let surfaceNode = node.querySelector(selected.surface);
+          let surfaceStyle = getComputedStyle(surfaceNode);
+          if (selected.backdrop) {
+            while (surfaceNode.parentElement && surfaceStyle.backgroundColor === 'rgba(0, 0, 0, 0)') {
+              surfaceNode = surfaceNode.parentElement;
+              surfaceStyle = getComputedStyle(surfaceNode);
+            }
+          }
+          const featureStyle = getComputedStyle(node.querySelector(selected.feature));
+          return {
+            radius: shapeStyle.borderRadius,
+            surface: surfaceStyle.backgroundColor,
+            font: featureStyle.fontFamily,
+            spacing: [featureStyle.padding, featureStyle.marginTop, featureStyle.marginBottom].join('|'),
+            type: featureStyle.fontSize,
+          };
+        }, targets);
+      }
+    }
+    return readings;
+  };
+  await setShippedSkin('stock');
+  const stockRadius = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--radius-md').trim());
+  const workspaceSkins = await workspaceSkinReadings();
+  for (const view of ['League', 'Team', 'New Team']) {
+    const proof = workspaceSkins;
+    const changed = {
+      radius: proof.square[view].radius !== proof.soft[view].radius,
+      spaceOrType: proof.tight[view].spacing !== proof.roomy[view].spacing
+        || proof.tight[view].type !== proof.roomy[view].type,
+      surface: proof.roomy[view].surface !== proof.paper[view].surface,
+      font: proof.paper[view].font !== proof.mono[view].font,
+    };
+    if (Object.values(changed).every(Boolean)) {
+      ok(`${label}: ${view} inherits skin tokens for radius, space/type, surface and font`);
+    } else {
+      bad(`${label}: ${view} skin inheritance incomplete — ${JSON.stringify({ changed, proof: Object.fromEntries(Object.entries(proof).map(([skin, byView]) => [skin, byView[view]])) })}`);
+    }
+  }
+  await setShippedSkin('stock');
+  const stockRestored = await page.evaluate(async (expected) => {
+    const { currentSkin } = await import('./js/skins.js');
+    return currentSkin() === 'stock'
+      && getComputedStyle(document.documentElement).getPropertyValue('--radius-md').trim() === expected;
+  }, stockRadius);
+  if (stockRestored) ok(`${label}: workspace skin proof restores canonical Stock state and tokens`);
+  else bad(`${label}: workspace skin proof did not restore canonical Stock state and tokens`);
+  await page.goto(URL_.replace(/#.*$/, '') + '#/sessions', { waitUntil: 'networkidle', timeout: 30_000 });
+
+  // Stock was restored through the same module before returning to Sessions: this probe
+  // shares a browser profile with the ones after it, so no skin state may leak onward.
+  } else {
+    console.log(`  note — ${label}: workspace skin composition proof runs against the staged dev client`);
+  }
 
   // 4 — the Commons strip is a real tablist: arrows move focus along it, Enter lands
   // the focused room. (Activation stays deliberate — focus alone must not open a room.)
@@ -669,6 +769,65 @@ async function checkJourneys(page, label, jsErrors) {
     if (/Failed to load resource.*500/.test(jsErrors[i])) jsErrors.splice(i, 1);
   }
   await page.keyboard.press('Escape');
+
+  // SESSIONS COEXISTS WITH WORKSPACE VIEWS — the raw 1/2/4 Tile grid is a first-class
+  // destination, not an implementation phase that League or Team may replace. Use only
+  // the gate's throwaway session (never an owner's), keep the other three slots blank so
+  // the exact four-slot map is distinguishable, and cross real direct-entry routes. A
+  // round trip must preserve layout, map and live rendering, not merely redraw four boxes.
+  const sessionsReading = () => page.evaluate(() => ({
+    layout: Number(document.getElementById('grid')?.dataset.layout),
+    map: [...document.querySelectorAll('select.sess')].map((picker) => picker.value),
+    visible: [...document.querySelectorAll('.tile')].filter((tile) => getComputedStyle(tile).display !== 'none').length,
+  }));
+  const setSessionsLayout = async (wanted) => {
+    for (let turns = 0; turns < 3; turns++) {
+      if ((await sessionsReading()).layout === wanted) break;
+      await page.locator('#layoutcycle').click();
+      await page.waitForTimeout(150);
+    }
+    return sessionsReading();
+  };
+  const waitForProbePaint = async () => {
+    for (let attempt = 0; attempt < 14; attempt++) {
+      const state = await painted(page);
+      if (state.xterm > 20 || state.tape > 20) return true;
+      await page.waitForTimeout(1000);
+    }
+    return false;
+  };
+  const sessionsRoundTrip = async (layout, destination) => {
+    const before = await setSessionsLayout(layout);
+    const mappedProbe = before.map[0] === PROBE && before.map.slice(1).every((session) => !session);
+    const paintedBefore = await waitForProbePaint();
+    if (before.layout !== layout || before.visible !== layout || !mappedProbe || !paintedBefore) {
+      bad(`${label}: Sessions ${layout}-Tile baseline is not truthful — ${JSON.stringify({ before, mappedProbe, paintedBefore })}`);
+      return;
+    }
+
+    const route = destination === 'team' ? '#/team' : '#/league';
+    await page.goto(URL_.replace(/#.*$/, '') + route, { waitUntil: 'networkidle', timeout: 30_000 });
+    await page.waitForSelector(`[data-workspace-view="${destination}"]:not([hidden])`, { timeout: 5000 });
+    await page.goto(URL_.replace(/#.*$/, '') + '#/sessions', { waitUntil: 'networkidle', timeout: 30_000 });
+    await page.waitForSelector('[data-workspace-view="sessions"]:not([hidden]) .tile', { timeout: 5000 });
+
+    const after = await sessionsReading();
+    const paintedAfter = await waitForProbePaint();
+    if (after.layout === layout && after.visible === layout
+      && JSON.stringify(after.map) === JSON.stringify(before.map) && paintedAfter) {
+      ok(`${label}: Sessions ${layout}-Tile layout/map and live Tile survive ${destination} round trip`);
+    } else {
+      bad(`${label}: Sessions ${layout}-Tile state changed across ${destination} — ${JSON.stringify({ before, after, paintedAfter })}`);
+    }
+  };
+
+  // Blank the unused display slots through their real pickers. This changes only this
+  // browser tab's mapping; it neither attaches to nor stops any other session.
+  for (let slot = 1; slot < 4; slot++) await page.locator('select.sess').nth(slot).selectOption('');
+  await sessionsRoundTrip(1, 'league');
+  await sessionsRoundTrip(2, 'team');
+  await sessionsRoundTrip(4, 'league');
+  await sessionsRoundTrip(4, 'team');
 }
 
 /**

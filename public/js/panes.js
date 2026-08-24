@@ -5,7 +5,7 @@
  * TWO SURFACES PRESENT THESE ROOMS, and `surface` is which (owner's ruling, 2026-08-18):
  *
  *   `commons`  the tab strip inside a tile's session_commons — about SESSIONS, and drawn
- *              in every sessionless tile whether or not anyone asked for it. Four rows.
+ *              in every sessionless tile whether or not anyone asked for it. Five rows.
  *   `desk`     the admin_desk (js/desk.js) — about THE MACHINE, drawn in the one tile you
  *              press ⚙ in. Six rows, plus the app's own three, which are not rows here
  *              because they are not rooms: see js/desk.js.
@@ -63,6 +63,7 @@
  */
 export const PANES = [
   { id: 'sessions', surface: 'commons', label: '⌂ Roster' },
+  { id: 'archives', surface: 'commons', label: 'Archived' },
   { id: 'new', surface: 'commons', label: '＋ New session' },
   { id: 'wipe', surface: 'commons', label: '▤ Wipeboard' },
   // MDEDIT — kin to the wipeboard and next to it: both are files a session keeps,

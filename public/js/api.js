@@ -42,3 +42,27 @@ export async function deleteSession(name) {
   const r = await request('/api/sessions/' + encodeURIComponent(name), { method: 'DELETE' });
   if (!r.ok) throw new Error(r.message);
 }
+
+/** Retire a live session without keeping its tmux process resident. */
+export async function archiveSession(name) {
+  const r = await request('/api/sessions/' + encodeURIComponent(name) + '/archive', { method: 'POST' });
+  if (!r.ok) throw new Error(r.message);
+  return r.data.archived;
+}
+
+export async function fetchArchivedSessions() {
+  const r = await request('/api/archived-sessions', { cache: 'no-store' });
+  if (!r.ok) throw new Error(r.message);
+  return Array.isArray(r.data) ? r.data : [];
+}
+
+export async function rehydrateSession(id) {
+  const r = await request('/api/archived-sessions/' + encodeURIComponent(id) + '/rehydrate', { method: 'POST' });
+  if (!r.ok) throw new Error(r.message);
+  return r.data.name;
+}
+
+export async function deleteArchivedSession(id) {
+  const r = await request('/api/archived-sessions/' + encodeURIComponent(id), { method: 'DELETE' });
+  if (!r.ok) throw new Error(r.message);
+}
