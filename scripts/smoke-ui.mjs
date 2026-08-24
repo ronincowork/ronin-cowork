@@ -769,6 +769,65 @@ async function checkJourneys(page, label, jsErrors) {
     if (/Failed to load resource.*500/.test(jsErrors[i])) jsErrors.splice(i, 1);
   }
   await page.keyboard.press('Escape');
+
+  // SESSIONS COEXISTS WITH WORKSPACE VIEWS — the raw 1/2/4 Tile grid is a first-class
+  // destination, not an implementation phase that League or Team may replace. Use only
+  // the gate's throwaway session (never an owner's), keep the other three slots blank so
+  // the exact four-slot map is distinguishable, and cross real direct-entry routes. A
+  // round trip must preserve layout, map and live rendering, not merely redraw four boxes.
+  const sessionsReading = () => page.evaluate(() => ({
+    layout: Number(document.getElementById('grid')?.dataset.layout),
+    map: [...document.querySelectorAll('select.sess')].map((picker) => picker.value),
+    visible: [...document.querySelectorAll('.tile')].filter((tile) => getComputedStyle(tile).display !== 'none').length,
+  }));
+  const setSessionsLayout = async (wanted) => {
+    for (let turns = 0; turns < 3; turns++) {
+      if ((await sessionsReading()).layout === wanted) break;
+      await page.locator('#layoutcycle').click();
+      await page.waitForTimeout(150);
+    }
+    return sessionsReading();
+  };
+  const waitForProbePaint = async () => {
+    for (let attempt = 0; attempt < 14; attempt++) {
+      const state = await painted(page);
+      if (state.xterm > 20 || state.tape > 20) return true;
+      await page.waitForTimeout(1000);
+    }
+    return false;
+  };
+  const sessionsRoundTrip = async (layout, destination) => {
+    const before = await setSessionsLayout(layout);
+    const mappedProbe = before.map[0] === PROBE && before.map.slice(1).every((session) => !session);
+    const paintedBefore = await waitForProbePaint();
+    if (before.layout !== layout || before.visible !== layout || !mappedProbe || !paintedBefore) {
+      bad(`${label}: Sessions ${layout}-Tile baseline is not truthful — ${JSON.stringify({ before, mappedProbe, paintedBefore })}`);
+      return;
+    }
+
+    const route = destination === 'team' ? '#/team' : '#/league';
+    await page.goto(URL_.replace(/#.*$/, '') + route, { waitUntil: 'networkidle', timeout: 30_000 });
+    await page.waitForSelector(`[data-workspace-view="${destination}"]:not([hidden])`, { timeout: 5000 });
+    await page.goto(URL_.replace(/#.*$/, '') + '#/sessions', { waitUntil: 'networkidle', timeout: 30_000 });
+    await page.waitForSelector('[data-workspace-view="sessions"]:not([hidden]) .tile', { timeout: 5000 });
+
+    const after = await sessionsReading();
+    const paintedAfter = await waitForProbePaint();
+    if (after.layout === layout && after.visible === layout
+      && JSON.stringify(after.map) === JSON.stringify(before.map) && paintedAfter) {
+      ok(`${label}: Sessions ${layout}-Tile layout/map and live Tile survive ${destination} round trip`);
+    } else {
+      bad(`${label}: Sessions ${layout}-Tile state changed across ${destination} — ${JSON.stringify({ before, after, paintedAfter })}`);
+    }
+  };
+
+  // Blank the unused display slots through their real pickers. This changes only this
+  // browser tab's mapping; it neither attaches to nor stops any other session.
+  for (let slot = 1; slot < 4; slot++) await page.locator('select.sess').nth(slot).selectOption('');
+  await sessionsRoundTrip(1, 'league');
+  await sessionsRoundTrip(2, 'team');
+  await sessionsRoundTrip(4, 'league');
+  await sessionsRoundTrip(4, 'team');
 }
 
 /**
