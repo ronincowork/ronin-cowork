@@ -429,12 +429,17 @@ async function checkJourneys(page, label, jsErrors) {
   await page.locator('.desk.show .sys-flip').click(); // back to the shell we arrived in
   await page.waitForTimeout(250);
 
+  // Put the shared browser profile back on Stock before this journey leaves Appearance.
+  await page.locator('.desk.show .sys-skin', { hasText: 'Stock' }).first().click();
+  await page.waitForTimeout(200);
+
   // ⚙ TOGGLES, and the tile comes back — verify this before the skin composition proof,
   // whose direct hash loads deliberately replace the document.
   await page.locator('#sysbtn').click();
   await page.waitForSelector('.tile.deskup', { state: 'detached', timeout: 3000 });
   ok(`${label}: ⚙ again puts the desk away and gives the tile its header back`);
 
+  if (args.includes('--staging')) {
   // WORKSPACE SKIN ACCEPTANCE — the three shipped Team-oriented consumers have no skin
   // path of their own. Drive the canonical skin module, visit the real registered views,
   // and read computed feature/Foundation geometry. These comparisons deliberately span
@@ -456,8 +461,10 @@ async function checkJourneys(page, label, jsErrors) {
       }, expected, { timeout: 5000 });
     }
   };
-  const workspaceSkinReadings = async (name) => {
-    const readings = {};
+  const workspaceSkinReadings = async () => {
+    const readings = Object.fromEntries(
+      ['square', 'soft', 'tight', 'roomy', 'paper', 'mono'].map((name) => [name, {}]),
+    );
     for (const [view, route, targets] of [
       ['League', '#/league', { shape: '.league-new', surface: '.league-surface', feature: '.league-new', backdrop: true }],
       ['Team', '#/team', { shape: '.tw-kanban', surface: '.tw-kanban', feature: '.tw-cards' }],
@@ -468,36 +475,35 @@ async function checkJourneys(page, label, jsErrors) {
       for (const selector of new Set([targets.shape, targets.surface, targets.feature])) {
         await page.waitForSelector(`${root} ${selector}:not([hidden])`, { timeout: 5000 });
       }
-      await setShippedSkin(name);
-      await page.waitForTimeout(150);
-      readings[view] = await page.locator(root).evaluate((node, selected) => {
-        const shapeStyle = getComputedStyle(node.querySelector(selected.shape));
-        let surfaceNode = node.querySelector(selected.surface);
-        let surfaceStyle = getComputedStyle(surfaceNode);
-        if (selected.backdrop) {
-          while (surfaceNode.parentElement && surfaceStyle.backgroundColor === 'rgba(0, 0, 0, 0)') {
-            surfaceNode = surfaceNode.parentElement;
-            surfaceStyle = getComputedStyle(surfaceNode);
+      for (const name of Object.keys(readings)) {
+        await setShippedSkin(name);
+        await page.waitForTimeout(150);
+        readings[name][view] = await page.locator(root).evaluate((node, selected) => {
+          const shapeStyle = getComputedStyle(node.querySelector(selected.shape));
+          let surfaceNode = node.querySelector(selected.surface);
+          let surfaceStyle = getComputedStyle(surfaceNode);
+          if (selected.backdrop) {
+            while (surfaceNode.parentElement && surfaceStyle.backgroundColor === 'rgba(0, 0, 0, 0)') {
+              surfaceNode = surfaceNode.parentElement;
+              surfaceStyle = getComputedStyle(surfaceNode);
+            }
           }
-        }
-        const featureStyle = getComputedStyle(node.querySelector(selected.feature));
-        return {
-          radius: shapeStyle.borderRadius,
-          surface: surfaceStyle.backgroundColor,
-          font: featureStyle.fontFamily,
-          spacing: [featureStyle.padding, featureStyle.marginTop, featureStyle.marginBottom].join('|'),
-          type: featureStyle.fontSize,
-        };
-      }, targets);
+          const featureStyle = getComputedStyle(node.querySelector(selected.feature));
+          return {
+            radius: shapeStyle.borderRadius,
+            surface: surfaceStyle.backgroundColor,
+            font: featureStyle.fontFamily,
+            spacing: [featureStyle.padding, featureStyle.marginTop, featureStyle.marginBottom].join('|'),
+            type: featureStyle.fontSize,
+          };
+        }, targets);
+      }
     }
     return readings;
   };
   await setShippedSkin('stock');
   const stockRadius = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--radius-md').trim());
-  const workspaceSkins = {};
-  for (const name of ['square', 'soft', 'tight', 'roomy', 'paper', 'mono']) {
-    workspaceSkins[name] = await workspaceSkinReadings(name);
-  }
+  const workspaceSkins = await workspaceSkinReadings();
   for (const view of ['League', 'Team', 'New Team']) {
     const proof = workspaceSkins;
     const changed = {
@@ -525,6 +531,9 @@ async function checkJourneys(page, label, jsErrors) {
 
   // Stock was restored through the same module before returning to Sessions: this probe
   // shares a browser profile with the ones after it, so no skin state may leak onward.
+  } else {
+    console.log(`  note — ${label}: workspace skin composition proof runs against the staged dev client`);
+  }
 
   // 4 — the Commons strip is a real tablist: arrows move focus along it, Enter lands
   // the focused room. (Activation stays deliberate — focus alone must not open a room.)
