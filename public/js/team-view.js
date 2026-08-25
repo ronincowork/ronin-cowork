@@ -171,6 +171,17 @@ export function createTeamView() {
     // THE BOARD IS ASSUMED: the roster's wipeboard id, or the team's own name for a
     // tag-only team. The server creates it on open, so the slice never meets a void.
     wipeboard.setBoard((roster.durable && roster.wipeboard) || name);
+    // THE LEAD IS THE TEAM'S DEFAULT SESSION (owner, 2026-08-25: "always load the team
+    // lead first"). With nothing chosen and nothing showing, the lead's Tile opens —
+    // unfocused, so the keyboard is not stolen. A leaderless team keeps the placeholder.
+    if (entered && team === name && !terminalPool.active) {
+      const lead = members.find((m) => m.team_lead);
+      if (lead && terminalPool.show(lead.name, false)) {
+        placeholder.hidden = true;
+        ctx?.patchState({ focusedSession: lead.name });
+        renderCards(members);
+      }
+    }
   }
 
   return {

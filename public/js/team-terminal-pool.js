@@ -12,9 +12,10 @@
  * seven members costs what one terminal costs, not seven.
  */
 
-export function createWarmTerminalPool({ createHost, container }) {
+export function createWarmTerminalPool({ createHost, container, warmCap = 4 }) {
   const entries = new Map();
   let active = '';
+  const lru = []; // mounted members, least-recently-shown first — the cap's eviction order
 
   const destroyEntry = (name) => {
     const entry = entries.get(name);
@@ -22,6 +23,8 @@ export function createWarmTerminalPool({ createHost, container }) {
     entry.host?.destroy();
     entry.host?.el.remove();
     entries.delete(name);
+    const at = lru.indexOf(name);
+    if (at >= 0) lru.splice(at, 1);
     if (active === name) active = '';
     return true;
   };
@@ -47,6 +50,21 @@ export function createWarmTerminalPool({ createHost, container }) {
       entry.host = createHost({ mode: 'full' });
       container.append(entry.host.el);
       entry.tile = entry.host.mount(name);
+    }
+    // THE WARM CAP (owner, 2026-08-25: "cap the warm pool at 4"). Beyond it, the
+    // least-recently-shown terminal closes its transport but KEEPS ITS SEAT — clicking
+    // that member again simply pays the mount again. The one being shown is never evicted.
+    const at = lru.indexOf(name);
+    if (at >= 0) lru.splice(at, 1);
+    lru.push(name);
+    while (lru.length > warmCap) {
+      const coldest = lru.shift();
+      const cold = entries.get(coldest);
+      if (!cold?.host || coldest === name) continue;
+      cold.host.destroy();
+      cold.host.el.remove();
+      cold.host = null;
+      cold.tile = null;
     }
     for (const [member, candidate] of entries) {
       if (candidate.host) candidate.host.el.hidden = member !== name;

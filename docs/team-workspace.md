@@ -42,7 +42,11 @@ work must not scope, wrap, replace, or retire it.
 6. Kanban renders one card per member and an inert `＋ Add team member` card.
    reconciles one SEAT per live member and mounts NOTHING at entry (lazy since
    2026-08-25, owner-driven: seven eager hidden terminals made the page crawl); a
-   member's host is created on its first show and stays warm after.
+   member's host is created on its first show and stays warm after, **capped at 4 warm
+   transports** — beyond the cap the least-recently-shown terminal closes but keeps its
+   seat, and revisiting it pays the mount again. **The team lead's Tile opens by default**
+   when the destination is entered with nothing chosen (owner, 2026-08-25: the lead is
+   the team's default session); a leaderless team keeps the placeholder.
 8. If persisted `focusedSession` is still a member, its host is revealed; otherwise every
    host stays hidden behind the honest empty placeholder.
 9. Selecting a card hides the old host and reveals/focuses the selected warm host. It does

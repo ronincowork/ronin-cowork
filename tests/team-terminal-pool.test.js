@@ -62,3 +62,38 @@ test('membership loss and page cleanup destroy every MOUNTED host exactly once',
   assert.equal(pool.size, 0);
   assert.equal(pool.active, '');
 });
+
+test('the warm cap: a fifth mount closes the coldest transport but keeps its seat', () => {
+  const h = harness();
+  const pool = createWarmTerminalPool({ ...h, warmCap: 4 });
+  const crew = ['a', 'b', 'c', 'd', 'e'];
+  pool.sync(crew);
+  for (const name of ['a', 'b', 'c', 'd']) pool.show(name, false);
+  assert.equal(h.records.length, 4, 'four warm terminals, at the cap');
+  assert.deepEqual(h.records.map((r) => r.destroys), [0, 0, 0, 0]);
+
+  pool.show('e', false); // the fifth — 'a' is coldest and must give up its transport
+  assert.equal(h.records[0].destroys, 1, "a's transport closed");
+  assert.equal(h.records[0].removed, 1);
+  assert.equal(pool.has('a'), true, 'but a keeps its seat');
+  assert.equal(pool.size, 5, 'no member lost its place on the team');
+
+  // Revisiting the evicted member simply pays the mount again — sixth record, and now
+  // 'b' is coldest and gives way.
+  pool.show('a', false);
+  assert.equal(h.records.length, 6, 'a remounted fresh');
+  assert.equal(h.records[1].destroys, 1, "b's transport closed in a's favour");
+  assert.equal(h.records[5].opens[0], 'a');
+
+  // The member being shown is never evicted, whatever the cap arithmetic says.
+  assert.equal(pool.active, 'a');
+});
+
+test('a cap of 4 never touches a team of 4 — the grid-sized case stays fully warm', () => {
+  const h = harness();
+  const pool = createWarmTerminalPool({ ...h, warmCap: 4 });
+  pool.sync(['a', 'b', 'c', 'd']);
+  for (const name of ['a', 'b', 'c', 'd', 'a', 'b']) pool.show(name, false);
+  assert.deepEqual(h.records.map((r) => r.destroys), [0, 0, 0, 0], 'nothing ever evicted');
+  assert.deepEqual(h.records.map((r) => r.opens.length), [1, 1, 1, 1], 'nothing ever remounted');
+});
