@@ -12,6 +12,7 @@ import { listMacros } from '../macros.js';
 import { listSkins } from '../skins.js';
 import { listSops } from '../sops.js';
 import { listActions } from '../actions.js';
+import { listSessionReadings } from '../session-readings.js';
 import { listAgentAvailability } from '../agents.js';
 import { dispatchInstall } from '../agent-install.js';
 import {
@@ -59,6 +60,16 @@ const bodyFields = (body: unknown) => {
 };
 
 export function registerCatalogs(app: express.Express): void {
+  /** Five-level session boot shelf. Leaf links are explicit inclusions; absolute paths
+   * and symlinked directories never cross this typed read surface. */
+  app.get('/api/session-readings', async (_req, res) => {
+    try {
+      res.json(await listSessionReadings());
+    } catch (e) {
+      res.status(500).json({ error: errMsg(e) });
+    }
+  });
+
   /** Resolved ACTIONS.md entries. Readable instructions with entry-level provenance;
    * authoring remains the existing seed-and-agent handoff. */
   app.get('/api/actions', async (_req, res) => {

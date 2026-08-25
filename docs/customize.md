@@ -77,9 +77,9 @@ This matrix is the v1 product authority. Completion may add a planned capability
 | Team roles | Guided agent handoff | Reads `/api/team-roles`; directory guidance |
 | Saved launches | Read-only in the shipped preview | Reads `/api/saved-launches` |
 | Skins | Read-only | Reads `/api/skins` |
-| Session readings | Read-only | Unavailable: read route missing |
+| Session readings | Read-only | Reads `/api/session-readings`; resolved level/file text expands in place |
 
-Two unavailable resources must never render an empty list: an absent route cannot prove
+The unavailable Tools resource must never render an empty list: an absent route cannot prove
 that the owner's shelf is empty. Saved Launches is now an ordinary read-only resource; the
 earlier deferred/inert state was removed when its live read was wired.
 
@@ -168,10 +168,10 @@ Established from the committed tree:
 
 - The four modules are committed in `ef801cb`.
 - Registration is committed in `d36b440`.
-- Static inspection confirms three sections, ten resources, **eight live reads, two
+- Static inspection confirms three sections, ten resources, **nine live reads, one
   unavailable resources, and no deferred resource**, plus the generation and repaint
-  guards. SOPs and Actions expose their resolved full text in native disclosure controls;
-  both carry the provenance and shadow semantics of their storage contracts.
+  guards. SOPs, Actions, and Session Readings expose resolved full text in native
+  disclosure controls and carry the provenance/shadow semantics of their storage contracts.
 - `a0f30f4` established and checks the shared feature-CSS/skin contract, but its rendered
   skin evidence names League, Team, and New Team—not Customize.
 
@@ -188,7 +188,7 @@ Ronin against the live tmux server for UI evidence.
 
 ## Known limits and blocked decisions
 
-1. Tools and session readings lack a complete read surface.
+1. Tools lacks a complete read surface.
 2. `TOOLS.md` is a table; the TypeScript reader lacks its keyed-table shadow rule.
 3. Malformed definition files are logged and dropped server-side, so the owner cannot see the broken file here.
 4. Role-family membership has a typed writer, but its editor has not moved from New Session.
@@ -210,10 +210,9 @@ Ronin against the live tmux server for UI evidence.
 5. Report committed state, remaining work, current visual verdict, one bounded next leg, requested shared seams, and non-touch scope to `view_mgr`; wait for acknowledgement.
 6. Classify Surface spacing, control styling, and cross-surface layout changes as Kit or
    feature work. The stylesheet location itself is already ruled: `public/css/`.
-7. Choose one bounded leg. **Next: Session Readings**, but first verify its five-level,
-   symlink and containment contract; stop if no typed safe projection can be derived.
-   Tools remains separately blocked on its table parser. Take visual hierarchy only after
-   Kit/feature ownership is explicit.
+7. Choose one bounded leg. **Next: role-family membership editor**, consuming only its
+   existing typed writer and preserving its orphaned-pin refusal. Tools remains blocked on
+   a shared keyed-table parser contract; do not invent one inside Customize.
 8. Obtain a named seam assignment before editing shared server or shell paths. Never bundle parser, route, malformed-data, or saved-launch policy work by assumption.
 9. Edit only approved paths. Preserve the Sessions 1/2/4 raw Tile grid and every other destination.
 10. Record direct dogfood and scoped diagnostic evidence; leave BYOIN to the designated release integrator.

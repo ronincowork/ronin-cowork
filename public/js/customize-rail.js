@@ -10,10 +10,9 @@
  *
  * `read` IS THE WHOLE HONESTY TEST OF THIS PREVIEW. A resource with no route does not get
  * an empty list — an empty list is a claim that the shelf is empty, which is false. It
- * gets the `unavailable` state and says which route is missing. Two resources are in that
- * position today (tools, session readings) because their read routes are a
- * prerequisite the owner has not unblocked; drawing them as empty would be the surface
- * lying about the owner's own files.
+ * gets the `unavailable` state and says which route is missing. Tools is in that
+ * position today because its read route requires a table parser the server does not have;
+ * drawing it as empty would make the surface lie about the owner's own files.
  */
 export const SECTIONS = [
   { id: 'behavior', label: 'Behavior' },
@@ -60,7 +59,7 @@ export const RESOURCES = [
     capability: 'read-only', read: '/api/skins', file: 'SKINS.md', what: 'a look — a set of design tokens, and nothing else',
     blurb: 'A set of design tokens and nothing else. Choosing one is a setting, and stays on the gear.' },
   { id: 'readings', section: 'presentation', mark: '▧', label: 'Session readings',
-    capability: 'read-only', read: null, why: 'No read route exists for the session-boot shelf yet (prerequisite P3).',
+    capability: 'read-only', read: '/api/session-readings', readLabel: 'Read reading',
     blurb: 'What a new session reads before anything else. A reading you add reaches the next session born, never a running one.' },
 ];
 
