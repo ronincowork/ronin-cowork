@@ -99,7 +99,7 @@ export async function init() {
   guard('register the Team destination', () => workspace.register('team', createTeamView()));
   workspace.register('sessions', {
     el: document.getElementById('grid'),
-    title: () => tiles[0]?.session ? `${tiles[0].session} · ronin` : 'tmux ronin',
+    title: () => tiles[0]?.session || '',
   });
   // NEW TEAM — one Surface, no Tile, no Channel services of its own. Registered beside
   // Sessions rather than replacing it: Sessions remains the default destination on `dev`
