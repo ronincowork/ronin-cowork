@@ -69,8 +69,9 @@ scrollTop round-trips) settled in minutes what three theory-driven "fixes" did n
 **The hot bench** (`public/js/team-terminal-pool.js`, tests in
 `tests/team-terminal-pool.test.js`) — the warm and hold rules stand (owner, 2026-08-25:
 "we have warm and hold rules"), and since the same day each workspace runs its OWN pool
-(cap 2 each, so four in all; the lead pinned in workspace 1). The pool's seats/holding
-machinery is still in the module for the one-seat form it now runs in.
+(cap 2 each, so four in all; the lead pinned in workspace 1). The module is the original
+one — the seats/holding variant from the shared-pool detour was reverted in the end-to-end
+review the owner asked for.
 - Seats are free: page entry mounts nothing; first show mounts; **warmth is durable** —
   no clock ever parks a shown tile (owner overruled a 25s grace: toggled members stay
   hot).

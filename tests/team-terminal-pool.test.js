@@ -52,44 +52,8 @@ function clock() {
   };
 }
 
-// Where a host's element is: in the one seat ('main'), or in the holding — out of the
-// document. There is no hidden (owner, 2026-08-25).
-const holding = { append: (el) => { el.where = 'holding'; } };
 const pool = (h, c, opts = {}) =>
-  createWarmTerminalPool({ ...h, container: { append: (el) => { el.where = 'main'; } }, holding, schedule: c.schedule, cancel: c.cancel, streamCap: 4, ...opts });
-
-test('two seats: a member is hot in one seat at a time, and both seats are watched', () => {
-  const h = harness(); const c = clock();
-  const left = { append: (el) => { el.seat = 'left'; } };
-  const right = { append: (el) => { el.seat = 'right'; } };
-  const p = createWarmTerminalPool({ createHost: h.createHost, seats: { left, right }, holding: { append: (el) => { el.seat = 'holding'; } }, schedule: c.schedule, cancel: c.cancel, streamCap: 4 });
-  p.sync(['a', 'b', 'c', 'd', 'e']);
-  assert.deepEqual(p.seats, ['left', 'right']);
-  p.show('a', false, 'left');
-  p.show('b', false, 'right');
-  assert.equal(p.activeIn('left'), 'a');
-  assert.equal(p.activeIn('right'), 'b');
-  assert.equal(h.records[0].el.seat, 'left', 'a is in its seat');
-  assert.equal(h.records[1].el.seat, 'right', 'b is in its seat');
-  p.show('a', false, 'right');
-  assert.equal(h.records[0].el.seat, 'right', 'a moved seats');
-  assert.equal(p.activeIn('left'), '', 'the seat a left is empty');
-  assert.equal(p.seatOf('a'), 'right');
-  assert.equal(h.records[1].el.seat, 'holding', 'b is warm, out of every seat, not parked');
-  assert.equal(h.records[1].parks, 0);
-  p.show('b', false, 'left');
-  p.show('c', false, 'left');
-  p.show('d', false, 'left');
-  p.show('e', false, 'left'); // five streaming, cap 4: the coldest UNWATCHED parks — never a's
-  assert.equal(h.records[0].parks, 0, 'a is watched in the right seat and is never the one parked');
-  assert.equal(p.streamingCount, 4);
-  p.clearSeat('right');
-  assert.equal(p.activeIn('right'), '');
-  assert.equal(h.records[0].el.seat, 'holding', 'a cleared seat puts a in the holding, still warm');
-  assert.equal(h.records[0].parks, 0);
-  const gone = p.sync(['a', 'b', 'c', 'd']);
-  assert.deepEqual(gone.removed, ['e'], 'the member up in a seat that lost membership is reported');
-});
+  createWarmTerminalPool({ ...h, schedule: c.schedule, cancel: c.cancel, streamCap: 4, ...opts });
 
 test('seats are free: entry mounts nothing; the first show pays the one mount', () => {
   const h = harness(); const c = clock();
@@ -112,8 +76,8 @@ test('flipping inside the grace is warm — no reopen, no park', () => {
   p.show('b', false);
   assert.deepEqual(h.records.map((r) => r.opens.length), [1, 1], 'each transport opened once');
   assert.deepEqual(h.records.map((r) => r.parks), [0, 0], 'the grace kept both warm');
-  assert.equal(h.records[0].el.where, 'holding', 'the one not being watched is out of the seat');
-  assert.equal(h.records[1].el.where, 'main');
+  assert.equal(h.records[0].el.hidden, true, 'the one not being watched is concealed');
+  assert.equal(h.records[1].el.hidden, false);
 });
 
 test('warmth is durable: no clock ever parks a shown tile', () => {
@@ -186,7 +150,7 @@ test('prewarm paints hidden, declines at the cap, and the grace collects it if n
   p.sync(['a', 'b', 'c', 'd', 'e']);
   p.show('a', false);
   assert.equal(p.prewarm('b'), true, 'hover starts b streaming');
-  assert.equal(h.records[1].el.where, 'holding', 'streaming, but in no seat');
+  assert.equal(h.records[1].el.hidden, true, 'painted, but concealed');
   assert.equal(p.active, 'a', 'a hover never steals the stage');
 
   p.show('c', false); p.show('d', false); // cap reached: a, b, c, d streaming
@@ -206,7 +170,7 @@ test('a prewarmed member clicked inside the grace costs nothing more', () => {
   p.prewarm('b');
   p.show('b', false);
   assert.deepEqual(h.records[1].opens, ['b'], 'the click reused the hover\'s transport');
-  assert.equal(h.records[1].el.where, 'main');
+  assert.equal(h.records[1].el.hidden, false);
 });
 
 test('membership loss and page exit destroy every host — streaming, warm or parked — once', () => {
@@ -232,7 +196,7 @@ test('keepHot mounts the lead hidden at entry — hot without being on stage', (
   p.setPinned(['lead']);
   assert.equal(p.keepHot('lead'), true);
   assert.equal(h.records[0].opens[0], 'lead', 'streaming from entry');
-  assert.equal(h.records[0].el.where, 'holding', 'but in no seat');
+  assert.equal(h.records[0].el.hidden, true, 'but not on stage');
   assert.equal(p.active, '', 'nothing focused by keepHot itself');
   c.fire();
   assert.equal(h.records[0].parks, 0, 'no grace ever collects a keepHot — it is not a prewarm');

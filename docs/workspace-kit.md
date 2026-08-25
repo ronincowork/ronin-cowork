@@ -60,9 +60,9 @@ Current load-bearing contracts:
   keeps nothing else in the box — no faces, no hidden second element, no overlay
   (owner, 2026-08-25). What may go in a slot, and the control that puts it there, are the
   consumer's (the Team page lists the commons as a roster card beside the sessions).
-- `createWarmTerminalPool({ createHost, seats: { id: container } })` (team feature, not
-  Kit) shows a member in a named seat; `container` alone is the one-seat form. A warm
-  host in no seat sits in the pool's holding, out of the document.
+- `createTerminalTileHost({ mode, actions })` and `createChannelSurface({ actions })`
+  take consumer actions for their own header row (a tile head, a tab strip) — the Team
+  page's C/T flip rides there, so no feature reaches into a Tile.
 - `createTerminalTileHost({ mode: 'full' | 'reduced' })` is the only terminal host. Full
   mode preserves the genuine existing Tile—including header, Torii, macros, controls,
   terminal, tape and composer—unchanged.

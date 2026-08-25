@@ -33,40 +33,20 @@
  * Timers are injectable so the unit floor can run the clock by hand.
  */
 
-/**
- * SEATS (leg 2/3, 2026-08-25): the page has more than one place a terminal can be
- * watched — two workspaces, either of which may hold a member. `seats` maps a seat id to
- * the container a host is appended into; `container` alone is the one-seat form the
- * first cuts used and the unit floor still runs. A member is HOT in at most one seat;
- * showing it in another moves its host there and leaves the first seat empty. Every
- * seat's member is watched — none is ever the one parked for the cap. A WARM host that
- * is in no seat sits in the holding, out of the document: a seat holds one host or none.
- */
 export function createWarmTerminalPool({
   createHost,
   container,
-  seats = null,
-  holding = null,
   streamCap = 4,
   warmGraceMs = 25_000,
   schedule = (fn, ms) => setTimeout(fn, ms),
   cancel = (id) => clearTimeout(id),
 } = {}) {
-  const entries = new Map(); // name -> { host, tile, graceTimer, seat }
+  const entries = new Map(); // name -> { host, tile, graceTimer }
   const lru = []; // streaming members, least-recently-shown first
   const pinned = new Set(); // never parked while members — the lead, by the caller's hand
-  const seatEls = new Map(Object.entries(seats && typeof seats === 'object' ? seats : {}));
-  if (!seatEls.size) seatEls.set('main', container);
-  const defaultSeat = seatEls.keys().next().value;
-  // THE HOLDING: where a warm host lives when it is in no seat — OUT of the document,
-  // not hidden inside a seat (owner, 2026-08-25: "it's there or it's not there; there is
-  // no hidden"). A seat's container holds its one member's host, or nothing.
-  const bench = holding || (typeof document !== 'undefined' ? document.createElement('div') : { append: () => {} });
-  const shown = new Map(); // seat -> name
-  let active = ''; // the member most recently shown, in whichever seat
+  let active = '';
 
   const streaming = (entry) => !!entry?.host && !entry.host.parked;
-  const watched = (name) => [...shown.values()].includes(name);
 
   const unlist = (name) => {
     const at = lru.indexOf(name);
@@ -96,7 +76,7 @@ export function createWarmTerminalPool({
     clearGrace(entry);
     entry.graceTimer = schedule(() => {
       entry.graceTimer = null;
-      if (!watched(name)) park(name);
+      if (name !== active) park(name);
     }, warmGraceMs);
   };
 
@@ -107,7 +87,7 @@ export function createWarmTerminalPool({
     if (asColdest) lru.unshift(name);
     else lru.push(name);
     while (lru.length > streamCap) {
-      const coldest = lru.find((n) => !watched(n) && !pinned.has(n));
+      const coldest = lru.find((n) => n !== active && !pinned.has(n));
       if (!coldest) break; // everything left is pinned or watched — the cap yields
       park(coldest);
     }
@@ -122,7 +102,6 @@ export function createWarmTerminalPool({
     entries.delete(name);
     unlist(name);
     pinned.delete(name); // a pin dies with its seat
-    for (const [seat, member] of shown) if (member === name) shown.delete(seat);
     if (active === name) active = '';
     return true;
   };
@@ -130,59 +109,42 @@ export function createWarmTerminalPool({
   const sync = (names = []) => {
     const wanted = [...new Set(names.map(String).filter(Boolean))];
     const keep = new Set(wanted);
-    const removed = [...shown.values()].filter((name) => !keep.has(name));
+    const removedActive = !!active && !keep.has(active);
     for (const name of [...entries.keys()]) if (!keep.has(name)) destroyEntry(name);
     for (const name of wanted) {
       if (entries.has(name)) continue;
       // A seat, not a stream: nothing is created until this member is first shown.
-      entries.set(name, { host: null, tile: null, graceTimer: null, seat: '' });
+      entries.set(name, { host: null, tile: null, graceTimer: null });
     }
-    return { removedActive: removed.length > 0, removed, size: entries.size };
+    return { removedActive, size: entries.size };
   };
 
-  /** COLD → streaming, hidden or not. mount() reattaches a parked host by itself. A
-   *  host is born in the default seat and moves when shown elsewhere. */
-  const stream = (name, entry, seat = entry.seat || defaultSeat) => {
-    if (!entry.host) entry.host = createHost({ mode: 'full' });
-    if (entry.seat !== seat) {
-      seatEls.get(seat).append(entry.host.el);
-      entry.seat = seat;
+  /** COLD → streaming, hidden or not. mount() reattaches a parked host by itself. */
+  const stream = (name, entry) => {
+    if (!entry.host) {
+      entry.host = createHost({ mode: 'full' });
+      container.append(entry.host.el);
     }
     entry.tile = entry.host.mount(name);
     return entry.tile;
   };
 
-  /** A host in no seat goes to the holding; a seat holds exactly its member's host. */
-  const paint = () => {
-    for (const [name, entry] of entries) {
-      if (!entry.host || watched(name) || !entry.seat) continue;
-      bench.append(entry.host.el);
-      entry.seat = '';
-    }
-  };
-
-  const show = (name, focus = true, seat = defaultSeat) => {
+  const show = (name, focus = true) => {
     const entry = entries.get(name);
-    if (!entry || !seatEls.has(seat)) return false;
+    if (!entry) return false;
+    const previous = active;
     clearGrace(entry);
-    for (const [other, member] of shown) if (member === name && other !== seat) shown.delete(other);
-    stream(name, entry, seat);
-    shown.set(seat, name);
-    paint();
+    stream(name, entry);
+    for (const [member, candidate] of entries) {
+      if (member !== name && candidate.host) candidate.host.hide();
+    }
     active = name;
     touch(name);
     // The member just left behind stays WARM — durable, no clock. Only cap pressure,
     // membership loss or page exit takes its stream (and never a pin's).
+    void previous;
     entry.host.fit();
     if (focus) entry.tile.focusTerminal?.();
-    return true;
-  };
-
-  /** Empty a seat without touching the member's warmth — the seat took something else. */
-  const clearSeat = (seat) => {
-    if (!shown.has(seat)) return false;
-    shown.delete(seat);
-    paint();
     return true;
   };
 
@@ -192,9 +154,9 @@ export function createWarmTerminalPool({
    *  and counts as recently shown. No-op when already streaming or on stage. */
   const keepHot = (name) => {
     const entry = entries.get(name);
-    if (!entry || streaming(entry) || watched(name)) return false;
+    if (!entry || streaming(entry) || name === active) return false;
     stream(name, entry);
-    paint();
+    entry.host.hide();
     touch(name);
     return true;
   };
@@ -203,10 +165,10 @@ export function createWarmTerminalPool({
    *  Declines politely at the cap — a hover never costs a genuinely warm member. */
   const prewarm = (name) => {
     const entry = entries.get(name);
-    if (!entry || streaming(entry) || watched(name)) return false;
+    if (!entry || streaming(entry) || name === active) return false;
     if (lru.length >= streamCap) return false;
     stream(name, entry);
-    paint();
+    entry.host.hide();
     touch(name, true); // coldest: first to park, never displacing shown members
     armGrace(name);
     return true;
@@ -214,7 +176,6 @@ export function createWarmTerminalPool({
 
   const destroyAll = () => {
     for (const name of [...entries.keys()]) destroyEntry(name);
-    shown.clear();
     active = '';
   };
 
@@ -229,16 +190,11 @@ export function createWarmTerminalPool({
   return {
     sync,
     show,
-    clearSeat,
     prewarm,
     keepHot,
     setPinned,
     destroyAll,
     has: (name) => entries.has(name),
-    activeIn: (seat) => shown.get(seat) || '',
-    seatOf: (name) => [...shown].find(([, member]) => member === name)?.[0] || '',
-    isShown: (name) => watched(name),
-    get seats() { return [...seatEls.keys()]; },
     get active() { return active; },
     get size() { return entries.size; },
     get streamingCount() { return lru.length; },
