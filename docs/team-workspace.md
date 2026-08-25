@@ -40,8 +40,9 @@ work must not scope, wrap, replace, or retire it.
 4. The shared Team controller refreshes durable and live readings.
 5. Live members are projected from sessions whose tags contain the Team name.
 6. Kanban renders one card per member and an inert `＋ Add team member` card.
-7. Team creates one full existing terminal host per live member and opens each member once;
-   all but the focused host remain warm and hidden.
+   reconciles one SEAT per live member and mounts NOTHING at entry (lazy since
+   2026-08-25, owner-driven: seven eager hidden terminals made the page crawl); a
+   member's host is created on its first show and stays warm after.
 8. If persisted `focusedSession` is still a member, its host is revealed; otherwise every
    host stays hidden behind the honest empty placeholder.
 9. Selecting a card hides the old host and reveals/focuses the selected warm host. It does
@@ -85,7 +86,7 @@ durable metadata.
   owner composer, entered-only poll, and service lifecycle.
 - `public/css/team-workspace.css` — Team-specific Kanban, notice, placeholder, and
   configuration presentation.
-- `tests/team-terminal-pool.test.js` — scoped proof of warm revisits and complete cleanup.
+- `tests/team-terminal-pool.test.js` — scoped proof of lazy seats, warm revisits and complete cleanup.
 - `docs/team-workspace.md` — this persistent implementation and resume contract.
 
 Registration in `public/js/main.js` and the stylesheet link in `public/index.html` are
@@ -154,8 +155,8 @@ keeps its ordinary existing behavior.
 
 The warm pool exists only while one Team destination is entered:
 
-- reconcile one `createTerminalTileHost({ mode: 'full' })` host per live Team member;
-- open each host against its member exactly once, then hide non-focused wrappers;
+- reconcile one SEAT per live Team member; a `createTerminalTileHost({ mode: 'full' })`
+  host is created lazily on the member's first show, opened once, and kept warm after;
 - on Kanban selection, reveal, fit, and focus the existing host without `switchSession`;
 - when a member leaves, immediately destroy that member's host and wrapper;
 - before changing Team or leaving, destroy the entire pool;
