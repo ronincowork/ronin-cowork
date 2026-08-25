@@ -69,7 +69,7 @@ This matrix is the v1 product authority. Completion may add a planned capability
 | Resource | Intended v1 capability | Current preview |
 |---|---|---|
 | Macros | Guided agent handoff | Reads `/api/macros`; seed/path handoff |
-| SOPs | Read-only | Unavailable: read route missing |
+| SOPs | Read-only | Reads `/api/sops`; resolved procedure text expands in place |
 | Actions | Guided agent handoff | Unavailable: read route missing |
 | Tools | Read-only | Unavailable: table parser and route missing |
 | Role families | Direct editor for membership only | Read-only list; editor not moved |
@@ -79,7 +79,7 @@ This matrix is the v1 product authority. Completion may add a planned capability
 | Skins | Read-only | Reads `/api/skins` |
 | Session readings | Read-only | Unavailable: read route missing |
 
-Four unavailable resources must never render an empty list: an absent route cannot prove
+Three unavailable resources must never render an empty list: an absent route cannot prove
 that the owner's shelf is empty. Saved Launches is now an ordinary read-only resource; the
 earlier deferred/inert state was removed when its live read was wired.
 
@@ -168,9 +168,10 @@ Established from the committed tree:
 
 - The four modules are committed in `ef801cb`.
 - Registration is committed in `d36b440`.
-- Static inspection confirms three sections, ten resources, **six live reads, four
+- Static inspection confirms three sections, ten resources, **seven live reads, three
   unavailable resources, and no deferred resource**, plus the generation and repaint
-  guards. Saved Launches now reads `/api/saved-launches` as read-only.
+  guards. SOPs resolve stock and owner files whole, include provenance, and expose the
+  resolved procedure text in native disclosure controls.
 - `a0f30f4` established and checks the shared feature-CSS/skin contract, but its rendered
   skin evidence names League, Team, and New Team—not Customize.
 
@@ -187,7 +188,7 @@ Ronin against the live tmux server for UI evidence.
 
 ## Known limits and blocked decisions
 
-1. SOPs, actions, tools, and session readings lack a complete read surface.
+1. Actions, tools, and session readings lack a complete read surface.
 2. `TOOLS.md` is a table; the TypeScript reader lacks its keyed-table shadow rule.
 3. Malformed definition files are logged and dropped server-side, so the owner cannot see the broken file here.
 4. Role-family membership has a typed writer, but its editor has not moved from New Session.
@@ -209,8 +210,9 @@ Ronin against the live tmux server for UI evidence.
 5. Report committed state, remaining work, current visual verdict, one bounded next leg, requested shared seams, and non-touch scope to `view_mgr`; wait for acknowledgement.
 6. Classify Surface spacing, control styling, and cross-surface layout changes as Kit or
    feature work. The stylesheet location itself is already ruled: `public/css/`.
-7. Choose one bounded leg. Prefer the smallest missing read path assigned by `view_mgr`,
-   or a visual hierarchy leg only after its Kit/feature ownership is explicit.
+7. Choose one bounded leg. **Next: Actions read-only/guided-handoff**, reusing the existing
+   entry catalog parser and adding only its typed route. Tools remains separately blocked
+   on its table parser; take visual hierarchy only after Kit/feature ownership is explicit.
 8. Obtain a named seam assignment before editing shared server or shell paths. Never bundle parser, route, malformed-data, or saved-launch policy work by assumption.
 9. Edit only approved paths. Preserve the Sessions 1/2/4 raw Tile grid and every other destination.
 10. Record direct dogfood and scoped diagnostic evidence; leave BYOIN to the designated release integrator.

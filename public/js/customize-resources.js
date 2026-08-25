@@ -75,6 +75,15 @@ export async function renderResource(resource, surface) {
       metadata: [entry.name].filter(Boolean),
     });
     addProvMark(card.heading, entry);
+    // Whole-document resources remain read-only, but genuinely readable. Native details
+    // keeps the list compact and exposes the resolved text without a second editor or a
+    // feature-local navigation foundation.
+    if (typeof entry.content === 'string') {
+      const details = el('details', 'cz-document');
+      details.append(el('summary', null, 'Read procedure'));
+      details.append(el('pre', 'cz-document-text', entry.content));
+      card.el.append(details);
+    }
     grid.append(card.el);
   }
   surface.content.append(grid);

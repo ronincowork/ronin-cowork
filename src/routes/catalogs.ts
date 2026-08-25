@@ -10,6 +10,7 @@ import type express from 'express';
 import { projectRootsOfSessions } from '../tmux.js';
 import { listMacros } from '../macros.js';
 import { listSkins } from '../skins.js';
+import { listSops } from '../sops.js';
 import { listAgentAvailability } from '../agents.js';
 import { dispatchInstall } from '../agent-install.js';
 import {
@@ -57,6 +58,16 @@ const bodyFields = (body: unknown) => {
 };
 
 export function registerCatalogs(app: express.Express): void {
+  /** Resolved SOP shelf: stock plus whole-file owner shadows, full text included so the
+   * Customize read-only view can genuinely read the selected procedure. */
+  app.get('/api/sops', async (_req, res) => {
+    try {
+      res.json(await listSops());
+    } catch (e) {
+      res.status(500).json({ error: errMsg(e) });
+    }
+  });
+
   /* THE LOOK, as entries. A skin is a set of design tokens and nothing else — no selector,
    * no rule — so this route serves data the client sets as custom properties and could not
    * turn into markup if it tried (src/skins.ts). Shadowable like any catalog: shipped
