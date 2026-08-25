@@ -1,5 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { request } from './request.js';
+import { serviceMissing } from './state.js';
 
 /**
  * RAM_RPM — the box's working reading, in the header.
@@ -49,6 +50,10 @@ function render(el, m) {
 export function mountRamRpm() {
   const el = document.getElementById('ramrpm');
   if (!el) return;
+  // THE SWITCH, client half. Machine administration is a SERVICES capability, so on the
+  // free build there is no /api/machine to ask — draw nothing rather than fetch into a
+  // 404 once a minute forever. `S.services` is filled from /api/version before this runs.
+  if (serviceMissing('machine')) return;
 
   let timer = null;
   const read = async () => {

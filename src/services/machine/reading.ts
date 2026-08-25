@@ -1,5 +1,11 @@
 /**
- * RAM_RPM — what this box is working at, as one small reading.
+ * MACHINE — what this box is working at, as one small reading.
+ *
+ * The services side of KYOKAI: system administration of the box is a SERVICES
+ * capability, not part of the free coworkspace (owner, 2026-08-25). Cowork is the
+ * tmux application a knowledgeable person runs themselves; helping them run the
+ * machine under it is what Ronin Services is for, and RAM is the nascent first
+ * piece of it.
  *
  * The name is the owner's (2026-08-24): a tachometer, not an alarm. It is always
  * visible and mostly ignored, and it tells you how hard the machine is working before
