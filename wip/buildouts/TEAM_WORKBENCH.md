@@ -171,9 +171,9 @@ why the slots cannot be reordered today.
 | # | Leg | Ends when |
 |---|---|---|
 | 1 | **Kit: slot arrangement** — N slots, surfaces assigned, swap, per-destination persistence; no team knowledge. Its control is the **layout map** in the app bar (click = show/hide, drag = reorder); the per-column chevron rails are retired with it | **DONE 2026-08-25** — see LEG 1 — LANDED below |
-| 2 | **Second terminal seat** — left and right can both be terminals, or either the commons; cards route to the seat last touched | two terminals side by side; state persists per team |
-| 3 | **Seat-aware hot bench** — pool `active` becomes per-seat; cap arithmetic already fits | flipping one seat never disturbs the other; the pin holds |
-| 4 | **Movable, shrinkable roster** — docks any slot, collapses to a chip rail | the owner can live in two terminals |
+| 2 | **Second terminal seat** — left and right can both be terminals, or either the commons; cards route to the seat last touched | **DONE 2026-08-25** — see LEGS 2 + 3 — LANDED below. Persistence is per destination; per team is leg 2b, one key |
+| 3 | **Seat-aware hot bench** — pool `active` becomes per-seat; cap arithmetic already fits | **DONE 2026-08-25** — with leg 2 |
+| 4 | **Movable, shrinkable roster** — docks any slot, collapses to a chip rail. **And a header:** "the roster should have a header the same as the terminal_tile and team_commons" (owner, in this file, 2026-08-25) — the tile has its head row, the commons its tab strip; the roster gets the same kind of row (a natural home for the roster's own controls, and for the face switch if it ever leaves the corner) | the owner can live in two terminals; the three columns read as one instrument |
 | 5 | **Polish** — keyboard flips through hot members; switcher in kit style | one instrument, not three panels |
 | 6 | **Roster readings** — SHINGO, model, ready/busy, taken; cherry_pick or summary when RIREKI fires (owner, 2026-08-25) | a card tells you the session's state without opening it |
 | 7 | **Team lead from the tile** — the 人 is set through the tile's existing session_role selector, not an API call (T5, ruled) | the owner designates a lead by hand from any tile |
@@ -211,7 +211,41 @@ one side ten pixels short per hundred. The probe pattern earns its keep.
 **Left for the owner:** T6 (a name for the action column) and whether the map's
 switches want a label on hover beyond the slot's declared label.
 
-### The design as approved (kept for the record)
+## LEGS 2 + 3 — LANDED (cut by `@team_page`, 2026-08-25, on "we should be able to toggle between the two")
+
+**What is on `dev`:** slots have FACES. The arrangement carries `faces: {slot: face}`;
+a declaration lists a slot's faces (`faces: ['terminal', {name: 'commons', exclusive:
+true}]`) and its default; an *exclusive* face is up in one slot at a time — turn a
+second slot to it and the first turns back. The frame takes one element per face for
+such a slot (a face element may be shared: the one commons lives in whichever slot has
+it up) and draws a small **face switch** in the slot's top-right corner, over the
+content, so it costs no row (`.wk-face-switch`, quiet until hovered). The pool has
+**seats**: `seats: {workspace1: el, workspace2: el}`; a member is hot in one seat at a
+time, showing it elsewhere moves its host; every seated member is watched and never
+the one parked for the cap; `clearSeat` conceals without parking. The team page is two
+seats (`workspace1` defaults to a terminal, `workspace2` to the commons), the roster
+between them; a card lands in **the seat last touched** (pointer on the seat, or its
+switch turned to terminal — T3 needs no ⇄); a seat turned to the commons hands its
+member to an empty terminal seat if there is one, else leaves it warm and concealed;
+seats persist as `{slot: member}` in the view state and are re-applied when the roster
+arrives, so a cold reload does not hand a remembered seat to the lead. **Both ways**
+(owner): a click lands in the seat last touched, and a card DRAGGED onto a seat lands in
+that seat (`text/x-ronin-session` on the drag; the seat outlines in kaki while a card
+is over it).
+
+**Measured (playwright, 1600×950, `#/team/five-eyes`):** default = terminal ·
+roster · commons, 630/315/630, the same as leg 1. Turn workspace 2 to terminal →
+placeholder; click a card → it lands in workspace 2, two xterms side by side, both
+cards marked. Turn workspace 1 to commons → the commons moves left, workspace 2 keeps
+its member, the displaced one is warm and hidden (one hidden host). Reload → faces and
+seats persist. Turn workspace 1 back and click a card → it lands in workspace 1. No
+console errors. 13 pool tests (two-seat case added), 12 arrangement tests.
+
+**Not done here:** per-team persistence (leg 2b: key `seats` and `arrangement` by team
+param — one line each in `teamWorkspaceState` and the two `patchViewState` calls); the
+roster header (leg 4).
+
+### The leg 1 design as approved (kept for the record)
 
 **What exists, read plainly.** `createWorkbenchLayout(terminalTile, kanban, channels,
 {managed})` in `public/js/workspace-layouts.js` is the whole frame today. Three
@@ -383,7 +417,7 @@ Two consequences, both inside leg 1:
 |---|---|---|
 | T1 | Right slot default | **RULED: team_commons**, opening on the chat tab (`8837ae5`; the wipeboard is one tab over) |
 | T2 | Roster default | **RULED: middle**; chips on collapse (leg 4) |
-| T3 | "Open in other seat" gesture | open — suggest ⇄ on the card; long-press on touch |
+| T3 | "Open in other seat" gesture | **RULED, both ways (owner, 2026-08-25):** a click lands in the seat last touched ("the tile that is selected"); a card dragged onto a seat lands in that seat. Both landed with leg 2 |
 | T4 | Raise the cap with two terminal seats? | **RULED: no** — four hot seats, lead + next three by last use (owner, 2026-08-25) |
 | T5 | **Assign the team lead live from the UI** ("I need to be able to assign team lead live", 2026-08-25) | **RULED: through the tile buttons** — the tile already has a session_role selector; the 人 goes there. Leg 7 |
 | T7 | Show/hide and reorder the columns | **RULED: a layout map in the app bar** — three toggling rectangles; drag within the map to reorder. No chevron rails (owner, 2026-08-25). Column-drag, if ever, is a second gesture in leg 5 |

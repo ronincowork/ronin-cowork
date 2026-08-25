@@ -47,8 +47,41 @@ export function createTeamView() {
   let unsubscribe = null;
   let entered = false;
 
-  /* ---------- the three surfaces ---------- */
-  const terminalTile = createSurface({ label: 'Focused session', className: 'tw-terminal', flush: true });
+  /* ---------- the surfaces: two seats, the roster, and one commons ---------- */
+  // TWO SEATS (owner, 2026-08-25: "a left-side terminal and a right-side terminal, and
+  // the middle would be the roster … on one or the other of the terminals, I could turn
+  // it over to the whiteboard or the docs"). Each workspace slot is a seat that shows a
+  // terminal, or is turned over to the one commons; the Kit's face switch does the
+  // turning, and a roster card lands in the seat last touched.
+  const makeSeat = (id, label) => {
+    const surface = createSurface({ label, className: 'tw-terminal', flush: true });
+    const placeholder = el('div', 'tw-placeholder');
+    placeholder.append(
+      el('p', 'tw-placeholder-head', 'Terminal Tile'),
+      el('p', null, 'Pick a Team session to show it here. Leaving this destination closes every Team transport.'),
+    );
+    surface.content.append(placeholder);
+    surface.el.addEventListener('pointerdown', () => { lastSeat = id; });
+    // BOTH WAYS (owner, 2026-08-25): a click lands in the seat last touched; a card
+    // dragged onto a seat lands in that seat.
+    surface.el.addEventListener('dragover', (event) => {
+      if (![...event.dataTransfer.types].includes('text/x-ronin-session')) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+      surface.el.dataset.dropReady = 'true';
+    });
+    surface.el.addEventListener('dragleave', () => { delete surface.el.dataset.dropReady; });
+    surface.el.addEventListener('drop', (event) => {
+      delete surface.el.dataset.dropReady;
+      const name = event.dataTransfer.getData('text/x-ronin-session');
+      if (!name) return;
+      event.preventDefault();
+      if (showIn(name, id)) renderCards(membersOfTeam(team));
+    });
+    return { id, surface, placeholder };
+  };
+  let lastSeat = 'workspace1';
+  const seats = { workspace1: makeSeat('workspace1', 'Workspace 1'), workspace2: makeSeat('workspace2', 'Workspace 2') };
   const kanban = createSurface({ label: 'Team sessions', className: 'tw-kanban' });
   // The wipeboard slice is real (owner, 2026-08-25 — the thread, and nothing else; the
   // Brief stays Team Configuration's). Its board id follows the roster: see setBoard below.
@@ -80,16 +113,14 @@ export function createTeamView() {
     selected: 'chat',
     services: { wipeboard, docs: docsService, 'team-configuration': service(config) },
   });
-  const placeholder = el('div', 'tw-placeholder');
-  placeholder.append(
-    el('p', 'tw-placeholder-head', 'Terminal Tile'),
-    el('p', null, 'Select a Team session to show its warm Tile. Leaving this destination closes every Team transport.'),
-  );
-  terminalTile.content.append(placeholder);
   const terminalPool = createWarmTerminalPool({
     createHost: createTerminalTileHost,
-    container: terminalTile.content,
+    seats: { workspace1: seats.workspace1.surface.content, workspace2: seats.workspace2.surface.content },
   });
+  const paintSeats = () => {
+    for (const seat of Object.values(seats)) seat.placeholder.hidden = !!terminalPool.activeIn(seat.id);
+  };
+  const rememberSeats = () => ctx?.patchViewState('team', { seats: Object.fromEntries(Object.keys(seats).map((id) => [id, terminalPool.activeIn(id)])) });
 
   const cards = el('div', 'tw-cards');
   kanban.content.append(cards);
@@ -105,26 +136,82 @@ export function createTeamView() {
   // shows, hides and reorders them. Commons-on-the-left is a reordered array here, not a
   // frame change. The action column (roster) goes down to 6% and turns compact under
   // 11rem (176px) — the frame writes data-width on its slot and renderCards reads it.
+  const FACES = ['terminal', { name: 'commons', label: 'commons', exclusive: true }];
   const DECLARATION = {
     slots: [
-      { name: 'terminal', label: 'Focused session', width: 40 },
+      { name: 'workspace1', label: 'Workspace 1', width: 40, faces: FACES, face: 'terminal' },
       { name: 'roster', label: 'Team sessions', width: 20, min: 6, compact: 176 },
-      { name: 'commons', label: 'Team commons', width: 40 },
+      { name: 'workspace2', label: 'Workspace 2', width: 40, faces: FACES, face: 'commons' },
     ],
   };
   const workbench = createWorkbenchLayout({
     declaration: DECLARATION,
-    surfaces: { terminal: terminalTile.el, roster: kanban.el, commons: channels.el },
+    surfaces: {
+      workspace1: { terminal: seats.workspace1.surface.el, commons: channels.el },
+      roster: kanban.el,
+      workspace2: { terminal: seats.workspace2.surface.el, commons: channels.el },
+    },
     onStateChange: (arrangement) => ctx?.patchViewState('team', { arrangement }),
   });
   root.append(workbench.host);
+  const faceOf = (id) => workbench.arrangement.state().faces?.[id] || '';
+  // Turning a seat is touching it: a seat turned to a terminal is where the next card
+  // lands. A seat turned to the commons hands its member to an empty terminal seat if
+  // there is one, else gives it up — warm and concealed, never parked for this.
+  let prevFaces = { ...(workbench.arrangement.state().faces || {}) };
+  workbench.arrangement.subscribe(() => {
+    const now = workbench.arrangement.state().faces || {};
+    for (const seat of Object.keys(seats)) {
+      if (now[seat] === prevFaces[seat]) continue;
+      if (now[seat] === 'terminal') { lastSeat = seat; continue; }
+      const member = terminalPool.activeIn(seat);
+      if (!member) continue;
+      const empty = Object.keys(seats).find((id) => id !== seat && now[id] === 'terminal' && !terminalPool.activeIn(id));
+      if (empty) terminalPool.show(member, false, empty);
+      else terminalPool.clearSeat(seat);
+      rememberSeats();
+    }
+    prevFaces = { ...now };
+    paintSeats();
+    if (entered) renderCards(membersOfTeam(team));
+  });
+  /** The seat a picked card lands in: the one last touched if it shows a terminal, else
+   *  the first that does; if none does, the last-touched one is turned to a terminal. */
+  const targetSeat = () => {
+    if (faceOf(lastSeat) === 'terminal') return lastSeat;
+    const open = Object.keys(seats).find((id) => faceOf(id) === 'terminal');
+    if (open) return open;
+    workbench.arrangement.setFace(lastSeat, 'terminal');
+    return lastSeat;
+  };
+  const showIn = (name, seat, focus = true) => {
+    if (!terminalPool.show(name, focus, seat)) return false;
+    lastSeat = seat;
+    paintSeats();
+    rememberSeats();
+    return true;
+  };
+
+  /** Fill each empty terminal seat: its remembered member first, else the lead. Runs on
+   *  enter AND when the roster arrives — on a cold reload the roster is not known yet
+   *  at enter, and the remembered member must not lose the seat to the lead. */
+  let remembered = {};
+  const seatTheTeam = (members) => {
+    const lead = members.find((m) => m.team_lead)?.name || '';
+    let changed = false;
+    for (const seat of Object.keys(seats)) {
+      if (faceOf(seat) !== 'terminal' || terminalPool.activeIn(seat)) continue;
+      const wanted = remembered[seat];
+      const pick = wanted && terminalPool.has(wanted) && !terminalPool.isShown(wanted) ? wanted : lead && !terminalPool.isShown(lead) ? lead : '';
+      if (pick && terminalPool.show(pick, false, seat)) changed = true;
+    }
+    if (changed) { paintSeats(); rememberSeats(); }
+    return changed;
+  };
 
   function syncTerminalPool(members) {
     const result = terminalPool.sync(members.map((member) => member.name));
-    if (result.removedActive) {
-      placeholder.hidden = false;
-      ctx?.patchState({ focusedSession: '' });
-    }
+    if (result.removedActive) { paintSeats(); rememberSeats(); }
     return result;
   }
 
@@ -159,16 +246,20 @@ export function createTeamView() {
         summary: m.summary || '',
         metadata: readings,
         mark: m.mark || null,
-        selected: terminalPool.active === m.name,
+        selected: terminalPool.isShown(m.name),
         action: () => {
-          if (!terminalPool.show(m.name)) return;
-          placeholder.hidden = true;
-          ctx?.patchState({ focusedSession: m.name });
+          if (!showIn(m.name, targetSeat())) return;
           renderCards(members);
         },
       });
       card.el.addEventListener('pointerenter', () => armPrewarm(m.name));
       card.el.addEventListener('pointerleave', disarmPrewarm);
+      card.el.draggable = true;
+      card.el.addEventListener('dragstart', (event) => {
+        event.dataTransfer.setData('text/x-ronin-session', m.name);
+        event.dataTransfer.setData('text/plain', m.name);
+        event.dataTransfer.effectAllowed = 'move';
+      });
       cards.append(card.el);
     }
     const add = createCard({ heading: '＋ Add team member', summary: 'Existing session or a new one — arrives with its own slice.', variant: 'dotted' });
@@ -234,14 +325,7 @@ export function createTeamView() {
     // lead's Tile opens — unfocused, so the keyboard is not stolen. A leaderless team
     // keeps the placeholder and pins nobody.
     ensureLeadHot(members);
-    if (entered && team === name && !terminalPool.active) {
-      const lead = members.find((m) => m.team_lead);
-      if (lead && terminalPool.show(lead.name, false)) {
-        placeholder.hidden = true;
-        ctx?.patchState({ focusedSession: lead.name });
-        renderCards(members);
-      }
-    }
+    if (entered && team === name && seatTheTeam(members)) renderCards(members);
   }
 
   return {
@@ -274,14 +358,14 @@ export function createTeamView() {
       const members = membersOfTeam(team);
       syncTerminalPool(members);
       ensureLeadHot(members);
-      const eligible = terminalPool.has(typed.focusedSession);
-      if (eligible) { terminalPool.show(typed.focusedSession, false); placeholder.hidden = true; }
-      else {
-        // Nothing restored: the lead is the team's default session, on re-entry too.
-        const lead = members.find((m) => m.team_lead);
-        if (lead && terminalPool.show(lead.name, false)) placeholder.hidden = true;
-        else placeholder.hidden = false;
-      }
+      // Each seat that shows a terminal gets its remembered member back (the old
+      // one-seat focusedSession lands in the first seat, once). A seat with nothing to
+      // restore gets the lead — the team's default session, on re-entry too.
+      remembered = { ...typed.seats };
+      if (!Object.keys(remembered).length && typed.focusedSession) remembered.workspace1 = typed.focusedSession;
+      seatTheTeam(members);
+      lastSeat = Object.keys(seats).find((seat) => faceOf(seat) === 'terminal') || 'workspace1';
+      paintSeats();
       channels.enter(context);
       if (team !== loaded) void load(team);
     },
@@ -289,7 +373,7 @@ export function createTeamView() {
       entered = false;
       disarmPrewarm();
       terminalPool.destroyAll();
-      placeholder.hidden = false;
+      paintSeats();
       channels.leave();
     },
     destroy: () => {

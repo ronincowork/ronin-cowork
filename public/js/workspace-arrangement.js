@@ -37,12 +37,25 @@ export function declareArrangement(declaration = {}) {
     const slot = typeof entry === 'string' ? { name: entry } : entry && typeof entry === 'object' ? entry : null;
     if (!slot || !isName(slot.name) || seen.has(slot.name)) continue;
     seen.add(slot.name);
+    // FACES: what a slot can be turned over to — a workspace shows a terminal OR the
+    // commons. An `exclusive` face may be up in one slot at a time (there is one
+    // commons); turning a second slot to it turns the first back to its own default.
+    const faces = [];
+    const faceNames = new Set();
+    for (const raw of Array.isArray(slot.faces) ? slot.faces : []) {
+      const face = typeof raw === 'string' ? { name: raw } : raw && typeof raw === 'object' ? raw : null;
+      if (!face || !isName(face.name) || faceNames.has(face.name)) continue;
+      faceNames.add(face.name);
+      faces.push(Object.freeze({ name: face.name, label: isName(face.label) ? face.label : face.name, exclusive: face.exclusive === true }));
+    }
     slots.push({
       name: slot.name,
       label: isName(slot.label) ? slot.label : slot.name,
       width: finite(slot.width, 0),
       min: Math.max(1, finite(slot.min, MIN_DEFAULT)),
       compact: Math.max(0, finite(slot.compact, 0)),
+      faces: Object.freeze(faces),
+      face: faces.some((f) => f.name === slot.face) ? slot.face : faces[0]?.name || '',
     });
   }
   if (!slots.length) throw new Error('an arrangement needs at least one slot');
@@ -61,10 +74,29 @@ export function defaultArrangement(declaration) {
     order: Object.freeze(slots.map((slot) => slot.name)),
     hidden: Object.freeze([]),
     widths: Object.freeze(Object.fromEntries(slots.map((slot) => [slot.name, slot.width]))),
+    faces: Object.freeze(Object.fromEntries(slots.filter((slot) => slot.face).map((slot) => [slot.name, slot.face]))),
   });
 }
 
 const slotOf = (declaration, name) => declaration.slots.find((slot) => slot.name === name);
+const faceOf = (slot, name) => slot?.faces.find((face) => face.name === name);
+
+/** Each slot's face, with an exclusive face held by at most one slot — first in order keeps it. */
+const settleFaces = (order, wanted, decl, keeper = '') => {
+  const faces = {};
+  const taken = new Set();
+  const claim = (name) => {
+    const slot = slotOf(decl, name);
+    if (!slot?.faces.length) return;
+    let face = faceOf(slot, wanted[name]) ? wanted[name] : slot.face;
+    if (faceOf(slot, face)?.exclusive && taken.has(face)) face = slot.faces.find((f) => f.name !== face && !(f.exclusive && taken.has(f.name)))?.name || face;
+    if (faceOf(slot, face)?.exclusive) taken.add(face);
+    faces[name] = face;
+  };
+  if (keeper) claim(keeper); // the slot just turned wins the exclusive face
+  for (const name of order) if (name !== keeper) claim(name);
+  return faces;
+};
 
 /** Drops unknown names, appends missing ones, and keeps every width inside its slot's bounds. */
 export function normalizeArrangement(state, declaration) {
@@ -81,7 +113,17 @@ export function normalizeArrangement(state, declaration) {
     const stored = source.widths && typeof source.widths === 'object' ? source.widths[slot.name] : undefined;
     widths[slot.name] = Math.min(WIDTH_MAX, Math.max(slot.min, finite(stored, slot.width)));
   }
-  return Object.freeze({ order: Object.freeze(order), hidden: Object.freeze(hidden), widths: Object.freeze(widths) });
+  const faces = settleFaces(order, source.faces && typeof source.faces === 'object' ? source.faces : {}, decl);
+  return Object.freeze({ order: Object.freeze(order), hidden: Object.freeze(hidden), widths: Object.freeze(widths), faces: Object.freeze(faces) });
+}
+
+/** Turn a slot over to one of its faces. An exclusive face leaves whichever slot had it. */
+export function setFace(state, name, face, declaration) {
+  const decl = declareArrangement(declaration);
+  const slot = slotOf(decl, name);
+  if (!slot || !faceOf(slot, face) || state.faces?.[name] === face) return state;
+  const faces = settleFaces(state.order, { ...(state.faces || {}), [name]: face }, decl, name);
+  return Object.freeze({ ...state, faces: Object.freeze(faces) });
 }
 
 export const isHidden = (state, name) => state.hidden.includes(name);
@@ -92,7 +134,10 @@ export function visibleColumns(state, declaration) {
   const decl = declareArrangement(declaration);
   const names = visibleOrder(state);
   const total = names.reduce((sum, name) => sum + state.widths[name], 0) || 1;
-  return names.map((name) => ({ name, width: (state.widths[name] / total) * 100, min: slotOf(decl, name)?.min ?? MIN_DEFAULT, compact: slotOf(decl, name)?.compact ?? 0 }));
+  return names.map((name) => {
+    const slot = slotOf(decl, name);
+    return { name, width: (state.widths[name] / total) * 100, min: slot?.min ?? MIN_DEFAULT, compact: slot?.compact ?? 0, face: state.faces?.[name] || slot?.face || '', faces: slot?.faces || [] };
+  });
 }
 
 /** Refuses to hide the last visible slot: a bench is never empty. */
@@ -181,5 +226,5 @@ export function migrateWorkbenchState(old, declaration) {
   }
   const flags = old.surfaces && typeof old.surfaces === 'object' ? Object.values(old.surfaces) : [];
   const hidden = names.filter((_, i) => flags[i] === true);
-  return normalizeArrangement({ order: names, hidden, widths }, declaration);
+  return normalizeArrangement({ order: names, hidden, widths, faces: fresh.faces }, declaration);
 }

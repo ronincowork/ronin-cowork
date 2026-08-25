@@ -55,6 +55,39 @@ function clock() {
 const pool = (h, c, opts = {}) =>
   createWarmTerminalPool({ ...h, schedule: c.schedule, cancel: c.cancel, streamCap: 4, ...opts });
 
+test('two seats: a member is hot in one seat at a time, and both seats are watched', () => {
+  const h = harness(); const c = clock();
+  const left = { append: (el) => { el.seat = 'left'; } };
+  const right = { append: (el) => { el.seat = 'right'; } };
+  const p = createWarmTerminalPool({ createHost: h.createHost, seats: { left, right }, schedule: c.schedule, cancel: c.cancel, streamCap: 4 });
+  p.sync(['a', 'b', 'c', 'd', 'e']);
+  assert.deepEqual(p.seats, ['left', 'right']);
+  p.show('a', false, 'left');
+  p.show('b', false, 'right');
+  assert.equal(p.activeIn('left'), 'a');
+  assert.equal(p.activeIn('right'), 'b');
+  assert.equal(h.records[0].el.hidden, false, 'a is visible in its seat');
+  assert.equal(h.records[1].el.hidden, false, 'b is visible in its seat');
+  p.show('a', false, 'right');
+  assert.equal(h.records[0].el.seat, 'right', 'a moved seats');
+  assert.equal(p.activeIn('left'), '', 'the seat a left is empty');
+  assert.equal(p.seatOf('a'), 'right');
+  assert.equal(h.records[1].el.hidden, true, 'b is warm, concealed, not parked');
+  assert.equal(h.records[1].parks, 0);
+  p.show('b', false, 'left');
+  p.show('c', false, 'left');
+  p.show('d', false, 'left');
+  p.show('e', false, 'left'); // five streaming, cap 4: the coldest UNWATCHED parks — never a's
+  assert.equal(h.records[0].parks, 0, 'a is watched in the right seat and is never the one parked');
+  assert.equal(p.streamingCount, 4);
+  p.clearSeat('right');
+  assert.equal(p.activeIn('right'), '');
+  assert.equal(h.records[0].el.hidden, true, 'cleared seat conceals a but keeps it warm');
+  assert.equal(h.records[0].parks, 0);
+  const gone = p.sync(['a', 'b', 'c', 'd']);
+  assert.deepEqual(gone.removed, ['e'], 'the member up in a seat that lost membership is reported');
+});
+
 test('seats are free: entry mounts nothing; the first show pays the one mount', () => {
   const h = harness(); const c = clock();
   const p = pool(h, c);

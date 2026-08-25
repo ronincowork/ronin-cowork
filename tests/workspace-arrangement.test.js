@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   declareArrangement, defaultArrangement, normalizeArrangement, visibleColumns, toggleSlot,
-  moveSlot, resizeSlot, yieldingNeighbour, widthClass, migrateWorkbenchState,
+  moveSlot, resizeSlot, yieldingNeighbour, widthClass, migrateWorkbenchState, setFace,
 } from '../public/js/workspace-arrangement.js';
 
 /**
@@ -110,6 +110,27 @@ test('the roster can get quite thin: a 6% floor and a compact width class', () =
   assert.equal(widthClass(150, column.compact), 'compact');
   assert.equal(widthClass(200, column.compact), 'full');
   assert.equal(widthClass(150, 0), 'full', 'no threshold, never compact');
+});
+
+const FACED = { slots: [
+  { name: 'a', faces: ['t', { name: 'c', exclusive: true }] },
+  { name: 'b' },
+  { name: 'd', faces: ['t', { name: 'c', exclusive: true }], face: 'c' },
+] };
+
+test('faces: each faced slot has one up; an exclusive face is held by one slot at a time', () => {
+  const state = defaultArrangement(FACED);
+  assert.deepEqual(state.faces, { a: 't', d: 'c' }, 'declared defaults, and b has no face');
+  const turned = setFace(state, 'a', 'c', FACED);
+  assert.deepEqual(turned.faces, { a: 'c', d: 't' }, 'a took the commons, so d turned back to its terminal');
+  assert.equal(setFace(turned, 'a', 'c', FACED), turned, 'same face is the same state');
+  assert.equal(setFace(turned, 'b', 'c', FACED), turned, 'a slot without faces cannot turn');
+  assert.equal(setFace(turned, 'a', 'zzz', FACED), turned, 'an undeclared face is refused');
+  const both = normalizeArrangement({ order: ['a', 'b', 'd'], faces: { a: 'c', d: 'c' } }, FACED);
+  assert.deepEqual(both.faces, { a: 'c', d: 't' }, 'a stored double claim settles to the first in order');
+  assert.equal(visibleColumns(turned, FACED)[0].face, 'c');
+  assert.equal(visibleColumns(turned, FACED)[2].faces.length, 2);
+  assert.equal(migrateWorkbenchState({ widths: { left: 40, right: 40 } }, FACED).faces.d, 'c', 'migration keeps declared faces');
 });
 
 test('the old workbench state migrates once, by position', () => {

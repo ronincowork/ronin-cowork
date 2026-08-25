@@ -8,6 +8,9 @@
 
   .tw-cards { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4); }
   .tw-cards [data-inert='true'] { cursor: default; }
+  .tw-cards > [draggable='true'] { cursor: grab; }
+  /* a seat with a card over it — the drop will land here */
+  .tw-terminal[data-drop-ready='true'] { outline: var(--edge-2) solid var(--kaki); outline-offset: calc(-1 * var(--edge-2)); }
 
   .tw-note { padding: var(--space-6) var(--space-7); color: var(--muted); font-size: var(--text-3); }
   .tw-config { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-6) var(--space-7); }

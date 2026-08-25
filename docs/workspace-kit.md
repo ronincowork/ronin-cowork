@@ -55,6 +55,13 @@ Current load-bearing contracts:
   which the ViewHost draws into the bar's `#viewmap` slot for any registered view that
   exposes `arrangement` — click shows/hides a slot, drag within the map reorders, keyboard
   works. Nothing in the frame, the map, or the ViewHost knows a slot's name or meaning.
+  A slot may declare FACES (`faces: ['terminal', { name: 'commons', exclusive: true }]`,
+  plus a default `face`); the consumer then hands `{ [face]: element }` for that slot,
+  a face element may be shared between slots, an exclusive face is up in one slot at a
+  time, and the Kit draws a corner face switch (`.wk-face-switch`) — the arrangement
+  carries `faces: { slot: face }` and `arrangement.setFace(slot, face)` turns one.
+- `createWarmTerminalPool({ createHost, seats: { id: container } })` (team feature, not
+  Kit) shows a member in a named seat; `container` alone is the one-seat form.
 - `createTerminalTileHost({ mode: 'full' | 'reduced' })` is the only terminal host. Full
   mode preserves the genuine existing Tile—including header, Torii, macros, controls,
   terminal, tape and composer—unchanged.
