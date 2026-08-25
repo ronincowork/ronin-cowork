@@ -182,6 +182,143 @@ why the slots cannot be reordered today.
 Legs 1–4 are one chain (each needs the one before). Legs 6, 7 and 8 stand alone and can
 go in any order, or in parallel with the chain.
 
+## LEG 1 — THE DESIGN (by `@team_page`, 2026-08-25; awaiting the owner's go)
+
+**What exists, read plainly.** `createWorkbenchLayout(terminalTile, kanban, channels,
+{managed})` in `public/js/workspace-layouts.js` is the whole frame today. Three
+positional arguments, three fixed names, a CSS grid of `--wk-left | 1fr | --wk-right`,
+collapse state keyed on those names, a `data-open` string enumerating the seven
+show/hide combinations by hand, and the rails/collapse actions built from
+`WorkspacePrimitives.createAction`. Its state `{widths:{left,right},
+surfaces:{terminalTile,kanban,channels}}` is typed by `teamWorkspaceState()` in
+`workspace-contract.js` and written by the team page with `ctx.patchState(...)` — **onto
+the shell's top-level state, not the view's**, so today it is neither per-destination
+nor per-team. The header `#bar` (`public/index.html`) has no slot a view can put a
+control into; views hand the ViewHost a `title` and nothing else.
+
+**The cut, in one sentence:** the frame stops knowing three names and starts taking a
+*declaration*; the state becomes an *arrangement*; the control becomes a *map* the
+ViewHost draws in the bar; and the team page shrinks to the declaration.
+
+### 1. The arrangement — pure state, no DOM (`public/js/workspace-arrangement.js`, new)
+
+```js
+// declared by a destination; the Kit never sees the names' meaning
+{ slots: ['terminal', 'roster', 'commons'],          // the surfaces, in default order
+  widths: [40, 20, 40],                              // default share of the row, percent
+  hidden: [] }                                       // default nothing hidden
+
+// the state it keeps and persists
+{ order:  ['terminal', 'roster', 'commons'],
+  hidden: ['roster'],
+  widths: { terminal: 40, roster: 20, commons: 40 } }  // by name, so a move keeps a width
+```
+
+Operations, each returning a new state: `toggle(name)` (refuses to hide the last
+visible one), `move(name, index)`, `resize(name, percent)` (clamped 15–70; the
+neighbour to the right yields, as today's "last changed edge yields"), `normalize(state,
+declaration)` (drops unknown names, adds missing ones at the end, rescales visible
+widths to 100). `migrateWorkbenchState(old)` turns today's
+`{widths:{left,right}, surfaces:{…}}` into an arrangement once, so nobody's saved
+layout is lost. Unit-tested with slots named `a b c d` and **no team import** — that is
+half of the non-hackery test, executable.
+
+### 2. The frame — `createWorkbenchLayout({ declaration, surfaces, state, onStateChange })`
+
+Same export name (it *is* the managed Workbench; renaming buys nothing). The positional
+form goes; the Kit gate flags any caller still using it. It renders `order` as DOM order
+inside `.wk-workbench-layout`, sets `grid-template-columns` from the visible widths
+(percent each, no `data-open` table — the seven hand-written combos in
+`workspace-kit.css` are deleted), puts a `.wk-workbench-splitter` between each visible
+pair (N−1, positioned from the cumulative widths), and marks hidden slots
+`hidden`. A move is a DOM move of the `.wk-layout-surface` wrapper; the terminal host's
+fit seam is poked after (its `ResizeObserver` already does this on any size change —
+confirm by probe, not assumption). `.wk-workbench-rails`, `.wk-workbench-expand`,
+`.wk-workbench-collapse` and the per-surface `.wk-surface-controls` injection are
+deleted. The phone composition (`max-width: 680px`: column flex, snap-scroll) is
+untouched — it reads DOM order, so it inherits reorder for free.
+
+Returns `{ host, el, arrangement, restore, snapshot }` where `arrangement` is the live
+controller the map binds to: `{ state(), toggle, move, resize, subscribe }`.
+
+### 3. The map — `createLayoutMap(arrangement)` in `workspace-primitives.js`
+
+A `<div class="wk-layout-map" role="group">` holding one `<button role="switch">` per
+slot in `order`, each drawn as a small rectangle whose width follows the slot's share
+and whose `aria-checked` follows visibility; `title` is the surface's declared label.
+**Click toggles. Pointer-drag reorders**: pointer capture on the button (the splitter's
+code, reused), and when the pointer crosses the midpoint of a neighbour, `move()`.
+Keyboard: arrows move focus, Space toggles, Shift+arrows move the slot. It renders from
+`arrangement.subscribe`, so a splitter drag redraws the rectangle widths and a map drag
+moves the real columns; one state, two faces. Roughly 2.2rem tall so it fits the bar's
+34px control height; no text.
+
+### 4. Where the map lives — the ViewHost draws it, features never touch the bar
+
+`#bar` gains one empty slot, `<span id="viewmap" class="wk-view-map">`, in the grow
+gap left of the five verbs (which keep their measured width untouched). A view may
+expose `arrangement` beside `el`/`mount`/`enter`; on every `navigate`, `createWorkspace`
+empties the slot and, if the incoming view has one, mounts `createLayoutMap(view.arrangement)`
+there. A view without slots (Sessions, League, Customize…) shows nothing. Nothing in the
+bar or the ViewHost knows what the slots contain.
+
+### 5. Persistence — per destination now, per team in leg 2
+
+`teamWorkspaceState()` becomes `{ team, mode, focusedSession, arrangement }`, with
+`arrangement` normalized against the declaration and migrated from the old shape. It is
+written with `ctx.patchViewState('team', { arrangement })` — the per-view store that
+already exists and today goes unused by the team page — not `patchState`. Leg 2 keys it
+by team param (`arrangements[team]`); the shape does not change again.
+
+### 6. The team page after the cut (`team-view.js`)
+
+```js
+const workbench = createWorkbenchLayout({
+  declaration: { slots: ['terminal', 'roster', 'commons'], widths: [40, 20, 40] },
+  surfaces: { terminal: terminalTile.el, roster: kanban.el, commons: channels.el },
+  state: typed.arrangement,
+  onStateChange: (arrangement) => ctx.patchViewState('team', { arrangement }),
+});
+root.append(workbench.host);
+// …and `arrangement: workbench.arrangement` on the view object it registers.
+```
+
+That is the whole of the team page's geometry. Commons-on-the-left is
+`slots: ['commons', 'roster', 'terminal']` — the other half of the non-hackery test.
+
+### 7. Gates and evidence
+
+- `scripts/check-workspace-kit.mjs`: the contract list changes from rails/expand/collapse
+  to `wk-layout-map`, `wk-view-map`, `workspace-arrangement.js`, and a rule that no file
+  under `public/js/` except the Kit reads `grid-template-columns` or `.wk-workbench-splitter`.
+- `scripts/check-css.mjs`: unchanged rules; the new map CSS lives in `workspace-kit.css`,
+  tokens only.
+- `tests/workspace-arrangement.test.js` (pure), plus the existing team-terminal-pool
+  suite untouched (the bench is DONE, and hiding a column does not park a transport —
+  same as today).
+- Playwright probe, before and after, at 1600×950: the three columns measure
+  632/304/632 today; after the cut they must measure the same, with `#bar` containing
+  three switches and the page containing zero `.wk-workbench-rails`. A second probe
+  toggles the middle switch and expects two columns and a persisted `hidden: ['roster']`
+  after reload.
+- `docs/workspace-kit.md`: the "Current load-bearing contracts" bullet for
+  `createWorkbenchLayout` is rewritten; the map and `arrangement` are added.
+
+### 8. Order of work (one PR, six commits)
+
+1. arrangement module + tests · 2. frame takes the declaration; rails deleted · 3. map
+primitive + CSS · 4. ViewHost bar slot · 5. contract + migration + team page declaration
+· 6. gates, probe evidence, README.
+
+### 9. Chosen without asking — say if wrong
+
+- At least one slot stays visible; the map refuses the last toggle rather than showing
+  an empty bench.
+- Hiding a column does not touch the hot bench: a hidden terminal keeps streaming. The
+  bench policy is DONE and this leg does not reopen it.
+- The map appears only on views that declare slots; the bar stays as it is everywhere else.
+- Widths are stored by slot name, so a moved column carries its width with it.
+
 ## Decisions
 
 | # | Question | State |
