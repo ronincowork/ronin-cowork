@@ -80,32 +80,46 @@ test('flipping inside the grace is warm — no reopen, no park', () => {
   assert.equal(h.records[1].el.hidden, false);
 });
 
-test('the grace expires: hidden tiles park and the server side is freed; re-show reattaches', () => {
+test('warmth is durable: no clock ever parks a shown tile', () => {
   const h = harness(); const c = clock();
   const p = pool(h, c);
   p.sync(['a', 'b']);
   p.show('a', false);
-  p.show('b', false); // a is now warm, grace armed
+  p.show('b', false); // a is hidden but stays hot — the owner toggles between these
   c.fire();
-  assert.equal(h.records[0].parks, 1, 'a parked — transport closed, seat kept');
-  assert.equal(p.has('a'), true);
-  assert.equal(p.streamingCount, 1, 'only the hot member still streams');
+  c.fire();
+  assert.deepEqual(h.records.map((r) => r.parks), [0, 0], 'nothing parked, however long the clock runs');
+  assert.equal(p.streamingCount, 2, 'both stay ready to flip to');
 
-  p.show('a', false); // cold → one reattach
-  assert.deepEqual(h.records[0].opens, ['a', 'a'], 'the re-show paid exactly one reattach');
+  p.show('a', false);
+  assert.deepEqual(h.records[0].opens, ['a'], 'the flip back cost nothing');
+});
+
+test('a re-show after a cap park pays exactly one reattach', () => {
+  const h = harness(); const c = clock();
+  const p = pool(h, c);
+  p.sync(['a', 'b', 'c', 'd', 'e']);
+  for (const name of ['a', 'b', 'c', 'd', 'e']) p.show(name, false); // a parked by the cap
+  assert.equal(h.records[0].parks, 1);
+  p.show('a', false);
+  assert.deepEqual(h.records[0].opens, ['a', 'a'], 'one reattach, tmux repaints at once');
   assert.equal(h.records[0].destroys, 0, 'parking never destroys');
 });
 
-test('the grace never parks the member being watched', () => {
+test('a PINNED member is never parked — not by the cap, not by anything but its seat', () => {
   const h = harness(); const c = clock();
   const p = pool(h, c);
-  p.sync(['a', 'b']);
-  p.show('a', false);
-  p.show('b', false);
-  p.show('a', false); // back before the grace fired — b now carries the timer
-  c.fire();
-  assert.equal(h.records[0].parks, 0, 'a is hot and untouchable');
-  assert.equal(h.records[1].parks, 1, 'b parked');
+  p.sync(['lead', 'a', 'b', 'c', 'd']);
+  p.show('lead', false); // the lead opens first and is pinned
+  p.setPinned(['lead']);
+  for (const name of ['a', 'b', 'c', 'd']) p.show(name, false); // cap pressure builds
+  assert.equal(h.records[0].parks, 0, 'the lead kept its stream through all of it');
+  assert.equal(h.records[1].parks, 1, 'the coldest UNPINNED member yielded instead');
+  assert.equal(p.streamingCount, 4, 'the cap held');
+
+  const result = p.sync(['a', 'b', 'c', 'd']); // the lead leaves the team
+  assert.equal(result.removedActive, false);
+  assert.equal(h.records[0].destroys, 1, 'membership loss is the one thing that takes a pin');
 });
 
 test('the stream cap parks the coldest, never destroys, never touches the active', () => {
@@ -142,9 +156,10 @@ test('prewarm paints hidden, declines at the cap, and the grace collects it if n
   p.show('c', false); p.show('d', false); // cap reached: a, b, c, d streaming
   assert.equal(p.prewarm('e'), false, 'a hover never costs a genuinely warm member');
 
-  c.fire(); // b was never shown — the grace collects it (and parks the a/c leftovers)
+  c.fire(); // b was never shown — the grace collects it; the SHOWN tiles are untouched
   assert.equal(h.records[1].parks, 1, 'the unclaimed prewarm was parked');
   assert.equal(h.records[1].destroys, 0);
+  assert.equal(h.records[0].parks, 0, 'a — shown earlier — kept its warmth');
 });
 
 test('a prewarmed member clicked inside the grace costs nothing more', () => {
@@ -163,13 +178,13 @@ test('membership loss and page exit destroy every host — streaming, warm or pa
   const p = pool(h, c);
   p.sync(['a', 'b', 'c']);
   p.show('a', false); p.show('b', false);
-  c.fire(); // a parked
-  const result = p.sync(['b', 'c']); // a loses membership while parked
+  p.prewarm('c'); c.fire(); // c's unclaimed prewarm parks; a and b stay warm
+  const result = p.sync(['b', 'c']); // a loses membership while warm
   assert.equal(result.removedActive, false);
-  assert.equal(h.records[0].destroys, 1, 'the parked host still tears down fully');
+  assert.equal(h.records[0].destroys, 1, 'the warm host still tears down fully');
   assert.equal(h.records[0].removed, 1);
   p.destroyAll();
-  assert.deepEqual(h.records.map((r) => r.destroys), [1, 1], 'each exactly once');
+  assert.deepEqual(h.records.map((r) => r.destroys), [1, 1, 1], 'each exactly once, parked included');
   assert.equal(p.size, 0);
   assert.equal(c.armed, 0, 'no timer outlives the page');
 });

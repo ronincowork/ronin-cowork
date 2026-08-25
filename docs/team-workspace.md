@@ -43,16 +43,17 @@ work must not scope, wrap, replace, or retire it.
    reconciles one SEAT per live member and mounts NOTHING at entry. A member's tile is
    tiered (2026-08-25, owner-driven — each streaming tile is a websocket, a tmux viewer
    session and a live `tmux attach` pty process server-side): **HOT** is the visible
-   member, streaming; **WARM** is hidden but streaming for a ~25s grace, so flips
-   between members being compared are instant; when the grace expires the tile
-   **PARKS** — transport closed, server fully freed, seat and painted DOM kept — and a
-   re-show pays one reattach. **The stream cap is 4** (HOT+WARM together); at the cap
-   the least-recently-shown warm tile parks, nothing is destroyed, and no member loses
-   a seat. Hovering a card ~150ms **pre-warms** it hidden so the click lands on a
-   painted tile; a prewarm is coldest in the LRU, declines at the cap, and the grace
-   collects it if never clicked. **The team lead's Tile opens by default** when the
-   destination is entered with nothing chosen; a leaderless team keeps the placeholder.
-   Destruction remains membership loss and page exit only.
+   member, streaming; **WARM** is hidden but streaming, and **warmth is durable** —
+   no clock parks a shown tile (owner, 2026-08-25: toggled members stay hot); **PARKED**
+   means transport closed, server fully freed, seat and painted DOM kept, one reattach
+   to return. **Every `team_lead` is PINNED** — never parked by anything but membership
+   loss or page exit ("the team manager is always hot, regardless"), and the lead's
+   Tile opens by default on entry. **The stream cap is 4** (HOT+WARM together); at the
+   cap the least-recently-shown UNPINNED tile parks; if everything left is pinned or
+   visible the cap yields. Hovering a card ~150ms **pre-warms** it hidden so the click
+   lands on a painted tile; an unclaimed prewarm is collected by a ~25s grace — the one
+   thing the clock is still for. Destruction remains membership loss and page exit
+   only. The planned two-seat layout is `wip/buildouts/TEAM_WORKBENCH.md`.
 8. If persisted `focusedSession` is still a member, its host is revealed; otherwise every
    host stays hidden behind the honest empty placeholder.
 9. Selecting a card hides the old host and reveals/focuses the selected warm host. It does

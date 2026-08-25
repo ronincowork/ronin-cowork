@@ -11,20 +11,24 @@
  * This is the third cut, and the tiers are the design:
  *
  *   HOT    the visible member. Streaming, rendered, focused on request.
- *   WARM   hidden but still streaming, for a short grace — so flipping between two
- *          members is instant while you are actually comparing them. When the grace
- *          expires, the tile PARKS: transport closed, server fully freed (the ws close
- *          kills the viewer session and the attach process), seat and DOM kept.
+ *   WARM   hidden but still streaming. WARMTH IS DURABLE (owner, 2026-08-25): a tile
+ *          you opened stays hot until the cap forces the coldest out — four locked
+ *          streams is a cost the owner has already accepted ("we have four tiles on a
+ *          working page that work just fine"). No timer ever parks a shown tile.
  *   COLD   a seat. Costs nothing anywhere. First show — or a re-show after parking —
  *          pays one reattach, and tmux repaints the live screen immediately.
  *
+ *   PINNED members are never parked by anything but membership loss or page exit —
+ *   "the team manager is always hot, regardless" (owner). Pins count toward the cap.
+ *
  *   streamCap bounds HOT+WARM together (owner: 4). At the cap the least-recently-shown
- *   warm tile parks; nothing is ever destroyed for the cap, so no member loses their
- *   seat. Destruction remains what it always was: membership loss and page exit.
+ *   unpinned warm tile parks; nothing is ever destroyed for the cap, so no member loses
+ *   their seat. Destruction remains what it always was: membership loss and page exit.
  *
  *   prewarm(name) starts a member streaming hidden — the hover flourish: by the time
  *   the click lands, the tile is already painted. A prewarm is the coldest thing in the
- *   LRU, never steals a warm slot at the cap, and the grace parks it if never shown.
+ *   LRU, never steals a warm slot at the cap, and a short grace collects one that is
+ *   never clicked — the ONLY thing the clock is still for.
  *
  * Timers are injectable so the unit floor can run the clock by hand.
  */
@@ -39,6 +43,7 @@ export function createWarmTerminalPool({
 } = {}) {
   const entries = new Map(); // name -> { host, tile, graceTimer }
   const lru = []; // streaming members, least-recently-shown first
+  const pinned = new Set(); // never parked while members — the lead, by the caller's hand
   let active = '';
 
   const streaming = (entry) => !!entry?.host && !entry.host.parked;
@@ -63,7 +68,8 @@ export function createWarmTerminalPool({
     unlist(name);
   };
 
-  /** A hidden-but-streaming tile earns its keep for one grace period, then parks. */
+  /** An unclaimed PREWARM earns its keep for one grace period, then parks. Shown tiles
+   *  never ride this clock — warmth is durable (owner, 2026-08-25). */
   const armGrace = (name) => {
     const entry = entries.get(name);
     if (!entry) return;
@@ -74,15 +80,15 @@ export function createWarmTerminalPool({
     }, warmGraceMs);
   };
 
-  /** Most-recently-shown wins; the coldest warm tile parks when the cap is exceeded.
-   *  The active member is at the tail and is therefore never the one parked. */
+  /** Most-recently-shown wins; the coldest UNPINNED warm tile parks when the cap is
+   *  exceeded. The active member is at the tail and is never the one parked. */
   const touch = (name, asColdest = false) => {
     unlist(name);
     if (asColdest) lru.unshift(name);
     else lru.push(name);
     while (lru.length > streamCap) {
-      const coldest = lru[0];
-      if (coldest === active) break; // never park the one being watched
+      const coldest = lru.find((n) => n !== active && !pinned.has(n));
+      if (!coldest) break; // everything left is pinned or watched — the cap yields
       park(coldest);
     }
   };
@@ -95,6 +101,7 @@ export function createWarmTerminalPool({
     entry.host?.el.remove();
     entries.delete(name);
     unlist(name);
+    pinned.delete(name); // a pin dies with its seat
     if (active === name) active = '';
     return true;
   };
@@ -133,8 +140,9 @@ export function createWarmTerminalPool({
     }
     active = name;
     touch(name);
-    // The member just left behind stays warm for one grace, then parks.
-    if (previous && previous !== name && streaming(entries.get(previous))) armGrace(previous);
+    // The member just left behind stays WARM — durable, no clock. Only cap pressure,
+    // membership loss or page exit takes its stream (and never a pin's).
+    void previous;
     entry.host.fit();
     if (focus) entry.tile.focusTerminal?.();
     return true;
@@ -158,10 +166,19 @@ export function createWarmTerminalPool({
     active = '';
   };
 
+  /** The always-hot set — the lead(s). Pins survive re-sync; a pin on a member that
+   *  loses membership dies with its seat. Pinning does not itself mount: the caller
+   *  shows the lead, and the pin keeps that stream from ever being taken. */
+  const setPinned = (names = []) => {
+    pinned.clear();
+    for (const name of names) if (entries.has(name)) pinned.add(name);
+  };
+
   return {
     sync,
     show,
     prewarm,
+    setPinned,
     destroyAll,
     has: (name) => entries.has(name),
     get active() { return active; },

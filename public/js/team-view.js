@@ -184,9 +184,12 @@ export function createTeamView() {
     // THE BOARD IS ASSUMED: the roster's wipeboard id, or the team's own name for a
     // tag-only team. The server creates it on open, so the slice never meets a void.
     wipeboard.setBoard((roster.durable && roster.wipeboard) || name);
-    // THE LEAD IS THE TEAM'S DEFAULT SESSION (owner, 2026-08-25: "always load the team
-    // lead first"). With nothing chosen and nothing showing, the lead's Tile opens —
-    // unfocused, so the keyboard is not stolen. A leaderless team keeps the placeholder.
+    // THE LEAD IS THE TEAM'S DEFAULT SESSION AND IS ALWAYS HOT (owner, 2026-08-25:
+    // "the team manager is always hot, regardless"). Pinned first, so nothing ever
+    // takes the lead's stream; then, with nothing chosen and nothing showing, the
+    // lead's Tile opens — unfocused, so the keyboard is not stolen. A leaderless team
+    // keeps the placeholder and pins nobody.
+    terminalPool.setPinned(members.filter((m) => m.team_lead).map((m) => m.name));
     if (entered && team === name && !terminalPool.active) {
       const lead = members.find((m) => m.team_lead);
       if (lead && terminalPool.show(lead.name, false)) {
@@ -209,6 +212,7 @@ export function createTeamView() {
         const members = membersOfTeam(team);
         const roster = teamByName(team);
         syncTerminalPool(members);
+        terminalPool.setPinned(members.filter((m) => m.team_lead).map((m) => m.name));
         renderCards(members);
         renderConfig(roster.durable ? roster : null, members);
         wipeboard.setBoard((roster.durable && roster.wipeboard) || team);
