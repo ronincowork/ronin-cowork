@@ -13,6 +13,10 @@ export function createTerminalTileHost(options = {}) {
     if (tile) return tile;
     tile = new Tile(Number(options.index) || 0);
     tile.el.classList.add('wk-hosted-tile');
+    // Consumer actions ride the Tile's own head row, beside its buttons — this host is
+    // the one seam that touches the Tile, so the consumer never reaches in itself.
+    const head = tile.el.querySelector(':scope > .tile-head');
+    for (const action of Array.isArray(options.actions) ? options.actions : []) if (action instanceof Node && head) head.append(action);
     el.append(tile.el);
     return tile;
   };

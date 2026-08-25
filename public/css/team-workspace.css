@@ -9,6 +9,9 @@
   .tw-cards { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4); }
   .tw-cards [data-inert='true'] { cursor: default; }
   .tw-cards > [draggable='true'] { cursor: grab; }
+  /* the flip — C on a terminal's head row, T on the commons' tab strip; one letter, one click */
+  .tw-flip { min-width: var(--space-12); min-height: var(--space-11); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); color: var(--fg); padding: 0 var(--space-3); font: inherit; font-size: var(--text-3); cursor: pointer; }
+  .tw-flip:hover { border-color: var(--kaki); color: var(--fg-strong); }
   /* a seat with a card over it — the drop will land here */
   .tw-terminal[data-drop-ready='true'] { outline: var(--edge-2) solid var(--kaki); outline-offset: calc(-1 * var(--edge-2)); }
 

@@ -213,33 +213,40 @@ switches want a label on hover beyond the slot's declared label.
 
 ## LEGS 2 + 3 — LANDED (cut by `@team_page`, 2026-08-25, on "we should be able to toggle between the two")
 
-**What is on `dev`:** slots have FACES. The arrangement carries `faces: {slot: face}`;
-a declaration lists a slot's faces (`faces: ['terminal', {name: 'commons', exclusive:
-true}]`) and its default; an *exclusive* face is up in one slot at a time — turn a
-second slot to it and the first turns back. The frame takes one element per face for
-such a slot (a face element may be shared: the one commons lives in whichever slot has
-it up) and draws a small **face switch** in the slot's top-right corner, over the
-content, so it costs no row (`.wk-face-switch`, quiet until hovered). The pool has
-**seats**: `seats: {workspace1: el, workspace2: el}`; a member is hot in one seat at a
-time, showing it elsewhere moves its host; every seated member is watched and never
-the one parked for the cap; `clearSeat` conceals without parking. The team page is two
-seats (`workspace1` defaults to a terminal, `workspace2` to the commons), the roster
-between them; a card lands in **the seat last touched** (pointer on the seat, or its
-switch turned to terminal — T3 needs no ⇄); a seat turned to the commons hands its
-member to an empty terminal seat if there is one, else leaves it warm and concealed;
-seats persist as `{slot: member}` in the view state and are re-applied when the roster
-arrives, so a cold reload does not hand a remembered seat to the lead. **Both ways**
-(owner): a click lands in the seat last touched, and a card DRAGGED onto a seat lands in
-that seat (`text/x-ronin-session` on the drag; the seat outlines in kaki while a card
-is over it).
+**The ruling that shaped it (owner, 2026-08-25, after the first cut):** "It should be a
+very simple trade in and trade out. There should be no overlaying. There should not be
+hidden. There should be only switched in or out. It's there or it's not there." The
+first cut had *faces* — a slot keeping two elements and showing one, a switch pill
+drawn over the tile, and warm tiles hidden inside the seat. All three are gone.
 
-**Measured (playwright, 1600×950, `#/team/five-eyes`):** default = terminal ·
-roster · commons, 630/315/630, the same as leg 1. Turn workspace 2 to terminal →
-placeholder; click a card → it lands in workspace 2, two xterms side by side, both
-cards marked. Turn workspace 1 to commons → the commons moves left, workspace 2 keeps
-its member, the displaced one is warm and hidden (one hidden host). Reload → faces and
-seats persist. Turn workspace 1 back and click a card → it lands in workspace 1. No
-console errors. 13 pool tests (two-seat case added), 12 arrangement tests.
+**What is on `dev`:**
+- **A slot holds exactly one element.** The Kit frame gained one verb, `place(slot,
+  element)`: what was there comes out (and is returned), what you hand it goes in.
+  `holding(slot)` reads it. The arrangement is order · hidden columns · widths, nothing
+  more; the frame keeps nothing in a box that is not showing it.
+- **What a workspace can hold is what the roster lists.** The commons is a card at the
+  top of the roster (⛩ Team commons), beside the sessions. Click a card → it goes into
+  the workspace last touched, trading out whatever was there. Drag a card onto a
+  workspace → it goes into that one (the commons included, and dropping ONTO the commons
+  trades it out). Nothing over a tile. T3 is this.
+- **The flip is one button in the header row** (owner: "just make it a button, just like
+  the other buttons … a T and a C"): **C** on a terminal's head row, beside ⛩ @ ⚡ ⤢,
+  trades in the commons; **T** on the commons' tab strip trades the terminal back — the
+  member the commons displaced, else the lead, else an empty seat. It rides the Tile
+  through the terminal host's `actions` (the one seam that touches a Tile) and the
+  channel surface's `actions`, so no feature reaches into a Tile.
+- **Warm is out of the document, not hidden in it.** The pool has seats (`seats:
+  {workspace1: el, workspace2: el}`) and a holding: a seat's container holds its one
+  member's host or nothing; a warm host in no seat sits in the holding, detached. Every
+  seated member is watched and never the one parked for the cap.
+- **The seat's surface holds one child**: the member's host, or the placeholder.
+- Defaults with nothing remembered: the lead in workspace 1, the commons in workspace 2.
+  Seats persist as `{slot: member | '@commons'}` and are re-applied when the roster
+  arrives, so a cold reload does not hand a remembered seat to the lead.
+
+**Measured (playwright, 1600×950, `#/team/five-eyes`):** see the probe record in the
+commit that landed this — every step lists what each slot holds, and it is always one
+element, full height.
 
 **Not done here:** per-team persistence (leg 2b: key `seats` and `arrangement` by team
 param — one line each in `teamWorkspaceState` and the two `patchViewState` calls); the

@@ -131,6 +131,11 @@ function createChannelSurface(options = {}) {
     tabs.append(button);
     surface.content.append(service);
   }
+  // Consumer actions ride the strip's right end — the same row, no new one.
+  if (Array.isArray(options.actions) && options.actions.length) {
+    tabs.append(node('span', 'wk-channel-service-grow'));
+    for (const action of options.actions) if (action instanceof Node) tabs.append(action);
+  }
   surface.el.prepend(tabs);
   const select = (requested) => {
     const id = CHANNEL_SERVICES.includes(requested) ? requested : 'chat';

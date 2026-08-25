@@ -39,12 +39,14 @@
  * the container a host is appended into; `container` alone is the one-seat form the
  * first cuts used and the unit floor still runs. A member is HOT in at most one seat;
  * showing it in another moves its host there and leaves the first seat empty. Every
- * seat's member is watched — none is ever the one parked for the cap.
+ * seat's member is watched — none is ever the one parked for the cap. A WARM host that
+ * is in no seat sits in the holding, out of the document: a seat holds one host or none.
  */
 export function createWarmTerminalPool({
   createHost,
   container,
   seats = null,
+  holding = null,
   streamCap = 4,
   warmGraceMs = 25_000,
   schedule = (fn, ms) => setTimeout(fn, ms),
@@ -56,6 +58,10 @@ export function createWarmTerminalPool({
   const seatEls = new Map(Object.entries(seats && typeof seats === 'object' ? seats : {}));
   if (!seatEls.size) seatEls.set('main', container);
   const defaultSeat = seatEls.keys().next().value;
+  // THE HOLDING: where a warm host lives when it is in no seat — OUT of the document,
+  // not hidden inside a seat (owner, 2026-08-25: "it's there or it's not there; there is
+  // no hidden"). A seat's container holds its one member's host, or nothing.
+  const bench = holding || (typeof document !== 'undefined' ? document.createElement('div') : { append: () => {} });
   const shown = new Map(); // seat -> name
   let active = ''; // the member most recently shown, in whichever seat
 
@@ -146,12 +152,12 @@ export function createWarmTerminalPool({
     return entry.tile;
   };
 
-  /** Only the members up in a seat are visible; every other host is concealed. */
+  /** A host in no seat goes to the holding; a seat holds exactly its member's host. */
   const paint = () => {
     for (const [name, entry] of entries) {
-      if (!entry.host) continue;
-      if (watched(name)) entry.host.el.hidden = false;
-      else entry.host.hide();
+      if (!entry.host || watched(name) || !entry.seat) continue;
+      bench.append(entry.host.el);
+      entry.seat = '';
     }
   };
 
@@ -172,7 +178,7 @@ export function createWarmTerminalPool({
     return true;
   };
 
-  /** Empty a seat without touching the member's warmth — the seat turned to another face. */
+  /** Empty a seat without touching the member's warmth — the seat took something else. */
   const clearSeat = (seat) => {
     if (!shown.has(seat)) return false;
     shown.delete(seat);
@@ -188,7 +194,7 @@ export function createWarmTerminalPool({
     const entry = entries.get(name);
     if (!entry || streaming(entry) || watched(name)) return false;
     stream(name, entry);
-    entry.host.hide();
+    paint();
     touch(name);
     return true;
   };
@@ -200,7 +206,7 @@ export function createWarmTerminalPool({
     if (!entry || streaming(entry) || watched(name)) return false;
     if (lru.length >= streamCap) return false;
     stream(name, entry);
-    entry.host.hide();
+    paint();
     touch(name, true); // coldest: first to park, never displacing shown members
     armGrace(name);
     return true;

@@ -1,6 +1,6 @@
 /* Named Workspace Kit compositions. These establish geometry only. */
 
-import { declareArrangement, normalizeArrangement, visibleColumns, toggleSlot, moveSlot, resizeSlot, setFace, widthClass } from './workspace-arrangement.js';
+import { declareArrangement, normalizeArrangement, visibleColumns, toggleSlot, moveSlot, resizeSlot, widthClass } from './workspace-arrangement.js';
 
 const layout = (name, surfaces) => {
   const el = document.createElement('div');
@@ -51,47 +51,30 @@ function createWorkbenchLayout(options = {}) {
   if (options instanceof Node || arguments.length > 1) throw new Error('createWorkbenchLayout takes { declaration, surfaces, state, onStateChange }');
   const declaration = declareArrangement(options.declaration);
   const surfaces = options.surfaces && typeof options.surfaces === 'object' ? options.surfaces : {};
-  // A slot's surface is one element, or — for a slot with faces — one element per face
-  // name. A face element may be shared between slots (the one commons); it lives in
-  // whichever slot has that face up, and an exclusive face is up in one slot at a time.
-  const faceElements = (slot) => {
-    const given = surfaces[slot.name];
-    if (given instanceof Node) return new Map(slot.faces.length ? [[slot.faces[0].name, given]] : [['', given]]);
-    const map = new Map();
-    for (const face of slot.faces) if (given?.[face.name] instanceof Node) map.set(face.name, given[face.name]);
-    return map;
-  };
-  const faces = new Map(declaration.slots.map((slot) => [slot.name, faceElements(slot)]));
-  const el = layout('workbench-layout', Object.fromEntries(declaration.slots.map((slot) => [slot.name, faces.get(slot.name).get('') ?? null])));
+  const el = layout('workbench-layout', Object.fromEntries(declaration.slots.map((slot) => [slot.name, surfaces[slot.name] ?? null])));
   el.dataset.responsive = 'workbench';
   const host = document.createElement('div');
   host.className = 'wk-workbench-host';
   host.append(el);
   const wrappers = new Map(declaration.slots.map((slot) => [slot.name, el.querySelector(`:scope > [data-surface="${slot.name}"]`)]));
-  const switches = new Map();
   const splitters = [];
   const listeners = new Set();
   let state = normalizeArrangement(options.state, declaration);
   let columns = [];
 
-  const paintFaces = () => {
-    for (const slot of declaration.slots) {
-      const wrapper = wrappers.get(slot.name);
-      const up = state.faces?.[slot.name] || '';
-      // A face that is down is taken OUT of the wrapper, not hidden in place: a surface
-      // sets its own display, so the `hidden` attribute does not conceal it — the owner
-      // met the commons painted above a terminal, tab strip and all (2026-08-25).
-      for (const [face, node] of faces.get(slot.name)) {
-        if (!face) continue;
-        if (face === up) {
-          if (node.parentElement !== wrapper) wrapper.prepend(node);
-        } else if (node.parentElement === wrapper) node.remove();
-      }
-      wrapper.dataset.face = up;
-      const strip = switches.get(slot.name);
-      if (strip) for (const button of strip.children) button.setAttribute('aria-pressed', button.dataset.face === up ? 'true' : 'false');
-    }
+  // A SLOT HOLDS EXACTLY ONE THING (owner, 2026-08-25: "it's there or it's not there;
+  // there is no hidden"). place() trades what a slot holds for what you hand it and
+  // returns what came out. The frame keeps nothing else in the box.
+  const place = (name, node) => {
+    const wrapper = wrappers.get(name);
+    if (!wrapper || !(node instanceof Node)) return null;
+    const previous = wrapper.firstElementChild;
+    if (previous === node) return node;
+    wrapper.replaceChildren(node);
+    measure();
+    return previous;
   };
+  const holding = (name) => wrappers.get(name)?.firstElementChild ?? null;
 
   const phone = () => window.matchMedia('(max-width: 680px)').matches;
   const placeSplitters = () => {
@@ -126,7 +109,6 @@ function createWorkbenchLayout(options = {}) {
     }
     el.style.gridTemplateColumns = columns.map((c) => `minmax(0, ${c.width.toFixed(3)}fr)`).join(' ');
     el.dataset.slots = columns.map((c) => c.name).join(' ');
-    paintFaces();
     // Splitters are absolutely positioned, so their DOM order is irrelevant — and they
     // must NOT be re-appended here: moving the node mid-drag drops its pointer capture.
     measure();
@@ -145,31 +127,9 @@ function createWorkbenchLayout(options = {}) {
     toggle: (name) => commit(toggleSlot(state, name), true),
     move: (name, index) => commit(moveSlot(state, name, index), true),
     resize: (name, percent, neighbour) => commit(resizeSlot(state, name, percent, declaration, neighbour), true),
-    setFace: (name, face) => commit(setFace(state, name, face, declaration), true),
     subscribe: (fn) => { listeners.add(fn); return () => listeners.delete(fn); },
   });
   const restore = (next) => { commit(normalizeArrangement(next, declaration), false); return state; };
-
-  // The face switch: one per slot that has more than one face, in the slot's corner.
-  for (const slot of declaration.slots) {
-    if (slot.faces.length < 2) continue;
-    const strip = document.createElement('div');
-    strip.className = 'wk-face-switch';
-    strip.setAttribute('role', 'group');
-    strip.setAttribute('aria-label', `${slot.label} shows`);
-    for (const face of slot.faces) {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'wk-face';
-      button.dataset.face = face.name;
-      button.textContent = face.label;
-      button.title = `Show ${face.label} here`;
-      button.addEventListener('click', () => arrangement.setFace(slot.name, face.name));
-      strip.append(button);
-    }
-    wrappers.get(slot.name).append(strip);
-    switches.set(slot.name, strip);
-  }
 
   // One splitter per gap the declaration can ever have; render hides the spares.
   for (let i = 0; i < declaration.slots.length - 1; i += 1) {
@@ -236,7 +196,7 @@ function createWorkbenchLayout(options = {}) {
 
   if (typeof ResizeObserver === 'function') new ResizeObserver(measure).observe(el);
   render();
-  return { el, host, arrangement, restore, snapshot };
+  return { el, host, arrangement, place, holding, restore, snapshot };
 }
 
 export const WorkspaceLayouts = Object.freeze({
