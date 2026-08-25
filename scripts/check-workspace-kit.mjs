@@ -52,7 +52,9 @@ for (const contract of ['ac-form', 'ac-fields', 'ac-field', 'ac-control']) {
 }
 if (!agentPreview.includes('ac-preview-body')) problems.push('Agent Configuration preview is missing its governed feature hierarchy hook.');
 if (!agentPreview.includes('resolved.stated_by?.[key]')) problems.push('Agent Configuration must render server-returned stated_by attribution.');
+if (!agentPreview.includes('resolved.birth_reading')) problems.push('Agent Configuration must render the server-returned birth reading list.');
 if (!preflight.includes('stated_by: resolved.stated_by')) problems.push('Launch preflight must publish canonical resolver attribution unchanged.');
+if (!preflight.includes('birth_reading: resolved.birth_reading')) problems.push('Launch preflight must publish canonical birth readings unchanged.');
 for (const contract of ['.ac-field {', '.ac-actions[data-dirty=', '.ac-preview-brief {', '.ac-preview-rows {']) {
   if (!agentStyles.includes(contract)) problems.push(`Agent Configuration feature styling is missing ${contract}.`);
 }

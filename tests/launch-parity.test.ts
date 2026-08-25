@@ -143,6 +143,19 @@ test('and to the same reading list — all + root + role, compiled once', async 
   for (const book of [...books, 'TEAM_BOOK.md']) {
     assert.ok(forkBooks.includes(book), `the forked Build Brief must carry ${book}`);
   }
+  assert.deepEqual(fromCommons.birth_reading.map((file) => path.basename(file)).sort(), books);
+  assert.deepEqual(fromForkit.birth_reading.map((file) => path.basename(file)).sort(), forkBooks);
+});
+
+test('resolved birth readings include explicit seeds, while manual mode reads nothing at birth', async () => {
+  const seed = path.join(temp, 'OWNER_SEED.md');
+  const assisted = await resolveForm(commonsForm({ seed: [seed] }), new Set());
+  assert.ok(assisted.birth_reading.includes(seed));
+  assert.deepEqual(reading(assisted.brief), assisted.birth_reading.map((file) => path.basename(file)).sort());
+
+  const manual = await resolveForm(commonsForm({ mode: 'manual', seed: [seed] }), new Set());
+  assert.deepEqual(manual.birth_reading, []);
+  assert.equal(manual.brief, commonsForm().prompt);
 });
 
 test("forkit's own inputs change its words and nothing about the mechanism", async () => {
@@ -231,6 +244,23 @@ test('preflight publishes resolver attribution unchanged', async () => {
   const preview = previewResolved(resolved);
   assert.strictEqual(preview.stated_by, resolved.stated_by);
   assert.deepEqual(preview.stated_by.lifecycle, resolved.stated_by.lifecycle);
+  assert.strictEqual(preview.birth_reading, resolved.birth_reading);
+  assert.strictEqual(preview.posture, resolved.posture);
+  assert.equal(preview.model, resolved.model);
+  assert.equal(preview.permissions, resolved.permissions);
+  assert.equal(preview.opening, resolved.opening);
+});
+
+test('server resolution returns profile and durable Team context without browser reconstruction', async () => {
+  const resolved = await resolveForm(forkitForm(), new Set());
+  assert.equal(resolved.model, 'opus');
+  assert.equal(resolved.permissions, 'default');
+  assert.equal(resolved.team_objective, 'prove the parity');
+  assert.deepEqual(resolved.team_repos, []);
+  assert.equal(resolved.team_branch, '');
+  assert.equal(resolved.team_wipeboard, 'scratchteam');
+  assert.equal(resolved.team_state, 'active');
+  assert.equal(resolved.stated_by.team_objective[0]?.layer, 'team_roster');
 });
 
 test('a stock task board keeps a stated order, and OpenShell is never in the middle of it', async () => {

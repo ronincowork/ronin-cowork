@@ -113,6 +113,14 @@ named runtime input such as `launch request` or `proposed Team draft` otherwise.
 does not inspect draft fields or reproduce precedence. Additive readings may name multiple
 sources. A missing key is rendered as “source not reported”, never guessed.
 
+The same payload carries the complete server-resolved launch-profile readings (`model`,
+permissions, acknowledgement gate, opening template, posture, label and MCP default/lock),
+durable Team context (objective, repositories, branch, wipeboard and state), and
+`birth_reading`. `birth_reading` is the literal assisted-mode list passed into brief
+construction after the server combines the boot shelf with explicit seeds; manual and
+agentless births return an empty list. The browser renders that array unchanged and never
+walks shelves or reconstructs reading precedence.
+
 ## Owned files
 
 Agent Configuration owns:
@@ -203,8 +211,10 @@ Current evidence is deliberately narrow:
   buttons. The visual-hierarchy leg extends that scoped contract over the feature hooks and
   stylesheet, while `scripts/check-css.mjs` enforces static loading, app-layer, tokens and
   namespace isolation. Focused launch tests cover explicit, Team roster, session-role and
-  system attribution plus unchanged preflight publication. Exact scoped results belong in
-  the commit handoff. Release-candidate BYOIN remains the designated integrator's
+  system attribution, the exact assisted/manual birth-reading contract, expanded profile
+  and Team readings, and unchanged preflight publication. The static Kit check also requires
+  the browser and preflight mapper to consume/publish `birth_reading`. Exact scoped results
+  belong in the commit handoff. Release-candidate BYOIN remains the designated integrator's
   responsibility.
 
 When feature work resumes, the acceptance proof must cover at least:
@@ -224,9 +234,7 @@ When feature work resumes, the acceptance proof must cover at least:
    release-ready.
 2. The selected seat and last-applied snapshot are not separately restored on refresh,
    although the canonical New Team draft is persisted per tab.
-3. The preview renders only the currently enumerated resolved rows, not the full ruled
-   read-only answer and birth reading list.
-4. There is no current, trustworthy scoped browser verdict against this destination, so the
+3. There is no current, trustworthy scoped browser verdict against this destination, so the
    owner's earlier not-release-ready visual verdict has not been superseded by inspection.
 
 ## Exact resume checklist
@@ -243,12 +251,12 @@ Do these in order; stop rather than guessing when a required ruling is missing.
    seams listed above. Treat this README as a map, not evidence that the tree is unchanged.
 5. State to `@view_mgr` the single bounded leg, touched paths and explicit exclusions before
    editing shared CSS or integration files.
-6. Next bounded product leg: expand the preview's enumerated resolved readings toward the
-   full ruled answer and birth reading list, using server-returned values only.
+6. Next bounded product leg, only when assigned: restore the selected Agent Configuration
+   seat and this view's last-applied boundary after refresh. Persistence must extend the
+   canonical draft/selection contract rather than create a feature-local draft store.
 7. Keep Kit geometry in the Kit and feature meaning in `ac-*`; do not broaden a local leg
    into a five-surface foundation rewrite.
-8. Keep persistence and expanded resolved readings as separate legs; never build a
-   browser-side cascade as a shortcut.
+8. Never build a browser-side cascade or shelf walk as a persistence shortcut.
 9. After each completed implementation leg, update this README by deleting the finished
    checklist item and stale limitation. Do not accumulate another historical diary.
 10. Record scoped rendered evidence for the leg; the designated integrator owns the single

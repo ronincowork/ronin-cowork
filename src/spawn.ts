@@ -132,6 +132,23 @@ export interface Resolved {
    * process is called, and for Codex that is `node`.
    */
   launchAgent: string;
+  /** The complete server-resolved profile readings used to construct this birth. */
+  model: string;
+  permissions: string;
+  ack: boolean;
+  opening: string;
+  posture: string[];
+  label: string;
+  mcpAlways: boolean;
+  mcpDefault: boolean;
+  /** Durable Team context. Empty for a rōnin launch. */
+  team_objective: string;
+  team_repos: string[];
+  team_branch: string;
+  team_wipeboard: string;
+  team_state: '' | 'active' | 'archived';
+  /** Literal files the server put in the assisted brief's `Read first:` sentence. */
+  birth_reading: string[];
   /** Server-owned attribution for every resolved reading. The browser only renders it. */
   stated_by: Record<string, StatedBy[]>;
 }
@@ -452,6 +469,14 @@ export async function resolveForm(
       return true;
     });
   };
+  // Compile this once and return the exact same list the brief receives. The browser must
+  // never recreate shelf precedence or guess which explicit seeds joined it.
+  const shelfReading = agent
+    ? await bootReading(root.name, profile.session_role, roster?.team_role ?? '', !mcpOffWanted)
+    : [];
+  const birthReading = agent && form.mode !== 'manual'
+    ? [...shelfReading, ...(form.seed ?? [])].filter(Boolean)
+    : [];
 
   return {
     name: wanted || slugName(profile.session_role || form.team || 'session', form.prompt, taken),
@@ -484,7 +509,7 @@ export async function resolveForm(
           root,
           form,
           referenceDir,
-          await bootReading(root.name, profile.session_role, roster?.team_role ?? '', !mcpOffWanted),
+          shelfReading,
           roster,
         )
       : '',
@@ -496,6 +521,20 @@ export async function resolveForm(
     // is free to name a path. RIREKI's decoder keys are bare binary names, and this value
     // is written into the option RIREKI reads, so it has to arrive in RIREKI's spelling.
     launchAgent: agent ? path.basename(cmd.trim().split(/\s+/)[0] ?? '') : '',
+    model: profile.model,
+    permissions: profile.permissions,
+    ack: profile.ack,
+    opening: profile.opening,
+    posture: profile.posture,
+    label: profile.label,
+    mcpAlways: profile.mcpAlways,
+    mcpDefault: profile.mcpDefault,
+    team_objective: roster?.objective ?? '',
+    team_repos: roster?.repos ?? [],
+    team_branch: roster?.branch ?? '',
+    team_wipeboard: roster?.wipeboard ?? '',
+    team_state: roster?.state ?? '',
+    birth_reading: birthReading,
     stated_by: {
       name: form.name ? explicit : system,
       dir: profile.dir ? profile.stated_by.dir : rootSource,
@@ -513,6 +552,20 @@ export async function resolveForm(
       capExempt: profile.stated_by.capExempt,
       mcp: mcpSource,
       launchAgent: cmdSource,
+      model: profile.stated_by.model,
+      permissions: profile.stated_by.permissions,
+      ack: profile.stated_by.ack,
+      opening: profile.stated_by.opening,
+      posture: profile.stated_by.posture,
+      label: profile.stated_by.label,
+      mcpAlways: profile.stated_by.mcpAlways,
+      mcpDefault: profile.stated_by.mcpDefault,
+      team_objective: rosterSource,
+      team_repos: rosterSource,
+      team_branch: rosterSource,
+      team_wipeboard: rosterSource,
+      team_state: rosterSource,
+      birth_reading: unique(system, form.seed?.length ? explicit : []),
     },
   };
 }
