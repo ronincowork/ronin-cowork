@@ -6437,6 +6437,14 @@ button.wb-door:hover b {
 }
 
 /* Services activation: static while waiting; motion only during a real check/install. */
+/* RAM_RPM — the box's working reading. QUIET BY DEFAULT: it wears --muted-2 like any
+   other passive readout, because a gauge that shouts all day is wallpaper by tomorrow
+   and stops carrying information. Only the two bands that mean something take colour,
+   and they take the palette's own --warn and --bad rather than inventing a red. It is a
+   readout, not a control: no pointer, no hover lift, nothing happens when it is clicked. */
+.ramrpm { margin-left: var(--space-4); border: var(--edge) solid var(--line-2); border-radius: var(--radius-pill); background: var(--raise); color: var(--muted-2); padding: var(--space-3) var(--space-6); font: var(--text-2) var(--font-mono); cursor: default; user-select: none; }
+.ramrpm[data-band='warn'] { color: var(--warn); border-color: var(--warn); }
+.ramrpm[data-band='red'] { color: var(--bad); border-color: var(--bad); }
 .services-state { margin-left: var(--space-4); border: var(--edge) solid var(--line-2); border-radius: var(--radius-pill); background: var(--raise); color: var(--muted-2); padding: var(--space-3) var(--space-6); font: var(--text-2) var(--font-mono); cursor: pointer; }
 .services-state.busy::before { content: '◌'; display: inline-block; margin-right: var(--space-3); animation: services-spin var(--motion-slow) linear infinite; }
 .services-pop { position: fixed; z-index: 50; width: min(360px, calc(100vw - var(--space-8))); border: var(--edge) solid var(--line-2); border-radius: var(--radius-sm); background: var(--panel); box-shadow: var(--shadow-menu); padding: var(--space-7); }

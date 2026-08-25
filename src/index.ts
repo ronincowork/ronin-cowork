@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { readMachine } from './machine.js';
 import express from 'express';
 import { createServer } from 'node:http';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -224,6 +225,11 @@ app.use('/api', (_req, res, next) => {
   res.set('Cache-Control', 'no-store');
   next();
 });
+
+// RAM_RPM's reading. Unauthenticated alongside /api/health deliberately: it says how
+// hard the box is working and nothing about what is on it — no session names, no paths,
+// no counts of anything a stranger could not guess from the machine's size.
+app.get('/api/machine', (_req, res) => res.json(readMachine()));
 
 app.get('/api/health', (_req, res) =>
   res.json({

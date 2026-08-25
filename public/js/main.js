@@ -1,5 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { fetchSessions } from './api.js';
+import { mountRamRpm } from './ramrpm.js';
 import { request } from './request.js';
 import { guard, showFailure } from './errors.js';
 import { applyTheme } from './theme.js';
@@ -37,6 +38,11 @@ export async function init() {
     // A failed read means an old operator or an unreachable server — the first reads
     // as "everything on", the second is reported by the session-list step below.
   }
+  // RAM_RPM before the grid, so the header carries a real reading from the first paint
+  // rather than appearing a minute in. Guarded like every other mount: a box that
+  // cannot answer /api/machine must still get its coworkspace.
+  guard('mount RAM_RPM', mountRamRpm);
+
   // The theme before the grid: tiles are born reading the resolved terminal palette.
   guard('apply theme', applyTheme);
   // After the theme, because a skin outranks it for whatever it names (js/skins.js).
