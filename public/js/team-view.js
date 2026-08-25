@@ -29,7 +29,9 @@ import { membersOfTeam, refreshTeams, subscribe, teamByName } from './team-contr
 import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { createTeamWipeboard } from './team-wipeboard.js';
 import { buildDocs } from './docs.js';
-import { refreshHome } from './home.js';
+import { STATUS_LABEL, refreshHome } from './home.js';
+import { request } from './request.js';
+import { humanAge } from './shingo.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -262,11 +264,38 @@ export function createTeamView() {
   const disarmPrewarm = () => window.clearTimeout(dwellTimer);
 
   /* ---------- the roster's cards ---------- */
+  // THE CARD IS A READING, NOT A LABEL (owner, 2026-08-25: "shingo, model, ready, session
+  // taken"). The readings ride /api/home's row — the same row the Commons roster reads:
+  // MICHI's SHINGO chip, the status, the model, the context gauge. Read on entry and every
+  // five seconds while entered (the Commons' own cadence); nothing is guessed when a
+  // reading is absent. RIREKI's cherry-pick or summary joins the row when the service
+  // contributes it; there is no field for it today.
+  let rows = new Map(); // name -> the /api/home row
+  let homeTimer = 0;
+  const readRows = async () => {
+    const r = await request('/api/home', { cache: 'no-store' });
+    if (!r.ok || !Array.isArray(r.data) || !entered) return;
+    rows = new Map(r.data.map((row) => [row.name, row]));
+    renderCards(membersOfTeam(team));
+  };
+  const readingsOf = (m) => {
+    const row = rows.get(m.name) || {};
+    const chip = row.tegami?.chip?.text && row.tegami?.ladder?.length ? row.tegami.chip.text + (row.tegami.quietMs >= 60000 ? ' · ' + humanAge(row.tegami.quietMs) : '') : null;
+    return [
+      m.session_role || null,
+      m.team_lead ? '人 lead' : null,
+      chip,
+      STATUS_LABEL[row.status] || null,
+      (row.model || '').toLowerCase() || null,
+      row.ctx != null ? `⛽ ${row.ctx}%` : null,
+      row.attached ? 'attached' : null,
+    ].filter(Boolean);
+  };
   function renderCards(members) {
     rosterCount.textContent = members.length ? String(members.length) : '';
     cards.replaceChildren();
     for (const m of members) {
-      const readings = [m.session_role || null, m.dial ? `dial ${m.dial}` : null, m.team_lead ? '人 lead' : null].filter(Boolean);
+      const readings = readingsOf(m);
       const card = createCard({
         heading: m.name,
         summary: m.summary || '',
@@ -381,12 +410,16 @@ export function createTeamView() {
       touch(Object.keys(seats).find((id) => holds(id) !== COMMONS) || 'workspace1');
       channels.enter(context);
       if (team !== loaded) void load(team);
+      void readRows();
+      window.clearInterval(homeTimer);
+      homeTimer = window.setInterval(() => void readRows(), 5000);
     },
     leave: () => {
       // Leaving the destination closes every Team transport; the seats remember what
       // they held and get it back on re-entry.
       entered = false;
       disarmPrewarm();
+      window.clearInterval(homeTimer);
       // Every Tile goes — the pools' and the empty ones. A Tile left in this view's DOM
       // is still a Tile to the Sessions grid's roll, and the smoke gate counts it.
       for (const seat of Object.values(seats)) { seat.pool.destroyAll(); seat.empty?.destroy(); seat.empty = null; }
