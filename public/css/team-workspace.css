@@ -2,6 +2,10 @@
 @layer app {
   .tw-cards[hidden], .tw-config[hidden], .tw-config-row[hidden] { display: none; }
 
+  /* the roster's header — the same depth as a tile head and the commons' tab strip */
+  .tw-roster-head { display: flex; align-items: center; gap: var(--space-3); flex: 0 0 auto; min-height: calc(var(--space-12) + var(--space-3)); padding: 0 var(--space-4); border-bottom: var(--edge) solid var(--line); color: var(--fg-strong); }
+  .tw-roster-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tw-roster-count { color: var(--muted); font-size: var(--text-3); }
   .tw-cards { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4); }
   .tw-cards [data-inert='true'] { cursor: default; }
   .tw-cards > [draggable='true'] { cursor: grab; }

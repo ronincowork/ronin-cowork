@@ -68,11 +68,9 @@ scrollTop round-trips) settled in minutes what three theory-driven "fixes" did n
 
 **The hot bench** (`public/js/team-terminal-pool.js`, tests in
 `tests/team-terminal-pool.test.js`) — the warm and hold rules stand (owner, 2026-08-25:
-"we have warm and hold rules"). What the KISS ruling removed was the *second host*
-that let one session be up in both workspaces at once; with one warm host per member,
-picking a session already up in the other workspace MOVES it there, and the workspace
-it left is empty — an empty box, no message. If one-session-in-both is wanted, it costs
-that second-host machinery back; the owner's call.
+"we have warm and hold rules"), and since the same day each workspace runs its OWN pool
+(cap 2 each, so four in all; the lead pinned in workspace 1). The pool's seats/holding
+machinery is still in the module for the one-seat form it now runs in.
 - Seats are free: page entry mounts nothing; first show mounts; **warmth is durable** —
   no clock ever parks a shown tile (owner overruled a 25s grace: toggled members stay
   hot).
@@ -229,11 +227,11 @@ drawn over the tile, and warm tiles hidden inside the seat. All three are gone.
   element)`: what was there comes out (and is returned), what you hand it goes in.
   `holding(slot)` reads it. The arrangement is order · hidden columns · widths, nothing
   more; the frame keeps nothing in a box that is not showing it.
-- **What a workspace can hold is what the roster lists.** The commons is a card at the
-  top of the roster (⛩ Team commons), beside the sessions. Click a card → it goes into
-  the workspace last touched, trading out whatever was there. Drag a card onto a
-  workspace → it goes into that one (the commons included, and dropping ONTO the commons
-  trades it out). Nothing over a tile. T3 is this.
+- **A roster card goes where you touched.** Click a card → it goes into the workspace
+  last touched, trading out whatever was there. Drag a card onto a workspace → it goes
+  into that one (dropping onto the commons trades it out). Nothing over a tile. T3 is
+  this. The commons is NOT a roster card (owner: "no team commons kanban") — C is the
+  way to it.
 - **The flip is one button in the header row** (owner: "just make it a button, just like
   the other buttons … a T and a C"): **C** on a terminal's head row, beside ⛩ @ ⚡ ⤢,
   trades in the commons; **T** on the commons' tab strip trades the terminal back — the
@@ -244,14 +242,20 @@ drawn over the tile, and warm tiles hidden inside the seat. All three are gone.
   {workspace1: el, workspace2: el}`) and a holding: a seat's container holds its one
   member's host or nothing; a warm host in no seat sits in the holding, detached. Every
   seated member is watched and never the one parked for the cap.
-- **The seat's surface holds its member's tile, or nothing.** No placeholder, no message
-  (owner: "it is either team_commons or a terminal_tile, and if it's empty so be it").
+- **The seat's surface holds its member's tile, or its own EMPTY tile** — the same head
+  row, the same C, no session (owner: "leave the header"; a blank box with no way back
+  is not a workspace). No placeholder text.
 - **The selected workspace is highlighted** the way the Sessions grid highlights its
   active tile (`.tile.active`) — that is where the next card lands.
-- **One host per member** (the warm and hold rules). So picking a session that is up in
-  the other workspace MOVES it, and the box it left is empty. The owner asked for
-  one-session-in-both like the Sessions grid; the second-host machinery that needs was
-  cut and then withdrawn as non-KISS (`a3974fe`, reverted). Open: T8.
+- **The workspaces are not connected** (owner: "there should be no mechanism for that
+  to fail … you're creating strings that are not necessary"). Each workspace has its OWN
+  pool with the warm and hold rules — cap 2 per workspace, four in all; the lead is
+  pinned hot in workspace 1, its default home. Putting a session in one workspace never
+  touches the other, the same session included: one session in both is two tiles, two
+  streams, like the Sessions grid. (The earlier one-shared-pool cut moved sessions
+  between workspaces; that was the string. T8 closed.)
+- **The roster has a header** of the same depth as a tile head and the commons' tab
+  strip (41px each, measured): "Team Roster" and the count. Leg 4's header item.
 - Defaults with nothing remembered: the lead in workspace 1, the commons in workspace 2.
   Seats persist as `{slot: member | '@commons'}` and are re-applied when the roster
   arrives, so a cold reload does not hand a remembered seat to the lead.
@@ -440,7 +444,7 @@ Two consequences, both inside leg 1:
 | T4 | Raise the cap with two terminal seats? | **RULED: no** — four hot seats, lead + next three by last use (owner, 2026-08-25) |
 | T5 | **Assign the team lead live from the UI** ("I need to be able to assign team lead live", 2026-08-25) | **RULED: through the tile buttons** — the tile already has a session_role selector; the 人 goes there. Leg 7 |
 | T7 | Show/hide and reorder the columns | **RULED: a layout map in the app bar** — three toggling rectangles; drag within the map to reorder. No chevron rails (owner, 2026-08-25). Column-drag, if ever, is a second gesture in leg 5 |
-| T8 | One session up in both workspaces at once? | open — needs a second host per extra seat (the pool keeps one warm host per member). Cut once, withdrawn as non-KISS; today a pick moves the session and leaves the other box empty |
+| T8 | One session up in both workspaces at once? | **CLOSED by independence** — each workspace has its own pool, so it is simply two tiles (owner: "who cares if they have the same tile in both … they shouldn't be connected") |
 | T6 | Name for the middle column — the owner's "action column": roster, new-session builder, whatever acts on the team | open — "action" is the placeholder; needs a KOTOBA word |
 
 ## Constraints

@@ -18,10 +18,12 @@
  * Kit composition. This feature supplies only Team content and behavior.
  *
  * KEEP IT SIMPLE (owner, 2026-08-25). Two workspaces, each holding exactly one thing: a
- * member's tile, or the team commons — "it's there or it's not there". The warm and hold
- * rules are the pool's (team-terminal-pool.js) and stand: warm is durable, the lead is
- * pinned hot, four streams is the cap. A member has one host, so picking a session that
- * is up in the other workspace moves it; the box it left is simply empty.
+ * member's tile, or the team commons — "it's there or it's not there". THE WORKSPACES
+ * ARE NOT CONNECTED (owner: "there should be no mechanism for that to fail … you're
+ * creating strings that are not necessary"): each has its OWN pool of tiles with the
+ * warm and hold rules (team-terminal-pool.js — warm is durable, the lead is pinned hot
+ * in workspace 1, two streams per workspace so four is still the cap). Putting a session
+ * in one workspace never touches the other, the same session included.
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { membersOfTeam, refreshTeams, subscribe, teamByName } from './team-controller.js';
@@ -74,14 +76,33 @@ export function createTeamView() {
   };
 
   /* ---------- the workspaces: two seats, the roster between them, one commons ---------- */
-  // A seat's surface holds its member's tile, or nothing. The commons is not a child of
-  // any seat — the Kit slot holds EITHER the seat's surface OR the commons, traded
-  // through place().
+  // A seat's surface holds its member's tile — or, with no member seated, the seat's own
+  // EMPTY tile: the same head row, the same C, no session (owner, 2026-08-25: "leave the
+  // header" — a blank box with no way back is not a workspace). The commons is not a
+  // child of any seat — the Kit slot holds EITHER the seat's surface OR the commons,
+  // traded through place().
   const makeSeat = (id, label) => {
     const surface = createSurface({ label, className: 'tw-terminal', flush: true });
     surface.el.addEventListener('pointerdown', () => touch(id));
     acceptDrops(surface.el, () => id);
-    return { id, surface, traded: '' };
+    const empty = createTerminalTileHost({ mode: 'full', actions: [flipButton('C')] });
+    empty.mount();
+    empty.park();
+    surface.content.append(empty.el);
+    const pool = createWarmTerminalPool({
+      createHost: (options) => createTerminalTileHost({ ...options, actions: [flipButton('C')] }),
+      container: surface.content,
+      streamCap: 2,
+    });
+    return { id, surface, empty, pool, traded: '' };
+  };
+  const seated = (id) => seats[id].pool.activeIn('main');
+  /** Each seat shows its member's tile, else its empty tile — one or the other. */
+  const paintSeats = () => {
+    for (const seat of Object.values(seats)) {
+      if (seated(seat.id)) seat.empty.el.remove();
+      else if (!seat.empty.el.isConnected) seat.surface.content.append(seat.empty.el);
+    }
   };
   // THE SELECTED WORKSPACE carries the same highlight the Sessions grid gives its active
   // tile (`.tile.active`) — that is where the next card lands.
@@ -110,6 +131,14 @@ export function createTeamView() {
   }
   const seats = { workspace1: makeSeat('workspace1', 'Workspace 1'), workspace2: makeSeat('workspace2', 'Workspace 2') };
   const kanban = createSurface({ label: 'Team sessions', className: 'tw-kanban' });
+  // THE ROSTER HAS A HEADER LIKE THE OTHER TWO COLUMNS (owner, 2026-08-25) — the same
+  // depth as a tile head and the commons' tab strip: "Team Roster" and the count. The
+  // commons is NOT a card here (owner: "no team commons kanban") — C is the way to it.
+  const rosterHead = el('div', 'tw-roster-head');
+  const rosterTitle = el('span', 'tw-roster-title', 'Team Roster');
+  const rosterCount = el('span', 'tw-roster-count');
+  rosterHead.append(rosterTitle, rosterCount);
+  kanban.el.prepend(rosterHead);
   // The wipeboard slice is real (owner, 2026-08-25 — the thread, and nothing else; the
   // Brief stays Team Configuration's). Its board id follows the roster: see setBoard below.
   const wipeboard = createTeamWipeboard();
@@ -144,11 +173,6 @@ export function createTeamView() {
   channels.el.addEventListener('pointerdown', () => { const seat = commonsIn(); if (seat) touch(seat); });
   acceptDrops(channels.el, () => commonsIn());
 
-  const terminalPool = createWarmTerminalPool({
-    createHost: (options) => createTerminalTileHost({ ...options, actions: [flipButton('C')] }),
-    seats: { workspace1: seats.workspace1.surface.content, workspace2: seats.workspace2.surface.content },
-  });
-
   const cards = el('div', 'tw-cards');
   kanban.content.append(cards);
 
@@ -179,7 +203,8 @@ export function createTeamView() {
 
   /* ---------- what each workspace holds ---------- */
   const commonsIn = () => Object.keys(seats).find((id) => workbench.holding(id) === channels.el) || '';
-  const holds = (id) => (commonsIn() === id ? COMMONS : terminalPool.activeIn(id));
+  const holds = (id) => (commonsIn() === id ? COMMONS : seated(id));
+  const isShown = (name) => Object.values(seats).some((seat) => seat.pool.isShown(name));
   const remember = () => ctx?.patchViewState('team', { seats: Object.fromEntries(Object.keys(seats).map((id) => [id, holds(id)])) });
 
   /** Trade the commons into a workspace: wherever it was gets its seat back, and this
@@ -188,10 +213,11 @@ export function createTeamView() {
     const from = commonsIn();
     if (from === id) { touch(id); return true; }
     if (from) workbench.place(from, seats[from].surface.el);
-    seats[id].traded = terminalPool.activeIn(id);
-    terminalPool.clearSeat(id);
+    seats[id].traded = seated(id);
+    seats[id].pool.clearSeat('main');
     workbench.place(id, channels.el);
     touch(id);
+    paintSeats();
     remember();
     return true;
   };
@@ -201,18 +227,20 @@ export function createTeamView() {
     if (commonsIn() !== id) { touch(id); return false; }
     workbench.place(id, seats[id].surface.el);
     const lead = membersOfTeam(team).find((m) => m.team_lead)?.name || '';
-    const pick = [seats[id].traded, lead].find((name) => name && terminalPool.has(name) && !terminalPool.isShown(name)) || '';
-    if (pick) terminalPool.show(pick, false, id);
+    const pick = [seats[id].traded, lead].find((name) => name && seats[id].pool.has(name)) || '';
+    if (pick) seats[id].pool.show(pick, false);
     touch(id);
+    paintSeats();
     remember();
     return true;
   };
   /** Trade a member into a workspace: if the commons was there it comes out first. */
   const putSession = (name, id, focus = true) => {
-    if (!terminalPool.has(name)) return false;
+    if (!seats[id].pool.has(name)) return false;
     if (commonsIn() === id) workbench.place(id, seats[id].surface.el);
-    if (!terminalPool.show(name, focus, id)) return false;
+    if (!seats[id].pool.show(name, focus)) return false;
     touch(id);
+    paintSeats();
     remember();
     return true;
   };
@@ -230,18 +258,20 @@ export function createTeamView() {
       if (holds(id)) continue;
       const wanted = remembered[id];
       if (wanted === COMMONS) { if (putCommons(id)) changed = true; continue; }
-      if (wanted && terminalPool.has(wanted) && !terminalPool.isShown(wanted)) { if (putSession(wanted, id, false)) changed = true; continue; }
+      if (wanted && seats[id].pool.has(wanted)) { if (putSession(wanted, id, false)) changed = true; continue; }
       if (wanted) continue; // remembered, not here yet — the roster may still be arriving
-      if (lead && !terminalPool.isShown(lead)) { if (putSession(lead, id, false)) changed = true; }
+      if (lead && !isShown(lead)) { if (putSession(lead, id, false)) changed = true; }
       else if (!commonsIn()) { if (putCommons(id)) changed = true; }
     }
     return changed;
   };
 
   function syncTerminalPool(members) {
-    const result = terminalPool.sync(members.map((member) => member.name));
-    if (result.removedActive) remember();
-    return result;
+    const names = members.map((member) => member.name);
+    let removed = false;
+    for (const seat of Object.values(seats)) if (seat.pool.sync(names).removedActive) removed = true;
+    paintSeats();
+    if (removed) remember();
   }
 
   /* ---------- the roster's cards ---------- */
@@ -252,16 +282,17 @@ export function createTeamView() {
   // THE LEAD IS ALWAYS HOT — from page entry, focused or not, first visit or return.
   // Pin every 人, then mount each one warm if it is not already streaming. Runs on
   // load, on every roster change, and on every enter.
+  // The pin lives in workspace 1 — the lead's default home; workspace 2 pins nobody.
   const ensureLeadHot = (members) => {
     const leads = members.filter((m) => m.team_lead).map((m) => m.name);
-    terminalPool.setPinned(leads);
-    for (const lead of leads) terminalPool.keepHot(lead);
+    seats.workspace1.pool.setPinned(leads);
+    for (const lead of leads) seats.workspace1.pool.keepHot(lead);
   };
 
   let dwellTimer = 0;
   const armPrewarm = (name) => {
     window.clearTimeout(dwellTimer);
-    dwellTimer = window.setTimeout(() => terminalPool.prewarm(name), 150);
+    dwellTimer = window.setTimeout(() => seats[lastSeat]?.pool.prewarm(name), 150);
   };
   const disarmPrewarm = () => window.clearTimeout(dwellTimer);
 
@@ -275,18 +306,8 @@ export function createTeamView() {
   };
 
   function renderCards(members) {
+    rosterCount.textContent = members.length ? String(members.length) : '';
     cards.replaceChildren();
-    // THE COMMONS IS A CARD: what a workspace can hold is what the roster lists.
-    const commons = createCard({
-      heading: 'Team commons',
-      summary: 'chat · wipeboard · docs · configuration',
-      mark: '⛩',
-      className: 'tw-commons-card',
-      selected: !!commonsIn(),
-      action: () => { if (put(COMMONS, lastSeat)) renderCards(members); },
-    });
-    draggable(commons.el, COMMONS);
-    cards.append(commons.el);
     for (const m of members) {
       const readings = [m.session_role || null, m.dial ? `dial ${m.dial}` : null, m.team_lead ? '人 lead' : null].filter(Boolean);
       const card = createCard({
@@ -294,7 +315,7 @@ export function createTeamView() {
         summary: m.summary || '',
         metadata: readings,
         mark: m.mark || null,
-        selected: terminalPool.isShown(m.name),
+        selected: isShown(m.name),
         action: () => { if (put(m.name, lastSeat)) renderCards(members); },
       });
       card.el.addEventListener('pointerenter', () => armPrewarm(m.name));
@@ -393,7 +414,7 @@ export function createTeamView() {
     enter: (context) => {
       ctx = context;
       entered = true;
-      terminalPool.destroyAll();
+      for (const seat of Object.values(seats)) seat.pool.destroyAll();
       team = context.param || context.state?.team || '';
       const typed = teamWorkspaceState(context.state, context.viewState('team'), DECLARATION);
       workbench.restore(typed.arrangement);
@@ -414,14 +435,16 @@ export function createTeamView() {
       // they held and get it back on re-entry.
       entered = false;
       disarmPrewarm();
-      terminalPool.destroyAll();
+      for (const seat of Object.values(seats)) seat.pool.destroyAll();
+      paintSeats();
       channels.leave();
     },
     destroy: () => {
       entered = false;
       unsubscribe?.();
       unsubscribe = null;
-      terminalPool.destroyAll();
+      for (const seat of Object.values(seats)) seat.pool.destroyAll();
+      for (const seat of Object.values(seats)) seat.empty.destroy();
       channels.destroy();
     },
   };
