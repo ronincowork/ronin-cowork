@@ -200,7 +200,7 @@ control into; views hand the ViewHost a `title` and nothing else.
 *declaration*; the state becomes an *arrangement*; the control becomes a *map* the
 ViewHost draws in the bar; and the team page shrinks to the declaration.
 
-### 1. The arrangement — pure state, no DOM (`public/js/workspace-arrangement.js`, new)
+### 1. The arrangement — pure state, no DOM (a new module, public/js/workspace-arrangement, not yet in the tree)
 
 ```js
 // declared by a destination; the Kit never sees the names' meaning
@@ -289,11 +289,11 @@ That is the whole of the team page's geometry. Commons-on-the-left is
 ### 7. Gates and evidence
 
 - `scripts/check-workspace-kit.mjs`: the contract list changes from rails/expand/collapse
-  to `wk-layout-map`, `wk-view-map`, `workspace-arrangement.js`, and a rule that no file
+  to `wk-layout-map`, `wk-view-map`, the arrangement module, and a rule that no file
   under `public/js/` except the Kit reads `grid-template-columns` or `.wk-workbench-splitter`.
 - `scripts/check-css.mjs`: unchanged rules; the new map CSS lives in `workspace-kit.css`,
   tokens only.
-- `tests/workspace-arrangement.test.js` (pure), plus the existing team-terminal-pool
+- a pure unit suite for the arrangement module under `tests/`, plus the existing team-terminal-pool
   suite untouched (the bench is DONE, and hiding a column does not park a transport —
   same as today).
 - Playwright probe, before and after, at 1600×950: the three columns measure
