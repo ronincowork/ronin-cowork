@@ -58,7 +58,7 @@ const holding = { append: (el) => { el.where = 'holding'; } };
 const pool = (h, c, opts = {}) =>
   createWarmTerminalPool({ ...h, container: { append: (el) => { el.where = 'main'; } }, holding, schedule: c.schedule, cancel: c.cancel, streamCap: 4, ...opts });
 
-test('two seats: a member is hot in one seat at a time, and both seats are watched', () => {
+test('two seats: both are watched, a seat holds one host, and the holding takes the rest', () => {
   const h = harness(); const c = clock();
   const left = { append: (el) => { el.seat = 'left'; } };
   const right = { append: (el) => { el.seat = 'right'; } };
@@ -71,24 +71,53 @@ test('two seats: a member is hot in one seat at a time, and both seats are watch
   assert.equal(p.activeIn('right'), 'b');
   assert.equal(h.records[0].el.seat, 'left', 'a is in its seat');
   assert.equal(h.records[1].el.seat, 'right', 'b is in its seat');
-  p.show('a', false, 'right');
-  assert.equal(h.records[0].el.seat, 'right', 'a moved seats');
-  assert.equal(p.activeIn('left'), '', 'the seat a left is empty');
-  assert.equal(p.seatOf('a'), 'right');
+  p.show('a', false, 'right'); // a on both sides: its own host stays left, a second host goes right
+  assert.equal(h.records[0].el.seat, 'left', 'a\'s own host did not move');
+  assert.equal(p.activeIn('left'), 'a');
+  assert.equal(p.activeIn('right'), 'a');
+  assert.equal(p.seatOf('a'), 'left');
   assert.equal(h.records[1].el.seat, 'holding', 'b is warm, out of every seat, not parked');
   assert.equal(h.records[1].parks, 0);
-  p.show('b', false, 'left');
+  p.show('b', false, 'left'); // b back on the left: a's own host goes to the holding, its second stays right
   p.show('c', false, 'left');
   p.show('d', false, 'left');
-  p.show('e', false, 'left'); // five streaming, cap 4: the coldest UNWATCHED parks — never a's
-  assert.equal(h.records[0].parks, 0, 'a is watched in the right seat and is never the one parked');
+  p.show('e', false, 'left'); // the cap: the coldest UNWATCHED stream parks — never a seated one
+  assert.equal(p.activeIn('right'), 'a', 'a is still up on the right');
   assert.equal(p.streamingCount, 4);
   p.clearSeat('right');
   assert.equal(p.activeIn('right'), '');
-  assert.equal(h.records[0].el.seat, 'holding', 'a cleared seat puts a in the holding, still warm');
-  assert.equal(h.records[0].parks, 0);
+  assert.equal(p.isShown('a'), false);
   const gone = p.sync(['a', 'b', 'c', 'd']);
   assert.deepEqual(gone.removed, ['e'], 'the member up in a seat that lost membership is reported');
+});
+
+test('the same member may be up in two seats — two hosts, unconnected, like the Sessions page', () => {
+  const h = harness(); const c = clock();
+  const left = { append: (el) => { el.seat = 'left'; } };
+  const right = { append: (el) => { el.seat = 'right'; } };
+  const p = createWarmTerminalPool({ createHost: h.createHost, seats: { left, right }, holding: { append: (el) => { el.seat = 'holding'; } }, schedule: c.schedule, cancel: c.cancel, streamCap: 4 });
+  p.sync(['a', 'b']);
+  p.show('a', false, 'left');
+  p.show('a', false, 'right');
+  assert.equal(p.activeIn('left'), 'a');
+  assert.equal(p.activeIn('right'), 'a', 'a is up on both sides');
+  assert.equal(h.records.length, 2, 'two hosts, two streams');
+  assert.deepEqual(h.records.map((r) => r.el.seat), ['left', 'right']);
+  assert.equal(p.streamingCount, 2);
+  assert.equal(p.size, 2, 'the second host is not a member');
+  p.show('b', false, 'right'); // b takes the right seat: a's second host goes away, its first stays
+  assert.equal(h.records[1].destroys, 1, 'the second host is destroyed when it leaves its seat');
+  assert.equal(h.records[0].destroys, 0);
+  assert.equal(p.activeIn('left'), 'a');
+  assert.equal(p.activeIn('right'), 'b');
+  p.show('a', false, 'right'); // a again on the right: a third host, the first still left
+  assert.equal(h.records.length, 4);
+  assert.equal(p.activeIn('left'), 'a');
+  p.clearSeat('left');
+  assert.equal(h.records[0].el.seat, 'holding', 'the member\'s own host goes warm to the holding');
+  assert.equal(p.activeIn('right'), 'a', 'the right seat still shows a');
+  p.destroyAll();
+  assert.equal(p.size, 0);
 });
 
 test('seats are free: entry mounts nothing; the first show pays the one mount', () => {

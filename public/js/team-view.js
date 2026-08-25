@@ -66,10 +66,7 @@ export function createTeamView() {
   const makeSeat = (id, label) => {
     const surface = createSurface({ label, className: 'tw-terminal', flush: true });
     const placeholder = el('div', 'tw-placeholder');
-    placeholder.append(
-      el('p', 'tw-placeholder-head', 'Empty workspace'),
-      el('p', null, 'Pick a session or the commons from the roster to put it here. Leaving this destination closes every Team transport.'),
-    );
+    placeholder.append(el('p', 'tw-placeholder-head', 'Nothing here yet'), el('p', null, 'Click a roster card, or drag one here.'));
     surface.content.append(placeholder);
     surface.el.addEventListener('pointerdown', () => { lastSeat = id; });
     acceptDrops(surface.el, () => id);
@@ -211,7 +208,7 @@ export function createTeamView() {
     if (commonsIn() !== seat) { lastSeat = seat; return false; }
     workbench.place(seat, seats[seat].surface.el);
     const lead = membersOfTeam(team).find((m) => m.team_lead)?.name || '';
-    const pick = [traded[seat], lead].find((name) => name && terminalPool.has(name) && !terminalPool.isShown(name)) || '';
+    const pick = [traded[seat], lead].find((name) => name && terminalPool.has(name)) || '';
     if (pick) terminalPool.show(pick, false, seat);
     lastSeat = seat;
     paintSeats();
@@ -242,7 +239,7 @@ export function createTeamView() {
       if (holds(seat)) continue;
       const wanted = remembered[seat];
       if (wanted === COMMONS) { if (putCommons(seat)) changed = true; continue; }
-      if (wanted && terminalPool.has(wanted) && !terminalPool.isShown(wanted)) { if (putSession(wanted, seat, false)) changed = true; continue; }
+      if (wanted && terminalPool.has(wanted)) { if (putSession(wanted, seat, false)) changed = true; continue; }
       if (wanted) continue; // remembered, not here yet — the roster may still be arriving
       if (lead && !terminalPool.isShown(lead)) { if (putSession(lead, seat, false)) changed = true; }
       else if (!commonsIn()) { if (putCommons(seat)) changed = true; }

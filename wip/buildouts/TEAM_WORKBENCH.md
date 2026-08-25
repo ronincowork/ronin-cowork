@@ -239,7 +239,15 @@ drawn over the tile, and warm tiles hidden inside the seat. All three are gone.
   {workspace1: el, workspace2: el}`) and a holding: a seat's container holds its one
   member's host or nothing; a warm host in no seat sits in the holding, detached. Every
   seated member is watched and never the one parked for the cap.
-- **The seat's surface holds one child**: the member's host, or the placeholder.
+- **The seat's surface holds one child**: the member's host, or the placeholder
+  ("Nothing here yet — click a roster card, or drag one here").
+- **The same session may be up in both workspaces** (owner, 2026-08-25: "tile in space
+  1 and tile in space 2 could be the same terminal session — they're not connected, like
+  the regular terminal tile page"). A member keeps one durable entry (warm or cold) and,
+  while it is up in a second workspace too, a second host keyed `name#seat` — a stream
+  like any other for the cap, destroyed the moment it leaves its seat. Picking a session
+  never *moves* it out of the other workspace; that was the "Empty workspace" the owner
+  met, and it is gone.
 - Defaults with nothing remembered: the lead in workspace 1, the commons in workspace 2.
   Seats persist as `{slot: member | '@commons'}` and are re-applied when the roster
   arrives, so a cold reload does not hand a remembered seat to the lead.
