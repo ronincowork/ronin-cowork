@@ -2,6 +2,8 @@
 
 > Stock SOP. Your own copy in the sops store (`ronin-store sops` → `remote_machine_health.md`)
 > replaces this file whole — a default, not law.
+> **Its sibling is `remote_machine_admin.md`** — this page diagnoses, that one sets up,
+> checks and repairs. Anything needing a chore done to the box is there.
 > **Voice: agent.** How a session works out what is wrong with the machine it is running on,
 > and what it may and may not do about it. Not a walkthrough to relay.
 >

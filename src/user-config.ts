@@ -269,9 +269,24 @@ export const readMachineSection = (): Promise<Record<string, unknown>> =>
  * box does not.* Detecting a region means a cloud metadata call, and no outbound call
  * belongs in a record that renders on page load.
  */
-export const writeMachineSection = (v: { name?: string; where?: string }): Promise<void> =>
+/**
+ * WATCHING THE BOX IS ON BY DEFAULT for an install that holds Ronin Services (owner,
+ * 2026-08-25). The capability is part of what Services is for, so it arrives working
+ * rather than arriving as a switch somebody has to find. Absent key = on; only an
+ * explicit `false` turns it off, so an older config gains the gauge on upgrade instead
+ * of silently opting out of it.
+ *
+ * Off means the reading is not gathered and the gauge is not drawn. Nothing was ever
+ * installed on the machine, so there is nothing to undo — this is a display choice, not
+ * a consent record.
+ */
+export const readMachineMonitor = async (): Promise<boolean> =>
+  (await readMachineSection()).monitor !== false;
+
+export const writeMachineSection = (v: { name?: string; where?: string; monitor?: boolean }): Promise<void> =>
   updateConfig((doc) => {
     const m = ((doc.machine ?? {}) as Record<string, unknown>) || {};
+    if (v.monitor !== undefined) m.monitor = Boolean(v.monitor);
     if (v.name !== undefined) m.name = String(v.name).trim().slice(0, 64);
     if (v.where !== undefined) m.where = String(v.where).trim().slice(0, 120);
     doc.machine = m;

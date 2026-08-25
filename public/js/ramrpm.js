@@ -61,6 +61,10 @@ export function mountRamRpm() {
     // A failed read LEAVES THE LAST NUMBER STANDING rather than blanking or zeroing.
     // A gauge that reads 0 on a network blip says "the box is dying" — the one lie it
     // must never tell. Staleness is the honest failure here, not alarm.
+    // OFF is a real answer, not a failure: the owner said do not watch this box. Hide
+    // the gauge and STOP asking — a poll that keeps running after being switched off is
+    // the switch not working, whatever the face shows.
+    if (r && r.ok && r.data && r.data.off) { el.hidden = true; stop(); return; }
     if (r && r.ok && r.data && r.data.mem) render(el, r.data);
   };
 

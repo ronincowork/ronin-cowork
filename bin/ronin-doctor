@@ -488,8 +488,29 @@ fi
 # A finding, never an action. Doctor reads; it does not touch the machine, and a
 # swapfile needs root that Ronin does not hold.
 sect "the box"
+
+# WHAT KILLED IT. After something dies unexpectedly the first question is what the kernel
+# killed and when, and on a stock box that answer is unreadable: kernel.dmesg_restrict is
+# commonly 1 and journalctl -k returns nothing without the right group. A session that
+# cannot read the log must say so rather than infer a cause from timing — "the box was
+# short of memory and a process vanished" is an observation; "the kernel OOM-killed it" is
+# a claim that needs the log.
+#
+# INFORMS, DOES NOT PRESCRIBE. The remedy is read-only and it is the box owner's own
+# account, but it is still an expansion — after it, anything running as this user can read
+# system logs. The line states that so the owner chooses knowing it.
+if [ ! -e /proc/sys/kernel/dmesg_restrict ] && ! command -v journalctl >/dev/null 2>&1; then
+  note "no kernel log interface here — OOM history not assessed on this system"
+elif journalctl -k -n 1 --no-pager >/dev/null 2>&1 && [ -n "$(journalctl -k -n 1 --no-pager 2>/dev/null | grep -v 'No entries')" ]; then
+  ok "the kernel log is readable — an agent can say what was killed and when"
+elif [ "$(cat /proc/sys/kernel/dmesg_restrict 2>/dev/null || echo 0)" = "0" ] && dmesg >/dev/null 2>&1; then
+  ok "the kernel log is readable — an agent can say what was killed and when"
+else
+  find_ "the kernel log is NOT readable, so nothing here can say what was killed or when — only that something vanished. remedy: sudo usermod -aG adm $USER, then log out and back in. It is read-only and it is your own account, but afterwards anything running as this user can read system logs. ronin_sops/remote_machine_health.md § what killed it"
+fi
+
 if [ ! -r /proc/swaps ]; then
-  note "cannot read /proc/swaps on this system — swap not assessed"
+  note "no /proc/swaps on this system — swap not assessed here (Linux-only reading)"
 elif [ "$(awk 'NR>1' /proc/swaps | wc -l)" -gt 0 ]; then
   ok "swap is configured ($(awk 'NR>1 {t+=$3} END {printf "%.1f GB", t/1048576}' /proc/swaps))"
 elif { command -v systemd-detect-virt >/dev/null 2>&1 && systemd-detect-virt --container --quiet; } ||

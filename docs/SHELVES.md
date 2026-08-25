@@ -35,6 +35,7 @@ file-for-file. `bin/ronin-store --all` prints every store on this machine, resol
 | `deploy.md` | getting a thing running where other people can reach it |
 | `gbrain.md` | working the brain, when this machine has one |
 | `github.md` | how we go about source control |
+| `remote_machine_admin.md` | setting the machine up, checking what is still in place, and repairing it — the chores, and what each one grants |
 | `remote_machine_health.md` | the box is slow, or something died — memory, swap, the kernel. Not the sessions on it |
 | `install.md` | is this install actually what it claims to be |
 | `ronin_methodology.md` | how work moves through sessions, shared artifacts, `dev`, and the final gate |

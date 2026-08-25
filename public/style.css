@@ -6636,3 +6636,7 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 }
 
 }
+/* ⚙ THE MACHINE — the detail behind RAM_RPM. Values right-aligned in the mono face so a
+   column of numbers reads as a column; everything else inherits the desk's own rows. */
+.sys-machine { margin-top: var(--space-5); }
+.sys-machine .mach-v { margin-left: auto; font: var(--text-2) var(--font-mono); color: var(--muted-2); }
