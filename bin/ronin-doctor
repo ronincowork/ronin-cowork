@@ -52,14 +52,45 @@ subst_literal() {
   printf '%s' "$out"
 }
 
-NODE_BIN="$(readlink -f "$(command -v node)" 2>/dev/null || command -v node || true)"
-NODE_DIR="${NODE_BIN:+$(dirname "$NODE_BIN")}"
+# THE FIRST PATH HIT THAT IS NOT OUR OWN GUARD SHIM. `bin/shim/` precedes /usr/bin in a
+# configured login shell, so a bare `command -v tmux` there answers with the guard rather
+# than the tmux setup.sh baked into the unit — and doctor would report drift on a box that
+# has none. Resolving past the shim is what makes this comparison stable in the shell an
+# agent actually runs in.
+resolve_tool() {  # resolve_tool <name> — a real path on stdout, empty if absent
+  local p
+  for p in $(type -aP "$1" 2>/dev/null); do
+    case "$p" in "$ROOT"/bin/shim/*) continue ;; esac
+    printf '%s' "$p"; return 0
+  done
+  return 0
+}
+
+# THE FOUR PLACEHOLDERS setup.sh FILLS, resolved the way setup.sh resolves them: a
+# bundled release carries its own node and tmux under vendor/, a checkout uses the
+# system's. Doctor rendered only two of the four, so `__TMUX_BIN__` and `__TMUX_DIR__`
+# survived into the comparison text and could never equal an installed unit — every
+# healthy box was told both its units had drifted, on every run. A check that always
+# fails is worse than no check: it teaches the reader to skip the section.
+if [ -x "$ROOT/vendor/node/bin/node" ] && [ -x "$ROOT/vendor/tmux" ]; then
+  NODE_BIN="$ROOT/vendor/node/bin/node"
+  NODE_DIR="$ROOT/vendor/node/bin"
+  TMUX_BIN="$ROOT/vendor/tmux"
+  TMUX_DIR="$ROOT/vendor/bin"
+else
+  NODE_BIN="$(readlink -f "$(command -v node)" 2>/dev/null || command -v node || true)"
+  NODE_DIR="${NODE_BIN:+$(dirname "$NODE_BIN")}"
+  TMUX_BIN="$(resolve_tool tmux)"
+  TMUX_DIR="${TMUX_BIN:+$(dirname "$TMUX_BIN")}"
+fi
 
 render_template() {  # render_template <template> — rendered text on stdout
   local text
   text="$(<"$1")"
   text="$(subst_literal "$text" '__REPO_DIR__' "$ROOT")"
   text="$(subst_literal "$text" '__NODE_DIR__' "$NODE_DIR")"
+  text="$(subst_literal "$text" '__TMUX_BIN__' "$TMUX_BIN")"
+  text="$(subst_literal "$text" '__TMUX_DIR__' "$TMUX_DIR")"
   printf '%s\n' "$text"
 }
 
