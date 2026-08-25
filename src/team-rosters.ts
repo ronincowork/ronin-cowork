@@ -50,7 +50,8 @@ export const isValidTeamName = (s: string): boolean => /^[a-z0-9][a-z0-9_-]{0,63
 export const isReservedTeamName = (s: string): boolean => s === 'unassigned';
 export const isCreatableTeamName = (s: string): boolean => isValidTeamName(s) && !isReservedTeamName(s);
 
-const fileOf = (name: string): string => path.join(dir(), `${name}.md`);
+/** Canonical source path for one durable roster, including proposed-roster attribution. */
+export const teamRosterFile = (name: string): string => path.join(dir(), `${name}.md`);
 
 function parse(name: string, raw: string): TeamRoster {
   const lines = raw.split('\n');
@@ -71,7 +72,7 @@ function parse(name: string, raw: string): TeamRoster {
 export async function readTeamRoster(name: string): Promise<TeamRoster | null> {
   if (!isValidTeamName(name)) return null;
   try {
-    return parse(name, await readFile(fileOf(name), 'utf8'));
+    return parse(name, await readFile(teamRosterFile(name), 'utf8'));
   } catch {
     return null;
   }
@@ -144,7 +145,7 @@ export async function createTeamRoster(name: string, edit: RosterEdit): Promise<
     state: edit.state ?? 'active',
   };
   await mkdir(dir(), { recursive: true });
-  const target = fileOf(name);
+  const target = teamRosterFile(name);
   const tmp = `${target}.tmp-${process.pid}`;
   await writeFile(tmp, render(name, roster), 'utf8');
   await rename(tmp, target);
@@ -160,7 +161,7 @@ export async function createTeamRoster(name: string, edit: RosterEdit): Promise<
 export async function writeTeamRoster(name: string, edit: RosterEdit): Promise<TeamRoster> {
   const existing = await readTeamRoster(name);
   if (!existing) throw new Error(`Team "${name}" has no roster. Create it first.`);
-  let raw = await readFile(fileOf(name), 'utf8');
+  let raw = await readFile(teamRosterFile(name), 'utf8');
   const lines = raw.split('\n');
   const merged: TeamRoster = {
     ...existing,
@@ -178,7 +179,7 @@ export async function writeTeamRoster(name: string, edit: RosterEdit): Promise<T
     } else lines[at] = lineText;
   }
   raw = lines.join('\n');
-  const target = fileOf(name);
+  const target = teamRosterFile(name);
   const tmp = `${target}.tmp-${process.pid}`;
   await writeFile(tmp, raw, 'utf8');
   await rename(tmp, target);
@@ -197,9 +198,9 @@ export async function renameTeamRoster(from: string, to: string): Promise<TeamRo
   const existing = await readTeamRoster(from);
   if (!existing) throw new Error(`Team "${from}" has no roster.`);
   if (await readTeamRoster(to)) throw new Error(`Team "${to}" already has a roster.`);
-  const raw = await readFile(fileOf(from), 'utf8');
-  await writeFile(fileOf(to), raw.replace(new RegExp(`^# ${from}$`, 'm'), `# ${to}`), 'utf8');
-  await unlink(fileOf(from));
+  const raw = await readFile(teamRosterFile(from), 'utf8');
+  await writeFile(teamRosterFile(to), raw.replace(new RegExp(`^# ${from}$`, 'm'), `# ${to}`), 'utf8');
+  await unlink(teamRosterFile(from));
   const back = await readTeamRoster(to);
   if (!back) throw new Error(`Refused: "${to}" does not read back after the rename.`);
   return back;
@@ -212,5 +213,5 @@ export async function renameTeamRoster(from: string, to: string): Promise<TeamRo
  */
 export async function deleteTeamRoster(name: string): Promise<void> {
   if (!(await readTeamRoster(name))) throw new Error(`Team "${name}" has no roster.`);
-  await unlink(fileOf(name));
+  await unlink(teamRosterFile(name));
 }

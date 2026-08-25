@@ -34,7 +34,11 @@
  * does not rely on this: the launch records the birth task explicitly, because the brief
  * already carried that task's reading.
  *
- * FAILURE IS VISIBLE AND RETRYABLE. A delivery that does not land is NOT recorded as
+ * THE RECORD IS CLAIMED BEFORE THE SEND, and a failure un-claims it. A send takes seconds
+ * on a busy pane — longer than a tick — and a record written only afterwards let every
+ * tick that started in between read the old task and type the notice again.
+ *
+ * FAILURE IS VISIBLE AND RETRYABLE. A delivery that does not land is NOT left recorded as
  * delivered, so the next tick tries again; the reason is kept in the record and logged.
  * Automatic retries stop after `MAX_TRIES` so a dial the owner deliberately closed does
  * not produce an endless drip, and re-posting the task resets the count. A changed mark
@@ -157,6 +161,11 @@ const houseSender: Sender = async (name, text) => {
   if (!started) throw new Error('the message did not submit — the prompt was not accepting input');
 };
 
+/** Sessions with a delivery in progress in THIS process — the window between reading the
+ *  record and claiming it is a few file operations wide, and the poll and the owner's
+ *  POST can both land inside it. The file is still the record; this only closes the gap. */
+const inFlight = new Set<string>();
+
 /**
  * Look at one session's letter and act if its task has moved.
  *
@@ -188,10 +197,18 @@ export async function observeRoleChange(name: string, reset = true, send: Sender
   }
 
   const tries = (changed || reset ? 0 : record.tries) + 1;
+  // CLAIM BEFORE TYPING. The record is written as delivered BEFORE the send, not after,
+  // and a failure rewrites it as undelivered. Typing into a busy pane takes seconds
+  // (src/send.ts re-types, presses Enter, reads the pane back), longer than one poll
+  // tick — so a record written after the send left every tick that started meanwhile
+  // reading the OLD task and sending again. Measured on team_page, 2026-08-25: one
+  // DraftPlan→CutCode change, five deliveries typed into the pane.
+  if (inFlight.has(name)) return;
+  inFlight.add(name);
   try {
+    await writeRecord(name, { task, ok: true, tries, at: new Date().toISOString() });
     const files = await roleFiles(task);
     await send(name, await roleChangeMessage(task, files));
-    await writeRecord(name, { task, ok: true, tries, at: new Date().toISOString() });
   } catch (e) {
     // A closed dial, a prompt that would not accept input, a session that went away
     // mid-send. Keep the reason where it can be read, and leave the record UNdelivered so
@@ -199,6 +216,8 @@ export async function observeRoleChange(name: string, reset = true, send: Sender
     const error = String((e as Error)?.message ?? e).trim();
     await writeRecord(name, { task, ok: false, tries, error, at: new Date().toISOString() });
     console.error(`[ronin] role-watch: ${name} → ${task} not delivered (try ${tries}/${MAX_TRIES}): ${error}`);
+  } finally {
+    inFlight.delete(name);
   }
 }
 
@@ -218,9 +237,14 @@ export async function roleDeliveryFault(name: string): Promise<Delivery | null> 
  * agent, which is worth doing at 3am with every tab closed.
  */
 export function startRoleWatch(send: Sender = houseSender): void {
+  let ticking = false;
   setInterval(() => {
+    if (ticking) return; // a sweep still typing into a pane is not joined by the next one
+    ticking = true;
     void (async () => {
       for (const s of await listSessions()) await observeRoleChange(s.name, false, send);
-    })().catch((e) => console.error('[ronin] role-watch:', e));
+    })()
+      .catch((e) => console.error('[ronin] role-watch:', e))
+      .finally(() => (ticking = false));
   }, EVERY_MS);
 }

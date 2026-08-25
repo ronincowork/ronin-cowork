@@ -1,5 +1,6 @@
 # ronin-cowork — agent contract
 
-Testing: `docs/test-protocols.md` — one command (`bin/ronin-byoin`), one verdict,
-nothing hand-rolled. That page is the whole contract; this file is only the pointer
-your CLI auto-reads.
+Testing: `docs/test-protocols.md`. Ordinary dev work does **not** run BYOIN. The
+designated integrator runs it once on the complete `dev → master` release candidate.
+That provider-neutral page is the whole contract; this file is only the pointer your
+CLI auto-reads.

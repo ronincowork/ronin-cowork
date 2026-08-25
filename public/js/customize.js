@@ -71,7 +71,7 @@ export function buildCustomize() {
     // A read in flight must not paint over a later selection. The generation counter is
     // the whole guard: a stale answer returns to a surface the owner has already left.
     const mine = ++generation;
-    const result = await renderResource(resource, content);
+    const result = await renderResource(resource, content, () => show(id));
     if (mine !== generation) return;
     counts[id] = result.count;
     marks[id] = result.mark;

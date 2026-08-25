@@ -1,21 +1,17 @@
 <!--
-  Before you open this: run the gates.
-
-      bin/ronin-byoin --gates
-
-  CI runs the same set (`--gates`), so a red PR here is a fault you could have
-  seen locally in seconds. The pre-push hook runs it for you when hooks are
-  wired — `git config core.hooksPath .githooks`, which `./setup.sh` does.
+  This PR is the isolated release boundary. Ordinary dev commits and pushes do not run
+  BYOIN. Record the designated integrator's one exact-candidate verdict below; GitHub runs
+  its own --gates check for this PR to master.
 -->
 
 ## What this changes
 
 <!-- One paragraph. What is different afterwards, and why it needed to be. -->
 
-## Gates
+## Release-candidate evidence
 
-- [ ] `bin/ronin-byoin --gates` — green, with its browser-UI SKIPs understood
-- [ ] if UI-affecting: `bin/ronin-byoin --ui` — green, or its SKIPs named below
+- [ ] designated integrator ran one appropriate BYOIN mode on this exact candidate
+- [ ] GitHub `--gates` check is green for this PR to `master`
 - [ ] any SKIP named below, with what it means was **not** checked
 
 <!--

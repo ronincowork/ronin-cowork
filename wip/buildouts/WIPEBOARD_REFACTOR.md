@@ -55,6 +55,19 @@ Calls made in building this, reversible and flagged:
 | 1 | **API coverage.** `src/routes/wipeboards-api.ts` has no automated test | every route asserted, including that `unread` never advances a cursor |
 | 2 | **Full BYOIN on the box**, then land and delete this file | one verdict, no SKIP read as a pass |
 
+**The team page's wipeboard slice LANDED** (2026-08-25): the tab was a hardcoded
+placeholder paragraph, met by the owner on the live page. `public/js/team-wipeboard.js`
+is the real channel service — the thread and the owner's loud compose row, board id from
+the roster, polling only while entered. The tab deferral is over; what remains deferred
+is only the OLD ▤ commons tab (`public/js/wipeboard.js`), which the new UI replaces.
+
+**Create-on-open LANDED** (2026-08-24, third ruling of the day): "should always have a
+board — if there isn't one at team open it should fall back to create one." `GET
+/api/wipeboards/:name` now materializes a team's board instead of answering with a
+phantom, stubbed with the TEAM's name even where the roster's id differs; the post and
+brief routes got the same team-name fix. The team page's own board slice is the team
+workstream's to wire — the server guarantee is in place for it.
+
 **Quiet by default LANDED** (2026-08-24, second ruling of the day): an agent's bare post
 interrupts **the lead alone** — "the board must be efficient, not a spam machine". `--to`
 adds names, `--to all` is the explicit everyone, `--to none` interrupts nobody. The owner's
@@ -101,6 +114,19 @@ merging it. The shared GitHub identity `gosmond3` is not attribution, so any aut
 release command and the session name that ran it are recorded here **before** execution.
 
 Nothing in this workstream has touched `master`. No PR is open. All commits are on `dev`.
+
+**Service action record — retiring the master instance** (the rule above requires the
+command and session recorded here). Owner's instruction, 2026-08-25: *"retire the old
+master instance so there's only one Ronin."* Session: `@wipeboard_refactor`. Executed
+verification found the retirement already effected: `ronin.service`'s drop-in now reads
+`WorkingDirectory=/home/glen3/dohyo/ronin-cowork` with `ExecStartPost=` cleared, restarted
+2026-08-25 05:02 by the integrator — the restart ended the `ronin-cowork-live` (master)
+process. Verified after: **no process runs from `ronin-cowork-live`**, and exactly one
+Ronin serves — the supervised unit's tree on `100.101.235.17:3006`, dev checkout, which is
+what the owner's `dohyo-unified` URL proxies to. **No kill was needed and none was run.**
+The `ronin-cowork-live` checkout stays on disk untouched; it still carries an uncommitted
+`REQUIRED_ABILITIES.md` edit (the forkit lesson) that should be ported to `dev` before
+that checkout is ever removed — removing it is the owner's own act.
 
 ## Shared seams other workstreams read
 

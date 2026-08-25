@@ -23,6 +23,12 @@ import {
 } from '../tmux.js';
 import { getStreamHandler } from '../sockets.js';
 
+/**
+ * How often a tile socket must prove its peer is still there. One missed interval ends
+ * it — see the heartbeat at the foot of handlePty for why that is the safe direction.
+ */
+const HEARTBEAT_MS = 30_000;
+
 export async function handlePty(ws: WebSocket, url: URL): Promise<void> {
   const session = url.searchParams.get('session') ?? '';
   const tape = url.searchParams.get('mode') === 'stream';
@@ -64,9 +70,12 @@ export async function handlePty(ws: WebSocket, url: URL): Promise<void> {
   });
 
   let closed = false;
+  // Declared before cleanup and armed after the handlers: the two refer to each other.
+  let beat: ReturnType<typeof setInterval> | undefined;
   const cleanup = () => {
     if (closed) return;
     closed = true;
+    if (beat) clearInterval(beat);
     try {
       term.kill();
     } catch {
@@ -128,6 +137,44 @@ export async function handlePty(ws: WebSocket, url: URL): Promise<void> {
 
   ws.on('close', cleanup);
   ws.on('error', cleanup);
+
+  /**
+   * THE HEARTBEAT — the only thing that tells a live tile socket from a dead one.
+   *
+   * `cleanup` is what reaps this socket's viewer, and 'close' is what drives it. A rude
+   * disconnect never sends one: a closed lid, a backgrounded phone, a walk out of wifi
+   * range or a NAT table quietly forgetting the flow all leave the server holding a
+   * half-open socket with no error and no close event. The BROWSER notices every one of
+   * those and reconnects two seconds later (public/js/tilewire.js) — and a reconnect is a
+   * new socket, so it gets a new viewer. Without a heartbeat the pane collects one more
+   * `grid_*` name per rude disconnect, and nothing sweeps them until Ronin restarts:
+   * cleanupViewers() runs at boot and at shutdown and never in between. On a phone, which
+   * is mid-reconnect all the time, that is the normal case rather than the exception.
+   *
+   * Terminating a connection that was merely slow costs nothing, which is why one missed
+   * interval is enough: the client reconnects on its own, and a tile that reconnects is
+   * the ordinary case this file is already written around. Leaving a dead one costs a
+   * viewer that outlives every browser that could have closed it.
+   */
+  let alive = true;
+  ws.on('pong', () => {
+    alive = true;
+  });
+  beat = setInterval(() => {
+    if (!alive) {
+      // No 'close' is coming from a peer that is not there; make one, then reap directly
+      // in case terminate's own close is not delivered. cleanup is idempotent.
+      ws.terminate();
+      cleanup();
+      return;
+    }
+    alive = false;
+    try {
+      ws.ping();
+    } catch {
+      /* closing under us — the next tick terminates */
+    }
+  }, HEARTBEAT_MS);
 }
 
 function clampDim(v: string | number | null | undefined, fallback: number): number {

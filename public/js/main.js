@@ -1,5 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { fetchSessions } from './api.js';
+import { mountRamRpm } from './ramrpm.js';
 import { request } from './request.js';
 import { guard, showFailure } from './errors.js';
 import { applyTheme } from './theme.js';
@@ -37,6 +38,11 @@ export async function init() {
     // A failed read means an old operator or an unreachable server — the first reads
     // as "everything on", the second is reported by the session-list step below.
   }
+  // RAM_RPM before the grid, so the header carries a real reading from the first paint
+  // rather than appearing a minute in. Guarded like every other mount: a box that
+  // cannot answer /api/machine must still get its coworkspace.
+  guard('mount RAM_RPM', mountRamRpm);
+
   // The theme before the grid: tiles are born reading the resolved terminal palette.
   guard('apply theme', applyTheme);
   // After the theme, because a skin outranks it for whatever it names (js/skins.js).
@@ -84,6 +90,8 @@ export async function init() {
   if (!viewhost) throw new Error('workspace ViewHost is missing');
   const workspace = createWorkspace(viewhost, {
     onError: (where, error) => showFailure(`workspace ${where}`, error),
+    // The bar's one slot for the layout map; the ViewHost fills it per active view.
+    mapSlot: document.getElementById('viewmap'),
   });
   workspace.kit = WorkspaceKit;
   S.workspace = workspace;
@@ -93,7 +101,7 @@ export async function init() {
   guard('register the Team destination', () => workspace.register('team', createTeamView()));
   workspace.register('sessions', {
     el: document.getElementById('grid'),
-    title: () => tiles[0]?.session ? `${tiles[0].session} · ronin` : 'tmux ronin',
+    title: () => tiles[0]?.session || '',
   });
   // NEW TEAM — one Surface, no Tile, no Channel services of its own. Registered beside
   // Sessions rather than replacing it: Sessions remains the default destination on `dev`

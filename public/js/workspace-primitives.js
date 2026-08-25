@@ -291,8 +291,96 @@ function createForm(options = {}) {
   return { el, fields, notice, actions };
 }
 
+/**
+ * THE LAYOUT MAP — a workbench's arrangement drawn small: one switch per slot, in order,
+ * its width the slot's share. Click toggles the slot; drag one past another to reorder;
+ * arrows move focus, Space toggles, Shift+arrows move the slot. It renders from the
+ * arrangement it is given ({ declaration, state(), toggle, move, subscribe }) and never
+ * holds state of its own, so a splitter drag redraws it and a map drag moves the real
+ * columns. The ViewHost mounts it in the app bar for any view exposing an arrangement.
+ */
+function createLayoutMap(arrangement) {
+  const el = node('div', 'wk-layout-map');
+  el.setAttribute('role', 'group');
+  el.setAttribute('aria-label', 'Workspace columns');
+  const labelOf = (name) => arrangement.declaration.slots.find((slot) => slot.name === name)?.label || name;
+  const render = () => {
+    const state = arrangement.state();
+    el.replaceChildren();
+    for (const name of state.order) {
+      const hidden = state.hidden.includes(name);
+      const button = node('button', 'wk-layout-map-slot');
+      button.type = 'button';
+      button.dataset.slot = name;
+      button.setAttribute('role', 'switch');
+      button.setAttribute('aria-checked', hidden ? 'false' : 'true');
+      button.setAttribute('aria-label', labelOf(name));
+      button.title = `${labelOf(name)} — click to ${hidden ? 'show' : 'hide'}, drag to move`;
+      button.style.flexGrow = String(Math.max(6, state.widths[name] || 0));
+      el.append(button);
+    }
+  };
+  // A press is a click until the pointer has travelled past the midpoint of a neighbour;
+  // from then on it is a drag, and the release is not a toggle. The drag listens on the
+  // document, not the button: every move re-renders the map, and a captured button that
+  // has just been replaced hears nothing more.
+  el.addEventListener('pointerdown', (event) => {
+    const button = event.target.closest('.wk-layout-map-slot');
+    if (!button || event.button !== 0) return;
+    const name = button.dataset.slot;
+    let dragged = false;
+    const current = () => el.querySelector(`[data-slot="${name}"]`);
+    const move = (next) => {
+      const mine = current();
+      const over = document.elementsFromPoint(next.clientX, next.clientY).find((n) => n !== mine && n.classList?.contains('wk-layout-map-slot') && el.contains(n));
+      if (!over) return;
+      const rect = over.getBoundingClientRect();
+      const order = arrangement.state().order;
+      const from = order.indexOf(name);
+      const to = order.indexOf(over.dataset.slot);
+      const past = to > from ? next.clientX > rect.left + rect.width / 2 : next.clientX < rect.right - rect.width / 2;
+      if (!past) return;
+      dragged = true;
+      arrangement.move(name, to);
+      const moved = current();
+      if (moved) moved.dataset.dragging = 'true';
+    };
+    const done = () => {
+      document.removeEventListener('pointermove', move);
+      document.removeEventListener('pointerup', done);
+      document.removeEventListener('pointercancel', done);
+      const mine = current();
+      if (mine) delete mine.dataset.dragging;
+      if (!dragged) arrangement.toggle(name);
+      current()?.focus();
+    };
+    document.addEventListener('pointermove', move);
+    document.addEventListener('pointerup', done);
+    document.addEventListener('pointercancel', done);
+    event.preventDefault();
+  });
+  el.addEventListener('keydown', (event) => {
+    const button = event.target.closest('.wk-layout-map-slot');
+    if (!button) return;
+    const name = button.dataset.slot;
+    const order = arrangement.state().order;
+    const at = order.indexOf(name);
+    if (event.key === ' ' || event.key === 'Enter') { arrangement.toggle(name); event.preventDefault(); return; }
+    if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+    const step = event.key === 'ArrowRight' ? 1 : -1;
+    if (event.shiftKey) arrangement.move(name, at + step);
+    const target = order[Math.max(0, Math.min(order.length - 1, at + step))];
+    el.querySelector(`[data-slot="${event.shiftKey ? name : target}"]`)?.focus();
+    event.preventDefault();
+  });
+  const unsubscribe = arrangement.subscribe(render);
+  render();
+  return { el, destroy: () => { unsubscribe(); el.remove(); } };
+}
+
 export const WorkspacePrimitives = Object.freeze({
   states: WORKSPACE_STATES,
+  createLayoutMap,
   setSurfaceState,
   createSurface,
   createCard,

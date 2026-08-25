@@ -108,13 +108,10 @@ async function membersOf(board: string): Promise<{ name: string; key: string }[]
   }
   const sessions = await listSessions().catch(() => []);
   // Through the roster's id, so the reaper counts the team that actually talks here.
-  // Teams only: custom enrolment is cut (owner, 2026-08-24).
+  // Teams only, and the key rides listSessions' single exec — one subprocess, not one
+  // per member (the 2026-08-25 slowness lesson).
   const team = (await teamOfBoard(board)) ?? board;
-  const out: { name: string; key: string }[] = [];
-  for (const s of sessions) {
-    if (s.tags.includes(team)) out.push({ name: s.name, key: await sessionKey(s.name) });
-  }
-  return out;
+  return sessions.filter((s) => s.tags.includes(team)).map((s) => ({ name: s.name, key: s.key }));
 }
 
 const render = (p: Post): string => `${postHeader(p.author, p.at, p.to, p.silent)}\n${p.text}`;
@@ -177,8 +174,8 @@ async function check(): Promise<number> {
   }
   // Retire what has now been delivered. Inline, so there is no daemon and no timer.
   for (const { board } of found) {
-    const { ttlMs, graceMs } = await readWipeboardSettings(board);
-    await reapPosts(board, { members: await membersOf(board), ttlMs, graceMs }).catch(() => {});
+    const { ttlMs } = await readWipeboardSettings(board);
+    await reapPosts(board, { members: await membersOf(board), ttlMs }).catch(() => {});
   }
   return 0;
 }

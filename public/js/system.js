@@ -1,6 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { request } from './request.js';
 import { button, field, status } from './ui.js';
+import { buildMachinePanel } from './machine-panel.js';
 import { currentSkin, listSkins, setSkin } from './skins.js';
 import { resolvedTheme, setTheme } from './theme.js';
 import { S } from './state.js';
@@ -232,6 +233,10 @@ export function buildSystemPanel() {
   paintFlip();
   appRow.append(appLab, flip);
 
+  // ⚙ THE MACHINE — the detail behind the header gauge, drawn only when the machine
+  // service is installed. Null when it is not: no empty box explaining its own absence.
+  const machineBlock = buildMachinePanel();
+
   /* THE SKIN PICKER, beside the light/dark flip because they are the same question asked
    * twice — what does this look like — and a person hunting "appearance" should find both
    * in one place rather than learning that one of them is a room of its own.
@@ -318,11 +323,16 @@ export function buildSystemPanel() {
   const group = (...kids) => {
     const g = document.createElement('div');
     g.className = 'sys';
-    g.append(...kids);
+    // A null child is a surface that decided not to draw itself (an absent service), and
+    // dropping it here is what lets those decide locally instead of every caller asking.
+    g.append(...kids.filter(Boolean));
     return g;
   };
   const appearance = group(appRow, skinBlock);
-  const release = group(idBlock, row, msg.el);
+  // The machine sits with the release block — both answer "what is this install running
+  // on", and a person hunting either finds them together. group() drops a null child, so
+  // an install without the machine service simply has one fewer row here.
+  const release = group(idBlock, row, msg.el, machineBlock);
   const account = group(outRow, passkeys.el);
 
   let version = null; // the operator's /api/version answer, fetched on open

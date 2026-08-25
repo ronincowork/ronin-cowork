@@ -19,11 +19,8 @@
  *                         file re-derives no part of the cascade; a second cascade in the
  *                         browser would be correct exactly until somebody edited one.
  *
- * WHAT IS NOT HERE YET, named rather than silently missing: `stated_by`, the per-key
- * attribution saying WHICH layer and WHICH FILE stated each resolved value. It is a joint
- * ask with New Team against the existing resolver, where `stated()` already computes it
- * and returns none of it. Until it lands, a resolved row shows the value and not its
- * origin, and this file marks that absence rather than guessing at a source.
+ * `stated_by` rides beside each resolved value from that same server answer. This file
+ * formats the returned layer/source pairs and does not infer a winner from the seat.
  */
 import { WorkspaceKit } from './workspace-kit.js';
 
@@ -35,12 +32,25 @@ const RESOLVED_ROWS = Object.freeze([
   ['team', 'Team'],
   ['team_role', 'Team role'],
   ['project_root', 'Project root'],
+  ['team_objective', 'Team objective'],
+  ['team_repos', 'Team repositories'],
+  ['team_branch', 'Team branch'],
+  ['team_wipeboard', 'Team wipeboard'],
+  ['team_state', 'Team state'],
   ['dir', 'Directory'],
   ['agent', 'Launches an agent'],
+  ['label', 'Agent label'],
+  ['model', 'Model bias'],
+  ['permissions', 'Permissions'],
+  ['posture', 'Posture'],
+  ['opening', 'Opening template'],
+  ['ack', 'Acknowledgement gate'],
   ['cmd', 'Command'],
   ['launchAgent', 'CLI'],
   ['dial', 'Control'],
   ['mcp', 'gbrain'],
+  ['mcpDefault', 'gbrain default'],
+  ['mcpAlways', 'gbrain locked on'],
   ['lifecycle', 'Lifecycle'],
   ['mode', 'Mode'],
   ['capExempt', 'Exempt from the session max'],
@@ -57,7 +67,7 @@ function readingOf(key, value) {
 
 export function createSeatPreview() {
   // Resolved at CALL time, not at import time — see the note in agent-config-fields.js.
-  const { createSurface, createNotice } = WorkspaceKit.primitives;
+  const { createSurface } = WorkspaceKit.primitives;
   const surface = createSurface({ className: 'ac-preview', label: 'Preview' });
 
   const briefHead = document.createElement('h3');
@@ -71,18 +81,22 @@ export function createSeatPreview() {
   resolvedHead.textContent = 'What it resolves to';
   const rows = document.createElement('dl');
   rows.className = 'ac-preview-rows';
+  const readingHead = document.createElement('h3');
+  readingHead.className = 'ac-preview-heading';
+  readingHead.textContent = 'Read at birth';
+  const reading = document.createElement('ul');
+  reading.className = 'ac-preview-reading';
 
-  const attribution = createNotice({
-    kind: 'info',
-    message: 'Each value shows what it resolves to, not yet which layer stated it — stated_by is a pending ask on the resolver.',
-  });
-
-  surface.content.append(briefHead, brief, resolvedHead, rows, attribution.el);
+  const body = document.createElement('div');
+  body.className = 'ac-preview-body';
+  body.append(briefHead, brief, readingHead, reading, resolvedHead, rows);
+  surface.content.append(body);
 
   /** Nothing resolved yet is not a failure — it is the ordinary state before the first
    *  preflight answers. `empty` says so without implying anything broke. */
   const clear = (message = 'Nothing to preview yet.') => {
     brief.textContent = '';
+    reading.replaceChildren();
     rows.replaceChildren();
     surface.setState('empty', message);
   };
@@ -96,11 +110,24 @@ export function createSeatPreview() {
   const show = (verdict) => {
     if (!verdict) return clear();
     const resolved = verdict.resolved ?? null;
-    brief.textContent = verdict.brief ?? '';
+    brief.textContent = resolved?.brief ?? '';
+    reading.replaceChildren();
     rows.replaceChildren();
     if (!resolved) {
       surface.setState('empty', 'This seat did not resolve far enough to preview.');
       return;
+    }
+    const birthReading = Array.isArray(resolved.birth_reading) ? resolved.birth_reading : [];
+    for (const file of birthReading) {
+      const item = document.createElement('li');
+      item.textContent = file;
+      reading.append(item);
+    }
+    if (!birthReading.length) {
+      const item = document.createElement('li');
+      item.dataset.blank = '';
+      item.textContent = 'No birth reading reported.';
+      reading.append(item);
     }
     for (const [key, label] of RESOLVED_ROWS) {
       const reading = readingOf(key, resolved[key]);
@@ -111,6 +138,13 @@ export function createSeatPreview() {
       // A blank resolved value is a real answer and is marked as one rather than left
       // looking like a rendering failure.
       if (!reading) dd.dataset.blank = '';
+      const attribution = document.createElement('small');
+      attribution.className = 'ac-preview-stated-by';
+      const statedBy = Array.isArray(resolved.stated_by?.[key]) ? resolved.stated_by[key] : [];
+      attribution.textContent = statedBy.length
+        ? statedBy.map(({ layer, source }) => `${String(layer).replaceAll('_', ' ')} · ${source}`).join(' + ')
+        : 'source not reported';
+      dd.append(attribution);
       rows.append(dt, dd);
     }
     surface.setState(verdict.verdict === 'refuse' ? 'stale' : '', '');

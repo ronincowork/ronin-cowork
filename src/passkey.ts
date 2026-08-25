@@ -138,7 +138,10 @@ export function secureUrl(): string | undefined {
     const web = JSON.parse(out)?.Web as Record<string, { Handlers?: Record<string, { Proxy?: string }> }> | undefined;
     for (const [hostPort, entry] of Object.entries(web ?? {})) {
       if (Object.values(entry?.Handlers ?? {}).some((h) => h?.Proxy?.endsWith(`:${config.port}`))) {
-        v = `https://${hostPort}`;
+        // `serve` keys every entry host:port, so the ordinary 443 case arrives as
+        // `name:443` — a port a URL never needs to carry and that reads, to anyone
+        // shown it, as one more thing to get right. Dropped; every other port stays.
+        v = `https://${hostPort.replace(/:443$/, '')}`;
         break;
       }
     }

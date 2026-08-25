@@ -152,6 +152,15 @@ app.post('/api/logout', (_req, res) => {
   res.json({ ok: true });
 });
 
+// THE HOUSE MARK, AHEAD OF THE GATE. The login page is the first thing an arrival sees,
+// and a favicon request from it would otherwise be answered with a redirect BACK to the
+// login page — HTML where an image was asked for, so the one page that most needs to look
+// like somewhere wears a blank tab. `public/brand/` holds identity artwork and nothing
+// else; a logo is not a secret and the gate gives up nothing by passing it. Deliberately
+// NOT wearing noCacheClient — that exists because iOS served a stale APP, and an icon is
+// the one asset where the browser holding on to it is the desired behaviour.
+app.use('/brand', express.static(path.join(PUBLIC, 'brand')));
+
 app.use((req, res, next) => {
   if (checkAuth(req.headers)) return next();
   // A person in a browser gets the login page, not a bare 401 — but only when there

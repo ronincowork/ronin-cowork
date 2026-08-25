@@ -1,6 +1,6 @@
 /* Named Workspace Kit compositions. These establish geometry only. */
 
-import { WorkspacePrimitives } from './workspace-primitives.js';
+import { declareArrangement, normalizeArrangement, visibleColumns, toggleSlot, moveSlot, resizeSlot, setFace, widthClass } from './workspace-arrangement.js';
 
 const layout = (name, surfaces) => {
   const el = document.createElement('div');
@@ -28,129 +28,213 @@ const createAgentConfigurationLayout = (configuration = null, preview = null) =>
 const createNewTeamLayout = (definition = null, roster = null, transaction = null) =>
   layout('new-team-layout', { definition, roster, transaction });
 
-function createWorkbenchLayout(terminalTile = null, kanban = null, channels = null, options = {}) {
-  const el = layout('workbench-layout', { terminalTile, kanban, channels });
-  const managed = options.managed === true;
+/**
+ * THE MANAGED WORKBENCH — N slots, arranged.
+ *
+ *   createWorkbenchLayout({ declaration, surfaces, state, onStateChange })
+ *
+ * The destination DECLARES its slots by name (workspace-arrangement.js) and hands one
+ * element per name in `surfaces`; this frame draws them in the arrangement's order, at
+ * its widths, hiding what it hides, with one splitter between each visible pair. It
+ * knows no slot name — the team page's "terminal · roster · commons" is its business
+ * alone, and commons-on-the-left is a reordered declaration, not a frame change.
+ *
+ * `arrangement` is the live controller the Kit's layout map binds to (the ViewHost draws
+ * that map in the app bar for any view that exposes one). One state, two faces: a
+ * splitter drag redraws the map, a map drag moves the real columns.
+ *
+ * Widths are `fr` units, not percentages, so the grid's own gap is absorbed instead of
+ * overflowing the row. Splitters are positioned from the columns' measured edges after
+ * every render and on every resize — never from arithmetic on percentages.
+ */
+function createWorkbenchLayout(options = {}) {
+  if (options instanceof Node || arguments.length > 1) throw new Error('createWorkbenchLayout takes { declaration, surfaces, state, onStateChange }');
+  const declaration = declareArrangement(options.declaration);
+  const surfaces = options.surfaces && typeof options.surfaces === 'object' ? options.surfaces : {};
+  // A slot's surface is one element, or — for a slot with faces — one element per face
+  // name. A face element may be shared between slots (the one commons); it lives in
+  // whichever slot has that face up, and an exclusive face is up in one slot at a time.
+  const faceElements = (slot) => {
+    const given = surfaces[slot.name];
+    if (given instanceof Node) return new Map(slot.faces.length ? [[slot.faces[0].name, given]] : [['', given]]);
+    const map = new Map();
+    for (const face of slot.faces) if (given?.[face.name] instanceof Node) map.set(face.name, given[face.name]);
+    return map;
+  };
+  const faces = new Map(declaration.slots.map((slot) => [slot.name, faceElements(slot)]));
+  const el = layout('workbench-layout', Object.fromEntries(declaration.slots.map((slot) => [slot.name, faces.get(slot.name).get('') ?? null])));
+  el.dataset.responsive = 'workbench';
   const host = document.createElement('div');
   host.className = 'wk-workbench-host';
-  const rails = document.createElement('div');
-  rails.className = 'wk-workbench-rails';
-  rails.hidden = true;
-  host.append(rails, el);
-  const surfaces = { terminalTile, kanban, channels };
-  const labels = { terminalTile: 'focused session', kanban: 'Team sessions', channels: 'Team channels' };
-  const collapsed = { terminalTile: false, kanban: false, channels: false };
-  let widths = { left: 40, right: 40 };
-  const clamp = (value) => Math.max(25, Math.min(60, Number(value) || 40));
-  const setWidths = (left = 40, right = 40) => {
-    const boundedLeft = clamp(left);
-    const boundedRight = clamp(right);
-    // Keep a usable Kanban between them; the last changed edge yields when necessary.
-    const excess = Math.max(0, boundedLeft + boundedRight - 80);
-    const resolvedRight = boundedRight - excess;
-    el.style.setProperty('--wk-left', `${boundedLeft}%`);
-    el.style.setProperty('--wk-right', `${resolvedRight}%`);
-    widths = { left: boundedLeft, right: resolvedRight };
-    return { ...widths };
-  };
-  const snapshot = () => ({ widths: { ...widths }, surfaces: { ...collapsed } });
-  const notify = () => options.onStateChange?.(snapshot());
-  const expandActions = new Map();
-  const setCollapsed = (surface, on, emit = false) => {
-    const target = el.querySelector(`[data-surface="${surface}"]`);
-    if (!target) return;
-    target.hidden = !!on;
-    collapsed[surface] = !!on;
-    const expand = expandActions.get(surface);
-    if (expand) expand.hidden = !on;
-    rails.hidden = !Object.values(collapsed).some(Boolean);
-    el.dataset.open = ['terminalTile', 'kanban', 'channels']
-      .filter((name) => !el.querySelector(`[data-surface="${name}"]`)?.hidden)
-      .join('-');
-    if (emit) notify();
-  };
-  const restore = (state = {}) => {
-    const nextWidths = state.widths || {};
-    setWidths(nextWidths.left, nextWidths.right);
-    for (const name of Object.keys(surfaces)) setCollapsed(name, !!state.surfaces?.[name]);
-    return snapshot();
-  };
-  el.dataset.open = 'terminalTile-kanban-channels';
-  el.dataset.responsive = 'workbench';
-  setWidths();
+  host.append(el);
+  const wrappers = new Map(declaration.slots.map((slot) => [slot.name, el.querySelector(`:scope > [data-surface="${slot.name}"]`)]));
+  const switches = new Map();
+  const splitters = [];
+  const listeners = new Set();
+  let state = normalizeArrangement(options.state, declaration);
+  let columns = [];
 
-  if (managed) {
-    for (const name of Object.keys(surfaces)) {
-      const expand = WorkspacePrimitives.createAction({
-        className: 'wk-workbench-expand',
-        label: name === 'channels' ? '«' : '»',
-        title: `Show ${labels[name]}`,
-        action: () => setCollapsed(name, false, true),
-      }).el;
-      expand.dataset.surface = name;
-      expand.hidden = true;
-      expandActions.set(name, expand);
-      rails.append(expand);
-
-      const controls = surfaces[name]?.querySelector(':scope > .wk-surface-controls');
-      if (controls) {
-        const collapse = WorkspacePrimitives.createAction({
-          className: 'wk-workbench-collapse',
-          label: name === 'channels' ? '»' : name === 'kanban' ? '⌃' : '«',
-          title: `Hide ${labels[name]}`,
-          action: () => setCollapsed(name, true, true),
-        }).el;
-        collapse.dataset.surface = name;
-        controls.hidden = false;
-        controls.append(collapse);
+  const paintFaces = () => {
+    for (const slot of declaration.slots) {
+      const wrapper = wrappers.get(slot.name);
+      const up = state.faces?.[slot.name] || '';
+      for (const [face, node] of faces.get(slot.name)) {
+        if (!face) continue;
+        if (face === up) {
+          if (node.parentElement !== wrapper) wrapper.append(node);
+          node.hidden = false;
+        } else if (node.parentElement === wrapper) node.hidden = true;
       }
+      wrapper.dataset.face = up;
+      const strip = switches.get(slot.name);
+      if (strip) for (const button of strip.children) button.setAttribute('aria-pressed', button.dataset.face === up ? 'true' : 'false');
     }
+  };
 
-    for (const side of ['left', 'right']) {
-      const splitter = document.createElement('div');
-      splitter.className = 'wk-workbench-splitter';
-      splitter.dataset.side = side;
-      splitter.setAttribute('role', 'separator');
-      splitter.setAttribute('aria-orientation', 'vertical');
-      splitter.setAttribute('aria-label', side === 'left' ? 'Resize the focused session' : 'Resize the Team channels');
-      splitter.tabIndex = 0;
-      const resize = (clientX, rect) => {
-        const ratio = ((side === 'left' ? clientX - rect.left : rect.right - clientX) / rect.width) * 100;
-        const next = side === 'left' ? { left: ratio, right: widths.right } : { left: widths.left, right: ratio };
-        setWidths(next.left, next.right);
-      };
-      splitter.addEventListener('pointerdown', (event) => {
-        if (window.matchMedia('(max-width: 680px)').matches) return;
-        const rect = el.getBoundingClientRect();
-        if (!rect.width) return;
-        splitter.setPointerCapture(event.pointerId);
-        splitter.dataset.dragging = 'true';
-        const move = (next) => resize(next.clientX, rect);
-        const done = () => {
-          delete splitter.dataset.dragging;
-          splitter.removeEventListener('pointermove', move);
-          splitter.removeEventListener('pointerup', done);
-          splitter.removeEventListener('pointercancel', done);
-          notify();
-        };
-        splitter.addEventListener('pointermove', move);
-        splitter.addEventListener('pointerup', done);
-        splitter.addEventListener('pointercancel', done);
-      });
-      splitter.addEventListener('keydown', (event) => {
-        if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
-        const direction = event.key === 'ArrowRight' ? 2 : -2;
-        const next = side === 'left' ? { left: widths.left + direction, right: widths.right } : { left: widths.left, right: widths.right - direction };
-        setWidths(next.left, next.right);
-        notify();
-        event.preventDefault();
-      });
-      el.append(splitter);
+  const phone = () => window.matchMedia('(max-width: 680px)').matches;
+  const placeSplitters = () => {
+    const rect = el.getBoundingClientRect();
+    for (const [i, splitter] of splitters.entries()) {
+      const column = columns[i];
+      const wrapper = column ? wrappers.get(column.name) : null;
+      if (!wrapper || i >= columns.length - 1 || !rect.width) { splitter.hidden = true; continue; }
+      const edge = wrapper.getBoundingClientRect().right - rect.left;
+      splitter.hidden = false;
+      splitter.style.left = `${edge}px`;
+      splitter.setAttribute('aria-label', `Resize ${declaration.slots.find((s) => s.name === column.name)?.label || column.name}`);
+      splitter.dataset.between = `${column.name}:${columns[i + 1].name}`;
     }
-    restore(options.state);
+  };
+  const markWidths = () => {
+    for (const column of columns) {
+      const wrapper = wrappers.get(column.name);
+      if (!wrapper) continue;
+      wrapper.dataset.width = widthClass(wrapper.getBoundingClientRect().width, column.compact);
+    }
+  };
+  const measure = () => { placeSplitters(); markWidths(); };
+
+  const render = () => {
+    columns = visibleColumns(state, declaration);
+    for (const name of state.order) {
+      const wrapper = wrappers.get(name);
+      if (!wrapper) continue;
+      wrapper.hidden = state.hidden.includes(name);
+      el.append(wrapper); // append in order: a move is a DOM move, and the phone stack reads DOM order
+    }
+    el.style.gridTemplateColumns = columns.map((c) => `minmax(0, ${c.width.toFixed(3)}fr)`).join(' ');
+    el.dataset.slots = columns.map((c) => c.name).join(' ');
+    paintFaces();
+    // Splitters are absolutely positioned, so their DOM order is irrelevant — and they
+    // must NOT be re-appended here: moving the node mid-drag drops its pointer capture.
+    measure();
+  };
+  const snapshot = () => state;
+  const commit = (next, emit) => {
+    if (next === state) return;
+    state = next;
+    render();
+    for (const fn of listeners) fn(state);
+    if (emit) options.onStateChange?.(state);
+  };
+  const arrangement = Object.freeze({
+    declaration,
+    state: snapshot,
+    toggle: (name) => commit(toggleSlot(state, name), true),
+    move: (name, index) => commit(moveSlot(state, name, index), true),
+    resize: (name, percent, neighbour) => commit(resizeSlot(state, name, percent, declaration, neighbour), true),
+    setFace: (name, face) => commit(setFace(state, name, face, declaration), true),
+    subscribe: (fn) => { listeners.add(fn); return () => listeners.delete(fn); },
+  });
+  const restore = (next) => { commit(normalizeArrangement(next, declaration), false); return state; };
+
+  // The face switch: one per slot that has more than one face, in the slot's corner.
+  for (const slot of declaration.slots) {
+    if (slot.faces.length < 2) continue;
+    const strip = document.createElement('div');
+    strip.className = 'wk-face-switch';
+    strip.setAttribute('role', 'group');
+    strip.setAttribute('aria-label', `${slot.label} shows`);
+    for (const face of slot.faces) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'wk-face';
+      button.dataset.face = face.name;
+      button.textContent = face.label;
+      button.title = `Show ${face.label} here`;
+      button.addEventListener('click', () => arrangement.setFace(slot.name, face.name));
+      strip.append(button);
+    }
+    wrappers.get(slot.name).append(strip);
+    switches.set(slot.name, strip);
   }
 
-  return { el, host, rails, setCollapsed, setWidths, restore, snapshot };
+  // One splitter per gap the declaration can ever have; render hides the spares.
+  for (let i = 0; i < declaration.slots.length - 1; i += 1) {
+    const splitter = document.createElement('div');
+    splitter.className = 'wk-workbench-splitter';
+    splitter.setAttribute('role', 'separator');
+    splitter.setAttribute('aria-orientation', 'vertical');
+    splitter.tabIndex = 0;
+    // The pair this splitter sits between: the outer one is resized and the one toward
+    // the middle yields — the same rule from either edge, so both workspaces feel alike.
+    const pair = () => {
+      const left = columns[i];
+      const right = columns[i + 1];
+      if (!left || !right) return null;
+      const rightIsLast = i + 1 === columns.length - 1;
+      return rightIsLast && i > 0 ? { name: right.name, neighbour: left.name, fromRight: true } : { name: left.name, neighbour: right.name, fromRight: false };
+    };
+    // A pull of N pixels is a change of N pixels to the outer column, from the width it
+    // had when the pointer went down. Shares are of the COLUMNS' content (padding and
+    // gaps excluded); measuring from the grid's box or a neighbour's edge instead left
+    // one side six to ten pixels off per hundred — measured, 2026-08-25.
+    let grip = null;
+    const drag = (clientX) => {
+      if (!grip) return;
+      const content = columns.reduce((sum, c) => sum + wrappers.get(c.name).getBoundingClientRect().width, 0);
+      if (!content) return;
+      const delta = clientX - grip.x;
+      const width = grip.width + (grip.target.fromRight ? -delta : delta);
+      commit(resizeSlot(state, grip.target.name, (width / content) * 100, declaration, grip.target.neighbour), false);
+    };
+    splitter.addEventListener('pointerdown', (event) => {
+      if (phone()) return;
+      const target = pair();
+      if (!target || !el.getBoundingClientRect().width) return;
+      grip = { x: event.clientX, width: wrappers.get(target.name).getBoundingClientRect().width, target };
+      splitter.setPointerCapture(event.pointerId);
+      splitter.dataset.dragging = 'true';
+      const move = (next) => drag(next.clientX);
+      const done = () => {
+        grip = null;
+        delete splitter.dataset.dragging;
+        splitter.removeEventListener('pointermove', move);
+        splitter.removeEventListener('pointerup', done);
+        splitter.removeEventListener('pointercancel', done);
+        for (const fn of listeners) fn(state);
+        options.onStateChange?.(state);
+      };
+      splitter.addEventListener('pointermove', move);
+      splitter.addEventListener('pointerup', done);
+      splitter.addEventListener('pointercancel', done);
+    });
+    splitter.addEventListener('keydown', (event) => {
+      if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+      const target = pair();
+      if (!target) return;
+      const current = columns.find((c) => c.name === target.name)?.width ?? 0;
+      const step = (event.key === 'ArrowRight') === !target.fromRight ? 2 : -2;
+      arrangement.resize(target.name, current + step, target.neighbour);
+      event.preventDefault();
+    });
+    splitters.push(splitter);
+    el.append(splitter);
+  }
+
+  if (typeof ResizeObserver === 'function') new ResizeObserver(measure).observe(el);
+  render();
+  return { el, host, arrangement, restore, snapshot };
 }
 
 export const WorkspaceLayouts = Object.freeze({

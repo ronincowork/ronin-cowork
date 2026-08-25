@@ -1,4 +1,5 @@
 /* part of the ronin-cowork client — see js/README.md */
+import { WorkspacePrimitives } from './workspace-primitives.js';
 
 export const WORKSPACE_STATE_KEY = 'ronin.workspace.v2';
 export const WORKSPACE_STATE_VERSION = 2;
@@ -108,6 +109,32 @@ export function hashFor(view, param = '') {
  * registered id and an element are structural. Lifecycle failures are contained to the
  * destination and reported without taking the compatibility Sessions view down.
  */
+/**
+ * THE TAB'S NAME, SPELLED IN ONE PLACE (owner, 2026-08-23).
+ *
+ * `tmux ronin` was the name of the thing this grew out of, and because `index.html` shipped
+ * it as a literal `<title>` it went into every tab and — the way the owner found it — into
+ * every bookmark saved from the app. It is not the product's name and no surface should be
+ * able to spell the house name for itself again.
+ *
+ * A view now says only WHAT IT IS — a team's name, `League`, a session — or says nothing at
+ * all. The house half is added here, and it is one word: `Ronin`, with the capital it
+ * carries everywhere else. Nothing, and the tab is just the house.
+ *
+ * THE NAME COMES FIRST AND THE HOUSE COMES LAST (owner, 2026-08-23), because a browser
+ * truncates a tab from the END. Whatever the owner opened this tab FOR therefore survives
+ * at every width, and `Ronin` — the part every tab shares, and so the part that
+ * distinguishes nothing — is the first thing given up when the strip is tight.
+ *
+ * NO MARK IN THE TEXT. The mark is the favicon (`public/brand/nin-mark.svg`), which is
+ * where a tab, a bookmark bar and a home screen all already look for one. Spelling a
+ * SECOND mark in the title beside it — the ⛩ this briefly carried — puts two different
+ * house marks an inch apart and spends the leading characters, the ones truncation never
+ * reaches, on something that identifies nothing.
+ */
+const HOUSE = 'Ronin';
+export const tabTitle = (what) => (what ? `${what} · ${HOUSE}` : HOUSE);
+
 export function createWorkspace(host, options = {}) {
   const views = new Map();
   const state = readState();
@@ -122,6 +149,22 @@ export function createWorkspace(host, options = {}) {
   };
   const invoke = (id, hook, fn) => {
     try { return fn?.(); } catch (error) { report(`${id} ${hook}`, error); return undefined; }
+  };
+
+  // THE LAYOUT MAP IN THE BAR. A view that exposes `arrangement` (a managed Workbench's
+  // slot controller) gets the Kit's map drawn into the bar's one slot while it is active;
+  // every other view leaves the slot empty. The ViewHost does the drawing so no feature
+  // ever touches the header, and the map knows only slot names — never what they hold.
+  const mapSlot = options.mapSlot instanceof Element ? options.mapSlot : null;
+  let map = null;
+  const showMap = (id, view) => {
+    map?.destroy();
+    map = null;
+    if (!mapSlot) return;
+    mapSlot.replaceChildren();
+    if (!view.arrangement) return;
+    map = invoke(id, 'map', () => WorkspacePrimitives.createLayoutMap(view.arrangement)) || null;
+    if (map) mapSlot.append(map.el);
   };
 
   const register = (id, view) => {
@@ -164,11 +207,12 @@ export function createWorkspace(host, options = {}) {
     }
     next.el.hidden = false;
     if (changed) invoke(id, 'enter', () => next.enter?.(context));
+    if (active?.view !== next) showMap(id, next);
     active = { id, view: next, param };
     state.view = id;
     if (id === 'team') state.team = param;
     writeState(state);
-    document.title = invoke(id, 'title', () => next.title?.(context)) || 'ronin';
+    document.title = tabTitle(invoke(id, 'title', () => next.title?.(context)));
     const target = hashFor(id, param);
     if (!nav.fromHistory && location.hash !== target) history[nav.replace ? 'replaceState' : 'pushState'](null, '', target);
     return requested === id;
@@ -206,7 +250,7 @@ export function createWorkspace(host, options = {}) {
   const refreshTitle = () => {
     if (!active) return;
     const context = { id: active.id, param: active.param, state, navigate, patchState, viewState, patchViewState };
-    document.title = invoke(active.id, 'title', () => active.view.title?.(context)) || 'ronin';
+    document.title = tabTitle(invoke(active.id, 'title', () => active.view.title?.(context)));
   };
 
   const back = () => history.length > 1 ? history.back() : navigate(safeView, { replace: true });

@@ -669,6 +669,7 @@ body {
   font-family: inherit;
   font-size: inherit;
   color: var(--fg);
+  text-decoration: none;
   line-height: 1;
   cursor: pointer;
 }
@@ -6436,6 +6437,14 @@ button.wb-door:hover b {
 }
 
 /* Services activation: static while waiting; motion only during a real check/install. */
+/* RAM_RPM — the box's working reading. QUIET BY DEFAULT: it wears --muted-2 like any
+   other passive readout, because a gauge that shouts all day is wallpaper by tomorrow
+   and stops carrying information. Only the two bands that mean something take colour,
+   and they take the palette's own --warn and --bad rather than inventing a red. It is a
+   readout, not a control: no pointer, no hover lift, nothing happens when it is clicked. */
+.ramrpm { margin-left: var(--space-4); border: var(--edge) solid var(--line-2); border-radius: var(--radius-pill); background: var(--raise); color: var(--muted-2); padding: var(--space-3) var(--space-6); font: var(--text-2) var(--font-mono); cursor: default; user-select: none; }
+.ramrpm[data-band='warn'] { color: var(--warn); border-color: var(--warn); }
+.ramrpm[data-band='red'] { color: var(--bad); border-color: var(--bad); }
 .services-state { margin-left: var(--space-4); border: var(--edge) solid var(--line-2); border-radius: var(--radius-pill); background: var(--raise); color: var(--muted-2); padding: var(--space-3) var(--space-6); font: var(--text-2) var(--font-mono); cursor: pointer; }
 .services-state.busy::before { content: '◌'; display: inline-block; margin-right: var(--space-3); animation: services-spin var(--motion-slow) linear infinite; }
 .services-pop { position: fixed; z-index: 50; width: min(360px, calc(100vw - var(--space-8))); border: var(--edge) solid var(--line-2); border-radius: var(--radius-sm); background: var(--panel); box-shadow: var(--shadow-menu); padding: var(--space-7); }
@@ -6550,6 +6559,12 @@ button.wb-door:hover b {
 .wk-layout, .wk-room-view { width: 100%; height: 100%; min-width: 0; min-height: 0; }
 .wk-layout { display: grid; gap: var(--space-3); padding: var(--space-3); overflow: auto; }
 .wk-layout-surface, .wk-surface { min-width: 0; min-height: 0; }
+/* A surface FILLS its slot. The wrapper had no height behavior, so every surface was
+   auto-height — content-sized — and a long one (the wipeboard thread) overflowed the
+   layout's overflow:hidden and was CLIPPED, unscrollable (found by measurement,
+   2026-08-25: the thread stood 2221px tall inside an 853px page). */
+.wk-layout-surface { display: flex; flex-direction: column; }
+.wk-layout-surface > .wk-surface { flex: 1 1 auto; min-height: 0; }
 .wk-surface { position: relative; display: flex; flex-direction: column; border: var(--edge) solid var(--line); border-radius: var(--radius-lg); background: var(--panel); overflow: hidden; }
 .wk-surface-content { flex: 1 1 auto; min-width: 0; min-height: 0; overflow: auto; }
 .wk-surface-controls { flex: 0 0 auto; }
@@ -6571,10 +6586,13 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 .wk-league-board { grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); align-content: start; }
 .wk-session-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); overflow: hidden; }
 .wk-explorer-layout, .wk-agent-configuration-layout, .wk-new-team-layout { grid-template-columns: minmax(12rem, 2fr) minmax(0, 5fr); overflow: hidden; }
-.wk-workbench-layout { grid-template-columns: minmax(0, var(--wk-left, 40%)) minmax(10rem, 1fr) minmax(0, var(--wk-right, 40%)); overflow: hidden; }
-.wk-workbench-layout[data-open='kanban-channels'] { grid-template-columns: minmax(10rem, 2fr) minmax(0, 3fr); }
-.wk-workbench-layout[data-open='terminalTile-kanban'] { grid-template-columns: minmax(0, 3fr) minmax(10rem, 2fr); }
-.wk-workbench-layout[data-open='terminalTile-channels'] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* Rows were unconstrained: the single row grew to the tallest surface and the grid's
+   overflow:hidden CLIPPED the rest — the 2026-08-25 "cannot scroll the wipeboard" bug.
+   minmax(0,1fr) is what makes every surface's bounded height real. */
+/* Columns are written inline by the frame from the arrangement (fr units, one per
+   visible slot) — there is no fixed count and no per-combination rule here. */
+.wk-workbench-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); overflow: hidden; }
+.wk-workbench-layout > .wk-layout-surface[hidden] { display: none; }
 .wk-explorer-rail { min-width: 0; min-height: 0; border: var(--edge) solid var(--line); border-radius: var(--radius-lg); background: var(--panel); overflow: auto; }
 .wk-explorer-head { display: flex; justify-content: flex-end; border-bottom: var(--edge) solid var(--line); padding: var(--space-2); }
 .wk-explorer-collapse { border: 0; background: transparent; color: var(--muted); padding: var(--space-2); }
@@ -6593,7 +6611,8 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 .wk-channel-service-tabs { display: flex; flex: 0 0 auto; gap: var(--space-2); border-bottom: var(--edge) solid var(--line); padding: var(--space-3); overflow-x: auto; }
 .wk-channel-service-tab { border: 0; border-radius: var(--radius-xs); background: transparent; color: var(--muted); padding: var(--space-3) var(--space-4); white-space: nowrap; }
 .wk-channel-service-tab[aria-selected='true'] { background: var(--raise); color: var(--fg-strong); }
-.wk-channel-service { width: 100%; height: 100%; min-height: 0; }
+.wk-channel-surface > .wk-surface-content { display: flex; flex-direction: column; }
+.wk-channel-service { width: 100%; flex: 1 1 auto; min-height: 0; }
 .wk-form { display: flex; flex-direction: column; gap: var(--space-6); }
 .wk-form-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: var(--space-5); }
 .wk-field { display: flex; flex-direction: column; gap: var(--space-2); }
@@ -6617,3 +6636,7 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 }
 
 }
+/* ⚙ THE MACHINE — the detail behind RAM_RPM. Values right-aligned in the mono face so a
+   column of numbers reads as a column; everything else inherits the desk's own rows. */
+.sys-machine { margin-top: var(--space-5); }
+.sys-machine .mach-v { margin-left: auto; font: var(--text-2) var(--font-mono); color: var(--muted-2); }

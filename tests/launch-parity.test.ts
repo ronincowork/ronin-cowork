@@ -143,6 +143,19 @@ test('and to the same reading list — all + root + role, compiled once', async 
   for (const book of [...books, 'TEAM_BOOK.md']) {
     assert.ok(forkBooks.includes(book), `the forked Build Brief must carry ${book}`);
   }
+  assert.deepEqual(fromCommons.birth_reading.map((file) => path.basename(file)).sort(), books);
+  assert.deepEqual(fromForkit.birth_reading.map((file) => path.basename(file)).sort(), forkBooks);
+});
+
+test('resolved birth readings include explicit seeds, while manual mode reads nothing at birth', async () => {
+  const seed = path.join(temp, 'OWNER_SEED.md');
+  const assisted = await resolveForm(commonsForm({ seed: [seed] }), new Set());
+  assert.ok(assisted.birth_reading.includes(seed));
+  assert.deepEqual(reading(assisted.brief), assisted.birth_reading.map((file) => path.basename(file)).sort());
+
+  const manual = await resolveForm(commonsForm({ mode: 'manual', seed: [seed] }), new Set());
+  assert.deepEqual(manual.birth_reading, []);
+  assert.equal(manual.brief, commonsForm().prompt);
 });
 
 test("forkit's own inputs change its words and nothing about the mechanism", async () => {
@@ -200,6 +213,54 @@ test('a ronin launch is legal, and a named team with no roster is refused out lo
     () => resolveForm(commonsForm({ team: 'ghosts' }), new Set()),
     /has no roster/,
   );
+});
+
+test('stated_by is resolved on the server across explicit, Team, role, and system layers', async () => {
+  const explicit = await resolveForm(commonsForm({
+    name: 'attribution-proof',
+    project_root: 'beta',
+    cmd: 'claude --model haiku',
+    mcp: true,
+    mode: 'manual',
+  }), new Set());
+  for (const key of ['name', 'project_root', 'cmd', 'mcp', 'mode', 'session_role']) {
+    assert.deepEqual(explicit.stated_by[key], [{ layer: 'explicit_launch', source: 'launch request' }], key);
+  }
+  assert.equal(explicit.stated_by.lifecycle[0]?.layer, 'session_role');
+  assert.match(explicit.stated_by.lifecycle[0]?.source ?? '', /session_roles\/DraftPlan\.md$/);
+
+  const inherited = await resolveForm(forkitForm({ project_root: undefined }), new Set());
+  assert.equal(inherited.stated_by.project_root[0]?.layer, 'team_roster');
+  assert.match(inherited.stated_by.project_root[0]?.source ?? '', /team_rosters\/scratchteam\.md$/);
+  assert.equal(inherited.stated_by.team_role[0]?.layer, 'team_roster');
+
+  const system = await resolveForm(commonsForm({ session_role: '' }), new Set());
+  assert.deepEqual(system.stated_by.dial, [{ layer: 'system', source: 'src/launch-profile.ts' }]);
+});
+
+test('preflight publishes resolver attribution unchanged', async () => {
+  const { previewResolved } = await import('../src/routes/launch-preflight.js');
+  const resolved = await resolveForm(commonsForm(), new Set());
+  const preview = previewResolved(resolved);
+  assert.strictEqual(preview.stated_by, resolved.stated_by);
+  assert.deepEqual(preview.stated_by.lifecycle, resolved.stated_by.lifecycle);
+  assert.strictEqual(preview.birth_reading, resolved.birth_reading);
+  assert.strictEqual(preview.posture, resolved.posture);
+  assert.equal(preview.model, resolved.model);
+  assert.equal(preview.permissions, resolved.permissions);
+  assert.equal(preview.opening, resolved.opening);
+});
+
+test('server resolution returns profile and durable Team context without browser reconstruction', async () => {
+  const resolved = await resolveForm(forkitForm(), new Set());
+  assert.equal(resolved.model, 'opus');
+  assert.equal(resolved.permissions, 'default');
+  assert.equal(resolved.team_objective, 'prove the parity');
+  assert.deepEqual(resolved.team_repos, []);
+  assert.equal(resolved.team_branch, '');
+  assert.equal(resolved.team_wipeboard, 'scratchteam');
+  assert.equal(resolved.team_state, 'active');
+  assert.equal(resolved.stated_by.team_objective[0]?.layer, 'team_roster');
 });
 
 test('a stock task board keeps a stated order, and OpenShell is never in the middle of it', async () => {

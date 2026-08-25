@@ -1,6 +1,8 @@
 /* ronin-cowork — browser grid of live tmux sessions. No framework, just xterm.js. */
 'use strict';
 
+import { tabTitle } from './workspace.js';
+
 export const grid = document.getElementById('grid');
 export const NEW = '__new__';
 export const TILE_COUNT = 4;
@@ -173,9 +175,10 @@ export function saveState() {
  * owner picked this himself: "should we just have the first tile be the tab name? That would
  * be enough."
  *
- * `· ronin` rides behind it so a tab is still identifiably Ronin among a window full of other
+ * `· Ronin` rides behind it so a tab is still identifiably Ronin among a window full of other
  * things. It is the half that gets truncated away when the strip is tight, which is the right
- * way round.
+ * way round. That half is workspace.js's `tabTitle()` and is not spelled here; this file
+ * only ever supplies the session, and the mark is the favicon, not a character.
  *
  * NOTHING IS STORED. The title is derived on every save, so there is no state to restore, go
  * stale, or fight another tab over — and a refresh cannot lose it.
@@ -190,7 +193,7 @@ function syncTitle() {
   // AppShell is the one title owner. The direct write survives only as a pre-Kit fallback
   // for an early failure before the shell exists.
   if (S.workspace) S.workspace.refreshTitle();
-  else document.title = first ? `${first} · ronin` : 'tmux ronin';
+  else document.title = tabTitle(first);
 }
 /**
  * ONE STATE, THREE SCOPES — first answer wins:

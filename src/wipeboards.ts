@@ -420,73 +420,36 @@ export async function highWater(name: string, sessionKey: string): Promise<strin
 
 /* ----------------------------------------------------------------------- the reaper */
 
-/** Shipped defaults. Both SETTEI — the owner's config overrides them per install, and
- *  a per-wipeboard key overrides them again. `ttl = 0` means never reap on age. */
+/** The shipped default. SETTEI — the owner's config overrides it per install, and a
+ *  per-wipeboard key overrides it again. `ttl = 0` means never reap on age. */
 export const DEFAULT_TTL_MS = 48 * 60 * 60 * 1000;
-export const DEFAULT_GRACE_MS = 60 * 60 * 1000;
-
-/**
- * THE REQUIRED READERS OF A POST — the one definition reaping turns on.
- *
- * An addressed post is required-read by its addressees; an open post by every live
- * member. A `--to none` post has none and can never be read-reaped: TTL alone retires
- * it, which is what "it lands on the wipeboard and waits to be found" means.
- */
-export function requiredReaders(post: Post, liveMembers: string[]): string[] | null {
-  if (post.silent) return null; // nothing can retire it by reading
-  const at = (s: string) => (s.startsWith('@') ? s.slice(1) : s);
-  if (post.to.length) {
-    const want = new Set(post.to.map(at));
-    return liveMembers.filter((m) => want.has(at(m)));
-  }
-  return liveMembers.filter((m) => at(m) !== at(post.author));
-}
 
 export interface ReapOpts {
   /** Live members, by session NAME. Membership is derived by the caller, never stored. */
   members: { name: string; key: string }[];
   ttlMs?: number;
-  graceMs?: number;
   now?: number;
 }
 
 /**
- * Retire what has been delivered. Two rules, whichever fires first:
- *
- *   READ-REAP  every required reader's cursor is at or past it, and the grace period
- *              has elapsed — so a member mid-turn, or one born a minute later, still
- *              finds recent context.
- *   TTL        it is older than the TTL, whoever read it. The backstop that stops one
- *              live-but-idle session holding a wipeboard hostage forever.
+ * Retire what has aged out. ONE RULE — the TTL (owner, 2026-08-25): a post lives its 48
+ * hours whoever has read it, then goes. Read-reaping was dropped the day the owner met
+ * a board that everyone ELSE had read: it looked empty to the one person who had not,
+ * which reads as broken — and it killed scrolling back over what people had been
+ * saying. Cursors still exist, but only for what they were always really for: handing
+ * each session its own unread.
  *
  * Lazily called — on every check and every post — so there is no daemon and no timer.
  * That is cheap precisely because the TTL keeps the directory small.
  */
 export async function reapPosts(name: string, opts: ReapOpts): Promise<string[]> {
   const ttl = opts.ttlMs ?? DEFAULT_TTL_MS;
-  const grace = opts.graceMs ?? DEFAULT_GRACE_MS;
   const now = opts.now ?? Date.now();
   const [posts, cursors] = await Promise.all([readPosts(name), allCursors(name)]);
-  const byName = new Map(opts.members.map((m) => [m.name, m.key]));
   const reaped: string[] = [];
   for (const p of posts) {
     const born = Number(p.id.split('-')[0]);
-    const aged = ttl > 0 && Number.isFinite(born) && now - born > ttl;
-    let read = false;
-    if (!aged) {
-      const need = requiredReaders(p, [...byName.keys()]);
-      // No required readers at all (a silent post, or an addressed post whose
-      // addressees are all gone) can never be read-reaped — only TTL retires it.
-      if (need && need.length) {
-        read =
-          now - born > grace &&
-          need.every((m) => {
-            const cur = cursors[byName.get(m) ?? ''];
-            return cur !== undefined && cur >= p.id;
-          });
-      }
-    }
-    if (!aged && !read) continue;
+    if (!(ttl > 0 && Number.isFinite(born) && now - born > ttl)) continue;
     await unlink(path.join(postsDir(name), `${p.id}.md`)).catch(() => {});
     reaped.push(p.id);
   }

@@ -1,7 +1,10 @@
-# test_protocols — where testing lives
+# test_protocols — the release boundary
 
-There is one test command in this house: `bin/ronin-byoin` — every check, one verdict,
-nothing hand-rolled around it. `docs/test-protocols.md` (in Ronin's own directory) is
-the whole contract: who runs what, when, and how to read the verdict. If you change
-Ronin's code, its catalogs, or anything in the user stores — a session task, a skin, a
-macro, an SOP shadow — run BYOIN afterward and read what it says. A SKIP is not a pass.
+`docs/test-protocols.md` is the provider-neutral contract. During ordinary work on
+Ronin, do **not** run `bin/ronin-byoin` after a leg, commit, or push. Keep dev moving and
+use the running dev product for direct dogfood. The designated integrator runs BYOIN
+once against the complete `dev → master` release candidate; GitHub checks the PR in an
+isolated runner. A SKIP is not a pass.
+
+Installed-box maintenance and user-store customization have their own full-BYOIN rule
+on that page. Do not confuse that install-health workflow with repository development.

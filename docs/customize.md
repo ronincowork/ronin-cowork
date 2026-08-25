@@ -2,9 +2,13 @@
 
 ## Status
 
-**PARKED by owner priority after this documentation pass.** Do not resume feature work until the owner or `view_mgr` explicitly un-parks Customize after League, Team, and New Team. This file is the restart point; it records the tree inspected on 2026-08-24.
+**Active product work on `dev`.** Retirement was cancelled by owner direction. This file
+is the durable implementation and restart contract; each bounded leg updates it when the
+shipped behavior changes.
 
-The current implementation is a registered, read-only preview on `dev`. It is useful as an inventory, but it is **not release-ready**. The owner's verdict on the Five Eyes previews is that they are awful. No visual acceptance or trustworthy browser verification has superseded that verdict.
+The implementation is a registered, predominantly read-only preview on `dev`. It is useful
+as an inventory, but it is not a complete authoring destination. No Customize-specific
+visual acceptance or trustworthy browser verification is recorded.
 
 Committed history:
 
@@ -65,17 +69,19 @@ This matrix is the v1 product authority. Completion may add a planned capability
 | Resource | Intended v1 capability | Current preview |
 |---|---|---|
 | Macros | Guided agent handoff | Reads `/api/macros`; seed/path handoff |
-| SOPs | Read-only | Unavailable: read route missing |
-| Actions | Guided agent handoff | Unavailable: read route missing |
+| SOPs | Read-only | Reads `/api/sops`; resolved procedure text expands in place |
+| Actions | Guided agent handoff | Reads `/api/actions`; resolved action text expands in place |
 | Tools | Read-only | Unavailable: table parser and route missing |
-| Role families | Direct editor for membership only | Read-only list; editor not moved |
+| Role families | Direct editor for membership only | Kit toggle editor; typed writer; inline pinned-lead refusal |
 | Session roles | Guided agent handoff | Reads `/api/session-roles`; directory guidance |
 | Team roles | Guided agent handoff | Reads `/api/team-roles`; directory guidance |
-| Saved launches | Direct editor | Deferred pending retired-axis ruling/sweep |
+| Saved launches | Read-only in the shipped preview | Reads `/api/saved-launches` |
 | Skins | Read-only | Reads `/api/skins` |
-| Session readings | Read-only | Unavailable: read route missing |
+| Session readings | Read-only | Reads `/api/session-readings`; resolved level/file text expands in place |
 
-Four unavailable resources must never render an empty list: an absent route cannot prove that the owner's shelf is empty. Saved launches must remain explicitly deferred.
+The unavailable Tools resource must never render an empty list: an absent route cannot prove
+that the owner's shelf is empty. Saved Launches is now an ordinary read-only resource; the
+earlier deferred/inert state was removed when its live read was wired.
 
 ### Provenance
 
@@ -121,7 +127,11 @@ If a defect affects several destinations—Surface padding, control reset, commo
 
 ## Skin and styling contract
 
-Customize ships no feature stylesheet today. Its markup exposes `cz-*` hooks, but the repository has no recorded final convention for destination CSS. That is a shared-foundation decision.
+Customize ships no feature stylesheet today. Its markup exposes `cz-*` hooks. The shared
+convention is now settled by `docs/workspace-kit.md` and enforced by
+`scripts/check-css.mjs`: feature sheets live under `public/css/`, are statically linked
+once from `public/index.html`, contain one `@layer app`, use existing tokens, and may not
+select `.wk-*` internals or own Kit geometry.
 
 When resumed:
 
@@ -129,9 +139,13 @@ When resumed:
 - Preserve contrast, focus visibility, reduced motion, and narrow-screen use in every supported skin.
 - Keep the skin chooser on the Admin Desk.
 - Keep the skin catalog read-only with provenance.
-- Separate shared Kit fixes from Customize-only hierarchy and obtain the stylesheet-location ruling before adding or linking a stylesheet.
+- Separate shared Kit fixes from Customize-only hierarchy. If Customize earns a feature
+  sheet, use `public/css/customize.css` [planned] under the governed feature-CSS contract and obtain
+  approval for the shared `public/index.html` link seam.
 
-The first bounded visual candidate is content hierarchy: deliberate spacing, readable card flow, a separated handoff region, and phone-safe rhythm. It waits for the foundation ruling because missing Surface padding may affect all five destinations.
+The first bounded visual candidate is content hierarchy: deliberate spacing, readable
+card flow, a separated handoff region, and phone-safe rhythm. First decide whether each
+defect is Kit-owned or Customize-only; shared Surface spacing remains foundation work.
 
 ## Lifecycle and states
 
@@ -154,44 +168,60 @@ Established from the committed tree:
 
 - The four modules are committed in `ef801cb`.
 - Registration is committed in `d36b440`.
-- Static inspection confirms three sections, ten resources, five live reads, four unavailable resources, one deferred resource, the generation guard, and repaint guard.
+- Static inspection confirms three sections, ten resources, **nine live reads, one
+  unavailable resources, and no deferred resource**, plus the generation and repaint
+  guards. SOPs, Actions, and Session Readings expose resolved full text in native
+  disclosure controls and carry the provenance/shadow semantics of their storage contracts.
+- `a0f30f4` established and checks the shared feature-CSS/skin contract, but its rendered
+  skin evidence names League, Team, and New Team—not Customize.
 
 Not established:
 
 - No trustworthy browser gate has been recorded against this checkout's Customize code.
 - Earlier `--ui` claims targeted the owner-facing live checkout and are not evidence here.
-- There is no current visual acceptance; the owner's “awful and not release-ready” verdict controls.
-- No test was run for this documentation-only pass, by assignment.
+- There is no current Customize-specific visual acceptance.
 
-On resumption, verification is governed only by `docs/test-protocols.md`: use the declared `bin/ronin-byoin` command in the mode the completed leg earns, capture one verdict, and run no hand-rolled sequence. A SKIP is unverified. Never repoint the owner-facing service or start another Ronin against the live tmux server for UI evidence.
+On resumption, verification is governed only by `docs/test-protocols.md`: ordinary work uses
+direct dogfood and scoped diagnostic evidence, not BYOIN. The designated integrator owns
+the one exact-candidate verdict. Never repoint the owner-facing service or start another
+Ronin against the live tmux server for UI evidence.
 
 ## Known limits and blocked decisions
 
-1. SOPs, actions, tools, and session readings lack a complete read surface.
+1. Tools lacks a complete read surface.
 2. `TOOLS.md` is a table; the TypeScript reader lacks its keyed-table shadow rule.
 3. Malformed definition files are logged and dropped server-side, so the owner cannot see the broken file here.
-4. Role-family membership has a typed writer, but its editor has not moved from New Session.
-5. Saved launches still carry retired `role_family` data through type/read/filter/field/validation/route code. Existing data needs an owner ruling before the direct editor ships.
+4. Role-family membership is the one shipped direct editor. Creation, deletion, labels,
+   ordering, and `default_lead_role` authoring remain guided agent work.
+5. Saved Launches is read-only here. Before granting its intended direct editor, re-audit
+   the typed saved-launch contract and existing retired-axis data; do not infer edit safety
+   from the read route.
 6. Team roles correctly ship with zero stock definitions. An owner-authored role reaches only later sessions born onto a rostered team; it does not retrofit current or adopted members.
 7. Session readings are not watched. Most levels are birth-only; role readings may re-resolve on a later session-role change. Never promise live propagation.
-8. Stylesheet location and the shared-Kit versus `cz-*` styling boundary remain unruled.
-9. The preview lacks both planned direct editors, complete failure journeys, and a verified visual/responsive pass.
+8. Stylesheet location is ruled (`public/css/*.css`); the shared-Kit versus `cz-*` ownership
+   of each proposed visual fix still requires an explicit decision.
+9. The preview lacks the Saved Launches editor, complete failure journeys, and a verified visual/responsive pass.
 
 ## Exact resume checklist
 
-1. Obtain explicit owner or `view_mgr` instruction un-parking Customize after League, Team, and New Team.
+1. Obtain an explicit owner or `view_mgr` assignment for a fresh Customize successor.
 2. Re-read this file, the latest `five-eyes` wipeboard Brief/posts, Workspace Kit ruling, `docs/test-protocols.md`, and current KOTOBA/session-boot contracts.
 3. Confirm `dev`; inspect status, `origin/dev..HEAD`, and changes since `18d9b35`. Identify unrelated worktree edits.
 4. Inspect the four owned modules and current Kit. Verify every claim here against the tree and update stale facts first.
 5. Report committed state, remaining work, current visual verdict, one bounded next leg, requested shared seams, and non-touch scope to `view_mgr`; wait for acknowledgement.
-6. Obtain the foundation ruling for Surface spacing, stylesheet location, control styling, and cross-surface layout changes.
-7. Choose one bounded leg. Prefer visual hierarchy only if ownership is explicit; otherwise take the smallest read-path prerequisite assigned by `view_mgr`.
+6. Classify Surface spacing, control styling, and cross-surface layout changes as Kit or
+   feature work. The stylesheet location itself is already ruled: `public/css/`.
+7. Choose one bounded leg. **Next: visual and keyboard acceptance for the resource cards
+   and role-family toggles**, after classifying any shared geometry as Kit work. Tools
+   remains blocked on a shared keyed-table parser contract; do not invent one in Customize.
 8. Obtain a named seam assignment before editing shared server or shell paths. Never bundle parser, route, malformed-data, or saved-launch policy work by assumption.
 9. Edit only approved paths. Preserve the Sessions 1/2/4 raw Tile grid and every other destination.
-10. Verify the completed leg with the declared BYOIN command; report its exact verdict and every SKIP.
+10. Record direct dogfood and scoped diagnostic evidence; leave BYOIN to the designated release integrator.
 11. Stage only owned/approved paths and inspect the staged path list. Commit and push verified work only to `dev`. Never touch `master`, merge a PR, enable auto-merge, repoint the service, or treat a PR as release authorization.
 12. Delete completed work from this README, refresh verification, and leave the successor one bounded next action—not a historical diary.
 
-## Parked constraints
+## Active constraints
 
-Until explicitly resumed: no product edits, tests, staging, commits, pushes, service changes, PR activity, or work on `master`. Documentation was temporarily un-parked only for this rewrite; Customize now returns to **PARKED**.
+Continue leg by leg from this document, never `wip/buildouts/`, and preserve unrelated
+dirty work. `master`, PR decisions, service pointers, release BYOIN, and other sessions'
+files remain owner-controlled and out of scope.
