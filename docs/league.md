@@ -52,11 +52,11 @@ to build a League-local substitute.
 
 ## Owned files
 
-League owns exactly these feature files:
+League's core is exactly these feature files:
 
 | File | Responsibility |
 |---|---|
-| `public/js/league-view.js` | Destination lifecycle, refresh boundary, repaint subscription, roster visibility, feature stylesheet loading. |
+| `public/js/league-view.js` | Destination lifecycle, refresh boundary, repaint subscription, and roster visibility. |
 | `public/js/league-board.js` | Team cards, feature-specific bubbles, standard states, Kit controls/readings, Team and New Team navigation. |
 | `public/css/league.css` | League meaning only: Team/card/bubble presentation, roster visibility, lead mark, empty copy, toolbar placement. |
 
@@ -68,6 +68,15 @@ League consumes but does not own:
 | `public/js/workspace-kit.js` | The feature entry point to Kit primitives, layouts, adapters, and navigation. |
 | `public/workspace-kit.css` | League card-grid/responsive geometry and generic action/metadata styling. |
 | `public/js/main.js` | Registers `league` before `workspace.start()`. This is a shared shell seam. |
+
+League also has three narrow shared entry/evidence seams. Treat each as exact-hunk work,
+not as ownership of the whole file:
+
+| File | League seam |
+|---|---|
+| `public/index.html` | Statically links `css/league.css` and renders the header's real same-origin `#/league` link with `_blank` and `noopener noreferrer`. |
+| `public/style.css` | Lets that anchor reuse the established header `.brand` control without native link decoration. It does not add League layout. |
+| `scripts/smoke-ui.mjs` | Inspects the rendered header link's visibility, same-origin hash, new-tab target, and `noopener` contract without opening or replacing the gate tab. |
 
 The retired feature-local teams-store module must not return.
 
@@ -134,10 +143,11 @@ Bubble-internal layout remains feature-specific.
 Repeated navigation must not multiply listeners, subscriptions, sockets, observers, timers,
 or polls.
 
-## Verified behavior and command
+## Verification status and command
 
-The hardened migration landed on `dev` at `5812cd1`, after the Kit completed the League
-cards-grid contract at `8357a3a`.
+Current code was audited against `dev` HEAD `5358577` on 2026-08-25. The hardened migration
+landed at `5812cd1`, after the Kit completed the League cards-grid contract at `8357a3a`.
+The discoverable header door and its regression landed at `5eeb6f2`.
 
 Declared UI verification from the repository root:
 
@@ -147,7 +157,7 @@ BYOIN: the repo is clean (19 ok, 0 skipped).
 ```
 
 That verdict included `smoke-ui`, `visual-ui`, `check-workspace-kit`, TypeScript, module
-parsing, CSS checks, and the repository chain. Verified behavior includes:
+parsing, CSS checks, and the repository chain. It verified the core migration behavior:
 
 - direct `#/league` registration;
 - Kit-contract Team and New Team navigation;
@@ -158,6 +168,13 @@ parsing, CSS checks, and the repository chain. Verified behavior includes:
 - feature-specific bubbles and Team lead indication;
 - Kit-owned desktop/phone board geometry;
 - coexistence with the Sessions one/two/four raw Tile grid.
+
+The later header slice has a committed rendered regression but does **not** inherit that
+earlier `19 ok` claim. During local dogfood, the owner moved BYOIN to the release-candidate
+boundary before a clean live run of that newer assertion. The designated integrator must
+run the final rendered candidate evidence. A `dev` commit or push does not itself update
+the process on port 3006; advancing/deploying that runtime is a separate, owner-controlled
+release act.
 
 For future League work, ordinary legs use direct dogfood and scoped diagnostic evidence;
 they do not run BYOIN. One designated integrator runs the appropriate mode once on the
@@ -177,6 +194,25 @@ exact `dev → master` candidate. `docs/test-protocols.md` is the current contra
 - A legacy durable Team named `unassigned` remains recoverable; the holding projection uses
   the controller's non-name sentinel.
 - Sessions remains the default on `dev`. League default cutover is owner-controlled.
+- The header link is discoverable and safe, but its final live rendered proof remains a
+  release-candidate-integrator task as recorded above.
+
+## Concrete next steps
+
+1. At the next rendered release boundary, verify the header **League** link is visible on
+   the exact candidate, resolves to same-origin `#/league`, opens `_blank` with `noopener`,
+   and leaves the originating Sessions 1/2/4 Tile state untouched.
+2. Dogfood the board with all four domain states together: empty durable Team, populated
+   durable Team, tag-only Team, and populated `Unassigned`.
+3. If the owner commissions writable League membership, first claim/reuse one shared
+   session-tag mutation controller. Preserve many-to-many membership; add-to-Team must not
+   remove other Teams, remove must not kill the session, and clearing through `Unassigned`
+   must write no fake tag. Do not add those writes directly to `league-board.js`.
+4. Add equivalent pointer, touch, and keyboard membership paths plus per-session write
+   serialization, server-response reconciliation, rollback, and surfaced notices. Until
+   that whole contract is commissioned, keep bubbles read-only.
+5. Keep Sessions a separate first-class raw Tile destination. League default cutover and
+   runtime deployment remain explicit owner decisions.
 
 ## Exact resume and dogfood checklist
 
@@ -184,8 +220,8 @@ exact `dev → master` candidate. `docs/test-protocols.md` is the current contra
    owner instruction naming that release action.
 2. Read this file, `docs/workspace-kit.md`'s consumer rules, and
    `docs/test-protocols.md` from the current tree.
-3. Inspect `git status`; preserve every unrelated dirty path. League owns only the three
-   files listed above.
+3. Inspect `git status`; preserve every unrelated dirty path. League's core is the three
+   feature files above; shared header/evidence files are exact-hunk seams only.
 4. Inspect `team-controller.js`, `workspace-kit.js`, and `workspace-kit.css`. If a needed
    controller, primitive, navigation, state, or geometry contract is missing or ambiguous,
    stop and report the exact gap to `view_mgr`; do not build a substitute.
@@ -204,6 +240,5 @@ exact `dev → master` candidate. `docs/test-protocols.md` is the current contra
 8. Check desktop, tablet, and phone without adding feature-local board geometry.
 9. Record scoped evidence for the leg. Leave BYOIN to the designated release-candidate
    integrator; report any diagnostic gap honestly.
-10. If a later assignment authorizes landing, stage only named League paths, verify the
-    staged list, and commit/push only `dev`. Documentation-only work authorizes none of
-    those actions.
+10. If a later assignment authorizes landing, stage only named League paths or exact shared
+    hunks, verify the cached list and patch, and commit/push only `dev`.
