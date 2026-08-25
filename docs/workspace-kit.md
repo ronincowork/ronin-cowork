@@ -43,9 +43,18 @@ const { workspaceTarget, navigateWorkspace, teamWorkspaceState } = WorkspaceKit.
 
 Current load-bearing contracts:
 
-- `createWorkbenchLayout(..., { managed: true, state, onStateChange })` returns `host` and
-  owns collapse/expand rails, actions, bounded pointer/keyboard splitters, responsive
-  stacking, snapshots, and `restore(state)`. Consumers append `host`, not only `el`.
+- `createWorkbenchLayout({ declaration, surfaces, state, onStateChange })` is the managed
+  Workbench: a slot ARRANGEMENT. The consumer declares its slots by name
+  (`{ slots: [{ name, label, width, min, compact }] }`, `public/js/workspace-arrangement.js`)
+  and hands one element per name; the Kit draws them in the arrangement's order and
+  widths, hides what it hides, places one splitter between each visible pair, stacks on
+  phones, and writes `data-width="compact" | "full"` on each slot wrapper from measurement.
+  It returns `{ host, el, arrangement, restore, snapshot }`; consumers append `host` and
+  persist the arrangement `{ order, hidden, widths }` through `patchViewState`. There are
+  no collapse rails: the control is the **layout map** (`createLayoutMap(arrangement)`),
+  which the ViewHost draws into the bar's `#viewmap` slot for any registered view that
+  exposes `arrangement` — click shows/hides a slot, drag within the map reorders, keyboard
+  works. Nothing in the frame, the map, or the ViewHost knows a slot's name or meaning.
 - `createTerminalTileHost({ mode: 'full' | 'reduced' })` is the only terminal host. Full
   mode preserves the genuine existing Tile—including header, Torii, macros, controls,
   terminal, tape and composer—unchanged.

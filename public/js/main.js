@@ -90,6 +90,8 @@ export async function init() {
   if (!viewhost) throw new Error('workspace ViewHost is missing');
   const workspace = createWorkspace(viewhost, {
     onError: (where, error) => showFailure(`workspace ${where}`, error),
+    // The bar's one slot for the layout map; the ViewHost fills it per active view.
+    mapSlot: document.getElementById('viewmap'),
   });
   workspace.kit = WorkspaceKit;
   S.workspace = workspace;

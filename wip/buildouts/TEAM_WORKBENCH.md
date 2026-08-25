@@ -170,7 +170,7 @@ why the slots cannot be reordered today.
 
 | # | Leg | Ends when |
 |---|---|---|
-| 1 | **Kit: slot arrangement** — N slots, surfaces assigned, swap, per-destination persistence; no team knowledge. Its control is the **layout map** in the app bar (click = show/hide, drag = reorder); the per-column chevron rails are retired with it | the team page renders identically to today *through the new machinery*, minus the chevron rows, with the map in the header |
+| 1 | **Kit: slot arrangement** — N slots, surfaces assigned, swap, per-destination persistence; no team knowledge. Its control is the **layout map** in the app bar (click = show/hide, drag = reorder); the per-column chevron rails are retired with it | **DONE 2026-08-25** — see LEG 1 — LANDED below |
 | 2 | **Second terminal seat** — left and right can both be terminals, or either the commons; cards route to the seat last touched | two terminals side by side; state persists per team |
 | 3 | **Seat-aware hot bench** — pool `active` becomes per-seat; cap arithmetic already fits | flipping one seat never disturbs the other; the pin holds |
 | 4 | **Movable, shrinkable roster** — docks any slot, collapses to a chip rail | the owner can live in two terminals |
@@ -182,7 +182,36 @@ why the slots cannot be reordered today.
 Legs 1–4 are one chain (each needs the one before). Legs 6, 7 and 8 stand alone and can
 go in any order, or in parallel with the chain.
 
-## LEG 1 — THE DESIGN (by `@team_page`, 2026-08-25; awaiting the owner's go)
+## LEG 1 — LANDED (cut by `@team_page`, 2026-08-25, on the owner's "go ahead and cut it")
+
+**What is on `dev`:** the arrangement module and its 11 pure tests (slots a·b·c·d, no
+team import); the frame taking a declaration, with N−1 splitters placed from measured
+edges, `fr` columns, DOM-order moves, and `data-width` written per slot; the layout map
+primitive; the ViewHost's `#viewmap` bar slot; the contract migrating the old
+`{widths, surfaces}` shape once; the team page reduced to its declaration; the Kit gate
+rewritten (rails/expand/collapse/`data-open` are now *forbidden* strings); the Kit
+README. One commit rather than the six planned below — the gate ties them together.
+
+**Measured (playwright, 1600×950, `#/team/five-eyes`):** columns 630/315/630 (was
+632/304/632 with the rails; the roster took back the rail's width), zero rails, three
+switches in the bar, xterm 98→940. Hide the roster → 791/791, survives reload. Drag
+commons over terminal in the map → commons leftmost. Pull each splitter 100px → each
+workspace grows by the same amount (see the note below). Squeeze the roster to its floor
+→ 95px, `data-width="compact"`, cards show heading only. Phone (600px): three stacked
+columns, no splitters, map toggles still work. Sessions and League: the bar slot is
+empty. Console: no errors. Smoke suite (desktop + WebKit phone): passed.
+
+**Three bugs found by measurement, not by reading:** (1) the shell's default state
+carries `widths: {left: null, right: null}` and `Number(null)` is `0`, which clamped
+the workspaces to their floors — 15/70/15; (2) re-appending the splitter node on every
+render dropped its pointer capture, so drags died after one move — same for the map's
+re-rendered buttons; (3) drag percentages measured against the grid's padded box left
+one side ten pixels short per hundred. The probe pattern earns its keep.
+
+**Left for the owner:** T6 (a name for the action column) and whether the map's
+switches want a label on hover beyond the slot's declared label.
+
+### The design as approved (kept for the record)
 
 **What exists, read plainly.** `createWorkbenchLayout(terminalTile, kanban, channels,
 {managed})` in `public/js/workspace-layouts.js` is the whole frame today. Three

@@ -100,10 +100,22 @@ export function createTeamView() {
   // Service DOM and lifecycle are mounted by ChannelSurface above; feature code supplies
   // content only and never owns a second tab/service engine.
 
-  /* ---------- geometry ---------- */
-  const workbench = createWorkbenchLayout(terminalTile.el, kanban.el, channels.el, {
-    managed: true,
-    onStateChange: (state) => ctx?.patchState(state),
+  /* ---------- geometry: the whole of it is this declaration ---------- */
+  // Three slots by name; the Kit's frame draws them and the Kit's layout map in the bar
+  // shows, hides and reorders them. Commons-on-the-left is a reordered array here, not a
+  // frame change. The action column (roster) goes down to 6% and turns compact under
+  // 11rem (176px) — the frame writes data-width on its slot and renderCards reads it.
+  const DECLARATION = {
+    slots: [
+      { name: 'terminal', label: 'Focused session', width: 40 },
+      { name: 'roster', label: 'Team sessions', width: 20, min: 6, compact: 176 },
+      { name: 'commons', label: 'Team commons', width: 40 },
+    ],
+  };
+  const workbench = createWorkbenchLayout({
+    declaration: DECLARATION,
+    surfaces: { terminal: terminalTile.el, roster: kanban.el, commons: channels.el },
+    onStateChange: (arrangement) => ctx?.patchViewState('team', { arrangement }),
   });
   root.append(workbench.host);
 
@@ -234,6 +246,8 @@ export function createTeamView() {
 
   return {
     el: root,
+    // The ViewHost draws the Kit's layout map in the bar for this while the view is active.
+    arrangement: workbench.arrangement,
     // The team's own name, alone — createWorkspace's tabTitle() adds the ⛩ and the house.
     title: ({ param }) => param || 'Team',
     mount: (_host, context) => {
@@ -255,8 +269,8 @@ export function createTeamView() {
       entered = true;
       terminalPool.destroyAll();
       team = context.param || context.state?.team || '';
-      const typed = teamWorkspaceState(context.state);
-      workbench.restore(typed);
+      const typed = teamWorkspaceState(context.state, context.viewState('team'), DECLARATION);
+      workbench.restore(typed.arrangement);
       const members = membersOfTeam(team);
       syncTerminalPool(members);
       ensureLeadHot(members);

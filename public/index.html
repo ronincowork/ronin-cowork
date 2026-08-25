@@ -52,6 +52,12 @@
            clicked. js/ramrpm.js writes the face and the title. -->
       <span id="ramrpm" class="ramrpm" hidden></span>
       <span class="grow"></span>
+      <!-- THE LAYOUT MAP — the workspace drawn small: one rectangle per column, click
+           to show or hide, drag to reorder. Empty unless the active view has columns
+           to arrange (the Team workbench does; Sessions and League do not). The
+           ViewHost (js/workspace.js) fills it; no feature writes here. It sits in the
+           grow gap, left of the five verbs, which keep their measured width. -->
+      <span id="viewmap" class="wk-view-map"></span>
       <button id="newbtn" title="⌃⇧N — start a new session: pick what it is for, where it works and who it is">か<span class="txt"> New</span></button>
       <!-- ⛩ is the house mark for "open the Commons", and this is the door: ONE press
            lands on ⌂ Roster, the first port of call once you are in there. It dropped a
