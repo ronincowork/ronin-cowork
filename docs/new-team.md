@@ -166,27 +166,32 @@ New Team owns no socket, Tile host, resize observer, poll, global key binding, o
 service. Leaving needs no terminal parking or resource teardown. Re-entry reuses the view
 and refreshes server readings.
 
-## Verification evidence
+## Verification status
 
-The approved KISS deletion is local `dev` commit:
+The approved KISS deletion shipped on `dev` in:
 
 ```text
 1e98f3ea1f67e99240af2617d758f8ffb052ca67
 New Team: keep one simple create transaction
 ```
 
-It contains exactly `public/js/new-team-launch.js`, `public/js/new-team.js`, and this file.
-Verification against repaired staging HEAD `52d81db` was:
+It changed exactly `public/js/new-team-launch.js`, `public/js/new-team.js`, and the build-out
+that became this persistent doc. Its implementation-time staging verdict, against repaired
+HEAD `52d81db`, was:
 
 ```text
 bin/ronin-byoin --ui
 BYOIN: the repo is clean (19 ok, 0 skipped).
 ```
 
-That includes parse, catalogs, governed CSS, dead exports, docs, vocabulary, boundaries,
+That included parse, catalogs, governed CSS, dead exports, docs, vocabulary, boundaries,
 tests, Workspace Kit, staging `smoke-ui`, `visual-ui`, stores map, and TypeScript. Strict
-workspace-skin assertions and Stock restoration passed. The pre-push tier was not run and
-the KISS commit was not pushed as part of that assignment.
+workspace-skin assertions and Stock restoration passed.
+
+Current closeout audit: `dev` HEAD `5358577` contains `1e98f3e`; no later commit changes an
+owned New Team product file. Full BYOIN now belongs at the dev-to-master release-candidate
+boundary (`docs/test-protocols.md`), so this retirement closeout does not claim a new full
+verdict. The narrow checks and their results are recorded in the final five-eyes handoff.
 
 ## Known limits
 
@@ -195,6 +200,10 @@ the KISS commit was not pushed as part of that assignment.
 - Preflight is advisory and launch re-resolves against the changing machine.
 - Retry is for unresolved seats in the current committed transaction. Starting another
   Team requires a fresh canonical draft boundary; no automatic reset is claimed.
+- The view has no explicit `leave()` cleanup. It owns no socket, Tile host, observer, poll,
+  or global binding, but its page-lifetime draft subscription and name-field debounce remain
+  alive with the registered view. A successor adding destroyable resources must add the
+  full lifecycle rather than assuming this minimal shape generalizes.
 - Lead SOP delivery obeys Control. “Not delivered” is a receipt, not a failed birth.
 - Adopted tag-only members do not receive birth-only reading retroactively.
 - The Team-role catalog may be empty; free-text and blank roles remain valid.
@@ -216,6 +225,16 @@ the KISS commit was not pushed as part of that assignment.
 11. The designated integrator runs one appropriate BYOIN mode on the exact release
     candidate and treats every SKIP as unverified.
 12. Stage owned exact hunks and inspect the staged path list before committing.
+
+Concrete next work, only when assigned:
+
+1. Dogfood the empty, one-seat, and partial-failure journeys below on the exact release
+   candidate selected by the integrator.
+2. Decide whether starting a second Team in the same tab needs an explicit fresh-draft
+   action; do not infer or silently reset typed work.
+3. Add focused controller coverage for preflight-before-roster, 400/409 continuation,
+   committed-Team retry, and zero-seat creation if the release candidate lacks it.
+4. Keep the Sessions raw Tile grid and live tag-derived membership as regression checks.
 
 ## Exact dogfood checklist
 
