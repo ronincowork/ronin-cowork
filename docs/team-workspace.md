@@ -81,6 +81,8 @@ durable metadata.
 - `public/js/team-view.js` — Team composition, readings, Kanban selection, and lifecycle.
 - `public/js/team-terminal-pool.js` — page-lifetime orchestration of existing full Kit
   terminal hosts; it contains no renderer, cache, or socket engine.
+- `public/js/team-wipeboard.js` — the Team Channel's roster-resolved wipeboard thread,
+  owner composer, entered-only poll, and service lifecycle.
 - `public/css/team-workspace.css` — Team-specific Kanban, notice, placeholder, and
   configuration presentation.
 - `tests/team-terminal-pool.test.js` — scoped proof of warm revisits and complete cleanup.
@@ -175,7 +177,11 @@ or preserve it across destinations.
 ## Channel Surface
 
 - **Chat** — reserved, empty, inert; no fetch, timer, socket, composer, or fallback.
-- **Wipeboard** — placeholder for the Team thread; the Brief does not belong here.
+- **Wipeboard** — the real Team thread and owner composer. It resolves the roster's
+  `wipeboard` id, falling back to the Team name for a tag-only Team; opening materializes
+  the Team board when absent. It polls every two seconds only while entered, preserves
+  typed text on a failed post, interrupts all members for an owner post through the
+  server's dial-governed fan-out, and never renders the Brief.
 - **Docs** — placeholder for Team working documents.
 - **Team Configuration** — read-only durable metadata and derived live roster.
 
@@ -192,6 +198,8 @@ The current chain landed as:
 - `092ddfc` — released managed Team workbench controls in Workspace Kit.
 - `ab659d7` — migrated Team to the managed workbench contract.
 - `bfeb772` — replaced card-driven transport resets with the page-lifetime warm host pool.
+- `3881c96` — made opening a Team board materialize its real empty thread when absent.
+- `7330d50` — replaced the Wipeboard placeholder with the entered-only thread/composer.
 
 For `ab659d7`, the declared rendered verification ran once:
 
@@ -231,7 +239,7 @@ No candidate-wide BYOIN was run: this audit is not the dev-to-master release bou
 - This remains a preview slice, not the complete Team product.
 - Richer reviewed SessionCard readings are incomplete.
 - `＋ Add team member` is intentionally inert.
-- Wipeboard and Docs are placeholders here.
+- Docs remains a placeholder here.
 - Team Configuration is read-only; creation, editing, membership mutation, and lead changes
   are not implemented.
 - Chat is intentionally empty, not an invitation to improvise.
