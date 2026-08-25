@@ -53,7 +53,9 @@ Current load-bearing contracts:
   `{ el, mount, enter, leave, destroy }`. Chat remains reserved and inert.
 - `team-controller.js` is the only Team projection. Membership and leads are derived live
   from sessions; `team_roster` stores durable Team metadata/defaults, never membership.
-- Programmatic ExplorerRail `setSections()` is silent. `onSelect` is for user selection.
+- ExplorerRail currently routes both programmatic `setSections()` reconciliation and user
+  selection through `select()`, so both invoke `onSelect`. This is a known contract defect,
+  not permission for new consumers to add another rail or selection engine.
 - Navigation uses `workspaceTarget()` and `navigateWorkspace()`. Views use shell state,
   `viewState()` and `patchViewState()` rather than private history or storage engines.
 
@@ -94,8 +96,9 @@ composers.
 
 Terminal views park the canonical host on `leave()` and destroy it on `destroy()`. Channel
 services run through `createChannelSurface`; features do not build a second tab/service
-lifecycle. Team-controller subscriptions are repaint signals; refresh has a clear view
-boundary and selectors remain authoritative.
+lifecycle. Team-controller selectors remain authoritative. Its subscribers currently
+receive an unused deep-copied `snapshot()` carrying a revision counter after refresh;
+consumers should not treat that payload as a second state source.
 
 ## Consumer rules
 
@@ -151,6 +154,13 @@ registry-derived five-room Commons.
   for a demonstrated defect.
 - Tiny DOM helpers and resource-free views are not foundation gaps.
 - Agent Configuration action primitives remain pre-PR cleanup, not a separate kit.
+- ExplorerRail programmatic reconciliation is not yet silent: `setSections()` calls
+  `select()`, which fires `onSelect`. The approved foundation cleanup is to notify only on
+  real user selection and then remove any consumer suppression workaround after audit.
+- `team-controller.js` still maintains `revision`, deep-copies state in `snapshot()`, and
+  passes that snapshot to subscribers even though consumers re-read authoritative
+  selectors. The approved KISS cleanup is a bare repaint notification and removal of the
+  unused snapshot machinery; do not replace it with another cache or state source.
 - `../ronin-lab/concepts/five-eyes.html` at reviewed commit `f9510ef` is visual reference,
   not production code, state, or an alternate contract.
 
