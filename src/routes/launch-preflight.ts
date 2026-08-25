@@ -40,7 +40,7 @@ import { isValidName, listSessions } from '../tmux.js';
 import { isCreatableTeamName, readTeamRoster, type TeamRoster } from '../team-rosters.js';
 import { boardExists } from '../wipeboards.js';
 import { liveCount, readMax } from '../user-config.js';
-import { resolveForm, type SpawnForm } from '../spawn.js';
+import { resolveForm, type Resolved, type SpawnForm } from '../spawn.js';
 
 const errMsg = (e: unknown): string => String((e as Error)?.message ?? e);
 
@@ -116,6 +116,30 @@ function formOf(seat: DraftSeat, team: string): SpawnForm {
     seed: list(seat.seed),
     inject: opt(seat.inject),
     reference: opt(seat.reference),
+  };
+}
+
+/** The public resolved-seat contract. Kept as a pure mapper so attribution cannot be
+ *  accidentally omitted while the launch resolver already returned it. */
+export function previewResolved(resolved: Resolved) {
+  return {
+    name: resolved.name,
+    dir: resolved.dir,
+    cmd: resolved.cmd,
+    tags: resolved.tags,
+    dial: resolved.dial,
+    lifecycle: resolved.lifecycle,
+    session_role: resolved.session_role,
+    team: resolved.team,
+    team_role: resolved.team_role,
+    project_root: resolved.project_root,
+    mode: resolved.mode,
+    agent: resolved.agent,
+    capExempt: resolved.capExempt,
+    mcp: resolved.mcp,
+    launchAgent: resolved.launchAgent,
+    brief: resolved.brief,
+    stated_by: resolved.stated_by,
   };
 }
 
@@ -254,32 +278,10 @@ export function registerLaunchPreflight(app: express.Express): void {
           seat_id: seatId,
           verdict: (reasons.length ? 'refuse' : 'ok') as Verdict,
           derived_name: resolved?.name ?? '',
-          resolved: resolved
-            ? {
-                name: resolved.name,
-                dir: resolved.dir,
-                cmd: resolved.cmd,
-                tags: resolved.tags,
-                dial: resolved.dial,
-                lifecycle: resolved.lifecycle,
-                session_role: resolved.session_role,
-                team: resolved.team,
-                team_role: resolved.team_role,
-                project_root: resolved.project_root,
-                mode: resolved.mode,
-                agent: resolved.agent,
-                capExempt: resolved.capExempt,
-                mcp: resolved.mcp,
-                launchAgent: resolved.launchAgent,
-                // Server-owned cascade attribution. Agent Configuration renders this
-                // answer verbatim and never reconstructs precedence in the browser.
-                stated_by: resolved.stated_by,
-                // The composed first message, so a seat can be previewed before it exists.
-                // A proposed seat has no session and therefore no Tile: the honest preview
-                // is this brief plus the resolved reading, which is the owner's ruling.
-                brief: resolved.brief,
-              }
-            : null,
+          // The composed first message and its server-owned attribution. A proposed seat
+          // has no session and therefore no Tile; Agent Configuration renders this answer
+          // and never reconstructs the cascade in the browser.
+          resolved: resolved ? previewResolved(resolved) : null,
           reasons,
         });
       }

@@ -19,11 +19,8 @@
  *                         file re-derives no part of the cascade; a second cascade in the
  *                         browser would be correct exactly until somebody edited one.
  *
- * WHAT IS NOT HERE YET, named rather than silently missing: `stated_by`, the per-key
- * attribution saying WHICH layer and WHICH FILE stated each resolved value. It is a joint
- * ask with New Team against the existing resolver, where `stated()` already computes it
- * and returns none of it. Until it lands, a resolved row shows the value and not its
- * origin, and this file marks that absence rather than guessing at a source.
+ * `stated_by` rides beside each resolved value from that same server answer. This file
+ * formats the returned layer/source pairs and does not infer a winner from the seat.
  */
 import { WorkspaceKit } from './workspace-kit.js';
 
@@ -57,7 +54,7 @@ function readingOf(key, value) {
 
 export function createSeatPreview() {
   // Resolved at CALL time, not at import time — see the note in agent-config-fields.js.
-  const { createSurface, createNotice } = WorkspaceKit.primitives;
+  const { createSurface } = WorkspaceKit.primitives;
   const surface = createSurface({ className: 'ac-preview', label: 'Preview' });
 
   const briefHead = document.createElement('h3');
@@ -72,14 +69,9 @@ export function createSeatPreview() {
   const rows = document.createElement('dl');
   rows.className = 'ac-preview-rows';
 
-  const attribution = createNotice({
-    kind: 'info',
-    message: 'Each value shows what it resolves to, not yet which layer stated it — stated_by is a pending ask on the resolver.',
-  });
-
   const body = document.createElement('div');
   body.className = 'ac-preview-body';
-  body.append(briefHead, brief, resolvedHead, rows, attribution.el);
+  body.append(briefHead, brief, resolvedHead, rows);
   surface.content.append(body);
 
   /** Nothing resolved yet is not a failure — it is the ordinary state before the first
@@ -114,6 +106,13 @@ export function createSeatPreview() {
       // A blank resolved value is a real answer and is marked as one rather than left
       // looking like a rendering failure.
       if (!reading) dd.dataset.blank = '';
+      const attribution = document.createElement('small');
+      attribution.className = 'ac-preview-stated-by';
+      const statedBy = Array.isArray(resolved.stated_by?.[key]) ? resolved.stated_by[key] : [];
+      attribution.textContent = statedBy.length
+        ? statedBy.map(({ layer, source }) => `${String(layer).replaceAll('_', ' ')} · ${source}`).join(' + ')
+        : 'source not reported';
+      dd.append(attribution);
       rows.append(dt, dd);
     }
     surface.setState(verdict.verdict === 'refuse' ? 'stale' : '', '');

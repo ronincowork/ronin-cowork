@@ -51,6 +51,8 @@ for (const contract of ['ac-form', 'ac-fields', 'ac-field', 'ac-control']) {
   if (!agentFields.includes(contract)) problems.push(`Agent Configuration fields are missing the governed feature hook ${contract}.`);
 }
 if (!agentPreview.includes('ac-preview-body')) problems.push('Agent Configuration preview is missing its governed feature hierarchy hook.');
+if (!agentPreview.includes('resolved.stated_by?.[key]')) problems.push('Agent Configuration must render server-returned stated_by attribution.');
+if (!preflight.includes('stated_by: resolved.stated_by')) problems.push('Launch preflight must publish canonical resolver attribution unchanged.');
 for (const contract of ['.ac-field {', '.ac-actions[data-dirty=', '.ac-preview-brief {', '.ac-preview-rows {']) {
   if (!agentStyles.includes(contract)) problems.push(`Agent Configuration feature styling is missing ${contract}.`);
 }

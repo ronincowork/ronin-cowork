@@ -202,6 +202,37 @@ test('a ronin launch is legal, and a named team with no roster is refused out lo
   );
 });
 
+test('stated_by is resolved on the server across explicit, Team, role, and system layers', async () => {
+  const explicit = await resolveForm(commonsForm({
+    name: 'attribution-proof',
+    project_root: 'beta',
+    cmd: 'claude --model haiku',
+    mcp: true,
+    mode: 'manual',
+  }), new Set());
+  for (const key of ['name', 'project_root', 'cmd', 'mcp', 'mode', 'session_role']) {
+    assert.deepEqual(explicit.stated_by[key], [{ layer: 'explicit_launch', source: 'launch request' }], key);
+  }
+  assert.equal(explicit.stated_by.lifecycle[0]?.layer, 'session_role');
+  assert.match(explicit.stated_by.lifecycle[0]?.source ?? '', /session_roles\/DraftPlan\.md$/);
+
+  const inherited = await resolveForm(forkitForm({ project_root: undefined }), new Set());
+  assert.equal(inherited.stated_by.project_root[0]?.layer, 'team_roster');
+  assert.match(inherited.stated_by.project_root[0]?.source ?? '', /team_rosters\/scratchteam\.md$/);
+  assert.equal(inherited.stated_by.team_role[0]?.layer, 'team_roster');
+
+  const system = await resolveForm(commonsForm({ session_role: '' }), new Set());
+  assert.deepEqual(system.stated_by.dial, [{ layer: 'system', source: 'src/launch-profile.ts' }]);
+});
+
+test('preflight publishes resolver attribution unchanged', async () => {
+  const { previewResolved } = await import('../src/routes/launch-preflight.js');
+  const resolved = await resolveForm(commonsForm(), new Set());
+  const preview = previewResolved(resolved);
+  assert.strictEqual(preview.stated_by, resolved.stated_by);
+  assert.deepEqual(preview.stated_by.lifecycle, resolved.stated_by.lifecycle);
+});
+
 test('a stock task board keeps a stated order, and OpenShell is never in the middle of it', async () => {
   // REGRESSION, 2026-08-22. The combined catalog had FILE order; a directory has none, so
   // `order:` is the replacement — and it shipped unpopulated, which sorted the board
