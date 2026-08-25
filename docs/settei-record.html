@@ -208,7 +208,11 @@
                                                    <span class="c">one stat per root — the most common real breakage</span>
 
   "routes":   [ { "what": "coworkspace", "at": "http://100.101.235.17:3006",
-                  "state": "answering", "exposure": "your tailnet only" } ],
+                  "state": "answering", "exposure": "your tailnet only",
+                  "secure": "https://dohyo-unified.taileaf817.ts.net" } ],
+                                                   <span class="c">`secure` is measured from `tailscale serve status`, null when</span>
+                                                   <span class="c">nothing fronts us — `at` is the door this process opened, and</span>
+                                                   <span class="c">on a served box it is the INSIDE of the proxy, not the way in</span>
 
   "services": [ { "name": "gbrain", "state": "registered, disabled in settings" },
                 { "name": "koshi",  "state": "registered" } <span class="c">…</span> ],

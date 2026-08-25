@@ -73,8 +73,8 @@ what you have already seen. **You never manage ids, timestamps, cursors, pages o
 if you find yourself about to, you have taken a wrong turn. Nothing unread answers in one
 line, and being on no team is an ordinary answer, not a problem.
 
-**The board is not a record.** Posts are delivered and then cleared — once the readers a
-post was for have read it, or once it ages out. Do not put anything there you need later:
+**The board is not a record.** A post lives 48 hours, whoever has read it, then clears.
+Do not put anything there you need later:
 that belongs in your TEGAMI, a `docs/` page, or a commit message.
 
 **Your post interrupts the team lead, and nobody else — that is the default.** The board

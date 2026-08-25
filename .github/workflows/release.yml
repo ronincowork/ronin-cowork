@@ -1,8 +1,7 @@
 # THE RELEASE — a tag becomes the ronin_artifact, built once for every box.
 #
-# Pushing a tag vX.Y.Z runs the byoin_checks (--gates: the render check SKIPs with its
-# reason — a runner has no live server or browser), builds the tarballs with
-# bin/ronin-build — the plain one plus a bundle per vendor.lock platform, each
+# Pushing a tag vX.Y.Z builds the already-verified master candidate with
+# bin/ronin-build — the plain tarball plus a bundle per vendor.lock platform, each
 # carrying its own Node, static tmux, and node_modules — and attaches them to a
 # GitHub Release together with their checksums. Nothing compiles here: the static
 # tmux comes pre-proven from a tmux-static-vN release (tmux-static.yml).
@@ -40,20 +39,7 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-      # NO `apt-get install tmux` HERE, and it is not an oversight (removed 2026-08-19).
-      # The step existed on the claim that "several checks shell out to tmux". Measured:
-      # sixteen of the seventeen gates never touch it, and the seventeenth — smoke-ui —
-      # resolves Playwright FIRST and SKIPs before it would ever reach for a tmux session.
-      # A runner has no browser, so on a runner that skip is certain and tmux is never
-      # used at all. bin/ronin-build does not use it either.
-      # It was not free. `apt-get update` hangs whenever Azure's Ubuntu mirrors are
-      # unreachable — 22m52s on 2026-08-19, against 8 SECONDS for all seventeen gates —
-      # so the install was the slowest and least reliable thing in the job, on every run,
-      # for nothing. If a runner ever does drive a real render check (tier 2, above), it
-      # brings its own tmux back with it, next to the browser it will also need.
       - run: npm ci
-      - name: BYOIN — no unchecked bytes get published
-        run: bin/ronin-byoin --gates
       - name: build the artifacts
         env:
           GH_TOKEN: ${{ github.token }}   # gh downloads the pinned tmux-static asset

@@ -1,11 +1,11 @@
 /* Runtime-checked workspace state and navigation values for Kit consumers. */
+import { migrateWorkbenchState } from './workspace-arrangement.js';
 export const WORKSPACE_DESTINATIONS = Object.freeze([
   'sessions', 'league', 'team', 'customize', 'new-team', 'agent-config', 'commons', 'configuration',
 ]);
 
 const destinationSet = new Set(WORKSPACE_DESTINATIONS);
 const text = (value) => typeof value === 'string' ? value : '';
-const finite = (value, fallback) => Number.isFinite(Number(value)) ? Number(value) : fallback;
 
 export function workspaceTarget(view, param = '') {
   if (!destinationSet.has(view)) throw new Error(`Unknown workspace destination: ${view}`);
@@ -17,14 +17,26 @@ export function navigateWorkspace(context, target, options = {}) {
   return context.navigate(target.view, { ...options, param: text(target.param) });
 }
 
-export function teamWorkspaceState(state = {}) {
-  const surfaces = state.surfaces && typeof state.surfaces === 'object' ? state.surfaces : {};
-  const widths = state.widths && typeof state.widths === 'object' ? state.widths : {};
+/**
+ * The Team destination's typed state. `arrangement` is the workbench's slot arrangement
+ * (workspace-arrangement.js) as the view persisted it — normalized against the
+ * declaration the view passes — or, once, migrated from the pre-arrangement shape the
+ * shell's top-level state used to carry (`widths: {left, right}`, `surfaces: {...}`).
+ * Per destination now; leg 2 keys it per team.
+ */
+export function teamWorkspaceState(state = {}, viewState = null, declaration = null) {
+  const view = viewState && typeof viewState === 'object' ? viewState : {};
+  const stored = view.arrangement || null;
+  const legacy = (state.widths || state.surfaces) ? { widths: state.widths, surfaces: state.surfaces } : null;
+  // SEATS: which member is up in which workspace slot, by slot name. The one-seat
+  // `focusedSession` of the shell's top-level state is read once, into the first seat.
+  const seats = {};
+  for (const [slot, name] of Object.entries(view.seats && typeof view.seats === 'object' ? view.seats : {})) if (text(name)) seats[slot] = name;
   return Object.freeze({
     team: text(state.team),
     mode: state.teamMode === 'sessions' ? 'sessions' : 'team',
     focusedSession: text(state.focusedSession),
-    surfaces: Object.freeze({ terminalTile: !!surfaces.terminalTile, kanban: !!surfaces.kanban, channels: !!surfaces.channels }),
-    widths: Object.freeze({ left: finite(widths.left, 40), right: finite(widths.right, 40) }),
+    seats: Object.freeze(seats),
+    arrangement: declaration ? migrateWorkbenchState(stored || legacy, declaration) : null,
   });
 }

@@ -88,7 +88,9 @@ const userShelf = () => storeDir('session_boot');
  * itself is generated on every assisted launch into Ronin's disposable data root. A checked-in
  * list would describe the stock catalog, not the active one, the moment the owner customized it.
  */
-async function sessionMacrosReading(): Promise<string> {
+/** The live macro reading as text. Exported for the read-only shelf inventory so the UI
+ * shows the same resolved document without creating or exposing the disposable cache. */
+export async function renderSessionMacrosReading(): Promise<string> {
   const [template, active] = await Promise.all([
     readFile(SESSION_MACROS_TEMPLATE, 'utf8'),
     listMacros().then((macros) => macros.filter((macro) => macro.preview)),
@@ -103,6 +105,11 @@ async function sessionMacrosReading(): Promise<string> {
   const pattern = new RegExp(`${start}[\\s\\S]*?${end}`);
   if (!pattern.test(template)) throw new Error('SESSION_MACROS.md has no generated-section markers.');
 
+  return template.replace(pattern, `${start}\n${rendered}\n${end}`);
+}
+
+async function sessionMacrosReading(): Promise<string> {
+  const text = await renderSessionMacrosReading();
   const dir = storeDir('session_boot_cache');
   const target = path.join(dir, 'SESSION_MACROS.md');
   // Several sessions may be born together. A shared `.tmp` name lets one rename the
@@ -110,7 +117,7 @@ async function sessionMacrosReading(): Promise<string> {
   // catalog snapshot becoming the cache.
   const temp = `${target}.${process.pid}.${randomUUID()}.tmp`;
   await mkdir(dir, { recursive: true });
-  await writeFile(temp, template.replace(pattern, `${start}\n${rendered}\n${end}`));
+  await writeFile(temp, text);
   await rename(temp, target);
   return target;
 }

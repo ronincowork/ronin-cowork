@@ -40,12 +40,26 @@ work must not scope, wrap, replace, or retire it.
 4. The shared Team controller refreshes durable and live readings.
 5. Live members are projected from sessions whose tags contain the Team name.
 6. Kanban renders one card per member and an inert `＋ Add team member` card.
-7. If persisted `focusedSession` is still a member, the terminal host switches to it;
-   otherwise the host parks and the honest empty placeholder appears.
-8. Selecting a card does one terminal act: `switchSession(member.name)`. Team then persists
-   `focusedSession` and redraws selection.
-9. Leaving parks the terminal host and leaves Channel services.
-10. Destroying unsubscribes and destroys the terminal host and Channel Surface.
+   reconciles one SEAT per live member and mounts NOTHING at entry. A member's tile is
+   tiered (2026-08-25, owner-driven — each streaming tile is a websocket, a tmux viewer
+   session and a live `tmux attach` pty process server-side): **HOT** is the visible
+   member, streaming; **WARM** is hidden but streaming, and **warmth is durable** —
+   no clock parks a shown tile (owner, 2026-08-25: toggled members stay hot); **PARKED**
+   means transport closed, server fully freed, seat and painted DOM kept, one reattach
+   to return. **Every `team_lead` is PINNED** — never parked by anything but membership
+   loss or page exit ("the team manager is always hot, regardless"), and the lead's
+   Tile opens by default on entry. **The stream cap is 4** (HOT+WARM together); at the
+   cap the least-recently-shown UNPINNED tile parks; if everything left is pinned or
+   visible the cap yields. Hovering a card ~150ms **pre-warms** it hidden so the click
+   lands on a painted tile; an unclaimed prewarm is collected by a ~25s grace — the one
+   thing the clock is still for. Destruction remains membership loss and page exit
+   only. The planned two-seat layout is `wip/buildouts/TEAM_WORKBENCH.md`.
+8. If persisted `focusedSession` is still a member, its host is revealed; otherwise every
+   host stays hidden behind the honest empty placeholder.
+9. Selecting a card hides the old host and reveals/focuses the selected warm host. It does
+   not close, reset, or reopen transport.
+10. Leaving, changing Team, losing membership, or destroying closes and destroys every
+    affected pooled host. No warm transport survives outside the entered Team destination.
 
 The Team name is the destination title; the workspace shell adds the Ronin house title.
 
@@ -77,8 +91,13 @@ durable metadata.
 ## Owned files
 
 - `public/js/team-view.js` — Team composition, readings, Kanban selection, and lifecycle.
+- `public/js/team-terminal-pool.js` — page-lifetime orchestration of existing full Kit
+  terminal hosts; it contains no renderer, cache, or socket engine.
+- `public/js/team-wipeboard.js` — the Team Channel's roster-resolved wipeboard thread,
+  owner composer, entered-only poll, and service lifecycle.
 - `public/css/team-workspace.css` — Team-specific Kanban, notice, placeholder, and
   configuration presentation.
+- `tests/team-terminal-pool.test.js` — scoped proof of lazy seats, warm revisits and complete cleanup.
 - `docs/team-workspace.md` — this persistent implementation and resume contract.
 
 Registration in `public/js/main.js` and the stylesheet link in `public/index.html` are
@@ -139,27 +158,42 @@ Full mode instantiates the existing `Tile` unchanged, retaining its genuine:
 - output/lock, Teams, context, Control, Docs, Note, and kill controls;
 - terminal, tape views, composer, focus, resize observer, and transport.
 
-Kanban may call `terminalHost.switchSession(name)`. It may not reach into Tile DOM,
-synthesize controls, constrain the genuine picker, or intercept Torii. The picker remains
-global and keeps its ordinary existing behavior.
+Kanban selects among already-open hosts. It may not reach into Tile DOM, synthesize
+controls, constrain the genuine picker, or intercept Torii. The picker remains global and
+keeps its ordinary existing behavior.
 
 ## Lifecycle
 
-One terminal host belongs to the focused Team slot:
+The warm pool exists only while one Team destination is entered:
 
-- construct the full host once while building the destination;
-- on enter, restore the workbench and switch to an eligible persisted member or park;
-- on Kanban selection, call `switchSession`—never remount or create another host;
-- on leave, call `park()` and leave Channel services;
-- on destroy, unsubscribe, call `terminalHost.destroy()`, and destroy Channel services.
+- reconcile one SEAT per live Team member; a `createTerminalTileHost({ mode: 'full' })`
+  host is created lazily on the member's first show, opened once, and kept warm after;
+- on Kanban selection, reveal, fit, and focus the existing host without `switchSession`;
+- when a member leaves, immediately destroy that member's host and wrapper;
+- before changing Team or leaving, destroy the entire pool;
+- on view destruction, unsubscribe and destroy the pool again idempotently.
 
-The host owns the Tile socket, reconnect behavior, xterm/tape renderers, composer, fitting,
-observers, timers, focus, and teardown. Team duplicates none of them.
+Each host still owns its unchanged Tile socket, reconnect behavior, xterm/tape renderers,
+composer, fitting, observers, timers, focus, and teardown. The pool owns only membership
+and visibility; it implements no renderer, cache, protocol, or socket.
+
+### Large-Team cost
+
+Warm revisits trade memory and concurrent transport for latency. A Team with **N live
+members** holds **N full Tiles and N viewer transports** while entered, including each
+Tile's xterm/tape state, observer, header, and any legitimate output timer. Creation and
+teardown are O(N); switching is O(N) DOM visibility work with no transport reopen. Cost
+drops to zero pooled hosts immediately on leave or Team change. Never make the pool global
+or preserve it across destinations.
 
 ## Channel Surface
 
 - **Chat** — reserved, empty, inert; no fetch, timer, socket, composer, or fallback.
-- **Wipeboard** — placeholder for the Team thread; the Brief does not belong here.
+- **Wipeboard** — the real Team thread and owner composer. It resolves the roster's
+  `wipeboard` id, falling back to the Team name for a tag-only Team; opening materializes
+  the Team board when absent. It polls every two seconds only while entered, preserves
+  typed text on a failed post, interrupts all members for an owner post through the
+  server's dial-governed fan-out, and never renders the Brief.
 - **Docs** — placeholder for Team working documents.
 - **Team Configuration** — read-only durable metadata and derived live roster.
 
@@ -175,6 +209,9 @@ The current chain landed as:
 - `09f579c` — replaced disabled Tile-control lookalikes with the complete existing Tile.
 - `092ddfc` — released managed Team workbench controls in Workspace Kit.
 - `ab659d7` — migrated Team to the managed workbench contract.
+- `bfeb772` — replaced card-driven transport resets with the page-lifetime warm host pool.
+- `3881c96` — made opening a Team board materialize its real empty thread when absent.
+- `7330d50` — replaced the Wipeboard placeholder with the entered-only thread/composer.
 
 For `ab659d7`, the declared rendered verification ran once:
 
@@ -191,16 +228,30 @@ BYOIN: the repo is clean (17 ok, 2 skipped).
 ```
 
 The two fast-tier skips were its browser checks by definition; the separate UI run had
-already executed them. Future rendered Team changes require `bin/ronin-byoin --ui`. Run
-the declared command once after the leg is complete; do not assemble a hand-written test
-sequence. A SKIP is not a pass.
+already executed them. That is historical evidence, not the current dev cadence. Future
+Team legs use direct dogfood and scoped diagnosis; the designated integrator runs one
+appropriate BYOIN mode on the exact release candidate. A SKIP remains unverified.
+
+The warm-pool change carries scoped evidence in `tests/team-terminal-pool.test.js`:
+repeated card revisits do not reopen transport, while membership loss and page cleanup
+destroy and remove every affected host exactly once. BYOIN is not run for this dev leg.
+
+Final retirement audit on 2026-08-25 checked current `dev` at `5358577` against the shipped
+Team modules and this document. The scoped command was:
+
+```text
+node --test tests/team-terminal-pool.test.js
+2 passed, 0 failed, 0 skipped
+```
+
+No candidate-wide BYOIN was run: this audit is not the dev-to-master release boundary.
 
 ## Known limits
 
 - This remains a preview slice, not the complete Team product.
 - Richer reviewed SessionCard readings are incomplete.
 - `＋ Add team member` is intentionally inert.
-- Wipeboard and Docs are placeholders here.
+- Docs remains a placeholder here.
 - Team Configuration is read-only; creation, editing, membership mutation, and lead changes
   are not implemented.
 - Chat is intentionally empty, not an invitation to improvise.
@@ -228,7 +279,7 @@ While implementing:
 
 8. Edit Team-owned files only unless a shared seam is explicitly authorized.
 9. Keep `createTerminalTileHost({ mode: 'full' })` and the genuine Tile unchanged.
-10. Let Kanban selection call only `switchSession` on the host.
+10. Let Kanban selection reveal/focus only an existing pooled host; never reopen it.
 11. Keep layout, collapse, rails, splitters, responsiveness, and snapshots in managed Kit.
 12. Keep membership derived from tags through the shared Team controller.
 13. Preserve the separate Sessions 1/2/4 raw Tile-grid destination.
@@ -236,8 +287,8 @@ While implementing:
 Before reporting completion:
 
 14. Confirm the diff contains no unrelated path.
-15. Run the mode required by `docs/test-protocols.md`; rendered Team work uses UI BYOIN.
-16. Read the exit code and report every SKIP as unverified.
+15. Record direct dogfood and scoped diagnostic evidence; do not run BYOIN in the dev loop.
+16. Leave the one candidate-wide BYOIN verdict to the designated integrator.
 17. If landing is authorized, stage only owned paths, inspect the staged path list, commit
     and push only `dev`. Documentation-only work does not itself authorize git writes.
 
@@ -247,18 +298,20 @@ Use the current checkout, not another serving tree:
 
 1. Open a rostered `#/team/:name`; confirm title and three Surfaces.
 2. Open a tag-only Team; confirm members render and Configuration says no roster exists.
-3. Select each Kanban member; confirm selection and the same hosted Tile switch.
+3. Select each member, revisit earlier cards, and confirm terminal state returns immediately
+   without reconnect/reset delay.
 4. Exercise the genuine picker, Torii, macros, output/lock, Teams, context, Control, Docs,
    Note, more/kill, terminal, and composer; confirm none is a Team imitation.
 5. Collapse and reopen all three Surfaces using Kit controls.
 6. Resize both edges by pointer and keyboard; reload and confirm state restoration.
 7. Repeat at phone width; confirm Kit responsive composition and no desktop splitters.
-8. Navigate away and back repeatedly; confirm no duplicate host, socket, composer,
-   observer, timer, or control.
-9. Remove the focused member's Team tag or end it; confirm honest fallback.
+8. Navigate away and back repeatedly; confirm the old pool closes completely and exactly
+   one fresh host per current member opens on re-entry.
+9. Remove a member's Team tag or end it; confirm that host is destroyed immediately and a
+   focused removal returns to the honest placeholder.
 10. Open Chat; confirm it is empty and inert.
 11. Open Sessions and exercise raw 1/2/4 Tile layouts; confirm Team did not alter them.
-12. Finish with declared UI BYOIN and record any browser SKIP as unverified.
+12. Finish with scoped rendered evidence; the designated integrator owns candidate BYOIN.
 
 If a journey requires Team to reproduce Kit or Tile behavior, stop. That is a missing
 shared contract, not permission for a local repair.

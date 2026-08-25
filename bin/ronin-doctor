@@ -52,14 +52,45 @@ subst_literal() {
   printf '%s' "$out"
 }
 
-NODE_BIN="$(readlink -f "$(command -v node)" 2>/dev/null || command -v node || true)"
-NODE_DIR="${NODE_BIN:+$(dirname "$NODE_BIN")}"
+# THE FIRST PATH HIT THAT IS NOT OUR OWN GUARD SHIM. `bin/shim/` precedes /usr/bin in a
+# configured login shell, so a bare `command -v tmux` there answers with the guard rather
+# than the tmux setup.sh baked into the unit — and doctor would report drift on a box that
+# has none. Resolving past the shim is what makes this comparison stable in the shell an
+# agent actually runs in.
+resolve_tool() {  # resolve_tool <name> — a real path on stdout, empty if absent
+  local p
+  for p in $(type -aP "$1" 2>/dev/null); do
+    case "$p" in "$ROOT"/bin/shim/*) continue ;; esac
+    printf '%s' "$p"; return 0
+  done
+  return 0
+}
+
+# THE FOUR PLACEHOLDERS setup.sh FILLS, resolved the way setup.sh resolves them: a
+# bundled release carries its own node and tmux under vendor/, a checkout uses the
+# system's. Doctor rendered only two of the four, so `__TMUX_BIN__` and `__TMUX_DIR__`
+# survived into the comparison text and could never equal an installed unit — every
+# healthy box was told both its units had drifted, on every run. A check that always
+# fails is worse than no check: it teaches the reader to skip the section.
+if [ -x "$ROOT/vendor/node/bin/node" ] && [ -x "$ROOT/vendor/tmux" ]; then
+  NODE_BIN="$ROOT/vendor/node/bin/node"
+  NODE_DIR="$ROOT/vendor/node/bin"
+  TMUX_BIN="$ROOT/vendor/tmux"
+  TMUX_DIR="$ROOT/vendor/bin"
+else
+  NODE_BIN="$(readlink -f "$(command -v node)" 2>/dev/null || command -v node || true)"
+  NODE_DIR="${NODE_BIN:+$(dirname "$NODE_BIN")}"
+  TMUX_BIN="$(resolve_tool tmux)"
+  TMUX_DIR="${TMUX_BIN:+$(dirname "$TMUX_BIN")}"
+fi
 
 render_template() {  # render_template <template> — rendered text on stdout
   local text
   text="$(<"$1")"
   text="$(subst_literal "$text" '__REPO_DIR__' "$ROOT")"
   text="$(subst_literal "$text" '__NODE_DIR__' "$NODE_DIR")"
+  text="$(subst_literal "$text" '__TMUX_BIN__' "$TMUX_BIN")"
+  text="$(subst_literal "$text" '__TMUX_DIR__' "$TMUX_DIR")"
   printf '%s\n' "$text"
 }
 
@@ -448,19 +479,19 @@ fi
 # browser lives is a mistake this tree has already made once.
 # shellcheck source=../libexec/ronin-banner.sh
 [ -r "$ROOT/libexec/ronin-banner.sh" ] && . "$ROOT/libexec/ronin-banner.sh"
+# shellcheck source=../libexec/ronin-machine.sh
+[ -r "$ROOT/libexec/ronin-machine.sh" ] && . "$ROOT/libexec/ronin-machine.sh"
 
 sect "the install steps"
 
 # LINGER is a genuine fault when it is off. Without it the user manager stops at logout
 # and every --user service goes with it, so the coworkspace is simply absent whenever
 # nobody is signed in — which reads as "Ronin is broken", not "a step was skipped".
-if ! command -v loginctl >/dev/null 2>&1; then
-  note "no loginctl here — linger not assessed"
-elif [ "$(loginctl show-user "$USER" --property=Linger --value 2>/dev/null || echo no)" = "yes" ]; then
-  ok "linger is on — the coworkspace survives logout"
-else
-  find_ "linger is OFF — every --user service stops at logout, so Ronin is absent whenever nobody is signed in. remedy: sudo loginctl enable-linger \$USER"
-fi
+machine_linger_on; case $? in
+  0) ok "linger is on — the coworkspace survives logout" ;;
+  2) note "no loginctl here — linger not assessed" ;;
+  *) find_ "linger is OFF — every --user service stops at logout, so Ronin is absent whenever nobody is signed in. remedy: sudo $(machine_linger_action)" ;;
+esac
 
 # SERVE is a NOTE, deliberately, and not a finding. Reaching the install over the tailnet
 # at http://ip:port is a legitimate arrangement — setup.sh's own banner falls back to
@@ -488,17 +519,43 @@ fi
 # A finding, never an action. Doctor reads; it does not touch the machine, and a
 # swapfile needs root that Ronin does not hold.
 sect "the box"
-if [ ! -r /proc/swaps ]; then
-  note "cannot read /proc/swaps on this system — swap not assessed"
-elif [ "$(awk 'NR>1' /proc/swaps | wc -l)" -gt 0 ]; then
-  ok "swap is configured ($(awk 'NR>1 {t+=$3} END {printf "%.1f GB", t/1048576}' /proc/swaps))"
-elif { command -v systemd-detect-virt >/dev/null 2>&1 && systemd-detect-virt --container --quiet; } ||
-     [ -f /.dockerenv ]; then
-  note "no swap, but this is a container — swap is the host's business, not this install's"
-else
-  ram_gb="$(awk '/^MemTotal:/ {printf "%.0f", $2/1048576; exit}' /proc/meminfo 2>/dev/null)"
-  find_ "NO SWAP on this box (${ram_gb:-?} GB RAM) — when memory fills the kernel kills a process rather than slowing down, and it chooses which. remedy: ronin_sops/machine_health.md § swap"
-fi
+
+# WHAT KILLED IT. After something dies unexpectedly the first question is what the kernel
+# killed and when, and on a stock box that answer is unreadable: kernel.dmesg_restrict is
+# commonly 1 and journalctl -k returns nothing without the right group. A session that
+# cannot read the log must say so rather than infer a cause from timing — "the box was
+# short of memory and a process vanished" is an observation; "the kernel OOM-killed it" is
+# a claim that needs the log.
+#
+# INFORMS, DOES NOT PRESCRIBE. The remedy is read-only and it is the box owner's own
+# account, but it is still an expansion — after it, anything running as this user can read
+# system logs. The line states that so the owner chooses knowing it.
+machine_kernel_log_readable; case $? in
+  0) ok "the kernel log is readable — an agent can say what was killed and when" ;;
+  2) note "no kernel log interface here — OOM history not assessed on this system" ;;
+  # A NOTE, NOT A FINDING (owner, 2026-08-25). `kernel.dmesg_restrict=1` is the stock
+  # default on Debian and Ubuntu, so a finding here goes red on a correctly-configured box
+  # — for every third-party install, on day one, forever. Nothing in Ronin reads the kernel
+  # log; it buys an agent one better sentence after an OOM kill and nothing else. And the
+  # remedy WIDENS PRIVILEGE: `adm` lets everything running as this user read system logs,
+  # not just doctor. A health check does not get to lobby for more access than the product
+  # needs. Case 2 below — no kernel log interface at all, which is strictly worse and
+  # cannot be fixed — was already a note; grading the fixable case harder than the
+  # permanent one was backwards. The remedy stays in the text for anyone who wants it.
+  *) note "the kernel log is not readable, so after something is killed nothing here can say what or when — only that it vanished. Optional, and Ronin needs none of it: 'sudo $(machine_kernel_log_action)' then log out and back in buys that history, at the cost of letting anything running as this user read system logs. ronin_sops/remote_machine_health.md § what killed it" ;;
+esac
+
+machine_has_swap; case $? in
+  0) ok "swap is configured ($(machine_swap_total))" ;;
+  2) note "no /proc/swaps on this system — swap not assessed here (Linux-only reading)" ;;
+  *)
+    if machine_is_container; then
+      note "no swap, but this is a container — swap is the host's business, not this install's"
+    else
+      ram_gb="$(awk '/^MemTotal:/ {printf "%.0f", $2/1048576; exit}' /proc/meminfo 2>/dev/null)"
+      find_ "NO SWAP on this box (${ram_gb:-?} GB RAM) — when memory fills the kernel kills a process rather than slowing down, and it chooses which. remedy: ronin_sops/remote_machine_health.md § swap"
+    fi ;;
+esac
 
 # ---- verdict -----------------------------------------------------------------------
 echo ""

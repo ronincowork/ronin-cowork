@@ -1,6 +1,6 @@
 # ronin_session_boot — what a NEW SESSION reads before anything else
 
-**test_protocols:** changed anything here? run `bin/ronin-byoin` and read the verdict — `docs/test-protocols.md` is the page.
+**test_protocols:** ordinary dev work does not run BYOIN; the integrator runs it once at the `dev → master` boundary — `docs/test-protocols.md` is the contract.
 
 Named for booting a **session**, never the application: nothing here runs when Ronin
 starts. It is read once, when a session is born.

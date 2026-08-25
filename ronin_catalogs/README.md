@@ -1,6 +1,6 @@
 # Adding macros & actions (TEJUN)
 
-**test_protocols:** changed anything here? run `bin/ronin-byoin` and read the verdict — `docs/test-protocols.md` is the page.
+**test_protocols:** ordinary dev work does not run BYOIN; the integrator runs it once at the `dev → master` boundary — `docs/test-protocols.md` is the contract.
 
 Entry point for the whole system: `../reading-list/TEJUN.md`. This file: the choreography for
 extending the two catalogs that live here.

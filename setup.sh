@@ -517,6 +517,11 @@ fi
 # assuming: serve needs a sudo this script does not have.
 # shellcheck source=libexec/ronin-banner.sh
 . "$REPO_DIR/libexec/ronin-banner.sh"
+# ONE definition of each question about the box, shared with bin/ronin-doctor: what
+# setup OFFERS and what doctor FINDS MISSING must be the same test, or a person is told
+# two different things about one machine.
+# shellcheck source=libexec/ronin-machine.sh
+. "$REPO_DIR/libexec/ronin-machine.sh"
 export RONIN_IP="${IP:-}" RONIN_FQDN="${FQDN:-}"
 PORT="$(ronin_port "$REPO_DIR")"
 OPEN_URL="$(ronin_open_url "$REPO_DIR" "$PORT")"
@@ -532,9 +537,8 @@ SERVED_ALREADY="$(ronin_served_url "$PORT")"
 # meant three pastes and three password prompts for what is one decision: "yes, do the
 # root-owned parts of my install" (owner, 2026-08-24).
 STEP_ACT=(); NSTEPS=0
-if command -v loginctl >/dev/null 2>&1 &&
-   [ "$(loginctl show-user "$USER" --property=Linger --value 2>/dev/null || echo no)" != "yes" ]; then
-  STEP_ACT[$NSTEPS]="loginctl enable-linger $USER"
+machine_linger_on || if [ $? -eq 1 ]; then
+  STEP_ACT[$NSTEPS]="$(machine_linger_action)"
   NSTEPS=$(( NSTEPS + 1 ))
 fi
 # Nothing to ask for when serve already points at THIS install: the address in the box
@@ -551,30 +555,18 @@ fi
 
 # SWAP, WHERE THERE IS NONE. Ronin runs several agent sessions at once and each runs
 # real work. On a box with no swap the kernel has no overflow when memory fills: it
-# picks a process and kills it, and it chooses which — which on this box means somebody's
-# session dies with their work in it. Swap converts that into slowness instead.
+# picks a process and kills it, and it chooses which — which means somebody's session
+# dies with their work in it. Swap converts that into slowness instead.
 #
-# OFFERED, NEVER DONE. This is the same contract as the two steps above: we detect the
-# condition and hand over the line; the person runs it. Setup does not hold root.
+# OFFERED, NEVER DONE — the same contract as the two steps above: detect the condition
+# and hand over the line; setup does not hold root.
 #
-# Conditions, all of them, because a wrong offer here is worse than no offer: swap must
-# be genuinely absent, the root filesystem must be one `fallocate` is safe on, there must
-# be room to spare, and we must not be inside a container (where swap is the host's
-# business and /etc/fstab is not ours to write).
-if [ "$OS" = "Linux" ] &&
-   [ -r /proc/swaps ] && [ "$(awk 'NR>1' /proc/swaps | wc -l)" = 0 ] &&
-   ! { command -v systemd-detect-virt >/dev/null 2>&1 && systemd-detect-virt --container --quiet; } &&
-   [ ! -f /.dockerenv ]; then
-  ROOT_FS="$(findmnt -no FSTYPE / 2>/dev/null || echo unknown)"
-  ROOT_FREE_G="$(df -BG --output=avail / 2>/dev/null | tail -1 | tr -dc '0-9')"
-  case "$ROOT_FS" in
-    ext4|xfs)
-      if [ -n "$ROOT_FREE_G" ] && [ "$ROOT_FREE_G" -ge 9 ] && [ ! -e /swapfile ]; then
-        STEP_ACT[$NSTEPS]='fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo "/swapfile none swap sw 0 0" >> /etc/fstab' 
-        NSTEPS=$(( NSTEPS + 1 ))
-        WANT_SWAP=1
-      fi ;;
-  esac
+# EVERY CONDITION IS machine_swap_offerable's, not spelled again here. doctor asks the
+# same library the same question, so the offer and the finding cannot drift apart.
+if [ "$OS" = "Linux" ] && machine_swap_offerable; then
+  STEP_ACT[$NSTEPS]="$(machine_swap_action)"
+  NSTEPS=$(( NSTEPS + 1 ))
+  WANT_SWAP=1
 fi
 
 if [ "$NSTEPS" = 1 ]; then

@@ -36,6 +36,9 @@ export function createTerminalTileHost(options = {}) {
     el.hidden = true;
     return true;
   };
+  /** Conceal without touching the transport — the pool's warm-hidden state. Parking is
+   *  the transport decision and stays its own verb. */
+  const hide = () => { el.hidden = true; };
   const fit = () => { if (!parked) tile?.doFit(); };
   const send = (text) => !parked && !!tile?.sendRaw(String(text));
   const destroy = () => {
@@ -47,5 +50,5 @@ export function createTerminalTileHost(options = {}) {
     tile = null;
     parked = true;
   };
-  return { el, mount, switchSession, park, destroy, fit, send, get session() { return tile?.session || ''; }, get parked() { return parked; } };
+  return { el, mount, switchSession, park, hide, destroy, fit, send, get session() { return tile?.session || ''; }, get parked() { return parked; } };
 }

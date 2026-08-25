@@ -43,9 +43,25 @@ const { workspaceTarget, navigateWorkspace, teamWorkspaceState } = WorkspaceKit.
 
 Current load-bearing contracts:
 
-- `createWorkbenchLayout(..., { managed: true, state, onStateChange })` returns `host` and
-  owns collapse/expand rails, actions, bounded pointer/keyboard splitters, responsive
-  stacking, snapshots, and `restore(state)`. Consumers append `host`, not only `el`.
+- `createWorkbenchLayout({ declaration, surfaces, state, onStateChange })` is the managed
+  Workbench: a slot ARRANGEMENT. The consumer declares its slots by name
+  (`{ slots: [{ name, label, width, min, compact }] }`, `public/js/workspace-arrangement.js`)
+  and hands one element per name; the Kit draws them in the arrangement's order and
+  widths, hides what it hides, places one splitter between each visible pair, stacks on
+  phones, and writes `data-width="compact" | "full"` on each slot wrapper from measurement.
+  It returns `{ host, el, arrangement, restore, snapshot }`; consumers append `host` and
+  persist the arrangement `{ order, hidden, widths }` through `patchViewState`. There are
+  no collapse rails: the control is the **layout map** (`createLayoutMap(arrangement)`),
+  which the ViewHost draws into the bar's `#viewmap` slot for any registered view that
+  exposes `arrangement` — click shows/hides a slot, drag within the map reorders, keyboard
+  works. Nothing in the frame, the map, or the ViewHost knows a slot's name or meaning.
+  A slot may declare FACES (`faces: ['terminal', { name: 'commons', exclusive: true }]`,
+  plus a default `face`); the consumer then hands `{ [face]: element }` for that slot,
+  a face element may be shared between slots, an exclusive face is up in one slot at a
+  time, and the Kit draws a corner face switch (`.wk-face-switch`) — the arrangement
+  carries `faces: { slot: face }` and `arrangement.setFace(slot, face)` turns one.
+- `createWarmTerminalPool({ createHost, seats: { id: container } })` (team feature, not
+  Kit) shows a member in a named seat; `container` alone is the one-seat form.
 - `createTerminalTileHost({ mode: 'full' | 'reduced' })` is the only terminal host. Full
   mode preserves the genuine existing Tile—including header, Torii, macros, controls,
   terminal, tape and composer—unchanged.
@@ -53,7 +69,9 @@ Current load-bearing contracts:
   `{ el, mount, enter, leave, destroy }`. Chat remains reserved and inert.
 - `team-controller.js` is the only Team projection. Membership and leads are derived live
   from sessions; `team_roster` stores durable Team metadata/defaults, never membership.
-- Programmatic ExplorerRail `setSections()` is silent. `onSelect` is for user selection.
+- ExplorerRail currently routes both programmatic `setSections()` reconciliation and user
+  selection through `select()`, so both invoke `onSelect`. This is a known contract defect,
+  not permission for new consumers to add another rail or selection engine.
 - Navigation uses `workspaceTarget()` and `navigateWorkspace()`. Views use shell state,
   `viewState()` and `patchViewState()` rather than private history or storage engines.
 
@@ -94,8 +112,9 @@ composers.
 
 Terminal views park the canonical host on `leave()` and destroy it on `destroy()`. Channel
 services run through `createChannelSurface`; features do not build a second tab/service
-lifecycle. Team-controller subscriptions are repaint signals; refresh has a clear view
-boundary and selectors remain authoritative.
+lifecycle. Team-controller selectors remain authoritative. Its subscribers currently
+receive an unused deep-copied `snapshot()` carrying a revision counter after refresh;
+consumers should not treat that payload as a second state source.
 
 ## Consumer rules
 
@@ -126,7 +145,8 @@ bin/ronin-byoin --ui      # repository checks plus browser and visual evidence
 bin/ronin-byoin           # installed-box verification and machine readouts
 ```
 
-Run the one mode appropriate to the change; do not assemble hand-rolled sequences.
+Ordinary Kit legs use direct dogfood and scoped diagnostic evidence, not BYOIN. One
+designated integrator runs the appropriate mode once on the exact release candidate.
 `scripts/check-workspace-kit.mjs` rejects feature-local Team projections, terminal hosts,
 primitive copies and layout drift. `scripts/check-css.mjs` guards CSS. Staging
 `scripts/smoke-ui.mjs` owns dev-only workspace/skin evidence; default live smoke must not
@@ -150,6 +170,13 @@ registry-derived five-room Commons.
   for a demonstrated defect.
 - Tiny DOM helpers and resource-free views are not foundation gaps.
 - Agent Configuration action primitives remain pre-PR cleanup, not a separate kit.
+- ExplorerRail programmatic reconciliation is not yet silent: `setSections()` calls
+  `select()`, which fires `onSelect`. The approved foundation cleanup is to notify only on
+  real user selection and then remove any consumer suppression workaround after audit.
+- `team-controller.js` still maintains `revision`, deep-copies state in `snapshot()`, and
+  passes that snapshot to subscribers even though consumers re-read authoritative
+  selectors. The approved KISS cleanup is a bare repaint notification and removal of the
+  unused snapshot machinery; do not replace it with another cache or state source.
 - `../ronin-lab/concepts/five-eyes.html` at reviewed commit `f9510ef` is visual reference,
   not production code, state, or an alternate contract.
 
@@ -166,10 +193,9 @@ registry-derived five-room Commons.
 7. Implement shared foundation first; touch features only for explicitly authorized minimal
    compatibility proof.
 8. Check CSS governance and prove Sessions remains reachable with 1/2/4 Tiles unchanged.
-9. Run the one declared BYOIN mode. For unlanded views, populate the staging directory
-   mounted by the running service and use declared staging smoke evidence.
-10. Read the whole verdict. Stop on an owned red; identify unrelated baseline failures.
-    Never report SKIP as verified.
+9. Use direct dogfood and scoped diagnostics. For unlanded views, use the declared staging
+   target without turning that evidence into a per-leg BYOIN run.
+10. Leave candidate-wide BYOIN to the designated integrator; never report a SKIP as proof.
 11. Stage exact owned paths/hunks, inspect `git diff --cached --check` and the whole cached
     patch, then commit/push only when authorized.
 12. Handoff hash or uncommitted state, verification verdict, exact paths, migration steps,

@@ -6,7 +6,14 @@
     <meta name="theme-color" content="#0b0e14" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <title>tmux ronin</title>
+    <title>Ronin</title>
+    <!-- THE HOUSE MARK. Copied from ronin-lab, which owns it — public/brand/README.md says
+         where and why. SVG first so a retina tab and a bookmark bar stay sharp at any size;
+         the 32px PNG is the fallback for anything that will not take one. The 256 is what
+         iOS puts on a home screen, which is the arrival REMOTE_ACCESS is built around. -->
+    <link rel="icon" type="image/svg+xml" href="/brand/nin-mark.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/brand/nin-mark-32.png" />
+    <link rel="apple-touch-icon" href="/brand/nin-mark-256.png" />
     <!-- The saved theme, applied BEFORE the stylesheet paints — a light-theme reload
          must not flash dark. Inline and tiny on purpose; js/theme.js owns the rest. -->
     <script>
@@ -23,10 +30,13 @@
     <link rel="stylesheet" href="css/league.css" />
     <link rel="stylesheet" href="css/team-workspace.css" />
     <link rel="stylesheet" href="css/new-team.css" />
+    <link rel="stylesheet" href="css/agent-configuration.css" />
   </head>
   <body>
     <header id="bar">
       <button id="brandbtn" class="brand" title="⛩ ronin — the session roster">⛩ ronin</button>
+      <a id="leaguebtn" class="brand" href="#/league" target="_blank" rel="noopener noreferrer"
+         title="Open League in a new browser tab">League</a>
       <button id="servicesstate" class="services-state" type="button" hidden aria-expanded="false"></button>
       <!-- ＋ opens a SECOND RONIN in a new browser tab. The owner already worked this way by
            opening tabs by hand; the button exists so everyone else discovers it is possible,
@@ -35,7 +45,19 @@
            among the five verbs on the right — those share one measured width and this is not
            one of them. -->
       <button id="newtabbtn" class="newtab" title="Open a second Ronin in a new browser tab">＋</button>
+      <!-- RAM_RPM — the box's working reading. A tachometer: always there, mostly
+           ignored, so you learn what normal looks like without being told. It sits with
+           the brand and NOT among the five verbs on the right, which share one measured
+           width and are all things you press; this is a readout and does nothing when
+           clicked. js/ramrpm.js writes the face and the title. -->
+      <span id="ramrpm" class="ramrpm" hidden></span>
       <span class="grow"></span>
+      <!-- THE LAYOUT MAP — the workspace drawn small: one rectangle per column, click
+           to show or hide, drag to reorder. Empty unless the active view has columns
+           to arrange (the Team workbench does; Sessions and League do not). The
+           ViewHost (js/workspace.js) fills it; no feature writes here. It sits in the
+           grow gap, left of the five verbs, which keep their measured width. -->
+      <span id="viewmap" class="wk-view-map"></span>
       <button id="newbtn" title="⌃⇧N — start a new session: pick what it is for, where it works and who it is">か<span class="txt"> New</span></button>
       <!-- ⛩ is the house mark for "open the Commons", and this is the door: ONE press
            lands on ⌂ Roster, the first port of call once you are in there. It dropped a

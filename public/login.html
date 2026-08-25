@@ -4,7 +4,14 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0b0e14" />
-    <title>tmux ronin — log in</title>
+    <title>Log in · Ronin</title>
+    <!-- THE HOUSE MARK. Copied from ronin-lab, which owns it — public/brand/README.md says
+         where and why. SVG first so a retina tab and a bookmark bar stay sharp at any size;
+         the 32px PNG is the fallback for anything that will not take one. The 256 is what
+         iOS puts on a home screen, which is the arrival REMOTE_ACCESS is built around. -->
+    <link rel="icon" type="image/svg+xml" href="/brand/nin-mark.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/brand/nin-mark-32.png" />
+    <link rel="apple-touch-icon" href="/brand/nin-mark-256.png" />
     <!-- SELF-CONTAINED ON PURPOSE: this page is served ahead of the auth gate, so it
          loads nothing else — style.css and the app stay behind the door. The handful
          of colours below are the same tokens style.css defines; a palette change

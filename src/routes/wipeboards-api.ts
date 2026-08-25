@@ -41,9 +41,10 @@ import { count } from '../counts.js';
  * cursor. Membership stays derived — this resolves it fresh, it never stores it.
  */
 async function memberKeys(board: string): Promise<{ name: string; key: string }[]> {
-  const out: { name: string; key: string }[] = [];
-  for (const m of await boardMembers(board)) out.push({ name: m.name, key: await sessionKey(m.name) });
-  return out;
+  // The key rides listSessions' single exec — never one subprocess per member.
+  const team = await teamBehind(board);
+  if (!team) return [];
+  return (await listSessions()).filter((s) => s.tags.includes(team)).map((s) => ({ name: s.name, key: s.key }));
 }
 
 /**
@@ -53,10 +54,19 @@ async function memberKeys(board: string): Promise<{ name: string; key: string }[
  * small. Never throws into a request: a wipeboard that could not be swept is not an
  * error the caller can do anything about.
  */
+const SWEEP_EVERY_MS = 45_000;
+const lastSweep = new Map<string, number>();
+
 async function sweep(board: string): Promise<void> {
+  // THROTTLED. The browser polls every couple of seconds; housekeeping on every poll is
+  // how one tab made the whole server crawl. Once a minute per board keeps the lazy
+  // no-daemon design without doing the work 30x over.
+  const last = lastSweep.get(board) ?? 0;
+  if (Date.now() - last < SWEEP_EVERY_MS) return;
+  lastSweep.set(board, Date.now());
   try {
-    const { ttlMs, graceMs } = await readWipeboardSettings(board);
-    await reapPosts(board, { members: await memberKeys(board), ttlMs, graceMs });
+    const { ttlMs } = await readWipeboardSettings(board);
+    await reapPosts(board, { members: await memberKeys(board), ttlMs });
     const sessions = await listSessions();
     const rosters = await listTeamRosters();
     await reapBoard(board, {
@@ -156,11 +166,8 @@ async function boardMembers(board: string): Promise<{ name: string; control: Con
   // only: custom enrolment is cut (owner, 2026-08-24), so a teamless board has nobody.
   const team = await teamBehind(board);
   if (!team) return [];
-  const out: { name: string; control: Control }[] = [];
-  for (const s of sessions) {
-    if (s.tags.includes(team)) out.push({ name: s.name, control: await getControl(s.name) });
-  }
-  return out;
+  // The dial rides listSessions' single exec — never one subprocess per member.
+  return sessions.filter((s) => s.tags.includes(team)).map((s) => ({ name: s.name, control: s.control }));
 }
 
 export function registerWipeboards(app: express.Express): void {
@@ -198,15 +205,14 @@ export function registerWipeboards(app: express.Express): void {
     const { name } = req.params;
     if (!isValidBoardName(name)) return res.status(400).json({ error: 'Invalid board name.' });
     try {
-      const team = await isTeamBoard(name);
+      const team = await teamBehind(name);
       if (!(await boardExists(name))) {
         if (!team) return res.status(404).json({ error: 'No such wipeboard.' });
-        // A team wipeboard is real before its file is: it exists because the team does,
-        // and the tile can open it. The file materializes on first post.
-        return res.json({
-          name, brief: '', posts: [], newest: '', file: boardPath(name),
-          members: await boardMembers(name), kind: 'team', more: false,
-        });
+        // OPENING A TEAM'S BOARD CREATES IT (owner, 2026-08-24: "should always have a
+        // board — if there isn't one at team open it should fall back to create one").
+        // No phantom answers: the surface that opens gets a real, empty board, which is
+        // a normal state — the conversation that has not started yet.
+        await ensureBoard(name, teamStub(team));
       }
       // Retire what has been delivered before answering — inline, so there is no daemon.
       await sweep(name);
@@ -248,17 +254,17 @@ export function registerWipeboards(app: express.Express): void {
   app.post('/api/wipeboards/:name/post', async (req, res) => {
     const { name } = req.params;
     if (!isValidBoardName(name)) return res.status(400).json({ error: 'Invalid board name.' });
-    const team = await isTeamBoard(name);
+    const team = await teamBehind(name);
     if (!team && !(await boardExists(name))) return res.status(404).json({ error: 'No such wipeboard.' });
     const text = String(req.body?.text ?? '').trim();
     if (!text) return res.status(400).json({ error: 'Nothing to post.' });
     try {
       count('board.post');
-      // A team wipeboard materializes on first post. That moment — and only that
-      // moment — sends the current members their join notice: they were never
-      // enrolled, so nothing else has ever told them this wipeboard exists. This is
-      // the JOIN notice, not a post echo; owner posts stay unannounced as ever.
-      const born = team && (await ensureBoard(name, teamStub(name)));
+      // Usually the board already exists — opening the team page creates it (owner,
+      // 2026-08-24). A post reaching an uncreated one still materializes it, stubbed
+      // with the TEAM's name (the roster's id need not be the team's name), and that
+      // birth moment sends the members their one join notice.
+      const born = !!team && (await ensureBoard(name, teamStub(team)));
       const author = String(req.body?.author ?? '').trim() || (await ownerAuthor());
       const { to, silent } = audienceOf(req.body);
       const post = await appendPost(name, author, text, { to, silent });
@@ -312,10 +318,11 @@ export function registerWipeboards(app: express.Express): void {
     const { name } = req.params;
     if (!isValidBoardName(name)) return res.status(400).json({ error: 'Invalid board name.' });
     if (!(await boardExists(name))) {
-      // Writing a Brief is authoring, so it MAY materialize a team wipeboard — with
-      // the team stub, so the file says whose it is even before the brief lands.
-      if (!(await isTeamBoard(name))) return res.status(404).json({ error: 'No such wipeboard.' });
-      await ensureBoard(name, teamStub(name));
+      // Writing a Brief is authoring, so it MAY materialize a team's board — stubbed
+      // with the TEAM's name, so the board says whose it is even before the brief lands.
+      const team = await teamBehind(name);
+      if (!team) return res.status(404).json({ error: 'No such wipeboard.' });
+      await ensureBoard(name, teamStub(team));
     }
     try {
       await setBrief(name, String(req.body?.brief ?? '').slice(0, 8000));

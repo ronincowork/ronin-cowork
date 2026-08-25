@@ -55,9 +55,15 @@ const FAMILY_WRITERS: Record<string, (body: Record<string, unknown>) => Promise<
    * error; `writeOwner` republishes to the tmux option so bash tools agree at once. */
   owner: async (body) => ({ name: await writeOwner(String(body.name ?? '').trim()) }),
 
-  /** What you call this box, and where it is. Both free text; `where` by ruling. */
+  /** What you call this box, where it is, and whether Ronin watches it. Name and where
+   * are free text (`where` by ruling); `monitor` defaults ON and only an explicit false
+   * turns the reading off. */
   machine: async (body) => {
-    await writeMachineSection({ name: str(body.name), where: str(body.where) });
+    await writeMachineSection({
+      name: str(body.name),
+      where: str(body.where),
+      monitor: typeof body.monitor === 'boolean' ? body.monitor : undefined,
+    });
     return { ok: true };
   },
 

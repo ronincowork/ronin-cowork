@@ -10,10 +10,9 @@
  *
  * `read` IS THE WHOLE HONESTY TEST OF THIS PREVIEW. A resource with no route does not get
  * an empty list — an empty list is a claim that the shelf is empty, which is false. It
- * gets the `unavailable` state and says which route is missing. Four resources are in that
- * position today (SOPs, actions, tools, session readings) because their read routes are a
- * prerequisite the owner has not unblocked; drawing them as empty would be the surface
- * lying about the owner's own files.
+ * gets the `unavailable` state and says which route is missing. Tools is in that
+ * position today because its read route requires a table parser the server does not have;
+ * drawing it as empty would make the surface lie about the owner's own files.
  */
 export const SECTIONS = [
   { id: 'behavior', label: 'Behavior' },
@@ -32,10 +31,10 @@ export const RESOURCES = [
     capability: 'handoff', read: '/api/macros', file: 'MACROS.md', what: 'a workflow an agent runs when you type +name:',
     blurb: 'Saved instructions you would otherwise have typed to your agent.' },
   { id: 'sops', section: 'behavior', mark: '▤', label: 'SOPs',
-    capability: 'read-only', read: null, why: 'No read route exists for the SOP shelf yet (prerequisite P3).',
+    capability: 'read-only', read: '/api/sops', readLabel: 'Read procedure',
     blurb: 'How this house goes about a domain — fetched by a situation, never pushed.' },
   { id: 'actions', section: 'behavior', mark: '◇', label: 'Actions',
-    capability: 'handoff', read: null, why: 'No read route exists for ACTIONS.md yet (prerequisite P3).',
+    capability: 'handoff', read: '/api/actions', readLabel: 'Read action',
     file: 'ACTIONS.md', what: 'a primitive step macros are composed from',
     blurb: 'The cataloged procedures macros are made of.' },
   { id: 'tools', section: 'behavior', mark: '⚙', label: 'Tools',
@@ -44,7 +43,7 @@ export const RESOURCES = [
     blurb: 'The executables that implement actions. A markdown row cannot author one.' },
 
   { id: 'role-families', section: 'people', mark: '人', label: 'Role families',
-    capability: 'read-only', read: '/api/role-families',
+    capability: 'direct', read: '/api/role-families', dir: 'role_families',
     blurb: 'The shelves of the ＋ New board. Presentation only — a family never rides a launch.' },
   { id: 'session-roles', section: 'people', mark: '◫', label: 'Session roles',
     capability: 'handoff', read: '/api/session-roles', dir: 'session_roles',
@@ -60,7 +59,7 @@ export const RESOURCES = [
     capability: 'read-only', read: '/api/skins', file: 'SKINS.md', what: 'a look — a set of design tokens, and nothing else',
     blurb: 'A set of design tokens and nothing else. Choosing one is a setting, and stays on the gear.' },
   { id: 'readings', section: 'presentation', mark: '▧', label: 'Session readings',
-    capability: 'read-only', read: null, why: 'No read route exists for the session-boot shelf yet (prerequisite P3).',
+    capability: 'read-only', read: '/api/session-readings', readLabel: 'Read reading',
     blurb: 'What a new session reads before anything else. A reading you add reaches the next session born, never a running one.' },
 ];
 

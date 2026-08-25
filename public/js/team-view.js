@@ -2,11 +2,10 @@
 /**
  * THE TEAM DESTINATION — Eye 2's first deployable preview.
  *
- * What this is: the Team workbench as GEOMETRY AND SHELLS. The owner authorized exactly
- * this slice against the frozen Workspace Kit (18d9b35) and held back the rest, so the
- * boundaries below are deliberate and are not "not done yet":
+ * What this is: the Team workbench over the hardened Workspace Kit. Its boundaries are
+ * deliberate:
  *
- *   NO terminal host, NO socket, NO xterm — the terminal Tile is a placeholder Surface.
+ *   Full existing Tiles only — one warm Kit host per live member while this view is entered.
  *   NO Chat protocol — Chat is a reserved Channel service and stays inert (owner's ruling).
  *   NO mutations — Team Configuration READS the roster and offers no write.
  *   NO Sessions mode — Gates C and D remain later work.
@@ -20,6 +19,10 @@
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { membersOfTeam, refreshTeams, subscribe, teamByName } from './team-controller.js';
+import { createWarmTerminalPool } from './team-terminal-pool.js';
+import { createTeamWipeboard } from './team-wipeboard.js';
+import { buildDocs } from './docs.js';
+import { refreshHome } from './home.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -42,27 +45,82 @@ export function createTeamView() {
   let team = '';
   let loaded = ''; // the team whose roster reading is currently drawn
   let unsubscribe = null;
+  let entered = false;
 
-  /* ---------- the three surfaces ---------- */
-  const terminalTile = createSurface({ label: 'Focused session', className: 'tw-terminal', flush: true });
+  /* ---------- the surfaces: two seats, the roster, and one commons ---------- */
+  // TWO SEATS (owner, 2026-08-25: "a left-side terminal and a right-side terminal, and
+  // the middle would be the roster … on one or the other of the terminals, I could turn
+  // it over to the whiteboard or the docs"). Each workspace slot is a seat that shows a
+  // terminal, or is turned over to the one commons; the Kit's face switch does the
+  // turning, and a roster card lands in the seat last touched.
+  const makeSeat = (id, label) => {
+    const surface = createSurface({ label, className: 'tw-terminal', flush: true });
+    const placeholder = el('div', 'tw-placeholder');
+    placeholder.append(
+      el('p', 'tw-placeholder-head', 'Terminal Tile'),
+      el('p', null, 'Pick a Team session to show it here. Leaving this destination closes every Team transport.'),
+    );
+    surface.content.append(placeholder);
+    surface.el.addEventListener('pointerdown', () => { lastSeat = id; });
+    // BOTH WAYS (owner, 2026-08-25): a click lands in the seat last touched; a card
+    // dragged onto a seat lands in that seat.
+    surface.el.addEventListener('dragover', (event) => {
+      if (![...event.dataTransfer.types].includes('text/x-ronin-session')) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+      surface.el.dataset.dropReady = 'true';
+    });
+    surface.el.addEventListener('dragleave', () => { delete surface.el.dataset.dropReady; });
+    surface.el.addEventListener('drop', (event) => {
+      delete surface.el.dataset.dropReady;
+      const name = event.dataTransfer.getData('text/x-ronin-session');
+      if (!name) return;
+      event.preventDefault();
+      if (showIn(name, id)) renderCards(membersOfTeam(team));
+    });
+    return { id, surface, placeholder };
+  };
+  let lastSeat = 'workspace1';
+  const seats = { workspace1: makeSeat('workspace1', 'Workspace 1'), workspace2: makeSeat('workspace2', 'Workspace 2') };
   const kanban = createSurface({ label: 'Team sessions', className: 'tw-kanban' });
-  const wipeboard = el('p', 'tw-note', 'The Team wipeboard thread arrives with its own slice. The Brief is Team Configuration’s and never appears here.');
-  const docs = el('p', 'tw-note', 'The Team’s working documents arrive with their own slice.');
+  // The wipeboard slice is real (owner, 2026-08-25 — the thread, and nothing else; the
+  // Brief stays Team Configuration's). Its board id follows the roster: see setBoard below.
+  const wipeboard = createTeamWipeboard();
+  // DOCS IS THE COMMONS' ▧ DOCS PANE, NOT A TEAM COPY (owner, 2026-08-25: "the docs don't
+  // show like it does on the commons"). `buildDocs` is mdedit itself — the same list over
+  // the same `/api/home` letters, the same editor — narrowed to the roster's members. The
+  // wrapper carries `home-docs` because that is the class mdedit's list/editor switch is
+  // written against; `tw-docs` only gives it the surface's height.
+  const docsPane = el('div', 'home-docs tw-docs');
+  const docs = buildDocs(null, docsPane, () => entered && !docsPane.parentElement?.hidden,
+    (name) => membersOfTeam(team).some((m) => m.name === name));
+  const docsService = {
+    el: docsPane,
+    mount: () => {},
+    // The list reads `homeData`, which only the Commons poll fills; ask for a read on the
+    // way in so a page opened straight onto a Team is not looking at an empty letter box.
+    enter: () => { void refreshHome(); docs.enter(); },
+    leave: () => {},
+    destroy: () => {},
+  };
   const config = el('div', 'tw-config');
   const service = (node) => ({ el: node, mount: () => {}, enter: () => {}, leave: () => {}, destroy: () => {} });
   const channels = createChannelSurface({
     label: 'Team channels',
-    services: { wipeboard: service(wipeboard), docs: service(docs), 'team-configuration': service(config) },
+    // Land on CHAT, by the owner's word (2026-08-25: "I don't want to land on the
+    // whiteboard. I want to land on chat. That's fine that it's empty.") — explicit,
+    // not the accident of an unqualified default.
+    selected: 'chat',
+    services: { wipeboard, docs: docsService, 'team-configuration': service(config) },
   });
-  // Full mode preserves the existing Tile wholesale: its genuine header, controls,
-  // terminal, composer and lifecycle. Team owns only the surrounding Surface chrome.
-  const terminalHost = createTerminalTileHost({ mode: 'full' });
-  const placeholder = el('div', 'tw-placeholder');
-  placeholder.append(
-    el('p', 'tw-placeholder-head', 'Terminal Tile'),
-    el('p', null, 'Select a Team session to mount it here. Leaving this destination parks and closes its transport.'),
-  );
-  terminalTile.content.append(placeholder, terminalHost.el);
+  const terminalPool = createWarmTerminalPool({
+    createHost: createTerminalTileHost,
+    seats: { workspace1: seats.workspace1.surface.content, workspace2: seats.workspace2.surface.content },
+  });
+  const paintSeats = () => {
+    for (const seat of Object.values(seats)) seat.placeholder.hidden = !!terminalPool.activeIn(seat.id);
+  };
+  const rememberSeats = () => ctx?.patchViewState('team', { seats: Object.fromEntries(Object.keys(seats).map((id) => [id, terminalPool.activeIn(id)])) });
 
   const cards = el('div', 'tw-cards');
   kanban.content.append(cards);
@@ -73,14 +131,112 @@ export function createTeamView() {
   // Service DOM and lifecycle are mounted by ChannelSurface above; feature code supplies
   // content only and never owns a second tab/service engine.
 
-  /* ---------- geometry ---------- */
-  const workbench = createWorkbenchLayout(terminalTile.el, kanban.el, channels.el, {
-    managed: true,
-    onStateChange: (state) => ctx?.patchState(state),
+  /* ---------- geometry: the whole of it is this declaration ---------- */
+  // Three slots by name; the Kit's frame draws them and the Kit's layout map in the bar
+  // shows, hides and reorders them. Commons-on-the-left is a reordered array here, not a
+  // frame change. The action column (roster) goes down to 6% and turns compact under
+  // 11rem (176px) — the frame writes data-width on its slot and renderCards reads it.
+  const FACES = ['terminal', { name: 'commons', label: 'commons', exclusive: true }];
+  const DECLARATION = {
+    slots: [
+      { name: 'workspace1', label: 'Workspace 1', width: 40, faces: FACES, face: 'terminal' },
+      { name: 'roster', label: 'Team sessions', width: 20, min: 6, compact: 176 },
+      { name: 'workspace2', label: 'Workspace 2', width: 40, faces: FACES, face: 'commons' },
+    ],
+  };
+  const workbench = createWorkbenchLayout({
+    declaration: DECLARATION,
+    surfaces: {
+      workspace1: { terminal: seats.workspace1.surface.el, commons: channels.el },
+      roster: kanban.el,
+      workspace2: { terminal: seats.workspace2.surface.el, commons: channels.el },
+    },
+    onStateChange: (arrangement) => ctx?.patchViewState('team', { arrangement }),
   });
   root.append(workbench.host);
+  const faceOf = (id) => workbench.arrangement.state().faces?.[id] || '';
+  // Turning a seat is touching it: a seat turned to a terminal is where the next card
+  // lands. A seat turned to the commons hands its member to an empty terminal seat if
+  // there is one, else gives it up — warm and concealed, never parked for this.
+  let prevFaces = { ...(workbench.arrangement.state().faces || {}) };
+  workbench.arrangement.subscribe(() => {
+    const now = workbench.arrangement.state().faces || {};
+    for (const seat of Object.keys(seats)) {
+      if (now[seat] === prevFaces[seat]) continue;
+      if (now[seat] === 'terminal') { lastSeat = seat; continue; }
+      const member = terminalPool.activeIn(seat);
+      if (!member) continue;
+      const empty = Object.keys(seats).find((id) => id !== seat && now[id] === 'terminal' && !terminalPool.activeIn(id));
+      if (empty) terminalPool.show(member, false, empty);
+      else terminalPool.clearSeat(seat);
+      rememberSeats();
+    }
+    prevFaces = { ...now };
+    paintSeats();
+    if (entered) renderCards(membersOfTeam(team));
+  });
+  /** The seat a picked card lands in: the one last touched if it shows a terminal, else
+   *  the first that does; if none does, the last-touched one is turned to a terminal. */
+  const targetSeat = () => {
+    if (faceOf(lastSeat) === 'terminal') return lastSeat;
+    const open = Object.keys(seats).find((id) => faceOf(id) === 'terminal');
+    if (open) return open;
+    workbench.arrangement.setFace(lastSeat, 'terminal');
+    return lastSeat;
+  };
+  const showIn = (name, seat, focus = true) => {
+    if (!terminalPool.show(name, focus, seat)) return false;
+    lastSeat = seat;
+    paintSeats();
+    rememberSeats();
+    return true;
+  };
+
+  /** Fill each empty terminal seat: its remembered member first, else the lead. Runs on
+   *  enter AND when the roster arrives — on a cold reload the roster is not known yet
+   *  at enter, and the remembered member must not lose the seat to the lead. */
+  let remembered = {};
+  const seatTheTeam = (members) => {
+    const lead = members.find((m) => m.team_lead)?.name || '';
+    let changed = false;
+    for (const seat of Object.keys(seats)) {
+      if (faceOf(seat) !== 'terminal' || terminalPool.activeIn(seat)) continue;
+      const wanted = remembered[seat];
+      const pick = wanted && terminalPool.has(wanted) && !terminalPool.isShown(wanted) ? wanted : lead && !terminalPool.isShown(lead) ? lead : '';
+      if (pick && terminalPool.show(pick, false, seat)) changed = true;
+    }
+    if (changed) { paintSeats(); rememberSeats(); }
+    return changed;
+  };
+
+  function syncTerminalPool(members) {
+    const result = terminalPool.sync(members.map((member) => member.name));
+    if (result.removedActive) { paintSeats(); rememberSeats(); }
+    return result;
+  }
 
   /* ---------- the Kanban's shells ---------- */
+  // THE HOVER FLOURISH: a pointer resting on a card pre-warms that member's tile, so
+  // the click lands on a painted terminal. The dwell keeps a pointer skating across the
+  // whole roster from spawning a transport per card; the pool itself declines at the
+  // stream cap and quietly parks a prewarm nobody clicks.
+  // THE LEAD IS ALWAYS HOT — from page entry, focused or not, first visit or return.
+  // Pin every 人, then mount each one hidden if it is not already streaming. Runs on
+  // load, on every roster change, and on every enter (a re-entry skips load() when the
+  // team is unchanged, which is exactly how the lead once arrived cold — 2026-08-25).
+  const ensureLeadHot = (members) => {
+    const leads = members.filter((m) => m.team_lead).map((m) => m.name);
+    terminalPool.setPinned(leads);
+    for (const lead of leads) terminalPool.keepHot(lead);
+  };
+
+  let dwellTimer = 0;
+  const armPrewarm = (name) => {
+    window.clearTimeout(dwellTimer);
+    dwellTimer = window.setTimeout(() => terminalPool.prewarm(name), 150);
+  };
+  const disarmPrewarm = () => window.clearTimeout(dwellTimer);
+
   function renderCards(members) {
     cards.replaceChildren();
     for (const m of members) {
@@ -90,13 +246,19 @@ export function createTeamView() {
         summary: m.summary || '',
         metadata: readings,
         mark: m.mark || null,
-        selected: terminalHost.session === m.name,
+        selected: terminalPool.isShown(m.name),
         action: () => {
-          terminalHost.switchSession(m.name);
-          placeholder.hidden = true;
-          ctx?.patchState({ focusedSession: m.name });
+          if (!showIn(m.name, targetSeat())) return;
           renderCards(members);
         },
+      });
+      card.el.addEventListener('pointerenter', () => armPrewarm(m.name));
+      card.el.addEventListener('pointerleave', disarmPrewarm);
+      card.el.draggable = true;
+      card.el.addEventListener('dragstart', (event) => {
+        event.dataTransfer.setData('text/x-ronin-session', m.name);
+        event.dataTransfer.setData('text/plain', m.name);
+        event.dataTransfer.effectAllowed = 'move';
       });
       cards.append(card.el);
     }
@@ -131,6 +293,7 @@ export function createTeamView() {
   /* ---------- reading ---------- */
   async function load(name) {
     if (!name) {
+      syncTerminalPool([]);
       setSurfaceState(kanban.el, 'empty', 'No Team selected.');
       renderCards([]);
       renderConfig(null, []);
@@ -139,7 +302,7 @@ export function createTeamView() {
     }
     setSurfaceState(kanban.el, 'loading', 'Reading the Team…');
     const result = await refreshTeams();
-    if (team !== name) return; // the destination moved while this was in flight
+    if (!entered || team !== name) return; // the destination moved while this was in flight
     loaded = name;
     if (!result.live.ok) {
       setSurfaceState(kanban.el, 'failed', `Could not read this Team — ${result.live.message}`);
@@ -149,41 +312,76 @@ export function createTeamView() {
     }
     const members = membersOfTeam(name);
     const roster = teamByName(name);
+    syncTerminalPool(members);
     setSurfaceState(kanban.el, members.length ? null : 'empty', members.length ? '' : 'No live sessions on this Team.');
     renderCards(members);
     renderConfig(roster.durable ? roster : null, members);
+    // THE BOARD IS ASSUMED: the roster's wipeboard id, or the team's own name for a
+    // tag-only team. The server creates it on open, so the slice never meets a void.
+    wipeboard.setBoard((roster.durable && roster.wipeboard) || name);
+    // THE LEAD IS THE TEAM'S DEFAULT SESSION AND IS ALWAYS HOT (owner, 2026-08-25:
+    // "the team manager is always hot, regardless"). Pinned first, so nothing ever
+    // takes the lead's stream; then, with nothing chosen and nothing showing, the
+    // lead's Tile opens — unfocused, so the keyboard is not stolen. A leaderless team
+    // keeps the placeholder and pins nobody.
+    ensureLeadHot(members);
+    if (entered && team === name && seatTheTeam(members)) renderCards(members);
   }
 
   return {
     el: root,
+    // The ViewHost draws the Kit's layout map in the bar for this while the view is active.
+    arrangement: workbench.arrangement,
     // The team's own name, alone — createWorkspace's tabTitle() adds the ⛩ and the house.
     title: ({ param }) => param || 'Team',
     mount: (_host, context) => {
       ctx = context;
       channels.mount(context);
       unsubscribe = subscribe(() => {
-        if (!team) return;
+        if (!entered || !team) return;
         const members = membersOfTeam(team);
         const roster = teamByName(team);
+        syncTerminalPool(members);
+        ensureLeadHot(members);
         renderCards(members);
         renderConfig(roster.durable ? roster : null, members);
+        wipeboard.setBoard((roster.durable && roster.wipeboard) || team);
       });
     },
     enter: (context) => {
       ctx = context;
+      entered = true;
+      terminalPool.destroyAll();
       team = context.param || context.state?.team || '';
-      const typed = teamWorkspaceState(context.state);
-      workbench.restore(typed);
-      const eligible = membersOfTeam(team).some((member) => member.name === typed.focusedSession);
-      if (eligible) { terminalHost.switchSession(typed.focusedSession); placeholder.hidden = true; }
-      else { terminalHost.park(); placeholder.hidden = false; }
+      const typed = teamWorkspaceState(context.state, context.viewState('team'), DECLARATION);
+      workbench.restore(typed.arrangement);
+      const members = membersOfTeam(team);
+      syncTerminalPool(members);
+      ensureLeadHot(members);
+      // Each seat that shows a terminal gets its remembered member back (the old
+      // one-seat focusedSession lands in the first seat, once). A seat with nothing to
+      // restore gets the lead — the team's default session, on re-entry too.
+      remembered = { ...typed.seats };
+      if (!Object.keys(remembered).length && typed.focusedSession) remembered.workspace1 = typed.focusedSession;
+      seatTheTeam(members);
+      lastSeat = Object.keys(seats).find((seat) => faceOf(seat) === 'terminal') || 'workspace1';
+      paintSeats();
       channels.enter(context);
       if (team !== loaded) void load(team);
     },
     leave: () => {
-      terminalHost.park();
+      entered = false;
+      disarmPrewarm();
+      terminalPool.destroyAll();
+      paintSeats();
       channels.leave();
     },
-    destroy: () => { unsubscribe?.(); unsubscribe = null; terminalHost.destroy(); channels.destroy(); },
+    destroy: () => {
+      entered = false;
+      unsubscribe?.();
+      unsubscribe = null;
+      terminalPool.destroyAll();
+      channels.destroy();
+    },
   };
 }

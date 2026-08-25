@@ -16,26 +16,41 @@
   .wk-league-board [data-surface='cards'] { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: var(--space-6); align-content: start; }
   .wk-workbench-host { display: flex; height: 100%; min-height: 0; gap: var(--space-3); }
   .wk-workbench-host > .wk-workbench-layout { flex: 1 1 auto; min-width: 0; position: relative; }
-  .wk-workbench-rails { display: flex; flex: 0 0 auto; flex-direction: column; gap: var(--space-3); }
-  .wk-workbench-expand { width: 2.625rem; min-height: 6rem; flex: 1 1 auto; padding: var(--space-2); }
-  .wk-workbench-collapse { min-width: 1.625rem; min-height: 1.5rem; padding: var(--space-2) var(--space-3); }
-  .wk-workbench-layout > .wk-layout-surface > .wk-surface > .wk-surface-controls { display: flex; justify-content: flex-end; padding: var(--space-2) var(--space-3) 0; }
-  .wk-workbench-splitter { position: absolute; top: 0; bottom: 0; width: .625rem; cursor: col-resize; touch-action: none; z-index: 2; }
-  .wk-workbench-splitter[data-side='left'] { left: calc(var(--wk-left, 40%) - .3125rem); }
-  .wk-workbench-splitter[data-side='right'] { right: calc(var(--wk-right, 40%) - .3125rem); }
+  /* Splitters sit on the measured right edge of each visible column (inline `left`,
+     written by the frame) and are centred on it by the negative margin. */
+  .wk-workbench-splitter { position: absolute; top: 0; bottom: 0; width: .625rem; margin-left: -.3125rem; cursor: col-resize; touch-action: none; z-index: 2; }
+  .wk-workbench-splitter[hidden] { display: none; }
   .wk-workbench-splitter::after { content: ''; position: absolute; inset: 0 .25rem; border-radius: var(--radius-xs); background: var(--line-2); opacity: .45; }
   .wk-workbench-splitter:hover::after, .wk-workbench-splitter[data-dragging='true']::after, .wk-workbench-splitter:focus-visible::after { background: var(--aiiro); opacity: 1; }
-  .wk-workbench-layout { grid-template-columns: var(--wk-left, 40%) minmax(12rem, 1fr) var(--wk-right, 40%); }
-  .wk-workbench-layout[data-open='kanban-channels'], .wk-workbench-layout[data-open='terminalTile-kanban'] { grid-template-columns: 40% 60%; }
-  .wk-workbench-layout[data-open='terminalTile-channels'] { grid-template-columns: 50% 50%; }
-  .wk-workbench-layout[data-open='kanban-channels'] .wk-workbench-splitter[data-side='left'], .wk-workbench-layout[data-open='terminalTile-kanban'] .wk-workbench-splitter[data-side='right'], .wk-workbench-layout[data-open='kanban'] .wk-workbench-splitter { display: none; }
+  /* THE LAYOUT MAP — the arrangement drawn small in the app bar: one switch per slot,
+     its width the slot's share; off is hidden. The ViewHost mounts it for any view that
+     exposes an arrangement, so this is Kit geometry and no feature sheet touches it. */
+  .wk-view-map:empty { display: none; }
+  .wk-layout-map { display: flex; align-items: stretch; gap: var(--space-1); height: 1.5rem; width: 4.5rem; padding: var(--space-1); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); }
+  .wk-layout-map-slot { flex: 1 1 auto; min-width: .5rem; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); padding: 0; cursor: pointer; touch-action: none; }
+  .wk-layout-map-slot[aria-checked='true'] { background: var(--aiiro); border-color: var(--aiiro); }
+  .wk-layout-map-slot[data-dragging='true'] { opacity: .6; }
+  .wk-layout-map-slot:focus-visible { outline: var(--edge) solid var(--kaki); outline-offset: 1px; }
+  /* THE FACE SWITCH — a slot with more than one face (a workspace: terminal or the
+     commons) carries a small switch in its top-right corner, over the content, so it
+     costs no row. Quiet until the pointer is near. */
+  .wk-layout-surface { position: relative; }
+  .wk-face-switch { position: absolute; top: var(--space-9); right: var(--space-4); z-index: 3; display: flex; gap: var(--space-1); padding: var(--space-1); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); opacity: .55; }
+  .wk-layout-surface:hover > .wk-face-switch, .wk-face-switch:focus-within { opacity: 1; }
+  .wk-face { min-width: 1.75rem; min-height: 1.5rem; border: var(--edge) solid transparent; border-radius: var(--radius-xs); background: transparent; color: var(--muted); padding: 0 var(--space-2); font: inherit; font-size: var(--text-3); cursor: pointer; }
+  .wk-face[aria-pressed='true'] { background: var(--raise); border-color: var(--line-2); color: var(--fg-strong); }
+  .wk-face:focus-visible { outline: var(--edge) solid var(--kaki); }
+  /* COMPACT — a slot narrower than its declared threshold (the frame writes data-width
+     from measurement). Cards keep their heading and drop the rest: the owner's "when it's
+     very thin it just becomes the session name". */
+  .wk-layout-surface[data-width='compact'] .wk-card { padding: var(--space-3); }
+  .wk-layout-surface[data-width='compact'] .wk-card-summary, .wk-layout-surface[data-width='compact'] .wk-card-meta { display: none; }
+  .wk-layout-surface[data-width='compact'] .wk-card-heading { font-size: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .wk-new-team-layout { grid-template-columns: minmax(0, 3fr) minmax(16rem, 2fr); align-items: start; }
   .wk-new-team-layout .wk-layout-surface-transaction { grid-column: 1 / -1; }
   @media (max-width: 680px) {
     .wk-league-board [data-surface='cards'] { grid-template-columns: 1fr; }
     .wk-workbench-host { flex-direction: column; }
-    .wk-workbench-rails { flex-direction: row; }
-    .wk-workbench-expand { width: auto; min-height: 2.625rem; }
     .wk-workbench-splitter { display: none; }
     .wk-workbench-layout[data-responsive='workbench'] { display: flex; flex-direction: column; overflow: auto; scroll-snap-type: y proximity; }
     .wk-workbench-layout[data-responsive='workbench'] > .wk-layout-surface { flex: 1 0 80%; scroll-snap-align: start; }

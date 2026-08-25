@@ -20,11 +20,21 @@ import { homeData } from './home.js';
  * below). It narrows this list to the session the tile is already showing; it enumerates
  * nothing this pane does not, and the rule above is untouched — the caller has to hold a
  * path that an agent already listed. Read that file before re-litigating this one.
+ *
+ * THE TEAM PAGE IS A THIRD DOOR SINCE 2026-08-25 — its Docs channel service mounts this
+ * same pane (`js/team-view.js`) over the same `homeData`, narrowed by `only` to the
+ * roster's members. One list mechanism, one editor, one rule; a Team never grows its own.
+ *
+ * @param only  optional predicate on a session name — keep it in the list, or not. Absent,
+ *              every session that listed a doc is shown (the Commons).
  */
-export function buildDocs(tile, root, isShowing) {
+export function buildDocs(tile, root, isShowing, only = null) {
   let openPath = null; // null = the list is showing
   let dirty = false; // the owner has typed since the last load or save
-  let sig = ''; // only rebuild the list when it actually changed — see refresh()
+  // Only rebuild the list when it actually changed — see refresh(). null, not '', so the
+  // first read always draws: an empty roster signs as '' and would otherwise leave
+  // 'loading…' standing over a list that is legitimately empty.
+  let sig = null;
 
   /* ---------- the list ---------- */
   const list = document.createElement('div');
@@ -150,7 +160,7 @@ export function buildDocs(tile, root, isShowing) {
   const render = (rows) => {
     list.innerHTML = '';
     if (!rows.length) {
-      empty('No session has listed a doc yet. An agent lists one with: write_tegami --doc <path>');
+      empty(`No session${only ? ' on this Team' : ''} has listed a doc yet. An agent lists one with: write_tegami --doc <path>`);
       return;
     }
     for (const s of rows) {
@@ -190,8 +200,9 @@ export function buildDocs(tile, root, isShowing) {
    */
   const refresh = () => {
     if (openPath) return; // the editor is up; the list underneath can wait
-    const rows = (homeData || [])
-      .filter((s) => s.tegami && (s.tegami.docs || []).length)
+    if (!homeData) return; // nothing read yet: 'loading…' is the truth, not "no docs"
+    const rows = homeData
+      .filter((s) => (!only || only(s.name)) && s.tegami && (s.tegami.docs || []).length)
       .map((s) => ({ name: s.name, docs: s.tegami.docs }));
     const next = rows.map((s) => s.name + ':' + s.docs.join('|')).join('\n');
     if (next === sig) return;
@@ -207,7 +218,7 @@ export function buildDocs(tile, root, isShowing) {
   empty('loading…');
   return {
     enter() {
-      sig = ''; // returning to the tab always redraws, however stale the signature
+      sig = null; // returning to the tab always redraws, however stale the signature
       refresh();
     },
     // ONE-DIRECTIONAL, deliberately: this pane learns nothing about tiles or headers in

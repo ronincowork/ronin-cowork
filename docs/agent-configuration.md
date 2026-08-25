@@ -1,9 +1,9 @@
 # Agent Configuration — current implementation README
 
-Status: **parked after this documentation-only refresh**. The destination is committed and
-wired on `dev`, but it is a preview-quality implementation, not release-ready. Do not resume
-feature work until the owner or `@view_mgr` explicitly un-parks it after League, Team and New
-Team and supplies the shared Workspace Kit convergence ruling.
+Status: **shipped on `dev`, incomplete, and ready for a fresh successor**. The destination is
+committed and wired, but remains preview-quality rather than release-ready. League, Team and
+New Team have moved ahead; there is no remaining sequencing hold or unresolved Workspace Kit
+foundation ruling. The remaining work below should still be cut as separate bounded legs.
 
 This file is the current handoff. Historical planning, investigations and superseded resume
 notes were removed so a successor has one answer rather than a chronology.
@@ -72,8 +72,10 @@ Revert
   -> does not restore defaults and does not materialize inherited values
 ```
 
-The view does not fetch or persist a draft. New Team owns the draft lifetime. `enter()` reads
-the current shared selection; `open()` may also be called directly with a draft and seat id.
+The view does not fetch or independently persist a draft. New Team owns the draft lifetime
+and stores the canonical object in per-tab workspace state. `enter()` reads the current shared
+selection; `open()` may also be called directly with a draft and seat id. Apply calls
+`changedTeamDraft()`, whose New Team subscriber persists the edited canonical object.
 
 ## Seat contract
 
@@ -97,6 +99,28 @@ Preflight `reasons[]` are shown in the server's words. A reason whose `field` ma
 editor control appears beneath that field; an unmatched reason goes to the form notice.
 Batch concerns remain New Team's responsibility.
 
+## Server attribution contract
+
+`resolveLaunchProfile()` records the winning system/session-role source while it resolves
+the definition cascade. `resolveForm()` is the only layer allowed to complete that map with
+Team roster context, project-root fallback, explicit launch choices, command resolution and
+MCP deliverability. Its `Resolved.stated_by` is a map from resolved key to one or more
+`{ layer, source }` records. `source` is the exact path when a file stated the value and a
+named runtime input such as `launch request` or `proposed Team draft` otherwise.
+
+`POST /api/launch/preflight` publishes that map unchanged through its pure
+`previewResolved()` mapper. `agent-config-preview.js` formats only the returned records; it
+does not inspect draft fields or reproduce precedence. Additive readings may name multiple
+sources. A missing key is rendered as “source not reported”, never guessed.
+
+The same payload carries the complete server-resolved launch-profile readings (`model`,
+permissions, acknowledgement gate, opening template, posture, label and MCP default/lock),
+durable Team context (objective, repositories, branch, wipeboard and state), and
+`birth_reading`. `birth_reading` is the literal assisted-mode list passed into brief
+construction after the server combines the boot shelf with explicit seeds; manual and
+agentless births return an empty list. The browser renders that array unchanged and never
+walks shelves or reconstructs reading precedence.
+
 ## Owned files
 
 Agent Configuration owns:
@@ -104,6 +128,7 @@ Agent Configuration owns:
 - `public/js/agent-config.js` — view lifecycle, Check/Apply/Revert and draft integration.
 - `public/js/agent-config-fields.js` — eleven controls, unset round-trip and field reasons.
 - `public/js/agent-config-preview.js` — composed brief and resolved-value display.
+- `public/css/agent-configuration.css` — governed feature hierarchy and meaning only.
 - `docs/agent-configuration.md` — this persistent implementation and resume contract.
 
 Committed foundation and integration seams consumed but **not owned** here:
@@ -118,11 +143,16 @@ Committed foundation and integration seams consumed but **not owned** here:
 - `public/index.html`
 - `public/style.css`
 
+Canonical server seams consumed by this view are `src/launch-profile.ts`, `src/spawn.ts`,
+`src/team-rosters.ts`, and `src/routes/launch-preflight.ts`. They are shared launch
+architecture, not browser-feature ownership; attribution changes there must preserve the
+one resolver used by both launch and preflight.
+
 The initial feature implementation is commit `9294446`. Shared destination wiring landed in
 `d36b440`. Later draft-controller integration is already present in the current tree; verify
 history and live code again when resuming rather than treating those hashes as tip.
 
-## Workspace Kit contract and known deviation
+## Workspace Kit contract
 
 The view reaches the Kit only through `WorkspaceKit`:
 
@@ -132,17 +162,16 @@ The view reaches the Kit only through `WorkspaceKit`:
 - `createForm`, `createField` and `createNotice` supply the editor structure and validation
   presentation.
 
-The Kit now also supplies `createAction` and `createActionBar`. **Agent Configuration does
-not consume them yet.** Its `.ac-actions` container and Check/Apply/Revert buttons are built
-with raw DOM elements, and the bar is appended beside the Kit form instead of using the
-Kit's action primitives / form action slot. This is the known action-bar deviation under
-the pending five-surface convergence ruling. Do not silently normalize it before that
-ruling; when authorized, move all three actions as one bounded convergence leg and preserve
-their behavior, titles and dirty-state semantics.
+Check, Apply and Revert consume Kit `createAction` and `createActionBar`. Their bar lives in
+the Kit form's `actions` slot, so keyboard order is the eleven seat controls followed by
+Check, Apply and Revert. `.ac-actions[data-dirty]` remains the feature-owned dirty-state seam;
+the Kit owns action construction, semantics and shared presentation.
 
-There is no Agent Configuration feature stylesheet. Its two-column ratio currently comes
-from shared Workspace Kit CSS. Visual quality and any shared geometry change remain parked
-pending the foundation ruling.
+`public/css/agent-configuration.css` is statically linked once from `public/index.html` and
+contains one `@layer app` block. It uses only `ac-*` hooks and shared tokens for field rhythm,
+dirty Apply emphasis, brief readability and resolved-row hierarchy. Workspace Kit still owns
+the two-Surface columns, responsive stacking, Surface/form/action primitives and every
+`wk-*` rule; the feature sheet reconstructs none of them.
 
 ## Lifecycle and state
 
@@ -158,23 +187,35 @@ pending the foundation ruling.
 - Revert repaints the last-applied snapshot without emitting a draft change.
 - `leave()` currently has no cleanup because this view owns no transport or subscription.
 
-The view keeps `draft`, `seatId` and `applied` in module-instance memory. A browser refresh
-loses this local editing context; durable per-view draft persistence is not implemented.
+The view keeps `draft`, `seatId` and `applied` in module-instance memory while it is open.
+The draft itself is durable per browser tab because New Team persists the shared canonical
+object after `changedTeamDraft()`. A refresh restores the draft through New Team; the
+selected Agent Configuration seat and this view's last-applied snapshot are not separately
+persisted.
 
 ## Verification contract
 
-Use only the command declared by `docs/test-protocols.md`:
+Follow `docs/test-protocols.md`. Ordinary implementation legs use direct dogfood and scoped
+diagnostic evidence and do not run BYOIN before commits or pushes. One designated integrator
+runs the appropriate BYOIN mode once on the exact `dev → master` release candidate. A SKIP
+in that verdict is unverified, not a pass.
 
-- `bin/ronin-byoin --gates` before landing ordinary repository work.
-- `bin/ronin-byoin --ui` for this destination because it changes rendered UI, browser flow,
-  layout and visual composition.
+Current evidence is deliberately narrow:
 
-Run the appropriate BYOIN mode once after a finished implementation leg. Do not assemble a
-hand-written sequence of checks. A SKIP is unverified, not a pass. The pre-push and PR tier
-does not substitute for the required rendered proof.
-
-No verification was run for this documentation-only refresh because the assignment
-explicitly prohibited tests. No current rendered verdict is claimed here.
+- `f84f908` added smoke coverage proving the Sessions 1/2/4 Tile layout, mapping and live
+  paint survive round trips through League and Team. This supports the coexistence contract,
+  but it does **not** enter Agent Configuration.
+- No current scoped browser journey proves the Agent Configuration editor/preview itself.
+- The action-convergence leg is guarded by `scripts/check-workspace-kit.mjs`, which requires
+  the Kit actions, action bar and live form action slot and refuses raw feature-local action
+  buttons. The visual-hierarchy leg extends that scoped contract over the feature hooks and
+  stylesheet, while `scripts/check-css.mjs` enforces static loading, app-layer, tokens and
+  namespace isolation. Focused launch tests cover explicit, Team roster, session-role and
+  system attribution, the exact assisted/manual birth-reading contract, expanded profile
+  and Team readings, and unchanged preflight publication. The static Kit check also requires
+  the browser and preflight mapper to consume/publish `birth_reading`. Exact scoped results
+  belong in the commit handoff. Release-candidate BYOIN remains the designated integrator's
+  responsibility.
 
 When feature work resumes, the acceptance proof must cover at least:
 
@@ -191,50 +232,43 @@ When feature work resumes, the acceptance proof must cover at least:
 
 1. The owner's current verdict is that the previews are visually awful and not
    release-ready.
-2. `stated_by` is absent. Resolved rows show values but not the layer and file that stated
-   each value. That attribution belongs to the existing server resolver and
-   `POST /api/launch/preflight` response contract; no Agent Configuration module owns it,
-   and the browser must not infer it.
-3. The action bar deviates from the current Kit action primitives as described above.
-4. There is no feature styling, and shared layout geometry has not received the pending
-   cross-surface ruling.
-5. Draft/editing context is not durable across refresh.
-6. The preview renders only the currently enumerated resolved rows, not the full ruled
-   read-only answer and birth reading list.
-7. There is no current, trustworthy `--ui` verdict against this destination.
+2. The selected seat and last-applied snapshot are not separately restored on refresh,
+   although the canonical New Team draft is persisted per tab.
+3. There is no current, trustworthy scoped browser verdict against this destination, so the
+   owner's earlier not-release-ready visual verdict has not been superseded by inspection.
 
 ## Exact resume checklist
 
 Do these in order; stop rather than guessing when a required ruling is missing.
 
-1. Confirm the owner has explicitly resumed Agent Configuration after League, Team and New
-   Team.
-2. Read this file completely, then read the latest `five-eyes` wipeboard Brief/posts and
-   the shared Workspace Kit convergence ruling.
+1. Read this file completely, then read `docs/workspace-kit.md`, `docs/new-team.md`, and the
+   latest `five-eyes` wipeboard Brief/posts. Persistent docs win over `wip/buildouts`.
+2. Confirm the owner has assigned a bounded Agent Configuration leg; do not infer release,
+   master, service or PR authority from the assignment.
 3. Confirm branch `dev`; inspect `git status`, `origin/dev..HEAD`, and history from
    `9294446..HEAD`. Preserve every unrelated worktree change.
 4. Re-read the live versions of all four owned files and the consumed Kit/draft/controller
    seams listed above. Treat this README as a map, not evidence that the tree is unchanged.
 5. State to `@view_mgr` the single bounded leg, touched paths and explicit exclusions before
    editing shared CSS or integration files.
-6. First eligible leg: apply the shared action-primitive ruling to Check/Apply/Revert only,
-   if that ruling names Agent Configuration. Preserve behavior and verify the leg before
-   starting visual work.
-7. Next eligible leg: implement only the ruled Agent Configuration geometry/feature styling.
-   Do not broaden a local visual task into a five-surface foundation rewrite.
-8. Keep `stated_by`, persistence and expanded resolved readings as separate legs requiring
-   their own contracts; never build a browser-side cascade as a shortcut.
+6. Next bounded product leg, only when assigned: restore the selected Agent Configuration
+   seat and this view's last-applied boundary after refresh. Persistence must extend the
+   canonical draft/selection contract rather than create a feature-local draft store.
+7. Keep Kit geometry in the Kit and feature meaning in `ac-*`; do not broaden a local leg
+   into a five-surface foundation rewrite.
+8. Never build a browser-side cascade or shelf walk as a persistence shortcut.
 9. After each completed implementation leg, update this README by deleting the finished
    checklist item and stale limitation. Do not accumulate another historical diary.
-10. When the final UI-affecting leg is complete, run the project-declared BYOIN mode only,
-    read the single verdict, and report every SKIP as unverified.
+10. Record scoped rendered evidence for the leg; the designated integrator owns the single
+    release-candidate BYOIN verdict and reports every SKIP as unverified.
 11. Stage only owned/explicitly authorized paths. Commit and push verified work to `dev`
     only. Never merge or push `master`; a PR is not authorization to merge.
-12. Once the whole destination meets its definition of done, delete this build-out file in
-    the final verified commit.
+12. Keep this persistent README current. Transient buildouts are not the handoff and must not
+    become the only place a decision survives.
 
-## Parked boundary
+## Successor boundary
 
-After this documentation refresh, Agent Configuration is parked again. Until explicitly
-resumed: no feature edits, tests, staging, commits, pushes, service changes, PR actions or
-master operations.
+The next concrete product leg is expanding the server-returned resolved readings and birth
+reading list. Selected-seat restoration remains an independent behavior leg. A safe scoped
+browser journey still owes visual acceptance for the styling and attribution already
+shipped.

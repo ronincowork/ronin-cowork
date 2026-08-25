@@ -15,6 +15,7 @@ import { request } from './request.js';
 import { addProvMark, isOwn } from './provenance.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { buildHandoff } from './customize-handoff.js';
+import { buildRoleFamilyEditor } from './customize-role-families.js';
 
 
 const el = (tag, cls, text) => {
@@ -33,7 +34,7 @@ const rows = (data) => (Array.isArray(data) ? data : null);
  * a provenance rollup — both absent when the read could not answer, which is the whole
  * point: a count of zero and a count we could not take are different facts.
  */
-export async function renderResource(resource, surface) {
+export async function renderResource(resource, surface, onRefresh = async () => {}) {
   const { createCard, createNotice } = WorkspaceKit.primitives;
   surface.content.replaceChildren();
   const head = el('div', 'cz-head');
@@ -67,14 +68,34 @@ export async function renderResource(resource, surface) {
     surface.content.append(createNotice({ message: 'Nothing here yet. That is an ordinary state, not a fault.' }).el);
   }
 
+  if (resource.id === 'role-families') {
+    const rolesResult = await request('/api/session-roles');
+    const roles = rolesResult.ok && Array.isArray(rolesResult.data) ? rolesResult.data : null;
+    if (!roles) {
+      surface.setState('failed', rolesResult.ok ? 'the session-role route did not answer with a list' : `could not read session roles — ${rolesResult.message}`);
+      return { count: list.length, mark: null };
+    }
+    surface.content.append(buildRoleFamilyEditor(list, roles, onRefresh));
+  }
+
   const grid = el('div', 'cz-grid');
   for (const entry of list) {
+    if (resource.id === 'role-families') continue;
     const card = createCard({
       heading: entry.label || entry.name,
       summary: entry.blurb || '',
       metadata: [entry.name].filter(Boolean),
     });
     addProvMark(card.heading, entry);
+    // Whole-document resources remain read-only, but genuinely readable. Native details
+    // keeps the list compact and exposes the resolved text without a second editor or a
+    // feature-local navigation foundation.
+    if (typeof entry.content === 'string') {
+      const details = el('details', 'cz-document');
+      details.append(el('summary', null, resource.readLabel || 'Read entry'));
+      details.append(el('pre', 'cz-document-text', entry.content));
+      card.el.append(details);
+    }
     grid.append(card.el);
   }
   surface.content.append(grid);

@@ -47,8 +47,13 @@ socket, the eight sockets themselves, and the bash shelf agents actually type at
 
 ## Installing it
 
-On a machine you control — your laptop, a home server, a VM you rent. Two doors,
-same Ronin; pick one:
+On a machine you control — your laptop, a home server, a VM you rent. **No machine
+yet?** [`docs/rent-a-machine.md`](docs/rent-a-machine.md) walks an agent through renting
+one: what capacity Ronin needs, and why you want it physically near you. **Want to check
+this before you run it?** [`docs/is-this-safe.md`](docs/is-this-safe.md) is written for
+the agent you ask to audit it — it names the files rather than asking for trust.
+
+Two doors, same Ronin; pick one:
 
 **Door 1 — the one command.** For a person with a terminal and nothing else: the
 release bundles its own Node, tmux, and node_modules, so this works on a box with

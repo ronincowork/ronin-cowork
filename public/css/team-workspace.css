@@ -8,6 +8,9 @@
 
   .tw-cards { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4); }
   .tw-cards [data-inert='true'] { cursor: default; }
+  .tw-cards > [draggable='true'] { cursor: grab; }
+  /* a seat with a card over it — the drop will land here */
+  .tw-terminal[data-drop-ready='true'] { outline: var(--edge-2) solid var(--kaki); outline-offset: calc(-1 * var(--edge-2)); }
 
   .tw-note { padding: var(--space-6) var(--space-7); color: var(--muted); font-size: var(--text-3); }
   .tw-config { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-6) var(--space-7); }
@@ -15,4 +18,19 @@
   .tw-config-row { display: flex; gap: var(--space-5); font-size: var(--text-3); }
   .tw-config-key { flex: 0 0 34%; color: var(--muted); }
   .tw-config-value { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+
+  /* -- the docs slice: mdedit's own pane (.home-docs, style.css), given the surface's height -- */
+  .tw-docs { display: flex; height: 100%; }
+
+  /* -- the wipeboard slice: the thread, and the owner's line under it -- */
+  .twb { display: flex; flex-direction: column; min-height: 0; height: 100%; }
+  .twb-thread { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-5) var(--space-6); }
+  .twb-post { display: flex; flex-direction: column; gap: var(--space-2); font-size: var(--text-3); }
+  .twb-post.owner .twb-head { color: var(--fg-strong); }
+  .twb-post.system { color: var(--muted); }
+  .twb-head { color: var(--muted); }
+  .twb-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .twb-cleared { color: var(--muted); font-size: var(--text-2); }
+  .twb-compose { display: flex; gap: var(--space-3); padding: var(--space-4) var(--space-6); border-top: var(--edge) solid var(--line-2); }
+  .twb-compose textarea { flex: 1 1 auto; resize: vertical; }
 }
