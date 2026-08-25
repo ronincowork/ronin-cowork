@@ -63,12 +63,30 @@ export function createTeamWipeboard() {
     return d;
   };
 
-  /** Scroll only when the reader is already at the bottom — never yank a hand that has
-   *  scrolled up to read. `force` is for the reader's own post. */
+  /**
+   * PINNED TO THE BOTTOM IS AN INTENT, not a moment. The reader is pinned until they
+   * scroll up; while pinned, the view holds the freshest post — through new posts,
+   * resizes, AND the tab becoming visible. That last one is the bug this shape fixes:
+   * the board loads while hidden behind the Chat tab (the landing tab, owner's ruling),
+   * and scrolling a hidden element does nothing — so the owner opened the tab pegged to
+   * the top (2026-08-25, twice). A ResizeObserver re-applies the intent the moment the
+   * panel gains real dimensions. Scrolling up releases the pin; returning near the
+   * bottom re-engages it; the reader's own post always re-pins.
+   */
+  let wantBottom = true;
   const pinnedToBottom = () => thread.scrollHeight - thread.scrollTop - thread.clientHeight < 48;
+  const snap = () => { thread.scrollTop = thread.scrollHeight; };
   const maybeScroll = (force) => {
-    if (force || pinnedToBottom()) thread.scrollTop = thread.scrollHeight;
+    if (force) wantBottom = true;
+    if (wantBottom) snap();
   };
+  thread.addEventListener('scroll', () => {
+    if (thread.clientHeight > 0) wantBottom = pinnedToBottom();
+  });
+  const ro = new ResizeObserver(() => {
+    if (wantBottom && thread.clientHeight > 0) snap();
+  });
+  ro.observe(thread);
 
   const renderThread = (posts, cleared) => {
     thread.replaceChildren();
@@ -144,6 +162,7 @@ export function createTeamWipeboard() {
     },
     enter: () => {
       entered = true;
+      wantBottom = true; // every entry starts at the freshest post
       if (board) void refresh();
       timer = window.setInterval(() => void refresh(), 2000);
     },
@@ -156,6 +175,7 @@ export function createTeamWipeboard() {
       entered = false;
       window.clearInterval(timer);
       timer = 0;
+      ro.disconnect();
     },
   };
 }
