@@ -62,7 +62,7 @@ export function buildMachinePanel() {
     const total = m.mem.total_mb || 1;
     const share = Math.max(0, m.mem.available_mb) / total;
     line(body, 'memory free', `${gb(m.mem.available_mb)} of ${gb(total)}`,
-      'Free means MemAvailable — what a new allocation could actually get. A healthy box always shows little "free" memory, because the kernel spends the rest on cache it hands back on demand.');
+      'MemAvailable: what a new allocation could get. A healthy box shows little free memory — the kernel spends it on cache, and hands it back on demand.');
     line(body, 'headroom', `${Math.round(share * 100)}%`);
     line(body, 'swap', m.swap.total_mb === 0
       ? 'none — a memory spike is a kill, not slowness'
