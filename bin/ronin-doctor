@@ -448,19 +448,19 @@ fi
 # browser lives is a mistake this tree has already made once.
 # shellcheck source=../libexec/ronin-banner.sh
 [ -r "$ROOT/libexec/ronin-banner.sh" ] && . "$ROOT/libexec/ronin-banner.sh"
+# shellcheck source=../libexec/ronin-machine.sh
+[ -r "$ROOT/libexec/ronin-machine.sh" ] && . "$ROOT/libexec/ronin-machine.sh"
 
 sect "the install steps"
 
 # LINGER is a genuine fault when it is off. Without it the user manager stops at logout
 # and every --user service goes with it, so the coworkspace is simply absent whenever
 # nobody is signed in — which reads as "Ronin is broken", not "a step was skipped".
-if ! command -v loginctl >/dev/null 2>&1; then
-  note "no loginctl here — linger not assessed"
-elif [ "$(loginctl show-user "$USER" --property=Linger --value 2>/dev/null || echo no)" = "yes" ]; then
-  ok "linger is on — the coworkspace survives logout"
-else
-  find_ "linger is OFF — every --user service stops at logout, so Ronin is absent whenever nobody is signed in. remedy: sudo loginctl enable-linger \$USER"
-fi
+machine_linger_on; case $? in
+  0) ok "linger is on — the coworkspace survives logout" ;;
+  2) note "no loginctl here — linger not assessed" ;;
+  *) find_ "linger is OFF — every --user service stops at logout, so Ronin is absent whenever nobody is signed in. remedy: sudo $(machine_linger_action)" ;;
+esac
 
 # SERVE is a NOTE, deliberately, and not a finding. Reaching the install over the tailnet
 # at http://ip:port is a legitimate arrangement — setup.sh's own banner falls back to
@@ -499,27 +499,23 @@ sect "the box"
 # INFORMS, DOES NOT PRESCRIBE. The remedy is read-only and it is the box owner's own
 # account, but it is still an expansion — after it, anything running as this user can read
 # system logs. The line states that so the owner chooses knowing it.
-if [ ! -e /proc/sys/kernel/dmesg_restrict ] && ! command -v journalctl >/dev/null 2>&1; then
-  note "no kernel log interface here — OOM history not assessed on this system"
-elif journalctl -k -n 1 --no-pager >/dev/null 2>&1 && [ -n "$(journalctl -k -n 1 --no-pager 2>/dev/null | grep -v 'No entries')" ]; then
-  ok "the kernel log is readable — an agent can say what was killed and when"
-elif [ "$(cat /proc/sys/kernel/dmesg_restrict 2>/dev/null || echo 0)" = "0" ] && dmesg >/dev/null 2>&1; then
-  ok "the kernel log is readable — an agent can say what was killed and when"
-else
-  find_ "the kernel log is NOT readable, so nothing here can say what was killed or when — only that something vanished. remedy: sudo usermod -aG adm $USER, then log out and back in. It is read-only and it is your own account, but afterwards anything running as this user can read system logs. ronin_sops/remote_machine_health.md § what killed it"
-fi
+machine_kernel_log_readable; case $? in
+  0) ok "the kernel log is readable — an agent can say what was killed and when" ;;
+  2) note "no kernel log interface here — OOM history not assessed on this system" ;;
+  *) find_ "the kernel log is NOT readable, so nothing here can say what was killed or when — only that something vanished. remedy: sudo $(machine_kernel_log_action), then log out and back in. It is read-only and it is your own account, but afterwards anything running as this user can read system logs. ronin_sops/remote_machine_health.md § what killed it" ;;
+esac
 
-if [ ! -r /proc/swaps ]; then
-  note "no /proc/swaps on this system — swap not assessed here (Linux-only reading)"
-elif [ "$(awk 'NR>1' /proc/swaps | wc -l)" -gt 0 ]; then
-  ok "swap is configured ($(awk 'NR>1 {t+=$3} END {printf "%.1f GB", t/1048576}' /proc/swaps))"
-elif { command -v systemd-detect-virt >/dev/null 2>&1 && systemd-detect-virt --container --quiet; } ||
-     [ -f /.dockerenv ]; then
-  note "no swap, but this is a container — swap is the host's business, not this install's"
-else
-  ram_gb="$(awk '/^MemTotal:/ {printf "%.0f", $2/1048576; exit}' /proc/meminfo 2>/dev/null)"
-  find_ "NO SWAP on this box (${ram_gb:-?} GB RAM) — when memory fills the kernel kills a process rather than slowing down, and it chooses which. remedy: ronin_sops/remote_machine_health.md § swap"
-fi
+machine_has_swap; case $? in
+  0) ok "swap is configured ($(machine_swap_total))" ;;
+  2) note "no /proc/swaps on this system — swap not assessed here (Linux-only reading)" ;;
+  *)
+    if machine_is_container; then
+      note "no swap, but this is a container — swap is the host's business, not this install's"
+    else
+      ram_gb="$(awk '/^MemTotal:/ {printf "%.0f", $2/1048576; exit}' /proc/meminfo 2>/dev/null)"
+      find_ "NO SWAP on this box (${ram_gb:-?} GB RAM) — when memory fills the kernel kills a process rather than slowing down, and it chooses which. remedy: ronin_sops/remote_machine_health.md § swap"
+    fi ;;
+esac
 
 # ---- verdict -----------------------------------------------------------------------
 echo ""
