@@ -497,7 +497,7 @@ elif { command -v systemd-detect-virt >/dev/null 2>&1 && systemd-detect-virt --c
   note "no swap, but this is a container — swap is the host's business, not this install's"
 else
   ram_gb="$(awk '/^MemTotal:/ {printf "%.0f", $2/1048576; exit}' /proc/meminfo 2>/dev/null)"
-  find_ "NO SWAP on this box (${ram_gb:-?} GB RAM) — when memory fills the kernel kills a process rather than slowing down, and it chooses which. remedy: ronin_sops/machine_health.md § swap"
+  find_ "NO SWAP on this box (${ram_gb:-?} GB RAM) — when memory fills the kernel kills a process rather than slowing down, and it chooses which. remedy: ronin_sops/remote_machine_health.md § swap"
 fi
 
 # ---- verdict -----------------------------------------------------------------------
