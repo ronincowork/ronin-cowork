@@ -37,6 +37,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { config, authEnabled, tailnetIp } from './config.js';
 import { SETTEI_SCHEMA } from './settei-registry.js';
+import { secureUrl } from './passkey.js';
 import { listServices } from './sockets.js';
 import { CONTRACT_V } from './sockets-contract.js';
 import { roninIdentity } from './routes/version.js';
@@ -199,6 +200,16 @@ function routes(): Record<string, unknown> {
     url: `http://${bind}:${config.port}`,
     bind,
     port: config.port,
+    // WHAT IS STANDING IN FRONT OF US (owner, 2026-08-23). The three lines above
+    // describe the door THIS PROCESS opened, and on a box running `tailscale serve`
+    // that is not the address a person should type: TLS terminates in tailscaled and
+    // reaches us as plain http on the bind, so the record was naming the inside of the
+    // proxy and calling it the way in. src/passkey.ts already measures the outside for
+    // the login page — the same question, answered from `tailscale serve status` rather
+    // than a hardcoded port — so read it rather than derive a second answer that can
+    // disagree. Its one shell-out is cached for the life of the process, and it is a
+    // local daemon, not the outbound call this file's header forbids.
+    secure: secureUrl() ?? null,
     reachable: { loopback, tailnet, wider: !loopback && !tailnet },
     auth: { basic: authEnabled },
   };
@@ -503,6 +514,7 @@ async function computeStatus(
 
   const r = observed.routes as {
     url: string;
+    secure: string | null;
     reachable: { loopback: boolean; tailnet: boolean; wider: boolean };
     auth: { basic: boolean };
   };
@@ -528,6 +540,9 @@ async function computeStatus(
       at: r.url,
       state: 'answering',
       exposure,
+      // THE HTTPS ADDRESS, when something terminates a certificate for us — null on a
+      // box with no `tailscale serve`, and the row falls back to `at` unchanged.
+      secure: r.secure,
       // THE ALIAS (owner, 2026-08-18): on a tailnet bind the hostname usually IS the
       // MagicDNS name, so http://<host>:<port> reaches the same door with a name a
       // person can remember. Derived from facts already measured — no lookup, no call.

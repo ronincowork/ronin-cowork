@@ -174,8 +174,8 @@ async function check(): Promise<number> {
   }
   // Retire what has now been delivered. Inline, so there is no daemon and no timer.
   for (const { board } of found) {
-    const { ttlMs, graceMs } = await readWipeboardSettings(board);
-    await reapPosts(board, { members: await membersOf(board), ttlMs, graceMs }).catch(() => {});
+    const { ttlMs } = await readWipeboardSettings(board);
+    await reapPosts(board, { members: await membersOf(board), ttlMs }).catch(() => {});
   }
   return 0;
 }

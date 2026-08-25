@@ -63,8 +63,9 @@ scrollTop round-trips) settled in minutes what three theory-driven "fixes" did n
 resolved from the roster (`roster.wipeboard || team name`), server creates the board on
 open. First load full, every poll a `?since=` delta (usually empty), one request in
 flight, append-only rendering, scroll never yanked unless pinned at bottom. An **empty
-board is normal** — posts clear once everyone they were for has read them; that is the
-wipeboard transport working, not a bug.
+board is normal** — posts clear after 48 hours (TTL only, owner 2026-08-25: read-reaping
+dropped so the board holds the same history for everyone and scroll-back works); that is
+the wipeboard transport working, not a bug.
 
 **Layout truths bought with pain:**
 - `.wk-layout-surface` (the wrapper between a Kit layout grid and a surface) now makes

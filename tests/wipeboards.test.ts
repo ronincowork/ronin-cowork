@@ -200,93 +200,61 @@ test('an unparseable audience means EVERYONE, never nobody', async () => {
   assert.equal(back.id, p.id, 'and it keeps its identity and its place in the order');
 });
 
-test('required readers: addressees if named, everyone otherwise, nobody when silent', () => {
-  const live = ['a', 'b', 'c'];
-  const post = (over: Partial<import('../src/wipeboards.js').Post>) =>
-    ({ id: '0', author: '@a', time: '', at: '', to: [], silent: false, text: '', ...over }) as import('../src/wipeboards.js').Post;
-  assert.deepEqual(W.requiredReaders(post({}), live), ['b', 'c'], 'open: everyone but the author');
-  assert.deepEqual(W.requiredReaders(post({ to: ['@b'] }), live), ['b'], 'addressed: just them');
-  assert.equal(W.requiredReaders(post({ silent: true }), live), null, 'silent: nothing can retire it by reading');
-  assert.deepEqual(W.requiredReaders(post({ to: ['@gone'] }), live), [], 'addressees that left');
-});
 
 /* --------------------------------------------------------------------------- reaping */
 
 const HOUR = 60 * 60 * 1000;
 
-test('read-reap: every required reader past it, and the grace elapsed', async () => {
+/**
+ * ONE RULE: the TTL (owner, 2026-08-25). Read-reaping was dropped — a board everyone
+ * else had read looked empty to the one person who had not, and scroll-back died with
+ * it. Every post now lives its 48 hours whoever read it; cursors serve delivery only.
+ */
+test('a post outlives being read by everyone — only the TTL retires it', async () => {
   await W.ensureBoard('reap1');
-  const p = await W.appendPost('reap1', '@a', 'delivered');
+  const p = await W.appendPost('reap1', '@a', 'read by all, still on the board');
   const crew = members('a', 'b', 'c');
   await W.writeCursor('reap1', key('b'), p.id);
   await W.writeCursor('reap1', key('c'), p.id);
-  // inside the grace: kept, so a member mid-turn still finds it
-  assert.deepEqual(await W.reapPosts('reap1', { members: crew, now: Date.now() + 5 * 60_000 }), []);
-  // past the grace: gone
-  assert.deepEqual(await W.reapPosts('reap1', { members: crew, now: Date.now() + 2 * HOUR }), [p.id]);
-  assert.equal((await W.readPosts('reap1')).length, 0);
+  assert.deepEqual(await W.reapPosts('reap1', { members: crew, now: Date.now() + 47 * HOUR }), [],
+    'fully read and hours old — kept, so latecomers can scroll back');
+  assert.deepEqual(await W.reapPosts('reap1', { members: crew, now: Date.now() + 49 * HOUR }), [p.id],
+    'the TTL, and nothing else, retires it');
 });
 
-test('one required reader behind holds it — until the TTL, which is the backstop', async () => {
+test('addressed and silent posts ride the same single clock', async () => {
   await W.ensureBoard('reap2');
-  const p = await W.appendPost('reap2', '@a', 'unread by c');
-  const crew = members('a', 'b', 'c');
-  await W.writeCursor('reap2', key('b'), p.id);
+  const aimed = await W.appendPost('reap2', '@a', 'for b', { to: ['@b'] });
+  const parked = await W.appendPost('reap2', '@a', 'parked', { silent: true });
+  const crew = members('a', 'b');
+  await W.writeCursor('reap2', key('b'), parked.id); // b has read everything
   assert.deepEqual(await W.reapPosts('reap2', { members: crew, now: Date.now() + 2 * HOUR }), []);
-  assert.deepEqual(await W.reapPosts('reap2', { members: crew, now: Date.now() + 49 * HOUR }), [p.id]);
+  const gone = await W.reapPosts('reap2', { members: crew, now: Date.now() + 49 * HOUR });
+  assert.deepEqual(gone.sort(), [aimed.id, parked.id].sort());
 });
 
-test('a live member that never checks holds a post only until the TTL', async () => {
+test('a dead session holds nothing and its cursor is swept', async () => {
   await W.ensureBoard('reap3');
-  const p = await W.appendPost('reap3', '@a', 'nobody checked');
-  const crew = members('a', 'idle');
-  assert.deepEqual(await W.reapPosts('reap3', { members: crew, now: Date.now() + 10 * HOUR }), []);
-  assert.deepEqual(await W.reapPosts('reap3', { members: crew, now: Date.now() + 49 * HOUR }), [p.id]);
+  const p = await W.appendPost('reap3', '@a', 'one');
+  await W.writeCursor('reap3', key('ghost'), p.id);
+  await W.writeCursor('reap3', key('b'), p.id);
+  await W.reapPosts('reap3', { members: members('a', 'b'), now: Date.now() });
+  assert.deepEqual(Object.keys(await W.allCursors('reap3')), [key('b')], 'the ghost was swept');
 });
 
-test('an addressed post reaps on its addressees, with a non-addressee still behind it', async () => {
+test('ttl 0 means never reap on age — the owner\'s off switch', async () => {
   await W.ensureBoard('reap4');
-  const p = await W.appendPost('reap4', '@a', 'for b only', { to: ['@b'] });
-  const crew = members('a', 'b', 'c'); // c never reads it, and must not hold it
-  await W.writeCursor('reap4', key('b'), p.id);
-  assert.deepEqual(await W.reapPosts('reap4', { members: crew, now: Date.now() + 2 * HOUR }), [p.id]);
+  await W.appendPost('reap4', '@a', 'kept forever by the override');
+  assert.deepEqual(await W.reapPosts('reap4', { members: members('a'), ttlMs: 0, now: Date.now() + 500 * HOUR }), []);
 });
 
-test('a silent post is held by the TTL alone — no read can retire it', async () => {
+test('the Brief is never reaped', async () => {
   await W.ensureBoard('reap5');
-  const p = await W.appendPost('reap5', '@a', 'parked', { silent: true });
-  const crew = members('a', 'b');
-  await W.writeCursor('reap5', key('b'), p.id);
-  assert.deepEqual(await W.reapPosts('reap5', { members: crew, now: Date.now() + 5 * HOUR }), []);
-  assert.deepEqual(await W.reapPosts('reap5', { members: crew, now: Date.now() + 49 * HOUR }), [p.id]);
-});
-
-test('a dead session holds nothing back, and its cursor is swept', async () => {
-  await W.ensureBoard('reap6');
-  const p = await W.appendPost('reap6', '@a', 'one');
-  await W.writeCursor('reap6', key('ghost'), '0000000000000-0000'); // behind the post
-  await W.writeCursor('reap6', key('b'), p.id);
-  const reaped = await W.reapPosts('reap6', { members: members('a', 'b'), now: Date.now() + 2 * HOUR });
-  assert.deepEqual(reaped, [p.id], 'the ghost did not hold it');
-  assert.deepEqual(Object.keys(await W.allCursors('reap6')), [key('b')], 'and was swept');
-});
-
-test('ttl 0 means never reap on age, while read-reap still runs', async () => {
-  await W.ensureBoard('reap7');
-  const p = await W.appendPost('reap7', '@a', 'kept by the override');
-  const crew = members('a', 'b');
-  assert.deepEqual(await W.reapPosts('reap7', { members: crew, ttlMs: 0, now: Date.now() + 500 * HOUR }), []);
-  await W.writeCursor('reap7', key('b'), p.id);
-  assert.deepEqual(await W.reapPosts('reap7', { members: crew, ttlMs: 0, now: Date.now() + 2 * HOUR }), [p.id]);
-});
-
-test('the Brief is never reaped by the post rule', async () => {
-  await W.ensureBoard('reap8');
-  await W.setBrief('reap8', 'what this is for');
-  const p = await W.appendPost('reap8', '@a', 'x');
-  await W.writeCursor('reap8', key('b'), p.id);
-  await W.reapPosts('reap8', { members: members('a', 'b'), now: Date.now() + 2 * HOUR });
-  assert.equal((await W.readBoard('reap8')).brief, 'what this is for');
+  await W.setBrief('reap5', 'what this is for');
+  await W.appendPost('reap5', '@a', 'x');
+  await W.reapPosts('reap5', { members: members('a'), now: Date.now() + 49 * HOUR });
+  assert.equal((await W.readBoard('reap5')).brief, 'what this is for');
+  assert.equal((await W.readPosts('reap5')).length, 0, 'the post aged out, the Brief stayed');
 });
 
 /* ------------------------------------------------------------------------- lifecycle */

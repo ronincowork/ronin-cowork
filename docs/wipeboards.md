@@ -139,20 +139,16 @@ post, and a header whose audience will not parse means **everyone**, never nobod
 
 ## Reaping
 
-Two rules, whichever fires first, and both are the machine's:
+**One rule: the TTL** (owner, 2026-08-25). A post lives its 48 hours — whoever has read
+it — then the machine retires it. Read-reaping was dropped the day the owner met a board
+everyone *else* had read: it looked empty to the one person who had not, which reads as
+broken, and it killed scrolling back over what the team had been saying. The board now
+holds the same 48 hours of history for everyone; cursors serve delivery only — each
+session's own unread — and a dead session's cursor is swept.
 
-- **Read-reap** — every **required reader** has read it and a grace period has passed. A
-  post's required readers are its addressees if it names any, otherwise every live member.
-  A `--to none` post has none, so only the TTL retires it.
-- **TTL** — it is older than the limit, whoever read it. The backstop that stops one live
-  but idle session holding a wipeboard forever.
-
-Reaping runs **inline** on every check and every post, so there is no daemon and no timer.
-A dead session's cursor holds nothing back and is swept. The owner never gates reaping.
-
-Both numbers are SETTEI, in `ronin.json` under `wipeboard` — `ttl_hours` (default 48) and
-`grace_minutes` (default 60), each overridable for a single wipeboard by name.
-`ttl_hours: 0` means never reap on age; read-reaping still runs.
+Reaping runs **inline** on every check and every post, so there is no daemon and no
+timer. The number is SETTEI, in `ronin.json` under `wipeboard` — `ttl_hours` (default
+48), overridable for a single wipeboard by name. `ttl_hours: 0` means never reap.
 
 **No human action deletes a post.** No button, no agent, no membership change. The reaper
 is the only deleter in the house, and authors remain append-only: nobody ever rewrites or

@@ -65,8 +65,8 @@ async function sweep(board: string): Promise<void> {
   if (Date.now() - last < SWEEP_EVERY_MS) return;
   lastSweep.set(board, Date.now());
   try {
-    const { ttlMs, graceMs } = await readWipeboardSettings(board);
-    await reapPosts(board, { members: await memberKeys(board), ttlMs, graceMs });
+    const { ttlMs } = await readWipeboardSettings(board);
+    await reapPosts(board, { members: await memberKeys(board), ttlMs });
     const sessions = await listSessions();
     const rosters = await listTeamRosters();
     await reapBoard(board, {

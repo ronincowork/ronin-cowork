@@ -8,9 +8,10 @@
  * the board on open (owner, 2026-08-24), so this slice never meets a missing one: an
  * empty thread is the conversation that has not started yet, said in one quiet line.
  *
- * A wipeboard is a transport, not a record: posts clear once the readers they were for
- * have read them, or when they age out. The thread view says so instead of letting a
- * shortening conversation read as data loss.
+ * A wipeboard is a transport, not a record: every post lives its 48 hours — whoever
+ * has read it — then clears (owner, 2026-08-25: TTL only, so the board never looks
+ * empty to the one person who has not read it yet, and scroll-back works). The thread
+ * view says so instead of letting a shortening conversation read as data loss.
  *
  * The owner's compose row posts loud — every member is interrupted ("all agents should
  * see that", owner 2026-08-23). The agents' quiet default lives in the CLI, not here.
@@ -73,7 +74,7 @@ export function createTeamWipeboard() {
     thread.replaceChildren();
     if (cleared) thread.append(el('p', 'twb-cleared', '… earlier posts have cleared'));
     for (const p of posts) thread.append(postNode(p));
-    if (!posts.length) quiet('Nothing on the board right now — posts clear once everyone they were for has read them.');
+    if (!posts.length) quiet('Nothing on the board right now — posts clear after 48 hours.');
     else quiet('');
   };
 

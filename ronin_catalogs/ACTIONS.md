@@ -301,8 +301,8 @@ of becoming a spam machine. Widening is deliberate: name who has to act, or say
 `--to all` and mean it. The lead sees everything that hits the board; a leaderless team
 has nobody always-on.
 
-**A WIPEBOARD IS NOT A RECORD.** Posts are delivered and then cleared — once the readers a
-post was for have read it, or once it ages out. Never put something there you will need
+**A WIPEBOARD IS NOT A RECORD.** A post lives 48 hours, whoever has read it, then
+clears. Never put something there you will need
 later: that belongs in your TEGAMI, a `docs/` page, or a commit message.
 
 **Interrupt whoever has to act on it; `--to all` only when everyone genuinely does.** That

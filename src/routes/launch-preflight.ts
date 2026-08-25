@@ -271,6 +271,9 @@ export function registerLaunchPreflight(app: express.Express): void {
                 capExempt: resolved.capExempt,
                 mcp: resolved.mcp,
                 launchAgent: resolved.launchAgent,
+                // Server-owned cascade attribution. Agent Configuration renders this
+                // answer verbatim and never reconstructs precedence in the browser.
+                stated_by: resolved.stated_by,
                 // The composed first message, so a seat can be previewed before it exists.
                 // A proposed seat has no session and therefore no Tile: the honest preview
                 // is this brief plus the resolved reading, which is the owner's ruling.

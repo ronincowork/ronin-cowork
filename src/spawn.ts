@@ -4,12 +4,12 @@ import path from 'node:path';
 import { defaultAgentCommand } from './agents.js';
 import { REPO_ROOT } from './config.js';
 import { bootFiles, ensureShelf } from './session-boot.js';
-import { listProjectRoots, listSessionLaunchSpecs, type ProjectRootInfo } from './project-roots.js';
+import { listProjectRoots, listSessionLaunchSpecs, USER_PROJECT_ROOTS_MD, type ProjectRootInfo } from './project-roots.js';
 import { readAgentsSection } from './user-config.js';
 import { storeDir } from './stores.js';
 import { findDefinition, listRoleFamilies } from './definitions.js';
-import { readTeamRoster, type TeamRoster } from './team-rosters.js';
-import { resolveLaunchProfile, type Dial, type LaunchProfile } from './launch-profile.js';
+import { readTeamRoster, teamRosterFile, type TeamRoster } from './team-rosters.js';
+import { resolveLaunchProfile, type Dial, type LaunchProfile, type StatedBy } from './launch-profile.js';
 
 /**
  * The mechanical executor: a filled form in, a briefed session out.
@@ -132,6 +132,8 @@ export interface Resolved {
    * process is called, and for Codex that is `node`.
    */
   launchAgent: string;
+  /** Server-owned attribution for every resolved reading. The browser only renders it. */
+  stated_by: Record<string, StatedBy[]>;
 }
 
 const ACK_RULE =
@@ -412,6 +414,45 @@ export async function resolveForm(
   }
   if (mcpOffWanted) cmd = `${cmd} ${spec!.mcpOff}`;
 
+  // ATTRIBUTION IS RESOLVED BESIDE THE VALUES. Keeping it here means launch and preflight
+  // cannot disagree and the browser never has to reconstruct the cascade. A source is an
+  // exact file when one stated the value, or a named runtime input when no file exists.
+  const explicit: StatedBy[] = [{ layer: 'explicit_launch', source: 'launch request' }];
+  const system: StatedBy[] = [{ layer: 'system', source: 'src/spawn.ts' }];
+  const rosterSource: StatedBy[] = roster
+    ? [{
+        layer: 'team_roster',
+        source: proposedRoster?.name === roster.name ? 'proposed Team draft' : teamRosterFile(roster.name),
+      }]
+    : system;
+  const rootSource: StatedBy[] = form.project_root
+    ? explicit
+    : roster?.project_root
+      ? rosterSource
+      : [{ layer: 'system', source: USER_PROJECT_ROOTS_MD }];
+  const cmdSource: StatedBy[] = form.cmd
+    ? explicit
+    : biasCmd
+      ? profile.stated_by.model
+      : system;
+  const defaultMcpWasUndeliverable = agent && !mcpWanted && !mcpOffWanted;
+  const mcpSource: StatedBy[] = !agent
+    ? profile.stated_by.agent
+    : defaultMcpWasUndeliverable
+      ? system
+      : typeof form.mcp === 'boolean'
+        ? explicit
+        : profile.stated_by.mcpDefault;
+  const unique = (...groups: StatedBy[][]): StatedBy[] => {
+    const seen = new Set<string>();
+    return groups.flat().filter((item) => {
+      const key = `${item.layer}\0${item.source}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+
   return {
     name: wanted || slugName(profile.session_role || form.team || 'session', form.prompt, taken),
     // The profile's own `dir:` WINS over the project_root's, because it is a constant of
@@ -455,6 +496,24 @@ export async function resolveForm(
     // is free to name a path. RIREKI's decoder keys are bare binary names, and this value
     // is written into the option RIREKI reads, so it has to arrive in RIREKI's spelling.
     launchAgent: agent ? path.basename(cmd.trim().split(/\s+/)[0] ?? '') : '',
+    stated_by: {
+      name: form.name ? explicit : system,
+      dir: profile.dir ? profile.stated_by.dir : rootSource,
+      cmd: cmdSource,
+      tags: unique(roster ? rosterSource : [], form.tags?.length ? explicit : []),
+      dial: profile.stated_by.dial,
+      lifecycle: profile.stated_by.lifecycle,
+      session_role: form.session_role !== undefined ? explicit : profile.stated_by.session_role,
+      team: form.team ? explicit : system,
+      team_role: roster ? rosterSource : system,
+      project_root: rootSource,
+      mode: form.mode !== undefined ? explicit : system,
+      brief: unique(explicit, profile.stated_by.opening, roster ? rosterSource : [], rootSource),
+      agent: profile.stated_by.agent,
+      capExempt: profile.stated_by.capExempt,
+      mcp: mcpSource,
+      launchAgent: cmdSource,
+    },
   };
 }
 

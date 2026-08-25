@@ -47,6 +47,13 @@ import type { Definition } from './definitions.js';
 /** The dial a session is BORN on — a constant of the launch, never a live control. */
 export type Dial = 'user' | 'read' | 'write';
 
+export type StatedLayer = 'system' | 'team_roster' | 'session_role' | 'explicit_launch';
+export interface StatedBy {
+  layer: StatedLayer;
+  /** Exact file when a file stated the value; a named runtime source otherwise. */
+  source: string;
+}
+
 /**
  * THE INSTALL'S OWN ANSWER for every cascading field — the bottom layer, and the one a
  * blank role and a blank task fall straight through to.
@@ -101,6 +108,8 @@ export interface LaunchProfile {
   mcpDefault: boolean;
   /** `{install}` resolved by the caller, or '' — the working directory this launch fixes. */
   dir: string;
+  /** The canonical cascade's winning source for every profile reading. */
+  stated_by: Record<string, StatedBy[]>;
 }
 
 interface Layer {
@@ -118,6 +127,14 @@ function stated(layers: Layer[], key: string): Layer | undefined {
 function pick(layers: Layer[], key: string): string {
   return stated(layers, key)?.def.get(key) ?? SYSTEM[key] ?? '';
 }
+
+const SYSTEM_SOURCE = 'src/launch-profile.ts';
+const sourceOf = (layers: Layer[], key: string): StatedBy[] => {
+  const layer = stated(layers, key);
+  return layer
+    ? [{ layer: layer.level, source: layer.def.file }]
+    : [{ layer: 'system', source: SYSTEM_SOURCE }];
+};
 
 /**
  * Resolve one session_role definition into one profile, or refuse.
@@ -198,5 +215,27 @@ export function resolveLaunchProfile(task: Definition | undefined): LaunchProfil
     // absence included, opens it off.
     mcpDefault: mcp === 'always' || mcp === 'on',
     dir: dirValue,
+    stated_by: {
+      session_role: task
+        ? [{ layer: 'session_role', source: task.file }]
+        : [{ layer: 'system', source: SYSTEM_SOURCE }],
+      agent: sourceOf(layers, 'agent'),
+      model: sourceOf(layers, 'model'),
+      dial: sourceOf(layers, 'dial'),
+      permissions: sourceOf(layers, 'permissions'),
+      lifecycle: sourceOf(layers, 'lifecycle'),
+      ack: sourceOf(layers, 'ack'),
+      opening: sourceOf(layers, 'opening'),
+      posture: task?.has('posture')
+        ? [{ layer: 'session_role', source: task.file }]
+        : [{ layer: 'system', source: SYSTEM_SOURCE }],
+      label: task
+        ? [{ layer: 'session_role', source: task.file }]
+        : [{ layer: 'system', source: SYSTEM_SOURCE }],
+      capExempt: sourceOf(layers, 'cap'),
+      mcpAlways: sourceOf(layers, 'mcp'),
+      mcpDefault: sourceOf(layers, 'mcp'),
+      dir: sourceOf(layers, 'dir'),
+    },
   };
 }
