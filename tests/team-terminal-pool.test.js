@@ -2,19 +2,38 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createWarmTerminalPool } from '../public/js/team-terminal-pool.js';
 
+/**
+ * The tiered pool's contract, run with a hand-cranked clock.
+ *
+ * HOT is the visible member; WARM is hidden-but-streaming inside the grace; COLD is a
+ * seat. The harness host mirrors the real terminal-tile-host: mount() (re)attaches when
+ * the session differs — which after park() it always does, because park detaches —
+ * park() closes transport, hide() conceals without touching transport, destroy() ends it.
+ */
 function harness() {
   const records = [];
   const container = { append: (el) => { el.appended = true; } };
   const createHost = ({ mode }) => {
-    const record = { mode, opens: [], fits: 0, focuses: 0, destroys: 0, removed: 0 };
+    const record = { mode, opens: [], parks: 0, fits: 0, focuses: 0, destroys: 0, removed: 0, el: null };
     const el = { hidden: false, remove: () => { record.removed += 1; } };
+    record.el = el;
     const tile = { focusTerminal: () => { record.focuses += 1; } };
+    let session = '';
+    let parked = true;
     const host = {
       el,
-      mount: (session) => { record.opens.push(session); return tile; },
+      get parked() { return parked; },
+      get session() { return session; },
+      mount: (name) => {
+        parked = false;
+        el.hidden = false;
+        if (session !== name) { record.opens.push(name); session = name; }
+        return tile;
+      },
+      park: () => { record.parks += 1; parked = true; session = ''; },
+      hide: () => { el.hidden = true; },
       fit: () => { record.fits += 1; },
       destroy: () => { record.destroys += 1; },
-      switchSession: () => { throw new Error('a warm revisit must not switch transport'); },
     };
     records.push(record);
     return host;
@@ -22,78 +41,135 @@ function harness() {
   return { records, container, createHost };
 }
 
-test('seats are lazy: entry costs nothing, first show mounts, revisits stay warm', () => {
-  // THE CONTRACT CHANGED 2026-08-25 (owner-driven): sync reserves SEATS and mounts
-  // nothing — seven members on page entry used to mean seven hidden xterm instances
-  // parsing seven busy sessions on the main thread, and the page crawled. A member's
-  // terminal now exists from its first show; after that, revisits are warm as before.
-  const h = harness();
-  const pool = createWarmTerminalPool(h);
-  pool.sync(['alpha', 'beta']);
+/** A scheduler the test winds by hand. */
+function clock() {
+  let pending = [];
+  return {
+    schedule: (fn, ms) => { const id = { fn, ms }; pending.push(id); return id; },
+    cancel: (id) => { pending = pending.filter((p) => p !== id); },
+    fire: () => { const due = pending; pending = []; for (const p of due) p.fn(); },
+    get armed() { return pending.length; },
+  };
+}
+
+const pool = (h, c, opts = {}) =>
+  createWarmTerminalPool({ ...h, schedule: c.schedule, cancel: c.cancel, streamCap: 4, ...opts });
+
+test('seats are free: entry mounts nothing; the first show pays the one mount', () => {
+  const h = harness(); const c = clock();
+  const p = pool(h, c);
+  p.sync(['a', 'b', 'c']);
   assert.equal(h.records.length, 0, 'page entry opens no transport at all');
-  assert.equal(pool.size, 2, 'but both seats are reserved');
-  assert.equal(pool.has('alpha'), true);
-
-  assert.equal(pool.show('alpha'), true);
-  assert.deepEqual(h.records.map((r) => [r.mode, r.opens]), [['full', ['alpha']]], 'first show mounts');
-  assert.equal(pool.show('beta'), true);
-  assert.equal(pool.show('alpha'), true);
-  assert.deepEqual(h.records.map((r) => r.opens.length), [1, 1], 'revisits never reopen transport');
-  assert.equal(h.records[0].focuses, 2);
-  assert.equal(h.records[1].focuses, 1);
+  assert.equal(p.size, 3);
+  p.show('a', false);
+  assert.deepEqual(h.records.map((r) => r.opens), [['a']]);
+  assert.equal(p.streamingCount, 1);
 });
 
-test('membership loss and page cleanup destroy every MOUNTED host exactly once', () => {
-  const h = harness();
-  const pool = createWarmTerminalPool(h);
-  pool.sync(['alpha', 'beta']);
-  pool.show('beta', false); // beta's is the only transport open
-
-  const result = pool.sync(['alpha', 'gamma']);
-  assert.equal(result.removedActive, true);
-  assert.equal(h.records[0].destroys, 1, 'lost member transport closes immediately');
-  assert.equal(h.records[0].removed, 1, 'lost member wrapper leaves the page');
-  assert.equal(pool.size, 2, 'alpha and gamma keep their (unmounted) seats');
-
-  // An unmounted seat destroys cleanly — there is nothing to close, and nothing throws.
-  pool.destroyAll();
-  assert.deepEqual(h.records.map((r) => r.destroys), [1], 'only ever-mounted hosts close');
-  assert.deepEqual(h.records.map((r) => r.removed), [1]);
-  assert.equal(pool.size, 0);
-  assert.equal(pool.active, '');
+test('flipping inside the grace is warm — no reopen, no park', () => {
+  const h = harness(); const c = clock();
+  const p = pool(h, c);
+  p.sync(['a', 'b']);
+  p.show('a', false);
+  p.show('b', false);
+  p.show('a', false);
+  p.show('b', false);
+  assert.deepEqual(h.records.map((r) => r.opens.length), [1, 1], 'each transport opened once');
+  assert.deepEqual(h.records.map((r) => r.parks), [0, 0], 'the grace kept both warm');
+  assert.equal(h.records[0].el.hidden, true, 'the one not being watched is concealed');
+  assert.equal(h.records[1].el.hidden, false);
 });
 
-test('the warm cap: a fifth mount closes the coldest transport but keeps its seat', () => {
-  const h = harness();
-  const pool = createWarmTerminalPool({ ...h, warmCap: 4 });
+test('the grace expires: hidden tiles park and the server side is freed; re-show reattaches', () => {
+  const h = harness(); const c = clock();
+  const p = pool(h, c);
+  p.sync(['a', 'b']);
+  p.show('a', false);
+  p.show('b', false); // a is now warm, grace armed
+  c.fire();
+  assert.equal(h.records[0].parks, 1, 'a parked — transport closed, seat kept');
+  assert.equal(p.has('a'), true);
+  assert.equal(p.streamingCount, 1, 'only the hot member still streams');
+
+  p.show('a', false); // cold → one reattach
+  assert.deepEqual(h.records[0].opens, ['a', 'a'], 'the re-show paid exactly one reattach');
+  assert.equal(h.records[0].destroys, 0, 'parking never destroys');
+});
+
+test('the grace never parks the member being watched', () => {
+  const h = harness(); const c = clock();
+  const p = pool(h, c);
+  p.sync(['a', 'b']);
+  p.show('a', false);
+  p.show('b', false);
+  p.show('a', false); // back before the grace fired — b now carries the timer
+  c.fire();
+  assert.equal(h.records[0].parks, 0, 'a is hot and untouchable');
+  assert.equal(h.records[1].parks, 1, 'b parked');
+});
+
+test('the stream cap parks the coldest, never destroys, never touches the active', () => {
+  const h = harness(); const c = clock();
+  const p = pool(h, c);
   const crew = ['a', 'b', 'c', 'd', 'e'];
-  pool.sync(crew);
-  for (const name of ['a', 'b', 'c', 'd']) pool.show(name, false);
-  assert.equal(h.records.length, 4, 'four warm terminals, at the cap');
-  assert.deepEqual(h.records.map((r) => r.destroys), [0, 0, 0, 0]);
-
-  pool.show('e', false); // the fifth — 'a' is coldest and must give up its transport
-  assert.equal(h.records[0].destroys, 1, "a's transport closed");
-  assert.equal(h.records[0].removed, 1);
-  assert.equal(pool.has('a'), true, 'but a keeps its seat');
-  assert.equal(pool.size, 5, 'no member lost its place on the team');
-
-  // Revisiting the evicted member simply pays the mount again — sixth record, and now
-  // 'b' is coldest and gives way.
-  pool.show('a', false);
-  assert.equal(h.records.length, 6, 'a remounted fresh');
-  assert.equal(h.records[1].destroys, 1, "b's transport closed in a's favour");
-  assert.equal(h.records[5].opens[0], 'a');
-
-  // The member being shown is never evicted, whatever the cap arithmetic says.
-  assert.equal(pool.active, 'a');
+  p.sync(crew);
+  for (const name of crew) p.show(name, false); // the fifth show breaches the cap
+  assert.equal(h.records[0].parks, 1, 'a — least recently shown — gave up its stream');
+  assert.deepEqual(h.records.map((r) => r.destroys), [0, 0, 0, 0, 0], 'nothing destroyed for the cap');
+  assert.equal(p.size, 5, 'every member keeps a seat');
+  assert.equal(p.streamingCount, 4);
+  assert.equal(p.active, 'e');
 });
 
-test('a cap of 4 never touches a team of 4 — the grid-sized case stays fully warm', () => {
-  const h = harness();
-  const pool = createWarmTerminalPool({ ...h, warmCap: 4 });
-  pool.sync(['a', 'b', 'c', 'd']);
-  for (const name of ['a', 'b', 'c', 'd', 'a', 'b']) pool.show(name, false);
-  assert.deepEqual(h.records.map((r) => r.destroys), [0, 0, 0, 0], 'nothing ever evicted');
-  assert.deepEqual(h.records.map((r) => r.opens.length), [1, 1, 1, 1], 'nothing ever remounted');
+test('a team of four flipped hard never feels the cap or the clock', () => {
+  const h = harness(); const c = clock();
+  const p = pool(h, c);
+  p.sync(['a', 'b', 'c', 'd']);
+  for (const name of ['a', 'b', 'c', 'd', 'a', 'b', 'c', 'd']) p.show(name, false);
+  assert.deepEqual(h.records.map((r) => r.opens.length), [1, 1, 1, 1], 'no reopens');
+  assert.deepEqual(h.records.map((r) => r.parks), [0, 0, 0, 0], 'no parks while warm');
+});
+
+test('prewarm paints hidden, declines at the cap, and the grace collects it if never shown', () => {
+  const h = harness(); const c = clock();
+  const p = pool(h, c);
+  p.sync(['a', 'b', 'c', 'd', 'e']);
+  p.show('a', false);
+  assert.equal(p.prewarm('b'), true, 'hover starts b streaming');
+  assert.equal(h.records[1].el.hidden, true, 'painted, but concealed');
+  assert.equal(p.active, 'a', 'a hover never steals the stage');
+
+  p.show('c', false); p.show('d', false); // cap reached: a, b, c, d streaming
+  assert.equal(p.prewarm('e'), false, 'a hover never costs a genuinely warm member');
+
+  c.fire(); // b was never shown — the grace collects it (and parks the a/c leftovers)
+  assert.equal(h.records[1].parks, 1, 'the unclaimed prewarm was parked');
+  assert.equal(h.records[1].destroys, 0);
+});
+
+test('a prewarmed member clicked inside the grace costs nothing more', () => {
+  const h = harness(); const c = clock();
+  const p = pool(h, c);
+  p.sync(['a', 'b']);
+  p.show('a', false);
+  p.prewarm('b');
+  p.show('b', false);
+  assert.deepEqual(h.records[1].opens, ['b'], 'the click reused the hover\'s transport');
+  assert.equal(h.records[1].el.hidden, false);
+});
+
+test('membership loss and page exit destroy every host — streaming, warm or parked — once', () => {
+  const h = harness(); const c = clock();
+  const p = pool(h, c);
+  p.sync(['a', 'b', 'c']);
+  p.show('a', false); p.show('b', false);
+  c.fire(); // a parked
+  const result = p.sync(['b', 'c']); // a loses membership while parked
+  assert.equal(result.removedActive, false);
+  assert.equal(h.records[0].destroys, 1, 'the parked host still tears down fully');
+  assert.equal(h.records[0].removed, 1);
+  p.destroyAll();
+  assert.deepEqual(h.records.map((r) => r.destroys), [1, 1], 'each exactly once');
+  assert.equal(p.size, 0);
+  assert.equal(c.armed, 0, 'no timer outlives the page');
 });

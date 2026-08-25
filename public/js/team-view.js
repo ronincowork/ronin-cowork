@@ -95,6 +95,17 @@ export function createTeamView() {
   }
 
   /* ---------- the Kanban's shells ---------- */
+  // THE HOVER FLOURISH: a pointer resting on a card pre-warms that member's tile, so
+  // the click lands on a painted terminal. The dwell keeps a pointer skating across the
+  // whole roster from spawning a transport per card; the pool itself declines at the
+  // stream cap and quietly parks a prewarm nobody clicks.
+  let dwellTimer = 0;
+  const armPrewarm = (name) => {
+    window.clearTimeout(dwellTimer);
+    dwellTimer = window.setTimeout(() => terminalPool.prewarm(name), 150);
+  };
+  const disarmPrewarm = () => window.clearTimeout(dwellTimer);
+
   function renderCards(members) {
     cards.replaceChildren();
     for (const m of members) {
@@ -112,6 +123,8 @@ export function createTeamView() {
           renderCards(members);
         },
       });
+      card.el.addEventListener('pointerenter', () => armPrewarm(m.name));
+      card.el.addEventListener('pointerleave', disarmPrewarm);
       cards.append(card.el);
     }
     const add = createCard({ heading: '＋ Add team member', summary: 'Existing session or a new one — arrives with its own slice.', variant: 'dotted' });
@@ -218,6 +231,7 @@ export function createTeamView() {
     },
     leave: () => {
       entered = false;
+      disarmPrewarm();
       terminalPool.destroyAll();
       placeholder.hidden = false;
       channels.leave();
