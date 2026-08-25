@@ -34,10 +34,11 @@ export function createTerminalTileHost(options = {}) {
     if (current.session !== session) current.connect(session);
     return current;
   };
+  // Parking is the transport decision only: the Tile stays where it is, empty, the way
+  // an unconnected cell of the Sessions grid does. Concealing is hide()'s, never park()'s.
   const park = () => {
     if (tile?.session) tile.detach();
     parked = true;
-    el.hidden = true;
     return true;
   };
   /** Conceal without touching the transport — the pool's warm-hidden state. Parking is

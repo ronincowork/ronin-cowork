@@ -66,8 +66,13 @@ scrollTop round-trips) settled in minutes what three theory-driven "fixes" did n
 
 ## LANDED — the state a successor inherits (all on `dev`)
 
-**The hot bench** (`public/js/team-terminal-pool.js`, 10 tests in
-`tests/team-terminal-pool.test.js`):
+**The hot bench** (`public/js/team-terminal-pool.js`, tests in
+`tests/team-terminal-pool.test.js`) — the warm and hold rules stand (owner, 2026-08-25:
+"we have warm and hold rules"). What the KISS ruling removed was the *second host*
+that let one session be up in both workspaces at once; with one warm host per member,
+picking a session already up in the other workspace MOVES it there, and the workspace
+it left is empty — an empty box, no message. If one-session-in-both is wanted, it costs
+that second-host machinery back; the owner's call.
 - Seats are free: page entry mounts nothing; first show mounts; **warmth is durable** —
   no clock ever parks a shown tile (owner overruled a 25s grace: toggled members stay
   hot).
@@ -239,15 +244,14 @@ drawn over the tile, and warm tiles hidden inside the seat. All three are gone.
   {workspace1: el, workspace2: el}`) and a holding: a seat's container holds its one
   member's host or nothing; a warm host in no seat sits in the holding, detached. Every
   seated member is watched and never the one parked for the cap.
-- **The seat's surface holds one child**: the member's host, or the placeholder
-  ("Nothing here yet — click a roster card, or drag one here").
-- **The same session may be up in both workspaces** (owner, 2026-08-25: "tile in space
-  1 and tile in space 2 could be the same terminal session — they're not connected, like
-  the regular terminal tile page"). A member keeps one durable entry (warm or cold) and,
-  while it is up in a second workspace too, a second host keyed `name#seat` — a stream
-  like any other for the cap, destroyed the moment it leaves its seat. Picking a session
-  never *moves* it out of the other workspace; that was the "Empty workspace" the owner
-  met, and it is gone.
+- **The seat's surface holds its member's tile, or nothing.** No placeholder, no message
+  (owner: "it is either team_commons or a terminal_tile, and if it's empty so be it").
+- **The selected workspace is highlighted** the way the Sessions grid highlights its
+  active tile (`.tile.active`) — that is where the next card lands.
+- **One host per member** (the warm and hold rules). So picking a session that is up in
+  the other workspace MOVES it, and the box it left is empty. The owner asked for
+  one-session-in-both like the Sessions grid; the second-host machinery that needs was
+  cut and then withdrawn as non-KISS (`a3974fe`, reverted). Open: T8.
 - Defaults with nothing remembered: the lead in workspace 1, the commons in workspace 2.
   Seats persist as `{slot: member | '@commons'}` and are re-applied when the roster
   arrives, so a cold reload does not hand a remembered seat to the lead.
@@ -373,7 +377,7 @@ That is the whole of the team page's geometry. Commons-on-the-left is
   under `public/js/` except the Kit reads `grid-template-columns` or `.wk-workbench-splitter`.
 - `scripts/check-css.mjs`: unchanged rules; the new map CSS lives in `workspace-kit.css`,
   tokens only.
-- a pure unit suite for the arrangement module under `tests/`, plus the existing team-terminal-pool
+- a pure unit suite for the arrangement module under `tests/`, plus the then-existing pool
   suite untouched (the bench is DONE, and hiding a column does not park a transport —
   same as today).
 - Playwright probe, before and after, at 1600×950: the three columns measure
@@ -436,6 +440,7 @@ Two consequences, both inside leg 1:
 | T4 | Raise the cap with two terminal seats? | **RULED: no** — four hot seats, lead + next three by last use (owner, 2026-08-25) |
 | T5 | **Assign the team lead live from the UI** ("I need to be able to assign team lead live", 2026-08-25) | **RULED: through the tile buttons** — the tile already has a session_role selector; the 人 goes there. Leg 7 |
 | T7 | Show/hide and reorder the columns | **RULED: a layout map in the app bar** — three toggling rectangles; drag within the map to reorder. No chevron rails (owner, 2026-08-25). Column-drag, if ever, is a second gesture in leg 5 |
+| T8 | One session up in both workspaces at once? | open — needs a second host per extra seat (the pool keeps one warm host per member). Cut once, withdrawn as non-KISS; today a pick moves the session and leaves the other box empty |
 | T6 | Name for the middle column — the owner's "action column": roster, new-session builder, whatever acts on the team | open — "action" is the placeholder; needs a KOTOBA word |
 
 ## Constraints
