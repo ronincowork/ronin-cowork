@@ -171,8 +171,16 @@ export function buildSettei(root, isShowing) {
       m.hypervisor ? ` ${m.hypervisor}` : ''));
     body.appendChild(obsRow('running', `${observed.os.name} · node ${observed.runtime.node}`,
       ` ${observed.ronin.release ?? observed.ronin.commit}${observed.ronin.dirty ? ' (dirty)' : ''} · contract ${observed.ronin.contract}`));
-    body.appendChild(obsRow('Ronin reachable at', st.routes[0]?.at,
-      ` ${st.routes[0]?.exposure}${st.routes[0]?.alias ? ` · or ${st.routes[0].alias} (MagicDNS)` : ''}`));
+    // THE ADDRESS A PERSON SHOULD TYPE. When `tailscale serve` is in front, its HTTPS
+    // name leads — it is the same MagicDNS name carrying a real certificate, and it is
+    // the only one of these a passkey can exist on. The plain address stays visible as
+    // what is behind the proxy; the MagicDNS alias is dropped in that case, because the
+    // HTTPS name already IS that name and saying it twice reads as two doors.
+    const rt = st.routes[0];
+    body.appendChild(obsRow('Ronin reachable at', rt?.secure ?? rt?.at,
+      rt?.secure
+        ? ` ${rt.exposure} · HTTPS by tailscale serve · plain ${rt.at}`
+        : ` ${rt?.exposure}${rt?.alias ? ` · or ${rt.alias} (MagicDNS)` : ''}`));
     body.appendChild(obsRow('reach by ssh', st.ssh));
 
     /* capacity */
