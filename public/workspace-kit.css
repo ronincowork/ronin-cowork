@@ -35,7 +35,9 @@
      commons) carries a small switch in its top-right corner, over the content, so it
      costs no row. Quiet until the pointer is near. */
   .wk-layout-surface { position: relative; }
-  .wk-face-switch { position: absolute; top: var(--space-9); right: var(--space-4); z-index: 3; display: flex; gap: var(--space-1); padding: var(--space-1); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); opacity: .55; }
+  /* Below the surface's own first row — a tile head or a tab strip is ~44px — so the
+     pill never crowds the controls that live at that row's right end. */
+  .wk-face-switch { position: absolute; top: calc(var(--space-10) * 2); right: var(--space-4); z-index: 3; display: flex; gap: var(--space-1); padding: var(--space-1); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); opacity: .55; }
   .wk-layout-surface:hover > .wk-face-switch, .wk-face-switch:focus-within { opacity: 1; }
   .wk-face { min-width: 1.75rem; min-height: 1.5rem; border: var(--edge) solid transparent; border-radius: var(--radius-xs); background: transparent; color: var(--muted); padding: 0 var(--space-2); font: inherit; font-size: var(--text-3); cursor: pointer; }
   .wk-face[aria-pressed='true'] { background: var(--raise); border-color: var(--line-2); color: var(--fg-strong); }
