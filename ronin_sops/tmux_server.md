@@ -129,9 +129,9 @@ tmux ls -F '#{session_name} #{session_attached}' | awk '$1 ~ /^grid_/ && $2 == 0
 
 A viewer exists only to be attached, so **an unattached viewer is leftover by definition**.
 Since the tile socket gained a heartbeat (2026-08-25) a browser that goes away rudely — a
-closed lid, a backgrounded phone, a dropped connection — is detected within about half a
-minute and its viewer reaped, so a handful is normal churn and **a steady pile is now worth
-reporting**: it means something orphaned them another way, usually Ronin killed mid-session
+closed lid, a backgrounded phone, a dropped connection — is detected and its viewer reaped
+within about a minute (measured: ping at 30s, terminate at 60s), so a handful is normal
+churn and **a steady pile is now worth reporting**: it means something orphaned them another way, usually Ronin killed mid-session
 or a session ended outside Ronin. They are inert either way: they run nothing and cost a
 session structure each.
 

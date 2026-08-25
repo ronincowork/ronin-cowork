@@ -103,8 +103,10 @@ spread is accumulation.
 
 **The heartbeat closes that hole.** `handlePty()` now pings the tile socket every thirty
 seconds and terminates it on a missed pong, which fires the same close path a polite
-disconnect takes, so the viewer is reaped within about one interval of the browser going
-away. Terminating a connection that was merely slow costs nothing: the client reconnects
+disconnect takes. **Measured end to end on 2026-08-25** with a client that held the socket
+open and refused to answer: ping at 30s, terminated at 60s, viewer gone. So a browser that
+vanishes takes up to about a minute to clear, and the worst case is two intervals rather
+than one. Terminating a connection that was merely slow costs nothing: the client reconnects
 on its own, which is the case the tile is already written around.
 
 What that does **not** cover is a viewer orphaned another way — Ronin killed mid-session,
