@@ -11,13 +11,25 @@
 
 ## Goal — the owner's words (2026-08-25)
 
-> "Probably, ideally, I would have a left-side terminal and a right-side terminal, and
-> the middle would be the roster. On one or the other of the terminals, I could turn it
-> over to the whiteboard or the docs or whatever … And then that center team roster, I
-> could actually ideally shrink that or even move that to one side or the other. … I
-> would always have, regardless of what's showing, at least two teams hot, so I could
-> toggle between those … The team manager is always hot, regardless."
->
+**The default, in the owner's own restatement (2026-08-25, in this file):** three
+columns, and every one of them can be reordered, swapped and resized.
+
+| Column | Holds |
+|---|---|
+| **workspace 1** | a terminal tile, OR the team_commons (chat · wipeboard · docs) |
+| **the action column** (name open — T6) | the team roster · the new-session builder · whatever else acts on the team |
+| **workspace 2** | same menu as workspace 1 |
+
+("terminal_tile" is the owner's working word; KOTOBA's term is **tile**, and a tile
+showing a terminal is what the Kit calls the `terminalTile` surface.)
+
+Earlier, spoken: "Probably, ideally, I would have a left-side terminal and a right-side
+terminal, and the middle would be the roster. On one or the other of the terminals, I
+could turn it over to the whiteboard or the docs or whatever … I would always have,
+regardless of what's showing, at least two teams hot … The team manager is always hot,
+regardless."
+
+
 > On architecture: "we have three surfaces, and we can just mix and match those
 > surfaces … plug and play the particular type of service that we want to show up on
 > that surface. I don't want to hack on these UI changes."
@@ -27,6 +39,10 @@
 > speed for us."
 
 ## THE COST MODEL — learn this before touching anything
+
+**The cap, in one line (owner, 2026-08-25): four hot seats — the team_lead always, plus
+the next three by last use.** That is what the landed bench below implements; T4 is
+therefore closed.
 
 **Every streaming tile is: one websocket + one tmux VIEWER SESSION (`grid_*`) + one live
 `tmux attach` process on a pty, server-side** (`src/ws/pty.ts` — `createViewer` then
@@ -39,6 +55,10 @@ Locked vs unlocked: tiles are born **locked** on desktop (`S.locked = !IS_TOUCH`
 (`mode=stream` in pty.ts) is RIREKI's file-follow: **no tmux process, no viewer, no
 pty** — radically cheaper per tile, held back only by fidelity (owner's ruling: hold
 until unlocked matches locked; then it unlocks walls of cheap tiles).
+
+**The roster card is a reading, not a label** (owner, 2026-08-25): each card should carry
+SHINGO, the model, ready/busy, whether the session is taken, and — once RIREKI is firing —
+its cherry_pick or summary. Today's card is name + role. That is leg 6.
 
 Never guess at browser behavior — **measure**. `scripts/lib/ui-host.mjs` exports
 `loadPlaywright()`; a ten-line probe against the live page (getBoundingClientRect,
@@ -89,6 +109,14 @@ the wipeboard transport working, not a bug.
   (owner, 2026-08-25, `8837ae5`: "I don't want to land on the whiteboard … I know to
   check the whiteboard tab"). An empty chat on entry is the ruling, not the fallback.
 
+**In simple terms, what was wrong with the layouts** (answering the owner's question):
+two things. The one that is FIXED — the Kit put each pane in a fixed-height box and let a
+long pane get cut off instead of scrolling, so the wipeboard looked frozen; the fix makes
+every pane fill its column and scroll inside it. The one that REMAINS — the three columns
+have their jobs hard-wired (left is always a terminal, middle always the roster, right
+always the commons), so nothing can be swapped or moved. Leg 1 exists to remove that
+wiring; the bullets above are the traps for whoever does it.
+
 **Server lessons that keep the page fast** (`src/routes/wipeboards-api.ts`,
 `src/tmux.ts`): the dial and the durable key ride `listSessions`' single tmux exec
 (fields on the list format — never one subprocess per member; that was the 2.9s GET);
@@ -118,6 +146,12 @@ KOTOBA row exists).
 | 3 | **Seat-aware hot bench** — pool `active` becomes per-seat; cap arithmetic already fits | flipping one seat never disturbs the other; the pin holds |
 | 4 | **Movable, shrinkable roster** — docks any slot, collapses to a chip rail | the owner can live in two terminals |
 | 5 | **Polish** — keyboard flips through hot members; switcher in kit style | one instrument, not three panels |
+| 6 | **Roster readings** — SHINGO, model, ready/busy, taken; cherry_pick or summary when RIREKI fires (owner, 2026-08-25) | a card tells you the session's state without opening it |
+| 7 | **Team lead from the tile** — the 人 is set through the tile's existing session_role selector, not an API call (T5, ruled) | the owner designates a lead by hand from any tile |
+| 8 | **Unlocked flavours** — a selector for the flavours of Unlocked, cherry pick included, to play with; later the Locked/Unlocked control moves out of the tile header (owner, 2026-08-25) | each flavour can be tried on a live tile |
+
+Legs 1–4 are one chain (each needs the one before). Legs 6, 7 and 8 stand alone and can
+go in any order, or in parallel with the chain.
 
 ## Decisions
 
@@ -126,13 +160,17 @@ KOTOBA row exists).
 | T1 | Right slot default | **RULED: team_commons**, opening on the chat tab (`8837ae5`; the wipeboard is one tab over) |
 | T2 | Roster default | **RULED: middle**; chips on collapse (leg 4) |
 | T3 | "Open in other seat" gesture | open — suggest ⇄ on the card; long-press on touch |
-| T4 | Raise the cap with two terminal seats? | open — suggest no: 4 fits the ruled arithmetic |
-| T5 | **Assign the team lead live from the UI** — the owner needs to designate the 人 without an API call ("I need to be able to assign team lead live, but that's another step", 2026-08-25). Likely a control on the roster card or Team Configuration, posting to the existing route | open — a leg of its own, not started |
+| T4 | Raise the cap with two terminal seats? | **RULED: no** — four hot seats, lead + next three by last use (owner, 2026-08-25) |
+| T5 | **Assign the team lead live from the UI** ("I need to be able to assign team lead live", 2026-08-25) | **RULED: through the tile buttons** — the tile already has a session_role selector; the 人 goes there. Leg 7 |
+| T6 | Name for the middle column — the owner's "action column": roster, new-session builder, whatever acts on the team | open — "action" is the placeholder; needs a KOTOBA word |
 
 ## Constraints
 
 - **Locked only** until unlocked fidelity matches locked (owner). The RIREKI lever is
-  the recorded future speed unlock — do not reach for it early.
+  the recorded future speed unlock — do not reach for it early. **Softened 2026-08-25:**
+  Unlocked is not one thing but several flavours (cherry pick among them), and the owner
+  wants a selector to try each on a live tile (leg 8). Locked stays the default; the
+  ruling is against *switching* the page to unlocked, not against experimenting.
 - No `tile.js` internals; compose existing machinery. The Kit/feature boundary above is
   the whole contract.
 - The board slice, its polling and the hot-bench policy are DONE — do not reopen them
