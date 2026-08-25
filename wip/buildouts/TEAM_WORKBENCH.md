@@ -27,10 +27,38 @@
 
 ## What this is, in one sentence
 
-The team page becomes a **two-seat workbench**: two big side panes that each show either
-a member's terminal or the channels (wipeboard · docs · team configuration), with the
-roster as a slim, movable, collapsible strip — and a warm bench underneath that keeps the
-lead and the sessions being watched hot at all times.
+The team page becomes **three slots the Workspace Kit owns — left, middle, right — into
+which surfaces plug**: a terminal seat, the **team commons** (wipeboard · docs · team
+configuration), or the roster. Mix and match; move them; shrink the roster. The default
+landing is the owner's ruling of 2026-08-25: **left = the team lead's terminal · middle =
+the roster · right = the team commons.**
+
+## The architecture rule — no hacking, and how that is enforced
+
+The owner's requirement, verbatim: *"we have three surfaces, and we can just mix and
+match those surfaces … we're just able to plug and play the particular type of service
+that we want to show up on that surface. I don't want to hack on these UI changes."*
+
+So the boundary is absolute and it is the Kit's existing boundary, extended rather than
+bent:
+
+- **The Kit owns the frame.** Slot geometry, which surface sits in which slot, moving a
+  surface between slots, collapse, resize, persistence — all of it lands in the
+  Workspace Kit as a general **slot arrangement** capability. Nothing about it knows the
+  word "team".
+- **Features supply surfaces.** The team page becomes a *declaration*: three surface
+  factories (terminal seat · roster · team commons) and a default arrangement. It owns
+  content and policy (which member, the hot bench, the pin) and zero geometry.
+- **The test of non-hackery:** any other destination could adopt the same slot machinery
+  tomorrow without touching team code, and the team page could show the commons on the
+  LEFT purely by changing its declared default. If either is untrue, the cut was a hack
+  and does not land.
+- Surfaces already meet the Kit's service contract (`mount/enter/leave/destroy`); the
+  wipeboard slice, the roster and the config panel plug in as they are.
+
+**`team_commons` is the name** (owner, 2026-08-25) for the channels surface — recorded in
+KOTOBA beside `session_commons`, same word one level up: shared ground about the TEAM,
+inside its workbench.
 
 ## Already landed ahead of this plan (2026-08-25, same day)
 
@@ -48,10 +76,11 @@ already holds on today's one-terminal layout. This plan is chiefly the LAYOUT wo
 
 | # | Leg | What it is | Ends when |
 |---|---|---|---|
-| 1 | **The second seat** | The workbench becomes two SEAT panes + the roster strip. A seat hosts either a terminal or the channels surface; a small switcher on each seat chooses. Default: left = terminal (the lead), right = channels — today's muscle memory, one more terminal away | both seats can show terminals side by side; either can flip to channels; state persists per team |
-| 2 | **Seat-aware pool** | Two visible tiles means HOT is a set, not a single: the pool's `active` becomes per-seat; the cap arithmetic already holds (2 hot + lead + 1 warm = 4). Cards route to "the seat you last touched", with a long-press/secondary affordance for "open in the other seat" | flipping either seat never disturbs the other; the lead's pin still holds |
-| 3 | **The movable roster** | The roster strip docks left / middle / right and collapses to a rail of avatars+marks (the kanban cards become compact chips when collapsed). Position and collapse persist per team via the existing workbench state | the owner can shove the roster aside and live in two terminals |
-| 4 | **Polish** | Keyboard flips (e.g. [ and ] cycle the focused seat through hot members), the seat switcher styled to the kit, `--to` addressee affordance on the board composer if wanted | feels like one instrument, not three panels |
+| 1 | **Kit: slot arrangement** | The general capability, in the Kit and only there: N slots, surfaces assigned to slots, an arrangement swap, per-destination persistence. No team knowledge anywhere in it | a destination can declare surfaces + a default arrangement and the Kit draws it; the team page still renders identically to today through the new machinery |
+| 2 | **The second terminal seat** | A second terminal-seat surface, so left and right can both be terminals, or either can be the team commons. Cards route to the seat last touched; a small affordance opens in the other seat | two terminals side by side; either flips to the commons; state persists per team |
+| 3 | **Seat-aware hot bench** | Two visible tiles means HOT is a set: the pool's `active` becomes per-seat; the cap arithmetic holds (2 hot + pinned lead + 1 warm = 4) | flipping either seat never disturbs the other; the pin holds |
+| 4 | **The movable, shrinkable roster** | The roster surface docks in any slot and collapses to a chip rail; position and collapse persist per team | the owner can shove the roster aside and live in two terminals |
+| 5 | **Polish** | Keyboard flips through hot members; switcher styled to the kit | feels like one instrument, not three panels |
 
 Each leg lands separately on `dev`; leg 1 is useful alone.
 
@@ -81,14 +110,14 @@ leads), the cap yields rather than parking a pin — bounded by team design, not
 - Narrow screens: seats stack; the roster collapses by default. The owner's Mac two-up
   is the design center.
 
-## Decisions for the owner
+## Decisions
 
-| # | Question | Recommendation |
+| # | Question | State |
 |---|---|---|
-| T1 | Default right seat: channels, or second terminal? | channels (board one glance away); one click flips it to a terminal |
-| T2 | Roster default position | middle, collapsed to chips once leg 3 lands |
-| T3 | "Open in other seat" gesture | a small ⇄ on each card; long-press on touch |
-| T4 | Raise the cap when both seats show terminals? | no — 4 holds; the arithmetic above fits inside it |
+| T1 | Default right slot | **RULED 2026-08-25: the team commons** — "the right side is the team commons". Left = lead's terminal, middle = roster |
+| T2 | Roster default position | **RULED: middle** ("the center is the team roster"); collapse-to-chips arrives with leg 4 |
+| T3 | "Open in other seat" gesture | open — recommended: a small ⇄ on each card; long-press on touch |
+| T4 | Raise the cap when both seats show terminals? | open — recommended no: 4 holds, the arithmetic fits |
 
 ## Definition of done
 
