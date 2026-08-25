@@ -79,8 +79,12 @@ act only where this file says you may.
 **1 — Is there a server, and whose cgroup is it in?**
 
 ```sh
-pgrep -x tmux | while read -r p; do grep -o '[^/]*\.service' "/proc/$p/cgroup" | tail -1; done
+grep -o '[^/]*\.service' "/proc/$(tmux display-message -p '#{pid}')/cgroup" | tail -1
 ```
+
+Ask tmux for its own server pid rather than hunting a process name: **the server is called
+`tmux: server`, so `pgrep -x tmux` finds nothing** and a `pgrep -f` wide enough to catch it
+is the trap below.
 
 Anything naming Ronin's own unit is the failure above: the next Ronin restart ends every
 session. **Do not fix it silently** — the repair replaces the server and therefore ends the

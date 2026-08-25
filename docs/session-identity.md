@@ -123,15 +123,24 @@ tmux ls -F '#{session_name}' | grep -c '^grid_'      # how many viewers are open
 tmux ls -F '#{session_name} #{session_group} #{session_attached}'   # who is grouped with whom
 ```
 
-To count the agents actually running, count by tmux parentage and read each process's real
-executable — never `pgrep -f`, which matches your own shell because the command line
-contains the word, and matches any process whose *path* contains it:
+To see which sessions are actually running an agent, ask tmux — it knows each pane's
+foreground process, and the answer needs no process hunting at all:
 
 ```sh
-pgrep -P "$(pgrep -x tmux | head -1)" | while read -r p; do readlink -f "/proc/$p/exe"; done
+tmux ls -F '#{session_name}' | grep -v '^grid_' | while read -r s; do
+  printf '%s\t%s\n' "$s" "$(tmux display-message -p -t "=$s:" '#{pane_current_command}')"
+done
 ```
 
-Process count is not session count: some agent CLIs run three processes per session.
+**Never `pgrep -f`.** It matches your own shell, because the command line contains the
+word, and it matches any process whose *path* contains it — an agent scratch directory is
+enough. That has produced a wrong census three times in one session.
+
+Two things the output does not say on its own. A session showing `node` may be an agent
+CLI that runs under node — some run three processes per session, so **process count is
+never session count**. And the tmux server itself is named `tmux: server`, not `tmux`, so
+`pgrep -x tmux` finds nothing; where you need its pid, `tmux display-message -p '#{pid}'`
+is the authoritative answer and does not depend on a process name at all.
 
 ## What counts sessions, and what each one filters
 
