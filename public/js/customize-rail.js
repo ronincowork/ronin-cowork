@@ -43,7 +43,7 @@ export const RESOURCES = [
     blurb: 'The executables that implement actions. A markdown row cannot author one.' },
 
   { id: 'role-families', section: 'people', mark: '人', label: 'Role families',
-    capability: 'read-only', read: '/api/role-families',
+    capability: 'direct', read: '/api/role-families', dir: 'role_families',
     blurb: 'The shelves of the ＋ New board. Presentation only — a family never rides a launch.' },
   { id: 'session-roles', section: 'people', mark: '◫', label: 'Session roles',
     capability: 'handoff', read: '/api/session-roles', dir: 'session_roles',

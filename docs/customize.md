@@ -72,7 +72,7 @@ This matrix is the v1 product authority. Completion may add a planned capability
 | SOPs | Read-only | Reads `/api/sops`; resolved procedure text expands in place |
 | Actions | Guided agent handoff | Reads `/api/actions`; resolved action text expands in place |
 | Tools | Read-only | Unavailable: table parser and route missing |
-| Role families | Direct editor for membership only | Read-only list; editor not moved |
+| Role families | Direct editor for membership only | Kit toggle editor; typed writer; inline pinned-lead refusal |
 | Session roles | Guided agent handoff | Reads `/api/session-roles`; directory guidance |
 | Team roles | Guided agent handoff | Reads `/api/team-roles`; directory guidance |
 | Saved launches | Read-only in the shipped preview | Reads `/api/saved-launches` |
@@ -191,7 +191,8 @@ Ronin against the live tmux server for UI evidence.
 1. Tools lacks a complete read surface.
 2. `TOOLS.md` is a table; the TypeScript reader lacks its keyed-table shadow rule.
 3. Malformed definition files are logged and dropped server-side, so the owner cannot see the broken file here.
-4. Role-family membership has a typed writer, but its editor has not moved from New Session.
+4. Role-family membership is the one shipped direct editor. Creation, deletion, labels,
+   ordering, and `default_lead_role` authoring remain guided agent work.
 5. Saved Launches is read-only here. Before granting its intended direct editor, re-audit
    the typed saved-launch contract and existing retired-axis data; do not infer edit safety
    from the read route.
@@ -199,7 +200,7 @@ Ronin against the live tmux server for UI evidence.
 7. Session readings are not watched. Most levels are birth-only; role readings may re-resolve on a later session-role change. Never promise live propagation.
 8. Stylesheet location is ruled (`public/css/*.css`); the shared-Kit versus `cz-*` ownership
    of each proposed visual fix still requires an explicit decision.
-9. The preview lacks both planned direct editors, complete failure journeys, and a verified visual/responsive pass.
+9. The preview lacks the Saved Launches editor, complete failure journeys, and a verified visual/responsive pass.
 
 ## Exact resume checklist
 
@@ -210,9 +211,9 @@ Ronin against the live tmux server for UI evidence.
 5. Report committed state, remaining work, current visual verdict, one bounded next leg, requested shared seams, and non-touch scope to `view_mgr`; wait for acknowledgement.
 6. Classify Surface spacing, control styling, and cross-surface layout changes as Kit or
    feature work. The stylesheet location itself is already ruled: `public/css/`.
-7. Choose one bounded leg. **Next: role-family membership editor**, consuming only its
-   existing typed writer and preserving its orphaned-pin refusal. Tools remains blocked on
-   a shared keyed-table parser contract; do not invent one inside Customize.
+7. Choose one bounded leg. **Next: visual and keyboard acceptance for the resource cards
+   and role-family toggles**, after classifying any shared geometry as Kit work. Tools
+   remains blocked on a shared keyed-table parser contract; do not invent one in Customize.
 8. Obtain a named seam assignment before editing shared server or shell paths. Never bundle parser, route, malformed-data, or saved-launch policy work by assumption.
 9. Edit only approved paths. Preserve the Sessions 1/2/4 raw Tile grid and every other destination.
 10. Record direct dogfood and scoped diagnostic evidence; leave BYOIN to the designated release integrator.

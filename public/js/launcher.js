@@ -26,7 +26,7 @@ import {
 } from './home.js';
 import { IS_TOUCH, S } from './state.js';
 import { button, field, status } from './ui.js';
-import { buildRoleSections, draggableTask } from './rolefamilies.js';
+import { buildRoleSections } from './rolefamilies.js';
 import { addProvMark, addYourOwn } from './provenance.js';
 
 /**
@@ -258,9 +258,6 @@ export function buildLauncher(tile, host) {
     taskButton: (k, role) => taskButton(k, role),
     allTasks: () => roleData || [],
     allRoles: () => familyData || [],
-    // A membership edit changes which section a button is in, so the whole board is
-    // rebuilt from the server's answer rather than patched in place.
-    onChange: () => void refreshRoles(),
   });
   /* ---- saved launches: this form, filled in ahead of time and named ---- */
   // NOT macros. A macro is a program an agent runs; this is the launcher with the
@@ -313,9 +310,6 @@ export function buildLauncher(tile, host) {
     b.className = 'ks-btn' + (task ? '' : ' ks-btn-role');
     b.dataset.role = role?.name ?? '';
     b.dataset.task = task?.name ?? '';
-    // Only a TASK is draggable: dropping it on a role shelves it there. A role is the
-    // shelf, and a shelf is not a thing you drop onto another shelf.
-    if (task) draggableTask(b, task.name);
     // The name carries the mark: a definition of yours, or one of ours you replaced, is
     // a fact about THIS button and belongs on it (js/provenance.js).
     const kLabel = Object.assign(document.createElement('b'), { textContent: face.label });
