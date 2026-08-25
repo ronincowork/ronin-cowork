@@ -134,6 +134,8 @@ export function createSeatFields({ seat, onChange } = {}) {
   // gate is right to refuse it.
   const { createField, createForm } = WorkspaceKit.primitives;
   const form = createForm({ noValidate: true });
+  form.el.classList.add('ac-form');
+  form.fields.classList.add('ac-fields');
   let current = seat ?? createSeat();
   const fields = new Map();
 
@@ -142,6 +144,8 @@ export function createSeatFields({ seat, onChange } = {}) {
   for (const spec of SEAT_FIELDS) {
     const control = controlFor(spec);
     const field = createField({ label: spec.label, description: spec.description, control });
+    field.el.classList.add('ac-field', `ac-field-${spec.key.replaceAll('_', '-')}`);
+    control.classList.add('ac-control');
     writeControl(spec, control, current[spec.key]);
 
     // The clear affordance — the ONLY way back to unset, and offered only where an unset
@@ -149,7 +153,7 @@ export function createSeatFields({ seat, onChange } = {}) {
     if (isNullable(spec.key)) {
       const clear = document.createElement('button');
       clear.type = 'button';
-      clear.className = 'wk-field-clear';
+      clear.className = 'ac-field-clear';
       clear.textContent = 'inherit';
       clear.title = `Return ${spec.label} to unset — the resolved profile answers it`;
       clear.addEventListener('click', () => {

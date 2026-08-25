@@ -50,14 +50,17 @@ export function createAgentConfigurationView(kit = WorkspaceKit) {
 
   const actions = (() => {
     const check = createAction({
+      className: 'ac-check',
       label: 'Check',
       title: 'Run the real resolver against this seat without creating anything',
     });
     const apply = createAction({
+      className: 'ac-apply',
       label: 'Apply',
       title: "Write this seat into the Team draft — the only durable effect this Surface has",
     });
     const revert = createAction({
+      className: 'ac-revert',
       label: 'Revert',
       title: 'Restore the last applied seat. Not the defaults — reverting into defaults would materialise inheritance',
     });

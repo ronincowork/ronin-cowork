@@ -12,6 +12,9 @@ const terminal = read('public/js/terminal-tile-host.js');
 const primitives = read('public/js/workspace-primitives.js');
 const newTeam = read('public/js/new-team.js');
 const agentConfig = read('public/js/agent-config.js');
+const agentFields = read('public/js/agent-config-fields.js');
+const agentPreview = read('public/js/agent-config-preview.js');
+const agentStyles = read('public/css/agent-configuration.css').replace(/\s+/g, ' ');
 const styles = read('public/workspace-kit.css').replace(/\s+/g, ' ');
 const preflight = read('src/routes/launch-preflight.ts');
 const rosters = read('src/team-rosters.ts');
@@ -44,6 +47,13 @@ for (const contract of ['createAction', 'createActionBar', 'fields.form.actions.
   if (!agentConfig.includes(contract)) problems.push(`Agent Configuration must consume the Kit form-action contract: ${contract}.`);
 }
 if (/document\.createElement\(['"]button['"]\)/.test(agentConfig)) problems.push('Agent Configuration must not construct feature-local action buttons.');
+for (const contract of ['ac-form', 'ac-fields', 'ac-field', 'ac-control']) {
+  if (!agentFields.includes(contract)) problems.push(`Agent Configuration fields are missing the governed feature hook ${contract}.`);
+}
+if (!agentPreview.includes('ac-preview-body')) problems.push('Agent Configuration preview is missing its governed feature hierarchy hook.');
+for (const contract of ['.ac-field {', '.ac-actions[data-dirty=', '.ac-preview-brief {', '.ac-preview-rows {']) {
+  if (!agentStyles.includes(contract)) problems.push(`Agent Configuration feature styling is missing ${contract}.`);
+}
 if (!preflight.includes('proposedRoster') || !preflight.includes('isCreatableTeamName')) problems.push('Preflight must use proposed Team defaults and canonical name availability.');
 if (!rosters.includes("isReservedTeamName = (s: string): boolean => s === 'unassigned'")) problems.push('The canonical Team store must reserve the Unassigned holding token.');
 for (const file of ['league-board.js', 'team-view.js', 'new-team.js']) {

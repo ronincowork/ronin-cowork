@@ -106,6 +106,7 @@ Agent Configuration owns:
 - `public/js/agent-config.js` — view lifecycle, Check/Apply/Revert and draft integration.
 - `public/js/agent-config-fields.js` — eleven controls, unset round-trip and field reasons.
 - `public/js/agent-config-preview.js` — composed brief and resolved-value display.
+- `public/css/agent-configuration.css` — governed feature hierarchy and meaning only.
 - `docs/agent-configuration.md` — this persistent implementation and resume contract.
 
 Committed foundation and integration seams consumed but **not owned** here:
@@ -139,10 +140,11 @@ the Kit form's `actions` slot, so keyboard order is the eleven seat controls fol
 Check, Apply and Revert. `.ac-actions[data-dirty]` remains the feature-owned dirty-state seam;
 the Kit owns action construction, semantics and shared presentation.
 
-There is no Agent Configuration feature stylesheet. Its two-column ratio and responsive
-stacking currently come from shared Workspace Kit CSS. Feature styling remains a separate
-visual-quality leg; it must use governed feature CSS and must not reconstruct `wk-*`
-geometry locally.
+`public/css/agent-configuration.css` is statically linked once from `public/index.html` and
+contains one `@layer app` block. It uses only `ac-*` hooks and shared tokens for field rhythm,
+dirty Apply emphasis, brief readability and resolved-row hierarchy. Workspace Kit still owns
+the two-Surface columns, responsive stacking, Surface/form/action primitives and every
+`wk-*` rule; the feature sheet reconstructs none of them.
 
 ## Lifecycle and state
 
@@ -179,8 +181,10 @@ Current evidence is deliberately narrow:
 - No current scoped browser journey proves the Agent Configuration editor/preview itself.
 - The action-convergence leg is guarded by `scripts/check-workspace-kit.mjs`, which requires
   the Kit actions, action bar and live form action slot and refuses raw feature-local action
-  buttons. Its scoped results belong in the commit handoff. Release-candidate BYOIN remains
-  the designated integrator's responsibility.
+  buttons. The visual-hierarchy leg extends that scoped contract over the feature hooks and
+  stylesheet, while `scripts/check-css.mjs` enforces static loading, app-layer, tokens and
+  namespace isolation. Exact scoped results belong in the commit handoff. Release-candidate
+  BYOIN remains the designated integrator's responsibility.
 
 When feature work resumes, the acceptance proof must cover at least:
 
@@ -201,12 +205,12 @@ When feature work resumes, the acceptance proof must cover at least:
    each value. That attribution belongs to the existing server resolver and
    `POST /api/launch/preflight` response contract; no Agent Configuration module owns it,
    and the browser must not infer it.
-3. There is no governed feature styling; the destination still presents raw Kit geometry.
-4. The selected seat and last-applied snapshot are not separately restored on refresh,
+3. The selected seat and last-applied snapshot are not separately restored on refresh,
    although the canonical New Team draft is persisted per tab.
-5. The preview renders only the currently enumerated resolved rows, not the full ruled
+4. The preview renders only the currently enumerated resolved rows, not the full ruled
    read-only answer and birth reading list.
-6. There is no current, trustworthy scoped browser verdict against this destination.
+5. There is no current, trustworthy scoped browser verdict against this destination, so the
+   owner's earlier not-release-ready visual verdict has not been superseded by inspection.
 
 ## Exact resume checklist
 
@@ -222,10 +226,11 @@ Do these in order; stop rather than guessing when a required ruling is missing.
    seams listed above. Treat this README as a map, not evidence that the tree is unchanged.
 5. State to `@view_mgr` the single bounded leg, touched paths and explicit exclusions before
    editing shared CSS or integration files.
-6. Next bounded leg: implement only governed Agent Configuration feature styling and visual
-   hierarchy on the existing Kit layout.
-7. Keep Kit geometry in the Kit; do not broaden the visual leg into a five-surface
-   foundation rewrite.
+6. Next bounded product leg: extend the existing server resolver/preflight response with
+   `stated_by`, then render it read-only. Stop if the response shape and file/layer spelling
+   are not explicitly owned; never infer attribution in the browser.
+7. Keep Kit geometry in the Kit and feature meaning in `ac-*`; do not broaden a local leg
+   into a five-surface foundation rewrite.
 8. Keep `stated_by`, persistence and expanded resolved readings as separate legs requiring
    their own contracts; never build a browser-side cascade as a shortcut.
 9. After each completed implementation leg, update this README by deleting the finished
@@ -239,6 +244,7 @@ Do these in order; stop rather than guessing when a required ruling is missing.
 
 ## Successor boundary
 
-The next concrete leg is governed feature styling and visual hierarchy on the existing Kit
-layout. `stated_by`, expanded resolved readings and selected-seat restoration remain
-independent contract/behavior legs and must not be smuggled into it.
+The next concrete product leg is the server/preflight `stated_by` contract and read-only
+rendering. Expanded resolved readings and selected-seat restoration remain independent
+behavior legs and must not be smuggled into it. A safe scoped browser journey still owes
+visual acceptance for the styling already shipped.

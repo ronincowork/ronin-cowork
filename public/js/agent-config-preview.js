@@ -77,7 +77,10 @@ export function createSeatPreview() {
     message: 'Each value shows what it resolves to, not yet which layer stated it — stated_by is a pending ask on the resolver.',
   });
 
-  surface.content.append(briefHead, brief, resolvedHead, rows, attribution.el);
+  const body = document.createElement('div');
+  body.className = 'ac-preview-body';
+  body.append(briefHead, brief, resolvedHead, rows, attribution.el);
+  surface.content.append(body);
 
   /** Nothing resolved yet is not a failure — it is the ordinary state before the first
    *  preflight answers. `empty` says so without implying anything broke. */
