@@ -41,6 +41,7 @@ file-for-file. `bin/ronin-store --all` prints every store on this machine, resol
 | `secrets.md` | keys, tokens, and the one mistake that cannot be undone |
 | `skins.md` | changing how Ronin looks |
 | `syncthing.md` | the same folders on every machine — start here when someone cannot find a file |
+| `tmux_server.md` | the session engine — the list disagrees with the roster, sessions vanished at once, or a tmux command is about to be typed |
 | `vpn.md` | reaching your own Ronin from your other devices |
 
 An SOP is fetched by a situation, relayed to a person, and never pushed at a session

@@ -7,8 +7,9 @@
 >
 > **Scope: THE MACHINE, not the sessions on it.** Memory, swap, disk, the kernel, the
 > hardware. Agent processes, tmux sessions and their cleanup are a **separate concern with
-> its own thread** (owner, 2026-08-25) and deliberately are not here — a session hunting a
-> stray process is not asking the same question as one asking whether the box is healthy.
+> its own book**, `ronin_sops/tmux_server.md`, and deliberately are not here: a session
+> hunting a stray process is not asking the same question as one asking whether the box is
+> healthy.
 > **Nothing in this file authorises killing anything.**
 
 This arrives as *"everything is slow"*, *"my session died"*, *"the browser cannot reach
@@ -56,7 +57,9 @@ first: a real ceiling there is the truth about this process's world.
 ## What you may not do
 
 - **Do not kill anything on the strength of this file.** Process cleanup belongs to the
-  sessions concern, not here, and the rules that make it safe live with it.
+  sessions concern, not here: the rules that make it safe live in
+  `ronin_sops/tmux_server.md`, and the tmux server is the one process on the box that
+  takes everyone's work with it.
 - **No `sudo` from a session.** Everything below that needs root is written out and handed
   to the person. A session composes the line; a person runs it.
 - **Nothing that acts on its own.** No reaper, no kill-daemon, no scheduled job that
