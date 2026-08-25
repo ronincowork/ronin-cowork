@@ -6,7 +6,8 @@
 > is the work that remains plus the knowledge that should not have to be rediscovered.
 > One home, this file — the owner has ruled against copies.
 >
-> By `@wipeboard_refactor`, last updated 2026-08-25, `dev` @ `536313f`.
+> By `@wipeboard_refactor`, last updated 2026-08-25, `dev` @ `eb122b3` (default-tab
+> lines corrected after `8837ae5`; the lead has been hot from page entry since `b3fb096`).
 
 ## Goal — the owner's words (2026-08-25)
 
@@ -84,7 +85,9 @@ the wipeboard transport working, not a bug.
 - The channel surface prepends its tab strip to `surface.el`, OUTSIDE
   `.wk-surface-content`; the panels live inside content, which is a column flex.
 - `createChannelSurface`'s unqualified default tab is **'chat', which is reserved and
-  deliberately empty** — always pass `selected`. The team page passes `'wipeboard'`.
+  deliberately empty** — always pass `selected`. The team page passes `'chat'` explicitly
+  (owner, 2026-08-25, `8837ae5`: "I don't want to land on the whiteboard … I know to
+  check the whiteboard tab"). An empty chat on entry is the ruling, not the fallback.
 
 **Server lessons that keep the page fast** (`src/routes/wipeboards-api.ts`,
 `src/tmux.ts`): the dial and the durable key ride `listSessions`' single tmux exec
@@ -120,7 +123,7 @@ KOTOBA row exists).
 
 | # | Question | State |
 |---|---|---|
-| T1 | Right slot default | **RULED: team_commons**, opening on the wipeboard tab |
+| T1 | Right slot default | **RULED: team_commons**, opening on the chat tab (`8837ae5`; the wipeboard is one tab over) |
 | T2 | Roster default | **RULED: middle**; chips on collapse (leg 4) |
 | T3 | "Open in other seat" gesture | open — suggest ⇄ on the card; long-press on touch |
 | T4 | Raise the cap with two terminal seats? | open — suggest no: 4 fits the ruled arithmetic |
