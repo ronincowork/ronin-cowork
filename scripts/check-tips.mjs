@@ -47,7 +47,14 @@ const browser = await pw.chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 let rows;
 try {
-  await page.goto(url, { waitUntil: 'networkidle', timeout: 20000 });
+  // NOT `networkidle`. This page polls — /api/session-max alone lands roughly twice a
+  // second, and settei, home, machine and the sockets fill the rest — so the longest
+  // window with zero requests in flight is 24 ms, measured 2026-08-25. `networkidle`
+  // wants 500 ms of quiet and can therefore never fire: it times out and the gate is
+  // red for a reason that has nothing to do with a label. `load` is a fact about the
+  // document rather than a bet on the network going silent, and the settle below is
+  // what actually waits for the client to paint.
+  await page.goto(url, { waitUntil: 'load', timeout: 20000 });
   await page.waitForTimeout(2000);
   // Bring the commons surfaces into existence — their controls do not exist until the
   // tab is opened, and their labels are the majority of the set.
