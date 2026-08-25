@@ -16,6 +16,9 @@
   .tw-config-key { flex: 0 0 34%; color: var(--muted); }
   .tw-config-value { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
 
+  /* -- the docs slice: mdedit's own pane (.home-docs, style.css), given the surface's height -- */
+  .tw-docs { display: flex; height: 100%; }
+
   /* -- the wipeboard slice: the thread, and the owner's line under it -- */
   .twb { display: flex; flex-direction: column; min-height: 0; height: 100%; }
   .twb-thread { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-5) var(--space-6); }

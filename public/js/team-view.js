@@ -21,6 +21,8 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { membersOfTeam, refreshTeams, subscribe, teamByName } from './team-controller.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { createTeamWipeboard } from './team-wipeboard.js';
+import { buildDocs } from './docs.js';
+import { refreshHome } from './home.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -51,7 +53,23 @@ export function createTeamView() {
   // The wipeboard slice is real (owner, 2026-08-25 — the thread, and nothing else; the
   // Brief stays Team Configuration's). Its board id follows the roster: see setBoard below.
   const wipeboard = createTeamWipeboard();
-  const docs = el('p', 'tw-note', 'The Team’s working documents arrive with their own slice.');
+  // DOCS IS THE COMMONS' ▧ DOCS PANE, NOT A TEAM COPY (owner, 2026-08-25: "the docs don't
+  // show like it does on the commons"). `buildDocs` is mdedit itself — the same list over
+  // the same `/api/home` letters, the same editor — narrowed to the roster's members. The
+  // wrapper carries `home-docs` because that is the class mdedit's list/editor switch is
+  // written against; `tw-docs` only gives it the surface's height.
+  const docsPane = el('div', 'home-docs tw-docs');
+  const docs = buildDocs(null, docsPane, () => entered && !docsPane.parentElement?.hidden,
+    (name) => membersOfTeam(team).some((m) => m.name === name));
+  const docsService = {
+    el: docsPane,
+    mount: () => {},
+    // The list reads `homeData`, which only the Commons poll fills; ask for a read on the
+    // way in so a page opened straight onto a Team is not looking at an empty letter box.
+    enter: () => { void refreshHome(); docs.enter(); },
+    leave: () => {},
+    destroy: () => {},
+  };
   const config = el('div', 'tw-config');
   const service = (node) => ({ el: node, mount: () => {}, enter: () => {}, leave: () => {}, destroy: () => {} });
   const channels = createChannelSurface({
@@ -60,7 +78,7 @@ export function createTeamView() {
     // whiteboard. I want to land on chat. That's fine that it's empty.") — explicit,
     // not the accident of an unqualified default.
     selected: 'chat',
-    services: { wipeboard, docs: service(docs), 'team-configuration': service(config) },
+    services: { wipeboard, docs: docsService, 'team-configuration': service(config) },
   });
   const placeholder = el('div', 'tw-placeholder');
   placeholder.append(
