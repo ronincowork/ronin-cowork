@@ -533,7 +533,16 @@ sect "the box"
 machine_kernel_log_readable; case $? in
   0) ok "the kernel log is readable — an agent can say what was killed and when" ;;
   2) note "no kernel log interface here — OOM history not assessed on this system" ;;
-  *) find_ "the kernel log is NOT readable, so nothing here can say what was killed or when — only that something vanished. remedy: sudo $(machine_kernel_log_action), then log out and back in. It is read-only and it is your own account, but afterwards anything running as this user can read system logs. ronin_sops/remote_machine_health.md § what killed it" ;;
+  # A NOTE, NOT A FINDING (owner, 2026-08-25). `kernel.dmesg_restrict=1` is the stock
+  # default on Debian and Ubuntu, so a finding here goes red on a correctly-configured box
+  # — for every third-party install, on day one, forever. Nothing in Ronin reads the kernel
+  # log; it buys an agent one better sentence after an OOM kill and nothing else. And the
+  # remedy WIDENS PRIVILEGE: `adm` lets everything running as this user read system logs,
+  # not just doctor. A health check does not get to lobby for more access than the product
+  # needs. Case 2 below — no kernel log interface at all, which is strictly worse and
+  # cannot be fixed — was already a note; grading the fixable case harder than the
+  # permanent one was backwards. The remedy stays in the text for anyone who wants it.
+  *) note "the kernel log is not readable, so after something is killed nothing here can say what or when — only that it vanished. Optional, and Ronin needs none of it: 'sudo $(machine_kernel_log_action)' then log out and back in buys that history, at the cost of letting anything running as this user read system logs. ronin_sops/remote_machine_health.md § what killed it" ;;
 esac
 
 machine_has_swap; case $? in
