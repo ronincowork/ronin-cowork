@@ -224,6 +224,40 @@ test('automatic retries stop at the cap, and re-posting the task starts them aga
   assert.equal(attempts, 4);
 });
 
+test('a send that outlasts the poll tick is not joined by the ticks that start meanwhile', async () => {
+  // team_page, 2026-08-25: one DraftPlan→CutCode change, FIVE notices typed. The send
+  // into a busy pane took longer than the 3s tick, the record was written only after
+  // it, and every tick that started in between read the old task and sent again.
+  const sent: string[] = [];
+  let release: () => void = () => {};
+  const slow: Sender = async (_n, text) => {
+    sent.push(text);
+    await new Promise<void>((r) => (release = r));
+  };
+
+  await seedTegami('axes_overlap', 'DraftPlan');
+  await markRoleDelivered('axes_overlap', 'DraftPlan');
+  await writeSessionRole('axes_overlap', 'CutCode');
+
+  const first = observeRoleChange('axes_overlap', false, slow);
+  while (sent.length === 0) await new Promise((r) => setTimeout(r, 5)); // the first is now typing
+  // Three more ticks, and the owner's POST, all while the first is still in the pane.
+  await Promise.all([
+    observeRoleChange('axes_overlap', false, slow),
+    observeRoleChange('axes_overlap', false, slow),
+    observeRoleChange('axes_overlap', true, slow),
+  ]);
+  assert.equal(sent.length, 1, 'the record is claimed before typing, so nobody else types');
+  release();
+  await first;
+  assert.equal(await roleDeliveryFault('axes_overlap'), null);
+
+  // Saving the letter again with the same task — a ladder update — is not a change.
+  await writeSessionRole('axes_overlap', 'CutCode');
+  await observeRoleChange('axes_overlap', false, slow);
+  assert.equal(sent.length, 1);
+});
+
 test('first sight of a session is a baseline, never a transition', async () => {
   const sent: string[] = [];
   const record: Sender = async (_n, text) => void sent.push(text);
