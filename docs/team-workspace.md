@@ -191,6 +191,7 @@ The current chain landed as:
 - `09f579c` — replaced disabled Tile-control lookalikes with the complete existing Tile.
 - `092ddfc` — released managed Team workbench controls in Workspace Kit.
 - `ab659d7` — migrated Team to the managed workbench contract.
+- `bfeb772` — replaced card-driven transport resets with the page-lifetime warm host pool.
 
 For `ab659d7`, the declared rendered verification ran once:
 
@@ -214,6 +215,16 @@ appropriate BYOIN mode on the exact release candidate. A SKIP remains unverified
 The warm-pool change carries scoped evidence in `tests/team-terminal-pool.test.js`:
 repeated card revisits do not reopen transport, while membership loss and page cleanup
 destroy and remove every affected host exactly once. BYOIN is not run for this dev leg.
+
+Final retirement audit on 2026-08-25 checked current `dev` at `5358577` against the shipped
+Team modules and this document. The scoped command was:
+
+```text
+node --test tests/team-terminal-pool.test.js
+2 passed, 0 failed, 0 skipped
+```
+
+No candidate-wide BYOIN was run: this audit is not the dev-to-master release boundary.
 
 ## Known limits
 
