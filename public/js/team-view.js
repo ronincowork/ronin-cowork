@@ -56,6 +56,10 @@ export function createTeamView() {
   const service = (node) => ({ el: node, mount: () => {}, enter: () => {}, leave: () => {}, destroy: () => {} });
   const channels = createChannelSurface({
     label: 'Team channels',
+    // Land on the wipeboard — the team commons' working tab. The unqualified default
+    // was 'chat', which is RESERVED and empty: the owner opened the team page and met
+    // a blank panel (2026-08-25).
+    selected: 'wipeboard',
     services: { wipeboard, docs: service(docs), 'team-configuration': service(config) },
   });
   const placeholder = el('div', 'tw-placeholder');
