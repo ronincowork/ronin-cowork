@@ -78,12 +78,14 @@ function createWorkbenchLayout(options = {}) {
     for (const slot of declaration.slots) {
       const wrapper = wrappers.get(slot.name);
       const up = state.faces?.[slot.name] || '';
+      // A face that is down is taken OUT of the wrapper, not hidden in place: a surface
+      // sets its own display, so the `hidden` attribute does not conceal it — the owner
+      // met the commons painted above a terminal, tab strip and all (2026-08-25).
       for (const [face, node] of faces.get(slot.name)) {
         if (!face) continue;
         if (face === up) {
-          if (node.parentElement !== wrapper) wrapper.append(node);
-          node.hidden = false;
-        } else if (node.parentElement === wrapper) node.hidden = true;
+          if (node.parentElement !== wrapper) wrapper.prepend(node);
+        } else if (node.parentElement === wrapper) node.remove();
       }
       wrapper.dataset.face = up;
       const strip = switches.get(slot.name);
