@@ -2,9 +2,9 @@
 
 ## Status
 
-**Shipped preview; owning session retiring.** This file is the durable restart point and
-records the implementation audited against `dev` HEAD `b0663b2` on 2026-08-25. A fresh
-successor must receive an explicit owner or `view_mgr` assignment before extending it.
+**Active product work on `dev`.** Retirement was cancelled by owner direction. This file
+is the durable implementation and restart contract; each bounded leg updates it when the
+shipped behavior changes.
 
 The implementation is a registered, predominantly read-only preview on `dev`. It is useful
 as an inventory, but it is not a complete authoring destination. No Customize-specific
@@ -70,7 +70,7 @@ This matrix is the v1 product authority. Completion may add a planned capability
 |---|---|---|
 | Macros | Guided agent handoff | Reads `/api/macros`; seed/path handoff |
 | SOPs | Read-only | Reads `/api/sops`; resolved procedure text expands in place |
-| Actions | Guided agent handoff | Unavailable: read route missing |
+| Actions | Guided agent handoff | Reads `/api/actions`; resolved action text expands in place |
 | Tools | Read-only | Unavailable: table parser and route missing |
 | Role families | Direct editor for membership only | Read-only list; editor not moved |
 | Session roles | Guided agent handoff | Reads `/api/session-roles`; directory guidance |
@@ -79,7 +79,7 @@ This matrix is the v1 product authority. Completion may add a planned capability
 | Skins | Read-only | Reads `/api/skins` |
 | Session readings | Read-only | Unavailable: read route missing |
 
-Three unavailable resources must never render an empty list: an absent route cannot prove
+Two unavailable resources must never render an empty list: an absent route cannot prove
 that the owner's shelf is empty. Saved Launches is now an ordinary read-only resource; the
 earlier deferred/inert state was removed when its live read was wired.
 
@@ -168,10 +168,10 @@ Established from the committed tree:
 
 - The four modules are committed in `ef801cb`.
 - Registration is committed in `d36b440`.
-- Static inspection confirms three sections, ten resources, **seven live reads, three
+- Static inspection confirms three sections, ten resources, **eight live reads, two
   unavailable resources, and no deferred resource**, plus the generation and repaint
-  guards. SOPs resolve stock and owner files whole, include provenance, and expose the
-  resolved procedure text in native disclosure controls.
+  guards. SOPs and Actions expose their resolved full text in native disclosure controls;
+  both carry the provenance and shadow semantics of their storage contracts.
 - `a0f30f4` established and checks the shared feature-CSS/skin contract, but its rendered
   skin evidence names League, Team, and New Team—not Customize.
 
@@ -188,7 +188,7 @@ Ronin against the live tmux server for UI evidence.
 
 ## Known limits and blocked decisions
 
-1. Actions, tools, and session readings lack a complete read surface.
+1. Tools and session readings lack a complete read surface.
 2. `TOOLS.md` is a table; the TypeScript reader lacks its keyed-table shadow rule.
 3. Malformed definition files are logged and dropped server-side, so the owner cannot see the broken file here.
 4. Role-family membership has a typed writer, but its editor has not moved from New Session.
@@ -210,17 +210,18 @@ Ronin against the live tmux server for UI evidence.
 5. Report committed state, remaining work, current visual verdict, one bounded next leg, requested shared seams, and non-touch scope to `view_mgr`; wait for acknowledgement.
 6. Classify Surface spacing, control styling, and cross-surface layout changes as Kit or
    feature work. The stylesheet location itself is already ruled: `public/css/`.
-7. Choose one bounded leg. **Next: Actions read-only/guided-handoff**, reusing the existing
-   entry catalog parser and adding only its typed route. Tools remains separately blocked
-   on its table parser; take visual hierarchy only after Kit/feature ownership is explicit.
+7. Choose one bounded leg. **Next: Session Readings**, but first verify its five-level,
+   symlink and containment contract; stop if no typed safe projection can be derived.
+   Tools remains separately blocked on its table parser. Take visual hierarchy only after
+   Kit/feature ownership is explicit.
 8. Obtain a named seam assignment before editing shared server or shell paths. Never bundle parser, route, malformed-data, or saved-launch policy work by assumption.
 9. Edit only approved paths. Preserve the Sessions 1/2/4 raw Tile grid and every other destination.
 10. Record direct dogfood and scoped diagnostic evidence; leave BYOIN to the designated release integrator.
 11. Stage only owned/approved paths and inspect the staged path list. Commit and push verified work only to `dev`. Never touch `master`, merge a PR, enable auto-merge, repoint the service, or treat a PR as release authorization.
 12. Delete completed work from this README, refresh verification, and leave the successor one bounded next action—not a historical diary.
 
-## Retirement constraints
+## Active constraints
 
-The retiring session owns no further feature action. A successor starts from this document,
-not `wip/buildouts/`, and must preserve unrelated dirty work. `master`, PR decisions,
-service pointers, and other sessions' files remain owner-controlled and out of scope.
+Continue leg by leg from this document, never `wip/buildouts/`, and preserve unrelated
+dirty work. `master`, PR decisions, service pointers, release BYOIN, and other sessions'
+files remain owner-controlled and out of scope.

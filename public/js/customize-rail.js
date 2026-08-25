@@ -10,8 +10,8 @@
  *
  * `read` IS THE WHOLE HONESTY TEST OF THIS PREVIEW. A resource with no route does not get
  * an empty list — an empty list is a claim that the shelf is empty, which is false. It
- * gets the `unavailable` state and says which route is missing. Three resources are in that
- * position today (actions, tools, session readings) because their read routes are a
+ * gets the `unavailable` state and says which route is missing. Two resources are in that
+ * position today (tools, session readings) because their read routes are a
  * prerequisite the owner has not unblocked; drawing them as empty would be the surface
  * lying about the owner's own files.
  */
@@ -32,10 +32,10 @@ export const RESOURCES = [
     capability: 'handoff', read: '/api/macros', file: 'MACROS.md', what: 'a workflow an agent runs when you type +name:',
     blurb: 'Saved instructions you would otherwise have typed to your agent.' },
   { id: 'sops', section: 'behavior', mark: '▤', label: 'SOPs',
-    capability: 'read-only', read: '/api/sops',
+    capability: 'read-only', read: '/api/sops', readLabel: 'Read procedure',
     blurb: 'How this house goes about a domain — fetched by a situation, never pushed.' },
   { id: 'actions', section: 'behavior', mark: '◇', label: 'Actions',
-    capability: 'handoff', read: null, why: 'No read route exists for ACTIONS.md yet (prerequisite P3).',
+    capability: 'handoff', read: '/api/actions', readLabel: 'Read action',
     file: 'ACTIONS.md', what: 'a primitive step macros are composed from',
     blurb: 'The cataloged procedures macros are made of.' },
   { id: 'tools', section: 'behavior', mark: '⚙', label: 'Tools',

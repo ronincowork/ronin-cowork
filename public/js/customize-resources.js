@@ -80,7 +80,7 @@ export async function renderResource(resource, surface) {
     // feature-local navigation foundation.
     if (typeof entry.content === 'string') {
       const details = el('details', 'cz-document');
-      details.append(el('summary', null, 'Read procedure'));
+      details.append(el('summary', null, resource.readLabel || 'Read entry'));
       details.append(el('pre', 'cz-document-text', entry.content));
       card.el.append(details);
     }

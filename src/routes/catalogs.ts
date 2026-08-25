@@ -11,6 +11,7 @@ import { projectRootsOfSessions } from '../tmux.js';
 import { listMacros } from '../macros.js';
 import { listSkins } from '../skins.js';
 import { listSops } from '../sops.js';
+import { listActions } from '../actions.js';
 import { listAgentAvailability } from '../agents.js';
 import { dispatchInstall } from '../agent-install.js';
 import {
@@ -58,6 +59,16 @@ const bodyFields = (body: unknown) => {
 };
 
 export function registerCatalogs(app: express.Express): void {
+  /** Resolved ACTIONS.md entries. Readable instructions with entry-level provenance;
+   * authoring remains the existing seed-and-agent handoff. */
+  app.get('/api/actions', async (_req, res) => {
+    try {
+      res.json(await listActions());
+    } catch (e) {
+      res.status(500).json({ error: errMsg(e) });
+    }
+  });
+
   /** Resolved SOP shelf: stock plus whole-file owner shadows, full text included so the
    * Customize read-only view can genuinely read the selected procedure. */
   app.get('/api/sops', async (_req, res) => {
