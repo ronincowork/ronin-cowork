@@ -188,3 +188,28 @@ test('membership loss and page exit destroy every host — streaming, warm or pa
   assert.equal(p.size, 0);
   assert.equal(c.armed, 0, 'no timer outlives the page');
 });
+
+test('keepHot mounts the lead hidden at entry — hot without being on stage', () => {
+  const h = harness(); const c = clock();
+  const p = pool(h, c);
+  p.sync(['lead', 'a']);
+  p.setPinned(['lead']);
+  assert.equal(p.keepHot('lead'), true);
+  assert.equal(h.records[0].opens[0], 'lead', 'streaming from entry');
+  assert.equal(h.records[0].el.hidden, true, 'but not on stage');
+  assert.equal(p.active, '', 'nothing focused by keepHot itself');
+  c.fire();
+  assert.equal(h.records[0].parks, 0, 'no grace ever collects a keepHot — it is not a prewarm');
+  assert.equal(p.keepHot('lead'), false, 'idempotent: already streaming');
+});
+
+test('a keepHot lead survives cap pressure like any pin', () => {
+  const h = harness(); const c = clock();
+  const p = pool(h, c);
+  p.sync(['lead', 'a', 'b', 'c', 'd']);
+  p.setPinned(['lead']);
+  p.keepHot('lead');
+  for (const name of ['a', 'b', 'c', 'd']) p.show(name, false);
+  assert.equal(h.records[0].parks, 0, 'the hidden lead kept its stream through the squeeze');
+  assert.equal(h.records[1].parks, 1, 'the coldest unpinned member yielded');
+});

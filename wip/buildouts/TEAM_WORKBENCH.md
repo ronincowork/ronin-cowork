@@ -50,8 +50,14 @@ scrollTop round-trips) settled in minutes what three theory-driven "fixes" did n
 - Seats are free: page entry mounts nothing; first show mounts; **warmth is durable** —
   no clock ever parks a shown tile (owner overruled a 25s grace: toggled members stay
   hot).
-- **Every `team_lead` is PINNED** — never parked by anything but membership loss or page
-  exit. The lead's Tile auto-opens on entry, unfocused.
+- **Every `team_lead` is PINNED and HOT FROM ENTRY** — `keepHot()` mounts each lead
+  hidden the moment the page opens (entry, re-entry, and roster change all re-ensure
+  it); nothing but membership loss or page exit parks a pin. The lead's Tile is also
+  the default focused session when nothing is restored. NOTE: this keys off the 人
+  designation (`@ronin-lead`), which is hand-set — a team with no designated lead has
+  no always-hot member, which is exactly how the owner first met it (2026-08-25;
+  five-eyes had none, view_mgr was then designated via
+  `POST /api/sessions/:name/team_lead {"teams":[…]}` as the test fixture).
 - **Stream cap 4** (hot+warm together): at the cap the least-recently-shown UNPINNED
   tile *parks* (transport closed, seat and painted DOM kept); nothing is destroyed for
   the cap; the cap yields if only pins/visible remain.
@@ -118,6 +124,7 @@ KOTOBA row exists).
 | T2 | Roster default | **RULED: middle**; chips on collapse (leg 4) |
 | T3 | "Open in other seat" gesture | open — suggest ⇄ on the card; long-press on touch |
 | T4 | Raise the cap with two terminal seats? | open — suggest no: 4 fits the ruled arithmetic |
+| T5 | **Assign the team lead live from the UI** — the owner needs to designate the 人 without an API call ("I need to be able to assign team lead live, but that's another step", 2026-08-25). Likely a control on the roster card or Team Configuration, posting to the existing route | open — a leg of its own, not started |
 
 ## Constraints
 

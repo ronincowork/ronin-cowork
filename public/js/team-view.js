@@ -103,6 +103,16 @@ export function createTeamView() {
   // the click lands on a painted terminal. The dwell keeps a pointer skating across the
   // whole roster from spawning a transport per card; the pool itself declines at the
   // stream cap and quietly parks a prewarm nobody clicks.
+  // THE LEAD IS ALWAYS HOT — from page entry, focused or not, first visit or return.
+  // Pin every 人, then mount each one hidden if it is not already streaming. Runs on
+  // load, on every roster change, and on every enter (a re-entry skips load() when the
+  // team is unchanged, which is exactly how the lead once arrived cold — 2026-08-25).
+  const ensureLeadHot = (members) => {
+    const leads = members.filter((m) => m.team_lead).map((m) => m.name);
+    terminalPool.setPinned(leads);
+    for (const lead of leads) terminalPool.keepHot(lead);
+  };
+
   let dwellTimer = 0;
   const armPrewarm = (name) => {
     window.clearTimeout(dwellTimer);
@@ -193,7 +203,7 @@ export function createTeamView() {
     // takes the lead's stream; then, with nothing chosen and nothing showing, the
     // lead's Tile opens — unfocused, so the keyboard is not stolen. A leaderless team
     // keeps the placeholder and pins nobody.
-    terminalPool.setPinned(members.filter((m) => m.team_lead).map((m) => m.name));
+    ensureLeadHot(members);
     if (entered && team === name && !terminalPool.active) {
       const lead = members.find((m) => m.team_lead);
       if (lead && terminalPool.show(lead.name, false)) {
@@ -216,7 +226,7 @@ export function createTeamView() {
         const members = membersOfTeam(team);
         const roster = teamByName(team);
         syncTerminalPool(members);
-        terminalPool.setPinned(members.filter((m) => m.team_lead).map((m) => m.name));
+        ensureLeadHot(members);
         renderCards(members);
         renderConfig(roster.durable ? roster : null, members);
         wipeboard.setBoard((roster.durable && roster.wipeboard) || team);
@@ -231,9 +241,15 @@ export function createTeamView() {
       workbench.restore(typed);
       const members = membersOfTeam(team);
       syncTerminalPool(members);
+      ensureLeadHot(members);
       const eligible = terminalPool.has(typed.focusedSession);
       if (eligible) { terminalPool.show(typed.focusedSession, false); placeholder.hidden = true; }
-      else placeholder.hidden = false;
+      else {
+        // Nothing restored: the lead is the team's default session, on re-entry too.
+        const lead = members.find((m) => m.team_lead);
+        if (lead && terminalPool.show(lead.name, false)) placeholder.hidden = true;
+        else placeholder.hidden = false;
+      }
       channels.enter(context);
       if (team !== loaded) void load(team);
     },

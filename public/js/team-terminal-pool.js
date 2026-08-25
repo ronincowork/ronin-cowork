@@ -148,6 +148,19 @@ export function createWarmTerminalPool({
     return true;
   };
 
+  /** Mount a member hidden and keep it that way — the pinned lead's entry state
+   *  (owner, 2026-08-25: "the team manager is always hot, regardless", which means hot
+   *  from page entry, not merely hot-once-clicked). Unlike a prewarm it rides no grace
+   *  and counts as recently shown. No-op when already streaming or on stage. */
+  const keepHot = (name) => {
+    const entry = entries.get(name);
+    if (!entry || streaming(entry) || name === active) return false;
+    stream(name, entry);
+    entry.host.hide();
+    touch(name);
+    return true;
+  };
+
   /** The hover flourish: start streaming hidden so the click lands on a painted tile.
    *  Declines politely at the cap — a hover never costs a genuinely warm member. */
   const prewarm = (name) => {
@@ -178,6 +191,7 @@ export function createWarmTerminalPool({
     sync,
     show,
     prewarm,
+    keepHot,
     setPinned,
     destroyAll,
     has: (name) => entries.has(name),
