@@ -139,9 +139,38 @@ KOTOBA row exists).
   without touching team code, AND the team page could show the commons on the LEFT
   purely by changing its declared default. If either is untrue, the cut does not land.
 
+**The control — a layout map in the app bar, not chevrons (owner, 2026-08-25):** "Carets
+suck and take up valuable real estate. For workspace one it's an entire row by itself."
+Today each column carries its own collapse rail — a `«` row above the left tile, a `^` on
+the roster, a `»` on the commons — and the left one costs a whole row of terminal.
+Instead: **one small drawing of the workspace in the header — three little rectangles,
+left · middle · right. Each is a toggle: click it off and that column is gone, click it
+on and it is back; all three on is the full bench.** Reordering is done *in the map* —
+drag a rectangle past another and the real columns swap. The map is the slot arrangement
+made visible, so it is Kit-owned and shows whatever N slots the destination declared;
+nothing in it knows the word "team". The column splitters stay for resizing (they sit
+between columns and cost no row). The chevron rails go.
+
+*Why drag in the map and not the columns* (the owner asked which is easier): the map
+is easier and it is enough. Its targets are tiny, fixed and always visible; a drag there
+is the same pointer-capture code the splitters already use; and it works the same on
+touch. Dragging a live column means dragging an xterm — which fights the terminal's own
+text selection, needs a drop indicator across a 600px-wide box, and has to redraw the
+map anyway, since the map only reflects arrangement state. If column-drag is ever
+wanted it is a second gesture over the same state (leg 5), never a second source of
+truth.
+
+*Where it plugs in:* the managed workbench (`public/js/workspace-layouts.js`) already
+keeps per-surface `collapsed` state with `setCollapsed`, `snapshot` and `restore`, and
+it builds the `.wk-workbench-rails` strip and each `.wk-workbench-collapse` action from
+that state. The map's toggles are that same state with a new face; the rails and the
+collapse actions are what get deleted. The team-wiring to remove is right there too —
+`collapsed` is keyed on the fixed names `terminalTile · kanban · channels`, which is
+why the slots cannot be reordered today.
+
 | # | Leg | Ends when |
 |---|---|---|
-| 1 | **Kit: slot arrangement** — N slots, surfaces assigned, swap, per-destination persistence; no team knowledge | the team page renders identically to today *through the new machinery* |
+| 1 | **Kit: slot arrangement** — N slots, surfaces assigned, swap, per-destination persistence; no team knowledge. Its control is the **layout map** in the app bar (click = show/hide, drag = reorder); the per-column chevron rails are retired with it | the team page renders identically to today *through the new machinery*, minus the chevron rows, with the map in the header |
 | 2 | **Second terminal seat** — left and right can both be terminals, or either the commons; cards route to the seat last touched | two terminals side by side; state persists per team |
 | 3 | **Seat-aware hot bench** — pool `active` becomes per-seat; cap arithmetic already fits | flipping one seat never disturbs the other; the pin holds |
 | 4 | **Movable, shrinkable roster** — docks any slot, collapses to a chip rail | the owner can live in two terminals |
@@ -162,6 +191,7 @@ go in any order, or in parallel with the chain.
 | T3 | "Open in other seat" gesture | open — suggest ⇄ on the card; long-press on touch |
 | T4 | Raise the cap with two terminal seats? | **RULED: no** — four hot seats, lead + next three by last use (owner, 2026-08-25) |
 | T5 | **Assign the team lead live from the UI** ("I need to be able to assign team lead live", 2026-08-25) | **RULED: through the tile buttons** — the tile already has a session_role selector; the 人 goes there. Leg 7 |
+| T7 | Show/hide and reorder the columns | **RULED: a layout map in the app bar** — three toggling rectangles; drag within the map to reorder. No chevron rails (owner, 2026-08-25). Column-drag, if ever, is a second gesture in leg 5 |
 | T6 | Name for the middle column — the owner's "action column": roster, new-session builder, whatever acts on the team | open — "action" is the placeholder; needs a KOTOBA word |
 
 ## Constraints
