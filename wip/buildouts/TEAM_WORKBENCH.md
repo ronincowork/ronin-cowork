@@ -215,7 +215,9 @@ ViewHost draws in the bar; and the team page shrinks to the declaration.
 ```
 
 Operations, each returning a new state: `toggle(name)` (refuses to hide the last
-visible one), `move(name, index)`, `resize(name, percent)` (clamped 15–70; the
+visible one), `move(name, index)`, `resize(name, percent)` (clamped to the slot's
+declared floor — 15 for a workspace, **6 for the action column, which the owner wants
+"quite thin"** — and 70; the
 neighbour to the right yields, as today's "last changed edge yields"), `normalize(state,
 declaration)` (drops unknown names, adds missing ones at the end, rescales visible
 widths to 100). `migrateWorkbenchState(old)` turns today's
@@ -309,6 +311,33 @@ That is the whole of the team page's geometry. Commons-on-the-left is
 1. arrangement module + tests · 2. frame takes the declaration; rails deleted · 3. map
 primitive + CSS · 4. ViewHost bar slot · 5. contract + migration + team page declaration
 · 6. gates, probe evidence, README.
+
+### 8a. The thin roster, and two workspaces that behave alike (owner, 2026-08-25)
+
+"The roster can only be so skinny, but we should make it so that it can get quite thin.
+It should have different modes when it's very thin — it maybe doesn't carry every piece
+of information, it just becomes the session name. And both left and right workspaces
+should be the same size; they don't seem to work exactly the same now."
+
+Two consequences, both inside leg 1:
+
+- **A declared floor per slot, and a compact mode below a width.** The declaration
+  carries `min` per slot (`widths: [40, 20, 40]` becomes `slots: [{name, width, min}]`).
+  The frame writes the slot's rendered width class onto its wrapper —
+  `data-width="compact"` under a declared threshold (the roster's is ~11rem), `"full"`
+  above — so a surface can change what it draws without measuring anything. The roster
+  card in compact mode is the session name and the 人 mark, nothing else; the readings of
+  leg 6 come back when it widens. (Container queries would do this in CSS alone; the
+  attribute is chosen because `check-css` forbids feature sheets owning Kit geometry, and
+  a feature reacting to a Kit-written attribute is exactly the boundary the README wants.)
+- **Symmetry is a property of the arrangement, not of "left" and "right".** Today the
+  frame has `left` and `right` widths, clamps each 25–60, and makes *the right one* yield
+  when they overlap (`setWidths`: "the last changed edge yields" — in fact the right
+  always does). The kanban is `minmax(12rem, 1fr)` and takes whatever is left, which is
+  why it cannot go thin and why the two workspaces feel different. Widths by slot name
+  with the same clamp and the same yield rule (the neighbour toward the middle yields)
+  removes the asymmetry by construction; a probe dragging each splitter by the same
+  distance must move each workspace by the same amount.
 
 ### 9. Chosen without asking — say if wrong
 
