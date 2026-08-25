@@ -28,7 +28,7 @@ import { preflight } from './new-team-preflight.js';
 import { changedTeamDraft, selectedDraftSeat } from './team-draft-controller.js';
 
 export function createAgentConfigurationView(kit = WorkspaceKit) {
-  const { createSurface } = kit.primitives;
+  const { createSurface, createAction, createActionBar } = kit.primitives;
 
   const configuration = createSurface({ className: 'ac-configuration', label: 'Seat configuration' });
   const preview = createSeatPreview();
@@ -49,26 +49,32 @@ export function createAgentConfigurationView(kit = WorkspaceKit) {
   });
 
   const actions = (() => {
-    const bar = document.createElement('div');
-    bar.className = 'ac-actions';
-    const check = document.createElement('button');
-    check.type = 'button';
-    check.textContent = 'Check';
-    check.title = 'Run the real resolver against this seat without creating anything';
-    const apply = document.createElement('button');
-    apply.type = 'button';
-    apply.textContent = 'Apply';
-    apply.title = "Write this seat into the Team draft — the only durable effect this Surface has";
-    const revert = document.createElement('button');
-    revert.type = 'button';
-    revert.textContent = 'Revert';
-    revert.title = 'Restore the last applied seat. Not the defaults — reverting into defaults would materialise inheritance';
-    bar.append(check, apply, revert);
-    const dirty = (on) => bar.dataset.dirty = on ? 'true' : 'false';
-    return { el: bar, check, apply, revert, dirty };
+    const check = createAction({
+      label: 'Check',
+      title: 'Run the real resolver against this seat without creating anything',
+    });
+    const apply = createAction({
+      label: 'Apply',
+      title: "Write this seat into the Team draft — the only durable effect this Surface has",
+    });
+    const revert = createAction({
+      label: 'Revert',
+      title: 'Restore the last applied seat. Not the defaults — reverting into defaults would materialise inheritance',
+    });
+    const bar = createActionBar({
+      className: 'ac-actions',
+      label: 'Seat configuration actions',
+      actions: [check, apply, revert],
+    });
+    const dirty = (on) => { bar.el.dataset.dirty = on ? 'true' : 'false'; };
+    return { el: bar.el, check: check.el, apply: apply.el, revert: revert.el, dirty };
   })();
 
-  configuration.content.append(fields.el, actions.el);
+  // The form owns the action slot and therefore the keyboard order: all eleven controls,
+  // then Check, Apply and Revert. The Surface contains one complete form rather than a
+  // feature-local action sibling beside it.
+  fields.form.actions.append(actions.el);
+  configuration.content.append(fields.el);
 
   /** One dry run, and the seat's own verdict out of it. Batch-level `team` and `capacity`
    *  are New Team's to show and are deliberately untouched here. */

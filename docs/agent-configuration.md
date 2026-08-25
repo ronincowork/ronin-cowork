@@ -124,7 +124,7 @@ The initial feature implementation is commit `9294446`. Shared destination wirin
 `d36b440`. Later draft-controller integration is already present in the current tree; verify
 history and live code again when resuming rather than treating those hashes as tip.
 
-## Workspace Kit contract and known deviation
+## Workspace Kit contract
 
 The view reaches the Kit only through `WorkspaceKit`:
 
@@ -134,13 +134,10 @@ The view reaches the Kit only through `WorkspaceKit`:
 - `createForm`, `createField` and `createNotice` supply the editor structure and validation
   presentation.
 
-The Kit also supplies `createAction` and `createActionBar`. **Agent Configuration does not
-consume them yet.** Its `.ac-actions` container and Check/Apply/Revert buttons are built with
-raw DOM elements, and the bar is appended beside the Kit form instead of using the Kit's
-action primitives / form action slot. The settled persistent Kit contract names this as
-pre-release cleanup, not a new primitive or an open foundation decision. Move all three
-actions as one bounded convergence leg and preserve their behavior, titles and dirty-state
-semantics.
+Check, Apply and Revert consume Kit `createAction` and `createActionBar`. Their bar lives in
+the Kit form's `actions` slot, so keyboard order is the eleven seat controls followed by
+Check, Apply and Revert. `.ac-actions[data-dirty]` remains the feature-owned dirty-state seam;
+the Kit owns action construction, semantics and shared presentation.
 
 There is no Agent Configuration feature stylesheet. Its two-column ratio and responsive
 stacking currently come from shared Workspace Kit CSS. Feature styling remains a separate
@@ -180,9 +177,10 @@ Current evidence is deliberately narrow:
   paint survive round trips through League and Team. This supports the coexistence contract,
   but it does **not** enter Agent Configuration.
 - No current scoped browser journey proves the Agent Configuration editor/preview itself.
-- The final retirement closeout ran the narrow documentation and module-contract checks
-  recorded in the final wipeboard handoff. It did not run BYOIN; release-candidate BYOIN
-  remains the designated integrator's responsibility.
+- The action-convergence leg is guarded by `scripts/check-workspace-kit.mjs`, which requires
+  the Kit actions, action bar and live form action slot and refuses raw feature-local action
+  buttons. Its scoped results belong in the commit handoff. Release-candidate BYOIN remains
+  the designated integrator's responsibility.
 
 When feature work resumes, the acceptance proof must cover at least:
 
@@ -203,13 +201,12 @@ When feature work resumes, the acceptance proof must cover at least:
    each value. That attribution belongs to the existing server resolver and
    `POST /api/launch/preflight` response contract; no Agent Configuration module owns it,
    and the browser must not infer it.
-3. The action bar deviates from the current Kit action primitives as described above.
-4. There is no governed feature styling; the destination still presents raw Kit geometry.
-5. The selected seat and last-applied snapshot are not separately restored on refresh,
+3. There is no governed feature styling; the destination still presents raw Kit geometry.
+4. The selected seat and last-applied snapshot are not separately restored on refresh,
    although the canonical New Team draft is persisted per tab.
-6. The preview renders only the currently enumerated resolved rows, not the full ruled
+5. The preview renders only the currently enumerated resolved rows, not the full ruled
    read-only answer and birth reading list.
-7. There is no current, trustworthy `--ui` verdict against this destination.
+6. There is no current, trustworthy scoped browser verdict against this destination.
 
 ## Exact resume checklist
 
@@ -225,11 +222,10 @@ Do these in order; stop rather than guessing when a required ruling is missing.
    seams listed above. Treat this README as a map, not evidence that the tree is unchanged.
 5. State to `@view_mgr` the single bounded leg, touched paths and explicit exclusions before
    editing shared CSS or integration files.
-6. First cleanup leg: replace the raw Check/Apply/Revert bar with Kit `createAction` and
-   `createActionBar`, using the form action slot if the live Kit contract still says so.
-   Preserve behavior and verify this leg before starting visual work.
-7. Next eligible leg: implement only the ruled Agent Configuration geometry/feature styling.
-   Do not broaden a local visual task into a five-surface foundation rewrite.
+6. Next bounded leg: implement only governed Agent Configuration feature styling and visual
+   hierarchy on the existing Kit layout.
+7. Keep Kit geometry in the Kit; do not broaden the visual leg into a five-surface
+   foundation rewrite.
 8. Keep `stated_by`, persistence and expanded resolved readings as separate legs requiring
    their own contracts; never build a browser-side cascade as a shortcut.
 9. After each completed implementation leg, update this README by deleting the finished
@@ -243,7 +239,6 @@ Do these in order; stop rather than guessing when a required ruling is missing.
 
 ## Successor boundary
 
-The retiring session owns no further work. A successor starts from this README and a fresh
-tree/history audit. The next concrete leg is the action-primitive convergence above; visual
-styling follows separately. `stated_by`, expanded resolved readings and selected-seat
-restoration remain independent contract/behavior legs and must not be smuggled into either.
+The next concrete leg is governed feature styling and visual hierarchy on the existing Kit
+layout. `stated_by`, expanded resolved readings and selected-seat restoration remain
+independent contract/behavior legs and must not be smuggled into it.

@@ -11,6 +11,7 @@ const layouts = read('public/js/workspace-layouts.js');
 const terminal = read('public/js/terminal-tile-host.js');
 const primitives = read('public/js/workspace-primitives.js');
 const newTeam = read('public/js/new-team.js');
+const agentConfig = read('public/js/agent-config.js');
 const styles = read('public/workspace-kit.css').replace(/\s+/g, ' ');
 const preflight = read('src/routes/launch-preflight.ts');
 const rosters = read('src/team-rosters.ts');
@@ -39,6 +40,10 @@ for (const hook of ['mount', 'enter', 'leave', 'destroy']) {
 if (!team.includes('teamWorkspaceState(context.state)')) problems.push('Team must consume typed workspace state.');
 if (!newTeam.includes("workspaceTarget('agent-config'")) problems.push('New Team must use typed navigation for seat configuration.');
 if (!newTeam.includes('registerTeamDraft') || !newTeam.includes("patchViewState('new-team'")) problems.push('New Team must use the canonical persisted draft controller.');
+for (const contract of ['createAction', 'createActionBar', 'fields.form.actions.append(actions.el)']) {
+  if (!agentConfig.includes(contract)) problems.push(`Agent Configuration must consume the Kit form-action contract: ${contract}.`);
+}
+if (/document\.createElement\(['"]button['"]\)/.test(agentConfig)) problems.push('Agent Configuration must not construct feature-local action buttons.');
 if (!preflight.includes('proposedRoster') || !preflight.includes('isCreatableTeamName')) problems.push('Preflight must use proposed Team defaults and canonical name availability.');
 if (!rosters.includes("isReservedTeamName = (s: string): boolean => s === 'unassigned'")) problems.push('The canonical Team store must reserve the Unassigned holding token.');
 for (const file of ['league-board.js', 'team-view.js', 'new-team.js']) {
