@@ -20,6 +20,7 @@
 import { WorkspaceKit } from './workspace-kit.js';
 import { membersOfTeam, refreshTeams, subscribe, teamByName } from './team-controller.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
+import { createTeamWipeboard } from './team-wipeboard.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -47,13 +48,15 @@ export function createTeamView() {
   /* ---------- the three surfaces ---------- */
   const terminalTile = createSurface({ label: 'Focused session', className: 'tw-terminal', flush: true });
   const kanban = createSurface({ label: 'Team sessions', className: 'tw-kanban' });
-  const wipeboard = el('p', 'tw-note', 'The Team wipeboard thread arrives with its own slice. The Brief is Team Configuration’s and never appears here.');
+  // The wipeboard slice is real (owner, 2026-08-25 — the thread, and nothing else; the
+  // Brief stays Team Configuration's). Its board id follows the roster: see setBoard below.
+  const wipeboard = createTeamWipeboard();
   const docs = el('p', 'tw-note', 'The Team’s working documents arrive with their own slice.');
   const config = el('div', 'tw-config');
   const service = (node) => ({ el: node, mount: () => {}, enter: () => {}, leave: () => {}, destroy: () => {} });
   const channels = createChannelSurface({
     label: 'Team channels',
-    services: { wipeboard: service(wipeboard), docs: service(docs), 'team-configuration': service(config) },
+    services: { wipeboard, docs: service(docs), 'team-configuration': service(config) },
   });
   const placeholder = el('div', 'tw-placeholder');
   placeholder.append(
@@ -165,6 +168,9 @@ export function createTeamView() {
     setSurfaceState(kanban.el, members.length ? null : 'empty', members.length ? '' : 'No live sessions on this Team.');
     renderCards(members);
     renderConfig(roster.durable ? roster : null, members);
+    // THE BOARD IS ASSUMED: the roster's wipeboard id, or the team's own name for a
+    // tag-only team. The server creates it on open, so the slice never meets a void.
+    wipeboard.setBoard((roster.durable && roster.wipeboard) || name);
   }
 
   return {
@@ -181,6 +187,7 @@ export function createTeamView() {
         syncTerminalPool(members);
         renderCards(members);
         renderConfig(roster.durable ? roster : null, members);
+        wipeboard.setBoard((roster.durable && roster.wipeboard) || team);
       });
     },
     enter: (context) => {
