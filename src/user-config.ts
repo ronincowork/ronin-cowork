@@ -280,6 +280,7 @@ export const readMachineSection = (): Promise<Record<string, unknown>> =>
  * installed on the machine, so there is nothing to undo — this is a display choice, not
  * a consent record.
  */
+/** @service — the machine reading (RONIN_SERVICES) asks this before it gathers or draws. */
 export const readMachineMonitor = async (): Promise<boolean> =>
   (await readMachineSection()).monitor !== false;
 

@@ -152,6 +152,11 @@ const IGNORE = {
   // whole point of the entry: `src/services/` is assembled at boot and gitignored, so a
   // developer's local check-docs passes on files the runner will never see (2026-08-18).
   'docs/tile.md': ['src/services/michi/tegami.ts'],
+  // Same shape: counting and rireki are services, so the files these two documents cite
+  // for the plan-id hash and the viewer filter are real on an installed box and absent
+  // from this repo's runner (2026-08-25).
+  'docs/is-this-safe.md': ['src/services/counting/plans.ts'],
+  'docs/session-identity.md': ['src/services/rireki/rireki.ts', 'src/services/counting/rollup.ts'],
   'README.md': ['connector-contract.md'],
   'public/js/README.md': ['app.js', 'co-working/user_repo/wip/buildouts/', 'CLAUDE.md', 'docs/commons.md', 'src/services/rireki/', 'co-working/user_repo/README/KEYPAD_README.md', '../../co-working/user_repo/README/KEYPAD_README.md'],
   // (The house-dir literals that lived in ACTIONS/MACROS collapsed into the documents
