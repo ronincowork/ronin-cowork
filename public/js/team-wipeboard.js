@@ -30,9 +30,11 @@ const el = (tag, cls, text) => {
 export function createTeamWipeboard() {
   const root = el('div', 'twb');
   let board = ''; // the roster's wipeboard id — set on enter, '' means no team resolved
-  let newest = ''; // newest post id rendered; only re-render when it moves
+  let newest = ''; // newest post id rendered — polls ask only for what is after it
   let entered = false;
   let timer = 0;
+  let inFlight = false; // one request at a time: overlapping polls re-rendered the whole
+  // thread on every response and yanked the scroll — the 2026-08-25 "can't scroll" bug
 
   const thread = el('div', 'twb-thread');
   const note = el('p', 'tw-note');
@@ -53,33 +55,59 @@ export function createTeamWipeboard() {
     note.hidden = !text;
   };
 
+  const postNode = (p) => {
+    const d = el('div', 'twb-post' + (p.author.startsWith('user:') ? ' owner' : p.author === 'system' ? ' system' : ''));
+    const aim = p.silent ? ' → (no notice)' : p.to?.length ? ` → ${p.to.join(', ')}` : '';
+    d.append(el('div', 'twb-head', `${p.author}${aim} · ${p.at}`), el('div', 'twb-text', p.text));
+    return d;
+  };
+
+  /** Scroll only when the reader is already at the bottom — never yank a hand that has
+   *  scrolled up to read. `force` is for the reader's own post. */
+  const pinnedToBottom = () => thread.scrollHeight - thread.scrollTop - thread.clientHeight < 48;
+  const maybeScroll = (force) => {
+    if (force || pinnedToBottom()) thread.scrollTop = thread.scrollHeight;
+  };
+
   const renderThread = (posts, cleared) => {
     thread.replaceChildren();
     if (cleared) thread.append(el('p', 'twb-cleared', '… earlier posts have cleared'));
-    for (const p of posts) {
-      const d = el('div', 'twb-post' + (p.author.startsWith('user:') ? ' owner' : p.author === 'system' ? ' system' : ''));
-      const aim = p.silent ? ' → (no notice)' : p.to?.length ? ` → ${p.to.join(', ')}` : '';
-      d.append(el('div', 'twb-head', `${p.author}${aim} · ${p.at}`), el('div', 'twb-text', p.text));
-      thread.append(d);
-    }
+    for (const p of posts) thread.append(postNode(p));
     if (!posts.length) quiet('Nothing on the board right now — posts clear once everyone they were for has read them.');
     else quiet('');
   };
 
-  const refresh = async () => {
-    if (!entered || !board) return;
-    const r = await request(`/api/wipeboards/${encodeURIComponent(board)}?limit=100`);
-    if (!entered) return;
-    if (!r.ok) {
-      // Network blips ride the poll; a standing failure is said in place of the thread.
-      if (!thread.childElementCount) quiet(`Could not read the board — ${r.message}`);
-      return;
+  const refresh = async (force = false) => {
+    if (!entered || !board || inFlight) return;
+    inFlight = true;
+    try {
+      // FIRST LOAD IS THE WHOLE PAGE; EVERY POLL IS A DELTA. Asking for the full thread
+      // every two seconds re-rendered a hundred posts a poll; asking for what is after
+      // `newest` returns nothing at all in the quiet case.
+      const url = newest
+        ? `/api/wipeboards/${encodeURIComponent(board)}?since=${encodeURIComponent(newest)}`
+        : `/api/wipeboards/${encodeURIComponent(board)}?limit=100`;
+      const r = await request(url);
+      if (!entered) return;
+      if (!r.ok) {
+        // Network blips ride the poll; a standing failure is said in place of the thread.
+        if (!thread.childElementCount) quiet(`Could not read the board — ${r.message}`);
+        return;
+      }
+      const posts = r.data.posts || [];
+      if (!newest) {
+        newest = r.data.newest || '';
+        renderThread(posts, Boolean(r.data.more));
+        maybeScroll(true);
+      } else if (posts.length) {
+        for (const p of posts) thread.append(postNode(p));
+        newest = r.data.newest || newest;
+        quiet('');
+        maybeScroll(force);
+      }
+    } finally {
+      inFlight = false;
     }
-    const now = r.data.newest || '';
-    if (now === newest && thread.childElementCount) return; // nothing moved — leave the DOM alone
-    newest = now;
-    renderThread(r.data.posts || [], Boolean(r.data.more));
-    thread.scrollTop = thread.scrollHeight;
   };
 
   const sendPost = async () => {
@@ -94,8 +122,7 @@ export function createTeamWipeboard() {
       return;
     }
     say.value = '';
-    newest = ''; // force a re-read so the thread shows what actually landed
-    void refresh();
+    void refresh(true); // a delta fetch picks the post up, and your own post may scroll
   };
   post.addEventListener('click', sendPost);
   say.addEventListener('keydown', (e) => {

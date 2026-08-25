@@ -41,9 +41,10 @@ import { count } from '../counts.js';
  * cursor. Membership stays derived — this resolves it fresh, it never stores it.
  */
 async function memberKeys(board: string): Promise<{ name: string; key: string }[]> {
-  const out: { name: string; key: string }[] = [];
-  for (const m of await boardMembers(board)) out.push({ name: m.name, key: await sessionKey(m.name) });
-  return out;
+  // The key rides listSessions' single exec — never one subprocess per member.
+  const team = await teamBehind(board);
+  if (!team) return [];
+  return (await listSessions()).filter((s) => s.tags.includes(team)).map((s) => ({ name: s.name, key: s.key }));
 }
 
 /**
@@ -53,7 +54,16 @@ async function memberKeys(board: string): Promise<{ name: string; key: string }[
  * small. Never throws into a request: a wipeboard that could not be swept is not an
  * error the caller can do anything about.
  */
+const SWEEP_EVERY_MS = 45_000;
+const lastSweep = new Map<string, number>();
+
 async function sweep(board: string): Promise<void> {
+  // THROTTLED. The browser polls every couple of seconds; housekeeping on every poll is
+  // how one tab made the whole server crawl. Once a minute per board keeps the lazy
+  // no-daemon design without doing the work 30x over.
+  const last = lastSweep.get(board) ?? 0;
+  if (Date.now() - last < SWEEP_EVERY_MS) return;
+  lastSweep.set(board, Date.now());
   try {
     const { ttlMs, graceMs } = await readWipeboardSettings(board);
     await reapPosts(board, { members: await memberKeys(board), ttlMs, graceMs });
@@ -156,11 +166,8 @@ async function boardMembers(board: string): Promise<{ name: string; control: Con
   // only: custom enrolment is cut (owner, 2026-08-24), so a teamless board has nobody.
   const team = await teamBehind(board);
   if (!team) return [];
-  const out: { name: string; control: Control }[] = [];
-  for (const s of sessions) {
-    if (s.tags.includes(team)) out.push({ name: s.name, control: await getControl(s.name) });
-  }
-  return out;
+  // The dial rides listSessions' single exec — never one subprocess per member.
+  return sessions.filter((s) => s.tags.includes(team)).map((s) => ({ name: s.name, control: s.control }));
 }
 
 export function registerWipeboards(app: express.Express): void {

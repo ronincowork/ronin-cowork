@@ -18,6 +18,11 @@ export interface SessionInfo {
   tags: string[];
   /** Teams this session is DESIGNATED to lead (see LEAD_OPT). Always ⊆ its teams. */
   leads: string[];
+  /** The dial, off the same single exec — 'write' when unset, as everywhere. */
+  control: Control;
+  /** The durable identity (`<name>-<created-epoch>`), stamped copy preferred — off the
+   *  same exec, so callers stop paying one `sessionKey` subprocess per session. */
+  key: string;
 }
 
 /** tmux user option holding a session's post-it note. Lives and dies with the session. */
@@ -116,16 +121,21 @@ export async function sessionDir(name: string): Promise<string> {
 
 export async function listSessions(): Promise<SessionInfo[]> {
   try {
+    // ONE EXEC CARRIES EVERYTHING. The wipeboard surfaces used to pay one subprocess
+    // per session for the dial and another for the key — ~15 spawns per 2s browser poll
+    // on a 22-session box, which is how a GET reached 2.9 seconds (owner, 2026-08-25:
+    // "deathly slow"). The list format is the one place tmux answers for every session
+    // at once, so the dial and the key ride it.
     const { stdout } = await pexec('tmux', [
       'list-sessions',
       '-F',
-      `#{session_name}\t#{session_windows}\t#{?session_attached,1,0}\t#{session_created}\t#{?${NOTE_OPT},1,0}\t#{${TAGS_OPT}}\t#{${LEAD_OPT}}`,
+      `#{session_name}\t#{session_windows}\t#{?session_attached,1,0}\t#{session_created}\t#{?${NOTE_OPT},1,0}\t#{${TAGS_OPT}}\t#{${LEAD_OPT}}\t#{@ronin-control}\t#{@ronin-key}`,
     ]);
     return stdout
       .split('\n')
       .filter(Boolean)
       .map((line) => {
-        const [name, windows, attached, created, hasNote, tags, leads] = line.split('\t');
+        const [name, windows, attached, created, hasNote, tags, leads, control, key] = line.split('\t');
         return {
           name,
           windows: Number(windows) || 0,
@@ -134,6 +144,8 @@ export async function listSessions(): Promise<SessionInfo[]> {
           hasNote: hasNote === '1',
           tags: parseTags(tags),
           leads: parseTags(leads),
+          control: control === 'user' || control === 'read' ? (control as Control) : 'write',
+          key: key?.trim() || `${name}-${Number(created) || 0}`,
         };
       })
       .filter((s) => !s.name.startsWith(config.viewerPrefix))
