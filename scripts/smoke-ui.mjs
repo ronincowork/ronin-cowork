@@ -266,7 +266,7 @@ async function checkJourneys(page, label, jsErrors) {
   // admin_desk; Archives later became the fifth session room. The expected count comes
   // from the same static registry the product renders, so this probe checks DOM convergence
   // without freezing a second copy of the intended room set.
-  const commonsRooms = PANES.filter((pane) => pane.surface === 'commons').length;
+  const commonsRooms = PANES().filter((pane) => pane.surface === 'commons').length; // PANES is a function since KOKUGO (labels read the lexicon)
   if (commons.tabs === commonsRooms) ok(`${label}: the Commons strip carries its ${commonsRooms} session rooms (registry-fed)`);
   else bad(`${label}: the Commons strip has ${commons.tabs} rooms, wanted ${commonsRooms}`);
 

@@ -16,6 +16,8 @@
  */
 // Functions, not tables: the lexicon loads after this module is evaluated, so the words
 // are read when the rail is drawn.
+import { t } from './lexicon.js';
+
 export function sections() {
   return [
     { id: 'behavior', label: t('customize.sec_behavior', 'Behavior') },
