@@ -8,7 +8,7 @@ import { listProjectRoots, listSessionLaunchSpecs, USER_PROJECT_ROOTS_MD, type P
 import { readAgentsSection } from './user-config.js';
 import { storeDir } from './stores.js';
 import { findDefinition, listRoleFamilies } from './definitions.js';
-import { readTeamRoster, teamRosterFile, type TeamRoster } from './team-rosters.js';
+import { isCreatableTeamName as isTeamName, readTeamRoster, teamRosterFile, type TeamRoster } from './team-rosters.js';
 import { resolveLaunchProfile, type Dial, type LaunchProfile, type StatedBy } from './launch-profile.js';
 
 /**
@@ -189,6 +189,11 @@ export function buildBrief(
     if (roster.objective) bits.push(`its objective: ${roster.objective}`);
     bits.push(`its wipeboard is "${roster.wipeboard}" (tejun-wipeboard ${roster.wipeboard})`);
     parts.push(bits.join('. ') + '.');
+  } else if (form.team) {
+    parts.push(
+      `You are born onto team "${form.team}" — a tag-only team: its members are the sessions carrying its tag ` +
+        `(tejun-team ${form.team}), it has no durable roster, and its wipeboard is "${form.team}" (tejun-wipeboard ${form.team}).`,
+    );
   }
   // THE SESSION BOOT SHELF, listed at this instant rather than remembered. This replaced
   // the project_root's `read:` — a stored list of literal paths that went stale in silence
@@ -297,17 +302,16 @@ export async function resolveForm(
   if (form.session_role && !taskDef) {
     throw new Error(`Unknown session_role "${form.session_role}" (see ronin_catalogs/session_roles/).`);
   }
-  // THE TEAM resolves through its ROSTER — the durable record. A named team with no
-  // roster is refused rather than silently joined: being born ONTO a team is a launch
-  // fact and deserves the durable half to exist; joining a tag-only team afterwards is
-  // the tags route's ordinary business.
-  const roster = form.team ? (proposedRoster?.name === form.team ? proposedRoster : await readTeamRoster(form.team)) : null;
-  if (form.team && !roster) {
-    throw new Error(
-      `Team "${form.team}" has no roster on this box. Create it first (POST /api/team-rosters), ` +
-        'or launch without a team and tag the session afterwards.',
-    );
+  // THE TEAM resolves through its ROSTER when it has one — the durable half, and the
+  // context a launch inherits. A TAG-ONLY TEAM IS AN ORDINARY TEAM (owner, 2026-08-26,
+  // overruling the refusal that stood here: "this shouldn't have happened"): most teams
+  // on a box are their sessions' tags and nothing more, and being born onto one is the
+  // same act as being tagged onto it afterwards. With no roster the launch inherits no
+  // root and no objective — it is told so — and its wipeboard is the team's own name.
+  if (form.team && !isTeamName(form.team)) {
+    throw new Error(`A team name is lowercase letters, digits, _ and - (it is also the tag): "${form.team}".`);
   }
+  const roster = form.team ? (proposedRoster?.name === form.team ? proposedRoster : await readTeamRoster(form.team)) : null;
   // THE CASCADE, and every refusal it makes happens here — before a session exists.
   const profile = resolveLaunchProfile(taskDef);
 
@@ -489,14 +493,14 @@ export async function resolveForm(
     cmd,
     // Born onto a team = tagged into it, through the same membership the roster derives
     // from. The team rides FIRST so a truncated list can never drop the birth team.
-    tags: [...(roster ? [roster.name] : []), ...(form.tags ?? [])]
+    tags: [...(form.team ? [form.team] : []), ...(form.tags ?? [])]
       .filter(Boolean)
       .filter((t, i, a) => a.indexOf(t) === i)
       .slice(0, 16),
     dial: profile.dial,
     lifecycle: profile.lifecycle,
     session_role: profile.session_role,
-    team: roster?.name ?? '',
+    team: form.team ?? '',
     team_role: roster?.team_role ?? '',
     project_root: root.name,
     mode: form.mode === 'manual' ? 'manual' : 'assisted',

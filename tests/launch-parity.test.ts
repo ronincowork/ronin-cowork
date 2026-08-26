@@ -203,16 +203,20 @@ test('the model cascade is the mechanism\'s: blank inherits, explicit wins, iden
   assert.equal(f2.cmd, c2.cmd, 'and both callers get the identical resolved command');
 });
 
-test('a ronin launch is legal, and a named team with no roster is refused out loud', async () => {
+test('a ronin launch is legal, and so is a launch onto a tag-only team', async () => {
   // No team at all — a ronin — reads no team_role level and is an ordinary launch.
   const ronin = await resolveForm(commonsForm(), new Set());
   assert.equal(ronin.team, '');
   assert.ok(!reading(ronin.brief).includes('TEAM_BOOK.md'), 'no team, no team_role reading');
-  // A team the durable half has never heard of is a refusal, never a silent join.
-  await assert.rejects(
-    () => resolveForm(commonsForm({ team: 'ghosts' }), new Set()),
-    /has no roster/,
-  );
+  // A team the durable half has never heard of is an ordinary team (owner, 2026-08-26):
+  // the session is born tagged onto it, told it is tag-only, and inherits no roster.
+  const tagOnly = await resolveForm(commonsForm({ team: 'ghosts' }), new Set());
+  assert.equal(tagOnly.team, 'ghosts');
+  assert.ok(tagOnly.tags.includes('ghosts'), 'born tagged onto it');
+  assert.equal(tagOnly.team_role, '', 'no roster, no team_role');
+  assert.match(tagOnly.brief, /tag-only team/);
+  // The name is still the tag, so it obeys the tag's spelling.
+  await assert.rejects(() => resolveForm(commonsForm({ team: 'Ghosts!' }), new Set()), /team name/);
 });
 
 test('stated_by is resolved on the server across explicit, Team, role, and system layers', async () => {

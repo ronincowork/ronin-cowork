@@ -39,9 +39,11 @@ sessions one at a time, as the work actually needs them — not a batch at birth
 3. **Or place an EXISTING session onto the team** — its tags are its membership
    (`POST /api/sessions/<name>/tags`, or ask the owner from the tile). A session joining
    late is not re-briefed by ruling; hand it what it needs on the wipeboard.
-4. **A team of your own choosing.** If the right team does not exist yet, create its
-   roster first (`POST /api/team-rosters` with a name, a `team_role`, an objective) and
-   raise into that. Name it the way tags are named: lowercase, boring, typeable.
+4. **A team of your own choosing.** Name one and raise into it — a team that exists
+   only as its tag is an ordinary team; the session is born tagged onto it, told it is
+   tag-only, and inherits no root or objective. Give the team a roster
+   (`POST /api/team-rosters` with a name, a `team_role`, an objective) when it has a
+   brief worth inheriting. Name it the way tags are named: lowercase, boring, typeable.
 
 ## Running it
 
