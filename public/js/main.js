@@ -21,6 +21,7 @@ import { createNewTeamView } from './new-team.js';
 import { createLeagueView } from './league-view.js';
 import { createAgentConfigurationView } from './agent-config.js';
 import { installCustomize } from './customize.js';
+import { t } from './lexicon.js';
 
 export async function init() {
   // Ask the operator which optional surfaces are plugged in BEFORE the grid is built,
@@ -159,7 +160,7 @@ export async function init() {
   // is an empty picker, which reads as "broken" rather than "server unreachable".
   {
     const r = await fetchSessions();
-    if (!r.ok) showFailure('could not load the session list', new Error(r.message));
+    if (!r.ok) showFailure(t('errors.no_session_list', 'could not load the session list'), new Error(r.message));
   }
   guard('reattach saved sessions', () => {
     saved.map.forEach((s, i) => {

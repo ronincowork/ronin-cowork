@@ -1252,3 +1252,6 @@ The catalog entry goes. {dir} is not touched.
 - **ladder.tap:** Tap for the ladder
 - **ladder.unchanged_for:** ladder unchanged for {age}
 - **ladder.side:** {state} — the ladder below is held, not stale
+
+## errors — main.js (the session-list failure)
+- **errors.no_session_list:** could not load the session list
