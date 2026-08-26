@@ -40,3 +40,13 @@ extending the two catalogs that live here.
    action, not a macro.
 4. The TEJUN panel and /api/macros parse MACROS.md live — adding the section IS
    shipping the macro. Test the pasteable form once for real before calling it done.
+
+## Adding a DESK PROFILE or a LEXICON (data, one file each)
+
+`desk_profiles/<name>.md` is the owner's standing defaults for the surfaces they work at
+(R38): `skin` (a `SKINS.md` entry), `lexicon` (a `lexicons/` entry), `campaign_kind`,
+`rireki_view`, `team_arrangement`. `lexicons/<name>.md` is the words a surface uses —
+keys to strings with a `base:` to fall through to. Both shadow whole-file by name
+(`docs/shadowing.md`); each directory's README carries the format. The rule for words:
+`professional` is the floor and complete, a lexicon says only what it changes, and
+`scripts/check-lexicon.mjs` keeps the floor honest. `docs/desk-profiles.md`, `docs/lexicons.md`.
