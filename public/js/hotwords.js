@@ -65,8 +65,8 @@ export function buildHotwords(pane, isShowing) {
   const render = (terms) => {
     list.innerHTML = '';
     count.textContent = terms.length
-      ? `${terms.length} word${terms.length === 1 ? '' : 's'} sent with your voice`
-      : 'no words yet — dictation runs unbiased';
+      ? (terms.length === 1 ? t('hotwords.count_one', '{n} word sent with your voice', { n: terms.length }) : t('hotwords.count_many', '{n} words sent with your voice', { n: terms.length }))
+      : t('hotwords.none', 'no words yet — dictation runs unbiased');
     for (const term of terms) {
       const row = document.createElement('div');
       row.className = 'hot-row';
@@ -123,8 +123,8 @@ export function buildHotwords(pane, isShowing) {
     }
     render(r.data.terms || []);
     whose.textContent = r.data.own
-      ? '◆ your list — an upgrade cannot touch it, and will not add to it either'
-      : 'Ronin\'s stock list — your first edit makes a copy that is yours';
+      ? t('hotwords.own_list', '◆ your list — an upgrade cannot touch it, and will not add to it either')
+      : t('hotwords.stock_list', 'Ronin\'s stock list — your first edit makes a copy that is yours');
     whose.classList.toggle('own', !!r.data.own);
     setMsg('');
   };
