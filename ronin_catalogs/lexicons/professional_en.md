@@ -1200,3 +1200,11 @@ The catalog entry goes. {dir} is not touched.
 
 ## workspace — workspace-layouts.js
 - **workspace.resize:** Resize {column}
+
+## stats — the tooltip, foot and UI rows
+- **stats.mek_seg:** launched {birth} · died {end} — {n}
+- **stats.foot:** Counted on this machine — no code, no prompts, no names. See README/STATS.md.
+- **stats.tab_proj:** ▣ Project root
+- **stats.tab_stats:** ▦ Stats
+- **stats.dials_changed:** dials changed
+- **stats.desktop_touch:** desktop : touch
