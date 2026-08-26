@@ -323,7 +323,7 @@ export function buildWipeboard(tile, root, isShowing) {
       return;
     }
     kind = r.data.kind === 'team' ? 'team' : 'custom';
-    kindNote.textContent = kind === 'team' ? 'team wipeboard' : 'custom wipeboard';
+    kindNote.textContent = kind === 'team' ? t('wipeboard.kind_team', 'team wipeboard') : t('wipeboard.kind_custom', 'custom wipeboard');
     renderMembers(r.data.members || []);
     if (r.data.mtime === mtime) return; // file hasn't moved — leave the DOM (and any selection) alone
     mtime = r.data.mtime;
