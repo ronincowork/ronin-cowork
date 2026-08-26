@@ -966,3 +966,8 @@ The catalog entry goes. {dir} is not touched.
 - **tile.pick_session:** — pick session —
 - **tile.gone:** {name}  (gone?)
 - **tile.new_session:** ➕ new session…
+
+## macros — tilemacros.js (the ⚡ menu)
+- **macros.button_title:** Macros — drop one into this session's input
+- **macros.cooldown:** sent — wait {s}s before sending it again
+- **macros.none_previewed:** no macros previewed — see MACROS.md
