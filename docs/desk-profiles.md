@@ -10,8 +10,8 @@ never a step in any run.
 ## The catalog
 
 `ronin_catalogs/desk_profiles/<name>.md`, one file per profile, shadowable whole-file by
-name (`docs/shadowing.md`). The directory's `README.md` carries the fields. Four ship:
-`terminal` · `vibe_code` · `professional` · `home`. Every field is optional and a blank
+name (`docs/shadowing.md`). The directory's `README.md` carries the fields. Five ship:
+`terminal` · `vibe_code` · `professional` · `home` · `league` (League is the gamer one, goofy on purpose). Every field is optional and a blank
 means "as stock".
 
 ## Which one is active is settei's
