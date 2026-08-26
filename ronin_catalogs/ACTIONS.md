@@ -254,6 +254,37 @@ its own control-check before you touch it (the roster reports the dial; it does 
 grant anything). Tagging is the OWNER's job in the Ronin UI, or a macro's at birth
 (`session-create`); do not re-tag other people's sessions to suit your task.
 
+## session-upsert — one session by name: read it, raise it, or change its facts
+`action_kind: mechanical` — run it, don't deliberate.
+> **Tool: `tejun-session-set <name> […]`** (TOOLS.md)
+The pair of `team-upsert`, keyed the same way. A bare LIVE name reads it; a name nobody
+holds is BORN through the one launch mechanism (`POST /api/session` — a second door onto
+`/api/launch`, never a second path); a live name with flags is UPDATED in what you name.
+```bash
+tejun-session-set wg_review                                   # read: role, teams, 人, dial, root
+tejun-session-set wg_review --prompt "Review leg 3" --role review   # born onto YOUR team
+tejun-session-set wg_review --team other-team --lead          # a live one: add a team, make it 人
+```
+With no `--team` a newborn joins the FIRST team you are on; on no team it is a rōnin.
+**Neither is a refusal, and you never create the team first** — the nag this removes is
+an agent flip-flopping between "create the team" and "add the member". One line, one
+verdict: `BORN …` / `UPDATED …` / one `REFUSED: <why>`. Birth-only flags (`--prompt`,
+`--cmd`, `--mode`, `--mcp`, `--seed`) are refused by name on a live session.
+
+## team-upsert — make a team, or change its facts
+`action_kind: mechanical` — run it, don't deliberate.
+> **Tool: `tejun-team-set <team> […]`** (TOOLS.md)
+The rare door. A team with no roster is CREATED from the fields you name; one with a
+roster is UPDATED in those fields and untouched elsewhere. `--add` tags live sessions
+onto it (additive; a name not live is reported, the rest go through).
+```bash
+tejun-team-set wipeboard-groups --objective "Groups on the wipeboard" --role development --root ronin-cowork
+tejun-team-set wipeboard-groups --add wg_lead,wg_review
+```
+You rarely need this: `tejun-session-set` births onto your team with no team named. Come
+here to create a team, or to give one a brief worth inheriting. Membership is never
+stored on the roster — it is the sessions' tags, and `--add` writes those.
+
 ## team-page-read — what the team page is showing, and where you are on it
 `action_kind: mechanical` — run it, don't deliberate.
 > **Tool: `tejun-teampage`** (TOOLS.md)

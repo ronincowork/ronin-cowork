@@ -30,7 +30,7 @@ sessions one at a time, as the work actually needs them — not a batch at birth
 
 1. **Read the roster first.** The objective is the team's brief; the root, repos and
    branch are the context your sessions inherit.
-2. **Raise a session in one line** — `tejun-session <name> --prompt "<what it is for>"
+2. **Raise a session in one line** — `tejun-session-set <name> --prompt "<what it is for>"
    [--role <session_role>]`. Name no team: the newborn joins YOUR team (the first one
    you are on). That is the one launch mechanism through a second door (`POST
    /api/session`), so it is tagged into the team, reads the team_role's own reading
@@ -44,7 +44,7 @@ sessions one at a time, as the work actually needs them — not a batch at birth
    (`tejun-team-set <team> --add <name>`, `POST /api/sessions/<name>/tags`, or ask the
    owner from the tile). A session joining late is not re-briefed by ruling; hand it
    what it needs on the wipeboard.
-4. **A team of your own choosing** — `tejun-session <name> --team <new-team> --prompt …`
+4. **A team of your own choosing** — `tejun-session-set <name> --team <new-team> --prompt …`
    raises into it. A team that exists only as its tag is an ordinary team; the session
    is born tagged onto it, told it is tag-only, and inherits no root or objective. Give
    the team a roster when it has a brief worth inheriting — `tejun-team-set <team>

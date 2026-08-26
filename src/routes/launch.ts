@@ -403,7 +403,7 @@ export function registerLaunch(app: express.Express): void {
    * is an agent flip-flopping between "create the team" and "add the member".
    *
    * `caller` is the session's own name, resolved by the CLI from its pane
-   * (`ronin_bin/tejun-session`, the same `me()` every tejun uses) — the server cannot
+   * (`ronin_bin/tejun-session-set`, the same `me()` every tejun uses) — the server cannot
    * see which pane an HTTP request came from. `team_from` in the receipt says which
    * rule fired, so the agent never has to guess what it got.
    */

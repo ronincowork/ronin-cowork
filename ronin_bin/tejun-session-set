@@ -1,0 +1,190 @@
+#!/usr/bin/env bash
+# tejun-session-set — one session, by name: read it, raise it, or change its facts.
+#
+# Usage: tejun-session-set <name>                       READ: role, teams, 人, dial, root
+#        tejun-session-set <name> --prompt <text> [--role <session_role>] [--team <team>]
+#                          [--lead] [--root <project_root>] [--mode manual|assisted]
+#                          [--cmd <cli>] [--mcp on|off] [--tags a,b] [--seed p1,p2]
+#                                                       CREATE: a name nobody holds is born
+#        tejun-session-set <name> [--role …] [--team …] [--lead] [--root …]
+#                                                       UPDATE: a live name changes those facts
+#
+# THE SAME COMMAND CREATES OR UPDATES, keyed by name, the way `tejun-team-set` does for a
+# team (owner, 2026-08-26). A name nobody holds is BORN; a live name is CHANGED in the
+# facts you name and untouched elsewhere. `--prompt`, `--cmd`, `--mode`, `--mcp`, `--seed`
+# are birth-only (they were consumed on the command line the session started with) and
+# are refused by name on a live session, never silently dropped.
+#
+# CREATE — only the name is required; everything else falls through the same ladder a
+# ＋ New launch uses (`POST /api/session`, src/routes/launch.ts). With no --team the
+# newborn joins the FIRST team you are on; on no team, it is born a rōnin. Neither is a
+# refusal — nothing here asks you to create a team first, and a session that lands in
+# the rōnin column can be dragged onto a team from the page. `--lead` makes it the 人 of
+# whichever team it resolved to. An agent session needs a --prompt.
+#
+# UPDATE — `--team <t>` adds the session to that team (tags are additive here; the page
+# removes), `--lead` makes it 人 of its --team (or of its first team), `--role` rewrites
+# its session_role, `--root` its project_root. Each is the route the tile's own menu
+# calls (`/api/sessions/<name>/tags` · `team_lead` · `session_role` · `project-root`).
+#
+# Verdicts: BORN <name> on <team> · BORN <name> (rōnin) · UPDATED <name> <what> ·
+# the read (one line per fact) · REFUSED: <why> · UNREACHABLE. Exit 0 done, 2 bad
+# arguments, 4 refused (unknown role, box full, birth-only flag on a live name…),
+# 5 Ronin unreachable.
+set -u
+die() { printf '%s\n' "$1" >&2; exit "${2:-4}"; }
+# WHICH SESSION AM I — asked of tmux, never guessed (the same resolver every tejun uses).
+me() {
+  local win s sid
+  if [ -n "${TMUX_PANE:-}" ]; then
+    win=$(tmux display-message -p -t "$TMUX_PANE" '#{window_id}' 2>/dev/null) || win=""
+    if [ -n "$win" ]; then
+      s=$(tmux list-windows -a -F '#{session_name}	#{window_id}' 2>/dev/null \
+          | awk -F'	' -v w="$win" '$2==w && $1 !~ /^grid_/ {print $1; exit}')
+      [ -n "$s" ] && { printf '%s\n' "$s"; return 0; }
+    fi
+  fi
+  if [ -n "${TMUX:-}" ]; then
+    sid=${TMUX##*,}
+    s=$(tmux list-sessions -F '#{session_id}	#{session_name}' 2>/dev/null \
+        | awk -F'	' -v i="\$$sid" '$1==i && $2 !~ /^grid_/ {print $2; exit}')
+    [ -n "$s" ] && { printf '%s\n' "$s"; return 0; }
+  fi
+  return 1
+}
+
+NAME="${1:-}"
+[ -n "$NAME" ] && [ "${NAME#-}" = "$NAME" ] || die "usage: tejun-session-set <name> [--prompt <text>] [--role <session_role>] [--team <team>] [--lead] …" 2
+shift
+PROMPT="" ROLE="" TEAM="" LEAD="" ROOT="" MODE="" CMD="" MCP="" TAGS="" SEED=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --prompt) PROMPT="${2:-}"; shift 2 ;;
+    --role|--session_role) ROLE="${2:-}"; shift 2 ;;
+    --team) TEAM="${2:-}"; shift 2 ;;
+    --lead) LEAD=1; shift ;;
+    --root|--project_root) ROOT="${2:-}"; shift 2 ;;
+    --mode) MODE="${2:-}"; shift 2 ;;
+    --cmd) CMD="${2:-}"; shift 2 ;;
+    --mcp) MCP="${2:-}"; shift 2 ;;
+    --tags) TAGS="${2:-}"; shift 2 ;;
+    --seed) SEED="${2:-}"; shift 2 ;;
+    *) die "BAD-ARG: $1" 2 ;;
+  esac
+done
+ME=$(me 2>/dev/null || true)
+
+url="${RONIN_URL:-$(tmux show-option -s -qv @ronin-url 2>/dev/null || true)}"
+[ -n "$url" ] || url="http://127.0.0.1:3006"
+AUTH=()
+[ -n "${RONIN_AUTH:-}" ] && AUTH=(-u "$RONIN_AUTH")
+api() { curl -sS -m 60 "${AUTH[@]+"${AUTH[@]}"}" -H 'content-type: application/json' "$@" 2>/dev/null; }
+
+# IS THE NAME LIVE — one read decides which of the three this call is.
+roster=$(api "$url/api/sessions") || die "UNREACHABLE: Ronin did not answer at $url" 5
+[ -n "$roster" ] || die "UNREACHABLE: Ronin did not answer at $url" 5
+live=$(printf '%s' "$roster" | NAME="$NAME" python3 -c '
+import json, os, sys
+for s in json.load(sys.stdin):
+    if s.get("name") == os.environ["NAME"]:
+        print(json.dumps(s)); break
+' 2>/dev/null || true)
+
+# ---------- READ ----------
+if [ -n "$live" ] && [ -z "$PROMPT$ROLE$TEAM$LEAD$ROOT$MODE$CMD$MCP$TAGS$SEED" ]; then
+  root=$(api "$url/api/sessions/$NAME/project-root" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("project_root") or "")' 2>/dev/null || true)
+  printf '%s' "$live" | ROOT="$root" ME="$ME" python3 -c '
+import json, os, sys
+s = json.load(sys.stdin)
+print(f"session:      {s['"'"'name'"'"']}" + ("  (you)" if s["name"] == os.environ["ME"] else ""))
+print(f"session_role: {s.get('"'"'session_role'"'"') or '"'"'—'"'"'}")
+print(f"teams:        {'"'"', '"'"'.join(s.get('"'"'tags'"'"') or []) or '"'"'— (rōnin)'"'"'}")
+print(f"人 of:        {'"'"', '"'"'.join(s.get('"'"'leads'"'"') or []) or '"'"'—'"'"'}")
+print(f"dial:         {s.get('"'"'control'"'"') or '"'"'—'"'"'}")
+print(f"project_root: {os.environ['"'"'ROOT'"'"'] or '"'"'—'"'"'}")
+'
+  exit 0
+fi
+
+# ---------- UPDATE ----------
+if [ -n "$live" ]; then
+  for pair in "--prompt:$PROMPT" "--cmd:$CMD" "--mode:$MODE" "--mcp:$MCP" "--seed:$SEED" "--tags:$TAGS"; do
+    [ -n "${pair#*:}" ] && die "REFUSED: ${pair%%:*} is birth-only — \"$NAME\" is already running (use --team to add a team)" 4
+  done
+  did=""
+  if [ -n "$TEAM" ]; then
+    tags=$(printf '%s' "$live" | python3 -c 'import sys,json; print(",".join(json.load(sys.stdin).get("tags") or []))')
+    case ",$tags," in *",$TEAM,"*) ;; *) tags="${tags:+$tags,}$TEAM" ;; esac
+    out=$(api -X POST --data "{\"tags\":\"$tags\"}" "$url/api/sessions/$NAME/tags") || die "UNREACHABLE: Ronin did not answer at $url" 5
+    printf '%s' "$out" | grep -q '"ok":true' || die "REFUSED: $(printf '%s' "$out" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("error","?"))' 2>/dev/null)" 4
+    did="$did team=$TEAM"
+  fi
+  if [ -n "$LEAD" ]; then
+    t="$TEAM"
+    [ -n "$t" ] || t=$(printf '%s' "$live" | python3 -c 'import sys,json; t=json.load(sys.stdin).get("tags") or []; print(t[0] if t else "")')
+    [ -n "$t" ] || die "REFUSED: --lead needs a team — \"$NAME\" is on none; say --team <t>" 4
+    out=$(api -X POST --data "{\"teams\":[\"$t\"]}" "$url/api/sessions/$NAME/team_lead") || die "UNREACHABLE: Ronin did not answer at $url" 5
+    printf '%s' "$out" | grep -q '"ok":true' || die "REFUSED: $(printf '%s' "$out" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("error","?"))' 2>/dev/null)" 4
+    did="$did 人=$t"
+  fi
+  if [ -n "$ROLE" ]; then
+    body=$(ROLE="$ROLE" python3 -c 'import json,os; print(json.dumps({"session_role": os.environ["ROLE"]}))')
+    out=$(api -X POST --data "$body" "$url/api/sessions/$NAME/session_role") || die "UNREACHABLE: Ronin did not answer at $url" 5
+    printf '%s' "$out" | grep -q '"ok":true' || die "REFUSED: $(printf '%s' "$out" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("error","?"))' 2>/dev/null)" 4
+    did="$did role=$ROLE"
+  fi
+  if [ -n "$ROOT" ]; then
+    body=$(ROOT="$ROOT" python3 -c 'import json,os; print(json.dumps({"project_root": os.environ["ROOT"]}))')
+    out=$(api -X POST --data "$body" "$url/api/sessions/$NAME/project-root") || die "UNREACHABLE: Ronin did not answer at $url" 5
+    printf '%s' "$out" | grep -q '"ok":true' || die "REFUSED: $(printf '%s' "$out" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("error","?"))' 2>/dev/null)" 4
+    did="$did root=$ROOT"
+  fi
+  echo "UPDATED $NAME$did"
+  exit 0
+fi
+
+# ---------- CREATE ----------
+# The body — only what was named, so the ladder fills the rest. Python for the JSON:
+# a prompt is prose, and prose is exactly what a hand-rolled quote gets wrong.
+body=$(NAME="$NAME" ME="$ME" PROMPT="$PROMPT" ROLE="$ROLE" TEAM="$TEAM" LEAD="$LEAD" ROOT="$ROOT" \
+       MODE="$MODE" CMD="$CMD" MCP="$MCP" TAGS="$TAGS" SEED="$SEED" python3 - <<'PY'
+import json, os
+e = os.environ
+b = {"name": e["NAME"]}
+if e["ME"]: b["caller"] = e["ME"]
+for k, v in (("prompt", "PROMPT"), ("session_role", "ROLE"), ("team", "TEAM"),
+             ("project_root", "ROOT"), ("mode", "MODE"), ("cmd", "CMD")):
+    if e[v]: b[k] = e[v]
+if e["LEAD"]: b["team_lead"] = True
+if e["MCP"]: b["mcp"] = e["MCP"].lower() in ("on", "true", "1", "yes")
+for k, v in (("tags", "TAGS"), ("seed", "SEED")):
+    if e[v]: b[k] = [t.strip() for t in e[v].split(",") if t.strip()]
+print(json.dumps(b))
+PY
+) || die "BAD-ARG: could not build the request" 2
+
+out=/tmp/tejun-session-set.$$
+code=$(curl -sS -m 60 "${AUTH[@]+"${AUTH[@]}"}" -o "$out" -w '%{http_code}' \
+       -H 'content-type: application/json' -X POST --data "$body" "$url/api/session" 2>/dev/null) \
+  || { rm -f "$out"; die "UNREACHABLE: Ronin did not answer at $url" 5; }
+python3 - "$code" "$out" <<'PY'
+import json, sys
+code, path = int(sys.argv[1]), sys.argv[2]
+try:
+    d = json.load(open(path))
+except Exception:
+    d = {}
+if code == 200 and d.get("ok"):
+    r = d.get("receipt") or {}
+    team = r.get("team") or ""
+    how = d.get("team_from", "none")
+    tail = f"on {team}" + (" (your team)" if how == "caller" else "") if team else "(rōnin)"
+    if r.get("team_lead"): tail += " as 人"
+    print(f"BORN {d.get('name')} {tail}")
+    sys.exit(0)
+print(f"REFUSED: {d.get('error') or f'HTTP {code}'}", file=sys.stderr)
+sys.exit(4)
+PY
+rc=$?
+rm -f "$out"
+exit $rc

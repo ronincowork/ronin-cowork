@@ -10,14 +10,14 @@
 # `--add` tags those live sessions onto the team — additive, never removing anyone;
 # a name that is not live is reported back, and the rest still go through.
 #
-# You rarely need this: a session is born onto your team by `tejun-session`, with no
+# You rarely need this: a session is born onto your team by `tejun-session-set`, with no
 # team named at all. Come here to create a team, or to give one a brief worth
 # inheriting (`--objective`, `--root`, `--repos`, `--branch`).
 #
 # Verdicts: CREATED <team> · UPDATED <team> — then `added: …` / `not live: …` when --add
 # was given. Exit 0 done, 2 bad arguments, 4 refused, 5 Ronin unreachable.
 set -u
-die() { printf '%s\n' "$*" >&2; exit "${2:-4}"; }
+die() { printf '%s\n' "$1" >&2; exit "${2:-4}"; }
 
 NAME="${1:-}"
 [ -n "$NAME" ] && [ "${NAME#-}" = "$NAME" ] || die "usage: tejun-team-set <team> [--objective <text>] [--role <team_role>] [--add s1,s2] …" 2
