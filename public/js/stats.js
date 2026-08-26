@@ -153,7 +153,7 @@ export function buildStats(root) {
         const seg = el('div', 'td-seg');
         seg.style.height = `${(ends[end] / n) * 100}%`;
         seg.style.background = `var(--k-${end})`;
-        seg.title = `launched ${birth} · died ${end} — ${ends[end]}`;
+        seg.title = t('stats.mek_seg', 'launched {birth} · died {end} — {n}', { birth, end, n: ends[end] });
         if (w > 7 && ends[end] / n > 0.28) seg.appendChild(el('span', null, String(ends[end])));
         colEl.appendChild(seg);
       }
@@ -354,7 +354,7 @@ export function buildStats(root) {
     const foot = el(
       'div',
       'td-foot',
-      'Counted on this machine — no code, no prompts, no names. See README/STATS.md.',
+      t('stats.foot', 'Counted on this machine — no code, no prompts, no names. See README/STATS.md.'),
     );
     body.appendChild(foot);
   };
@@ -368,18 +368,18 @@ export function buildStats(root) {
     };
     const tabsSeen = surf.tabs || {};
     for (const [id, label] of [
-      ['sessions', '⌂ Roster'],
-      ['new', '＋ New session'],
-      ['wipe', '▤ Wipeboard'],
-      ['proj', '▣ Project root'],
-      ['stats', '▦ Stats'],
+      ['sessions', t('pane.sessions', '⌂ Roster')],
+      ['new', t('pane.new', '＋ New session')],
+      ['wipe', t('pane.wipe', '▤ Wipeboard')],
+      ['proj', t('stats.tab_proj', '▣ Project root')],
+      ['stats', t('stats.tab_stats', '▦ Stats')],
     ]) {
       add(label, String(tabsSeen[id] || 0), !tabsSeen[id]);
     }
     const dials = surf.dials || {};
     if (sumOf(dials)) {
       add(
-        'dials changed',
+        t('stats.dials_changed', 'dials changed'),
         `${sumOf(dials)} — ${Object.entries(dials).map(([k, v]) => `${k} ${v}`).join(' · ')}`,
       );
     }
@@ -387,7 +387,7 @@ export function buildStats(root) {
     if (sumOf(client)) {
       const total = sumOf(client);
       add(
-        'desktop : touch',
+        t('stats.desktop_touch', 'desktop : touch'),
         `${Math.round(((client.desktop || 0) / total) * 100)} : ${Math.round(((client.touch || 0) / total) * 100)}`,
       );
     }
