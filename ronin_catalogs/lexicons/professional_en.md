@@ -299,3 +299,36 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.raising:** Checking the roster, then raising sessions in order…
 - **new_team.root_default:** — the box’s default —
 - **new_team.title:** New Team
+
+## preview / seat — agent-config-preview.js (the seat preview half of Agent Configuration)
+- **seat.session_role:** Session role
+- **seat.name:** Name
+- **preview.team_objective:** Team objective
+- **preview.team_repos:** Team repositories
+- **preview.team_branch:** Team branch
+- **preview.team_wipeboard:** Team wipeboard
+- **preview.team_state:** Team state
+- **preview.dir:** Directory
+- **preview.agent:** Launches an agent
+- **preview.label:** Agent label
+- **preview.model:** Model bias
+- **preview.permissions:** Permissions
+- **preview.posture:** Posture
+- **preview.opening:** Opening template
+- **preview.ack:** Acknowledgement gate
+- **preview.cli:** CLI
+- **seat.mcp:** gbrain
+- **preview.mcp_default:** gbrain default
+- **preview.mcp_always:** gbrain locked on
+- **preview.lifecycle:** Lifecycle
+- **preview.cap_exempt:** Exempt from the session max
+- **preview.yes:** yes
+- **preview.no:** no
+- **preview.title:** Preview
+- **preview.brief_head:** The brief this session is born with
+- **preview.resolved_head:** What it resolves to
+- **preview.reading_head:** Read at birth
+- **preview.nothing_yet:** Nothing to preview yet.
+- **preview.unresolved:** This seat did not resolve far enough to preview.
+- **preview.no_reading:** No birth reading reported.
+- **preview.source_unknown:** source not reported
