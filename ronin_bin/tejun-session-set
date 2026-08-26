@@ -4,14 +4,14 @@
 # Usage: tejun-session-set <name>                       READ: role, teams, 人, dial, root
 #        tejun-session-set <name> --prompt <text> [--role <session_role>] [--team <team>]
 #                          [--lead] [--root <project_root>] [--mode manual|assisted]
-#                          [--cmd <cli>] [--mcp on|off] [--tags a,b] [--seed p1,p2]
+#                          [--model <name>] [--cmd <cli>] [--mcp on|off] [--tags a,b] [--seed p1,p2]
 #                                                       CREATE: a name nobody holds is born
 #        tejun-session-set <name> [--role …] [--team …] [--lead] [--root …]
 #                                                       UPDATE: a live name changes those facts
 #
 # THE SAME COMMAND CREATES OR UPDATES, keyed by name, the way `tejun-team-set` does for a
 # team (owner, 2026-08-26). A name nobody holds is BORN; a live name is CHANGED in the
-# facts you name and untouched elsewhere. `--prompt`, `--cmd`, `--mode`, `--mcp`, `--seed`
+# facts you name and untouched elsewhere. `--prompt`, `--model`, `--cmd`, `--mode`, `--mcp`, `--seed`
 # are birth-only (they were consumed on the command line the session started with) and
 # are refused by name on a live session, never silently dropped.
 #
@@ -20,7 +20,10 @@
 # newborn joins the FIRST team you are on; on no team, it is born a rōnin. Neither is a
 # refusal — nothing here asks you to create a team first, and a session that lands in
 # the rōnin column can be dragged onto a team from the page. `--lead` makes it the 人 of
-# whichever team it resolved to. An agent session needs a --prompt.
+# whichever team it resolved to. An agent session needs a --prompt. `--model <name>`
+# picks a row of this box's launch table by its model column (`fable`, `opus`,
+# `gpt-5.6-sol`…) — "open a fable session" is `--model fable`; an unknown name is refused
+# with the names the table has.
 #
 # UPDATE — `--team <t>` adds the session to that team (tags are additive here; the page
 # removes), `--lead` makes it 人 of its --team (or of its first team), `--role` rewrites
@@ -56,7 +59,7 @@ me() {
 NAME="${1:-}"
 [ -n "$NAME" ] && [ "${NAME#-}" = "$NAME" ] || die "usage: tejun-session-set <name> [--prompt <text>] [--role <session_role>] [--team <team>] [--lead] …" 2
 shift
-PROMPT="" ROLE="" TEAM="" LEAD="" ROOT="" MODE="" CMD="" MCP="" TAGS="" SEED=""
+PROMPT="" ROLE="" TEAM="" LEAD="" ROOT="" MODE="" CMD="" MODEL="" MCP="" TAGS="" SEED=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --prompt) PROMPT="${2:-}"; shift 2 ;;
@@ -66,6 +69,7 @@ while [ $# -gt 0 ]; do
     --root|--project_root) ROOT="${2:-}"; shift 2 ;;
     --mode) MODE="${2:-}"; shift 2 ;;
     --cmd) CMD="${2:-}"; shift 2 ;;
+    --model) MODEL="${2:-}"; shift 2 ;;
     --mcp) MCP="${2:-}"; shift 2 ;;
     --tags) TAGS="${2:-}"; shift 2 ;;
     --seed) SEED="${2:-}"; shift 2 ;;
@@ -91,7 +95,7 @@ for s in json.load(sys.stdin):
 ' 2>/dev/null || true)
 
 # ---------- READ ----------
-if [ -n "$live" ] && [ -z "$PROMPT$ROLE$TEAM$LEAD$ROOT$MODE$CMD$MCP$TAGS$SEED" ]; then
+if [ -n "$live" ] && [ -z "$PROMPT$ROLE$TEAM$LEAD$ROOT$MODE$CMD$MODEL$MCP$TAGS$SEED" ]; then
   root=$(api "$url/api/sessions/$NAME/project-root" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("project_root") or "")' 2>/dev/null || true)
   printf '%s' "$live" | ROOT="$root" ME="$ME" python3 -c '
 import json, os, sys
@@ -108,7 +112,7 @@ fi
 
 # ---------- UPDATE ----------
 if [ -n "$live" ]; then
-  for pair in "--prompt:$PROMPT" "--cmd:$CMD" "--mode:$MODE" "--mcp:$MCP" "--seed:$SEED" "--tags:$TAGS"; do
+  for pair in "--prompt:$PROMPT" "--model:$MODEL" "--cmd:$CMD" "--mode:$MODE" "--mcp:$MCP" "--seed:$SEED" "--tags:$TAGS"; do
     [ -n "${pair#*:}" ] && die "REFUSED: ${pair%%:*} is birth-only — \"$NAME\" is already running (use --team to add a team)" 4
   done
   did=""
@@ -147,13 +151,13 @@ fi
 # The body — only what was named, so the ladder fills the rest. Python for the JSON:
 # a prompt is prose, and prose is exactly what a hand-rolled quote gets wrong.
 body=$(NAME="$NAME" ME="$ME" PROMPT="$PROMPT" ROLE="$ROLE" TEAM="$TEAM" LEAD="$LEAD" ROOT="$ROOT" \
-       MODE="$MODE" CMD="$CMD" MCP="$MCP" TAGS="$TAGS" SEED="$SEED" python3 - <<'PY'
+       MODE="$MODE" CMD="$CMD" MODEL="$MODEL" MCP="$MCP" TAGS="$TAGS" SEED="$SEED" python3 - <<'PY'
 import json, os
 e = os.environ
 b = {"name": e["NAME"]}
 if e["ME"]: b["caller"] = e["ME"]
 for k, v in (("prompt", "PROMPT"), ("session_role", "ROLE"), ("team", "TEAM"),
-             ("project_root", "ROOT"), ("mode", "MODE"), ("cmd", "CMD")):
+             ("project_root", "ROOT"), ("mode", "MODE"), ("cmd", "CMD"), ("model", "MODEL")):
     if e[v]: b[k] = e[v]
 if e["LEAD"]: b["team_lead"] = True
 if e["MCP"]: b["mcp"] = e["MCP"].lower() in ("on", "true", "1", "yes")
