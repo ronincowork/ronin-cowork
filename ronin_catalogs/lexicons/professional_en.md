@@ -1224,3 +1224,8 @@ The catalog entry goes. {dir} is not touched.
 - **tile.session_ended:** session ended.
 - **output.title_locked:** Output — Locked only. Ronin Services is not installed.
 - **output.title_choose:** Output — choose the live terminal or a RIREKI view
+
+## tape — the summary default and the alt note
+- **tape.no_summary:** No summary has been written yet.
+- **tape.alt_note_partial:** history begins mid-session · scrollback above is reconstructed from the tape
+- **tape.alt_note:** scrollback above is reconstructed from the tape

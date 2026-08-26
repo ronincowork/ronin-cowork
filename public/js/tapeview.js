@@ -106,7 +106,7 @@ export class TapeView {
 
   setSummary(text, note = '') {
     const wasAtBottom = this.atBottom();
-    this.ttext.textContent = text || note || 'No summary has been written yet.';
+    this.ttext.textContent = text || note || t('tape.no_summary', 'No summary has been written yet.');
     this.tframe.textContent = '';
     this.lastFold = null;
     this.tapeChars = this.ttext.textContent.length;
@@ -179,7 +179,7 @@ export class TapeView {
    * the tape by collapsing repaints, not transcribed from what was on screen.
    */
   setAltNote(on, partial) {
-    const text = (partial ? 'history begins mid-session · ' : '') + 'scrollback above is reconstructed from the tape';
+    const text = partial ? t('tape.alt_note_partial', 'history begins mid-session · scrollback above is reconstructed from the tape') : t('tape.alt_note', 'scrollback above is reconstructed from the tape');
     if (!this.altNote) {
       if (!on) return;
       const n = document.createElement('div');
