@@ -368,6 +368,28 @@ app.put('/api/file', express.text({ type: '*/*', limit: '8mb' }), async (req, re
   }
 });
 
+/**
+ * THE FILE ITSELF, AS THE BROWSER WOULD RENDER IT (owner, 2026-08-26: *"i cant view an html
+ * in [the docs tab] … if we can have a mini viewer in the doc tab that would be cool. and
+ * then have a open into browser tab button"*). `/api/file` hands back TEXT for the editor;
+ * this hands back the file with its own content-type, so an `.html` a session listed can
+ * sit in an iframe inside the ▧ Docs pane, or open in a tab of its own from the ↗ button.
+ *
+ * PATH-SHAPED, NOT A QUERY: `/raw/home/x/page.html` rather than `/raw?path=`, so a page's
+ * relative `<img src="pic.png">` resolves to `/raw/home/x/pic.png` and comes through the
+ * same door. Same absolute-path rule, same "no filter" ruling as `/api/file` above — the
+ * browser is on the tailnet with the owner's cookie, and every agent already has the shell.
+ */
+app.get('/raw/*', (req, res) => {
+  const file = '/' + String((req.params as Record<string, string>)[0] ?? '');
+  res.sendFile(file, { dotfiles: 'allow', headers: { 'Cache-Control': 'no-store' } }, (e) => {
+    if (!e || res.headersSent) return;
+    const code = (e as NodeJS.ErrnoException)?.code;
+    if (code === 'ENOENT' || code === 'EISDIR') return res.status(404).json({ error: 'No such file.' });
+    res.status(500).json({ error: String((e as Error)?.message ?? e) });
+  });
+});
+
 // --- HTTP + WebSocket server ---
 const server = createServer(app);
 // A tape-fed tile opens with its whole reconstructed history — a couple of megabytes of

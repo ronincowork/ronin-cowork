@@ -3190,10 +3190,38 @@ body {
   display: block;
   overflow: auto;
 }
-.home-docs[data-view='edit'] .dc-ed {
+.home-docs[data-view='edit'] .dc-ed,
+.home-docs[data-view='view'] .dc-ed {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+}
+/* 'edit' is the textarea and Save; 'view' is the frame and ↗. One bar, two bodies —
+   an .html renders as the page it is instead of as its source (owner, 2026-08-26). */
+.home-docs[data-view='edit'] .dc-frame,
+.home-docs[data-view='edit'] .dc-open,
+.home-docs[data-view='view'] .dc-text,
+.home-docs[data-view='view'] .dc-save {
+  display: none;
+}
+.dc-frame {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-md);
+  background: #fff; /* a page paints its own ground; until it does, paper, not the well */
+}
+.dc-open {
+  margin-left: auto;
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--raise);
+  color: var(--fg-strong);
+  padding: var(--space-3) var(--space-5);
+  font-size: var(--text-3);
+  text-decoration: none;
+  white-space: nowrap;
 }
 .dc-who {
   display: flex;
