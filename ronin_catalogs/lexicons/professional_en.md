@@ -1279,3 +1279,8 @@ The catalog entry goes. {dir} is not touched.
 - **macros.no_blurb:** no blurb yet — add a blurb: line to its MACROS.md entry
 - **macros.aria_send:** {label} — +{name} ⏎, typed into the session and sent for you
 - **macros.aria_drop:** {label} — +{name}: dropped into the input for you to finish
+
+## voice — voice.js failures
+- **voice.failed:** Dictation failed ({why})
+- **voice.failed_network:** Dictation failed (network)
+- **voice.mic_blocked:** Mic blocked — open Ronin over the https url and allow the microphone
