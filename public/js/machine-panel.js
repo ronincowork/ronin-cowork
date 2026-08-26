@@ -2,6 +2,7 @@
 import { request } from './request.js';
 import { serviceMissing } from './state.js';
 import { button, status } from './ui.js';
+import { t } from './lexicon.js';
 
 /**
  * ⚙ THE MACHINE — the detail behind the header gauge.
@@ -45,7 +46,7 @@ export function buildMachinePanel() {
   block.className = 'sys-machine';
   const head = document.createElement('div');
   head.className = 'sys-theme-lbl';
-  head.textContent = 'this machine';
+  head.textContent = t('machine.head', 'this machine');
   block.append(head);
 
   const body = document.createElement('div');
@@ -55,48 +56,48 @@ export function buildMachinePanel() {
   const draw = (m) => {
     body.textContent = '';
     if (m.off) {
-      msg.textContent = 'Watching is off. Nothing is gathered, and nothing was ever installed on the box.';
+      msg.textContent = t('machine.off', 'Watching is off. Nothing is gathered, and nothing was ever installed on the box.');
       return;
     }
     msg.textContent = '';
     const total = m.mem.total_mb || 1;
     const share = Math.max(0, m.mem.available_mb) / total;
-    line(body, 'memory free', `${gb(m.mem.available_mb)} of ${gb(total)}`,
-      'MemAvailable: what a new allocation could get. A healthy box shows little free memory — the kernel spends it on cache, and hands it back on demand.');
-    line(body, 'headroom', `${Math.round(share * 100)}%`);
-    line(body, 'swap', m.swap.total_mb === 0
-      ? 'none — a memory spike is a kill, not slowness'
-      : `${gb(m.swap.used_mb)} used of ${gb(m.swap.total_mb)}`);
-    line(body, 'load', `${m.load[0]} · ${m.load[1]} · ${m.load[2]}  on ${m.cpus} cores`,
-      '1, 5 and 15 minute averages. Compare against the core count, not against zero.');
+    line(body, t('machine.memory_free', 'memory free'), t('machine.of', '{free} of {total}', { free: gb(m.mem.available_mb), total: gb(total) }),
+      t('machine.memory_note', 'MemAvailable: what a new allocation could get. A healthy box shows little free memory — the kernel spends it on cache, and hands it back on demand.'));
+    line(body, t('machine.headroom', 'headroom'), `${Math.round(share * 100)}%`);
+    line(body, t('machine.swap', 'swap'), m.swap.total_mb === 0
+      ? t('machine.swap_none', 'none — a memory spike is a kill, not slowness')
+      : t('machine.used_of', '{used} used of {total}', { used: gb(m.swap.used_mb), total: gb(m.swap.total_mb) }));
+    line(body, t('machine.load', 'load'), t('machine.load_value', '{one} · {five} · {fifteen}  on {cpus} cores', { one: m.load[0], five: m.load[1], fifteen: m.load[2], cpus: m.cpus }),
+      t('machine.load_note', '1, 5 and 15 minute averages. Compare against the core count, not against zero.'));
     if (m.scope === 'container') {
-      line(body, 'scope', 'container limit', 'These are this container’s numbers, not the host’s.');
+      line(body, t('machine.scope', 'scope'), t('machine.scope_container', 'container limit'), t('machine.scope_note', 'These are this container’s numbers, not the host’s.'));
     }
     // NAMED, NEVER A ZERO. A reading that could not see something says so; reporting 0
     // for an unknown is how a box with swap gets reported as having none.
     if (Array.isArray(m.unavailable) && m.unavailable.length) {
-      line(body, 'not readable here', m.unavailable.join(', '),
-        'This system does not expose these, so they are left unanswered rather than reported as zero.');
+      line(body, t('machine.unavailable', 'not readable here'), m.unavailable.join(', '),
+        t('machine.unavailable_note', 'This system does not expose these, so they are left unanswered rather than reported as zero.'));
     }
   };
 
   const load = async () => {
     const r = await request('/api/machine', { cache: 'no-store' });
     if (r && r.ok && r.data) draw(r.data);
-    else msg.textContent = 'Could not read the machine just now.';
+    else msg.textContent = t('machine.read_failed', 'Could not read the machine just now.');
   };
 
   const row = document.createElement('div');
   row.className = 'sys-actions';
-  const refresh = button('Refresh', { cls: 'sys-run', title: 'Read the machine again now' });
+  const refresh = button(t('machine.refresh', 'Refresh'), { cls: 'sys-run', title: t('machine.refresh_title', 'Read the machine again now') });
   refresh.addEventListener('click', () => void load());
-  const off = button('Stop watching', {
+  const off = button(t('machine.stop', 'Stop watching'), {
     cls: 'sys-run',
-    title: 'Stop gathering machine readings and hide the gauge. Nothing was installed on the box, so there is nothing to undo — turn it back on whenever you like.',
+    title: t('machine.stop_title', 'Stop gathering machine readings and hide the gauge. Nothing was installed on the box, so there is nothing to undo — turn it back on whenever you like.'),
   });
   off.addEventListener('click', async () => {
     const r = await request('/api/settei/machine', { method: 'PUT', body: { monitor: false } });
-    msg.textContent = r && r.ok ? 'Off. Reload to clear the gauge.' : 'Could not save that.';
+    msg.textContent = r && r.ok ? t('machine.stopped', 'Off. Reload to clear the gauge.') : t('machine.save_failed', 'Could not save that.');
   });
   row.append(refresh, off);
   block.append(row);
