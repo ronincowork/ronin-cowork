@@ -238,8 +238,8 @@ export function buildPadPanel() {
     if (cell.w) {
       const div = document.createElement('div');
       div.className = 'pad-widget pad-' + cell.w;
-      div.textContent = PAD_WIDGETS[cell.w][0];
-      div.title = PAD_WIDGETS[cell.w][1];
+      div.textContent = PAD_WIDGETS()[cell.w][0];
+      div.title = PAD_WIDGETS()[cell.w][1];
       board.appendChild(div);
       widgets.set(cell.w, div);
       continue;
@@ -275,7 +275,7 @@ export function buildPadPanel() {
       const mine = Object.keys(PAD_CONTROLS).filter((c) => PAD_CONTROLS[c] === w && padBinds[c]);
       if (!mine.length) continue;
       const what = mine.map((c) => (PAD_KEYS()[padBinds[c].key] || { label: padBinds[c].macro || c }).label).join(' · ');
-      el.title = PAD_WIDGETS[w][1] + ' — ' + what;
+      el.title = PAD_WIDGETS()[w][1] + ' — ' + what;
     }
     extraCells.clear();
     extras.innerHTML = '';

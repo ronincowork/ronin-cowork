@@ -28,17 +28,20 @@ export const PAD_LAYOUT = [
   [{ w: 'kesc' }, { w: 'ktab' }, { w: 'adel' }, { w: 'ent' }],
   [{ w: 'touch' }, { k: 'F21' }, { w: 'aent' }, { w: 'wispr' }],
 ];
-export const PAD_WIDGETS = {
-  enc: ['◉', 'encoder — volume and play/pause; it speaks media-key only, so it cannot drive Ronin'],
-  joy: ['✛', 'joystick — flick to move between tiles'],
-  touch: ['▭', 'touch strip — cycles the pad layers (not bindable here)'],
-  kesc: ['⎋ ESC', 'Escape — a real universal Esc key, works in any app'],
-  ktab: ['⇥ TAB', 'Tab — a real universal Tab key, works in any app'],
-  ent: ['↵ ENTER', 'Enter — a real universal Enter key, works in any app'],
-  adel: ['⌥⌫ DEL', 'Option+Delete (delete word) — universal, works in any app'],
-  aent: ['⌥↵ NEWLINE', 'Option+Enter (newline without send) — universal, works in any app'],
-  wispr: ['🎙', 'Wispr push-to-talk (right ⌥) — Wispr handles it, Ronin stays out of the way'],
-};
+// A function, not a table: the lexicon loads after this module is evaluated.
+export function PAD_WIDGETS() {
+  return {
+    enc: ['◉', t('pad.w_encoder', 'encoder — volume and play/pause; it speaks media-key only, so it cannot drive Ronin')],
+    joy: ['✛', t('pad.w_joystick', 'joystick — flick to move between tiles')],
+    touch: ['▭', t('pad.w_touch', 'touch strip — cycles the pad layers (not bindable here)')],
+    kesc: ['⎋ ESC', t('pad.w_esc', 'Escape — a real universal Esc key, works in any app')],
+    ktab: ['⇥ TAB', t('pad.w_tab', 'Tab — a real universal Tab key, works in any app')],
+    ent: ['↵ ENTER', t('pad.w_enter', 'Enter — a real universal Enter key, works in any app')],
+    adel: ['⌥⌫ DEL', t('pad.w_delete_word', 'Option+Delete (delete word) — universal, works in any app')],
+    aent: ['⌥↵ NEWLINE', t('pad.w_newline', 'Option+Enter (newline without send) — universal, works in any app')],
+    wispr: ['🎙', t('pad.w_wispr', 'Wispr push-to-talk (right ⌥) — Wispr handles it, Ronin stays out of the way')],
+  };
+}
 
 // ⌨ key bindings: a pad key can also press a terminal key in the ACTIVE tile —
 // the keys that drive claude (Esc, Tab, ⇧Tab, Enter, arrows, ^C), same sequences
