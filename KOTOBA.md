@@ -305,6 +305,8 @@ project_root (required)  ×  session_role (optional, mutable)  ×  team (optiona
 |---|---|---|---|
 | **the axes** | system_scope | `project_root` (where) · `session_role` (what it is doing now) — **one token, every surface**: the launcher sets them, TEGAMI carries them, the boot shelf reads by them, OBOERU matches on them, TOMODACHI counts by them. Defined here once; § OBOERU and § TOMODACHI use it and do not redefine it. **There is no per-session identity axis** (R35): identity is the TEAM's `team_role`, worn contextually — see § TEAMS | `co-working/user_repo/README/OBOERU.md` |
 | **session_role** | system_scope definition · session_scope selection | what a session is doing **right now** — all eleven of the former `session_job`s, without exception: `RiffOnIt`, `DraftPlan`, `CutCode`, `ChaseBug`, `CheckWork`, `QuarterBack`, `OddJob`, `Atarashi`, `PersonalAssistant`, `OpenShell`, `MikaAssist`. **Optional and MUTABLE**: the session changes it with `write_tegami`, the owner changes it from the tile, and a committed change injects that role's reading into the running session. Blank is valid and means no role reading and no mark. Successor to `session_task` (R35), which succeeded `session_job` | `ronin_catalogs/session_roles/` |
+| **behaviour** | system_scope | **one word for everything that can be given to a session to change what it does** — a macro, an SOP, a doc, a tool, a memory, a reading list (R37). On the shelf a behaviour is inert; handed to a session it makes that session right for a situation. The first term that spans all five shelves (`docs/SHELVES.md`): the shelves are where behaviours live, a loadout is which ones a session carries. Fetched by a situation, never pushed — the SOP shelf's rule, now the rule for the class. Spelled **behaviour**, house English | `docs/SHELVES.md` · `MANIFESTO.md` (ronin-lab) § 1 |
+| **session_build** | user_scope definition · session_scope selection | **a preconfigured composition to start a session from** (R37): a way of working, the reading it arrives with, the model and posture that suit it — chosen off a shelf, then finished with a **loadout** (the extra behaviours this one session carries). A build is what a session *is*; a loadout is what it *carries*; the `session_role` is what it is doing now. The house ships some builds; you make your own by saving a session that worked — the same harvest rule as a preset. A lead is not a kind of thing: it is a session on a build designed for leading, chosen from the project's `team_role` (MANIFESTO § 4) | `MANIFESTO.md` (ronin-lab) § 2 |
 | **session_mandate** | session_scope selection | **how far a session may go before it checks in, and whom it may recruit** — two dials, set on the FIRST session of a project and re-settable on any (R36). **Reach:** `discuss` (talk it through with the owner and stop) · `plan` (write the plan and gate) · `execute` (plan and cut, gate at the end) · `run` (to completion, gates only on trouble). **Recruit:** `none` (do it yourself — the solo case) · `propose` (name the seats, the owner approves each) · `staff` (spawn the team yourself). Every 'solo vs squad' question is a mandate, not a mode: solo is `recruit: none`; 'let the lead build the squad' is `recruit: staff`; 'let us discuss, then decide the team' is `reach: discuss · recruit: propose`. The value is the owner's and never derived from the `session_role` — a `QuarterBack` with `recruit: none` runs the play itself. Rides the letter beside `session_role`; blank means `reach: plan · recruit: propose`, the cautious default | `ronin_catalogs/session_roles/README.md` · `concepts/league-lobby.html` (ronin-lab) |
 | **role_family** | user_scope definition | **PRESENTATION, not structure** (R35): a New Session shelf grouping session_roles for viewing, and a Build-Team template — *a family of roles, not a family's role*. It never rides a launch, a letter, or a session; its launch constants moved into each session_role definition when the old `family_role` axis was dismantled. `developer`, `assistant`, `extra` ship so a fresh board is useful | `ronin_catalogs/role_families/` |
 | **`session_roles:`** | system_scope | the KEY inside a `role_family` definition naming the roles on its shelf — `- **session_roles:** A, B, C`. The family owns it and a session_role never names a family. A role may appear in several families, so adding it to one never removes it from another | `ronin_catalogs/role_families/` |
@@ -1364,6 +1366,24 @@ is an ordinary act, a mandate narrowing on a running session is a gate. **Hand-b
 team stays a door of equal standing** (MANIFESTO § 4, ronin-lab) — the mandate governs what
 the lead may do, and says nothing about what the owner may. Adds the § LAUNCHER row.
 *Named by the session that drew the lobby, adopted by the owner: "yes, Mandate!"*
+
+**R37 · `behaviour` and `session_build` — the bottom of the stack gets its words.** Owner,
+2026-08-26, on the manifesto: *"pile of behaviours — yes! I think we're going to have to add
+behaviours to the KOTOBA. It's the macros, it's SOPs, it's the docs, it's everything that we
+could be giving to a session. That's easy for users to grok."* And on how a session is put
+together: *"if I'm building a session I want to choose from preconfigured session-builds and
+if needed finish their loadout with additional behaviours."* Ruled as two rows in § LAUNCHER.
+**`behaviour`** is the class: one word for anything handed to a session to change what it
+does, across all five shelves. **`session_build`** is the preconfigured composition a session
+starts from; **loadout** is the ordinary word for what a session carries beyond its build
+and needs no row of its own; **kit** — what a build ships with by default — stays a plain
+word until it earns one. **NOT ruled, deliberately:** renaming `session_role`. The owner's
+read is that *role* misleads — the thing a session is doing moves from riffing to drafting
+to cutting — and the leaning is **`task_at_hand`**, not the R35-era `session_task`. Parked
+(owner: *"let's not do that yet"*), because the token rides the letter, the launcher, the
+boot shelf, OBOERU and TOMODACHI, and a rename is a code leg. Until it is ruled, a change of
+`session_role` is a change of task and **never a re-brief**: the reading was handed over at
+birth, and that is enough.
 
 ---
 
