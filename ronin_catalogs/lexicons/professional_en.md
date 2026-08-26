@@ -1168,3 +1168,20 @@ The catalog entry goes. {dir} is not touched.
 
 ## desk — the rail toggle and the inert row
 - **desk.rail_expand:** Expand the rail
+
+## league — league-board.js (the League board)
+- **league.lead:** lead
+- **league.holding_empty:** Every live session is on a Team
+- **league.no_members:** No live members
+- **league.holding:** Holding area
+- **league.active:** Active Team
+- **league.resting:** Resting Team
+- **league.not_recorded:** Not recorded
+- **league.unassigned:** Unassigned
+- **league.unassigned_summary:** Live sessions that carry no Team membership.
+- **league.title:** League
+- **league.controls:** League controls
+- **league.hide_rosters:** Hide rosters
+- **league.show_rosters:** Show rosters
+- **league.new_team_summary:** Define the Team, then build its session roster.
+- **league.rosters_unavailable:** Durable rosters unavailable — showing live Teams only.
