@@ -6605,7 +6605,7 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 .wk-card-heading { margin: 0; color: var(--fg-strong); font-size: var(--text-5); }
 .wk-card-summary { margin: var(--space-3) 0 0; color: var(--muted-2); font-size: var(--text-3); }
 .wk-card-meta { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: auto; padding-top: var(--space-5); color: var(--muted); font-size: var(--text-2); }
-.wk-card-mark { color: var(--kaki); }
+.wk-card-mark { color: var(--kaki); margin-right: var(--space-3); }
 .wk-league-board { grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); align-content: start; }
 .wk-session-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); overflow: hidden; }
 .wk-explorer-layout, .wk-agent-configuration-layout, .wk-new-team-layout { grid-template-columns: minmax(12rem, 2fr) minmax(0, 5fr); overflow: hidden; }

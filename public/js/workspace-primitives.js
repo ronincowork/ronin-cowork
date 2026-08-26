@@ -54,7 +54,9 @@ function createCard(options = {}) {
   const summary = node('p', 'wk-card-summary', options.summary ?? '');
   const metadata = node('div', 'wk-card-meta');
   el.append(heading, summary, metadata);
-  if (options.mark != null) el.prepend(node('span', 'wk-card-mark', options.mark));
+  // The mark rides the heading's own line, before the name (owner, 2026-08-26: "the
+  // hito and the team name should be same line"), not a line of its own above it.
+  if (options.mark != null) heading.prepend(node('span', 'wk-card-mark', options.mark));
   for (const value of options.metadata || []) metadata.append(node('span', null, value));
   if (options.action) el.addEventListener('click', options.action);
   const setState = (state, on = true) => {
