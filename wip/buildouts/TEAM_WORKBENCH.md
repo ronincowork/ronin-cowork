@@ -110,10 +110,26 @@ RIREKI source, one render … conversation and cherry pick are the same fucking 
   `team_pg` (the "scroll lags one screen" finding in Koe's ledger — settled records are
   scrolled-off content; a live-frame layer classified by the same decoder is the
   settled answer, and belongs in RIREKI, not in a consumer).
-- **Owed, in ronin-koe, by the same ruling:** Koe consumes and never re-filters. Its
-  bundled projector, `cherryPickRecords` and the `proseOnly`-era paths should go; the
-  live-frame layer and `earClean` are the two pieces that need a home in RIREKI first.
-  A Koe session's job, from this record.
+- **PAID, both legs, 2026-08-26** (cut by `koe_rireki`, a CutCode session on `team`):
+  (a) `ronin-services` `dev` (`9aa0103`) — `render.ts` grew `sinceMark()` (windows any
+  view to the pane's own echo of the owner's last message) and `withLiveFrame()`
+  (`cherry_pick` only: captures the live viewport, folds the composer's own input box
+  with the vendor decoder's `inputBox()` before classifying — a real bug caught measuring
+  on `team_pg`'s pane, an unsent draft was reading as an owner echo — then cherry-picks
+  and appends, deduped against the settled tail). Both ride one query flag,
+  `?since=mark`, documented in `docs/rireki.md`. `earClean`/bullet-stripping stay in Koe
+  by design (pronunciation-only, not a transcript correction — every other consumer of
+  the view keeps the hash and the bullet). (b) `ronin-koe` `main` (`fb10334`) —
+  `koe-link`'s bundled projector, `cherryPickRecords`, `voiceText`, local settling and
+  decoding are gone; `read_output` asks RIREKI's render route with `since=mark` and
+  trusts the answer, including "nothing new" as a real answer rather than a fallback
+  trigger. `packages/rireki` there is retired (kept only as the flowback provenance
+  record). Also fixed in the same cut: `renderApi`'s default pointed at a placeholder
+  dev cowork that always 404d — now points at the box that actually serves RIREKI.
+  Measured: `curl .../render?view=cherry_pick&since=mark` on `team_pg` and (empty scroll,
+  flagged separately) on `koe_rireki`; `read_output` driven against a running `koe-link`
+  returns `{stance, text}` served from RIREKI's render for `team_pg`, and degrades
+  cleanly to the raw tail when RIREKI has nothing settled yet.
 
 **Probe trap added to the list:** `page.goto(url, { waitUntil: 'networkidle' })` never
 resolves against this app (websockets and polls); use `'load'` and a fixed wait.
