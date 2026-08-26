@@ -586,3 +586,30 @@ The pad's current config downloads as a backup first.
 - **pad.restoring:** restoring…
 - **pad.restored:** ✓ backup restored to the pad
 - **pad.restore_failed:** restore failed: {message}
+
+## pad — pad.js (the pad's ⌨ key labels)
+- **pad.key_enter:** ↵ Enter
+- **pad.key_newline:** ⌥↵ Newline
+- **pad.key_delete_word:** ⌥⌫ Delete word
+- **pad.key_esc:** ⎋ Esc
+- **pad.key_tab:** ⇥ Tab
+- **pad.key_shift_tab:** ⇧⇥ Shift-Tab
+- **pad.key_up:** ↑ Up
+- **pad.key_down:** ↓ Down
+- **pad.key_left:** ← Left
+- **pad.key_right:** → Right
+- **pad.key_interrupt:** ^C Interrupt
+- **pad.key_next_tile:** ⇄ Next tile
+- **pad.key_session_switcher:** ⌸ Session switcher
+- **pad.key_commons:** ⌂ Commons
+- **pad.key_tile_1:** ⊞ Tile 1 (top-left)
+- **pad.key_tile_2:** ⊞ Tile 2 (top-right)
+- **pad.key_tile_3:** ⊞ Tile 3 (bottom-left)
+- **pad.key_tile_4:** ⊞ Tile 4 (bottom-right)
+- **pad.key_scroll_up:** ⤒ Scroll up
+- **pad.key_scroll_down:** ⤓ Scroll down
+- **pad.key_layout_cycle:** ▚ Layout 1→2→4
+- **pad.key_tile_up:** 🕹 Tile up
+- **pad.key_tile_down:** 🕹 Tile down
+- **pad.key_tile_left:** 🕹 Tile left
+- **pad.key_tile_right:** 🕹 Tile right

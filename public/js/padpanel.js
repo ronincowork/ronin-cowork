@@ -201,7 +201,7 @@ export function buildPadPanel() {
     macroSel.appendChild(gm);
     const gk = document.createElement('optgroup');
     gk.label = t('pad.group_keys', '⌨ keys (to the active tile)');
-    for (const [id, k] of Object.entries(PAD_KEYS)) gk.appendChild(new Option(k.label, 'key:' + id));
+    for (const [id, k] of Object.entries(PAD_KEYS())) gk.appendChild(new Option(k.label, 'key:' + id));
     macroSel.appendChild(gk);
     sessSel.innerHTML = '';
     sessSel.add(new Option(t('pad.active_tile', '▸ active tile'), ''));
@@ -259,7 +259,7 @@ export function buildPadPanel() {
   const decorate = (btn, chord) => {
     const b = padBinds[chord];
     btn.classList.toggle('bound', !!b);
-    const cap = b ? (b.key ? (PAD_KEYS[b.key] || { label: b.key }).label : b.macro + (b.ask ? '…' : '')) : '·';
+    const cap = b ? (b.key ? (PAD_KEYS()[b.key] || { label: b.key }).label : b.macro + (b.ask ? '…' : '')) : '·';
     btn.querySelector('b').textContent = cap;
     btn.title = !b
       ? 'unbound — tap to bind'
@@ -274,7 +274,7 @@ export function buildPadPanel() {
     for (const [w, el] of widgets) {
       const mine = Object.keys(PAD_CONTROLS).filter((c) => PAD_CONTROLS[c] === w && padBinds[c]);
       if (!mine.length) continue;
-      const what = mine.map((c) => (PAD_KEYS[padBinds[c].key] || { label: padBinds[c].macro || c }).label).join(' · ');
+      const what = mine.map((c) => (PAD_KEYS()[padBinds[c].key] || { label: padBinds[c].macro || c }).label).join(' · ');
       el.title = PAD_WIDGETS[w][1] + ' — ' + what;
     }
     extraCells.clear();
@@ -517,7 +517,7 @@ export function buildPadPanel() {
     // Name what it's bound to, not just the code — makes "which direction did
     // that flick fire?" answerable by looking, without any guessing.
     const b = padBinds[chord];
-    const what = b ? (b.key ? (PAD_KEYS[b.key] || {}).label : '⚡ ' + b.macro) : '';
+    const what = b ? (b.key ? (PAD_KEYS()[b.key] || {}).label : '⚡ ' + b.macro) : '';
     last.textContent = pretty(chord) + (what ? ' · ' + what : '');
     // Encoder/joystick codes light their widget; keys light their square.
     const btn = cells.get(chord) || extraCells.get(chord) || (PAD_CONTROLS[chord] && widgets.get(PAD_CONTROLS[chord]));
