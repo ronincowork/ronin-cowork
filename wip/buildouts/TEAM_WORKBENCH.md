@@ -126,6 +126,11 @@ RIREKI source, one render … conversation and cherry pick are the same fucking 
   trigger. `packages/rireki` there is retired (kept only as the flowback provenance
   record). Also fixed in the same cut: `renderApi`'s default pointed at a placeholder
   dev cowork that always 404d — now points at the box that actually serves RIREKI.
+  **`team_pg` caught that fix landing as a literal IP** ("this box today and nothing
+  tomorrow") — redone (`main` `61ac1a7`) as `resolveRenderApi()`: `RONIN_RENDER_API` env,
+  else `RONIN_URL` env, else tmux's server-scope `@ronin-url` (published at cowork boot by
+  `publishRoninUrl`), else a once-per-outage loud log and a clean degrade to the raw tail
+  — the house pattern `mika`/`tejun-teampage` use, no IP literal left in the repo.
   Measured: `curl .../render?view=cherry_pick&since=mark` on `team_pg` and (empty scroll,
   flagged separately) on `koe_rireki`; `read_output` driven against a running `koe-link`
   returns `{stance, text}` served from RIREKI's render for `team_pg`, and degrades
