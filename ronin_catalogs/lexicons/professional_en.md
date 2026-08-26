@@ -1149,3 +1149,8 @@ The catalog entry goes. {dir} is not touched.
 - **new_team.note_tagged:** Those members were tagged, not born onto this Team, so none of them reads the team_role shelf — that reading happens at birth only. Sessions raised from the roster afterwards do.
 - **new_team.note_wipeboard:** A wipeboard named "{name}" already exists and this Team adopts its thread — the team wins its name.
 - **new_team.note_capacity:** This box allows {max} live sessions and {live} are running. This roster would need {over} more than there is room for.
+
+## pad — weblink.js (the pad's failure sentences)
+- **pad.open_failed:** could not open the pad — 1) System Settings → Privacy & Security → 
+- **pad.device_error:** device error
+- **pad.no_reply:** {method}: pad did not reply
