@@ -23,43 +23,47 @@
  * formats the returned layer/source pairs and does not infer a winner from the seat.
  */
 import { WorkspaceKit } from './workspace-kit.js';
+import { t } from './lexicon.js';
 
 
-/** The resolved readings worth showing, in the order they answer "what will this be". */
-const RESOLVED_ROWS = Object.freeze([
-  ['session_role', 'Session role'],
-  ['name', 'Name'],
-  ['team', 'Team'],
-  ['team_role', 'Team role'],
-  ['project_root', 'Project root'],
-  ['team_objective', 'Team objective'],
-  ['team_repos', 'Team repositories'],
-  ['team_branch', 'Team branch'],
-  ['team_wipeboard', 'Team wipeboard'],
-  ['team_state', 'Team state'],
-  ['dir', 'Directory'],
-  ['agent', 'Launches an agent'],
-  ['label', 'Agent label'],
-  ['model', 'Model bias'],
-  ['permissions', 'Permissions'],
-  ['posture', 'Posture'],
-  ['opening', 'Opening template'],
-  ['ack', 'Acknowledgement gate'],
-  ['cmd', 'Command'],
-  ['launchAgent', 'CLI'],
-  ['dial', 'Control'],
-  ['mcp', 'gbrain'],
-  ['mcpDefault', 'gbrain default'],
-  ['mcpAlways', 'gbrain locked on'],
-  ['lifecycle', 'Lifecycle'],
-  ['mode', 'Mode'],
-  ['capExempt', 'Exempt from the session max'],
-]);
+/** The resolved readings worth showing, in the order they answer "what will this be".
+ *  A function, not a table: the lexicon loads after this module is evaluated. */
+function resolvedRows() {
+  return [
+    ['session_role', t('seat.session_role', 'Session role')],
+    ['name', t('seat.name', 'Name')],
+    ['team', t('team.team', 'Team')],
+    ['team_role', t('team.team_role', 'Team role')],
+    ['project_root', t('team.project_root', 'Project root')],
+    ['team_objective', t('preview.team_objective', 'Team objective')],
+    ['team_repos', t('preview.team_repos', 'Team repositories')],
+    ['team_branch', t('preview.team_branch', 'Team branch')],
+    ['team_wipeboard', t('preview.team_wipeboard', 'Team wipeboard')],
+    ['team_state', t('preview.team_state', 'Team state')],
+    ['dir', t('preview.dir', 'Directory')],
+    ['agent', t('preview.agent', 'Launches an agent')],
+    ['label', t('preview.label', 'Agent label')],
+    ['model', t('preview.model', 'Model bias')],
+    ['permissions', t('preview.permissions', 'Permissions')],
+    ['posture', t('preview.posture', 'Posture')],
+    ['opening', t('preview.opening', 'Opening template')],
+    ['ack', t('preview.ack', 'Acknowledgement gate')],
+    ['cmd', t('team.command', 'Command')],
+    ['launchAgent', t('preview.cli', 'CLI')],
+    ['dial', t('team.control', 'Control')],
+    ['mcp', t('seat.mcp', 'gbrain')],
+    ['mcpDefault', t('preview.mcp_default', 'gbrain default')],
+    ['mcpAlways', t('preview.mcp_always', 'gbrain locked on')],
+    ['lifecycle', t('preview.lifecycle', 'Lifecycle')],
+    ['mode', t('team.mode', 'Mode')],
+    ['capExempt', t('preview.cap_exempt', 'Exempt from the session max')],
+  ];
+}
 
 /** A resolved value in the owner's words. Booleans read as words; a blank stays blank,
  *  because blank is a real answer and "—" would be us inventing one. */
 function readingOf(key, value) {
-  if (typeof value === 'boolean') return value ? 'yes' : 'no';
+  if (typeof value === 'boolean') return value ? t('preview.yes', 'yes') : t('preview.no', 'no');
   if (value === null || value === undefined || value === '') return '';
   if (Array.isArray(value)) return value.join(', ');
   return String(value);
@@ -68,22 +72,22 @@ function readingOf(key, value) {
 export function createSeatPreview() {
   // Resolved at CALL time, not at import time — see the note in agent-config-fields.js.
   const { createSurface } = WorkspaceKit.primitives;
-  const surface = createSurface({ className: 'ac-preview', label: 'Preview' });
+  const surface = createSurface({ className: 'ac-preview', label: t('preview.title', 'Preview') });
 
   const briefHead = document.createElement('h3');
   briefHead.className = 'ac-preview-heading';
-  briefHead.textContent = 'The brief this session is born with';
+  briefHead.textContent = t('preview.brief_head', 'The brief this session is born with');
   const brief = document.createElement('pre');
   brief.className = 'ac-preview-brief';
 
   const resolvedHead = document.createElement('h3');
   resolvedHead.className = 'ac-preview-heading';
-  resolvedHead.textContent = 'What it resolves to';
+  resolvedHead.textContent = t('preview.resolved_head', 'What it resolves to');
   const rows = document.createElement('dl');
   rows.className = 'ac-preview-rows';
   const readingHead = document.createElement('h3');
   readingHead.className = 'ac-preview-heading';
-  readingHead.textContent = 'Read at birth';
+  readingHead.textContent = t('preview.reading_head', 'Read at birth');
   const reading = document.createElement('ul');
   reading.className = 'ac-preview-reading';
 
@@ -94,7 +98,7 @@ export function createSeatPreview() {
 
   /** Nothing resolved yet is not a failure — it is the ordinary state before the first
    *  preflight answers. `empty` says so without implying anything broke. */
-  const clear = (message = 'Nothing to preview yet.') => {
+  const clear = (message = t('preview.nothing_yet', 'Nothing to preview yet.')) => {
     brief.textContent = '';
     reading.replaceChildren();
     rows.replaceChildren();
@@ -114,7 +118,7 @@ export function createSeatPreview() {
     reading.replaceChildren();
     rows.replaceChildren();
     if (!resolved) {
-      surface.setState('empty', 'This seat did not resolve far enough to preview.');
+      surface.setState('empty', t('preview.unresolved', 'This seat did not resolve far enough to preview.'));
       return;
     }
     const birthReading = Array.isArray(resolved.birth_reading) ? resolved.birth_reading : [];
@@ -126,10 +130,10 @@ export function createSeatPreview() {
     if (!birthReading.length) {
       const item = document.createElement('li');
       item.dataset.blank = '';
-      item.textContent = 'No birth reading reported.';
+      item.textContent = t('preview.no_reading', 'No birth reading reported.');
       reading.append(item);
     }
-    for (const [key, label] of RESOLVED_ROWS) {
+    for (const [key, label] of resolvedRows()) {
       const reading = readingOf(key, resolved[key]);
       const dt = document.createElement('dt');
       dt.textContent = label;
@@ -143,7 +147,7 @@ export function createSeatPreview() {
       const statedBy = Array.isArray(resolved.stated_by?.[key]) ? resolved.stated_by[key] : [];
       attribution.textContent = statedBy.length
         ? statedBy.map(({ layer, source }) => `${String(layer).replaceAll('_', ' ')} · ${source}`).join(' + ')
-        : 'source not reported';
+        : t('preview.source_unknown', 'source not reported');
       dd.append(attribution);
       rows.append(dt, dd);
     }
