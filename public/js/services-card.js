@@ -11,20 +11,24 @@
  */
 import { request } from './request.js';
 import { button, field, status } from './ui.js';
+import { t } from './lexicon.js';
 
-/** How the six durable stages read to a person, in their words rather than ours. */
-const SAY = {
-  not_requested: ['Not requested', 'Ronin Services are not switched on for this machine.'],
-  requesting: ['Sending…', 'Asking Ronin to send your confirmation email.'],
-  awaiting_email: ['Check your email', 'Open the link we sent. Any device is fine — your phone works.'],
-  verified: ['Email confirmed', 'Ronin has what it needs. Services install next.'],
-  installing: ['Installing Services', 'This machine is fetching and verifying the download.'],
-  installed: ['Services are ready', 'Nothing further to do.'],
-  expired: ['This link expired', 'Ask for a fresh confirmation email below.'],
-  cancelled: ['Request cancelled', 'Nothing was switched on, and the address was not kept.'],
-  address_changed: ['Address changed', 'A new confirmation email is on its way.'],
-  error: ['Waiting to send', 'Ronin HQ could not be reached. This will retry.'],
-};
+/** How the six durable stages read to a person, in their words rather than ours.
+ *  A function, not a table: the lexicon loads after this module is evaluated. */
+function say() {
+  return {
+    not_requested: [t('services.stage_not_requested', 'Not requested'), t('services.stage_not_requested_blurb', 'Ronin Services are not switched on for this machine.')],
+    requesting: [t('services.stage_requesting', 'Sending…'), t('services.stage_requesting_blurb', 'Asking Ronin to send your confirmation email.')],
+    awaiting_email: [t('services.stage_awaiting_email', 'Check your email'), t('services.stage_awaiting_email_blurb', 'Open the link we sent. Any device is fine — your phone works.')],
+    verified: [t('services.stage_verified', 'Email confirmed'), t('services.stage_verified_blurb', 'Ronin has what it needs. Services install next.')],
+    installing: [t('services.stage_installing', 'Installing Services'), t('services.stage_installing_blurb', 'This machine is fetching and verifying the download.')],
+    installed: [t('services.stage_installed', 'Services are ready'), t('services.stage_installed_blurb', 'Nothing further to do.')],
+    expired: [t('services.stage_expired', 'This link expired'), t('services.stage_expired_blurb', 'Ask for a fresh confirmation email below.')],
+    cancelled: [t('services.stage_cancelled', 'Request cancelled'), t('services.stage_cancelled_blurb', 'Nothing was switched on, and the address was not kept.')],
+    address_changed: [t('services.stage_address_changed', 'Address changed'), t('services.stage_address_changed_blurb', 'A new confirmation email is on its way.')],
+    error: [t('services.stage_error', 'Waiting to send'), t('services.stage_error_blurb', 'Ronin HQ could not be reached. This will retry.')],
+  };
+}
 
 export function servicesCard(container, onChange) {
   const wrap = document.createElement('div');
@@ -38,20 +42,21 @@ export function servicesCard(container, onChange) {
       // SAY IT WHERE IT CAN BE SEEN. `line.el` is only mounted on the success path
       // below, so this branch used to write into a node that was not in the document —
       // an unreachable operator looked exactly like a card with nothing to show.
-      line.say('could not reach the operator', 'bad');
+      line.say(t('services.unreachable', 'could not reach the operator'), 'bad');
       wrap.replaceChildren(line.el);
       return;
     }
     if (installTimer) clearTimeout(installTimer);
     wrap.replaceChildren();
 
+    const SAY = say();
     const [title, blurb] = SAY[state.stage] ?? SAY.not_requested;
 
     const head = document.createElement('div');
     head.className = 'st-row st-obs';
     const l = document.createElement('div');
     l.className = 'st-lab';
-    l.textContent = 'Ronin Services';
+    l.textContent = t('settei.ronin_services', 'Ronin Services');
     const v = document.createElement('div');
     v.className = 'st-val';
     v.textContent = title;
@@ -72,7 +77,7 @@ export function servicesCard(container, onChange) {
 
     if (state.entitlement_id) {
       // An identifier, so it is safe to show. HQ refuses it as a credential.
-      wrap.appendChild(obs('entitlement', state.entitlement_id));
+      wrap.appendChild(obs(t('services.entitlement', 'entitlement'), state.entitlement_id));
     }
 
     const actions = document.createElement('div');
@@ -83,37 +88,37 @@ export function servicesCard(container, onChange) {
       email.type = 'email';
       email.className = 'st-inp';
       email.placeholder = 'you@example.com';
-      const f = field(email, { label: 'Your email address', sr: false });
+      const f = field(email, { label: t('services.email', 'Your email address'), sr: false });
       f.el.classList.add('st-field');
       // The same disclosure as first run, because a person may meet Services for the first
       // time here rather than there. docs/services-activation.md lists what this must say;
       // it previously listed five things and this said one, which made the document a claim
       // about the product rather than a description of it.
-      f.say('Ronin receives this address, the accepted terms version, and a request from '
+      f.say(t('services.disclosure', 'Ronin receives this address, the accepted terms version, and a request from '
         + 'this install — enough to verify you and manage Services access. Services then '
         + 'sends the weekly operating statistics described in the terms: counts, never code '
         + 'and never what was typed. Free Cowork sends none of this merely because it is '
-        + 'installed. A pending request can be cancelled, and Services can be uninstalled later.');
+        + 'installed. A pending request can be cancelled, and Services can be uninstalled later.'));
       wrap.appendChild(f.el);
 
       // The action names what it DOES. "Save" would hide an immediate, disclosed account
       // action behind a word that means "write this down".
-      actions.appendChild(nodeOf(button('Send confirmation email', {
+      actions.appendChild(nodeOf(button(t('services.send_confirmation', 'Send confirmation email'), {
         onClick: () => act(f, '/api/services/activation', { email: email.value.trim() }),
       })));
     }
 
     if (state.stage === 'awaiting_email'
         || (state.stage === 'error' && state.error_at_stage === 'awaiting_email')) {
-      actions.appendChild(nodeOf(button('Check status', {
+      actions.appendChild(nodeOf(button(t('services.check_status', 'Check status'), {
         cls: 'services-check',
         onClick: () => act(line, '/api/services/activation/poll', null),
       })));
-      const resend = button('Resend', {
+      const resend = button(t('services.resend', 'Resend'), {
         onClick: () => act(line, '/api/services/activation/resend', null),
       });
-      const change = button('Change address', { onClick: () => changeAddress() });
-      const cancel = button('Cancel request', {
+      const change = button(t('services.change_address', 'Change address'), { onClick: () => changeAddress() });
+      const cancel = button(t('services.cancel_request', 'Cancel request'), {
         onClick: () => act(line, '/api/services/activation', null, 'DELETE'),
       });
       actions.append(nodeOf(resend), nodeOf(change), nodeOf(cancel));
@@ -124,16 +129,16 @@ export function servicesCard(container, onChange) {
           // The server owns the cooldown; the page reports it rather than guessing.
           const n = document.createElement('span');
           n.className = 'st-note';
-          n.textContent = ` you can resend after ${when.toLocaleTimeString()}`;
+          n.textContent = ' ' + t('services.resend_after', 'you can resend after {time}', { time: when.toLocaleTimeString() });
           actions.appendChild(n);
         }
       }
     }
 
     if (state.stage === 'error' && state.error_at_stage === 'requesting') {
-      actions.append(nodeOf(button('Change address and try again', {
+      actions.append(nodeOf(button(t('services.change_and_retry', 'Change address and try again'), {
         onClick: () => changeAddress(),
-      })), nodeOf(button('Cancel request', {
+      })), nodeOf(button(t('services.cancel_request', 'Cancel request'), {
         onClick: () => act(line, '/api/services/activation', null, 'DELETE'),
       })));
     }
@@ -142,7 +147,7 @@ export function servicesCard(container, onChange) {
       // Recovery only. Installation normally starts by itself the moment an entitlement
       // arrives; this is for the case where it failed and somebody wants to try again
       // without another email.
-      actions.appendChild(nodeOf(button('Install Services now', {
+      actions.appendChild(nodeOf(button(t('services.install_now', 'Install Services now'), {
         onClick: () => act(line, '/api/services/install', {}),
       })));
     }
@@ -179,7 +184,7 @@ export function servicesCard(container, onChange) {
     const d = document.createElement('details');
     d.className = 'st-egress';
     const s = document.createElement('summary');
-    s.textContent = `what this machine has sent (${lines.length})`;
+    s.textContent = t('services.egress_summary', 'what this machine has sent ({n})', { n: lines.length });
     d.appendChild(s);
     for (const e of lines.slice(0, 10)) {
       const row = document.createElement('div');
@@ -191,14 +196,14 @@ export function servicesCard(container, onChange) {
   }
 
   async function act(where, route, json, method) {
-    where.say('working…', 'busy');
+    where.say(t('services.working', 'working…'), 'busy');
     const r = await request(route, { method: method || 'POST', ...(json ? { json } : {}) });
-    if (!r.ok) { where.say(r.message || 'that did not work', 'bad'); return; }
+    if (!r.ok) { where.say(r.message || t('services.failed', 'that did not work'), 'bad'); return; }
     await load();
   }
 
   async function changeAddress() {
-    const next = window.prompt('New email address for Ronin Services');
+    const next = window.prompt(t('services.new_address_prompt', 'New email address for Ronin Services'));
     if (!next) return;
     await act(line, '/api/services/activation/address', { email: next.trim() });
   }

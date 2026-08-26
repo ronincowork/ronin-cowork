@@ -392,3 +392,41 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team.reading:** Reading the Team…
 - **team.read_failed:** Could not read this Team — {message}
 - **team.no_live:** No live sessions on this Team.
+
+## services — services-card.js (the Services activation card)
+- **services.stage_not_requested:** Not requested
+- **services.stage_not_requested_blurb:** Ronin Services are not switched on for this machine.
+- **services.stage_requesting:** Sending…
+- **services.stage_requesting_blurb:** Asking Ronin to send your confirmation email.
+- **services.stage_awaiting_email:** Check your email
+- **services.stage_awaiting_email_blurb:** Open the link we sent. Any device is fine — your phone works.
+- **services.stage_verified:** Email confirmed
+- **services.stage_verified_blurb:** Ronin has what it needs. Services install next.
+- **services.stage_installing:** Installing Services
+- **services.stage_installing_blurb:** This machine is fetching and verifying the download.
+- **services.stage_installed:** Services are ready
+- **services.stage_installed_blurb:** Nothing further to do.
+- **services.stage_expired:** This link expired
+- **services.stage_expired_blurb:** Ask for a fresh confirmation email below.
+- **services.stage_cancelled:** Request cancelled
+- **services.stage_cancelled_blurb:** Nothing was switched on, and the address was not kept.
+- **services.stage_address_changed:** Address changed
+- **services.stage_address_changed_blurb:** A new confirmation email is on its way.
+- **services.stage_error:** Waiting to send
+- **services.stage_error_blurb:** Ronin HQ could not be reached. This will retry.
+- **services.unreachable:** could not reach the operator
+- **services.entitlement:** entitlement
+- **services.email:** Your email address
+- **services.disclosure:** Ronin receives this address, the accepted terms version, and a request from 
+- **services.send_confirmation:** Send confirmation email
+- **services.check_status:** Check status
+- **services.resend:** Resend
+- **services.change_address:** Change address
+- **services.cancel_request:** Cancel request
+- **services.resend_after:** you can resend after {time}
+- **services.change_and_retry:** Change address and try again
+- **services.install_now:** Install Services now
+- **services.egress_summary:** what this machine has sent ({n})
+- **services.working:** working…
+- **services.failed:** that did not work
+- **services.new_address_prompt:** New email address for Ronin Services
