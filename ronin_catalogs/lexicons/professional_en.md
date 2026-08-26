@@ -474,3 +474,53 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **machine.stop_title:** Stop gathering machine readings and hide the gauge. Nothing was installed on the box, so there is nothing to undo — turn it back on whenever you like.
 - **machine.stopped:** Off. Reload to clear the gauge.
 - **machine.save_failed:** Could not save that.
+
+## gbrain — gbrain.js (the gbrain commons tab)
+- **gbrain.running:** ● running
+- **gbrain.stopped:** ○ stopped
+- **gbrain.vm_only:** VM only
+- **gbrain.network:** network reachable
+- **gbrain.none:** none
+- **gbrain.off:** off
+- **gbrain.on:** on
+- **gbrain.unknown:** unknown
+- **gbrain.intro:** What is running, what can leave this VM, and what gbrain can draw from.
+- **gbrain.refresh:** ↻ Refresh
+- **gbrain.n_connected:** {n} connected
+- **gbrain.process:** Local gbrain process
+- **gbrain.listening:** Listening
+- **gbrain.provider:** External model provider
+- **gbrain.integrations:** Integrations
+- **gbrain.public_access:** Public access
+- **gbrain.privacy_head:** Privacy and reach
+- **gbrain.details:** Local details
+- **gbrain.endpoint:** {address}:{port} · gbrain {version} · observed {time}
+- **gbrain.version_unknown:** version unknown
+- **gbrain.search_head:** Search
+- **gbrain.embeddings:** Local embeddings
+- **gbrain.model:** Model
+- **gbrain.dimensions:** Dimensions
+- **gbrain.retrieval_hybrid:** hybrid (keyword + semantic)
+- **gbrain.retrieval_keyword:** degraded — keyword only
+- **gbrain.retrieval:** Retrieval
+- **gbrain.answers_on:** gbrain composition available
+- **gbrain.answers_off:** composed by the agent (by design)
+- **gbrain.answers:** Answers
+- **gbrain.reason:** Reason
+- **gbrain.integrations_unread:** Integration status could not be read.
+- **gbrain.ask_assistant:** Ask PersonalAssistant
+- **gbrain.not_installed:** gbrain is not installed
+- **gbrain.removing:** Removing
+- **gbrain.installing:** Installing
+- **gbrain.removing_detail:** running — units, wiring, shelves (your brain repo is kept)
+- **gbrain.installing_detail:** running — weights, gbrain, cabinet, wiring
+- **gbrain.remove:** Remove
+- **gbrain.install:** Install
+- **gbrain.failed_detail:** failed — the log below says where
+- **gbrain.install_pitch:** One press installs everything: the local embedding weights, gbrain itself (pinned), your brain repo, the server, and the session wiring. Downloads come from github.com and huggingface.co; nothing else leaves the VM.
+- **gbrain.retry_install:** Retry install
+- **gbrain.load:** Load gbrain
+- **gbrain.remove_button:** Remove gbrain…
+- **gbrain.remove_confirm:** Remove gbrain from this machine? The server, tokens, wiring and shelves go; your brain repo and its pages are KEPT.
+- **gbrain.checking:** checking…
+- **gbrain.status:** gbrain status
