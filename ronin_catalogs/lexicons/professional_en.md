@@ -664,3 +664,24 @@ The catalog entry goes. {dir} is not touched.
 - **docs.loading:** loading…
 - **docs.saving:** saving…
 - **docs.saved:** saved
+
+## roots — the count line and chips
+- **roots.chip_archived:** archived
+- **roots.chip_archived_title:** Off the new-session picker. Still here, and still launchable by name.
+- **roots.chip_gone:** directory is gone
+- **roots.chip_gone_title:** Nothing on disk at this path — fix the path or exclude it
+- **roots.chip_no_remote:** repo, no remote
+- **roots.chip_no_remote_title:** A git repo with no origin
+- **roots.chip_no_repo:** no repo
+- **roots.chip_no_repo_title:** Not a git repo — legal, a project_root need not be one
+- **roots.sessions_one:** {n} session
+- **roots.sessions_many:** {n} sessions
+- **roots.unarchive:** unarchive
+- **roots.archive:** archive
+- **roots.unarchive_title:** Put it back on the new-session picker.
+- **roots.archive_title:** Take it off the new-session picker. It stays on this pane, and sessions already using it are untouched.
+- **roots.count_one:** {n} project_root
+- **roots.count_many:** {n} project_roots
+- **roots.count_archived:** {n} archived
+- **roots.untagged_one:** {n} untagged session
+- **roots.untagged_many:** {n} untagged sessions
