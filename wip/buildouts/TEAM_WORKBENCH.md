@@ -87,6 +87,34 @@ profiles, set from a configure-Ronin place / the sette — which argues for the 
 living on the host (one verb, three callers: the select, a draft, a skin), not in the
 select's change handler. The select's placement on the row does not change for this.
 
+**CHERRY_PICK, found and made RIREKI's (owner's ruling, 2026-08-26: "there is one
+RIREKI source, one render … conversation and cherry pick are the same fucking thing"):**
+- Where it was: only in **Koe's bundled copy** of RIREKI (`ronin-koe/packages/rireki`,
+  `cherryPickRecords` + `voiceText({cherryPick})`), never flowed back — Koe's own
+  HANDOFF item 5. `koe-link` asked cowork for `view=cherry_pick`, got 400, and fell
+  through to its bundle every time. The served RIREKI had `terminal_mirror · detailed ·
+  condensed · conversation`.
+- What is on `ronin-services` `dev` now (`cb051a6`, and the flowback after it):
+  `cherry_pick` is a render view — assistant blocks and prompts, code as a counted
+  activity line, the owner's words and all work excluded; `conversation` retired. And
+  the decoder rules Koe grew (v8–v18: codex smears, `Ran`/`Waited`/`Edited`, separators,
+  the Claude epitaph and `!` commands), the vendorOf trim fix and the busy-settler −1,
+  plus one rule measured here: `● Name(` is a tool call whatever the name. SETTLE_V 19.
+- On cowork (`191e2dd`): the selector reads Locked · Terminal Mirror · Detailed ·
+  Condensed · Cherry Pick · Agent Summary. `condensed` stays because kaki summarises
+  from it and it is the "dialogue plus activity stubs" level the owner listed.
+- Measured: `cherry_pick` on `team_pg`'s pane reads clean (tool lines, rules, epitaph
+  gone; code a count). Two residues, neither the filter's: `league`'s tape is
+  column-split in EVERY view (a wide-pane wrap in the record — a decoder cannot mend
+  it); a few wrapped continuation lines are absent from the settled scroll on
+  `team_pg` (the "scroll lags one screen" finding in Koe's ledger — settled records are
+  scrolled-off content; a live-frame layer classified by the same decoder is the
+  settled answer, and belongs in RIREKI, not in a consumer).
+- **Owed, in ronin-koe, by the same ruling:** Koe consumes and never re-filters. Its
+  bundled projector, `cherryPickRecords` and the `proseOnly`-era paths should go; the
+  live-frame layer and `earClean` are the two pieces that need a home in RIREKI first.
+  A Koe session's job, from this record.
+
 **Probe trap added to the list:** `page.goto(url, { waitUntil: 'networkidle' })` never
 resolves against this app (websockets and polls); use `'load'` and a fixed wait.
 
