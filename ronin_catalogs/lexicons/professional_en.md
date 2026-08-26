@@ -1191,3 +1191,6 @@ The catalog entry goes. {dir} is not touched.
 - **mark.lead_make:** 人 make team lead
 - **mark.lead_clear_title:** Leads {teams} — clear the designation
 - **mark.lead_make_title:** Designate the 人 of {teams}
+
+## docs — tiledocs.js
+- **docs.empty_session:** This session has listed no docs yet. An agent lists one with: write_tegami --doc <path>

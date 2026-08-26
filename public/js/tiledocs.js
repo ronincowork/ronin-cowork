@@ -1,5 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { closeTileMore, fitDropToTile } from './tilemore.js';
+import { t } from './lexicon.js';
 
 /**
  * 📄 ON THE TILE HEADER — THIS session's listed docs, without leaving the tile.
@@ -66,7 +67,7 @@ export function buildTileDocs(tile) {
       const e = document.createElement('div');
       e.className = 'tdocs-empty';
       e.textContent =
-        'This session has listed no docs yet. An agent lists one with: write_tegami --doc <path>';
+        t('docs.empty_session', 'This session has listed no docs yet. An agent lists one with: write_tegami --doc <path>');
       menu.appendChild(e);
       return;
     }
