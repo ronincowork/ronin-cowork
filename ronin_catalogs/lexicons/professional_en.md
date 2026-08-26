@@ -1160,3 +1160,8 @@ The catalog entry goes. {dir} is not touched.
 - **docs.empty:** No session has listed a doc yet. An agent lists one with: write_tegami --doc <path>
 - **docs.count_one:** 1 doc
 - **docs.count_many:** {n} docs
+
+## errors — the where-words and the dead tile
+- **errors.uncaught_at:** uncaught error at {at}
+- **errors.uncaught:** uncaught error
+- **errors.unhandled:** unhandled promise
