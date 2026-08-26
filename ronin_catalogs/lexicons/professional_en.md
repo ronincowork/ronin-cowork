@@ -906,3 +906,9 @@ The catalog entry goes. {dir} is not touched.
 - **customize.saving_membership:** Saving membership…
 - **customize.membership_saved:** Membership saved.
 - **customize.membership_bar:** {family} membership
+
+## customize — customize-handoff.js
+- **customize.handoff_head:** Making it yours
+- **customize.handoff_read_only:** One file per {thing}, named by its token, in your catalogs store under {dir}. Ronin cannot create that file for you yet — ask your agent to add one, and point it at the directory’s own README, which states the format and every field.
+- **customize.handoff_store_hint:** Ask for the store path with: bin/ronin-store catalogs — never spell it by hand.
+- **customize.handoff_ask_agent:** Ask your agent to add one.
