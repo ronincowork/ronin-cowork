@@ -20,7 +20,7 @@
 
 From KOTOBA: **Ronin is the product name and goes everywhere.** Our internal system names —
 **TEJUN · MICHI · TEGAMI · SHINGO · RIREKI · OBOERU · TOMODACHI · SOROBAN · KOSHI · KOE ·
-DAIKUSAN · KOTOBA · AGERU · JUSHO · BYOIN · SETTEI · KYOKAI · SHIWAKE** — **stay ours.** Useful shorthand between us; a translation tax
+DAIKUSAN · KOTOBA · AGERU · JUSHO · BYOIN · SETTEI · KYOKAI · SHIWAKE · KOKUGO** — **stay ours.** Useful shorthand between us; a translation tax
 on anyone else.
 
 **The list is KOTOBA's.** This file quotes it verbatim and may never carry a name KOTOBA
@@ -157,7 +157,7 @@ r_render; the tile's paint is ephemeral)*
 test · shadowing · the session directory · build-out doc · handoff · `landed/`
 **Plumbing:** shim · control-check · viewer session · scrape · compile · step tracker ·
 `session_macro` · `workspace_macro` · one-way flow
-**Ours only:** KOTOBA · KOSHI · SHINGO · BUNKAI · KYOKAI · `ronin_repo` · dohyo
+**Ours only:** KOTOBA · KOSHI · SHINGO · BUNKAI · KYOKAI · KOKUGO · `ronin_repo` · dohyo
 
 ---
 
