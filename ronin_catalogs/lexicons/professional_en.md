@@ -155,3 +155,21 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **roster.drop_here:** Drop a session here to add it to {team}
 - **roster.no_team:** no team
 - **roster.no_sessions:** no sessions yet
+
+## panels — panels.js (the session note and session teams sheets)
+- **panels.note_sheet:** Session note
+- **panels.save:** Save
+- **panels.close:** Close
+- **panels.note_placeholder:** What's this session working on?
+- **panels.note:** session note
+- **panels.loading:** loading…
+- **panels.load_failed:** could not load — {message}
+- **panels.saving:** saving…
+- **panels.not_saved:** not saved — {message}
+- **panels.teams_sheet:** Session teams
+- **panels.team_placeholder:** add a team (letters, digits, - _)
+- **panels.team_hint:** Agents resolve these with {cmd}.
+- **panels.add_team:** add a team
+- **panels.no_team:** on no team
+- **panels.remove:** remove
+- **panels.join:** join:
