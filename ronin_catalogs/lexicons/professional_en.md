@@ -971,3 +971,9 @@ The catalog entry goes. {dir} is not touched.
 - **macros.button_title:** Macros — drop one into this session's input
 - **macros.cooldown:** sent — wait {s}s before sending it again
 - **macros.none_previewed:** no macros previewed — see MACROS.md
+
+## composer — composer.js
+- **composer.placeholder:** Message…
+- **composer.title:** Enter sends · Shift+Enter or Option+Enter for a new line
+- **composer.mic_title:** Dictate into this box — tap again to stop, then ↵ to send
+- **composer.send:** Send
