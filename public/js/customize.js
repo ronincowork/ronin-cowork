@@ -21,6 +21,7 @@
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { byId, railSections, resources } from './customize-rail.js';
+import { t } from './lexicon.js';
 import { renderResource } from './customize-resources.js';
 
 
@@ -35,9 +36,9 @@ export function buildCustomize() {
   let generation = 0;
 
   let repainting = false;
-  const content = createSurface({ label: 'Customize' });
+  const content = createSurface({ label: t('customize.title', 'Customize') });
   const rail = createExplorerRail({
-    label: 'Customize resources',
+    label: t('customize.rail_label', 'Customize resources'),
     sections: railSections(counts, marks),
     onSelect: (id) => { if (!repainting) show(id); },
   });
