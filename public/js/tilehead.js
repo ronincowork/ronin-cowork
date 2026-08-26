@@ -124,10 +124,10 @@ const HEADER = () => {
       el.textContent = repos.length === 1 ? '⑂ ' + (branches[0] || '?') : repos.length ? '⑂ ' + repos.length : '⑂ ?';
       el.classList.toggle('unset', !repos.length);
       return repos.length
-        // The repo by its SHORT name — `ronin-lab`, not its whole URL. A hover tip is
-        // three lines of a 300px box; two full URLs overran it on every run of check-tips
-        // until 2026-08-26. The ladder it opens still shows the whole URL.
-        ? clampTip('Branches: ' + repos.map((x) => `${x.branch || '(detached)'} — ${String(x.repo || '').replace(/\.git$/, '').split('/').filter(Boolean).pop() || x.repo}`).join(' · '), 120 - '. Opens the ladder.'.length) + '. Opens the ladder.'
+        // The repo by its short name and its branch, nothing else (owner, 2026-08-26:
+        // "just the repo name and the branch name — that's all you need"). The ladder it
+        // opens still shows the whole URL.
+        ? clampTip(repos.map((x) => `${String(x.repo || '').replace(/\.git$/, '').split('/').filter(Boolean).pop() || x.repo} — ${x.branch || '(detached)'}`).join(' · '))
         : 'No branch listed yet. The session keeps its repos list current in TEGAMI.';
     } },
 
