@@ -15,6 +15,7 @@
  */
 import { IS_TOUCH, SELECT_MOD, WHEEL_DOWN, WHEEL_UP, forcesSelection } from './state.js';
 import { termFace, termTheme } from './theme.js';
+import { t } from './lexicon.js';
 
 export class TermView {
   /**
@@ -135,7 +136,7 @@ export class TermView {
 
     const hint = document.createElement('div');
     hint.className = 'copyhint';
-    hint.textContent = `Trying to copy? Hold ${SELECT_MOD} while you drag, then ⌘C.`;
+    hint.textContent = t('term.copy_hint', 'Trying to copy? Hold {mod} while you drag, then ⌘C.', { mod: SELECT_MOD });
     this.body.appendChild(hint);
 
     let from = null;

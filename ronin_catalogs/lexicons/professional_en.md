@@ -1048,3 +1048,6 @@ The catalog entry goes. {dir} is not touched.
 ## bar — viewport.js (the layout button)
 - **bar.layout_one:** {n} terminal — click for {next}
 - **bar.layout_many:** {n} terminals — click for {next}
+
+## term — termview.js (the copy hint)
+- **term.copy_hint:** Trying to copy? Hold {mod} while you drag, then ⌘C.
