@@ -262,10 +262,10 @@ export function buildPadPanel() {
     const cap = b ? (b.key ? (PAD_KEYS()[b.key] || { label: b.key }).label : b.macro + (b.ask ? '…' : '')) : '·';
     btn.querySelector('b').textContent = cap;
     btn.title = !b
-      ? 'unbound — tap to bind'
+      ? t('pad.unbound_tip', 'unbound — tap to bind')
       : b.key
-        ? cap + ' → active tile'
-        : `+${b.macro}${b.ask ? ': (asks on press)' : b.args ? ': ' + b.args : ''} → ${b.session || 'active tile'}`;
+        ? cap + ' → ' + t('pad.active_tile_word', 'active tile')
+        : `+${b.macro}${b.ask ? ': ' + t('pad.asks_on_press', '(asks on press)') : b.args ? ': ' + b.args : ''} → ${b.session || t('pad.active_tile_word', 'active tile')}`;
   };
   const renderCaps = () => {
     cells.forEach((btn, chord) => decorate(btn, chord));
@@ -366,8 +366,8 @@ export function buildPadPanel() {
     cleanChk.checked = false;
     progBtn.hidden = false;
     progMsg.textContent = navigator.hid
-      ? 'writes F13–F24 + 🎙 Wispr straight onto the pad — no Input app needed'
-      : 'programming the pad needs Chrome/Edge on desktop (WebHID)';
+      ? t('pad.prog_ready', 'writes F13–F24 + 🎙 Wispr straight onto the pad — no Input app needed')
+      : t('pad.prog_needs_webhid', 'programming the pad needs Chrome/Edge on desktop (WebHID)');
   };
   if (!navigator.hid) progBtn.disabled = true;
   progReset();

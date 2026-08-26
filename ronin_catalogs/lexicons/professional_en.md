@@ -1267,3 +1267,10 @@ The catalog entry goes. {dir} is not touched.
 - **roots.f_match:** match
 - **roots.f_match_hint:** Words that suggest this project_root from free-form intent
 - **roots.f_match_placeholder:** comma separated
+
+## pad — cell tooltips and idle lines
+- **pad.unbound_tip:** unbound — tap to bind
+- **pad.active_tile_word:** active tile
+- **pad.asks_on_press:** (asks on press)
+- **pad.prog_ready:** writes F13–F24 + 🎙 Wispr straight onto the pad — no Input app needed
+- **pad.prog_needs_webhid:** programming the pad needs Chrome/Edge on desktop (WebHID)
