@@ -1,10 +1,13 @@
-/* The six session outputs. Cowork owns the selector; services own every unlocked source. */
+/* The session outputs. Cowork owns the selector; services own every unlocked source —
+ * RIREKI's four views (owner, 2026-08-26: cherry_pick is RIREKI's own view and its
+ * technical term; `conversation` was the same thing under another name and is gone),
+ * and koshi's summary. */
 export const OUTPUTS = [
   ['locked', 'Locked'],
   ['terminal_mirror', 'Terminal Mirror'],
   ['detailed', 'Detailed'],
   ['condensed', 'Condensed'],
-  ['conversation', 'Conversation'],
+  ['cherry_pick', 'Cherry Pick'],
   ['agent_summary', 'Agent Summary'],
 ];
 

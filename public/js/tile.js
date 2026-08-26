@@ -505,7 +505,7 @@ export class Tile {
   /** Change this tile's Output and reopen its viewer against the named server projection. */
   setOutput(value) {
     const previous = this.output;
-    const allowed = new Set(['locked', 'terminal_mirror', 'detailed', 'condensed', 'conversation', 'agent_summary']);
+    const allowed = new Set(['locked', 'terminal_mirror', 'detailed', 'condensed', 'cherry_pick', 'agent_summary']);
     this.output = S.streamOff || !allowed.has(value) ? 'locked' : value;
     this.locked = this.output === 'locked';
     S.output = this.output;
