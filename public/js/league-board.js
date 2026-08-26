@@ -17,6 +17,7 @@
 import { WorkspaceKit } from './workspace-kit.js';
 import { UNASSIGNED, leadsTeam, membersOfTeam, rostersLoaded, teamByName, teamsFromState } from './team-controller.js';
 import { S, serviceMissing } from './state.js';
+import { t } from './lexicon.js';
 
 // Reached inside function bodies, never at module top level: a top-level destructure of
 // an imported binding is the load-order fragility js/README.md rule 4 exists to prevent.
@@ -51,7 +52,7 @@ function bubble(session, team) {
   // A blank session_role draws as absent. No stand-in glyph, ever.
   row.append(el('span', 'league-member-mark', mark ? mark.slice(0, 2) : ''));
   const name = el('b', null, session.name);
-  if (leadsTeam(session, team)) name.append(el('span', 'league-lead', 'lead'));
+  if (leadsTeam(session, team)) name.append(el('span', 'league-lead', t('league.lead', 'lead')));
   row.append(name);
   const readings = [mark, age(session.created)].filter(Boolean);
   if (serviceMissing('michi')) row.dataset.shingo = 'off';
@@ -64,7 +65,7 @@ function roster(team) {
   const box = el('div', 'league-members');
   const members = membersOfTeam(team.name);
   if (!members.length) {
-    box.append(el('p', 'league-empty', team.holding ? 'Every live session is on a Team' : 'No live members'));
+    box.append(el('p', 'league-empty', team.holding ? t('league.holding_empty', 'Every live session is on a Team') : t('league.no_members', 'No live members')));
     return box;
   }
   for (const s of members) box.append(bubble(s, team.name));
@@ -81,21 +82,21 @@ function unit(team, context) {
   // the primitive renders it as an <article> rather than a <button>. The ruling is
   // structural here, not a suppressed click handler.
   const navigable = !team.holding;
-  const eyebrow = team.holding ? 'Holding area' : members.length ? 'Active Team' : 'Resting Team';
+  const eyebrow = team.holding ? t('league.holding', 'Holding area') : members.length ? t('league.active', 'Active Team') : t('league.resting', 'Resting Team');
   const metadata = kit().primitives.createMetadata({ rows: [
-    ['State', eyebrow],
-    ['Sessions', `${members.length}`],
-    ['Team role', (team.team_role || '').trim()],
-    ['Roster', !team.durable && !team.holding ? 'Not recorded' : ''],
+    [t('team.state', 'State'), eyebrow],
+    [t('stats.sessions', 'Sessions'), `${members.length}`],
+    [t('team.team_role', 'Team role'), (team.team_role || '').trim()],
+    [t('team.roster', 'Roster'), !team.durable && !team.holding ? t('league.not_recorded', 'Not recorded') : ''],
   ] });
   // team_role renders as its own text and is never fetched: the house ships no
   // definitions for it by design (ronin_catalogs/team_roles/README.md), so a lookup
   // would cost a request to learn nothing. Blank draws as absent.
   const card = kit().primitives.createCard({
     className: 'league-team-card',
-    heading: team.holding ? 'Unassigned' : team.name,
+    heading: team.holding ? t('league.unassigned', 'Unassigned') : team.name,
     summary: team.holding
-      ? 'Live sessions that carry no Team membership.'
+      ? t('league.unassigned_summary', 'Live sessions that carry no Team membership.')
       : (team.objective || '').trim(),
     action: navigable ? () => {
       const { navigateWorkspace, workspaceTarget } = kit().contract;
@@ -113,7 +114,7 @@ function unit(team, context) {
  */
 export function createBoard({ context, rostersVisible }) {
   const { createAction, createActionBar, createCard, createSurface, setSurfaceState } = kit().primitives;
-  const surface = createSurface({ label: 'League' });
+  const surface = createSurface({ label: t('league.title', 'League') });
   surface.el.classList.add('league-surface');
   const board = kit().layouts.createLeagueBoard();
   const cards = board.querySelector('[data-surface="cards"]');
@@ -125,8 +126,8 @@ export function createBoard({ context, rostersVisible }) {
 
     // ONE control for every card together. There are no per-Team disclosure buttons —
     // the reviewed fixture removes its own at load, and the contract forbids them.
-    const bar = createActionBar({ className: 'league-toolbar', label: 'League controls' });
-    const toggle = createAction({ className: 'league-rosters', label: visible ? 'Hide rosters' : 'Show rosters' }).el;
+    const bar = createActionBar({ className: 'league-toolbar', label: t('league.controls', 'League controls') });
+    const toggle = createAction({ className: 'league-rosters', label: visible ? t('league.hide_rosters', 'Hide rosters') : t('league.show_rosters', 'Show rosters') }).el;
     toggle.dataset.leagueRosters = '';
     bar.append(toggle);
     cards.append(bar.el);
@@ -142,8 +143,8 @@ export function createBoard({ context, rostersVisible }) {
     const dotted = createCard({
       className: 'league-new',
       variant: 'dotted',
-      heading: 'New Team',
-      summary: 'Define the Team, then build its session roster.',
+      heading: t('new_team.title', 'New Team'),
+      summary: t('league.new_team_summary', 'Define the Team, then build its session roster.'),
       action: () => {
         const { navigateWorkspace, workspaceTarget } = kit().contract;
         navigateWorkspace(context, workspaceTarget('new-team'));
@@ -151,7 +152,7 @@ export function createBoard({ context, rostersVisible }) {
     });
     cards.append(dotted.el);
 
-    if (!rostersLoaded()) setSurfaceState(surface.el, 'stale', 'Durable rosters unavailable — showing live Teams only.');
+    if (!rostersLoaded()) setSurfaceState(surface.el, 'stale', t('league.rosters_unavailable', 'Durable rosters unavailable — showing live Teams only.'));
     else if (!real.length && !(S.sessions || []).length) setSurfaceState(surface.el, null);
     else setSurfaceState(surface.el, null);
   };
