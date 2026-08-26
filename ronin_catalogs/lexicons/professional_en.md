@@ -1061,3 +1061,41 @@ The catalog entry goes. {dir} is not touched.
 ## request — request.js (the client's own two messages)
 - **request.cancelled:** cancelled
 - **request.unreachable:** could not reach Ronin — network or server down
+
+## head — tilehead.js (the tile head's help and quiet words)
+- **head.dial_help:** Who may touch this session: 👤 owner only · 👁 outside agents watch · 🤖 outside agents type. Yours to turn; agents never flip it.
+- **head.dot_help:** Connection: green = attached, grey = disconnected
+- **head.select_help:** Pick / switch the session shown in this tile
+- **head.chip_help:** Where this session is on its ladder, and how long it has been there. Opens the ladder.
+- **head.job_help:** What this session is doing
+- **head.job_quiet:** What a session is doing — no session in this tile yet
+- **head.job_read:** {job} — click to change what this session is doing
+- **head.job_unmarked:** Not marked — click to say what this session is doing
+- **head.branch_help:** Branches this session is working on
+- **head.branch_quiet:** Branches — no session in this tile yet
+- **head.branch_no_michi:** Branches — michi is not installed, so TEGAMI checkout data is unavailable
+- **head.detached:** (detached)
+- **head.branch_none:** No branch listed yet. The session keeps its repos list current in TEGAMI.
+- **head.output_help:** Output — live terminal or one of RIREKI’s unlocked views
+- **head.commons_help:** ⌃⇧C — the CoWorking Commons: roster, new session, wipeboard, docs, roots, hotwords. Opens over this tile; ✕ comes back.
+- **head.mention_help:** Mention another session — choose a name to add it to the message box
+- **head.mention_quiet:** Mentions — no session in this tile yet
+- **head.macros_quiet:** Macros — no session in this tile yet
+- **head.more_help:** This session's other controls — 🏷 teams, ⛽ context, 🎛 control, 📄 docs, 📝 note, 🗑 kill
+- **head.tags_help:** Teams this session is on
+- **head.tags_quiet:** Teams — no session in this tile yet
+- **head.tags_read:** Teams: {teams}
+- **head.tags_none:** Teams (none yet)
+- **head.gauge_help:** Context gauge — how full this session's context window is, read off the pane's own status line. Hidden until there is a reading.
+- **head.dial_quiet:** Control dial — no session in this tile yet
+- **head.docs_help:** This session's docs — open one over this tile
+- **head.docs_quiet:** This session's docs — no session in this tile yet
+- **head.docs_no_michi:** This session's docs — michi is not installed, so no session keeps a doc list
+- **head.docs_read:** Docs — {n} listed by this session. Opens one over this tile; ✕ comes back.
+- **head.docs_none:** Docs — this session has listed none yet. An agent lists one with write_tegami --doc
+- **head.note_help:** Session note (post-it)
+- **head.note_quiet:** Session note — no session in this tile yet
+- **head.note_has:** Session note (has notes)
+- **head.note_empty:** Session note (empty)
+- **head.kill_help:** Kill session (ends it + its viewers)
+- **head.kill_quiet:** Kill session — no session in this tile yet
