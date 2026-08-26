@@ -218,7 +218,7 @@ const HEADER = () => {
   // On BOTH surfaces — cockpit dials are the motif everywhere (an explicit override of
   // the desktop-freeze rule for this control).
   { key: 'dial', drop: true, needs: 'session', holds: true,
-    widget: (t) => makeDial(CONTROL_POSITIONS, (v) => t.pickControl(v)),
+    widget: (t) => makeDial(CONTROL_POSITIONS(), (v) => t.pickControl(v)),
     help: DIAL_TITLE, quiet: 'Control dial — no session in this tile yet' },
 
   // 📄 — THIS session's listed docs, one press from the tile that already knows them
