@@ -1194,3 +1194,6 @@ The catalog entry goes. {dir} is not touched.
 
 ## docs — tiledocs.js
 - **docs.empty_session:** This session has listed no docs yet. An agent lists one with: write_tegami --doc <path>
+
+## head — tilementions.js
+- **head.mention_aria:** Mention another session
