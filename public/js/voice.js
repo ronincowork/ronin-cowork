@@ -58,10 +58,10 @@ export function makeClipRecorder({ onState, onText, onError }) {
         body: blob,
       });
       const data = await r.json().catch(() => ({}));
-      if (!r.ok) onError && onError(`Dictation failed (${data.error || r.status})`);
+      if (!r.ok) onError && onError(t('voice.failed', 'Dictation failed ({why})', { why: data.error || r.status }));
       else if (data.text) onText && onText(data.text);
     } catch {
-      onError && onError('Dictation failed (network)');
+      onError && onError(t('voice.failed_network', 'Dictation failed (network)'));
     }
     state('idle');
   };
@@ -93,7 +93,7 @@ export function makeClipRecorder({ onState, onText, onError }) {
       // no mic / not a secure context (needs the https url) / permission denied
       recording = false;
       state('idle');
-      onError && onError('Mic blocked — open Ronin over the https url and allow the microphone');
+      onError && onError(t('voice.mic_blocked', 'Mic blocked — open Ronin over the https url and allow the microphone'));
     }
   };
 
