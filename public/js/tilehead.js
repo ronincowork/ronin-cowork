@@ -133,6 +133,14 @@ const HEADER = () => {
 
   { grow: true },
 
+  // THE OUTPUT SELECTOR IS ON THE ROW, not in メ's drop (owner, 2026-08-26: "add the
+  // rireki choices to the terminal header … I want to be able to switch between locked
+  // and the different versions of unlocked to see how this looks"). Ugly for now by his
+  // own word — a select with a word in it among glyph buttons — and the trade is that
+  // the RIREKI flavours are one click away on every tile while they are being judged.
+  { key: 'outputEl', widget: (t) => makeOutput(t),
+    help: 'Output — live terminal or one of RIREKI’s unlocked views' },
+
   // ⛩ IS THE COMMONS, EVERYWHERE (owner's ruling 2026-08-17). It was メ here and き in
   // the bar, for the same act, while ⛩ meant "the letter" on this very header — one
   // glyph for two things and two glyphs for one. Now the torii means exactly one thing
@@ -184,12 +192,7 @@ const HEADER = () => {
   // at all, and dimming it would hide the six explanations of why its contents are dim.
   { key: 'moreBtn', hosts: true,
     widget: () => buildTileMore(),
-    help: "This session's other controls — Output, 🏷 teams, ⛽ context, 🎛 control, 📄 docs, 📝 note, 🗑 kill" },
-
-  { key: 'outputEl', drop: true, widget: (t) => {
-    return makeOutput(t);
-  },
-    help: 'Output — live terminal or one of RIREKI’s unlocked views' },
+    help: "This session's other controls — 🏷 teams, ⛽ context, 🎛 control, 📄 docs, 📝 note, 🗑 kill" },
 
   { key: 'tagBtn', cls: 'tags', text: '🏷', drop: true, modal: true, needs: 'session',
     help: 'Teams this session is on',

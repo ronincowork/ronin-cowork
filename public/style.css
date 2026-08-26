@@ -5033,6 +5033,11 @@ button.wb-door:hover b {
   font: var(--text-2)/1.2 var(--font-mono);
   padding: var(--space-1) var(--space-2);
 }
+/* On the head row (since 2026-08-26) it is a fixed 5rem, not 148px: a wrapping row
+   breaks on natural widths before anything shrinks, so a wide select here put メ and C
+   on a second line at a team workspace's default 626px. 5rem shows the chosen word;
+   the long names show in the drop-down (measured: one line at 626px seated). */
+.tile-head select.output { width: auto; flex: 0 0 5rem; min-width: 0; }
 @media (pointer: coarse) {
   .tile select.output { width: 44px; height: 40px; padding: 0; flex: 0 0 44px; }
 }

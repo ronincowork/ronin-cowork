@@ -66,6 +66,27 @@ and a fresh 人 is handed the teams SOP by `sendText` (`src/routes/sessions-api.
 both routes). The owner called it useful, then annoying, in one breath. Each is one
 `void`/`sendText` line to switch off; that is a ruling, not a fix.
 
+**The 人 pins to the top of the roster** (owner, 2026-08-26): `membersOfTeam` sorts
+lead first, then role, then name — the cards, Team Configuration and the League board
+all read that selector.
+
+**The output selector is ON the head row** (owner, 2026-08-26: "add the rireki choices
+to the terminal header … it will be a bit ugly"): the `outputEl` row in `tilehead.js`
+lost its `drop`, so Locked · Terminal Mirror · Detailed · Condensed · Conversation ·
+Agent Summary sit between the readings and ⛩ on every tile, both pages. It yields
+like the picker (`.tile-head select.output`, 113px at rest, 5rem floor); measured one
+line at 626px seated and at 789px on the Sessions grid.
+
+**NEXT LEG, from the owner (2026-08-26, FYI for now):** the output is a setting the one
+controller should take — a draft word on `tejun-teampage` such as
+`workspace1=me:output=condensed` (or a cherry-pick flavour when RIREKI has it), so an
+agent can turn its own tile unlocked to the detail it wants shown. The seam is
+`arrange()` → the seat's host → `tile.setOutput(value)`; the terminal host would grow a
+`setOutput` beside `send`. The same setter is to be callable by a SKIN — skins become
+profiles, set from a configure-Ronin place / the sette — which argues for the setter
+living on the host (one verb, three callers: the select, a draft, a skin), not in the
+select's change handler. The select's placement on the row does not change for this.
+
 **Probe trap added to the list:** `page.goto(url, { waitUntil: 'networkidle' })` never
 resolves against this app (websockets and polls); use `'load'` and a fixed wait.
 
