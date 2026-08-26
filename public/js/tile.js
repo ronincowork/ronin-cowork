@@ -24,14 +24,14 @@ import { createSession, fetchSessions } from './api.js';
 import { request } from './request.js';
 import { toast } from './ui.js';
 import { retireSession } from './session-retire.js';
-import { roleData, refreshHome } from './home.js';
+import { refreshHome } from './home.js';
 import { IS_TOUCH, NEW, S, saveState, serviceMissing, tiles } from './state.js';
 import { buildHome } from './commons.js';
 import { installDesk } from './tiledesk.js';
 import { guard } from './errors.js';
 import { buildLadder } from './shingo.js';
 import { buildTileHead, syncTileHead } from './tilehead.js';
-import { openJobMenu } from './widgets.js';
+import { pickJobFor } from './tilejob.js';
 import { dvrStep } from './dvr.js';
 import { TapeView } from './tapeview.js';
 import { TermView } from './termview.js';
@@ -372,28 +372,7 @@ export class Tile {
    * The list is updated locally before the ws poll gets there, so the mark moves under
    * your finger; the poll then confirms it, and would correct it if the write lost a race.
    */
-  async pickJob(anchor) {
-    if (!this.session) return;
-    const session = this.session;
-    const cur = S.sessions.find((x) => x.name === session);
-    openJobMenu(anchor, roleData || [], (cur && cur.session_role) || '', async (job) => {
-      const r = await request('/api/sessions/' + encodeURIComponent(session) + '/session_role', {
-        method: 'POST',
-        json: { session_role: job },
-      });
-      if (!r.ok) {
-        toast(`could not set the task — ${r.message}`, false);
-        return;
-      }
-      const live = S.sessions.find((x) => x.name === session);
-      if (live) live.session_role = r.data.session_role ?? job;
-      tiles.forEach((t) => {
-        t.syncHeader();
-        t.refreshOptions();
-      });
-      refreshHome();
-    });
-  }
+  pickJob(anchor) { pickJobFor(this, anchor); }
 
   openNote() {
     if (S.notePanel) S.notePanel.open(this.session);

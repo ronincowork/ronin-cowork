@@ -136,6 +136,16 @@ export function createTeamView() {
   kanban.el.prepend(rosterHead);
   const cards = el('div', 'tw-cards');
   kanban.content.append(cards);
+  // Keyboard through the roster: arrows move between cards, Enter or Space picks (a
+  // card is a button, so the pick is the button's own click).
+  cards.addEventListener('keydown', (event) => {
+    if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return;
+    const all = [...cards.querySelectorAll('.wk-card[aria-pressed]')];
+    const at = all.indexOf(document.activeElement);
+    if (at < 0) return;
+    all[Math.max(0, Math.min(all.length - 1, at + (event.key === 'ArrowDown' ? 1 : -1)))]?.focus();
+    event.preventDefault();
+  });
 
   // The wipeboard slice is real (owner, 2026-08-25 — the thread, and nothing else; the
   // Brief stays Team Configuration's). Its board id follows the roster: see setBoard below.

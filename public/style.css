@@ -3829,6 +3829,10 @@ button.wb-door:hover b {
 .job-opt.on {
   color: var(--accent);
 }
+.job-opt.extra {
+  margin-top: var(--space-1);
+  border-top: var(--edge) solid var(--line);
+}
 .job-opt.none {
   margin-top: var(--space-1);
   border-top: var(--edge) solid var(--line);

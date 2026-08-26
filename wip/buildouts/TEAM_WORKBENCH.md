@@ -181,10 +181,96 @@ why the slots cannot be reordered today.
 | 5 | **Polish** — keyboard flips through hot members; switcher in kit style | one instrument, not three panels |
 | 6 | **Roster readings** — SHINGO, model, ready/busy, taken; cherry_pick or summary when RIREKI fires (owner, 2026-08-25) | **DONE 2026-08-25** for what the row carries: each card reads `/api/home`'s row — the same row the Commons roster reads — SHINGO chip (+ quiet age), status (ready · thinking… · awaiting input), model, ⛽ context, attached; refreshed every 5s while entered. `refreshHome()` could not be reused: it only runs while a Commons is open in a Sessions tile. **Open:** cherry_pick / summary — no service contributes such a field to the row today; when RIREKI does, it is one more entry in `readingsOf` |
 | 7 | **Team lead from the tile** — the 人 is set through the tile's existing session_role selector, not an API call (T5, ruled) | the owner designates a lead by hand from any tile |
-| 8 | **Unlocked flavours** — a selector for the flavours of Unlocked, cherry pick included, to play with; later the Locked/Unlocked control moves out of the tile header (owner, 2026-08-25) | each flavour can be tried on a live tile |
+| 8 | **Unlocked flavours** — a selector for the flavours of Unlocked, cherry pick included, to play with; later the Locked/Unlocked control moves out of the tile header (owner, 2026-08-25) | **ALREADY THERE** (found 2026-08-26): every tile head carries the output selector from `public/js/output.js` — Locked · Terminal Mirror · Detailed · Condensed · Conversation · Agent Summary; services own each unlocked source. Nothing to cut. Moving it out of the header is not asked for yet |
+| 9 | **The team page takes instructions** — a Tejun an agent runs to arrange the page it is on: show/hide/move columns, put a session or the commons in a workspace, open the commons to a doc (owner, 2026-08-26) | see LEG 9 — THE DESIGN below; gated |
 
 Legs 1–4 are one chain (each needs the one before). Legs 6, 7 and 8 stand alone and can
 go in any order, or in parallel with the chain.
+
+## LEG 9 — THE DESIGN: the team page takes instructions (by `@team_page`, 2026-08-26; gated)
+
+**The owner's words:** "a Tejun that an agent controls the landscape of a team view …
+hide or unhide columns … move the columns … if I'm in one session on the terminal, say
+workspace 2, I could say 'show me the document you're working on' and it would, in
+workspace 1, open the team commons to that specific doc … consolidated into one team
+page config application … given simple instructions and it runs it."
+
+**One controller, two callers.** Everything the owner can do to the page by hand goes
+through one object on the page, `arrange(instruction)`; the buttons call it, and so does
+an instruction arriving from an agent. Nothing is reachable one way and not the other,
+and nothing is duplicated.
+
+### 1. The instructions — plain words, one line each
+
+```
+show <column>                     column = workspace1 | roster | workspace2
+hide <column>
+move <column> left|right|first|last
+put <session> in <workspace>      workspace = workspace1 | workspace2
+put commons in <workspace>
+open <tab> in <workspace>         tab = chat | wipeboard | docs | config
+open doc <path> in <workspace>    the commons, on ▧ Docs, with that file open
+```
+
+An instruction is a small object under the hood (`{verb, column|target, where, path}`)
+and a plain line on the wire; `parse(line)` is the only parser. Unknown words are
+refused with the line echoed back. A workspace that is hidden is shown first.
+
+### 2. On the page — a new module, team-arrange, under public/js (~80 lines)
+
+`createArranger({ workbench, seats, channels, docs, put })` returns `{ apply, parse }`.
+`apply` maps verbs onto what already exists: `arrangement.toggle/move` for columns,
+`putSession/putCommons` for workspaces, `channels.select(tab)` for tabs, and
+`docs.open(path)` — which `buildDocs` already returns — for a document. The team page
+calls `apply` from its own C/T buttons and card clicks too, so the page has one way of
+changing itself. Feature code; the Kit is untouched.
+
+### 3. The wire — one route, one push
+
+- `POST /api/teams/:team/page` with `{ line }` (or `{ instruction }`). The server does
+  not know the page's state and does not try to: it validates the line with the same
+  parser (shipped as a tiny shared module the server imports too), then pushes
+  `{ t: 'team-page', team, instruction, from }` on the `/events` feed the sessions list
+  already rides. Every browser looking at that team applies it; the others ignore it.
+- The dial applies: the request carries the calling session (the tool resolves its own,
+  viewer-safe, the way `write_tegami` does), and a session at 👤 is refused the way
+  `tejun-send` refuses. An agent may arrange the page of a team it is ON; nothing else.
+- `events.js` gains one line in its dispatch; the team view registers a handler on mount.
+
+### 4. The tool — tejun-teampage, a new sibling in ronin_bin
+
+```
+tejun-teampage show me                        # my own session, in the OTHER workspace
+tejun-teampage open doc wip/handoffs/X.md     # the commons on ▧ Docs, that file
+tejun-teampage hide roster
+tejun-teampage move workspace2 first
+tejun-teampage put commons in workspace1
+```
+
+Bash, like its siblings: resolves its session and team the way `tejun-wipeboard` does,
+reaches Ronin the way `mika` does (`@ronin-url`, `RONIN_URL`), posts the line, prints
+one verdict (`ARRANGED` · `REFUSED <why>` · `NO-TEAM` · `UNREACHABLE`), exits 0/2/3/5.
+Two conveniences only, because they are what a session actually says: `show me` (put
+this session in whichever workspace is not the one the owner is typing in — the page
+knows which is selected) and `open doc <path>` without naming a workspace (the one that
+is not selected). Catalogued in `TOOLS.md` and `ACTIONS.md` beside `tejun-wipeboard`.
+
+### 5. What it costs, what it does not
+
+- New: the arranger module, the parser module (shared), one route, one push type, one
+  tool, one TOOLS row, one test file for the parser. Roughly 250 lines.
+- Untouched: the Kit, the pool, the layout map, persistence (an agent's arrangement is
+  persisted exactly as the owner's would be — it went through the same `apply`).
+- Not in this leg: an agent arranging a page it is not on; arranging the Sessions grid;
+  any reply channel (the agent gets the verdict of delivery, not of what the page did —
+  the page may be closed).
+
+### 6. Gate
+
+The owner says cut, or changes the words. Two questions only: (a) is `show me` right —
+"put my tile in the workspace you are not typing in"? (b) should an instruction from an
+agent be visible on the page for a moment (a one-line note in the roster header:
+"arranged by view_mgr"), or silent?
 
 ## LEG 1 — LANDED (cut by `@team_page`, 2026-08-25, on the owner's "go ahead and cut it")
 
