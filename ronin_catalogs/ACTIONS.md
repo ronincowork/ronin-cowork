@@ -254,6 +254,38 @@ its own control-check before you touch it (the roster reports the dial; it does 
 grant anything). Tagging is the OWNER's job in the Ronin UI, or a macro's at birth
 (`session-create`); do not re-tag other people's sessions to suit your task.
 
+## team-page-read — what the team page is showing, and where you are on it
+`action_kind: mechanical` — run it, don't deliberate.
+> **Tool: `tejun-teampage`** (TOOLS.md)
+The team page is two workspaces around the roster; each holds a member's terminal or the
+team commons (chat · wipeboard · docs · configuration). The bare form prints the roster
+(who is on your team, who is 人, which is you) and, for each browser tab showing the
+team, which workspace the owner is typing in, which shows YOU, and what each holds.
+```bash
+tejun-teampage              # the view
+```
+`NO-PAGE` means no tab is on the team page right now — nothing to arrange, say so and
+stop. `NO-TEAM` means you are on no team. Read this BEFORE a draft: the workspace the
+owner is typing in is the one to leave alone.
+
+## team-page-draft — arrange the team page you are on
+`action_kind: mechanical` — run it, don't deliberate.
+> **Tool: `tejun-teampage <key=value …>`** (TOOLS.md)
+A draft names only what should change; **what you omit stays as it is.** The page
+applies it through the same control the owner's own buttons use, so you can do exactly
+what they can by hand — put a session or the commons in a workspace, open the commons
+on a tab or on a document, reorder or hide columns — and nothing else.
+```bash
+tejun-teampage workspace1=commons:docs:<path>          # the doc, open, beside the owner
+tejun-teampage workspace2=me                           # your own tile there
+tejun-teampage order=workspace2,roster,workspace1 hidden=roster
+tejun-teampage hidden=none
+```
+Two tabs may show one team: the draft goes to the tab that shows you, else to every tab
+on your team. The dial applies as for send-to-session (`REFUSED`, exit 4). The roster
+header on the page says who arranged it. You are free to arrange the page any way you
+judge useful — including taking yourself off it.
+
 ## wipeboard-check
 `action_kind: mechanical` — run it, don't deliberate.
 > **Tool: `tejun-wipeboard`** (TOOLS.md)
