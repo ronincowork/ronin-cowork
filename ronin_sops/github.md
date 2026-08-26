@@ -49,6 +49,59 @@ repository's standing agent instructions or README. Changing modes is a delibera
 decision, never an agent's convenience. If neither the repository nor the owner makes it clear,
 ask before the first commit.
 
+## Making a new repository
+
+Four decisions, then the mechanics. Take them in this order — two of them are one-way.
+
+**1. Where it lives.** House work goes in the `ronincowork` organisation, one repo per
+project, named for the project (`ronin-koe`, not `koe-app`).
+
+**2. Visibility — one-way.** Base Ronin is the open-source half and is **public**; a
+`ronin_service` is the rented half and is **private**. `ronin-cowork` is public,
+`ronin-services` is private, and a repo that IS a Service (KOE, MICHI, KOSHI…) follows
+`ronin-services`. When in doubt, **private**: private→public is a click, and
+public→private does not un-publish — by then it is cloned, cached and indexed. Ask the
+owner rather than guess when a repo is genuinely neither half.
+
+**3. Secrets, BEFORE the first push — also one-way.** A push publishes the whole
+HISTORY, not the current tree: a key committed in week one and deleted in week two is
+still published. Three checks, because the first one alone only reads the working tree:
+
+```sh
+tejun-secrets .                                     # what .env holds, and whether it is ignored
+git log --all --pretty=format: --name-only | sort -u | grep -E '(^|/)\.env|\.pem$|secret'
+git grep -nIE '(sk-[A-Za-z0-9_-]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----)'
+```
+
+A `.env.example` holding NAMES with placeholder values is meant to be tracked; a `.env`
+holding values is not, and belongs in `.gitignore` before the first commit. If a real key
+is already in the history, the answer is **rotate the key**, not rewrite the history
+(`ronin_sops/secrets.md`).
+
+**4. Declare the arrangement, and write it down.** Choose reviewed or direct per the two
+sections above, and record the choice — the branch names, and whether a working branch
+exists at all — in the repo's `CLAUDE.md` or README **at creation**. An arrangement
+nobody wrote down is one the next agent infers from whichever branch is checked out,
+which the top of this file warns against. Name the default branch to match: under direct
+publishing there is no `dev`, and none should be created later out of habit.
+
+Then the mechanics. `gh` is the tool, and on a Ronin box it is **not always on `PATH`**
+even though pushes work — git reaches it through a credential helper by absolute path, so
+check `git config --list --show-origin | grep credential` and call it there rather than
+concluding it is missing:
+
+```sh
+gh repo create ronincowork/<name> --private --description "…"   # no --add-readme: history exists
+cd <local repo> && git remote add origin https://github.com/ronincowork/<name>.git
+git push -u origin <stable branch>
+```
+
+Push an existing local history rather than initialising an empty repo and copying files
+in — the history is the thing the repo was for. Afterwards confirm what actually landed:
+`git ls-remote --heads origin` (the branches you meant, and no others) and
+`git ls-tree -r origin/<branch> --name-only | grep -E '(^|/)\.env'` (nothing but the
+example).
+
 ## The approach
 
 1. **One repo per project, made at the start** — before there is anything to lose. A
