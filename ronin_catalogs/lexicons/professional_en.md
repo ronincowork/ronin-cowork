@@ -238,3 +238,64 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **settei.setup_started:** setup session started — see ⌂ Roster
 - **settei.setup_failed:** could not start
 - **settei.reading:** reading…
+
+## new_team / team — new-team.js (the New Team view; team.* rows are shared by the Team page family)
+- **new_team.define:** Define the Team
+- **new_team.define_eyebrow:** 1 · Define the Team
+- **new_team.definition:** Team definition
+- **new_team.name:** Team name
+- **new_team.name_desc:** Lowercase letters, digits, _ and - . This is also the tag its sessions carry.
+- **new_team.role_placeholder:** development — or leave blank
+- **team.team_role:** Team role
+- **new_team.role_desc:** Optional. Blank is an unclassified Team, which is a valid state.
+- **team.objective:** Objective
+- **new_team.objective_desc:** Optional. Rides the brief of every session born onto this Team.
+- **new_team.root:** Default project root
+- **new_team.root_desc:** Optional. Seeds where sessions are born; a launch may override it.
+- **team.repos:** Repositories
+- **new_team.repos_desc:** Optional, comma-separated.
+- **team.branch:** Branch
+- **new_team.optional:** Optional.
+- **team.wipeboard:** Wipeboard
+- **new_team.wipeboard_desc:** Optional. Blank uses the Team’s own name.
+- **new_team.build_roster:** Build the roster
+- **new_team.build_roster_eyebrow:** 2 · Build the roster
+- **new_team.sessions_heading:** Sessions · one or many
+- **new_team.roster_notice:** A Team with no sessions is complete and valid. Add one or more proposed sessions, check them against the real launch resolver, then raise them in order.
+- **new_team.add_seat:** Add proposed session
+- **new_team.check_seats:** Check seats
+- **new_team.create_and_raise:** Create Team and raise sessions
+- **new_team.roster_actions:** Roster actions
+- **new_team.transaction:** Team transaction
+- **new_team.open_team:** Open Team
+- **new_team.proposed_session:** Proposed session
+- **new_team.no_brief:** No brief yet.
+- **new_team.preflight:** preflight {verdict}
+- **new_team.resolved_name:** Resolved name
+- **team.project_root:** Project root
+- **team.command:** Command
+- **team.control:** Control
+- **team.mcp:** MCP
+- **new_team.edit_session:** Edit session
+- **new_team.designate_lead:** Designate as lead
+- **new_team.no_lead:** No lead
+- **new_team.remove_proposal:** Remove proposal
+- **new_team.seat_actions:** Proposed session actions
+- **new_team.retry_unresolved:** Retry unresolved sessions
+- **new_team.create:** Create Team
+- **team.team:** Team
+- **team.roster:** Roster
+- **new_team.completed:** Completed
+- **new_team.error:** Error
+- **team.status:** Status
+- **team.mode:** Mode
+- **team.role:** Role
+- **new_team.reason:** Reason
+- **new_team.retry_seat:** Retry this seat
+- **new_team.lead_line:** Lead: {status}
+- **new_team.name_invalid:** Lowercase letters, digits, _ and - only.
+- **new_team.name_taken:** "{name}" already has a roster.
+- **new_team.preflight_unreachable:** The dry run could not be reached — {message}
+- **new_team.raising:** Checking the roster, then raising sessions in order…
+- **new_team.root_default:** — the box’s default —
+- **new_team.title:** New Team

@@ -29,6 +29,7 @@ import {
 import { capacityNote, preflight, teamNotes } from './new-team-preflight.js';
 import { registerTeamDraft, selectDraftSeat, subscribeTeamDraft } from './team-draft-controller.js';
 import { launchDraft } from './new-team-launch.js';
+import { t } from './lexicon.js';
 
 const node = (tag, className, text) => {
   const el = document.createElement(tag);
@@ -40,10 +41,10 @@ const node = (tag, className, text) => {
 /** Debounced, because every keystroke in the name field changes the adoption answer and
  *  the answer costs a resolver run per seat. */
 const debounce = (fn, ms) => {
-  let t = 0;
+  let timer = 0;
   return (...args) => {
-    clearTimeout(t);
-    t = setTimeout(() => fn(...args), ms);
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), ms);
   };
 };
 
@@ -59,9 +60,9 @@ export function createNewTeamView(kit) {
 
   /* ---------------- stage 1 — define the Team ---------------- */
 
-  const definition = createSurface({ className: 'nt-definition', label: 'Define the Team' });
-  const eyebrow = node('span', 'nt-eyebrow', '1 · Define the Team');
-  const heading = node('h2', null, 'Team definition');
+  const definition = createSurface({ className: 'nt-definition', label: t('new_team.define', 'Define the Team') });
+  const eyebrow = node('span', 'nt-eyebrow', t('new_team.define_eyebrow', '1 · Define the Team'));
+  const heading = node('h2', null, t('new_team.definition', 'Team definition'));
   const form = createForm({ onSubmit: (e) => e.preventDefault() });
 
   const nameInput = node('input');
@@ -70,9 +71,9 @@ export function createNewTeamView(kit) {
   nameInput.spellcheck = false;
   nameInput.placeholder = 'product-launch';
   const nameField = createField({
-    label: 'Team name',
+    label: t('new_team.name', 'Team name'),
     control: nameInput,
-    description: 'Lowercase letters, digits, _ and - . This is also the tag its sessions carry.',
+    description: t('new_team.name_desc', 'Lowercase letters, digits, _ and - . This is also the tag its sessions carry.'),
   });
 
   // A combobox, not a select: `GET /api/team-roles` legitimately answers EMPTY — the house
@@ -82,51 +83,51 @@ export function createNewTeamView(kit) {
   const roleInput = node('input');
   roleInput.type = 'text';
   roleInput.setAttribute('list', 'nt-team-roles');
-  roleInput.placeholder = 'development — or leave blank';
+  roleInput.placeholder = t('new_team.role_placeholder', 'development — or leave blank');
   const roleList = node('datalist');
   roleList.id = 'nt-team-roles';
   const roleField = createField({
-    label: 'Team role',
+    label: t('team.team_role', 'Team role'),
     control: roleInput,
-    description: 'Optional. Blank is an unclassified Team, which is a valid state.',
+    description: t('new_team.role_desc', 'Optional. Blank is an unclassified Team, which is a valid state.'),
   });
   roleField.el.append(roleList);
 
   const objectiveInput = node('textarea');
   objectiveInput.rows = 3;
   const objectiveField = createField({
-    label: 'Objective',
+    label: t('team.objective', 'Objective'),
     control: objectiveInput,
-    description: 'Optional. Rides the brief of every session born onto this Team.',
+    description: t('new_team.objective_desc', 'Optional. Rides the brief of every session born onto this Team.'),
   });
 
   const rootSelect = node('select');
   const rootField = createField({
-    label: 'Default project root',
+    label: t('new_team.root', 'Default project root'),
     control: rootSelect,
-    description: 'Optional. Seeds where sessions are born; a launch may override it.',
+    description: t('new_team.root_desc', 'Optional. Seeds where sessions are born; a launch may override it.'),
   });
 
   const reposInput = node('input');
   reposInput.type = 'text';
   reposInput.placeholder = 'ronin-cowork, ronin-services';
   const reposField = createField({
-    label: 'Repositories',
+    label: t('team.repos', 'Repositories'),
     control: reposInput,
-    description: 'Optional, comma-separated.',
+    description: t('new_team.repos_desc', 'Optional, comma-separated.'),
   });
 
   const branchInput = node('input');
   branchInput.type = 'text';
   branchInput.placeholder = 'dev';
-  const branchField = createField({ label: 'Branch', control: branchInput, description: 'Optional.' });
+  const branchField = createField({ label: t('team.branch', 'Branch'), control: branchInput, description: t('new_team.optional', 'Optional.') });
 
   const boardInput = node('input');
   boardInput.type = 'text';
   const boardField = createField({
-    label: 'Wipeboard',
+    label: t('team.wipeboard', 'Wipeboard'),
     control: boardInput,
-    description: 'Optional. Blank uses the Team’s own name.',
+    description: t('new_team.wipeboard_desc', 'Optional. Blank uses the Team’s own name.'),
   });
 
   form.fields.append(
@@ -138,28 +139,28 @@ export function createNewTeamView(kit) {
 
   /* ---------------- stage 2 — the roster ---------------- */
 
-  const roster = createSurface({ className: 'nt-roster', label: 'Build the roster' });
-  const rosterEyebrow = node('span', 'nt-eyebrow', '2 · Build the roster');
-  const rosterHeading = node('h2', null, 'Sessions · one or many');
+  const roster = createSurface({ className: 'nt-roster', label: t('new_team.build_roster', 'Build the roster') });
+  const rosterEyebrow = node('span', 'nt-eyebrow', t('new_team.build_roster_eyebrow', '2 · Build the roster'));
+  const rosterHeading = node('h2', null, t('new_team.sessions_heading', 'Sessions · one or many'));
   const rosterBody_ = node('div', 'nt-roster-body');
   const rosterNotice = createNotice({
     kind: 'info',
     message:
-      'A Team with no sessions is complete and valid. Add one or more proposed sessions, check them against the real launch resolver, then raise them in order.',
+      t('new_team.roster_notice', 'A Team with no sessions is complete and valid. Add one or more proposed sessions, check them against the real launch resolver, then raise them in order.'),
   });
   roster.content.append(rosterEyebrow, rosterHeading, rosterNotice.el, rosterBody_);
-  const addSeat = createAction({ label: 'Add proposed session' });
-  const checkSeats = createAction({ label: 'Check seats' });
-  const launchSeats = createAction({ label: 'Create Team and raise sessions', kind: 'primary' });
-  const rosterActions = createActionBar({ label: 'Roster actions', actions: [addSeat, checkSeats, launchSeats] });
+  const addSeat = createAction({ label: t('new_team.add_seat', 'Add proposed session') });
+  const checkSeats = createAction({ label: t('new_team.check_seats', 'Check seats') });
+  const launchSeats = createAction({ label: t('new_team.create_and_raise', 'Create Team and raise sessions'), kind: 'primary' });
+  const rosterActions = createActionBar({ label: t('new_team.roster_actions', 'Roster actions'), actions: [addSeat, checkSeats, launchSeats] });
   roster.content.append(rosterActions.el);
 
   /* ---------------- the transaction region ---------------- */
 
-  const transaction = createSurface({ className: 'nt-transaction', label: 'Team transaction' });
+  const transaction = createSurface({ className: 'nt-transaction', label: t('new_team.transaction', 'Team transaction') });
   const txNotice = createNotice();
   const receipt = node('div', 'nt-receipt');
-  const openTeam = createAction({ label: 'Open Team' });
+  const openTeam = createAction({ label: t('new_team.open_team', 'Open Team') });
   openTeam.el.hidden = true;
   transaction.content.append(txNotice.el, receipt, openTeam.el);
   transaction.el.hidden = true;
@@ -196,22 +197,22 @@ export function createNewTeamView(kit) {
       const outcome = seat.outcome;
       const verdict = lastPreflight?.seats?.find((candidate) => candidate.seat_id === seat.seat_id);
       const card = createCard({
-        heading: seat.name || seat.session_role || 'Proposed session',
-        summary: seat.prompt || 'No brief yet.',
-        metadata: [seat.mode, verdict ? `preflight ${verdict.verdict}` : null, outcome?.status].filter(Boolean),
+        heading: seat.name || seat.session_role || t('new_team.proposed_session', 'Proposed session'),
+        summary: seat.prompt || t('new_team.no_brief', 'No brief yet.'),
+        metadata: [seat.mode, verdict ? t('new_team.preflight', 'preflight {verdict}').replace('{verdict}', verdict.verdict) : null, outcome?.status].filter(Boolean),
         warning: verdict?.verdict === 'refuse' || outcome?.status === 'refused' || outcome?.status === 'skipped',
       });
       if (verdict?.reasons?.length) {
         card.el.append(node('p', 'nt-seat-reasons', verdict.reasons.map((reason) => reason.message).join(' ')));
       } else if (verdict?.resolved) {
         const reading = createMetadata({ rows: [
-          ['Resolved name', verdict.resolved.name], ['Project root', verdict.resolved.project_root],
-          ['Command', verdict.resolved.cmd], ['Control', verdict.resolved.dial],
-          ['MCP', String(verdict.resolved.mcp)],
+          [t('new_team.resolved_name', 'Resolved name'), verdict.resolved.name], [t('team.project_root', 'Project root'), verdict.resolved.project_root],
+          [t('team.command', 'Command'), verdict.resolved.cmd], [t('team.control', 'Control'), verdict.resolved.dial],
+          [t('team.mcp', 'MCP'), String(verdict.resolved.mcp)],
         ] });
         card.el.append(reading.el);
       }
-      const edit = createAction({ label: 'Edit session' });
+      const edit = createAction({ label: t('new_team.edit_session', 'Edit session') });
       edit.el.addEventListener('click', () => {
           selectDraftSeat(draft, seat.seat_id);
           navigateWorkspace(context, workspaceTarget('agent-config', seat.seat_id));
@@ -223,15 +224,15 @@ export function createNewTeamView(kit) {
       radio.checked = draft.lead_seat_id === seat.seat_id;
       radio.addEventListener('click', (event) => event.stopPropagation());
       radio.addEventListener('change', () => { draft.lead_seat_id = seat.seat_id; saveDraft(); paintRoster(); });
-      lead.append(radio, document.createTextNode(' Designate as lead'));
-      const clearLead = createAction({ label: 'No lead' });
+      lead.append(radio, document.createTextNode(' ' + t('new_team.designate_lead', 'Designate as lead')));
+      const clearLead = createAction({ label: t('new_team.no_lead', 'No lead') });
       clearLead.el.addEventListener('click', (event) => {
         event.stopPropagation();
         draft.lead_seat_id = null;
         saveDraft();
         paintRoster();
       });
-      const remove = createAction({ label: 'Remove proposal', kind: 'danger' });
+      const remove = createAction({ label: t('new_team.remove_proposal', 'Remove proposal'), kind: 'danger' });
       remove.el.disabled = outcome?.status === 'born';
       remove.el.addEventListener('click', () => {
         draft.seats = draft.seats.filter((candidate) => candidate.seat_id !== seat.seat_id);
@@ -240,7 +241,7 @@ export function createNewTeamView(kit) {
         paintRoster();
         paintReceipt();
       });
-      const actions = createActionBar({ label: 'Proposed session actions', actions: [edit, remove] });
+      const actions = createActionBar({ label: t('new_team.seat_actions', 'Proposed session actions'), actions: [edit, remove] });
       card.el.append(lead);
       if (draft.lead_seat_id === seat.seat_id) card.el.append(clearLead.el);
       card.el.append(actions.el);
@@ -248,8 +249,8 @@ export function createNewTeamView(kit) {
     }
     const committed = committedTeam(draft);
     launchSeats.el.textContent = committed
-      ? 'Retry unresolved sessions'
-      : draft.seats.length ? 'Create Team and raise sessions' : 'Create Team';
+      ? t('new_team.retry_unresolved', 'Retry unresolved sessions')
+      : draft.seats.length ? t('new_team.create_and_raise', 'Create Team and raise sessions') : t('new_team.create', 'Create Team');
     launchSeats.setDisabled(busy || (!committed && !canCreateTeam(draft)));
     checkSeats.setDisabled(busy || !draft.seats.length);
   };
@@ -263,10 +264,10 @@ export function createNewTeamView(kit) {
     }
     transaction.el.hidden = false;
     const summary = createMetadata({ rows: [
-      ['Team', committedTeam(draft) || draft.team.name],
-      ['Roster', tx?.roster?.status],
-      ['Completed', tx?.completed_at],
-      ['Error', tx?.error || tx?.roster?.error],
+      [t('team.team', 'Team'), committedTeam(draft) || draft.team.name],
+      [t('team.roster', 'Roster'), tx?.roster?.status],
+      [t('new_team.completed', 'Completed'), tx?.completed_at],
+      [t('new_team.error', 'Error'), tx?.error || tx?.roster?.error],
     ] });
     receipt.append(summary.el);
     for (const seat of draft.seats) {
@@ -274,16 +275,16 @@ export function createNewTeamView(kit) {
       if (!outcome) continue;
       const row = node('article', 'nt-receipt-seat');
       row.dataset.status = outcome.status;
-      row.append(node('h3', null, outcome.session_name || seat.name || seat.session_role || 'Proposed session'));
+      row.append(node('h3', null, outcome.session_name || seat.name || seat.session_role || t('new_team.proposed_session', 'Proposed session')));
       const meta = createMetadata({ rows: [
-        ['Status', outcome.status], ['Mode', outcome.receipt?.mode],
-        ['Role', outcome.receipt?.session_role], ['Project root', outcome.receipt?.project_root],
-        ['Command', outcome.receipt?.cmd], ['Control', outcome.receipt?.dial],
-        ['MCP', outcome.receipt ? String(outcome.receipt.mcp) : null], ['Reason', outcome.error],
+        [t('team.status', 'Status'), outcome.status], [t('team.mode', 'Mode'), outcome.receipt?.mode],
+        [t('team.role', 'Role'), outcome.receipt?.session_role], [t('team.project_root', 'Project root'), outcome.receipt?.project_root],
+        [t('team.command', 'Command'), outcome.receipt?.cmd], [t('team.control', 'Control'), outcome.receipt?.dial],
+        [t('team.mcp', 'MCP'), outcome.receipt ? String(outcome.receipt.mcp) : null], [t('new_team.reason', 'Reason'), outcome.error],
       ] });
       row.append(meta.el);
       if (outcome.status !== 'born') {
-        const retry = createAction({ label: 'Retry this seat' });
+        const retry = createAction({ label: t('new_team.retry_seat', 'Retry this seat') });
         retry.el.addEventListener('click', () => void runLaunch([seat.seat_id]));
         row.append(retry.el);
       }
@@ -291,16 +292,16 @@ export function createNewTeamView(kit) {
     }
     const lead = tx?.lead;
     if (lead) receipt.append(node('p', 'nt-lead-receipt',
-      `Lead: ${lead.status}${lead.session_name ? ` · ${lead.session_name}` : ''}${lead.delivery ? ` · ${lead.delivery}` : ''}${lead.error ? ` · ${lead.error}` : ''}`));
+      t('new_team.lead_line', 'Lead: {status}').replace('{status}', lead.status) + `${lead.session_name ? ` · ${lead.session_name}` : ''}${lead.delivery ? ` · ${lead.delivery}` : ''}${lead.error ? ` · ${lead.error}` : ''}`));
     openTeam.el.hidden = !committedTeam(draft);
   };
 
   const paintName = () => {
     const name = draft.team.name;
     if (!name) return nameField.setValidation('', '');
-    if (!isValidTeamName(name)) return nameField.setValidation('invalid', 'Lowercase letters, digits, _ and - only.');
+    if (!isValidTeamName(name)) return nameField.setValidation('invalid', t('new_team.name_invalid', 'Lowercase letters, digits, _ and - only.'));
     if (!committedTeam(draft) && lastPreflight?.team && !lastPreflight.team.name_available) {
-      return nameField.setValidation('invalid', `"${name}" already has a roster.`);
+      return nameField.setValidation('invalid', t('new_team.name_taken', '"{name}" already has a roster.').replace('{name}', name));
     }
     nameField.setValidation('valid', '');
   };
@@ -318,7 +319,7 @@ export function createNewTeamView(kit) {
     const result = await preflight(draft);
     if (result.broken) {
       // The tool failed, not the draft. Say which — and do not disable anything over it.
-      txNotice.set('failed', `The dry run could not be reached — ${result.message}`);
+      txNotice.set('failed', t('new_team.preflight_unreachable', 'The dry run could not be reached — {message}').replace('{message}', result.message));
       transaction.el.hidden = false;
       return;
     }
@@ -362,7 +363,7 @@ export function createNewTeamView(kit) {
     busy = true;
     paintRoster();
     transaction.el.hidden = false;
-    txNotice.set('info', 'Checking the roster, then raising sessions in order…');
+    txNotice.set('info', t('new_team.raising', 'Checking the roster, then raising sessions in order…'));
     await launchDraft(draft, {
       seatIds,
       persist: () => { saveDraft(); paintRoster(); paintReceipt(); },
@@ -381,7 +382,7 @@ export function createNewTeamView(kit) {
       request('/api/team-roles'),
     ]);
     rootSelect.replaceChildren();
-    rootSelect.append(new Option('— the box’s default —', ''));
+    rootSelect.append(new Option(t('new_team.root_default', '— the box’s default —'), ''));
     if (roots.ok) for (const r of roots.data) rootSelect.append(new Option(r.name, r.name));
     roleList.replaceChildren();
     // Zero options is the ordinary answer here and the field still works: free text is
@@ -391,7 +392,7 @@ export function createNewTeamView(kit) {
 
   return {
     el,
-    title: () => 'New Team',
+    title: () => t('new_team.title', 'New Team'),
     enter: (nextContext) => {
       context = nextContext;
       const stored = nextContext.viewState('new-team')?.draft;
