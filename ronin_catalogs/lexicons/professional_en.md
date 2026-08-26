@@ -1218,3 +1218,9 @@ The catalog entry goes. {dir} is not touched.
 - **wipeboard.nothing_posted:** nothing posted yet
 - **wipeboard.read_failed:** could not read this wipeboard
 - **wipeboard.post_failed:** could not post — {message} (your text is still in the box)
+
+## tile — the prompt, the ended line, the picker tooltips
+- **tile.new_session_prompt:** New tmux session name (letters, digits, _ or -):
+- **tile.session_ended:** session ended.
+- **output.title_locked:** Output — Locked only. Ronin Services is not installed.
+- **output.title_choose:** Output — choose the live terminal or a RIREKI view
