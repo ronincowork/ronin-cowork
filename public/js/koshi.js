@@ -1,6 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { request } from './request.js';
 import { status } from './ui.js';
+import { t } from './lexicon.js';
 
 /* ---------- KOSHI — the seventh commons pane (tab: 目 Koshi) ----------
  *
@@ -31,16 +32,16 @@ export function buildKoshi(root, isShowing) {
   // the watcher is not running at all, and there is nobody to ask.
   const restart = document.createElement('button');
   restart.className = 'ko-restart';
-  restart.textContent = '↻ Restart Koshi';
-  restart.title = 'Stop and start the watcher. Settings apply on their own; this is for when it is not running at all.';
+  restart.textContent = t('koshi.restart', '↻ Restart Koshi');
+  restart.title = t('koshi.restart_title', 'Stop and start the watcher. Settings apply on their own; this is for when it is not running at all.');
   restart.addEventListener('click', async () => {
     const was = restart.textContent;
     restart.disabled = true;
-    restart.textContent = 'restarting…';
+    restart.textContent = t('koshi.restarting', 'restarting…');
     const r = await request('/api/koshi/restart', { method: 'POST' });
     if (!r.ok || !r.data.ok) {
       blurb.classList.add('bad');
-      blurb.textContent = r.ok ? 'it did not come back up' : r.message;
+      blurb.textContent = r.ok ? t('koshi.restart_failed', 'it did not come back up') : r.message;
     } else {
       data.running = r.data.running;
       say2();
@@ -53,8 +54,8 @@ export function buildKoshi(root, isShowing) {
   const say2 = () => {
     blurb.classList.remove('bad');
     blurb.textContent = data?.running
-      ? 'Which model each Koshi job asks. Changes apply within a minute — no restart needed.'
-      : 'Koshi is NOT running. Nothing is watching any ladder.';
+      ? t('koshi.blurb_running', 'Which model each Koshi job asks. Changes apply within a minute — no restart needed.')
+      : t('koshi.blurb_stopped', 'Koshi is NOT running. Nothing is watching any ladder.');
     blurb.classList.toggle('bad', !data?.running);
   };
 
@@ -85,7 +86,7 @@ export function buildKoshi(root, isShowing) {
     const pick = document.createElement('select');
     pick.className = 'ko-pick';
     for (const o of data.outlets) {
-      const opt = new Option(o.built ? o.label : `${o.label} — not built`, o.id);
+      const opt = new Option(o.built ? o.label : t('koshi.outlet_not_built', '{outlet} — not built', { outlet: o.label }), o.id);
       opt.disabled = !o.built;
       opt.title = o.what;
       pick.add(opt);
@@ -94,7 +95,7 @@ export function buildKoshi(root, isShowing) {
     // setting is running on the default, and the dropdown should say which.
     pick.value = data.choices[inc.id]?.outlet || 'koshi_external';
     pick.disabled = !inc.built;
-    pick.title = inc.built ? 'Which outlet this job asks' : 'Not built yet';
+    pick.title = inc.built ? t('koshi.pick_title', 'Which outlet this job asks') : t('koshi.not_built', 'Not built yet');
 
     // THE SLIDER — three stops, and it is honest about being three stops: the labels
     // say Relaxed / Steady / Keen rather than pretending to a continuum. It scales the
@@ -122,7 +123,7 @@ export function buildKoshi(root, isShowing) {
 
     const note = status('ko-note');
     const chosen = () => data.outlets.find((o) => o.id === pick.value);
-    const describe = () => note.say(inc.built ? (chosen()?.what ?? '') : 'Not built yet — nothing asks anything.');
+    const describe = () => note.say(inc.built ? (chosen()?.what ?? '') : t('koshi.not_built_note', 'Not built yet — nothing asks anything.'));
     describe();
 
     const currentPace = () => (data.paces || [])[Number(pace.value)];
@@ -133,7 +134,7 @@ export function buildKoshi(root, isShowing) {
     describePace();
 
     const save = async (msg) => {
-      note.say('saving…', 'busy');
+      note.say(t('koshi.saving', 'saving…'), 'busy');
       const r = await request(`/api/koshi/${inc.id}`, {
         method: 'POST',
         json: {

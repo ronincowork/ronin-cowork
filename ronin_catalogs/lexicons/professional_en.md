@@ -524,3 +524,16 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **gbrain.remove_confirm:** Remove gbrain from this machine? The server, tokens, wiring and shelves go; your brain repo and its pages are KEPT.
 - **gbrain.checking:** checking…
 - **gbrain.status:** gbrain status
+
+## koshi — koshi.js (the 目 Koshi tab)
+- **koshi.restart:** ↻ Restart Koshi
+- **koshi.restart_title:** Stop and start the watcher. Settings apply on their own; this is for when it is not running at all.
+- **koshi.restarting:** restarting…
+- **koshi.restart_failed:** it did not come back up
+- **koshi.blurb_running:** Which model each Koshi job asks. Changes apply within a minute — no restart needed.
+- **koshi.blurb_stopped:** Koshi is NOT running. Nothing is watching any ladder.
+- **koshi.outlet_not_built:** {outlet} — not built
+- **koshi.pick_title:** Which outlet this job asks
+- **koshi.not_built:** Not built yet
+- **koshi.not_built_note:** Not built yet — nothing asks anything.
+- **koshi.saving:** saving…
