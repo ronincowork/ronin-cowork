@@ -359,3 +359,13 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **seat.inherit_title:** Return {field} to unset — the resolved profile answers it
 - **seat.cmd_no_agent:** This seat launches no agent, so it cannot carry a command.
 - **seat.prompt_no_agent:** A plain terminal has nobody to tell — an empty prompt is valid here.
+
+## team_wipeboard — team-wipeboard.js (the team wipeboard channel on the Team page)
+- **team_wipeboard.placeholder:** say something to the team — every member is interrupted
+- **team_wipeboard.post:** Post
+- **team_wipeboard.no_notice:** → (no notice)
+- **team_wipeboard.cleared:** … earlier posts have cleared
+- **team_wipeboard.empty:** Nothing on the board right now — posts clear after 48 hours.
+- **team_wipeboard.read_failed:** Could not read the board — {message}
+- **team_wipeboard.post_failed:** Could not post — {message} (your text is still in the box)
+- **team_wipeboard.no_team:** No Team resolved — nothing to read.
