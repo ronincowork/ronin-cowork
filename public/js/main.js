@@ -22,6 +22,7 @@ import { createLeagueView } from './league-view.js';
 import { createAgentConfigurationView } from './agent-config.js';
 import { installCustomize } from './customize.js';
 import { t } from './lexicon.js';
+import { applyPageWords } from './pagewords.js';
 
 export async function init() {
   // Ask the operator which optional surfaces are plugged in BEFORE the grid is built,
@@ -51,6 +52,7 @@ export async function init() {
   // RIREKI view is the Output a new tile is born with — so it has to be known before a
   // tile is built. One request; a box that cannot answer gets stock, not a failure.
   try { await loadDeskProfile(); } catch (e) { console.warn('desk profile', e); }
+  guard('page words', applyPageWords); // index.html's static words, through the lexicon
   // After the theme, because a skin outranks it for whatever it names (js/skins.js).
   // The profile's skin is the default; a skin this device picked since still wins.
   guard('restore skin', () => restoreSkin(activeProfile()?.skin || ''));
