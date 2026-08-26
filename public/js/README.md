@@ -6,6 +6,11 @@ Native ES modules. **No bundler, no build step, no TypeScript.** `index.html` lo
 `js/main.js` with `type="module"`; the browser fetches the rest. `express.static` already
 serves this directory, so a change here is live on reload — same as it always was.
 
+**Words:** every string a person reads goes through `t('room.key', 'literal')` from
+`lexicon.js`, with the key in `ronin_catalogs/lexicons/professional_en.md` in the same
+commit — `docs/kokugo.md` is the instruction, and `scripts/check-lexicon.mjs` fails a
+module that forgets. `index.html`'s static words go through `pagewords.js`.
+
 xterm stays a classic `<script>` (`window.Terminal`, `window.FitAddon`): the vendor files
 are served straight from `node_modules` and load before the module graph runs.
 

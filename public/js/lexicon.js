@@ -4,10 +4,9 @@
  *
  * `t(key, literal, vars)` is the whole surface: the active lexicon's word for `key`, else the
  * literal the view wrote, with `{name}` placeholders filled from `vars`. That second argument is the floor's floor — it is what makes a
- * missing lexicon paint exactly as stock, and a missing key never blank a label. A view
- * born after 2026-08-27 reads its strings through `t()`; a view older than that keeps
- * its literals until it is touched for another reason (no sweep, by ruling — the
- * check reports the unconverted, it does not fail on them).
+ * missing lexicon paint exactly as stock, and a missing key never blank a label. Every view reads its strings through `t()` since
+ * 2026-08-27 (the KOKUGO sweep); `docs/kokugo.md` is how a new one does the same, and
+ * `scripts/check-lexicon.mjs` fails a key the floor lacks.
  *
  * ONE FLAT OBJECT PER PICK. The server resolves the `base:` chain (`src/lexicons.ts`), so
  * this file never learns that `home_en` falls through to `professional_en`, or that a French
