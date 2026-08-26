@@ -137,3 +137,21 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **launcher.saved_role_missing:** "{label}" names session_role "{role}", which is not in the catalog.
 - **launcher.where_none:** — no project_roots —
 - **launcher.launch_failed:** could not put a session out — {message}
+
+## roster — roster.js (the ⌂ Roster tab)
+- **roster.session_max:** session max
+- **roster.session_max_title:** How many sessions may run at once. 0 = no limit. The owner sets this; agents cannot.
+- **roster.running_of:** {n} / {max} running
+- **roster.running_no_limit:** {n} running · no limit
+- **roster.not_saved:** not saved — {message}
+- **roster.team_name:** team name
+- **roster.team_name_aria:** New team name
+- **roster.add_team:** ＋ Team
+- **roster.team_name_rule:** use letters, digits, - or _
+- **roster.drag_into:** drag a session into {team}
+- **roster.leads:** 人 leads {teams}
+- **roster.no_role_yet:** has not said what it is doing yet
+- **roster.stale:** ⚠ roster may be stale — {fault}
+- **roster.drop_here:** Drop a session here to add it to {team}
+- **roster.no_team:** no team
+- **roster.no_sessions:** no sessions yet
