@@ -1,4 +1,5 @@
 /* part of the ronin-cowork client — see js/README.md */
+import { t } from './lexicon.js';
 
 
 export let failBar = null;
@@ -15,16 +16,17 @@ export function showFailure(where, err) {
     if (!failBar) {
       failBar = document.createElement('div');
       failBar.id = 'failbar';
-      failBar.innerHTML =
-        // Do NOT promise "the rest of the page still works". It said that while the panes
-        // were gone, which is worse than saying nothing: a wrong reassurance costs the
-        // reader the one thing they came for. Say what is known and what to try.
-        '<span class="failbar-title">⚠ Ronin hit an error. The top bar still works — a pane may not. ' +
-        'Reload; if it persists the cause is below.</span>';
+      // Do NOT promise "the rest of the page still works". It said that while the panes
+      // were gone, which is worse than saying nothing: a wrong reassurance costs the
+      // reader the one thing they came for. Say what is known and what to try.
+      failBar.replaceChildren(Object.assign(document.createElement('span'), {
+        className: 'failbar-title',
+        textContent: t('errors.title', '⚠ Ronin hit an error. The top bar still works — a pane may not. Reload; if it persists the cause is below.'),
+      }));
       const x = document.createElement('button');
       x.className = 'failbar-x';
       x.textContent = '✕';
-      x.title = 'Dismiss';
+      x.title = t('errors.dismiss', 'Dismiss');
       x.addEventListener('click', () => failBar.remove());
       failBar.appendChild(x);
       // FIRST child, in normal flow: the page shifts down and the top bar stays
