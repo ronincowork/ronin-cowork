@@ -654,3 +654,13 @@ The catalog entry goes. {dir} is not touched.
 - **roots.exclude_failed:** could not exclude it — {message}
 - **roots.empty:** nothing included yet — ＋ include asks Mika to point Ronin at a directory
 - **roots.loading:** loading…
+
+## docs — docs.js (the ▧ Docs tab)
+- **docs.back_title:** Back to the list
+- **docs.save:** Save
+- **docs.open_browser:** Open in browser ↗
+- **docs.frame_title:** document
+- **docs.discard_confirm:** Discard unsaved changes?
+- **docs.loading:** loading…
+- **docs.saving:** saving…
+- **docs.saved:** saved
