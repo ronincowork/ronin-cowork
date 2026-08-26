@@ -935,3 +935,14 @@ The catalog entry goes. {dir} is not touched.
 
 ## desk — the install group heading
 - **desk.group_install:** This install
+
+## dial / gauge / mark — widgets.js (the control dial, the context gauge, the role menu)
+- **gauge.used:** ⛽ {label} {pct}% used
+- **mark.none:** not marked
+- **mark.none_title:** Clear the mark — this session has not said what it is doing
+- **dial.user:** Owner only
+- **dial.user_help:** Owner only — outside agents may not read or type here
+- **dial.read:** Outside agents: watch
+- **dial.read_help:** Outside agents may watch this session, not type into it
+- **dial.write:** Outside agents: type
+- **dial.write_help:** Outside agents may type into this session
