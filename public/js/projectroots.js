@@ -3,6 +3,7 @@ import { request } from './request.js';
 import { status } from './ui.js';
 import { loadProjects } from './home.js';
 import { askMika } from './mika.js';
+import { t } from './lexicon.js';
 
 /* ---------- PROJECT ROOT — the fourth commons pane (tab: ▣ Project root) ----------
  *
@@ -38,8 +39,8 @@ export function buildProjectRoots(root, isShowing, tile) {
   const count = document.createElement('span');
   count.className = 'pr-count';
   const addBtn = document.createElement('button');
-  addBtn.textContent = '＋ include';
-  addBtn.title = 'Ask Mika to include a directory — she reads it and proposes the entry';
+  addBtn.textContent = t('roots.include', '＋ include');
+  addBtn.title = t('roots.include_title', 'Ask Mika to include a directory — she reads it and proposes the entry');
   head.append(count, addBtn);
 
   const list = document.createElement('div');
@@ -57,7 +58,7 @@ export function buildProjectRoots(root, isShowing, tile) {
   async function refresh() {
     const r = await request('/api/project-roots/detail', { cache: 'no-store' });
     if (!r.ok) {
-      say('could not read the catalog — ' + r.message, true);
+      say(t('roots.read_failed', 'could not read the catalog — {message}', { message: r.message }), true);
       return;
     }
     data = r.data;
@@ -97,10 +98,10 @@ export function buildProjectRoots(root, isShowing, tile) {
     const row = document.createElement('div');
     row.className = 'pr-frow';
     const save = document.createElement('button');
-    save.textContent = 'save';
+    save.textContent = t('roots.save', 'save');
     const cancel = document.createElement('button');
     cancel.className = 'pr-ghost';
-    cancel.textContent = 'cancel';
+    cancel.textContent = t('roots.cancel', 'cancel');
     const err = status('pr-err');
     row.append(save, cancel, err.el);
     f.appendChild(row);
@@ -184,7 +185,7 @@ export function buildProjectRoots(root, isShowing, tile) {
     const acts = document.createElement('div');
     acts.className = 'pr-acts';
     const edit = document.createElement('button');
-    edit.textContent = 'edit';
+    edit.textContent = t('roots.edit', 'edit');
     edit.addEventListener('click', () => {
       editing = editing === r.name ? null : r.name;
       render();
@@ -202,7 +203,7 @@ export function buildProjectRoots(root, isShowing, tile) {
         json: { archived: !r.archived },
       });
       if (!res.ok) {
-        say('could not archive it — ' + res.message, true);
+        say(t('roots.archive_failed', 'could not archive it — {message}', { message: res.message }), true);
         shelve.disabled = false;
         return;
       }
@@ -211,15 +212,15 @@ export function buildProjectRoots(root, isShowing, tile) {
     });
     const drop = document.createElement('button');
     drop.className = 'pr-ghost';
-    drop.textContent = 'exclude';
-    drop.title = 'Remove it from the catalog. Nothing on disk is touched.';
+    drop.textContent = t('roots.exclude', 'exclude');
+    drop.title = t('roots.exclude_title', 'Remove it from the catalog. Nothing on disk is touched.');
     drop.addEventListener('click', async () => {
-      if (!confirm(`Exclude "${r.name}" from your Ronin?\n\nThe catalog entry goes. ${r.dir} is not touched.`)) return;
+      if (!confirm(t('roots.exclude_confirm', 'Exclude "{name}" from your Ronin?\n\nThe catalog entry goes. {dir} is not touched.', { name: r.name, dir: r.dir }))) return;
       drop.disabled = true;
       const res = await request('/api/project-roots/' + encodeURIComponent(r.name), { method: 'DELETE' });
       if (!res.ok) {
         // On the pane's own empty/error line, not a browser alert.
-        say('could not exclude it — ' + res.message, true);
+        say(t('roots.exclude_failed', 'could not exclude it — {message}', { message: res.message }), true);
         drop.disabled = false;
         return;
       }
@@ -245,7 +246,7 @@ export function buildProjectRoots(root, isShowing, tile) {
       (archived ? ` · ${archived} archived` : '') +
       (data.untagged ? ` · ${data.untagged} untagged session${data.untagged === 1 ? '' : 's'}` : '');
     if (!roots.length) {
-      say('nothing included yet — ＋ include asks Mika to point Ronin at a directory');
+      say(t('roots.empty', 'nothing included yet — ＋ include asks Mika to point Ronin at a directory'));
       return;
     }
     for (const r of roots) list.appendChild(block(r));
@@ -264,7 +265,7 @@ export function buildProjectRoots(root, isShowing, tile) {
     if (isShowing() && !editing) void refresh();
   }, 15000);
 
-  say('loading…');
+  say(t('roots.loading', 'loading…'));
   return {
     enter() {
       void refresh();

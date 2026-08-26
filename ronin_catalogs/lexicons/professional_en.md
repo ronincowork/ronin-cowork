@@ -637,3 +637,20 @@ The pad's current config downloads as a backup first.
 ## wipeboard — the kind note
 - **wipeboard.kind_team:** team wipeboard
 - **wipeboard.kind_custom:** custom wipeboard
+
+## roots — projectroots.js (the ▣ Project roots tab)
+- **roots.include:** ＋ include
+- **roots.include_title:** Ask Mika to include a directory — she reads it and proposes the entry
+- **roots.read_failed:** could not read the catalog — {message}
+- **roots.save:** save
+- **roots.cancel:** cancel
+- **roots.edit:** edit
+- **roots.archive_failed:** could not archive it — {message}
+- **roots.exclude:** exclude
+- **roots.exclude_title:** Remove it from the catalog. Nothing on disk is touched.
+- **roots.exclude_confirm:** Exclude "{name}" from your Ronin?
+
+The catalog entry goes. {dir} is not touched.
+- **roots.exclude_failed:** could not exclude it — {message}
+- **roots.empty:** nothing included yet — ＋ include asks Mika to point Ronin at a directory
+- **roots.loading:** loading…
