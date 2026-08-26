@@ -1133,3 +1133,9 @@ The catalog entry goes. {dir} is not touched.
 - **me.control:** Control
 - **me.kill:** Kill session
 - **me.title:** This session — status, ladder, TEGAMI, macros, groups, docs, note, control
+
+## new_team — new-team-launch.js (the transaction's own sentences)
+- **new_team.preflight_refused:** Preflight refused this seat.
+- **new_team.none_passed:** No proposed session passed preflight. The Team was not created.
+- **new_team.halted:** Not attempted after Ronin could not complete the previous launch: {message}
+- **new_team.lead_not_born:** The designated lead seat was not born.
