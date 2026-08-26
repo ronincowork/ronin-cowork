@@ -6,8 +6,51 @@
 > is the work that remains plus the knowledge that should not have to be rediscovered.
 > One home, this file — the owner has ruled against copies.
 >
-> By `@wipeboard_refactor`, last updated 2026-08-25, `dev` @ `eb122b3` (default-tab
-> lines corrected after `8837ae5`; the lead has been hot from page entry since `b3fb096`).
+> Begun by `@wipeboard_refactor` 2026-08-25; carried through leg 9 by `@team_page`
+> 2026-08-25/26. Last updated 2026-08-26, `dev` @ `041206a`.
+
+## HANDOFF — for the next `team_page` (2026-08-26)
+
+**Where it stands.** Legs 1–9 are cut and on `dev` (PR #34, dev → master, carries all of
+it). The page is: two workspaces around the roster, each holding a member's tile or the
+team commons; a layout map in the app bar to show/hide/reorder columns; C/T in the
+header row to trade a workspace between terminal and commons; a click or a drag puts a
+roster card in a workspace; the cards read SHINGO · status · model · ⛽ · attached; the
+人 is set from the tile's job menu; and `tejun-teampage` lets the session you are
+talking to read the page and hand it a draft. Every "LANDED" section below records what
+was measured. Gates, 248 unit tests and the smoke suite were green at `041206a`.
+
+**What is left to cut — all small, none blocking:**
+1. **Leg 2b, per-team persistence** — seats and arrangement persist per *destination*
+   (`patchViewState('team', …)`); two teams in one tab share them. Key both by the team
+   param: `viewState.teams[team].{arrangement, seats}` — one line in
+   `teamWorkspaceState`, two `patchViewState` calls in `team-view.js`.
+2. **Leg 6, the cherry-pick / summary reading** — waits on RIREKI putting a field on the
+   `/api/home` row. When it exists, one more entry in `readingsOf` in `team-view.js`.
+3. **T6, a name for the middle column** — the owner's word; "roster" is what the code
+   says (`DECLARATION.slots[1].name`), and the header reads "Team Roster".
+4. **The closing gate** — the owner living in two terminals with the roster tucked away,
+   and saying so.
+
+**Traps a successor should know (beyond the ones under LANDED):**
+- The server runs `tsx src/index.ts` with no watch: a change under `src/` needs
+  `systemctl --user restart ronin`; `public/` is served live.
+- `refreshHome()` in `home.js` is a no-op unless a Commons is open in a Sessions tile —
+  the team page reads `/api/home` itself (`readRows`), every 5s while entered.
+- Any Tile built while the team page is not entered, or left in its DOM after `leave()`,
+  is counted by the Sessions grid's smoke checks (`select.sess` pickers, `.tile`
+  elements). Build tiles on first need; destroy every one on `leave()`.
+- The Kit gate (`check-workspace-kit.mjs`) reads `team-view.js` for any `/api/teams/`
+  request and calls it a feature-local projection — the page's view report therefore
+  lives in `team-arrange.js`.
+- The owner edits this file in the browser; a stale editor buffer once wrote over two
+  commits. Reload before commenting; commit as you go.
+- `check-tips` measures the live page: a session with two repos on its letter makes the
+  🌿 label too long, and the check fails on data, not code. Not fixed; not this page's.
+- Measure, always: `scripts/lib/ui-host.mjs` + a ten-line playwright probe found every
+  real bug of these two days (null widths read as zero, pointer capture lost on
+  re-append, `hidden` beaten by a surface's own `display`, tiles leaking into the
+  Sessions roll). Reading the code found none of them.
 
 ## Goal — the owner's words (2026-08-25)
 
