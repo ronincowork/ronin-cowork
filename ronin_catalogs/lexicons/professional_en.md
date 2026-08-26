@@ -1008,3 +1008,6 @@ The catalog entry goes. {dir} is not touched.
 - **retire.archiving:** archiving…
 - **retire.delete_failed:** could not hard delete it
 - **retire.deleting:** deleting…
+
+## customize — the shadow-trade notice
+- **customize.shadow_trade:** Changing one of Ronin’s own entries makes it yours: it moves to your catalogs store, 
