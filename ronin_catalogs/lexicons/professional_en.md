@@ -29,3 +29,65 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **kind.work:** Work
 - **kind.social:** Events
 - **kind.school:** Learning
+
+## desk — system.js (the ⚙ desk's own rooms: appearance, the updater, the account)
+- **desk.passkeys:** passkeys
+- **desk.passkey_name_placeholder:** this device
+- **desk.passkey_name:** passkey name
+- **desk.add_passkey:** Add a passkey
+- **desk.add_passkey_title:** Register this device — Touch ID, Face ID or a security key
+- **desk.no_passkeys:** none registered — this device can be the first.
+- **desk.passkey_elsewhere:** (registered on {rp} — not usable from this address)
+- **desk.remove:** Remove
+- **desk.remove_named:** Remove {name}
+- **desk.removed:** removed
+- **desk.recovery_outstanding:** a recovery code is outstanding until {time}
+- **desk.passkeys_predate:** this operator predates passkeys — its next restart carries the routes
+- **desk.passkey_needs_https:** Adding a passkey needs the HTTPS address — this one is not a secure context.
+- **desk.passkeys_unavailable:** Passkeys unavailable: {why}
+- **desk.no_rp_name:** no relying-party name
+- **desk.waiting_authenticator:** waiting for the authenticator…
+- **desk.passkey_added:** ✓ passkey added
+- **desk.cancelled:** cancelled
+- **desk.appearance:** appearance
+- **desk.theme_flip_title:** The shell's mode — tap to flip. Ronin follows this device until you flip away; flip back to match and it follows again.
+- **desk.theme_dark:** ● dark
+- **desk.theme_light:** ○ light
+- **desk.skin:** skin
+- **desk.yours_shadowing:** yours (replaces ours)
+- **desk.yours:** yours
+- **desk.profile_stock:** Stock
+- **desk.profile_stock_blurb:** No profile — the look, the words and the tile as shipped.
+- **desk.profile_not_saved:** desk profile not saved — {message}
+- **desk.check_updates:** Check for updates
+- **desk.check_updates_title:** Ask the release feeds what the latest versions are — both packages, only when pressed
+- **desk.update:** Update
+- **desk.install_services:** Install services
+- **desk.log_out:** Log out
+- **desk.log_out_title:** End this device’s session — the next visit asks for the password
+- **desk.unreachable:** unreachable
+- **desk.no_version_answer:** the operator did not answer /api/version
+- **desk.release_detail:** release · built from {commit} · contract {contract} · started {started}
+- **desk.dirty:** (dirty)
+- **desk.checkout_detail:** a dev checkout, not a release — updated by git, not by the button · started {started}
+- **desk.services_list:** services: {list}
+- **desk.services_none:** services: none — the free build
+- **desk.asking_feed:** asking the release feed…
+- **desk.updater_predate:** this operator predates the updater — its next restart carries the routes
+- **desk.feed_no_release:** the feed named no cowork release yet (a private repo needs gh auth on the host)
+- **desk.cowork_up_to_date:** ✓ cowork up to date — {installed}
+- **desk.cowork_checkout_latest:** latest cowork release is {latest} — this box runs a checkout, so the button stays off
+- **desk.update_to:** Update to {latest}
+- **desk.cowork_available:** cowork {latest} available (installed: {installed})
+- **desk.none:** none
+- **desk.update_services_to:** Update services to {latest}
+- **desk.install_services_v:** Install services {latest}
+- **desk.services_available_installed:** services {latest} available (installed: {installed})
+- **desk.services_available:** services {latest} available
+- **desk.services_up_to_date:** ✓ services up to date — {installed}
+- **desk.updated_reloading:** ✓ updated to {release} — reloading
+- **desk.update_timeout:** no new version answered after 5 minutes — journalctl --user -u "ronin-update-*" has the transcript
+- **desk.updating:** updating to {latest} — fetch, verify, gate the candidate, swap. The page blinks at the swap; sessions are untouched…
+- **desk.services_live_reloading:** ✓ services live: {list} — reloading
+- **desk.services_timeout:** services did not answer after 5 minutes — journalctl --user -u "ronin-update-*" has the transcript
+- **desk.installing_services:** installing services {latest} — fetch, verify, contract check, restart. The page blinks at the restart; sessions are untouched…
