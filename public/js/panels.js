@@ -52,7 +52,7 @@ export function buildNotePanel() {
     if (!r.ok) {
       // Save stays off: an empty box over a note that failed to LOAD would save
       // emptiness over it, which is worse than the failure it hides.
-      say(t('panels.load_failed', 'could not load — {message}').replace('{message}', r.message), true);
+      say(t('panels.load_failed', 'could not load — {message}', { message: r.message }), true);
       return;
     }
     ta.value = r.data.note || '';
@@ -74,7 +74,7 @@ export function buildNotePanel() {
     if (!r.ok) {
       // The text stays in the box and the sheet stays up — a failed save must never
       // close the editor and look successful.
-      say(t('panels.not_saved', 'not saved — {message}').replace('{message}', r.message), true);
+      say(t('panels.not_saved', 'not saved — {message}', { message: r.message }), true);
       return;
     }
     const s = S.sessions.find((x) => x.name === session);
@@ -197,7 +197,7 @@ export function buildTagPanel() {
     const r = await request('/api/sessions/' + encodeURIComponent(session) + '/tags');
     if (current !== session) return;
     if (!r.ok) {
-      say(t('panels.load_failed', 'could not load — {message}').replace('{message}', r.message), true);
+      say(t('panels.load_failed', 'could not load — {message}', { message: r.message }), true);
       return;
     }
     list = Array.isArray(r.data.tags) ? r.data.tags : [];
@@ -223,7 +223,7 @@ export function buildTagPanel() {
     });
     if (!r.ok) {
       // The membership you assembled stays on screen; the failure says why.
-      say(t('panels.not_saved', 'not saved — {message}').replace('{message}', r.message), true);
+      say(t('panels.not_saved', 'not saved — {message}', { message: r.message }), true);
       return;
     }
     const s = S.sessions.find((x) => x.name === session);

@@ -371,7 +371,7 @@ export function buildLauncher(tile, host) {
     const credit = face.credit || role?.credit;
     creditEl.hidden = !credit;
     if (credit) {
-      creditEl.textContent = t('launcher.powered_by', 'powered by {name} ↗').replace('{name}', credit.text);
+      creditEl.textContent = t('launcher.powered_by', 'powered by {name} ↗', { name: credit.text });
       creditEl.href = credit.url;
       creditEl.title = credit.url;
     } else {
@@ -457,7 +457,7 @@ export function buildLauncher(tile, host) {
         // may still carry a role_family field; it is presentation-era data and ignored.)
         const task = l.session_role ? (roleData || []).find((k) => k.name === l.session_role) : null;
         if (l.session_role && !task) {
-          sayErr(t('launcher.saved_role_missing', '"{label}" names session_role "{role}", which is not in the catalog.').replace('{label}', l.label).replace('{role}', l.session_role));
+          sayErr(t('launcher.saved_role_missing', '"{label}" names session_role "{role}", which is not in the catalog.', { label: l.label, role: l.session_role }));
           return;
         }
         const shelf = task ? (familyData || []).find((r) => (r.session_roles ?? []).includes(task.name)) : null;
@@ -572,7 +572,7 @@ export function buildLauncher(tile, host) {
     if (!r.ok) {
       // The brief stays in the box and the form stays open: a failed launch costs a
       // retry, never the words.
-      sayErr(t('launcher.launch_failed', 'could not put a session out — {message}').replace('{message}', r.message));
+      sayErr(t('launcher.launch_failed', 'could not put a session out — {message}', { message: r.message }));
     } else {
       closeForm();
       showReceipt(r.data.name, r.data.receipt);
