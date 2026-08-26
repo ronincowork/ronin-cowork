@@ -1057,3 +1057,7 @@ The catalog entry goes. {dir} is not touched.
 - **gauge.swap:** swap {used}
 - **gauge.container_limit:** (container limit)
 - **gauge.ram_title:** RAM_RPM — {free} free of {total}{where} · load {load} on {cpus} · {swap}
+
+## request — request.js (the client's own two messages)
+- **request.cancelled:** cancelled
+- **request.unreachable:** could not reach Ronin — network or server down

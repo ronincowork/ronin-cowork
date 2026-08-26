@@ -22,7 +22,6 @@
  * WHAT IS NEVER HERE: anything an agent reads. The letter, the brief and the boot shelf
  * stay in stock tokens; a lexicon changes what a PERSON sees and nothing else.
  */
-import { request } from './request.js';
 
 /** The active lexicon: { name, label, words } — null is stock, and ordinary. */
 let active = null;
@@ -49,8 +48,16 @@ export async function loadLexicon(name) {
   const want = String(name || '').trim();
   let next = null;
   if (want) {
-    const r = await request(`/api/lexicons/${encodeURIComponent(want)}`);
-    if (r.ok && r.data && r.data.words) next = { name: r.data.name, label: r.data.label, words: r.data.words };
+    // A bare fetch, not request.js: request.js reads t() for its own two messages, and a
+    // module the whole client imports cannot also import the client. Nothing is lost —
+    // an unreachable or unknown lexicon is stock, which is the ordinary state.
+    try {
+      const res = await fetch(`/api/lexicons/${encodeURIComponent(want)}`, { cache: 'no-store' });
+      const d = res.ok ? await res.json() : null;
+      if (d && d.words) next = { name: d.name, label: d.label, words: d.words };
+    } catch {
+      next = null;
+    }
   }
   active = next;
   return active;
