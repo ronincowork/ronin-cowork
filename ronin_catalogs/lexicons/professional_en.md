@@ -884,3 +884,7 @@ The catalog entry goes. {dir} is not touched.
 - **customize.readings:** Session readings
 - **customize.readings_read:** Read reading
 - **customize.readings_blurb:** What a new session reads before anything else. A reading you add reaches the next session born, never a running one.
+
+## customize — customize.js
+- **customize.title:** Customize
+- **customize.rail_label:** Customize resources
