@@ -1002,3 +1002,9 @@ The catalog entry goes. {dir} is not touched.
 - **retire.copy:** Archive stops the session and frees its RAM, while keeping it available to rehydrate. Hard delete permanently removes its Ronin record.
 - **retire.archive:** Archive
 - **retire.hard_delete:** Hard delete
+
+## retire — the working words
+- **retire.archive_failed:** could not archive it
+- **retire.archiving:** archiving…
+- **retire.delete_failed:** could not hard delete it
+- **retire.deleting:** deleting…
