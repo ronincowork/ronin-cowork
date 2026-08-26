@@ -996,3 +996,9 @@ The catalog entry goes. {dir} is not touched.
 - **archives.delete_aria:** Permanently delete archived session {name}
 - **archives.delete_title:** Hard delete this archive
 - **archives.delete_confirm:** Hard delete archived session "{name}"? Its saved Ronin record cannot be rehydrated after this.
+
+## retire — session-retire.js (the tile's retire sheet)
+- **retire.sheet:** Retire {name}
+- **retire.copy:** Archive stops the session and frees its RAM, while keeping it available to rehydrate. Hard delete permanently removes its Ronin record.
+- **retire.archive:** Archive
+- **retire.hard_delete:** Hard delete
