@@ -189,7 +189,7 @@ export function buildDocs(tile, root, isShowing, only = null) {
   const render = (rows) => {
     list.innerHTML = '';
     if (!rows.length) {
-      empty(`No session${only ? ' on this Team' : ''} has listed a doc yet. An agent lists one with: write_tegami --doc <path>`);
+      empty(only ? t('docs.empty_team', 'No session on this Team has listed a doc yet. An agent lists one with: write_tegami --doc <path>') : t('docs.empty', 'No session has listed a doc yet. An agent lists one with: write_tegami --doc <path>'));
       return;
     }
     for (const s of rows) {
@@ -198,7 +198,7 @@ export function buildDocs(tile, root, isShowing, only = null) {
       h.append(
         Object.assign(document.createElement('b'), { textContent: s.name }),
         Object.assign(document.createElement('span'), {
-          textContent: s.docs.length === 1 ? '1 doc' : `${s.docs.length} docs`,
+          textContent: s.docs.length === 1 ? t('docs.count_one', '1 doc') : t('docs.count_many', '{n} docs', { n: s.docs.length }),
         }),
       );
       list.appendChild(h);
