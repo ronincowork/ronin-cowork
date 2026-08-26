@@ -1,11 +1,10 @@
-# home
-
+# home_en
 The household's words — a dozen of them, to prove the chain. Everything not said here
-falls through to `professional`.
+falls through to `professional_en`.
 
 - **label:** Home
 - **blurb:** The household's words — occasions, staff, mise en place, service.
-- **base:** professional
+- **base:** professional_en
 - **desk_profile:** the house style
 - **campaign:** Occasion
 - **campaigns:** Occasions

@@ -1,5 +1,4 @@
-# professional
-
+# professional_en
 The floor. Every key a surface reads is here, in plain English, so a lexicon that says
 nothing paints exactly this. `check-lexicon` holds this file complete.
 

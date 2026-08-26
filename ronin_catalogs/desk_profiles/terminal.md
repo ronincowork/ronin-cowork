@@ -7,7 +7,7 @@ stay plain.
 - **blurb:** The tile as it is — every command, in the terminal's own font.
 - **order:** 20
 - **skin:** mono
-- **lexicon:** terminal
+- **lexicon:** terminal_en
 - **campaign_kind:** coding
 - **rireki_view:** terminal_mirror
 - **team_arrangement:** workspace1,workspace2,roster

@@ -7,7 +7,7 @@
  * Three findings, two of them fatal:
  *
  *   FAIL  a key the client reads (`t('key', …)` in public/js)
- *         is missing from `ronin_catalogs/lexicons/professional.md` — the floor is
+ *         is missing from `ronin_catalogs/lexicons/professional_en.md` — the floor is
  *         complete BY DEFINITION, so this is the build's mistake, in the same commit as
  *         the view that added the key.
  *   FAIL  a shipped lexicon other than the floor carries a bare key the floor does not
@@ -28,7 +28,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const JS = path.join(ROOT, 'public', 'js');
 const LEX = path.join(ROOT, 'ronin_catalogs', 'lexicons');
-const FLOOR = 'professional';
+const FLOOR = 'professional_en';
 const FIELDS = new Set(['label', 'blurb', 'base', 'order', 'hidden']);
 const PREFIXED = /^(kind|role|team_role|behaviour)\./;
 

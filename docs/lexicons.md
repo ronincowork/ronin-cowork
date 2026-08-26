@@ -11,8 +11,8 @@ names a skin (`docs/desk-profiles.md`).
 `ronin_catalogs/lexicons/<name>.md`, one file per lexicon, shadowable whole-file by name
 (`docs/shadowing.md`): yours in the catalogs store replaces ours of the same name; a new
 name is a new lexicon; `- **hidden:** yes` withdraws one of ours. The directory's
-`README.md` carries the format. Four ship: `professional` (the floor), `home` (a dozen
-words, to prove the chain), `vibe_code` and `terminal` (near-empty, on purpose — the words
+`README.md` carries the format. Four ship: `professional_en` (the floor), `home_en` (a dozen
+words, to prove the chain), `vibe_code_en` and `terminal_en` (near-empty, on purpose — the words
 grow as the surfaces settle, one file at a time, with no code).
 
 Two kinds of key in one table: a bare word is a surface string (`campaign`, `go`); a
@@ -30,15 +30,16 @@ active lexicon  →  its base:  →  the definition's own label: / the literal i
 the file's words over its base's, to the floor, with a cycle guard. The client
 (`public/js/lexicon.js`) holds one flat object and answers `t(key, literal)` — the word,
 or the literal the view wrote. So a missing key can never blank a label, and a missing
-lexicon paints exactly as stock. Wording and translation are one axis: a French Home
-is one more lexicon, `home_fr`, with `- **base:** fr` — never a second setting.
+lexicon paints exactly as stock. Wording and translation are one axis, and the language is in the name: a French Home
+is one more lexicon, `home_fr`, with `- **base:** professional_fr` (itself based on
+`professional_en`) — never a second setting.
 
 ## The floor, and the check
 
-`professional` is complete by definition. `scripts/check-lexicon.mjs` (in the verify
+`professional_en` is complete by definition. `scripts/check-lexicon.mjs` (in the verify
 chain) **fails** when a key the client reads through `t()` is missing from it, or when
 another shipped lexicon spells a bare key the floor lacks (nothing to fall through to);
-it **reports** floor keys no view reads yet. A view adds its keys to `professional` in
+it **reports** floor keys no view reads yet. A view adds its keys to `professional_en` in
 the same commit.
 
 ## No sweep
