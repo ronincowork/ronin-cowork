@@ -1165,3 +1165,6 @@ The catalog entry goes. {dir} is not touched.
 - **errors.uncaught_at:** uncaught error at {at}
 - **errors.uncaught:** uncaught error
 - **errors.unhandled:** unhandled promise
+
+## desk — the rail toggle and the inert row
+- **desk.rail_expand:** Expand the rail

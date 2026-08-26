@@ -104,7 +104,7 @@ export function buildDesk(tile) {
   railBtn.addEventListener('click', () => {
     const railed = nav.classList.toggle('railed');
     railBtn.textContent = railed ? '»' : '«';
-    railBtn.title = railed ? 'Expand the rail' : 'Collapse the rail';
+    railBtn.title = railed ? t('desk.rail_expand', 'Expand the rail') : t('desk.rail_collapse', 'Collapse the rail');
   });
 
   const rowEls = {};
@@ -130,7 +130,7 @@ export function buildDesk(tile) {
       if (serviceOff(r.id)) {
         b.classList.add('off');
         b.disabled = true;
-        b.setAttribute('aria-label', `${r.label} — off, this service is not installed.`);
+        b.setAttribute('aria-label', t('commons.tab_off', '{tab} — off, this service is not installed.', { tab: r.label }));
       } else b.addEventListener('click', () => show(r.id));
       rowEls[r.id] = b;
       nav.appendChild(b);
