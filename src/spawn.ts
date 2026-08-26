@@ -8,7 +8,7 @@ import { listProjectRoots, listSessionLaunchSpecs, USER_PROJECT_ROOTS_MD, type P
 import { readAgentsSection } from './user-config.js';
 import { storeDir } from './stores.js';
 import { findDefinition, listRoleFamilies } from './definitions.js';
-import { readTeamRoster, teamRosterFile, type TeamRoster } from './team-rosters.js';
+import { isCreatableTeamName as isTeamName, readTeamRoster, teamRosterFile, type TeamRoster } from './team-rosters.js';
 import { resolveLaunchProfile, type Dial, type LaunchProfile, type StatedBy } from './launch-profile.js';
 
 /**
@@ -44,6 +44,25 @@ export interface SpawnForm {
    * project_root default, its team_role's reading shelf, and its objective in the brief.
    */
   team?: string;
+  /**
+   * BORN AS THE 人 of `team` (owner, 2026-08-26, the session door): the one case where
+   * leadership is known before the session exists — the lobby's Go, or a lead raising
+   * its successor. Designation still rides `@ronin-lead` exactly as the hand-set route
+   * does (routes/sessions-api.ts); this only sets it at birth instead of a call later,
+   * and carries the teams SOP into the birth reading the way a default_lead_role does.
+   * Ignored when there is no team to lead.
+   */
+  team_lead?: boolean;
+  /**
+   * WHICH MODEL, BY NAME (owner, 2026-08-26: *"please open a fable five session"*). A
+   * model name out of the launch table's own column — `fable`, `opus`, `gpt-5.6-sol` —
+   * resolved to that row's command. One field: named, it is the model; blank, the
+   * session's usual default applies. Naming a `cmd` as well is refused (a cmd already
+   * carries its model). A name the table does not carry is refused with the names it
+   * does; it is never guessed into a command string here, because the table is the one
+   * place a model is a column.
+   */
+  model?: string;
   prompt: string;
   /**
    * What the session is called. MANDATORY in manual mode: manual means Ronin adds
@@ -189,6 +208,11 @@ export function buildBrief(
     if (roster.objective) bits.push(`its objective: ${roster.objective}`);
     bits.push(`its wipeboard is "${roster.wipeboard}" (tejun-wipeboard ${roster.wipeboard})`);
     parts.push(bits.join('. ') + '.');
+  } else if (form.team) {
+    parts.push(
+      `You are born onto team "${form.team}" — a tag-only team: its members are the sessions carrying its tag ` +
+        `(tejun-team ${form.team}), it has no durable roster, and its wipeboard is "${form.team}" (tejun-wipeboard ${form.team}).`,
+    );
   }
   // THE SESSION BOOT SHELF, listed at this instant rather than remembered. This replaced
   // the project_root's `read:` — a stored list of literal paths that went stale in silence
@@ -266,11 +290,13 @@ async function bootReading(
   sessionRole: string,
   teamRole: string,
   mcpOn: boolean,
+  bornLead = false,
 ): Promise<string[]> {
   const files = await bootFiles(projectRoot, sessionRole, teamRole, mcpOn);
-  if (sessionRole && (await listRoleFamilies()).some((f) => f.default_lead_role === sessionRole)) {
-    files.push(teamsSopPath());
-  }
+  // Route 1 (the coordinating kind of role) — and a session BORN as the 人 (`team_lead`
+  // on the form), which leads whatever its role says: the reading follows the 人.
+  const leadRole = !!sessionRole && (await listRoleFamilies()).some((f) => f.default_lead_role === sessionRole);
+  if ((leadRole || bornLead) && !files.includes(teamsSopPath())) files.push(teamsSopPath());
   return files;
 }
 
@@ -297,17 +323,16 @@ export async function resolveForm(
   if (form.session_role && !taskDef) {
     throw new Error(`Unknown session_role "${form.session_role}" (see ronin_catalogs/session_roles/).`);
   }
-  // THE TEAM resolves through its ROSTER — the durable record. A named team with no
-  // roster is refused rather than silently joined: being born ONTO a team is a launch
-  // fact and deserves the durable half to exist; joining a tag-only team afterwards is
-  // the tags route's ordinary business.
-  const roster = form.team ? (proposedRoster?.name === form.team ? proposedRoster : await readTeamRoster(form.team)) : null;
-  if (form.team && !roster) {
-    throw new Error(
-      `Team "${form.team}" has no roster on this box. Create it first (POST /api/team-rosters), ` +
-        'or launch without a team and tag the session afterwards.',
-    );
+  // THE TEAM resolves through its ROSTER when it has one — the durable half, and the
+  // context a launch inherits. A TAG-ONLY TEAM IS AN ORDINARY TEAM (owner, 2026-08-26,
+  // overruling the refusal that stood here: "this shouldn't have happened"): most teams
+  // on a box are their sessions' tags and nothing more, and being born onto one is the
+  // same act as being tagged onto it afterwards. With no roster the launch inherits no
+  // root and no objective — it is told so — and its wipeboard is the team's own name.
+  if (form.team && !isTeamName(form.team)) {
+    throw new Error(`A team name is lowercase letters, digits, _ and - (it is also the tag): "${form.team}".`);
   }
+  const roster = form.team ? (proposedRoster?.name === form.team ? proposedRoster : await readTeamRoster(form.team)) : null;
   // THE CASCADE, and every refusal it makes happens here — before a session exists.
   const profile = resolveLaunchProfile(taskDef);
 
@@ -389,7 +414,25 @@ export async function resolveForm(
     ? (launchSpecs.find((s) => s.model === profile.model && s.provider === dflt?.provider)
         ?? launchSpecs.find((s) => s.model === profile.model))?.cmd
     : undefined;
-  let cmd = agent ? form.cmd || biasCmd || defaultCmd || defaultAgentCommand() : '';
+  // THE NAMED MODEL — one field, filled or not. Named, it is the model; blank, the
+  // session's usual default applies, as for every other field. It is not a precedence
+  // game: `cmd` is a raw command string that already carries a model, so naming both is
+  // a contradiction and is refused rather than ranked (owner, 2026-08-26: "it shouldn't
+  // be overwriting anything, it should just be one of the fields"). The owner's default
+  // provider wins a name two providers both offer, as for the bias.
+  let modelCmd: string | undefined;
+  if (form.model && form.cmd) {
+    throw new Error('Name a model OR a cmd, not both — the cmd already says which model it runs.');
+  }
+  if (agent && form.model) {
+    modelCmd = (launchSpecs.find((s) => s.model === form.model && s.provider === dflt?.provider)
+      ?? launchSpecs.find((s) => s.model === form.model))?.cmd;
+    if (!modelCmd) {
+      const known = [...new Set(launchSpecs.map((s) => s.model))].join(', ');
+      throw new Error(`Unknown model "${form.model}" — this box's launch table offers: ${known || 'nothing yet (see ⚙ Configuration)'}.`);
+    }
+  }
+  let cmd = agent ? form.cmd || modelCmd || biasCmd || defaultCmd || defaultAgentCommand() : '';
   // The row this cmd came out of, matched BEFORE the MCP-off flags are appended below —
   // appending changes the very string the match is on, and looking it up afterwards would
   // find nothing for exactly the launches that asked for something unusual. It carried the
@@ -472,7 +515,7 @@ export async function resolveForm(
   // Compile this once and return the exact same list the brief receives. The browser must
   // never recreate shelf precedence or guess which explicit seeds joined it.
   const shelfReading = agent
-    ? await bootReading(root.name, profile.session_role, roster?.team_role ?? '', !mcpOffWanted)
+    ? await bootReading(root.name, profile.session_role, roster?.team_role ?? '', !mcpOffWanted, !!form.team_lead && !!form.team)
     : [];
   const birthReading = agent && form.mode !== 'manual'
     ? [...shelfReading, ...(form.seed ?? [])].filter(Boolean)
@@ -489,14 +532,14 @@ export async function resolveForm(
     cmd,
     // Born onto a team = tagged into it, through the same membership the roster derives
     // from. The team rides FIRST so a truncated list can never drop the birth team.
-    tags: [...(roster ? [roster.name] : []), ...(form.tags ?? [])]
+    tags: [...(form.team ? [form.team] : []), ...(form.tags ?? [])]
       .filter(Boolean)
       .filter((t, i, a) => a.indexOf(t) === i)
       .slice(0, 16),
     dial: profile.dial,
     lifecycle: profile.lifecycle,
     session_role: profile.session_role,
-    team: roster?.name ?? '',
+    team: form.team ?? '',
     team_role: roster?.team_role ?? '',
     project_root: root.name,
     mode: form.mode === 'manual' ? 'manual' : 'assisted',

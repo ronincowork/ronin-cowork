@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+# tejun-teampage — read the team page your team is showing, or hand it a draft.
+#
+# Usage: tejun-teampage                          the view: which workspace shows what, which
+#                                                one the owner is typing in, which shows YOU
+#        tejun-teampage <key=value ...>          a draft — only what you name changes
+#        tejun-teampage --team <team> ...        on several teams, say which
+#
+# The draft's words (team-arrange.js is the one parser):
+#   workspace1=<session>|me           a session's tile there
+#   workspace2=commons                the commons there, on the tab it was last on
+#   workspace2=commons:docs           the commons on a tab: chat · wipeboard · docs · config
+#   workspace2=commons:docs:<path>    the commons on ▧ Docs with that file open
+#   workspace1=terminal | empty       the seat back as it was | the seat with nothing in it
+#   order=workspace2,roster,workspace1     hidden=roster    shown=roster    hidden=none
+#
+# "Show the owner the document I am working on", from workspace 2:
+#   tejun-teampage workspace1=commons:docs:wip/handoffs/THIS.md
+#
+# What you omit stays as it is. Read the view first (the bare form): it tells you which
+# workspace you are in, so you know which one the owner is looking at. You are free to
+# arrange the page any way you like — including taking yourself off it.
+#
+# Two browser tabs may show one team; the draft goes to the tab that shows you, else to
+# every tab on your team. The dial applies: 👤 and 👁 sessions are refused, as tejun-send
+# refuses them. Verdicts: ARRANGED · REFUSED · NO-TEAM · NO-PAGE · UNREACHABLE.
+# Exit 0 arranged/read, 2 bad draft, 3 no session/team, 4 refused by the dial, 5 unreachable.
+set -u
+
+die() { printf '%s\n' "$*" >&2; exit "${2:-3}"; }
+
+# WHICH SESSION AM I — asked of tmux, never guessed (the same resolver as write_tegami).
+me() {
+  local win s sid
+  if [ -n "${TMUX_PANE:-}" ]; then
+    win=$(tmux display-message -p -t "$TMUX_PANE" '#{window_id}' 2>/dev/null) || win=""
+    if [ -n "$win" ]; then
+      s=$(tmux list-windows -a -F '#{session_name}	#{window_id}' 2>/dev/null \
+          | awk -F'	' -v w="$win" '$2==w && $1 !~ /^grid_/ {print $1; exit}')
+      [ -n "$s" ] && { printf '%s\n' "$s"; return 0; }
+    fi
+  fi
+  if [ -n "${TMUX:-}" ]; then
+    sid=${TMUX##*,}
+    s=$(tmux list-sessions -F '#{session_id}	#{session_name}' 2>/dev/null \
+        | awk -F'	' -v i="\$$sid" '$1==i && $2 !~ /^grid_/ {print $2; exit}')
+    [ -n "$s" ] && { printf '%s\n' "$s"; return 0; }
+  fi
+  return 1
+}
+
+TEAM=""
+if [ "${1:-}" = "--team" ]; then TEAM="${2:-}"; shift 2 || die "usage: tejun-teampage --team <team> ..." 2; fi
+
+ME=$(me) || die "NO-SESSION: cannot tell which session this is — TMUX_PANE and \$TMUX are both unset." 3
+if [ -z "$TEAM" ]; then
+  tags=$(tmux show-option -t "$ME" -qv @ronin-tags 2>/dev/null || true)
+  tags=${tags//,/ }
+  set -- "$@"
+  n=0; for t in $tags; do n=$((n+1)); TEAM="$t"; done
+  [ "$n" -ge 1 ] || die "NO-TEAM: $ME is on no team (no @ronin-tags); a team page needs a team." 3
+  [ "$n" -eq 1 ] || die "WHICH-TEAM: $ME is on several teams ($tags) — say --team <team>." 2
+fi
+
+url="${RONIN_URL:-$(tmux show-option -s -qv @ronin-url 2>/dev/null || true)}"
+[ -n "$url" ] || url="http://127.0.0.1:3006"
+AUTH=()
+[ -n "${RONIN_AUTH:-}" ] && AUTH=(-u "$RONIN_AUTH")
+api() { curl -sS -m 20 "${AUTH[@]+"${AUTH[@]}"}" "$@" 2>/dev/null; }
+q() { python3 -c 'import sys,urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$1" 2>/dev/null || printf '%s' "$1"; }
+
+# THE VIEW — the bare form.
+if [ $# -eq 0 ]; then
+  out=$(api "$url/api/teams/$(q "$TEAM")/page?session=$(q "$ME")") || die "UNREACHABLE: Ronin did not answer at $url" 5
+  [ -n "$out" ] || die "UNREACHABLE: Ronin did not answer at $url" 5
+  python3 - "$ME" "$out" <<'PY'
+import sys, json
+me = sys.argv[1]
+d = json.loads(sys.argv[2])
+roster = d.get("roster") or []
+if roster:
+    print("team %s: %s" % (d.get("team"), ", ".join(r["name"] + (" 人" if r.get("lead") else "") + (" ← you" if r["name"] == me else "") for r in roster)))
+tabs = d.get("tabs") or []
+if not tabs:
+    print("NO-PAGE: no browser tab is showing team %s right now." % d.get("team")); sys.exit(0)
+for t in tabs:
+    v = t.get("view") or {}
+    ws = v.get("workspaces") or {}
+    you = " (shows you)" if t.get("showsYou") else ""
+    print("tab %s%s · selected: %s · order: %s · hidden: %s" % (t.get("tab"), you, v.get("selected"), ",".join(v.get("order") or []), ",".join(v.get("hidden") or []) or "none"))
+    for name in ("workspace1", "workspace2"):
+        w = ws.get(name) or {}
+        what = w.get("holds") or "empty"
+        if what == "session": what = w.get("session") or "empty"
+        if what == "commons" and w.get("tab"): what = "commons:%s" % w.get("tab")
+        mark = " ← you" if w.get("session") == me else ""
+        print("  %s: %s%s" % (name, what, mark))
+PY
+  exit 0
+fi
+
+# THE DRAFT — every remaining argument is one key=value.
+tokens=$(python3 -c 'import sys, json; print(json.dumps(sys.argv[1:]))' "$@")
+body=$(python3 -c 'import sys, json; print(json.dumps({"from": sys.argv[1], "tokens": json.loads(sys.argv[2])}))' "$ME" "$tokens")
+code=$(api -o /tmp/tejun-teampage.$$ -w '%{http_code}' -H 'content-type: application/json' -X POST --data "$body" "$url/api/teams/$(q "$TEAM")/page") || { rm -f /tmp/tejun-teampage.$$; die "UNREACHABLE: Ronin did not answer at $url" 5; }
+out=$(cat /tmp/tejun-teampage.$$ 2>/dev/null); rm -f /tmp/tejun-teampage.$$
+msg=$(printf '%s' "$out" | python3 -c 'import sys,json
+try: d=json.load(sys.stdin)
+except Exception: d={}
+print(d.get("error") or ("pages=%s tab=%s" % (d.get("pages"), d.get("tab") or "all")))' 2>/dev/null)
+case "$code" in
+  200) echo "ARRANGED: $* → $msg"; exit 0 ;;
+  400) echo "BAD-DRAFT: $msg"; exit 2 ;;
+  403) echo "REFUSED: $msg"; exit 4 ;;
+  404) echo "NO-SESSION: $msg"; exit 3 ;;
+  *)   echo "UNREACHABLE: HTTP $code $msg"; exit 5 ;;
+esac

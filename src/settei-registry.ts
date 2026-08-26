@@ -178,6 +178,23 @@ export const SETTEI_SCHEMA = {
       omit: 'blank',
     },
     {
+      // THE DESK PROFILE (R38): the owner's standing defaults for the surfaces they work
+      // at — skin, lexicon, campaign kind, a new tile's RIREKI view, the Team page's
+      // order. Not asked on first run (stock is a complete answer); editable forever
+      // here and from the ⚙ desk's picker, which write the same leaf.
+      id: 'deskProfile',
+      sec: 'defaults',
+      kind: 'select',
+      ask: false,
+      label: 'Desk profile',
+      short: 'desk profile',
+      hint: 'The look, the words, and how much of the terminal a new tile shows. Unset is stock.',
+      options: 'desk_profiles',
+      from: 'set.desk.profile',
+      lands: { family: 'desk', key: 'profile' },
+      omit: 'blank',
+    },
+    {
       id: 'mika',
       sec: 'defaults',
       kind: 'select',

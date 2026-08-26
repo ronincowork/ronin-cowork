@@ -53,9 +53,18 @@ export const isCreatableTeamName = (s: string): boolean => isValidTeamName(s) &&
 /** Canonical source path for one durable roster, including proposed-roster attribution. */
 export const teamRosterFile = (name: string): string => path.join(dir(), `${name}.md`);
 
+/** The mark a blank field is WRITTEN as, so the file reads as a page and not a form with
+ *  holes. It is a rendering, and `parse` must read it back as the blank it stands for —
+ *  until 2026-08-26 it did not, and one edit turned every untouched blank into a literal
+ *  "—" (a project_root named "—", refused at the next launch). */
+const BLANK = '—';
+
 function parse(name: string, raw: string): TeamRoster {
   const lines = raw.split('\n');
-  const get = (k: string) => entryValue(lines, k);
+  const get = (k: string) => {
+    const v = entryValue(lines, k).trim();
+    return v === BLANK || v === '-' ? '' : v;
+  };
   return {
     name,
     team_role: get('team_role'),
@@ -112,7 +121,7 @@ export interface RosterEdit {
 const KEYS: (keyof RosterEdit)[] = ['team_role', 'objective', 'project_root', 'repos', 'branch', 'wipeboard', 'state'];
 
 function render(name: string, r: TeamRoster): string {
-  const line = (k: string, v: string) => (v ? `- **${k}:** ${v}` : `- **${k}:** —`);
+  const line = (k: string, v: string) => `- **${k}:** ${v || BLANK}`;
   return [
     `# ${name}`,
     '',
@@ -170,7 +179,7 @@ export async function writeTeamRoster(name: string, edit: RosterEdit): Promise<T
   for (const k of KEYS) {
     if (edit[k] === undefined) continue;
     const v = k === 'repos' ? (edit.repos ?? []).join(', ') : String(edit[k] ?? '');
-    const lineText = `- **${k}:** ${v || '—'}`;
+    const lineText = `- **${k}:** ${v || BLANK}`;
     const at = lines.findIndex((l) => new RegExp(`^-\\s*\\*\\*${k}:\\*\\*`).test(l.trim()));
     if (at === -1) {
       let last = -1;

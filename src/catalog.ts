@@ -74,13 +74,27 @@ export type Entry = { name: string; origin: Origin; shadowed: boolean; get: (key
  * The cards read `blurb:` and only `blurb:` now (owner, same day: the two do not overlap),
  * but the skip is still what keeps `instruction` from opening with a field line.
  */
-export const isKeyLine = (line: string): boolean => /^-\s*\*\*[\w-]+:\*\*/.test(line.trim());
+// `[\w.-]` — a key may carry DOTS since 2026-08-27: a lexicon keys catalog tokens by prefix
+// (`kind.household`, `role.DraftPlan`), and the alternative was a second separator nobody
+// else in the house uses. `entryValue` escapes the dot so a key never reads as a wildcard.
+export const isKeyLine = (line: string): boolean => /^-\s*\*\*[\w.-]+:\*\*/.test(line.trim());
+const keyPattern = (key: string): string => key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /** The value of one `- **key:** value` line, or '' when the entry does not carry it. */
 export const entryValue = (lines: string[], key: string): string =>
-  (lines.find((l) => new RegExp(`^-\\s*\\*\\*${key}:\\*\\*`, 'i').test(l.trim())) ?? '')
-    .replace(new RegExp(`^\\s*-\\s*\\*\\*${key}:\\*\\*\\s*`, 'i'), '')
+  (lines.find((l) => new RegExp(`^-\\s*\\*\\*${keyPattern(key)}:\\*\\*`, 'i').test(l.trim())) ?? '')
+    .replace(new RegExp(`^\\s*-\\s*\\*\\*${keyPattern(key)}:\\*\\*\\s*`, 'i'), '')
     .trim();
+
+/** Every `- **key:** value` line of an entry, in file order — the shape a lexicon is read as. */
+export const entryPairs = (lines: string[]): Array<[string, string]> => {
+  const out: Array<[string, string]> = [];
+  for (const raw of lines) {
+    const m = /^-\s*\*\*([\w.-]+):\*\*\s*(.*?)\s*$/.exec(raw.trim());
+    if (m) out.push([m[1], m[2]]);
+  }
+  return out;
+};
 
 /** The user's copy, or '' when there is not one yet. Absence is a fresh install, never a fault. */
 async function readUserCatalog(file: string): Promise<string> {

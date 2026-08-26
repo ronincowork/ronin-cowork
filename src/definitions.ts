@@ -48,8 +48,8 @@ import path from 'node:path';
 import { STOCK_DIR, entryValue, isKeyLine, type Origin } from './catalog.js';
 import { storeDir } from './stores.js';
 
-/** The three directories, and the only three. Each is a token in its own right. */
-export type DefinitionKind = 'role_families' | 'session_roles' | 'team_roles';
+/** The definition directories — one file per token. `desk_profiles/` and `lexicons/` joined 2026-08-27 (R38). */
+export type DefinitionKind = 'role_families' | 'session_roles' | 'team_roles' | 'desk_profiles' | 'lexicons';
 
 export interface Definition {
   /** The token — the filename without `.md`. Never the `#` heading. */

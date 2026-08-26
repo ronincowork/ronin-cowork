@@ -28,6 +28,7 @@ import { registerLaunchPreflight } from './routes/launch-preflight.js';
 import { registerPasskeyLogin, registerPasskeyManage } from './routes/passkey-api.js';
 import { registerSessions } from './routes/sessions-api.js';
 import { registerTeams } from './routes/teams-api.js';
+import { registerTeamPage } from './routes/team-page-api.js';
 import { startTomodachiSender } from './activation/tomodachi.js';
 import { registerServicesActivation, resumeInstallWatch } from './routes/services-activation-api.js';
 import { registerSettei } from './routes/settei-api.js';
@@ -249,6 +250,7 @@ registerLaunch(app); // /api/launch (both variants), /api/sessions, /api/home, s
 registerLaunchPreflight(app); // /api/launch/preflight — the dry run: resolveForm with no session and no roster — src/routes/launch-preflight.ts
 registerCatalogs(app); // /api/macros, /api/hotwords*, /api/project-roots*, /api/session-launch-specs, /api/role-families*, /api/session-roles, /api/team-roles, /api/launch-profile — src/routes/catalogs.ts
 registerTeams(app); // /api/team-rosters* — the durable half of every team — src/routes/teams-api.ts
+registerTeamPage(app); // /api/teams/:team/page — the team page's view, and drafts an agent hands it — src/routes/team-page-api.ts
 registerVersion(app); // /api/version — release string, or the commit this process started from — src/routes/version.ts
 registerUpdate(app); // /api/update/* — the ⚙ gear's check + run, press-only — src/routes/update-api.ts
 registerSettei(app); // /api/settei — the install record, and writes BY NAME only — src/routes/settei-api.ts
@@ -364,6 +366,28 @@ app.put('/api/file', express.text({ type: '*/*', limit: '8mb' }), async (req, re
     if (code === 'ENOENT') return res.status(404).json({ error: 'No such file — it moved or was deleted.' });
     res.status(500).json({ error: String((e as Error)?.message ?? e) });
   }
+});
+
+/**
+ * THE FILE ITSELF, AS THE BROWSER WOULD RENDER IT (owner, 2026-08-26: *"i cant view an html
+ * in [the docs tab] … if we can have a mini viewer in the doc tab that would be cool. and
+ * then have a open into browser tab button"*). `/api/file` hands back TEXT for the editor;
+ * this hands back the file with its own content-type, so an `.html` a session listed can
+ * sit in an iframe inside the ▧ Docs pane, or open in a tab of its own from the ↗ button.
+ *
+ * PATH-SHAPED, NOT A QUERY: `/raw/<abs path>/page.html` rather than `/raw?path=`, so a page's
+ * relative `<img src="pic.png">` resolves to `/raw/<abs path>/pic.png` and comes through the
+ * same door. Same absolute-path rule, same "no filter" ruling as `/api/file` above — the
+ * browser is on the tailnet with the owner's cookie, and every agent already has the shell.
+ */
+app.get('/raw/*', (req, res) => {
+  const file = '/' + String((req.params as Record<string, string>)[0] ?? '');
+  res.sendFile(file, { dotfiles: 'allow', headers: { 'Cache-Control': 'no-store' } }, (e) => {
+    if (!e || res.headersSent) return;
+    const code = (e as NodeJS.ErrnoException)?.code;
+    if (code === 'ENOENT' || code === 'EISDIR') return res.status(404).json({ error: 'No such file.' });
+    res.status(500).json({ error: String((e as Error)?.message ?? e) });
+  });
 });
 
 // --- HTTP + WebSocket server ---

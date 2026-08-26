@@ -20,6 +20,7 @@ import {
   sessionExists,
   setControl,
   setLaunchStamp,
+  setLeads,
   setProviderSessionId,
   setProjectRoot,
   setTags,
@@ -54,8 +55,10 @@ import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFiel
  * launch_bare: the session is created under that name and the extras are ignored.
  */
 export function registerLaunch(app: express.Express): void {
-  // launch_job — the catalog variant.
-  app.post('/api/launch', async (req, res, next) => {
+  // launch_job — the catalog variant. NAMED, not inlined, since 2026-08-26: `/api/session`
+  // below is a second DOOR onto this same body, never a second launch path (the parity
+  // invariant, tests/launch-parity.test.ts).
+  const launchJob: express.RequestHandler = async (req, res, next) => {
     // The retired keys, refused by name (410-shaped, but a launch is a POST that never
     // existed per-key, so 400 with the teaching text is the honest shape here).
     if (req.body?.role_family !== undefined || req.body?.family_role !== undefined || req.body?.session_task !== undefined) {
@@ -72,11 +75,13 @@ export function registerLaunch(app: express.Express): void {
     const form: SpawnForm = {
       session_role: sessionRole,
       team: team || undefined,
+      team_lead: req.body?.team_lead === true,
       prompt: String(req.body?.prompt ?? '').trim(),
       name: String(req.body?.name ?? '').trim() || undefined,
       mode: req.body?.mode === 'manual' ? 'manual' : 'assisted',
       project_root: String(req.body?.project_root ?? '').trim() || undefined,
       cmd: String(req.body?.cmd ?? '').trim() || undefined,
+      model: String(req.body?.model ?? '').trim() || undefined,
       // Only an explicit boolean is an opinion. Absent hands the choice to the resolved
       // profile's `mcp:` default (off for every ordinary launch, owner 2026-08-22)
       // rather than meaning "on", so a caller with nothing to say cannot connect a
@@ -144,6 +149,9 @@ export function registerLaunch(app: express.Express): void {
         // is told, same as any tag change — and a failed notice never costs a launch.
         await announceTeamChanges(resolved.name, [], resolved.tags).catch(() => {});
       }
+      // BORN AS THE 人: the same column the hand-set route writes, written at birth. The
+      // teams SOP is already in the brief (`bootReading`), so no message is sent here.
+      if (form.team_lead && resolved.team) await setLeads(resolved.name, [resolved.team]);
       // The project_root the session serves, written at birth — the one moment tagging
       // reliably happens. Two shipped tools (tejun-recall, tejun-remember) read this to
       // scope a memory and nothing used to set it.
@@ -216,6 +224,7 @@ export function registerLaunch(app: express.Express): void {
         lifecycle: resolved.lifecycle,
         tags: resolved.tags,
         mcp: resolved.mcp,
+        team_lead: !!form.team_lead && !!resolved.team,
       },
     });
     void appendLedger(form, resolved, true);
@@ -246,7 +255,8 @@ export function registerLaunch(app: express.Express): void {
         );
       }
     })().catch((e) => console.error(`[ronin] spawn ${resolved.name}:`, e));
-  });
+  };
+  app.post('/api/launch', launchJob);
 
   app.get('/api/sessions', async (_req, res) => {
     try {
@@ -356,7 +366,7 @@ export function registerLaunch(app: express.Express): void {
   });
 
   // launch_bare — a name and nothing else.
-  app.post('/api/launch', async (req, res) => {
+  const launchBare: express.RequestHandler = async (req, res) => {
     const name = String(req.body?.name ?? '').trim();
     if (!isValidName(name)) {
       return res.status(400).json({ error: 'Invalid name. Use letters, digits, _ or - (no spaces, . or :).' });
@@ -375,5 +385,51 @@ export function registerLaunch(app: express.Express): void {
     } catch (e) {
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }
+  };
+  app.post('/api/launch', launchBare);
+
+  /**
+   * THE SESSION DOOR — `POST /api/session { name, caller?, team?, team_lead?, …launch keys }`
+   * (owner, 2026-08-26). Only `name` is required; every other key is optional and falls
+   * through the profile ladder exactly as a ＋ New launch does, because this IS that
+   * launch: the body is filled in and handed to `launchJob` / `launchBare` above. A
+   * second door, never a second path.
+   *
+   * WHAT IT ADDS IS THE TEAM DEFAULT. Nearly every call comes from a session growing its
+   * own team, so `team` absent means THE CALLER'S TEAM — the first tag the calling
+   * session carries (owner: *"just take the first one, and then if people don't like
+   * it, they just drag it and drop it. It's not a big deal"*). A caller on no team, or no
+   * caller at all (the browser), births a rōnin. Nothing here is a refusal: a session
+   * landing in the rōnin column is a session that exists, and the nag this door removes
+   * is an agent flip-flopping between "create the team" and "add the member".
+   *
+   * `caller` is the session's own name, resolved by the CLI from its pane
+   * (`ronin_bin/tejun-session-set`, the same `me()` every tejun uses) — the server cannot
+   * see which pane an HTTP request came from. `team_from` in the receipt says which
+   * rule fired, so the agent never has to guess what it got.
+   */
+  app.post('/api/session', async (req, res, next) => {
+    const name = String(req.body?.name ?? '').trim();
+    if (!isValidName(name)) {
+      return res.status(400).json({ error: 'Name the session. Use letters, digits, _ or - (no spaces, . or :).' });
+    }
+    const caller = String(req.body?.caller ?? '').trim();
+    let team = String(req.body?.team ?? '').trim();
+    let teamFrom: 'explicit' | 'caller' | 'none' = team ? 'explicit' : 'none';
+    if (!team && caller) {
+      const mine = (await listSessions()).find((s) => s.name === caller)?.tags ?? [];
+      if (mine.length) {
+        team = mine[0];
+        teamFrom = 'caller';
+      }
+    }
+    req.body = { ...req.body, name, team: team || undefined };
+    // The receipt is launchJob's; `team_from` rides on top of it so the two doors never
+    // disagree about what a launch is — only about how the team was chosen.
+    const send = res.json.bind(res);
+    res.json = (body: unknown) =>
+      send(body && typeof body === 'object' && (body as { ok?: boolean }).ok ? { ...body, team_from: teamFrom } : body);
+    if (String(req.body.session_role ?? '').trim() || team) return launchJob(req, res, next);
+    return launchBare(req, res, next);
   });
 }

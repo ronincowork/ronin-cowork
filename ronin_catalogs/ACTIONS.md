@@ -254,6 +254,72 @@ its own control-check before you touch it (the roster reports the dial; it does 
 grant anything). Tagging is the OWNER's job in the Ronin UI, or a macro's at birth
 (`session-create`); do not re-tag other people's sessions to suit your task.
 
+## session-upsert — one session by name: read it, raise it, or change its facts
+`action_kind: mechanical` — run it, don't deliberate.
+> **Tool: `tejun-session-set <name> […]`** (TOOLS.md)
+The pair of `team-upsert`, keyed the same way. A bare LIVE name reads it; a name nobody
+holds is BORN through the one launch mechanism (`POST /api/session` — a second door onto
+`/api/launch`, never a second path); a live name with flags is UPDATED in what you name.
+```bash
+tejun-session-set wg_review                                   # read: role, teams, 人, dial, root
+tejun-session-set wg_review --prompt "Review leg 3" --role review   # born onto YOUR team
+tejun-session-set wg_review --prompt "Review leg 3" --model fable  # "open a fable session"
+tejun-session-set wg_review --team other-team --lead          # a live one: add a team, make it 人
+```
+With no `--team` a newborn joins the FIRST team you are on; on no team it is a rōnin.
+**Neither is a refusal, and you never create the team first** — the nag this removes is
+an agent flip-flopping between "create the team" and "add the member". One line, one
+verdict: `BORN …` / `UPDATED …` / one `REFUSED: <why>`. `--model <name>` picks a row of
+the launch table by its model column; an unknown name is refused with the names the box
+has. Birth-only flags (`--prompt`, `--model`,
+`--cmd`, `--mode`, `--mcp`, `--seed`) are refused by name on a live session.
+
+## team-upsert — make a team, or change its facts
+`action_kind: mechanical` — run it, don't deliberate.
+> **Tool: `tejun-team-set <team> […]`** (TOOLS.md)
+The rare door. A team with no roster is CREATED from the fields you name; one with a
+roster is UPDATED in those fields and untouched elsewhere. `--add` tags live sessions
+onto it (additive; a name not live is reported, the rest go through).
+```bash
+tejun-team-set wipeboard-groups --objective "Groups on the wipeboard" --role development --root ronin-cowork
+tejun-team-set wipeboard-groups --add wg_lead,wg_review
+```
+You rarely need this: `tejun-session-set` births onto your team with no team named. Come
+here to create a team, or to give one a brief worth inheriting. Membership is never
+stored on the roster — it is the sessions' tags, and `--add` writes those.
+
+## team-page-read — what the team page is showing, and where you are on it
+`action_kind: mechanical` — run it, don't deliberate.
+> **Tool: `tejun-teampage`** (TOOLS.md)
+The team page is two workspaces around the roster; each holds a member's terminal or the
+team commons (chat · wipeboard · docs · configuration). The bare form prints the roster
+(who is on your team, who is 人, which is you) and, for each browser tab showing the
+team, which workspace the owner is typing in, which shows YOU, and what each holds.
+```bash
+tejun-teampage              # the view
+```
+`NO-PAGE` means no tab is on the team page right now — nothing to arrange, say so and
+stop. `NO-TEAM` means you are on no team. Read this BEFORE a draft: the workspace the
+owner is typing in is the one to leave alone.
+
+## team-page-draft — arrange the team page you are on
+`action_kind: mechanical` — run it, don't deliberate.
+> **Tool: `tejun-teampage <key=value …>`** (TOOLS.md)
+A draft names only what should change; **what you omit stays as it is.** The page
+applies it through the same control the owner's own buttons use, so you can do exactly
+what they can by hand — put a session or the commons in a workspace, open the commons
+on a tab or on a document, reorder or hide columns — and nothing else.
+```bash
+tejun-teampage workspace1=commons:docs:<path>          # the doc, open, beside the owner
+tejun-teampage workspace2=me                           # your own tile there
+tejun-teampage order=workspace2,roster,workspace1 hidden=roster
+tejun-teampage hidden=none
+```
+Two tabs may show one team: the draft goes to the tab that shows you, else to every tab
+on your team. The dial applies as for send-to-session (`REFUSED`, exit 4). The roster
+header on the page says who arranged it. You are free to arrange the page any way you
+judge useful — including taking yourself off it.
+
 ## wipeboard-check
 `action_kind: mechanical` — run it, don't deliberate.
 > **Tool: `tejun-wipeboard`** (TOOLS.md)

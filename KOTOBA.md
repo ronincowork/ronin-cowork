@@ -78,11 +78,11 @@ written about.
 own vocabulary. So does anything built on it: `ronin_machine`, `@ronin-control`. It is the
 brand, and the brand is the one Japanese word everyone learns on purpose.
 
-**Our internal system names stay ours.** Eighteen, and this is the list — `KOTOBA_GLOSSARY.md`
-repeats it verbatim and may not carry a nineteenth this file does not have:
+**Our internal system names stay ours.** Nineteen, and this is the list — `KOTOBA_GLOSSARY.md`
+repeats it verbatim and may not carry a twentieth this file does not have:
 
 > **TEJUN · MICHI · TEGAMI · SHINGO · RIREKI · OBOERU · TOMODACHI · SOROBAN · KOSHI · KOE ·
-> DAIKUSAN · KOTOBA · AGERU · JUSHO · BYOIN · SETTEI · KYOKAI · SHIWAKE**
+> DAIKUSAN · KOTOBA · AGERU · JUSHO · BYOIN · SETTEI · KYOKAI · SHIWAKE · KOKUGO**
 
 Useful shorthand between us; a translation tax on anyone else.
 
@@ -140,6 +140,7 @@ copy and a source tree at once. It now names one thing.
 |---|---|---|---|
 | **ronin_artifact** | system_scope | **[planned]** a released, versioned copy: tag → build → tarball, published as a **GitHub Release for cowork** and a **hosted archive for services** (a button cannot clone a private repo). Deferred by R22 until the split, which landed 2026-08-14. The package is **`ronin-cowork`** — never `tmux-ronin`, which named the frozen unified repo | `plans/ARTIFACT.md` · `plans/RAMP.md` |
 | **SHIWAKE** (仕分け) | system_scope | **HQ — the house's own service, not part of an install.** The receiving room a ronin_install talks to when it activates and when it fetches an authorized release: it issues the grants, holds the entitlement, and sends the confirmation mail. Deployed as `ronin-shiwake.service` at `hq.ronincowork.com`; it runs on OUR box and never on the user's. **Nothing in cowork or services calls it at runtime** — an install meets HQ at setup and at update, and at no other time. Added to this list 2026-08-24 (owner): the name was load-bearing across a repo, six units, a CLI and a session_boot root while absent from KOTOBA entirely | `ronin-shiwake` (its own repo) · `docs/services-activation.md` |
+| **KOKUGO** (国語) | system_scope | **the words project — every string a person reads, through one door.** Opened 2026-08-27 on the owner's word, as the execution of `lexicon` and `desk_profile` (R38): the coworkspace's user-facing strings become `t('key', 'literal')` (`public/js/lexicon.js`), each key landing in the floor `professional_en` in the same commit, so a language is one more lexicon file and nothing else. Measured at the start: 195 literal sites across 38 client modules and 4 in `index.html`. Rules: one module per commit, no behaviour change, `check-lexicon` green after each; **never** the letter, the brief, the boot shelf or any internal name — those are not words a person reads. The session that does it is `kokugo`; the brief is `ronin-lab/wip/handoffs/KOKUGO.md` | `docs/lexicons.md` · `scripts/check-lexicon.mjs` |
 | **Machine Admin** | system_scope | **the toolkit for the machine Ronin runs on** — the reading, the health findings, and the SOPs an agent works from. A **Services** capability, not part of the free coworkspace (owner, 2026-08-25): cowork is the tmux application a knowledgeable person runs themselves, and helping them run the box underneath it is what Services is for. **Plain English on purpose, and deliberately not "VM"** — the machine may be a rented VM, a home server, or a box down the hall, and VM is the subset rather than the category. **It takes no privilege and installs nothing**: reading a machine is free (the kernel publishes `/proc`), changing one is not, and every chore that needs root stays advice a person acts on. Watching is ON by default for an install holding Services; turning it off is a display choice, not a consent record, because nothing was put on the box to undo | `src/services/machine/` (ships with services) · `ronin_sops/remote_machine_health.md` · `ronin_sops/remote_machine_admin.md` · `libexec/ronin-machine.sh` |
 | **RAM_RPM** | system_scope | **the box's working reading, in the coworkspace header** — free memory, with load and swap in its label. Named by the owner 2026-08-24 and deliberately not a *dial*: a dial in this house is the session control (👤 · 👁 · 🤖) and nothing else. **A tachometer, not an alarm** — always visible, mostly ignored, so a person learns what normal looks like without being told. Reports MemAvailable and never `free` (on a healthy box `free` is always small, because the kernel spends spare pages on reclaimable cache), and a cgroup ceiling outranks `/proc` so a container does not report its host's memory. Polls once a minute, and not at all in a hidden tab | `src/machine.ts` · `public/js/ramrpm.js` · `/api/machine` |
 | **ronin_install** | system_scope | one deployed copy on a ronin_machine — the code plus what `setup.sh` put in place: `node_modules/`, the units in `~/.config/systemd/user/`, the statusLine registration | `docs/repo-to-operator.md` |
@@ -305,6 +306,11 @@ project_root (required)  ×  session_role (optional, mutable)  ×  team (optiona
 |---|---|---|---|
 | **the axes** | system_scope | `project_root` (where) · `session_role` (what it is doing now) — **one token, every surface**: the launcher sets them, TEGAMI carries them, the boot shelf reads by them, OBOERU matches on them, TOMODACHI counts by them. Defined here once; § OBOERU and § TOMODACHI use it and do not redefine it. **There is no per-session identity axis** (R35): identity is the TEAM's `team_role`, worn contextually — see § TEAMS | `co-working/user_repo/README/OBOERU.md` |
 | **session_role** | system_scope definition · session_scope selection | what a session is doing **right now** — all eleven of the former `session_job`s, without exception: `RiffOnIt`, `DraftPlan`, `CutCode`, `ChaseBug`, `CheckWork`, `QuarterBack`, `OddJob`, `Atarashi`, `PersonalAssistant`, `OpenShell`, `MikaAssist`. **Optional and MUTABLE**: the session changes it with `write_tegami`, the owner changes it from the tile, and a committed change injects that role's reading into the running session. Blank is valid and means no role reading and no mark. Successor to `session_task` (R35), which succeeded `session_job` | `ronin_catalogs/session_roles/` |
+| **desk_profile** | user_scope definition · session_scope selection | **the owner's standing defaults for the surfaces they work at** (R38): which **skin** (look — `SKINS.md`, tokens only, unchanged), which **lexicon** (the words a surface uses: *campaign* or *occasion*, *squad* or *staff*), which **campaign_kind** the board opens on, the **Team page's default arrangement**, the RIREKI **detail level** a tile shows — and more as surfaces earn defaults. **A desk_profile is NOT a skin; each desk_profile HAS a skin.** The house ships five — **terminal · vibe_code · professional · home · league** (owner, 2026-08-27 — League the gamer one, goofy on purpose; the concept's *Stewart* is `home`); yours shadow stock. Chosen once, kept; not a step in any run | `concepts/ronin-league.html` (ronin-lab) lobby · `MANIFESTO.md` § 4 |
+| **lexicon** | user_scope definition · session_scope selection | **the words a surface uses, as a catalog — a language, mechanically** (2026-08-27, with R38): keys to strings and a fallback chain, applied at render. A `desk_profile` HAS a lexicon the way it has a skin. Two kinds of key in one table: surface strings (`campaign`, `go`) and catalog tokens by prefix (`kind.household`, `role.DraftPlan`, `behaviour.sop_github`). The chain, one rule: active lexicon → its `base:` → the definition's own `label:` / the stock literal in the view — a missing key can never blank a surface, and a missing lexicon paints exactly as stock. `professional_en` is the floor and complete by definition (`check-lexicon` fails on a key it lacks). Wording (Stewart) and translation (French) are ONE axis — `home_fr` is one file with `base: professional_fr`, never a second setting. **Never translated:** anything an agent reads — the letter, the brief, the boot shelf — and the internal names above. A lexicon changes words, never structure: a surface that must be SHAPED differently is a Kit question | `ronin_catalogs/lexicons/` · `docs/lexicons.md` |
+| **behaviour** | system_scope | **one word for everything that can be given to a session to change what it does** — a macro, an SOP, a doc, a tool, a memory, a reading list (R37). On the shelf a behaviour is inert; handed to a session it makes that session right for a situation. The first term that spans all five shelves (`docs/SHELVES.md`): the shelves are where behaviours live, a loadout is which ones a session carries. Fetched by a situation, never pushed — the SOP shelf's rule, now the rule for the class. Spelled **behaviour**, house English | `docs/SHELVES.md` · `MANIFESTO.md` (ronin-lab) § 1 |
+| **session_build** | user_scope definition · session_scope selection | **a preconfigured composition to start a session from** (R37): a way of working, the reading it arrives with, the model and posture that suit it — chosen off a shelf, then finished with a **loadout** (the extra behaviours this one session carries). A build is what a session *is*; a loadout is what it *carries*; the `session_role` is what it is doing now. The house ships some builds; you make your own by saving a session that worked — the same harvest rule as a preset. A lead is not a kind of thing: it is a session on a build designed for leading, chosen from the project's `team_role` (MANIFESTO § 4) | `MANIFESTO.md` (ronin-lab) § 2 |
+| **session_mandate** | session_scope selection | **how far a session may go before it checks in, whom it may recruit, and what it hands back** — three dials, set on the FIRST session of a project and re-settable on any (R36, third dial added 2026-08-27). **Reach:** `discuss` (talk it through with the owner and stop) · `plan` (write the plan and gate) · `execute` (plan and cut, gate at the end) · `run` (to completion, gates only on trouble). **Recruit:** `none` (do it yourself — the solo case) · `propose` (name the seats, the owner approves each) · `staff` (spawn the team yourself). **Output:** `plan` · `ideas` · `code` · `artifact` (a site, a deck, a pamphlet) · `team` (stood up and briefed, nothing more) — what comes back, named separately from how far to go to get it. Every 'solo vs squad' question is a mandate, not a mode: solo is `recruit: none`; 'let the lead build the squad' is `recruit: staff`; 'let us discuss, then decide the team' is `reach: discuss · recruit: propose`. The value is the owner's and never derived from the `session_role` — a `QuarterBack` with `recruit: none` runs the play itself. Rides the letter beside `session_role`; blank means `reach: plan · recruit: propose · output: plan`, the cautious default. **Vocabulary today, not yet a field:** the letter does not carry it and `write_tegami` does not accept it | `ronin_catalogs/session_roles/README.md` · `concepts/league-lobby.html` (ronin-lab) |
 | **role_family** | user_scope definition | **PRESENTATION, not structure** (R35): a New Session shelf grouping session_roles for viewing, and a Build-Team template — *a family of roles, not a family's role*. It never rides a launch, a letter, or a session; its launch constants moved into each session_role definition when the old `family_role` axis was dismantled. `developer`, `assistant`, `extra` ship so a fresh board is useful | `ronin_catalogs/role_families/` |
 | **`session_roles:`** | system_scope | the KEY inside a `role_family` definition naming the roles on its shelf — `- **session_roles:** A, B, C`. The family owns it and a session_role never names a family. A role may appear in several families, so adding it to one never removes it from another | `ronin_catalogs/role_families/` |
 | **default_lead_role** | user_scope | the one `session_role` a `role_family` PINS FIRST on its shelf — the suggested first launch when a team is built from that family, and the role whose launch carries the team-building SOP (`ronin_sops/teams.md`). A default and a pin, **never the `team_lead` designation** on a live session; nothing may derive one from the other (R35). `developer` pins `QuarterBack` | `ronin_catalogs/role_families/developer.md` |
@@ -1347,6 +1353,59 @@ than the pointer line proposed here: a stored path — the `read:` key it replac
 stale in silence the moment a file moves, while a level listed at the instant of use
 cannot, because a file that is gone simply is not named. The SOP shelf's second reach
 route (*found by name*) now has something behind it.
+
+**R36 · `session_mandate` — the fork was never solo-vs-squad.** Owner, 2026-08-26, riffing
+the League lobby: *"the team lead is going to inherit the responsibilities of the objective
+… I want to also set the parameters for the breadth of execution … I don't think that the
+fork is like solo versus squad."* Every run starts the same way — the objective, then ONE
+first session, loaded out — and what differs is not a mode chosen up front but what that
+session is **authorised to do**: how far it goes before it checks in (**reach**), and whom
+it may bring in (**recruit**). Solo, lead, and "go build me a squad" are three settings of
+the same two dials on the same seat, and every in-between the owner named (*"let's discuss
+and then build," "let me add these later"*) falls out of them without a third mode. Ruled
+with it: the dials are the **owner's**, set at launch and re-settable from the tile, never
+derived from the `session_role`; the cautious blank is `plan · propose`; a mandate widening
+is an ordinary act, a mandate narrowing on a running session is a gate. **Hand-building the
+team stays a door of equal standing** (MANIFESTO § 4, ronin-lab) — the mandate governs what
+the lead may do, and says nothing about what the owner may. Adds the § LAUNCHER row.
+*Named by the session that drew the lobby, adopted by the owner: "yes, Mandate!"*
+**Amended 2026-08-27 — a third dial, `output`.** The owner's riff of the 26th set the
+mandate at three levels, not two: *"what is the output? Is it a plan, is it ideas, is it
+code, is it an artifact like a website or pamphlet, or is it just standing up the team?"*
+The ruling had recorded reach and recruit only; asked to add the third the owner said
+*"yes, obviously."* Output names the deliverable separately from how far to go to get it,
+so a person can ask for a plan without also saying when to stop. Known gap (MANIFESTO
+§ 7): tutoring campaigns deliver a change in the student, which none of the five values
+names.
+
+**R38 · `desk_profile` — not a skin; each one has a skin.** Owner, 2026-08-27. The League
+concept found that a game lobby and a household run sheet were one structure with
+different words on it, and called the difference a "skin profile". The owner renamed and
+widened it: **`desk_profile`** is the owner's standing defaults for the surfaces they work
+at — *"each desk_profile has a skin; desk_profile will have defaults for several surfaces:
+skin, campaign_kind, team page default config, etc."* So `SKINS.md` stays exactly what it
+is (tokens, one path, `check-css.mjs` guarding it), and the lexicon, the default kind, the
+Team page arrangement and the RIREKI detail level are the profile's, not the skin's. It is
+configuration chosen once, never a step in a run — the lobby page of the concept is a
+desk_profile picker, and the run starts on the page after it. Adds the § LAUNCHER row.
+
+**R37 · `behaviour` and `session_build` — the bottom of the stack gets its words.** Owner,
+2026-08-26, on the manifesto: *"pile of behaviours — yes! I think we're going to have to add
+behaviours to the KOTOBA. It's the macros, it's SOPs, it's the docs, it's everything that we
+could be giving to a session. That's easy for users to grok."* And on how a session is put
+together: *"if I'm building a session I want to choose from preconfigured session-builds and
+if needed finish their loadout with additional behaviours."* Ruled as two rows in § LAUNCHER.
+**`behaviour`** is the class: one word for anything handed to a session to change what it
+does, across all five shelves. **`session_build`** is the preconfigured composition a session
+starts from; **loadout** is the ordinary word for what a session carries beyond its build
+and needs no row of its own; **kit** — what a build ships with by default — stays a plain
+word until it earns one. **NOT ruled, deliberately:** renaming `session_role`. The owner's
+read is that *role* misleads — the thing a session is doing moves from riffing to drafting
+to cutting — and the leaning is **`task_at_hand`**, not the R35-era `session_task`. Parked
+(owner: *"let's not do that yet"*), because the token rides the letter, the launcher, the
+boot shelf, OBOERU and TOMODACHI, and a rename is a code leg. Until it is ruled, a change of
+`session_role` is a change of task and **never a re-brief**: the reading was handed over at
+birth, and that is enough.
 
 ---
 

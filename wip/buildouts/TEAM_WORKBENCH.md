@@ -6,8 +6,202 @@
 > is the work that remains plus the knowledge that should not have to be rediscovered.
 > One home, this file — the owner has ruled against copies.
 >
-> By `@wipeboard_refactor`, last updated 2026-08-25, `dev` @ `eb122b3` (default-tab
-> lines corrected after `8837ae5`; the lead has been hot from page entry since `b3fb096`).
+> Begun by `@wipeboard_refactor` 2026-08-25; carried through leg 9 by `@team_page`
+> 2026-08-25/26; the finish by `@team_pg` 2026-08-26. Last updated 2026-08-26, `dev` @
+> `7c5c619`.
+
+## THE FINISH — what `@team_pg` did with the remit below (2026-08-26)
+
+**A bug first, from the owner's chair:** a session that joined the team while the page
+was open got a card and no seat — its card clicked and dragged into nothing ("that one
+Kanban is broken"). The pools were synced on entry only; the cards were drawn off
+`S.sessions`, which the feed keeps live. Now (`02f288b`) the page repaints whenever the
+member set or the 人 changes — on the feed's `sessions` event (`sessionsHandlers` in
+`events.js`, beside `teamPageHandlers`) and on the five-second row read as fallback —
+and the server's feed watches tags and leads, not only names and marks (`src/ws/events.ts`;
+a tag-only join or leave was invisible to it). Measured: tag a session onto the team →
+card and seat, click lands; untag → tile destroyed, card gone, the empty tile back.
+
+**The head row (`7c5c619`), all of it measured at 1600×950 on both pages:**
+- C was 34×28 in a row of 26×24 / 28×24 buttons; it is a head button now (`.tw-flip`
+  sets no size on the head — `.tile-head button` sizes it; `tw-flip-strip` gives T its
+  tab height on the strip).
+- The three headers topping a column measured 39 (tile head on Sessions) / 41 (tile head
+  on the team page, inflated by C) / 41 (tab strip) / 40 (roster head). One token now,
+  `--row-head` (28 + 12 + 1 = 41px, style.css), on all three; the Sessions head grew 2px.
+- At the workspace floor (236px) the head overflowed by 99px: picker squashed to 14px,
+  ⚡ メ and C off the right edge — no way to the commons from a squeezed tile. `.tile-head`
+  wraps now, and the picker keeps a 6rem floor. Measured: two rows at ~330px, three at
+  the 236px floor, nothing clipped; a Sessions tile at 4-up never wraps. (The `@` select
+  needed `min-width: 0` back, or it took the picker's floor — measured, fixed.)
+- **⤢ does not exist.** The remit names it among ⛩ @ ⚡; no row in `tilehead.js` and no
+  glyph in the tree carries it. If the owner means a maximise-this-workspace control,
+  that is the layout map's job (hide the other two) and is not built.
+- **The picker is untouched in function.** It still lists every session on the box and
+  ➕; picking a non-member from it is the known limit in `docs/team-workspace.md`. The
+  one change is the readable floor. Narrowing it to members, or replacing it with the
+  name, is the owner's call — it means teaching the Tile about the team.
+
+**The commons' tabs (`7c5c619`):** Team Configuration was "team has no roster" plus a
+developer's note for a tag-only team. It is a reading now for every team: the durable
+record or `tag-only — no durable roster`, the wipeboard in use (the roster's, else the
+team's name), and the live roster — the 人 (or `not designated`) and each member with the
+same readings its card carries, refreshed on the cards' clock. Chat stays empty by
+ruling. Docs was found finished: mdedit's own list over the members' letters, the editor
+on click, `+show_file` landing in it — nothing changed.
+
+**Measured but not changed — for the owner:** the three-row head at the floor is honest
+but tall (95px in a 236px column). If that is too much, the readings (chip, branch)
+could yield before the controls, or the workspace floor could rise from 15%; both are
+rulings, not fixes.
+
+**The 人 on the card (owner, 2026-08-26: "the session that is the team lead should
+hito kanji in the central console"):** the lead's card wears 人 as its mark — kaki,
+above the name, kept in compact mode — instead of a grey "人 lead" among the readings;
+Team Configuration's live roster prefixes the lead's name the same way.
+
+**Left as it is, on the owner's word, and flagged:** setting a task or the 人 from the
+tile's job menu TYPES INTO the session — `observeRoleChange` delivers the new reading,
+and a fresh 人 is handed the teams SOP by `sendText` (`src/routes/sessions-api.ts`,
+both routes). The owner called it useful, then annoying, in one breath. Each is one
+`void`/`sendText` line to switch off; that is a ruling, not a fix.
+
+**The 人 pins to the top of the roster** (owner, 2026-08-26): `membersOfTeam` sorts
+lead first, then role, then name — the cards, Team Configuration and the League board
+all read that selector.
+
+**The output selector is ON the head row** (owner, 2026-08-26: "add the rireki choices
+to the terminal header … it will be a bit ugly"): the `outputEl` row in `tilehead.js`
+lost its `drop`, so Locked · Terminal Mirror · Detailed · Condensed · Conversation ·
+Agent Summary sit between the readings and ⛩ on every tile, both pages. It yields
+like the picker (`.tile-head select.output`, 113px at rest, 5rem floor); measured one
+line at 626px seated and at 789px on the Sessions grid.
+
+**NEXT LEG, from the owner (2026-08-26, FYI for now):** the output is a setting the one
+controller should take — a draft word on `tejun-teampage` such as
+`workspace1=me:output=condensed` (or a cherry-pick flavour when RIREKI has it), so an
+agent can turn its own tile unlocked to the detail it wants shown. The seam is
+`arrange()` → the seat's host → `tile.setOutput(value)`; the terminal host would grow a
+`setOutput` beside `send`. The same setter is to be callable by a SKIN — skins become
+profiles, set from a configure-Ronin place / the sette — which argues for the setter
+living on the host (one verb, three callers: the select, a draft, a skin), not in the
+select's change handler. The select's placement on the row does not change for this.
+
+**CHERRY_PICK, found and made RIREKI's (owner's ruling, 2026-08-26: "there is one
+RIREKI source, one render … conversation and cherry pick are the same fucking thing"):**
+- Where it was: only in **Koe's bundled copy** of RIREKI (`ronin-koe/packages/rireki`,
+  `cherryPickRecords` + `voiceText({cherryPick})`), never flowed back — Koe's own
+  HANDOFF item 5. `koe-link` asked cowork for `view=cherry_pick`, got 400, and fell
+  through to its bundle every time. The served RIREKI had `terminal_mirror · detailed ·
+  condensed · conversation`.
+- What is on `ronin-services` `dev` now (`cb051a6`, and the flowback after it):
+  `cherry_pick` is a render view — assistant blocks and prompts, code as a counted
+  activity line, the owner's words and all work excluded; `conversation` retired. And
+  the decoder rules Koe grew (v8–v18: codex smears, `Ran`/`Waited`/`Edited`, separators,
+  the Claude epitaph and `!` commands), the vendorOf trim fix and the busy-settler −1,
+  plus one rule measured here: `● Name(` is a tool call whatever the name. SETTLE_V 19.
+- On cowork (`191e2dd`): the selector reads Locked · Terminal Mirror · Detailed ·
+  Condensed · Cherry Pick · Agent Summary. `condensed` stays because kaki summarises
+  from it and it is the "dialogue plus activity stubs" level the owner listed.
+- Measured: `cherry_pick` on `team_pg`'s pane reads clean (tool lines, rules, epitaph
+  gone; code a count). Two residues, neither the filter's: `league`'s tape is
+  column-split in EVERY view (a wide-pane wrap in the record — a decoder cannot mend
+  it); a few wrapped continuation lines are absent from the settled scroll on
+  `team_pg` (the "scroll lags one screen" finding in Koe's ledger — settled records are
+  scrolled-off content; a live-frame layer classified by the same decoder is the
+  settled answer, and belongs in RIREKI, not in a consumer).
+- **PAID, both legs, 2026-08-26** (cut by `koe_rireki`, a CutCode session on `team`):
+  (a) `ronin-services` `dev` (`9aa0103`) — `render.ts` grew `sinceMark()` (windows any
+  view to the pane's own echo of the owner's last message) and `withLiveFrame()`
+  (`cherry_pick` only: captures the live viewport, folds the composer's own input box
+  with the vendor decoder's `inputBox()` before classifying — a real bug caught measuring
+  on `team_pg`'s pane, an unsent draft was reading as an owner echo — then cherry-picks
+  and appends, deduped against the settled tail). Both ride one query flag,
+  `?since=mark`, documented in `docs/rireki.md`. `earClean`/bullet-stripping stay in Koe
+  by design (pronunciation-only, not a transcript correction — every other consumer of
+  the view keeps the hash and the bullet). (b) `ronin-koe` `main` (`fb10334`) —
+  `koe-link`'s bundled projector, `cherryPickRecords`, `voiceText`, local settling and
+  decoding are gone; `read_output` asks RIREKI's render route with `since=mark` and
+  trusts the answer, including "nothing new" as a real answer rather than a fallback
+  trigger. `packages/rireki` there is retired (kept only as the flowback provenance
+  record). Also fixed in the same cut: `renderApi`'s default pointed at a placeholder
+  dev cowork that always 404d — now points at the box that actually serves RIREKI.
+  **`team_pg` caught that fix landing as a literal IP** ("this box today and nothing
+  tomorrow") — redone (`main` `61ac1a7`) as a resolver in koe-link: `RONIN_RENDER_API` env,
+  else `RONIN_URL` env, else tmux's server-scope `@ronin-url` (published at cowork boot by
+  `publishRoninUrl`), else a once-per-outage loud log and a clean degrade to the raw tail
+  — the house pattern `mika`/`tejun-teampage` use, no IP literal left in the repo.
+  Measured: `curl .../render?view=cherry_pick&since=mark` on `team_pg` and (empty scroll,
+  flagged separately) on `koe_rireki`; `read_output` driven against a running `koe-link`
+  returns `{stance, text}` served from RIREKI's render for `team_pg`, and degrades
+  cleanly to the raw tail when RIREKI has nothing settled yet.
+
+**THE SETTLER WAS BLIND TO UNWATCHED PANES (found 2026-08-26 chasing `koe_rireki`'s
+empty scroll; ronin-services `scroll.ts` v20):** RIREKI commits what scrolls off between
+two finished *frames*, and its frame cutter knew two starts — a cursor home (a full
+redraw) and Codex's `?2026h`. Claude Code (ink) redraws incrementally: hide cursor, jump
+up N rows, repaint. A pane with a browser viewer gets resized and homes on every full
+repaint (196 homes in 3.9MB) — so it settled *something*, about a tenth of its
+transcript; a pane nobody is attached to never resizes, homed 18 times in 1.8MB, and
+settled NOTHING for half an hour of work. Which is precisely the session Koe most needs
+to read. The hide-then-up is a frame start now, with the cut spacing raised 64→256 bytes
+so spinner ticks do not make 27k frames (measured: watched pane 545→5516 lines, unwatched
+0→308, no duplication, 23s/8s cold rebuilds). This is also the "missing continuation
+lines" residue noted under CHERRY_PICK — it was never the decoder. Reproduced and
+measured out of process over COPIES of the store (`settle()` over a `cpSync` of the
+session dir; never the live one — one settler per pane).
+
+**Probe trap added to the list:** `page.goto(url, { waitUntil: 'networkidle' })` never
+resolves against this app (websockets and polls); use `'load'` and a fixed wait.
+
+## HANDOFF — for the next `team_page` (2026-08-26)
+
+**Where it stands.** Legs 1–9 are cut and on `dev` (PR #34, dev → master, carries all of
+it). The page is: two workspaces around the roster, each holding a member's tile or the
+team commons; a layout map in the app bar to show/hide/reorder columns; C/T in the
+header row to trade a workspace between terminal and commons; a click or a drag puts a
+roster card in a workspace; the cards read SHINGO · status · model · ⛽ · attached; the
+人 is set from the tile's job menu; and `tejun-teampage` lets the session you are
+talking to read the page and hand it a draft. Every "LANDED" section below records what
+was measured. Gates, 248 unit tests and the smoke suite were green at `041206a`.
+
+**What is left to cut: nothing** (owner, 2026-08-26). Three items that had been listed
+were dropped on his word: per-team persistence (one tab is one team — seats and columns
+are saved per tab, which is the case); a cherry-pick/summary reading on the cards (no
+service puts such a field on the row); and a name for the middle column ("Team Roster"
+stands). T8 (one session in both workspaces) is closed by independence. The closing gate
+is the owner's, not a leg.
+
+**The next session's remit (owner, 2026-08-26)** — not more legs on this plan, but the
+finish on what the page shows:
+1. **The tile's head row** — clean up and reshape the header and its buttons as they
+   sit in a workspace (the C among ⛩ @ ⚡ ⤢, the picker, the readings). The seam is
+   `createTerminalTileHost({ actions })` and `tilehead.js`'s table; the Sessions grid
+   uses the same head, so what changes here changes there — measure both.
+2. **The commons' tabs** — Docs and Team Configuration are read-only slices; Chat is
+   reserved and empty by ruling. Finish them as the owner wants them to work on the
+   team page (`createChannelSurface`, `team-view.js`'s `docsService` and `renderConfig`).
+3. Keep the shape: one controller (`arrange()`), one tab one team, no hidden, no overlay.
+
+**Traps a successor should know (beyond the ones under LANDED):**
+- The server runs `tsx src/index.ts` with no watch: a change under `src/` needs
+  `systemctl --user restart ronin`; `public/` is served live.
+- `refreshHome()` in `home.js` is a no-op unless a Commons is open in a Sessions tile —
+  the team page reads `/api/home` itself (`readRows`), every 5s while entered.
+- Any Tile built while the team page is not entered, or left in its DOM after `leave()`,
+  is counted by the Sessions grid's smoke checks (`select.sess` pickers, `.tile`
+  elements). Build tiles on first need; destroy every one on `leave()`.
+- The Kit gate (`check-workspace-kit.mjs`) reads `team-view.js` for any `/api/teams/`
+  request and calls it a feature-local projection — the page's view report therefore
+  lives in `team-arrange.js`.
+- The owner edits this file in the browser; a stale editor buffer once wrote over two
+  commits. Reload before commenting; commit as you go.
+- `check-tips` measures the live page: a session with two repos on its letter makes the
+  🌿 label too long, and the check fails on data, not code. Not fixed; not this page's.
+- Measure, always: `scripts/lib/ui-host.mjs` + a ten-line playwright probe found every
+  real bug of these two days (null widths read as zero, pointer capture lost on
+  re-append, `hidden` beaten by a surface's own `display`, tiles leaking into the
+  Sessions roll). Reading the code found none of them.
 
 ## Goal — the owner's words (2026-08-25)
 
@@ -66,8 +260,12 @@ scrollTop round-trips) settled in minutes what three theory-driven "fixes" did n
 
 ## LANDED — the state a successor inherits (all on `dev`)
 
-**The hot bench** (`public/js/team-terminal-pool.js`, 10 tests in
-`tests/team-terminal-pool.test.js`):
+**The hot bench** (`public/js/team-terminal-pool.js`, tests in
+`tests/team-terminal-pool.test.js`) — the warm and hold rules stand (owner, 2026-08-25:
+"we have warm and hold rules"), and since the same day each workspace runs its OWN pool
+(cap 2 each, so four in all; the lead pinned in workspace 1). The module is the original
+one — the seats/holding variant from the shared-pool detour was reverted in the end-to-end
+review the owner asked for.
 - Seats are free: page entry mounts nothing; first show mounts; **warmth is durable** —
   no clock ever parks a shown tile (owner overruled a 25s grace: toggled members stay
   hot).
@@ -171,16 +369,143 @@ why the slots cannot be reordered today.
 | # | Leg | Ends when |
 |---|---|---|
 | 1 | **Kit: slot arrangement** — N slots, surfaces assigned, swap, per-destination persistence; no team knowledge. Its control is the **layout map** in the app bar (click = show/hide, drag = reorder); the per-column chevron rails are retired with it | **DONE 2026-08-25** — see LEG 1 — LANDED below |
-| 2 | **Second terminal seat** — left and right can both be terminals, or either the commons; cards route to the seat last touched | **DONE 2026-08-25** — see LEGS 2 + 3 — LANDED below. Persistence is per destination; per team is leg 2b, one key |
+| 2 | **Second terminal seat** — left and right can both be terminals, or either the commons; cards route to the seat last touched | **DONE 2026-08-25** — see LEGS 2 + 3 — LANDED below. Seats and columns persist per tab (one tab is one team; owner, 2026-08-26) |
 | 3 | **Seat-aware hot bench** — pool `active` becomes per-seat; cap arithmetic already fits | **DONE 2026-08-25** — with leg 2 |
 | 4 | **Movable, shrinkable roster** — docks any slot, collapses to a chip rail. **And a header:** "the roster should have a header the same as the terminal_tile and team_commons" (owner, in this file, 2026-08-25) — the tile has its head row, the commons its tab strip; the roster gets the same kind of row (a natural home for the roster's own controls, and for the face switch if it ever leaves the corner) | the owner can live in two terminals; the three columns read as one instrument |
 | 5 | **Polish** — keyboard flips through hot members; switcher in kit style | one instrument, not three panels |
-| 6 | **Roster readings** — SHINGO, model, ready/busy, taken; cherry_pick or summary when RIREKI fires (owner, 2026-08-25) | a card tells you the session's state without opening it |
+| 6 | **Roster readings** — SHINGO, model, ready/busy, taken; cherry_pick or summary when RIREKI fires (owner, 2026-08-25) | **DONE 2026-08-25** for what the row carries: each card reads `/api/home`'s row — the same row the Commons roster reads — SHINGO chip (+ quiet age), status (ready · thinking… · awaiting input), model, ⛽ context, attached; refreshed every 5s while entered. `refreshHome()` could not be reused: it only runs while a Commons is open in a Sessions tile. **Open:** cherry_pick / summary — no service contributes such a field to the row today; when RIREKI does, it is one more entry in `readingsOf` |
 | 7 | **Team lead from the tile** — the 人 is set through the tile's existing session_role selector, not an API call (T5, ruled) | the owner designates a lead by hand from any tile |
-| 8 | **Unlocked flavours** — a selector for the flavours of Unlocked, cherry pick included, to play with; later the Locked/Unlocked control moves out of the tile header (owner, 2026-08-25) | each flavour can be tried on a live tile |
+| 8 | **Unlocked flavours** — a selector for the flavours of Unlocked, cherry pick included, to play with; later the Locked/Unlocked control moves out of the tile header (owner, 2026-08-25) | **ALREADY THERE** (found 2026-08-26): every tile head carries the output selector from `public/js/output.js` — Locked · Terminal Mirror · Detailed · Condensed · Conversation · Agent Summary; services own each unlocked source. Nothing to cut. Moving it out of the header is not asked for yet |
+| 9 | **The team page takes instructions** — a Tejun an agent runs to arrange the page it is on: show/hide/move columns, put a session or the commons in a workspace, open the commons to a doc (owner, 2026-08-26) | **DONE 2026-08-26** — `tejun-teampage`; see LEG 9 — LANDED |
 
 Legs 1–4 are one chain (each needs the one before). Legs 6, 7 and 8 stand alone and can
 go in any order, or in parallel with the chain.
+
+## LEG 9 — LANDED (cut by `@team_page`, 2026-08-26, on "yes to both, cut leg 9")
+
+**What changed from the design, on the owner's refinement:** no `show me`, no
+conveniences, no rigid rules. The tool's bare form GIVES the agent the view — each tab on
+its team, which workspace is selected (the one the owner is typing in), which shows the
+agent, what each holds — and its other form takes a DRAFT: `key=value` words naming only
+what should change; the rest stays. The agent is free to arrange the page any way it
+likes, itself off the page included ("in agents we trust-ish").
+
+**What is on `dev`:**
+- `public/js/team-arrange.js` — the one parser (`parseDraft`) and the one controller
+  (`createArranger`): a draft runs through the page's own verbs, columns first. The
+  team page's C/T buttons and roster cards call `arrange()` too — one controller, two
+  callers, nothing reachable one way and not the other. 4 tests.
+- `src/routes/team-page-api.ts` — `PUT /api/teams/:team/page/:tab` (a tab reports its
+  view on every change and every 10s), `GET …/page?session=` (the views, marking the
+  tab that shows the asking session), `POST …/page {from, tokens}` (keys validated, the
+  dial and team membership checked, then pushed on `/events` as `{t:'team-page', team,
+  from, tab, tokens}` — `tab` names the tab that shows the agent, or null for every tab
+  on the team). The server keeps views in memory for 30s and holds no page state of its
+  own. `broadcastEvent()` in `src/ws/events.ts` is the push; `events.js` dispatches to
+  `teamPageHandlers`.
+- `ronin_bin/tejun-teampage` — bare: the view; `key=value …`: a draft; `--team` on
+  several teams. Resolves its own session as `write_tegami` does and reaches Ronin as
+  `mika` does. Verdicts ARRANGED · BAD-DRAFT · REFUSED · NO-SESSION · NO-PAGE ·
+  UNREACHABLE. Catalogued in `ronin_catalogs/TOOLS.md`.
+- The roster header says "arranged by <session>" for six seconds after a draft lands.
+- The words: `workspace1=<session>|me` · `workspace2=commons[:tab[:path]]` · `terminal`
+  · `empty` · `order=…` · `hidden=…` · `shown=…` · `hidden=none`.
+
+**Measured (a tab on team `team`, the tool run from `team_page`'s own shell):**
+`workspace1=commons:docs:<path>` → the commons in workspace 1 on ▧ Docs with the file
+open in the editor, the header noting `arranged by team_page`; `order=workspace2,roster,
+workspace1 hidden=roster` → columns reordered, roster hidden; `hidden=none order=…
+workspace1=me workspace2=commons:wipeboard` → `team_page`'s tile left, the wipeboard
+right; `workspace9=x` → `BAD-DRAFT` with the keys named, exit 2. No console errors.
+
+**Also in this cut, from the owner's side note:** a tab that remembered a session the
+roster no longer has used to wait forever with a blank workspace; once the roster is
+loaded it now lets that go and takes the lead (or the commons).
+
+### The design as approved (kept for the record)
+
+**The owner's words:** "a Tejun that an agent controls the landscape of a team view …
+hide or unhide columns … move the columns … if I'm in one session on the terminal, say
+workspace 2, I could say 'show me the document you're working on' and it would, in
+workspace 1, open the team commons to that specific doc … consolidated into one team
+page config application … given simple instructions and it runs it."
+
+**One controller, two callers.** Everything the owner can do to the page by hand goes
+through one object on the page, `arrange(instruction)`; the buttons call it, and so does
+an instruction arriving from an agent. Nothing is reachable one way and not the other,
+and nothing is duplicated.
+
+### 1. The instructions — plain words, one line each
+
+```
+show <column>                     column = workspace1 | roster | workspace2
+hide <column>
+move <column> left|right|first|last
+put <session> in <workspace>      workspace = workspace1 | workspace2
+put commons in <workspace>
+open <tab> in <workspace>         tab = chat | wipeboard | docs | config
+open doc <path> in <workspace>    the commons, on ▧ Docs, with that file open
+```
+
+An instruction is a small object under the hood (`{verb, column|target, where, path}`)
+and a plain line on the wire; `parse(line)` is the only parser. Unknown words are
+refused with the line echoed back. A workspace that is hidden is shown first.
+
+### 2. On the page — a new module, team-arrange, under public/js (~80 lines)
+
+`createArranger({ workbench, seats, channels, docs, put })` returns `{ apply, parse }`.
+`apply` maps verbs onto what already exists: `arrangement.toggle/move` for columns,
+`putSession/putCommons` for workspaces, `channels.select(tab)` for tabs, and
+`docs.open(path)` — which `buildDocs` already returns — for a document. The team page
+calls `apply` from its own C/T buttons and card clicks too, so the page has one way of
+changing itself. Feature code; the Kit is untouched.
+
+### 3. The wire — one route, one push
+
+- `POST /api/teams/:team/page` with `{ line }` (or `{ instruction }`). The server does
+  not know the page's state and does not try to: it validates the line with the same
+  parser (shipped as a tiny shared module the server imports too), then pushes
+  `{ t: 'team-page', team, instruction, from }` on the `/events` feed the sessions list
+  already rides. Every browser looking at that team applies it; the others ignore it.
+- The dial applies: the request carries the calling session (the tool resolves its own,
+  viewer-safe, the way `write_tegami` does), and a session at 👤 is refused the way
+  `tejun-send` refuses. An agent may arrange the page of a team it is ON; nothing else.
+- `events.js` gains one line in its dispatch; the team view registers a handler on mount.
+
+### 4. The tool — tejun-teampage, a new sibling in ronin_bin
+
+```
+tejun-teampage show me                        # my own session, in the OTHER workspace
+tejun-teampage open doc wip/handoffs/X.md     # the commons on ▧ Docs, that file
+tejun-teampage hide roster
+tejun-teampage move workspace2 first
+tejun-teampage put commons in workspace1
+```
+
+Bash, like its siblings: resolves its session and team the way `tejun-wipeboard` does,
+reaches Ronin the way `mika` does (`@ronin-url`, `RONIN_URL`), posts the line, prints
+one verdict (`ARRANGED` · `REFUSED <why>` · `NO-TEAM` · `UNREACHABLE`), exits 0/2/3/5.
+Two conveniences only, because they are what a session actually says: `show me` (put
+this session in whichever workspace is not the one the owner is typing in — the page
+knows which is selected) and `open doc <path>` without naming a workspace (the one that
+is not selected). Catalogued in `TOOLS.md` and `ACTIONS.md` beside `tejun-wipeboard`.
+
+### 5. What it costs, what it does not
+
+- New: the arranger module, the parser module (shared), one route, one push type, one
+  tool, one TOOLS row, one test file for the parser. Roughly 250 lines.
+- Untouched: the Kit, the pool, the layout map, persistence (an agent's arrangement is
+  persisted exactly as the owner's would be — it went through the same `apply`).
+- Not in this leg: an agent arranging a page it is not on; arranging the Sessions grid;
+  any reply channel (the agent gets the verdict of delivery, not of what the page did —
+  the page may be closed).
+
+### 6. Gate
+
+The owner says cut, or changes the words. Two questions only: (a) is `show me` right —
+"put my tile in the workspace you are not typing in"? (b) should an instruction from an
+agent be visible on the page for a moment (a one-line note in the roster header:
+"arranged by view_mgr"), or silent?
 
 ## LEG 1 — LANDED (cut by `@team_page`, 2026-08-25, on the owner's "go ahead and cut it")
 
@@ -213,37 +538,56 @@ switches want a label on hover beyond the slot's declared label.
 
 ## LEGS 2 + 3 — LANDED (cut by `@team_page`, 2026-08-25, on "we should be able to toggle between the two")
 
-**What is on `dev`:** slots have FACES. The arrangement carries `faces: {slot: face}`;
-a declaration lists a slot's faces (`faces: ['terminal', {name: 'commons', exclusive:
-true}]`) and its default; an *exclusive* face is up in one slot at a time — turn a
-second slot to it and the first turns back. The frame takes one element per face for
-such a slot (a face element may be shared: the one commons lives in whichever slot has
-it up) and draws a small **face switch** in the slot's top-right corner, over the
-content, so it costs no row (`.wk-face-switch`, quiet until hovered). The pool has
-**seats**: `seats: {workspace1: el, workspace2: el}`; a member is hot in one seat at a
-time, showing it elsewhere moves its host; every seated member is watched and never
-the one parked for the cap; `clearSeat` conceals without parking. The team page is two
-seats (`workspace1` defaults to a terminal, `workspace2` to the commons), the roster
-between them; a card lands in **the seat last touched** (pointer on the seat, or its
-switch turned to terminal — T3 needs no ⇄); a seat turned to the commons hands its
-member to an empty terminal seat if there is one, else leaves it warm and concealed;
-seats persist as `{slot: member}` in the view state and are re-applied when the roster
-arrives, so a cold reload does not hand a remembered seat to the lead. **Both ways**
-(owner): a click lands in the seat last touched, and a card DRAGGED onto a seat lands in
-that seat (`text/x-ronin-session` on the drag; the seat outlines in kaki while a card
-is over it).
+**The ruling that shaped it (owner, 2026-08-25, after the first cut):** "It should be a
+very simple trade in and trade out. There should be no overlaying. There should not be
+hidden. There should be only switched in or out. It's there or it's not there." The
+first cut had *faces* — a slot keeping two elements and showing one, a switch pill
+drawn over the tile, and warm tiles hidden inside the seat. All three are gone.
 
-**Measured (playwright, 1600×950, `#/team/five-eyes`):** default = terminal ·
-roster · commons, 630/315/630, the same as leg 1. Turn workspace 2 to terminal →
-placeholder; click a card → it lands in workspace 2, two xterms side by side, both
-cards marked. Turn workspace 1 to commons → the commons moves left, workspace 2 keeps
-its member, the displaced one is warm and hidden (one hidden host). Reload → faces and
-seats persist. Turn workspace 1 back and click a card → it lands in workspace 1. No
-console errors. 13 pool tests (two-seat case added), 12 arrangement tests.
+**What is on `dev`:**
+- **A slot holds exactly one element.** The Kit frame gained one verb, `place(slot,
+  element)`: what was there comes out (and is returned), what you hand it goes in.
+  `holding(slot)` reads it. The arrangement is order · hidden columns · widths, nothing
+  more; the frame keeps nothing in a box that is not showing it.
+- **A roster card goes where you touched.** Click a card → it goes into the workspace
+  last touched, trading out whatever was there. Drag a card onto a workspace → it goes
+  into that one (dropping onto the commons trades it out). Nothing over a tile. T3 is
+  this. The commons is NOT a roster card (owner: "no team commons kanban") — C is the
+  way to it.
+- **The flip is one button in the header row** (owner: "just make it a button, just like
+  the other buttons … a T and a C"): **C** on a terminal's head row, beside ⛩ @ ⚡ ⤢,
+  trades in the commons; **T** on the commons' tab strip trades the terminal back — the
+  member the commons displaced, else the lead, else an empty seat. It rides the Tile
+  through the terminal host's `actions` (the one seam that touches a Tile) and the
+  channel surface's `actions`, so no feature reaches into a Tile.
+- **Warm is out of the document, not hidden in it.** The pool has seats (`seats:
+  {workspace1: el, workspace2: el}`) and a holding: a seat's container holds its one
+  member's host or nothing; a warm host in no seat sits in the holding, detached. Every
+  seated member is watched and never the one parked for the cap.
+- **The seat's surface holds its member's tile, or its own EMPTY tile** — the same head
+  row, the same C, no session (owner: "leave the header"; a blank box with no way back
+  is not a workspace). No placeholder text.
+- **The selected workspace is highlighted** the way the Sessions grid highlights its
+  active tile (`.tile.active`) — that is where the next card lands.
+- **The workspaces are not connected** (owner: "there should be no mechanism for that
+  to fail … you're creating strings that are not necessary"). Each workspace has its OWN
+  pool with the warm and hold rules — cap 2 per workspace, four in all; the lead is
+  pinned hot in workspace 1, its default home. Putting a session in one workspace never
+  touches the other, the same session included: one session in both is two tiles, two
+  streams, like the Sessions grid. (The earlier one-shared-pool cut moved sessions
+  between workspaces; that was the string. T8 closed.)
+- **The roster has a header** of the same depth as a tile head and the commons' tab
+  strip (41px each, measured): "Team Roster" and the count. Leg 4's header item.
+- Defaults with nothing remembered: the lead in workspace 1, the commons in workspace 2.
+  Seats persist as `{slot: member | '@commons'}` and are re-applied when the roster
+  arrives, so a cold reload does not hand a remembered seat to the lead.
 
-**Not done here:** per-team persistence (leg 2b: key `seats` and `arrangement` by team
-param — one line each in `teamWorkspaceState` and the two `patchViewState` calls); the
-roster header (leg 4).
+**Measured (playwright, 1600×950, `#/team/five-eyes`):** see the probe record in the
+commit that landed this — every step lists what each slot holds, and it is always one
+element, full height.
+
+**Persistence is per tab** — sessionStorage, through the shell's `patchViewState` —
+and one tab is one team (owner, 2026-08-26), so that is the whole of it.
 
 ### The leg 1 design as approved (kept for the record)
 
@@ -358,7 +702,7 @@ That is the whole of the team page's geometry. Commons-on-the-left is
   under `public/js/` except the Kit reads `grid-template-columns` or `.wk-workbench-splitter`.
 - `scripts/check-css.mjs`: unchanged rules; the new map CSS lives in `workspace-kit.css`,
   tokens only.
-- a pure unit suite for the arrangement module under `tests/`, plus the existing team-terminal-pool
+- a pure unit suite for the arrangement module under `tests/`, plus the then-existing pool
   suite untouched (the bench is DONE, and hiding a column does not park a transport —
   same as today).
 - Playwright probe, before and after, at 1600×950: the three columns measure
@@ -421,6 +765,7 @@ Two consequences, both inside leg 1:
 | T4 | Raise the cap with two terminal seats? | **RULED: no** — four hot seats, lead + next three by last use (owner, 2026-08-25) |
 | T5 | **Assign the team lead live from the UI** ("I need to be able to assign team lead live", 2026-08-25) | **RULED: through the tile buttons** — the tile already has a session_role selector; the 人 goes there. Leg 7 |
 | T7 | Show/hide and reorder the columns | **RULED: a layout map in the app bar** — three toggling rectangles; drag within the map to reorder. No chevron rails (owner, 2026-08-25). Column-drag, if ever, is a second gesture in leg 5 |
+| T8 | One session up in both workspaces at once? | **CLOSED by independence** — each workspace has its own pool, so it is simply two tiles (owner: "who cares if they have the same tile in both … they shouldn't be connected") |
 | T6 | Name for the middle column — the owner's "action column": roster, new-session builder, whatever acts on the team | open — "action" is the placeholder; needs a KOTOBA word |
 
 ## Constraints

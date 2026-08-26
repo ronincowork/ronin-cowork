@@ -15,9 +15,16 @@ export function connectEvents() {
       return;
     }
     if (m.t === 'sessions' && Array.isArray(m.list)) onSessionsEvent(m.list);
+    if (m.t === 'team-page') for (const fn of teamPageHandlers) fn(m);
   };
   ws.onclose = () => setTimeout(connectEvents, 3000); // keep the feed alive
 }
+
+/** Who hears a team-page draft (`{t:'team-page', team, from, tab, tokens}`): the Team view registers on mount. */
+export const teamPageHandlers = new Set();
+/** Who hears the session list change, after `S.sessions` has been reconciled: the Team
+ *  view, whose membership is read off that list live. */
+export const sessionsHandlers = new Set();
 
 export function onSessionsEvent(list) {
   const before = new Set(S.sessions.map((s) => s.name));
@@ -32,6 +39,7 @@ export function onSessionsEvent(list) {
     if (!before.has(s.name) && !tiles.some((t) => t.session === s.name)) showBirthChip(s.name);
   }
   refreshHome(); // fresh status/gauge for any home panels on screen
+  for (const fn of sessionsHandlers) fn(list);
 }
 
 /* Chip: "a session appeared" — one tap to open, dismisses itself. */

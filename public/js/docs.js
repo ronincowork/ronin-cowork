@@ -54,7 +54,20 @@ export function buildDocs(tile, root, isShowing, only = null) {
   const save = document.createElement('button');
   save.className = 'dc-save';
   save.textContent = 'Save';
-  bar.append(back, title, note.el, save);
+  // THE ↗ AND THE FRAME ARE THE HTML HALF OF THE EDITOR (owner, 2026-08-26): a listed
+  // `.html` is a page, not prose, so it renders in a frame where the textarea would be,
+  // and ↗ opens the same URL in a tab of its own. Both hang off `/raw/<path>`, which serves
+  // the file as itself — see the route in src/index.ts. Which of the two shows is CSS's
+  // call from `data-view` ('edit' | 'view'), the same switch the list already rides.
+  const pop = document.createElement('a');
+  pop.className = 'dc-open';
+  pop.textContent = 'Open in browser ↗';
+  pop.target = '_blank';
+  pop.rel = 'noopener';
+  bar.append(back, title, note.el, pop, save);
+  const frame = document.createElement('iframe');
+  frame.className = 'dc-frame';
+  frame.title = 'document';
   const area = document.createElement('textarea');
   area.className = 'dc-text';
   area.spellcheck = false;
@@ -63,8 +76,10 @@ export function buildDocs(tile, root, isShowing, only = null) {
   area.autocapitalize = 'off';
   area.autocomplete = 'off';
   area.setAttribute('autocorrect', 'off');
-  ed.append(bar, area);
+  ed.append(bar, frame, area);
   root.append(list, ed);
+  const isPage = (p) => /\.html?$/i.test(p);
+  const rawUrl = (p) => '/raw' + p.split('/').map(encodeURIComponent).join('/');
 
   const show = (which) => {
     root.dataset.view = which;
@@ -90,6 +105,18 @@ export function buildDocs(tile, root, isShowing, only = null) {
     openPath = path;
     title.textContent = path.split('/').pop();
     title.title = path;
+    if (isPage(path)) {
+      // No text round-trip: the frame fetches the page itself, and a page has no Save —
+      // an HTML edited in a textarea is a different feature, and not one anyone asked for.
+      dirty = false;
+      say('');
+      pop.href = rawUrl(path);
+      frame.src = rawUrl(path);
+      show('view');
+      return;
+    }
+    frame.src = 'about:blank'; // a page left running behind a textarea is a page nobody sees
+    pop.removeAttribute('href');
     area.value = '';
     area.disabled = true;
     dirty = false;
@@ -143,6 +170,7 @@ export function buildDocs(tile, root, isShowing, only = null) {
     if (dirty && !confirm('Discard unsaved changes?')) return;
     openPath = null;
     dirty = false;
+    frame.src = 'about:blank'; // stop the page's scripts; the list is what's showing now
     show('list');
     refresh();
   });

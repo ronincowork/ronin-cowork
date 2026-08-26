@@ -293,6 +293,17 @@ export const writeMachineSection = (v: { name?: string; where?: string; monitor?
     doc.machine = m;
   });
 
+/** THE DESK — which desk_profile the owner works at (R38). `profile` is a token in
+ * `ronin_catalogs/desk_profiles/` or ''; nothing here checks it exists, because a
+ * profile can be removed after it was chosen and the reader answers null for that. */
+export const readDeskSection = (): Promise<{ profile?: string }> => readSection('desk', {});
+export const writeDeskSection = (v: { profile?: string }): Promise<void> =>
+  updateConfig((doc) => {
+    const d = ((doc.desk ?? {}) as Record<string, unknown>) || {};
+    if (v.profile !== undefined) d.profile = String(v.profile).trim().slice(0, 64);
+    doc.desk = d;
+  });
+
 /**
  * HOW WORK GETS A MODEL — two different questions, and merging them is the trap.
  *

@@ -148,7 +148,7 @@ export function setInert(el, inert, why, title) {
  * It knows nothing about sessions or fetching. The caller owns what a pick MEANS, which
  * is what lets the same menu hang off a tile header and a roster row.
  */
-export function openJobMenu(anchor, jobs, current, onPick) {
+export function openJobMenu(anchor, jobs, current, onPick, extras = []) {
   document.querySelector('.job-menu')?.remove();
   const m = document.createElement('div');
   m.className = 'job-menu';
@@ -180,6 +180,16 @@ export function openJobMenu(anchor, jobs, current, onPick) {
     b.textContent = 'not marked';
     b.title = 'Clear the mark — this session has not said what it is doing';
   }, '');
+  // EXTRAS — a separate fact that lives on the same menu because this is the one
+  // control the owner reaches for a session's standing: the 人 team-lead designation
+  // (owner, 2026-08-25: "this should be through the tile buttons"). `{label, title,
+  // on, pick}`, drawn after a rule; the caller owns what the pick means.
+  for (const x of extras || []) {
+    opt(' extra', !!x.on, (b) => {
+      b.textContent = x.label;
+      b.title = x.title || '';
+    }, x.pick);
+  }
 
   // Anchored to the glyph, then pulled back inside the viewport: a tile on the right of
   // a four-up grid would otherwise open its menu off the edge of the screen.

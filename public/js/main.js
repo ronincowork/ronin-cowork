@@ -5,6 +5,7 @@ import { request } from './request.js';
 import { guard, showFailure } from './errors.js';
 import { applyTheme } from './theme.js';
 import { restoreSkin } from './skins.js';
+import { activeProfile, loadDeskProfile } from './desk-profile.js';
 import { connectEvents } from './events.js';
 import { loadMacros, loadPresets, loadProjects, loadSavedLaunches, refreshHome } from './home.js';
 import { build } from './layout.js';
@@ -45,8 +46,13 @@ export async function init() {
 
   // The theme before the grid: tiles are born reading the resolved terminal palette.
   guard('apply theme', applyTheme);
+  // THE DESK PROFILE before the grid (R38): its lexicon is what every t() reads, and its
+  // RIREKI view is the Output a new tile is born with — so it has to be known before a
+  // tile is built. One request; a box that cannot answer gets stock, not a failure.
+  try { await loadDeskProfile(); } catch (e) { console.warn('desk profile', e); }
   // After the theme, because a skin outranks it for whatever it names (js/skins.js).
-  guard('restore skin', restoreSkin);
+  // The profile's skin is the default; a skin this device picked since still wins.
+  guard('restore skin', () => restoreSkin(activeProfile()?.skin || ''));
 
   // FIRST LOAD. A fresh install lands here; everyone else never sees it.
   //
@@ -90,7 +96,8 @@ export async function init() {
   if (!viewhost) throw new Error('workspace ViewHost is missing');
   const workspace = createWorkspace(viewhost, {
     onError: (where, error) => showFailure(`workspace ${where}`, error),
-    // The bar's one slot for the layout map; the ViewHost fills it per active view.
+    // The bar's slots for the tab name and the layout map; the ViewHost fills them per active view.
+    nameSlot: document.getElementById('viewname'),
     mapSlot: document.getElementById('viewmap'),
   });
   workspace.kit = WorkspaceKit;

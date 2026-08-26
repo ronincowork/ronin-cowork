@@ -133,7 +133,16 @@ export function hashFor(view, param = '') {
  * reaches, on something that identifies nothing.
  */
 const HOUSE = 'Ronin';
-export const tabTitle = (what) => (what ? `${what} · ${HOUSE}` : HOUSE);
+/**
+ * A NAMED TAB DROPS THE HOUSE (owner, 2026-08-26: "we don't need Ronin in there unless
+ * it's the default"). A view hands back a string — what it is — and the house is added;
+ * or `{ bare: text }` — a title the owner composed, spelled whole, with nothing added.
+ * The Team page uses the second when its tab has been named: `<name> · <team>`.
+ */
+export const tabTitle = (what) => {
+  if (what && typeof what === 'object' && what.bare) return String(what.bare);
+  return what ? `${what} · ${HOUSE}` : HOUSE;
+};
 
 export function createWorkspace(host, options = {}) {
   const views = new Map();
@@ -165,6 +174,25 @@ export function createWorkspace(host, options = {}) {
     if (!view.arrangement) return;
     map = invoke(id, 'map', () => WorkspacePrimitives.createLayoutMap(view.arrangement)) || null;
     if (map) mapSlot.append(map.el);
+  };
+  // THE TAB NAME rides beside the map, for a view that offers one (`tabName`). Redrawn on
+  // every navigation, not only on a view change: the same view on another param has
+  // another default. A commit retitles the tab at once.
+  const nameSlot = options.nameSlot instanceof Element ? options.nameSlot : null;
+  let name = null;
+  const showName = (id, view) => {
+    name?.destroy();
+    name = null;
+    if (!nameSlot) return;
+    nameSlot.replaceChildren();
+    if (!view.tabName) return;
+    const facet = view.tabName;
+    name = invoke(id, 'tabName', () => WorkspacePrimitives.createTabName({
+      get: () => facet.get?.(),
+      placeholder: () => facet.placeholder?.(),
+      set: (value) => { facet.set?.(value); refreshTitle(); },
+    })) || null;
+    if (name) nameSlot.append(name.el);
   };
 
   const register = (id, view) => {
@@ -208,6 +236,7 @@ export function createWorkspace(host, options = {}) {
     next.el.hidden = false;
     if (changed) invoke(id, 'enter', () => next.enter?.(context));
     if (active?.view !== next) showMap(id, next);
+    showName(id, next);
     active = { id, view: next, param };
     state.view = id;
     if (id === 'team') state.team = param;

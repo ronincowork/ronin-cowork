@@ -12,6 +12,7 @@
  * projection; League calls it at the view boundary and subscribes only to repaint.
  */
 import { createBoard } from './league-board.js';
+import { sessionsHandlers } from './events.js';
 import { refreshTeams, subscribe } from './team-controller.js';
 
 export function createLeagueView() {
@@ -19,6 +20,19 @@ export function createLeagueView() {
   host.id = 'league';
   let board = null;
   let unsubscribe = () => {};
+  let entered = false;
+  let clock = 0;
+  // THE BOARD STAYS CURRENT WHILE IT IS UP. It refreshed on enter only, so a tab left on
+  // League drew a team's roster as "Not recorded" long after one was written (owner,
+  // 2026-08-26: "why don't I see it on the league page?"). Membership rides the sessions
+  // feed; a roster write rides no feed, so a slow clock covers it.
+  const refresh = async (context) => {
+    if (!entered) return;
+    await refreshTeams();
+    if (entered) draw(context);
+  };
+  const onSessions = () => void refresh(lastContext);
+  let lastContext = null;
 
   /** Null is the default and a real answer: rosters start shown. */
   const visible = (context) => context?.viewState?.('league')?.rostersVisible !== false;
@@ -41,6 +55,7 @@ export function createLeagueView() {
       // Controller notifications are repaint signals only. Refresh ownership stays at
       // the view boundary below; a subscription never fetches or opens another socket.
       unsubscribe = subscribe(() => draw(context));
+      sessionsHandlers.add(onSessions);
       // ONE delegated handler for the whole board, wired at mount and never at enter,
       // so repeated navigation cannot multiply listeners.
       host.addEventListener('click', (event) => {
@@ -52,14 +67,26 @@ export function createLeagueView() {
     },
 
     async enter(context) {
+      entered = true;
+      lastContext = context;
       draw(context);
       // The durable half and the live half, then one redraw. A failed fetch keeps the
       // last good board and says so through the Surface's stale state.
       await refreshTeams();
       draw(context);
+      window.clearInterval(clock);
+      clock = window.setInterval(() => void refresh(context), 15000);
+    },
+
+    leave() {
+      entered = false;
+      window.clearInterval(clock);
     },
 
     destroy() {
+      entered = false;
+      window.clearInterval(clock);
+      sessionsHandlers.delete(onSessions);
       unsubscribe();
       unsubscribe = () => {};
       host.replaceChildren();

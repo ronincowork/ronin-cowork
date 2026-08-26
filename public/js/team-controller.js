@@ -40,9 +40,11 @@ export function unassignedSessions() {
 }
 export function membersOfTeam(team) {
   if (team === UNASSIGNED) return unassignedSessions();
+  // The 人 pins to the top (owner, 2026-08-26); the rest by role, then name.
+  const byRole = blankLast('session_role');
   return sessions().filter((s) => sessionBelongsToTeam(s, team))
     .map((session) => ({ ...session, team_lead: leadsTeam(session, team) }))
-    .sort(blankLast('session_role'));
+    .sort((a, b) => Number(b.team_lead) - Number(a.team_lead) || byRole(a, b));
 }
 export function teamByName(name) {
   const roster = rosters.find((row) => row.name === name && row.state !== 'archived');

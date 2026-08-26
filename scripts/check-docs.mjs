@@ -157,6 +157,10 @@ const IGNORE = {
   // from this repo's runner (2026-08-25).
   'docs/is-this-safe.md': ['src/services/counting/plans.ts'],
   'docs/session-identity.md': ['src/services/rireki/rireki.ts', 'src/services/counting/rollup.ts'],
+  // The Team workbench record names RIREKI's render pieces by file and symbol — cut in
+  // RONIN_SERVICES (`rireki/render.ts`, `scroll.ts`, `docs/rireki.md`), mounted here at
+  // boot, never in this repo's tree (2026-08-26).
+  'wip/buildouts/TEAM_WORKBENCH.md': ['render.ts', 'sinceMark()', 'withLiveFrame()', 'inputBox()', 'docs/rireki.md', 'scroll.ts'],
   'README.md': ['connector-contract.md'],
   'public/js/README.md': ['app.js', 'co-working/user_repo/wip/buildouts/', 'CLAUDE.md', 'docs/commons.md', 'src/services/rireki/', 'co-working/user_repo/README/KEYPAD_README.md', '../../co-working/user_repo/README/KEYPAD_README.md'],
   // (The house-dir literals that lived in ACTIONS/MACROS collapsed into the documents

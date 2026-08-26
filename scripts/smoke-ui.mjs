@@ -81,10 +81,17 @@ async function openPage(browser, contextOpts) {
   // handoff journey deliberately reloads to reset the shared launcher.
   await page.route('**/api/settei', async (route) => {
     if (route.request().method() !== 'GET') return route.continue();
-    const response = await route.fetch();
-    const data = await response.json();
-    if (data?.set?.owner && !String(data.set.owner.name ?? '').trim()) data.set.owner.name = 'Ronin rendering gate';
-    await route.fulfill({ response, json: data });
+    // A settei poll can be in flight when this context closes at the end of a pass; the
+    // fetch then rejects ("Request context disposed") and, unhandled, that killed the
+    // whole run after every desktop check had passed (three runs, 2026-08-25).
+    try {
+      const response = await route.fetch();
+      const data = await response.json();
+      if (data?.set?.owner && !String(data.set.owner.name ?? '').trim()) data.set.owner.name = 'Ronin rendering gate';
+      await route.fulfill({ response, json: data });
+    } catch (_) {
+      await route.continue().catch(() => {});
+    }
   });
   const jsErrors = [];
   const netFails = [];

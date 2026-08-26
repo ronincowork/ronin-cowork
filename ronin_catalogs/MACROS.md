@@ -105,21 +105,24 @@ Send: Update your TEGAMI now — read it, bring the ladder in line with what you
 - **class:** session_macro.workflow
 - **preview:** yes
 - **label:** +show_file:
-- **blurb:** Ask this session what it has open. It lists its documents on the ▧ Docs tab in commons, so you open and edit the real file instead of hunting your disk for it.
+- **blurb:** Ask this session what it has open. It lists its documents on the ▧ Docs tab in commons — and, on a team page, opens the one you asked for in the workspace beside you — so you read and edit the real file instead of hunting your disk for it.
 Owner wants to READ what you are working on: `+show_file`, or `+show_file: MDEDIT.md`.
-Bring your document list up to date, then tell them where to look. **Do not paste the
-document into the pane and do not summarise it** — the point is that they open the real
-file and can edit it.
+Bring your document list up to date, then put the file in front of them. **Do not paste
+the document into the pane and do not summarise it** — the point is that they open the
+real file and can edit it.
 
-Params: `file` (optional — one document to make sure is listed. Bare `+show_file` means
-"list everything you are working on").
+Params: `file` (optional — one document to make sure is listed, and to reveal. Bare
+`+show_file` means "list everything you are working on").
 
 | # | Action | With |
 |---|---|---|
 | 1 | list-doc | `write_tegami --doc <path>` for the named file, or for every document this session is working on — buildouts, handoffs, plans, notes. `--undoc` anything you have finished with |
-| 2 | report-outcome | name what you listed, then send them to the tab (wording below) |
+| 2 | team-page-read | `tejun-teampage` — if a tab is showing your team page, it tells you which workspace the owner is typing in and which shows you. `NO-PAGE` (they are not on the team page) or `NO-TEAM` (you are on no team) ends this step; the list is still on ▧ Docs |
+| 3 | team-page-draft | with a named file: `tejun-teampage <other>=commons:docs:<path>` — the commons on ▧ Docs with that file open, in the workspace the owner is NOT typing in (`<other>` = workspace1 or workspace2, read off step 2). Bare `+show_file`: `tejun-teampage <other>=commons:docs` — the list, in that workspace |
+| 4 | report-outcome | name what you listed, then say where it is (wording below) |
 
-Report: the documents you listed, one per line by name, then **"open them from the ▧ Docs
+Report: the documents you listed, one per line by name, then — on a team page —
+**"<file> is open in workspace <n>, on ▧ Docs."**; otherwise **"open them from the ▧ Docs
 tab in commons, under this session."** That sentence is the whole point of the macro —
 without it they have a list they do not know exists.
 

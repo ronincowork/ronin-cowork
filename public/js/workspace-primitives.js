@@ -54,7 +54,9 @@ function createCard(options = {}) {
   const summary = node('p', 'wk-card-summary', options.summary ?? '');
   const metadata = node('div', 'wk-card-meta');
   el.append(heading, summary, metadata);
-  if (options.mark != null) el.prepend(node('span', 'wk-card-mark', options.mark));
+  // The mark rides the heading's own line, before the name (owner, 2026-08-26: "the
+  // hito and the team name should be same line"), not a line of its own above it.
+  if (options.mark != null) heading.prepend(node('span', 'wk-card-mark', options.mark));
   for (const value of options.metadata || []) metadata.append(node('span', null, value));
   if (options.action) el.addEventListener('click', options.action);
   const setState = (state, on = true) => {
@@ -131,9 +133,16 @@ function createChannelSurface(options = {}) {
     tabs.append(button);
     surface.content.append(service);
   }
+  // Consumer actions ride the strip's right end — the same row, no new one.
+  if (Array.isArray(options.actions) && options.actions.length) {
+    tabs.append(node('span', 'wk-channel-service-grow'));
+    for (const action of options.actions) if (action instanceof Node) tabs.append(action);
+  }
   surface.el.prepend(tabs);
+  let current = 'chat';
   const select = (requested) => {
     const id = CHANNEL_SERVICES.includes(requested) ? requested : 'chat';
+    current = id;
     for (const [name, button] of buttons) {
       const on = name === id;
       button.setAttribute('aria-selected', String(on));
@@ -150,7 +159,7 @@ function createChannelSurface(options = {}) {
     }
   };
   return {
-    ...surface, tabs, services, select,
+    ...surface, tabs, services, select, current: () => current,
     mount: (context) => invoke('mount', context),
     enter: (context) => invoke('enter', context),
     leave: () => invoke('leave'),
@@ -299,6 +308,39 @@ function createForm(options = {}) {
  * holds state of its own, so a splitter drag redraws it and a map drag moves the real
  * columns. The ViewHost mounts it in the app bar for any view exposing an arrangement.
  */
+/**
+ * THE TAB NAME — one text field in the app bar, drawn by the ViewHost for a view that
+ * exposes `tabName` ({ get(), placeholder(), set(value) }). What is typed becomes the
+ * browser tab's title (the ViewHost retitles on every change); empty means the view's
+ * own default, shown as the placeholder. Enter or leaving the field commits, Escape
+ * puts the last committed value back. Nothing here knows what the view is.
+ */
+function createTabName(tabName) {
+  const el = node('input', 'wk-tab-name');
+  el.type = 'text';
+  el.maxLength = 48;
+  el.spellcheck = false;
+  el.setAttribute('aria-label', 'Name this tab');
+  el.title = 'Name this browser tab — what it is for. Empty is the default name.';
+  const render = () => {
+    el.placeholder = tabName.placeholder?.() || '';
+    el.value = tabName.get?.() || '';
+  };
+  const commit = () => {
+    const next = el.value.trim();
+    if (next === (tabName.get?.() || '')) return;
+    tabName.set?.(next);
+    render();
+  };
+  el.addEventListener('change', commit);
+  el.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') { commit(); el.blur(); }
+    else if (event.key === 'Escape') { render(); el.blur(); }
+  });
+  render();
+  return { el, render, destroy: () => el.remove() };
+}
+
 function createLayoutMap(arrangement) {
   const el = node('div', 'wk-layout-map');
   el.setAttribute('role', 'group');
@@ -381,6 +423,7 @@ function createLayoutMap(arrangement) {
 export const WorkspacePrimitives = Object.freeze({
   states: WORKSPACE_STATES,
   createLayoutMap,
+  createTabName,
   setSurfaceState,
   createSurface,
   createCard,

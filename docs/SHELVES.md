@@ -55,7 +55,10 @@ that did not ask. The_owner's copy of any name wins whole. `ronin_sops/README.md
 made of), `TOOLS.md` (the executables that implement actions, with usage), `role_families/`
 (who a session is) and `session_roles/` (what it is doing — one file each),
 `PROJECT_ROOTS.md` (the launch table),
-`MIKA_MACROS.md` (the house assistant's jobs), `SKINS.md`. Extending any of it starts at
+`MIKA_MACROS.md` (the house assistant's jobs), `SKINS.md` (the look, tokens only),
+`desk_profiles/` (your standing defaults for the surfaces you work at — skin, lexicon,
+campaign kind, RIREKI view, Team page order; one file each) and `lexicons/` (the words a
+surface uses — one file each, a language mechanically). Extending any of it starts at
 `ronin_catalogs/README.md` — the action exists before the macro, the tool after the action.
 
 ## The library — how a step is done

@@ -1,0 +1,12 @@
+# professional
+
+The plain one. Stock look, plain words, the terminal as it is.
+
+- **label:** Professional
+- **blurb:** The plain one — stock look, plain words.
+- **order:** 10
+- **skin:** stock
+- **lexicon:** professional_en
+- **campaign_kind:** work
+- **rireki_view:** terminal_mirror
+- **team_arrangement:** workspace1,roster,workspace2

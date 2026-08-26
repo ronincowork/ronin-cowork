@@ -1,0 +1,57 @@
+# Lexicons — the words a surface uses
+
+A **lexicon** is keys to strings: what a surface says where it would otherwise say the
+stock English. Mechanically it is a language — a wording (*Home* says *occasion* for a
+campaign) and a translation (*Français*) are the same kind of file, and that is the point
+(KOTOBA `lexicon`, ruled with R38 on 2026-08-27). A **desk profile** names one the way it
+names a skin (`docs/desk-profiles.md`).
+
+## The catalog
+
+`ronin_catalogs/lexicons/<name>.md`, one file per lexicon, shadowable whole-file by name
+(`docs/shadowing.md`): yours in the catalogs store replaces ours of the same name; a new
+name is a new lexicon; `- **hidden:** yes` withdraws one of ours. The directory's
+`README.md` carries the format. Five ship: `professional_en` (the floor), `home_en` (a dozen
+words, to prove the chain), `league_en` (the gamer's words, goofy on purpose), `vibe_code_en`
+and `terminal_en` (near-empty on purpose — the words grow as the surfaces settle, one file
+at a time, with no code).
+
+Two kinds of key in one table: a bare word is a surface string (`campaign`, `go`); a
+prefixed key names a catalog entry's label by its token (`kind.household`,
+`role.DraftPlan`, `team_role.<t>`, `behaviour.<t>`). A key may carry dots — the catalog
+grammar widened for it (`src/catalog.ts`, `isKeyLine`).
+
+## The chain, one rule
+
+```
+active lexicon  →  its base:  →  the definition's own label: / the literal in the view
+```
+
+`src/lexicons.ts` resolves a lexicon **flat** on the server (`GET /api/lexicons/:name`):
+the file's words over its base's, to the floor, with a cycle guard. The client
+(`public/js/lexicon.js`) holds one flat object and answers `t(key, literal)` — the word,
+or the literal the view wrote. So a missing key can never blank a label, and a missing
+lexicon paints exactly as stock. Wording and translation are one axis, and the language is in the name: a French Home
+is one more lexicon, `home_fr`, with `- **base:** professional_fr` (itself based on
+`professional_en`) — never a second setting.
+
+## The floor, and the check
+
+`professional_en` is complete by definition. `scripts/check-lexicon.mjs` (in the verify
+chain) **fails** when a key the client reads through `t()` is missing from it, or when
+another shipped lexicon spells a bare key the floor lacks (nothing to fall through to);
+it **reports** floor keys no view reads yet. A view adds its keys to `professional_en` in
+the same commit.
+
+## No sweep
+
+Views born from 2026-08-27 read their strings through `t()`; a view older than that keeps
+its literals until it is touched for another reason. The check does not fail on those.
+
+## What is never translated
+
+Anything an **agent** reads — the letter, the brief, the boot shelf, `write_tegami` —
+stays in stock tokens: a session on a Home desk is still `DraftPlan` with
+`reach: plan`. The house's internal names (KOTOBA's list) are not keys. And a lexicon
+changes words, never structure: a surface that must be *shaped* differently per profile
+is a Workspace Kit question.

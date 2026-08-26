@@ -48,6 +48,21 @@ test('team_role is MUTABLE, and an edit touches only what it states', async () =
   assert.equal(r.objective, 'ship the teams cut', 'unstated fields survive');
 });
 
+test('a blank field is written as "—" and reads back as the blank it stands for', async () => {
+  // The quirk of 2026-08-26: a roster created with blanks rendered them as "—", and the
+  // next edit read those marks back as VALUES — a project_root named "—", refused at
+  // launch. The mark is a rendering; the store must never return it as a fact.
+  await createTeamRoster('bare', { objective: 'only this' });
+  const r = await writeTeamRoster('bare', { branch: 'dev' });
+  assert.equal(r.project_root, '', 'an untouched blank stays blank after an edit');
+  assert.equal(r.team_role, '');
+  assert.deepEqual(r.repos, []);
+  assert.equal(r.branch, 'dev');
+  const cleared = await writeTeamRoster('bare', { objective: '' });
+  assert.equal(cleared.objective, '', 'clearing a field is blank on read-back, not "—"');
+  await deleteTeamRoster('bare');
+});
+
 test('creating over an existing roster is refused — editing is a different intent', async () => {
   await assert.rejects(() => createTeamRoster('alpha', {}), /already has a roster/);
 });

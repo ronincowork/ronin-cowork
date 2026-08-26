@@ -20,7 +20,7 @@
 
 From KOTOBA: **Ronin is the product name and goes everywhere.** Our internal system names —
 **TEJUN · MICHI · TEGAMI · SHINGO · RIREKI · OBOERU · TOMODACHI · SOROBAN · KOSHI · KOE ·
-DAIKUSAN · KOTOBA · AGERU · JUSHO · BYOIN · SETTEI · KYOKAI · SHIWAKE** — **stay ours.** Useful shorthand between us; a translation tax
+DAIKUSAN · KOTOBA · AGERU · JUSHO · BYOIN · SETTEI · KYOKAI · SHIWAKE · KOKUGO** — **stay ours.** Useful shorthand between us; a translation tax
 on anyone else.
 
 **The list is KOTOBA's.** This file quotes it verbatim and may never carry a name KOTOBA
@@ -101,6 +101,10 @@ learn in order to use Ronin should cost them a second language first.
 | macro | **macro** | A saved instruction you would otherwise have typed to your agent. |
 | invocation | **typing a macro** | `+name: what you want`. That is the whole syntax. |
 | `session_role` | **role** | What a session is doing now. The values read plainly on their own (RiffOnIt, CutCode, CheckWork, …). The set lives in `ronin_catalogs/session_roles/` — one file per role, and the directory is the count. |
+| `desk_profile` | **desk profile** | Your standing defaults for the surfaces you work at — the skin, the words, the kind of campaign the board opens on, how the Team page is arranged. Not a skin; it has one. |
+| `behaviour` | **behaviour** | Anything you can hand a session to change what it does — an SOP, a doc, a tool, a macro, a memory. Inert on the shelf; handed over, it makes the session right for the situation. |
+| `session_build` | **build** | A preconfigured way to start a session — its way of working, the reading it arrives with, the model that suits it. Pick one, then finish its loadout with the behaviours this run needs. |
+| `session_mandate` | **mandate** | How far a session may go before it checks in (discuss · plan · execute · run), whom it may recruit (none · propose · staff), and what it hands back (plan · ideas · code · artifact · team). Set by the owner on the first session of a project; a solo run is just `recruit: none`. |
 | forkit | **fork** | Split the current topic into a visible Ronin session. “Fork it” and “new session” mean this; “spawn an agent” means an internal sub-agent. |
 | harakiri | **harakiri** | A session ends itself. Kept — it is a word people know. |
 
@@ -153,7 +157,7 @@ r_render; the tile's paint is ephemeral)*
 test · shadowing · the session directory · build-out doc · handoff · `landed/`
 **Plumbing:** shim · control-check · viewer session · scrape · compile · step tracker ·
 `session_macro` · `workspace_macro` · one-way flow
-**Ours only:** KOTOBA · KOSHI · SHINGO · BUNKAI · KYOKAI · `ronin_repo` · dohyo
+**Ours only:** KOTOBA · KOSHI · SHINGO · BUNKAI · KYOKAI · KOKUGO · `ronin_repo` · dohyo
 
 ---
 
