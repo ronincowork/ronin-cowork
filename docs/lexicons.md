@@ -11,9 +11,10 @@ names a skin (`docs/desk-profiles.md`).
 `ronin_catalogs/lexicons/<name>.md`, one file per lexicon, shadowable whole-file by name
 (`docs/shadowing.md`): yours in the catalogs store replaces ours of the same name; a new
 name is a new lexicon; `- **hidden:** yes` withdraws one of ours. The directory's
-`README.md` carries the format. Four ship: `professional_en` (the floor), `home_en` (a dozen
-words, to prove the chain), `vibe_code_en` and `terminal_en` (near-empty, on purpose — the words
-grow as the surfaces settle, one file at a time, with no code).
+`README.md` carries the format. Five ship: `professional_en` (the floor), `home_en` (a dozen
+words, to prove the chain), `league_en` (the gamer's words, goofy on purpose), `vibe_code_en`
+and `terminal_en` (near-empty on purpose — the words grow as the surfaces settle, one file
+at a time, with no code).
 
 Two kinds of key in one table: a bare word is a surface string (`campaign`, `go`); a
 prefixed key names a catalog entry's label by its token (`kind.household`,
