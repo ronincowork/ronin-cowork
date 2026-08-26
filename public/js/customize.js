@@ -20,7 +20,7 @@
  * foundation owner has not ruled.
  */
 import { WorkspaceKit } from './workspace-kit.js';
-import { RESOURCES, byId, railSections } from './customize-rail.js';
+import { byId, railSections, resources } from './customize-rail.js';
 import { renderResource } from './customize-resources.js';
 
 
@@ -81,7 +81,7 @@ export function buildCustomize() {
   return {
     el: layout,
     title: () => 'Customize · ronin',
-    enter: () => { if (!current) show(RESOURCES[0].id); },
+    enter: () => { if (!current) show(resources()[0].id); },
     rail,
     content,
   };
