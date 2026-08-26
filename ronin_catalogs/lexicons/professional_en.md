@@ -1018,3 +1018,9 @@ The catalog entry goes. {dir} is not touched.
 - **provenance.create_failed:** could not create it — {message}
 - **provenance.made:** made {path} — edit it, or tell an agent to
 - **provenance.exists:** yours is at {path}
+
+## switcher — macros.js (the session switcher)
+- **switcher.sheet:** Session switcher
+- **switcher.hint:** ↑↓ move · same key (or ↵) opens it · Esc cancels
+- **switcher.title:** Switch tile {n}
+- **switcher.now:** — now: {session}
