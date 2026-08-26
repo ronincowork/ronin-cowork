@@ -888,3 +888,13 @@ The catalog entry goes. {dir} is not touched.
 ## customize — customize.js
 - **customize.title:** Customize
 - **customize.rail_label:** Customize resources
+
+## customize — customize-resources.js
+- **customize.unavailable:** Not available in this preview.
+- **customize.reading:** reading…
+- **customize.read_failed:** could not read — {message}
+- **customize.not_a_list:** the route did not answer with a list
+- **customize.empty:** Nothing here yet. That is an ordinary state, not a fault.
+- **customize.roles_not_a_list:** the session-role route did not answer with a list
+- **customize.roles_read_failed:** could not read session roles — {message}
+- **customize.read_entry:** Read entry
