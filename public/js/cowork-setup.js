@@ -2,6 +2,7 @@
 import { request } from './request.js';
 import { status } from './ui.js';
 import { LIGHT, pm, initialOf, toRequests } from './settei-schema.js';
+import { t } from './lexicon.js';
 
 const el = (tag, cls, text) => {
   const node = document.createElement(tag);
@@ -93,134 +94,134 @@ export async function buildCoworkSetup(host, onDone) {
   const top = el('header', 'cs-topbar');
   const brand = el('div', 'cs-brand');
   brand.append(logo(), document.createTextNode('RONIN '), el('span', 'cs-brand-cowork', 'COWORK'));
-  top.append(brand, el('div', 'cs-step', 'cowork setup · nothing is saved yet')); shell.append(top);
+  top.append(brand, el('div', 'cs-step', t('setup.step', 'cowork setup · nothing is saved yet'))); shell.append(top);
   const hero = el('section', 'cs-hero');
-  const proof = el('p', 'cs-live-proof'); proof.append(el('strong', null, 'YOU’RE CONNECTED'), document.createTextNode(' — Ronin is live on your machine.'));
-  hero.append(proof, el('h1', null, 'Make this coworkspace yours.'), el('p', null, 'Tell Ronin Cowork who you are, where your work lives, and which agents you want here. You can change all of this later.'));
-  const connected = el('div', 'cs-connected'); connected.append(el('span', 'cs-dot'), document.createTextNode(`Running privately on ${machine.host || 'this machine'}`));
+  const proof = el('p', 'cs-live-proof'); proof.append(el('strong', null, t('setup.connected', 'YOU’RE CONNECTED')), document.createTextNode(' ' + t('setup.connected_tail', '— Ronin is live on your machine.')));
+  hero.append(proof, el('h1', null, t('setup.hero', 'Make this coworkspace yours.')), el('p', null, t('setup.hero_lede', 'Tell Ronin Cowork who you are, where your work lives, and which agents you want here. You can change all of this later.')));
+  const connected = el('div', 'cs-connected'); connected.append(el('span', 'cs-dot'), document.createTextNode(t('setup.running_on', 'Running privately on {host}', { host: machine.host || t('setup.this_machine', 'this machine') })));
   hero.append(connected); shell.append(hero);
   const layout = el('div', 'cs-layout'); const form = el('form', 'cs-form');
   form.addEventListener('submit', (event) => event.preventDefault());
   const reviewShell = el('aside', 'cs-review-shell'); reviewShell.setAttribute('aria-live', 'polite');
-  layout.append(form, reviewShell); shell.append(layout); form.append(stage('First', 'Set up your coworkspace'));
+  layout.append(form, reviewShell); shell.append(layout); form.append(stage(t('setup.stage_first', 'First'), t('setup.stage_first_title', 'Set up your coworkspace')));
 
-  const identity = card(1, 'Name your coworkspace', 'This is how you’ll recognize this machine in your roster.');
+  const identity = card(1, t('setup.identity', 'Name your coworkspace'), t('setup.identity_lede', 'This is how you’ll recognize this machine in your roster.'));
   const identityFields = el('div', 'cs-fields');
-  const machineField = inputField('cs-machine', 'Coworkspace name', 'The machine’s real hostname will not change.', { placeholder: 'The workshop' });
-  const ownerField = inputField('cs-owner', 'What should Ronin call you?', 'Mika and your working agents use this name.', { placeholder: 'Your name' });
+  const machineField = inputField('cs-machine', t('setup.machine_name', 'Coworkspace name'), t('setup.machine_name_hint', 'The machine’s real hostname will not change.'), { placeholder: t('setup.machine_name_placeholder', 'The workshop') });
+  const ownerField = inputField('cs-owner', t('setup.owner_name', 'What should Ronin call you?'), t('setup.owner_name_hint', 'Mika and your working agents use this name.'), { placeholder: t('setup.owner_name_placeholder', 'Your name') });
   machineField.input.value = initialOf(fieldById(schema, 'machineName'), ctx) || record.status?.machine_name || '';
   ownerField.input.value = initialOf(fieldById(schema, 'ownerName'), ctx) || record.status?.owner_name || '';
   identityFields.append(machineField.wrap, ownerField.wrap); identity.append(identityFields);
-  const facts = el('details', 'cs-machine-details'); facts.append(el('summary', null, 'Machine details'), el('div', 'cs-detail-body',
-    [machine.host, record.observed?.os?.name, machine.cores && `${machine.cores} cores`, ram && `${ram} GB memory`].filter(Boolean).join(' · ')));
+  const facts = el('details', 'cs-machine-details'); facts.append(el('summary', null, t('setup.machine_details', 'Machine details')), el('div', 'cs-detail-body',
+    [machine.host, record.observed?.os?.name, machine.cores && t('setup.cores', '{n} cores', { n: machine.cores }), ram && t('setup.memory', '{n} GB memory', { n: ram })].filter(Boolean).join(' · ')));
   identity.append(facts); form.append(identity);
 
-  const agentsCard = card(2, 'Your agents', 'Agents already found here are ready. Select any others you want RoninCoWork to add.');
+  const agentsCard = card(2, t('setup.agents', 'Your agents'), t('setup.agents_lede', 'Agents already found here are ready. Select any others you want RoninCoWork to add.'));
   const agentGrid = el('div', 'cs-agents'); const agentHead = el('div', 'cs-agent-head');
-  for (const text of ['', 'Agent', 'When you save', 'Status']) agentHead.append(el('span', null, text));
+  for (const text of ['', t('setup.col_agent', 'Agent'), t('setup.col_when_saved', 'When you save'), t('setup.col_status', 'Status')]) agentHead.append(el('span', null, text));
   agentGrid.append(agentHead); const wantAgents = new Map();
   for (const agent of agents) {
     const row = el('div', `cs-agent${!agent.installed && !agent.get ? ' unavailable' : ''}`);
     const check = document.createElement('input'); check.type = 'checkbox'; check.id = `cs-agent-${agent.id}`;
     const name = el('label', 'cs-agent-name', agent.label); name.htmlFor = check.id;
     let consequence; let tag;
-    if (agent.installed) { check.checked = true; check.disabled = true; consequence = 'Nothing—already ready.'; tag = el('span', 'cs-tag on', 'Installed'); }
-    else if (agent.get) { wantAgents.set(agent.id, check); consequence = 'Install if selected.'; tag = el('span', 'cs-tag add', 'Available to add'); }
-    else { check.disabled = true; consequence = 'Nothing—vendor installer needs sudo.'; tag = el('span', 'cs-tag', 'Manual install'); }
+    if (agent.installed) { check.checked = true; check.disabled = true; consequence = t('setup.agent_ready', 'Nothing—already ready.'); tag = el('span', 'cs-tag on', t('setup.agent_installed', 'Installed')); }
+    else if (agent.get) { wantAgents.set(agent.id, check); consequence = t('setup.agent_install_if', 'Install if selected.'); tag = el('span', 'cs-tag add', t('setup.agent_available', 'Available to add')); }
+    else { check.disabled = true; consequence = t('setup.agent_needs_sudo', 'Nothing—vendor installer needs sudo.'); tag = el('span', 'cs-tag', t('setup.agent_manual', 'Manual install')); }
     row.append(check, name, el('div', 'cs-agent-desc', consequence), tag);
     if (!agent.installed) {
-      const more = el('details', 'cs-agent-more'); more.append(el('summary', null, agent.get ? 'Installation details' : 'Why Ronin can’t install it'),
-        el('div', 'cs-detail-body', agent.get ? `${agent.from}. RoninCoWork will run ${agent.get} on this machine.` : agent.parked)); row.append(more);
+      const more = el('details', 'cs-agent-more'); more.append(el('summary', null, agent.get ? t('setup.agent_details', 'Installation details') : t('setup.agent_why_not', 'Why Ronin can’t install it')),
+        el('div', 'cs-detail-body', agent.get ? t('setup.agent_will_run', '{from}. RoninCoWork will run {command} on this machine.', { from: agent.from, command: agent.get }) : agent.parked)); row.append(more);
     }
     agentGrid.append(row);
   }
   agentsCard.append(agentGrid); form.append(agentsCard);
 
-  const defaults = card(3, 'How new sessions should start', 'This is only the default. You can choose something different each time.');
+  const defaults = card(3, t('setup.defaults', 'How new sessions should start'), t('setup.defaults_lede', 'This is only the default. You can choose something different each time.'));
   const defaultFields = el('div', 'cs-fields');
-  const modelField = selectField('cs-model', 'Start new sessions with', 'These are the runnable models in Ronin’s launch catalog. A saved choice wins when one exists.');
-  const mikaField = selectField('cs-mika', 'Mika uses', 'The same runnable launch catalog supplies this list. A light model is recommended for Mika.');
+  const modelField = selectField('cs-model', t('setup.model', 'Start new sessions with'), t('setup.model_hint', 'These are the runnable models in Ronin’s launch catalog. A saved choice wins when one exists.'));
+  const mikaField = selectField('cs-mika', t('setup.mika', 'Mika uses'), t('setup.mika_hint', 'The same runnable launch catalog supplies this list. A light model is recommended for Mika.'));
   for (const option of ctx.modelOpts) {
     modelField.select.add(new Option(option.label, option.value));
-    mikaField.select.add(new Option(`${option.label}${LIGHT.test(option.spec.model) ? ' (recommended)' : ''}`, option.value));
+    mikaField.select.add(new Option(LIGHT.test(option.spec.model) ? t('setup.recommended', '{model} (recommended)', { model: option.label }) : option.label, option.value));
   }
   modelField.select.value = initialOf(fieldById(schema, 'model'), ctx); mikaField.select.value = initialOf(fieldById(schema, 'mika'), ctx);
   modelField.wrap.classList.add('full');
-  const capField = selectField('cs-cap', 'Maximum agent sessions', '≈700 MB per agent. Ronin reserves 25% (minimum 2 GB). Shells don’t count.');
+  const capField = selectField('cs-cap', t('setup.cap', 'Maximum agent sessions'), t('setup.cap_hint', '≈700 MB per agent. Ronin reserves 25% (minimum 2 GB). Shells don’t count.'));
   const savedCap = Number(initialOf(fieldById(schema, 'cap'), ctx));
   const caps = [...new Set([sessionEstimate, 2, 4, 8, 24, savedCap, 0].filter((x) => Number.isFinite(x) && x >= 0))];
-  for (const cap of caps) capField.select.add(new Option(cap === 0 ? 'No limit — allow any number' : cap === sessionEstimate ? `${cap} — Ronin estimate for this ${ram} GB machine` : `${cap} agent sessions`, String(cap)));
+  for (const cap of caps) capField.select.add(new Option(cap === 0 ? t('setup.cap_none', 'No limit — allow any number') : cap === sessionEstimate ? t('setup.cap_estimate', '{n} — Ronin estimate for this {ram} GB machine', { n: cap, ram }) : t('setup.cap_n', '{n} agent sessions', { n: cap }), String(cap)));
   capField.select.value = String(savedCap); defaultFields.append(modelField.wrap, mikaField.wrap, capField.wrap); defaults.append(defaultFields); form.append(defaults);
 
-  const servicesCard = card(4, 'Ronin Services', 'Extra capabilities for your coworkspace. Base RoninCoWork works fully without them.');
-  servicesCard.querySelector('h2').append(el('span', 'cs-optional', 'Optional'));
-  const intro = el('div', 'cs-service-intro'); intro.append(el('strong', null, 'Keep the work on your machine, add the view around it. '), document.createTextNode('Services add live agent plans, readable transcripts, voice, usage history, and long-term memory.'));
+  const servicesCard = card(4, t('settei.ronin_services', 'Ronin Services'), t('setup.services_lede', 'Extra capabilities for your coworkspace. Base RoninCoWork works fully without them.'));
+  servicesCard.querySelector('h2').append(el('span', 'cs-optional', t('setup.optional', 'Optional')));
+  const intro = el('div', 'cs-service-intro'); intro.append(el('strong', null, t('setup.services_intro_strong', 'Keep the work on your machine, add the view around it.') + ' '), document.createTextNode(t('setup.services_intro', 'Services add live agent plans, readable transcripts, voice, usage history, and long-term memory.')));
   servicesCard.append(intro); const features = el('div', 'cs-features');
-  for (const [name] of record.schema?.services?.features ?? []) features.append(el('div', 'cs-feature', name === 'gbrain' ? 'Long-term agent memory' : name));
+  for (const [name] of record.schema?.services?.features ?? []) features.append(el('div', 'cs-feature', name === 'gbrain' ? t('setup.feature_gbrain', 'Long-term agent memory') : name));
   servicesCard.append(features);
   const choice = el('div', 'cs-choice'); const wantServices = document.createElement('input'); wantServices.type = 'checkbox'; wantServices.id = 'cs-services';
   const activationStage = record.set?.services?.activation?.stage || 'not_requested';
   const activationExists = !['not_requested', 'cancelled'].includes(activationStage);
   wantServices.checked = activationExists;
   wantServices.disabled = activationExists;
-  const choiceLabel = el('label'); choiceLabel.htmlFor = wantServices.id; choiceLabel.append(el('div', 'cs-choice-title', 'Start Ronin Services activation'), el('div', 'cs-choice-copy', 'Ronin will send your email address, this terms version, and an activation request.'));
-  const serviceFields = el('div', 'cs-service-fields'); const emailField = inputField('cs-email', 'Email for the confirmation', '', { type: 'email', placeholder: 'you@example.com' });
+  const choiceLabel = el('label'); choiceLabel.htmlFor = wantServices.id; choiceLabel.append(el('div', 'cs-choice-title', t('setup.services_start', 'Start Ronin Services activation')), el('div', 'cs-choice-copy', t('setup.services_start_copy', 'Ronin will send your email address, this terms version, and an activation request.')));
+  const serviceFields = el('div', 'cs-service-fields'); const emailField = inputField('cs-email', t('setup.email', 'Email for the confirmation'), '', { type: 'email', placeholder: 'you@example.com' });
   if (activationExists) {
-    choiceLabel.querySelector('.cs-choice-title').textContent = activationStage === 'installed' ? 'Ronin Services are active' : 'Ronin Services activation is already in progress';
-    choiceLabel.querySelector('.cs-choice-copy').textContent = `Current status: ${activationStage.replaceAll('_', ' ')}.`;
-    emailField.input.placeholder = record.set?.services?.activation?.email_masked || 'Email already recorded securely';
+    choiceLabel.querySelector('.cs-choice-title').textContent = activationStage === 'installed' ? t('setup.services_active', 'Ronin Services are active') : t('setup.services_in_progress', 'Ronin Services activation is already in progress');
+    choiceLabel.querySelector('.cs-choice-copy').textContent = t('setup.services_status', 'Current status: {stage}.', { stage: activationStage.replaceAll('_', ' ') });
+    emailField.input.placeholder = record.set?.services?.activation?.email_masked || t('setup.email_recorded', 'Email already recorded securely');
   }
-  serviceFields.append(emailField.wrap, el('div', 'cs-activation-flow', '1. Ronin emails a link → 2. You confirm the terms → 3. Services install.'), el('div', 'cs-terms', 'Confirming accepts the Services terms: share anonymous operating measurements—never your code or conversations—and don’t resell the Services. Declining sends nothing.'));
+  serviceFields.append(emailField.wrap, el('div', 'cs-activation-flow', t('setup.activation_flow', '1. Ronin emails a link → 2. You confirm the terms → 3. Services install.')), el('div', 'cs-terms', t('setup.terms', 'Confirming accepts the Services terms: share anonymous operating measurements—never your code or conversations—and don’t resell the Services. Declining sends nothing.')));
   const gbrainLabel = el('label', 'cs-gbrain-choice'); const wantGbrain = document.createElement('input'); wantGbrain.type = 'checkbox'; wantGbrain.id = 'cs-gbrain'; wantGbrain.checked = record.set?.gbrain?.enabled === true;
-  const gbrainCopy = el('span'); const gbrainDesc = el('span', 'cs-choice-copy'); const gbrainLink = el('a', null, 'Garry Tan’s open-source agent memory');
+  const gbrainCopy = el('span'); const gbrainDesc = el('span', 'cs-choice-copy'); const gbrainLink = el('a', null, t('setup.gbrain_link', 'Garry Tan’s open-source agent memory'));
   gbrainLink.href = 'https://github.com/garrytan/gbrain'; gbrainLink.target = '_blank'; gbrainLink.rel = 'noreferrer';
-  gbrainDesc.append(gbrainLink, document.createTextNode('. Agents search it before answering and add to it as they work. To keep your data local and serve gbrain, Ronin provides a local embeddings model that requires about 0.3 GB.'));
-  gbrainCopy.append(el('span', 'cs-choice-title', 'Use gbrain memory'), gbrainDesc); gbrainLabel.append(wantGbrain, gbrainCopy); serviceFields.append(gbrainLabel);
+  gbrainDesc.append(gbrainLink, document.createTextNode(t('setup.gbrain_copy', '. Agents search it before answering and add to it as they work. To keep your data local and serve gbrain, Ronin provides a local embeddings model that requires about 0.3 GB.')));
+  gbrainCopy.append(el('span', 'cs-choice-title', t('setup.gbrain_use', 'Use gbrain memory')), gbrainDesc); gbrainLabel.append(wantGbrain, gbrainCopy); serviceFields.append(gbrainLabel);
   choice.append(wantServices, choiceLabel, serviceFields); servicesCard.append(choice); form.append(servicesCard);
 
-  form.append(stage('Then', 'Start your first project', 'project'));
-  const projectCard = card(5, 'What would you like to work on first?', 'Leave it empty and add projects later from ▣ Roots — or give a folder and RoninCoWork registers it as your first project.');
-  projectCard.querySelector('h2').append(el('span', 'cs-optional', 'Optional'));
+  form.append(stage(t('setup.stage_then', 'Then'), t('setup.stage_then_title', 'Start your first project'), 'project'));
+  const projectCard = card(5, t('setup.project', 'What would you like to work on first?'), t('setup.project_lede', 'Leave it empty and add projects later from ▣ Roots — or give a folder and RoninCoWork registers it as your first project.'));
+  projectCard.querySelector('h2').append(el('span', 'cs-optional', t('setup.optional', 'Optional')));
   const projectFields = el('div', 'cs-fields');
-  const dirField = inputField('cs-folder', 'Working folder', 'Pick from the suggestions or type the path — ~ is your home folder. It must already exist; RoninCoWork will not create or clone it.', { placeholder: '~/code/my-app', cls: 'path' }); dirField.wrap.classList.add('full');
+  const dirField = inputField('cs-folder', t('setup.folder', 'Working folder'), t('setup.folder_hint', 'Pick from the suggestions or type the path — ~ is your home folder. It must already exist; RoninCoWork will not create or clone it.'), { placeholder: '~/code/my-app', cls: 'path' }); dirField.wrap.classList.add('full');
   // The selection half: the operator lists real subdirectories under what is typed so
   // far, the datalist offers them natively, and typing stays first-class.
   const dirList = el('datalist'); dirList.id = 'cs-folder-dirs';
   dirField.input.setAttribute('list', dirList.id); dirField.wrap.append(dirList);
-  const repoFact = el('div', 'cs-detected'); repoFact.append(el('b', null, 'Git repository: '), el('span', null, 'Not checked yet — Git is optional')); dirField.wrap.append(repoFact);
-  const projectField = inputField('cs-project', 'Short name (Optional)', 'Left empty, the folder’s name is used. Lowercase letters, numbers, hyphens or underscores; at most 32 characters.', { placeholder: 'my-app' });
-  const remitField = inputField('cs-purpose', 'What are you working on? (Optional)', 'One sentence gives agents useful context.', { placeholder: 'A customer support dashboard' });
+  const repoFact = el('div', 'cs-detected'); repoFact.append(el('b', null, t('setup.git_repo', 'Git repository:') + ' '), el('span', null, t('setup.git_unchecked', 'Not checked yet — Git is optional'))); dirField.wrap.append(repoFact);
+  const projectField = inputField('cs-project', t('setup.short_name', 'Short name (Optional)'), t('setup.short_name_hint', 'Left empty, the folder’s name is used. Lowercase letters, numbers, hyphens or underscores; at most 32 characters.'), { placeholder: 'my-app' });
+  const remitField = inputField('cs-purpose', t('setup.purpose', 'What are you working on? (Optional)'), t('setup.purpose_hint', 'One sentence gives agents useful context.'), { placeholder: t('setup.purpose_placeholder', 'A customer support dashboard') });
   projectFields.append(dirField.wrap, projectField.wrap, remitField.wrap); projectCard.append(projectFields); form.append(projectCard);
 
-  reviewShell.append(stage('', 'When you save')); const review = el('div', 'cs-review'); const reviewHead = el('div', 'cs-review-head');
-  reviewHead.append(el('p', null, 'Review what RoninCoWork will do.')); review.append(reviewHead); const list = el('ul', 'cs-review-list'); review.append(list);
-  const rr = { machine: reviewRow('Coworkspace name'), owner: reviewRow('Ronin will call you'), ready: reviewRow('Ready agents · detected'), add: reviewRow('RoninCoWork will install · consequence'), model: reviewRow('New sessions start with'), mika: reviewRow('Mika uses'), cap: reviewRow('Maximum agent sessions'), services: reviewRow('Ronin Services'), gbrain: reviewRow('gbrain memory'), project: reviewRow('First project'), folder: reviewRow('Working folder'), repo: reviewRow('Git repository · detected'), purpose: reviewRow('What are you working on?') };
+  reviewShell.append(stage('', t('setup.review_stage', 'When you save'))); const review = el('div', 'cs-review'); const reviewHead = el('div', 'cs-review-head');
+  reviewHead.append(el('p', null, t('setup.review_lede', 'Review what RoninCoWork will do.'))); review.append(reviewHead); const list = el('ul', 'cs-review-list'); review.append(list);
+  const rr = { machine: reviewRow(t('setup.machine_name', 'Coworkspace name')), owner: reviewRow(t('setup.review_owner', 'Ronin will call you')), ready: reviewRow(t('setup.review_ready', 'Ready agents · detected')), add: reviewRow(t('setup.review_add', 'RoninCoWork will install · consequence')), model: reviewRow(t('setup.review_model', 'New sessions start with')), mika: reviewRow(t('setup.mika', 'Mika uses')), cap: reviewRow(t('setup.cap', 'Maximum agent sessions')), services: reviewRow(t('settei.ronin_services', 'Ronin Services')), gbrain: reviewRow(t('setup.review_gbrain', 'gbrain memory')), project: reviewRow(t('setup.review_project', 'First project')), folder: reviewRow(t('setup.folder', 'Working folder')), repo: reviewRow(t('setup.review_repo', 'Git repository · detected')), purpose: reviewRow(t('setup.review_purpose', 'What are you working on?')) };
   Object.values(rr).forEach((row) => list.append(row.li)); rr.add.li.hidden = true;
-  const reviewFoot = el('div', 'cs-review-foot'); const save = el('button', 'cs-save', 'Save and open RoninCoWork'); save.type = 'button';
-  const line = status('cs-status'); reviewFoot.append(save, el('p', 'cs-save-note', 'You can change these choices later.'), line.el); review.append(reviewFoot); reviewShell.append(review);
+  const reviewFoot = el('div', 'cs-review-foot'); const save = el('button', 'cs-save', t('setup.save', 'Save and open RoninCoWork')); save.type = 'button';
+  const line = status('cs-status'); reviewFoot.append(save, el('p', 'cs-save-note', t('setup.save_note', 'You can change these choices later.')), line.el); review.append(reviewFoot); reviewShell.append(review);
 
-  let repoText = 'Not checked yet — Git is optional'; let inspectTimer;
+  let repoText = t('setup.git_unchecked', 'Not checked yet — Git is optional'); let inspectTimer;
   /** The short name a folder earns when none is typed: its basename, said in the name rule. */
   const deriveName = (dir) => dir.split('/').filter(Boolean).pop()?.toLowerCase().replace(/[^a-z0-9_-]/g, '-').replace(/^[^a-z0-9]+/, '').slice(0, 32) || 'project';
   const updateReview = () => {
     const additions = [...wantAgents].filter(([, box]) => box.checked).map(([id]) => agents.find((a) => a.id === id)?.label || id);
-    rr.machine.out.textContent = machineField.input.value.trim() || `Use ${machine.host || 'the hostname'}`;
-    rr.owner.out.textContent = ownerField.input.value.trim() || `Use ${machine.user || 'the machine user'}`;
-    rr.ready.out.textContent = agents.filter((a) => a.installed).map((a) => a.label).join(', ') || 'None detected';
-    rr.add.li.hidden = additions.length === 0; rr.add.out.textContent = additions.length ? `${additions.join(', ')} — install in visible tiles` : '';
-    rr.model.out.textContent = modelField.select.selectedOptions[0]?.textContent || 'No runnable model detected'; rr.mika.out.textContent = mikaField.select.selectedOptions[0]?.textContent || 'No runnable model detected'; rr.cap.out.textContent = capField.select.selectedOptions[0]?.textContent || '';
-    rr.services.out.textContent = activationExists ? `Already selected · ${activationStage.replaceAll('_', ' ')}` : wantServices.checked ? `Begin activation${emailField.input.value.trim() ? ` for ${emailField.input.value.trim()}` : ' after you enter an email'}` : 'Not selected — nothing will be sent';
-    rr.gbrain.out.textContent = wantServices.checked && wantGbrain.checked ? 'Add local embeddings model · about 0.3 GB' : 'Not selected';
+    rr.machine.out.textContent = machineField.input.value.trim() || t('setup.use_value', 'Use {value}', { value: machine.host || t('setup.the_hostname', 'the hostname') });
+    rr.owner.out.textContent = ownerField.input.value.trim() || t('setup.use_value', 'Use {value}', { value: machine.user || t('setup.the_machine_user', 'the machine user') });
+    rr.ready.out.textContent = agents.filter((a) => a.installed).map((a) => a.label).join(', ') || t('setup.none_detected', 'None detected');
+    rr.add.li.hidden = additions.length === 0; rr.add.out.textContent = additions.length ? t('setup.install_in_tiles', '{agents} — install in visible tiles', { agents: additions.join(', ') }) : '';
+    rr.model.out.textContent = modelField.select.selectedOptions[0]?.textContent || t('setup.no_model', 'No runnable model detected'); rr.mika.out.textContent = mikaField.select.selectedOptions[0]?.textContent || t('setup.no_model', 'No runnable model detected'); rr.cap.out.textContent = capField.select.selectedOptions[0]?.textContent || '';
+    rr.services.out.textContent = activationExists ? t('setup.services_already', 'Already selected · {stage}', { stage: activationStage.replaceAll('_', ' ') }) : wantServices.checked ? (emailField.input.value.trim() ? t('setup.services_begin_for', 'Begin activation for {email}', { email: emailField.input.value.trim() }) : t('setup.services_begin_after', 'Begin activation after you enter an email')) : t('setup.services_not_selected', 'Not selected — nothing will be sent');
+    rr.gbrain.out.textContent = wantServices.checked && wantGbrain.checked ? t('setup.gbrain_selected', 'Add local embeddings model · about 0.3 GB') : t('setup.not_selected', 'Not selected');
     const dirVal = dirField.input.value.trim(); const nameVal = projectField.input.value.trim();
-    rr.project.out.textContent = nameVal || (dirVal ? `Use "${deriveName(dirVal)}" — the folder's name` : 'Skipped — add projects later from ▣ Roots');
-    rr.folder.out.textContent = dirVal || 'None'; rr.repo.out.textContent = repoText; rr.purpose.out.textContent = remitField.input.value.trim() || 'No description yet';
+    rr.project.out.textContent = nameVal || (dirVal ? t('setup.project_derived', 'Use "{name}" — the folder\'s name', { name: deriveName(dirVal) }) : t('setup.project_skipped', 'Skipped — add projects later from ▣ Roots'));
+    rr.folder.out.textContent = dirVal || t('setup.none', 'None'); rr.repo.out.textContent = repoText; rr.purpose.out.textContent = remitField.input.value.trim() || t('setup.no_description', 'No description yet');
   };
   const inspectDir = () => {
-    clearTimeout(inspectTimer); repoText = dirField.input.value.trim() ? 'Checking this folder…' : 'Not checked yet — Git is optional'; repoFact.querySelector('span').textContent = repoText; updateReview();
+    clearTimeout(inspectTimer); repoText = dirField.input.value.trim() ? t('setup.git_checking', 'Checking this folder…') : t('setup.git_unchecked', 'Not checked yet — Git is optional'); repoFact.querySelector('span').textContent = repoText; updateReview();
     if (!dirField.input.value.trim()) return;
     inspectTimer = setTimeout(async () => {
       const result = await request(`/api/project-roots/inspect?dir=${encodeURIComponent(dirField.input.value.trim())}`, { cache: 'no-store' });
-      repoText = !result.ok ? result.message : !result.data.exists ? 'Folder does not exist' : result.data.repo ? `${result.data.repo.remote || 'Local Git repository'}${result.data.repo.branch ? ` · branch ${result.data.repo.branch}` : ''}` : 'Existing folder · Git is optional';
+      repoText = !result.ok ? result.message : !result.data.exists ? t('setup.folder_missing', 'Folder does not exist') : result.data.repo ? `${result.data.repo.remote || t('setup.git_local', 'Local Git repository')}${result.data.repo.branch ? ' · ' + t('setup.git_branch', 'branch {branch}', { branch: result.data.repo.branch }) : ''}` : t('setup.folder_no_git', 'Existing folder · Git is optional');
       repoFact.querySelector('span').textContent = repoText; updateReview();
     }, 350);
   };
@@ -244,11 +245,11 @@ export async function buildCoworkSetup(host, onDone) {
     const typedName = projectField.input.value.trim().toLowerCase(); const projectDir = dirField.input.value.trim();
     const wantsProject = Boolean(projectDir);
     const projectName = typedName || (wantsProject ? deriveName(projectDir) : '');
-    if (!wantsProject && typedName) { line.say('A project needs its working folder — add it, or clear the name to skip.', 'bad'); dirField.input.focus(); return; }
-    if (wantsProject && !/^[a-z0-9][a-z0-9_-]{0,31}$/.test(projectName)) { line.say('The short name: lowercase letters, numbers, hyphens or underscores — or leave it empty.', 'bad'); projectField.input.focus(); return; }
-    if (wantsProject && repoText === 'Folder does not exist') { line.say('The working folder must already exist on this machine.', 'bad'); dirField.input.focus(); return; }
-    if (!activationExists && wantServices.checked && (!emailField.input.value.trim() || !emailField.input.validity.valid)) { line.say('Enter the email address for Services confirmation.', 'bad'); emailField.input.focus(); return; }
-    save.disabled = true; line.say('Saving…', 'busy');
+    if (!wantsProject && typedName) { line.say(t('setup.err_folder_needed', 'A project needs its working folder — add it, or clear the name to skip.'), 'bad'); dirField.input.focus(); return; }
+    if (wantsProject && !/^[a-z0-9][a-z0-9_-]{0,31}$/.test(projectName)) { line.say(t('setup.err_short_name', 'The short name: lowercase letters, numbers, hyphens or underscores — or leave it empty.'), 'bad'); projectField.input.focus(); return; }
+    if (wantsProject && repoText === t('setup.folder_missing', 'Folder does not exist')) { line.say(t('setup.err_folder_missing', 'The working folder must already exist on this machine.'), 'bad'); dirField.input.focus(); return; }
+    if (!activationExists && wantServices.checked && (!emailField.input.value.trim() || !emailField.input.validity.valid)) { line.say(t('setup.err_email', 'Enter the email address for Services confirmation.'), 'bad'); emailField.input.focus(); return; }
+    save.disabled = true; line.say(t('setup.saving', 'Saving…'), 'busy');
     // A skipped project sends NOTHING: undefined never reaches toRequests' families.
     const values = { machineName: machineField.input.value, ownerName: ownerField.input.value, projName: wantsProject ? projectName : undefined, projDir: wantsProject ? projectDir : undefined, projRemit: wantsProject ? remitField.input.value : undefined, model: modelField.select.value, mika: mikaField.select.value, cap: capField.select.value };
     const problems = []; let installNote = ''; const landOn = [];
@@ -256,21 +257,21 @@ export async function buildCoworkSetup(host, onDone) {
     // previous Save. Any other family answering 409 is a problem worth showing.
     for (const req of toRequests(schema, values)) { const result = await request(req.route, { method: req.method, json: req.json }); if (!result.ok && !(result.status === 409 && req.family === 'project')) problems.push(result.message || req.route); }
     const gbrainResult = await request('/api/settei/gbrain', { method: 'PUT', json: { enabled: wantServices.checked && wantGbrain.checked } }); if (!gbrainResult.ok) problems.push(gbrainResult.message);
-    if (!activationExists && wantServices.checked) { const result = await request('/api/services/activation', { method: 'POST', json: { email: emailField.input.value.trim() } }); if (!result.ok && result.status === 400) problems.push(result.message); else if (!result.ok) installNote = ' Services activation needs attention in the workspace.'; }
+    if (!activationExists && wantServices.checked) { const result = await request('/api/services/activation', { method: 'POST', json: { email: emailField.input.value.trim() } }); if (!result.ok && result.status === 400) problems.push(result.message); else if (!result.ok) installNote = ' ' + t('setup.note_activation', 'Services activation needs attention in the workspace.'); }
     if (problems.length) { line.say(problems[0], 'bad'); save.disabled = false; return; }
     // The pending flag must actually clear — a silent failure here would loop the
     // person back into setup on their next load with no word about why.
     const done = await request('/api/settei/setup', { method: 'PUT' });
-    if (!done.ok) { line.say(done.message || 'could not record setup as finished — try Save again', 'bad'); save.disabled = false; return; }
+    if (!done.ok) { line.say(done.message || t('setup.err_not_recorded', 'could not record setup as finished — try Save again'), 'bad'); save.disabled = false; return; }
     const picks = [...wantAgents].filter(([, box]) => box.checked).map(([id]) => id);
     if (picks.length) {
       const already = (record.set?.wanted ?? []).filter((w) => !(w.kind === 'agent' && picks.includes(w.name)));
       await request('/api/settei/wanted', { method: 'PUT', json: { wanted: [...already, ...picks.map((name) => ({ kind: 'agent', name }))] } });
       const installed = await request('/api/install', { method: 'POST', json: { items: picks.map((name) => ({ kind: 'agent', name })) } });
-      if (installed.ok && Array.isArray(installed.data)) landOn.push(...installed.data.filter((x) => x.session).map((x) => x.session)); else if (!installed.ok) installNote += ' Agent installs can be retried from Configuration.';
+      if (installed.ok && Array.isArray(installed.data)) landOn.push(...installed.data.filter((x) => x.session).map((x) => x.session)); else if (!installed.ok) installNote += ' ' + t('setup.note_installs', 'Agent installs can be retried from Configuration.');
     }
     if (ctx.modelOpts.length) { const born = await request('/api/launch', { method: 'POST', json: { session_role: schema.seat.session_role, name: schema.seat.name, ...(wantsProject ? { project_root: projectName } : {}), prompt: schema.seat.prompt } }); if (born.ok && born.data?.name) landOn.push(born.data.name); }
-    line.say(`Saved. Opening RoninCoWork…${installNote}`, installNote ? 'bad' : 'ok'); onDone?.({ tiles: landOn });
+    line.say(t('setup.saved', 'Saved. Opening RoninCoWork…') + installNote, installNote ? 'bad' : 'ok'); onDone?.({ tiles: landOn });
   });
   updateReview(); inspectDir();
 }

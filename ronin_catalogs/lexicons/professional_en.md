@@ -732,3 +732,123 @@ The catalog entry goes. {dir} is not touched.
 - **stats.capabilities:** Capabilities
 - **stats.unreachable:** Stats could not be read.
 - **stats.unavailable:** Stats are not available on this install yet.
+
+## setup — cowork-setup.js (the one-time cowork_setup page)
+- **setup.step:** cowork setup · nothing is saved yet
+- **setup.connected:** YOU’RE CONNECTED
+- **setup.connected_tail:** — Ronin is live on your machine.
+- **setup.hero:** Make this coworkspace yours.
+- **setup.hero_lede:** Tell Ronin Cowork who you are, where your work lives, and which agents you want here. You can change all of this later.
+- **setup.running_on:** Running privately on {host}
+- **setup.this_machine:** this machine
+- **setup.stage_first:** First
+- **setup.stage_first_title:** Set up your coworkspace
+- **setup.identity:** Name your coworkspace
+- **setup.identity_lede:** This is how you’ll recognize this machine in your roster.
+- **setup.machine_name:** Coworkspace name
+- **setup.machine_name_hint:** The machine’s real hostname will not change.
+- **setup.machine_name_placeholder:** The workshop
+- **setup.owner_name:** What should Ronin call you?
+- **setup.owner_name_hint:** Mika and your working agents use this name.
+- **setup.owner_name_placeholder:** Your name
+- **setup.machine_details:** Machine details
+- **setup.cores:** {n} cores
+- **setup.memory:** {n} GB memory
+- **setup.agents:** Your agents
+- **setup.agents_lede:** Agents already found here are ready. Select any others you want RoninCoWork to add.
+- **setup.col_agent:** Agent
+- **setup.col_when_saved:** When you save
+- **setup.col_status:** Status
+- **setup.agent_ready:** Nothing—already ready.
+- **setup.agent_installed:** Installed
+- **setup.agent_install_if:** Install if selected.
+- **setup.agent_available:** Available to add
+- **setup.agent_needs_sudo:** Nothing—vendor installer needs sudo.
+- **setup.agent_manual:** Manual install
+- **setup.agent_details:** Installation details
+- **setup.agent_why_not:** Why Ronin can’t install it
+- **setup.agent_will_run:** {from}. RoninCoWork will run {command} on this machine.
+- **setup.defaults:** How new sessions should start
+- **setup.defaults_lede:** This is only the default. You can choose something different each time.
+- **setup.model:** Start new sessions with
+- **setup.model_hint:** These are the runnable models in Ronin’s launch catalog. A saved choice wins when one exists.
+- **setup.mika:** Mika uses
+- **setup.mika_hint:** The same runnable launch catalog supplies this list. A light model is recommended for Mika.
+- **setup.recommended:** {model} (recommended)
+- **setup.cap:** Maximum agent sessions
+- **setup.cap_hint:** ≈700 MB per agent. Ronin reserves 25% (minimum 2 GB). Shells don’t count.
+- **setup.cap_none:** No limit — allow any number
+- **setup.cap_estimate:** {n} — Ronin estimate for this {ram} GB machine
+- **setup.cap_n:** {n} agent sessions
+- **setup.services_lede:** Extra capabilities for your coworkspace. Base RoninCoWork works fully without them.
+- **setup.optional:** Optional
+- **setup.services_intro_strong:** Keep the work on your machine, add the view around it.
+- **setup.services_intro:** Services add live agent plans, readable transcripts, voice, usage history, and long-term memory.
+- **setup.feature_gbrain:** Long-term agent memory
+- **setup.services_start:** Start Ronin Services activation
+- **setup.services_start_copy:** Ronin will send your email address, this terms version, and an activation request.
+- **setup.email:** Email for the confirmation
+- **setup.services_active:** Ronin Services are active
+- **setup.services_in_progress:** Ronin Services activation is already in progress
+- **setup.services_status:** Current status: {stage}.
+- **setup.email_recorded:** Email already recorded securely
+- **setup.activation_flow:** 1. Ronin emails a link → 2. You confirm the terms → 3. Services install.
+- **setup.terms:** Confirming accepts the Services terms: share anonymous operating measurements—never your code or conversations—and don’t resell the Services. Declining sends nothing.
+- **setup.gbrain_link:** Garry Tan’s open-source agent memory
+- **setup.gbrain_copy:** . Agents search it before answering and add to it as they work. To keep your data local and serve gbrain, Ronin provides a local embeddings model that requires about 0.3 GB.
+- **setup.gbrain_use:** Use gbrain memory
+- **setup.stage_then:** Then
+- **setup.stage_then_title:** Start your first project
+- **setup.project:** What would you like to work on first?
+- **setup.project_lede:** Leave it empty and add projects later from ▣ Roots — or give a folder and RoninCoWork registers it as your first project.
+- **setup.folder:** Working folder
+- **setup.folder_hint:** Pick from the suggestions or type the path — ~ is your home folder. It must already exist; RoninCoWork will not create or clone it.
+- **setup.git_repo:** Git repository:
+- **setup.git_unchecked:** Not checked yet — Git is optional
+- **setup.short_name:** Short name (Optional)
+- **setup.short_name_hint:** Left empty, the folder’s name is used. Lowercase letters, numbers, hyphens or underscores; at most 32 characters.
+- **setup.purpose:** What are you working on? (Optional)
+- **setup.purpose_hint:** One sentence gives agents useful context.
+- **setup.purpose_placeholder:** A customer support dashboard
+- **setup.review_stage:** When you save
+- **setup.review_lede:** Review what RoninCoWork will do.
+- **setup.review_owner:** Ronin will call you
+- **setup.review_ready:** Ready agents · detected
+- **setup.review_add:** RoninCoWork will install · consequence
+- **setup.review_model:** New sessions start with
+- **setup.review_gbrain:** gbrain memory
+- **setup.review_project:** First project
+- **setup.review_repo:** Git repository · detected
+- **setup.review_purpose:** What are you working on?
+- **setup.save:** Save and open RoninCoWork
+- **setup.save_note:** You can change these choices later.
+- **setup.use_value:** Use {value}
+- **setup.the_hostname:** the hostname
+- **setup.the_machine_user:** the machine user
+- **setup.none_detected:** None detected
+- **setup.install_in_tiles:** {agents} — install in visible tiles
+- **setup.no_model:** No runnable model detected
+- **setup.services_already:** Already selected · {stage}
+- **setup.services_begin_for:** Begin activation for {email}
+- **setup.services_begin_after:** Begin activation after you enter an email
+- **setup.services_not_selected:** Not selected — nothing will be sent
+- **setup.gbrain_selected:** Add local embeddings model · about 0.3 GB
+- **setup.not_selected:** Not selected
+- **setup.project_derived:** Use "{name}" — the folder's name
+- **setup.project_skipped:** Skipped — add projects later from ▣ Roots
+- **setup.none:** None
+- **setup.no_description:** No description yet
+- **setup.git_checking:** Checking this folder…
+- **setup.folder_missing:** Folder does not exist
+- **setup.git_local:** Local Git repository
+- **setup.git_branch:** branch {branch}
+- **setup.folder_no_git:** Existing folder · Git is optional
+- **setup.err_folder_needed:** A project needs its working folder — add it, or clear the name to skip.
+- **setup.err_short_name:** The short name: lowercase letters, numbers, hyphens or underscores — or leave it empty.
+- **setup.err_folder_missing:** The working folder must already exist on this machine.
+- **setup.err_email:** Enter the email address for Services confirmation.
+- **setup.saving:** Saving…
+- **setup.note_activation:** Services activation needs attention in the workspace.
+- **setup.err_not_recorded:** could not record setup as finished — try Save again
+- **setup.note_installs:** Agent installs can be retried from Configuration.
+- **setup.saved:** Saved. Opening RoninCoWork…
