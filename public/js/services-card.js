@@ -15,7 +15,7 @@ import { t } from './lexicon.js';
 
 /** How the six durable stages read to a person, in their words rather than ours.
  *  A function, not a table: the lexicon loads after this module is evaluated. */
-function say() {
+function stageWords() {
   return {
     not_requested: [t('services.stage_not_requested', 'Not requested'), t('services.stage_not_requested_blurb', 'Ronin Services are not switched on for this machine.')],
     requesting: [t('services.stage_requesting', 'Sending…'), t('services.stage_requesting_blurb', 'Asking Ronin to send your confirmation email.')],
@@ -49,7 +49,7 @@ export function servicesCard(container, onChange) {
     if (installTimer) clearTimeout(installTimer);
     wrap.replaceChildren();
 
-    const SAY = say();
+    const SAY = stageWords();
     const [title, blurb] = SAY[state.stage] ?? SAY.not_requested;
 
     const head = document.createElement('div');

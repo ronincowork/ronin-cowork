@@ -63,6 +63,8 @@
  */
 // A function, not a table: the lexicon loads after this module is evaluated, so the tab
 // labels are read when a strip is drawn.
+import { t } from './lexicon.js';
+
 export function PANES() {
   return [
   { id: 'sessions', surface: 'commons', label: t('pane.sessions', '⌂ Roster') },

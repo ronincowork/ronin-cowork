@@ -18,16 +18,16 @@ export function build() {
   // Per-tile guard: a constructor that throws costs ONE tile, not the grid. The
   // tiles array stays dense (no nulls) so every tiles.forEach stays safe.
   for (let i = 0; i < TILE_COUNT; i++) {
-    let t = null;
+    let tile = null;
     try {
-      t = new Tile(i);
+      tile = new Tile(i);
     } catch (e) {
       showFailure(t('errors.tile_failed', 'tile {n} failed to build', { n: i + 1 }), e);
       grid.appendChild(deadTile(i, e));
       continue;
     }
-    tiles.push(t);
-    grid.appendChild(t.el);
+    tiles.push(tile);
+    grid.appendChild(tile.el);
   }
   // Each wiring block is guarded separately: losing one control must not cost the
   // rest of the header, which is exactly what happened on 2026-08-08.

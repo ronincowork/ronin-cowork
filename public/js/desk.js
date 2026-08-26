@@ -120,9 +120,9 @@ export function buildDesk(tile) {
       b.dataset.room = r.id;
       const g = document.createElement('b');
       g.textContent = r.glyph;
-      const t = document.createElement('span');
-      t.textContent = r.label;
-      b.append(g, t);
+      const name = document.createElement('span');
+      name.textContent = r.label;
+      b.append(g, name);
       // A row whose service is absent is visible but opaque-and-inert — the same
       // treatment the strip gives an absent room, so the desk does not invent a second
       // way of saying "not plugged in". The name rides as the accessible name rather

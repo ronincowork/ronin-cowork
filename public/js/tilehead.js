@@ -90,19 +90,19 @@ const HEADER = () => {
   // SHINGO 信号 — beside the name, because it answers "where is this session", which
   // belongs with "which session is this" and not among the controls on the right.
   { key: 'chip',
-    widget: (t) => makeChip(() => t.toggleLadder()),
+    widget: (tile) => makeChip(() => tile.toggleLadder()),
     help: t('head.chip_help', 'Where this session is on its ladder, and how long it has been there. Opens the ladder.') },
 
   // THE MARK — what the session is doing, off its letter. `?` when it has not said.
   { key: 'jobBtn', cls: 'job', needs: 'session',
     help: t('head.job_help', 'What this session is doing'),
     quiet: t('head.job_quiet', 'What a session is doing — no session in this tile yet'),
-    on: (t, el) => t.pickJob(el),
+    on: (tile, el) => tile.pickJob(el),
     // `?` when nothing has been said, not blank: an empty button among eight others is
     // invisible, and the owner could not find the control at all. `?` is not a guessed
     // mark — it is the honest reading, drawn so it can be seen and pressed.
-    read: (t, el) => {
-      const s = S.sessions.find((x) => x.name === t.session);
+    read: (tile, el) => {
+      const s = S.sessions.find((x) => x.name === tile.session);
       const job = (s && s.session_role) || '';
       // The job NAME on the element, so style can reach ONE mark: glyphs differ in how
       // heavily their font draws them (style.css, `[data-job=…]`).
@@ -120,9 +120,9 @@ const HEADER = () => {
     help: t('head.branch_help', 'Branches this session is working on'),
     quiet: { session: t('head.branch_quiet', 'Branches — no session in this tile yet'),
       michi: t('head.branch_no_michi', 'Branches — michi is not installed, so TEGAMI checkout data is unavailable') },
-    on: (t) => t.toggleLadder(),
-    read: (t, el) => {
-      const repos = t.tegami?.repos || [];
+    on: (tile) => tile.toggleLadder(),
+    read: (tile, el) => {
+      const repos = tile.tegami?.repos || [];
       const branches = repos.map((x) => x.branch).filter(Boolean);
       el.textContent = repos.length === 1 ? '⑂ ' + (branches[0] || '?') : repos.length ? '⑂ ' + repos.length : '⑂ ?';
       el.classList.toggle('unset', !repos.length);
@@ -141,7 +141,7 @@ const HEADER = () => {
   // and the different versions of unlocked to see how this looks"). Ugly for now by his
   // own word — a select with a word in it among glyph buttons — and the trade is that
   // the RIREKI flavours are one click away on every tile while they are being judged.
-  { key: 'outputEl', widget: (t) => makeOutput(t),
+  { key: 'outputEl', widget: (tile) => makeOutput(tile),
     help: t('head.output_help', 'Output — live terminal or one of RIREKI’s unlocked views') },
 
   // ⛩ IS THE COMMONS, EVERYWHERE (owner's ruling 2026-08-17). It was メ here and き in
@@ -159,10 +159,10 @@ const HEADER = () => {
   // give back.
   { key: 'menuBtn', cls: 'menu', text: '⛩',
     help: t('head.commons_help', '⌃⇧C — the CoWorking Commons: roster, new session, wipeboard, docs, roots, hotwords. Opens over this tile; ✕ comes back.'),
-    on: (t) => t.toggleHome('sessions') },
+    on: (tile) => tile.toggleHome('sessions') },
 
   { key: 'mentionBtn', needs: 'session',
-    widget: (t) => buildTileMentions(t),
+    widget: (tile) => buildTileMentions(tile),
     help: t('head.mention_help', 'Mention another session — choose a name to add it to the message box'),
     quiet: t('head.mention_quiet', 'Mentions — no session in this tile yet') },
 
@@ -180,7 +180,7 @@ const HEADER = () => {
   { key: 'tmacBtn', needs: 'session',
     // Normalised to the {el, …} shape every other widget returns, rather than teaching
     // the loop a second convention for one control.
-    widget: (t) => { const m = buildTileMacros(t); return { el: m.btn, menu: m.menu }; },
+    widget: (tile) => { const m = buildTileMacros(tile); return { el: m.btn, menu: m.menu }; },
     help: t('macros.button_title', "Macros — drop one into this session's input"),
     quiet: t('head.macros_quiet', 'Macros — no session in this tile yet') },
 
@@ -200,9 +200,9 @@ const HEADER = () => {
   { key: 'tagBtn', cls: 'tags', text: '🏷', drop: true, modal: true, needs: 'session',
     help: t('head.tags_help', 'Teams this session is on'),
     quiet: t('head.tags_quiet', 'Teams — no session in this tile yet'),
-    on: (t) => t.openTags(),
-    read: (t, el) => {
-      const tags = S.sessions.find((x) => x.name === t.session)?.tags || [];
+    on: (tile) => tile.openTags(),
+    read: (tile, el) => {
+      const tags = S.sessions.find((x) => x.name === tile.session)?.tags || [];
       el.classList.toggle('has-tags', !!tags.length);
       return tags.length ? t('head.tags_read', 'Teams: {teams}', { teams: tags.join(', ') }) : t('head.tags_none', 'Teams (none yet)');
     } },
@@ -221,7 +221,7 @@ const HEADER = () => {
   // On BOTH surfaces — cockpit dials are the motif everywhere (an explicit override of
   // the desktop-freeze rule for this control).
   { key: 'dial', drop: true, needs: 'session', holds: true,
-    widget: (t) => makeDial(CONTROL_POSITIONS(), (v) => t.pickControl(v)),
+    widget: (tile) => makeDial(CONTROL_POSITIONS(), (v) => tile.pickControl(v)),
     help: dialTitle(), quiet: t('head.dial_quiet', 'Control dial — no session in this tile yet') },
 
   // 📄 — THIS session's listed docs, one press from the tile that already knows them
@@ -236,7 +236,7 @@ const HEADER = () => {
   // so this fetches nothing — see js/tiledocs.js, which also records why narrowing the
   // ▧ Docs list to one session is not the file browser the owner ruled out.
   { key: 'docsBtn', drop: true, needs: 'session michi',
-    widget: (t) => buildTileDocs(t),
+    widget: (tile) => buildTileDocs(tile),
     help: t('head.docs_help', "This session's docs — open one over this tile"),
     quiet: {
       session: t('head.docs_quiet', "This session's docs — no session in this tile yet"),
@@ -244,11 +244,11 @@ const HEADER = () => {
     },
     // Lit when there is something behind it, the same reading 🏷 and 📝 carry: a control
     // you must open to find out it is empty is one you stop opening.
-    read: (t, el) => {
-      // `t.session &&` because `detach` syncs the header BEFORE it clears the letter, so
+    read: (tile, el) => {
+      // `tile.session &&` because `detach` syncs the header BEFORE it clears the letter, so
       // reading `tegami` alone leaves a detached tile lit for the docs of the session that
       // just left it. The session is the truth about whether there is anything to count.
-      const n = ((t.session && t.tegami?.docs) || []).length;
+      const n = ((tile.session && tile.tegami?.docs) || []).length;
       el.classList.toggle('has-docs', !!n);
       return n
         ? t('head.docs_read', 'Docs — {n} listed by this session. Opens one over this tile; ✕ comes back.', { n })
@@ -258,9 +258,9 @@ const HEADER = () => {
   { key: 'noteBtn', cls: 'note', text: '📝', drop: true, modal: true, needs: 'session',
     help: t('head.note_help', 'Session note (post-it)'),
     quiet: t('head.note_quiet', 'Session note — no session in this tile yet'),
-    on: (t) => t.openNote(),
-    read: (t, el) => {
-      const has = !!S.sessions.find((x) => x.name === t.session)?.hasNote;
+    on: (tile) => tile.openNote(),
+    read: (tile, el) => {
+      const has = !!S.sessions.find((x) => x.name === tile.session)?.hasNote;
       el.classList.toggle('has-note', has);
       return has ? t('head.note_has', 'Session note (has notes)') : t('head.note_empty', 'Session note (empty)');
     } },
@@ -268,7 +268,7 @@ const HEADER = () => {
   { key: 'killBtn', cls: 'kill', text: '🗑', drop: true, needs: 'session',
     help: t('head.kill_help', 'Kill session (ends it + its viewers)'),
     quiet: t('head.kill_quiet', 'Kill session — no session in this tile yet'),
-    on: (t) => t.kill() },
+    on: (tile) => tile.kill() },
   ];
   return rows;
 };
