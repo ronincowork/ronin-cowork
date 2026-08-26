@@ -1154,3 +1154,9 @@ The catalog entry goes. {dir} is not touched.
 - **pad.open_failed:** could not open the pad — 1) System Settings → Privacy & Security → 
 - **pad.device_error:** device error
 - **pad.no_reply:** {method}: pad did not reply
+
+## docs — the empty line and count
+- **docs.empty_team:** No session on this Team has listed a doc yet. An agent lists one with: write_tegami --doc <path>
+- **docs.empty:** No session has listed a doc yet. An agent lists one with: write_tegami --doc <path>
+- **docs.count_one:** 1 doc
+- **docs.count_many:** {n} docs
