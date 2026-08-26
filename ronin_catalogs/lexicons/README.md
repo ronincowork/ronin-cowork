@@ -27,7 +27,7 @@ dozen lines, not six hundred.
 
 **`professional_en` is the floor**, and it is complete by definition: every key a view reads
 through `t()` is in it, and `scripts/check-lexicon.mjs` fails the build when one is not.
-The other shipped lexicons (`vibe_code_en`, `home_en`, `terminal_en`) may be short or empty.
+The other shipped lexicons (`vibe_code_en`, `home_en`, `terminal_en`, `league_en`) may be short or empty.
 
 **The language is in the name.** Every lexicon ends in its language — `home_en`,
 `professional_en` — so a French Home is `home_fr` with `- **base:** professional_fr`, and
