@@ -4,6 +4,7 @@ import { toast } from './ui.js';
 import { IS_TOUCH, S } from './state.js';
 import { closeTileMore, fitDropToTile } from './tilemore.js';
 import { addProvMark } from './provenance.js';
+import { t } from './lexicon.js';
 
 /**
  * The ⚡ button on a TILE header: the fast path for session_macros.
@@ -57,7 +58,7 @@ export function buildTileMacros(tile) {
   const btn = document.createElement('button');
   btn.className = 'tmac-btn';
   btn.textContent = '⚡';
-  btn.title = 'Macros — drop one into this session\'s input';
+  btn.title = t('macros.button_title', 'Macros — drop one into this session\'s input');
 
   const menu = document.createElement('div');
   menu.className = 'tmac';
@@ -173,7 +174,7 @@ export function buildTileMacros(tile) {
         row.disabled = true;
         // The blurb's place, not an appendix to the headline: a spent button explaining
         // what it does is less use than one explaining why it will not go.
-        why.textContent = `sent — wait ${cool}s before sending it again`;
+        why.textContent = t('macros.cooldown', 'sent — wait {s}s before sending it again', { s: cool });
       }
       row.addEventListener('click', () => {
         if (m.send) {
@@ -192,7 +193,7 @@ export function buildTileMacros(tile) {
     }
     // Two ways to be empty and one sentence for both — the catalog has not loaded, or
     // nothing in it is marked `preview: yes`. Either way the fix is the same file.
-    if (!shown.length) menu.textContent = 'no macros previewed — see MACROS.md';
+    if (!shown.length) menu.textContent = t('macros.none_previewed', 'no macros previewed — see MACROS.md');
   };
 
   /**
