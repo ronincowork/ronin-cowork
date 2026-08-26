@@ -405,7 +405,7 @@ export class Tile {
   async onSelect() {
     const v = this.select.value;
     if (v === NEW) {
-      const name = (prompt('New tmux session name (letters, digits, _ or -):') || '').trim();
+      const name = (prompt(t('tile.new_session_prompt', 'New tmux session name (letters, digits, _ or -):')) || '').trim();
       this.select.value = this.session || '';
       if (!name) return;
       try {
@@ -480,7 +480,7 @@ export class Tile {
       this.term.writeln('\r\n\x1b[31m[grid] ' + m.m + '\x1b[0m');
       this.setDot('off');
     } else if (m.t === 'exit') {
-      this.term.writeln('\r\n\x1b[33m[grid] session ended.\x1b[0m');
+      this.term.writeln('\r\n\x1b[33m[grid] ' + t('tile.session_ended', 'session ended.') + '\x1b[0m');
       this.setDot('off');
     } else if (m.t === 'ready') {
       // Honest UI: scrollback above the live screen of an alt-screen app is
@@ -532,8 +532,8 @@ export class Tile {
     for (const option of [...sel.options])
       if ((S.streamOff && option.value !== 'locked') || (option.value === 'agent_summary' && serviceMissing('koshi'))) option.remove();
     sel.title = S.streamOff
-      ? 'Output — Locked only. Ronin Services is not installed.'
-      : 'Output — choose the live terminal or a RIREKI view';
+      ? t('output.title_locked', 'Output — Locked only. Ronin Services is not installed.')
+      : t('output.title_choose', 'Output — choose the live terminal or a RIREKI view');
   }
 
   /**
