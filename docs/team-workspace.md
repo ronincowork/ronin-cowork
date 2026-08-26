@@ -48,7 +48,9 @@ checks** — build tiles on first need and destroy every one on leave.
 3. The managed Workbench restores the arrangement; the Kit's layout map in the app bar
    shows it.
 4. The shared Team controller refreshes durable and live readings; live members are
-   projected from sessions whose tags contain the Team name.
+   projected from sessions whose tags contain the Team name. Membership stays live
+   while the page is open: the events feed pushes on tag and lead changes, and the page
+   repaints (seats, cards, configuration) whenever the member set or the 人 changes.
 5. Each workspace gets back what it remembered. With nothing remembered: the **人** (the
    designated lead) left, the commons right. A remembered member the roster no longer has
    is waited for while the roster is still arriving, then let go.
@@ -181,9 +183,19 @@ from what the tab remembered.
   the Team name; polled only while entered.
 - **Docs** — the Commons' own mdedit pane (`buildDocs`), narrowed to the roster's members;
   a draft `commons:docs:<path>` opens a file here.
-- **Team Configuration** — read-only durable metadata and derived live roster.
+- **Team Configuration** — a read-only reading of the team, durable record or not: the
+  record's fields or `tag-only`, the wipeboard in use, and the live roster — the 人 and
+  each member with the same readings its card carries, on the cards' clock.
 
 The tab strip carries **T** at its right end through `createChannelSurface({ actions })`.
+
+### The three headers
+
+A tile's head, the commons' tab strip and the roster's head share one depth, the
+`--row-head` token in `style.css` (41px). **C** on a tile head is sized by the head's own
+button rule, like ⛩ @ ⚡ メ; **T** on the strip stands at tab height (`tw-flip-strip`).
+A tile head wraps rather than clips when its workspace is squeezed, so the picker stays
+readable and every control — C included — stays reachable at the workspace floor.
 
 ## Verified behavior and commands
 
@@ -191,7 +203,8 @@ The chain through 2026-08-25/26 (all on `dev`, PR #34): `e291c6d` slot arrangeme
 the layout map · `dfc627f`/`8d1758b`/`085426b` discrete workspaces, C/T, KISS ·
 `08c6813` end-to-end review · `272428c` roster readings · `4b42d44` 人 from the tile,
 keyboard · `5acb840` `tejun-teampage` · `a6819eb` the roster in its view · `041206a`
-`+show_file` on the team page.
+`+show_file` on the team page · `02f288b` live membership seats and unseats ·
+`7c5c619` the head row and Team Configuration finished on measurement.
 
 Every leg was verified by a playwright probe against the live page (`scripts/lib/ui-host.mjs`,
 `loadPlaywright()`), recorded in `wip/buildouts/TEAM_WORKBENCH.md` under each LANDED
@@ -203,7 +216,7 @@ The designated integrator runs one BYOIN mode on the release candidate; a SKIP i
 
 - `＋ Add team member` is intentionally inert.
 - Team Configuration is read-only; creation, editing and membership mutation are not
-  implemented (the 人 is settable from the Tile).
+  implemented (the 人 is settable from the Tile; membership is the sessions' tags).
 - Chat is intentionally empty.
 - No cherry-pick/summary reading on the cards: no service puts such a field on the
   `/api/home` row.

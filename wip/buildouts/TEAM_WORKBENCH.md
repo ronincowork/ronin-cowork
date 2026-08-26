@@ -7,7 +7,56 @@
 > One home, this file — the owner has ruled against copies.
 >
 > Begun by `@wipeboard_refactor` 2026-08-25; carried through leg 9 by `@team_page`
-> 2026-08-25/26. Last updated 2026-08-26, `dev` @ `041206a`.
+> 2026-08-25/26; the finish by `@team_pg` 2026-08-26. Last updated 2026-08-26, `dev` @
+> `7c5c619`.
+
+## THE FINISH — what `@team_pg` did with the remit below (2026-08-26)
+
+**A bug first, from the owner's chair:** a session that joined the team while the page
+was open got a card and no seat — its card clicked and dragged into nothing ("that one
+Kanban is broken"). The pools were synced on entry only; the cards were drawn off
+`S.sessions`, which the feed keeps live. Now (`02f288b`) the page repaints whenever the
+member set or the 人 changes — on the feed's `sessions` event (`sessionsHandlers` in
+`events.js`, beside `teamPageHandlers`) and on the five-second row read as fallback —
+and the server's feed watches tags and leads, not only names and marks (`src/ws/events.ts`;
+a tag-only join or leave was invisible to it). Measured: tag a session onto the team →
+card and seat, click lands; untag → tile destroyed, card gone, the empty tile back.
+
+**The head row (`7c5c619`), all of it measured at 1600×950 on both pages:**
+- C was 34×28 in a row of 26×24 / 28×24 buttons; it is a head button now (`.tw-flip`
+  sets no size on the head — `.tile-head button` sizes it; `tw-flip-strip` gives T its
+  tab height on the strip).
+- The three headers topping a column measured 39 (tile head on Sessions) / 41 (tile head
+  on the team page, inflated by C) / 41 (tab strip) / 40 (roster head). One token now,
+  `--row-head` (28 + 12 + 1 = 41px, style.css), on all three; the Sessions head grew 2px.
+- At the workspace floor (236px) the head overflowed by 99px: picker squashed to 14px,
+  ⚡ メ and C off the right edge — no way to the commons from a squeezed tile. `.tile-head`
+  wraps now, and the picker keeps a 6rem floor. Measured: two rows at ~330px, three at
+  the 236px floor, nothing clipped; a Sessions tile at 4-up never wraps. (The `@` select
+  needed `min-width: 0` back, or it took the picker's floor — measured, fixed.)
+- **⤢ does not exist.** The remit names it among ⛩ @ ⚡; no row in `tilehead.js` and no
+  glyph in the tree carries it. If the owner means a maximise-this-workspace control,
+  that is the layout map's job (hide the other two) and is not built.
+- **The picker is untouched in function.** It still lists every session on the box and
+  ➕; picking a non-member from it is the known limit in `docs/team-workspace.md`. The
+  one change is the readable floor. Narrowing it to members, or replacing it with the
+  name, is the owner's call — it means teaching the Tile about the team.
+
+**The commons' tabs (`7c5c619`):** Team Configuration was "team has no roster" plus a
+developer's note for a tag-only team. It is a reading now for every team: the durable
+record or `tag-only — no durable roster`, the wipeboard in use (the roster's, else the
+team's name), and the live roster — the 人 (or `not designated`) and each member with the
+same readings its card carries, refreshed on the cards' clock. Chat stays empty by
+ruling. Docs was found finished: mdedit's own list over the members' letters, the editor
+on click, `+show_file` landing in it — nothing changed.
+
+**Measured but not changed — for the owner:** the three-row head at the floor is honest
+but tall (95px in a 236px column). If that is too much, the readings (chip, branch)
+could yield before the controls, or the workspace floor could rise from 15%; both are
+rulings, not fixes.
+
+**Probe trap added to the list:** `page.goto(url, { waitUntil: 'networkidle' })` never
+resolves against this app (websockets and polls); use `'load'` and a fixed wait.
 
 ## HANDOFF — for the next `team_page` (2026-08-26)
 
