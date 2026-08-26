@@ -91,3 +91,49 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **desk.services_live_reloading:** ✓ services live: {list} — reloading
 - **desk.services_timeout:** services did not answer after 5 minutes — journalctl --user -u "ronin-update-*" has the transcript
 - **desk.installing_services:** installing services {latest} — fetch, verify, contract check, restart. The page blinks at the restart; sessions are untouched…
+
+## launcher — launcher.js (the ＋ New board and its form)
+- **launcher.team_none:** — team —
+- **launcher.team_new:** ＋ new team…
+- **launcher.team_new_prompt:** New team name (letters, digits, - _):
+- **launcher.head:** put a session out to work
+- **launcher.name_title:** session name — how you address this session afterwards
+- **launcher.name:** session name
+- **launcher.what:** what this session is told
+- **launcher.where_title:** project_root — where the work happens (sets the directory + reading list)
+- **launcher.model_title:** Which session_launch_spec to launch
+- **launcher.team_title:** Team the new session joins (tag)
+- **launcher.gbrain_on:** gbrain on
+- **launcher.gbrain_off:** gbrain off
+- **launcher.gbrain_on_title:** This session can reach gbrain — and any other MCP servers the CLI is wired with. Click to launch it with none.
+- **launcher.gbrain_off_title:** This session launches with NO MCP servers — gbrain and every other connector off. Click to launch connected.
+- **launcher.start:** Start
+- **launcher.cancel:** Cancel
+- **launcher.mode_manual:** manual
+- **launcher.mode_manual_title:** Your text is the whole prompt — nothing added, nothing templated
+- **launcher.mode_assisted:** assisted
+- **launcher.mode_assisted_title:** Say it long-form; Ronin composes the brief around it
+- **launcher.mode_manual_note:** your words, untouched
+- **launcher.mode_assisted_note:** Koshi fills the rest
+- **launcher.mode_manual_say:** Sent word for word — nothing added.
+- **launcher.mode_assisted_say:** Say it in plain terms and Koshi your AI admin will handle the rest; the below selections are optional.
+- **launcher.what_placeholder:** exactly what you want said to the agent
+- **launcher.what_placeholder_assisted:** Describe in plain terms what this session should do and cover…
+- **launcher.name_placeholder:** session name (required)
+- **launcher.name_placeholder_assisted:** session name (optional — named from your text)
+- **launcher.optional:** optional
+- **launcher.seed_placeholder:** read first (optional): paths, comma-separated
+- **launcher.seed:** read first — paths, comma-separated
+- **launcher.inject_placeholder:** extra instruction (optional)
+- **launcher.inject:** extra instruction
+- **launcher.reference_title:** Point this session at ONE existing session (review it, fork from it, watch it)
+- **launcher.reference_none:** — no session —
+- **launcher.setup_offer:** 新 start your setup session
+- **launcher.cannot_launch:** this combination cannot be launched — see the definition files it names
+- **launcher.powered_by:** powered by {name} ↗
+- **launcher.no_roles:** no session_roles in ronin_catalogs/session_roles/
+- **launcher.own_kind:** session task
+- **launcher.saved:** saved launches
+- **launcher.saved_role_missing:** "{label}" names session_role "{role}", which is not in the catalog.
+- **launcher.where_none:** — no project_roots —
+- **launcher.launch_failed:** could not put a session out — {message}
