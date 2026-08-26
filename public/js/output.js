@@ -32,10 +32,10 @@ export async function refreshKaki(tile, request, create, force = false) {
   let r = await request(path);
   if (r.ok) tile.tape.setSummaryPolicy(r.data.policy);
   if (r.ok && r.data.text && !force) { tile.tape.setSummary(r.data.text); return; }
-  tile.tape.setSummary('', create ? 'Writing a summary…' : 'No summary has been written yet.');
+  tile.tape.setSummary('', create ? t('tape.writing_summary', 'Writing a summary…') : t('tape.no_summary', 'No summary has been written yet.'));
   if (!create) return;
   r = await request(path, { method: 'POST', json: {} });
-  if (!r.ok) { tile.tape.setSummary('', 'Summary unavailable — ' + r.message); return; }
+  if (!r.ok) { tile.tape.setSummary('', t('tape.summary_unavailable', 'Summary unavailable — {message}', { message: r.message })); return; }
   tile.tape.setSummary((r.data.chunks || []).map((c) => c.summary).join('\n\n'));
 }
 
