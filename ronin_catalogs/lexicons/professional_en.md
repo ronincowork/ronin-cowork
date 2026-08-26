@@ -1246,3 +1246,9 @@ The catalog entry goes. {dir} is not touched.
 - **hotwords.none:** no words yet — dictation runs unbiased
 - **hotwords.own_list:** ◆ your list — an upgrade cannot touch it, and will not add to it either
 - **hotwords.stock_list:** Ronin's stock list — your first edit makes a copy that is yours
+
+## ladder — the chip tooltip and side line
+- **ladder.held:** Held at a gate
+- **ladder.tap:** Tap for the ladder
+- **ladder.unchanged_for:** ladder unchanged for {age}
+- **ladder.side:** {state} — the ladder below is held, not stale
