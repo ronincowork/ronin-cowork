@@ -1,6 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { request } from './request.js';
 import { tabs as makeTabs } from './ui.js';
+import { t } from './lexicon.js';
 
 /* ---------- STATS — the sixth commons pane (tab: ▦ Stats) ----------
  *
@@ -25,25 +26,30 @@ import { tabs as makeTabs } from './ui.js';
 // `other` is a real bucket, not a gap: a session whose letter names no job still has
 // to be drawable, or it silently vanishes from a chart that claims to show everything.
 const TASKS = ['RiffOnIt', 'DraftPlan', 'CutCode', 'ChaseBug', 'CheckWork', 'QuarterBack', 'OddJob', 'Atarashi', 'PersonalAssistant', 'OpenShell', 'MikaAssist', 'other'];
-const WINDOWS = [
-  ['today', 'Today'],
-  ['week', 'This week'],
-  ['month', 'This month'],
-  ['all', 'All time'],
-];
+// Functions, not tables: the lexicon loads after this module is evaluated.
+function windows() {
+  return [
+    ['today', t('stats.win_today', 'Today')],
+    ['week', t('stats.win_week', 'This week')],
+    ['month', t('stats.win_month', 'This month')],
+    ['all', t('stats.win_all', 'All time')],
+  ];
+}
 /** Named for the thing you would go and try, not for the internal counter. */
-const CAPS = [
-  ['forks', 'forks'],
-  ['groups', 'teams'],
-  // `led` (@ronin-lead) was here until the 人 was retired. A cap is "the thing you would
-  // go and try", and there is nothing to go and try any more — a session's coordinator is
-  // its session_role now, which the task chart above already counts.
-  ['board_posts', 'wipeboard posts'],
-  ['board_reads', 'wipeboard reads'],
-  ['voice', 'voice'],
-  ['pad', 'pad'],
-  ['copy', 'copy panel'],
-];
+function caps() {
+  return [
+    ['forks', t('stats.cap_forks', 'forks')],
+    ['groups', t('stats.cap_teams', 'teams')],
+    // `led` (@ronin-lead) was here until the 人 was retired. A cap is "the thing you would
+    // go and try", and there is nothing to go and try any more — a session's coordinator is
+    // its session_role now, which the task chart above already counts.
+    ['board_posts', t('stats.cap_board_posts', 'wipeboard posts')],
+    ['board_reads', t('stats.cap_board_reads', 'wipeboard reads')],
+    ['voice', t('stats.cap_voice', 'voice')],
+    ['pad', t('stats.cap_pad', 'pad')],
+    ['copy', t('stats.cap_copy', 'copy panel')],
+  ];
+}
 
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
@@ -60,7 +66,7 @@ export function buildStats(root) {
   const head = el('div', 'td-head');
   const tabs = el('div', 'td-wins');
   const range = el('span', 'td-range');
-  for (const [id, label] of WINDOWS) {
+  for (const [id, label] of windows()) {
     const b = el('button', 'td-win', label);
     b.type = 'button';
     b.dataset.win = id;
@@ -222,7 +228,7 @@ export function buildStats(root) {
       el(
         'div',
         'td-fhead',
-        `⚠ ${n} stats probe${n > 1 ? 's are' : ' is'} broken — counting has stopped for ${n > 1 ? 'these' : 'this'}. Paste this into a session to fix.`,
+        n > 1 ? t('stats.faults_many', '⚠ {n} stats probes are broken — counting has stopped for these. Paste this into a session to fix.', { n }) : t('stats.faults_one', '⚠ {n} stats probe is broken — counting has stopped for this. Paste this into a session to fix.', { n }),
       ),
     );
     // The caught error verbatim. Never a paraphrase: a summary drops exactly the words
@@ -237,7 +243,7 @@ export function buildStats(root) {
 
   const render = (d) => {
     body.textContent = '';
-    range.textContent = d.days > 1 ? `${d.from} → ${d.to} · ${d.days} days` : d.from;
+    range.textContent = d.days > 1 ? t('stats.range', '{from} → {to} · {days} days', { from: d.from, to: d.to, days: d.days }) : d.from;
     renderFaults(d.faults);
 
     const s = d.sessions || {};
@@ -245,14 +251,14 @@ export function buildStats(root) {
 
     // cards
     const cards = el('div', 'td-cards');
-    const sessCard = card('Sessions', String(s.started ?? 0));
+    const sessCard = card(t('stats.sessions', 'Sessions'), String(s.started ?? 0));
     const sp = spark(s.spark);
     if (sp) sessCard.insertBefore(sp, sessCard.children[2] || null);
     cards.append(
       sessCard,
-      card('Active days', `${s.active_days ?? 0} / ${d.days}`),
-      card('Live now', String(s.alive ?? 0), `peak ${s.peak ?? 0}`),
-      card('Teams', String(s.tag_groups ?? 0)),
+      card(t('stats.active_days', 'Active days'), `${s.active_days ?? 0} / ${d.days}`),
+      card(t('stats.live_now', 'Live now'), String(s.alive ?? 0), t('stats.peak', 'peak {n}', { n: s.peak ?? 0 })),
+      card(t('stats.teams', 'Teams'), String(s.tag_groups ?? 0)),
     );
     body.appendChild(cards);
 
@@ -263,27 +269,27 @@ export function buildStats(root) {
       ? el(
           'div',
           'td-mean',
-          `${migN} migrated · ${Object.entries(s.migrations).map(([k, v]) => `${k.replace('>', '→')} ${v}`).join(' · ')}`,
+          t('stats.migrated', '{n} migrated · {list}', { n: migN, list: Object.entries(s.migrations).map(([k, v]) => `${k.replace('>', '→')} ${v}`).join(' · ') }),
         )
       : null;
-    const mekPanel = mek ? panel('Task at birth × task at death', mek, true) : null;
+    const mekPanel = mek ? panel(t('stats.mek', 'Task at birth × task at death'), mek, true) : null;
     if (mekPanel && migNote) mekPanel.appendChild(migNote);
 
     body.appendChild(
       section(
-        'Sessions',
-        `${s.started ?? 0} started`,
-        sumOf(s.by_task_now) ? panel('Doing right now', bars(s.by_task_now, TASKS)) : null,
+        t('stats.sessions', 'Sessions'),
+        t('stats.started', '{n} started', { n: s.started ?? 0 }),
+        sumOf(s.by_task_now) ? panel(t('stats.doing_now', 'Doing right now'), bars(s.by_task_now, TASKS)) : null,
         // The role is a census and never a migration: it cannot change while a session
         // lives, so there is no birth-vs-now pair for it and no arrow to draw.
         mekPanel,
-        sumOf(s.born) ? panel('Born', bars(s.born, ['assisted', 'manual', 'fork', 'macro', 'hand'])) : null,
-        sumOf(s.end) ? panel('Ended', bars(s.end, ['harakiri', 'deleted', 'cold', 'archived'])) : null,
-        sumOf(s.life) ? panel('Lifetime', hist(s.life, ['<1h', '1-8h', '8h-1d', '1-7d', '>7d'])) : null,
+        sumOf(s.born) ? panel(t('stats.born', 'Born'), bars(s.born, ['assisted', 'manual', 'fork', 'macro', 'hand'])) : null,
+        sumOf(s.end) ? panel(t('stats.ended', 'Ended'), bars(s.end, ['harakiri', 'deleted', 'cold', 'archived'])) : null,
+        sumOf(s.life) ? panel(t('stats.lifetime', 'Lifetime'), hist(s.life, ['<1h', '1-8h', '8h-1d', '1-7d', '>7d'])) : null,
         sumOf(s.ctx)
-          ? panel('Context unused at close', hist(s.ctx, ['<25', '25-50', '50-75', '75-90', '>90']))
+          ? panel(t('stats.ctx_unused', 'Context unused at close'), hist(s.ctx, ['<25', '25-50', '50-75', '75-90', '>90']))
           : null,
-        sumOf(s.by_model) ? panel('Model', bars(s.by_model)) : null,
+        sumOf(s.by_model) ? panel(t('stats.model', 'Model'), bars(s.by_model)) : null,
       ) || el('div'),
     );
 
@@ -293,18 +299,18 @@ export function buildStats(root) {
     delete lad.at_gate;
     const ladderPanel = sumOf(lad)
       ? panel(
-          'How far up the ladder',
+          t('stats.ladder_height', 'How far up the ladder'),
           hist(
             lad,
             ['none', '0-25', '25-50', '50-75', '75-100'],
-            atGate ? `${atGate} at a gate — waiting on you` : null,
+            atGate ? t('stats.at_gate', '{n} at a gate — waiting on you', { n: atGate }) : null,
           ),
         )
       : null;
     const pl = d.plans;
     const planPanel = pl
       ? panel(
-          'Plan docs',
+          t('stats.plan_docs', 'Plan docs'),
           (() => {
             const rows = el('div', 'td-rows');
             const add = (k, v) => {
@@ -312,36 +318,36 @@ export function buildStats(root) {
               r.append(el('span', 'td-k', k), el('span', 'td-v', String(v)));
               rows.appendChild(r);
             };
-            add('in flight', pl.live);
-            add('landed', pl.landed);
-            add('legs completed', pl.legs_done);
-            add('stale 14d+', pl.stale);
-            add('legs per plan (median)', pl.legs_median);
+            add(t('stats.plans_in_flight', 'in flight'), pl.live);
+            add(t('stats.plans_landed', 'landed'), pl.landed);
+            add(t('stats.plans_legs_done', 'legs completed'), pl.legs_done);
+            add(t('stats.plans_stale', 'stale 14d+'), pl.stale);
+            add(t('stats.plans_legs_median', 'legs per plan (median)'), pl.legs_median);
             return rows;
           })(),
         )
       : null;
     if (ladderPanel || planPanel) {
       body.appendChild(
-        section('Ladders & plans', `${s.alive ?? 0} live`, ladderPanel, planPanel) || el('div'),
+        section(t('stats.ladders_plans', 'Ladders & plans'), t('stats.n_live', '{n} live', { n: s.alive ?? 0 }), ladderPanel, planPanel) || el('div'),
       );
     }
 
     // surfaces
-    const caps = el('div', 'td-caps');
-    for (const [key, label] of CAPS) {
+    const capGrid = el('div', 'td-caps');
+    for (const [key, label] of caps()) {
       const n = (surf.caps || {})[key] || 0;
       const cell = el('div', n ? 'td-capcell' : 'td-capcell off');
       cell.append(el('span', 'td-capn', String(n)), el('span', 'td-capt', label));
-      caps.appendChild(cell);
+      capGrid.appendChild(cell);
     }
     body.appendChild(
       section(
-        'Ronin surfaces',
-        `${sumOf(surf.macros)} macro runs`,
-        sumOf(surf.macros) ? panel('Macros', bars(surf.macros)) : null,
-        sumOf(surf.tabs) || sumOf(surf.dials) ? panel('UI', uiRows(surf)) : null,
-        panel('Capabilities', caps, true),
+        t('stats.surfaces', 'Ronin surfaces'),
+        t('stats.macro_runs', '{n} macro runs', { n: sumOf(surf.macros) }),
+        sumOf(surf.macros) ? panel(t('stats.macros', 'Macros'), bars(surf.macros)) : null,
+        sumOf(surf.tabs) || sumOf(surf.dials) ? panel(t('stats.ui', 'UI'), uiRows(surf)) : null,
+        panel(t('stats.capabilities', 'Capabilities'), capGrid, true),
       ) || el('div'),
     );
 
@@ -395,8 +401,8 @@ export function buildStats(root) {
     loading = true;
     const r = await request(`/api/tomodachi/stats?window=${win}`, { cache: 'no-store' });
     if (r.ok && !r.data.error) render(r.data);
-    else if (r.kind === 'network') body.textContent = 'Stats could not be read.';
-    else body.textContent = 'Stats are not available on this install yet.';
+    else if (r.kind === 'network') body.textContent = t('stats.unreachable', 'Stats could not be read.');
+    else body.textContent = t('stats.unavailable', 'Stats are not available on this install yet.');
     loading = false;
   }
 

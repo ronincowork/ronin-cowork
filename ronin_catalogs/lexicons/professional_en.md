@@ -685,3 +685,50 @@ The catalog entry goes. {dir} is not touched.
 - **roots.count_archived:** {n} archived
 - **roots.untagged_one:** {n} untagged session
 - **roots.untagged_many:** {n} untagged sessions
+
+## stats — stats.js (the ▦ Stats tab)
+- **stats.win_today:** Today
+- **stats.win_week:** This week
+- **stats.win_month:** This month
+- **stats.win_all:** All time
+- **stats.cap_forks:** forks
+- **stats.cap_teams:** teams
+- **stats.cap_board_posts:** wipeboard posts
+- **stats.cap_board_reads:** wipeboard reads
+- **stats.cap_voice:** voice
+- **stats.cap_pad:** pad
+- **stats.cap_copy:** copy panel
+- **stats.faults_many:** ⚠ {n} stats probes are broken — counting has stopped for these. Paste this into a session to fix.
+- **stats.faults_one:** ⚠ {n} stats probe is broken — counting has stopped for this. Paste this into a session to fix.
+- **stats.range:** {from} → {to} · {days} days
+- **stats.sessions:** Sessions
+- **stats.active_days:** Active days
+- **stats.live_now:** Live now
+- **stats.peak:** peak {n}
+- **stats.teams:** Teams
+- **stats.migrated:** {n} migrated · {list}
+- **stats.mek:** Task at birth × task at death
+- **stats.started:** {n} started
+- **stats.doing_now:** Doing right now
+- **stats.born:** Born
+- **stats.ended:** Ended
+- **stats.lifetime:** Lifetime
+- **stats.ctx_unused:** Context unused at close
+- **stats.model:** Model
+- **stats.ladder_height:** How far up the ladder
+- **stats.at_gate:** {n} at a gate — waiting on you
+- **stats.plan_docs:** Plan docs
+- **stats.plans_in_flight:** in flight
+- **stats.plans_landed:** landed
+- **stats.plans_legs_done:** legs completed
+- **stats.plans_stale:** stale 14d+
+- **stats.plans_legs_median:** legs per plan (median)
+- **stats.ladders_plans:** Ladders & plans
+- **stats.n_live:** {n} live
+- **stats.surfaces:** Ronin surfaces
+- **stats.macro_runs:** {n} macro runs
+- **stats.macros:** Macros
+- **stats.ui:** UI
+- **stats.capabilities:** Capabilities
+- **stats.unreachable:** Stats could not be read.
+- **stats.unavailable:** Stats are not available on this install yet.
