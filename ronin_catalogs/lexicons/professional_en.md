@@ -852,3 +852,35 @@ The catalog entry goes. {dir} is not touched.
 - **setup.err_not_recorded:** could not record setup as finished — try Save again
 - **setup.note_installs:** Agent installs can be retried from Configuration.
 - **setup.saved:** Saved. Opening RoninCoWork…
+
+## customize — customize-rail.js (the Customize rail's sections and resources)
+- **customize.sec_behavior:** Behavior
+- **customize.sec_people:** People & work
+- **customize.sec_presentation:** Presentation
+- **customize.macros:** Macros
+- **customize.macros_what:** a workflow an agent runs when you type +name:
+- **customize.macros_blurb:** Saved instructions you would otherwise have typed to your agent.
+- **customize.sops:** SOPs
+- **customize.sops_read:** Read procedure
+- **customize.sops_blurb:** How this house goes about a domain — fetched by a situation, never pushed.
+- **customize.actions:** Actions
+- **customize.actions_read:** Read action
+- **customize.actions_what:** a primitive step macros are composed from
+- **customize.actions_blurb:** The cataloged procedures macros are made of.
+- **customize.tools:** Tools
+- **customize.tools_why:** TOOLS.md is a table, and the server has no table reader — the rule in docs/shadowing.md is implemented in ronin_bin/tejun and not in src/catalog.ts (prerequisite P1).
+- **customize.tools_blurb:** The executables that implement actions. A markdown row cannot author one.
+- **customize.role_families:** Role families
+- **customize.role_families_blurb:** The shelves of the ＋ New board. Presentation only — a family never rides a launch.
+- **customize.session_roles:** Session roles
+- **customize.session_roles_blurb:** What a session is doing now. Its fields cascade into every launch.
+- **customize.team_roles:** Team roles
+- **customize.team_roles_blurb:** What a TEAM is. The house ships none — every one is yours.
+- **customize.saved_launches:** Saved launches
+- **customize.saved_launches_blurb:** The launcher form, filled in ahead of time and named.
+- **customize.skins:** Skins
+- **customize.skins_what:** a look — a set of design tokens, and nothing else
+- **customize.skins_blurb:** A set of design tokens and nothing else. Choosing one is a setting, and stays on the gear.
+- **customize.readings:** Session readings
+- **customize.readings_read:** Read reading
+- **customize.readings_blurb:** What a new session reads before anything else. A reading you add reaches the next session born, never a running one.
