@@ -70,7 +70,7 @@ export function buildWipeboard(tile, root, isShowing) {
       // The text stays, the flag stays dirty, and the failure is IN the thread area:
       // a brief that silently never landed is the wipeboard lying to its members.
       briefDirty = true;
-      empty('brief not saved — ' + r.message + ' (your text is still in the box)');
+      empty(t('wipeboard.brief_not_saved', 'brief not saved — {message} (your text is still in the box)', { message: r.message }));
       return;
     }
     briefDirty = false;
@@ -151,7 +151,7 @@ export function buildWipeboard(tile, root, isShowing) {
       const e = document.createElement('div');
       e.className = 'wb-empty';
       e.textContent =
-        'no teams yet — tag sessions in the ⌂ Roster and each team gets its own wipeboard';
+        t('wipeboard.no_teams', 'no teams yet — tag sessions in the ⌂ Roster and each team gets its own wipeboard');
       listWrap.appendChild(e);
     }
     // Custom wipeboards: the secondary path, capability whole. house lives here too.
@@ -186,7 +186,7 @@ export function buildWipeboard(tile, root, isShowing) {
       const r2 = await request('/api/wipeboards', { method: 'POST', json: { name: n } });
       if (!r2.ok) {
         listSig = '';
-        alert('could not start a wipeboard — ' + r2.message);
+        alert(t('wipeboard.start_failed', 'could not start a wipeboard — {message}', { message: r2.message }));
         return;
       }
       open(n, 'custom');
@@ -231,7 +231,7 @@ export function buildWipeboard(tile, root, isShowing) {
             { method: 'DELETE' },
           );
           if (!r.ok) {
-            empty('could not remove ' + m.name + ' — ' + r.message);
+            empty(t('wipeboard.remove_failed', 'could not remove {name} — {message}', { name: m.name, message: r.message }));
             x.disabled = false;
             return;
           }
@@ -271,7 +271,7 @@ export function buildWipeboard(tile, root, isShowing) {
         json: v.startsWith('g:') ? { team: v.slice(2) } : { session: v.slice(2) },
       });
       if (!r.ok) {
-        empty('could not add — ' + r.message);
+        empty(t('wipeboard.add_failed', 'could not add — {message}', { message: r.message }));
       } else {
         // Say plainly who was told and who wasn't — a silently-unnotified member is
         // exactly the confusion this wipeboard exists to remove. The thread area
@@ -289,7 +289,7 @@ export function buildWipeboard(tile, root, isShowing) {
   const renderThread = (posts) => {
     thread.innerHTML = '';
     if (!posts.length) {
-      empty('nothing posted yet');
+      empty(t('wipeboard.nothing_posted', 'nothing posted yet'));
       return;
     }
     for (const p of posts) {
@@ -319,7 +319,7 @@ export function buildWipeboard(tile, root, isShowing) {
     if (!r.ok) {
       // Network blips ride the 2s poll — the thread stays; a real answer that says
       // "no" replaces it, exactly as before.
-      if (r.kind !== 'network') empty(r.message || 'could not read this wipeboard');
+      if (r.kind !== 'network') empty(r.message || t('wipeboard.read_failed', 'could not read this wipeboard'));
       return;
     }
     kind = r.data.kind === 'team' ? 'team' : 'custom';
@@ -364,7 +364,7 @@ export function buildWipeboard(tile, root, isShowing) {
     });
     if (!r.ok) {
       // The words stay in the box — a failed post must never cost the post.
-      empty('could not post — ' + r.message + ' (your text is still in the box)');
+      empty(t('wipeboard.post_failed', 'could not post — {message} (your text is still in the box)', { message: r.message }));
     } else {
       say.value = '';
       mtime = 0;
