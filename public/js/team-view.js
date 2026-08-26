@@ -64,7 +64,8 @@ export function createTeamView() {
 
   /* ---------- the flip: one button in the header row, C or T ---------- */
   const flipButton = (letter) => {
-    const button = el('button', 'tw-flip', letter);
+    // C is sized by the tile head's own button rule; T stands at tab height on the strip.
+    const button = el('button', letter === 'T' ? 'tw-flip tw-flip-strip' : 'tw-flip', letter);
     button.type = 'button';
     button.title = letter === 'C' ? 'Show the Team commons in this workspace' : 'Show the terminal in this workspace';
     button.addEventListener('click', () => {
@@ -353,6 +354,9 @@ export function createTeamView() {
     rows = new Map(r.data.map((row) => [row.name, row]));
     onSessions();
     renderCards(membersOfTeam(team));
+    // The configuration's live roster carries the same readings; it keeps the same clock.
+    const roster = teamByName(team);
+    renderConfig(roster.durable ? roster : null, membersOfTeam(team));
   };
   // MEMBERSHIP IS LIVE, AND SO ARE THE SEATS. The team controller only publishes on
   // `refreshTeams()`, which this page runs once on entry; the cards, though, are drawn
@@ -410,25 +414,32 @@ export function createTeamView() {
   }
 
   /* ---------- Team Configuration: READ ONLY ---------- */
+  // A READING OF THE TEAM, whether or not it has a durable record. Most teams on a box are
+  // tag-only, and a tag-only team still has facts worth a page: who is on it, who leads
+  // it, what each member is doing, and which board it writes on (the server opens the
+  // team's own name as its wipeboard). The durable record, when there is one, reads first.
+  // Nothing here writes — membership is the sessions' tags, the 人 is set from a tile.
   function renderConfig(roster, live) {
     config.replaceChildren();
-    if (!roster) {
-      config.append(
-        el('p', 'tw-config-head', team ? `${team} has no roster` : 'No Team selected'),
-        el('p', 'tw-note', 'A Team with no durable record is an ordinary state — most Teams on a box are tag-only. Creating one is a later slice; this Surface reads and does not write.'),
-      );
+    if (!team) {
+      config.append(el('p', 'tw-config-head', 'No Team selected'));
       return;
     }
-    config.append(el('p', 'tw-config-head', roster.name));
-    const metadata = createMetadata({ className: 'tw-config-metadata', rows: [
-      ['Team role', roster.team_role], ['Objective', roster.objective], ['Project root', roster.project_root],
-      ['Repositories', (roster.repos || []).join(', ')], ['Branch', roster.branch], ['Wipeboard', roster.wipeboard],
-      ['State', roster.state],
-    ] });
-    config.append(metadata.el);
-    config.append(el('p', 'tw-config-head', `Live roster · ${live.length}`));
-    for (const m of live) config.append(el('div', 'tw-config-row', `${m.name}${m.team_lead ? ' · 人' : ''}`));
-    config.append(el('p', 'tw-note', 'Read-only in this preview. Editing, membership and roster creation are later slices.'));
+    config.append(el('p', 'tw-config-head', team));
+    const record = roster
+      ? [['Team role', roster.team_role], ['Objective', roster.objective], ['Project root', roster.project_root],
+        ['Repositories', (roster.repos || []).join(', ')], ['Branch', roster.branch],
+        ['Wipeboard', roster.wipeboard || team], ['State', roster.state]]
+      : [['Record', 'tag-only — no durable roster; the team is its sessions’ tags'], ['Wipeboard', team]];
+    config.append(createMetadata({ className: 'tw-config-metadata', rows: record }).el);
+    config.append(el('p', 'tw-config-head', live.length ? `Live roster · ${live.length}` : 'Live roster · none'));
+    if (!live.length) return;
+    const lead = live.filter((m) => m.team_lead).map((m) => m.name);
+    const table = el('div', 'tw-config-roster');
+    const line = (name, reading) => table.append(el('span', 'tw-config-name', name), el('span', 'tw-config-reading', reading));
+    line('人', lead.length ? lead.join(', ') : 'not designated');
+    for (const m of live) line(m.name, readingsOf(m).filter((r) => r !== '人 lead').join(' · ') || '—');
+    config.append(table);
   }
 
   /* ---------- reading ---------- */
