@@ -925,3 +925,10 @@ The catalog entry goes. {dir} is not touched.
 - **pane.koshi:** Koshi
 - **pane.gbrain:** gbrain
 - **pane.stats:** Stats
+
+## desk — desk.js (the desk's rows and tooltips)
+- **desk.row_appearance:** Appearance
+- **desk.row_release:** Release & update
+- **desk.close_title:** Back to what this tile was showing
+- **desk.rail_collapse:** Collapse the rail
+- **desk.group_app:** This app

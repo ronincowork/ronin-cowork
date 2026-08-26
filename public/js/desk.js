@@ -48,13 +48,17 @@ import { buildGbrain } from './gbrain.js';
 import { buildSettei } from './settei.js';
 import { buildStats } from './stats.js';
 import { buildSystemPanel } from './system.js';
+import { t } from './lexicon.js';
 
 /** The app's own three, under the six. Not registry rows — they are not rooms. */
-const APP_ROWS = [
-  { id: 'appearance', label: 'Appearance', glyph: '◐' },
-  { id: 'release', label: 'Release & update', glyph: '↑' },
-  { id: 'account', label: 'Log out', glyph: '⏻' },
-];
+// A function, not a table: the lexicon loads after this module is evaluated.
+function appRows() {
+  return [
+    { id: 'appearance', label: t('desk.row_appearance', 'Appearance'), glyph: '◐' },
+    { id: 'release', label: t('desk.row_release', 'Release & update'), glyph: '↑' },
+    { id: 'account', label: t('desk.log_out', 'Log out'), glyph: '⏻' },
+  ];
+}
 
 export function buildDesk(tile) {
   const el = document.createElement('div');
@@ -82,14 +86,14 @@ export function buildDesk(tile) {
   closeMark.className = 'close-hex';
   closeMark.textContent = '×';
   closeBtn.appendChild(closeMark);
-  closeBtn.title = 'Back to what this tile was showing';
+  closeBtn.title = t('desk.close_title', 'Back to what this tile was showing');
   closeBtn.addEventListener('click', () => tile.hideDesk());
   railTop.appendChild(closeBtn);
   const railBtn = document.createElement('button');
   railBtn.type = 'button';
   railBtn.className = 'desk-railbtn';
   railBtn.textContent = '«';
-  railBtn.title = 'Collapse the rail';
+  railBtn.title = t('desk.rail_collapse', 'Collapse the rail');
   railTop.appendChild(railBtn);
   nav.appendChild(railTop);
 
@@ -135,7 +139,8 @@ export function buildDesk(tile) {
 
   const deskPanes = PANES().filter((p) => p.surface === 'desk');
   addGroup('This install', deskPanes);
-  addGroup('This app', APP_ROWS);
+  const APP_ROWS = appRows();
+  addGroup(t('desk.group_app', 'This app'), APP_ROWS);
 
   // ---- the content -------------------------------------------------------------
   const content = document.createElement('div');
