@@ -263,12 +263,15 @@ holds is BORN through the one launch mechanism (`POST /api/session` — a second
 ```bash
 tejun-session-set wg_review                                   # read: role, teams, 人, dial, root
 tejun-session-set wg_review --prompt "Review leg 3" --role review   # born onto YOUR team
+tejun-session-set wg_review --prompt "Review leg 3" --model fable  # "open a fable session"
 tejun-session-set wg_review --team other-team --lead          # a live one: add a team, make it 人
 ```
 With no `--team` a newborn joins the FIRST team you are on; on no team it is a rōnin.
 **Neither is a refusal, and you never create the team first** — the nag this removes is
 an agent flip-flopping between "create the team" and "add the member". One line, one
-verdict: `BORN …` / `UPDATED …` / one `REFUSED: <why>`. Birth-only flags (`--prompt`,
+verdict: `BORN …` / `UPDATED …` / one `REFUSED: <why>`. `--model <name>` picks a row of
+the launch table by its model column; an unknown name is refused with the names the box
+has. Birth-only flags (`--prompt`, `--model`,
 `--cmd`, `--mode`, `--mcp`, `--seed`) are refused by name on a live session.
 
 ## team-upsert — make a team, or change its facts

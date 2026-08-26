@@ -81,6 +81,7 @@ export function registerLaunch(app: express.Express): void {
       mode: req.body?.mode === 'manual' ? 'manual' : 'assisted',
       project_root: String(req.body?.project_root ?? '').trim() || undefined,
       cmd: String(req.body?.cmd ?? '').trim() || undefined,
+      model: String(req.body?.model ?? '').trim() || undefined,
       // Only an explicit boolean is an opinion. Absent hands the choice to the resolved
       // profile's `mcp:` default (off for every ordinary launch, owner 2026-08-22)
       // rather than meaning "on", so a caller with nothing to say cannot connect a

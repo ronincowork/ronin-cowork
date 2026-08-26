@@ -53,6 +53,16 @@ export interface SpawnForm {
    * Ignored when there is no team to lead.
    */
   team_lead?: boolean;
+  /**
+   * WHICH MODEL, BY NAME (owner, 2026-08-26: *"please open a fable five session"*). A
+   * model name out of the launch table's own column — `fable`, `opus`, `gpt-5.6-sol` —
+   * resolved to that row's command. One field: named, it is the model; blank, the
+   * session's usual default applies. Naming a `cmd` as well is refused (a cmd already
+   * carries its model). A name the table does not carry is refused with the names it
+   * does; it is never guessed into a command string here, because the table is the one
+   * place a model is a column.
+   */
+  model?: string;
   prompt: string;
   /**
    * What the session is called. MANDATORY in manual mode: manual means Ronin adds
@@ -404,7 +414,25 @@ export async function resolveForm(
     ? (launchSpecs.find((s) => s.model === profile.model && s.provider === dflt?.provider)
         ?? launchSpecs.find((s) => s.model === profile.model))?.cmd
     : undefined;
-  let cmd = agent ? form.cmd || biasCmd || defaultCmd || defaultAgentCommand() : '';
+  // THE NAMED MODEL — one field, filled or not. Named, it is the model; blank, the
+  // session's usual default applies, as for every other field. It is not a precedence
+  // game: `cmd` is a raw command string that already carries a model, so naming both is
+  // a contradiction and is refused rather than ranked (owner, 2026-08-26: "it shouldn't
+  // be overwriting anything, it should just be one of the fields"). The owner's default
+  // provider wins a name two providers both offer, as for the bias.
+  let modelCmd: string | undefined;
+  if (form.model && form.cmd) {
+    throw new Error('Name a model OR a cmd, not both — the cmd already says which model it runs.');
+  }
+  if (agent && form.model) {
+    modelCmd = (launchSpecs.find((s) => s.model === form.model && s.provider === dflt?.provider)
+      ?? launchSpecs.find((s) => s.model === form.model))?.cmd;
+    if (!modelCmd) {
+      const known = [...new Set(launchSpecs.map((s) => s.model))].join(', ');
+      throw new Error(`Unknown model "${form.model}" — this box's launch table offers: ${known || 'nothing yet (see ⚙ Configuration)'}.`);
+    }
+  }
+  let cmd = agent ? form.cmd || modelCmd || biasCmd || defaultCmd || defaultAgentCommand() : '';
   // The row this cmd came out of, matched BEFORE the MCP-off flags are appended below —
   // appending changes the very string the match is on, and looking it up afterwards would
   // find nothing for exactly the launches that asked for something unusual. It carried the
