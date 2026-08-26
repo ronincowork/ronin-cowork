@@ -1110,3 +1110,13 @@ The catalog entry goes. {dir} is not touched.
 - **pad.w_delete_word:** Option+Delete (delete word) — universal, works in any app
 - **pad.w_newline:** Option+Enter (newline without send) — universal, works in any app
 - **pad.w_wispr:** Wispr push-to-talk (right ⌥) — Wispr handles it, Ronin stays out of the way
+
+## bar — layout.js (the ニ sheet)
+- **errors.tile_failed:** tile {n} failed to build
+- **bar.keys:** Keys
+- **bar.ni_title:** Ronin — keys, home, new session, board, pad
+- **bar.new:** New
+- **bar.mika:** Mika Assist
+- **bar.commons:** Commons
+- **bar.keypad:** Keypad
+- **bar.desk:** Admin Desk
