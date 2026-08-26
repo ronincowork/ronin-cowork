@@ -633,3 +633,7 @@ The pad's current config downloads as a backup first.
 - **wipeboard.membership_follows:** membership follows the team — tag sessions in the ⌂ Roster
 - **wipeboard.add_member:** ＋ add…
 - **wipeboard.team_option:** +{team} (team)
+
+## wipeboard — the kind note
+- **wipeboard.kind_team:** team wipeboard
+- **wipeboard.kind_custom:** custom wipeboard
