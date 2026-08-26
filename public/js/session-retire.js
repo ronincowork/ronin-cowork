@@ -46,7 +46,7 @@ export function retireSession(name, tileIndex, onDone) {
     dlg.el.remove();
     await onDone();
   };
-  archive.addEventListener('click', () => void finish(archive, () => archiveSession(name), 'could not archive it', 'archiving…'));
-  hard.addEventListener('click', () => void finish(hard, () => deleteSession(name), 'could not hard delete it', 'deleting…'));
+  archive.addEventListener('click', () => void finish(archive, () => archiveSession(name), t('retire.archive_failed', 'could not archive it'), t('retire.archiving', 'archiving…')));
+  hard.addEventListener('click', () => void finish(hard, () => deleteSession(name), t('retire.delete_failed', 'could not hard delete it'), t('retire.deleting', 'deleting…')));
   dlg.open();
 }
