@@ -29,10 +29,12 @@ const el = (tag, cls, text) => {
   return n;
 };
 
-const SHADOW_TRADE =
-  'Changing one of Ronin’s own entries makes it yours: it moves to your catalogs store, ' +
-  'where an upgrade cannot touch it — and improvements Ronin makes to that entry will not ' +
-  'reach you. That is the trade for owning it.';
+// A function, not a constant: the lexicon loads after this module is evaluated.
+function shadowTrade() {
+  return t('customize.shadow_trade', 'Changing one of Ronin’s own entries makes it yours: it moves to your catalogs store, '
+  + 'where an upgrade cannot touch it — and improvements Ronin makes to that entry will not '
+  + 'reach you. That is the trade for owning it.');
+}
 
 export function buildHandoff(resource, list = []) {
   const { createNotice } = WorkspaceKit.primitives;
@@ -53,7 +55,7 @@ export function buildHandoff(resource, list = []) {
     return box;
   }
 
-  box.append(createNotice({ message: SHADOW_TRADE }).el);
+  box.append(createNotice({ message: shadowTrade() }).el);
 
   if (resource.file) {
     // A shadowable markdown catalog: the seed route makes the file and hands back the path.
