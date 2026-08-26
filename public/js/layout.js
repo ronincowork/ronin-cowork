@@ -12,6 +12,7 @@ import { IS_TOUCH, S, TILE_COUNT, WHEEL_DOWN, grid, tiles } from './state.js';
 import { Tile } from './tile.js';
 import { collapseTileHead, isCoarse, makeDrop } from './tiledrop.js';
 import { curLayout, nextLayout, setLayout } from './viewport.js';
+import { t } from './lexicon.js';
 
 export function build() {
   // Per-tile guard: a constructor that throws costs ONE tile, not the grid. The
@@ -409,7 +410,7 @@ export function buildDrawers() {
   keysBtn.id = 'k-keys';
   keysBtn.type = 'button';
   keysBtn.textContent = '⌨';
-  keysBtn.title = 'Esc, ^C, jump to latest, Tab and the arrows';
+  keysBtn.title = t('bar.keys_title', 'Esc, ^C, jump to latest, Tab and the arrows');
   keysBtn.addEventListener('click', () => keys.classList.toggle('open'));
   drop.addRow(keysBtn, 'Keys');
 

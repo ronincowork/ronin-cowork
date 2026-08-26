@@ -1031,3 +1031,6 @@ The catalog entry goes. {dir} is not touched.
 
 ## events — events.js (the birth chip)
 - **events.open:** Open
+
+## bar — layout.js
+- **bar.keys_title:** Esc, ^C, jump to latest, Tab and the arrows
