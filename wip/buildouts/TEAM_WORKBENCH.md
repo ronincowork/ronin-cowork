@@ -136,6 +136,21 @@ RIREKI source, one render … conversation and cherry pick are the same fucking 
   returns `{stance, text}` served from RIREKI's render for `team_pg`, and degrades
   cleanly to the raw tail when RIREKI has nothing settled yet.
 
+**THE SETTLER WAS BLIND TO UNWATCHED PANES (found 2026-08-26 chasing `koe_rireki`'s
+empty scroll; ronin-services `scroll.ts` v20):** RIREKI commits what scrolls off between
+two finished *frames*, and its frame cutter knew two starts — a cursor home (a full
+redraw) and Codex's `?2026h`. Claude Code (ink) redraws incrementally: hide cursor, jump
+up N rows, repaint. A pane with a browser viewer gets resized and homes on every full
+repaint (196 homes in 3.9MB) — so it settled *something*, about a tenth of its
+transcript; a pane nobody is attached to never resizes, homed 18 times in 1.8MB, and
+settled NOTHING for half an hour of work. Which is precisely the session Koe most needs
+to read. The hide-then-up is a frame start now, with the cut spacing raised 64→256 bytes
+so spinner ticks do not make 27k frames (measured: watched pane 545→5516 lines, unwatched
+0→308, no duplication, 23s/8s cold rebuilds). This is also the "missing continuation
+lines" residue noted under CHERRY_PICK — it was never the decoder. Reproduced and
+measured out of process over COPIES of the store (`settle()` over a `cpSync` of the
+session dir; never the live one — one settler per pane).
+
 **Probe trap added to the list:** `page.goto(url, { waitUntil: 'networkidle' })` never
 resolves against this app (websockets and polls); use `'load'` and a fixed wait.
 
