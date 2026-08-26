@@ -1317,3 +1317,27 @@ The catalog entry goes. {dir} is not touched.
 - **workspace.columns:** Workspace columns
 - **workspace.slot_show:** {column} — click to show, drag to move
 - **workspace.slot_hide:** {column} — click to hide, drag to move
+
+## bar / keys — index.html (the page's own words, filled by public/js/pagewords.js at boot)
+- **bar.brand_title:** ⛩ ronin — the session roster
+- **bar.league:** League
+- **bar.league_title:** Open League in a new browser tab
+- **bar.newtab_title:** Open a second Ronin in a new browser tab
+- **bar.new_title:** ⌃⇧N — start a new session: pick what it is for, where it works and who it is
+- **bar.commons_title:** ⌃⇧C — the CoWorking Commons, straight to ⌂ Roster. The tab strip inside it reaches the other rooms. (⌃⌥C on Linux/Windows.)
+- **bar.keypad_title:** Keypad — the Work Louder pad: physical keys fire macros
+- **bar.mika_title:** Mika Assist — ask about Ronin itself: how it works, project roots, starting a session, changing a setting. Starts her if she is not up.
+- **bar.desk_title:** Admin Desk — this machine and this app: configuration, project roots, hotwords, Koshi, gbrain, stats, appearance, updates, log out
+- **bar.layout_default_title:** Four terminals — click for 1
+- **keys.esc:** Esc
+- **keys.interrupt_title:** Ctrl-C (interrupt)
+- **keys.latest_title:** Jump to latest output
+- **keys.more:** More keys
+- **keys.enter:** Enter
+- **keys.tab:** Tab
+- **keys.shift_tab:** Shift-Tab
+- **keys.shift_tab_face:** ⇧Tab
+- **keys.up:** Up
+- **keys.down:** Down
+- **keys.left:** Left
+- **keys.right:** Right
