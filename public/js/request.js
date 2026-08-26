@@ -1,4 +1,5 @@
 /* part of the ronin-cowork client — see js/README.md */
+import { t } from './lexicon.js';
 /**
  * REQUEST — the one answer to "what happened?" for every JSON call the client makes.
  *
@@ -70,13 +71,13 @@ export async function request(url, opts = {}) {
     res = await fetch(url, init);
   } catch (cause) {
     if (opts.signal?.aborted) {
-      return { ok: false, status: 0, kind: 'abort', message: 'cancelled', retryable: false, cause };
+      return { ok: false, status: 0, kind: 'abort', message: t('request.cancelled', 'cancelled'), retryable: false, cause };
     }
     return {
       ok: false,
       status: 0,
       kind: 'network',
-      message: 'could not reach Ronin — network or server down',
+      message: t('request.unreachable', 'could not reach Ronin — network or server down'),
       retryable: true,
       cause,
     };
