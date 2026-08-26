@@ -1,23 +1,27 @@
 /* The session outputs. Cowork owns the selector; services own every unlocked source —
+import { t } from './lexicon.js';
  * RIREKI's four views (owner, 2026-08-26: cherry_pick is RIREKI's own view and its
  * technical term; `conversation` was the same thing under another name and is gone),
  * and koshi's summary. */
-export const OUTPUTS = [
-  ['locked', 'Locked'],
-  ['terminal_mirror', 'Terminal Mirror'],
-  ['detailed', 'Detailed'],
-  ['condensed', 'Condensed'],
-  ['cherry_pick', 'Cherry Pick'],
-  ['agent_summary', 'Agent Summary'],
-];
+// A function, not a table: the lexicon loads after this module is evaluated.
+export function OUTPUTS() {
+  return [
+    ['locked', t('output.locked', 'Locked')],
+    ['terminal_mirror', t('output.terminal_mirror', 'Terminal Mirror')],
+    ['detailed', t('output.detailed', 'Detailed')],
+    ['condensed', t('output.condensed', 'Condensed')],
+    ['cherry_pick', t('output.cherry_pick', 'Cherry Pick')],
+    ['agent_summary', t('output.agent_summary', 'Agent Summary')],
+  ];
+}
 
 /** Build the one per-tile control. Server capability is applied by Tile.syncOutput(). */
 export function makeOutput(tile) {
   const el = document.createElement('select');
   el.className = 'output';
-  el.setAttribute('aria-label', 'Output');
-  el.title = 'Output shown in this tile';
-  for (const [value, label] of OUTPUTS) el.add(new Option(label, value));
+  el.setAttribute('aria-label', t('output.aria', 'Output'));
+  el.title = t('output.title', 'Output shown in this tile');
+  for (const [value, label] of OUTPUTS()) el.add(new Option(label, value));
   el.addEventListener('change', () => tile.setOutput(el.value));
   return { el };
 }
