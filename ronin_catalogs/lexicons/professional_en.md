@@ -1011,3 +1011,10 @@ The catalog entry goes. {dir} is not touched.
 
 ## customize — the shadow-trade notice
 - **customize.shadow_trade:** Changing one of Ronin’s own entries makes it yours: it moves to your catalogs store, 
+
+## provenance — provenance.js (the add-your-own button)
+- **provenance.add_own:** ＋ add your own {what}
+- **provenance.add_own_title:** Create your own {file} in the catalogs store — yours, outside every repo, untouched by upgrades
+- **provenance.create_failed:** could not create it — {message}
+- **provenance.made:** made {path} — edit it, or tell an agent to
+- **provenance.exists:** yours is at {path}
