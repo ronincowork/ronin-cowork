@@ -560,6 +560,9 @@ body {
   background: var(--panel);
   box-shadow: var(--shadow-menu);
   font: var(--text-3)/1.45 var(--font-ui);
+  /* A label may carry a URL, and a URL is one word: without this the box cannot break it
+     and it spills 17px past the edge at any length (the 🌿 label, measured 2026-08-26). */
+  overflow-wrap: anywhere;
   /* THE BACKSTOP, not the mechanism. `check-tips` is what guarantees labels fit; this is
      what happens if one ever slips past it. Without it the overflow rendered OUTSIDE the
      border, spraying a stray line across the terminal underneath — measured, on the dial.
