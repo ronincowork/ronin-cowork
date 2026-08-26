@@ -3210,7 +3210,7 @@ body {
   width: 100%;
   border: var(--edge) solid var(--line);
   border-radius: var(--radius-md);
-  background: #fff; /* a page paints its own ground; until it does, paper, not the well */
+  background: var(--panel); /* a page paints its own ground; until it does, the panel, not the well */
 }
 .dc-open {
   margin-left: auto;
