@@ -1051,3 +1051,9 @@ The catalog entry goes. {dir} is not touched.
 
 ## term — termview.js (the copy hint)
 - **term.copy_hint:** Trying to copy? Hold {mod} while you drag, then ⌘C.
+
+## gauge — ramrpm.js (the RAM gauge)
+- **gauge.no_swap:** no swap
+- **gauge.swap:** swap {used}
+- **gauge.container_limit:** (container limit)
+- **gauge.ram_title:** RAM_RPM — {free} free of {total}{where} · load {load} on {cpus} · {swap}
