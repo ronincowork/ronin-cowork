@@ -77,6 +77,9 @@ if [ $# -eq 0 ]; then
 import sys, json
 me = sys.argv[1]
 d = json.loads(sys.argv[2])
+roster = d.get("roster") or []
+if roster:
+    print("team %s: %s" % (d.get("team"), ", ".join(r["name"] + (" 人" if r.get("lead") else "") + (" ← you" if r["name"] == me else "") for r in roster)))
 tabs = d.get("tabs") or []
 if not tabs:
     print("NO-PAGE: no browser tab is showing team %s right now." % d.get("team")); sys.exit(0)

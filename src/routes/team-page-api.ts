@@ -52,11 +52,17 @@ export function registerTeamPage(app: express.Express): void {
     res.json({ ok: true });
   });
 
-  app.get('/api/teams/:team/page', (req, res) => {
+  app.get('/api/teams/:team/page', async (req, res) => {
     const { team } = req.params;
     const session = String(req.query.session ?? '');
     const list = fresh(team).map((v) => ({ tab: v.tab, at: v.at, showsYou: !!session && v.sessions.includes(session), view: v.view }));
-    res.json({ team, tabs: list });
+    // The roster rides along: which sessions are on this team, and who leads it — the
+    // agent should not need a second tool to know who it can put in a workspace.
+    let roster: { name: string; lead: boolean; control: string }[] = [];
+    try {
+      roster = (await listSessions()).filter((s) => s.tags.includes(team)).map((s) => ({ name: s.name, lead: s.leads.includes(team), control: s.control }));
+    } catch { /* the view still answers without it */ }
+    res.json({ team, roster, tabs: list });
   });
 
   app.post('/api/teams/:team/page', async (req, res) => {
