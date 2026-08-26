@@ -101,6 +101,7 @@ learn in order to use Ronin should cost them a second language first.
 | macro | **macro** | A saved instruction you would otherwise have typed to your agent. |
 | invocation | **typing a macro** | `+name: what you want`. That is the whole syntax. |
 | `session_role` | **role** | What a session is doing now. The values read plainly on their own (RiffOnIt, CutCode, CheckWork, …). The set lives in `ronin_catalogs/session_roles/` — one file per role, and the directory is the count. |
+| `session_mandate` | **mandate** | How far a session may go before it checks in (discuss · plan · execute · run), and whom it may recruit (none · propose · staff). Set by the owner on the first session of a project; a solo run is just `recruit: none`. |
 | forkit | **fork** | Split the current topic into a visible Ronin session. “Fork it” and “new session” mean this; “spawn an agent” means an internal sub-agent. |
 | harakiri | **harakiri** | A session ends itself. Kept — it is a word people know. |
 

@@ -305,6 +305,7 @@ project_root (required)  ×  session_role (optional, mutable)  ×  team (optiona
 |---|---|---|---|
 | **the axes** | system_scope | `project_root` (where) · `session_role` (what it is doing now) — **one token, every surface**: the launcher sets them, TEGAMI carries them, the boot shelf reads by them, OBOERU matches on them, TOMODACHI counts by them. Defined here once; § OBOERU and § TOMODACHI use it and do not redefine it. **There is no per-session identity axis** (R35): identity is the TEAM's `team_role`, worn contextually — see § TEAMS | `co-working/user_repo/README/OBOERU.md` |
 | **session_role** | system_scope definition · session_scope selection | what a session is doing **right now** — all eleven of the former `session_job`s, without exception: `RiffOnIt`, `DraftPlan`, `CutCode`, `ChaseBug`, `CheckWork`, `QuarterBack`, `OddJob`, `Atarashi`, `PersonalAssistant`, `OpenShell`, `MikaAssist`. **Optional and MUTABLE**: the session changes it with `write_tegami`, the owner changes it from the tile, and a committed change injects that role's reading into the running session. Blank is valid and means no role reading and no mark. Successor to `session_task` (R35), which succeeded `session_job` | `ronin_catalogs/session_roles/` |
+| **session_mandate** | session_scope selection | **how far a session may go before it checks in, and whom it may recruit** — two dials, set on the FIRST session of a project and re-settable on any (R36). **Reach:** `discuss` (talk it through with the owner and stop) · `plan` (write the plan and gate) · `execute` (plan and cut, gate at the end) · `run` (to completion, gates only on trouble). **Recruit:** `none` (do it yourself — the solo case) · `propose` (name the seats, the owner approves each) · `staff` (spawn the team yourself). Every 'solo vs squad' question is a mandate, not a mode: solo is `recruit: none`; 'let the lead build the squad' is `recruit: staff`; 'let us discuss, then decide the team' is `reach: discuss · recruit: propose`. The value is the owner's and never derived from the `session_role` — a `QuarterBack` with `recruit: none` runs the play itself. Rides the letter beside `session_role`; blank means `reach: plan · recruit: propose`, the cautious default | `ronin_catalogs/session_roles/README.md` · `concepts/league-lobby.html` (ronin-lab) |
 | **role_family** | user_scope definition | **PRESENTATION, not structure** (R35): a New Session shelf grouping session_roles for viewing, and a Build-Team template — *a family of roles, not a family's role*. It never rides a launch, a letter, or a session; its launch constants moved into each session_role definition when the old `family_role` axis was dismantled. `developer`, `assistant`, `extra` ship so a fresh board is useful | `ronin_catalogs/role_families/` |
 | **`session_roles:`** | system_scope | the KEY inside a `role_family` definition naming the roles on its shelf — `- **session_roles:** A, B, C`. The family owns it and a session_role never names a family. A role may appear in several families, so adding it to one never removes it from another | `ronin_catalogs/role_families/` |
 | **default_lead_role** | user_scope | the one `session_role` a `role_family` PINS FIRST on its shelf — the suggested first launch when a team is built from that family, and the role whose launch carries the team-building SOP (`ronin_sops/teams.md`). A default and a pin, **never the `team_lead` designation** on a live session; nothing may derive one from the other (R35). `developer` pins `QuarterBack` | `ronin_catalogs/role_families/developer.md` |
@@ -1347,6 +1348,22 @@ than the pointer line proposed here: a stored path — the `read:` key it replac
 stale in silence the moment a file moves, while a level listed at the instant of use
 cannot, because a file that is gone simply is not named. The SOP shelf's second reach
 route (*found by name*) now has something behind it.
+
+**R36 · `session_mandate` — the fork was never solo-vs-squad.** Owner, 2026-08-26, riffing
+the League lobby: *"the team lead is going to inherit the responsibilities of the objective
+… I want to also set the parameters for the breadth of execution … I don't think that the
+fork is like solo versus squad."* Every run starts the same way — the objective, then ONE
+first session, loaded out — and what differs is not a mode chosen up front but what that
+session is **authorised to do**: how far it goes before it checks in (**reach**), and whom
+it may bring in (**recruit**). Solo, lead, and "go build me a squad" are three settings of
+the same two dials on the same seat, and every in-between the owner named (*"let's discuss
+and then build," "let me add these later"*) falls out of them without a third mode. Ruled
+with it: the dials are the **owner's**, set at launch and re-settable from the tile, never
+derived from the `session_role`; the cautious blank is `plan · propose`; a mandate widening
+is an ordinary act, a mandate narrowing on a running session is a gate. **Hand-building the
+team stays a door of equal standing** (MANIFESTO § 4, ronin-lab) — the mandate governs what
+the lead may do, and says nothing about what the owner may. Adds the § LAUNCHER row.
+*Named by the session that drew the lobby, adopted by the owner: "yes, Mandate!"*
 
 ---
 
