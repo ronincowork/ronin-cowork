@@ -2,6 +2,7 @@
 import { request } from './request.js';
 import { field } from './ui.js';
 import { IS_TOUCH, S } from './state.js';
+import { t } from './lexicon.js';
 
 /**
  * ▤ WIPEBOARD — teams first (owner ruling 2026-08-22; the WIPEBOARD_TEAMS build-out).
@@ -31,8 +32,8 @@ export function buildWipeboard(tile, root, isShowing) {
   const head = document.createElement('div');
   head.className = 'wb-head';
   const back = document.createElement('button');
-  back.textContent = '‹ wipeboards';
-  back.title = 'Back to the wipeboard listing';
+  back.textContent = t('wipeboard.back', '‹ wipeboards');
+  back.title = t('wipeboard.back_title', 'Back to the wipeboard listing');
   const title = document.createElement('b');
   title.className = 'wb-title';
   const kindNote = document.createElement('span');
@@ -44,13 +45,13 @@ export function buildWipeboard(tile, root, isShowing) {
   briefWrap.className = 'wb-brief';
   const briefH = document.createElement('button');
   briefH.className = 'wb-brief-h';
-  briefH.textContent = 'brief';
-  briefH.title = 'Show / hide the brief';
+  briefH.textContent = t('wipeboard.brief', 'brief');
+  briefH.title = t('wipeboard.brief_title', 'Show / hide the brief');
   const brief = document.createElement('textarea');
   brief.rows = 3;
-  brief.placeholder = 'what this wipeboard is for, and what is to be discussed';
+  brief.placeholder = t('wipeboard.brief_placeholder', 'what this wipeboard is for, and what is to be discussed');
   brief.spellcheck = false;
-  const briefField = field(brief, { label: 'wipeboard brief' });
+  const briefField = field(brief, { label: t('wipeboard.brief_label', 'wipeboard brief') });
   briefWrap.append(briefH, briefField.el);
   // On a phone the brief starts collapsed — the thread is what you came for, and the
   // keyboard eats half the screen. Desktop keeps it open, exactly as before.
@@ -91,11 +92,11 @@ export function buildWipeboard(tile, root, isShowing) {
   composeRow.className = 'wb-compose';
   const say = document.createElement('textarea');
   say.rows = 1;
-  say.placeholder = 'say something to everyone on this wipeboard';
+  say.placeholder = t('wipeboard.say_placeholder', 'say something to everyone on this wipeboard');
   say.spellcheck = false;
-  const sayField = field(say, { label: 'post to this wipeboard' });
+  const sayField = field(say, { label: t('wipeboard.say_label', 'post to this wipeboard') });
   const post = document.createElement('button');
-  post.textContent = 'Post';
+  post.textContent = t('team_wipeboard.post', 'Post');
   composeRow.append(sayField.el, post);
   boardWrap.append(head, briefWrap, memRow, thread, composeRow);
   root.append(listWrap, boardWrap);
@@ -118,7 +119,7 @@ export function buildWipeboard(tile, root, isShowing) {
     const h = document.createElement('button');
     h.type = 'button';
     h.className = 'home-grp wb-door';
-    h.title = `Open the ${team.name} team's wipeboard`;
+    h.title = t('wipeboard.open_team', "Open the {team} team's wipeboard", { team: team.name });
     h.append(
       Object.assign(document.createElement('b'), { textContent: team.name }),
       Object.assign(document.createElement('span'), { textContent: String(members.length) }),
@@ -140,12 +141,12 @@ export function buildWipeboard(tile, root, isShowing) {
     const boards = r.data.boards || [];
     const teams = boards.filter((b) => b.kind === 'team');
     const customs = boards.filter((b) => b.kind !== 'team');
-    const bySess = (t) => S.sessions.filter((s) => (s.tags || []).includes(t));
+    const bySess = (tag) => S.sessions.filter((s) => (s.tags || []).includes(tag));
     const sig = JSON.stringify([boards, S.sessions.map((s) => [s.name, s.tags])]);
     if (sig === listSig) return; // nothing moved — leave the DOM (and any tap) alone
     listSig = sig;
     listWrap.innerHTML = '';
-    for (const t of teams) listWrap.appendChild(teamBlock(t, bySess(t.name)));
+    for (const tm of teams) listWrap.appendChild(teamBlock(tm, bySess(tm.name)));
     if (!teams.length) {
       const e = document.createElement('div');
       e.className = 'wb-empty';
@@ -168,17 +169,17 @@ export function buildWipeboard(tile, root, isShowing) {
       row.type = 'button';
       row.className = 'wb-sess wb-door';
       row.textContent = `${b.name} (${b.members})`;
-      row.title = `Open the custom wipeboard "${b.name}"`;
+      row.title = t('wipeboard.open_custom', 'Open the custom wipeboard "{name}"', { name: b.name });
       row.addEventListener('click', () => open(b.name, 'custom'));
       cWrap.appendChild(row);
     }
     const add = document.createElement('button');
     add.type = 'button';
     add.className = 'wb-add';
-    add.textContent = '＋ wipeboard';
-    add.title = 'Start a custom wipeboard — a team already has one automatically';
+    add.textContent = t('wipeboard.add', '＋ wipeboard');
+    add.title = t('wipeboard.add_title', 'Start a custom wipeboard — a team already has one automatically');
     add.addEventListener('click', async () => {
-      const raw = prompt('Name the wipeboard (letters, digits, - _):');
+      const raw = prompt(t('wipeboard.add_prompt', 'Name the wipeboard (letters, digits, - _):'));
       if (raw == null) return;
       const n = raw.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
       if (!n) return;
@@ -215,14 +216,14 @@ export function buildWipeboard(tile, root, isShowing) {
         chip.append(
           Object.assign(document.createElement('i'), {
             textContent: m.control === 'user' ? '👤' : '👁',
-            title: 'On the wipeboard, but not notified — its dial is not 🤖',
+            title: t('wipeboard.not_notified', 'On the wipeboard, but not notified — its dial is not 🤖'),
           }),
         );
       }
       if (kind === 'custom') {
         const x = document.createElement('button');
         x.textContent = '×';
-        x.title = 'Remove ' + m.name + ' from this wipeboard';
+        x.title = t('wipeboard.remove_member', 'Remove {name} from this wipeboard', { name: m.name });
         x.addEventListener('click', async () => {
           x.disabled = true;
           const r = await request(
@@ -247,7 +248,7 @@ export function buildWipeboard(tile, root, isShowing) {
       memRow.appendChild(
         Object.assign(document.createElement('span'), {
           className: 'wb-follow',
-          textContent: 'membership follows the team — tag sessions in the ⌂ Roster',
+          textContent: t('wipeboard.membership_follows', 'membership follows the team — tag sessions in the ⌂ Roster'),
         }),
       );
       return;
@@ -257,9 +258,9 @@ export function buildWipeboard(tile, root, isShowing) {
     const on = new Set(members.map((m) => m.name));
     const plus = document.createElement('select');
     plus.className = 'wb-plus';
-    plus.add(new Option('＋ add…', ''));
+    plus.add(new Option(t('wipeboard.add_member', '＋ add…'), ''));
     const teams = [...new Set(S.sessions.flatMap((s) => s.tags || []))].sort();
-    for (const g of teams) plus.add(new Option('+' + g + ' (team)', 'g:' + g));
+    for (const g of teams) plus.add(new Option(t('wipeboard.team_option', '+{team} (team)', { team: g }), 'g:' + g));
     for (const s of S.sessions) if (!on.has(s.name)) plus.add(new Option('@' + s.name, 's:' + s.name));
     plus.addEventListener('change', async () => {
       const v = plus.value;
