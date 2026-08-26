@@ -2,6 +2,7 @@
 import { request } from './request.js';
 import { status } from './ui.js';
 import { homeData } from './home.js';
+import { t } from './lexicon.js';
 
 /**
  * MDEDIT — the ▧ Docs tab: every session's listed docs, and a plain editor for one.
@@ -48,12 +49,12 @@ export function buildDocs(tile, root, isShowing, only = null) {
   const back = document.createElement('button');
   back.className = 'dc-back';
   back.textContent = '←';
-  back.title = 'Back to the list';
+  back.title = t('docs.back_title', 'Back to the list');
   const title = document.createElement('b');
   const note = status('dc-note');
   const save = document.createElement('button');
   save.className = 'dc-save';
-  save.textContent = 'Save';
+  save.textContent = t('docs.save', 'Save');
   // THE ↗ AND THE FRAME ARE THE HTML HALF OF THE EDITOR (owner, 2026-08-26): a listed
   // `.html` is a page, not prose, so it renders in a frame where the textarea would be,
   // and ↗ opens the same URL in a tab of its own. Both hang off `/raw/<path>`, which serves
@@ -61,13 +62,13 @@ export function buildDocs(tile, root, isShowing, only = null) {
   // call from `data-view` ('edit' | 'view'), the same switch the list already rides.
   const pop = document.createElement('a');
   pop.className = 'dc-open';
-  pop.textContent = 'Open in browser ↗';
+  pop.textContent = t('docs.open_browser', 'Open in browser ↗');
   pop.target = '_blank';
   pop.rel = 'noopener';
   bar.append(back, title, note.el, pop, save);
   const frame = document.createElement('iframe');
   frame.className = 'dc-frame';
-  frame.title = 'document';
+  frame.title = t('docs.frame_title', 'document');
   const area = document.createElement('textarea');
   area.className = 'dc-text';
   area.spellcheck = false;
@@ -101,7 +102,7 @@ export function buildDocs(tile, root, isShowing, only = null) {
     // The guard ← has always had, now that ← is not the only way in. Arriving from the
     // tile can land on a doc while another is open and TYPED IN; without this, that
     // typing would go without a word. Same question, same wording, one place further out.
-    if (dirty && path !== openPath && !confirm('Discard unsaved changes?')) return;
+    if (dirty && path !== openPath && !confirm(t('docs.discard_confirm', 'Discard unsaved changes?'))) return;
     openPath = path;
     title.textContent = path.split('/').pop();
     title.title = path;
@@ -120,7 +121,7 @@ export function buildDocs(tile, root, isShowing, only = null) {
     area.value = '';
     area.disabled = true;
     dirty = false;
-    say('loading…');
+    say(t('docs.loading', 'loading…'));
     show('edit');
     const r = await request('/api/file?path=' + encodeURIComponent(path), { cache: 'no-store' });
     if (!r.ok) {
@@ -138,7 +139,7 @@ export function buildDocs(tile, root, isShowing, only = null) {
   const doSave = async () => {
     if (!openPath || area.disabled) return;
     save.disabled = true;
-    say('saving…');
+    say(t('docs.saving', 'saving…'));
     // text/plain on purpose — see the route in src/index.ts. The global json parser
     // has a 100kb limit and would refuse a large document before it ever arrived.
     const r = await request('/api/file?path=' + encodeURIComponent(openPath), {
@@ -148,7 +149,7 @@ export function buildDocs(tile, root, isShowing, only = null) {
     if (!r.ok) say(r.message, true);
     else {
       dirty = false;
-      say('saved');
+      say(t('docs.saved', 'saved'));
     }
     save.disabled = false;
   };
@@ -167,7 +168,7 @@ export function buildDocs(tile, root, isShowing, only = null) {
     }
   });
   back.addEventListener('click', () => {
-    if (dirty && !confirm('Discard unsaved changes?')) return;
+    if (dirty && !confirm(t('docs.discard_confirm', 'Discard unsaved changes?'))) return;
     openPath = null;
     dirty = false;
     frame.src = 'about:blank'; // stop the page's scripts; the list is what's showing now
