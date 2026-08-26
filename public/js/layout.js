@@ -22,7 +22,7 @@ export function build() {
     try {
       t = new Tile(i);
     } catch (e) {
-      showFailure(`tile ${i + 1} failed to build`, e);
+      showFailure(t('errors.tile_failed', 'tile {n} failed to build', { n: i + 1 }), e);
       grid.appendChild(deadTile(i, e));
       continue;
     }
@@ -397,12 +397,12 @@ export function buildDrawers() {
   keys.className = 'drawer';
   keys.id = 'dr-keys';
   keys.setAttribute('role', 'group');
-  keys.setAttribute('aria-label', 'Keys');
+  keys.setAttribute('aria-label', t('bar.keys', 'Keys'));
   // append MOVES the node — listeners come along
   [...pick('k-esc', 'k-int', 'k-bottom'), ...(keypad ? [...keypad.children] : [])].forEach((n) => keys.append(n));
   wrap.append(keys);
 
-  const drop = makeDrop('ニ', 'Ronin — keys, home, new session, board, pad', 'ni');
+  const drop = makeDrop('ニ', t('bar.ni_title', 'Ronin — keys, home, new session, board, pad'), 'ni');
 
   // Keys is a toggle, not a destination — but it still closes the sheet, so the
   // keypad it just opened is not left standing behind a sheet.
@@ -412,20 +412,20 @@ export function buildDrawers() {
   keysBtn.textContent = '⌨';
   keysBtn.title = t('bar.keys_title', 'Esc, ^C, jump to latest, Tab and the arrows');
   keysBtn.addEventListener('click', () => keys.classList.toggle('open'));
-  drop.addRow(keysBtn, 'Keys');
+  drop.addRow(keysBtn, t('bar.keys', 'Keys'));
 
   // ⟳ Refresh is NOT here: `fetchSessions` already runs on tab-resume, on a bfcache
   // restore and off the /events socket, so the button was a manual copy of something
   // that never stops happening — and its round arrow read as the tile's ⟳ Reconnect,
   // a different action. Two dead round arrows, both gone.
   const APP = [
-    ['newbtn', 'New'],
-    ['mikabtn', 'Mika Assist'],
-    ['commonsbtn', 'Commons'],
-    ['padbtn', 'Keypad'],
+    ['newbtn', t('bar.new', 'New')],
+    ['mikabtn', t('bar.mika', 'Mika Assist')],
+    ['commonsbtn', t('bar.commons', 'Commons')],
+    ['padbtn', t('bar.keypad', 'Keypad')],
     // Account, not System — the bar's word and this row's word are the same control
     // wearing one name. See the sysbtn wiring above for why only the LABEL moved.
-    ['sysbtn', 'Admin Desk'],
+    ['sysbtn', t('bar.desk', 'Admin Desk')],
   ];
   for (const [id, label] of APP) {
     const el = document.getElementById(id);
