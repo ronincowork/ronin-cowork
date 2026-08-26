@@ -375,8 +375,8 @@ app.put('/api/file', express.text({ type: '*/*', limit: '8mb' }), async (req, re
  * this hands back the file with its own content-type, so an `.html` a session listed can
  * sit in an iframe inside the ▧ Docs pane, or open in a tab of its own from the ↗ button.
  *
- * PATH-SHAPED, NOT A QUERY: `/raw/home/x/page.html` rather than `/raw?path=`, so a page's
- * relative `<img src="pic.png">` resolves to `/raw/home/x/pic.png` and comes through the
+ * PATH-SHAPED, NOT A QUERY: `/raw/<abs path>/page.html` rather than `/raw?path=`, so a page's
+ * relative `<img src="pic.png">` resolves to `/raw/<abs path>/pic.png` and comes through the
  * same door. Same absolute-path rule, same "no filter" ruling as `/api/file` above — the
  * browser is on the tailnet with the owner's cookie, and every agent already has the shell.
  */
