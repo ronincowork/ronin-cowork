@@ -1,18 +1,24 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { request } from './request.js';
+import { t } from './lexicon.js';
 
-const words = {
-  running: '● running',
-  stopped: '○ stopped',
-  vm_only: 'VM only',
-  network: 'network reachable',
-  none: 'none',
-  off: 'off',
-  on: 'on',
-  unknown: 'unknown',
-};
+// A function, not a table: the lexicon loads after this module is evaluated.
+function words() {
+  return {
+    running: t('gbrain.running', '● running'),
+    stopped: t('gbrain.stopped', '○ stopped'),
+    vm_only: t('gbrain.vm_only', 'VM only'),
+    network: t('gbrain.network', 'network reachable'),
+    none: t('gbrain.none', 'none'),
+    off: t('gbrain.off', 'off'),
+    on: t('gbrain.on', 'on'),
+    unknown: t('gbrain.unknown', 'unknown'),
+  };
+}
 
-const value = (v) => words[v] || String(v ?? 'unknown').replaceAll('_', ' ');
+function value(v) {
+  return words()[v] || String(v ?? 'unknown').replaceAll('_', ' ');
+}
 
 /** The service-owned gbrain commons_tab. Without its service it is never entered. */
 export function buildGbrain(root, isShowing, askPersonalAssistant) {
@@ -20,10 +26,10 @@ export function buildGbrain(root, isShowing, askPersonalAssistant) {
   head.className = 'gb-head';
   const intro = document.createElement('div');
   intro.className = 'gb-intro';
-  intro.textContent = 'What is running, what can leave this VM, and what gbrain can draw from.';
+  intro.textContent = t('gbrain.intro', 'What is running, what can leave this VM, and what gbrain can draw from.');
   const refresh = document.createElement('button');
   refresh.type = 'button';
-  refresh.textContent = '↻ Refresh';
+  refresh.textContent = t('gbrain.refresh', '↻ Refresh');
   head.append(intro, refresh);
 
   const privacy = document.createElement('section');
@@ -51,50 +57,50 @@ export function buildGbrain(root, isShowing, askPersonalAssistant) {
     const connected = data.integrationsKnown
       ? data.integrations.filter((x) => x.state === 'connected').length
       : null;
-    const integrationText = connected === null ? 'unknown' : connected === 0 ? 'none' : `${connected} connected`;
+    const integrationText = connected === null ? 'unknown' : connected === 0 ? 'none' : t('gbrain.n_connected', '{n} connected', { n: connected });
     const facts = [
-      ['Local gbrain process', data.process.state],
-      ['Listening', data.listener.scope],
-      ['External model provider', data.externalModelProvider],
-      ['Integrations', connected === null ? 'unknown' : connected === 0 ? 'none' : integrationText],
-      ['Public access', data.publicAccess.state],
+      [t('gbrain.process', 'Local gbrain process'), data.process.state],
+      [t('gbrain.listening', 'Listening'), data.listener.scope],
+      [t('gbrain.provider', 'External model provider'), data.externalModelProvider],
+      [t('gbrain.integrations', 'Integrations'), connected === null ? 'unknown' : connected === 0 ? 'none' : integrationText],
+      [t('gbrain.public_access', 'Public access'), data.publicAccess.state],
     ];
-    privacy.append(heading('Privacy and reach'));
+    privacy.append(heading(t('gbrain.privacy_head', 'Privacy and reach')));
     for (const [label, raw] of facts) privacy.append(row(label, value(raw), toneFor(raw)));
 
     const details = document.createElement('details');
     const summary = document.createElement('summary');
-    summary.textContent = 'Local details';
+    summary.textContent = t('gbrain.details', 'Local details');
     const endpoint = document.createElement('p');
-    endpoint.textContent = `${data.listener.address}:${data.listener.port} · gbrain ${data.process.version || 'version unknown'} · observed ${new Date(data.observedAt).toLocaleString()}`;
+    endpoint.textContent = t('gbrain.endpoint', '{address}:{port} · gbrain {version} · observed {time}', { address: data.listener.address, port: data.listener.port, version: data.process.version || t('gbrain.version_unknown', 'version unknown'), time: new Date(data.observedAt).toLocaleString() });
     details.append(summary, endpoint);
     privacy.append(details);
   };
 
   const renderSearch = (data) => {
     search.innerHTML = '';
-    search.append(heading('Search'));
+    search.append(heading(t('gbrain.search_head', 'Search')));
     const weightsTone = data.search.weights === 'running' ? 'good' : 'bad';
-    search.append(row('Local embeddings', value(data.search.weights), weightsTone));
+    search.append(row(t('gbrain.embeddings', 'Local embeddings'), value(data.search.weights), weightsTone));
     // Measured or absent — a dash, never a claimed model on a box that has none.
-    search.append(row('Model', data.search.model ?? '—', data.search.model ? '' : 'warn'));
-    search.append(row('Dimensions', data.search.dimensions === null ? '—' : String(data.search.dimensions)));
-    const retrieval = data.search.mode === 'hybrid' ? 'hybrid (keyword + semantic)' : data.search.mode === 'keyword_only' ? 'degraded — keyword only' : 'unknown';
-    search.append(row('Retrieval', retrieval, toneFor(data.search.mode)));
+    search.append(row(t('gbrain.model', 'Model'), data.search.model ?? '—', data.search.model ? '' : 'warn'));
+    search.append(row(t('gbrain.dimensions', 'Dimensions'), data.search.dimensions === null ? '—' : String(data.search.dimensions)));
+    const retrieval = data.search.mode === 'hybrid' ? t('gbrain.retrieval_hybrid', 'hybrid (keyword + semantic)') : data.search.mode === 'keyword_only' ? t('gbrain.retrieval_keyword', 'degraded — keyword only') : t('gbrain.unknown', 'unknown');
+    search.append(row(t('gbrain.retrieval', 'Retrieval'), retrieval, toneFor(data.search.mode)));
     const answers = data.search.answers?.state === 'on'
-      ? 'gbrain composition available'
+      ? t('gbrain.answers_on', 'gbrain composition available')
       : data.search.answers?.state === 'off'
-        ? 'composed by the agent (by design)'
-        : 'unknown';
-    search.append(row('Answers', answers, data.search.answers?.state === 'unknown' ? 'warn' : 'good'));
-    if (data.search.reason) search.append(row('Reason', value(data.search.reason), 'warn'));
+        ? t('gbrain.answers_off', 'composed by the agent (by design)')
+        : t('gbrain.unknown', 'unknown');
+    search.append(row(t('gbrain.answers', 'Answers'), answers, data.search.answers?.state === 'unknown' ? 'warn' : 'good'));
+    if (data.search.reason) search.append(row(t('gbrain.reason', 'Reason'), value(data.search.reason), 'warn'));
   };
 
   const renderIntegrations = (data) => {
     integrations.innerHTML = '';
-    integrations.append(heading('Integrations'));
+    integrations.append(heading(t('gbrain.integrations', 'Integrations')));
     if (!data.integrationsKnown) {
-      integrations.append(Object.assign(document.createElement('p'), { className: 'gb-empty', textContent: 'Integration status could not be read.' }));
+      integrations.append(Object.assign(document.createElement('p'), { className: 'gb-empty', textContent: t('gbrain.integrations_unread', 'Integration status could not be read.') }));
       return;
     }
     const ordered = [...data.integrations].sort((a, b) => Number(a.state !== 'connected') - Number(b.state !== 'connected'));
@@ -110,7 +116,7 @@ export function buildGbrain(root, isShowing, askPersonalAssistant) {
       if (item.state !== 'connected') {
         const ask = document.createElement('button');
         ask.type = 'button';
-        ask.textContent = 'Ask PersonalAssistant';
+        ask.textContent = t('gbrain.ask_assistant', 'Ask PersonalAssistant');
         ask.addEventListener('click', () => askPersonalAssistant(`Help me connect ${item.label} to gbrain. Explain every outside connection before asking me to approve it.`));
         el.append(ask);
       }
@@ -127,13 +133,13 @@ export function buildGbrain(root, isShowing, askPersonalAssistant) {
     search.innerHTML = '';
     integrations.innerHTML = '';
     privacy.innerHTML = '';
-    privacy.append(heading('gbrain is not installed'));
+    privacy.append(heading(t('gbrain.not_installed', 'gbrain is not installed')));
     if (data.install.state === 'running') {
       const removing = data.install.op === 'uninstall';
       privacy.append(
         row(
-          removing ? 'Removing' : 'Installing',
-          removing ? 'running — units, wiring, shelves (your brain repo is kept)' : 'running — weights, gbrain, cabinet, wiring',
+          removing ? t('gbrain.removing', 'Removing') : t('gbrain.installing', 'Installing'),
+          removing ? t('gbrain.removing_detail', 'running — units, wiring, shelves (your brain repo is kept)') : t('gbrain.installing_detail', 'running — weights, gbrain, cabinet, wiring'),
           'warn',
         ),
       );
@@ -149,7 +155,7 @@ export function buildGbrain(root, isShowing, askPersonalAssistant) {
       polling = null;
     }
     if (data.install.state === 'failed') {
-      privacy.append(row(data.install.op === 'uninstall' ? 'Remove' : 'Install', 'failed — the log below says where', 'bad'));
+      privacy.append(row(data.install.op === 'uninstall' ? t('gbrain.remove', 'Remove') : t('gbrain.install', 'Install'), t('gbrain.failed_detail', 'failed — the log below says where'), 'bad'));
       const log = document.createElement('pre');
       log.className = 'gb-log';
       log.textContent = data.install.log.join('\n');
@@ -159,13 +165,13 @@ export function buildGbrain(root, isShowing, askPersonalAssistant) {
         Object.assign(document.createElement('p'), {
           className: 'gb-empty',
           textContent:
-            'One press installs everything: the local embedding weights, gbrain itself (pinned), your brain repo, the server, and the session wiring. Downloads come from github.com and huggingface.co; nothing else leaves the VM.',
+            t('gbrain.install_pitch', 'One press installs everything: the local embedding weights, gbrain itself (pinned), your brain repo, the server, and the session wiring. Downloads come from github.com and huggingface.co; nothing else leaves the VM.'),
         }),
       );
     }
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.textContent = data.install.state === 'failed' && data.install.op !== 'uninstall' ? 'Retry install' : 'Load gbrain';
+    btn.textContent = data.install.state === 'failed' && data.install.op !== 'uninstall' ? t('gbrain.retry_install', 'Retry install') : t('gbrain.load', 'Load gbrain');
     btn.addEventListener('click', async () => {
       btn.disabled = true;
       await request('/api/gbrain/install', { method: 'POST', json: {} });
@@ -181,10 +187,10 @@ export function buildGbrain(root, isShowing, askPersonalAssistant) {
     el.className = 'gb-remove';
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.textContent = 'Remove gbrain…';
+    btn.textContent = t('gbrain.remove_button', 'Remove gbrain…');
     btn.addEventListener('click', async () => {
       const sure = window.confirm(
-        'Remove gbrain from this machine? The server, tokens, wiring and shelves go; your brain repo and its pages are KEPT.',
+        t('gbrain.remove_confirm', 'Remove gbrain from this machine? The server, tokens, wiring and shelves go; your brain repo and its pages are KEPT.'),
       );
       if (!sure) return;
       btn.disabled = true;
@@ -197,13 +203,13 @@ export function buildGbrain(root, isShowing, askPersonalAssistant) {
 
   const load = async () => {
     refresh.disabled = true;
-    refresh.textContent = 'checking…';
+    refresh.textContent = t('gbrain.checking', 'checking…');
     const r = await request('/api/gbrain');
     refresh.disabled = false;
-    refresh.textContent = '↻ Refresh';
+    refresh.textContent = t('gbrain.refresh', '↻ Refresh');
     if (!r.ok) {
       privacy.innerHTML = '';
-      privacy.append(row('gbrain status', r.message, 'bad'));
+      privacy.append(row(t('gbrain.status', 'gbrain status'), r.message, 'bad'));
       search.innerHTML = '';
       integrations.innerHTML = '';
       return;
