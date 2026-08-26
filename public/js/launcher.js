@@ -28,6 +28,7 @@ import { IS_TOUCH, S } from './state.js';
 import { button, field, status } from './ui.js';
 import { buildRoleSections } from './rolefamilies.js';
 import { addProvMark, addYourOwn } from './provenance.js';
+import { t } from './lexicon.js';
 
 /**
  * THE PICK IS ONE BUTTON — a `session_role`. The family shelf it sat under is
@@ -51,15 +52,15 @@ export function buildLauncher(tile, host) {
   const fillGroups = (sel) => {
     const cur = sel.value;
     sel.innerHTML = '';
-    sel.add(new Option('— team —', ''));
+    sel.add(new Option(t('launcher.team_none', '— team —'), ''));
     for (const g of [...new Set(S.sessions.flatMap((x) => x.tags || []))].sort()) sel.add(new Option(g, g));
-    sel.add(new Option('＋ new team…', NEWGRP));
+    sel.add(new Option(t('launcher.team_new', '＋ new team…'), NEWGRP));
     sel.value = [...sel.options].some((o) => o.value === cur) ? cur : '';
   };
   const wireNewGroup = (sel) =>
     sel.addEventListener('change', () => {
       if (sel.value !== NEWGRP) return;
-      const g = (prompt('New team name (letters, digits, - _):') || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+      const g = (prompt(t('launcher.team_new_prompt', 'New team name (letters, digits, - _):')) || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
       if (g) {
         sel.add(new Option(g, g), sel.options.length - 1);
         sel.value = g;
@@ -72,7 +73,7 @@ export function buildLauncher(tile, host) {
   board.className = 'ks-board';
   const boardHead = document.createElement('div');
   boardHead.className = 'ks-head';
-  boardHead.textContent = 'put a session out to work';
+  boardHead.textContent = t('launcher.head', 'put a session out to work');
   // The spawn form: which pair you pressed, then the two things only you can answer —
   // what the work is, and where it happens. Hidden until something is chosen.
   const form = document.createElement('div');
@@ -100,10 +101,10 @@ export function buildLauncher(tile, host) {
   nameInp.autocomplete = 'off';
   nameInp.spellcheck = false;
   nameInp.maxLength = 40;
-  nameInp.title = 'session name — how you address this session afterwards';
+  nameInp.title = t('launcher.name_title', 'session name — how you address this session afterwards');
   // Real accessible names, zero visual change (ui.field is display:contents; the
   // labels are screen-reader-only — placeholders keep carrying the visual).
-  const nameField = field(nameInp, { label: 'session name' });
+  const nameField = field(nameInp, { label: t('launcher.name', 'session name') });
   // Show the REAL name as it is typed. The transform is character-for-character
   // (lowercase, anything else -> '_'), so the length never changes and the caret
   // stays where it was — safe to run on every keystroke, mid-string edits included.
@@ -118,19 +119,19 @@ export function buildLauncher(tile, host) {
   what.rows = 2;
   what.autocapitalize = 'off';
   what.spellcheck = false;
-  const whatField = field(what, { label: 'what this session is told' });
+  const whatField = field(what, { label: t('launcher.what', 'what this session is told') });
   const formRow = document.createElement('div');
   formRow.className = 'home-ctl';
   // The third axis, and the required one: project_root (where the session is born). The
   // other two are the board's own buttons above. It is never blank — omitting it selects
   // the top active root server-side, exactly as this picker does here.
   const whereSel = document.createElement('select');
-  whereSel.title = 'project_root — where the work happens (sets the directory + reading list)';
+  whereSel.title = t('launcher.where_title', 'project_root — where the work happens (sets the directory + reading list)');
   const modelSel = document.createElement('select');
   modelSel.className = 'ks-model'; // hidden for an agentless launch — there is no session_launch_spec to pick
-  modelSel.title = 'Which session_launch_spec to launch';
+  modelSel.title = t('launcher.model_title', 'Which session_launch_spec to launch');
   const groupSel = document.createElement('select');
-  groupSel.title = 'Team the new session joins (tag)';
+  groupSel.title = t('launcher.team_title', 'Team the new session joins (tag)');
   // MCP on/off for THIS session — a mechanical pick like the model, live in both
   // modes. On: the CLI's own config applies, untouched. Off: the session launches with
   // no MCP servers at all — no shared memory, no connectors — via the provider's own
@@ -146,21 +147,21 @@ export function buildLauncher(tile, host) {
   // The label says gbrain — the owner's ruling: "MCP" means nothing to a person, the
   // brain is the thing being switched. The tooltip tells the whole truth: off means NO
   // MCP servers at all, so any other connector the CLI is wired with goes with it.
-  const mcpBtn = button('gbrain on', { cls: 'ks-mcp' });
+  const mcpBtn = button(t('launcher.gbrain_on', 'gbrain on'), { cls: 'ks-mcp' });
   const applyMcp = () => {
-    mcpBtn.textContent = mcpOn ? 'gbrain on' : 'gbrain off';
+    mcpBtn.textContent = mcpOn ? t('launcher.gbrain_on', 'gbrain on') : t('launcher.gbrain_off', 'gbrain off');
     mcpBtn.classList.toggle('off', !mcpOn);
     mcpBtn.title = mcpOn
-      ? 'This session can reach gbrain — and any other MCP servers the CLI is wired with. Click to launch it with none.'
-      : 'This session launches with NO MCP servers — gbrain and every other connector off. Click to launch connected.';
+      ? t('launcher.gbrain_on_title', 'This session can reach gbrain — and any other MCP servers the CLI is wired with. Click to launch it with none.')
+      : t('launcher.gbrain_off_title', 'This session launches with NO MCP servers — gbrain and every other connector off. Click to launch connected.');
   };
   mcpBtn.addEventListener('click', () => {
     mcpOn = !mcpOn;
     applyMcp();
   });
   applyMcp();
-  const startBtn = button('Start', { cls: 'home-go' });
-  const cancelBtn = button('Cancel');
+  const startBtn = button(t('launcher.start', 'Start'), { cls: 'home-go' });
+  const cancelBtn = button(t('launcher.cancel', 'Cancel'));
   // WHERE A FAILURE LANDS: the form's own status line, under the controls it refers
   // to. The text you typed stays in the boxes — a failed launch must never cost the
   // brief. ui.status: announced, hidden while empty.
@@ -187,8 +188,8 @@ export function buildLauncher(tile, host) {
     b.title = hint;
     return b;
   };
-  const manualBtn = mkMode('manual', 'manual', 'Your text is the whole prompt — nothing added, nothing templated');
-  const assistBtn = mkMode('assisted', 'assisted', 'Say it long-form; Ronin composes the brief around it');
+  const manualBtn = mkMode('manual', t('launcher.mode_manual', 'manual'), t('launcher.mode_manual_title', 'Your text is the whole prompt — nothing added, nothing templated'));
+  const assistBtn = mkMode('assisted', t('launcher.mode_assisted', 'assisted'), t('launcher.mode_assisted_title', 'Say it long-form; Ronin composes the brief around it'));
   const modeNote = document.createElement('small');
   modeRow.append(manualBtn, assistBtn, modeNote);
   // A sentence under the toggle saying plainly what each mode does with your words.
@@ -200,17 +201,17 @@ export function buildLauncher(tile, host) {
     manualBtn.classList.toggle('on', mode === 'manual');
     assistBtn.classList.toggle('on', mode === 'assisted');
     form.classList.toggle('assisted', mode === 'assisted');
-    modeNote.textContent = mode === 'manual' ? 'your words, untouched' : 'Koshi fills the rest';
+    modeNote.textContent = mode === 'manual' ? t('launcher.mode_manual_note', 'your words, untouched') : t('launcher.mode_assisted_note', 'Koshi fills the rest');
     modeSay.textContent =
       mode === 'manual'
-        ? 'Sent word for word — nothing added.'
-        : 'Say it in plain terms and Koshi your AI admin will handle the rest; the below selections are optional.';
+        ? t('launcher.mode_manual_say', 'Sent word for word — nothing added.')
+        : t('launcher.mode_assisted_say', 'Say it in plain terms and Koshi your AI admin will handle the rest; the below selections are optional.');
     what.placeholder =
       mode === 'manual'
-        ? (pick && (pick.task || pick.role)?.ask) || 'exactly what you want said to the agent'
-        : 'Describe in plain terms what this session should do and cover…';
+        ? (pick && (pick.task || pick.role)?.ask) || t('launcher.what_placeholder', 'exactly what you want said to the agent')
+        : t('launcher.what_placeholder_assisted', 'Describe in plain terms what this session should do and cover…');
     nameInp.placeholder =
-      mode === 'manual' ? 'session name (required)' : 'session name (optional — named from your text)';
+      mode === 'manual' ? t('launcher.name_placeholder', 'session name (required)') : t('launcher.name_placeholder_assisted', 'session name (optional — named from your text)');
     nameInp.classList.toggle('req', mode === 'manual');
   };
   manualBtn.addEventListener('click', () => {
@@ -224,29 +225,29 @@ export function buildLauncher(tile, host) {
   // Optional extras — assisted only; in manual they would be wording we inject.
   const extrasHead = document.createElement('div');
   extrasHead.className = 'ks-extras-h';
-  extrasHead.textContent = 'optional';
+  extrasHead.textContent = t('launcher.optional', 'optional');
   const extras = document.createElement('div');
   extras.className = 'ks-extras';
   const seedInp = document.createElement('input');
   seedInp.type = 'text';
-  seedInp.placeholder = 'read first (optional): paths, comma-separated';
+  seedInp.placeholder = t('launcher.seed_placeholder', 'read first (optional): paths, comma-separated');
   seedInp.autocapitalize = 'off';
   seedInp.spellcheck = false;
-  const seedField = field(seedInp, { label: 'read first — paths, comma-separated' });
+  const seedField = field(seedInp, { label: t('launcher.seed', 'read first — paths, comma-separated') });
   const injectInp = document.createElement('input');
   injectInp.type = 'text';
-  injectInp.placeholder = 'extra instruction (optional)';
+  injectInp.placeholder = t('launcher.inject_placeholder', 'extra instruction (optional)');
   injectInp.autocapitalize = 'off';
-  const injectField = field(injectInp, { label: 'extra instruction' });
+  const injectField = field(injectInp, { label: t('launcher.inject', 'extra instruction') });
   // A group says "these people"; this says "that one". Reviewing or forking is
   // usually about ONE session, so pointing at it should not require typing a name.
   const refSel = document.createElement('select');
-  refSel.title = 'Point this session at ONE existing session (review it, fork from it, watch it)';
+  refSel.title = t('launcher.reference_title', 'Point this session at ONE existing session (review it, fork from it, watch it)');
   extras.append(seedField.el, injectField.el, refSel);
   const fillRef = () => {
     const cur = refSel.value;
     refSel.innerHTML = '';
-    refSel.add(new Option('— no session —', ''));
+    refSel.add(new Option(t('launcher.reference_none', '— no session —'), ''));
     for (const s of S.sessions) refSel.add(new Option('@' + s.name, s.name));
     refSel.value = [...refSel.options].some((o) => o.value === cur) ? cur : '';
   };
@@ -278,7 +279,7 @@ export function buildLauncher(tile, host) {
     const r = await request('/api/settei');
     const rec = r.ok ? r.data : null;
     if (!rec || !(rec.needed ?? []).length || !(rec.status?.agents?.usable ?? []).length) return;
-    offer.textContent = '新 start your setup session';
+    offer.textContent = t('launcher.setup_offer', '新 start your setup session');
     offer.title = rec.needed.map((n) => n.needs).join(' · ');
     offer.addEventListener('click', () => open(rec.schema.seat.session_role, rec.schema.seat.prompt));
     offer.hidden = false;
@@ -340,7 +341,7 @@ export function buildLauncher(tile, host) {
   const choose = async (role, task, promptText = '') => {
     const profile = await launchProfile(task?.name);
     if (!profile) {
-      sayErr('this combination cannot be launched — see the definition files it names');
+      sayErr(t('launcher.cannot_launch', 'this combination cannot be launched — see the definition files it names'));
       return;
     }
     pick = { role, task, profile };
@@ -370,7 +371,7 @@ export function buildLauncher(tile, host) {
     const credit = face.credit || role?.credit;
     creditEl.hidden = !credit;
     if (credit) {
-      creditEl.textContent = `powered by ${credit.text} ↗`;
+      creditEl.textContent = t('launcher.powered_by', 'powered by {name} ↗').replace('{name}', credit.text);
       creditEl.href = credit.url;
       creditEl.title = credit.url;
     } else {
@@ -408,13 +409,13 @@ export function buildLauncher(tile, host) {
     // sits flat under them — loose, and every bit as launchable (js/rolefamilies.js).
     const shelved = shelves.render();
     for (const k of all.filter((x) => !shelved.has(x.name))) grid2.appendChild(taskButton(k, null));
-    if (!all.length) grid2.textContent = 'no session_roles in ronin_catalogs/session_roles/';
+    if (!all.length) grid2.textContent = t('launcher.no_roles', 'no session_roles in ronin_catalogs/session_roles/');
     grid2.dataset.n = String(all.length);
     // HIDDEN, not gone (owner, 2026-08-21, OPEN_THREADS 4.31): the tile's whole answer
     // is a file path popped at a person mid-launch — developer-shaped, not owner-shaped.
     // It stays a consumer so the affordance survives to be redesigned, and one deleted
     // line brings it back.
-    const own = addYourOwn('session_roles/', 'session task');
+    const own = addYourOwn('session_roles/', t('launcher.own_kind', 'session task'));
     own.hidden = true;
     grid2.appendChild(own);
   };
@@ -432,7 +433,7 @@ export function buildLauncher(tile, host) {
     if (!saved.length) return; // nothing shipped, nothing saved: say nothing
     const head = document.createElement('div');
     head.className = 'ks-saved-h';
-    head.textContent = 'saved launches';
+    head.textContent = t('launcher.saved', 'saved launches');
     savedRow.appendChild(head);
     for (const l of saved) {
       const b = document.createElement('button');
@@ -456,7 +457,7 @@ export function buildLauncher(tile, host) {
         // may still carry a role_family field; it is presentation-era data and ignored.)
         const task = l.session_role ? (roleData || []).find((k) => k.name === l.session_role) : null;
         if (l.session_role && !task) {
-          sayErr(`"${l.label}" names session_role "${l.session_role}", which is not in the catalog.`);
+          sayErr(t('launcher.saved_role_missing', '"{label}" names session_role "{role}", which is not in the catalog.').replace('{label}', l.label).replace('{role}', l.session_role));
           return;
         }
         const shelf = task ? (familyData || []).find((r) => (r.session_roles ?? []).includes(task.name)) : null;
@@ -478,7 +479,7 @@ export function buildLauncher(tile, host) {
     const cur = whereSel.value;
     whereSel.innerHTML = '';
     if (!projectData || !projectData.length) {
-      whereSel.add(new Option('— no project_roots —', ''));
+      whereSel.add(new Option(t('launcher.where_none', '— no project_roots —'), ''));
       return;
     }
     for (const r of projectData) {
@@ -571,7 +572,7 @@ export function buildLauncher(tile, host) {
     if (!r.ok) {
       // The brief stays in the box and the form stays open: a failed launch costs a
       // retry, never the words.
-      sayErr('could not put a session out — ' + r.message);
+      sayErr(t('launcher.launch_failed', 'could not put a session out — {message}').replace('{message}', r.message));
     } else {
       closeForm();
       showReceipt(r.data.name, r.data.receipt);
