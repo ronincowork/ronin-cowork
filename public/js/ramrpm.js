@@ -1,6 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { request } from './request.js';
 import { serviceMissing } from './state.js';
+import { t } from './lexicon.js';
 
 /**
  * RAM_RPM — the box's working reading, in the header.
@@ -42,9 +43,9 @@ function render(el, m) {
 
   // The title carries what the face cannot. Kept short: the help box is a FIXED
   // rectangle and a long label spills out of it (scripts/check-tips.mjs).
-  const swap = m.swap.total_mb === 0 ? 'no swap' : `swap ${gb(m.swap.used_mb)}`;
-  const where = m.scope === 'container' ? ' (container limit)' : '';
-  el.title = `RAM_RPM — ${gb(free)} free of ${gb(total)}${where} · load ${m.load[0]} on ${m.cpus} · ${swap}`;
+  const swap = m.swap.total_mb === 0 ? t('gauge.no_swap', 'no swap') : t('gauge.swap', 'swap {used}', { used: gb(m.swap.used_mb) });
+  const where = m.scope === 'container' ? ' ' + t('gauge.container_limit', '(container limit)') : '';
+  el.title = t('gauge.ram_title', 'RAM_RPM — {free} free of {total}{where} · load {load} on {cpus} · {swap}', { free: gb(free), total: gb(total), where, load: m.load[0], cpus: m.cpus, swap });
 }
 
 export function mountRamRpm() {
