@@ -93,14 +93,20 @@ export function guard(where, fn, fallback) {
  */
 const BENIGN = [/ResizeObserver loop/i];
 
-window.addEventListener('error', (e) => {
+// Named functions, not top-level arrows: check-modules refuses an imported binding used
+// at module top level, and these read t() — the handler body runs long after boot.
+function onWindowError(e) {
   if (BENIGN.some((re) => re.test(e.message || ''))) return;
   const err = e.error;
   const at = e.filename ? `${String(e.filename).replace(/^.*\//, '')}:${e.lineno}:${e.colno}` : '';
-  if (err instanceof Error) showFailure(at ? `uncaught error at ${at}` : 'uncaught error', err);
-  else showFailure(at ? `uncaught error at ${at}` : 'uncaught error', e.message);
-});
-window.addEventListener('unhandledrejection', (e) => showFailure('unhandled promise', e.reason));
+  if (err instanceof Error) showFailure(at ? t('errors.uncaught_at', 'uncaught error at {at}', { at }) : t('errors.uncaught', 'uncaught error'), err);
+  else showFailure(at ? t('errors.uncaught_at', 'uncaught error at {at}', { at }) : t('errors.uncaught', 'uncaught error'), e.message);
+}
+function onUnhandledRejection(e) {
+  showFailure(t('errors.unhandled', 'unhandled promise'), e.reason);
+}
+window.addEventListener('error', onWindowError);
+window.addEventListener('unhandledrejection', onUnhandledRejection);
 
 /** Placeholder for a tile that failed to build, so the grid keeps its shape. */
 export function deadTile(i, err) {
@@ -108,8 +114,9 @@ export function deadTile(i, err) {
   el.className = 'tile tile-dead';
   el.innerHTML =
     `<div class="tile-head"><span class="dot off"></span><span class="grow"></span></div>` +
-    `<div class="tile-body"><div class="dead-note">tile ${i + 1} failed to build` +
+    `<div class="tile-body"><div class="dead-note"><span class="dead-what"></span>` +
     `<br><span class="dead-why"></span></div></div>`;
+  el.querySelector('.dead-what').textContent = t('errors.tile_failed', 'tile {n} failed to build', { n: i + 1 });
   el.querySelector('.dead-why').textContent = err && err.message ? err.message : String(err);
   return el;
 }
