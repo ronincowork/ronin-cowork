@@ -188,3 +188,53 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **home.receipt_no_agent:** no agent
 - **home.receipt_kill:** kill
 - **home.receipt_kill_title:** Wrong? Remove the session now.
+
+## settei — settei.js (the ⚙ Configuration tab)
+- **settei.saving:** saving…
+- **settei.saved:** saved
+- **settei.none_set:** — none set —
+- **settei.unset_using:** unset — using {value}
+- **settei.spec_not_installed:** {spec} — not installed
+- **settei.blurb:** What this install is set to — and what it is running on.
+- **settei.measured:** measured {time}
+- **settei.group_you:** you and this machine
+- **settei.hardware:** hardware
+- **settei.virtual:** virtual
+- **settei.physical:** physical
+- **settei.cores_ram:** {cores} cores · {ram} GB
+- **settei.running:** running
+- **settei.os_node:** {os} · node {node}
+- **settei.release_contract:** {release} · contract {contract}
+- **settei.reachable_at:** Ronin reachable at
+- **settei.reach_secure:** {exposure} · HTTPS by tailscale serve · plain {at}
+- **settei.reach_alias:** · or {alias} (MagicDNS)
+- **settei.reach_ssh:** reach by ssh
+- **settei.group_capacity:** capacity
+- **settei.group_projects:** projects · {n}
+- **settei.dir_gone:** ✕ {dir} is gone
+- **settei.projects_link:** Edit these in ▣ Project root — this room only shows them.
+- **settei.group_models:** how work gets a model
+- **settei.key_set:** ✓ set
+- **settei.key_not_set:** not set
+- **settei.key_presence:** presence only — the value stays in .env
+- **settei.weights_downloaded:** ✓ downloaded
+- **settei.weights_size:** {mb} MB · koshi_weights store
+- **settei.local_weights:** local weights
+- **settei.weights_none:** none downloaded
+- **settei.group_agents:** agent installations
+- **settei.agents_hint:** a tick means it is on the box — tick an empty one to put it on the needed list
+- **settei.installed:** installed
+- **settei.not_installed_tick:** not installed — tick to put it on the needed list
+- **settei.group_services:** services
+- **settei.ronin_services:** Ronin Services
+- **settei.use_gbrain:** use gbrain
+- **settei.use_gbrain_hint:** tick this if your agents use it
+- **settei.group_subscription:** subscription
+- **settei.subscription:** subscription
+- **settei.group_needed:** still needed
+- **settei.needed_nothing:** nothing
+- **settei.needed_satisfied:** your choices are satisfied
+- **settei.setup_go:** start your setup session
+- **settei.setup_started:** setup session started — see ⌂ Roster
+- **settei.setup_failed:** could not start
+- **settei.reading:** reading…
