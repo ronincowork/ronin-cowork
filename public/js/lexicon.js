@@ -10,8 +10,8 @@
  * check reports the unconverted, it does not fail on them).
  *
  * ONE FLAT OBJECT PER PICK. The server resolves the `base:` chain (`src/lexicons.ts`), so
- * this file never learns that Stewart falls through to Professional, or that a French
- * Stewart is one file. It is fetched at boot from the active desk profile and again on a
+ * this file never learns that Home falls through to Professional, or that a French
+ * Home is one file. It is fetched at boot from the active desk profile and again on a
  * pick, never cached in storage — the same reason skins re-fetch: edit the file, reload,
  * wear the change.
  *

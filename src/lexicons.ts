@@ -2,13 +2,13 @@
  * LEXICONS — the words a surface uses, as a shadowable catalog (`ronin_catalogs/lexicons/`).
  *
  * A lexicon is keys to strings and a `base:` to fall through to. Mechanically it is a
- * language: a wording (Stewart says *occasion*) and a translation (French) are the same
+ * language: a wording (Home says *occasion*) and a translation (French) are the same
  * kind of file (KOTOBA `lexicon`, 2026-08-27). This module reads the directory through
  * the one definitions reader — stock ⊕ yours, whole-file by name — and RESOLVES a lexicon
  * flat: the file's own words over its base's, the base's over its base's, to the floor.
  *
  * WHY RESOLVE ON THE SERVER. The client reads one flat object per pick and never learns
- * the chain, so a French Stewart (`stewart_fr`, base `fr`) costs it nothing; and the
+ * the chain, so a French Home (`home_fr`, base `fr`) costs it nothing; and the
  * cycle guard lives in one place. `label`, `blurb`, `base`, `order`, `hidden` are fields,
  * not words, and never reach the flat map.
  *

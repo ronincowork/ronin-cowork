@@ -1,10 +1,10 @@
-# stewart
+# home
 
 The household's words — a dozen of them, to prove the chain. Everything not said here
 falls through to `professional`.
 
-- **label:** Stewart
-- **blurb:** The household. Occasions, staff, mise en place, service.
+- **label:** Home
+- **blurb:** The household's words — occasions, staff, mise en place, service.
 - **base:** professional
 - **desk_profile:** the house style
 - **campaign:** Occasion

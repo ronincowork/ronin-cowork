@@ -21,5 +21,5 @@ prose. Fields, all optional — a blank field means "as stock":
 
 **Yours and ours.** A file of the same name in your catalogs store replaces ours **whole**;
 a new name adds a profile; `- **hidden:** yes` withdraws one of ours (`docs/shadowing.md`).
-Four ship: `league` · `stewart` · `terminal` · `professional`. No profile chosen is the
+Four ship: `terminal` · `vibe_code` · `professional` · `home`. No profile chosen is the
 ordinary state of every install older than this file, and it renders exactly as stock.

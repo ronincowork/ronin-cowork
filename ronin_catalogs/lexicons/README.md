@@ -2,10 +2,10 @@
 
 > **DATA.** Nothing here executes. A **lexicon** is keys to strings: what a surface says
 > where it would otherwise say the stock English. Mechanically it is a language — a
-> wording (*Stewart* says *occasion* for a campaign) and a translation (*Français*) are
+> wording (*Home* says *occasion* for a campaign) and a translation (*Français*) are
 > the same kind of file, and that is deliberate (KOTOBA `lexicon`, 2026-08-27).
 >
-> A **desk_profile** names one (`- **lexicon:** stewart`) the way it names a skin. A
+> A **desk_profile** names one (`- **lexicon:** home`) the way it names a skin. A
 > lexicon never rides a launch, a letter or a brief: **anything an agent reads stays in
 > stock tokens**, and the house's internal names are not keys.
 
@@ -22,15 +22,15 @@ lexicon a missing key falls through to.
 
 **The chain, one rule:** the active lexicon → its `base:` → the definition's own `label:`
 or the stock literal in the view. A missing key can never blank a surface; a missing
-lexicon paints exactly as stock. So a lexicon says **only what it changes** — Stewart is a
+lexicon paints exactly as stock. So a lexicon says **only what it changes** — Home is a
 dozen lines, not six hundred.
 
 **`professional` is the floor**, and it is complete by definition: every key a view reads
 through `t()` is in it, and `scripts/check-lexicon.mjs` fails the build when one is not.
-The other shipped lexicons (`league`, `stewart`, `terminal`) may be short or empty.
+The other shipped lexicons (`vibe_code`, `home`, `terminal`) may be short or empty.
 
-**A language is one file.** French is a lexicon named `fr`; a French Stewart is one named
-`stewart_fr` with `- **base:** fr`. Wording and translation are one axis — there is no
+**A language is one file.** French is a lexicon named `fr`; a French Home is one named
+`home_fr` with `- **base:** fr`. Wording and translation are one axis — there is no
 second setting.
 
 **Yours and ours.** A file of the same name in your catalogs store replaces ours **whole**;

@@ -1,7 +1,7 @@
 # Lexicons — the words a surface uses
 
 A **lexicon** is keys to strings: what a surface says where it would otherwise say the
-stock English. Mechanically it is a language — a wording (*Stewart* says *occasion* for a
+stock English. Mechanically it is a language — a wording (*Home* says *occasion* for a
 campaign) and a translation (*Français*) are the same kind of file, and that is the point
 (KOTOBA `lexicon`, ruled with R38 on 2026-08-27). A **desk profile** names one the way it
 names a skin (`docs/desk-profiles.md`).
@@ -11,8 +11,8 @@ names a skin (`docs/desk-profiles.md`).
 `ronin_catalogs/lexicons/<name>.md`, one file per lexicon, shadowable whole-file by name
 (`docs/shadowing.md`): yours in the catalogs store replaces ours of the same name; a new
 name is a new lexicon; `- **hidden:** yes` withdraws one of ours. The directory's
-`README.md` carries the format. Four ship: `professional` (the floor), `stewart` (a dozen
-words, to prove the chain), `league` and `terminal` (near-empty, on purpose — the words
+`README.md` carries the format. Four ship: `professional` (the floor), `home` (a dozen
+words, to prove the chain), `vibe_code` and `terminal` (near-empty, on purpose — the words
 grow as the surfaces settle, one file at a time, with no code).
 
 Two kinds of key in one table: a bare word is a surface string (`campaign`, `go`); a
@@ -30,8 +30,8 @@ active lexicon  →  its base:  →  the definition's own label: / the literal i
 the file's words over its base's, to the floor, with a cycle guard. The client
 (`public/js/lexicon.js`) holds one flat object and answers `t(key, literal)` — the word,
 or the literal the view wrote. So a missing key can never blank a label, and a missing
-lexicon paints exactly as stock. Wording and translation are one axis: a French Stewart
-is one more lexicon, `stewart_fr`, with `- **base:** fr` — never a second setting.
+lexicon paints exactly as stock. Wording and translation are one axis: a French Home
+is one more lexicon, `home_fr`, with `- **base:** fr` — never a second setting.
 
 ## The floor, and the check
 
@@ -49,7 +49,7 @@ its literals until it is touched for another reason. The check does not fail on 
 ## What is never translated
 
 Anything an **agent** reads — the letter, the brief, the boot shelf, `write_tegami` —
-stays in stock tokens: a session on a Stewart desk is still `DraftPlan` with
+stays in stock tokens: a session on a Home desk is still `DraftPlan` with
 `reach: plan`. The house's internal names (KOTOBA's list) are not keys. And a lexicon
 changes words, never structure: a surface that must be *shaped* differently per profile
 is a Workspace Kit question.
