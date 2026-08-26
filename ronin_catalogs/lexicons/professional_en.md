@@ -1274,3 +1274,8 @@ The catalog entry goes. {dir} is not touched.
 - **pad.asks_on_press:** (asks on press)
 - **pad.prog_ready:** writes F13–F24 + 🎙 Wispr straight onto the pad — no Input app needed
 - **pad.prog_needs_webhid:** programming the pad needs Chrome/Edge on desktop (WebHID)
+
+## macros — no-blurb and accessible names
+- **macros.no_blurb:** no blurb yet — add a blurb: line to its MACROS.md entry
+- **macros.aria_send:** {label} — +{name} ⏎, typed into the session and sent for you
+- **macros.aria_drop:** {label} — +{name}: dropped into the input for you to finish

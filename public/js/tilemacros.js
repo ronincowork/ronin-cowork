@@ -150,7 +150,7 @@ export function buildTileMacros(tile) {
       // honest line naming the gap and the fix — not a blank under the headline (which reads
       // as broken), not the instruction, and not a guess at what their macro does.
       const why = document.createElement('small');
-      why.textContent = plain(m.blurb) || 'no blurb yet — add a blurb: line to its MACROS.md entry';
+      why.textContent = plain(m.blurb) || t('macros.no_blurb', 'no blurb yet — add a blurb: line to its MACROS.md entry');
       row.append(nm, why);
       // THE INVOCATION IS THE ACCESSIBLE NAME, and it is deliberately not a `title`.
       //
@@ -167,8 +167,8 @@ export function buildTileMacros(tile) {
       // reader who most needs to know this button types `+name:` rather than doing a thing.
       // The face stays the owner's plain words either way.
       row.setAttribute('aria-label', m.send
-        ? `${m.label || m.name} — +${m.name} ⏎, typed into the session and sent for you`
-        : `${m.label || m.name} — +${m.name}: dropped into the input for you to finish`);
+        ? t('macros.aria_send', '{label} — +{name} ⏎, typed into the session and sent for you', { label: m.label || m.name, name: m.name })
+        : t('macros.aria_drop', '{label} — +{name}: dropped into the input for you to finish', { label: m.label || m.name, name: m.name }));
       const cool = m.send ? coolingFor(m.name) : 0;
       if (cool) {
         row.disabled = true;
