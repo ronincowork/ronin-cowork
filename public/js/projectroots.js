@@ -159,22 +159,22 @@ export function buildProjectRoots(root, isShowing, tile) {
       facts.appendChild(c);
     };
     if (r.archived) {
-      chip('archived', 'muted', 'Off the new-session picker. Still here, and still launchable by name.');
+      chip(t('roots.chip_archived', 'archived'), 'muted', t('roots.chip_archived_title', 'Off the new-session picker. Still here, and still launchable by name.'));
     }
     if (!r.facts?.exists) {
       // The one maintenance job that arrives on its own: a directory moved or deleted
       // out from under the catalog. Flagged, never auto-removed.
-      chip('directory is gone', 'bad', 'Nothing on disk at this path — fix the path or exclude it');
+      chip(t('roots.chip_gone', 'directory is gone'), 'bad', t('roots.chip_gone_title', 'Nothing on disk at this path — fix the path or exclude it'));
     } else if (r.facts.repo) {
       const remote = (r.facts.repo.remote || '').replace(/^.*[/:]([^/]+\/[^/]+?)(\.git)?$/, '$1');
-      chip(remote || 'repo, no remote', '', r.facts.repo.remote || 'A git repo with no origin');
+      chip(remote || t('roots.chip_no_remote', 'repo, no remote'), '', r.facts.repo.remote || t('roots.chip_no_remote_title', 'A git repo with no origin'));
       if (r.facts.repo.branch) chip('⑂ ' + r.facts.repo.branch);
     } else {
       // A project_root need not be a project_repo. `~/lab` is one; this is a
       // legal shape, not a warning.
-      chip('no repo', 'muted', 'Not a git repo — legal, a project_root need not be one');
+      chip(t('roots.chip_no_repo', 'no repo'), 'muted', t('roots.chip_no_repo_title', 'Not a git repo — legal, a project_root need not be one'));
     }
-    if (r.sessions) chip(r.sessions + (r.sessions === 1 ? ' session' : ' sessions'), 'muted');
+    if (r.sessions) chip(r.sessions === 1 ? t('roots.sessions_one', '{n} session', { n: r.sessions }) : t('roots.sessions_many', '{n} sessions', { n: r.sessions }), 'muted');
     if (r.remit) {
       const rem = document.createElement('div');
       rem.className = 'pr-remit';
@@ -192,10 +192,10 @@ export function buildProjectRoots(root, isShowing, tile) {
     });
     const shelve = document.createElement('button');
     shelve.className = 'pr-ghost';
-    shelve.textContent = r.archived ? 'unarchive' : 'archive';
+    shelve.textContent = r.archived ? t('roots.unarchive', 'unarchive') : t('roots.archive', 'archive');
     shelve.title = r.archived
-      ? 'Put it back on the new-session picker.'
-      : 'Take it off the new-session picker. It stays on this pane, and sessions already using it are untouched.';
+      ? t('roots.unarchive_title', 'Put it back on the new-session picker.')
+      : t('roots.archive_title', 'Take it off the new-session picker. It stays on this pane, and sessions already using it are untouched.');
     shelve.addEventListener('click', async () => {
       shelve.disabled = true;
       const res = await request('/api/project-roots/' + encodeURIComponent(r.name), {
@@ -242,9 +242,9 @@ export function buildProjectRoots(root, isShowing, tile) {
     const archived = roots.filter((r) => r.archived).length;
     const live = roots.length - archived;
     count.textContent =
-      live + (live === 1 ? ' project_root' : ' project_roots') +
-      (archived ? ` · ${archived} archived` : '') +
-      (data.untagged ? ` · ${data.untagged} untagged session${data.untagged === 1 ? '' : 's'}` : '');
+      (live === 1 ? t('roots.count_one', '{n} project_root', { n: live }) : t('roots.count_many', '{n} project_roots', { n: live })) +
+      (archived ? ' · ' + t('roots.count_archived', '{n} archived', { n: archived }) : '') +
+      (data.untagged ? ' · ' + (data.untagged === 1 ? t('roots.untagged_one', '{n} untagged session', { n: data.untagged }) : t('roots.untagged_many', '{n} untagged sessions', { n: data.untagged })) : '');
     if (!roots.length) {
       say(t('roots.empty', 'nothing included yet — ＋ include asks Mika to point Ronin at a directory'));
       return;
