@@ -1139,3 +1139,13 @@ The catalog entry goes. {dir} is not touched.
 - **new_team.none_passed:** No proposed session passed preflight. The Team was not created.
 - **new_team.halted:** Not attempted after Ronin could not complete the previous launch: {message}
 - **new_team.lead_not_born:** The designated lead seat was not born.
+
+## new_team — new-team-preflight.js (the preflight notes)
+- **new_team.preflight_broken:** the preflight could not run
+- **new_team.note_name:** A Team name is lowercase letters, digits, _ and - — and it is also the tag. "unassigned" is reserved for the holding area.
+- **new_team.note_taken:** Team "{name}" already has a roster. Open it instead of creating it.
+- **new_team.note_adopts_one:** {n} live session already carries this name and becomes a member the moment the Team exists: {sessions}. Membership is derived from the sessions, so the Team arrives already staffed.
+- **new_team.note_adopts_many:** {n} live sessions already carry this name and become members the moment the Team exists: {sessions}. Membership is derived from the sessions, so the Team arrives already staffed.
+- **new_team.note_tagged:** Those members were tagged, not born onto this Team, so none of them reads the team_role shelf — that reading happens at birth only. Sessions raised from the roster afterwards do.
+- **new_team.note_wipeboard:** A wipeboard named "{name}" already exists and this Team adopts its thread — the team wins its name.
+- **new_team.note_capacity:** This box allows {max} live sessions and {live} are running. This roster would need {over} more than there is room for.
