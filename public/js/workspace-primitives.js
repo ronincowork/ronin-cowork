@@ -308,6 +308,39 @@ function createForm(options = {}) {
  * holds state of its own, so a splitter drag redraws it and a map drag moves the real
  * columns. The ViewHost mounts it in the app bar for any view exposing an arrangement.
  */
+/**
+ * THE TAB NAME — one text field in the app bar, drawn by the ViewHost for a view that
+ * exposes `tabName` ({ get(), placeholder(), set(value) }). What is typed becomes the
+ * browser tab's title (the ViewHost retitles on every change); empty means the view's
+ * own default, shown as the placeholder. Enter or leaving the field commits, Escape
+ * puts the last committed value back. Nothing here knows what the view is.
+ */
+function createTabName(tabName) {
+  const el = node('input', 'wk-tab-name');
+  el.type = 'text';
+  el.maxLength = 48;
+  el.spellcheck = false;
+  el.setAttribute('aria-label', 'Name this tab');
+  el.title = 'Name this browser tab — what it is for. Empty is the default name.';
+  const render = () => {
+    el.placeholder = tabName.placeholder?.() || '';
+    el.value = tabName.get?.() || '';
+  };
+  const commit = () => {
+    const next = el.value.trim();
+    if (next === (tabName.get?.() || '')) return;
+    tabName.set?.(next);
+    render();
+  };
+  el.addEventListener('change', commit);
+  el.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') { commit(); el.blur(); }
+    else if (event.key === 'Escape') { render(); el.blur(); }
+  });
+  render();
+  return { el, render, destroy: () => el.remove() };
+}
+
 function createLayoutMap(arrangement) {
   const el = node('div', 'wk-layout-map');
   el.setAttribute('role', 'group');
@@ -390,6 +423,7 @@ function createLayoutMap(arrangement) {
 export const WorkspacePrimitives = Object.freeze({
   states: WORKSPACE_STATES,
   createLayoutMap,
+  createTabName,
   setSurfaceState,
   createSurface,
   createCard,

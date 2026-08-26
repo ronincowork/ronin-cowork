@@ -55,6 +55,10 @@ Current load-bearing contracts:
   which the ViewHost draws into the bar's `#viewmap` slot for any registered view that
   exposes `arrangement` — click shows/hides a slot, drag within the map reorders, keyboard
   works. Nothing in the frame, the map, or the ViewHost knows a slot's name or meaning.
+  Beside it, the bar's `#viewname` slot takes the **tab name** (`createTabName`): a view
+  that exposes `tabName` (`{ get, placeholder, set }`) gets one text field, and what is
+  typed becomes the browser tab's title through the view's own `title()`; the Team page
+  offers it, defaulting to the team and persisted per tab.
   **A slot holds exactly one element.** `place(slot, element)` trades what the slot holds
   for what you hand it and returns what came out; `holding(slot)` reads it. The Kit
   keeps nothing else in the box — no faces, no hidden second element, no overlay

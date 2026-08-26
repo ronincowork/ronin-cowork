@@ -26,6 +26,11 @@
      its width the slot's share; off is hidden. The ViewHost mounts it for any view that
      exposes an arrangement, so this is Kit geometry and no feature sheet touches it. */
   .wk-view-map:empty { display: none; }
+  /* THE TAB NAME — a bar control, the map's height, wide enough for a phrase. */
+  .wk-view-name:empty { display: none; }
+  .wk-tab-name { width: 12rem; max-width: 30vw; height: 1.75rem; padding: 0 var(--space-3); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--fg-strong); font: inherit; font-size: var(--text-3); }
+  .wk-tab-name::placeholder { color: var(--muted); }
+  .wk-tab-name:focus-visible { outline: var(--edge) solid var(--kaki); outline-offset: 1px; }
   .wk-channel-service-grow { flex: 1 1 auto; }
   .wk-layout-map { display: flex; align-items: stretch; gap: var(--space-1); height: 1.5rem; width: 4.5rem; padding: var(--space-1); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); }
   .wk-layout-map-slot { flex: 1 1 auto; min-width: .5rem; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); padding: 0; cursor: pointer; touch-action: none; }

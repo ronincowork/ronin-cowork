@@ -57,6 +57,11 @@
            to arrange (the Team workbench does; Sessions and League do not). The
            ViewHost (js/workspace.js) fills it; no feature writes here. It sits in the
            grow gap, left of the five verbs, which keep their measured width. -->
+      <!-- THE TAB'S NAME — a field the owner can type over, because three tabs each titled
+           "team · Ronin" cannot be told apart (owner, 2026-08-26). Empty unless the active
+           view offers a name to edit (the Team page does; its default is the team). The
+           ViewHost fills it; what is typed becomes the browser tab's title, per tab. -->
+      <span id="viewname" class="wk-view-name"></span>
       <span id="viewmap" class="wk-view-map"></span>
       <button id="newbtn" title="⌃⇧N — start a new session: pick what it is for, where it works and who it is">か<span class="txt"> New</span></button>
       <!-- ⛩ is the house mark for "open the Commons", and this is the door: ONE press
