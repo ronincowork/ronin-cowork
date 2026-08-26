@@ -613,3 +613,23 @@ The pad's current config downloads as a backup first.
 - **pad.key_tile_down:** 🕹 Tile down
 - **pad.key_tile_left:** 🕹 Tile left
 - **pad.key_tile_right:** 🕹 Tile right
+
+## wipeboard — wipeboard.js (the ▤ Wipeboard tab)
+- **wipeboard.back:** ‹ wipeboards
+- **wipeboard.back_title:** Back to the wipeboard listing
+- **wipeboard.brief:** brief
+- **wipeboard.brief_title:** Show / hide the brief
+- **wipeboard.brief_placeholder:** what this wipeboard is for, and what is to be discussed
+- **wipeboard.brief_label:** wipeboard brief
+- **wipeboard.say_placeholder:** say something to everyone on this wipeboard
+- **wipeboard.say_label:** post to this wipeboard
+- **wipeboard.open_team:** Open the {team} team's wipeboard
+- **wipeboard.open_custom:** Open the custom wipeboard "{name}"
+- **wipeboard.add:** ＋ wipeboard
+- **wipeboard.add_title:** Start a custom wipeboard — a team already has one automatically
+- **wipeboard.add_prompt:** Name the wipeboard (letters, digits, - _):
+- **wipeboard.not_notified:** On the wipeboard, but not notified — its dial is not 🤖
+- **wipeboard.remove_member:** Remove {name} from this wipeboard
+- **wipeboard.membership_follows:** membership follows the team — tag sessions in the ⌂ Roster
+- **wipeboard.add_member:** ＋ add…
+- **wipeboard.team_option:** +{team} (team)
