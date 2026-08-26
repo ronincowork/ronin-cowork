@@ -18,6 +18,7 @@
 import { IS_TOUCH, S } from './state.js';
 import { CAN_RECORD, wireDictation } from './voice.js';
 import { MENTION_MIME } from './tilementions.js';
+import { t } from './lexicon.js';
 
 /**
  * @param {HTMLElement} body
@@ -30,8 +31,8 @@ export function buildComposer(body, hooks) {
   wrap.className = 'composer';
   const ta = document.createElement('textarea');
   ta.rows = 1;
-  ta.placeholder = 'Message…';
-  ta.title = 'Enter sends · Shift+Enter or Option+Enter for a new line';
+  ta.placeholder = t('composer.placeholder', 'Message…');
+  ta.title = t('composer.title', 'Enter sends · Shift+Enter or Option+Enter for a new line');
   ta.spellcheck = false;
   // 🎤 sits ON the box, not floating over the terminal, and records to the host
   // rather than to Apple — same engine the Mac's ⌥ mic uses, so it knows the words
@@ -43,12 +44,12 @@ export function buildComposer(body, hooks) {
     mic.className = 'cmic';
     mic.type = 'button';
     mic.textContent = '🎤';
-    mic.title = 'Dictate into this box — tap again to stop, then ↵ to send';
+    mic.title = t('composer.mic_title', 'Dictate into this box — tap again to stop, then ↵ to send');
   }
   const btn = document.createElement('button');
   btn.className = 'csend';
   btn.textContent = '↵';
-  btn.title = 'Send';
+  btn.title = t('composer.send', 'Send');
   wrap.append(...[ta, mic, btn].filter(Boolean));
   body.appendChild(wrap);
 
