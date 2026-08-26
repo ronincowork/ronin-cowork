@@ -25,6 +25,9 @@ import {
 } from '../team-rosters.js';
 import { boardExists } from '../wipeboards.js';
 import { count } from '../counts.js';
+import { getTags, listSessions, setTags } from '../tmux.js';
+import { writeTeams } from '../tegami.js';
+import { announceTeamChanges } from './wipeboards-api.js';
 
 const errMsg = (e: unknown): string => String((e as Error)?.message ?? e);
 
@@ -118,6 +121,52 @@ export function registerTeams(app: express.Express): void {
       await deleteTeamRoster(req.params.name);
       count('team.dissolve');
       res.json({ ok: true });
+    } catch (e) {
+      res.status(400).json({ error: errMsg(e) });
+    }
+  });
+
+  /**
+   * THE TEAM DOOR — `PUT /api/team { name, …fields?, session_names?: string[] }` (owner,
+   * 2026-08-26): one upsert. A name with no roster CREATES one from whatever fields are
+   * present; a name with a roster UPDATES only the fields present and leaves the rest.
+   * `session_names` tags those LIVE sessions onto the team — additive, never removing
+   * anyone; a name that is not live is reported back by name, and the rest still go
+   * through. Membership stays derived from tags (the roster stores none of it — `editOf`
+   * still refuses `members` by name); this door only gives the roster call a way to do
+   * the tagging in the same breath. The rare door: most sessions are born onto a team by
+   * `/api/session`, and only a team's creation or a change to its facts comes here.
+   */
+  app.put('/api/team', async (req, res) => {
+    const name = String(req.body?.name ?? '').trim();
+    if (!isCreatableTeamName(name)) {
+      return res.status(400).json({ error: 'A team name is lowercase letters, digits, _ and - (it is also the tag).' });
+    }
+    const wanted = (Array.isArray(req.body?.session_names) ? req.body.session_names : String(req.body?.session_names ?? '').split(','))
+      .map((s: unknown) => String(s).trim())
+      .filter(Boolean)
+      .slice(0, 32);
+    try {
+      const edit = editOf(req.body);
+      const existing = await readTeamRoster(name);
+      const roster = existing ? await writeTeamRoster(name, edit) : await createTeamRoster(name, edit);
+      count(existing ? 'team.update' : 'team.create');
+      const live = new Set((await listSessions()).map((s) => s.name));
+      const added: string[] = [];
+      const notLive: string[] = [];
+      for (const s of wanted) {
+        if (!live.has(s)) {
+          notLive.push(s);
+          continue;
+        }
+        const before = await getTags(s);
+        if (before.includes(name)) continue;
+        const after = await setTags(s, [...before, name].slice(0, 16));
+        await announceTeamChanges(s, before, after).catch(() => {});
+        await writeTeams(s, after).catch(() => {});
+        added.push(s);
+      }
+      res.json({ ok: true, created: !existing, roster, added, not_live: notLive });
     } catch (e) {
       res.status(400).json({ error: errMsg(e) });
     }

@@ -44,6 +44,15 @@ export interface SpawnForm {
    * project_root default, its team_role's reading shelf, and its objective in the brief.
    */
   team?: string;
+  /**
+   * BORN AS THE 人 of `team` (owner, 2026-08-26, the session door): the one case where
+   * leadership is known before the session exists — the lobby's Go, or a lead raising
+   * its successor. Designation still rides `@ronin-lead` exactly as the hand-set route
+   * does (routes/sessions-api.ts); this only sets it at birth instead of a call later,
+   * and carries the teams SOP into the birth reading the way a default_lead_role does.
+   * Ignored when there is no team to lead.
+   */
+  team_lead?: boolean;
   prompt: string;
   /**
    * What the session is called. MANDATORY in manual mode: manual means Ronin adds
@@ -271,11 +280,13 @@ async function bootReading(
   sessionRole: string,
   teamRole: string,
   mcpOn: boolean,
+  bornLead = false,
 ): Promise<string[]> {
   const files = await bootFiles(projectRoot, sessionRole, teamRole, mcpOn);
-  if (sessionRole && (await listRoleFamilies()).some((f) => f.default_lead_role === sessionRole)) {
-    files.push(teamsSopPath());
-  }
+  // Route 1 (the coordinating kind of role) — and a session BORN as the 人 (`team_lead`
+  // on the form), which leads whatever its role says: the reading follows the 人.
+  const leadRole = !!sessionRole && (await listRoleFamilies()).some((f) => f.default_lead_role === sessionRole);
+  if ((leadRole || bornLead) && !files.includes(teamsSopPath())) files.push(teamsSopPath());
   return files;
 }
 
@@ -476,7 +487,7 @@ export async function resolveForm(
   // Compile this once and return the exact same list the brief receives. The browser must
   // never recreate shelf precedence or guess which explicit seeds joined it.
   const shelfReading = agent
-    ? await bootReading(root.name, profile.session_role, roster?.team_role ?? '', !mcpOffWanted)
+    ? await bootReading(root.name, profile.session_role, roster?.team_role ?? '', !mcpOffWanted, !!form.team_lead && !!form.team)
     : [];
   const birthReading = agent && form.mode !== 'manual'
     ? [...shelfReading, ...(form.seed ?? [])].filter(Boolean)

@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# tejun-team-set — make a team, or change its facts, in one line. The rare door.
+#
+# Usage: tejun-team-set <team> [--objective <text>] [--role <team_role>] [--root <project_root>]
+#                              [--repos a,b] [--branch <b>] [--wipeboard <board>]
+#                              [--state active|archived] [--add s1,s2]
+#
+# ONE UPSERT (owner, 2026-08-26). A team with no roster is CREATED from whatever you
+# name; a team with one is UPDATED in the fields you name and untouched elsewhere.
+# `--add` tags those live sessions onto the team — additive, never removing anyone;
+# a name that is not live is reported back, and the rest still go through.
+#
+# You rarely need this: a session is born onto your team by `tejun-session`, with no
+# team named at all. Come here to create a team, or to give one a brief worth
+# inheriting (`--objective`, `--root`, `--repos`, `--branch`).
+#
+# Verdicts: CREATED <team> · UPDATED <team> — then `added: …` / `not live: …` when --add
+# was given. Exit 0 done, 2 bad arguments, 4 refused, 5 Ronin unreachable.
+set -u
+die() { printf '%s\n' "$*" >&2; exit "${2:-4}"; }
+
+NAME="${1:-}"
+[ -n "$NAME" ] && [ "${NAME#-}" = "$NAME" ] || die "usage: tejun-team-set <team> [--objective <text>] [--role <team_role>] [--add s1,s2] …" 2
+shift
+OBJ="" ROLE="" ROOT="" REPOS="" BRANCH="" BOARD="" STATE="" ADD=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --objective) OBJ="${2:-}"; shift 2 ;;
+    --role|--team_role) ROLE="${2:-}"; shift 2 ;;
+    --root|--project_root) ROOT="${2:-}"; shift 2 ;;
+    --repos) REPOS="${2:-}"; shift 2 ;;
+    --branch) BRANCH="${2:-}"; shift 2 ;;
+    --wipeboard) BOARD="${2:-}"; shift 2 ;;
+    --state) STATE="${2:-}"; shift 2 ;;
+    --add) ADD="${2:-}"; shift 2 ;;
+    *) die "BAD-ARG: $1" 2 ;;
+  esac
+done
+
+url="${RONIN_URL:-$(tmux show-option -s -qv @ronin-url 2>/dev/null || true)}"
+[ -n "$url" ] || url="http://127.0.0.1:3006"
+AUTH=()
+[ -n "${RONIN_AUTH:-}" ] && AUTH=(-u "$RONIN_AUTH")
+
+body=$(NAME="$NAME" OBJ="$OBJ" ROLE="$ROLE" ROOT="$ROOT" REPOS="$REPOS" BRANCH="$BRANCH" \
+       BOARD="$BOARD" STATE="$STATE" ADD="$ADD" python3 - <<'PY'
+import json, os
+e = os.environ
+b = {"name": e["NAME"]}
+for k, v in (("objective", "OBJ"), ("team_role", "ROLE"), ("project_root", "ROOT"),
+             ("branch", "BRANCH"), ("wipeboard", "BOARD"), ("state", "STATE")):
+    if e[v]: b[k] = e[v]
+for k, v in (("repos", "REPOS"), ("session_names", "ADD")):
+    if e[v]: b[k] = [t.strip() for t in e[v].split(",") if t.strip()]
+print(json.dumps(b))
+PY
+) || die "BAD-ARG: could not build the request" 2
+
+out=/tmp/tejun-team-set.$$
+code=$(curl -sS -m 20 "${AUTH[@]+"${AUTH[@]}"}" -o "$out" -w '%{http_code}' \
+       -H 'content-type: application/json' -X PUT --data "$body" "$url/api/team" 2>/dev/null) \
+  || { rm -f "$out"; die "UNREACHABLE: Ronin did not answer at $url" 5; }
+python3 - "$code" "$out" <<'PY'
+import json, sys
+code, path = int(sys.argv[1]), sys.argv[2]
+try:
+    d = json.load(open(path))
+except Exception:
+    d = {}
+if code == 200 and d.get("ok"):
+    print(("CREATED " if d.get("created") else "UPDATED ") + d["roster"]["name"])
+    if d.get("added"): print("added: " + ", ".join(d["added"]))
+    if d.get("not_live"): print("not live: " + ", ".join(d["not_live"]))
+    sys.exit(0)
+print(f"REFUSED: {d.get('error') or f'HTTP {code}'}", file=sys.stderr)
+sys.exit(4)
+PY
+rc=$?
+rm -f "$out"
+exit $rc

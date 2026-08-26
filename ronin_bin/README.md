@@ -1,8 +1,9 @@
 # ronin_bin — the agent-facing tools
 
 **Everything an agent types, and nothing else** — `tejun`, `tejun-step`, `tejun-send`,
-`tejun-peek`, `tejun-team`, `tejun-wipeboard`, `tejun-harakiri`, `tejun-recall`,
-`tejun-remember`, `tejun-rireki`, `write_tegami`, `read_tegami`. `setup.sh` puts this
+`tejun-peek`, `tejun-team`, `tejun-session`, `tejun-team-set`, `tejun-wipeboard`,
+`tejun-harakiri`, `tejun-recall`, `tejun-remember`, `tejun-rireki`, `write_tegami`,
+`read_tegami`. `setup.sh` puts this
 directory on PATH, after `bin/shim` (the guards) and ahead of `bin/`.
 
 **The shelf is defined by its audience, the catalog by its rule.** Anything an agent
