@@ -1255,3 +1255,15 @@ The catalog entry goes. {dir} is not touched.
 
 ## errors — main.js (the session-list failure)
 - **errors.no_session_list:** could not load the session list
+
+## roots — the edit form
+- **roots.f_handle:** handle
+- **roots.f_handle_hint:** The short name — this IS the shortcut
+- **roots.f_directory:** directory
+- **roots.f_directory_hint:** Any absolute path, at any depth
+- **roots.f_remit:** remit
+- **roots.f_remit_hint:** The one line you pick it from in a list
+- **roots.f_remit_placeholder:** what this is
+- **roots.f_match:** match
+- **roots.f_match_hint:** Words that suggest this project_root from free-form intent
+- **roots.f_match_placeholder:** comma separated
