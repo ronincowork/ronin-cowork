@@ -19,13 +19,14 @@
  */
 import { request } from './request.js';
 import { preflightBody } from './new-team-draft.js';
+import { t } from './lexicon.js';
 
 /** What a caller gets when the request itself failed — never confused with a refusal. */
 const BROKEN = (message) => ({ ok: false, broken: true, message, team: null, capacity: null, seats: [] });
 
 export async function preflight(draft) {
   const r = await request('/api/launch/preflight', { method: 'POST', json: preflightBody(draft) });
-  if (!r.ok) return BROKEN(r.message || 'the preflight could not run');
+  if (!r.ok) return BROKEN(r.message || t('new_team.preflight_broken', 'the preflight could not run'));
   return { broken: false, ...r.data };
 }
 
@@ -43,29 +44,31 @@ export function teamNotes(team) {
   if (team.name && !team.name_valid) {
     notes.push({
       kind: 'failed',
-      text: 'A Team name is lowercase letters, digits, _ and - — and it is also the tag. "unassigned" is reserved for the holding area.',
+      text: t('new_team.note_name', 'A Team name is lowercase letters, digits, _ and - — and it is also the tag. "unassigned" is reserved for the holding area.'),
     });
   }
   if (team.name_valid && !team.name_available) {
-    notes.push({ kind: 'failed', text: `Team "${team.name}" already has a roster. Open it instead of creating it.` });
+    notes.push({ kind: 'failed', text: t('new_team.note_taken', 'Team "{name}" already has a roster. Open it instead of creating it.', { name: team.name }) });
   }
   const n = team.adopts_sessions?.length ?? 0;
   if (n) {
     notes.push({
       kind: 'info',
-      text: `${n} live session${n === 1 ? '' : 's'} already carry this name and become members the moment the Team exists: ${team.adopts_sessions.join(', ')}. Membership is derived from the sessions, so the Team arrives already staffed.`,
+      text: n === 1
+        ? t('new_team.note_adopts_one', '{n} live session already carries this name and becomes a member the moment the Team exists: {sessions}. Membership is derived from the sessions, so the Team arrives already staffed.', { n, sessions: team.adopts_sessions.join(', ') })
+        : t('new_team.note_adopts_many', '{n} live sessions already carry this name and become members the moment the Team exists: {sessions}. Membership is derived from the sessions, so the Team arrives already staffed.', { n, sessions: team.adopts_sessions.join(', ') }),
     });
     // Birth-only by ruling: a session that joins later is not re-briefed, and these were
     // never BORN onto the Team. Naming a team_role now briefs nobody who is already here.
     notes.push({
       kind: 'warning',
-      text: 'Those members were tagged, not born onto this Team, so none of them reads the team_role shelf — that reading happens at birth only. Sessions raised from the roster afterwards do.',
+      text: t('new_team.note_tagged', 'Those members were tagged, not born onto this Team, so none of them reads the team_role shelf — that reading happens at birth only. Sessions raised from the roster afterwards do.'),
     });
   }
   if (team.adopts_wipeboard) {
     notes.push({
       kind: 'info',
-      text: `A wipeboard named "${team.wipeboard}" already exists and this Team adopts its thread — the team wins its name.`,
+      text: t('new_team.note_wipeboard', 'A wipeboard named "{name}" already exists and this Team adopts its thread — the team wins its name.', { name: team.wipeboard }),
     });
   }
   return notes;
@@ -77,6 +80,6 @@ export function capacityNote(capacity) {
   if (!capacity || capacity.over_by <= 0) return null;
   return {
     kind: 'failed',
-    text: `This box allows ${capacity.max} live sessions and ${capacity.live} are running. This roster would need ${capacity.over_by} more than there is room for.`,
+    text: t('new_team.note_capacity', 'This box allows {max} live sessions and {live} are running. This roster would need {over} more than there is room for.', { max: capacity.max, live: capacity.live, over: capacity.over_by }),
   };
 }
