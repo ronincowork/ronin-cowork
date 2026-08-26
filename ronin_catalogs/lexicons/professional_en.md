@@ -173,3 +173,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **panels.no_team:** on no team
 - **panels.remove:** remove
 - **panels.join:** join:
+
+## commons — commons.js (the commons shell: tab strip and frame)
+- **commons.tab_off:** {tab} — off, this service is not installed.
+- **commons.close_title:** Back to the terminal
+- **commons.sessions:** sessions
