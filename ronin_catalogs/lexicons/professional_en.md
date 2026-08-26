@@ -1197,3 +1197,6 @@ The catalog entry goes. {dir} is not touched.
 
 ## head — tilementions.js
 - **head.mention_aria:** Mention another session
+
+## workspace — workspace-layouts.js
+- **workspace.resize:** Resize {column}
