@@ -1044,3 +1044,7 @@ The catalog entry goes. {dir} is not touched.
 - **output.agent_summary:** Agent Summary
 - **output.aria:** Output
 - **output.title:** Output shown in this tile
+
+## bar — viewport.js (the layout button)
+- **bar.layout_one:** {n} terminal — click for {next}
+- **bar.layout_many:** {n} terminals — click for {next}
