@@ -71,7 +71,7 @@ export function buildHotwords(pane, isShowing) {
       const row = document.createElement('div');
       row.className = 'hot-row';
       const w = document.createElement('span');
-      w.textContent = t;
+      w.textContent = term;
       const x = document.createElement('button');
       x.type = 'button';
       x.className = 'hot-x';
@@ -98,9 +98,9 @@ export function buildHotwords(pane, isShowing) {
 
   const add = () => {
     const term = input.value.trim();
-    if (!t) return;
+    if (!term) return;
     input.value = '';
-    post('/api/hotwords/add', t, addBtn).then(() => {
+    post('/api/hotwords/add', term, addBtn).then(() => {
       addBtn.disabled = false;
       // Stay in the field: adding words is something you do several of at a time.
       input.focus();
