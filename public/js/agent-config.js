@@ -26,11 +26,12 @@ import { createSeatFields } from './agent-config-fields.js';
 import { createSeatPreview } from './agent-config-preview.js';
 import { preflight } from './new-team-preflight.js';
 import { changedTeamDraft, selectedDraftSeat } from './team-draft-controller.js';
+import { t } from './lexicon.js';
 
 export function createAgentConfigurationView(kit = WorkspaceKit) {
   const { createSurface, createAction, createActionBar } = kit.primitives;
 
-  const configuration = createSurface({ className: 'ac-configuration', label: 'Seat configuration' });
+  const configuration = createSurface({ className: 'ac-configuration', label: t('seat.configuration', 'Seat configuration') });
   const preview = createSeatPreview();
 
   /** The draft and the seat under edit. Both are handed in; this view invents neither. */
@@ -51,22 +52,22 @@ export function createAgentConfigurationView(kit = WorkspaceKit) {
   const actions = (() => {
     const check = createAction({
       className: 'ac-check',
-      label: 'Check',
-      title: 'Run the real resolver against this seat without creating anything',
+      label: t('seat.check', 'Check'),
+      title: t('seat.check_title', 'Run the real resolver against this seat without creating anything'),
     });
     const apply = createAction({
       className: 'ac-apply',
-      label: 'Apply',
-      title: "Write this seat into the Team draft — the only durable effect this Surface has",
+      label: t('seat.apply', 'Apply'),
+      title: t('seat.apply_title', "Write this seat into the Team draft — the only durable effect this Surface has"),
     });
     const revert = createAction({
       className: 'ac-revert',
-      label: 'Revert',
-      title: 'Restore the last applied seat. Not the defaults — reverting into defaults would materialise inheritance',
+      label: t('seat.revert', 'Revert'),
+      title: t('seat.revert_title', 'Restore the last applied seat. Not the defaults — reverting into defaults would materialise inheritance'),
     });
     const bar = createActionBar({
       className: 'ac-actions',
-      label: 'Seat configuration actions',
+      label: t('seat.actions', 'Seat configuration actions'),
       actions: [check, apply, revert],
     });
     const dirty = (on) => { bar.el.dataset.dirty = on ? 'true' : 'false'; };
@@ -83,7 +84,7 @@ export function createAgentConfigurationView(kit = WorkspaceKit) {
    *  are New Team's to show and are deliberately untouched here. */
   const run = async () => {
     if (!draft) return;
-    configuration.setState('loading', 'Resolving…');
+    configuration.setState('loading', t('seat.resolving', 'Resolving…'));
     const answer = await preflight(draft);
     configuration.setState('', '');
     if (answer.broken) {
@@ -126,7 +127,7 @@ export function createAgentConfigurationView(kit = WorkspaceKit) {
     seatId = nextSeatId ?? null;
     const seat = draft?.seats?.find((s) => s.seat_id === seatId) ?? null;
     if (!seat) {
-      configuration.setState('empty', 'No seat selected. Open one from the Team roster.');
+      configuration.setState('empty', t('seat.none_selected', 'No seat selected. Open one from the Team roster.'));
       preview.clear();
       return;
     }
@@ -134,17 +135,17 @@ export function createAgentConfigurationView(kit = WorkspaceKit) {
     fields.setSeat(seat);
     applied = { ...seat };
     actions.dirty(false);
-    preview.clear('Not resolved yet — press Check.');
+    preview.clear(t('seat.not_resolved', 'Not resolved yet — press Check.'));
   };
 
   return {
     el,
     open,
-    title: () => 'Agent Configuration · ronin',
+    title: () => t('seat.title', 'Agent Configuration') + ' · ronin',
     enter: () => {
       const selected = selectedDraftSeat();
       if (selected.draft && selected.seatId) open(selected.draft, selected.seatId);
-      else configuration.setState('empty', 'No seat selected. Open one from the Team roster.');
+      else configuration.setState('empty', t('seat.none_selected', 'No seat selected. Open one from the Team roster.'));
     },
     leave: () => {},
   };
