@@ -3,6 +3,7 @@ import { openSessionSomewhere } from './events.js';
 import { taskIcon } from './home.js';
 import { sheet, toast } from './ui.js';
 import { IS_TOUCH, S, tiles } from './state.js';
+import { t } from './lexicon.js';
 
 /* ---------- session switcher (one pad key: open → arrow → same key lands it) ---------- */
 // Deliberately NOT the tile's native <select>: a browser can't open a native
@@ -13,10 +14,11 @@ import { IS_TOUCH, S, tiles } from './state.js';
 export function buildSessionPicker() {
   // The ui.sheet primitive carries the dialog mechanics (backdrop, Escape, focus in
   // and back out); the picker keeps what is its own — the one-key gesture below.
-  const dlg = sheet({ id: 'sesspick', cls: 'sp-card', label: 'Session switcher' });
+  const dlg = sheet({ id: 'sesspick', cls: 'sp-card', label: t('switcher.sheet', 'Session switcher') });
   dlg.card.innerHTML = `<div class="sp-title"></div>
       <div class="sp-list"></div>
-      <div class="sp-hint">↑↓ move · same key (or ↵) opens it · Esc cancels</div>`;
+      <div class="sp-hint"></div>`;
+  dlg.card.querySelector('.sp-hint').textContent = t('switcher.hint', '↑↓ move · same key (or ↵) opens it · Esc cancels');
   const title = dlg.card.querySelector('.sp-title');
   const list = dlg.card.querySelector('.sp-list');
   let names = [];
@@ -55,10 +57,10 @@ export function buildSessionPicker() {
       toast('⌸ no sessions to switch to', false);
       return;
     }
-    const t = S.active || tiles[0];
-    const n = tiles.indexOf(t) + 1;
-    title.textContent = `Switch tile ${n || 1}` + (t && t.session ? ` — now: ${t.session}` : '');
-    idx = Math.max(0, names.indexOf(t && t.session));
+    const tile = S.active || tiles[0];
+    const n = tiles.indexOf(tile) + 1;
+    title.textContent = t('switcher.title', 'Switch tile {n}', { n: n || 1 }) + (tile && tile.session ? ' ' + t('switcher.now', '— now: {session}', { session: tile.session }) : '');
+    idx = Math.max(0, names.indexOf(tile && tile.session));
     render();
     dlg.open();
   };
