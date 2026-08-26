@@ -1284,3 +1284,7 @@ The catalog entry goes. {dir} is not touched.
 - **voice.failed:** Dictation failed ({why})
 - **voice.failed_network:** Dictation failed (network)
 - **voice.mic_blocked:** Mic blocked — open Ronin over the https url and allow the microphone
+
+## provenance — the mark tooltips
+- **provenance.shadowed:** Yours — this replaces Ronin's shipped entry of the same name. Upgrades to that entry will not reach you.
+- **provenance.own:** Yours — added by you, in your catalogs store. An upgrade cannot touch it.
