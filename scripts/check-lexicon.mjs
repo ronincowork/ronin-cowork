@@ -17,9 +17,18 @@
  *   note  keys the floor carries that no view reads yet — allowed, because the surfaces
  *         that will read them (the campaign board) are not built; reported so the list
  *         cannot rot in silence.
+ *   note  modules that import `t` AND declare a local named `t` (a parameter, a `const`,
+ *         a `let`, a loop variable) — legal, but every such scope is one where a bare
+ *         `t` is the local and not the word; listed so a reviewer reads those scopes.
+ *         (hotwords.js, 2026-08-27: a rename left two reads on the local behind.)
  *
- * No sweep, by ruling (2026-08-27): a view that still holds its strings as literals is
- * not a finding here. This checks what IS read through `t()`, nothing about what is not.
+ * `public/index.html` is read too: an element's `data-t`, `data-t-title` and `data-t-aria`
+ * name keys the boot pass (`public/js/pagewords.js`) fills, and they must be in the floor
+ * like any `t()` call.
+ *
+ * The sweep landed 2026-08-27 (KOKUGO): every view reads its strings through `t()`. A
+ * literal that is not is a finding for a reviewer, not for this script — this checks what
+ * IS read, nothing about what is not.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -46,10 +55,19 @@ const floor = keysOf(path.join(LEX, `${FLOOR}.md`));
 
 // What the client reads: t('key' …) with a literal first argument.
 const read = new Set();
+const shadowers = [];
 for (const f of fs.readdirSync(JS).filter((f) => f.endsWith('.js'))) {
   const src = fs.readFileSync(path.join(JS, f), 'utf8');
   for (const m of src.matchAll(/\bt\(\s*'([\w.-]+)'/g)) read.add(m[1]);
+  // A module that imports t and also names a local t: the scopes where `t` is not the word.
+  if (/import \{[^}]*\bt\b[^}]*\} from '\.\/lexicon\.js'/.test(src)) {
+    const locals = src.match(/\b(?:const|let|var)\s+t\b|\(\s*t\s*[,)]|\(\s*t\s*=>|\bt\s*=>|\b(?:const|let)\s+\[[^\]]*\bt\b[^\]]*\]\s*of/g) || [];
+    if (locals.length) shadowers.push(`${f} (${locals.length})`);
+  }
 }
+// index.html: the boot pass fills data-t / data-t-title / data-t-aria from the floor.
+const html = fs.readFileSync(path.join(ROOT, 'public', 'index.html'), 'utf8');
+for (const m of html.matchAll(/\bdata-t(?:-title|-aria)?="([\w.-]+)"/g)) read.add(m[1]);
 
 const fails = [];
 for (const k of read) if (!PREFIXED.test(k) && !floor.has(k)) fails.push(`the client reads \`${k}\` and ${FLOOR}.md does not carry it`);
@@ -64,5 +82,6 @@ const unread = [...floor].filter((k) => !read.has(k) && !PREFIXED.test(k));
 
 for (const line of fails) console.log(`  FAIL  ${line}`);
 if (unread.length) console.log(`  note  ${unread.length} floor key(s) no view reads yet: ${unread.join(', ')}`);
+if (shadowers.length) console.log(`  note  ${shadowers.length} module(s) import t and also name a local t — read those scopes: ${shadowers.join(', ')}`);
 console.log(fails.length ? `check-lexicon: ${fails.length} failure(s)` : `check-lexicon: the floor holds (${floor.size} keys, ${read.size} read by the client, ${lexicons.length} lexicons)`);
 process.exit(fails.length ? 1 : 0);
