@@ -13,7 +13,7 @@
  * tile's own 🏷 opens.
  */
 import { request } from './request.js';
-import { STATUS_LABEL, homeData, homeFault, taskIcon } from './home.js';
+import { homeData, homeFault, statusLabel, taskIcon } from './home.js';
 import { S, tiles } from './state.js';
 import { clampTip, humanAge } from './shingo.js';
 import { t } from './lexicon.js';
@@ -201,7 +201,7 @@ export function buildRoster(tile, host) {
     if (s.status) {
       const st = document.createElement('span');
       st.className = 'home-status st-' + s.status;
-      st.textContent = STATUS_LABEL[s.status] || s.status;
+      st.textContent = statusLabel(s.status) || s.status;
       r.appendChild(st);
     }
     if (s.ctx != null) {
