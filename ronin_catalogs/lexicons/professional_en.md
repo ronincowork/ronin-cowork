@@ -1288,3 +1288,17 @@ The catalog entry goes. {dir} is not touched.
 ## provenance — the mark tooltips
 - **provenance.shadowed:** Yours — this replaces Ronin's shipped entry of the same name. Upgrades to that entry will not reach you.
 - **provenance.own:** Yours — added by you, in your catalogs store. An upgrade cannot touch it.
+
+## seat — agent-config.js (the Agent Configuration view)
+- **seat.configuration:** Seat configuration
+- **seat.check:** Check
+- **seat.check_title:** Run the real resolver against this seat without creating anything
+- **seat.apply:** Apply
+- **seat.apply_title:** Write this seat into the Team draft — the only durable effect this Surface has
+- **seat.revert:** Revert
+- **seat.revert_title:** Restore the last applied seat. Not the defaults — reverting into defaults would materialise inheritance
+- **seat.actions:** Seat configuration actions
+- **seat.resolving:** Resolving…
+- **seat.none_selected:** No seat selected. Open one from the Team roster.
+- **seat.not_resolved:** Not resolved yet — press Check.
+- **seat.title:** Agent Configuration
