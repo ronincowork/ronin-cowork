@@ -985,3 +985,14 @@ The catalog entry goes. {dir} is not touched.
 - **hotwords.loading:** loading…
 - **hotwords.remove:** Remove {word}
 - **hotwords.load_failed:** could not load
+
+## archives — archives.js (the Archived tab)
+- **archives.title:** Archived sessions
+- **archives.unavailable:** unavailable
+- **archives.read_failed:** archive could not be read
+- **archives.empty:** no archived sessions
+- **archives.ago:** {age} ago
+- **archives.rehydrate:** Rehydrate {name}
+- **archives.delete_aria:** Permanently delete archived session {name}
+- **archives.delete_title:** Hard delete this archive
+- **archives.delete_confirm:** Hard delete archived session "{name}"? Its saved Ronin record cannot be rehydrated after this.
