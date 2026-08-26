@@ -1185,3 +1185,9 @@ The catalog entry goes. {dir} is not touched.
 - **league.show_rosters:** Show rosters
 - **league.new_team_summary:** Define the Team, then build its session roster.
 - **league.rosters_unavailable:** Durable rosters unavailable — showing live Teams only.
+
+## mark — tilejob.js (the 人 row)
+- **mark.lead_step_down:** 人 team lead — step down
+- **mark.lead_make:** 人 make team lead
+- **mark.lead_clear_title:** Leads {teams} — clear the designation
+- **mark.lead_make_title:** Designate the 人 of {teams}
