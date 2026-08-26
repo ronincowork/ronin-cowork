@@ -1,67 +1,88 @@
 # TEAM WORKSPACE — current implementation and resume contract
 
-This is the current README for the Team destination. It records what is landed on `dev`,
-which contracts Team consumes, what was verified, and the exact place to resume. It is not
-a speculative redesign brief.
+This is the current README for the Team destination. It records what is landed on `dev`
+as of 2026-08-26, which contracts Team consumes, what was verified, and the exact place to
+resume. It is not a speculative redesign brief. The history of how it got here — the
+rulings, the measurements, the traps — is `wip/buildouts/TEAM_WORKBENCH.md`.
 
 ## Purpose and non-goals
 
-`#/team/:name` is the Team-oriented workbench: one focused session Tile, a Kanban of the
-Team's live sessions, and a Channel Surface for Team services.
+`#/team/:name` is the Team workbench: **two workspaces around the Team roster.** Each
+workspace holds exactly one thing — a member's full terminal Tile, or the Team commons
+(chat · wipeboard · docs · configuration) — and trades between them with one button in
+its header row: **C** on a Tile's head, **T** on the commons' tab strip. The three
+columns are shown, hidden and reordered from a small **layout map** in the app bar.
 
 Team composes existing Ronin machinery. It does not create a second terminal, Team store,
 workspace shell, or control system. Specifically:
 
-- never redraw, restyle, intercept, or reinterpret the Tile header or its controls;
+- never redraw, restyle, intercept, or reinterpret the Tile header or its controls — the
+  one seam that touches a Tile is `createTerminalTileHost({ actions })`;
 - never create another transport, composer, output selector, or terminal lifecycle;
-- never infer membership from a durable roster—membership is live and session-owned;
-- never improvise a Chat protocol—Chat is reserved, empty, and inert;
+- never infer membership from a durable roster — membership is live and session-owned;
+- never improvise a Chat protocol — Chat is reserved, empty, and inert;
 - never make Team Configuration authoritative for membership or leadership;
-- never move Kit layout, collapse, resize, responsive, or persistence behavior into Team;
+- never move Kit layout, splitter, responsive, or persistence behavior into Team;
 - never replace or narrow the existing Sessions destination.
 
 ## Two first-class destinations
 
 Team and Sessions are deliberately separate first-class destinations:
 
-- **Team:** `#/team/:name` — one focused Tile beside Kanban and Channel services.
+- **Team:** `#/team/:name` — two workspaces, the roster between them.
 - **Sessions:** the existing raw **1 / 2 / 4 Tile grid** — the familiar unrestricted
   coworkspace of complete Tiles.
 
 The Sessions grid is not a compatibility shim and is not a mode inside Team. Preserve its
 raw Tile composition, full controls, session pickers, layout choices, and behavior. Team
-work must not scope, wrap, replace, or retire it.
+work must not scope, wrap, replace, or retire it. **Any Tile built by the Team page while
+it is not entered, or left in its DOM after `leave()`, is counted by the Sessions grid's
+checks** — build tiles on first need and destroy every one on leave.
 
 ## `#/team/:name` user flow
 
 1. The router enters Team with `name` as the route parameter.
-2. Team normalizes tab state through `teamWorkspaceState()`.
-3. Managed WorkbenchLayout restores widths and collapsed Surfaces from that state.
-4. The shared Team controller refreshes durable and live readings.
-5. Live members are projected from sessions whose tags contain the Team name.
-6. Kanban renders one card per member and an inert `＋ Add team member` card.
-   reconciles one SEAT per live member and mounts NOTHING at entry. A member's tile is
-   tiered (2026-08-25, owner-driven — each streaming tile is a websocket, a tmux viewer
-   session and a live `tmux attach` pty process server-side): **HOT** is the visible
-   member, streaming; **WARM** is hidden but streaming, and **warmth is durable** —
-   no clock parks a shown tile (owner, 2026-08-25: toggled members stay hot); **PARKED**
-   means transport closed, server fully freed, seat and painted DOM kept, one reattach
-   to return. **Every `team_lead` is PINNED** — never parked by anything but membership
-   loss or page exit ("the team manager is always hot, regardless"), and the lead's
-   Tile opens by default on entry. **The stream cap is 4** (HOT+WARM together); at the
-   cap the least-recently-shown UNPINNED tile parks; if everything left is pinned or
-   visible the cap yields. Hovering a card ~150ms **pre-warms** it hidden so the click
-   lands on a painted tile; an unclaimed prewarm is collected by a ~25s grace — the one
-   thing the clock is still for. Destruction remains membership loss and page exit
-   only. The planned two-seat layout is `wip/buildouts/TEAM_WORKBENCH.md`.
-8. If persisted `focusedSession` is still a member, its host is revealed; otherwise every
-   host stays hidden behind the honest empty placeholder.
-9. Selecting a card hides the old host and reveals/focuses the selected warm host. It does
-   not close, reset, or reopen transport.
+2. Team normalizes tab state through `teamWorkspaceState(state, viewState, declaration)`:
+   the column **arrangement** (order · hidden · widths) and the **seats** (what each
+   workspace held: a member, or `@commons`).
+3. The managed Workbench restores the arrangement; the Kit's layout map in the app bar
+   shows it.
+4. The shared Team controller refreshes durable and live readings; live members are
+   projected from sessions whose tags contain the Team name.
+5. Each workspace gets back what it remembered. With nothing remembered: the **人** (the
+   designated lead) left, the commons right. A remembered member the roster no longer has
+   is waited for while the roster is still arriving, then let go.
+6. The roster renders one card per member and an inert `＋ Add team member` card. A card
+   is a **reading**: session role, 人, SHINGO chip, status (ready · thinking · awaiting
+   input), model, ⛽ context, attached — read off `/api/home`'s row on entry and every 5s.
+7. **Click a card** and its Tile goes into the workspace last touched (the one carrying
+   the Sessions grid's `.tile.active` highlight); **drag a card** onto a workspace and it
+   goes there. Arrow keys walk the cards; Enter picks.
+8. **C** on a Tile's head trades the commons into that workspace; **T** on the commons
+   trades the terminal back. A workspace with no member seated shows an empty Tile —
+   head row and C, no session — never a blank box.
+9. The two workspaces are **not connected**: each has its own warm pool of Tiles. The
+   same session may be up in both. Cap 2 per workspace (four in all); the lead is pinned
+   hot in workspace 1.
 10. Leaving, changing Team, losing membership, or destroying closes and destroys every
-    affected pooled host. No warm transport survives outside the entered Team destination.
+    Tile of the page. No transport survives outside the entered Team destination.
 
 The Team name is the destination title; the workspace shell adds the Ronin house title.
+Persistence is per browser tab (sessionStorage); one tab is one team.
+
+## The page takes instructions (`tejun-teampage`)
+
+Everything that changes the page goes through one controller, `arrange(draft)` in
+`team-view.js`, built by `createArranger` (`team-arrange.js`). The C/T buttons and the
+roster cards call it — and so does a **draft** an agent hands in with `tejun-teampage`
+(`ronin_bin/`, catalogued in `ronin_catalogs/TOOLS.md`; actions `team-page-read` and
+`team-page-draft` in `ACTIONS.md`). The tool's bare form prints the view (the roster;
+each tab on the team; which workspace the owner is typing in; which shows the agent;
+what each holds); its other form takes `key=value` words naming only what should
+change. The wire is `src/routes/team-page-api.ts`: tabs report their view (`PUT`),
+agents read it (`GET`), and a draft (`POST`) is key-, dial- and membership-checked, then
+pushed on `/events` as `{t:'team-page'}` to the tab that shows the agent, else every tab
+on the team. The server holds no page state. The roster header says who arranged it.
 
 ## Membership and durable data
 
@@ -69,39 +90,37 @@ The Team name is the destination title; the workspace shell adds the Ronin house
 
 Membership is derived from each live session's `tags`. Team consumes
 `membersOfTeam(name)` from the shared Team controller; it keeps no private member array and
-does not read a roster `members` field.
-
-This preserves the domain contract:
-
-- membership is many-to-many and session-owned;
-- one session may belong to several Teams;
-- a Team may exist from tags alone;
-- removing a tag removes membership without killing the session;
-- joining, leaving, or dying is reflected from the shared live reading.
+does not read a roster `members` field. Membership is many-to-many and session-owned; a
+Team may exist from tags alone; removing a tag removes membership without killing the
+session. The **人** is a separate, hand-set designation (`leads`), toggled from any Tile's
+job menu ("人 make team lead" / "step down") through `POST /api/sessions/:name/team_lead`.
 
 ### Durable Team record
 
 A `team_roster` is optional metadata: Team role, objective, project root, repositories,
 branch, wipeboard, and state. A tag-only Team is ordinary. When no durable record exists,
-Team Configuration says so rather than treating the Team as broken.
-
-Team Configuration is currently read-only. It never writes `members` or `team_lead` into
-durable metadata.
+Team Configuration says so rather than treating the Team as broken. Team Configuration is
+read-only.
 
 ## Owned files
 
-- `public/js/team-view.js` — Team composition, readings, Kanban selection, and lifecycle.
-- `public/js/team-terminal-pool.js` — page-lifetime orchestration of existing full Kit
-  terminal hosts; it contains no renderer, cache, or socket engine.
-- `public/js/team-wipeboard.js` — the Team Channel's roster-resolved wipeboard thread,
-  owner composer, entered-only poll, and service lifecycle.
-- `public/css/team-workspace.css` — Team-specific Kanban, notice, placeholder, and
-  configuration presentation.
-- `tests/team-terminal-pool.test.js` — scoped proof of lazy seats, warm revisits and complete cleanup.
+- `public/js/team-view.js` — the page: seats, roster cards, C/T, `arrange()`, lifecycle.
+- `public/js/team-arrange.js` — `parseDraft` and `createArranger`: the one parser and
+  the one controller; `reportView`, the tab's view to Ronin.
+- `public/js/team-terminal-pool.js` — one pool per workspace: warm, hot, cold, pinned,
+  prewarm, cap. No renderer, cache, or socket engine.
+- `public/js/team-wipeboard.js` — the commons' roster-resolved wipeboard thread.
+- `public/css/team-workspace.css` — roster header, cards, flip button, configuration.
+- `src/routes/team-page-api.ts` — the page's view and drafts; `src/ws/events.ts`
+  `broadcastEvent`.
+- `ronin_bin/tejun-teampage` — the agent's tool.
+- `tests/team-terminal-pool.test.js`, `tests/team-arrange.test.js`.
 - `docs/team-workspace.md` — this persistent implementation and resume contract.
 
-Registration in `public/js/main.js` and the stylesheet link in `public/index.html` are
-shared integration seams. Do not edit them as Team-only cleanup.
+Shared seams touched for Team, by authorization: `public/js/terminal-tile-host.js`
+(`actions` ride the Tile head), `workspace-primitives.js` (`createChannelSurface({
+actions })`, `current()`), `tilejob.js` (the job pick, split from `tile.js` at its
+ceiling; carries the 人 toggle), `events.js` (`teamPageHandlers`).
 
 ## Workspace Kit contract
 
@@ -111,207 +130,111 @@ modules directly.
 ### Managed WorkbenchLayout
 
 ```js
-createWorkbenchLayout(terminalTile.el, kanban.el, channels.el, {
-  managed: true,
-  onStateChange: (state) => ctx?.patchState(state),
+createWorkbenchLayout({
+  declaration: { slots: [
+    { name: 'workspace1', label: 'Workspace 1', width: 40 },
+    { name: 'roster', label: 'Team Roster', width: 20, min: 6, compact: 176 },
+    { name: 'workspace2', label: 'Workspace 2', width: 40 },
+  ] },
+  surfaces: { workspace1: seat1.el, roster: kanban.el, workspace2: seat2.el },
+  onStateChange: (arrangement) => ctx?.patchViewState('team', { arrangement }),
 })
 ```
 
-Append `workbench.host`, not its inner layout element. On every entry normalize with
-`teamWorkspaceState(context.state)` and call `workbench.restore(typed)`.
+Append `workbench.host`. Expose `workbench.arrangement` on the registered view so the
+ViewHost draws the layout map in the bar. `workbench.place(slot, element)` trades what a
+slot holds (the seat's surface, or the commons); `workbench.holding(slot)` reads it.
 
-The managed Kit owns:
-
-- outer host and desktop geometry;
-- responsive phone composition;
-- collapse controls and expand rails;
-- left and right splitters;
-- pointer capture and listener teardown;
-- keyboard resizing;
-- width bounds and resolved widths;
-- collapsed-state snapshots and `onStateChange` notification.
-
-Team must not add raw rail buttons, collapse lookalikes, splitters, pointer handlers, local
-width state, direct `setCollapsed` persistence, or responsive workbench CSS.
+The managed Kit owns: slot geometry and DOM order; the layout map (show/hide/reorder);
+one splitter between each visible pair, symmetric; `data-width="compact"` on a slot
+under its declared threshold (the roster's cards drop to names); responsive phone
+stacking; the arrangement's snapshot and `restore`. Team declares slots and supplies
+surfaces; it never adds rails, splitters, pointer handlers, width state, or geometry CSS.
 
 ### CSS boundary
 
-`public/workspace-kit.css` owns `.wk-workbench-*`, `.wk-layout-*`, Surface-control chrome,
-splitters, rails, geometry, and responsive behavior.
-
-`public/css/team-workspace.css` may style only Team semantics: Kanban contents, notices,
-configuration readings, and the empty terminal placeholder. It must not restyle
-`.tile-head`, Tile controls, managed workbench controls, or shared Kit primitives.
+`public/workspace-kit.css` owns `.wk-workbench-*`, `.wk-layout-*`, the layout map, and
+the compact-card rule. `public/css/team-workspace.css` styles Team semantics only: the
+roster header, cards, the C/T button, configuration readings, drop targets. It must not
+select `.wk-*` internals or restyle `.tile-head`.
 
 ## Existing Tile and header contract
 
-The focused terminal is obtained only through:
-
-```js
-createTerminalTileHost({ mode: 'full' })
-```
-
-Full mode instantiates the existing `Tile` unchanged, retaining its genuine:
-
-- connection status, session picker, SHINGO ladder, role mark, and branch reading;
-- ⛩ Torii/Commons, mentions, ⚡ macros, and メ more control;
-- output/lock, Teams, context, Control, Docs, Note, and kill controls;
-- terminal, tape views, composer, focus, resize observer, and transport.
-
-Kanban selects among already-open hosts. It may not reach into Tile DOM, synthesize
-controls, constrain the genuine picker, or intercept Torii. The picker remains global and
-keeps its ordinary existing behavior.
+A workspace's terminal is obtained only through
+`createTerminalTileHost({ mode: 'full', actions: [flipButton('C')] })`. Full mode
+instantiates the existing `Tile` unchanged — picker, SHINGO ladder, role mark, branch
+reading, ⛩, @, ⚡, メ, output selector, dials, terminal, tape, composer — and appends the
+given actions to its own head row. Team never reaches into Tile DOM.
 
 ## Lifecycle
 
-The warm pool exists only while one Team destination is entered:
-
-- reconcile one SEAT per live Team member; a `createTerminalTileHost({ mode: 'full' })`
-  host is created lazily on the member's first show, opened once, and kept warm after;
-- on Kanban selection, reveal, fit, and focus the existing host without `switchSession`;
-- when a member leaves, immediately destroy that member's host and wrapper;
-- before changing Team or leaving, destroy the entire pool;
-- on view destruction, unsubscribe and destroy the pool again idempotently.
-
-Each host still owns its unchanged Tile socket, reconnect behavior, xterm/tape renderers,
-composer, fitting, observers, timers, focus, and teardown. The pool owns only membership
-and visibility; it implements no renderer, cache, protocol, or socket.
-
-### Large-Team cost
-
-Warm revisits trade memory and concurrent transport for latency. A Team with **N live
-members** holds **N full Tiles and N viewer transports** while entered, including each
-Tile's xterm/tape state, observer, header, and any legitimate output timer. Creation and
-teardown are O(N); switching is O(N) DOM visibility work with no transport reopen. Cost
-drops to zero pooled hosts immediately on leave or Team change. Never make the pool global
-or preserve it across destinations.
+Each workspace's pool exists only while the Team destination is entered: a host is created
+on the member's first show and kept warm after; cap 2 per workspace; the 人 is pinned in
+workspace 1 and kept hot from entry; hovering a card pre-warms it in the workspace the
+click would land in. Leaving destroys every host and every empty Tile; re-entry rebuilds
+from what the tab remembered.
 
 ## Channel Surface
 
-- **Chat** — reserved, empty, inert; no fetch, timer, socket, composer, or fallback.
-- **Wipeboard** — the real Team thread and owner composer. It resolves the roster's
-  `wipeboard` id, falling back to the Team name for a tag-only Team; opening materializes
-  the Team board when absent. It polls every two seconds only while entered, preserves
-  typed text on a failed post, interrupts all members for an owner post through the
-  server's dial-governed fan-out, and never renders the Brief.
-- **Docs** — placeholder for Team working documents.
+- **Chat** — reserved, empty, inert.
+- **Wipeboard** — the real Team thread and owner composer; the roster's `wipeboard` id or
+  the Team name; polled only while entered.
+- **Docs** — the Commons' own mdedit pane (`buildDocs`), narrowed to the roster's members;
+  a draft `commons:docs:<path>` opens a file here.
 - **Team Configuration** — read-only durable metadata and derived live roster.
 
-Channel tab/service lifecycle belongs to the Kit Channel Surface. Team supplies service
-content objects only.
+The tab strip carries **T** at its right end through `createChannelSurface({ actions })`.
 
 ## Verified behavior and commands
 
-The current chain landed as:
+The chain through 2026-08-25/26 (all on `dev`, PR #34): `e291c6d` slot arrangement and
+the layout map · `dfc627f`/`8d1758b`/`085426b` discrete workspaces, C/T, KISS ·
+`08c6813` end-to-end review · `272428c` roster readings · `4b42d44` 人 from the tile,
+keyboard · `5acb840` `tejun-teampage` · `a6819eb` the roster in its view · `041206a`
+`+show_file` on the team page.
 
-- `dbc03c2` — Team workbench destination, geometry, and shells.
-- `47cb962` — repaired the original feature-owned hidden contract.
-- `09f579c` — replaced disabled Tile-control lookalikes with the complete existing Tile.
-- `092ddfc` — released managed Team workbench controls in Workspace Kit.
-- `ab659d7` — migrated Team to the managed workbench contract.
-- `bfeb772` — replaced card-driven transport resets with the page-lifetime warm host pool.
-- `3881c96` — made opening a Team board materialize its real empty thread when absent.
-- `7330d50` — replaced the Wipeboard placeholder with the entered-only thread/composer.
-
-For `ab659d7`, the declared rendered verification ran once:
-
-```text
-bin/ronin-byoin --ui
-BYOIN: the repo is clean (19 ok, 0 skipped).
-```
-
-Both `smoke-ui` and `visual-ui` ran and passed. The push hook then ran:
-
-```text
-bin/ronin-byoin --gates
-BYOIN: the repo is clean (17 ok, 2 skipped).
-```
-
-The two fast-tier skips were its browser checks by definition; the separate UI run had
-already executed them. That is historical evidence, not the current dev cadence. Future
-Team legs use direct dogfood and scoped diagnosis; the designated integrator runs one
-appropriate BYOIN mode on the exact release candidate. A SKIP remains unverified.
-
-The warm-pool change carries scoped evidence in `tests/team-terminal-pool.test.js`:
-repeated card revisits do not reopen transport, while membership loss and page cleanup
-destroy and remove every affected host exactly once. BYOIN is not run for this dev leg.
-
-Final retirement audit on 2026-08-25 checked current `dev` at `5358577` against the shipped
-Team modules and this document. The scoped command was:
-
-```text
-node --test tests/team-terminal-pool.test.js
-2 passed, 0 failed, 0 skipped
-```
-
-No candidate-wide BYOIN was run: this audit is not the dev-to-master release boundary.
+Every leg was verified by a playwright probe against the live page (`scripts/lib/ui-host.mjs`,
+`loadPlaywright()`), recorded in `wip/buildouts/TEAM_WORKBENCH.md` under each LANDED
+section, plus the repo gates (`check-modules`, `check-workspace-kit`, `check-css`,
+`check-dead`, `check-docs`, `check-tests` — 248 unit tests) and `scripts/smoke-ui.mjs`.
+The designated integrator runs one BYOIN mode on the release candidate; a SKIP is not a pass.
 
 ## Known limits
 
-- This remains a preview slice, not the complete Team product.
-- Richer reviewed SessionCard readings are incomplete.
 - `＋ Add team member` is intentionally inert.
-- Docs remains a placeholder here.
-- Team Configuration is read-only; creation, editing, membership mutation, and lead changes
-  are not implemented.
-- Chat is intentionally empty, not an invitation to improvise.
-- There is no Team-scoped 1/2/4 mode. Sessions retains its separate raw 1/2/4 grid.
-- The full hosted Tile keeps its global picker; switching to a non-member is existing Tile
-  behavior and must not be silently narrowed in Team code.
-- Historical source comments may describe the first preview; this README is the current
-  resume contract.
+- Team Configuration is read-only; creation, editing and membership mutation are not
+  implemented (the 人 is settable from the Tile).
+- Chat is intentionally empty.
+- No cherry-pick/summary reading on the cards: no service puts such a field on the
+  `/api/home` row.
+- There is no Team-scoped 1/2/4 mode. Sessions retains its separate raw grid.
+- The hosted Tile keeps its global picker; switching it to a non-member is existing Tile
+  behavior.
+- `src/` changes need `systemctl --user restart ronin` (`tsx`, no watch); `public/` is live.
 
 ## Exact resume checklist
 
-Before changing Team:
-
 1. Confirm the branch is `dev`; never act on `master` without a fresh owner instruction.
-2. Read current `docs/test-protocols.md` and this file completely.
-3. Inspect `git status`; preserve all unrelated shared-worktree changes.
-4. Inspect current `WorkspaceKit` exports and managed WorkbenchLayout; do not trust an old
-   plan description.
-5. Verify Team membership is still derived from session tags in the shared controller.
-6. Name one bounded missing Team behavior; do not combine it with foundation cleanup.
-7. If it needs a new Kit primitive, shared CSS, Tile, backend, League, New Team, or Sessions
-   change, stop for the responsible owner's reviewed contract.
-
-While implementing:
-
-8. Edit Team-owned files only unless a shared seam is explicitly authorized.
-9. Keep `createTerminalTileHost({ mode: 'full' })` and the genuine Tile unchanged.
-10. Let Kanban selection reveal/focus only an existing pooled host; never reopen it.
-11. Keep layout, collapse, rails, splitters, responsiveness, and snapshots in managed Kit.
-12. Keep membership derived from tags through the shared Team controller.
-13. Preserve the separate Sessions 1/2/4 raw Tile-grid destination.
-
-Before reporting completion:
-
-14. Confirm the diff contains no unrelated path.
-15. Record direct dogfood and scoped diagnostic evidence; do not run BYOIN in the dev loop.
-16. Leave the one candidate-wide BYOIN verdict to the designated integrator.
-17. If landing is authorized, stage only owned paths, inspect the staged path list, commit
-    and push only `dev`. Documentation-only work does not itself authorize git writes.
+2. Read `wip/buildouts/TEAM_WORKBENCH.md` (HANDOFF first), this file, and `docs/workspace-kit.md`.
+3. Inspect `git status`; preserve unrelated shared-worktree changes.
+4. Name one bounded behavior; if it needs a new Kit primitive, Tile change, or backend
+   contract, stop for the owner.
+5. Route every change to the page through `arrange()`; never a second path.
+6. Keep Tiles lazy and destroyed on `leave()`; keep membership derived from tags; keep the
+   Sessions 1/2/4 grid untouched.
+7. Verify by probe, then gates; stage only owned paths; commit as you go on `dev`.
 
 ## Exact dogfood checklist
 
-Use the current checkout, not another serving tree:
-
-1. Open a rostered `#/team/:name`; confirm title and three Surfaces.
-2. Open a tag-only Team; confirm members render and Configuration says no roster exists.
-3. Select each member, revisit earlier cards, and confirm terminal state returns immediately
-   without reconnect/reset delay.
-4. Exercise the genuine picker, Torii, macros, output/lock, Teams, context, Control, Docs,
-   Note, more/kill, terminal, and composer; confirm none is a Team imitation.
-5. Collapse and reopen all three Surfaces using Kit controls.
-6. Resize both edges by pointer and keyboard; reload and confirm state restoration.
-7. Repeat at phone width; confirm Kit responsive composition and no desktop splitters.
-8. Navigate away and back repeatedly; confirm the old pool closes completely and exactly
-   one fresh host per current member opens on re-entry.
-9. Remove a member's Team tag or end it; confirm that host is destroyed immediately and a
-   focused removal returns to the honest placeholder.
-10. Open Chat; confirm it is empty and inert.
-11. Open Sessions and exercise raw 1/2/4 Tile layouts; confirm Team did not alter them.
-12. Finish with scoped rendered evidence; the designated integrator owns candidate BYOIN.
-
-If a journey requires Team to reproduce Kit or Tile behavior, stop. That is a missing
-shared contract, not permission for a local repair.
+1. Open a rostered `#/team/:name`; confirm the lead's Tile left, the commons right, the
+   roster between, the layout map in the bar.
+2. Click the map's rectangles: columns hide and return; drag one past another: columns
+   reorder; reload: it holds.
+3. Pull each splitter: both workspaces move by the same amount; squeeze the roster: it goes
+   to names only.
+4. Click a card: its Tile lands in the highlighted workspace; drag a card onto the other:
+   it lands there; the same session in both.
+5. C on a Tile: the commons trades in; T: the terminal trades back with its session.
+6. From a member's shell: `tejun-teampage` prints the view; a draft moves the page and the
+   roster header says who.
+7. Open Sessions and exercise raw 1/2/4 layouts; confirm exactly four Tiles.

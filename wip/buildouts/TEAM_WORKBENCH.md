@@ -20,17 +20,23 @@ roster card in a workspace; the cards read SHINGO · status · model · ⛽ · a
 talking to read the page and hand it a draft. Every "LANDED" section below records what
 was measured. Gates, 248 unit tests and the smoke suite were green at `041206a`.
 
-**What is left to cut — all small, none blocking:**
-1. **Leg 2b, per-team persistence** — seats and arrangement persist per *destination*
-   (`patchViewState('team', …)`); two teams in one tab share them. Key both by the team
-   param: `viewState.teams[team].{arrangement, seats}` — one line in
-   `teamWorkspaceState`, two `patchViewState` calls in `team-view.js`.
-2. **Leg 6, the cherry-pick / summary reading** — waits on RIREKI putting a field on the
-   `/api/home` row. When it exists, one more entry in `readingsOf` in `team-view.js`.
-3. **T6, a name for the middle column** — the owner's word; "roster" is what the code
-   says (`DECLARATION.slots[1].name`), and the header reads "Team Roster".
-4. **The closing gate** — the owner living in two terminals with the roster tucked away,
-   and saying so.
+**What is left to cut: nothing** (owner, 2026-08-26). Three items that had been listed
+were dropped on his word: per-team persistence (one tab is one team — seats and columns
+are saved per tab, which is the case); a cherry-pick/summary reading on the cards (no
+service puts such a field on the row); and a name for the middle column ("Team Roster"
+stands). T8 (one session in both workspaces) is closed by independence. The closing gate
+is the owner's, not a leg.
+
+**The next session's remit (owner, 2026-08-26)** — not more legs on this plan, but the
+finish on what the page shows:
+1. **The tile's head row** — clean up and reshape the header and its buttons as they
+   sit in a workspace (the C among ⛩ @ ⚡ ⤢, the picker, the readings). The seam is
+   `createTerminalTileHost({ actions })` and `tilehead.js`'s table; the Sessions grid
+   uses the same head, so what changes here changes there — measure both.
+2. **The commons' tabs** — Docs and Team Configuration are read-only slices; Chat is
+   reserved and empty by ruling. Finish them as the owner wants them to work on the
+   team page (`createChannelSurface`, `team-view.js`'s `docsService` and `renderConfig`).
+3. Keep the shape: one controller (`arrange()`), one tab one team, no hidden, no overlay.
 
 **Traps a successor should know (beyond the ones under LANDED):**
 - The server runs `tsx src/index.ts` with no watch: a change under `src/` needs
@@ -218,7 +224,7 @@ why the slots cannot be reordered today.
 | # | Leg | Ends when |
 |---|---|---|
 | 1 | **Kit: slot arrangement** — N slots, surfaces assigned, swap, per-destination persistence; no team knowledge. Its control is the **layout map** in the app bar (click = show/hide, drag = reorder); the per-column chevron rails are retired with it | **DONE 2026-08-25** — see LEG 1 — LANDED below |
-| 2 | **Second terminal seat** — left and right can both be terminals, or either the commons; cards route to the seat last touched | **DONE 2026-08-25** — see LEGS 2 + 3 — LANDED below. Persistence is per destination; per team is leg 2b, one key |
+| 2 | **Second terminal seat** — left and right can both be terminals, or either the commons; cards route to the seat last touched | **DONE 2026-08-25** — see LEGS 2 + 3 — LANDED below. Seats and columns persist per tab (one tab is one team; owner, 2026-08-26) |
 | 3 | **Seat-aware hot bench** — pool `active` becomes per-seat; cap arithmetic already fits | **DONE 2026-08-25** — with leg 2 |
 | 4 | **Movable, shrinkable roster** — docks any slot, collapses to a chip rail. **And a header:** "the roster should have a header the same as the terminal_tile and team_commons" (owner, in this file, 2026-08-25) — the tile has its head row, the commons its tab strip; the roster gets the same kind of row (a natural home for the roster's own controls, and for the face switch if it ever leaves the corner) | the owner can live in two terminals; the three columns read as one instrument |
 | 5 | **Polish** — keyboard flips through hot members; switcher in kit style | one instrument, not three panels |
@@ -435,9 +441,8 @@ drawn over the tile, and warm tiles hidden inside the seat. All three are gone.
 commit that landed this — every step lists what each slot holds, and it is always one
 element, full height.
 
-**Not done here:** per-team persistence (leg 2b: key `seats` and `arrangement` by team
-param — one line each in `teamWorkspaceState` and the two `patchViewState` calls); the
-roster header (leg 4).
+**Persistence is per tab** — sessionStorage, through the shell's `patchViewState` —
+and one tab is one team (owner, 2026-08-26), so that is the whole of it.
 
 ### The leg 1 design as approved (kept for the record)
 
