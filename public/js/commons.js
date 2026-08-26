@@ -32,6 +32,7 @@ import { buildLauncher } from './launcher.js';
 import { buildWipeboard } from './wipeboard.js';
 import { buildDocs } from './docs.js';
 import { buildArchives } from './archives.js';
+import { t } from './lexicon.js';
 
 export function buildHome(tile) {
   const el = document.createElement('div');
@@ -75,7 +76,7 @@ export function buildHome(tile) {
       // opened a box — it was a label only a screen reader could ever reach, and that
       // is what it now is. The visible text leads the name so the name still contains
       // it (WCAG 2.5.3, label in name).
-      b.setAttribute('aria-label', `${b.textContent} — off, this service is not installed.`);
+      b.setAttribute('aria-label', t('commons.tab_off', '{tab} — off, this service is not installed.').replace('{tab}', b.textContent));
     } else b.addEventListener('click', () => showPane(p.id));
     tabRow.appendChild(b);
   }
@@ -87,7 +88,7 @@ export function buildHome(tile) {
   closeMark.className = 'close-hex';
   closeMark.textContent = '×';
   closeTab.appendChild(closeMark);
-  closeTab.title = 'Back to the terminal';
+  closeTab.title = t('commons.close_title', 'Back to the terminal');
   tabs.appendChild(closeTab);
 
   /* WHICH ENDS OF THE STRIP HAVE MORE ON THEM. Ten rooms plus the ✕ is 831px against
@@ -174,7 +175,7 @@ export function buildHome(tile) {
   secList.className = 'home-sec';
   const h = document.createElement('div');
   h.className = 'home-h';
-  h.textContent = 'sessions';
+  h.textContent = t('commons.sessions', 'sessions');
   secList.appendChild(h);
   colL.appendChild(secList);
   const roster = buildRoster(tile, secList);
