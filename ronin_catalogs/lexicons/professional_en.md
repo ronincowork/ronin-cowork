@@ -430,3 +430,21 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **services.working:** working…
 - **services.failed:** that did not work
 - **services.new_address_prompt:** New email address for Ronin Services
+
+## services — services-activation.js (the bar's Services state and pop-over)
+- **services.resend_confirmation:** Resend confirmation
+- **services.change_email:** Change email
+- **services.cancel_services:** Cancel Ronin Services
+- **services.bar_ready:** Services ready
+- **services.bar_installing:** Installing Ronin Services…
+- **services.bar_verified:** Confirmation received
+- **services.bar_awaiting_email:** Email confirmation required
+- **services.bar_expired:** Services confirmation expired
+- **services.bar_error:** Ronin Services needs attention
+- **services.confirmation_address:** Confirmation address: {email}
+- **services.activation:** Ronin Services activation
+- **services.checking:** Checking…
+- **services.sending:** Sending…
+- **services.cancelling:** Cancelling…
+- **services.new_confirmation_prompt:** Send the new confirmation to:
+- **services.changing:** Changing…
