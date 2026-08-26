@@ -11,10 +11,11 @@
  * no detail view — one behaviour, nothing to learn.
  *
  * This is an OUTLINE INDICATOR, not a channel. It says moving / held / stopped somewhere
- * it shouldn't be. Titles are nice; they are not the point, and nothing is being passed
+ * it shouldn'letter be. Titles are nice; they are not the point, and nothing is being passed
  * through here. Everything on this side is read-only: no element built in this module can
  * touch a session. A gate is answered by typing into the pane, like everything else.
  */
+import { t } from './lexicon.js';
 
 /** ✓ done · □ not done. Two marks, no legend, and they belong to legs only.
  *  Statuses are PLANNED · ACTIVE · DONE; GATE is a rung KIND, never a status. */
@@ -62,21 +63,21 @@ export function makeChip(onTap) {
     onTap();
   });
 
-  const set = (t) => {
+  const set = (letter) => {
     // No ladder up = nothing to show. The torii button is always there to read the
     // letter, so an absent chip costs the owner nothing and stops a dash-plus-age
     // pretending to be a position.
-    if (!t || !t.chip || !t.ladder?.length) {
+    if (!letter || !letter.chip || !letter.ladder?.length) {
       btn.hidden = true;
       return null;
     }
     btn.hidden = false;
-    pos.textContent = t.chip.text;
-    const quiet = t.quietMs >= 60000 ? humanAge(t.quietMs) : '';
+    pos.textContent = letter.chip.text;
+    const quiet = letter.quietMs >= 60000 ? humanAge(letter.quietMs) : '';
     age.textContent = quiet;
-    btn.classList.toggle('gate', !!t.chip.gate);
-    btn.classList.toggle('side', !!t.ladder_state);
-    const held = t.chip.gate ? 'Held at a gate' : 'Tap for the ladder';
+    btn.classList.toggle('gate', !!letter.chip.gate);
+    btn.classList.toggle('side', !!letter.ladder_state);
+    const held = letter.chip.gate ? 'Held at a gate' : 'Tap for the ladder';
     // The objective is AGENT-AUTHORED and unbounded; the help box is three lines.
     // Clamp here at the source, or any session that writes a long objective overflows
     // the box and fails check-tips for everyone (it measures the live DOM).
@@ -87,9 +88,9 @@ export function makeChip(onTap) {
     // and check-tips caught it at 165 chars on a live session (2026-08-17). Clamping the
     // JOINED string instead would have trimmed the wrong end.
     const tail = held + (quiet ? ' · ladder unchanged for ' + quiet : '');
-    const ob = t.objective ? clampTip(t.objective, 120 - tail.length - 1) + '\n' : '';
+    const ob = letter.objective ? clampTip(letter.objective, 120 - tail.length - 1) + '\n' : '';
     btn.title = ob + tail;
-    return t;
+    return letter;
   };
   return { el: btn, set };
 }
@@ -110,26 +111,26 @@ export function makeChip(onTap) {
  *   │   └────────── done or not
  *   └────────────── you are here
  */
-export function buildLadder(t) {
+export function buildLadder(letter) {
   const box = document.createElement('div');
   box.className = 'shingo-ladder';
-  if (!t) return box;
+  if (!letter) return box;
 
   // Parked, in the agent's own words. Sits above the objective because it changes what
   // the whole ladder below it means: those statuses are true, they are just not moving.
-  if (t.ladder_state) {
+  if (letter.ladder_state) {
     const sr = document.createElement('div');
     sr.className = 'sl-side';
-    sr.textContent = '↳ ' + t.ladder_state.replace(/_/g, ' ') + ' — the ladder below is held, not stale';
+    sr.textContent = '↳ ' + letter.ladder_state.replace(/_/g, ' ') + ' — the ladder below is held, not stale';
     box.appendChild(sr);
   }
 
   // WHERE THIS WORK LANDS. Branch is first and visually strongest because it is the
   // coordinate that changes during ordinary work; repo is the stable context beneath it.
-  if (t.repos?.length) {
+  if (letter.repos?.length) {
     const checkout = document.createElement('div');
     checkout.className = 'sl-checkout';
-    for (const item of t.repos) {
+    for (const item of letter.repos) {
       const line = document.createElement('div');
       line.className = 'sl-checkout-line';
       if (item.branch) {
@@ -150,10 +151,10 @@ export function buildLadder(t) {
     box.appendChild(checkout);
   }
 
-  if (t.objective || t.session_role || (t.teams ?? []).length) {
+  if (letter.objective || letter.session_role || (letter.teams ?? []).length) {
     const ob = document.createElement('div');
     ob.className = 'sl-obj';
-    for (const entry of t.teams ?? []) {
+    for (const entry of letter.teams ?? []) {
       // The TEAMS this session is on — contextual identity, derived from the rosters
       // (R35): the team's name, and its team_role when the roster states one.
       const team = document.createElement('span');
@@ -161,25 +162,25 @@ export function buildLadder(t) {
       team.textContent = entry.team_role ? `${entry.team} · ${entry.team_role}` : entry.team;
       ob.appendChild(team);
     }
-    if (t.session_role) {
+    if (letter.session_role) {
       // What this SESSION is DOING. It migrates — riffing becomes planning becomes
       // cutting code — so it is kept current rather than stamped at birth.
       const job = document.createElement('span');
       job.className = 'sl-job';
-      job.textContent = t.session_role;
+      job.textContent = letter.session_role;
       ob.appendChild(job);
     }
-    ob.append(t.objective || '');
+    ob.append(letter.objective || '');
     box.appendChild(ob);
   }
 
   // Checkout facts remain useful before the session has drawn a ladder. The branch and
   // repo header buttons open this panel, so returning early above would make both buttons
   // open a panel that hid the very values they name.
-  if (!t.ladder?.length) {
+  if (!letter.ladder?.length) {
     const empty = document.createElement('div');
     empty.className = 'sl-empty';
-    empty.textContent = 'no ladder up yet';
+    empty.textContent = t('ladder.none', 'no ladder up yet');
     box.appendChild(empty);
     return box;
   }
@@ -205,7 +206,7 @@ export function buildLadder(t) {
     // Column order, fixed: torii · done-or-not · leg # · description.
     if (kind !== 'phase') el.appendChild(span('sl-here', here ? HERE : ''));
     if (kind === 'leg') el.append(span('sl-m', mark), span('sl-n', n));
-    el.appendChild(span('sl-t', text));
+    el.appendChild(span('sl-letter', text));
     return el;
   };
 
@@ -218,7 +219,7 @@ export function buildLadder(t) {
     r.gate !== undefined
       ? r.status === 'DONE'
       : (r.legs || []).length > 0 && r.legs.every((l) => l.status === 'DONE');
-  let frontier = t.ladder.findIndex((r) => !finished(r));
+  let frontier = letter.ladder.findIndex((r) => !finished(r));
 
   // THE POINTER WINS WHEN THERE IS ONE. `at` is a monitor's observation of where the
   // session actually is — {rung} for a gate, {rung, leg} for a leg, positions in the
@@ -227,14 +228,14 @@ export function buildLadder(t) {
   // which is the whole reason `at` is its own key.
   let atRung = -1;
   let atLeg = -1;
-  if (t.at && Number.isInteger(t.at.rung) && t.at.rung >= 1 && t.at.rung <= t.ladder.length) {
-    atRung = t.at.rung - 1;
-    atLeg = Number.isInteger(t.at.leg) ? t.at.leg - 1 : -1;
+  if (letter.at && Number.isInteger(letter.at.rung) && letter.at.rung >= 1 && letter.at.rung <= letter.ladder.length) {
+    atRung = letter.at.rung - 1;
+    atLeg = Number.isInteger(letter.at.leg) ? letter.at.leg - 1 : -1;
     frontier = atRung;
   }
 
   let phaseNo = 0;
-  for (const [i, rung] of t.ladder.entries()) {
+  for (const [i, rung] of letter.ladder.entries()) {
     const live = i === frontier;
 
     if (rung.gate !== undefined) {
@@ -244,8 +245,8 @@ export function buildLadder(t) {
       const g = row({ kind: 'gate', here: live, text: rung.gate, cls: 'st-' + (rung.status || 'GATE') });
       const tag = document.createElement('span');
       tag.className = 'sl-tag';
-      tag.textContent = 'GATE';
-      g.querySelector('.sl-t').before(tag);
+      tag.textContent = t('ladder.gate', 'GATE');
+      g.querySelector('.sl-letter').before(tag);
       box.appendChild(g);
       continue;
     }
@@ -267,8 +268,8 @@ export function buildLadder(t) {
         // The honesty rule: a phase whose legs are undetermined shows nothing under it.
         const tail = document.createElement('i');
         tail.className = 'sl-und';
-        tail.textContent = ' — legs undetermined';
-        head.querySelector('.sl-t').appendChild(tail);
+        tail.textContent = ' ' + t('ladder.legs_undetermined', '— legs undetermined');
+        head.querySelector('.sl-letter').appendChild(tail);
       }
       box.appendChild(head);
     }
@@ -298,11 +299,11 @@ export function buildLadder(t) {
 
   // How long the file has been sitting still. Not a check on the agent and not a
   // judgement — just the mtime, which is the one reading nobody has to maintain. It is
-  // how "stopped somewhere it shouldn't be" becomes visible instead of guessed.
-  if (t.quietMs != null && t.quietMs > 10 * 60 * 1000) {
+  // how "stopped somewhere it shouldn'letter be" becomes visible instead of guessed.
+  if (letter.quietMs != null && letter.quietMs > 10 * 60 * 1000) {
     const q = document.createElement('div');
     q.className = 'sl-quiet';
-    q.textContent = 'quiet ' + humanAge(t.quietMs);
+    q.textContent = t('ladder.quiet', 'quiet {age}', { age: humanAge(letter.quietMs) });
     box.appendChild(q);
   }
   return box;

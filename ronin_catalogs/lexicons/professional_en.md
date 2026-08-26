@@ -955,3 +955,9 @@ The catalog entry goes. {dir} is not touched.
 - **tape.jump_title:** Jump to the latest output — the deterministic way back to the bottom, whatever the scroll is doing.
 - **tape.jump:** ↓ latest
 - **tape.fold_code:** ⌨ code
+
+## ladder — shingo.js (the ladder chip and panel)
+- **ladder.none:** no ladder up yet
+- **ladder.gate:** GATE
+- **ladder.legs_undetermined:** — legs undetermined
+- **ladder.quiet:** quiet {age}
