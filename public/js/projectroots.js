@@ -90,10 +90,10 @@ export function buildProjectRoots(root, isShowing, tile) {
     };
     // The handle is shown, never edited: renaming is a catalog edit by hand, not a form
     // field. It is here because a block with no name on it is unreadable.
-    mk('handle', 'name', existing.name, 'The short name — this IS the shortcut', 'ronin').disabled = true;
-    mk('directory', 'dir', existing.dir, 'Any absolute path, at any depth', '~/work/api');
-    mk('remit', 'remit', existing.remit, 'The one line you pick it from in a list', 'what this is');
-    mk('match', 'match', (existing.match || []).join(', '), 'Words that suggest this project_root from free-form intent', 'comma separated');
+    mk(t('roots.f_handle', 'handle'), 'name', existing.name, t('roots.f_handle_hint', 'The short name — this IS the shortcut'), 'ronin').disabled = true;
+    mk(t('roots.f_directory', 'directory'), 'dir', existing.dir, t('roots.f_directory_hint', 'Any absolute path, at any depth'), '~/work/api');
+    mk(t('roots.f_remit', 'remit'), 'remit', existing.remit, t('roots.f_remit_hint', 'The one line you pick it from in a list'), t('roots.f_remit_placeholder', 'what this is'));
+    mk(t('roots.f_match', 'match'), 'match', (existing.match || []).join(', '), t('roots.f_match_hint', 'Words that suggest this project_root from free-form intent'), t('roots.f_match_placeholder', 'comma separated'));
 
     const row = document.createElement('div');
     row.className = 'pr-frow';
