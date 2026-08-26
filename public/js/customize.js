@@ -81,7 +81,7 @@ export function buildCustomize() {
 
   return {
     el: layout,
-    title: () => 'Customize · ronin',
+    title: () => t('customize.title', 'Customize') + ' · ronin',
     enter: () => { if (!current) show(resources()[0].id); },
     rail,
     content,
