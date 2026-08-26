@@ -1229,3 +1229,7 @@ The catalog entry goes. {dir} is not touched.
 - **tape.no_summary:** No summary has been written yet.
 - **tape.alt_note_partial:** history begins mid-session · scrollback above is reconstructed from the tape
 - **tape.alt_note:** scrollback above is reconstructed from the tape
+
+## tape — output.js summary notes
+- **tape.writing_summary:** Writing a summary…
+- **tape.summary_unavailable:** Summary unavailable — {message}
