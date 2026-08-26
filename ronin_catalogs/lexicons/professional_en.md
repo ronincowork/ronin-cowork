@@ -932,3 +932,6 @@ The catalog entry goes. {dir} is not touched.
 - **desk.close_title:** Back to what this tile was showing
 - **desk.rail_collapse:** Collapse the rail
 - **desk.group_app:** This app
+
+## desk — the install group heading
+- **desk.group_install:** This install
