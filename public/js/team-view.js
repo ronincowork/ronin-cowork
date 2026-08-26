@@ -32,7 +32,7 @@ import { buildDocs } from './docs.js';
 import { STATUS_LABEL, refreshHome } from './home.js';
 import { request } from './request.js';
 import { humanAge } from './shingo.js';
-import { teamPageHandlers } from './events.js';
+import { sessionsHandlers, teamPageHandlers } from './events.js';
 import { createArranger, parseDraft, reportView as sendView } from './team-arrange.js';
 
 const el = (tag, cls, text) => {
@@ -351,7 +351,22 @@ export function createTeamView() {
     const r = await request('/api/home', { cache: 'no-store' });
     if (!r.ok || !Array.isArray(r.data) || !entered) return;
     rows = new Map(r.data.map((row) => [row.name, row]));
+    onSessions();
     renderCards(membersOfTeam(team));
+  };
+  // MEMBERSHIP IS LIVE, AND SO ARE THE SEATS. The team controller only publishes on
+  // `refreshTeams()`, which this page runs once on entry; the cards, though, are drawn
+  // off `S.sessions`, which the events feed keeps current. A session that joined the team
+  // after entry therefore had a card and no seat in either pool — its card clicked and
+  // dragged into nothing (owner, 2026-08-26: "that one Kanban is broken"). The fix is the
+  // whole paint again whenever the member set or the 人 changes: on the feed's event, and
+  // on the five-second row read as the fallback.
+  const membership = (members) => members.map((m) => m.name + (m.team_lead ? ' 人' : '')).join('\n');
+  let seenMembers = '';
+  const onSessions = () => {
+    if (!entered || !team || loaded !== team) return;
+    if (membership(membersOfTeam(team)) === seenMembers) return;
+    paint();
   };
   const readingsOf = (m) => {
     const row = rows.get(m.name) || {};
@@ -420,6 +435,7 @@ export function createTeamView() {
   const paint = () => {
     const members = membersOfTeam(team);
     const roster = teamByName(team);
+    seenMembers = membership(members);
     syncPools(members);
     ensureLeadHot(members);
     seatTheTeam();
@@ -466,6 +482,7 @@ export function createTeamView() {
       channels.mount(context);
       unsubscribe = subscribe(() => { if (entered && team) paint(); });
       teamPageHandlers.add(onDraft);
+      sessionsHandlers.add(onSessions);
     },
     enter: (context) => {
       ctx = context;
@@ -510,6 +527,7 @@ export function createTeamView() {
       unsubscribe?.();
       unsubscribe = null;
       teamPageHandlers.delete(onDraft);
+      sessionsHandlers.delete(onSessions);
       for (const seat of Object.values(seats)) { seat.pool.destroyAll(); seat.empty?.destroy(); }
       channels.destroy();
     },

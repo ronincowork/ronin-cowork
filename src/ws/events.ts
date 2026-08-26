@@ -46,10 +46,12 @@ export function startSessionsBroadcast(): void {
         // re-marks itself (`write_tegami`) changes its mark on every picker and tile
         // header, and a poll watching names alone would hold the old icon until something
         // was born or died. The `role_family` is deliberately NOT watched — it cannot change
-        // while a session lives, so a change in it is not a thing that can happen. Still a
-        // push only when something actually changed — attach and note flapping stay
-        // deliberately unwatched.
-        const names = list.map((s) => `${s.name}\t${s.session_role}`).join('\n');
+        // while a session lives, so a change in it is not a thing that can happen. The
+        // tags and the leads ARE watched: the Team page reads its membership and its 人
+        // off this list live, and a tag-only join or leave was invisible until something
+        // else moved (2026-08-26). Still a push only when something actually changed —
+        // attach and note flapping stay deliberately unwatched.
+        const names = list.map((s) => `${s.name}\t${s.session_role}\t${s.tags.join(',')}\t${s.leads.join(',')}`).join('\n');
         if (names === lastSessionNames) return;
         lastSessionNames = names;
         const msg = JSON.stringify({ t: 'sessions', list });
