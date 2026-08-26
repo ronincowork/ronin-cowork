@@ -537,3 +537,52 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **koshi.not_built:** Not built yet
 - **koshi.not_built_note:** Not built yet — nothing asks anything.
 - **koshi.saving:** saving…
+
+## pad — padpanel.js (the ▦ Work Louder pad panel)
+- **pad.ask_sheet:** Macro arguments
+- **pad.ask_placeholder:** Enter sends · Esc cancels
+- **pad.ask_label:** macro arguments
+- **pad.sheet:** Work Louder pad
+- **pad.title:** ▦ Work Louder
+- **pad.press_key:** press a pad key…
+- **pad.capture:** ⊕ Capture
+- **pad.close:** Close
+- **pad.args_placeholder:** args (k=v …) — optional
+- **pad.ask_on_press:** ask on press
+- **pad.ask_on_press_title:** Every press pops a prompt for the args (e.g. buildout) — Enter fires
+- **pad.save:** Save
+- **pad.key_title:** key {chord}
+- **pad.unbound:** — unbound —
+- **pad.group_macros:** ⚡ macros
+- **pad.group_keys:** ⌨ keys (to the active tile)
+- **pad.active_tile:** ▸ active tile
+- **pad.press_to_capture:** press the pad key to capture…
+- **pad.program:** ⚙ Program pad…
+- **pad.write:** Write
+- **pad.config:** ⧉ Config
+- **pad.config_title:** Copy the pad's current config JSON to the clipboard
+- **pad.restore:** Restore backup…
+- **pad.clean_write:** clean write
+- **pad.clean_write_title:** Replace every key with the Ronin default, including keys set by hand in Input
+- **pad.pick_prompt:** pick the pad in the browser prompt… (quit the Input app first)
+- **pad.reading:** reading the pad…
+- **pad.layer_n:** Layer {n}
+- **pad.layer_active:** • active
+- **pad.connected:** pad fw {version} — Write overwrites the chosen layer's keys (backup downloads first)
+- **pad.error:** pad: {message}
+- **pad.no_layout:** pad: that layer has no layout to write into
+- **pad.layer_n_lower:** layer {n}
+- **pad.overwrite_confirm:** Overwrite the 13 keys of "{layer}" with the Ronin layout?
+The pad's current config downloads as a backup first.
+- **pad.writing:** writing…
+- **pad.written:** ✓ "{layer}" is now the Ronin layer — switch the pad to it and press a key. Knob unchanged? Replug the pad: the firmware applies keys and joystick live but caches the encoder from boot.
+- **pad.write_partial:** write finished but the pad did not store: {parts} — the backup file has the original
+- **pad.toast_written:** ▦ pad programmed with the Ronin layout ✓
+- **pad.toast_rejected:** ▦ pad rejected: {parts}
+- **pad.write_failed:** write failed: {message} — the backup file has the original
+- **pad.config_copied:** ✓ pad config copied to clipboard
+- **pad.clipboard_blocked:** clipboard blocked — use the https url
+- **pad.config_read_failed:** config read failed: {message}
+- **pad.restoring:** restoring…
+- **pad.restored:** ✓ backup restored to the pad
+- **pad.restore_failed:** restore failed: {message}
