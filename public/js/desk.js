@@ -138,7 +138,7 @@ export function buildDesk(tile) {
   };
 
   const deskPanes = PANES().filter((p) => p.surface === 'desk');
-  addGroup('This install', deskPanes);
+  addGroup(t('desk.group_install', 'This install'), deskPanes);
   const APP_ROWS = appRows();
   addGroup(t('desk.group_app', 'This app'), APP_ROWS);
 
