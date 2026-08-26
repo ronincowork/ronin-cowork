@@ -2,7 +2,9 @@
 import { request } from './request.js';
 import { button, field, status } from './ui.js';
 import { buildMachinePanel } from './machine-panel.js';
-import { currentSkin, listSkins, setSkin } from './skins.js';
+import { currentSkin, followProfileSkin, listSkins, setSkin } from './skins.js';
+import { activeProfile, deskProfiles, loadDeskProfile, setDeskProfile } from './desk-profile.js';
+import { t } from './lexicon.js';
 import { resolvedTheme, setTheme } from './theme.js';
 import { S } from './state.js';
 
@@ -282,6 +284,50 @@ export function buildSystemPanel() {
     }
   };
 
+  /* THE DESK PROFILE PICKER (R38), above the skins because it is the wider question: a
+   * profile HAS a skin, and picking one puts that skin up, loads its words, and sets
+   * what a new tile shows. Same shape as the skin rows — a row per profile, blurb and
+   * `origin` — and the choice is settei's leaf, so every browser agrees. "Stock" is the
+   * row for no profile at all: the ordinary state, never an error. */
+  const profBlock = document.createElement('div');
+  profBlock.className = 'sys-skins';
+  const profLab = document.createElement('span');
+  profLab.className = 'sys-theme-lbl';
+  profLab.textContent = t('desk_profile', 'desk profile');
+  const profList = document.createElement('div');
+  profList.className = 'sys-skinlist';
+  profBlock.append(profLab, profList);
+  const paintProfiles = () => {
+    profList.innerHTML = '';
+    const chosen = activeProfile()?.name || '';
+    profLab.textContent = t('desk_profile', 'desk profile'); // re-read: a pick may have changed the words
+    const rows = [{ name: '', label: 'Stock', blurb: 'No profile — the look, the words and the tile as shipped.' }, ...deskProfiles()];
+    for (const p of rows) {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'sys-skin' + (p.name === chosen ? ' on' : '');
+      const nm = document.createElement('b');
+      nm.textContent = p.label;
+      if (p.origin === 'user') {
+        const mark = document.createElement('i');
+        mark.className = 'sys-skin-mine';
+        mark.textContent = p.shadowed ? 'yours (replaces ours)' : 'yours';
+        nm.appendChild(mark);
+      }
+      const why = document.createElement('small');
+      why.textContent = p.blurb;
+      row.append(nm, why);
+      row.addEventListener('click', async () => {
+        const r = await setDeskProfile(p.name);
+        if (!r.ok) { say('desk profile not saved — ' + r.message); return; }
+        await followProfileSkin(activeProfile()?.skin || '');
+        paintProfiles();
+        void listSkins().then(paintSkins);
+      });
+      profList.appendChild(row);
+    }
+  };
+
   const row = document.createElement('div');
   row.className = 'sys-actions';
   const checkBtn = button('Check for updates', {
@@ -328,7 +374,7 @@ export function buildSystemPanel() {
     g.append(...kids.filter(Boolean));
     return g;
   };
-  const appearance = group(appRow, skinBlock);
+  const appearance = group(appRow, profBlock, skinBlock);
   // The machine sits with the release block — both answer "what is this install running
   // on", and a person hunting either finds them together. group() drops a null child, so
   // an install without the machine service simply has one fewer row here.
@@ -478,6 +524,7 @@ export function buildSystemPanel() {
     // an upgrade that ships a new one — is visible on the next visit to this room without
     // a reload. That is the same promise the macro list makes about MACROS.md.
     void listSkins().then(paintSkins);
+    void loadDeskProfile().then(paintProfiles, paintProfiles);
     say('');
     void (async () => {
       const r = await request('/api/version', { cache: 'no-store' });

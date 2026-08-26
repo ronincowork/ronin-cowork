@@ -89,14 +89,26 @@ export async function listSkins() {
  * to do nothing. The cost is one request at boot; the alternative is a stale look nobody
  * can explain.
  */
-export async function restoreSkin() {
-  const want = currentSkin();
+export async function restoreSkin(profileSkin = '') {
+  // THE DESK PROFILE'S SKIN IS THE DEFAULT (R38), the device's own pick the override:
+  // a device that never picked wears the profile's; a device that picked in ⚙ keeps its
+  // pick until the profile changes (setDeskProfile clears the device pick, below).
+  const want = localStorage.getItem(LS_SKIN) || profileSkin || 'stock';
   if (want === 'stock') return; // nothing to fetch and nothing to paint
   const skin = (await listSkins()).find((s) => s.name === want);
   // A skin that has been deleted or hidden since it was picked: fall back to stock rather
   // than leaving a name pointing at nothing.
   if (!skin) { localStorage.removeItem(LS_SKIN); return; }
   applySkin(skin);
+  applyTheme();
+}
+
+/** Wear the profile's skin now and forget the device's own pick — a profile change is
+ *  a whole-desk decision. `''`/`stock` clears to the shipped look. */
+export async function followProfileSkin(name) {
+  localStorage.removeItem(LS_SKIN);
+  const skin = name && name !== 'stock' ? (await listSkins()).find((s) => s.name === name) : null;
+  applySkin(skin || { tokens: {}, light: {}, dark: {} });
   applyTheme();
 }
 

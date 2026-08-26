@@ -38,6 +38,7 @@ import {
   writeGbrainSection,
   writeMachineSection,
   writeOwner,
+  writeDeskSection,
 } from '../user-config.js';
 
 const errMsg = (e: unknown): string => String((e as Error)?.message ?? e);
@@ -102,6 +103,14 @@ const FAMILY_WRITERS: Record<string, (body: Record<string, unknown>) => Promise<
         : { default: { provider: str(d.provider) ?? null, model: str(d.model) ?? null } },
       jobs: body.jobs === undefined ? priorJobs : { ...priorJobs, ...jobs },
     });
+    return { ok: true };
+  },
+
+  /** THE DESK (R38) — which desk_profile the surfaces read their defaults from. A blank
+   * is how you go back to stock, not an error; an unknown token is stored as typed and
+   * reads back as null (a profile can be removed after it was chosen). */
+  desk: async (body) => {
+    await writeDeskSection({ profile: str(body.profile) ?? '' });
     return { ok: true };
   },
 

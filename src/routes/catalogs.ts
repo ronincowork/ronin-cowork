@@ -10,6 +10,8 @@ import type express from 'express';
 import { projectRootsOfSessions } from '../tmux.js';
 import { listMacros } from '../macros.js';
 import { listSkins } from '../skins.js';
+import { listLexicons, resolveLexicon } from '../lexicons.js';
+import { activeDeskProfileName, listDeskProfiles } from '../desk-profiles.js';
 import { listSops } from '../sops.js';
 import { listActions } from '../actions.js';
 import { listSessionReadings } from '../session-readings.js';
@@ -311,6 +313,37 @@ export function registerCatalogs(app: express.Express): void {
   app.get('/api/team-roles', async (_req, res) => {
     try {
       res.json(await listTeamRoles());
+    } catch (e) {
+      res.status(500).json({ error: errMsg(e) });
+    }
+  });
+
+  /* THE DESK PROFILES (R38) — the list with `origin`, and which one settei holds as
+   * active. One request at boot answers both, which is why `active` rides the list
+   * rather than a second route. `active: ''` is the ordinary answer of every install
+   * older than the catalog and means "as stock" everywhere. */
+  app.get('/api/desk-profiles', async (_req, res) => {
+    try {
+      res.json({ active: await activeDeskProfileName(), profiles: await listDeskProfiles() });
+    } catch (e) {
+      res.status(500).json({ error: errMsg(e) });
+    }
+  });
+
+  /* THE LEXICONS — the list, and one resolved flat through its `base:` chain
+   * (src/lexicons.ts). The client only ever asks for the flat one. */
+  app.get('/api/lexicons', async (_req, res) => {
+    try {
+      res.json(await listLexicons());
+    } catch (e) {
+      res.status(500).json({ error: errMsg(e) });
+    }
+  });
+  app.get('/api/lexicons/:name', async (req, res) => {
+    try {
+      const lex = await resolveLexicon(String(req.params.name));
+      if (!lex) return res.status(404).json({ error: `no lexicon named '${req.params.name}'` });
+      res.json(lex);
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }

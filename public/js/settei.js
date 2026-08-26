@@ -38,6 +38,7 @@ import { servicesCard } from './services-card.js';
 export function buildSettei(root, isShowing) {
   let rec = null;
   let specs = [];
+  let deskProfiles = []; // /api/desk-profiles — the ⚙ select's options (R38)
 
   const head = document.createElement('div');
   head.className = 'st-head';
@@ -117,7 +118,7 @@ export function buildSettei(root, isShowing) {
   /** One registry row in, one saving ⚙ row out — the only place a `kind` is read. */
   const schemaRow = (f) => {
     const cur = currentOf(f, { record: rec });
-    const ctx = { record: rec, modelOpts: allModelOpts() };
+    const ctx = { record: rec, modelOpts: allModelOpts(), deskProfiles };
     let control;
     if (f.kind === 'select') {
       control = document.createElement('select');
@@ -354,8 +355,9 @@ export function buildSettei(root, isShowing) {
     // Two calls, not one: the record is this install, and the launch table is what the
     // house supports. Keeping them apart is what lets the dropdown offer a provider this
     // box has not installed yet and say so, instead of pretending the table is the box.
-    const [r, sp] = await Promise.all([request('/api/settei'), request('/api/session-launch-specs')]);
+    const [r, sp, dp] = await Promise.all([request('/api/settei'), request('/api/session-launch-specs'), request('/api/desk-profiles')]);
     specs = sp.ok && Array.isArray(sp.data) ? sp.data : [];
+    deskProfiles = dp.ok && Array.isArray(dp.data?.profiles) ? dp.data.profiles : [];
     if (!r.ok) {
       blurb.textContent = r.message;
       blurb.classList.add('bad');

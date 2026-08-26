@@ -26,6 +26,7 @@
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { membersOfTeam, refreshTeams, subscribe, teamByName } from './team-controller.js';
+import { activeProfile } from './desk-profile.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { createTeamWipeboard } from './team-wipeboard.js';
 import { buildDocs } from './docs.js';
@@ -514,7 +515,11 @@ export function createTeamView() {
       for (const seat of Object.values(seats)) seat.pool.destroyAll();
       team = context.param || context.state?.team || '';
       const typed = teamWorkspaceState(context.state, context.viewState('team'), DECLARATION);
-      workbench.restore(typed.arrangement);
+      // THE DESK PROFILE'S ORDER (R38) when this tab has no arrangement of its own — the
+      // owner's standing default, never an override of what a tab already arranged.
+      const stored = context.viewState('team')?.arrangement;
+      const profileOrder = activeProfile()?.team_arrangement || [];
+      workbench.restore(!stored && profileOrder.length ? { ...typed.arrangement, order: profileOrder } : typed.arrangement);
       // What each workspace remembers holding; the old one-seat focusedSession lands in
       // the first workspace, once. With nothing remembered: the lead left, the commons right.
       remembered = { ...typed.seats };
