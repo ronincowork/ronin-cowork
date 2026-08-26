@@ -1099,3 +1099,14 @@ The catalog entry goes. {dir} is not touched.
 - **head.note_empty:** Session note (empty)
 - **head.kill_help:** Kill session (ends it + its viewers)
 - **head.kill_quiet:** Kill session — no session in this tile yet
+
+## pad — pad.js (the pad's widget captions)
+- **pad.w_encoder:** encoder — volume and play/pause; it speaks media-key only, so it cannot drive Ronin
+- **pad.w_joystick:** joystick — flick to move between tiles
+- **pad.w_touch:** touch strip — cycles the pad layers (not bindable here)
+- **pad.w_esc:** Escape — a real universal Esc key, works in any app
+- **pad.w_tab:** Tab — a real universal Tab key, works in any app
+- **pad.w_enter:** Enter — a real universal Enter key, works in any app
+- **pad.w_delete_word:** Option+Delete (delete word) — universal, works in any app
+- **pad.w_newline:** Option+Enter (newline without send) — universal, works in any app
+- **pad.w_wispr:** Wispr push-to-talk (right ⌥) — Wispr handles it, Ronin stays out of the way
