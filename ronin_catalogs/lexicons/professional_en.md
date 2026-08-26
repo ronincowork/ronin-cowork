@@ -332,3 +332,30 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **preview.unresolved:** This seat did not resolve far enough to preview.
 - **preview.no_reading:** No birth reading reported.
 - **preview.source_unknown:** source not reported
+
+## seat — agent-config-fields.js (the seat form half of Agent Configuration)
+- **seat.session_role_desc:** What this session is doing. Blank is a real launch — no reading, no mark.
+- **seat.name_desc:** Left unset, the server derives it from the role and the prompt.
+- **seat.mode_desc:** Manual sends your words untouched. Assisted composes the brief.
+- **seat.prompt:** What it is for
+- **seat.prompt_desc:** The agent's first message.
+- **seat.project_root_desc:** Unset falls to the Team's root, then the top active root.
+- **seat.cmd:** Launch command
+- **seat.cmd_desc:** Unset falls to the role’s model bias, then the install default.
+- **seat.mcp_desc:** Unset means whatever the resolved profile says.
+- **seat.tags:** Further teams
+- **seat.tags_desc:** Memberships beyond the birth team.
+- **seat.seed:** Read first
+- **seat.seed_desc:** Paths read before anything else. Assisted mode only.
+- **seat.inject:** Extra instruction
+- **seat.inject_desc:** Appended verbatim. Assisted mode only.
+- **seat.reference:** Pointed at
+- **seat.reference_desc:** One session this one is aimed at.
+- **seat.inherit:** inherit
+- **seat.on:** on
+- **seat.off:** off
+- **seat.manual:** manual
+- **seat.assisted:** assisted
+- **seat.inherit_title:** Return {field} to unset — the resolved profile answers it
+- **seat.cmd_no_agent:** This seat launches no agent, so it cannot carry a command.
+- **seat.prompt_no_agent:** A plain terminal has nobody to tell — an empty prompt is valid here.

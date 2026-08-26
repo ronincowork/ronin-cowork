@@ -32,34 +32,39 @@
  */
 import { WorkspaceKit } from './workspace-kit.js';
 import { NULLABLE_SEAT_FIELDS, createSeat, clearSeatField } from './new-team-draft.js';
+import { t } from './lexicon.js';
 
 
 /** The eleven, in the order the owner meets them. `team` is NOT here: it lives once on
  *  the TeamDefinition, because one draft is one Team. */
-export const SEAT_FIELDS = Object.freeze([
-  { key: 'session_role', label: 'Session role', kind: 'text',
-    description: 'What this session is doing. Blank is a real launch — no reading, no mark.' },
-  { key: 'name', label: 'Name', kind: 'text',
-    description: 'Left unset, the server derives it from the role and the prompt.' },
-  { key: 'mode', label: 'Mode', kind: 'mode',
-    description: 'Manual sends your words untouched. Assisted composes the brief.' },
-  { key: 'prompt', label: 'What it is for', kind: 'textarea',
-    description: "The agent's first message." },
-  { key: 'project_root', label: 'Project root', kind: 'text',
-    description: "Unset falls to the Team's root, then the top active root." },
-  { key: 'cmd', label: 'Launch command', kind: 'text',
-    description: 'Unset falls to the role’s model bias, then the install default.' },
-  { key: 'mcp', label: 'gbrain', kind: 'tristate',
-    description: 'Unset means whatever the resolved profile says.' },
-  { key: 'tags', label: 'Further teams', kind: 'list',
-    description: 'Memberships beyond the birth team.' },
-  { key: 'seed', label: 'Read first', kind: 'list',
-    description: 'Paths read before anything else. Assisted mode only.' },
-  { key: 'inject', label: 'Extra instruction', kind: 'text',
-    description: 'Appended verbatim. Assisted mode only.' },
-  { key: 'reference', label: 'Pointed at', kind: 'text',
-    description: 'One session this one is aimed at.' },
-]);
+// A function, not a frozen table: the lexicon loads after this module is evaluated, so
+// the words are read when the form is built.
+function seatFields() {
+  return [
+    { key: 'session_role', label: t('seat.session_role', 'Session role'), kind: 'text',
+      description: t('seat.session_role_desc', 'What this session is doing. Blank is a real launch — no reading, no mark.') },
+    { key: 'name', label: t('seat.name', 'Name'), kind: 'text',
+      description: t('seat.name_desc', 'Left unset, the server derives it from the role and the prompt.') },
+    { key: 'mode', label: t('team.mode', 'Mode'), kind: 'mode',
+      description: t('seat.mode_desc', 'Manual sends your words untouched. Assisted composes the brief.') },
+    { key: 'prompt', label: t('seat.prompt', 'What it is for'), kind: 'textarea',
+      description: t('seat.prompt_desc', "The agent's first message.") },
+    { key: 'project_root', label: t('team.project_root', 'Project root'), kind: 'text',
+      description: t('seat.project_root_desc', "Unset falls to the Team's root, then the top active root.") },
+    { key: 'cmd', label: t('seat.cmd', 'Launch command'), kind: 'text',
+      description: t('seat.cmd_desc', 'Unset falls to the role’s model bias, then the install default.') },
+    { key: 'mcp', label: t('seat.mcp', 'gbrain'), kind: 'tristate',
+      description: t('seat.mcp_desc', 'Unset means whatever the resolved profile says.') },
+    { key: 'tags', label: t('seat.tags', 'Further teams'), kind: 'list',
+      description: t('seat.tags_desc', 'Memberships beyond the birth team.') },
+    { key: 'seed', label: t('seat.seed', 'Read first'), kind: 'list',
+      description: t('seat.seed_desc', 'Paths read before anything else. Assisted mode only.') },
+    { key: 'inject', label: t('seat.inject', 'Extra instruction'), kind: 'text',
+      description: t('seat.inject_desc', 'Appended verbatim. Assisted mode only.') },
+    { key: 'reference', label: t('seat.reference', 'Pointed at'), kind: 'text',
+      description: t('seat.reference_desc', 'One session this one is aimed at.') },
+  ];
+}
 
 const isNullable = (key) => NULLABLE_SEAT_FIELDS.includes(key);
 
@@ -99,14 +104,14 @@ function controlFor(spec) {
     const sel = document.createElement('select');
     // The inherit position is FIRST and is a real option, not a placeholder — a seat that
     // says nothing about gbrain must be selectable, not merely the absence of a choice.
-    for (const [v, t] of [['', 'inherit'], ['on', 'on'], ['off', 'off']]) {
-      sel.add(new Option(t, v));
+    for (const [v, label] of [['', t('seat.inherit', 'inherit')], ['on', t('seat.on', 'on')], ['off', t('seat.off', 'off')]]) {
+      sel.add(new Option(label, v));
     }
     return sel;
   }
   if (spec.kind === 'mode') {
     const sel = document.createElement('select');
-    for (const [v, t] of [['manual', 'manual'], ['assisted', 'assisted']]) sel.add(new Option(t, v));
+    for (const [v, label] of [['manual', t('seat.manual', 'manual')], ['assisted', t('seat.assisted', 'assisted')]]) sel.add(new Option(label, v));
     return sel;
   }
   if (spec.kind === 'textarea') {
@@ -141,7 +146,7 @@ export function createSeatFields({ seat, onChange } = {}) {
 
   const emit = () => onChange?.(current);
 
-  for (const spec of SEAT_FIELDS) {
+  for (const spec of seatFields()) {
     const control = controlFor(spec);
     const field = createField({ label: spec.label, description: spec.description, control });
     field.el.classList.add('ac-field', `ac-field-${spec.key.replaceAll('_', '-')}`);
@@ -154,8 +159,8 @@ export function createSeatFields({ seat, onChange } = {}) {
       const clear = document.createElement('button');
       clear.type = 'button';
       clear.className = 'ac-field-clear';
-      clear.textContent = 'inherit';
-      clear.title = `Return ${spec.label} to unset — the resolved profile answers it`;
+      clear.textContent = t('seat.inherit', 'inherit');
+      clear.title = t('seat.inherit_title', 'Return {field} to unset — the resolved profile answers it', { field: spec.label });
       clear.addEventListener('click', () => {
         current = clearSeatField(current, spec.key);
         writeControl(spec, control, current[spec.key]);
@@ -202,12 +207,12 @@ export function createSeatFields({ seat, onChange } = {}) {
     const cmd = fields.get('cmd');
     cmd.control.disabled = !agent;
     cmd.field.description.textContent = agent
-      ? 'Unset falls to the role’s model bias, then the install default.'
-      : 'This seat launches no agent, so it cannot carry a command.';
+      ? t('seat.cmd_desc', 'Unset falls to the role’s model bias, then the install default.')
+      : t('seat.cmd_no_agent', 'This seat launches no agent, so it cannot carry a command.');
     const prompt = fields.get('prompt');
     prompt.field.description.textContent = agent
-      ? "The agent's first message."
-      : 'A plain terminal has nobody to tell — an empty prompt is valid here.';
+      ? t('seat.prompt_desc', "The agent's first message.")
+      : t('seat.prompt_no_agent', 'A plain terminal has nobody to tell — an empty prompt is valid here.');
   };
 
   /** Repaint from a seat without emitting: opening a seat must not edit it. */
