@@ -898,3 +898,11 @@ The catalog entry goes. {dir} is not touched.
 - **customize.roles_not_a_list:** the session-role route did not answer with a list
 - **customize.roles_read_failed:** could not read session roles — {message}
 - **customize.read_entry:** Read entry
+
+## customize — customize-role-families.js
+- **customize.family_warning:** Changing a shipped family makes the whole definition yours; later improvements to Ronin’s copy stop reaching it.
+- **customize.family_summary:** Choose which session roles this Family presents.
+- **customize.pinned_first:** pinned first: {role}
+- **customize.saving_membership:** Saving membership…
+- **customize.membership_saved:** Membership saved.
+- **customize.membership_bar:** {family} membership
