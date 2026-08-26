@@ -1302,3 +1302,18 @@ The catalog entry goes. {dir} is not touched.
 - **seat.none_selected:** No seat selected. Open one from the Team roster.
 - **seat.not_resolved:** Not resolved yet — press Check.
 - **seat.title:** Agent Configuration
+
+## workspace — workspace-primitives.js (the Kit's own words)
+- **workspace.channels:** Team channels
+- **workspace.channel_chat:** Chat
+- **workspace.channel_wipeboard:** Wipeboard
+- **workspace.channel_docs:** Docs
+- **workspace.channel_team_configuration:** Team Configuration
+- **workspace.explorer:** Explorer
+- **workspace.explorer_collapse:** Collapse explorer
+- **workspace.explorer_expand:** Expand explorer
+- **workspace.tab_name:** Name this tab
+- **workspace.tab_name_title:** Name this browser tab — what it is for. Empty is the default name.
+- **workspace.columns:** Workspace columns
+- **workspace.slot_show:** {column} — click to show, drag to move
+- **workspace.slot_hide:** {column} — click to hide, drag to move
