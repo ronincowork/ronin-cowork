@@ -70,6 +70,7 @@ written contract those modules enforce.
 | `tilemore.js` | 158 | DESKTOP ONLY — `buildTileMore`: メ on a tile head and the controls it drops in one strip; `fitDropToTile`, shared by every drop off that header |
 | `tiledocs.js` | 126 | `buildTileDocs` — 📄 on a tile head: THIS session's listed docs, read off the letter the tile already holds, opened over the tile |
 | `tilejob.js` | 55 | `pickJobFor` — the job pick off a tile head: the session_role, and the 人 team-lead toggle beneath it; split out of tile.js at the ceiling |
+| `team-arrange.js` | 95 | `parseDraft`, `createArranger` — the team page's one controller: a draft (what changes; the rest stays) from a button or from an agent's `tejun-teampage`, run through the page's own verbs |
 | `voice.js` | 181 | dictation: `makeClipRecorder` + `wireDictation` (the 🎤 on the tile's compose box) |
 | `panels.js` | 248 | `buildNotePanel` 📝, `buildTagPanel` 🏷 (on `ui.sheet`), `toClipboard` |
 | `macros.js` | 103 | `buildSessionPicker` — the pad key's session switcher (on `ui.sheet`) |

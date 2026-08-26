@@ -32,6 +32,8 @@ import { buildDocs } from './docs.js';
 import { STATUS_LABEL, refreshHome } from './home.js';
 import { request } from './request.js';
 import { humanAge } from './shingo.js';
+import { teamPageHandlers } from './events.js';
+import { createArranger, parseDraft, reportView as sendView } from './team-arrange.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -67,9 +69,7 @@ export function createTeamView() {
     button.title = letter === 'C' ? 'Show the Team commons in this workspace' : 'Show the terminal in this workspace';
     button.addEventListener('click', () => {
       const id = button.closest('[data-surface]')?.dataset.surface;
-      if (!seats[id]) return;
-      if (letter === 'C') putCommons(id); else putTerminal(id);
-      renderCards(membersOfTeam(team));
+      if (seats[id]) arrange({ [id]: letter === 'C' ? { commons: true } : { terminal: true } });
     });
     return button;
   };
@@ -123,7 +123,7 @@ export function createTeamView() {
       const id = seatOf();
       if (!name || !id) return;
       event.preventDefault();
-      if (putSession(name, id)) renderCards(membersOfTeam(team));
+      arrange({ [id]: { session: name } });
     });
   }
   const seats = { workspace1: makeSeat('workspace1', 'Workspace 1'), workspace2: makeSeat('workspace2', 'Workspace 2') };
@@ -132,7 +132,8 @@ export function createTeamView() {
   // The roster's header — the same depth as a tile head and the commons' tab strip.
   const rosterHead = el('div', 'tw-roster-head');
   const rosterCount = el('span', 'tw-roster-count');
-  rosterHead.append(el('span', 'tw-roster-title', 'Team Roster'), rosterCount);
+  const rosterNote = el('span', 'tw-roster-note');
+  rosterHead.append(el('span', 'tw-roster-title', 'Team Roster'), rosterCount, rosterNote);
   kanban.el.prepend(rosterHead);
   const cards = el('div', 'tw-cards');
   kanban.content.append(cards);
@@ -205,16 +206,26 @@ export function createTeamView() {
   const commonsIn = () => Object.keys(seats).find((id) => workbench.holding(id) === channels.el) || '';
   const holds = (id) => (commonsIn() === id ? COMMONS : seats[id].pool.active);
   const isShown = (name) => Object.values(seats).some((seat) => seat.pool.active === name && commonsIn() !== seat.id);
-  const remember = () => ctx?.patchViewState('team', { seats: Object.fromEntries(Object.keys(seats).map((id) => [id, holds(id)])) });
+  const remember = () => { ctx?.patchViewState('team', { seats: Object.fromEntries(Object.keys(seats).map((id) => [id, holds(id)])) }); reportView(); };
   const lead = () => membersOfTeam(team).find((m) => m.team_lead)?.name || '';
 
   /** Commons in: the seat's surface (tiles and all) leaves the slot; wherever the
    *  commons was, that seat's surface comes back. */
-  const putCommons = (id) => {
+  const putCommons = (id, tab = '', doc = '') => {
     const from = commonsIn();
     if (from && from !== id) workbench.place(from, seats[from].surface.el);
     workbench.place(id, channels.el);
+    if (doc) { channels.select('docs'); void docs.open(doc); } else if (tab) channels.select(tab);
     touch(id);
+    remember();
+  };
+  /** The seat back, with nothing in it: its tiles go; the lead comes back warm on the next paint. */
+  const emptySeat = (id) => {
+    if (commonsIn() === id) workbench.place(id, seats[id].surface.el);
+    seats[id].pool.destroyAll();
+    ensureLeadHot(membersOfTeam(team));
+    touch(id);
+    paintSeats();
     remember();
   };
   /** Terminal in: the seat's surface comes back as it was; a seat that never showed
@@ -237,6 +248,57 @@ export function createTeamView() {
     return true;
   };
 
+  /* ---------- one controller, two callers ---------- */
+  // Everything that changes this page goes through arrange(): the C/T buttons and the
+  // roster cards call it, and so does a draft an agent hands in with tejun-teampage
+  // (owner, 2026-08-26). What a draft omits stays as it is.
+  const arranger = createArranger({
+    showColumn: (name) => { if (workbench.arrangement.state().hidden.includes(name)) workbench.arrangement.toggle(name); },
+    hideColumn: (name) => { if (!workbench.arrangement.state().hidden.includes(name)) workbench.arrangement.toggle(name); },
+    moveColumn: (name, index) => workbench.arrangement.move(name, index),
+    putSession: (name, ws) => putSession(name, ws, false),
+    putCommons,
+    putTerminal,
+    emptySeat,
+  });
+  const arrange = (draft) => {
+    const did = arranger.apply(draft);
+    renderCards(membersOfTeam(team));
+    reportView();
+    return did;
+  };
+  /** What this tab shows — reported to Ronin so an agent can read it (tejun-teampage). */
+  const TAB = (() => {
+    try {
+      let id = sessionStorage.getItem('ronin.team.tab');
+      if (!id) { id = Math.random().toString(36).slice(2, 10); sessionStorage.setItem('ronin.team.tab', id); }
+      return id;
+    } catch (_) { return 'tab'; }
+  })();
+  const view = () => {
+    const a = workbench.arrangement.state();
+    const workspaces = {};
+    for (const id of Object.keys(seats)) {
+      const c = commonsIn() === id;
+      workspaces[id] = c ? { holds: 'commons', tab: channels.current?.() || '' } : seats[id].pool.active ? { holds: 'session', session: seats[id].pool.active } : { holds: 'empty' };
+    }
+    return { team, selected: lastSeat, order: [...a.order], hidden: [...a.hidden], workspaces };
+  };
+  let reportTimer = 0;
+  const reportView = () => { if (entered && team) void sendView(team, TAB, view()); };
+  // A draft from an agent: for this tab if it names it (the tab that shows the agent),
+  // else for every tab on the team. A line in the roster header says who arranged it.
+  let noteTimer = 0;
+  const onDraft = (m) => {
+    if (!entered || m.team !== team || (m.tab && m.tab !== TAB)) return;
+    const { draft, errors } = parseDraft(m.tokens || [], m.from);
+    if (errors.length) return;
+    arrange(draft);
+    rosterNote.textContent = `arranged by ${m.from}`;
+    window.clearTimeout(noteTimer);
+    noteTimer = window.setTimeout(() => { rosterNote.textContent = ''; }, 6000);
+  };
+
   /** Fill each empty workspace: what it remembers first, else the defaults — the lead
    *  left, the commons right. Runs on enter AND when the roster arrives, since on a cold
    *  reload the roster is not known yet at enter. */
@@ -247,8 +309,11 @@ export function createTeamView() {
       const wanted = remembered[id];
       if (wanted === COMMONS) putCommons(id);
       else if (wanted && seats[id].pool.has(wanted)) putSession(wanted, id, false);
-      else if (!wanted && lead() && !isShown(lead())) putSession(lead(), id, false);
-      else if (!wanted && !commonsIn()) putCommons(id);
+      // A remembered session the roster does not have: wait while the roster is still
+      // arriving, then let it go — a workspace waiting forever is the blank the owner met.
+      else if (wanted && loaded !== team) continue;
+      else if (lead() && !isShown(lead())) putSession(lead(), id, false);
+      else if (!commonsIn()) putCommons(id);
     }
   };
 
@@ -312,7 +377,7 @@ export function createTeamView() {
         metadata: readings,
         mark: m.mark || null,
         selected: isShown(m.name),
-        action: () => { if (putSession(m.name, lastSeat)) renderCards(members); },
+        action: () => arrange({ [lastSeat]: { session: m.name } }),
       });
       card.el.addEventListener('pointerenter', () => armPrewarm(m.name));
       card.el.addEventListener('pointerleave', disarmPrewarm);
@@ -400,6 +465,7 @@ export function createTeamView() {
       ctx = context;
       channels.mount(context);
       unsubscribe = subscribe(() => { if (entered && team) paint(); });
+      teamPageHandlers.add(onDraft);
     },
     enter: (context) => {
       ctx = context;
@@ -423,6 +489,9 @@ export function createTeamView() {
       void readRows();
       window.clearInterval(homeTimer);
       homeTimer = window.setInterval(() => void readRows(), 5000);
+      reportView();
+      window.clearInterval(reportTimer);
+      reportTimer = window.setInterval(reportView, 10000);
     },
     leave: () => {
       // Leaving the destination closes every Team transport; the seats remember what
@@ -430,6 +499,7 @@ export function createTeamView() {
       entered = false;
       disarmPrewarm();
       window.clearInterval(homeTimer);
+      window.clearInterval(reportTimer);
       // Every Tile goes — the pools' and the empty ones. A Tile left in this view's DOM
       // is still a Tile to the Sessions grid's roll, and the smoke gate counts it.
       for (const seat of Object.values(seats)) { seat.pool.destroyAll(); seat.empty?.destroy(); seat.empty = null; }
@@ -439,6 +509,7 @@ export function createTeamView() {
       entered = false;
       unsubscribe?.();
       unsubscribe = null;
+      teamPageHandlers.delete(onDraft);
       for (const seat of Object.values(seats)) { seat.pool.destroyAll(); seat.empty?.destroy(); }
       channels.destroy();
     },

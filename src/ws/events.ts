@@ -25,6 +25,14 @@ export function handleEvents(ws: WebSocket): void {
     .catch(() => {});
 }
 
+/** One message to every listening page. The team page's instructions ride this (src/routes/team-page-api.ts). */
+export function broadcastEvent(msg: Record<string, unknown>): number {
+  const text = JSON.stringify(msg);
+  let sent = 0;
+  for (const ws of eventClients) if (ws.readyState === ws.OPEN) { ws.send(text); sent += 1; }
+  return sent;
+}
+
 /** The 2s membership poll. Called once at boot — a timer is a choice index.ts makes, not an import side effect. */
 export function startSessionsBroadcast(): void {
   let lastSessionNames = '';

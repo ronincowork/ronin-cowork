@@ -15,9 +15,13 @@ export function connectEvents() {
       return;
     }
     if (m.t === 'sessions' && Array.isArray(m.list)) onSessionsEvent(m.list);
+    if (m.t === 'team-page') for (const fn of teamPageHandlers) fn(m);
   };
   ws.onclose = () => setTimeout(connectEvents, 3000); // keep the feed alive
 }
+
+/** Who hears a team-page draft (`{t:'team-page', team, from, tab, tokens}`): the Team view registers on mount. */
+export const teamPageHandlers = new Set();
 
 export function onSessionsEvent(list) {
   const before = new Set(S.sessions.map((s) => s.name));

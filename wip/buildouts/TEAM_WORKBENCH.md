@@ -182,12 +182,53 @@ why the slots cannot be reordered today.
 | 6 | **Roster readings** — SHINGO, model, ready/busy, taken; cherry_pick or summary when RIREKI fires (owner, 2026-08-25) | **DONE 2026-08-25** for what the row carries: each card reads `/api/home`'s row — the same row the Commons roster reads — SHINGO chip (+ quiet age), status (ready · thinking… · awaiting input), model, ⛽ context, attached; refreshed every 5s while entered. `refreshHome()` could not be reused: it only runs while a Commons is open in a Sessions tile. **Open:** cherry_pick / summary — no service contributes such a field to the row today; when RIREKI does, it is one more entry in `readingsOf` |
 | 7 | **Team lead from the tile** — the 人 is set through the tile's existing session_role selector, not an API call (T5, ruled) | the owner designates a lead by hand from any tile |
 | 8 | **Unlocked flavours** — a selector for the flavours of Unlocked, cherry pick included, to play with; later the Locked/Unlocked control moves out of the tile header (owner, 2026-08-25) | **ALREADY THERE** (found 2026-08-26): every tile head carries the output selector from `public/js/output.js` — Locked · Terminal Mirror · Detailed · Condensed · Conversation · Agent Summary; services own each unlocked source. Nothing to cut. Moving it out of the header is not asked for yet |
-| 9 | **The team page takes instructions** — a Tejun an agent runs to arrange the page it is on: show/hide/move columns, put a session or the commons in a workspace, open the commons to a doc (owner, 2026-08-26) | see LEG 9 — THE DESIGN below; gated |
+| 9 | **The team page takes instructions** — a Tejun an agent runs to arrange the page it is on: show/hide/move columns, put a session or the commons in a workspace, open the commons to a doc (owner, 2026-08-26) | **DONE 2026-08-26** — `tejun-teampage`; see LEG 9 — LANDED |
 
 Legs 1–4 are one chain (each needs the one before). Legs 6, 7 and 8 stand alone and can
 go in any order, or in parallel with the chain.
 
-## LEG 9 — THE DESIGN: the team page takes instructions (by `@team_page`, 2026-08-26; gated)
+## LEG 9 — LANDED (cut by `@team_page`, 2026-08-26, on "yes to both, cut leg 9")
+
+**What changed from the design, on the owner's refinement:** no `show me`, no
+conveniences, no rigid rules. The tool's bare form GIVES the agent the view — each tab on
+its team, which workspace is selected (the one the owner is typing in), which shows the
+agent, what each holds — and its other form takes a DRAFT: `key=value` words naming only
+what should change; the rest stays. The agent is free to arrange the page any way it
+likes, itself off the page included ("in agents we trust-ish").
+
+**What is on `dev`:**
+- `public/js/team-arrange.js` — the one parser (`parseDraft`) and the one controller
+  (`createArranger`): a draft runs through the page's own verbs, columns first. The
+  team page's C/T buttons and roster cards call `arrange()` too — one controller, two
+  callers, nothing reachable one way and not the other. 4 tests.
+- `src/routes/team-page-api.ts` — `PUT /api/teams/:team/page/:tab` (a tab reports its
+  view on every change and every 10s), `GET …/page?session=` (the views, marking the
+  tab that shows the asking session), `POST …/page {from, tokens}` (keys validated, the
+  dial and team membership checked, then pushed on `/events` as `{t:'team-page', team,
+  from, tab, tokens}` — `tab` names the tab that shows the agent, or null for every tab
+  on the team). The server keeps views in memory for 30s and holds no page state of its
+  own. `broadcastEvent()` in `src/ws/events.ts` is the push; `events.js` dispatches to
+  `teamPageHandlers`.
+- `ronin_bin/tejun-teampage` — bare: the view; `key=value …`: a draft; `--team` on
+  several teams. Resolves its own session as `write_tegami` does and reaches Ronin as
+  `mika` does. Verdicts ARRANGED · BAD-DRAFT · REFUSED · NO-SESSION · NO-PAGE ·
+  UNREACHABLE. Catalogued in `ronin_catalogs/TOOLS.md`.
+- The roster header says "arranged by <session>" for six seconds after a draft lands.
+- The words: `workspace1=<session>|me` · `workspace2=commons[:tab[:path]]` · `terminal`
+  · `empty` · `order=…` · `hidden=…` · `shown=…` · `hidden=none`.
+
+**Measured (a tab on team `team`, the tool run from `team_page`'s own shell):**
+`workspace1=commons:docs:<path>` → the commons in workspace 1 on ▧ Docs with the file
+open in the editor, the header noting `arranged by team_page`; `order=workspace2,roster,
+workspace1 hidden=roster` → columns reordered, roster hidden; `hidden=none order=…
+workspace1=me workspace2=commons:wipeboard` → `team_page`'s tile left, the wipeboard
+right; `workspace9=x` → `BAD-DRAFT` with the keys named, exit 2. No console errors.
+
+**Also in this cut, from the owner's side note:** a tab that remembered a session the
+roster no longer has used to wait forever with a blank workspace; once the roster is
+loaded it now lets that go and takes the lead (or the commons).
+
+### The design as approved (kept for the record)
 
 **The owner's words:** "a Tejun that an agent controls the landscape of a team view …
 hide or unhide columns … move the columns … if I'm in one session on the terminal, say

@@ -137,8 +137,10 @@ function createChannelSurface(options = {}) {
     for (const action of options.actions) if (action instanceof Node) tabs.append(action);
   }
   surface.el.prepend(tabs);
+  let current = 'chat';
   const select = (requested) => {
     const id = CHANNEL_SERVICES.includes(requested) ? requested : 'chat';
+    current = id;
     for (const [name, button] of buttons) {
       const on = name === id;
       button.setAttribute('aria-selected', String(on));
@@ -155,7 +157,7 @@ function createChannelSurface(options = {}) {
     }
   };
   return {
-    ...surface, tabs, services, select,
+    ...surface, tabs, services, select, current: () => current,
     mount: (context) => invoke('mount', context),
     enter: (context) => invoke('enter', context),
     leave: () => invoke('leave'),
