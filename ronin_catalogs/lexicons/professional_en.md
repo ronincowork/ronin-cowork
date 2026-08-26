@@ -1034,3 +1034,13 @@ The catalog entry goes. {dir} is not touched.
 
 ## bar — layout.js
 - **bar.keys_title:** Esc, ^C, jump to latest, Tab and the arrows
+
+## output — output.js (the RIREKI view picker)
+- **output.locked:** Locked
+- **output.terminal_mirror:** Terminal Mirror
+- **output.detailed:** Detailed
+- **output.condensed:** Condensed
+- **output.cherry_pick:** Cherry Pick
+- **output.agent_summary:** Agent Summary
+- **output.aria:** Output
+- **output.title:** Output shown in this tile
