@@ -38,6 +38,7 @@ import { TermView } from './termview.js';
 import { TileWire } from './tilewire.js';
 import { buildComposer } from './composer.js';
 import { refreshKaki, setKakiPolicy } from './output.js';
+import { t } from './lexicon.js';
 
 export class Tile {
   constructor(index) {
@@ -217,7 +218,7 @@ export class Tile {
   refreshOptions() {
     const cur = this.session;
     this.select.innerHTML = '';
-    this.select.add(new Option('— pick session —', ''));
+    this.select.add(new Option(t('tile.pick_session', '— pick session —'), ''));
     for (const s of S.sessions) {
       // NO MARK IN THE PICKER. It was prefixed here too, and the collapsed <select> then
       // showed the current session's icon immediately beside the job button showing the
@@ -230,9 +231,9 @@ export class Tile {
     }
     // keep a stale-but-connected session visible even if it left the list
     if (cur && !S.sessions.some((s) => s.name === cur)) {
-      this.select.add(new Option(`${cur}  (gone?)`, cur));
+      this.select.add(new Option(t('tile.gone', '{name}  (gone?)', { name: cur }), cur));
     }
-    this.select.add(new Option('➕ new session…', NEW));
+    this.select.add(new Option(t('tile.new_session', '➕ new session…'), NEW));
     this.select.value = cur || '';
     this.syncHeader();
     this.refreshCtx();

@@ -961,3 +961,8 @@ The catalog entry goes. {dir} is not touched.
 - **ladder.gate:** GATE
 - **ladder.legs_undetermined:** — legs undetermined
 - **ladder.quiet:** quiet {age}
+
+## tile — tile.js (the session picker)
+- **tile.pick_session:** — pick session —
+- **tile.gone:** {name}  (gone?)
+- **tile.new_session:** ➕ new session…
