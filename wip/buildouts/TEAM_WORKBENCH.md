@@ -55,6 +55,17 @@ but tall (95px in a 236px column). If that is too much, the readings (chip, bran
 could yield before the controls, or the workspace floor could rise from 15%; both are
 rulings, not fixes.
 
+**The 人 on the card (owner, 2026-08-26: "the session that is the team lead should
+hito kanji in the central console"):** the lead's card wears 人 as its mark — kaki,
+above the name, kept in compact mode — instead of a grey "人 lead" among the readings;
+Team Configuration's live roster prefixes the lead's name the same way.
+
+**Left as it is, on the owner's word, and flagged:** setting a task or the 人 from the
+tile's job menu TYPES INTO the session — `observeRoleChange` delivers the new reading,
+and a fresh 人 is handed the teams SOP by `sendText` (`src/routes/sessions-api.ts`,
+both routes). The owner called it useful, then annoying, in one breath. Each is one
+`void`/`sendText` line to switch off; that is a ruling, not a fix.
+
 **Probe trap added to the list:** `page.goto(url, { waitUntil: 'networkidle' })` never
 resolves against this app (websockets and polls); use `'load'` and a fixed wait.
 

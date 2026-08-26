@@ -377,7 +377,6 @@ export function createTeamView() {
     const chip = row.tegami?.chip?.text && row.tegami?.ladder?.length ? row.tegami.chip.text + (row.tegami.quietMs >= 60000 ? ' · ' + humanAge(row.tegami.quietMs) : '') : null;
     return [
       m.session_role || null,
-      m.team_lead ? '人 lead' : null,
       chip,
       STATUS_LABEL[row.status] || null,
       (row.model || '').toLowerCase() || null,
@@ -394,7 +393,9 @@ export function createTeamView() {
         heading: m.name,
         summary: m.summary || '',
         metadata: readings,
-        mark: m.mark || null,
+        // THE 人 IS THE CARD'S MARK (owner, 2026-08-26): the lead wears the kanji itself,
+        // beside the name, and keeps it when the roster goes compact.
+        mark: m.team_lead ? '人' : null,
         selected: isShown(m.name),
         action: () => arrange({ [lastSeat]: { session: m.name } }),
       });
@@ -438,7 +439,7 @@ export function createTeamView() {
     const table = el('div', 'tw-config-roster');
     const line = (name, reading) => table.append(el('span', 'tw-config-name', name), el('span', 'tw-config-reading', reading));
     line('人', lead.length ? lead.join(', ') : 'not designated');
-    for (const m of live) line(m.name, readingsOf(m).filter((r) => r !== '人 lead').join(' · ') || '—');
+    for (const m of live) line(m.team_lead ? `人 ${m.name}` : m.name, readingsOf(m).join(' · ') || '—');
     config.append(table);
   }
 
