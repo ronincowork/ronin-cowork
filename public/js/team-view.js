@@ -487,11 +487,15 @@ export function createTeamView() {
     el: root,
     // The ViewHost draws the Kit's layout map in the bar for this while the view is active.
     arrangement: workbench.arrangement,
-    // The tab's name, else the team's own name, alone — createWorkspace's tabTitle() adds
-    // the house. THE NAME IS THE OWNER'S (2026-08-26): three tabs each titled "team ·
-    // Ronin" cannot be told apart, so the bar's field lets each tab say what it is for.
-    // Per tab, like everything else here — one tab is one team.
-    title: ({ param, viewState }) => viewState?.('team')?.tabName || param || 'Team',
+    // THE NAME IS THE OWNER'S (2026-08-26): three tabs each titled "team · Ronin" cannot
+    // be told apart, so the bar's field lets each tab say what it is for. Named, the tab
+    // reads `<name> · <team>` and nothing else — the house only rides the default, which
+    // is the team's own name with createWorkspace's tabTitle() adding "Ronin". Per tab,
+    // like everything else here — one tab is one team.
+    title: ({ param, viewState }) => {
+      const name = viewState?.('team')?.tabName;
+      return name ? { bare: `${name} · ${param || 'Team'}` } : (param || 'Team');
+    },
     tabName: {
       get: () => ctx?.viewState('team')?.tabName || '',
       placeholder: () => team || 'Team',

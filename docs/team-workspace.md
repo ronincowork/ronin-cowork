@@ -71,7 +71,8 @@ checks** — build tiles on first need and destroy every one on leave.
 
 The Team name is the destination title; the workspace shell adds the Ronin house title.
 The bar's tab-name field (`tabName` on the view) lets the owner retitle the tab — "what
-this tab is for" — since three tabs on one team read the same; empty means the team.
+this tab is for" — since three tabs on one team read the same. Named, the tab reads
+`<name> · <team>` with no house word; empty means the default, `<team> · Ronin`.
 Persistence is per browser tab (sessionStorage); one tab is one team.
 
 ## The page takes instructions (`tejun-teampage`)

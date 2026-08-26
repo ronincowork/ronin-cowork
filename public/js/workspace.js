@@ -133,7 +133,16 @@ export function hashFor(view, param = '') {
  * reaches, on something that identifies nothing.
  */
 const HOUSE = 'Ronin';
-export const tabTitle = (what) => (what ? `${what} · ${HOUSE}` : HOUSE);
+/**
+ * A NAMED TAB DROPS THE HOUSE (owner, 2026-08-26: "we don't need Ronin in there unless
+ * it's the default"). A view hands back a string — what it is — and the house is added;
+ * or `{ bare: text }` — a title the owner composed, spelled whole, with nothing added.
+ * The Team page uses the second when its tab has been named: `<name> · <team>`.
+ */
+export const tabTitle = (what) => {
+  if (what && typeof what === 'object' && what.bare) return String(what.bare);
+  return what ? `${what} · ${HOUSE}` : HOUSE;
+};
 
 export function createWorkspace(host, options = {}) {
   const views = new Map();
