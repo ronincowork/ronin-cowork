@@ -977,3 +977,11 @@ The catalog entry goes. {dir} is not touched.
 - **composer.title:** Enter sends · Shift+Enter or Option+Enter for a new line
 - **composer.mic_title:** Dictate into this box — tap again to stop, then ↵ to send
 - **composer.send:** Send
+
+## hotwords — hotwords.js (the ▥ Hotwords tab)
+- **hotwords.placeholder:** a word it keeps getting wrong
+- **hotwords.label:** a word dictation keeps getting wrong
+- **hotwords.add:** Add
+- **hotwords.loading:** loading…
+- **hotwords.remove:** Remove {word}
+- **hotwords.load_failed:** could not load
