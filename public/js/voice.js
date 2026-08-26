@@ -1,5 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { S } from './state.js';
+import { t } from './lexicon.js';
 
 /**
  * DICTATION — one engine, ours, on both surfaces.
@@ -140,7 +141,7 @@ export function wireDictation(ta, micBtn) {
       micBtn.classList.toggle('listening', s === 'rec');
       micBtn.classList.toggle('busy', s === 'busy');
       micBtn.textContent = s === 'busy' ? '…' : '🎤';
-      if (s !== 'busy') micBtn.title = 'Dictate into this box — tap again to stop, then ↵ to send';
+      if (s !== 'busy') micBtn.title = t('composer.mic_title', 'Dictate into this box — tap again to stop, then ↵ to send');
     },
     onText: (text) => {
       const had = ta.value.trim();
