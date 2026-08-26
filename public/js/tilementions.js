@@ -1,12 +1,13 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { S } from './state.js';
+import { t } from './lexicon.js';
 
 export const MENTION_MIME = 'application/x-ronin-session-mention';
 /** A native session dropdown that inserts the chosen name into this tile's composer. */
 export function buildTileMentions(tile) {
   const select = document.createElement('select');
   select.className = 'tmention-btn';
-  select.setAttribute('aria-label', 'Mention another session');
+  select.setAttribute('aria-label', t('head.mention_aria', 'Mention another session'));
 
   const insert = (name) => {
     const mention = `@${name} `;
