@@ -35,6 +35,7 @@ import { request } from './request.js';
 import { humanAge } from './shingo.js';
 import { sessionsHandlers, teamPageHandlers } from './events.js';
 import { createArranger, parseDraft, reportView as sendView } from './team-arrange.js';
+import { t } from './lexicon.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -68,7 +69,7 @@ export function createTeamView() {
     // C is sized by the tile head's own button rule; T stands at tab height on the strip.
     const button = el('button', letter === 'T' ? 'tw-flip tw-flip-strip' : 'tw-flip', letter);
     button.type = 'button';
-    button.title = letter === 'C' ? 'Show the Team commons in this workspace' : 'Show the terminal in this workspace';
+    button.title = letter === 'C' ? t('team.flip_commons', 'Show the Team commons in this workspace') : t('team.flip_terminal', 'Show the terminal in this workspace');
     button.addEventListener('click', () => {
       const id = button.closest('[data-surface]')?.dataset.surface;
       if (seats[id]) arrange({ [id]: letter === 'C' ? { commons: true } : { terminal: true } });
@@ -128,14 +129,14 @@ export function createTeamView() {
       arrange({ [id]: { session: name } });
     });
   }
-  const seats = { workspace1: makeSeat('workspace1', 'Workspace 1'), workspace2: makeSeat('workspace2', 'Workspace 2') };
+  const seats = { workspace1: makeSeat('workspace1', t('team.workspace_1', 'Workspace 1')), workspace2: makeSeat('workspace2', t('team.workspace_2', 'Workspace 2')) };
 
-  const kanban = createSurface({ label: 'Team Roster', className: 'tw-kanban' });
+  const kanban = createSurface({ label: t('team.roster_title', 'Team Roster'), className: 'tw-kanban' });
   // The roster's header — the same depth as a tile head and the commons' tab strip.
   const rosterHead = el('div', 'tw-roster-head');
   const rosterCount = el('span', 'tw-roster-count');
   const rosterNote = el('span', 'tw-roster-note');
-  rosterHead.append(el('span', 'tw-roster-title', 'Team Roster'), rosterCount, rosterNote);
+  rosterHead.append(el('span', 'tw-roster-title', t('team.roster_title', 'Team Roster')), rosterCount, rosterNote);
   kanban.el.prepend(rosterHead);
   const cards = el('div', 'tw-cards');
   kanban.content.append(cards);
@@ -173,7 +174,7 @@ export function createTeamView() {
   const config = el('div', 'tw-config');
   const service = (node) => ({ el: node, mount: () => {}, enter: () => {}, leave: () => {}, destroy: () => {} });
   const channels = createChannelSurface({
-    label: 'Team commons',
+    label: t('team.commons', 'Team commons'),
     // Land on CHAT, by the owner's word (2026-08-25: "I don't want to land on the
     // whiteboard. I want to land on chat. That's fine that it's empty.") — explicit,
     // not the accident of an unqualified default.
@@ -192,9 +193,9 @@ export function createTeamView() {
   // 11rem (176px) — the frame writes data-width on its slot and the Kit's card CSS reads it.
   const DECLARATION = {
     slots: [
-      { name: 'workspace1', label: 'Workspace 1', width: 40 },
-      { name: 'roster', label: 'Team Roster', width: 20, min: 6, compact: 176 },
-      { name: 'workspace2', label: 'Workspace 2', width: 40 },
+      { name: 'workspace1', label: t('team.workspace_1', 'Workspace 1'), width: 40 },
+      { name: 'roster', label: t('team.roster_title', 'Team Roster'), width: 20, min: 6, compact: 176 },
+      { name: 'workspace2', label: t('team.workspace_2', 'Workspace 2'), width: 40 },
     ],
   };
   const workbench = createWorkbenchLayout({
@@ -296,7 +297,7 @@ export function createTeamView() {
     const { draft, errors } = parseDraft(m.tokens || [], m.from);
     if (errors.length) return;
     arrange(draft);
-    rosterNote.textContent = `arranged by ${m.from}`;
+    rosterNote.textContent = t('team.arranged_by', 'arranged by {from}', { from: m.from });
     window.clearTimeout(noteTimer);
     noteTimer = window.setTimeout(() => { rosterNote.textContent = ''; }, 6000);
   };
@@ -382,7 +383,7 @@ export function createTeamView() {
       statusLabel(row.status) || null,
       (row.model || '').toLowerCase() || null,
       row.ctx != null ? `⛽ ${row.ctx}%` : null,
-      row.attached ? 'attached' : null,
+      row.attached ? t('team.attached', 'attached') : null,
     ].filter(Boolean);
   };
   function renderCards(members) {
@@ -410,7 +411,7 @@ export function createTeamView() {
       });
       cards.append(card.el);
     }
-    const add = createCard({ heading: '＋ Add team member', summary: 'Existing session or a new one — arrives with its own slice.', variant: 'dotted' });
+    const add = createCard({ heading: t('team.add_member', '＋ Add team member'), summary: t('team.add_member_summary', 'Existing session or a new one — arrives with its own slice.'), variant: 'dotted' });
     add.el.dataset.inert = 'true';
     cards.append(add.el);
   }
@@ -424,22 +425,22 @@ export function createTeamView() {
   function renderConfig(roster, live) {
     config.replaceChildren();
     if (!team) {
-      config.append(el('p', 'tw-config-head', 'No Team selected'));
+      config.append(el('p', 'tw-config-head', t('team.none_selected', 'No Team selected')));
       return;
     }
     config.append(el('p', 'tw-config-head', team));
     const record = roster
-      ? [['Team role', roster.team_role], ['Objective', roster.objective], ['Project root', roster.project_root],
-        ['Repositories', (roster.repos || []).join(', ')], ['Branch', roster.branch],
-        ['Wipeboard', roster.wipeboard || team], ['State', roster.state]]
-      : [['Record', 'tag-only — no durable roster; the team is its sessions’ tags'], ['Wipeboard', team]];
+      ? [[t('team.team_role', 'Team role'), roster.team_role], [t('team.objective', 'Objective'), roster.objective], [t('team.project_root', 'Project root'), roster.project_root],
+        [t('team.repos', 'Repositories'), (roster.repos || []).join(', ')], [t('team.branch', 'Branch'), roster.branch],
+        [t('team.wipeboard', 'Wipeboard'), roster.wipeboard || team], [t('team.state', 'State'), roster.state]]
+      : [[t('team.record', 'Record'), t('team.record_tag_only', 'tag-only — no durable roster; the team is its sessions’ tags')], [t('team.wipeboard', 'Wipeboard'), team]];
     config.append(createMetadata({ className: 'tw-config-metadata', rows: record }).el);
-    config.append(el('p', 'tw-config-head', live.length ? `Live roster · ${live.length}` : 'Live roster · none'));
+    config.append(el('p', 'tw-config-head', live.length ? t('team.live_roster_n', 'Live roster · {n}', { n: live.length }) : t('team.live_roster_none', 'Live roster · none')));
     if (!live.length) return;
     const lead = live.filter((m) => m.team_lead).map((m) => m.name);
     const table = el('div', 'tw-config-roster');
     const line = (name, reading) => table.append(el('span', 'tw-config-name', name), el('span', 'tw-config-reading', reading));
-    line('人', lead.length ? lead.join(', ') : 'not designated');
+    line('人', lead.length ? lead.join(', ') : t('team.lead_none', 'not designated'));
     for (const m of live) line(m.team_lead ? `人 ${m.name}` : m.name, readingsOf(m).join(' · ') || '—');
     config.append(table);
   }
@@ -463,24 +464,24 @@ export function createTeamView() {
   async function load(name) {
     if (!name) {
       syncPools([]);
-      setSurfaceState(kanban.el, 'empty', 'No Team selected.');
+      setSurfaceState(kanban.el, 'empty', t('team.none_selected_dot', 'No Team selected.'));
       renderCards([]);
       renderConfig(null, []);
       loaded = '';
       return;
     }
-    setSurfaceState(kanban.el, 'loading', 'Reading the Team…');
+    setSurfaceState(kanban.el, 'loading', t('team.reading', 'Reading the Team…'));
     const result = await refreshTeams();
     if (!entered || team !== name) return; // the destination moved while this was in flight
     loaded = name;
     if (!result.live.ok) {
-      setSurfaceState(kanban.el, 'failed', `Could not read this Team — ${result.live.message}`);
+      setSurfaceState(kanban.el, 'failed', t('team.read_failed', 'Could not read this Team — {message}', { message: result.live.message }));
       renderCards([]);
       renderConfig(null, []);
       return;
     }
     const members = membersOfTeam(name);
-    setSurfaceState(kanban.el, members.length ? null : 'empty', members.length ? '' : 'No live sessions on this Team.');
+    setSurfaceState(kanban.el, members.length ? null : 'empty', members.length ? '' : t('team.no_live', 'No live sessions on this Team.'));
     paint();
   }
 
@@ -495,11 +496,11 @@ export function createTeamView() {
     // like everything else here — one tab is one team.
     title: ({ param, viewState }) => {
       const name = viewState?.('team')?.tabName;
-      return name ? { bare: `${name} · ${param || 'Team'}` } : (param || 'Team');
+      return name ? { bare: `${name} · ${param || t('team.team', 'Team')}` } : (param || t('team.team', 'Team'));
     },
     tabName: {
       get: () => ctx?.viewState('team')?.tabName || '',
-      placeholder: () => team || 'Team',
+      placeholder: () => team || t('team.team', 'Team'),
       set: (value) => ctx?.patchViewState('team', { tabName: String(value || '').trim() }),
     },
     mount: (_host, context) => {

@@ -369,3 +369,26 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team_wipeboard.read_failed:** Could not read the board — {message}
 - **team_wipeboard.post_failed:** Could not post — {message} (your text is still in the box)
 - **team_wipeboard.no_team:** No Team resolved — nothing to read.
+
+## team — team-view.js (the Team page)
+- **team.flip_commons:** Show the Team commons in this workspace
+- **team.flip_terminal:** Show the terminal in this workspace
+- **team.workspace_1:** Workspace 1
+- **team.workspace_2:** Workspace 2
+- **team.roster_title:** Team Roster
+- **team.commons:** Team commons
+- **team.arranged_by:** arranged by {from}
+- **team.attached:** attached
+- **team.add_member:** ＋ Add team member
+- **team.add_member_summary:** Existing session or a new one — arrives with its own slice.
+- **team.none_selected:** No Team selected
+- **team.state:** State
+- **team.record:** Record
+- **team.record_tag_only:** tag-only — no durable roster; the team is its sessions’ tags
+- **team.live_roster_n:** Live roster · {n}
+- **team.live_roster_none:** Live roster · none
+- **team.lead_none:** not designated
+- **team.none_selected_dot:** No Team selected.
+- **team.reading:** Reading the Team…
+- **team.read_failed:** Could not read this Team — {message}
+- **team.no_live:** No live sessions on this Team.
