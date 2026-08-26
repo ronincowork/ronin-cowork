@@ -178,3 +178,13 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **commons.tab_off:** {tab} — off, this service is not installed.
 - **commons.close_title:** Back to the terminal
 - **commons.sessions:** sessions
+
+## home — home.js (the status words and the launch receipt)
+- **home.status_ready:** ready
+- **home.status_thinking:** thinking…
+- **home.status_awaiting_input:** awaiting input
+- **home.receipt_manual:** manual
+- **home.receipt_assisted:** assisted
+- **home.receipt_no_agent:** no agent
+- **home.receipt_kill:** kill
+- **home.receipt_kill_title:** Wrong? Remove the session now.

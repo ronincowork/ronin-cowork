@@ -30,7 +30,7 @@ import { activeProfile } from './desk-profile.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { createTeamWipeboard } from './team-wipeboard.js';
 import { buildDocs } from './docs.js';
-import { STATUS_LABEL, refreshHome } from './home.js';
+import { refreshHome, statusLabel } from './home.js';
 import { request } from './request.js';
 import { humanAge } from './shingo.js';
 import { sessionsHandlers, teamPageHandlers } from './events.js';
@@ -379,7 +379,7 @@ export function createTeamView() {
     return [
       m.session_role || null,
       chip,
-      STATUS_LABEL[row.status] || null,
+      statusLabel(row.status) || null,
       (row.model || '').toLowerCase() || null,
       row.ctx != null ? `⛽ ${row.ctx}%` : null,
       row.attached ? 'attached' : null,
