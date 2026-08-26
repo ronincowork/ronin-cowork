@@ -1120,3 +1120,16 @@ The catalog entry goes. {dir} is not touched.
 - **bar.commons:** Commons
 - **bar.keypad:** Keypad
 - **bar.desk:** Admin Desk
+
+## me — tiledrop.js (the メ sheet)
+- **me.status:** Status
+- **me.ladder:** Ladder
+- **me.branches:** Branches
+- **me.macros:** Macros
+- **me.mention:** Mention session
+- **me.groups:** Groups
+- **me.docs:** Docs
+- **me.note:** Note
+- **me.control:** Control
+- **me.kill:** Kill session
+- **me.title:** This session — status, ladder, TEGAMI, macros, groups, docs, note, control
