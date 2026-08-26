@@ -57,6 +57,7 @@ import {
   readSection,
   readSetupSection,
   liveCount,
+  readDeskSection,
 } from './user-config.js';
 
 const pexec = promisify(execFile);
@@ -297,6 +298,7 @@ async function readSet(): Promise<Record<string, unknown>> {
   const machine = await readMachineSection();
   const agents = await readAgentsSection();
   const gbrain = await readSection<Record<string, unknown>>('gbrain', {});
+  const desk = await readDeskSection();
   const setup = await readSetupSection();
   const roots = await listProjectRoots();
 
@@ -320,6 +322,9 @@ async function readSet(): Promise<Record<string, unknown>> {
       jobs: (agents.jobs as unknown) ?? {},
     },
     gbrain: { enabled: gbrain.enabled === true },
+    // THE DESK (R38) — which desk_profile the surfaces read their defaults from; '' is
+    // "as stock", the ordinary state of every install older than the catalog.
+    desk: { profile: typedStr(desk.profile) },
     // THE WANT LIST — typed intents, each judged against found per read (computeNeeded).
     // The want persists; the needed entry it produces never does.
     wanted: (await readSection<Array<{ kind?: unknown; name?: unknown }>>('wanted', []))

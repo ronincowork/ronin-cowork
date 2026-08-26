@@ -54,6 +54,7 @@ export function initialOf(f, ctx) {
 /** The options a select offers — resolved from the surface's own ctx. */
 export function optionsOf(f, ctx) {
   if (f.options === 'models') return ctx.modelOpts ?? [];
+  if (f.options === 'desk_profiles') return (ctx.deskProfiles ?? []).map((p) => ({ label: p.label, value: p.name }));
   return [];
 }
 
