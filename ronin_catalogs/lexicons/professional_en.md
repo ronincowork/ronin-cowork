@@ -912,3 +912,16 @@ The catalog entry goes. {dir} is not touched.
 - **customize.handoff_read_only:** One file per {thing}, named by its token, in your catalogs store under {dir}. Ronin cannot create that file for you yet — ask your agent to add one, and point it at the directory’s own README, which states the format and every field.
 - **customize.handoff_store_hint:** Ask for the store path with: bin/ronin-store catalogs — never spell it by hand.
 - **customize.handoff_ask_agent:** Ask your agent to add one.
+
+## pane — panes.js (the pane registry's tab labels)
+- **pane.sessions:** ⌂ Roster
+- **pane.archives:** Archived
+- **pane.new:** ＋ New session
+- **pane.wipe:** ▤ Wipeboard
+- **pane.docs:** ▧ Docs
+- **pane.settei:** Configuration
+- **pane.proj:** Project roots
+- **pane.hotwords:** Hotwords
+- **pane.koshi:** Koshi
+- **pane.gbrain:** gbrain
+- **pane.stats:** Stats

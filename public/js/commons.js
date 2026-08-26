@@ -61,7 +61,7 @@ export function buildHome(tile) {
   // was landing over the strip it described. `title` is the thing tips.js takes over,
   // so the way to have no box is to set none — and the registry's `hint` column went
   // with this line, which was its only reader (js/panes.js).
-  for (const p of PANES.filter((p) => p.surface === 'commons')) {
+  for (const p of PANES().filter((p) => p.surface === 'commons')) {
     const b = document.createElement('button');
     b.type = 'button';
     b.dataset.pane = p.id;
