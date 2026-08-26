@@ -1028,3 +1028,6 @@ The catalog entry goes. {dir} is not touched.
 ## errors — errors.js (the fail bar)
 - **errors.title:** ⚠ Ronin hit an error. The top bar still works — a pane may not. Reload; if it persists the cause is below.
 - **errors.dismiss:** Dismiss
+
+## events — events.js (the birth chip)
+- **events.open:** Open
