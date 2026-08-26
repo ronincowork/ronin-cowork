@@ -1024,3 +1024,7 @@ The catalog entry goes. {dir} is not touched.
 - **switcher.hint:** ↑↓ move · same key (or ↵) opens it · Esc cancels
 - **switcher.title:** Switch tile {n}
 - **switcher.now:** — now: {session}
+
+## errors — errors.js (the fail bar)
+- **errors.title:** ⚠ Ronin hit an error. The top bar still works — a pane may not. Reload; if it persists the cause is below.
+- **errors.dismiss:** Dismiss
