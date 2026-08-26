@@ -19,6 +19,7 @@
  */
 import { addYourOwn } from './provenance.js';
 import { WorkspaceKit } from './workspace-kit.js';
+import { t } from './lexicon.js';
 
 
 const el = (tag, cls, text) => {
@@ -36,7 +37,7 @@ const SHADOW_TRADE =
 export function buildHandoff(resource, list = []) {
   const { createNotice } = WorkspaceKit.primitives;
   const box = el('section', 'cz-write');
-  box.append(el('h3', null, 'Making it yours'));
+  box.append(el('h3', null, t('customize.handoff_head', 'Making it yours')));
 
   if (resource.capability === 'read-only') {
     // Read-only is a decision about this release, not a claim the resource is immutable.
@@ -66,16 +67,13 @@ export function buildHandoff(resource, list = []) {
   if (resource.dir) {
     // A definition directory: no seed path exists, so the README is the worked example.
     box.append(el('p', null,
-      `One file per ${resource.label.toLowerCase().replace(/s$/, '')}, named by its token, in your ` +
-      `catalogs store under ${resource.dir}. Ronin cannot create that file for you yet — ask ` +
-      'your agent to add one, and point it at the directory’s own README, which states the format ' +
-      'and every field.'));
+      t('customize.handoff_read_only', 'One file per {thing}, named by its token, in your catalogs store under {dir}. Ronin cannot create that file for you yet — ask your agent to add one, and point it at the directory’s own README, which states the format and every field.', { thing: resource.label.toLowerCase().replace(/s$/, ''), dir: resource.dir })));
     const hint = el('p', 'cz-hint',
-      'Ask for the store path with: bin/ronin-store catalogs — never spell it by hand.');
+      t('customize.handoff_store_hint', 'Ask for the store path with: bin/ronin-store catalogs — never spell it by hand.'));
     box.append(hint);
     return box;
   }
 
-  box.append(el('p', null, 'Ask your agent to add one.'));
+  box.append(el('p', null, t('customize.handoff_ask_agent', 'Ask your agent to add one.')));
   return box;
 }
