@@ -448,3 +448,29 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **services.cancelling:** Cancelling…
 - **services.new_confirmation_prompt:** Send the new confirmation to:
 - **services.changing:** Changing…
+
+## machine — machine-panel.js (the desk's machine block)
+- **machine.head:** this machine
+- **machine.off:** Watching is off. Nothing is gathered, and nothing was ever installed on the box.
+- **machine.memory_free:** memory free
+- **machine.of:** {free} of {total}
+- **machine.memory_note:** MemAvailable: what a new allocation could get. A healthy box shows little free memory — the kernel spends it on cache, and hands it back on demand.
+- **machine.headroom:** headroom
+- **machine.swap:** swap
+- **machine.swap_none:** none — a memory spike is a kill, not slowness
+- **machine.used_of:** {used} used of {total}
+- **machine.load:** load
+- **machine.load_value:** {one} · {five} · {fifteen}  on {cpus} cores
+- **machine.load_note:** 1, 5 and 15 minute averages. Compare against the core count, not against zero.
+- **machine.scope:** scope
+- **machine.scope_container:** container limit
+- **machine.scope_note:** These are this container’s numbers, not the host’s.
+- **machine.unavailable:** not readable here
+- **machine.unavailable_note:** This system does not expose these, so they are left unanswered rather than reported as zero.
+- **machine.read_failed:** Could not read the machine just now.
+- **machine.refresh:** Refresh
+- **machine.refresh_title:** Read the machine again now
+- **machine.stop:** Stop watching
+- **machine.stop_title:** Stop gathering machine readings and hide the gauge. Nothing was installed on the box, so there is nothing to undo — turn it back on whenever you like.
+- **machine.stopped:** Off. Reload to clear the gauge.
+- **machine.save_failed:** Could not save that.
