@@ -29,8 +29,8 @@ export function provMark(entry) {
   el.className = 'prov' + (entry.shadowed ? ' prov-shad' : '');
   el.textContent = entry.shadowed ? '◈' : '◆';
   el.title = entry.shadowed
-    ? 'Yours — this replaces Ronin\'s shipped entry of the same name. Upgrades to that entry will not reach you.'
-    : 'Yours — added by you, in your catalogs store. An upgrade cannot touch it.';
+    ? t('provenance.shadowed', 'Yours — this replaces Ronin\'s shipped entry of the same name. Upgrades to that entry will not reach you.')
+    : t('provenance.own', 'Yours — added by you, in your catalogs store. An upgrade cannot touch it.');
   return el;
 }
 
