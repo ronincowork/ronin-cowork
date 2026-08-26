@@ -946,3 +946,12 @@ The catalog entry goes. {dir} is not touched.
 - **dial.read_help:** Outside agents may watch this session, not type into it
 - **dial.write:** Outside agents: type
 - **dial.write_help:** Outside agents may type into this session
+
+## tape — tapeview.js (the RIREKI tape view)
+- **tape.summarize_now:** Summarize now
+- **tape.summary_policy:** Summary production
+- **tape.policy_on_demand:** On demand
+- **tape.policy_keep_current:** Keep current
+- **tape.jump_title:** Jump to the latest output — the deterministic way back to the bottom, whatever the scroll is doing.
+- **tape.jump:** ↓ latest
+- **tape.fold_code:** ⌨ code
