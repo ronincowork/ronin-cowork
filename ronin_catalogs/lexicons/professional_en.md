@@ -1239,3 +1239,10 @@ The catalog entry goes. {dir} is not touched.
 - **customize.handoff_deferred:** Deferred in this preview.
 - **customize.handoff_seed:** Ronin can create your own {file} in your catalogs store — outside every repo, untouched by upgrades. The path is the answer: hand it to your agent, or open it yourself.
 - **customize.entry:** entry
+
+## hotwords — the count and ownership lines
+- **hotwords.count_one:** {n} word sent with your voice
+- **hotwords.count_many:** {n} words sent with your voice
+- **hotwords.none:** no words yet — dictation runs unbiased
+- **hotwords.own_list:** ◆ your list — an upgrade cannot touch it, and will not add to it either
+- **hotwords.stock_list:** Ronin's stock list — your first edit makes a copy that is yours
