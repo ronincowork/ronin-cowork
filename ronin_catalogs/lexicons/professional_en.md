@@ -1208,3 +1208,13 @@ The catalog entry goes. {dir} is not touched.
 - **stats.tab_stats:** ▦ Stats
 - **stats.dials_changed:** dials changed
 - **stats.desktop_touch:** desktop : touch
+
+## wipeboard — the status lines
+- **wipeboard.brief_not_saved:** brief not saved — {message} (your text is still in the box)
+- **wipeboard.no_teams:** no teams yet — tag sessions in the ⌂ Roster and each team gets its own wipeboard
+- **wipeboard.start_failed:** could not start a wipeboard — {message}
+- **wipeboard.remove_failed:** could not remove {name} — {message}
+- **wipeboard.add_failed:** could not add — {message}
+- **wipeboard.nothing_posted:** nothing posted yet
+- **wipeboard.read_failed:** could not read this wipeboard
+- **wipeboard.post_failed:** could not post — {message} (your text is still in the box)
