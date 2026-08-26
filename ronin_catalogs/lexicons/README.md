@@ -5,7 +5,7 @@
 > wording (*Home* says *occasion* for a campaign) and a translation (*Français*) are
 > the same kind of file, and that is deliberate (KOTOBA `lexicon`, 2026-08-27).
 >
-> A **desk_profile** names one (`- **lexicon:** home`) the way it names a skin. A
+> A **desk_profile** names one (`- **lexicon:** home_en`) the way it names a skin. A
 > lexicon never rides a launch, a letter or a brief: **anything an agent reads stays in
 > stock tokens**, and the house's internal names are not keys.
 
@@ -25,13 +25,14 @@ or the stock literal in the view. A missing key can never blank a surface; a mis
 lexicon paints exactly as stock. So a lexicon says **only what it changes** — Home is a
 dozen lines, not six hundred.
 
-**`professional` is the floor**, and it is complete by definition: every key a view reads
+**`professional_en` is the floor**, and it is complete by definition: every key a view reads
 through `t()` is in it, and `scripts/check-lexicon.mjs` fails the build when one is not.
-The other shipped lexicons (`vibe_code`, `home`, `terminal`) may be short or empty.
+The other shipped lexicons (`vibe_code_en`, `home_en`, `terminal_en`) may be short or empty.
 
-**A language is one file.** French is a lexicon named `fr`; a French Home is one named
-`home_fr` with `- **base:** fr`. Wording and translation are one axis — there is no
-second setting.
+**The language is in the name.** Every lexicon ends in its language — `home_en`,
+`professional_en` — so a French Home is `home_fr` with `- **base:** professional_fr`, and
+`professional_fr` carries `- **base:** professional_en` so anything untranslated still
+reads in English. Wording and translation are one axis — there is no second setting.
 
 **Yours and ours.** A file of the same name in your catalogs store replaces ours **whole**;
 a new name adds a lexicon; `- **hidden:** yes` withdraws one of ours (`docs/shadowing.md`).

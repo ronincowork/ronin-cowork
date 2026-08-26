@@ -48,5 +48,5 @@ extending the two catalogs that live here.
 `rireki_view`, `team_arrangement`. `lexicons/<name>.md` is the words a surface uses —
 keys to strings with a `base:` to fall through to. Both shadow whole-file by name
 (`docs/shadowing.md`); each directory's README carries the format. The rule for words:
-`professional` is the floor and complete, a lexicon says only what it changes, and
+`professional_en` is the floor and complete, a lexicon says only what it changes, and
 `scripts/check-lexicon.mjs` keeps the floor honest. `docs/desk-profiles.md`, `docs/lexicons.md`.

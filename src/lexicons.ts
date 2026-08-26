@@ -8,11 +8,11 @@
  * flat: the file's own words over its base's, the base's over its base's, to the floor.
  *
  * WHY RESOLVE ON THE SERVER. The client reads one flat object per pick and never learns
- * the chain, so a French Home (`home_fr`, base `fr`) costs it nothing; and the
+ * the chain, so a French Home (`home_fr`, base `professional_fr`) costs it nothing; and the
  * cycle guard lives in one place. `label`, `blurb`, `base`, `order`, `hidden` are fields,
  * not words, and never reach the flat map.
  *
- * THE FLOOR IS NOT SPECIAL HERE. `professional` is a file like any other; what makes it
+ * THE FLOOR IS NOT SPECIAL HERE. `professional_en` is a file like any other; what makes it
  * the floor is `scripts/check-lexicon.mjs`, which holds it complete against every `t()`
  * the client reads. A key no lexicon carries falls through to the VIEW's own literal —
  * that is the client's half (`public/js/lexicon.js`), and it is why a missing lexicon
