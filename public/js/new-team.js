@@ -199,7 +199,7 @@ export function createNewTeamView(kit) {
       const card = createCard({
         heading: seat.name || seat.session_role || t('new_team.proposed_session', 'Proposed session'),
         summary: seat.prompt || t('new_team.no_brief', 'No brief yet.'),
-        metadata: [seat.mode, verdict ? t('new_team.preflight', 'preflight {verdict}').replace('{verdict}', verdict.verdict) : null, outcome?.status].filter(Boolean),
+        metadata: [seat.mode, verdict ? t('new_team.preflight', 'preflight {verdict}', { verdict: verdict.verdict }) : null, outcome?.status].filter(Boolean),
         warning: verdict?.verdict === 'refuse' || outcome?.status === 'refused' || outcome?.status === 'skipped',
       });
       if (verdict?.reasons?.length) {
@@ -292,7 +292,7 @@ export function createNewTeamView(kit) {
     }
     const lead = tx?.lead;
     if (lead) receipt.append(node('p', 'nt-lead-receipt',
-      t('new_team.lead_line', 'Lead: {status}').replace('{status}', lead.status) + `${lead.session_name ? ` · ${lead.session_name}` : ''}${lead.delivery ? ` · ${lead.delivery}` : ''}${lead.error ? ` · ${lead.error}` : ''}`));
+      t('new_team.lead_line', 'Lead: {status}', { status: lead.status }) + `${lead.session_name ? ` · ${lead.session_name}` : ''}${lead.delivery ? ` · ${lead.delivery}` : ''}${lead.error ? ` · ${lead.error}` : ''}`));
     openTeam.el.hidden = !committedTeam(draft);
   };
 
@@ -301,7 +301,7 @@ export function createNewTeamView(kit) {
     if (!name) return nameField.setValidation('', '');
     if (!isValidTeamName(name)) return nameField.setValidation('invalid', t('new_team.name_invalid', 'Lowercase letters, digits, _ and - only.'));
     if (!committedTeam(draft) && lastPreflight?.team && !lastPreflight.team.name_available) {
-      return nameField.setValidation('invalid', t('new_team.name_taken', '"{name}" already has a roster.').replace('{name}', name));
+      return nameField.setValidation('invalid', t('new_team.name_taken', '"{name}" already has a roster.', { name }));
     }
     nameField.setValidation('valid', '');
   };
@@ -319,7 +319,7 @@ export function createNewTeamView(kit) {
     const result = await preflight(draft);
     if (result.broken) {
       // The tool failed, not the draft. Say which — and do not disable anything over it.
-      txNotice.set('failed', t('new_team.preflight_unreachable', 'The dry run could not be reached — {message}').replace('{message}', result.message));
+      txNotice.set('failed', t('new_team.preflight_unreachable', 'The dry run could not be reached — {message}', { message: result.message }));
       transaction.el.hidden = false;
       return;
     }

@@ -76,7 +76,7 @@ export function buildHome(tile) {
       // opened a box — it was a label only a screen reader could ever reach, and that
       // is what it now is. The visible text leads the name so the name still contains
       // it (WCAG 2.5.3, label in name).
-      b.setAttribute('aria-label', t('commons.tab_off', '{tab} — off, this service is not installed.').replace('{tab}', b.textContent));
+      b.setAttribute('aria-label', t('commons.tab_off', '{tab} — off, this service is not installed.', { tab: b.textContent }));
     } else b.addEventListener('click', () => showPane(p.id));
     tabRow.appendChild(b);
   }

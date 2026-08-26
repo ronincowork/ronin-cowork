@@ -98,8 +98,8 @@ function buildPasskeyBlock() {
       const line = document.createElement('div');
       line.className = 'sys-theme';
       const lab = document.createElement('small');
-      lab.textContent = c.label + (c.usable ? '' : ' ' + t('desk.passkey_elsewhere', '(registered on {rp} — not usable from this address)').replace('{rp}', c.rpId));
-      const rm = button(t('desk.remove', 'Remove'), { title: t('desk.remove_named', 'Remove {name}').replace('{name}', c.label) });
+      lab.textContent = c.label + (c.usable ? '' : ' ' + t('desk.passkey_elsewhere', '(registered on {rp} — not usable from this address)', { rp: c.rpId }));
+      const rm = button(t('desk.remove', 'Remove'), { title: t('desk.remove_named', 'Remove {name}', { name: c.label }) });
       rm.addEventListener('click', async () => {
         // No confirm(): removing one of several passkeys is reversible by re-adding,
         // and the destructive-confirm primitive is reserved for work that is not.
@@ -113,7 +113,7 @@ function buildPasskeyBlock() {
     }
     if (d && d.recovery) {
       const rec = document.createElement('small');
-      rec.textContent = t('desk.recovery_outstanding', 'a recovery code is outstanding until {time}').replace('{time}', new Date(d.recovery.expiresAt).toLocaleTimeString());
+      rec.textContent = t('desk.recovery_outstanding', 'a recovery code is outstanding until {time}', { time: new Date(d.recovery.expiresAt).toLocaleTimeString() });
       list.append(rec);
     }
   };
@@ -133,7 +133,7 @@ function buildPasskeyBlock() {
     if (!secure) {
       msg.say(t('desk.passkey_needs_https', 'Adding a passkey needs the HTTPS address — this one is not a secure context.'), 'bad');
     } else if (!r.data.rpId) {
-      msg.say(t('desk.passkeys_unavailable', 'Passkeys unavailable: {why}').replace('{why}', r.data.why || t('desk.no_rp_name', 'no relying-party name')), 'bad');
+      msg.say(t('desk.passkeys_unavailable', 'Passkeys unavailable: {why}', { why: r.data.why || t('desk.no_rp_name', 'no relying-party name') }), 'bad');
     }
   };
 
@@ -319,7 +319,7 @@ export function buildSystemPanel() {
       row.append(nm, why);
       row.addEventListener('click', async () => {
         const r = await setDeskProfile(p.name);
-        if (!r.ok) { say(t('desk.profile_not_saved', 'desk profile not saved — {message}').replace('{message}', r.message)); return; }
+        if (!r.ok) { say(t('desk.profile_not_saved', 'desk profile not saved — {message}', { message: r.message })); return; }
         await followProfileSkin(activeProfile()?.skin || '');
         paintProfiles();
         void listSkins().then(paintSkins);
@@ -397,10 +397,10 @@ export function buildSystemPanel() {
       detail.textContent = t('desk.no_version_answer', 'the operator did not answer /api/version');
     } else if (version.release) {
       name.textContent = version.release;
-      detail.textContent = t('desk.release_detail', 'release · built from {commit} · contract {contract} · started {started}').replace('{commit}', version.commit).replace('{contract}', version.contract).replace('{started}', version.startedAt);
+      detail.textContent = t('desk.release_detail', 'release · built from {commit} · contract {contract} · started {started}', { commit: version.commit, contract: version.contract, started: version.startedAt });
     } else {
       name.textContent = version.commit + (version.dirty ? ' ' + t('desk.dirty', '(dirty)') : '');
-      detail.textContent = t('desk.checkout_detail', 'a dev checkout, not a release — updated by git, not by the button · started {started}').replace('{started}', version.startedAt);
+      detail.textContent = t('desk.checkout_detail', 'a dev checkout, not a release — updated by git, not by the button · started {started}', { started: version.startedAt });
     }
     idBlock.append(name, detail);
     // The roster line: which services this operator discovered at start. The honest
@@ -408,7 +408,7 @@ export function buildSystemPanel() {
     const svc = document.createElement('small');
     svc.className = 'sys-services';
     const roster = Array.isArray(version?.services) ? version.services : [];
-    svc.textContent = roster.length ? t('desk.services_list', 'services: {list}').replace('{list}', roster.join(' · ')) : t('desk.services_none', 'services: none — the free build');
+    svc.textContent = roster.length ? t('desk.services_list', 'services: {list}', { list: roster.join(' · ') }) : t('desk.services_none', 'services: none — the free build');
     idBlock.append(svc);
   };
 
@@ -428,14 +428,14 @@ export function buildSystemPanel() {
       if (!d.latest) {
         bits.push(t('desk.feed_no_release', 'the feed named no cowork release yet (a private repo needs gh auth on the host)'));
       } else if (d.upToDate) {
-        bits.push(t('desk.cowork_up_to_date', '✓ cowork up to date — {installed}').replace('{installed}', d.installed));
+        bits.push(t('desk.cowork_up_to_date', '✓ cowork up to date — {installed}', { installed: d.installed }));
       } else if (version && !version.release) {
-        bits.push(t('desk.cowork_checkout_latest', 'latest cowork release is {latest} — this box runs a checkout, so the button stays off').replace('{latest}', d.latest));
+        bits.push(t('desk.cowork_checkout_latest', 'latest cowork release is {latest} — this box runs a checkout, so the button stays off', { latest: d.latest }));
       } else {
-        runBtn.textContent = t('desk.update_to', 'Update to {latest}').replace('{latest}', d.latest);
+        runBtn.textContent = t('desk.update_to', 'Update to {latest}', { latest: d.latest });
         runBtn.hidden = false;
         runBtn.disabled = false;
-        bits.push(t('desk.cowork_available', 'cowork {latest} available (installed: {installed})').replace('{latest}', d.latest).replace('{installed}', d.installed || t('desk.none', 'none')));
+        bits.push(t('desk.cowork_available', 'cowork {latest} available (installed: {installed})', { latest: d.latest, installed: d.installed || t('desk.none', 'none') }));
       }
       // The services half of the same answer. The button is off on a checkout for
       // the same reason the cowork one is: the updater manages installs, git
@@ -443,12 +443,12 @@ export function buildSystemPanel() {
       const s = d.services || {};
       if (s.latest && !s.upToDate && version && version.release) {
         svcLatest = s.latest;
-        svcBtn.textContent = s.installed ? t('desk.update_services_to', 'Update services to {latest}').replace('{latest}', s.latest) : t('desk.install_services_v', 'Install services {latest}').replace('{latest}', s.latest);
+        svcBtn.textContent = s.installed ? t('desk.update_services_to', 'Update services to {latest}', { latest: s.latest }) : t('desk.install_services_v', 'Install services {latest}', { latest: s.latest });
         svcBtn.hidden = false;
         svcBtn.disabled = false;
-        bits.push(s.installed ? t('desk.services_available_installed', 'services {latest} available (installed: {installed})').replace('{latest}', s.latest).replace('{installed}', s.installed) : t('desk.services_available', 'services {latest} available').replace('{latest}', s.latest));
+        bits.push(s.installed ? t('desk.services_available_installed', 'services {latest} available (installed: {installed})', { latest: s.latest, installed: s.installed }) : t('desk.services_available', 'services {latest} available', { latest: s.latest }));
       } else if (s.latest && s.upToDate) {
-        bits.push(t('desk.services_up_to_date', '✓ services up to date — {installed}').replace('{installed}', s.installed));
+        bits.push(t('desk.services_up_to_date', '✓ services up to date — {installed}', { installed: s.installed }));
       }
       say(bits.join(' · '));
     }
@@ -463,7 +463,7 @@ export function buildSystemPanel() {
       const rv = await request('/api/version', { cache: 'no-store' });
       // A failed read is the restart itself — keep polling.
       if (rv.ok && rv.data.release && rv.data.release !== was) {
-        say(t('desk.updated_reloading', '✓ updated to {release} — reloading').replace('{release}', rv.data.release));
+        say(t('desk.updated_reloading', '✓ updated to {release} — reloading', { release: rv.data.release }));
         setTimeout(() => location.reload(), 1200);
         return;
       }
@@ -475,7 +475,7 @@ export function buildSystemPanel() {
   const run = async () => {
     runBtn.disabled = true;
     checkBtn.disabled = true;
-    say(t('desk.updating', 'updating to {latest} — fetch, verify, gate the candidate, swap. The page blinks at the swap; sessions are untouched…').replace('{latest}', latest));
+    say(t('desk.updating', 'updating to {latest} — fetch, verify, gate the candidate, swap. The page blinks at the swap; sessions are untouched…', { latest }));
     const r = await request('/api/update/run', { method: 'POST' });
     if (!r.ok) {
       say(r.message, true);
@@ -493,7 +493,7 @@ export function buildSystemPanel() {
       const rv = await request('/api/version', { cache: 'no-store' });
       // A failed read is the restart itself — keep polling.
       if (rv.ok && rv.data.startedAt !== was && (rv.data.services || []).length) {
-        say(t('desk.services_live_reloading', '✓ services live: {list} — reloading').replace('{list}', rv.data.services.join(' · ')));
+        say(t('desk.services_live_reloading', '✓ services live: {list} — reloading', { list: rv.data.services.join(' · ') }));
         setTimeout(() => location.reload(), 1200);
         return;
       }
@@ -505,7 +505,7 @@ export function buildSystemPanel() {
   const runSvc = async () => {
     svcBtn.disabled = true;
     checkBtn.disabled = true;
-    say(t('desk.installing_services', 'installing services {latest} — fetch, verify, contract check, restart. The page blinks at the restart; sessions are untouched…').replace('{latest}', svcLatest));
+    say(t('desk.installing_services', 'installing services {latest} — fetch, verify, contract check, restart. The page blinks at the restart; sessions are untouched…', { latest: svcLatest }));
     const r = await request('/api/update/run', { method: 'POST', json: { package: 'services' } });
     if (!r.ok) {
       say(r.message, true);

@@ -135,7 +135,7 @@ export function buildSettei(root, isShowing) {
     const notes = [];
     if (f.note) notes.push(String(getPath(rec, f.note) ?? ''));
     // A fallback in force is visible — a default is never passed off as an answer.
-    if (cur === '' && f.fallback) notes.push(t('settei.unset_using', 'unset — using {value}').replace('{value}', getPath(rec, f.fallback) ?? ''));
+    if (cur === '' && f.fallback) notes.push(t('settei.unset_using', 'unset — using {value}', { value: getPath(rec, f.fallback) ?? '' }));
     if (f.aside) notes.push(f.aside);
     return setRow(f.short ?? f.label, control, notes.filter(Boolean).join(' · '), (v) => {
       const req = toRequest(rec.schema, f, v);
@@ -152,7 +152,7 @@ export function buildSettei(root, isShowing) {
     specs.map((sp) => {
       const have = rec.observed.agents[sp.cmd.split(' ')[0]]?.installed;
       const spec = `${sp.provider} · ${sp.model}`;
-      return { label: have ? spec : t('settei.spec_not_installed', '{spec} — not installed').replace('{spec}', spec), value: pm(sp) };
+      return { label: have ? spec : t('settei.spec_not_installed', '{spec} — not installed', { spec }), value: pm(sp) };
     });
 
   const render = () => {
@@ -162,7 +162,7 @@ export function buildSettei(root, isShowing) {
     const fieldsIn = (test) => schema.fields.filter(test).map(schemaRow);
 
     blurb.textContent = t('settei.blurb', 'What this install is set to — and what it is running on.');
-    stamp.textContent = t('settei.measured', 'measured {time}').replace('{time}', new Date(observed.observed_at).toLocaleString());
+    stamp.textContent = t('settei.measured', 'measured {time}', { time: new Date(observed.observed_at).toLocaleString() });
 
     /* you and this machine — the typed rows are the registry's, in its order */
     group(t('settei.group_you', 'you and this machine'));
@@ -170,10 +170,10 @@ export function buildSettei(root, isShowing) {
     // The box's own name leads the row — it must be readable here even when the owner
     // has typed nothing (the setup page's THIS BOX fact, kept visible for good).
     body.appendChild(obsRow(t('settei.hardware', 'hardware'),
-      `${m.host} · ${m.kind === 'virtual' ? `${m.provider ?? t('settei.virtual', 'virtual')} ${m.product ?? ''}`.trim() : t('settei.physical', 'physical')} · ${t('settei.cores_ram', '{cores} cores · {ram} GB').replace('{cores}', m.cores).replace('{ram}', m.ram_gb)}`,
+      `${m.host} · ${m.kind === 'virtual' ? `${m.provider ?? t('settei.virtual', 'virtual')} ${m.product ?? ''}`.trim() : t('settei.physical', 'physical')} · ${t('settei.cores_ram', '{cores} cores · {ram} GB', { cores: m.cores, ram: m.ram_gb })}`,
       m.hypervisor ? ` ${m.hypervisor}` : ''));
-    body.appendChild(obsRow(t('settei.running', 'running'), t('settei.os_node', '{os} · node {node}').replace('{os}', observed.os.name).replace('{node}', observed.runtime.node),
-      ' ' + t('settei.release_contract', '{release} · contract {contract}').replace('{release}', `${observed.ronin.release ?? observed.ronin.commit}${observed.ronin.dirty ? ' ' + t('desk.dirty', '(dirty)') : ''}`).replace('{contract}', observed.ronin.contract)));
+    body.appendChild(obsRow(t('settei.running', 'running'), t('settei.os_node', '{os} · node {node}', { os: observed.os.name, node: observed.runtime.node }),
+      ' ' + t('settei.release_contract', '{release} · contract {contract}', { release: `${observed.ronin.release ?? observed.ronin.commit}${observed.ronin.dirty ? ' ' + t('desk.dirty', '(dirty)') : ''}`, contract: observed.ronin.contract })));
     // THE ADDRESS A PERSON SHOULD TYPE. When `tailscale serve` is in front, its HTTPS
     // name leads — it is the same MagicDNS name carrying a real certificate, and it is
     // the only one of these a passkey can exist on. The plain address stays visible as
@@ -182,8 +182,8 @@ export function buildSettei(root, isShowing) {
     const rt = st.routes[0];
     body.appendChild(obsRow(t('settei.reachable_at', 'Ronin reachable at'), rt?.secure ?? rt?.at,
       rt?.secure
-        ? ' ' + t('settei.reach_secure', '{exposure} · HTTPS by tailscale serve · plain {at}').replace('{exposure}', rt.exposure).replace('{at}', rt.at)
-        : ` ${rt?.exposure}${rt?.alias ? ' ' + t('settei.reach_alias', '· or {alias} (MagicDNS)').replace('{alias}', rt.alias) : ''}`));
+        ? ' ' + t('settei.reach_secure', '{exposure} · HTTPS by tailscale serve · plain {at}', { exposure: rt.exposure, at: rt.at })
+        : ` ${rt?.exposure}${rt?.alias ? ' ' + t('settei.reach_alias', '· or {alias} (MagicDNS)', { alias: rt.alias }) : ''}`));
     body.appendChild(obsRow(t('settei.reach_ssh', 'reach by ssh'), st.ssh));
 
     /* capacity */
@@ -191,11 +191,11 @@ export function buildSettei(root, isShowing) {
     for (const row of fieldsIn((f) => f.lands?.family === 'session-max')) body.appendChild(row);
 
     /* projects — shown, never edited here */
-    group(t('settei.group_projects', 'projects · {n}').replace('{n}', set.projects.length));
+    group(t('settei.group_projects', 'projects · {n}', { n: set.projects.length }));
     for (const p of set.projects) {
       const health = st.projects.find((x) => x.name === p.name);
       body.appendChild(obsRow(p.name, p.remit || p.dir,
-        health?.dir === 'missing' ? ' ' + t('settei.dir_gone', '✕ {dir} is gone').replace('{dir}', p.dir) : health?.repo ? ` ${health.repo}` : ''));
+        health?.dir === 'missing' ? ' ' + t('settei.dir_gone', '✕ {dir} is gone', { dir: p.dir }) : health?.repo ? ` ${health.repo}` : ''));
     }
     const link = document.createElement('div');
     link.className = 'st-row st-link';
@@ -227,7 +227,7 @@ export function buildSettei(root, isShowing) {
 
     // Open-source weights actually ON the box — named and sized, never assumed.
     for (const w of observed.weights ?? []) {
-      body.appendChild(obsRow(w.name, t('settei.weights_downloaded', '✓ downloaded'), ' ' + t('settei.weights_size', '{mb} MB · koshi_weights store').replace('{mb}', w.mb)));
+      body.appendChild(obsRow(w.name, t('settei.weights_downloaded', '✓ downloaded'), ' ' + t('settei.weights_size', '{mb} MB · koshi_weights store', { mb: w.mb })));
     }
     if (!(observed.weights ?? []).length) body.appendChild(obsRow(t('settei.local_weights', 'local weights'), t('settei.weights_none', 'none downloaded')));
 

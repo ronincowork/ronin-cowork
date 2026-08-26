@@ -55,7 +55,7 @@ export function buildRoster(tile, host) {
     // "4 / 6 running" when a limit is set; just the count when it is not, because
     // "4 / 0" reads as an error rather than as freedom.
     const m = Number(maxInp.value) || 0;
-    maxNow.textContent = m > 0 ? t('roster.running_of', '{n} / {max} running').replace('{n}', maxLive).replace('{max}', m) : t('roster.running_no_limit', '{n} running · no limit').replace('{n}', maxLive);
+    maxNow.textContent = m > 0 ? t('roster.running_of', '{n} / {max} running', { n: maxLive, max: m }) : t('roster.running_no_limit', '{n} running · no limit', { n: maxLive });
     maxNow.classList.toggle('full', m > 0 && maxLive >= m);
   };
   const loadMax = async () => {
@@ -71,7 +71,7 @@ export function buildRoster(tile, host) {
     const r = await request('/api/session-max', { method: 'PUT', json: { max: n } });
     if (!r.ok) {
       // The failure lands on the line that states the rule, not in a browser alert.
-      maxNow.textContent = t('roster.not_saved', 'not saved — {message}').replace('{message}', r.message);
+      maxNow.textContent = t('roster.not_saved', 'not saved — {message}', { message: r.message });
       maxNow.classList.add('full');
       setTimeout(loadMax, 2500);
       return;
@@ -130,7 +130,7 @@ export function buildRoster(tile, host) {
     }
     pendingGroups.add(group);
     groupInput.value = '';
-    groupMessage.textContent = t('roster.drag_into', 'drag a session into {team}').replace('{team}', group);
+    groupMessage.textContent = t('roster.drag_into', 'drag a session into {team}', { team: group });
     render();
   });
 
@@ -174,7 +174,7 @@ export function buildRoster(tile, host) {
     jb.dataset.job = s.session_role || ''; // so style can reach one mark — see style.css
     jb.textContent = mark;
     jb.title = mark
-      ? [s.session_role, s.leads?.length ? t('roster.leads', '人 leads {teams}').replace('{teams}', s.leads.join(', ')) : ''].filter(Boolean).join(' · ')
+      ? [s.session_role, s.leads?.length ? t('roster.leads', '人 leads {teams}', { teams: s.leads.join(', ') }) : ''].filter(Boolean).join(' · ')
       : t('roster.no_role_yet', 'has not said what it is doing yet');
     r.appendChild(jb);
     // The name takes the slack (`minmax(0, 1fr)`), so the spacer `.grow` that used to
@@ -271,7 +271,7 @@ export function buildRoster(tile, host) {
     // overwrites the field while it has focus (see loadMax).
     void loadMax();
     stale.hidden = !homeFault;
-    if (homeFault) stale.textContent = t('roster.stale', '⚠ roster may be stale — {fault}').replace('{fault}', homeFault);
+    if (homeFault) stale.textContent = t('roster.stale', '⚠ roster may be stale — {fault}', { fault: homeFault });
     const data = homeData || S.sessions.map((s) => ({ ...s, status: null, ctx: null }));
     list.innerHTML = '';
     // Sorted by group, with a heading per group. A session in two groups is listed
@@ -292,7 +292,7 @@ export function buildRoster(tile, host) {
         h.append(Object.assign(document.createElement('span'), { textContent: String(n) }));
         container.appendChild(h);
         if (!acceptsDrop) return;
-        h.title = t('roster.drop_here', 'Drop a session here to add it to {team}').replace('{team}', text);
+        h.title = t('roster.drop_here', 'Drop a session here to add it to {team}', { team: text });
         container.addEventListener('dragover', (e) => {
           if (!e.dataTransfer.types.includes('application/x-ronin-session')) return;
           e.preventDefault();
@@ -322,7 +322,7 @@ export function buildRoster(tile, host) {
             session.tags = (session.tags || []).filter((tag) => tag !== text);
             if (base) base.tags = (base.tags || []).filter((tag) => tag !== text);
             if (wasPending && !data.some((s) => (s.tags || []).includes(text))) pendingGroups.add(text);
-            groupMessage.textContent = t('roster.not_saved', 'not saved — {message}').replace('{message}', message);
+            groupMessage.textContent = t('roster.not_saved', 'not saved — {message}', { message });
             tiles.forEach((t) => t.syncHeader());
             render();
           };
