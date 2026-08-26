@@ -1233,3 +1233,9 @@ The catalog entry goes. {dir} is not touched.
 ## tape — output.js summary notes
 - **tape.writing_summary:** Writing a summary…
 - **tape.summary_unavailable:** Summary unavailable — {message}
+
+## customize — three more paragraphs
+- **customize.handoff_read_only_shelf:** This preview reads this shelf and does not write it. Your own agent can change it 
+- **customize.handoff_deferred:** Deferred in this preview.
+- **customize.handoff_seed:** Ronin can create your own {file} in your catalogs store — outside every repo, untouched by upgrades. The path is the answer: hand it to your agent, or open it yourself.
+- **customize.entry:** entry

@@ -45,13 +45,13 @@ export function buildHandoff(resource, list = []) {
     // Read-only is a decision about this release, not a claim the resource is immutable.
     // Say how the owner changes it, and do not draw a disabled control.
     box.append(el('p', null,
-      'This preview reads this shelf and does not write it. Your own agent can change it ' +
-      'directly — tell it what you want and it edits the file.'));
+      t('customize.handoff_read_only_shelf', 'This preview reads this shelf and does not write it. Your own agent can change it '
+      + 'directly — tell it what you want and it edits the file.')));
     return box;
   }
 
   if (resource.capability === 'deferred') {
-    box.append(el('p', null, resource.why || 'Deferred in this preview.'));
+    box.append(el('p', null, resource.why || t('customize.handoff_deferred', 'Deferred in this preview.')));
     return box;
   }
 
@@ -60,9 +60,8 @@ export function buildHandoff(resource, list = []) {
   if (resource.file) {
     // A shadowable markdown catalog: the seed route makes the file and hands back the path.
     box.append(el('p', null,
-      `Ronin can create your own ${resource.file} in your catalogs store — outside every ` +
-      'repo, untouched by upgrades. The path is the answer: hand it to your agent, or open it yourself.'));
-    box.append(addYourOwn(resource.file, resource.what || 'entry'));
+      t('customize.handoff_seed', 'Ronin can create your own {file} in your catalogs store — outside every repo, untouched by upgrades. The path is the answer: hand it to your agent, or open it yourself.', { file: resource.file })));
+    box.append(addYourOwn(resource.file, resource.what || t('customize.entry', 'entry')));
     return box;
   }
 
