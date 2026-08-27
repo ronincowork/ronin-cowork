@@ -2499,6 +2499,7 @@ body {
 .desk[data-room='koshi'] .desk-pane[data-room='koshi'],
 .desk[data-room='gbrain'] .desk-pane[data-room='gbrain'],
 .desk[data-room='stats'] .desk-pane[data-room='stats'],
+.desk[data-room='profile'] .desk-pane[data-room='profile'],
 .desk[data-room='appearance'] .desk-pane[data-room='appearance'],
 .desk[data-room='release'] .desk-pane[data-room='release'],
 .desk[data-room='account'] .desk-pane[data-room='account'] {
@@ -2506,6 +2507,7 @@ body {
 }
 /* The app's own three are plain blocks of the sheet's old content (js/system.js), so
    they get the padding the sheet used to give them. */
+.desk-pane[data-room='profile'],
 .desk-pane[data-room='appearance'],
 .desk-pane[data-room='release'],
 .desk-pane[data-room='account'] {
