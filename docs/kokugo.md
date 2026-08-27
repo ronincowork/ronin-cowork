@@ -138,7 +138,24 @@ reads these attributes as keys the client reads.
   take the words on their next paint; only the ⚙ desk repaints itself on a pick. Do not add
   a global re-render.
 
-## 8 · Running the gate
+## 8 · The glossary room — what an agent says to a person
+
+The house names (TEGAMI, TEJUN, RIREKI …) never reach a person's face, and tools and docs
+use them freely with agents. `KOTOBA_GLOSSARY.md` is where a session learns which word to
+SAY for each — and since the desk profile decides what the person is looking at, that
+page is rendered per session. Its keyed cells are `**word**<!--g:glossary.key-->`; the
+words live in the lexicon under `glossary.*` (floor: the plain English the glossary
+carries); **no surface reads them** — the one consumer is the boot shelf, which renders
+the glossary at session birth from the active profile's resolved lexicon
+(`src/session-boot.ts`, `renderGlossary`) with a header line saying which profile it was
+rendered for. One-time, by ruling: a profile changed mid-session is not re-read.
+
+Adding a row to the glossary means marking its UI word and adding the `glossary.*` line
+to the floor; a profile's word for it is one line in that profile's lexicon
+(`home_en`: `glossary.team` → *Staff*). `check-lexicon` fails a row with no marker, a
+marked key the floor lacks, a floor word that differs from the cell's, and an orphan key.
+
+## 9 · Running the gate
 
 ```
 node scripts/check-lexicon.mjs
@@ -158,7 +175,7 @@ Also green after every change: `node scripts/check-modules.mjs` (cycles, top-lev
 an import), `check-dead`, `check-docs`, and `node --check` on the file. `check-lexicon` is
 in `npm run verify` and in the BYOIN gate.
 
-## 9 · A worked before / after
+## 10 · A worked before / after
 
 `public/js/roster.js`, the session-max line, as it was:
 

@@ -16,9 +16,11 @@ words, to prove the chain), `league_en` (the gamer's words, goofy on purpose), `
 and `terminal_en` (near-empty on purpose — the words grow as the surfaces settle, one file
 at a time, with no code).
 
-Two kinds of key in one table: a bare word is a surface string (`campaign`, `go`); a
+Three kinds of key in one table (the third joined 2026-08-27, owner's ruling): a bare word is a surface string (`campaign`, `go`); a
 prefixed key names a catalog entry's label by its token (`kind.household`,
-`role.DraftPlan`, `team_role.<t>`, `behaviour.<t>`). A key may carry dots — the catalog
+`role.DraftPlan`, `team_role.<t>`, `behaviour.<t>`); a `glossary.*` key is a word an agent
+says to a person for a house term — no surface reads it; the boot shelf renders
+`KOTOBA_GLOSSARY.md` from it at session birth (`docs/kokugo.md` § 8). A key may carry dots — the catalog
 grammar widened for it (`src/catalog.ts`, `isKeyLine`).
 
 ## The chain, one rule
