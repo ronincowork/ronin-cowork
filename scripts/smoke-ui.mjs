@@ -388,13 +388,14 @@ async function checkJourneys(page, label, jsErrors) {
   } catch {
     bad(`${label}: the bar's ⚙ did not raise the admin_desk`);
   }
-  // The six that left the strip are all here, plus the app's own three under them.
+  // The six that left the strip are all here, plus the app's own four under them (the desk
+  // profile became its own row on 2026-08-27; Keypad is an action row and is not counted).
   const deskRows = await page.evaluate(() => ({
     install: [...document.querySelectorAll('.desk.show .desk-row')].filter((r) => ['settei','proj','hotwords','koshi','gbrain','stats'].includes(r.dataset.room)).length,
-    app: [...document.querySelectorAll('.desk.show .desk-row')].filter((r) => ['appearance','release','account'].includes(r.dataset.room)).length,
+    app: [...document.querySelectorAll('.desk.show .desk-row')].filter((r) => ['profile','appearance','release','account'].includes(r.dataset.room)).length,
   }));
-  if (deskRows.install === 6 && deskRows.app === 3) ok(`${label}: the desk carries the 6 install rooms and the app's 3`);
-  else bad(`${label}: the desk has ${deskRows.install} install rooms and ${deskRows.app} app rows, wanted 6 and 3`);
+  if (deskRows.install === 6 && deskRows.app === 4) ok(`${label}: the desk carries the 6 install rooms and the app's 4`);
+  else bad(`${label}: the desk has ${deskRows.install} install rooms and ${deskRows.app} app rows, wanted 6 and 4`);
 
   const headGone = await page.evaluate(() => {
     const h = document.querySelector('.tile.deskup .tile-head');
@@ -420,14 +421,14 @@ async function checkJourneys(page, label, jsErrors) {
   // a rendered element: the variable proves the block landed, the element proves the app
   // actually wears it. Shipped skins only here; the user's own copy is a store this gate
   // must not write to.
-  const skins = await page.locator('.desk.show .sys-skin').count();
+  const skins = await page.locator('.desk.show .desk-appearance .sys-skin').count();
   if (skins >= 2) ok(`${label}: the skin picker lists ${skins} skins from the catalog`);
   else bad(`${label}: the skin picker listed ${skins} skins, wanted at least 2`);
   const before = await page.evaluate(() => ({
     tok: getComputedStyle(document.documentElement).getPropertyValue('--radius-md').trim(),
     drawn: getComputedStyle(document.querySelector('.desk.show .desk-row')).borderRadius,
   }));
-  await page.locator('.desk.show .sys-skin', { hasText: 'Square' }).first().click();
+  await page.locator('.desk.show .desk-appearance .sys-skin', { hasText: 'Square' }).first().click();
   await page.waitForTimeout(250);
   const after = await page.evaluate(() => ({
     tok: getComputedStyle(document.documentElement).getPropertyValue('--radius-md').trim(),
@@ -440,7 +441,7 @@ async function checkJourneys(page, label, jsErrors) {
   // face and a light face, and the bug this catches is silent in both directions: a prefix
   // that eats one of the token's own dashes parses to zero tokens, so the skin applies
   // nothing and looks merely subtle rather than broken (2026-08-19, one run).
-  await page.locator('.desk.show .sys-skin', { hasText: 'Paper' }).first().click();
+  await page.locator('.desk.show .desk-appearance .sys-skin', { hasText: 'Paper' }).first().click();
   await page.waitForTimeout(250);
   const faceA = await page.evaluate(() => ({
     shell: document.documentElement.dataset.theme,
@@ -459,7 +460,7 @@ async function checkJourneys(page, label, jsErrors) {
   await page.waitForTimeout(250);
 
   // Put the shared browser profile back on Stock before this journey leaves Appearance.
-  await page.locator('.desk.show .sys-skin', { hasText: 'Stock' }).first().click();
+  await page.locator('.desk.show .desk-appearance .sys-skin', { hasText: 'Stock' }).first().click();
   await page.waitForTimeout(200);
 
   // ⚙ TOGGLES, and the tile comes back — verify this before the skin composition proof,

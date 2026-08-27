@@ -284,7 +284,8 @@ export function buildSystemPanel() {
     }
   };
 
-  /* THE DESK PROFILE PICKER (R38), above the skins because it is the wider question: a
+  /* THE DESK PROFILE PICKER (R38) — its own desk row since 2026-08-27 (see `profile`
+   * below); it was drawn above the skins because it is the wider question: a
    * profile HAS a skin, and picking one puts that skin up, loads its words, and sets
    * what a new tile shows. Same shape as the skin rows — a row per profile, blurb and
    * `origin` — and the choice is settei's leaf, so every browser agrees. "Stock" is the
@@ -374,7 +375,11 @@ export function buildSystemPanel() {
     g.append(...kids.filter(Boolean));
     return g;
   };
-  const appearance = group(appRow, profBlock, skinBlock);
+  // THE DESK PROFILE IS ITS OWN ROW (owner, 2026-08-27): it was the top block of
+  // Appearance since R38, but a profile is the wider question — it HAS a skin — and a person
+  // hunting it should find it in the desk's nav, not learn it lives under the look.
+  const appearance = group(appRow, skinBlock);
+  const profile = group(profBlock);
   // The machine sits with the release block — both answer "what is this install running
   // on", and a person hunting either finds them together. group() drops a null child, so
   // an install without the machine service simply has one fewer row here.
@@ -541,5 +546,5 @@ export function buildSystemPanel() {
     })();
   };
 
-  return { appearance, release, account, enter };
+  return { appearance, profile, release, account, enter };
 }
