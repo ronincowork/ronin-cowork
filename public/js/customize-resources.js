@@ -28,7 +28,8 @@ const el = (tag, cls, text) => {
 
 /** The rows a list route returns, normalised. Every catalog route answers an array; the
  *  definition routes answer one too. A non-array is a fault, not an empty shelf. */
-const rows = (data) => (Array.isArray(data) ? data : null);
+// A list, or the desk-profiles answer ({ active, profiles }) — the list is inside it.
+const rows = (data) => (Array.isArray(data) ? data : Array.isArray(data?.profiles) ? data.profiles : null);
 
 /**
  * Render one resource. Returns { count, mark } so the rail can show a resolved count and

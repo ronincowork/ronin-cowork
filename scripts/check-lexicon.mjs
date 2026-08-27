@@ -17,6 +17,8 @@
  *   note  keys the floor carries that no view reads yet — allowed, because the surfaces
  *         that will read them (the campaign board) are not built; reported so the list
  *         cannot rot in silence.
+ *   note  the lexicons in YOUR catalogs store (`bin/ronin-store catalogs` → lexicons/), and
+ *         any key in them the floor lacks — a typo that changes nothing. Yours, so a note.
  *   note  modules that import `t` AND declare a local named `t` (a parameter, a `const`,
  *         a `let`, a loop variable) — legal, but every such scope is one where a bare
  *         `t` is the local and not the word; listed so a reviewer reads those scopes.
@@ -63,6 +65,27 @@ const keysOf = (file) => {
 
 const lexicons = fs.readdirSync(LEX).filter((f) => f.endsWith('.md') && f !== 'README.md');
 const floor = keysOf(path.join(LEX, `${FLOOR}.md`));
+// YOURS: the owner's catalogs store may carry lexicons too (`bin/ronin-store catalogs` →
+// lexicons/). They are the owner's files, so a key the floor lacks is a NOTE, never a fail —
+// but an unnoticed typo there falls through to nothing and silently paints stock, which is
+// exactly the kind of quiet the owner asked not to have (2026-08-27).
+let yours = '';
+try {
+  const store = execFileSync(path.join(ROOT, 'bin', 'ronin-store'), ['catalogs'], { encoding: 'utf8' }).trim();
+  const dir = path.join(store, 'lexicons');
+  if (store && fs.existsSync(dir)) yours = dir;
+} catch {
+  yours = '';
+}
+const yourNotes = [];
+if (yours) {
+  for (const f of fs.readdirSync(yours).filter((f) => f.endsWith('.md') && f !== 'README.md')) {
+    const name = f.replace(/\.md$/, '');
+    const shadow = lexicons.includes(f) ? ' (shadows ours)' : '';
+    const stray = [...keysOf(path.join(yours, f))].filter((k) => !PREFIXED.test(k) && !floor.has(k) && name !== FLOOR);
+    yourNotes.push(`${name}${shadow}${stray.length ? ` — ${stray.length} key(s) the floor lacks, so they change nothing: ${stray.join(', ')}` : ''}`);
+  }
+}
 
 // What the client reads: t('key' …) with a literal first argument.
 const read = new Set();
@@ -139,6 +162,7 @@ try {
 
 for (const line of fails) console.log(`  FAIL  ${line}`);
 if (unread.length) console.log(`  note  ${unread.length} floor key(s) no view reads yet: ${unread.join(', ')}`);
+if (yourNotes.length) console.log(`  note  ${yourNotes.length} lexicon(s) in your catalogs store: ${yourNotes.join(' · ')}`);
 if (shadowers.length) console.log(`  note  ${shadowers.length} module(s) import t and also name a local t — read those scopes: ${shadowers.join(', ')}`);
 console.log(fails.length ? `check-lexicon: ${fails.length} failure(s)` : `check-lexicon: the floor holds (${floor.size} keys, ${read.size} read by the client, ${lexicons.length} lexicons)`);
 process.exit(fails.length ? 1 : 0);

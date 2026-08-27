@@ -66,3 +66,37 @@ Ronin recolours agent output live. Its theme lives in `~/.claude/settings.json` 
 never writes it. On this palette, pin **`dark-ansi`** — it clears 16:1 in both shells, where
 `light-ansi` drops to 1.17:1 on the dark shell and the body text disappears. `docs/ui.md`
 carries the measured table.
+
+## Writing your own words — a lexicon, and the desk profile that wears it
+
+The skin decides how Ronin *looks*; a **lexicon** decides what it *says* (`docs/lexicons.md`,
+`docs/kokugo.md`). Both hang off a **desk profile** (`ronin_catalogs/desk_profiles/`), which is
+what a person actually picks in ⚙ Admin Desk → Appearance. Same shadowing rule as everything
+in the catalogs store: a file of ours of the same name is replaced whole; a new name is new.
+
+1. **The words.** `ronin-store catalogs` → `lexicons/<name>_<lang>.md` (the language is in the
+   name). Format: `ronin_catalogs/lexicons/README.md`. Say only what changes — everything
+   else falls through to `professional_en`, the floor. Every key that can be changed, with
+   every shipped lexicon's word beside it, is `docs/kokugo-table.md`; a `glossary.*` key
+   changes the word an agent says to the person for a house term, nothing on screen.
+
+   ```markdown
+   # mine_en
+   - **label:** Mine
+   - **blurb:** My words.
+   - **base:** professional_en
+   - **roster.no_team:** freelancers
+   - **glossary.wipeboard:** the noticeboard
+   ```
+
+2. **The profile.** `ronin-store catalogs` → `desk_profiles/<name>.md` naming it
+   (`- **lexicon:** mine_en`, plus the skin and the rest; format in that directory's
+   README) — or copy one of ours (`home.md`) and change its `lexicon:` line.
+3. **Pick it** in ⚙ → Appearance → desk profile, and reload. Surfaces take the words on
+   their next paint; sessions born after the pick get the glossary rendered in those words.
+4. **Check it**: `node scripts/check-lexicon.mjs` from the cowork checkout notes every
+   lexicon in the store and any key in it the floor lacks (a typo changes nothing, silently).
+   The Customize view lists both shelves (Presentation → Desk profiles · Lexicons).
+
+**An update never touches your files.** Never edit `ronin_catalogs/` — a `git pull` replaces it.
+
