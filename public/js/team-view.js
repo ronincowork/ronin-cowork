@@ -109,7 +109,7 @@ export function createTeamView() {
       if (seat.pool.active) seat.empty?.el.remove();
       else if (!seat.empty) {
         const blank = createSurface({ label: t('team.workspace_blank', 'Workspace'), className: 'tw-blank' });
-        setSurfaceState(blank.el, 'empty', t('team.workspace_blank', 'Workspace'));
+        blank.content.append(el('p', 'tw-blank-word', t('team.workspace_blank', 'Workspace')));
         seat.empty = { el: blank.el, mount: () => {}, destroy: () => blank.el.remove() };
         seat.surface.content.append(seat.empty.el);
       } else if (!seat.empty.el.isConnected) seat.surface.content.append(seat.empty.el);
@@ -236,10 +236,14 @@ export function createTeamView() {
   // ＋ Add team member on the roster and か New on the bar both put it in the selected
   // workspace; a session born from it lands in that same workspace (`connect`).
   const newSurface = createSurface({ label: t('team.new_session', 'New session'), className: 'tw-new' });
-  newSurface.controls.hidden = false;
-  newSurface.controls.append(flipButton('T'), el('span', 'tw-new-title', t('team.new_session', 'New session')));
+  // Its own head and body (feature classes; the Kit's own nodes are the Kit's to style).
+  const newHead = el('div', 'tw-new-head');
+  newHead.append(flipButton('T'), el('span', 'tw-new-title', t('team.new_session', 'New session')));
+  newSurface.el.prepend(newHead);
+  const newBody = el('div', 'tw-new-body');
   const launcherHost = el('div', 'home-null');
-  newSurface.content.append(launcherHost);
+  newBody.append(launcherHost);
+  newSurface.content.append(newBody);
   const extras = new Set(); // sessions shown here that are not (yet) members — a newborn, a picked one
   const launcher = buildLauncher({ index: 'ws', connect: (name) => connectSession(name) }, launcherHost);
   newSurface.el.addEventListener('pointerdown', () => { const id = newIn(); if (id) touch(id); });
