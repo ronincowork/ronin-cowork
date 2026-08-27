@@ -3,6 +3,7 @@ import { request } from './request.js';
 import { status } from './ui.js';
 import { loadProjects } from './home.js';
 import { askMika } from './mika.js';
+import { S } from './state.js';
 import { t } from './lexicon.js';
 
 /* ---------- PROJECT ROOT — the fourth commons pane (tab: ▣ Project root) ----------
@@ -255,7 +256,9 @@ export function buildProjectRoots(root, isShowing, tile) {
   addBtn.addEventListener('click', () => {
     // Her tile replaces this pane in the same tile, which is the point: you asked to add
     // a directory and you are now talking to somebody who does that.
-    if (tile) void askMika(tile, '+project_root: I want to include a directory. Ask me which one.');
+    // In the cowork commons there is no tile of its own; the ask goes where the desk's did.
+    const at = tile || S.active;
+    if (at) void askMika(at, '+project_root: I want to include a directory. Ask me which one.');
   });
 
   // Only while the pane is actually on screen — a tile on another tab costs nothing.

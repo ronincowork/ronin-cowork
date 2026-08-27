@@ -75,6 +75,10 @@
            logging out, appearance — is not about the box (owner, 2026-08-18).
            The label is 75px in the shipped font, the same as ミ Mika Assist, so it sits
            inside the five verbs' measured 100px box without moving it (see style.css). -->
+      <!-- THE 1·2·4 COUNT IS PARKED (owner, 2026-08-27: "the 1-2-4 button is going to come
+           off … we can just park it for now"). Hidden, not deleted: the pad's ▚ layout key
+           and the parked grid page still cycle it, and js/viewport.js writes its face. -->
+      <button id="layoutcycle" class="layout-cycle" hidden data-t-title="bar.layout_default_title" title="Four terminals — click for 1">4</button>
       <button id="sysbtn" data-t-title="bar.desk_title" title="Admin Desk — this machine and this app: configuration, project roots, hotwords, Koshi, gbrain, stats, appearance, updates, log out">⚙<span class="txt" data-t="bar.desk"> Admin Desk</span></button>
       <div class="ctrls" role="group" data-t-aria="bar.keys" aria-label="Keys">
         <button id="k-esc" data-t-title="keys.esc" title="Esc" data-t="keys.esc">Esc</button>
@@ -86,7 +90,6 @@
            1 → 2 → 4 → 1. It was a segmented trio, which spent three boxes saying what
            one says and left two of them permanently dark. js/viewport.js writes the
            face; the same node is relocated into the touch bar by js/layout.js. -->
-      <button id="layoutcycle" class="layout-cycle" data-t-title="bar.layout_default_title" title="Four terminals — click for 1">4</button>
     </header>
     <div id="keypad" role="group" data-t-aria="keys.more" aria-label="More keys">
       <button data-key="cr" data-t-title="keys.enter" title="Enter">↵</button>
@@ -99,6 +102,10 @@
     </div>
     <div id="viewhost">
       <main id="grid" class="layout-4" data-layout="4"></main>
+      <!-- THE COWORK COMMONS at full width — ⚙'s destination on the parked grid page, where
+           there is no workspace to place it in. On the cowork_space it sits IN a workspace
+           instead (js/team-view.js). One surface, two doors: docs/cowork-space.md. -->
+      <section id="cowork-view" class="cc-view" hidden></section>
       <section id="new-team-view" hidden></section>
       <section id="agent-config-view" hidden></section>
     </div>

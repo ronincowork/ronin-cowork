@@ -9,6 +9,9 @@
  *   workspace2=commons             the commons there (on the tab it was last on)
  *   workspace2=commons:docs        the commons, on that tab (chat · wipeboard · docs · config)
  *   workspace2=commons:docs:<path> the commons on ▧ Docs, with that file open
+ *   workspace2=cowork              the cowork commons there (on the tab it was last on)
+ *   workspace2=cowork:roots        the cowork commons, on that tab
+ *                                  (health · account · profile · roots · help · keypad)
  *   workspace1=terminal            the workspace's seat back, as it was
  *   workspace1=empty               the seat, with nothing in it
  *   order=workspace2,roster,workspace1
@@ -19,6 +22,7 @@
  */
 
 import { request } from './request.js';
+import { COWORK_TABS } from './cowork-commons.js';
 
 const COLUMNS = ['workspace1', 'roster', 'workspace2'];
 const WORKSPACES = ['workspace1', 'workspace2'];
@@ -40,6 +44,9 @@ export function parseDraft(tokens = [], me = '') {
       if (what === 'commons') {
         if (tab && !TABS[tab]) { errors.push(`${key}: no commons tab "${tab}"`); continue; }
         draft[key] = { commons: true, tab: tab ? TABS[tab] : '', doc: rest.join(':') || '' };
+      } else if (what === 'cowork') {
+        if (tab && !COWORK_TABS[tab]) { errors.push(`${key}: no cowork tab "${tab}"`); continue; }
+        draft[key] = { cowork: true, tab: tab ? COWORK_TABS[tab] : '' };
       } else if (what === 'terminal' || what === 'empty') draft[key] = { [what]: true };
       else if (what) draft[key] = { session: what === 'me' ? me : what };
       else errors.push(`${key}: say what goes there`);
@@ -89,6 +96,7 @@ export function createArranger(verbs) {
       const want = draft[ws];
       if (!want) continue;
       if (want.commons) { verbs.putCommons(ws, want.tab, want.doc); did.push(`${ws} commons${want.tab ? ':' + want.tab : ''}`); }
+      else if (want.cowork) { verbs.putCowork(ws, want.tab); did.push(`${ws} cowork${want.tab ? ':' + want.tab : ''}`); }
       else if (want.session) { if (verbs.putSession(want.session, ws)) did.push(`${ws} ${want.session}`); else did.push(`${ws}: no session ${want.session}`); }
       else if (want.terminal) { verbs.putTerminal(ws); did.push(`${ws} terminal`); }
       else if (want.empty) { verbs.emptySeat(ws); did.push(`${ws} empty`); }

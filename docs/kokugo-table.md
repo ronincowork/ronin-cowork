@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1221 keys · 53 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1239 keys · 54 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -87,6 +87,29 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `composer.placeholder` | Message… |  |  |  |  |
 | `composer.send` | Send |  |  |  |  |
 | `composer.title` | Enter sends · Shift+Enter or Option+Enter for a new line |  |  |  |  |
+
+## cowork
+
+| key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
+|---|---|---|---|---|---|
+| `cowork.commons` | Cowork commons |  |  |  |  |
+| `cowork.h_appearance` | Appearance |  |  |  |  |
+| `cowork.h_configuration` | Configuration |  |  |  |  |
+| `cowork.h_gbrain` | gbrain |  |  |  |  |
+| `cowork.h_hotwords` | Hotwords |  |  |  |  |
+| `cowork.h_koshi` | Koshi |  |  |  |  |
+| `cowork.h_log_out` | Log out |  |  |  |  |
+| `cowork.h_mika` | Mika Assist |  |  |  |  |
+| `cowork.h_release` | Release & update |  |  |  |  |
+| `cowork.keypad_missing` | The keypad did not build on this page. |  |  |  |  |
+| `cowork.mika_button` | ミ Ask Mika |  |  |  |  |
+| `cowork.mika_text` | Ask about Ronin itself — how it works, project roots, starting a session, changing a setting. She starts if she is not up. |  |  |  |  |
+| `cowork.tab_account` | Account |  |  |  |  |
+| `cowork.tab_health` | Machine health |  |  |  |  |
+| `cowork.tab_help` | Help desk |  |  |  |  |
+| `cowork.tab_keypad` | Keypad |  |  |  |  |
+| `cowork.tab_profile` | Desk profile |  |  |  |  |
+| `cowork.tab_roots` | Project roots |  |  |  |  |
 
 ## customize
 

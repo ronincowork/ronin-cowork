@@ -2272,248 +2272,102 @@ body {
 .home[data-pane='docs'] .home-docs {
   display: flex;
 }
-
-/* ================= THE ADMIN DESK (js/desk.js) =================================
-   A SIBLING OF THE COMMONS, not a new kind of surface. Same box, same z-index, same
-   `.show` — the two overlay one tile body and js/tile.js raises one by lowering the
-   other. Everything below is the rail and the panes; the tile, the overlay and the
-   room content were all already written.
-
-   `.desk-<room>` — the six rooms' own layout rules, further down this file, are the
-   `.home-<room>` rules renamed and otherwise untouched (2026-08-18). None of them was
-   ever used as an ancestor selector, so the move was a rename and nothing else. */
-.desk {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  display: none;
-  background: var(--bg);
-}
-.desk.show {
-  display: flex;
-}
-/* CLEAN, TOP TO BOTTOM. Every control in a tile header acts on a SESSION — the picker
-   chooses one, ⚡ sends macros to one, ⌗ and メ act on one — and the desk is the tile not
-   being about a session. A row of controls that do nothing is worse than no row, so the
-   header goes while the desk is up and the desk owns the whole cell (owner, 2026-08-18).
-   The desk's own ✕ is the way back, and it is the only control the desk has. */
-.tile.deskup .tile-head {
-  display: none;
-}
-
-/* ---- the rail ----
-   A NAV, NOT A STRIP. The six rooms just left a tab strip for being too long for it;
-   putting them back on one, in a narrower box, would rebuild the row this change exists
-   to shorten. Vertical has room to grow and a tile has more height than width. */
-.desk-nav {
-  flex: 0 0 154px;
-  display: flex;
-  flex-direction: column;
-  padding: var(--space-5) var(--space-3);
-  background: var(--bg-2);
-  border-right: var(--edge) solid var(--line);
-  overflow-y: auto;
-}
-/* THE DESK'S OWN TWO CONTROLS — ✕ out, « narrower — and they are in the RAIL because
-   the rail is chrome. ✕ was absolutely positioned over the content pane for one run on
-   2026-08-18 and took the pointer from whatever each room drew up there (↻ Restart Koshi,
-   ＋ include, gbrain's status button): a transparent overlay is still an overlay. */
-.desk-railtop {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 0 var(--space-1) var(--space-3);
-}
-.desk-railbtn {
-  border: var(--edge) solid transparent;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--muted-3);
-  font-size: var(--text-3);
-  line-height: 1;
-  padding: var(--space-2) var(--space-3);
-  cursor: pointer;
-}
-.desk-railbtn:hover {
-  border-color: var(--line-2);
-  background: var(--well);
-  color: var(--fg-strong);
-}
-.desk-sep {
-  font-size: var(--text-1);
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--muted);
-  padding: var(--space-5) var(--space-4) var(--space-2);
-  white-space: nowrap;
-}
-.desk-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  flex: 0 0 auto;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--muted-2);
-  font-size: var(--text-3);
-  font-family: inherit;
-  text-align: left;
-  padding: var(--space-3) var(--space-4);
-  cursor: pointer;
-  white-space: nowrap;
-}
-.desk-row b {
-  font-weight: 400;
-  width: 15px;
-  flex: 0 0 auto;
-  text-align: center;
-}
-.desk-row:hover {
-  background: var(--raise);
-}
-.desk-row.on {
-  background: var(--raise);
-  color: var(--fg-strong);
-}
-/* Visible but inert — the same treatment `.home-tabs button.off` gives an absent room,
-   so the desk does not invent a second way of saying "not plugged in". */
-.desk-row.off {
-  opacity: 0.3;
-  pointer-events: none;
-}
-
-/* NAMED BY DEFAULT (owner, 2026-08-18: "glyphs & labels"), and the container query says
-   how a name LAYS OUT, never whether it shows: beside its glyph where there is room,
-   stacked under it in a 4-up tile at 70px rather than 154. 680px is the number the tab
-   strip already breaks at — one breakpoint for the tile, not two. */
-@container tile (max-width: 680px) {
-  .desk-nav {
-    flex-basis: 70px;
-    padding: var(--space-5) var(--space-3);
-  }
-  .desk-row {
-    flex-direction: column;
-    gap: var(--space-1);
-    padding: var(--space-3) var(--space-1);
-    text-align: center;
-  }
-  .desk-row span {
-    font-size: var(--text-1);
-    line-height: 1.15;
-    white-space: normal;
-  }
-  .desk-sep {
-    font-size: 0;
-    padding: var(--space-4) 0 var(--space-2);
-    border-top: var(--edge) solid var(--line);
-    margin: var(--space-2) var(--space-3) 0;
-  }
-  .desk-railtop + .desk-sep {
-    border-top: 0;
-    margin-top: 0;
-    padding-top: 0;
-  }
-}
-/* COLLAPSED BY HAND, and it wins at every width because it is the owner's answer rather
-   than the box's. One class more specific than the rules above, which is all it needs:
-   a container query changes WHEN a rule applies, never how strong it is. */
-.desk-nav.railed {
-  flex-basis: 44px;
-  padding: var(--space-5) var(--space-3);
-}
-.desk-nav.railed .desk-row {
-  flex-direction: row;
-  justify-content: center;
-  gap: 0;
-  padding: var(--space-4) var(--space-2);
-}
-.desk-nav.railed .desk-row span {
-  display: none;
-}
-.desk-nav.railed .desk-sep {
-  font-size: 0;
-  padding: var(--space-4) 0 var(--space-2);
-  border-top: var(--edge) solid var(--line);
-  margin: var(--space-2) var(--space-3) 0;
-}
-.desk-nav.railed .desk-railtop {
-  flex-direction: column;
-  justify-content: center;
-  gap: var(--space-1);
-}
-.desk-nav.railed .desk-railtop + .desk-sep {
-  border-top: 0;
-  margin-top: 0;
-  padding-top: 0;
-}
-
-/* ---- the content ---- */
-.desk-content {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-/* ✕, and the only control the desk owns. Top of the CONTENT, not the foot of the rail:
-   "Log out" lives down there, and a thing pressed often must not neighbour a thing
-   pressed once. */
-.desk-x {
-  border: var(--edge) solid transparent;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--muted-3);
-  font-size: var(--text-3);
-  line-height: 1;
-  font-family: inherit;
-  padding: var(--space-2);
-  cursor: pointer;
-}
-.desk-x:hover {
-  border-color: transparent;
-}
-.close-hex {
-  display: inline-grid;
-  place-items: center;
-  width: var(--heighten-inline-size);
-  height: var(--heighten-block-size);
-  clip-path: var(--heighten-shape);
-  background: var(--heighten);
-  color: var(--heighten-fg);
-  font-size: var(--text-5);
-  font-weight: 700;
-  line-height: 1;
-}
-.desk-x:hover .close-hex,
-.home-x:hover .close-hex { background: var(--heighten-hover); }
+/* ---- THE COWORK COMMONS' ROOMS (js/cowork-commons.js). The admin desk — an overlay a
+   tile drew on itself, with a rail, a ✕ and eleven rows — retired on 2026-08-27 (owner:
+   "another workspace alternative"); its rooms are re-hung on the Kit's channel surface
+   under six tabs. `.desk-<room>` below is each room's own layout rule, untouched: the rooms
+   moved surfaces, not names. A pane is shown by `.show` now, not by the desk's data-room. */
 .desk-pane {
   display: none;
   flex: 1;
   min-width: 0;
   min-height: 0;
 }
-.desk[data-room='settei'] .desk-pane[data-room='settei'],
-.desk[data-room='proj'] .desk-pane[data-room='proj'],
-.desk[data-room='hotwords'] .desk-pane[data-room='hotwords'],
-.desk[data-room='koshi'] .desk-pane[data-room='koshi'],
-.desk[data-room='gbrain'] .desk-pane[data-room='gbrain'],
-.desk[data-room='stats'] .desk-pane[data-room='stats'],
-.desk[data-room='profile'] .desk-pane[data-room='profile'],
-.desk[data-room='appearance'] .desk-pane[data-room='appearance'],
-.desk[data-room='release'] .desk-pane[data-room='release'],
-.desk[data-room='account'] .desk-pane[data-room='account'] {
+.desk-pane.show {
   display: flex;
 }
-/* The app's own three are plain blocks of the sheet's old content (js/system.js), so
-   they get the padding the sheet used to give them. */
-.desk-pane[data-room='profile'],
-.desk-pane[data-room='appearance'],
-.desk-pane[data-room='release'],
-.desk-pane[data-room='account'] {
+/* The app's own blocks (js/system.js) are plain content, so they get the padding the
+   sheet used to give them. */
+.cc-app {
+  flex-direction: column;
+  padding: var(--space-4) 0 var(--space-6);
+}
+/* The surface's own box: a tab is one scrolling pane; a `.cc-stack` pane is several
+   rooms under headings, one after another, the way "the rest of the desk" reads. */
+.cc-pane {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+.cc-pane.cc-stack {
   flex-direction: column;
   overflow-y: auto;
-  padding: var(--space-6) var(--space-7) var(--space-8);
+  padding: var(--space-5) var(--space-7) var(--space-8);
+}
+.cc-pane.cc-stack .desk-pane {
+  flex: 0 0 auto;
+  overflow: visible;
+  padding-left: 0;
+  padding-right: 0;
+}
+.cc-h {
+  margin: var(--space-6) 0 var(--space-2);
+  color: var(--fg-strong);
+  font-size: var(--text-4);
+  font-weight: 600;
+}
+.cc-h:first-child {
+  margin-top: 0;
+}
+.cc-p {
+  margin: 0 0 var(--space-4);
+  color: var(--muted);
+  font-size: var(--text-3);
+  max-width: 60ch;
+}
+.cc-btn {
+  align-self: flex-start;
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--raise);
+  color: var(--fg-strong);
+  padding: var(--space-3) var(--space-5);
+  font-size: var(--text-3);
+  cursor: pointer;
+}
+/* Reserved chat — geometry promised, nothing implied (the team commons' Chat rule). */
+.cc-chat {
+  flex: 1;
+  min-height: 12rem;
+  border: var(--edge) dashed var(--line);
+  border-radius: var(--radius-md);
+}
+/* The pad's card INLINE: the sheet's width and scroll are the sheet's; here it is the tab. */
+.cc .pad-card {
+  flex: 1;
+  min-height: 0;
+  width: auto;
+  max-height: none;
+  overflow-y: auto;
+  border: 0;
+  border-radius: 0;
+}
+.cc .pad-close {
+  display: none;
+}
+/* ⚙'s destination on the grid page: the surface at full width. */
+.cc-view {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+}
+.cc-view[hidden] {
+  display: none;
+}
+.cc-view .cc {
+  flex: 1;
+  min-height: 0;
 }
 
 /* ---- ⚙ CONFIGURATION: the install record, in one room (js/settei.js).

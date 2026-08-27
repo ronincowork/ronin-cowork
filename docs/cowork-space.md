@@ -40,7 +40,7 @@ Three kinds of thing, and only three, sit inside the bar:
 |---|---|---|---|
 | **terminal_tile** | one session | **tile head** (`js/tilehead.js`) | the session picker · connection dot · ladder chip · job · branch · output selector · ⛩ · @ · ⚡ · メ · gauge — the unchanged `Tile` head — plus **C** (flip to the commons) appended by the page |
 | **team_commons** | one team | **commons strip** — the channel surface's tab strip | Chat · Wipeboard · Docs · Team Configuration, plus **T** (flip back to the terminal) at its right end |
-| **cowork_commons** | this install and this owner | **commons strip** — the same tab strip | Machine health · Account · Desk profile · Project roots · Help desk · Keypad (planned — `ronin-lab wip/buildouts/COWORK_COMMONS.md`; today this is the `admin_desk`, an overlay a tile draws, and that overlay retires when the surface lands) |
+| **cowork_commons** | this install and this owner | **commons strip** — the same tab strip | Machine health (Stats) · Account (Configuration · Appearance · Release & update · Hotwords · Koshi · gbrain · Log out — "the rest, as the desk was") · Desk profile · Project roots · Help desk (Mika's door over a reserved chat) · Keypad (the pad's card, inline), plus **T**. `js/cowork-commons.js`; landed 2026-08-27, the `admin_desk` overlay retired with it |
 | *league* | every team | *a strip* | **[planned]** — the League destination re-hung as a surface; not designed here |
 
 Rules that make them peers:
@@ -74,6 +74,22 @@ Rules that make them peers:
 - **top header** — the bar. Say *the bar*.
 - **surface head** — the genus for a surface's top row: *tile head*, *commons strip*,
   *column head*.
+
+## Where ⚙ puts it
+
+- **On the cowork_space:** into the workspace you are in (the selected one); ⚙ there
+  again brings the terminal back. Any workspace can be selected whatever it holds — a
+  terminal tile wears `.tile.active`, a commons wears the same ring on its surface.
+- **On the parked grid page:** there is no workspace to place it in, so ⚙ is the
+  `cowork` destination — the surface at full width — and ⚙ again is the way back.
+
+## Parked
+
+- **The 1·2·4 count** left the bar on 2026-08-27 (owner: *"the 1-2-4 button is going to
+  come off"*). Hidden, not deleted: the pad's ▚ layout key still cycles it.
+- **The grid page** (1 / 2 / 4 tiles, the `sessions` destination) is parked with it —
+  reachable, unchanged, and to be removed once the cowork_space carries everything it
+  did. Its `#layoutcycle` and its tile-pool rules are the parts that go with it.
 
 ## What is NOT a workspace surface
 

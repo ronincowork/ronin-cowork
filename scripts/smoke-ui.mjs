@@ -283,44 +283,45 @@ async function checkJourneys(page, label, jsErrors) {
   // 3 — gbrain is the service-switch proof: always visible; inert in cowork alone;
   // live and populated when the service registered.
   const hasGbrain = await page.evaluate(async () => (await (await fetch('/api/version')).json()).services?.includes('gbrain'));
-  // ON THE DESK, since 2026-08-18 — gbrain is install-level, so it moved off the Commons
-  // strip with the other five. "Visible but inert" has to be true wherever the room is
-  // drawn, and the `.desk-row.off` rule is the same one the tab wore; only the surface
-  // asserting it moved, for the second time (menu → strip → desk).
+  // IN THE COWORK COMMONS, since 2026-08-27 — gbrain is install-level, so it lives on the
+  // cowork commons' Account tab ("the rest, as the desk was"). ⚙ on the grid page is the
+  // `cowork` destination at full width. "Visible but inert" has to be true wherever the
+  // room is drawn; only the surface asserting it moved (menu → strip → desk → commons).
   await page.locator('#sysbtn').click();
-  await page.waitForSelector('.desk.show', { timeout: 3000 });
-  const gbrainRow = page.locator('.desk.show .desk-row[data-room="gbrain"]').first();
+  await page.waitForSelector('#cowork-view:not([hidden]) .cc', { timeout: 3000 });
+  const ccTabs = await page.evaluate(() => [...document.querySelectorAll('#cowork-view .wk-channel-service-tab')].map((b) => b.textContent.trim()));
+  if (ccTabs.length === 6) ok(`${label}: the cowork commons carries its six tabs (${ccTabs.join(' · ')})`);
+  else bad(`${label}: the cowork commons has ${ccTabs.length} tabs, wanted 6`);
+  await page.locator('#cowork-view .wk-channel-service-tab').nth(1).click(); // Account
+  await page.waitForTimeout(200);
+  const gbrainRow = page.locator('#cowork-view .desk-gbrain').first();
   if (!hasGbrain) {
-    if (await gbrainRow.isDisabled()) ok(`${label}: gbrain is visible but inert without its service`);
-    else bad(`${label}: gbrain is clickable without its service`);
-    await page.evaluate(() => document.querySelector('.desk.show .desk-x')?.click());
+    if ((await gbrainRow.count()) > 0) ok(`${label}: gbrain is drawn on the Account tab without its service`);
+    else bad(`${label}: gbrain is missing from the Account tab`);
+    await page.locator('#sysbtn').click(); // ⚙ again is the way back
+  } else if (!(await page.evaluate(async () => (await (await fetch('/api/gbrain')).json()).installed))) {
+    // NOT INSTALLED is a legal, first-class state (install-contract.md § The tab rule):
+    // the room must be exactly one Load button, not the status panel.
+    try {
+      await page.waitForSelector('#cowork-view .desk-gbrain .gb-privacy button', { timeout: 8000 });
+      const btn = await page.locator('#cowork-view .desk-gbrain .gb-privacy button').first().textContent();
+      if (/load|retry/i.test(btn || '')) ok(`${label}: gbrain room offers the one-press Load while not installed`);
+      else bad(`${label}: gbrain not installed but the room's button says "${btn}", wanted Load`);
+    } catch {
+      bad(`${label}: gbrain not installed and the room offered no Load button`);
+    }
+    await page.locator('#sysbtn').click();
   } else {
-    if (await gbrainRow.isDisabled()) bad(`${label}: gbrain service registered but its room is inert`);
-    else if (!(await page.evaluate(async () => (await (await fetch('/api/gbrain')).json()).installed))) {
-      // NOT INSTALLED is a legal, first-class state (install-contract.md § The tab
-      // rule): the room must be exactly one Load button, not the status panel.
-      await gbrainRow.click();
       try {
-        await page.waitForSelector('.desk.show[data-room="gbrain"] .gb-privacy button', { timeout: 8000 });
-        const btn = await page.locator('.desk.show[data-room="gbrain"] .gb-privacy button').first().textContent();
-        if (/load|retry/i.test(btn || '')) ok(`${label}: gbrain room offers the one-press Load while not installed`);
-        else bad(`${label}: gbrain not installed but the room's button says "${btn}", wanted Load`);
-      } catch {
-        bad(`${label}: gbrain not installed and the room offered no Load button`);
-      }
-      await page.evaluate(() => document.querySelector('.desk.show .desk-x')?.click());
-    } else {
-      await gbrainRow.click();
-      try {
-        await page.waitForSelector('.desk.show[data-room="gbrain"] .gb-privacy .gb-row', { timeout: 8000 });
-        const rows = await page.locator('.desk.show[data-room="gbrain"] .gb-privacy .gb-row').count();
+        await page.waitForSelector('#cowork-view .desk-gbrain .gb-privacy .gb-row', { timeout: 8000 });
+        const rows = await page.locator('#cowork-view .desk-gbrain .gb-privacy .gb-row').count();
         if (rows === 5) ok(`${label}: gbrain service room loads its five privacy facts`);
         else bad(`${label}: gbrain service room loaded ${rows} privacy facts, wanted 5`);
-        const answerRow = await page.locator('.desk.show[data-room="gbrain"] .gb-card .gb-row').filter({ hasText: 'Answers' }).first().textContent();
+        const answerRow = await page.locator('#cowork-view .desk-gbrain .gb-card .gb-row').filter({ hasText: 'Answers' }).first().textContent();
         if (/composed by the agent \(by design\)|gbrain composition available|unknown/.test(answerRow || '')) {
           ok(`${label}: gbrain names who composes answers beside search`);
         } else bad(`${label}: gbrain did not name who composes answers`);
-        const ask = page.locator('.desk.show[data-room="gbrain"] .gb-integration button').first();
+        const ask = page.locator('#cowork-view .desk-gbrain .gb-integration button').first();
         if (await ask.count()) {
           await ask.click();
           // IT CROSSES SURFACES NOW, and that is the half worth asserting. gbrain is a
@@ -330,7 +331,7 @@ async function checkJourneys(page, label, jsErrors) {
           // the launcher opens filled-in and invisible behind the desk. It did exactly
           // that for one run on 2026-08-18; this probe is why that lasted one run.
           const handoff = await page.evaluate(() => ({
-            deskUp: !!document.querySelector('.desk.show'),
+            deskUp: !document.getElementById('cowork-view')?.hidden,
             homeUp: !!document.querySelector('.home.show'),
             pane: document.querySelector('.home.show')?.dataset.pane,
             prompt: document.querySelector('.home.show .home-null textarea')?.value || '',
@@ -366,57 +367,44 @@ async function checkJourneys(page, label, jsErrors) {
         bad(`${label}: gbrain service room did not load its status`);
       }
       await page.evaluate(() => document.querySelector('.home.show .home-x')?.click());
-    }
   }
 
-  // 4 — the ONE gear: ⚙ in the bar raises the admin_desk on the active tile, the tile
-  // header goes while it is up, and the appearance flip button — which now lives in the
-  // desk's "This app" group rather than a sheet — flips the shell and flips it back
-  // (auto-follow re-arms on the way back; the colorScheme pin above makes dark the
-  // device mode here).
-  //
-  // THIS PROBE USED TO DRIVE `#syssheet` (a page-level ui.sheet) and was rewritten on
-  // 2026-08-18 when ⚙ became the desk. What it asserts is deliberately unchanged: one
-  // gear, one surface, and the flip works from it. The waiting is simpler now for a
-  // structural reason worth keeping — a desk is a tile overlay, not a modal, so nothing
-  // can intercept pointer events for the probes that follow, which is what the long
-  // comment this replaced was entirely about.
+  // 4 — the ONE gear: ⚙ in the bar is the COWORK COMMONS (2026-08-27) — on the parked grid
+  // page the `cowork` destination at full width, six tabs on the Kit's channel surface; on
+  // the cowork_space the same surface placed in a workspace (team-view.js). What this
+  // asserts is unchanged from the desk it replaced: one gear, one surface, the appearance
+  // flip works from it, a skin re-skins the running app, and ⚙ again is the way back.
+  // No overlay, so nothing can intercept pointer events for the probes that follow.
+  const CC_TAB = (id) => `#cowork-view .cc-pane[data-tab="${id}"]`;
+  const ccTab = async (n) => { await page.locator('#cowork-view .wk-channel-service-tab').nth(n).click(); await page.waitForTimeout(700); };
   await page.locator('#sysbtn').click();
   try {
-    await page.waitForSelector('.tile.deskup .desk.show', { timeout: 3000 });
-    ok(`${label}: the bar's ⚙ raises the admin_desk on the active tile`);
+    await page.waitForSelector('#cowork-view:not([hidden]) .cc', { timeout: 3000 });
+    ok(`${label}: the bar's ⚙ shows the cowork commons`);
   } catch {
-    bad(`${label}: the bar's ⚙ did not raise the admin_desk`);
+    bad(`${label}: the bar's ⚙ did not show the cowork commons`);
   }
-  // The six that left the strip are all here, plus the app's own four under them (the desk
-  // profile became its own row on 2026-08-27; Keypad is an action row and is not counted).
-  const deskRows = await page.evaluate(() => ({
-    install: [...document.querySelectorAll('.desk.show .desk-row')].filter((r) => ['settei','proj','hotwords','koshi','gbrain','stats'].includes(r.dataset.room)).length,
-    app: [...document.querySelectorAll('.desk.show .desk-row')].filter((r) => ['profile','appearance','release','account'].includes(r.dataset.room)).length,
-  }));
-  if (deskRows.install === 6 && deskRows.app === 4) ok(`${label}: the desk carries the 6 install rooms and the app's 4`);
-  else bad(`${label}: the desk has ${deskRows.install} install rooms and ${deskRows.app} app rows, wanted 6 and 4`);
-  // The Desk profile row must DRAW — the pane list in style.css is explicit per room, and a
-  // row whose pane is not on it counts in the nav while showing nothing (2026-08-27).
-  await page.locator('.desk.show .desk-row[data-room="profile"]').click();
-  await page.waitForTimeout(500);
-  const profileRows = await page.locator('.desk.show .desk-profile .sys-skin:visible').count();
-  if (profileRows >= 2) ok(`${label}: the Desk profile row shows the picker — Stock plus ${profileRows - 1} profile(s)`);
-  else bad(`${label}: the Desk profile row shows ${profileRows} visible row(s) — the pane is not drawing`);
+  const ccNames = await page.evaluate(() => [...document.querySelectorAll('#cowork-view .wk-channel-service-tab')].map((b) => b.textContent.trim()));
+  if (ccNames.length === 6) ok(`${label}: the cowork commons carries six tabs — ${ccNames.join(' · ')}`);
+  else bad(`${label}: the cowork commons has ${ccNames.length} tabs, wanted 6`);
+  // The Desk profile tab must DRAW the picker (its pane was missing from the desk's per-room
+  // CSS list once, 2026-08-27, and the row counted while showing nothing).
+  await ccTab(2);
+  const profileRows = await page.locator(`${CC_TAB('profile')} .sys-skin:visible`).count();
+  if (profileRows >= 2) ok(`${label}: the Desk profile tab shows the picker — Stock plus ${profileRows - 1} profile(s)`);
+  else bad(`${label}: the Desk profile tab shows ${profileRows} visible row(s) — the pane is not drawing`);
+  // The Keypad tab holds the pad's card INLINE — not a sheet (owner, 2026-08-27).
+  await ccTab(5);
+  const padInline = await page.evaluate(() => !!document.querySelector('#cowork-view .cc-pane[data-tab="keypad"] .pad-card .pad-board'));
+  if (padInline) ok(`${label}: the Keypad tab holds the pad's board inline`);
+  else bad(`${label}: the Keypad tab does not hold the pad's board`);
 
-  const headGone = await page.evaluate(() => {
-    const h = document.querySelector('.tile.deskup .tile-head');
-    return h ? getComputedStyle(h).display === 'none' : false;
-  });
-  if (headGone) ok(`${label}: the desk is a clean tile — the session header goes with it`);
-  else bad(`${label}: the tile header is still drawn over the desk`);
-
-  await page.locator('.desk.show .desk-row[data-room="appearance"]').click();
+  await ccTab(1); // Account: appearance, skins, the flip
   const darkBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-  await page.locator('.desk.show .sys-flip').click();
+  await page.locator(`${CC_TAB('account')} .sys-flip`).click();
   await page.waitForTimeout(200);
   const lightBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-  await page.locator('.desk.show .sys-flip').click();
+  await page.locator(`${CC_TAB('account')} .sys-flip`).click();
   await page.waitForTimeout(200);
   const backBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
   if (lightBg !== darkBg && backBg === darkBg) ok(`${label}: the flip button flips the shell and back (${darkBg} ⇄ ${lightBg})`);
@@ -425,21 +413,22 @@ async function checkJourneys(page, label, jsErrors) {
   if (failAfterTheme) bad(`${label}: the theme flip raised the failure banner`);
 
   // SKINS — a skin is design tokens and nothing else, so the probe reads a TOKEN and then
-  // a rendered element: the variable proves the block landed, the element proves the app
-  // actually wears it. Shipped skins only here; the user's own copy is a store this gate
-  // must not write to.
-  const skins = await page.locator('.desk.show .desk-appearance .sys-skin').count();
+  // a rendered element (the bar's ⚙, always drawn): the variable proves the block landed,
+  // the element proves the app actually wears it. Shipped skins only here; the user's own
+  // copy is a store this gate must not write to.
+  const skinPick = `${CC_TAB('account')} .sys-skin`;
+  const skins = await page.locator(skinPick).count();
   if (skins >= 2) ok(`${label}: the skin picker lists ${skins} skins from the catalog`);
   else bad(`${label}: the skin picker listed ${skins} skins, wanted at least 2`);
   const before = await page.evaluate(() => ({
     tok: getComputedStyle(document.documentElement).getPropertyValue('--radius-md').trim(),
-    drawn: getComputedStyle(document.querySelector('.desk.show .desk-row')).borderRadius,
+    drawn: getComputedStyle(document.querySelector('#sysbtn')).borderRadius,
   }));
-  await page.locator('.desk.show .desk-appearance .sys-skin', { hasText: 'Square' }).first().click();
+  await page.locator(skinPick, { hasText: 'Square' }).first().click();
   await page.waitForTimeout(250);
   const after = await page.evaluate(() => ({
     tok: getComputedStyle(document.documentElement).getPropertyValue('--radius-md').trim(),
-    drawn: getComputedStyle(document.querySelector('.desk.show .desk-row')).borderRadius,
+    drawn: getComputedStyle(document.querySelector('#sysbtn')).borderRadius,
   }));
   if (after.tok !== before.tok && after.drawn !== before.drawn) {
     ok(`${label}: a skin re-skins the running app (--radius-md ${before.tok}→${after.tok}, drawn ${before.drawn}→${after.drawn})`);
@@ -448,13 +437,13 @@ async function checkJourneys(page, label, jsErrors) {
   // face and a light face, and the bug this catches is silent in both directions: a prefix
   // that eats one of the token's own dashes parses to zero tokens, so the skin applies
   // nothing and looks merely subtle rather than broken (2026-08-19, one run).
-  await page.locator('.desk.show .desk-appearance .sys-skin', { hasText: 'Paper' }).first().click();
+  await page.locator(skinPick, { hasText: 'Paper' }).first().click();
   await page.waitForTimeout(250);
   const faceA = await page.evaluate(() => ({
     shell: document.documentElement.dataset.theme,
     bg: getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(),
   }));
-  await page.locator('.desk.show .sys-flip').click();
+  await page.locator(`${CC_TAB('account')} .sys-flip`).click();
   await page.waitForTimeout(350);
   const faceB = await page.evaluate(() => ({
     shell: document.documentElement.dataset.theme,
@@ -463,18 +452,18 @@ async function checkJourneys(page, label, jsErrors) {
   if (faceA.bg !== faceB.bg && faceA.shell !== faceB.shell) {
     ok(`${label}: a colour skin keeps the flip — ${faceA.shell} ${faceA.bg} ⇄ ${faceB.shell} ${faceB.bg}`);
   } else bad(`${label}: the skin's two faces did not follow the shell — ${JSON.stringify(faceA)} vs ${JSON.stringify(faceB)}`);
-  await page.locator('.desk.show .sys-flip').click(); // back to the shell we arrived in
+  await page.locator(`${CC_TAB('account')} .sys-flip`).click(); // back to the shell we arrived in
   await page.waitForTimeout(250);
 
   // Put the shared browser profile back on Stock before this journey leaves Appearance.
-  await page.locator('.desk.show .desk-appearance .sys-skin', { hasText: 'Stock' }).first().click();
+  await page.locator(skinPick, { hasText: 'Stock' }).first().click();
   await page.waitForTimeout(200);
 
-  // ⚙ TOGGLES, and the tile comes back — verify this before the skin composition proof,
+  // ⚙ TOGGLES, and the grid comes back — verify this before the skin composition proof,
   // whose direct hash loads deliberately replace the document.
   await page.locator('#sysbtn').click();
-  await page.waitForSelector('.tile.deskup', { state: 'detached', timeout: 3000 });
-  ok(`${label}: ⚙ again puts the desk away and gives the tile its header back`);
+  await page.waitForSelector('#cowork-view', { state: 'hidden', timeout: 3000 });
+  ok(`${label}: ⚙ again puts the cowork commons away and gives the grid back`);
 
   if (args.includes('--staging')) {
   // WORKSPACE SKIN ACCEPTANCE — the three shipped Team-oriented consumers have no skin

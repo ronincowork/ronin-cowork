@@ -19,6 +19,7 @@ import { createTeamView } from './team-view.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createNewTeamView } from './new-team.js';
 import { createLeagueView } from './league-view.js';
+import { coworkCommons } from './cowork-commons.js';
 import { createAgentConfigurationView } from './agent-config.js';
 import { installCustomize } from './customize.js';
 import { t } from './lexicon.js';
@@ -109,6 +110,18 @@ export async function init() {
   // this preview is geometry and readings only — no terminal host, no sockets, no Sessions
   // mode — so the existing coworkspace stays the working surface until those gates land.
   guard('register the Team destination', () => workspace.register('team', createTeamView()));
+  // THE COWORK COMMONS at full width — ⚙'s door on the parked grid page, where there is no
+  // workspace to place it in (docs/cowork-space.md). The same one surface the team page
+  // places; entering here takes it, leaving hands it back to whoever places it next.
+  guard('register the cowork destination', () => {
+    const root = document.getElementById('cowork-view');
+    if (!root) throw new Error('cowork root is missing');
+    workspace.register('cowork', {
+      el: root,
+      title: () => t('cowork.commons', 'Cowork commons'),
+      enter: () => { const c = coworkCommons(); root.append(c.el); c.select(c.current()); },
+    });
+  });
   workspace.register('sessions', {
     el: document.getElementById('grid'),
     title: () => tiles[0]?.session || '',
