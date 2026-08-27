@@ -33,6 +33,14 @@
   .tw-count-btn { border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); color: var(--muted); padding: 0 var(--space-3); font: inherit; font-size: var(--text-3); cursor: pointer; }
   .tw-count-btn[aria-pressed='true'] { border-color: var(--kaki); color: var(--fg-strong); }
 
+  /* a blank workspace: the word, centred, and nothing else (owner, 2026-08-27) */
+  .tw-blank { display: flex; align-items: center; justify-content: center; height: 100%; }
+  .tw-blank .wk-state { font-size: var(--text-5); color: var(--muted); }
+  /* the new-session surface: T on the left of its head, then the name; the launcher below */
+  .tw-new .wk-surface-controls { display: flex; align-items: center; gap: var(--space-3); min-height: var(--row-head); padding: var(--space-3) var(--space-4); background: var(--bg-2); border-bottom: var(--edge) solid var(--line); }
+  .tw-new-title { color: var(--fg-strong); }
+  .tw-new .wk-surface-content { overflow-y: auto; }
+
   .tw-note { padding: var(--space-6) var(--space-7); color: var(--muted); font-size: var(--text-3); }
   /* -- Team Configuration: a reading of the team — its record, then its live roster -- */
   .tw-config { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-6) var(--space-7); overflow-y: auto; }

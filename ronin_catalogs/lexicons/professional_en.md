@@ -380,16 +380,22 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team.flip_terminal:** Show the terminal in this workspace
 - **team.workspace_1:** Workspace 1
 - **team.workspace_2:** Workspace 2
+- **team.roster_of:** Roster: {team}
+- **team.workspace_blank:** Workspace
+- **team.new_session:** New session
+- **cowork.tab_roster:** Roster
+- **cowork.tab_archives:** Archived
+- **glossary.new_session:** new session
 - **team.workspace_3:** Workspace 3
 - **team.workspace_4:** Workspace 4
 - **team.count_2_title:** Two workspaces around the roster
 - **team.count_4_title:** Four workspaces, two by two
-- **team.roster_title:** Team Roster
+- **team.roster_title:** Roster
 - **team.commons:** Team commons
 - **team.arranged_by:** arranged by {from}
 - **team.attached:** attached
 - **team.add_member:** ＋ Add team member
-- **team.add_member_summary:** Existing session or a new one — arrives with its own slice.
+- **team.add_member_summary:** A new session, born into the workspace you are in.
 - **team.none_selected:** No Team selected
 - **team.state:** State
 - **team.record:** Record

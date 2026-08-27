@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1233 keys · 54 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1239 keys · 54 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -99,11 +99,13 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `cowork.mika_button` | ミ Ask Mika |  |  |  |  |
 | `cowork.mika_text` | Ask about Ronin itself — how it works, project roots, starting a session, changing a setting. She starts if she is not up. |  |  |  |  |
 | `cowork.tab_account` | Account |  |  |  |  |
+| `cowork.tab_archives` | Archived |  |  |  |  |
 | `cowork.tab_health` | Machine health |  |  |  |  |
 | `cowork.tab_help` | Help desk |  |  |  |  |
 | `cowork.tab_keypad` | Keypad |  |  |  |  |
 | `cowork.tab_profile` | Desk profile |  |  |  |  |
 | `cowork.tab_roots` | Project roots |  |  |  |  |
+| `cowork.tab_roster` | Roster |  |  |  |  |
 
 ## customize
 
@@ -382,6 +384,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.macros` | macros |  |  |  |  |
 | `glossary.mandate` | mandate |  |  |  |  |
 | `glossary.memory` | memory |  |  |  |  |
+| `glossary.new_session` | new session |  |  |  |  |
 | `glossary.note` | Note |  |  |  |  |
 | `glossary.packet` | what gets sent |  |  |  |  |
 | `glossary.packet_kinds` | Usage counts · Feedback · Macro submission |  |  |  |  |
@@ -1378,7 +1381,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
 | `team.add_member` | ＋ Add team member |  |  |  |  |
-| `team.add_member_summary` | Existing session or a new one — arrives with its own slice. |  |  |  |  |
+| `team.add_member_summary` | A new session, born into the workspace you are in. |  |  |  |  |
 | `team.arranged_by` | arranged by {from} |  |  |  |  |
 | `team.attached` | attached |  |  |  |  |
 | `team.branch` | Branch |  |  |  |  |
@@ -1394,6 +1397,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `team.live_roster_none` | Live roster · none |  |  |  |  |
 | `team.mcp` | MCP |  |  |  |  |
 | `team.mode` | Mode |  |  |  |  |
+| `team.new_session` | New session |  |  |  |  |
 | `team.no_live` | No live sessions on this Team. |  |  |  |  |
 | `team.none_selected` | No Team selected |  |  |  |  |
 | `team.none_selected_dot` | No Team selected. |  |  |  |  |
@@ -1406,7 +1410,8 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `team.repos` | Repositories |  |  |  |  |
 | `team.role` | Role |  |  |  |  |
 | `team.roster` | Roster |  |  |  |  |
-| `team.roster_title` | Team Roster |  |  |  |  |
+| `team.roster_of` | Roster: {team} |  |  |  |  |
+| `team.roster_title` | Roster |  |  |  |  |
 | `team.state` | State |  |  |  |  |
 | `team.status` | Status |  |  |  |  |
 | `team.team` | Team |  |  |  |  |
@@ -1416,6 +1421,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `team.workspace_2` | Workspace 2 |  |  |  |  |
 | `team.workspace_3` | Workspace 3 |  |  |  |  |
 | `team.workspace_4` | Workspace 4 |  |  |  |  |
+| `team.workspace_blank` | Workspace |  |  |  |  |
 
 ## team_wipeboard
 

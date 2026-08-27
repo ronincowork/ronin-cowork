@@ -195,6 +195,9 @@ export function build() {
   // か New — putting a session out to work is the one verb that deserves its own
   // button rather than a row inside a menu: it is how work starts.
   key('newbtn', () => {
+    // On the cowork_space, ＋ New session is a workspace surface (team-view.js); on the
+    // parked grid page it is still the tile's commons tab.
+    if (S.showNewSession) return S.showNewSession();
     const t = S.active || tiles[0];
     if (t) t.showHome('new');
   });

@@ -12,6 +12,7 @@
  *   workspace2=cowork              the cowork commons there (on the tab it was last on)
  *   workspace2=cowork:roots        the cowork commons, on that tab
  *                                  (health · account · profile · roots · help · keypad)
+ *   workspace1=new                 the ＋ New session surface there
  *   workspace1=terminal            the workspace's seat back, as it was
  *   workspace1=empty               the seat, with nothing in it
  *   workspace3=…  workspace4=…      the lower cells of the 2×2 (count=4)
@@ -24,7 +25,11 @@
  */
 
 import { request } from './request.js';
-import { COWORK_TABS } from './cowork-commons.js';
+
+// The cowork commons' tab words, as a draft names them. A PLAIN CONSTANT here, not an
+// import from cowork-commons.js: that module reaches state.js (DOM at top level) and this
+// one is unit-tested under node (tests/team-arrange.test.js — kokugo, 2026-08-27).
+const COWORK_TABS = { health: 'health', account: 'account', profile: 'profile', roots: 'roots', roster: 'roster', archives: 'archives', help: 'help', keypad: 'keypad' };
 
 const COLUMNS = ['workspace1', 'roster', 'workspace2'];
 const WORKSPACES = ['workspace1', 'workspace2', 'workspace3', 'workspace4'];
@@ -49,7 +54,7 @@ export function parseDraft(tokens = [], me = '') {
       } else if (what === 'cowork') {
         if (tab && !COWORK_TABS[tab]) { errors.push(`${key}: no cowork tab "${tab}"`); continue; }
         draft[key] = { cowork: true, tab: tab ? COWORK_TABS[tab] : '' };
-      } else if (what === 'terminal' || what === 'empty') draft[key] = { [what]: true };
+      } else if (what === 'new' || what === 'terminal' || what === 'empty') draft[key] = { [what]: true };
       else if (what) draft[key] = { session: what === 'me' ? me : what };
       else errors.push(`${key}: say what goes there`);
       continue;
@@ -106,6 +111,7 @@ export function createArranger(verbs) {
       if (want.commons) { verbs.putCommons(ws, want.tab, want.doc); did.push(`${ws} commons${want.tab ? ':' + want.tab : ''}`); }
       else if (want.cowork) { verbs.putCowork(ws, want.tab); did.push(`${ws} cowork${want.tab ? ':' + want.tab : ''}`); }
       else if (want.session) { if (verbs.putSession(want.session, ws)) did.push(`${ws} ${want.session}`); else did.push(`${ws}: no session ${want.session}`); }
+      else if (want.new) { verbs.putNew(ws); did.push(`${ws} new`); }
       else if (want.terminal) { verbs.putTerminal(ws); did.push(`${ws} terminal`); }
       else if (want.empty) { verbs.emptySeat(ws); did.push(`${ws} empty`); }
     }
