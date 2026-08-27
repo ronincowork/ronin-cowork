@@ -40,7 +40,7 @@
  * (js/tile.js `deskBase`), not a guess made here.
  */
 import { PANES } from './panes.js';
-import { serviceOff } from './state.js';
+import { S, serviceOff } from './state.js';
 import { buildProjectRoots } from './projectroots.js';
 import { buildHotwords } from './hotwords.js';
 import { buildKoshi } from './koshi.js';
@@ -50,10 +50,14 @@ import { buildStats } from './stats.js';
 import { buildSystemPanel } from './system.js';
 import { t } from './lexicon.js';
 
-/** The app's own three, under the six. Not registry rows — they are not rooms. */
+/** The app's own rows, under the six. Not registry rows — they are not rooms. */
 // A function, not a table: the lexicon loads after this module is evaluated.
 function appRows() {
   return [
+    // く KEYPAD — the Work Louder pad panel, a row here since 2026-08-27 (owner: off the
+    // bar, onto the desk). It is an ACTION, not a pane: the panel is its own sheet
+    // (js/pad.js) and opening it from here is exactly what the bar's button did.
+    { id: 'keypad', label: t('desk.row_keypad', 'Keypad'), glyph: 'く', action: () => S.padPanel?.open() },
     { id: 'appearance', label: t('desk.row_appearance', 'Appearance'), glyph: '◐' },
     { id: 'release', label: t('desk.row_release', 'Release & update'), glyph: '↑' },
     { id: 'account', label: t('desk.log_out', 'Log out'), glyph: '⏻' },
@@ -131,7 +135,7 @@ export function buildDesk(tile) {
         b.classList.add('off');
         b.disabled = true;
         b.setAttribute('aria-label', t('commons.tab_off', '{tab} — off, this service is not installed.', { tab: r.label }));
-      } else b.addEventListener('click', () => show(r.id));
+      } else b.addEventListener('click', () => (r.action ? r.action() : show(r.id)));
       rowEls[r.id] = b;
       nav.appendChild(b);
     }
@@ -147,7 +151,7 @@ export function buildDesk(tile) {
   content.className = 'desk-content';
 
   const paneEl = {};
-  for (const id of [...deskPanes.map((p) => p.id), ...APP_ROWS.map((r) => r.id)]) {
+  for (const id of [...deskPanes.map((p) => p.id), ...APP_ROWS.filter((r) => !r.action).map((r) => r.id)]) {
     const d = document.createElement('div');
     // `desk-<id>` is the room's own layout rule — the `.home-<id>` rule renamed and
     // otherwise untouched when the six moved. The app's three have no such rule and
@@ -186,7 +190,7 @@ export function buildDesk(tile) {
     el.dataset.room = which;
     for (const [id, b] of Object.entries(rowEls)) b.classList.toggle('on', id === which);
     rooms[which]?.enter?.();
-    if (APP_ROWS.some((r) => r.id === which)) app.enter();
+    if (APP_ROWS.some((r) => r.id === which && !r.action)) app.enter();
   };
   show('settei');
 

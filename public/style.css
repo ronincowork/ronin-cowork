@@ -699,14 +699,10 @@ body {
   flex: 1;
 }
 /* Top-bar verbs — BOTH surfaces (owner override of the touch/desktop split) */
-/* The LOOK: one rule, one family — the old list named #homebtn and #macrobtn, which no
-   longer exist, so Commons and Keypad were falling back to the browser default and
-   looked like a different family of control. The grid count rides this rule too; it is
-   the same box. SIZING splits below, because the count is not a verb. */
+/* The LOOK: one rule, one family. The grid count rides this rule too; it is the same
+   box. SIZING splits below, because the count is not a verb. Two verbs since 2026-08-27
+   (owner): Commons, Mika Assist and Keypad left the bar — see index.html. */
 #newbtn,
-#mikabtn,
-#commonsbtn,
-#padbtn,
 #sysbtn,
 #bar .layout-cycle {
   display: inline-flex;
@@ -721,7 +717,7 @@ body {
   cursor: pointer;
   white-space: nowrap;
 }
-/* ONE WIDTH FOR THE FIVE VERBS, and the label sits inside it.
+/* ONE WIDTH FOR THE VERBS (five when measured, two now), and the label sits inside it.
    Owner, 2026-08-17: "each of the boxes on the right, except for the number … should be
    the same width so there's not a small New and a large Commons … and then just fit
    inside that button so that it looks a little bit more symmetrical." Boxes sized to
@@ -740,9 +736,6 @@ body {
    that always fits. Rename a verb longer than this and RE-MEASURE at 681px; do not just
    nudge it up. */
 #newbtn,
-#mikabtn,
-#commonsbtn,
-#padbtn,
 #sysbtn {
   min-width: 100px;
   justify-content: center;
@@ -752,22 +745,13 @@ body {
    THE EQUAL WIDTH GOES WITH THEM — five 100px boxes holding one glyph each would eat
    500px of a 402px row and shove the grid count off the end, which is the opposite of
    what the width was for. `min-width: auto` hands each glyph back its own small box.
-
-   Commons and Account are in this list now; they were not. #commonsbtn kept its word at
-   402px and ⚙ had no word to lose, so the phone bar carried two exceptions to a rule
-   with three members. One rule, five members, no exceptions. */
+   One rule, every verb on the bar, no exceptions. */
 @media (max-width: 680px) {
   #newbtn .txt,
-  #mikabtn .txt,
-  #commonsbtn .txt,
-  #padbtn .txt,
   #sysbtn .txt {
     display: none; /* icon-only on phones — bar space is tight */
   }
   #newbtn,
-  #mikabtn,
-  #commonsbtn,
-  #padbtn,
   #sysbtn {
     min-width: auto;
   }

@@ -927,6 +927,7 @@ The catalog entry goes. {dir} is not touched.
 - **pane.stats:** Stats
 
 ## desk — desk.js (the desk's rows and tooltips)
+- **desk.row_keypad:** Keypad
 - **desk.row_appearance:** Appearance
 - **desk.row_release:** Release & update
 - **desk.close_title:** Back to what this tile was showing
