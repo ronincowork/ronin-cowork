@@ -396,6 +396,13 @@ async function checkJourneys(page, label, jsErrors) {
   }));
   if (deskRows.install === 6 && deskRows.app === 4) ok(`${label}: the desk carries the 6 install rooms and the app's 4`);
   else bad(`${label}: the desk has ${deskRows.install} install rooms and ${deskRows.app} app rows, wanted 6 and 4`);
+  // The Desk profile row must DRAW — the pane list in style.css is explicit per room, and a
+  // row whose pane is not on it counts in the nav while showing nothing (2026-08-27).
+  await page.locator('.desk.show .desk-row[data-room="profile"]').click();
+  await page.waitForTimeout(500);
+  const profileRows = await page.locator('.desk.show .desk-profile .sys-skin:visible').count();
+  if (profileRows >= 2) ok(`${label}: the Desk profile row shows the picker — Stock plus ${profileRows - 1} profile(s)`);
+  else bad(`${label}: the Desk profile row shows ${profileRows} visible row(s) — the pane is not drawing`);
 
   const headGone = await page.evaluate(() => {
     const h = document.querySelector('.tile.deskup .tile-head');
