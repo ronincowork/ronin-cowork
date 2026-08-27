@@ -1341,3 +1341,53 @@ The catalog entry goes. {dir} is not touched.
 - **keys.down:** Down
 - **keys.left:** Left
 - **keys.right:** Right
+
+## glossary — the words an agent says to a person for the house terms (KOTOBA_GLOSSARY.md, rendered at session birth; no UI reads these)
+- **glossary.ronin:** Ronin
+- **glossary.coworkspace:** the coworkspace
+- **glossary.tile:** tile
+- **glossary.session:** session
+- **glossary.agent:** agent
+- **glossary.commons:** the commons
+- **glossary.desk:** the desk
+- **glossary.tab:** tab
+- **glossary.cowork_setup:** cowork setup
+- **glossary.locked:** Locked / Unlocked
+- **glossary.roster:** the roster
+- **glossary.launch:** launch
+- **glossary.family:** Family
+- **glossary.team_roster:** Team roster
+- **glossary.team_role:** team role
+- **glossary.team_lead:** team lead · 人
+- **glossary.wipeboard:** wipeboard
+- **glossary.brief:** Brief
+- **glossary.docs:** the Docs tab
+- **glossary.configuration:** Configuration
+- **glossary.hotwords:** Hotwords
+- **glossary.project_root:** project root
+- **glossary.project_root_list:** the project root list
+- **glossary.customization:** your own macros and jobs
+- **glossary.pad:** Pad
+- **glossary.control:** Control
+- **glossary.team:** Team
+- **glossary.note:** Note
+- **glossary.doing:** what it's doing
+- **glossary.ladder:** ladder
+- **glossary.rung:** rung · leg · phase · gate
+- **glossary.memory:** memory
+- **glossary.stats:** Stats
+- **glossary.macros:** macros
+- **glossary.macro:** macro
+- **glossary.invocation:** typing a macro
+- **glossary.role:** role
+- **glossary.desk_profile:** desk profile
+- **glossary.behaviour:** behaviour
+- **glossary.build:** build
+- **glossary.mandate:** mandate
+- **glossary.fork:** fork
+- **glossary.harakiri:** harakiri
+- **glossary.packet_kinds:** Usage counts · Feedback · Macro submission
+- **glossary.packet:** what gets sent
+- **glossary.egress_log:** where Ronin has connected
+- **glossary.services:** Services
+- **glossary.session_menu:** Status · Ladder · Macros · Detach · Kill session

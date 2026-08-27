@@ -16,6 +16,12 @@
 > here missed four; KOTOBA's own "the ten" heading missed one. Where a set lives in a
 > catalog, the catalog is the count.
 
+<!-- RENDERED_FOR:START -->
+> This copy is the template. A session receives it rendered at birth for the owner's desk
+> profile — each bold word below is a `glossary.*` key in the lexicon, and the word the
+> owner actually sees replaces it (`src/session-boot.ts`, `docs/kokugo.md` § the glossary).
+<!-- RENDERED_FOR:END -->
+
 ## Where the Japanese stops
 
 From KOTOBA: **Ronin is the product name and goes everywhere.** Our internal system names —
@@ -36,86 +42,86 @@ learn in order to use Ronin should cost them a second language first.
 
 | House term | Plain English | One line |
 |---|---|---|
-| Ronin | **Ronin** | The product. The one word anyone learns on purpose. |
-| `coworkspace` | **the coworkspace** | The whole UI — every tile, panel, tab and button in it. Say *the coworkspace* for the lot, *a tile* for one cell, *the commons* for a tile with no session in it. |
-| tile | **tile** | One cell of the coworkspace, showing one session. The public word for the terminal you look at. |
+| Ronin | **Ronin**<!--g:glossary.ronin--> | The product. The one word anyone learns on purpose. |
+| `coworkspace` | **the coworkspace**<!--g:glossary.coworkspace--> | The whole UI — every tile, panel, tab and button in it. Say *the coworkspace* for the lot, *a tile* for one cell, *the commons* for a tile with no session in it. |
+| tile | **tile**<!--g:glossary.tile--> | One cell of the coworkspace, showing one session. The public word for the terminal you look at. |
 | ~~pane~~ | **tile** | **Not a house word — tmux's, retired from ours** (owner, 2026-08-22). A pane exists only inside the tmux server (the thing `pipe-pane` attaches to); everything OURS that touches or shows one — browser and backend alike — is the **tile**. The word survives only where tmux's own object is literally the subject (the recorder pipes *a pane*). Our code that misnamed its own structures pane is being swept (OPEN_THREADS 4.33). |
-| session | **session** | One agent, one job, one name. Keeps running when you close the tab. |
-| agent | **agent** | The CLI in a tile — `claude`, `codex`, `pi`, a shell script. |
-| `session_commons` | **the commons** | The shared surface inside a tile when no session is showing — one per tile, and about sessions. Already plain English. (Was `coworking_commons` until 2026-08-18.) |
-| `admin_desk` | **the desk** | What a tile shows when you ask it for the machine instead of a session — everything about this install and this app, behind ⚙. Say *the desk*, or just ⚙. Never "the install commons": a commons is about sessions; a desk is about the machine. |
-| `commons_tab` | **tab** | One section of the commons, reached from its tab strip. Say *the Roster tab*, *the Docs tab*. **Never "pane" or "panel"** — pane is tmux's word, and panel adds a second word for a tab. A row on the desk is not a tab. |
-| `cowork_setup` | **cowork setup** | The one-time surface that shapes a new coworkspace before it opens. In code and house documents always write `cowork_setup`; never bare *setup*, *setup page*, or *first run*. |
-| locked 🔒 / unlocked 🔓 | **Locked / Unlocked** | Locked: this view is attached to the live session. Unlocked: the session is still running, this view is not attached to it. |
+| session | **session**<!--g:glossary.session--> | One agent, one job, one name. Keeps running when you close the tab. |
+| agent | **agent**<!--g:glossary.agent--> | The CLI in a tile — `claude`, `codex`, `pi`, a shell script. |
+| `session_commons` | **the commons**<!--g:glossary.commons--> | The shared surface inside a tile when no session is showing — one per tile, and about sessions. Already plain English. (Was `coworking_commons` until 2026-08-18.) |
+| `admin_desk` | **the desk**<!--g:glossary.desk--> | What a tile shows when you ask it for the machine instead of a session — everything about this install and this app, behind ⚙. Say *the desk*, or just ⚙. Never "the install commons": a commons is about sessions; a desk is about the machine. |
+| `commons_tab` | **tab**<!--g:glossary.tab--> | One section of the commons, reached from its tab strip. Say *the Roster tab*, *the Docs tab*. **Never "pane" or "panel"** — pane is tmux's word, and panel adds a second word for a tab. A row on the desk is not a tab. |
+| `cowork_setup` | **cowork setup**<!--g:glossary.cowork_setup--> | The one-time surface that shapes a new coworkspace before it opens. In code and house documents always write `cowork_setup`; never bare *setup*, *setup page*, or *first run*. |
+| locked 🔒 / unlocked 🔓 | **Locked / Unlocked**<!--g:glossary.locked--> | Locked: this view is attached to the live session. Unlocked: the session is still running, this view is not attached to it. |
 
 ## § THE TABS — the commons' rooms
 
 | House term | Plain English | One line |
 |---|---|---|
-| `session_roster` | **the roster** | The **⌂ Roster** tab: every session on the machine. The session list, full stop. **Never "the board."** |
-| `session_launch` | **launch** | The **＋ New** tab. Where a session is born. |
-| `role_family` | **Family** | A shelf on the ＋ New board grouping session roles for viewing — Developer, Assistant, Extra — and a template when you build a team. Presentation only (R35): a family never rides a launch and is not a fact about any session. Its `default_lead_role` is pinned first as the suggested first launch for a new team. |
-| `team_roster` | **Team roster** | The team's durable record: what the team is (`team_role`), what it is for (objective), and the defaults a launch into it inherits. It never lists members — who is on a team is read off the live sessions, always. |
-| `team_role` | **team role** | What a TEAM is — development, health & fitness, admin. It belongs to the team, never to a session: a session on two teams wears each contextually. Changeable, and a change reaches members lazily on their next letter reread. |
-| `team_lead` (`@ronin-lead`) | **team lead · 人** | The one designation: this session leads that team. Set by hand — the secretary can be team lead — never inferred from what a session is doing. A team may have none, one, or several. |
-| `wipeboard` | **wipeboard** | The **▤ Wipeboard** tab and the file behind it. Our own coinage and it stays — *wipe* is right for a surface many hands write on and erase. Every **Team** has its own wipeboard automatically — say **team wipeboard**; membership is the team's and is never managed separately. A **custom wipeboard** is the owner-made secondary kind. Alias **whiteboard** only, because voice-to-text hears it that way. **Never "the board."** |
-| Brief | **Brief** | Your statement of what a wipeboard is for. Agents never edit it. |
-| `MDEDIT` | **the Docs tab** | The **▧ Docs** tab: the documents each session is working on, opened and edited in the tile. **MDEDIT is ours and never reaches a user's face**; on screen it is just *Docs*. Say *list a doc*, never *track* or *attach*. There is no file browser by design — ask the session to show you a file (`+show_file`). |
-| SETTEI (設定) | **Configuration** *(the tab)* · **your settings** *(the things in it)* | What you have set about how your Ronin behaves. **SETTEI never reaches a user's face**; the tab says **⚙ Configuration** (owner, 2026-08-18 — "Setup" read as the act, and the room is a standing statement). |
-| — | **Hotwords** | The words dictation keeps mishearing, sent with your voice. The **tab** is coworkspace like every UI surface; `src/services/koe/hotwords.ts` and the stock list belong to **KOE**. |
+| `session_roster` | **the roster**<!--g:glossary.roster--> | The **⌂ Roster** tab: every session on the machine. The session list, full stop. **Never "the board."** |
+| `session_launch` | **launch**<!--g:glossary.launch--> | The **＋ New** tab. Where a session is born. |
+| `role_family` | **Family**<!--g:glossary.family--> | A shelf on the ＋ New board grouping session roles for viewing — Developer, Assistant, Extra — and a template when you build a team. Presentation only (R35): a family never rides a launch and is not a fact about any session. Its `default_lead_role` is pinned first as the suggested first launch for a new team. |
+| `team_roster` | **Team roster**<!--g:glossary.team_roster--> | The team's durable record: what the team is (`team_role`), what it is for (objective), and the defaults a launch into it inherits. It never lists members — who is on a team is read off the live sessions, always. |
+| `team_role` | **team role**<!--g:glossary.team_role--> | What a TEAM is — development, health & fitness, admin. It belongs to the team, never to a session: a session on two teams wears each contextually. Changeable, and a change reaches members lazily on their next letter reread. |
+| `team_lead` (`@ronin-lead`) | **team lead · 人**<!--g:glossary.team_lead--> | The one designation: this session leads that team. Set by hand — the secretary can be team lead — never inferred from what a session is doing. A team may have none, one, or several. |
+| `wipeboard` | **wipeboard**<!--g:glossary.wipeboard--> | The **▤ Wipeboard** tab and the file behind it. Our own coinage and it stays — *wipe* is right for a surface many hands write on and erase. Every **Team** has its own wipeboard automatically — say **team wipeboard**; membership is the team's and is never managed separately. A **custom wipeboard** is the owner-made secondary kind. Alias **whiteboard** only, because voice-to-text hears it that way. **Never "the board."** |
+| Brief | **Brief**<!--g:glossary.brief--> | Your statement of what a wipeboard is for. Agents never edit it. |
+| `MDEDIT` | **the Docs tab**<!--g:glossary.docs--> | The **▧ Docs** tab: the documents each session is working on, opened and edited in the tile. **MDEDIT is ours and never reaches a user's face**; on screen it is just *Docs*. Say *list a doc*, never *track* or *attach*. There is no file browser by design — ask the session to show you a file (`+show_file`). |
+| SETTEI (設定) | **Configuration**<!--g:glossary.configuration--> *(the tab)* · **your settings** *(the things in it)* | What you have set about how your Ronin behaves. **SETTEI never reaches a user's face**; the tab says **⚙ Configuration** (owner, 2026-08-18 — "Setup" read as the act, and the room is a standing statement). |
+| — | **Hotwords**<!--g:glossary.hotwords--> | The words dictation keeps mishearing, sent with your voice. The **tab** is coworkspace like every UI surface; `src/services/koe/hotwords.ts` and the stock list belong to **KOE**. |
 | KOSHI | ⚠ **see § OPEN 1a** | Ronin's own agents, doing the house's internal jobs. **Reaches a user's face today** — the `目 Koshi` tab, `↻ Restart Koshi`, and body copy calling it *"your AI admin"*. |
-| `project_root` | **project root** | A folder on the machine Ronin is allowed to work in. |
-| `inclusion_list` | **the project root list** | Which folders those are. Ships empty. |
-| `user_customization` | **your own macros and jobs** | The recipes you write to extend what Ronin can do. Distinct from settings: **you set a setting, you write a recipe.** |
-| ▦ keypad | **Pad** | Physical keys wired to macros. Optional hardware. |
+| `project_root` | **project root**<!--g:glossary.project_root--> | A folder on the machine Ronin is allowed to work in. |
+| `inclusion_list` | **the project root list**<!--g:glossary.project_root_list--> | Which folders those are. Ships empty. |
+| `user_customization` | **your own macros and jobs**<!--g:glossary.customization--> | The recipes you write to extend what Ronin can do. Distinct from settings: **you set a setting, you write a recipe.** |
+| ▦ keypad | **Pad**<!--g:glossary.pad--> | Physical keys wired to macros. Optional hardware. |
 
 ## § THE CONTROLS ON A SESSION
 
 | House term | Plain English | One line |
 |---|---|---|
-| dial (`@ronin-control`) | **Control** | Per session: you-only 👤, read 👁, read-and-write 🤖. Only the owner flips it. |
-| team (`@ronin-tags`) | **Team** | A set of sessions that work together, addressable as one — the organizing unit of the whole space (R35). A session may be on several teams, every team has its own wipeboard under its roster, and anyone may move a session between teams. A session on no team is a **rōnin**, which is an ordinary state. `session_team` is the retired spelling. |
-| note (`@ronin_note`) | **Note** | The owner's one line about a session. |
-| `session_role` (in the letter) | **what it's doing** | The role's icon, drawn beside every session in the roster and the tile picker. Set at launch; the session changes it itself as its work changes, and so can you. A session with no session_role shows no icon. |
-| — | **Status · Ladder · Macros · Detach · Kill session** | The rest of the per-session menu. Already plain. |
+| dial (`@ronin-control`) | **Control**<!--g:glossary.control--> | Per session: you-only 👤, read 👁, read-and-write 🤖. Only the owner flips it. |
+| team (`@ronin-tags`) | **Team**<!--g:glossary.team--> | A set of sessions that work together, addressable as one — the organizing unit of the whole space (R35). A session may be on several teams, every team has its own wipeboard under its roster, and anyone may move a session between teams. A session on no team is a **rōnin**, which is an ordinary state. `session_team` is the retired spelling. |
+| note (`@ronin_note`) | **Note**<!--g:glossary.note--> | The owner's one line about a session. |
+| `session_role` (in the letter) | **what it's doing**<!--g:glossary.doing--> | The role's icon, drawn beside every session in the roster and the tile picker. Set at launch; the session changes it itself as its work changes, and so can you. A session with no session_role shows no icon. |
+| — | **Status · Ladder · Macros · Detach · Kill session**<!--g:glossary.session_menu--> | The rest of the per-session menu. Already plain. |
 
 ## § PROGRESS AND HISTORY
 
 | House term | Plain English | One line |
 |---|---|---|
-| MICHI (道) | **ladder** | Ruled in KOTOBA: never say MICHI to a user. The UI says Ladder. |
-| ladder | **ladder** | What a session has done, is doing, and knows is next. |
-| rung · leg · phase · gate | **rung · leg · phase · gate** | One line on the ladder; a unit of work; a group of them; a stop waiting on someone. **Leg stays** — no rename to *step*, which is `tejun-step` (position in a macro run). |
+| MICHI (道) | **ladder**<!--g:glossary.ladder--> | Ruled in KOTOBA: never say MICHI to a user. The UI says Ladder. |
+| ladder | **ladder**<!--g:glossary.ladder--> | What a session has done, is doing, and knows is next. |
+| rung · leg · phase · gate | **rung · leg · phase · gate**<!--g:glossary.rung--> | One line on the ladder; a unit of work; a group of them; a stop waiting on someone. **Leg stays** — no rename to *step*, which is `tejun-step` (position in a macro run). |
 | undetermined | — | Not rendered at all. The ladder never guesses ahead. |
 | SHINGO (信号) | *(no user word)* | The ladder shown on a tile header. A user sees the ladder, not a name. |
 | TEGAMI (手紙) | ⚠ **none — see § OPEN 1** | The one file a session keeps about its own work. Still reaching a user's face. |
 | RIREKI (履歴) | ⚠ **two words on screen — see § OPEN 6** | Everything a pane printed, written to disk as it happens. The tape view says *the recording*; the Services card says *Readable transcripts*. One must win. |
-| OBOERU (覚える) | **memory** | Notes that outlive the session that wrote them. |
-| TOMODACHI (友達) | **Stats** | What your sessions have been doing — counts, not content. **Ruled 2026-08-22:** every surface says *Stats*; the internal spelling is `cowork_stats`; the card's "Usage statistics" is renamed. TOMODACHI never reaches a user's face. |
+| OBOERU (覚える) | **memory**<!--g:glossary.memory--> | Notes that outlive the session that wrote them. |
+| TOMODACHI (友達) | **Stats**<!--g:glossary.stats--> | What your sessions have been doing — counts, not content. **Ruled 2026-08-22:** every surface says *Stats*; the internal spelling is `cowork_stats`; the card's "Usage statistics" is renamed. TOMODACHI never reaches a user's face. |
 
 ## § HOW WORK IS ASKED FOR
 
 | House term | Plain English | One line |
 |---|---|---|
-| TEJUN (手順) | **macros** | The UI says Macros. A user never needs the word TEJUN. |
-| macro | **macro** | A saved instruction you would otherwise have typed to your agent. |
-| invocation | **typing a macro** | `+name: what you want`. That is the whole syntax. |
-| `session_role` | **role** | What a session is doing now. The values read plainly on their own (RiffOnIt, CutCode, CheckWork, …). The set lives in `ronin_catalogs/session_roles/` — one file per role, and the directory is the count. |
-| `desk_profile` | **desk profile** | Your standing defaults for the surfaces you work at — the skin, the words, the kind of campaign the board opens on, how the Team page is arranged. Not a skin; it has one. |
-| `behaviour` | **behaviour** | Anything you can hand a session to change what it does — an SOP, a doc, a tool, a macro, a memory. Inert on the shelf; handed over, it makes the session right for the situation. |
-| `session_build` | **build** | A preconfigured way to start a session — its way of working, the reading it arrives with, the model that suits it. Pick one, then finish its loadout with the behaviours this run needs. |
-| `session_mandate` | **mandate** | How far a session may go before it checks in (discuss · plan · execute · run), whom it may recruit (none · propose · staff), and what it hands back (plan · ideas · code · artifact · team). Set by the owner on the first session of a project; a solo run is just `recruit: none`. |
-| forkit | **fork** | Split the current topic into a visible Ronin session. “Fork it” and “new session” mean this; “spawn an agent” means an internal sub-agent. |
-| harakiri | **harakiri** | A session ends itself. Kept — it is a word people know. |
+| TEJUN (手順) | **macros**<!--g:glossary.macros--> | The UI says Macros. A user never needs the word TEJUN. |
+| macro | **macro**<!--g:glossary.macro--> | A saved instruction you would otherwise have typed to your agent. |
+| invocation | **typing a macro**<!--g:glossary.invocation--> | `+name: what you want`. That is the whole syntax. |
+| `session_role` | **role**<!--g:glossary.role--> | What a session is doing now. The values read plainly on their own (RiffOnIt, CutCode, CheckWork, …). The set lives in `ronin_catalogs/session_roles/` — one file per role, and the directory is the count. |
+| `desk_profile` | **desk profile**<!--g:glossary.desk_profile--> | Your standing defaults for the surfaces you work at — the skin, the words, the kind of campaign the board opens on, how the Team page is arranged. Not a skin; it has one. |
+| `behaviour` | **behaviour**<!--g:glossary.behaviour--> | Anything you can hand a session to change what it does — an SOP, a doc, a tool, a macro, a memory. Inert on the shelf; handed over, it makes the session right for the situation. |
+| `session_build` | **build**<!--g:glossary.build--> | A preconfigured way to start a session — its way of working, the reading it arrives with, the model that suits it. Pick one, then finish its loadout with the behaviours this run needs. |
+| `session_mandate` | **mandate**<!--g:glossary.mandate--> | How far a session may go before it checks in (discuss · plan · execute · run), whom it may recruit (none · propose · staff), and what it hands back (plan · ideas · code · artifact · team). Set by the owner on the first session of a project; a solo run is just `recruit: none`. |
+| forkit | **fork**<!--g:glossary.fork--> | Split the current topic into a visible Ronin session. “Fork it” and “new session” mean this; “spawn an agent” means an internal sub-agent. |
+| harakiri | **harakiri**<!--g:glossary.harakiri--> | A session ends itself. Kept — it is a word people know. |
 
 ## § THE DOOR OUT
 
 | House term | Plain English | One line |
 |---|---|---|
 | AGERU (上げる) | *(no user word — the surfaces say what they do)* | The one door out: nothing leaves except through it and the model provider. **The door is live in cowork** — one allowlisted client, the egress record, the Services activation and stats sends. The review-outbox surface is still to come **[planned]**. The name stays ours. |
-| `packet_kind` | **Usage counts · Feedback · Macro submission** | The three things that can be sent. The JSON says `tomodachi` / `kansou` / `tejun`; **a user never sees those three words.** |
-| `ageru_packet` | **what gets sent** | Shown in full before anything leaves, and kept afterwards. Never *your data*, never *diagnostics*, never *telemetry* — it is a file, and the sentence should say so. |
-| `egress_log` | **where Ronin has connected** | Every outbound request Ronin ever made, model providers included. The honest answer to "does this thing phone home", which is a list, not a promise. |
+| `packet_kind` | **Usage counts · Feedback · Macro submission**<!--g:glossary.packet_kinds--> | The three things that can be sent. The JSON says `tomodachi` / `kansou` / `tejun`; **a user never sees those three words.** |
+| `ageru_packet` | **what gets sent**<!--g:glossary.packet--> | Shown in full before anything leaves, and kept afterwards. Never *your data*, never *diagnostics*, never *telemetry* — it is a file, and the sentence should say so. |
+| `egress_log` | **where Ronin has connected**<!--g:glossary.egress_log--> | Every outbound request Ronin ever made, model providers included. The honest answer to "does this thing phone home", which is a list, not a promise. |
 | KOE (声) | *(the name stays ours)* | Voice, both directions. **Dictation in is live** — the mic on a tile goes through `/api/transcribe` with your Hotwords attached. Spoken summaries back are not built **[planned]**. What a user meets is the mic and the **Hotwords** tab. |
 
 ## § WHAT IS SOLD
@@ -125,7 +131,7 @@ Base Ronin is open source. The rented capabilities on top are **`ronin_service`*
 
 | House term | Plain English | One line |
 |---|---|---|
-| `ronin_service` | **Services** | A rented capability on top of base Ronin: a folder, plus optionally a long-running process that reads files base already writes. Base never imports one. |
+| `ronin_service` | **Services**<!--g:glossary.services--> | A rented capability on top of base Ronin: a folder, plus optionally a long-running process that reads files base already writes. Base never imports one. |
 
 **Never** *module* (the client is built of ES modules) · *plug-in* (OpenClaw's kojinsa-tools and
 skinner) · *extension* (two live bind-mounted directories) · *applet* (RIREKI's recorder is

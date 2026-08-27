@@ -68,6 +68,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { storeDir } from './stores.js';
 import { listMacros } from './macros.js';
+import { activeDeskProfileName, listDeskProfiles } from './desk-profiles.js';
+import { resolveLexicon } from './lexicons.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -106,6 +108,61 @@ export async function renderSessionMacrosReading(): Promise<string> {
   if (!pattern.test(template)) throw new Error('SESSION_MACROS.md has no generated-section markers.');
 
   return template.replace(pattern, `${start}\n${rendered}\n${end}`);
+}
+
+/**
+ * THE GLOSSARY, RENDERED FOR THE OWNER'S DESK (KOKUGO, owner's ruling 2026-08-27).
+ *
+ * KOTOBA_GLOSSARY.md tells a session which word to SAY to a person for a house term the
+ * tools and docs use (TEGAMI, TEJUN, the wipeboard …). Those words are keys in the lexicon
+ * under `glossary.*`, and no surface reads them — their one consumer is this render. Each
+ * keyed cell is marked in the template as `**word**<!--g:glossary.key-->`; the active desk
+ * profile's resolved lexicon replaces the word, and the marker is dropped so the session
+ * reads a plain page. Stock (no profile, or a lexicon that does not answer) renders the
+ * template's own words — the floor's floor, as everywhere else.
+ *
+ * ONE-TIME, BY RULING: rendered at birth, never re-read. A profile changed mid-session is
+ * the owner's own problem.
+ */
+const GLOSSARY_MARK = /\*\*([^*\n]+)\*\*<!--g:([\w.-]+)-->/g;
+const GLOSSARY_HEAD_START = '<!-- RENDERED_FOR:START -->';
+const GLOSSARY_HEAD_END = '<!-- RENDERED_FOR:END -->';
+
+export async function renderGlossaryReading(templatePath: string): Promise<string> {
+  return renderGlossary(await readFile(templatePath, 'utf8'));
+}
+
+/** The render itself, from template text — the inventory renders in memory from what it read. */
+export async function renderGlossary(template: string): Promise<string> {
+  let words: Record<string, string> = {};
+  let line = 'Rendered for the stock desk — no desk profile is chosen, so these are the plain words.';
+  try {
+    const name = await activeDeskProfileName();
+    const profile = name ? (await listDeskProfiles()).find((p) => p.name === name) : undefined;
+    const lexicon = profile?.lexicon ? await resolveLexicon(profile.lexicon) : undefined;
+    if (profile && lexicon) {
+      words = lexicon.words;
+      line = `Rendered for the owner's desk profile \`${profile.name}\` (${profile.label}) · lexicon \`${lexicon.name}\` — **these are the words the owner sees on screen and the words to use with them.** House names stay ours.`;
+    } else if (profile) {
+      line = `Rendered for the owner's desk profile \`${profile.name}\` — its lexicon did not answer, so these are the plain words.`;
+    }
+  } catch {
+    // A lexicon that cannot be read is stock; a session must never fail to launch over words.
+  }
+  const body = template.replace(GLOSSARY_MARK, (_m, literal: string, key: string) => `**${words[key] || literal}**`);
+  const head = new RegExp(`${GLOSSARY_HEAD_START}[\\s\\S]*?${GLOSSARY_HEAD_END}`);
+  return head.test(body) ? body.replace(head, `${GLOSSARY_HEAD_START}\n> ${line}\n${GLOSSARY_HEAD_END}`) : body;
+}
+
+async function glossaryReading(templatePath: string): Promise<string> {
+  const text = await renderGlossaryReading(templatePath);
+  const dir = storeDir('session_boot_cache');
+  const target = path.join(dir, 'KOTOBA_GLOSSARY.md');
+  const temp = `${target}.${process.pid}.${randomUUID()}.tmp`;
+  await mkdir(dir, { recursive: true });
+  await writeFile(temp, text);
+  await rename(temp, target);
+  return target;
 }
 
 async function sessionMacrosReading(): Promise<string> {
@@ -235,6 +292,10 @@ export async function bootFiles(
   for (const dir of dirs) for (const f of await filesIn(dir)) byName.set(path.basename(f), f);
   // Generated last, so the live catalog's macro reading is always the file handed over.
   byName.set('SESSION_MACROS.md', await sessionMacrosReading());
+  // The glossary is rendered from whichever copy won (stock, or the owner's shadow of it)
+  // with the active desk profile's words — KOKUGO, 2026-08-27.
+  const glossary = byName.get('KOTOBA_GLOSSARY.md');
+  if (glossary) byName.set('KOTOBA_GLOSSARY.md', await glossaryReading(glossary));
   return [...byName.values()];
 }
 
