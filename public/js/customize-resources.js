@@ -16,6 +16,7 @@ import { addProvMark, isOwn } from './provenance.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { buildHandoff } from './customize-handoff.js';
 import { buildRoleFamilyEditor } from './customize-role-families.js';
+import { t } from './lexicon.js';
 
 
 const el = (tag, cls, text) => {
@@ -27,7 +28,8 @@ const el = (tag, cls, text) => {
 
 /** The rows a list route returns, normalised. Every catalog route answers an array; the
  *  definition routes answer one too. A non-array is a fault, not an empty shelf. */
-const rows = (data) => (Array.isArray(data) ? data : null);
+// A list, or the desk-profiles answer ({ active, profiles }) — the list is inside it.
+const rows = (data) => (Array.isArray(data) ? data : Array.isArray(data?.profiles) ? data.profiles : null);
 
 /**
  * Render one resource. Returns { count, mark } so the rail can show a resolved count and
@@ -45,19 +47,19 @@ export async function renderResource(resource, surface, onRefresh = async () => 
   // No route: say so, name the missing prerequisite, and stop. An empty list here would
   // assert the owner's shelf is empty, which is a different and false claim.
   if (!resource.read) {
-    surface.setState(resource.capability === 'deferred' ? 'inert' : 'unavailable', resource.why || 'Not available in this preview.');
+    surface.setState(resource.capability === 'deferred' ? 'inert' : 'unavailable', resource.why || t('customize.unavailable', 'Not available in this preview.'));
     return { count: null, mark: null };
   }
 
-  surface.setState('loading', 'reading…');
+  surface.setState('loading', t('customize.reading', 'reading…'));
   const r = await request(resource.read);
   if (!r.ok) {
-    surface.setState('failed', `could not read — ${r.message}`);
+    surface.setState('failed', t('customize.read_failed', 'could not read — {message}', { message: r.message }));
     return { count: null, mark: null };
   }
   const list = rows(r.data);
   if (!list) {
-    surface.setState('failed', 'the route did not answer with a list');
+    surface.setState('failed', t('customize.not_a_list', 'the route did not answer with a list'));
     return { count: null, mark: null };
   }
 
@@ -65,14 +67,14 @@ export async function renderResource(resource, surface, onRefresh = async () => 
   if (!list.length) {
     // A genuinely empty shelf is an ordinary state — a fresh install, or a directory the
     // house deliberately ships nothing into. Say which, rather than looking broken.
-    surface.content.append(createNotice({ message: 'Nothing here yet. That is an ordinary state, not a fault.' }).el);
+    surface.content.append(createNotice({ message: t('customize.empty', 'Nothing here yet. That is an ordinary state, not a fault.') }).el);
   }
 
   if (resource.id === 'role-families') {
     const rolesResult = await request('/api/session-roles');
     const roles = rolesResult.ok && Array.isArray(rolesResult.data) ? rolesResult.data : null;
     if (!roles) {
-      surface.setState('failed', rolesResult.ok ? 'the session-role route did not answer with a list' : `could not read session roles — ${rolesResult.message}`);
+      surface.setState('failed', rolesResult.ok ? t('customize.roles_not_a_list', 'the session-role route did not answer with a list') : t('customize.roles_read_failed', 'could not read session roles — {message}', { message: rolesResult.message }));
       return { count: list.length, mark: null };
     }
     surface.content.append(buildRoleFamilyEditor(list, roles, onRefresh));
@@ -92,7 +94,7 @@ export async function renderResource(resource, surface, onRefresh = async () => 
     // feature-local navigation foundation.
     if (typeof entry.content === 'string') {
       const details = el('details', 'cz-document');
-      details.append(el('summary', null, resource.readLabel || 'Read entry'));
+      details.append(el('summary', null, resource.readLabel || t('customize.read_entry', 'Read entry')));
       details.append(el('pre', 'cz-document-text', entry.content));
       card.el.append(details);
     }

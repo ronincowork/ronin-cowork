@@ -24,6 +24,7 @@
  */
 import { ANSI_RE } from './ansi.js';
 import { groupRecs } from './tapefold.js';
+import { t } from './lexicon.js';
 
 const TRIM_HIGH = 4000000; // characters held before trimming kicks in
 const TRIM_LOW = 3000000; // trim down to this
@@ -57,12 +58,12 @@ export class TapeView {
     this.kakiControls = document.createElement('div');
     this.kakiControls.className = 'kaki-controls';
     const now = document.createElement('button');
-    now.type = 'button'; now.textContent = 'Summarize now';
+    now.type = 'button'; now.textContent = t('tape.summarize_now', 'Summarize now');
     now.addEventListener('click', () => hooks.onSummaryNow?.());
     this.kakiPolicy = document.createElement('select');
-    this.kakiPolicy.setAttribute('aria-label', 'Summary production');
-    this.kakiPolicy.add(new Option('On demand', 'on_demand'));
-    this.kakiPolicy.add(new Option('Keep current', 'keep_current'));
+    this.kakiPolicy.setAttribute('aria-label', t('tape.summary_policy', 'Summary production'));
+    this.kakiPolicy.add(new Option(t('tape.policy_on_demand', 'On demand'), 'on_demand'));
+    this.kakiPolicy.add(new Option(t('tape.policy_keep_current', 'Keep current'), 'keep_current'));
     this.kakiPolicy.addEventListener('change', () => hooks.onSummaryPolicy?.(this.kakiPolicy.value));
     this.kakiControls.append(now, this.kakiPolicy);
     this.el.prepend(this.kakiControls);
@@ -85,8 +86,8 @@ export class TapeView {
     // physics of the day are doing. Shown only while scrolled up.
     this.jump = document.createElement('button');
     this.jump.className = 'tapejump';
-    this.jump.title = 'Jump to the latest output — the deterministic way back to the bottom, whatever the scroll is doing.';
-    this.jump.textContent = '↓ latest';
+    this.jump.title = t('tape.jump_title', 'Jump to the latest output — the deterministic way back to the bottom, whatever the scroll is doing.');
+    this.jump.textContent = t('tape.jump', '↓ latest');
     this.jump.addEventListener('click', () => {
       this.el.scrollTop = this.el.scrollHeight;
       this.jump.classList.remove('show');
@@ -105,7 +106,7 @@ export class TapeView {
 
   setSummary(text, note = '') {
     const wasAtBottom = this.atBottom();
-    this.ttext.textContent = text || note || 'No summary has been written yet.';
+    this.ttext.textContent = text || note || t('tape.no_summary', 'No summary has been written yet.');
     this.tframe.textContent = '';
     this.lastFold = null;
     this.tapeChars = this.ttext.textContent.length;
@@ -178,7 +179,7 @@ export class TapeView {
    * the tape by collapsing repaints, not transcribed from what was on screen.
    */
   setAltNote(on, partial) {
-    const text = (partial ? 'history begins mid-session · ' : '') + 'scrollback above is reconstructed from the tape';
+    const text = partial ? t('tape.alt_note_partial', 'history begins mid-session · scrollback above is reconstructed from the tape') : t('tape.alt_note', 'scrollback above is reconstructed from the tape');
     if (!this.altNote) {
       if (!on) return;
       const n = document.createElement('div');
@@ -229,7 +230,7 @@ export class TapeView {
           this.fill(fold, op);
           continue;
         }
-        op.label = '⌨ code';
+        op.label = t('tape.fold_code', '⌨ code');
       }
       const fold = document.createElement('details');
       fold.className = 'fold';

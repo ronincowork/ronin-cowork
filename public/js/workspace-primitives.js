@@ -1,4 +1,5 @@
 /* Workspace Kit primitives. Feature meaning belongs to consumers, never these nodes. */
+import { t } from './lexicon.js';
 
 const node = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -107,16 +108,36 @@ function createReservedSurface(label = 'Reserved') {
 
 const CHANNEL_SERVICES = ['chat', 'wipeboard', 'docs', 'team-configuration'];
 
-/** Geometry and replacement-tab behavior only. Chat intentionally starts as empty space. */
+/**
+ * Geometry and replacement-tab behavior only. Chat intentionally starts as empty space.
+ *
+ * THE SERVICE LIST IS THE CALLER'S since 2026-08-27: `options.channels` is an ordered
+ * `[{ id, label }]`, and absent it is the team commons' four (CHANNEL_SERVICES, labels
+ * below). The cowork_commons is a second surface on this same primitive with six tabs of
+ * its own (js/cowork-commons.js, docs/cowork-space.md) — one strip, one look, one set of
+ * rules, and no second frame. The default tab is the first in the list.
+ */
 function createChannelSurface(options = {}) {
-  const surface = createSurface({ label: options.label || 'Team channels' });
+  const surface = createSurface({ label: options.label || t('workspace.channels', 'Team channels') });
   surface.el.classList.add('wk-channel-surface');
   const tabs = node('div', 'wk-channel-service-tabs');
   tabs.setAttribute('role', 'tablist');
   const services = new Map();
   const buttons = new Map();
-  for (const id of CHANNEL_SERVICES) {
-    const button = node('button', 'wk-channel-service-tab', id === 'team-configuration' ? 'Team Configuration' : id[0].toUpperCase() + id.slice(1));
+  // One literal key per team service, so the gate can see each of them.
+  const TEAM_LABELS = () => ({
+    chat: t('workspace.channel_chat', 'Chat'),
+    wipeboard: t('workspace.channel_wipeboard', 'Wipeboard'),
+    docs: t('workspace.channel_docs', 'Docs'),
+    'team-configuration': t('workspace.channel_team_configuration', 'Team Configuration'),
+  });
+  const channels = Array.isArray(options.channels) && options.channels.length
+    ? options.channels.map((c) => ({ id: String(c.id), label: c.label || c.id }))
+    : CHANNEL_SERVICES.map((id) => ({ id, label: TEAM_LABELS()[id] ?? id[0].toUpperCase() + id.slice(1) }));
+  const ids = channels.map((c) => c.id);
+  const first = ids[0];
+  for (const { id, label: tabLabel } of channels) {
+    const button = node('button', 'wk-channel-service-tab', tabLabel);
     button.type = 'button';
     button.setAttribute('role', 'tab');
     const service = node('div', 'wk-channel-service');
@@ -133,15 +154,15 @@ function createChannelSurface(options = {}) {
     tabs.append(button);
     surface.content.append(service);
   }
-  // Consumer actions ride the strip's right end — the same row, no new one.
+  // Consumer actions ride the strip's LEFT end since 2026-08-27 (owner: C and T "all the
+  // way to the left") — the same row, no new one.
   if (Array.isArray(options.actions) && options.actions.length) {
-    tabs.append(node('span', 'wk-channel-service-grow'));
-    for (const action of options.actions) if (action instanceof Node) tabs.append(action);
+    for (const action of [...options.actions].reverse()) if (action instanceof Node) tabs.prepend(action);
   }
   surface.el.prepend(tabs);
-  let current = 'chat';
+  let current = first;
   const select = (requested) => {
-    const id = CHANNEL_SERVICES.includes(requested) ? requested : 'chat';
+    const id = ids.includes(requested) ? requested : first;
     current = id;
     for (const [name, button] of buttons) {
       const on = name === id;
@@ -153,7 +174,7 @@ function createChannelSurface(options = {}) {
   };
   select(options.selected);
   const invoke = (hook, context) => {
-    for (const id of CHANNEL_SERVICES) {
+    for (const id of ids) {
       const mounted = options.services?.[id];
       if (mounted && !(mounted instanceof Node)) mounted[hook]?.(services.get(id), context);
     }
@@ -169,11 +190,11 @@ function createChannelSurface(options = {}) {
 
 function createExplorerRail(options = {}) {
   const el = node('nav', 'wk-explorer-rail');
-  el.setAttribute('aria-label', options.label || 'Explorer');
+  el.setAttribute('aria-label', options.label || t('workspace.explorer', 'Explorer'));
   const head = node('div', 'wk-explorer-head');
   const collapseButton = node('button', 'wk-explorer-collapse', '«');
   collapseButton.type = 'button';
-  collapseButton.setAttribute('aria-label', 'Collapse explorer');
+  collapseButton.setAttribute('aria-label', t('workspace.explorer_collapse', 'Collapse explorer'));
   head.append(collapseButton);
   const list = node('div', 'wk-explorer-list');
   list.setAttribute('role', 'listbox');
@@ -187,7 +208,7 @@ function createExplorerRail(options = {}) {
     collapsed = !!on;
     el.dataset.collapsed = String(collapsed);
     collapseButton.textContent = collapsed ? '»' : '«';
-    collapseButton.setAttribute('aria-label', collapsed ? 'Expand explorer' : 'Collapse explorer');
+    collapseButton.setAttribute('aria-label', collapsed ? t('workspace.explorer_expand', 'Expand explorer') : t('workspace.explorer_collapse', 'Collapse explorer'));
   };
   const setDrawer = (open = true) => {
     el.dataset.drawer = open ? 'open' : 'closed';
@@ -320,8 +341,8 @@ function createTabName(tabName) {
   el.type = 'text';
   el.maxLength = 48;
   el.spellcheck = false;
-  el.setAttribute('aria-label', 'Name this tab');
-  el.title = 'Name this browser tab — what it is for. Empty is the default name.';
+  el.setAttribute('aria-label', t('workspace.tab_name', 'Name this tab'));
+  el.title = t('workspace.tab_name_title', 'Name this browser tab — what it is for. Empty is the default name.');
   const render = () => {
     el.placeholder = tabName.placeholder?.() || '';
     el.value = tabName.get?.() || '';
@@ -344,7 +365,7 @@ function createTabName(tabName) {
 function createLayoutMap(arrangement) {
   const el = node('div', 'wk-layout-map');
   el.setAttribute('role', 'group');
-  el.setAttribute('aria-label', 'Workspace columns');
+  el.setAttribute('aria-label', t('workspace.columns', 'Workspace columns'));
   const labelOf = (name) => arrangement.declaration.slots.find((slot) => slot.name === name)?.label || name;
   const render = () => {
     const state = arrangement.state();
@@ -357,7 +378,7 @@ function createLayoutMap(arrangement) {
       button.setAttribute('role', 'switch');
       button.setAttribute('aria-checked', hidden ? 'false' : 'true');
       button.setAttribute('aria-label', labelOf(name));
-      button.title = `${labelOf(name)} — click to ${hidden ? 'show' : 'hide'}, drag to move`;
+      button.title = hidden ? t('workspace.slot_show', '{column} — click to show, drag to move', { column: labelOf(name) }) : t('workspace.slot_hide', '{column} — click to hide, drag to move', { column: labelOf(name) });
       button.style.flexGrow = String(Math.max(6, state.widths[name] || 0));
       el.append(button);
     }

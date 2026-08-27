@@ -1,5 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { request } from './request.js';
+import { t } from './lexicon.js';
 
 /**
  * PROVENANCE — the mark that says a catalog entry is yours.
@@ -28,8 +29,8 @@ export function provMark(entry) {
   el.className = 'prov' + (entry.shadowed ? ' prov-shad' : '');
   el.textContent = entry.shadowed ? '◈' : '◆';
   el.title = entry.shadowed
-    ? 'Yours — this replaces Ronin\'s shipped entry of the same name. Upgrades to that entry will not reach you.'
-    : 'Yours — added by you, in your catalogs store. An upgrade cannot touch it.';
+    ? t('provenance.shadowed', 'Yours — this replaces Ronin\'s shipped entry of the same name. Upgrades to that entry will not reach you.')
+    : t('provenance.own', 'Yours — added by you, in your catalogs store. An upgrade cannot touch it.');
   return el;
 }
 
@@ -52,19 +53,19 @@ export function addYourOwn(file, what, onDone) {
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'prov-add';
-  btn.textContent = `＋ add your own ${what}`;
-  btn.title = `Create your own ${file} in the catalogs store — yours, outside every repo, untouched by upgrades`;
+  btn.textContent = t('provenance.add_own', '＋ add your own {what}', { what });
+  btn.title = t('provenance.add_own_title', 'Create your own {file} in the catalogs store — yours, outside every repo, untouched by upgrades', { file });
   btn.addEventListener('click', async () => {
     btn.disabled = true;
     const r = await request('/api/catalogs/seed', { method: 'POST', json: { file } });
     const say = document.createElement('div');
     if (!r.ok) {
       say.className = 'prov-said bad';
-      say.textContent = 'could not create it — ' + r.message;
+      say.textContent = t('provenance.create_failed', 'could not create it — {message}', { message: r.message });
     } else {
       // The PATH is the answer — it is what you hand your agent, or open yourself.
       say.className = 'prov-said';
-      say.textContent = r.data.created ? `made ${r.data.path} — edit it, or tell an agent to` : `yours is at ${r.data.path}`;
+      say.textContent = r.data.created ? t('provenance.made', 'made {path} — edit it, or tell an agent to', { path: r.data.path }) : t('provenance.exists', 'yours is at {path}', { path: r.data.path });
       if (onDone) onDone(r.data);
     }
     btn.after(say);

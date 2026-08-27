@@ -336,7 +336,11 @@ at every width there was. Length was the symptom; the defect was that the six we
 that line once, for the gear — *release, update, appearance and log out are the install's,
 not a tile's* — and the six were on the wrong side of it.
 
-They are the **`admin_desk`**'s now (`js/desk.js`), raised by ⚙ on the bar. The desk is a
+They were the **`admin_desk`**'s from 2026-08-18, and since 2026-08-27 they are the
+**`cowork_commons`**'s (`js/cowork-commons.js`, `docs/cowork-space.md`) — a workspace
+surface with six tabs, never an overlay: ⚙ places it in the workspace you are in on the
+cowork_space, and shows it at full width as the `cowork` destination on the parked grid
+page. The rest of this section is the desk's history. The desk was a
 TILE, not a page-level sheet (owner: *"page level surface? cant it just be a tile?"*): the
 copies were never about a surface being able to live in a tile, they were about six rooms
 being drawn in every empty one whether or not anyone wanted them. A tile is also a full
@@ -365,9 +369,10 @@ anything. Selecting a pane also scrolls its tab back onto the strip — a room c
 entered from somewhere other than its own tab (⚙ Configuration from first-run, ▧ Docs from the
 tile's 📄), and the strip must not disagree with the pane.
 
-**The five bar verbs are one width** — New · Commons · Keypad · Mika Assist · Account,
-`min-width` plus centred labels, so the row reads even rather than as five different
-kinds of control. The grid count is exempt: it is a number, not a verb. At ≤680px the
+**The bar verbs are one width** — New · Admin Desk since 2026-08-27 (Commons, Keypad and
+Mika Assist left the bar by the owner's word: the Commons is the tile's ⛩ and ⌃⇧C, Mika is
+the `mika` tool, Keypad is a row on the Admin Desk) — `min-width` plus centred labels, so
+the row reads even rather than as different kinds of control. The grid count is exempt: it is a number, not a verb. At ≤680px the
 words go and the width goes with them (a genuine shell change, so a `@media` query).
 
 ## Keyboard and focus

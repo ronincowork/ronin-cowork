@@ -13,9 +13,10 @@
  * tile's own 🏷 opens.
  */
 import { request } from './request.js';
-import { STATUS_LABEL, homeData, homeFault, taskIcon } from './home.js';
+import { homeData, homeFault, statusLabel, taskIcon } from './home.js';
 import { S, tiles } from './state.js';
 import { clampTip, humanAge } from './shingo.js';
+import { t } from './lexicon.js';
 
 /**
  * @param {object} tile  rows connect into this tile
@@ -35,7 +36,7 @@ export function buildRoster(tile, host) {
   const maxRow = document.createElement('div');
   maxRow.className = 'home-maxrow';
   const maxLab = document.createElement('label');
-  maxLab.textContent = 'session max';
+  maxLab.textContent = t('roster.session_max', 'session max');
   const maxInp = document.createElement('input');
   // Four tiles build four rosters, so a fixed id here was four elements wearing one
   // id — latent (label-for resolved to the first tile's input from every tile).
@@ -46,7 +47,7 @@ export function buildRoster(tile, host) {
   maxInp.min = '0';
   maxInp.step = '1';
   maxInp.className = 'home-max';
-  maxInp.title = 'How many sessions may run at once. 0 = no limit. The owner sets this; agents cannot.';
+  maxInp.title = t('roster.session_max_title', 'How many sessions may run at once. 0 = no limit. The owner sets this; agents cannot.');
   const maxNow = document.createElement('span');
   maxNow.className = 'home-maxnow';
   let maxLive = 0;
@@ -54,7 +55,7 @@ export function buildRoster(tile, host) {
     // "4 / 6 running" when a limit is set; just the count when it is not, because
     // "4 / 0" reads as an error rather than as freedom.
     const m = Number(maxInp.value) || 0;
-    maxNow.textContent = m > 0 ? `${maxLive} / ${m} running` : `${maxLive} running · no limit`;
+    maxNow.textContent = m > 0 ? t('roster.running_of', '{n} / {max} running', { n: maxLive, max: m }) : t('roster.running_no_limit', '{n} running · no limit', { n: maxLive });
     maxNow.classList.toggle('full', m > 0 && maxLive >= m);
   };
   const loadMax = async () => {
@@ -70,7 +71,7 @@ export function buildRoster(tile, host) {
     const r = await request('/api/session-max', { method: 'PUT', json: { max: n } });
     if (!r.ok) {
       // The failure lands on the line that states the rule, not in a browser alert.
-      maxNow.textContent = 'not saved — ' + r.message;
+      maxNow.textContent = t('roster.not_saved', 'not saved — {message}', { message: r.message });
       maxNow.classList.add('full');
       setTimeout(loadMax, 2500);
       return;
@@ -104,14 +105,14 @@ export function buildRoster(tile, host) {
   const groupInput = document.createElement('input');
   groupInput.type = 'text';
   groupInput.maxLength = 32;
-  groupInput.placeholder = 'team name';
-  groupInput.setAttribute('aria-label', 'New team name');
+  groupInput.placeholder = t('roster.team_name', 'team name');
+  groupInput.setAttribute('aria-label', t('roster.team_name_aria', 'New team name'));
   groupInput.autocapitalize = 'off';
   groupInput.autocomplete = 'off';
   groupInput.spellcheck = false;
   const groupButton = document.createElement('button');
   groupButton.type = 'submit';
-  groupButton.textContent = '＋ Team';
+  groupButton.textContent = t('roster.add_team', '＋ Team');
   const groupMessage = document.createElement('span');
   groupMessage.className = 'home-group-msg';
   groupAdd.append(groupInput, groupButton, groupMessage);
@@ -123,13 +124,13 @@ export function buildRoster(tile, host) {
     e.preventDefault();
     const group = cleanGroup(groupInput.value);
     if (!group) {
-      groupMessage.textContent = 'use letters, digits, - or _';
+      groupMessage.textContent = t('roster.team_name_rule', 'use letters, digits, - or _');
       groupInput.focus();
       return;
     }
     pendingGroups.add(group);
     groupInput.value = '';
-    groupMessage.textContent = `drag a session into ${group}`;
+    groupMessage.textContent = t('roster.drag_into', 'drag a session into {team}', { team: group });
     render();
   });
 
@@ -173,8 +174,8 @@ export function buildRoster(tile, host) {
     jb.dataset.job = s.session_role || ''; // so style can reach one mark — see style.css
     jb.textContent = mark;
     jb.title = mark
-      ? [s.session_role, s.leads?.length ? `人 leads ${s.leads.join(', ')}` : ''].filter(Boolean).join(' · ')
-      : 'has not said what it is doing yet';
+      ? [s.session_role, s.leads?.length ? t('roster.leads', '人 leads {teams}', { teams: s.leads.join(', ') }) : ''].filter(Boolean).join(' · ')
+      : t('roster.no_role_yet', 'has not said what it is doing yet');
     r.appendChild(jb);
     // The name takes the slack (`minmax(0, 1fr)`), so the spacer `.grow` that used to
     // shove the readings rightwards is gone with the flex row it existed to stretch —
@@ -200,7 +201,7 @@ export function buildRoster(tile, host) {
     if (s.status) {
       const st = document.createElement('span');
       st.className = 'home-status st-' + s.status;
-      st.textContent = STATUS_LABEL[s.status] || s.status;
+      st.textContent = statusLabel(s.status) || s.status;
       r.appendChild(st);
     }
     if (s.ctx != null) {
@@ -270,7 +271,7 @@ export function buildRoster(tile, host) {
     // overwrites the field while it has focus (see loadMax).
     void loadMax();
     stale.hidden = !homeFault;
-    if (homeFault) stale.textContent = '⚠ roster may be stale — ' + homeFault;
+    if (homeFault) stale.textContent = t('roster.stale', '⚠ roster may be stale — {fault}', { fault: homeFault });
     const data = homeData || S.sessions.map((s) => ({ ...s, status: null, ctx: null }));
     list.innerHTML = '';
     // Sorted by group, with a heading per group. A session in two groups is listed
@@ -291,7 +292,7 @@ export function buildRoster(tile, host) {
         h.append(Object.assign(document.createElement('span'), { textContent: String(n) }));
         container.appendChild(h);
         if (!acceptsDrop) return;
-        h.title = `Drop a session here to add it to ${text}`;
+        h.title = t('roster.drop_here', 'Drop a session here to add it to {team}', { team: text });
         container.addEventListener('dragover', (e) => {
           if (!e.dataTransfer.types.includes('application/x-ronin-session')) return;
           e.preventDefault();
@@ -321,7 +322,7 @@ export function buildRoster(tile, host) {
             session.tags = (session.tags || []).filter((tag) => tag !== text);
             if (base) base.tags = (base.tags || []).filter((tag) => tag !== text);
             if (wasPending && !data.some((s) => (s.tags || []).includes(text))) pendingGroups.add(text);
-            groupMessage.textContent = 'not saved — ' + message;
+            groupMessage.textContent = t('roster.not_saved', 'not saved — {message}', { message });
             tiles.forEach((t) => t.syncHeader());
             render();
           };
@@ -361,12 +362,12 @@ export function buildRoster(tile, host) {
         const block = document.createElement('div');
         block.className = 'home-group';
         list.appendChild(block);
-        heading('no team', loose.length, block, false);
+        heading(t('roster.no_team', 'no team'), loose.length, block, false);
         for (const s of loose) block.appendChild(rowFor(s));
       }
     }
     if (!data.length) {
-      list.innerHTML = '<span class="home-empty">no sessions yet</span>';
+      list.appendChild(Object.assign(document.createElement('span'), { className: 'home-empty', textContent: t('roster.no_sessions', 'no sessions yet') }));
     }
   };
 

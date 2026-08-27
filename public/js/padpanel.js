@@ -5,6 +5,7 @@ import { field, sheet, toast } from './ui.js';
 import { toClipboard } from './panels.js';
 import { S } from './state.js';
 import { WL_COMBOS, WL_ENCODER, WL_JOYSTICK, WL_RONIN_KEYMAP, wlConnect, wlDownload, wlWriteFile } from './weblink.js';
+import { t } from './lexicon.js';
 
 /**
  * ASK-ON-PRESS — the prompt an `ask: true` binding pops so ONE physical key can carry
@@ -27,18 +28,18 @@ import { WL_COMBOS, WL_ENCODER, WL_JOYSTICK, WL_RONIN_KEYMAP, wlConnect, wlDownl
  */
 export function buildPadAsk() {
   let cur = null; // the binding being asked about
-  const dlg = sheet({ id: 'padask', cls: 'pa-card', label: 'Macro arguments', onClose: () => (cur = null) });
+  const dlg = sheet({ id: 'padask', cls: 'pa-card', label: t('pad.ask_sheet', 'Macro arguments'), onClose: () => (cur = null) });
   const label = document.createElement('code');
   const inp = document.createElement('input');
   inp.type = 'text';
-  inp.placeholder = 'Enter sends · Esc cancels';
+  inp.placeholder = t('pad.ask_placeholder', 'Enter sends · Esc cancels');
   inp.autocapitalize = 'off';
   inp.autocomplete = 'off';
   inp.spellcheck = false;
   // The placeholder tells you the KEYS, not what the box is for — so the box gets a
   // real name of its own. ui.field is display:contents and its message line is
   // :empty-hidden, so the row is the same two items it always was.
-  const inpField = field(inp, { label: 'macro arguments' });
+  const inpField = field(inp, { label: t('pad.ask_label', 'macro arguments') });
   dlg.card.append(label, inpField.el);
 
   const open = (bind) => {
@@ -96,7 +97,7 @@ export function buildPadPanel() {
   const dlg = sheet({
     id: 'padsheet',
     cls: 'pad-card',
-    label: 'Work Louder pad',
+    label: t('pad.sheet', 'Work Louder pad'),
     // The panel's teardown hangs HERE, not on the Close button, because Escape and a
     // backdrop tap now close through the primitive and they are the two routes that
     // used to skip it. Dismissing with Esc must still drop the WebHID connection.
@@ -110,19 +111,20 @@ export function buildPadPanel() {
   bar.className = 'pad-bar';
   const title = document.createElement('span');
   title.className = 'pad-title';
-  title.textContent = '▦ Work Louder';
+  title.textContent = t('pad.title', '▦ Work Louder');
   // Live readout of the last physical chord seen — doubles as discovery: if a key
   // lights nothing, this shows what it actually emits so you can fix the mapping.
   const last = document.createElement('code');
   last.className = 'pad-last';
-  last.textContent = 'press a pad key…';
+  last.textContent = t('pad.press_key', 'press a pad key…');
   // ⊕ Capture: bind whatever the pad actually emits — press the button, then the
   // physical key; its chord (F17, ⌥⌘1, whatever Input was told to send) opens the
   // editor. Keys outside the drawn layout land in the "captured" row below it.
   const capBtn = document.createElement('button');
-  capBtn.textContent = '⊕ Capture';
+  capBtn.textContent = t('pad.capture', '⊕ Capture');
   const closeBtn = document.createElement('button');
-  closeBtn.textContent = 'Close';
+  closeBtn.className = 'pad-close'; // hidden when the card sits inline in the cowork commons
+  closeBtn.textContent = t('pad.close', 'Close');
   bar.append(title, last, capBtn, closeBtn);
   const board = document.createElement('div');
   board.className = 'pad-board';
@@ -151,7 +153,7 @@ export function buildPadPanel() {
   const macroSel = document.createElement('select');
   const argsInp = document.createElement('input');
   argsInp.type = 'text';
-  argsInp.placeholder = 'args (k=v …) — optional';
+  argsInp.placeholder = t('pad.args_placeholder', 'args (k=v …) — optional');
   argsInp.autocapitalize = 'off';
   argsInp.autocomplete = 'off';
   argsInp.spellcheck = false;
@@ -163,10 +165,10 @@ export function buildPadPanel() {
   askLbl.className = 'pad-asklbl';
   const askChk = document.createElement('input');
   askChk.type = 'checkbox';
-  askLbl.append(askChk, document.createTextNode(' ask on press'));
-  askLbl.title = 'Every press pops a prompt for the args (e.g. buildout) — Enter fires';
+  askLbl.append(askChk, document.createTextNode(' ' + t('pad.ask_on_press', 'ask on press')));
+  askLbl.title = t('pad.ask_on_press_title', 'Every press pops a prompt for the args (e.g. buildout) — Enter fires');
   const saveBtn = document.createElement('button');
-  saveBtn.textContent = 'Save';
+  saveBtn.textContent = t('pad.save', 'Save');
   row2.append(sessSel, askLbl, saveBtn);
   edit.append(editTitle, row1, row2);
   dlg.card.appendChild(edit);
@@ -188,22 +190,22 @@ export function buildPadPanel() {
   };
   const openEditor = (chord) => {
     editing = chord;
-    editTitle.textContent = 'key ' + pretty(chord);
+    editTitle.textContent = t('pad.key_title', 'key {chord}', { chord: pretty(chord) });
     macroSel.innerHTML = '';
-    macroSel.add(new Option('— unbound —', ''));
+    macroSel.add(new Option(t('pad.unbound', '— unbound —'), ''));
     const gm = document.createElement('optgroup');
-    gm.label = '⚡ macros';
+    gm.label = t('pad.group_macros', '⚡ macros');
     // An <option> holds no child element, so the provenance mark rides in the text
     // (js/provenance.js keeps the glyphs; this is the one surface that cannot use it).
     for (const m of macroData || [])
       gm.appendChild(new Option(m.origin === 'user' ? `${m.shadowed ? '◈' : '◆'} ${m.name}` : m.name, m.name));
     macroSel.appendChild(gm);
     const gk = document.createElement('optgroup');
-    gk.label = '⌨ keys (to the active tile)';
-    for (const [id, k] of Object.entries(PAD_KEYS)) gk.appendChild(new Option(k.label, 'key:' + id));
+    gk.label = t('pad.group_keys', '⌨ keys (to the active tile)');
+    for (const [id, k] of Object.entries(PAD_KEYS())) gk.appendChild(new Option(k.label, 'key:' + id));
     macroSel.appendChild(gk);
     sessSel.innerHTML = '';
-    sessSel.add(new Option('▸ active tile', ''));
+    sessSel.add(new Option(t('pad.active_tile', '▸ active tile'), ''));
     for (const s of S.sessions) sessSel.add(new Option(s.name, s.name));
     const b = padBinds[chord];
     const want = b ? (b.key ? 'key:' + b.key : b.macro) : '';
@@ -237,8 +239,8 @@ export function buildPadPanel() {
     if (cell.w) {
       const div = document.createElement('div');
       div.className = 'pad-widget pad-' + cell.w;
-      div.textContent = PAD_WIDGETS[cell.w][0];
-      div.title = PAD_WIDGETS[cell.w][1];
+      div.textContent = PAD_WIDGETS()[cell.w][0];
+      div.title = PAD_WIDGETS()[cell.w][1];
       board.appendChild(div);
       widgets.set(cell.w, div);
       continue;
@@ -258,13 +260,13 @@ export function buildPadPanel() {
   const decorate = (btn, chord) => {
     const b = padBinds[chord];
     btn.classList.toggle('bound', !!b);
-    const cap = b ? (b.key ? (PAD_KEYS[b.key] || { label: b.key }).label : b.macro + (b.ask ? '…' : '')) : '·';
+    const cap = b ? (b.key ? (PAD_KEYS()[b.key] || { label: b.key }).label : b.macro + (b.ask ? '…' : '')) : '·';
     btn.querySelector('b').textContent = cap;
     btn.title = !b
-      ? 'unbound — tap to bind'
+      ? t('pad.unbound_tip', 'unbound — tap to bind')
       : b.key
-        ? cap + ' → active tile'
-        : `+${b.macro}${b.ask ? ': (asks on press)' : b.args ? ': ' + b.args : ''} → ${b.session || 'active tile'}`;
+        ? cap + ' → ' + t('pad.active_tile_word', 'active tile')
+        : `+${b.macro}${b.ask ? ': ' + t('pad.asks_on_press', '(asks on press)') : b.args ? ': ' + b.args : ''} → ${b.session || t('pad.active_tile_word', 'active tile')}`;
   };
   const renderCaps = () => {
     cells.forEach((btn, chord) => decorate(btn, chord));
@@ -273,8 +275,8 @@ export function buildPadPanel() {
     for (const [w, el] of widgets) {
       const mine = Object.keys(PAD_CONTROLS).filter((c) => PAD_CONTROLS[c] === w && padBinds[c]);
       if (!mine.length) continue;
-      const what = mine.map((c) => (PAD_KEYS[padBinds[c].key] || { label: padBinds[c].macro || c }).label).join(' · ');
-      el.title = PAD_WIDGETS[w][1] + ' — ' + what;
+      const what = mine.map((c) => (PAD_KEYS()[padBinds[c].key] || { label: padBinds[c].macro || c }).label).join(' · ');
+      el.title = PAD_WIDGETS()[w][1] + ' — ' + what;
     }
     extraCells.clear();
     extras.innerHTML = '';
@@ -300,14 +302,14 @@ export function buildPadPanel() {
   const stopCapture = () => {
     capturingNow = false;
     capBtn.classList.remove('armed');
-    if (last.textContent === 'press the pad key to capture…') last.textContent = 'press a pad key…';
+    if (last.textContent === t('pad.press_to_capture', 'press the pad key to capture…')) last.textContent = t('pad.press_key', 'press a pad key…');
   };
   capBtn.addEventListener('click', () => {
     capturingNow = !capturingNow;
     capBtn.classList.toggle('armed', capturingNow);
     if (capturingNow) {
       closeEditor();
-      last.textContent = 'press the pad key to capture…';
+      last.textContent = t('pad.press_to_capture', 'press the pad key to capture…');
     } else stopCapture();
   });
   const capturing = () => isOpen() && capturingNow;
@@ -326,18 +328,18 @@ export function buildPadPanel() {
   prog.className = 'pad-prog';
   dlg.card.appendChild(prog);
   const progBtn = document.createElement('button');
-  progBtn.textContent = '⚙ Program pad…';
+  progBtn.textContent = t('pad.program', '⚙ Program pad…');
   const layerSel = document.createElement('select');
   const writeBtn = document.createElement('button');
-  writeBtn.textContent = 'Write';
+  writeBtn.textContent = t('pad.write', 'Write');
   // ⧉ Config: copy the pad's current keymap.json to the clipboard — the debug
   // tap for learning how the Input app encodes things (macros, combos) so ⚙ can
   // reproduce them.
   const dumpBtn = document.createElement('button');
-  dumpBtn.textContent = '⧉ Config';
-  dumpBtn.title = "Copy the pad's current config JSON to the clipboard";
+  dumpBtn.textContent = t('pad.config', '⧉ Config');
+  dumpBtn.title = t('pad.config_title', "Copy the pad's current config JSON to the clipboard");
   const restoreBtn = document.createElement('button');
-  restoreBtn.textContent = 'Restore backup…';
+  restoreBtn.textContent = t('pad.restore', 'Restore backup…');
   const restoreInp = document.createElement('input');
   restoreInp.type = 'file';
   restoreInp.accept = '.json,application/json';
@@ -346,8 +348,8 @@ export function buildPadPanel() {
   cleanLbl.className = 'pad-asklbl';
   const cleanChk = document.createElement('input');
   cleanChk.type = 'checkbox';
-  cleanLbl.append(cleanChk, document.createTextNode(' clean write'));
-  cleanLbl.title = 'Replace every key with the Ronin default, including keys set by hand in Input';
+  cleanLbl.append(cleanChk, document.createTextNode(' ' + t('pad.clean_write', 'clean write')));
+  cleanLbl.title = t('pad.clean_write_title', 'Replace every key with the Ronin default, including keys set by hand in Input');
   const progMsg = document.createElement('span');
   progMsg.className = 'pad-progmsg';
   prog.append(progBtn, layerSel, writeBtn, cleanLbl, dumpBtn, restoreBtn, restoreInp, progMsg);
@@ -365,32 +367,32 @@ export function buildPadPanel() {
     cleanChk.checked = false;
     progBtn.hidden = false;
     progMsg.textContent = navigator.hid
-      ? 'writes F13–F24 + 🎙 Wispr straight onto the pad — no Input app needed'
-      : 'programming the pad needs Chrome/Edge on desktop (WebHID)';
+      ? t('pad.prog_ready', 'writes F13–F24 + 🎙 Wispr straight onto the pad — no Input app needed')
+      : t('pad.prog_needs_webhid', 'programming the pad needs Chrome/Edge on desktop (WebHID)');
   };
   if (!navigator.hid) progBtn.disabled = true;
   progReset();
 
   progBtn.addEventListener('click', async () => {
     try {
-      progMsg.textContent = 'pick the pad in the browser prompt… (quit the Input app first)';
+      progMsg.textContent = t('pad.pick_prompt', 'pick the pad in the browser prompt… (quit the Input app first)');
       wl = await wlConnect();
-      progMsg.textContent = 'reading the pad…';
+      progMsg.textContent = t('pad.reading', 'reading the pad…');
       const st = await wl.rpc('device.status');
       wlRaw = String((await wl.rpc('fs.read', { file: 'keymap.json' })).data);
       wlCfg = JSON.parse(wlRaw);
       const layers = activeProfile(wlCfg).layers;
       layerSel.innerHTML = '';
       layers.forEach((l, i) =>
-        layerSel.add(new Option((l.name || 'Layer ' + (i + 1)) + (i === (st.layer_index || 1) - 1 ? ' • active' : ''), i)),
+        layerSel.add(new Option((l.name || t('pad.layer_n', 'Layer {n}', { n: i + 1 })) + (i === (st.layer_index || 1) - 1 ? ' ' + t('pad.layer_active', '• active') : ''), i)),
       );
       layerSel.value = String(Math.min(layers.length - 1, Math.max(0, (st.layer_index || 1) - 1)));
       progBtn.hidden = true;
       layerSel.hidden = writeBtn.hidden = restoreBtn.hidden = cleanLbl.hidden = dumpBtn.hidden = false;
-      progMsg.textContent = `pad fw ${st.version} — Write overwrites the chosen layer's keys (backup downloads first)`;
+      progMsg.textContent = t('pad.connected', "pad fw {version} — Write overwrites the chosen layer's keys (backup downloads first)", { version: st.version });
     } catch (e) {
       progReset();
-      progMsg.textContent = 'pad: ' + e.message;
+      progMsg.textContent = t('pad.error', 'pad: {message}', { message: e.message });
     }
   });
 
@@ -399,11 +401,11 @@ export function buildPadPanel() {
     const li = Number(layerSel.value);
     const layer = activeProfile(wlCfg).layers[li];
     if (!layer || !layer.layout) {
-      progMsg.textContent = 'pad: that layer has no layout to write into';
+      progMsg.textContent = t('pad.no_layout', 'pad: that layer has no layout to write into');
       return;
     }
-    const lname = layer.name || 'layer ' + (li + 1);
-    if (!confirm(`Overwrite the 13 keys of "${lname}" with the Ronin layout?\nThe pad's current config downloads as a backup first.`)) return;
+    const lname = layer.name || t('pad.layer_n_lower', 'layer {n}', { n: li + 1 });
+    if (!confirm(t('pad.overwrite_confirm', 'Overwrite the 13 keys of "{layer}" with the Ronin layout?\nThe pad\'s current config downloads as a backup first.', { layer: lname }))) return;
     writeBtn.disabled = true;
     try {
       wlDownload('worklouder-keymap-backup-' + Date.now() + '.json', wlRaw);
@@ -455,7 +457,7 @@ export function buildPadPanel() {
         type: WL_JOYSTICK.type,
         sectors: WL_JOYSTICK.sectors.map((s) => ({ ...s, k: resolveCombo(s.k) })),
       };
-      progMsg.textContent = 'writing…';
+      progMsg.textContent = t('pad.writing', 'writing…');
       await wlWriteFile(wl.rpc, 'keymap.json', JSON.stringify(wlCfg));
       // Verify each part separately: "the keys took but the encoder didn't" is
       // the difference between a bad keycode and a wrong config path.
@@ -468,11 +470,11 @@ export function buildPadPanel() {
         !same(got.joystick, layer.layout.joystick) && 'joystick',
       ].filter(Boolean);
       progMsg.textContent = !bad.length
-        ? `✓ "${lname}" is now the Ronin layer — switch the pad to it and press a key. Knob unchanged? Replug the pad: the firmware applies keys and joystick live but caches the encoder from boot.`
-        : `write finished but the pad did not store: ${bad.join(', ')} — the backup file has the original`;
-      toast(!bad.length ? '▦ pad programmed with the Ronin layout ✓' : `▦ pad rejected: ${bad.join(', ')}`, !bad.length);
+        ? t('pad.written', '✓ "{layer}" is now the Ronin layer — switch the pad to it and press a key. Knob unchanged? Replug the pad: the firmware applies keys and joystick live but caches the encoder from boot.', { layer: lname })
+        : t('pad.write_partial', 'write finished but the pad did not store: {parts} — the backup file has the original', { parts: bad.join(', ') });
+      toast(!bad.length ? t('pad.toast_written', '▦ pad programmed with the Ronin layout ✓') : t('pad.toast_rejected', '▦ pad rejected: {parts}', { parts: bad.join(', ') }), !bad.length);
     } catch (e) {
-      progMsg.textContent = 'write failed: ' + e.message + ' — the backup file has the original';
+      progMsg.textContent = t('pad.write_failed', 'write failed: {message} — the backup file has the original', { message: e.message });
     }
     writeBtn.disabled = false;
   });
@@ -482,9 +484,9 @@ export function buildPadPanel() {
     try {
       const raw = String((await wl.rpc('fs.read', { file: 'keymap.json' })).data);
       const ok = await toClipboard(raw);
-      progMsg.textContent = ok ? '✓ pad config copied to clipboard' : 'clipboard blocked — use the https url';
+      progMsg.textContent = ok ? t('pad.config_copied', '✓ pad config copied to clipboard') : t('pad.clipboard_blocked', 'clipboard blocked — use the https url');
     } catch (e) {
-      progMsg.textContent = 'config read failed: ' + e.message;
+      progMsg.textContent = t('pad.config_read_failed', 'config read failed: {message}', { message: e.message });
     }
   });
 
@@ -497,11 +499,11 @@ export function buildPadPanel() {
     try {
       const text = await f.text();
       JSON.parse(text); // sanity — never write a non-JSON file to the pad
-      progMsg.textContent = 'restoring…';
+      progMsg.textContent = t('pad.restoring', 'restoring…');
       await wlWriteFile(wl.rpc, 'keymap.json', text);
-      progMsg.textContent = '✓ backup restored to the pad';
+      progMsg.textContent = t('pad.restored', '✓ backup restored to the pad');
     } catch (e) {
-      progMsg.textContent = 'restore failed: ' + e.message;
+      progMsg.textContent = t('pad.restore_failed', 'restore failed: {message}', { message: e.message });
     }
   });
 
@@ -516,7 +518,7 @@ export function buildPadPanel() {
     // Name what it's bound to, not just the code — makes "which direction did
     // that flick fire?" answerable by looking, without any guessing.
     const b = padBinds[chord];
-    const what = b ? (b.key ? (PAD_KEYS[b.key] || {}).label : '⚡ ' + b.macro) : '';
+    const what = b ? (b.key ? (PAD_KEYS()[b.key] || {}).label : '⚡ ' + b.macro) : '';
     last.textContent = pretty(chord) + (what ? ' · ' + what : '');
     // Encoder/joystick codes light their widget; keys light their square.
     const btn = cells.get(chord) || extraCells.get(chord) || (PAD_CONTROLS[chord] && widgets.get(PAD_CONTROLS[chord]));
@@ -529,5 +531,7 @@ export function buildPadPanel() {
   // stops it there, so it never reaches the sheet root — the same order that made the
   // old bubble-phase listener behave, kept by construction rather than by luck.
   closeBtn.addEventListener('click', close);
-  S.padPanel = { open, close, isOpen, hit, capturing, capture, stopCapture };
+  // `card` and `render` are for the cowork commons, which mounts the card INLINE on its
+  // Keypad tab (owner, 2026-08-27) and overrides open/isOpen to mean that tab.
+  S.padPanel = { open, close, isOpen, hit, capturing, capture, stopCapture, card: dlg.card, render: renderCaps };
 }

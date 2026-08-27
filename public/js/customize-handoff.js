@@ -19,6 +19,7 @@
  */
 import { addYourOwn } from './provenance.js';
 import { WorkspaceKit } from './workspace-kit.js';
+import { t } from './lexicon.js';
 
 
 const el = (tag, cls, text) => {
@@ -28,54 +29,52 @@ const el = (tag, cls, text) => {
   return n;
 };
 
-const SHADOW_TRADE =
-  'Changing one of Ronin’s own entries makes it yours: it moves to your catalogs store, ' +
-  'where an upgrade cannot touch it — and improvements Ronin makes to that entry will not ' +
-  'reach you. That is the trade for owning it.';
+// A function, not a constant: the lexicon loads after this module is evaluated.
+function shadowTrade() {
+  return t('customize.shadow_trade', 'Changing one of Ronin’s own entries makes it yours: it moves to your catalogs store, '
+  + 'where an upgrade cannot touch it — and improvements Ronin makes to that entry will not '
+  + 'reach you. That is the trade for owning it.');
+}
 
 export function buildHandoff(resource, list = []) {
   const { createNotice } = WorkspaceKit.primitives;
   const box = el('section', 'cz-write');
-  box.append(el('h3', null, 'Making it yours'));
+  box.append(el('h3', null, t('customize.handoff_head', 'Making it yours')));
 
   if (resource.capability === 'read-only') {
     // Read-only is a decision about this release, not a claim the resource is immutable.
     // Say how the owner changes it, and do not draw a disabled control.
     box.append(el('p', null,
-      'This preview reads this shelf and does not write it. Your own agent can change it ' +
-      'directly — tell it what you want and it edits the file.'));
+      t('customize.handoff_read_only_shelf', 'This preview reads this shelf and does not write it. Your own agent can change it '
+      + 'directly — tell it what you want and it edits the file.')));
     return box;
   }
 
   if (resource.capability === 'deferred') {
-    box.append(el('p', null, resource.why || 'Deferred in this preview.'));
+    box.append(el('p', null, resource.why || t('customize.handoff_deferred', 'Deferred in this preview.')));
     return box;
   }
 
-  box.append(createNotice({ message: SHADOW_TRADE }).el);
+  box.append(createNotice({ message: shadowTrade() }).el);
 
   if (resource.file) {
     // A shadowable markdown catalog: the seed route makes the file and hands back the path.
     box.append(el('p', null,
-      `Ronin can create your own ${resource.file} in your catalogs store — outside every ` +
-      'repo, untouched by upgrades. The path is the answer: hand it to your agent, or open it yourself.'));
-    box.append(addYourOwn(resource.file, resource.what || 'entry'));
+      t('customize.handoff_seed', 'Ronin can create your own {file} in your catalogs store — outside every repo, untouched by upgrades. The path is the answer: hand it to your agent, or open it yourself.', { file: resource.file })));
+    box.append(addYourOwn(resource.file, resource.what || t('customize.entry', 'entry')));
     return box;
   }
 
   if (resource.dir) {
     // A definition directory: no seed path exists, so the README is the worked example.
     box.append(el('p', null,
-      `One file per ${resource.label.toLowerCase().replace(/s$/, '')}, named by its token, in your ` +
-      `catalogs store under ${resource.dir}. Ronin cannot create that file for you yet — ask ` +
-      'your agent to add one, and point it at the directory’s own README, which states the format ' +
-      'and every field.'));
+      t('customize.handoff_read_only', 'One file per {thing}, named by its token, in your catalogs store under {dir}. Ronin cannot create that file for you yet — ask your agent to add one, and point it at the directory’s own README, which states the format and every field.', { thing: resource.label.toLowerCase().replace(/s$/, ''), dir: resource.dir })));
     const hint = el('p', 'cz-hint',
-      'Ask for the store path with: bin/ronin-store catalogs — never spell it by hand.');
+      t('customize.handoff_store_hint', 'Ask for the store path with: bin/ronin-store catalogs — never spell it by hand.'));
     box.append(hint);
     return box;
   }
 
-  box.append(el('p', null, 'Ask your agent to add one.'));
+  box.append(el('p', null, t('customize.handoff_ask_agent', 'Ask your agent to add one.')));
   return box;
 }

@@ -6,9 +6,9 @@
  *
  *   `commons`  the tab strip inside a tile's session_commons — about SESSIONS, and drawn
  *              in every sessionless tile whether or not anyone asked for it. Five rows.
- *   `desk`     the admin_desk (js/desk.js) — about THE MACHINE, drawn in the one tile you
+ *   `desk`     the admin_desk (js/cowork-commons.js) — about THE MACHINE, drawn in the one tile you
  *              press ⚙ in. Six rows, plus the app's own three, which are not rows here
- *              because they are not rooms: see js/desk.js.
+ *              because they are not rooms: see js/cowork-commons.js.
  *
  * THE SIX MOVED because they were on the wrong side of a line the house had already drawn
  * once, for the gear: *release, update, appearance and log out are the install's, not a
@@ -61,22 +61,27 @@
  * which agent CLI runs in a tile; a new provider or agent is catalog data (a
  * ronin_catalogs/PROJECT_ROOTS.md launch cell), never a new pane branch.
  */
-export const PANES = [
-  { id: 'sessions', surface: 'commons', label: '⌂ Roster' },
-  { id: 'archives', surface: 'commons', label: 'Archived' },
-  { id: 'new', surface: 'commons', label: '＋ New session' },
-  { id: 'wipe', surface: 'commons', label: '▤ Wipeboard' },
+// A function, not a table: the lexicon loads after this module is evaluated, so the tab
+// labels are read when a strip is drawn.
+import { t } from './lexicon.js';
+
+export function PANES() {
+  return [
+  { id: 'sessions', surface: 'commons', label: t('pane.sessions', '⌂ Roster') },
+  { id: 'archives', surface: 'commons', label: t('pane.archives', 'Archived') },
+  { id: 'new', surface: 'commons', label: t('pane.new', '＋ New session') },
+  { id: 'wipe', surface: 'commons', label: t('pane.wipe', '▤ Wipeboard') },
   // MDEDIT — kin to the wipeboard and next to it: both are files a session keeps,
   // rendered where the owner already is. The difference is ownership — a board is
   // shared by a set of sessions, a doc belongs to the one that listed it.
-  { id: 'docs', surface: 'commons', label: '▧ Docs' },
+  { id: 'docs', surface: 'commons', label: t('pane.docs', '▧ Docs') },
   // ---- the desk, in the order it reads: what the install IS, then what it HOLDS ----
-  { id: 'settei', surface: 'desk', glyph: '⚙', label: 'Configuration' },
-  { id: 'proj', surface: 'desk', glyph: '▣', label: 'Project roots' },
-  { id: 'hotwords', surface: 'desk', glyph: '▥', label: 'Hotwords' },
-  { id: 'koshi', surface: 'desk', glyph: '目', label: 'Koshi' },
-  { id: 'gbrain', surface: 'desk', glyph: '◇', label: 'gbrain' },
-  { id: 'stats', surface: 'desk', glyph: '▦', label: 'Stats' },
+  { id: 'settei', surface: 'desk', glyph: '⚙', label: t('pane.settei', 'Configuration') },
+  { id: 'proj', surface: 'desk', glyph: '▣', label: t('pane.proj', 'Project roots') },
+  { id: 'hotwords', surface: 'desk', glyph: '▥', label: t('pane.hotwords', 'Hotwords') },
+  { id: 'koshi', surface: 'desk', glyph: '目', label: t('pane.koshi', 'Koshi') },
+  { id: 'gbrain', surface: 'desk', glyph: '◇', label: t('pane.gbrain', 'gbrain') },
+  { id: 'stats', surface: 'desk', glyph: '▦', label: t('pane.stats', 'Stats') },
   // The gear's own sheet (js/system.js) stays page-level and is NOT a row: release,
   // update, appearance and log out are the install's, not a tile's, and a room for them
   // meant four copies, one per tile.
@@ -87,4 +92,5 @@ export const PANES = [
   // So settings moved here; the gear's two mechanical buttons did not. KOTOBA_GLOSSARY
   // rules the label — SETTEI stays ours, and the tab a person reads says Setup.
   // See docs/ui.md.
-];
+  ];
+}

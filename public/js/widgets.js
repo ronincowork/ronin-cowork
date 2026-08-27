@@ -1,5 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { refreshTipStatus } from './tips.js';
+import { t } from './lexicon.js';
 
 
 export function makeDial(positions, onPick) {
@@ -103,7 +104,7 @@ export function makeGauge(label) {
     btn.style.setProperty('--g2', Math.min(sweep, 180) + 'deg');
     btn.style.setProperty('--g3', Math.min(sweep, 270) + 'deg');
     ptr.style.transform = `rotate(${deg}deg)`;
-    badge.textContent = `⛽ ${label} ${pct}% used`;
+    badge.textContent = t('gauge.used', '⛽ {label} {pct}% used', { label, pct });
   };
   // No flash here either — same reason as the dial. The reading lives in the badge for
   // the help box to read; clicking the gauge no longer raises a bubble of its own.
@@ -177,8 +178,8 @@ export function openJobMenu(anchor, jobs, current, onPick, extras = []) {
     }, k.name);
   }
   opt(' none', !current, (b) => {
-    b.textContent = 'not marked';
-    b.title = 'Clear the mark — this session has not said what it is doing';
+    b.textContent = t('mark.none', 'not marked');
+    b.title = t('mark.none_title', 'Clear the mark — this session has not said what it is doing');
   }, '');
   // EXTRAS — a separate fact that lives on the same menu because this is the one
   // control the owner reaches for a session's standing: the 人 team-lead designation
@@ -223,11 +224,15 @@ export function openJobMenu(anchor, jobs, current, onPick, extras = []) {
 // The control dial's three detents (@ronin-control on the tmux session). "Outside
 // agents" = other agents reaching into the session (via /send or tmux) — never the
 // agent already running inside it, and never the owner's own typing.
-export const CONTROL_POSITIONS = [
-  { v: 'user', icon: '👤', label: 'Owner only', help: 'Owner only — outside agents may not read or type here', angle: -60 },
-  { v: 'read', icon: '👁', label: 'Outside agents: watch', help: 'Outside agents may watch this session, not type into it', angle: 0 },
-  { v: 'write', icon: '🤖', label: 'Outside agents: type', help: 'Outside agents may type into this session', angle: 60 },
-];
+// A function, not a table: the lexicon loads after this module is evaluated, so the dial's
+// words are read when a tile head is built.
+export function CONTROL_POSITIONS() {
+  return [
+    { v: 'user', icon: '👤', label: t('dial.user', 'Owner only'), help: t('dial.user_help', 'Owner only — outside agents may not read or type here'), angle: -60 },
+    { v: 'read', icon: '👁', label: t('dial.read', 'Outside agents: watch'), help: t('dial.read_help', 'Outside agents may watch this session, not type into it'), angle: 0 },
+    { v: 'write', icon: '🤖', label: t('dial.write', 'Outside agents: type'), help: t('dial.write_help', 'Outside agents may type into this session'), angle: 60 },
+  ];
+}
 
 /* ---------- lifecycle events (births & deaths, no reload) ---------- */
 // One /events socket per PAGE: the server pushes the fresh session list whenever

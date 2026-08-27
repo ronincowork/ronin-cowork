@@ -135,6 +135,10 @@ Every consumer must:
 6. Preserve null, empty, zero-member and unclassified states. Do not invent workflow locks
    or validation the backend does not require.
 7. Preserve unrelated dirty work and stage paths/hunks selectively.
+8. Read every string a person sees through `t('room.key', 'literal')` (`public/js/lexicon.js`)
+   and land the key in `ronin_catalogs/lexicons/professional_en.md` in the same commit —
+   `docs/kokugo.md` is the whole instruction; `scripts/check-lexicon.mjs` fails the gate
+   otherwise. Kit primitives take the already-translated word; they never translate.
 
 If a needed primitive, layout, adapter, state field, lifecycle capability, or backend
 contract is missing, **stop and ask the Workspace Kit/owner decision-maker**. Do not work

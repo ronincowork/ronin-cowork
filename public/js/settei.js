@@ -3,6 +3,7 @@ import { request } from './request.js';
 import { button, field, status } from './ui.js';
 import { pm, getPath, currentOf, optionsOf, toRequest } from './settei-schema.js';
 import { servicesCard } from './services-card.js';
+import { t } from './lexicon.js';
 
 /* ---------- ⚙ CONFIGURATION — what this install IS, in one room ----------
  *
@@ -69,10 +70,10 @@ export function buildSettei(root, isShowing) {
     f.el.classList.add('st-field');
     if (hint) f.say(hint);
     const commit = async () => {
-      f.say('saving…');
+      f.say(t('settei.saving', 'saving…'));
       const r = await save(control.value);
       if (!r.ok) return f.say(r.message, true);
-      f.say('saved');
+      f.say(t('settei.saved', 'saved'));
       // The record is the authority on what a save produced — a fallback in force is
       // not the same as the value typed, and only a re-read knows which is showing.
       await load({ quiet: true });
@@ -123,7 +124,7 @@ export function buildSettei(root, isShowing) {
     if (f.kind === 'select') {
       control = document.createElement('select');
       control.className = 'st-inp';
-      control.add(new Option('— none set —', ''));
+      control.add(new Option(t('settei.none_set', '— none set —'), ''));
       for (const o of optionsOf(f, ctx)) control.add(new Option(o.label, o.value));
       control.value = cur;
     } else if (f.kind === 'number') {
@@ -134,7 +135,7 @@ export function buildSettei(root, isShowing) {
     const notes = [];
     if (f.note) notes.push(String(getPath(rec, f.note) ?? ''));
     // A fallback in force is visible — a default is never passed off as an answer.
-    if (cur === '' && f.fallback) notes.push(`unset — using ${getPath(rec, f.fallback) ?? ''}`);
+    if (cur === '' && f.fallback) notes.push(t('settei.unset_using', 'unset — using {value}', { value: getPath(rec, f.fallback) ?? '' }));
     if (f.aside) notes.push(f.aside);
     return setRow(f.short ?? f.label, control, notes.filter(Boolean).join(' · '), (v) => {
       const req = toRequest(rec.schema, f, v);
@@ -150,7 +151,8 @@ export function buildSettei(root, isShowing) {
   const allModelOpts = () =>
     specs.map((sp) => {
       const have = rec.observed.agents[sp.cmd.split(' ')[0]]?.installed;
-      return { label: `${sp.provider} · ${sp.model}${have ? '' : ' — not installed'}`, value: pm(sp) };
+      const spec = `${sp.provider} · ${sp.model}`;
+      return { label: have ? spec : t('settei.spec_not_installed', '{spec} — not installed', { spec }), value: pm(sp) };
     });
 
   const render = () => {
@@ -159,49 +161,49 @@ export function buildSettei(root, isShowing) {
     const m = observed.machine;
     const fieldsIn = (test) => schema.fields.filter(test).map(schemaRow);
 
-    blurb.textContent = 'What this install is set to — and what it is running on.';
-    stamp.textContent = `measured ${new Date(observed.observed_at).toLocaleString()}`;
+    blurb.textContent = t('settei.blurb', 'What this install is set to — and what it is running on.');
+    stamp.textContent = t('settei.measured', 'measured {time}', { time: new Date(observed.observed_at).toLocaleString() });
 
     /* you and this machine — the typed rows are the registry's, in its order */
-    group('you and this machine');
+    group(t('settei.group_you', 'you and this machine'));
     for (const row of fieldsIn((f) => (f.sec === 'you' || f.sec === 'machine') && f.lands)) body.appendChild(row);
     // The box's own name leads the row — it must be readable here even when the owner
     // has typed nothing (the setup page's THIS BOX fact, kept visible for good).
-    body.appendChild(obsRow('hardware',
-      `${m.host} · ${m.kind === 'virtual' ? `${m.provider ?? 'virtual'} ${m.product ?? ''}`.trim() : 'physical'} · ${m.cores} cores · ${m.ram_gb} GB`,
+    body.appendChild(obsRow(t('settei.hardware', 'hardware'),
+      `${m.host} · ${m.kind === 'virtual' ? `${m.provider ?? t('settei.virtual', 'virtual')} ${m.product ?? ''}`.trim() : t('settei.physical', 'physical')} · ${t('settei.cores_ram', '{cores} cores · {ram} GB', { cores: m.cores, ram: m.ram_gb })}`,
       m.hypervisor ? ` ${m.hypervisor}` : ''));
-    body.appendChild(obsRow('running', `${observed.os.name} · node ${observed.runtime.node}`,
-      ` ${observed.ronin.release ?? observed.ronin.commit}${observed.ronin.dirty ? ' (dirty)' : ''} · contract ${observed.ronin.contract}`));
+    body.appendChild(obsRow(t('settei.running', 'running'), t('settei.os_node', '{os} · node {node}', { os: observed.os.name, node: observed.runtime.node }),
+      ' ' + t('settei.release_contract', '{release} · contract {contract}', { release: `${observed.ronin.release ?? observed.ronin.commit}${observed.ronin.dirty ? ' ' + t('desk.dirty', '(dirty)') : ''}`, contract: observed.ronin.contract })));
     // THE ADDRESS A PERSON SHOULD TYPE. When `tailscale serve` is in front, its HTTPS
     // name leads — it is the same MagicDNS name carrying a real certificate, and it is
     // the only one of these a passkey can exist on. The plain address stays visible as
     // what is behind the proxy; the MagicDNS alias is dropped in that case, because the
     // HTTPS name already IS that name and saying it twice reads as two doors.
     const rt = st.routes[0];
-    body.appendChild(obsRow('Ronin reachable at', rt?.secure ?? rt?.at,
+    body.appendChild(obsRow(t('settei.reachable_at', 'Ronin reachable at'), rt?.secure ?? rt?.at,
       rt?.secure
-        ? ` ${rt.exposure} · HTTPS by tailscale serve · plain ${rt.at}`
-        : ` ${rt?.exposure}${rt?.alias ? ` · or ${rt.alias} (MagicDNS)` : ''}`));
-    body.appendChild(obsRow('reach by ssh', st.ssh));
+        ? ' ' + t('settei.reach_secure', '{exposure} · HTTPS by tailscale serve · plain {at}', { exposure: rt.exposure, at: rt.at })
+        : ` ${rt?.exposure}${rt?.alias ? ' ' + t('settei.reach_alias', '· or {alias} (MagicDNS)', { alias: rt.alias }) : ''}`));
+    body.appendChild(obsRow(t('settei.reach_ssh', 'reach by ssh'), st.ssh));
 
     /* capacity */
-    group('capacity');
+    group(t('settei.group_capacity', 'capacity'));
     for (const row of fieldsIn((f) => f.lands?.family === 'session-max')) body.appendChild(row);
 
     /* projects — shown, never edited here */
-    group(`projects · ${set.projects.length}`);
+    group(t('settei.group_projects', 'projects · {n}', { n: set.projects.length }));
     for (const p of set.projects) {
       const health = st.projects.find((x) => x.name === p.name);
       body.appendChild(obsRow(p.name, p.remit || p.dir,
-        health?.dir === 'missing' ? ` ✕ ${p.dir} is gone` : health?.repo ? ` ${health.repo}` : ''));
+        health?.dir === 'missing' ? ' ' + t('settei.dir_gone', '✕ {dir} is gone', { dir: p.dir }) : health?.repo ? ` ${health.repo}` : ''));
     }
     const link = document.createElement('div');
     link.className = 'st-row st-link';
-    link.textContent = 'Edit these in ▣ Project root — this room only shows them.';
+    link.textContent = t('settei.projects_link', 'Edit these in ▣ Project root — this room only shows them.');
     body.appendChild(link);
 
     /* how work gets a model */
-    group('how work gets a model');
+    group(t('settei.group_models', 'how work gets a model'));
     for (const row of fieldsIn((f) => f.sec === 'defaults' && f.lands?.family === 'agents')) body.appendChild(row);
     // Jobs the registry already edits above render once, not twice.
     const managed = new Set(
@@ -220,23 +222,23 @@ export function buildSettei(root, isShowing) {
     // registry plus every key_env a job points at); the value lives in .env and never
     // enters the record in either direction — there is nothing here to leak.
     for (const [name, isSet] of Object.entries(observed.keys)) {
-      body.appendChild(obsRow(name, isSet ? '✓ set' : 'not set', ' presence only — the value stays in .env'));
+      body.appendChild(obsRow(name, isSet ? t('settei.key_set', '✓ set') : t('settei.key_not_set', 'not set'), ' ' + t('settei.key_presence', 'presence only — the value stays in .env')));
     }
 
     // Open-source weights actually ON the box — named and sized, never assumed.
     for (const w of observed.weights ?? []) {
-      body.appendChild(obsRow(w.name, '✓ downloaded', ` ${w.mb} MB · koshi_weights store`));
+      body.appendChild(obsRow(w.name, t('settei.weights_downloaded', '✓ downloaded'), ' ' + t('settei.weights_size', '{mb} MB · koshi_weights store', { mb: w.mb })));
     }
-    if (!(observed.weights ?? []).length) body.appendChild(obsRow('local weights', 'none downloaded'));
+    if (!(observed.weights ?? []).length) body.appendChild(obsRow(t('settei.local_weights', 'local weights'), t('settei.weights_none', 'none downloaded')));
 
     /* agent installations — THE CHECKBOX IS THE INSTALLED BIT (owner, 2026-08-18):
      * ticked-and-fixed means it is on the box; an empty one is live — ticking it puts
      * the thing on the needed list. Col 2 the name, col 3 where it is (or who makes
      * it). One meaning, taught ONCE on the hint line. */
-    group('agent installations');
+    group(t('settei.group_agents', 'agent installations'));
     const hint = document.createElement('div');
     hint.className = 'st-row st-link';
-    hint.textContent = 'a tick means it is on the box — tick an empty one to put it on the needed list';
+    hint.textContent = t('settei.agents_hint', 'a tick means it is on the box — tick an empty one to put it on the needed list');
     body.appendChild(hint);
     const wantedNow = () => (set.wanted ?? []);
     const instTick = (installed, kind, name) => {
@@ -246,10 +248,10 @@ export function buildSettei(root, isShowing) {
       if (installed) {
         box.checked = true;
         box.disabled = true; // a fact, not a control — reality unticks it, not you
-        box.title = 'installed';
+        box.title = t('settei.installed', 'installed');
         return box;
       }
-      box.title = 'not installed — tick to put it on the needed list';
+      box.title = t('settei.not_installed_tick', 'not installed — tick to put it on the needed list');
       box.checked = wantedNow().some((w) => w.kind === kind && w.name === name);
       box.addEventListener('change', async () => {
         const next = wantedNow().filter((w) => !(w.kind === kind && w.name === name));
@@ -281,21 +283,21 @@ export function buildSettei(root, isShowing) {
     /* services — the SAME leading-tick format as the agents (owner, 2026-08-18):
        Ronin Services is a bundle, one row, tick = installed; gbrain likewise; and
        "use gbrain" stays its own setting beneath — a choice, not a fact. */
-    group('services');
-    body.appendChild(tickRow(observed.ronin.services.length > 0, 'service', '*', 'Ronin Services', ''));
+    group(t('settei.group_services', 'services'));
+    body.appendChild(tickRow(observed.ronin.services.length > 0, 'service', '*', t('settei.ronin_services', 'Ronin Services'), ''));
     body.appendChild(tickRow(observed.ronin.services.includes('gbrain'), 'service', 'gbrain', 'gbrain', ''));
     const gb = document.createElement('input');
     gb.type = 'checkbox';
     gb.className = 'st-check';
     gb.checked = set.gbrain.enabled;
-    const gbField = field(gb, { label: 'use gbrain', sr: false });
+    const gbField = field(gb, { label: t('settei.use_gbrain', 'use gbrain'), sr: false });
     gbField.el.classList.add('st-field');
     // The installed FACT is the row above; this tick is the CHOICE.
-    gbField.say('tick this if your agents use it');
+    gbField.say(t('settei.use_gbrain_hint', 'tick this if your agents use it'));
     gb.addEventListener('change', async () => {
-      gbField.say('saving…');
+      gbField.say(t('settei.saving', 'saving…'));
       const r = await request('/api/settei/gbrain', { method: 'PUT', json: { enabled: gb.checked } });
-      gbField.say(r.ok ? 'saved' : r.message, !r.ok);
+      gbField.say(r.ok ? t('settei.saved', 'saved') : r.message, !r.ok);
     });
     const gbRow = document.createElement('div');
     gbRow.className = 'st-row';
@@ -303,9 +305,9 @@ export function buildSettei(root, isShowing) {
     body.appendChild(gbRow);
 
     /* the deal — Ronin Services the subscription, a different thing from the sockets above */
-    group('subscription');
+    group(t('settei.group_subscription', 'subscription'));
     const activation = set.services.activation ?? {};
-    body.appendChild(obsRow('subscription', st.subscription,
+    body.appendChild(obsRow(t('settei.subscription', 'subscription'), st.subscription,
       activation.email_masked ? ` ${activation.email_masked}` : ''));
     // THE REAL FLOW, replacing the pasted code. The id used to be typed in from the
     // email and recorded without being checked; now the operator asks Ronin HQ, the
@@ -318,11 +320,11 @@ export function buildSettei(root, isShowing) {
      * registry's requires and the owner's own wants, computed per read. Satisfy one
      * and it vanishes on the next look with no write anywhere. This is exactly the
      * list the setup seat reads at its own start. */
-    group('still needed');
+    group(t('settei.group_needed', 'still needed'));
     for (const n of rec.needed ?? []) {
       body.appendChild(obsRow(n.leaf, n.needs, ` ${n.how}`));
     }
-    if (!(rec.needed ?? []).length) body.appendChild(obsRow('nothing', 'your choices are satisfied'));
+    if (!(rec.needed ?? []).length) body.appendChild(obsRow(t('settei.needed_nothing', 'nothing'), t('settei.needed_satisfied', 'your choices are satisfied')));
 
     /* the reading list's offer — an agent exists and the list is non-empty. One
      * press, per the flow's death condition: the seat reads the door itself at
@@ -330,7 +332,7 @@ export function buildSettei(root, isShowing) {
     if (st.agents.usable.length && (rec.needed ?? []).length) {
       const row = document.createElement('div');
       row.className = 'st-row';
-      const go = button('start your setup session', {
+      const go = button(t('settei.setup_go', 'start your setup session'), {
         cls: 'st-go',
         onClick: async () => {
           go.disabled = true;
@@ -339,7 +341,7 @@ export function buildSettei(root, isShowing) {
             json: { session_role: schema.seat.session_role, name: schema.seat.name, prompt: schema.seat.prompt },
           });
           go.disabled = false;
-          go.textContent = r.ok ? 'setup session started — see ⌂ Roster' : r.message || 'could not start';
+          go.textContent = r.ok ? t('settei.setup_started', 'setup session started — see ⌂ Roster') : r.message || t('settei.setup_failed', 'could not start');
         },
       });
       row.appendChild(go);
@@ -349,7 +351,7 @@ export function buildSettei(root, isShowing) {
 
   const load = async ({ quiet } = {}) => {
     if (!quiet) {
-      blurb.textContent = 'reading…';
+      blurb.textContent = t('settei.reading', 'reading…');
       stamp.textContent = '';
     }
     // Two calls, not one: the record is this install, and the launch table is what the

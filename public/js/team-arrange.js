@@ -9,9 +9,15 @@
  *   workspace2=commons             the commons there (on the tab it was last on)
  *   workspace2=commons:docs        the commons, on that tab (chat · wipeboard · docs · config)
  *   workspace2=commons:docs:<path> the commons on ▧ Docs, with that file open
+ *   workspace2=cowork              the cowork commons there (on the tab it was last on)
+ *   workspace2=cowork:roots        the cowork commons, on that tab
+ *                                  (health · account · profile · roots · help · keypad)
+ *   workspace1=new                 the ＋ New session surface there
  *   workspace1=terminal            the workspace's seat back, as it was
  *   workspace1=empty               the seat, with nothing in it
- *   order=workspace2,roster,workspace1
+ *   workspace3=…  workspace4=…      the lower cells of the 2×2 (count=4)
+ *   count=2 | count=4              two workspaces around the roster, or four two-by-two
+ *   order=workspace2,roster,workspace1   (a column word names a STACK: 1 over 3, 2 over 4)
  *   hidden=roster    shown=roster  hidden=none
  *
  * `me` stands for the asking session. Nothing here knows how a workspace shows a
@@ -20,8 +26,13 @@
 
 import { request } from './request.js';
 
+// The cowork commons' tab words, as a draft names them. A PLAIN CONSTANT here, not an
+// import from cowork-commons.js: that module reaches state.js (DOM at top level) and this
+// one is unit-tested under node (tests/team-arrange.test.js — kokugo, 2026-08-27).
+const COWORK_TABS = { health: 'health', account: 'account', profile: 'profile', roots: 'roots', roster: 'roster', archives: 'archives', help: 'help', keypad: 'keypad' };
+
 const COLUMNS = ['workspace1', 'roster', 'workspace2'];
-const WORKSPACES = ['workspace1', 'workspace2'];
+const WORKSPACES = ['workspace1', 'workspace2', 'workspace3', 'workspace4'];
 const TABS = { chat: 'chat', wipeboard: 'wipeboard', docs: 'docs', config: 'team-configuration', 'team-configuration': 'team-configuration' };
 
 /** Tokens (`key=value`) → { draft, errors }. Unknown words are errors, not guesses. */
@@ -40,9 +51,17 @@ export function parseDraft(tokens = [], me = '') {
       if (what === 'commons') {
         if (tab && !TABS[tab]) { errors.push(`${key}: no commons tab "${tab}"`); continue; }
         draft[key] = { commons: true, tab: tab ? TABS[tab] : '', doc: rest.join(':') || '' };
-      } else if (what === 'terminal' || what === 'empty') draft[key] = { [what]: true };
+      } else if (what === 'cowork') {
+        if (tab && !COWORK_TABS[tab]) { errors.push(`${key}: no cowork tab "${tab}"`); continue; }
+        draft[key] = { cowork: true, tab: tab ? COWORK_TABS[tab] : '' };
+      } else if (what === 'new' || what === 'terminal' || what === 'empty') draft[key] = { [what]: true };
       else if (what) draft[key] = { session: what === 'me' ? me : what };
       else errors.push(`${key}: say what goes there`);
+      continue;
+    }
+    if (key === 'count') {
+      if (value === '2' || value === '4') draft.count = Number(value);
+      else errors.push('count: 2 or 4');
       continue;
     }
     if (key === 'roster') {
@@ -85,11 +104,14 @@ export function createArranger(verbs) {
     }
     for (const name of draft.shown || []) { verbs.showColumn(name); did.push(`show ${name}`); }
     for (const name of draft.hidden || []) { verbs.hideColumn(name); did.push(`hide ${name}`); }
+    if (draft.count) { verbs.setCount(draft.count); did.push(`count ${draft.count}`); }
     for (const ws of WORKSPACES) {
       const want = draft[ws];
       if (!want) continue;
       if (want.commons) { verbs.putCommons(ws, want.tab, want.doc); did.push(`${ws} commons${want.tab ? ':' + want.tab : ''}`); }
+      else if (want.cowork) { verbs.putCowork(ws, want.tab); did.push(`${ws} cowork${want.tab ? ':' + want.tab : ''}`); }
       else if (want.session) { if (verbs.putSession(want.session, ws)) did.push(`${ws} ${want.session}`); else did.push(`${ws}: no session ${want.session}`); }
+      else if (want.new) { verbs.putNew(ws); did.push(`${ws} new`); }
       else if (want.terminal) { verbs.putTerminal(ws); did.push(`${ws} terminal`); }
       else if (want.empty) { verbs.emptySeat(ws); did.push(`${ws} empty`); }
     }

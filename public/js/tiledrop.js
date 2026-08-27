@@ -1,4 +1,5 @@
 /* part of the ronin-cowork client — see js/README.md */
+import { t } from './lexicon.js';
 
 /**
  * TOUCH ONLY: ONE header row for the whole phone.
@@ -41,30 +42,33 @@
  */
 
 /** The tile's controls, in drop order, with the word that goes beside each. */
-const ITEMS = [
+// A function, not a table: the lexicon loads after this module is evaluated.
+function items() {
+  return [
   // FIRST, and the only row that is not a door. Context percent and which model is
   // answering — a READING, not a control, so it does not take a tap and does not
   // light up under one. This is the only place either appears: the strip above the
   // text entry is gone, because the bottom of a phone is the keyboard and the box
   // you type in, and there is no room down there.
-  ['.gauge', 'Status'],
-  ['.shingo-chip', 'Ladder'],
-  ['.checkout.branch', 'Branches'],
+  ['.gauge', t('me.status', 'Status')],
+  ['.shingo-chip', t('me.ladder', 'Ladder')],
+  ['.checkout.branch', t('me.branches', 'Branches')],
   // ['.torii', 'TEGAMI'] stood here until 2026-08-17, removed with the button itself.
   // The ⛩ on the tile head is the Commons now, and it is already reachable on touch as
   // the ニ sheet's own Commons row — a second door to it does not belong in this list.
-  ['.tmac-btn', 'Macros'],
-  ['.tmention-btn', 'Mention session'],
-  ['.tags', 'Groups'],
+  ['.tmac-btn', t('me.macros', 'Macros')],
+  ['.tmention-btn', t('me.mention', 'Mention session')],
+  ['.tags', t('me.groups', 'Groups')],
   // 📄 THIS session's listed docs (2026-08-18). It has to be named here or it is
   // STRANDED: the desktop builds it into メ's drop, touch builds it into the header row
   // instead, and a control the hoist does not name stays behind in a header the
   // stylesheet then hides. Its own drop follows its button up — see the hoist below.
-  ['.tdocs-btn', 'Docs'],
-  ['.note', 'Note'],
-  ['.dial', 'Control'],
-  ['.kill', 'Kill session'],
-];
+  ['.tdocs-btn', t('me.docs', 'Docs')],
+  ['.note', t('me.note', 'Note')],
+  ['.dial', t('me.control', 'Control')],
+  ['.kill', t('me.kill', 'Kill session')],
+  ];
+}
 
 /** Rows that are not plain doors. See `addRow`. */
 const MODE = { '.gauge': 'inert', '.dial': 'stay' };
@@ -167,9 +171,9 @@ export function collapseTileHead(tile) {
   // removed, because ⟳ does not come back.
   tile.headKids = [...head.children];
 
-  const drop = makeDrop('メ', 'This session — status, ladder, TEGAMI, macros, groups, docs, note, control', 'me');
+  const drop = makeDrop('メ', t('me.title', 'This session — status, ladder, TEGAMI, macros, groups, docs, note, control'), 'me');
   tile.headDrop = drop;
-  for (const [sel, label] of ITEMS) {
+  for (const [sel, label] of items()) {
     const ctl = head.querySelector(sel);
     if (!ctl) continue;
     const word = drop.addRow(ctl, label, MODE[sel]);

@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { storeDir } from './stores.js';
 import type { Origin } from './catalog.js';
-import { renderSessionMacrosReading } from './session-boot.js';
+import { renderGlossary, renderSessionMacrosReading } from './session-boot.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const STOCK = path.join(ROOT, 'ronin_session_boot');
@@ -107,6 +107,11 @@ export async function listSessionReadings(): Promise<SessionReadingRow[]> {
   }
   // Generated last at birth, so it wins this filename here too. It is rendered in memory:
   // inspecting Customize must not create the disposable boot cache.
+  // The glossary, likewise rendered in memory from the copy that won and the owner's desk words.
+  const glossaryRow = rows.get('all/KOTOBA_GLOSSARY.md');
+  if (glossaryRow) {
+    rows.set('all/KOTOBA_GLOSSARY.md', { ...glossaryRow, content: await renderGlossary(glossaryRow.content), blurb: `${glossaryRow.blurb} · rendered for the owner's desk profile` });
+  }
   rows.set('all/SESSION_MACROS.md', {
     name: 'all/SESSION_MACROS.md',
     label: 'SESSION_MACROS.md',

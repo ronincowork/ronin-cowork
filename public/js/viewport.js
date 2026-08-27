@@ -1,6 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { grid, saveState, tiles } from './state.js';
 import { collapseTileHead, expandTileHead, isCoarse } from './tiledrop.js';
+import { t } from './lexicon.js';
 
 /** The ring the grid count steps round, and the only statement of it: the bar button,
  *  the pad's layout key and the button's own label all ask here, so they cannot drift. */
@@ -23,7 +24,7 @@ export function setLayout(n) {
   const cyc = document.getElementById('layoutcycle');
   if (cyc) {
     cyc.textContent = String(n);
-    cyc.title = `${n} terminal${n === 1 ? '' : 's'} — click for ${nextLayout(n)}`;
+    cyc.title = n === 1 ? t('bar.layout_one', '{n} terminal — click for {next}', { n, next: nextLayout(n) }) : t('bar.layout_many', '{n} terminals — click for {next}', { n, next: nextLayout(n) });
     cyc.setAttribute('aria-label', cyc.title);
   }
   // TOUCH: the merged header follows the COUNT, not the device. Tile 1's controls live

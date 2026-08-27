@@ -3,6 +3,8 @@ import { request } from './request.js';
 import { status } from './ui.js';
 import { loadProjects } from './home.js';
 import { askMika } from './mika.js';
+import { S } from './state.js';
+import { t } from './lexicon.js';
 
 /* ---------- PROJECT ROOT — the fourth commons pane (tab: ▣ Project root) ----------
  *
@@ -38,8 +40,8 @@ export function buildProjectRoots(root, isShowing, tile) {
   const count = document.createElement('span');
   count.className = 'pr-count';
   const addBtn = document.createElement('button');
-  addBtn.textContent = '＋ include';
-  addBtn.title = 'Ask Mika to include a directory — she reads it and proposes the entry';
+  addBtn.textContent = t('roots.include', '＋ include');
+  addBtn.title = t('roots.include_title', 'Ask Mika to include a directory — she reads it and proposes the entry');
   head.append(count, addBtn);
 
   const list = document.createElement('div');
@@ -57,7 +59,7 @@ export function buildProjectRoots(root, isShowing, tile) {
   async function refresh() {
     const r = await request('/api/project-roots/detail', { cache: 'no-store' });
     if (!r.ok) {
-      say('could not read the catalog — ' + r.message, true);
+      say(t('roots.read_failed', 'could not read the catalog — {message}', { message: r.message }), true);
       return;
     }
     data = r.data;
@@ -89,18 +91,18 @@ export function buildProjectRoots(root, isShowing, tile) {
     };
     // The handle is shown, never edited: renaming is a catalog edit by hand, not a form
     // field. It is here because a block with no name on it is unreadable.
-    mk('handle', 'name', existing.name, 'The short name — this IS the shortcut', 'ronin').disabled = true;
-    mk('directory', 'dir', existing.dir, 'Any absolute path, at any depth', '~/work/api');
-    mk('remit', 'remit', existing.remit, 'The one line you pick it from in a list', 'what this is');
-    mk('match', 'match', (existing.match || []).join(', '), 'Words that suggest this project_root from free-form intent', 'comma separated');
+    mk(t('roots.f_handle', 'handle'), 'name', existing.name, t('roots.f_handle_hint', 'The short name — this IS the shortcut'), 'ronin').disabled = true;
+    mk(t('roots.f_directory', 'directory'), 'dir', existing.dir, t('roots.f_directory_hint', 'Any absolute path, at any depth'), '~/work/api');
+    mk(t('roots.f_remit', 'remit'), 'remit', existing.remit, t('roots.f_remit_hint', 'The one line you pick it from in a list'), t('roots.f_remit_placeholder', 'what this is'));
+    mk(t('roots.f_match', 'match'), 'match', (existing.match || []).join(', '), t('roots.f_match_hint', 'Words that suggest this project_root from free-form intent'), t('roots.f_match_placeholder', 'comma separated'));
 
     const row = document.createElement('div');
     row.className = 'pr-frow';
     const save = document.createElement('button');
-    save.textContent = 'save';
+    save.textContent = t('roots.save', 'save');
     const cancel = document.createElement('button');
     cancel.className = 'pr-ghost';
-    cancel.textContent = 'cancel';
+    cancel.textContent = t('roots.cancel', 'cancel');
     const err = status('pr-err');
     row.append(save, cancel, err.el);
     f.appendChild(row);
@@ -158,22 +160,22 @@ export function buildProjectRoots(root, isShowing, tile) {
       facts.appendChild(c);
     };
     if (r.archived) {
-      chip('archived', 'muted', 'Off the new-session picker. Still here, and still launchable by name.');
+      chip(t('roots.chip_archived', 'archived'), 'muted', t('roots.chip_archived_title', 'Off the new-session picker. Still here, and still launchable by name.'));
     }
     if (!r.facts?.exists) {
       // The one maintenance job that arrives on its own: a directory moved or deleted
       // out from under the catalog. Flagged, never auto-removed.
-      chip('directory is gone', 'bad', 'Nothing on disk at this path — fix the path or exclude it');
+      chip(t('roots.chip_gone', 'directory is gone'), 'bad', t('roots.chip_gone_title', 'Nothing on disk at this path — fix the path or exclude it'));
     } else if (r.facts.repo) {
       const remote = (r.facts.repo.remote || '').replace(/^.*[/:]([^/]+\/[^/]+?)(\.git)?$/, '$1');
-      chip(remote || 'repo, no remote', '', r.facts.repo.remote || 'A git repo with no origin');
+      chip(remote || t('roots.chip_no_remote', 'repo, no remote'), '', r.facts.repo.remote || t('roots.chip_no_remote_title', 'A git repo with no origin'));
       if (r.facts.repo.branch) chip('⑂ ' + r.facts.repo.branch);
     } else {
       // A project_root need not be a project_repo. `~/lab` is one; this is a
       // legal shape, not a warning.
-      chip('no repo', 'muted', 'Not a git repo — legal, a project_root need not be one');
+      chip(t('roots.chip_no_repo', 'no repo'), 'muted', t('roots.chip_no_repo_title', 'Not a git repo — legal, a project_root need not be one'));
     }
-    if (r.sessions) chip(r.sessions + (r.sessions === 1 ? ' session' : ' sessions'), 'muted');
+    if (r.sessions) chip(r.sessions === 1 ? t('roots.sessions_one', '{n} session', { n: r.sessions }) : t('roots.sessions_many', '{n} sessions', { n: r.sessions }), 'muted');
     if (r.remit) {
       const rem = document.createElement('div');
       rem.className = 'pr-remit';
@@ -184,17 +186,17 @@ export function buildProjectRoots(root, isShowing, tile) {
     const acts = document.createElement('div');
     acts.className = 'pr-acts';
     const edit = document.createElement('button');
-    edit.textContent = 'edit';
+    edit.textContent = t('roots.edit', 'edit');
     edit.addEventListener('click', () => {
       editing = editing === r.name ? null : r.name;
       render();
     });
     const shelve = document.createElement('button');
     shelve.className = 'pr-ghost';
-    shelve.textContent = r.archived ? 'unarchive' : 'archive';
+    shelve.textContent = r.archived ? t('roots.unarchive', 'unarchive') : t('roots.archive', 'archive');
     shelve.title = r.archived
-      ? 'Put it back on the new-session picker.'
-      : 'Take it off the new-session picker. It stays on this pane, and sessions already using it are untouched.';
+      ? t('roots.unarchive_title', 'Put it back on the new-session picker.')
+      : t('roots.archive_title', 'Take it off the new-session picker. It stays on this pane, and sessions already using it are untouched.');
     shelve.addEventListener('click', async () => {
       shelve.disabled = true;
       const res = await request('/api/project-roots/' + encodeURIComponent(r.name), {
@@ -202,7 +204,7 @@ export function buildProjectRoots(root, isShowing, tile) {
         json: { archived: !r.archived },
       });
       if (!res.ok) {
-        say('could not archive it — ' + res.message, true);
+        say(t('roots.archive_failed', 'could not archive it — {message}', { message: res.message }), true);
         shelve.disabled = false;
         return;
       }
@@ -211,15 +213,15 @@ export function buildProjectRoots(root, isShowing, tile) {
     });
     const drop = document.createElement('button');
     drop.className = 'pr-ghost';
-    drop.textContent = 'exclude';
-    drop.title = 'Remove it from the catalog. Nothing on disk is touched.';
+    drop.textContent = t('roots.exclude', 'exclude');
+    drop.title = t('roots.exclude_title', 'Remove it from the catalog. Nothing on disk is touched.');
     drop.addEventListener('click', async () => {
-      if (!confirm(`Exclude "${r.name}" from your Ronin?\n\nThe catalog entry goes. ${r.dir} is not touched.`)) return;
+      if (!confirm(t('roots.exclude_confirm', 'Exclude "{name}" from your Ronin?\n\nThe catalog entry goes. {dir} is not touched.', { name: r.name, dir: r.dir }))) return;
       drop.disabled = true;
       const res = await request('/api/project-roots/' + encodeURIComponent(r.name), { method: 'DELETE' });
       if (!res.ok) {
         // On the pane's own empty/error line, not a browser alert.
-        say('could not exclude it — ' + res.message, true);
+        say(t('roots.exclude_failed', 'could not exclude it — {message}', { message: res.message }), true);
         drop.disabled = false;
         return;
       }
@@ -241,11 +243,11 @@ export function buildProjectRoots(root, isShowing, tile) {
     const archived = roots.filter((r) => r.archived).length;
     const live = roots.length - archived;
     count.textContent =
-      live + (live === 1 ? ' project_root' : ' project_roots') +
-      (archived ? ` · ${archived} archived` : '') +
-      (data.untagged ? ` · ${data.untagged} untagged session${data.untagged === 1 ? '' : 's'}` : '');
+      (live === 1 ? t('roots.count_one', '{n} project_root', { n: live }) : t('roots.count_many', '{n} project_roots', { n: live })) +
+      (archived ? ' · ' + t('roots.count_archived', '{n} archived', { n: archived }) : '') +
+      (data.untagged ? ' · ' + (data.untagged === 1 ? t('roots.untagged_one', '{n} untagged session', { n: data.untagged }) : t('roots.untagged_many', '{n} untagged sessions', { n: data.untagged })) : '');
     if (!roots.length) {
-      say('nothing included yet — ＋ include asks Mika to point Ronin at a directory');
+      say(t('roots.empty', 'nothing included yet — ＋ include asks Mika to point Ronin at a directory'));
       return;
     }
     for (const r of roots) list.appendChild(block(r));
@@ -254,7 +256,9 @@ export function buildProjectRoots(root, isShowing, tile) {
   addBtn.addEventListener('click', () => {
     // Her tile replaces this pane in the same tile, which is the point: you asked to add
     // a directory and you are now talking to somebody who does that.
-    if (tile) void askMika(tile, '+project_root: I want to include a directory. Ask me which one.');
+    // In the cowork commons there is no tile of its own; the ask goes where the desk's did.
+    const at = tile || S.active;
+    if (at) void askMika(at, '+project_root: I want to include a directory. Ask me which one.');
   });
 
   // Only while the pane is actually on screen — a tile on another tab costs nothing.
@@ -264,7 +268,7 @@ export function buildProjectRoots(root, isShowing, tile) {
     if (isShowing() && !editing) void refresh();
   }, 15000);
 
-  say('loading…');
+  say(t('roots.loading', 'loading…'));
   return {
     enter() {
       void refresh();

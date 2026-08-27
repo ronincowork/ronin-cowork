@@ -18,6 +18,7 @@
 import { request } from './request.js';
 import { fetchSessions } from './api.js';
 import { tiles } from './state.js';
+import { t } from './lexicon.js';
 
 export let homeData = null; // session list enriched with status + ctx
 // `instruction` is the AGENT's prose and `label`/`blurb` are the PERSON's copy — two
@@ -130,7 +131,11 @@ export async function loadSavedLaunches() {
   tiles.forEach((t) => t.renderHome());
 }
 
-export const STATUS_LABEL = { ready: 'ready', thinking: 'thinking…', 'awaiting-input': 'awaiting input' };
+/** The status word for a row — a function, not a table, because the lexicon is loaded
+ *  after this module is evaluated and a table would freeze the stock words. */
+export function statusLabel(status) {
+  return { ready: t('home.status_ready', 'ready'), thinking: t('home.status_thinking', 'thinking…'), 'awaiting-input': t('home.status_awaiting_input', 'awaiting input') }[status];
+}
 
 /**
  * KOSHI_DASHI — the receipt for a spawn. It says what the session was actually born
@@ -144,7 +149,7 @@ export function showReceipt(name, receipt) {
   el.id = 'kdashi';
   const dialIcon = { user: '👤', read: '👁', write: '🤖' }[receipt.dial] || '';
   const bits = [
-    receipt.mode === 'manual' ? 'manual' : 'assisted',
+    receipt.mode === 'manual' ? t('home.receipt_manual', 'manual') : t('home.receipt_assisted', 'assisted'),
     // BOTH AXES ON THE RECEIPT, and a blank one is simply absent from it: the receipt
     // exists so a wrong fill is visible immediately, and "no task" is a fill that can be
     // wrong just as "CutCode" can.
@@ -153,7 +158,7 @@ export function showReceipt(name, receipt) {
     receipt.project_root,
     // No cmd = an `agent: none` kind: say so, rather than leaving a gap the reader
     // has to interpret as "the session_launch_spec field failed to fill".
-    receipt.cmd ? receipt.cmd.replace(/^claude --model /, '') : 'no agent',
+    receipt.cmd ? receipt.cmd.replace(/^claude --model /, '') : t('home.receipt_no_agent', 'no agent'),
     `${dialIcon} ${receipt.dial}`,
     receipt.lifecycle ? `⟳ ${receipt.lifecycle}` : '',
     ...(receipt.tags || []).map((g) => `🏷 ${g}`),
@@ -163,8 +168,8 @@ export function showReceipt(name, receipt) {
   const body = document.createElement('small');
   body.textContent = bits.join(' · ');
   const kill = document.createElement('button');
-  kill.textContent = 'kill';
-  kill.title = 'Wrong? Remove the session now.';
+  kill.textContent = t('home.receipt_kill', 'kill');
+  kill.title = t('home.receipt_kill_title', 'Wrong? Remove the session now.');
   kill.addEventListener('click', async () => {
     kill.disabled = true;
     await request('/api/sessions/' + encodeURIComponent(name), { method: 'DELETE' });

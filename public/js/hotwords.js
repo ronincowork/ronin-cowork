@@ -1,6 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { request } from './request.js';
 import { button, field, status } from './ui.js';
+import { t } from './lexicon.js';
 
 /**
  * the commons' ▥ Hotwords pane — the words dictation keeps getting wrong.
@@ -29,18 +30,18 @@ export function buildHotwords(pane, isShowing) {
   addRow.className = 'hot-add';
   const input = document.createElement('input');
   input.type = 'text';
-  input.placeholder = 'a word it keeps getting wrong';
+  input.placeholder = t('hotwords.placeholder', 'a word it keeps getting wrong');
   input.autocapitalize = 'off';
   input.autocomplete = 'off';
   input.spellcheck = false;
   input.setAttribute('autocorrect', 'off');
-  const inputField = field(input, { label: 'a word dictation keeps getting wrong' });
-  const addBtn = button('Add', { cls: 'hot-addbtn' });
+  const inputField = field(input, { label: t('hotwords.label', 'a word dictation keeps getting wrong') });
+  const addBtn = button(t('hotwords.add', 'Add'), { cls: 'hot-addbtn' });
   addRow.append(inputField.el, addBtn);
 
   const count = document.createElement('div');
   count.className = 'hot-count';
-  count.textContent = 'loading…';
+  count.textContent = t('hotwords.loading', 'loading…');
 
   // WHOSE LIST IS THIS. Hotwords is the one catalog that is copy-on-write rather than
   // an entry-merge (docs/shadowing.md): until your first edit you are reading Ronin's
@@ -64,19 +65,19 @@ export function buildHotwords(pane, isShowing) {
   const render = (terms) => {
     list.innerHTML = '';
     count.textContent = terms.length
-      ? `${terms.length} word${terms.length === 1 ? '' : 's'} sent with your voice`
-      : 'no words yet — dictation runs unbiased';
-    for (const t of terms) {
+      ? (terms.length === 1 ? t('hotwords.count_one', '{n} word sent with your voice', { n: terms.length }) : t('hotwords.count_many', '{n} words sent with your voice', { n: terms.length }))
+      : t('hotwords.none', 'no words yet — dictation runs unbiased');
+    for (const term of terms) {
       const row = document.createElement('div');
       row.className = 'hot-row';
       const w = document.createElement('span');
-      w.textContent = t;
+      w.textContent = term;
       const x = document.createElement('button');
       x.type = 'button';
       x.className = 'hot-x';
       x.textContent = '✕';
-      x.title = `Remove ${t}`;
-      x.addEventListener('click', () => post('/api/hotwords/remove', t, x));
+      x.title = t('hotwords.remove', 'Remove {word}', { word: term });
+      x.addEventListener('click', () => post('/api/hotwords/remove', term, x));
       row.append(w, x);
       list.appendChild(row);
     }
@@ -96,10 +97,10 @@ export function buildHotwords(pane, isShowing) {
   };
 
   const add = () => {
-    const t = input.value.trim();
-    if (!t) return;
+    const term = input.value.trim();
+    if (!term) return;
     input.value = '';
-    post('/api/hotwords/add', t, addBtn).then(() => {
+    post('/api/hotwords/add', term, addBtn).then(() => {
       addBtn.disabled = false;
       // Stay in the field: adding words is something you do several of at a time.
       input.focus();
@@ -116,14 +117,14 @@ export function buildHotwords(pane, isShowing) {
   const enter = async () => {
     const r = await request('/api/hotwords');
     if (!r.ok) {
-      count.textContent = 'could not load';
+      count.textContent = t('hotwords.load_failed', 'could not load');
       setMsg(r.message, true);
       return;
     }
     render(r.data.terms || []);
     whose.textContent = r.data.own
-      ? '◆ your list — an upgrade cannot touch it, and will not add to it either'
-      : 'Ronin\'s stock list — your first edit makes a copy that is yours';
+      ? t('hotwords.own_list', '◆ your list — an upgrade cannot touch it, and will not add to it either')
+      : t('hotwords.stock_list', 'Ronin\'s stock list — your first edit makes a copy that is yours');
     whose.classList.toggle('own', !!r.data.own);
     setMsg('');
   };

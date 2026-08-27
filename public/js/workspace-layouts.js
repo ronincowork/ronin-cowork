@@ -1,6 +1,7 @@
 /* Named Workspace Kit compositions. These establish geometry only. */
 
 import { declareArrangement, normalizeArrangement, visibleColumns, toggleSlot, moveSlot, resizeSlot, widthClass } from './workspace-arrangement.js';
+import { t } from './lexicon.js';
 
 const layout = (name, surfaces) => {
   const el = document.createElement('div');
@@ -86,7 +87,7 @@ function createWorkbenchLayout(options = {}) {
       const edge = wrapper.getBoundingClientRect().right - rect.left;
       splitter.hidden = false;
       splitter.style.left = `${edge}px`;
-      splitter.setAttribute('aria-label', `Resize ${declaration.slots.find((s) => s.name === column.name)?.label || column.name}`);
+      splitter.setAttribute('aria-label', t('workspace.resize', 'Resize {column}', { column: declaration.slots.find((s) => s.name === column.name)?.label || column.name }));
       splitter.dataset.between = `${column.name}:${columns[i + 1].name}`;
     }
   };

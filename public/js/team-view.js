@@ -30,11 +30,16 @@ import { activeProfile } from './desk-profile.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { createTeamWipeboard } from './team-wipeboard.js';
 import { buildDocs } from './docs.js';
-import { STATUS_LABEL, refreshHome } from './home.js';
+import { buildLauncher } from './launcher.js';
+import { homeData, refreshHome, statusLabel } from './home.js';
 import { request } from './request.js';
 import { humanAge } from './shingo.js';
 import { sessionsHandlers, teamPageHandlers } from './events.js';
 import { createArranger, parseDraft, reportView as sendView } from './team-arrange.js';
+import { t } from './lexicon.js';
+import { coworkCommons } from './cowork-commons.js';
+import { DRAG_TYPE, acceptDrops as acceptSessionDrops } from './team-drag.js';
+import { S } from './state.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -43,8 +48,9 @@ const el = (tag, cls, text) => {
   return out;
 };
 
-const COMMONS = '@commons'; // what a workspace remembers when it holds the commons
-const DRAG_TYPE = 'text/x-ronin-session';
+const COMMONS = '@commons'; // what a workspace remembers when it holds the team commons
+const COWORK = '@cowork'; // …and when it holds the cowork commons (docs/cowork-space.md)
+const NEW = '@new'; // …and when it holds the new-session surface
 
 export function createTeamView() {
   // Resolved INSIDE the factory, never at module top level: a top-level read of an imported
@@ -68,7 +74,7 @@ export function createTeamView() {
     // C is sized by the tile head's own button rule; T stands at tab height on the strip.
     const button = el('button', letter === 'T' ? 'tw-flip tw-flip-strip' : 'tw-flip', letter);
     button.type = 'button';
-    button.title = letter === 'C' ? 'Show the Team commons in this workspace' : 'Show the terminal in this workspace';
+    button.title = letter === 'C' ? t('team.flip_commons', 'Show the Team commons in this workspace') : t('team.flip_terminal', 'Show the terminal in this workspace');
     button.addEventListener('click', () => {
       const id = button.closest('[data-surface]')?.dataset.surface;
       if (seats[id]) arrange({ [id]: letter === 'C' ? { commons: true } : { terminal: true } });
@@ -84,7 +90,7 @@ export function createTeamView() {
   const makeSeat = (id, label) => {
     const surface = createSurface({ label, className: 'tw-terminal', flush: true });
     surface.el.addEventListener('pointerdown', () => touch(id));
-    acceptDrops(surface.el, () => id);
+    acceptSessionDrops(surface.el, () => id, (name, id) => arrange({ [id]: { session: name } }));
     const pool = createWarmTerminalPool({
       createHost: (options) => createTerminalTileHost({ ...options, actions: [flipButton('C')] }),
       container: surface.content,
@@ -94,48 +100,83 @@ export function createTeamView() {
   };
   /** The empty tile is in the seat exactly when no member is shown there. Built on first
    *  need, not at page load: a Tile registers itself with the Sessions grid's roll. */
+  // AN EMPTY WORKSPACE IS BLANK, AND SAYS SO (owner, 2026-08-27: *"it should just say
+  // 'workspace'. That's okay, it's blank"*). It was an empty Tile showing the tile-level
+  // commons — a surface the cowork_space no longer uses (its rooms moved: Roster and
+  // Archived to the cowork commons, ＋ New session to a surface of its own).
   const paintSeats = () => {
     for (const seat of Object.values(seats)) {
       if (seat.pool.active) seat.empty?.el.remove();
       else if (!seat.empty) {
-        seat.empty = createTerminalTileHost({ mode: 'full', actions: [flipButton('C')] });
-        seat.empty.mount();
+        const blank = createSurface({ label: t('team.workspace_blank', 'Workspace'), className: 'tw-blank' });
+        blank.content.append(el('p', 'tw-blank-word', t('team.workspace_blank', 'Workspace')));
+        seat.empty = { el: blank.el, mount: () => {}, destroy: () => blank.el.remove() };
         seat.surface.content.append(seat.empty.el);
       } else if (!seat.empty.el.isConnected) seat.surface.content.append(seat.empty.el);
     }
   };
   // The selected workspace carries the highlight the Sessions grid gives its active
   // tile (`.tile.active`) — that is where the next card lands.
+  // ANY SURFACE CAN BE SELECTED (owner, 2026-08-27: *"I should be able to select any
+  // workspace at any point … when I click admin desk, it populates the selected
+  // workspace"*): the mark goes on whatever the workspace holds — a tile gets `.active`
+  // as on the grid, a commons gets `.tw-selected` on its surface — so a workspace holding
+  // the team commons is as selectable as one holding a terminal.
   const touch = (id) => {
     lastSeat = id;
-    for (const seat of Object.values(seats)) for (const tile of seat.surface.content.querySelectorAll('.tile')) tile.classList.toggle('active', seat.id === id);
+    for (const seat of Object.values(seats)) {
+      for (const tile of seat.surface.content.querySelectorAll('.tile')) tile.classList.toggle('active', seat.id === id);
+      cellHolding(seat.id)?.classList.toggle('tw-selected', seat.id === id);
+    }
   };
-  // A card dragged onto a workspace lands in that workspace.
-  function acceptDrops(node, seatOf) {
-    node.addEventListener('dragover', (event) => {
-      if (![...event.dataTransfer.types].includes(DRAG_TYPE)) return;
-      event.preventDefault();
-      event.dataTransfer.dropEffect = 'move';
-      node.dataset.dropReady = 'true';
-    });
-    node.addEventListener('dragleave', () => { delete node.dataset.dropReady; });
-    node.addEventListener('drop', (event) => {
-      delete node.dataset.dropReady;
-      const name = event.dataTransfer.getData(DRAG_TYPE);
-      const id = seatOf();
-      if (!name || !id) return;
-      event.preventDefault();
-      arrange({ [id]: { session: name } });
-    });
+  const seats = {
+    workspace1: makeSeat('workspace1', t('team.workspace_1', 'Workspace 1')),
+    workspace2: makeSeat('workspace2', t('team.workspace_2', 'Workspace 2')),
+    workspace3: makeSeat('workspace3', t('team.workspace_3', 'Workspace 3')),
+    workspace4: makeSeat('workspace4', t('team.workspace_4', 'Workspace 4')),
+  };
+  // TWO SHAPES (owner, 2026-08-27): TWO workspaces around the selector column, or FOUR as a
+  // 2×2 with the selector column left, centre or right. The Kit's workbench is a row of
+  // columns — order, hide, splitters — so the columns stay three: each workspace column is
+  // a STACK, workspace 1 over 3 on the left column, 2 over 4 on the right, and the count
+  // shows or hides the lower cell. The selector's place is the existing `order`. A seat's
+  // surface (or a commons) sits in its CELL; the Kit slot holds the column for good.
+  const COLUMN_OF = { workspace1: 'workspace1', workspace3: 'workspace1', workspace2: 'workspace2', workspace4: 'workspace2' };
+  const LOWER = ['workspace3', 'workspace4'];
+  const columns = { workspace1: el('div', 'tw-column'), workspace2: el('div', 'tw-column') };
+  const cells = {};
+  for (const id of Object.keys(seats)) {
+    const cell = el('div', 'tw-cell');
+    cell.dataset.workspace = id;
+    cell.append(seats[id].surface.el);
+    cells[id] = cell;
+    columns[COLUMN_OF[id]].append(cell);
   }
-  const seats = { workspace1: makeSeat('workspace1', 'Workspace 1'), workspace2: makeSeat('workspace2', 'Workspace 2') };
+  const cellPlace = (id, node) => { if (cells[id].firstElementChild !== node) cells[id].replaceChildren(node); };
+  const cellHolding = (id) => cells[id]?.firstElementChild ?? null;
+  let count = 2;
+  const liveSeats = () => Object.keys(seats).filter((id) => count === 4 || !LOWER.includes(id));
 
-  const kanban = createSurface({ label: 'Team Roster', className: 'tw-kanban' });
+  const kanban = createSurface({ label: t('team.roster_title', 'Team Roster'), className: 'tw-kanban' });
   // The roster's header — the same depth as a tile head and the commons' tab strip.
   const rosterHead = el('div', 'tw-roster-head');
   const rosterCount = el('span', 'tw-roster-count');
   const rosterNote = el('span', 'tw-roster-note');
-  rosterHead.append(el('span', 'tw-roster-title', 'Team Roster'), rosterCount, rosterNote);
+  // THE SHAPE CONTROL lives on the selector column's head — it is about how the space is
+  // arranged, which is the column's business. Two buttons, one pressed.
+  const countBox = el('div', 'tw-count');
+  const countBtns = {};
+  for (const n of [2, 4]) {
+    const b = el('button', 'tw-count-btn', String(n));
+    b.type = 'button';
+    b.title = n === 2 ? t('team.count_2_title', 'Two workspaces around the roster') : t('team.count_4_title', 'Four workspaces, two by two');
+    b.setAttribute('aria-pressed', 'false');
+    b.addEventListener('click', () => arrange({ count: n }));
+    countBtns[n] = b;
+    countBox.append(b);
+  }
+  const rosterTitle = el('span', 'tw-roster-title', t('team.roster_title', 'Roster'));
+  rosterHead.append(rosterTitle, rosterCount, rosterNote, countBox);
   kanban.el.prepend(rosterHead);
   const cards = el('div', 'tw-cards');
   kanban.content.append(cards);
@@ -173,7 +214,7 @@ export function createTeamView() {
   const config = el('div', 'tw-config');
   const service = (node) => ({ el: node, mount: () => {}, enter: () => {}, leave: () => {}, destroy: () => {} });
   const channels = createChannelSurface({
-    label: 'Team commons',
+    label: t('team.commons', 'Team commons'),
     // Land on CHAT, by the owner's word (2026-08-25: "I don't want to land on the
     // whiteboard. I want to land on chat. That's fine that it's empty.") — explicit,
     // not the accident of an unqualified default.
@@ -182,7 +223,30 @@ export function createTeamView() {
     actions: [flipButton('T')],
   });
   channels.el.addEventListener('pointerdown', () => { const id = commonsIn(); if (id) touch(id); });
-  acceptDrops(channels.el, () => commonsIn());
+  acceptSessionDrops(channels.el, () => commonsIn(), (name, id) => arrange({ [id]: { session: name } }));
+  // THE COWORK COMMONS — the third surface a workspace can hold (owner, 2026-08-27). One
+  // instance for the whole page; its strip carries the same T as the team commons'.
+  const cowork = coworkCommons();
+  if (!cowork.tabs.querySelector('.tw-flip-strip')) {
+    cowork.tabs.append(el('span', 'wk-channel-service-grow'), flipButton('T'));
+  }
+  cowork.el.addEventListener('pointerdown', () => { const id = coworkIn(); if (id) touch(id); });
+  acceptSessionDrops(cowork.el, () => coworkIn(), (name, id) => arrange({ [id]: { session: name } }));
+  // ＋ NEW SESSION IS A SURFACE (owner, 2026-08-27): the commons' launcher, in a workspace.
+  // ＋ Add team member on the roster and か New on the bar both put it in the selected
+  // workspace; a session born from it lands in that same workspace (`connect`).
+  const newSurface = createSurface({ label: t('team.new_session', 'New session'), className: 'tw-new' });
+  // Its own head and body (feature classes; the Kit's own nodes are the Kit's to style).
+  const newHead = el('div', 'tw-new-head');
+  newHead.append(flipButton('T'), el('span', 'tw-new-title', t('team.new_session', 'New session')));
+  newSurface.el.prepend(newHead);
+  const newBody = el('div', 'tw-new-body');
+  const launcherHost = el('div', 'home-null');
+  newBody.append(launcherHost);
+  newSurface.content.append(newBody);
+  const extras = new Set(); // sessions shown here that are not (yet) members — a newborn, a picked one
+  const launcher = buildLauncher({ index: 'ws', connect: (name) => connectSession(name) }, launcherHost);
+  newSurface.el.addEventListener('pointerdown', () => { const id = newIn(); if (id) touch(id); });
   // Chat is reserved by the Kit and this file adds NOTHING to it — no composer, no fetch,
   // no timer. Its emptiness is the owner's ruling, not an unfinished state.
 
@@ -192,22 +256,26 @@ export function createTeamView() {
   // 11rem (176px) — the frame writes data-width on its slot and the Kit's card CSS reads it.
   const DECLARATION = {
     slots: [
-      { name: 'workspace1', label: 'Workspace 1', width: 40 },
-      { name: 'roster', label: 'Team Roster', width: 20, min: 6, compact: 176 },
-      { name: 'workspace2', label: 'Workspace 2', width: 40 },
+      { name: 'workspace1', label: t('team.workspace_1', 'Workspace 1'), width: 40 },
+      { name: 'roster', label: t('team.roster_title', 'Team Roster'), width: 20, min: 6, compact: 176 },
+      { name: 'workspace2', label: t('team.workspace_2', 'Workspace 2'), width: 40 },
     ],
   };
   const workbench = createWorkbenchLayout({
     declaration: DECLARATION,
-    surfaces: { workspace1: seats.workspace1.surface.el, roster: kanban.el, workspace2: seats.workspace2.surface.el },
+    surfaces: { workspace1: columns.workspace1, roster: kanban.el, workspace2: columns.workspace2 },
     onStateChange: (arrangement) => ctx?.patchViewState('team', { arrangement }),
   });
   root.append(workbench.host);
 
   /* ---------- in and out ---------- */
-  const commonsIn = () => Object.keys(seats).find((id) => workbench.holding(id) === channels.el) || '';
-  const holds = (id) => (commonsIn() === id ? COMMONS : seats[id].pool.active);
-  const isShown = (name) => Object.values(seats).some((seat) => seat.pool.active === name && commonsIn() !== seat.id);
+  const commonsIn = () => Object.keys(seats).find((id) => cellHolding(id) === channels.el) || '';
+  const coworkIn = () => Object.keys(seats).find((id) => cellHolding(id) === cowork.el) || '';
+  const newIn = () => Object.keys(seats).find((id) => cellHolding(id) === newSurface.el) || '';
+  /** A surface other than the seat's own is in this workspace. */
+  const surfaceIn = (id) => commonsIn() === id || coworkIn() === id || newIn() === id;
+  const holds = (id) => (commonsIn() === id ? COMMONS : coworkIn() === id ? COWORK : newIn() === id ? NEW : seats[id].pool.active);
+  const isShown = (name) => Object.values(seats).some((seat) => seat.pool.active === name && !surfaceIn(seat.id));
   const remember = () => { ctx?.patchViewState('team', { seats: Object.fromEntries(Object.keys(seats).map((id) => [id, holds(id)])) }); reportView(); };
   const lead = () => membersOfTeam(team).find((m) => m.team_lead)?.name || '';
 
@@ -215,15 +283,55 @@ export function createTeamView() {
    *  commons was, that seat's surface comes back. */
   const putCommons = (id, tab = '', doc = '') => {
     const from = commonsIn();
-    if (from && from !== id) workbench.place(from, seats[from].surface.el);
-    workbench.place(id, channels.el);
+    if (from && from !== id) cellPlace(from, seats[from].surface.el);
+    cellPlace(id, channels.el);
     if (doc) { channels.select('docs'); void docs.open(doc); } else if (tab) channels.select(tab);
+    touch(id);
+    remember();
+  };
+  /** The shape: 2 or 4. Lowering to 2 leaves seats 3 and 4 as they are, hidden — their
+   *  tiles stay warm under the pool's own cap; a selection down there moves up. */
+  const setCount = (n) => {
+    count = n === 4 ? 4 : 2;
+    for (const col of Object.values(columns)) col.dataset.count = String(count);
+    for (const id of LOWER) cells[id].hidden = count !== 4;
+    for (const [n2, b] of Object.entries(countBtns)) b.setAttribute('aria-pressed', String(Number(n2) === count));
+    if (count === 2 && LOWER.includes(lastSeat)) touch('workspace1');
+    ctx?.patchViewState('team', { count });
+    remember();
+  };
+  /** New session in: the launcher, in this workspace. */
+  const putNew = (id) => {
+    const from = newIn();
+    if (from && from !== id) cellPlace(from, seats[from].surface.el);
+    cellPlace(id, newSurface.el);
+    launcher.render();
+    touch(id);
+    remember();
+  };
+  /** Show ANY live session in the selected workspace — a member, or one the owner picked
+   *  from the Roster tab or a newborn from the launcher. Non-members ride the pool as
+   *  extras until they leave. */
+  const connectSession = (name, id = lastSeat) => {
+    if (!name) return false;
+    if (!membersOfTeam(team).some((m) => m.name === name)) extras.add(name);
+    syncPools(membersOfTeam(team));
+    return putSession(name, id);
+  };
+  /** Cowork commons in: the same trade as the team commons — wherever it was, that seat's
+   *  surface comes back; the seat it lands on keeps its tiles while it is out. */
+  const putCowork = (id, tab = '') => {
+    const from = coworkIn();
+    if (from && from !== id) cellPlace(from, seats[from].surface.el);
+    cellPlace(id, cowork.el);
+    if (tab) cowork.select(tab);
+    else cowork.select(cowork.current());
     touch(id);
     remember();
   };
   /** The seat back, with nothing in it: its tiles go; the lead comes back warm on the next paint. */
   const emptySeat = (id) => {
-    if (commonsIn() === id) workbench.place(id, seats[id].surface.el);
+    if (surfaceIn(id)) cellPlace(id, seats[id].surface.el);
     seats[id].pool.destroyAll();
     ensureLeadHot(membersOfTeam(team));
     touch(id);
@@ -233,7 +341,7 @@ export function createTeamView() {
   /** Terminal in: the seat's surface comes back as it was; a seat that never showed
    *  anyone gets the lead. */
   const putTerminal = (id) => {
-    workbench.place(id, seats[id].surface.el);
+    cellPlace(id, seats[id].surface.el);
     if (!seats[id].pool.active && lead() && seats[id].pool.has(lead())) seats[id].pool.show(lead(), false);
     touch(id);
     paintSeats();
@@ -242,7 +350,7 @@ export function createTeamView() {
   /** A session in: the terminal comes in if the commons was there, then the tile shows it. */
   const putSession = (name, id, focus = true) => {
     if (!seats[id].pool.has(name)) return false;
-    if (commonsIn() === id) workbench.place(id, seats[id].surface.el);
+    if (surfaceIn(id)) cellPlace(id, seats[id].surface.el);
     if (!seats[id].pool.show(name, focus)) return false;
     touch(id);
     paintSeats();
@@ -260,8 +368,11 @@ export function createTeamView() {
     moveColumn: (name, index) => workbench.arrangement.move(name, index),
     putSession: (name, ws) => putSession(name, ws, false),
     putCommons,
+    putCowork,
+    putNew,
     putTerminal,
     emptySeat,
+    setCount,
   });
   const arrange = (draft) => {
     const did = arranger.apply(draft);
@@ -280,11 +391,12 @@ export function createTeamView() {
   const view = () => {
     const a = workbench.arrangement.state();
     const workspaces = {};
-    for (const id of Object.keys(seats)) {
+    for (const id of liveSeats()) {
       const c = commonsIn() === id;
-      workspaces[id] = c ? { holds: 'commons', tab: channels.current?.() || '' } : seats[id].pool.active ? { holds: 'session', session: seats[id].pool.active } : { holds: 'empty' };
+      const k = coworkIn() === id;
+      workspaces[id] = c ? { holds: 'commons', tab: channels.current?.() || '' } : k ? { holds: 'cowork', tab: cowork.current?.() || '' } : newIn() === id ? { holds: 'new' } : seats[id].pool.active ? { holds: 'session', session: seats[id].pool.active } : { holds: 'empty' };
     }
-    return { team, selected: lastSeat, order: [...a.order], hidden: [...a.hidden], workspaces };
+    return { team, selected: lastSeat, count, order: [...a.order], hidden: [...a.hidden], workspaces };
   };
   let reportTimer = 0;
   const reportView = () => { if (entered && team) void sendView(team, TAB, view()); };
@@ -296,7 +408,7 @@ export function createTeamView() {
     const { draft, errors } = parseDraft(m.tokens || [], m.from);
     if (errors.length) return;
     arrange(draft);
-    rosterNote.textContent = `arranged by ${m.from}`;
+    rosterNote.textContent = t('team.arranged_by', 'arranged by {from}', { from: m.from });
     window.clearTimeout(noteTimer);
     noteTimer = window.setTimeout(() => { rosterNote.textContent = ''; }, 6000);
   };
@@ -306,21 +418,25 @@ export function createTeamView() {
    *  reload the roster is not known yet at enter. */
   let remembered = {};
   const seatTheTeam = () => {
-    for (const id of Object.keys(seats)) {
+    for (const id of liveSeats()) {
       if (holds(id)) continue;
       const wanted = remembered[id];
       if (wanted === COMMONS) putCommons(id);
+      else if (wanted === COWORK) putCowork(id);
+      else if (wanted === NEW) putNew(id);
       else if (wanted && seats[id].pool.has(wanted)) putSession(wanted, id, false);
       // A remembered session the roster does not have: wait while the roster is still
       // arriving, then let it go — a workspace waiting forever is the blank the owner met.
       else if (wanted && loaded !== team) continue;
       else if (lead() && !isShown(lead())) putSession(lead(), id, false);
-      else if (!commonsIn()) putCommons(id);
+      // Otherwise the workspace stays BLANK — no commons by default (owner, 2026-08-27).
     }
   };
 
   const syncPools = (members) => {
-    const names = members.map((m) => m.name);
+    const live = new Set((homeData || []).map((s) => s.name));
+    for (const x of [...extras]) if (!live.has(x) && live.size) extras.delete(x); // a gone extra leaves the pool
+    const names = [...new Set([...members.map((m) => m.name), ...extras])];
     for (const seat of Object.values(seats)) seat.pool.sync(names);
     paintSeats();
   };
@@ -379,10 +495,10 @@ export function createTeamView() {
     return [
       m.session_role || null,
       chip,
-      STATUS_LABEL[row.status] || null,
+      statusLabel(row.status) || null,
       (row.model || '').toLowerCase() || null,
       row.ctx != null ? `⛽ ${row.ctx}%` : null,
-      row.attached ? 'attached' : null,
+      row.attached ? t('team.attached', 'attached') : null,
     ].filter(Boolean);
   };
   function renderCards(members) {
@@ -410,8 +526,8 @@ export function createTeamView() {
       });
       cards.append(card.el);
     }
-    const add = createCard({ heading: '＋ Add team member', summary: 'Existing session or a new one — arrives with its own slice.', variant: 'dotted' });
-    add.el.dataset.inert = 'true';
+    const add = createCard({ heading: t('team.add_member', '＋ Add team member'), summary: t('team.add_member_summary', 'A new session, born into the workspace you are in.'), variant: 'dotted' });
+    add.el.addEventListener('click', () => arrange({ [lastSeat || 'workspace1']: { new: true } }));
     cards.append(add.el);
   }
 
@@ -424,22 +540,22 @@ export function createTeamView() {
   function renderConfig(roster, live) {
     config.replaceChildren();
     if (!team) {
-      config.append(el('p', 'tw-config-head', 'No Team selected'));
+      config.append(el('p', 'tw-config-head', t('team.none_selected', 'No Team selected')));
       return;
     }
     config.append(el('p', 'tw-config-head', team));
     const record = roster
-      ? [['Team role', roster.team_role], ['Objective', roster.objective], ['Project root', roster.project_root],
-        ['Repositories', (roster.repos || []).join(', ')], ['Branch', roster.branch],
-        ['Wipeboard', roster.wipeboard || team], ['State', roster.state]]
-      : [['Record', 'tag-only — no durable roster; the team is its sessions’ tags'], ['Wipeboard', team]];
+      ? [[t('team.team_role', 'Team role'), roster.team_role], [t('team.objective', 'Objective'), roster.objective], [t('team.project_root', 'Project root'), roster.project_root],
+        [t('team.repos', 'Repositories'), (roster.repos || []).join(', ')], [t('team.branch', 'Branch'), roster.branch],
+        [t('team.wipeboard', 'Wipeboard'), roster.wipeboard || team], [t('team.state', 'State'), roster.state]]
+      : [[t('team.record', 'Record'), t('team.record_tag_only', 'tag-only — no durable roster; the team is its sessions’ tags')], [t('team.wipeboard', 'Wipeboard'), team]];
     config.append(createMetadata({ className: 'tw-config-metadata', rows: record }).el);
-    config.append(el('p', 'tw-config-head', live.length ? `Live roster · ${live.length}` : 'Live roster · none'));
+    config.append(el('p', 'tw-config-head', live.length ? t('team.live_roster_n', 'Live roster · {n}', { n: live.length }) : t('team.live_roster_none', 'Live roster · none')));
     if (!live.length) return;
     const lead = live.filter((m) => m.team_lead).map((m) => m.name);
     const table = el('div', 'tw-config-roster');
     const line = (name, reading) => table.append(el('span', 'tw-config-name', name), el('span', 'tw-config-reading', reading));
-    line('人', lead.length ? lead.join(', ') : 'not designated');
+    line('人', lead.length ? lead.join(', ') : t('team.lead_none', 'not designated'));
     for (const m of live) line(m.team_lead ? `人 ${m.name}` : m.name, readingsOf(m).join(' · ') || '—');
     config.append(table);
   }
@@ -463,24 +579,25 @@ export function createTeamView() {
   async function load(name) {
     if (!name) {
       syncPools([]);
-      setSurfaceState(kanban.el, 'empty', 'No Team selected.');
+      setSurfaceState(kanban.el, 'empty', t('team.none_selected_dot', 'No Team selected.'));
       renderCards([]);
       renderConfig(null, []);
       loaded = '';
       return;
     }
-    setSurfaceState(kanban.el, 'loading', 'Reading the Team…');
+    setSurfaceState(kanban.el, 'loading', t('team.reading', 'Reading the Team…'));
     const result = await refreshTeams();
     if (!entered || team !== name) return; // the destination moved while this was in flight
     loaded = name;
+    rosterTitle.textContent = t('team.roster_of', 'Roster: {team}', { team: name });
     if (!result.live.ok) {
-      setSurfaceState(kanban.el, 'failed', `Could not read this Team — ${result.live.message}`);
+      setSurfaceState(kanban.el, 'failed', t('team.read_failed', 'Could not read this Team — {message}', { message: result.live.message }));
       renderCards([]);
       renderConfig(null, []);
       return;
     }
     const members = membersOfTeam(name);
-    setSurfaceState(kanban.el, members.length ? null : 'empty', members.length ? '' : 'No live sessions on this Team.');
+    setSurfaceState(kanban.el, members.length ? null : 'empty', members.length ? '' : t('team.no_live', 'No live sessions on this Team.'));
     paint();
   }
 
@@ -495,11 +612,11 @@ export function createTeamView() {
     // like everything else here — one tab is one team.
     title: ({ param, viewState }) => {
       const name = viewState?.('team')?.tabName;
-      return name ? { bare: `${name} · ${param || 'Team'}` } : (param || 'Team');
+      return name ? { bare: `${name} · ${param || t('team.team', 'Team')}` } : (param || t('team.team', 'Team'));
     },
     tabName: {
       get: () => ctx?.viewState('team')?.tabName || '',
-      placeholder: () => team || 'Team',
+      placeholder: () => team || t('team.team', 'Team'),
       set: (value) => ctx?.patchViewState('team', { tabName: String(value || '').trim() }),
     },
     mount: (_host, context) => {
@@ -522,15 +639,25 @@ export function createTeamView() {
       workbench.restore(!stored && profileOrder.length ? { ...typed.arrangement, order: profileOrder } : typed.arrangement);
       // What each workspace remembers holding; the old one-seat focusedSession lands in
       // the first workspace, once. With nothing remembered: the lead left, the commons right.
+      setCount(context.viewState('team')?.count === 4 ? 4 : 2);
       remembered = { ...typed.seats };
-      if (!Object.keys(remembered).length) remembered = typed.focusedSession ? { workspace1: typed.focusedSession, workspace2: COMMONS } : { workspace2: COMMONS };
+      if (!Object.keys(remembered).length) remembered = typed.focusedSession ? { workspace1: typed.focusedSession } : {};
       const members = membersOfTeam(team);
       syncPools(members);
       ensureLeadHot(members);
       seatTheTeam();
       paintSeats();
-      touch(Object.keys(seats).find((id) => holds(id) !== COMMONS) || 'workspace1');
+      touch(liveSeats().find((id) => holds(id) !== COMMONS && holds(id) !== COWORK) || 'workspace1');
       channels.enter(context);
+      // ⚙ ON THIS PAGE: the cowork commons into the workspace you are in; pressed again
+      // there, the terminal back — the toggle ⛩ taught (layout.js reads this hook).
+      S.showNewSession = () => putNew(lastSeat || 'workspace1');
+      S.connectSession = (name) => connectSession(name);
+      S.showCoworkCommons = (tab = '') => {
+        const id = lastSeat || 'workspace1';
+        if (coworkIn() === id && !tab) putTerminal(id);
+        else putCowork(id, tab);
+      };
       if (team !== loaded) void load(team);
       void readRows();
       window.clearInterval(homeTimer);
@@ -550,6 +677,9 @@ export function createTeamView() {
       // is still a Tile to the Sessions grid's roll, and the smoke gate counts it.
       for (const seat of Object.values(seats)) { seat.pool.destroyAll(); seat.empty?.destroy(); seat.empty = null; }
       channels.leave();
+      if (S.showCoworkCommons) S.showCoworkCommons = null;
+      S.showNewSession = null;
+      S.connectSession = null;
     },
     destroy: () => {
       entered = false;

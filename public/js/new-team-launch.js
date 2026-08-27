@@ -2,6 +2,7 @@
 import { request } from './request.js';
 import { bodyOf, committedTeam, rosterBody } from './new-team-draft.js';
 import { preflight } from './new-team-preflight.js';
+import { t } from './lexicon.js';
 
 const now = () => new Date().toISOString();
 const outcomeFor = (draft, seatId) => draft.seats.find((seat) => seat.seat_id === seatId)?.outcome;
@@ -45,11 +46,11 @@ export async function launchDraft(draft, { persist = () => {}, seatIds = null } 
       const verdict = checked.seats.find((item) => item.seat_id === seat.seat_id);
       writeOutcome(draft, seat.seat_id, {
         status: 'refused', http: 400,
-        error: verdict?.reasons?.map((reason) => reason.message).join(' ') || 'Preflight refused this seat.',
+        error: verdict?.reasons?.map((reason) => reason.message).join(' ') || t('new_team.preflight_refused', 'Preflight refused this seat.'),
         attempted_at: now(),
       });
     }
-    transaction.error = 'No proposed session passed preflight. The Team was not created.';
+    transaction.error = t('new_team.none_passed', 'No proposed session passed preflight. The Team was not created.');
     transaction.completed_at = now();
     persist(draft);
     return draft;
@@ -81,7 +82,7 @@ export async function launchDraft(draft, { persist = () => {}, seatIds = null } 
     if (!verdict || verdict.verdict === 'refuse') {
       writeOutcome(draft, seat.seat_id, {
         status: 'refused', http: 400,
-        error: verdict?.reasons?.map((reason) => reason.message).join(' ') || 'Preflight refused this seat.',
+        error: verdict?.reasons?.map((reason) => reason.message).join(' ') || t('new_team.preflight_refused', 'Preflight refused this seat.'),
         attempted_at: now(),
       });
       persist(draft);
@@ -97,7 +98,7 @@ export async function launchDraft(draft, { persist = () => {}, seatIds = null } 
         status: 'refused', http: result.status, error: result.message, attempted_at: now(),
       });
       if (result.status === 429) halted = result.message;
-      else if (![400, 409].includes(result.status)) halted = `Not attempted after Ronin could not complete the previous launch: ${result.message}`;
+      else if (![400, 409].includes(result.status)) halted = t('new_team.halted', 'Not attempted after Ronin could not complete the previous launch: {message}', { message: result.message });
     }
     persist(draft);
   }
@@ -105,7 +106,7 @@ export async function launchDraft(draft, { persist = () => {}, seatIds = null } 
   const leadSeat = draft.lead_seat_id && draft.seats.find((seat) => seat.seat_id === draft.lead_seat_id);
   if (leadSeat) {
     const born = leadSeat.outcome?.status === 'born' ? leadSeat.outcome.session_name : '';
-    if (!born) transaction.lead = { status: 'skipped', error: 'The designated lead seat was not born.' };
+    if (!born) transaction.lead = { status: 'skipped', error: t('new_team.lead_not_born', 'The designated lead seat was not born.') };
     else {
       const result = await request(`/api/sessions/${encodeURIComponent(born)}/team_lead`, {
         method: 'POST', json: { teams: [team] },

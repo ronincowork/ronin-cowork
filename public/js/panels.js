@@ -3,6 +3,7 @@ import { request } from './request.js';
 import { refreshHome } from './home.js';
 import { field, sheet, status } from './ui.js';
 import { IS_TOUCH, S, tiles } from './state.js';
+import { t } from './lexicon.js';
 
 /**
  * Per-session "post-it" note editor. One shared modal (a centered card on desktop,
@@ -18,21 +19,21 @@ import { IS_TOUCH, S, tiles } from './state.js';
  */
 export function buildNotePanel() {
   let current = null; // session whose note is loaded
-  const dlg = sheet({ id: 'notesheet', cls: 'ns-card', label: 'Session note', onClose: () => (current = null) });
+  const dlg = sheet({ id: 'notesheet', cls: 'ns-card', label: t('panels.note_sheet', 'Session note'), onClose: () => (current = null) });
   const bar = document.createElement('div');
   bar.className = 'ns-bar';
   const title = document.createElement('span');
   title.className = 'ns-title';
   const msg = status('ns-msg');
   const saveBtn = document.createElement('button');
-  saveBtn.textContent = 'Save';
+  saveBtn.textContent = t('panels.save', 'Save');
   const closeBtn = document.createElement('button');
-  closeBtn.textContent = 'Close';
+  closeBtn.textContent = t('panels.close', 'Close');
   bar.append(title, msg.el, saveBtn, closeBtn);
   const ta = document.createElement('textarea');
-  ta.placeholder = "What's this session working on?";
+  ta.placeholder = t('panels.note_placeholder', "What's this session working on?");
   ta.spellcheck = false;
-  const taField = field(ta, { label: 'session note' });
+  const taField = field(ta, { label: t('panels.note', 'session note') });
   dlg.card.append(bar, taField.el);
 
   const say = (text, bad) => msg.say(text, bad ? 'bad' : '');
@@ -44,14 +45,14 @@ export function buildNotePanel() {
     ta.value = '';
     ta.disabled = true;
     saveBtn.disabled = true;
-    say('loading…');
+    say(t('panels.loading', 'loading…'));
     dlg.open();
     const r = await request('/api/sessions/' + encodeURIComponent(session) + '/note');
     if (current !== session) return; // the sheet moved on while this was in flight
     if (!r.ok) {
       // Save stays off: an empty box over a note that failed to LOAD would save
       // emptiness over it, which is worse than the failure it hides.
-      say('could not load — ' + r.message, true);
+      say(t('panels.load_failed', 'could not load — {message}', { message: r.message }), true);
       return;
     }
     ta.value = r.data.note || '';
@@ -64,7 +65,7 @@ export function buildNotePanel() {
     if (!current || saveBtn.disabled) return;
     const session = current;
     saveBtn.disabled = true;
-    say('saving…');
+    say(t('panels.saving', 'saving…'));
     const r = await request('/api/sessions/' + encodeURIComponent(session) + '/note', {
       method: 'POST',
       json: { note: ta.value },
@@ -73,7 +74,7 @@ export function buildNotePanel() {
     if (!r.ok) {
       // The text stays in the box and the sheet stays up — a failed save must never
       // close the editor and look successful.
-      say('not saved — ' + r.message, true);
+      say(t('panels.not_saved', 'not saved — {message}', { message: r.message }), true);
       return;
     }
     const s = S.sessions.find((x) => x.name === session);
@@ -95,26 +96,36 @@ export function buildNotePanel() {
 export function buildTagPanel() {
   let current = null;
   let list = [];
-  const dlg = sheet({ id: 'tagsheet', cls: 'tg-card', label: 'Session teams', onClose: () => (current = null) });
+  const dlg = sheet({ id: 'tagsheet', cls: 'tg-card', label: t('panels.teams_sheet', 'Session teams'), onClose: () => (current = null) });
   dlg.card.innerHTML = `<div class="tg-bar"><span class="tg-title"></span>
-        <button class="tg-save">Save</button><button class="tg-close">Close</button></div>
+        <button class="tg-save"></button><button class="tg-close"></button></div>
       <div class="tg-chips"></div>
-      <input class="tg-input" type="text" placeholder="add a team (letters, digits, - _)" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <input class="tg-input" type="text" autocapitalize="off" autocorrect="off" spellcheck="false">
       <div class="tg-known"></div>
-      <div class="tg-hint">Agents resolve these with <code>tejun-team &lt;name&gt;</code>.</div>`;
+      <div class="tg-hint"></div>`;
+  // The words go in through t(), never through the template: a lexicon's word is text,
+  // and the one sentence with markup in it keeps its <code> by splitting on the placeholder.
+  dlg.card.querySelector('.tg-save').textContent = t('panels.save', 'Save');
+  dlg.card.querySelector('.tg-close').textContent = t('panels.close', 'Close');
+  dlg.card.querySelector('.tg-input').placeholder = t('panels.team_placeholder', 'add a team (letters, digits, - _)');
+  {
+    const hint = dlg.card.querySelector('.tg-hint');
+    const [before, after = ''] = t('panels.team_hint', 'Agents resolve these with {cmd}.').split('{cmd}');
+    hint.append(before, Object.assign(document.createElement('code'), { textContent: 'tejun-team <name>' }), after);
+  }
   const title = dlg.card.querySelector('.tg-title');
   const msg = status('tg-msg');
   title.after(msg.el);
   const chips = dlg.card.querySelector('.tg-chips');
   const known = dlg.card.querySelector('.tg-known');
   const inp = dlg.card.querySelector('.tg-input');
-  const inpField = field(inp, { label: 'add a team' });
+  const inpField = field(inp, { label: t('panels.add_team', 'add a team') });
   // field() wraps in place: put the wrapper where the input was.
   dlg.card.insertBefore(inpField.el, known);
 
   const say = (text, bad) => msg.say(text, bad ? 'bad' : '');
-  const clean = (t) =>
-    String(t || '')
+  const clean = (tag) =>
+    String(tag || '')
       .trim()
       .toLowerCase()
       .replace(/[^a-z0-9_-]/g, '')
@@ -125,14 +136,14 @@ export function buildTagPanel() {
     if (!list.length) {
       const em = document.createElement('span');
       em.className = 'tg-empty';
-      em.textContent = 'on no team';
+      em.textContent = t('panels.no_team', 'on no team');
       chips.appendChild(em);
     }
-    list.forEach((t, i) => {
+    list.forEach((tag, i) => {
       const c = document.createElement('button');
       c.className = 'tg-chip on';
-      c.append(document.createTextNode(t), Object.assign(document.createElement('i'), { textContent: '✕' }));
-      c.title = 'remove';
+      c.append(document.createTextNode(tag), Object.assign(document.createElement('i'), { textContent: '✕' }));
+      c.title = t('panels.remove', 'remove');
       c.addEventListener('click', () => {
         list.splice(i, 1);
         renderChips();
@@ -149,7 +160,7 @@ export function buildTagPanel() {
     if (!all.length) return;
     const lbl = document.createElement('span');
     lbl.className = 'tg-known-lbl';
-    lbl.textContent = 'join:';
+    lbl.textContent = t('panels.join', 'join:');
     known.appendChild(lbl);
     all.forEach((t) => {
       const c = document.createElement('button');
@@ -165,10 +176,10 @@ export function buildTagPanel() {
     });
   };
   const add = () => {
-    const t = clean(inp.value);
+    const tag = clean(inp.value);
     inp.value = '';
-    if (!t || list.includes(t)) return;
-    list.push(t);
+    if (!tag || list.includes(tag)) return;
+    list.push(tag);
     list.sort();
     renderChips();
     renderKnown();
@@ -186,7 +197,7 @@ export function buildTagPanel() {
     const r = await request('/api/sessions/' + encodeURIComponent(session) + '/tags');
     if (current !== session) return;
     if (!r.ok) {
-      say('could not load — ' + r.message, true);
+      say(t('panels.load_failed', 'could not load — {message}', { message: r.message }), true);
       return;
     }
     list = Array.isArray(r.data.tags) ? r.data.tags : [];
@@ -205,14 +216,14 @@ export function buildTagPanel() {
     if (!current) return;
     add(); // don't silently drop a tag left sitting in the box
     const session = current;
-    say('saving…');
+    say(t('panels.saving', 'saving…'));
     const r = await request('/api/sessions/' + encodeURIComponent(session) + '/tags', {
       method: 'POST',
       json: { tags: list },
     });
     if (!r.ok) {
       // The membership you assembled stays on screen; the failure says why.
-      say('not saved — ' + r.message, true);
+      say(t('panels.not_saved', 'not saved — {message}', { message: r.message }), true);
       return;
     }
     const s = S.sessions.find((x) => x.name === session);

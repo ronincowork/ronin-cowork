@@ -11,7 +11,7 @@
  * IT SHRANK AGAIN ON 2026-08-18, and this time the rooms did not move into their own
  * files — they moved to their own SURFACE. Six of the ten were about the install rather
  * than about sessions, and the strip that held all ten measured 871px against a 609px
- * tile. They are the admin_desk's now (js/desk.js); the registry says which surface owns
+ * tile. They are the admin_desk's now (js/cowork-commons.js); the registry says which surface owns
  * a row (`surface`), and this file reads only its own. What is left is four tabs and the
  * frame around them.
  *
@@ -32,6 +32,7 @@ import { buildLauncher } from './launcher.js';
 import { buildWipeboard } from './wipeboard.js';
 import { buildDocs } from './docs.js';
 import { buildArchives } from './archives.js';
+import { t } from './lexicon.js';
 
 export function buildHome(tile) {
   const el = document.createElement('div');
@@ -60,7 +61,7 @@ export function buildHome(tile) {
   // was landing over the strip it described. `title` is the thing tips.js takes over,
   // so the way to have no box is to set none — and the registry's `hint` column went
   // with this line, which was its only reader (js/panes.js).
-  for (const p of PANES.filter((p) => p.surface === 'commons')) {
+  for (const p of PANES().filter((p) => p.surface === 'commons')) {
     const b = document.createElement('button');
     b.type = 'button';
     b.dataset.pane = p.id;
@@ -75,7 +76,7 @@ export function buildHome(tile) {
       // opened a box — it was a label only a screen reader could ever reach, and that
       // is what it now is. The visible text leads the name so the name still contains
       // it (WCAG 2.5.3, label in name).
-      b.setAttribute('aria-label', `${b.textContent} — off, this service is not installed.`);
+      b.setAttribute('aria-label', t('commons.tab_off', '{tab} — off, this service is not installed.', { tab: b.textContent }));
     } else b.addEventListener('click', () => showPane(p.id));
     tabRow.appendChild(b);
   }
@@ -87,7 +88,7 @@ export function buildHome(tile) {
   closeMark.className = 'close-hex';
   closeMark.textContent = '×';
   closeTab.appendChild(closeMark);
-  closeTab.title = 'Back to the terminal';
+  closeTab.title = t('commons.close_title', 'Back to the terminal');
   tabs.appendChild(closeTab);
 
   /* WHICH ENDS OF THE STRIP HAVE MORE ON THEM. Ten rooms plus the ✕ is 831px against
@@ -174,7 +175,7 @@ export function buildHome(tile) {
   secList.className = 'home-sec';
   const h = document.createElement('div');
   h.className = 'home-h';
-  h.textContent = 'sessions';
+  h.textContent = t('commons.sessions', 'sessions');
   secList.appendChild(h);
   colL.appendChild(secList);
   const roster = buildRoster(tile, secList);
@@ -203,7 +204,7 @@ export function buildHome(tile) {
     showPane,
     openDoc: (p) => { showPane('docs'); docs.open(p); },
     /* THE GBRAIN HAND-OFF, which now arrives from another surface. gbrain moved to the
-     * admin_desk (js/desk.js) and its "ask this of a PersonalAssistant" button still has
+     * admin_desk (js/cowork-commons.js) and its "ask this of a PersonalAssistant" button still has
      * to land in ＋ New — which is the commons', and stays the commons'. So the desk asks
      * the tile, the tile asks here, and the launcher never learns it has two callers.
      *

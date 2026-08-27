@@ -1,5 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { S } from './state.js';
+import { t } from './lexicon.js';
 
 /**
  * DICTATION — one engine, ours, on both surfaces.
@@ -57,10 +58,10 @@ export function makeClipRecorder({ onState, onText, onError }) {
         body: blob,
       });
       const data = await r.json().catch(() => ({}));
-      if (!r.ok) onError && onError(`Dictation failed (${data.error || r.status})`);
+      if (!r.ok) onError && onError(t('voice.failed', 'Dictation failed ({why})', { why: data.error || r.status }));
       else if (data.text) onText && onText(data.text);
     } catch {
-      onError && onError('Dictation failed (network)');
+      onError && onError(t('voice.failed_network', 'Dictation failed (network)'));
     }
     state('idle');
   };
@@ -92,7 +93,7 @@ export function makeClipRecorder({ onState, onText, onError }) {
       // no mic / not a secure context (needs the https url) / permission denied
       recording = false;
       state('idle');
-      onError && onError('Mic blocked — open Ronin over the https url and allow the microphone');
+      onError && onError(t('voice.mic_blocked', 'Mic blocked — open Ronin over the https url and allow the microphone'));
     }
   };
 
@@ -140,7 +141,7 @@ export function wireDictation(ta, micBtn) {
       micBtn.classList.toggle('listening', s === 'rec');
       micBtn.classList.toggle('busy', s === 'busy');
       micBtn.textContent = s === 'busy' ? '…' : '🎤';
-      if (s !== 'busy') micBtn.title = 'Dictate into this box — tap again to stop, then ↵ to send';
+      if (s !== 'busy') micBtn.title = t('composer.mic_title', 'Dictate into this box — tap again to stop, then ↵ to send');
     },
     onText: (text) => {
       const had = ta.value.trim();

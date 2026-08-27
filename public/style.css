@@ -699,14 +699,10 @@ body {
   flex: 1;
 }
 /* Top-bar verbs — BOTH surfaces (owner override of the touch/desktop split) */
-/* The LOOK: one rule, one family — the old list named #homebtn and #macrobtn, which no
-   longer exist, so Commons and Keypad were falling back to the browser default and
-   looked like a different family of control. The grid count rides this rule too; it is
-   the same box. SIZING splits below, because the count is not a verb. */
+/* The LOOK: one rule, one family. The grid count rides this rule too; it is the same
+   box. SIZING splits below, because the count is not a verb. Two verbs since 2026-08-27
+   (owner): Commons, Mika Assist and Keypad left the bar — see index.html. */
 #newbtn,
-#mikabtn,
-#commonsbtn,
-#padbtn,
 #sysbtn,
 #bar .layout-cycle {
   display: inline-flex;
@@ -721,7 +717,7 @@ body {
   cursor: pointer;
   white-space: nowrap;
 }
-/* ONE WIDTH FOR THE FIVE VERBS, and the label sits inside it.
+/* ONE WIDTH FOR THE VERBS (five when measured, two now), and the label sits inside it.
    Owner, 2026-08-17: "each of the boxes on the right, except for the number … should be
    the same width so there's not a small New and a large Commons … and then just fit
    inside that button so that it looks a little bit more symmetrical." Boxes sized to
@@ -740,9 +736,6 @@ body {
    that always fits. Rename a verb longer than this and RE-MEASURE at 681px; do not just
    nudge it up. */
 #newbtn,
-#mikabtn,
-#commonsbtn,
-#padbtn,
 #sysbtn {
   min-width: 100px;
   justify-content: center;
@@ -752,22 +745,13 @@ body {
    THE EQUAL WIDTH GOES WITH THEM — five 100px boxes holding one glyph each would eat
    500px of a 402px row and shove the grid count off the end, which is the opposite of
    what the width was for. `min-width: auto` hands each glyph back its own small box.
-
-   Commons and Account are in this list now; they were not. #commonsbtn kept its word at
-   402px and ⚙ had no word to lose, so the phone bar carried two exceptions to a rule
-   with three members. One rule, five members, no exceptions. */
+   One rule, every verb on the bar, no exceptions. */
 @media (max-width: 680px) {
   #newbtn .txt,
-  #mikabtn .txt,
-  #commonsbtn .txt,
-  #padbtn .txt,
   #sysbtn .txt {
     display: none; /* icon-only on phones — bar space is tight */
   }
   #newbtn,
-  #mikabtn,
-  #commonsbtn,
-  #padbtn,
   #sysbtn {
     min-width: auto;
   }
@@ -1145,7 +1129,7 @@ body {
    primitive now (@layer ui, .ui-sheet), which is why the `#padsheet { position: fixed;
    z-index: 30; … }` block that used to stand here is gone with the JS that toggled it.
    What stays is what is THIS card's: its width, its scroll, and the board inside it. */
-#padsheet .pad-card {
+.pad-card {
   display: flex;
   flex-direction: column;
   width: min(420px, 92vw);
@@ -1155,7 +1139,7 @@ body {
   border: var(--edge) solid var(--line);
   border-radius: var(--radius-xl);
 }
-#padsheet .pad-bar {
+.pad-card .pad-bar {
   display: flex;
   align-items: center;
   gap: var(--space-4);
@@ -1164,13 +1148,13 @@ body {
   background: var(--bg-2);
   border-bottom: var(--edge) solid var(--line);
 }
-#padsheet .pad-title {
+.pad-card .pad-title {
   color: var(--fg);
   font-size: var(--text-5);
   font-weight: 600;
   white-space: nowrap;
 }
-#padsheet .pad-last {
+.pad-card .pad-last {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1179,7 +1163,7 @@ body {
   color: var(--muted);
   font: var(--text-3)/1.4 var(--font-term);
 }
-#padsheet .pad-bar button {
+.pad-card .pad-bar button {
   background: var(--panel);
   color: var(--fg);
   border: var(--edge) solid var(--line);
@@ -1189,28 +1173,28 @@ body {
   font-size: var(--text-5);
   cursor: pointer;
 }
-#padsheet .pad-bar button.armed {
+.pad-card .pad-bar button.armed {
   background: var(--accent);
   color: var(--on-accent);
   border-color: var(--accent);
 }
-#padsheet .pad-board {
+.pad-card .pad-board {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: var(--space-5);
   padding: var(--space-7);
 }
 /* Captured off-layout chords (e.g. ⌥⌘1 dummies) — same key look, own row */
-#padsheet .pad-extras {
+.pad-card .pad-extras {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: var(--space-5);
   padding: 0 var(--space-7) var(--space-7);
 }
-#padsheet .pad-extras:empty {
+.pad-card .pad-extras:empty {
   display: none;
 }
-#padsheet .pad-key {
+.pad-card .pad-key {
   aspect-ratio: 1;
   display: flex;
   flex-direction: column;
@@ -1231,7 +1215,7 @@ body {
    It WRAPS (up to three lines, then clamps) rather than being cut off with an
    ellipsis: a truncated binding name is unreadable on the one surface whose whole
    job is telling you what a key does. */
-#padsheet .pad-key b {
+.pad-card .pad-key b {
   max-width: 92%;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -1245,28 +1229,28 @@ body {
   font-size: var(--text-3);
   font-weight: 600;
 }
-#padsheet .pad-key small {
+.pad-card .pad-key small {
   font: var(--text-micro)/1 var(--font-term);
   color: var(--muted);
 }
-#padsheet .pad-key.bound {
+.pad-card .pad-key.bound {
   border-color: var(--accent);
 }
-#padsheet .pad-key.bound b {
+.pad-card .pad-key.bound b {
   color: var(--accent);
 }
-#padsheet .pad-key.editing {
+.pad-card .pad-key.editing {
   border-color: var(--fg);
 }
-#padsheet .pad-key.hit {
+.pad-card .pad-key.hit {
   background: var(--accent);
   border-color: var(--accent);
 }
-#padsheet .pad-key.hit b,
-#padsheet .pad-key.hit small {
+.pad-card .pad-key.hit b,
+.pad-card .pad-key.hit small {
   color: var(--on-accent);
 }
-#padsheet .pad-widget {
+.pad-card .pad-widget {
   aspect-ratio: 1;
   display: flex;
   align-items: center;
@@ -1278,29 +1262,29 @@ body {
   font-size: var(--text-8);
 }
 /* Universal-key widgets carry symbol + name — smaller type so it fits */
-#padsheet .pad-kesc,
-#padsheet .pad-ktab,
-#padsheet .pad-ent,
-#padsheet .pad-adel,
-#padsheet .pad-aent {
+.pad-card .pad-kesc,
+.pad-card .pad-ktab,
+.pad-card .pad-ent,
+.pad-card .pad-adel,
+.pad-card .pad-aent {
   font-size: var(--text-2);
   font-weight: 600;
   color: var(--fg);
   padding: 0 var(--space-2);
   line-height: 1.3;
 }
-#padsheet .pad-enc,
-#padsheet .pad-joy {
+.pad-card .pad-enc,
+.pad-card .pad-joy {
   border-radius: var(--radius-round);
 }
 /* the encoder / joystick flash too, so you can see what a turn or flick emits */
-#padsheet .pad-widget.hit {
+.pad-card .pad-widget.hit {
   background: var(--accent);
   border-style: solid;
   border-color: var(--accent);
   color: var(--on-accent);
 }
-#padsheet .pad-edit {
+.pad-card .pad-edit {
   display: none;
   flex-direction: column;
   gap: var(--space-4);
@@ -1309,15 +1293,15 @@ body {
   color: var(--fg);
   font-size: var(--text-4);
 }
-#padsheet .pad-edit.open {
+.pad-card .pad-edit.open {
   display: flex;
 }
-#padsheet .pad-erow {
+.pad-card .pad-erow {
   display: flex;
   gap: var(--space-4);
 }
-#padsheet .pad-erow select,
-#padsheet .pad-erow input {
+.pad-card .pad-erow select,
+.pad-card .pad-erow input {
   flex: 1;
   min-width: 0;
   height: 34px;
@@ -1328,7 +1312,7 @@ body {
   padding: 0 var(--space-4);
   font-size: var(--text-4);
 }
-#padsheet .pad-erow button {
+.pad-card .pad-erow button {
   background: var(--panel);
   color: var(--fg);
   border: var(--edge) solid var(--line);
@@ -1338,7 +1322,7 @@ body {
   font-size: var(--text-4);
   cursor: pointer;
 }
-#padsheet .pad-asklbl {
+.pad-card .pad-asklbl {
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -1382,7 +1366,7 @@ body {
   font-size: var(--text-5);
 }
 /* ⚙ program-the-pad row (WebHID) */
-#padsheet .pad-prog {
+.pad-card .pad-prog {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1390,8 +1374,8 @@ body {
   padding: var(--space-5) var(--space-7) max(var(--space-7), env(safe-area-inset-bottom));
   border-top: var(--edge) solid var(--line);
 }
-#padsheet .pad-prog button,
-#padsheet .pad-prog select {
+.pad-card .pad-prog button,
+.pad-card .pad-prog select {
   background: var(--panel);
   color: var(--fg);
   border: var(--edge) solid var(--line);
@@ -1401,11 +1385,11 @@ body {
   font-size: var(--text-4);
   cursor: pointer;
 }
-#padsheet .pad-prog button:disabled {
+.pad-card .pad-prog button:disabled {
   opacity: 0.45;
   cursor: default;
 }
-#padsheet .pad-progmsg {
+.pad-card .pad-progmsg {
   flex-basis: 100%;
   color: var(--muted);
   font-size: var(--text-3);
@@ -2159,6 +2143,13 @@ body {
   flex-wrap: wrap;
   gap: var(--space-3);
 }
+/* A CONTROL MUST ANSWER THE HAND. These two buttons carried six declarations and not one
+   interaction state: no pointer, no hover, no press, and — the failure the owner actually
+   hit — no `:disabled` look, while `finish()` in js/session-retire.js disables BOTH of
+   them for the entire length of the request. Archiving stops a tmux session, so that is
+   not instant; the click therefore read as "nothing happened", right up until the sheet
+   vanished by itself. Nothing was wrong with the tokens — the ramps below were all here
+   the whole time; this rule just never reached for them. */
 .end-session-actions button {
   min-height: 40px;
   padding: var(--space-3) var(--space-5);
@@ -2166,13 +2157,48 @@ body {
   border-radius: var(--radius-md);
   background: var(--bg-2);
   color: var(--fg);
+  cursor: pointer;
+  transition:
+    background var(--motion-quick) var(--ease),
+    border-color var(--motion-quick) var(--ease),
+    transform var(--motion-quick) var(--ease);
 }
+.end-session-actions button:hover:not(:disabled) {
+  background: var(--raise);
+}
+/* The press. `.tile-head button:active` is this same motif one row up — the header the
+   sheet opens from — so a click here answers the way a click there already does. */
+.end-session-actions button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.end-session-actions button:focus-visible {
+  outline: var(--edge) solid var(--accent);
+  outline-offset: 2px;
+}
+/* The house's disabled motif: opacity plus a dead cursor, as `.fr-go`, `.st-go` and
+   fourteen other rules in this sheet already spell it. */
+.end-session-actions button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+/* Archive is the recommended way out, so it is a FILLED primary like the other two
+   commit-buttons in the app (`.fr-go`, `.st-go`) rather than an outline that reads as
+   secondary next to a red one. */
 .end-session-actions .primary {
-  border-color: var(--accent);
+  background: var(--accent);
+  border-color: var(--accent-deep);
+  color: var(--on-accent);
+}
+.end-session-actions .primary:hover:not(:disabled) {
+  background: var(--accent-deep);
 }
 .end-session-actions .danger {
   color: var(--bad);
   border-color: var(--bad);
+}
+.end-session-actions .danger:hover:not(:disabled) {
+  background: var(--bad-ground);
+  border-color: var(--bad-deep);
 }
 /* ---- the session max: the roster's top line, above the list it describes ---- */
 .home-maxrow {
@@ -2246,39 +2272,11 @@ body {
 .home[data-pane='docs'] .home-docs {
   display: flex;
 }
-
-/* ================= THE ADMIN DESK (js/desk.js) =================================
-   A SIBLING OF THE COMMONS, not a new kind of surface. Same box, same z-index, same
-   `.show` — the two overlay one tile body and js/tile.js raises one by lowering the
-   other. Everything below is the rail and the panes; the tile, the overlay and the
-   room content were all already written.
-
-   `.desk-<room>` — the six rooms' own layout rules, further down this file, are the
-   `.home-<room>` rules renamed and otherwise untouched (2026-08-18). None of them was
-   ever used as an ancestor selector, so the move was a rename and nothing else. */
-.desk {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  display: none;
-  background: var(--bg);
-}
-.desk.show {
-  display: flex;
-}
-/* CLEAN, TOP TO BOTTOM. Every control in a tile header acts on a SESSION — the picker
-   chooses one, ⚡ sends macros to one, ⌗ and メ act on one — and the desk is the tile not
-   being about a session. A row of controls that do nothing is worse than no row, so the
-   header goes while the desk is up and the desk owns the whole cell (owner, 2026-08-18).
-   The desk's own ✕ is the way back, and it is the only control the desk has. */
-.tile.deskup .tile-head {
-  display: none;
-}
-
-/* ---- the rail ----
-   A NAV, NOT A STRIP. The six rooms just left a tab strip for being too long for it;
-   putting them back on one, in a narrower box, would rebuild the row this change exists
-   to shorten. Vertical has room to grow and a tile has more height than width. */
+/* ---- THE ACCOUNT TAB'S RAIL (js/cowork-commons.js) — the admin desk's nav, kept (owner,
+   2026-08-27: "we should still have the selectors on the left … not get rid of the UI that
+   we have from the previous admin desk, which is actually quite good"). A NAV, NOT A STRIP,
+   inside the tab: pick a room on the left, see one room on the right. The rows that became
+   tabs of their own left it; the rest of the desk is here as it was. */
 .desk-nav {
   flex: 0 0 154px;
   display: flex;
@@ -2288,10 +2286,7 @@ body {
   border-right: var(--edge) solid var(--line);
   overflow-y: auto;
 }
-/* THE DESK'S OWN TWO CONTROLS — ✕ out, « narrower — and they are in the RAIL because
-   the rail is chrome. ✕ was absolutely positioned over the content pane for one run on
-   2026-08-18 and took the pointer from whatever each room drew up there (↻ Restart Koshi,
-   ＋ include, gbrain's status button): a transparent overlay is still an overlay. */
+/* THE RAIL'S ONE CONTROL — « narrower — in the RAIL because the rail is chrome. */
 .desk-railtop {
   display: flex;
   justify-content: space-between;
@@ -2362,7 +2357,7 @@ body {
    how a name LAYS OUT, never whether it shows: beside its glyph where there is room,
    stacked under it in a 4-up tile at 70px rather than 154. 680px is the number the tab
    strip already breaks at — one breakpoint for the tile, not two. */
-@container tile (max-width: 680px) {
+@container (max-width: 680px) {
   .desk-nav {
     flex-basis: 70px;
     padding: var(--space-5) var(--space-3);
@@ -2423,69 +2418,117 @@ body {
   padding-top: 0;
 }
 
-/* ---- the content ---- */
+
 .desk-content {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }
-/* ✕, and the only control the desk owns. Top of the CONTENT, not the foot of the rail:
-   "Log out" lives down there, and a thing pressed often must not neighbour a thing
-   pressed once. */
-.desk-x {
-  border: var(--edge) solid transparent;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--muted-3);
-  font-size: var(--text-3);
-  line-height: 1;
-  font-family: inherit;
-  padding: var(--space-2);
-  cursor: pointer;
+/* The Account tab is the rail beside the content, and a container for the rail's query. */
+.cc-pane.cc-rail {
+  container-type: inline-size;
 }
-.desk-x:hover {
-  border-color: transparent;
-}
-.close-hex {
-  display: inline-grid;
-  place-items: center;
-  width: var(--heighten-inline-size);
-  height: var(--heighten-block-size);
-  clip-path: var(--heighten-shape);
-  background: var(--heighten);
-  color: var(--heighten-fg);
-  font-size: var(--text-5);
-  font-weight: 700;
-  line-height: 1;
-}
-.desk-x:hover .close-hex,
-.home-x:hover .close-hex { background: var(--heighten-hover); }
+
+/* ---- THE COWORK COMMONS' ROOMS (js/cowork-commons.js). The admin desk — an overlay a
+   tile drew on itself, with a rail, a ✕ and eleven rows — retired on 2026-08-27 (owner:
+   "another workspace alternative"); its rooms are re-hung on the Kit's channel surface
+   under six tabs. `.desk-<room>` below is each room's own layout rule, untouched: the rooms
+   moved surfaces, not names. A pane is shown by `.show` now, not by the desk's data-room. */
 .desk-pane {
   display: none;
   flex: 1;
   min-width: 0;
   min-height: 0;
 }
-.desk[data-room='settei'] .desk-pane[data-room='settei'],
-.desk[data-room='proj'] .desk-pane[data-room='proj'],
-.desk[data-room='hotwords'] .desk-pane[data-room='hotwords'],
-.desk[data-room='koshi'] .desk-pane[data-room='koshi'],
-.desk[data-room='gbrain'] .desk-pane[data-room='gbrain'],
-.desk[data-room='stats'] .desk-pane[data-room='stats'],
-.desk[data-room='appearance'] .desk-pane[data-room='appearance'],
-.desk[data-room='release'] .desk-pane[data-room='release'],
-.desk[data-room='account'] .desk-pane[data-room='account'] {
+.desk-pane.show {
   display: flex;
 }
-/* The app's own three are plain blocks of the sheet's old content (js/system.js), so
-   they get the padding the sheet used to give them. */
-.desk-pane[data-room='appearance'],
-.desk-pane[data-room='release'],
-.desk-pane[data-room='account'] {
+/* The app's own blocks (js/system.js) are plain content, so they get the padding the
+   sheet used to give them. */
+.cc-app {
+  flex-direction: column;
+  padding: var(--space-4) 0 var(--space-6);
+}
+/* The surface's own box: a tab is one scrolling pane; a `.cc-stack` pane is several
+   rooms under headings, one after another, the way "the rest of the desk" reads. */
+.cc-pane {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+.cc-pane.cc-stack {
   flex-direction: column;
   overflow-y: auto;
-  padding: var(--space-6) var(--space-7) var(--space-8);
+  padding: var(--space-5) var(--space-7) var(--space-8);
+}
+.cc-pane.cc-stack .desk-pane {
+  flex: 0 0 auto;
+  overflow: visible;
+  padding-left: 0;
+  padding-right: 0;
+}
+.cc-h {
+  margin: var(--space-6) 0 var(--space-2);
+  color: var(--fg-strong);
+  font-size: var(--text-4);
+  font-weight: 600;
+}
+.cc-h:first-child {
+  margin-top: 0;
+}
+.cc-p {
+  margin: 0 0 var(--space-4);
+  color: var(--muted);
+  font-size: var(--text-3);
+  max-width: 60ch;
+}
+.cc-btn {
+  align-self: flex-start;
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--raise);
+  color: var(--fg-strong);
+  padding: var(--space-3) var(--space-5);
+  font-size: var(--text-3);
+  cursor: pointer;
+}
+/* Reserved chat — geometry promised, nothing implied (the team commons' Chat rule). */
+.cc-chat {
+  flex: 1;
+  min-height: 12rem;
+  border: var(--edge) dashed var(--line);
+  border-radius: var(--radius-md);
+}
+/* The pad's card INLINE — the SAME card, the same graphic, as the sheet showed (owner,
+   2026-08-27: "it should be the exact same graphic we had for the sheet"); every pad rule is
+   scoped to `.pad-card` so it draws the same wherever the card is. Only the sheet's box
+   limits are lifted here: the tab is the box. */
+.cc .pad-card {
+  flex: 1;
+  min-height: 0;
+  width: min(420px, 100%);
+  max-height: none;
+  margin: var(--space-5) auto;
+  overflow-y: auto;
+}
+.cc .pad-close {
+  display: none;
+}
+/* ⚙'s destination on the grid page: the surface at full width. */
+.cc-view {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+}
+.cc-view[hidden] {
+  display: none;
+}
+.cc-view .cc {
+  flex: 1;
+  min-height: 0;
 }
 
 /* ---- ⚙ CONFIGURATION: the install record, in one room (js/settei.js).
@@ -6664,7 +6707,9 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 .wk-explorer-rail[data-state='failed'] > .wk-state { color: var(--bad-soft); }
 .wk-explorer-rail[data-state='stale'] > .wk-state { color: var(--warn); }
 .wk-explorer-rail[data-state='unavailable'], .wk-explorer-rail[data-state='inert'] { opacity: .58; pointer-events: none; }
-.wk-channel-service-tabs { display: flex; flex: 0 0 auto; align-items: center; gap: var(--space-2); min-height: var(--row-head); border-bottom: var(--edge) solid var(--line); padding: var(--space-3); overflow-x: auto; }
+/* THE COMMONS STRIP WEARS THE TILE HEAD'S SHADING (owner, 2026-08-27: "it should be the same,
+   at least shading") — one surface_head look for every surface (docs/cowork-space.md). */
+.wk-channel-service-tabs { display: flex; flex: 0 0 auto; align-items: center; gap: var(--space-2); min-height: var(--row-head); background: var(--bg-2); border-bottom: var(--edge) solid var(--line); padding: var(--space-3) var(--space-4); overflow-x: auto; }
 .wk-channel-service-tab { border: 0; border-radius: var(--radius-xs); background: transparent; color: var(--muted); padding: var(--space-3) var(--space-4); white-space: nowrap; }
 .wk-channel-service-tab[aria-selected='true'] { background: var(--raise); color: var(--fg-strong); }
 .wk-channel-surface > .wk-surface-content { display: flex; flex-direction: column; }

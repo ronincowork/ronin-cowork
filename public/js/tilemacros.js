@@ -4,6 +4,7 @@ import { toast } from './ui.js';
 import { IS_TOUCH, S } from './state.js';
 import { closeTileMore, fitDropToTile } from './tilemore.js';
 import { addProvMark } from './provenance.js';
+import { t } from './lexicon.js';
 
 /**
  * The ⚡ button on a TILE header: the fast path for session_macros.
@@ -57,7 +58,7 @@ export function buildTileMacros(tile) {
   const btn = document.createElement('button');
   btn.className = 'tmac-btn';
   btn.textContent = '⚡';
-  btn.title = 'Macros — drop one into this session\'s input';
+  btn.title = t('macros.button_title', 'Macros — drop one into this session\'s input');
 
   const menu = document.createElement('div');
   menu.className = 'tmac';
@@ -149,7 +150,7 @@ export function buildTileMacros(tile) {
       // honest line naming the gap and the fix — not a blank under the headline (which reads
       // as broken), not the instruction, and not a guess at what their macro does.
       const why = document.createElement('small');
-      why.textContent = plain(m.blurb) || 'no blurb yet — add a blurb: line to its MACROS.md entry';
+      why.textContent = plain(m.blurb) || t('macros.no_blurb', 'no blurb yet — add a blurb: line to its MACROS.md entry');
       row.append(nm, why);
       // THE INVOCATION IS THE ACCESSIBLE NAME, and it is deliberately not a `title`.
       //
@@ -166,14 +167,14 @@ export function buildTileMacros(tile) {
       // reader who most needs to know this button types `+name:` rather than doing a thing.
       // The face stays the owner's plain words either way.
       row.setAttribute('aria-label', m.send
-        ? `${m.label || m.name} — +${m.name} ⏎, typed into the session and sent for you`
-        : `${m.label || m.name} — +${m.name}: dropped into the input for you to finish`);
+        ? t('macros.aria_send', '{label} — +{name} ⏎, typed into the session and sent for you', { label: m.label || m.name, name: m.name })
+        : t('macros.aria_drop', '{label} — +{name}: dropped into the input for you to finish', { label: m.label || m.name, name: m.name }));
       const cool = m.send ? coolingFor(m.name) : 0;
       if (cool) {
         row.disabled = true;
         // The blurb's place, not an appendix to the headline: a spent button explaining
         // what it does is less use than one explaining why it will not go.
-        why.textContent = `sent — wait ${cool}s before sending it again`;
+        why.textContent = t('macros.cooldown', 'sent — wait {s}s before sending it again', { s: cool });
       }
       row.addEventListener('click', () => {
         if (m.send) {
@@ -192,7 +193,7 @@ export function buildTileMacros(tile) {
     }
     // Two ways to be empty and one sentence for both — the catalog has not loaded, or
     // nothing in it is marked `preview: yes`. Either way the fix is the same file.
-    if (!shown.length) menu.textContent = 'no macros previewed — see MACROS.md';
+    if (!shown.length) menu.textContent = t('macros.none_previewed', 'no macros previewed — see MACROS.md');
   };
 
   /**

@@ -2,12 +2,11 @@
 /**
  * LEXICON — the words a surface uses, chosen at runtime.
  *
- * `t(key, literal)` is the whole surface: the active lexicon's word for `key`, else the
- * literal the view wrote. That second argument is the floor's floor — it is what makes a
- * missing lexicon paint exactly as stock, and a missing key never blank a label. A view
- * born after 2026-08-27 reads its strings through `t()`; a view older than that keeps
- * its literals until it is touched for another reason (no sweep, by ruling — the
- * check reports the unconverted, it does not fail on them).
+ * `t(key, literal, vars)` is the whole surface: the active lexicon's word for `key`, else the
+ * literal the view wrote, with `{name}` placeholders filled from `vars`. That second argument is the floor's floor — it is what makes a
+ * missing lexicon paint exactly as stock, and a missing key never blank a label. Every view reads its strings through `t()` since
+ * 2026-08-27 (the KOKUGO sweep); `docs/kokugo.md` is how a new one does the same, and
+ * `scripts/check-lexicon.mjs` fails a key the floor lacks.
  *
  * ONE FLAT OBJECT PER PICK. The server resolves the `base:` chain (`src/lexicons.ts`), so
  * this file never learns that `home_en` falls through to `professional_en`, or that a French
@@ -22,15 +21,22 @@
  * WHAT IS NEVER HERE: anything an agent reads. The letter, the brief and the boot shelf
  * stay in stock tokens; a lexicon changes what a PERSON sees and nothing else.
  */
-import { request } from './request.js';
 
 /** The active lexicon: { name, label, words } — null is stock, and ordinary. */
 let active = null;
 
-/** A word for the key, or the literal the view wrote. Never undefined, never ''. */
-export function t(key, literal = '') {
+/**
+ * A word for the key, or the literal the view wrote. Never undefined, never ''.
+ *
+ * `vars` fills placeholders: `t('roster.running_no_limit', '{n} running · no limit', { n })`. A string with a
+ * value in it stays ONE key with a `{name}` in it — word order differs between languages,
+ * so two translated halves are never concatenated. A placeholder `vars` does not name is
+ * left as written, so a lexicon's typo is visible rather than silently blanked.
+ */
+export function t(key, literal = '', vars) {
   const w = active?.words?.[key];
-  return w != null && w !== '' ? w : (literal || key);
+  const s = w != null && w !== '' ? w : (literal || key);
+  return vars ? s.replace(/\{(\w+)\}/g, (m, name) => (name in vars ? String(vars[name]) : m)) : s;
 }
 
 /**
@@ -41,8 +47,16 @@ export async function loadLexicon(name) {
   const want = String(name || '').trim();
   let next = null;
   if (want) {
-    const r = await request(`/api/lexicons/${encodeURIComponent(want)}`);
-    if (r.ok && r.data && r.data.words) next = { name: r.data.name, label: r.data.label, words: r.data.words };
+    // A bare fetch, not request.js: request.js reads t() for its own two messages, and a
+    // module the whole client imports cannot also import the client. Nothing is lost —
+    // an unreachable or unknown lexicon is stock, which is the ordinary state.
+    try {
+      const res = await fetch(`/api/lexicons/${encodeURIComponent(want)}`, { cache: 'no-store' });
+      const d = res.ok ? await res.json() : null;
+      if (d && d.words) next = { name: d.name, label: d.label, words: d.words };
+    } catch {
+      next = null;
+    }
   }
   active = next;
   return active;

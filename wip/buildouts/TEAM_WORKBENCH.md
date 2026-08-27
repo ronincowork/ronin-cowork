@@ -151,6 +151,13 @@ lines" residue noted under CHERRY_PICK — it was never the decoder. Reproduced 
 measured out of process over COPIES of the store (`settle()` over a `cpSync` of the
 session dir; never the live one — one settler per pane).
 
+**KOKUGO landed over this page (2026-08-26, `@kokugo`):** every string a person reads
+goes through `t('room.key', 'literal')` from `public/js/lexicon.js`, with its key in
+`lexicons/professional_en.md` in the same commit — `check-lexicon` fails a module
+otherwise, and also fails a `t()` call with no live import. Read `docs/kokugo.md` before
+adding a word to this page. The cards, the configuration reading, the tab-name field and
+the output selector are already through it.
+
 **Probe trap added to the list:** `page.goto(url, { waitUntil: 'networkidle' })` never
 resolves against this app (websockets and polls); use `'load'` and a fixed wait.
 

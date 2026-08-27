@@ -1,4 +1,5 @@
 /* part of the ronin-cowork client — see js/README.md */
+import { t } from './lexicon.js';
 
 
 /* ---------- Work Louder device programming (WebHID — Chrome/Edge desktop) ---------- */
@@ -82,10 +83,10 @@ export async function wlConnect() {
       // to actually do about it, most likely cause first (macOS TCC gates HID
       // access to keyboard-like devices behind Input Monitoring).
       throw new Error(
-        'could not open the pad — 1) System Settings → Privacy & Security → ' +
-          'Input Monitoring: enable Chrome, then restart Chrome; 2) quit the ' +
-          'Work Louder Input app (menu bar too); 3) use the USB cable, not ' +
-          'Bluetooth; 4) chrome://device-log shows the exact refusal',
+        t('pad.open_failed', 'could not open the pad — 1) System Settings → Privacy & Security → '
+          + 'Input Monitoring: enable Chrome, then restart Chrome; 2) quit the '
+          + 'Work Louder Input app (menu bar too); 3) use the USB cable, not '
+          + 'Bluetooth; 4) chrome://device-log shows the exact refusal'),
       );
     }
   }
@@ -113,7 +114,7 @@ export async function wlConnect() {
       if (!p) continue; // id-less = device notification (kb.radial etc.) — not ours
       pending.delete(m.id);
       clearTimeout(p.timer);
-      if (m.error) p.reject(new Error(m.error.message || 'device error'));
+      if (m.error) p.reject(new Error(m.error.message || t('pad.device_error', 'device error')));
       else p.resolve(m.result);
     }
   };
@@ -133,7 +134,7 @@ export async function wlConnect() {
         reject,
         timer: setTimeout(() => {
           pending.delete(id);
-          reject(new Error(method + ': pad did not reply'));
+          reject(new Error(t('pad.no_reply', '{method}: pad did not reply', { method })));
         }, 10000),
       });
     });

@@ -20,6 +20,7 @@
  * slice polls only while entered, and stops the moment it is left.
  */
 import { request } from './request.js';
+import { t } from './lexicon.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -45,9 +46,9 @@ export function createTeamWipeboard() {
   const composeRow = el('div', 'twb-compose');
   const say = document.createElement('textarea');
   say.rows = 2;
-  say.placeholder = 'say something to the team — every member is interrupted';
+  say.placeholder = t('team_wipeboard.placeholder', 'say something to the team — every member is interrupted');
   say.spellcheck = false;
-  const post = el('button', null, 'Post');
+  const post = el('button', null, t('team_wipeboard.post', 'Post'));
   composeRow.append(say, post);
   root.append(note, thread, composeRow);
 
@@ -58,7 +59,7 @@ export function createTeamWipeboard() {
 
   const postNode = (p) => {
     const d = el('div', 'twb-post' + (p.author.startsWith('user:') ? ' owner' : p.author === 'system' ? ' system' : ''));
-    const aim = p.silent ? ' → (no notice)' : p.to?.length ? ` → ${p.to.join(', ')}` : '';
+    const aim = p.silent ? ' ' + t('team_wipeboard.no_notice', '→ (no notice)') : p.to?.length ? ` → ${p.to.join(', ')}` : '';
     d.append(el('div', 'twb-head', `${p.author}${aim} · ${p.at}`), el('div', 'twb-text', p.text));
     return d;
   };
@@ -90,9 +91,9 @@ export function createTeamWipeboard() {
 
   const renderThread = (posts, cleared) => {
     thread.replaceChildren();
-    if (cleared) thread.append(el('p', 'twb-cleared', '… earlier posts have cleared'));
+    if (cleared) thread.append(el('p', 'twb-cleared', t('team_wipeboard.cleared', '… earlier posts have cleared')));
     for (const p of posts) thread.append(postNode(p));
-    if (!posts.length) quiet('Nothing on the board right now — posts clear after 48 hours.');
+    if (!posts.length) quiet(t('team_wipeboard.empty', 'Nothing on the board right now — posts clear after 48 hours.'));
     else quiet('');
   };
 
@@ -110,7 +111,7 @@ export function createTeamWipeboard() {
       if (!entered) return;
       if (!r.ok) {
         // Network blips ride the poll; a standing failure is said in place of the thread.
-        if (!thread.childElementCount) quiet(`Could not read the board — ${r.message}`);
+        if (!thread.childElementCount) quiet(t('team_wipeboard.read_failed', 'Could not read the board — {message}', { message: r.message }));
         return;
       }
       const posts = r.data.posts || [];
@@ -137,7 +138,7 @@ export function createTeamWipeboard() {
     post.disabled = false;
     if (!r.ok) {
       // The words stay in the box — a post that silently never landed is the board lying.
-      quiet(`Could not post — ${r.message} (your text is still in the box)`);
+      quiet(t('team_wipeboard.post_failed', 'Could not post — {message} (your text is still in the box)', { message: r.message }));
       return;
     }
     say.value = '';
@@ -157,7 +158,7 @@ export function createTeamWipeboard() {
       board = id || '';
       newest = '';
       thread.replaceChildren();
-      quiet(board ? '' : 'No Team resolved — nothing to read.');
+      quiet(board ? '' : t('team_wipeboard.no_team', 'No Team resolved — nothing to read.'));
       if (entered && board) void refresh();
     },
     enter: () => {

@@ -18,3 +18,6 @@ falls through to `professional_en`.
 - **kind.personal:** Oneself
 - **kind.social:** Entertaining
 - **kind.school:** Lessons
+- **roster.no_team:** no household
+- **glossary.team:** Staff
+- **glossary.desk_profile:** the house style

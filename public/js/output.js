@@ -2,22 +2,26 @@
  * RIREKI's four views (owner, 2026-08-26: cherry_pick is RIREKI's own view and its
  * technical term; `conversation` was the same thing under another name and is gone),
  * and koshi's summary. */
-export const OUTPUTS = [
-  ['locked', 'Locked'],
-  ['terminal_mirror', 'Terminal Mirror'],
-  ['detailed', 'Detailed'],
-  ['condensed', 'Condensed'],
-  ['cherry_pick', 'Cherry Pick'],
-  ['agent_summary', 'Agent Summary'],
-];
+import { t } from './lexicon.js';
+// A function, not a table: the lexicon loads after this module is evaluated.
+export function OUTPUTS() {
+  return [
+    ['locked', t('output.locked', 'Locked')],
+    ['terminal_mirror', t('output.terminal_mirror', 'Terminal Mirror')],
+    ['detailed', t('output.detailed', 'Detailed')],
+    ['condensed', t('output.condensed', 'Condensed')],
+    ['cherry_pick', t('output.cherry_pick', 'Cherry Pick')],
+    ['agent_summary', t('output.agent_summary', 'Agent Summary')],
+  ];
+}
 
 /** Build the one per-tile control. Server capability is applied by Tile.syncOutput(). */
 export function makeOutput(tile) {
   const el = document.createElement('select');
   el.className = 'output';
-  el.setAttribute('aria-label', 'Output');
-  el.title = 'Output shown in this tile';
-  for (const [value, label] of OUTPUTS) el.add(new Option(label, value));
+  el.setAttribute('aria-label', t('output.aria', 'Output'));
+  el.title = t('output.title', 'Output shown in this tile');
+  for (const [value, label] of OUTPUTS()) el.add(new Option(label, value));
   el.addEventListener('change', () => tile.setOutput(el.value));
   return { el };
 }
@@ -28,10 +32,10 @@ export async function refreshKaki(tile, request, create, force = false) {
   let r = await request(path);
   if (r.ok) tile.tape.setSummaryPolicy(r.data.policy);
   if (r.ok && r.data.text && !force) { tile.tape.setSummary(r.data.text); return; }
-  tile.tape.setSummary('', create ? 'Writing a summary…' : 'No summary has been written yet.');
+  tile.tape.setSummary('', create ? t('tape.writing_summary', 'Writing a summary…') : t('tape.no_summary', 'No summary has been written yet.'));
   if (!create) return;
   r = await request(path, { method: 'POST', json: {} });
-  if (!r.ok) { tile.tape.setSummary('', 'Summary unavailable — ' + r.message); return; }
+  if (!r.ok) { tile.tape.setSummary('', t('tape.summary_unavailable', 'Summary unavailable — {message}', { message: r.message })); return; }
   tile.tape.setSummary((r.data.chunks || []).map((c) => c.summary).join('\n\n'));
 }
 

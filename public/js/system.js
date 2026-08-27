@@ -17,7 +17,7 @@ import { S } from './state.js';
  * page-level `ui.sheet` off the bar's ⚙. That fixed the copies and cost it the room: a
  * sheet is a small box, and this content wants a pane.
  *
- * Since 2026-08-18 it is neither. These three groups hang in the **admin_desk** (js/desk.js)
+ * Since 2026-08-18 it is neither. These three groups hang in the **admin_desk** (js/cowork-commons.js)
  * under "This app", below the six rooms about the install — one tile, opened where you ask
  * for it, with a full pane to draw in. The line the 2026-08-16 ruling drew was right; what
  * was missing was a surface on the correct side of it. `buildSystemPanel` returns elements
@@ -58,19 +58,19 @@ function buildPasskeyBlock() {
   el.hidden = true;
   const head = document.createElement('div');
   head.className = 'sys-theme-lbl';
-  head.textContent = 'passkeys';
+  head.textContent = t('desk.passkeys', 'passkeys');
   const list = document.createElement('div');
   const msg = status('sys-msg');
 
   const name = document.createElement('input');
   name.type = 'text';
-  name.placeholder = 'this device';
+  name.placeholder = t('desk.passkey_name_placeholder', 'this device');
   name.maxLength = 60;
-  const nameField = field(name, { label: 'passkey name' });
+  const nameField = field(name, { label: t('desk.passkey_name', 'passkey name') });
 
-  const addBtn = button('Add a passkey', {
+  const addBtn = button(t('desk.add_passkey', 'Add a passkey'), {
     cls: 'sys-run',
-    title: 'Register this device — Touch ID, Face ID or a security key',
+    title: t('desk.add_passkey_title', 'Register this device — Touch ID, Face ID or a security key'),
   });
   const row = document.createElement('div');
   row.className = 'sys-actions';
@@ -91,21 +91,21 @@ function buildPasskeyBlock() {
     const creds = (d && d.credentials) || [];
     if (!creds.length) {
       const none = document.createElement('small');
-      none.textContent = 'none registered — this device can be the first.';
+      none.textContent = t('desk.no_passkeys', 'none registered — this device can be the first.');
       list.append(none);
     }
     for (const c of creds) {
       const line = document.createElement('div');
       line.className = 'sys-theme';
       const lab = document.createElement('small');
-      lab.textContent = c.label + (c.usable ? '' : ` (registered on ${c.rpId} — not usable from this address)`);
-      const rm = button('Remove', { title: `Remove ${c.label}` });
+      lab.textContent = c.label + (c.usable ? '' : ' ' + t('desk.passkey_elsewhere', '(registered on {rp} — not usable from this address)', { rp: c.rpId }));
+      const rm = button(t('desk.remove', 'Remove'), { title: t('desk.remove_named', 'Remove {name}', { name: c.label }) });
       rm.addEventListener('click', async () => {
         // No confirm(): removing one of several passkeys is reversible by re-adding,
         // and the destructive-confirm primitive is reserved for work that is not.
         rm.disabled = true;
         const r = await request('/api/passkey/remove', { method: 'POST', json: { id: c.id } });
-        msg.say(r.ok ? 'removed' : r.message, r.ok ? 'ok' : 'bad');
+        msg.say(r.ok ? t('desk.removed', 'removed') : r.message, r.ok ? 'ok' : 'bad');
         refresh();
       });
       line.append(lab, rm);
@@ -113,7 +113,7 @@ function buildPasskeyBlock() {
     }
     if (d && d.recovery) {
       const rec = document.createElement('small');
-      rec.textContent = `a recovery code is outstanding until ${new Date(d.recovery.expiresAt).toLocaleTimeString()}`;
+      rec.textContent = t('desk.recovery_outstanding', 'a recovery code is outstanding until {time}', { time: new Date(d.recovery.expiresAt).toLocaleTimeString() });
       list.append(rec);
     }
   };
@@ -123,7 +123,7 @@ function buildPasskeyBlock() {
     if (!r.ok) {
       // A 404 means this operator predates the routes — the same honest reading the
       // update button gives, rather than an error the owner cannot act on.
-      msg.say(r.status === 404 ? 'this operator predates passkeys — its next restart carries the routes' : r.message, 'bad');
+      msg.say(r.status === 404 ? t('desk.passkeys_predate', 'this operator predates passkeys — its next restart carries the routes') : r.message, 'bad');
       addBtn.disabled = true;
       return;
     }
@@ -131,15 +131,15 @@ function buildPasskeyBlock() {
     const secure = window.isSecureContext && !!(window.PublicKeyCredential && navigator.credentials);
     addBtn.disabled = !secure || !r.data.rpId;
     if (!secure) {
-      msg.say('Adding a passkey needs the HTTPS address — this one is not a secure context.', 'bad');
+      msg.say(t('desk.passkey_needs_https', 'Adding a passkey needs the HTTPS address — this one is not a secure context.'), 'bad');
     } else if (!r.data.rpId) {
-      msg.say(`Passkeys unavailable: ${r.data.why || 'no relying-party name'}`, 'bad');
+      msg.say(t('desk.passkeys_unavailable', 'Passkeys unavailable: {why}', { why: r.data.why || t('desk.no_rp_name', 'no relying-party name') }), 'bad');
     }
   };
 
   addBtn.addEventListener('click', async () => {
     addBtn.disabled = true;
-    msg.say('waiting for the authenticator…', 'busy');
+    msg.say(t('desk.waiting_authenticator', 'waiting for the authenticator…'), 'busy');
     try {
       const o = await request('/api/passkey/register-options', { cache: 'no-store' });
       if (!o.ok) throw new Error(o.message);
@@ -176,12 +176,12 @@ function buildPasskeyBlock() {
       });
       if (!r.ok) throw new Error(r.message);
       name.value = '';
-      msg.say('✓ passkey added', 'ok');
+      msg.say(t('desk.passkey_added', '✓ passkey added'), 'ok');
       refresh();
       return;
     } catch (ex) {
       const cancelled = ex && (ex.name === 'NotAllowedError' || ex.name === 'AbortError');
-      msg.say(cancelled ? 'cancelled' : ex.message, cancelled ? '' : 'bad');
+      msg.say(cancelled ? t('desk.cancelled', 'cancelled') : ex.message, cancelled ? '' : 'bad');
     }
     addBtn.disabled = false;
   });
@@ -220,13 +220,13 @@ export function buildSystemPanel() {
   appRow.className = 'sys-theme';
   const appLab = document.createElement('span');
   appLab.className = 'sys-theme-lbl';
-  appLab.textContent = 'appearance';
+  appLab.textContent = t('desk.appearance', 'appearance');
   const flip = button('', {
     cls: 'sys-flip',
-    title: "The shell's mode — tap to flip. Ronin follows this device until you flip away; flip back to match and it follows again.",
+    title: t('desk.theme_flip_title', "The shell's mode — tap to flip. Ronin follows this device until you flip away; flip back to match and it follows again."),
   });
   const paintFlip = () => {
-    flip.textContent = resolvedTheme() === 'dark' ? '● dark' : '○ light';
+    flip.textContent = resolvedTheme() === 'dark' ? t('desk.theme_dark', '● dark') : t('desk.theme_light', '○ light');
   };
   flip.addEventListener('click', () => {
     setTheme(resolvedTheme() === 'dark' ? 'light' : 'dark');
@@ -253,7 +253,7 @@ export function buildSystemPanel() {
   skinBlock.className = 'sys-skins';
   const skinLab = document.createElement('span');
   skinLab.className = 'sys-theme-lbl';
-  skinLab.textContent = 'skin';
+  skinLab.textContent = t('desk.skin', 'skin');
   const skinList = document.createElement('div');
   skinList.className = 'sys-skinlist';
   skinBlock.append(skinLab, skinList);
@@ -270,7 +270,7 @@ export function buildSystemPanel() {
       if (sk.origin === 'user') {
         const mark = document.createElement('i');
         mark.className = 'sys-skin-mine';
-        mark.textContent = sk.shadowed ? 'yours (replaces ours)' : 'yours';
+        mark.textContent = sk.shadowed ? t('desk.yours_shadowing', 'yours (replaces ours)') : t('desk.yours', 'yours');
         nm.appendChild(mark);
       }
       const why = document.createElement('small');
@@ -284,7 +284,8 @@ export function buildSystemPanel() {
     }
   };
 
-  /* THE DESK PROFILE PICKER (R38), above the skins because it is the wider question: a
+  /* THE DESK PROFILE PICKER (R38) — its own desk row since 2026-08-27 (see `profile`
+   * below); it was drawn above the skins because it is the wider question: a
    * profile HAS a skin, and picking one puts that skin up, loads its words, and sets
    * what a new tile shows. Same shape as the skin rows — a row per profile, blurb and
    * `origin` — and the choice is settei's leaf, so every browser agrees. "Stock" is the
@@ -301,7 +302,7 @@ export function buildSystemPanel() {
     profList.innerHTML = '';
     const chosen = activeProfile()?.name || '';
     profLab.textContent = t('desk_profile', 'desk profile'); // re-read: a pick may have changed the words
-    const rows = [{ name: '', label: 'Stock', blurb: 'No profile — the look, the words and the tile as shipped.' }, ...deskProfiles()];
+    const rows = [{ name: '', label: t('desk.profile_stock', 'Stock'), blurb: t('desk.profile_stock_blurb', 'No profile — the look, the words and the tile as shipped.') }, ...deskProfiles()];
     for (const p of rows) {
       const row = document.createElement('button');
       row.type = 'button';
@@ -311,7 +312,7 @@ export function buildSystemPanel() {
       if (p.origin === 'user') {
         const mark = document.createElement('i');
         mark.className = 'sys-skin-mine';
-        mark.textContent = p.shadowed ? 'yours (replaces ours)' : 'yours';
+        mark.textContent = p.shadowed ? t('desk.yours_shadowing', 'yours (replaces ours)') : t('desk.yours', 'yours');
         nm.appendChild(mark);
       }
       const why = document.createElement('small');
@@ -319,7 +320,7 @@ export function buildSystemPanel() {
       row.append(nm, why);
       row.addEventListener('click', async () => {
         const r = await setDeskProfile(p.name);
-        if (!r.ok) { say('desk profile not saved — ' + r.message); return; }
+        if (!r.ok) { say(t('desk.profile_not_saved', 'desk profile not saved — {message}', { message: r.message })); return; }
         await followProfileSkin(activeProfile()?.skin || '');
         paintProfiles();
         void listSkins().then(paintSkins);
@@ -330,25 +331,25 @@ export function buildSystemPanel() {
 
   const row = document.createElement('div');
   row.className = 'sys-actions';
-  const checkBtn = button('Check for updates', {
-    title: 'Ask the release feeds what the latest versions are — both packages, only when pressed',
+  const checkBtn = button(t('desk.check_updates', 'Check for updates'), {
+    title: t('desk.check_updates_title', 'Ask the release feeds what the latest versions are — both packages, only when pressed'),
   });
-  const runBtn = button('Update', { cls: 'sys-run' });
+  const runBtn = button(t('desk.update', 'Update'), { cls: 'sys-run' });
   runBtn.disabled = true;
   runBtn.hidden = true;
   // THE SERVICES BUTTON — the owner's ruling (2026-08-16): ungated, click it and it
   // does it. Same updater underneath (--services): fetch, verify, CONTRACT CHECK
   // against the running cowork, into the store, into the tree, restart. It appears
   // only when the check names an installable services release.
-  const svcBtn = button('Install services', { cls: 'sys-run' });
+  const svcBtn = button(t('desk.install_services', 'Install services'), { cls: 'sys-run' });
   svcBtn.disabled = true;
   svcBtn.hidden = true;
   // LOG OUT — only drawn when a login exists (/api/health `login`), because a button
   // that answers "you were never logged in" is furniture. Clearing the cookie sends
   // the next navigation through /login; the reload makes that immediate and visible.
-  const outBtn = button('Log out', {
+  const outBtn = button(t('desk.log_out', 'Log out'), {
     cls: 'sys-logout',
-    title: 'End this device’s session — the next visit asks for the password',
+    title: t('desk.log_out_title', 'End this device’s session — the next visit asks for the password'),
   });
   outBtn.hidden = true;
   outBtn.addEventListener('click', async () => {
@@ -374,7 +375,11 @@ export function buildSystemPanel() {
     g.append(...kids.filter(Boolean));
     return g;
   };
-  const appearance = group(appRow, profBlock, skinBlock);
+  // THE DESK PROFILE IS ITS OWN ROW (owner, 2026-08-27): it was the top block of
+  // Appearance since R38, but a profile is the wider question — it HAS a skin — and a person
+  // hunting it should find it in the desk's nav, not learn it lives under the look.
+  const appearance = group(appRow, skinBlock);
+  const profile = group(profBlock);
   // The machine sits with the release block — both answer "what is this install running
   // on", and a person hunting either finds them together. group() drops a null child, so
   // an install without the machine service simply has one fewer row here.
@@ -393,14 +398,14 @@ export function buildSystemPanel() {
     name.className = 'sys-release';
     const detail = document.createElement('small');
     if (!version) {
-      name.textContent = 'unreachable';
-      detail.textContent = 'the operator did not answer /api/version';
+      name.textContent = t('desk.unreachable', 'unreachable');
+      detail.textContent = t('desk.no_version_answer', 'the operator did not answer /api/version');
     } else if (version.release) {
       name.textContent = version.release;
-      detail.textContent = `release · built from ${version.commit} · contract ${version.contract} · started ${version.startedAt}`;
+      detail.textContent = t('desk.release_detail', 'release · built from {commit} · contract {contract} · started {started}', { commit: version.commit, contract: version.contract, started: version.startedAt });
     } else {
-      name.textContent = version.commit + (version.dirty ? ' (dirty)' : '');
-      detail.textContent = `a dev checkout, not a release — updated by git, not by the button · started ${version.startedAt}`;
+      name.textContent = version.commit + (version.dirty ? ' ' + t('desk.dirty', '(dirty)') : '');
+      detail.textContent = t('desk.checkout_detail', 'a dev checkout, not a release — updated by git, not by the button · started {started}', { started: version.startedAt });
     }
     idBlock.append(name, detail);
     // The roster line: which services this operator discovered at start. The honest
@@ -408,16 +413,16 @@ export function buildSystemPanel() {
     const svc = document.createElement('small');
     svc.className = 'sys-services';
     const roster = Array.isArray(version?.services) ? version.services : [];
-    svc.textContent = roster.length ? `services: ${roster.join(' · ')}` : 'services: none — the free build';
+    svc.textContent = roster.length ? t('desk.services_list', 'services: {list}', { list: roster.join(' · ') }) : t('desk.services_none', 'services: none — the free build');
     idBlock.append(svc);
   };
 
   const check = async () => {
     checkBtn.disabled = true;
-    say('asking the release feed…');
+    say(t('desk.asking_feed', 'asking the release feed…'));
     const res = await request('/api/update/check');
     if (!res.ok) {
-      say(res.status === 404 ? 'this operator predates the updater — its next restart carries the routes' : res.message, true);
+      say(res.status === 404 ? t('desk.updater_predate', 'this operator predates the updater — its next restart carries the routes') : res.message, true);
       checkBtn.disabled = false;
       return;
     }
@@ -426,16 +431,16 @@ export function buildSystemPanel() {
       latest = d.latest;
       const bits = [];
       if (!d.latest) {
-        bits.push('the feed named no cowork release yet (a private repo needs gh auth on the host)');
+        bits.push(t('desk.feed_no_release', 'the feed named no cowork release yet (a private repo needs gh auth on the host)'));
       } else if (d.upToDate) {
-        bits.push(`✓ cowork up to date — ${d.installed}`);
+        bits.push(t('desk.cowork_up_to_date', '✓ cowork up to date — {installed}', { installed: d.installed }));
       } else if (version && !version.release) {
-        bits.push(`latest cowork release is ${d.latest} — this box runs a checkout, so the button stays off`);
+        bits.push(t('desk.cowork_checkout_latest', 'latest cowork release is {latest} — this box runs a checkout, so the button stays off', { latest: d.latest }));
       } else {
-        runBtn.textContent = `Update to ${d.latest}`;
+        runBtn.textContent = t('desk.update_to', 'Update to {latest}', { latest: d.latest });
         runBtn.hidden = false;
         runBtn.disabled = false;
-        bits.push(`cowork ${d.latest} available (installed: ${d.installed || 'none'})`);
+        bits.push(t('desk.cowork_available', 'cowork {latest} available (installed: {installed})', { latest: d.latest, installed: d.installed || t('desk.none', 'none') }));
       }
       // The services half of the same answer. The button is off on a checkout for
       // the same reason the cowork one is: the updater manages installs, git
@@ -443,12 +448,12 @@ export function buildSystemPanel() {
       const s = d.services || {};
       if (s.latest && !s.upToDate && version && version.release) {
         svcLatest = s.latest;
-        svcBtn.textContent = s.installed ? `Update services to ${s.latest}` : `Install services ${s.latest}`;
+        svcBtn.textContent = s.installed ? t('desk.update_services_to', 'Update services to {latest}', { latest: s.latest }) : t('desk.install_services_v', 'Install services {latest}', { latest: s.latest });
         svcBtn.hidden = false;
         svcBtn.disabled = false;
-        bits.push(`services ${s.latest} available${s.installed ? ` (installed: ${s.installed})` : ''}`);
+        bits.push(s.installed ? t('desk.services_available_installed', 'services {latest} available (installed: {installed})', { latest: s.latest, installed: s.installed }) : t('desk.services_available', 'services {latest} available', { latest: s.latest }));
       } else if (s.latest && s.upToDate) {
-        bits.push(`✓ services up to date — ${s.installed}`);
+        bits.push(t('desk.services_up_to_date', '✓ services up to date — {installed}', { installed: s.installed }));
       }
       say(bits.join(' · '));
     }
@@ -463,19 +468,19 @@ export function buildSystemPanel() {
       const rv = await request('/api/version', { cache: 'no-store' });
       // A failed read is the restart itself — keep polling.
       if (rv.ok && rv.data.release && rv.data.release !== was) {
-        say(`✓ updated to ${rv.data.release} — reloading`);
+        say(t('desk.updated_reloading', '✓ updated to {release} — reloading', { release: rv.data.release }));
         setTimeout(() => location.reload(), 1200);
         return;
       }
     }
-    say('no new version answered after 5 minutes — journalctl --user -u "ronin-update-*" has the transcript', true);
+    say(t('desk.update_timeout', 'no new version answered after 5 minutes — journalctl --user -u "ronin-update-*" has the transcript'), true);
     runBtn.disabled = false;
   };
 
   const run = async () => {
     runBtn.disabled = true;
     checkBtn.disabled = true;
-    say(`updating to ${latest} — fetch, verify, gate the candidate, swap. The page blinks at the swap; sessions are untouched…`);
+    say(t('desk.updating', 'updating to {latest} — fetch, verify, gate the candidate, swap. The page blinks at the swap; sessions are untouched…', { latest }));
     const r = await request('/api/update/run', { method: 'POST' });
     if (!r.ok) {
       say(r.message, true);
@@ -493,19 +498,19 @@ export function buildSystemPanel() {
       const rv = await request('/api/version', { cache: 'no-store' });
       // A failed read is the restart itself — keep polling.
       if (rv.ok && rv.data.startedAt !== was && (rv.data.services || []).length) {
-        say(`✓ services live: ${rv.data.services.join(' · ')} — reloading`);
+        say(t('desk.services_live_reloading', '✓ services live: {list} — reloading', { list: rv.data.services.join(' · ') }));
         setTimeout(() => location.reload(), 1200);
         return;
       }
     }
-    say('services did not answer after 5 minutes — journalctl --user -u "ronin-update-*" has the transcript', true);
+    say(t('desk.services_timeout', 'services did not answer after 5 minutes — journalctl --user -u "ronin-update-*" has the transcript'), true);
     svcBtn.disabled = false;
   };
 
   const runSvc = async () => {
     svcBtn.disabled = true;
     checkBtn.disabled = true;
-    say(`installing services ${svcLatest} — fetch, verify, contract check, restart. The page blinks at the restart; sessions are untouched…`);
+    say(t('desk.installing_services', 'installing services {latest} — fetch, verify, contract check, restart. The page blinks at the restart; sessions are untouched…', { latest: svcLatest }));
     const r = await request('/api/update/run', { method: 'POST', json: { package: 'services' } });
     if (!r.ok) {
       say(r.message, true);
@@ -541,5 +546,5 @@ export function buildSystemPanel() {
     })();
   };
 
-  return { appearance, release, account, enter };
+  return { appearance, profile, release, account, enter };
 }

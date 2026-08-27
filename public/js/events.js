@@ -3,6 +3,7 @@ import { reconcileSessions } from './api.js';
 import { refreshHome } from './home.js';
 import { IS_TOUCH, S, TILE_COUNT, grid, tiles } from './state.js';
 import { setLayout } from './viewport.js';
+import { t } from './lexicon.js';
 
 export function connectEvents() {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
@@ -55,7 +56,7 @@ export function showBirthChip(name) {
   const label = document.createElement('span');
   label.textContent = '＋ ' + name;
   const openBtn = document.createElement('button');
-  openBtn.textContent = 'Open';
+  openBtn.textContent = t('events.open', 'Open');
   openBtn.addEventListener('click', () => {
     hideChip();
     openSessionSomewhere(name);

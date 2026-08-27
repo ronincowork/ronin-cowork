@@ -1,4 +1,5 @@
 /* part of the ronin-cowork client — see js/README.md */
+import { t } from './lexicon.js';
 
 
 export let failBar = null;
@@ -15,16 +16,17 @@ export function showFailure(where, err) {
     if (!failBar) {
       failBar = document.createElement('div');
       failBar.id = 'failbar';
-      failBar.innerHTML =
-        // Do NOT promise "the rest of the page still works". It said that while the panes
-        // were gone, which is worse than saying nothing: a wrong reassurance costs the
-        // reader the one thing they came for. Say what is known and what to try.
-        '<span class="failbar-title">⚠ Ronin hit an error. The top bar still works — a pane may not. ' +
-        'Reload; if it persists the cause is below.</span>';
+      // Do NOT promise "the rest of the page still works". It said that while the panes
+      // were gone, which is worse than saying nothing: a wrong reassurance costs the
+      // reader the one thing they came for. Say what is known and what to try.
+      failBar.replaceChildren(Object.assign(document.createElement('span'), {
+        className: 'failbar-title',
+        textContent: t('errors.title', '⚠ Ronin hit an error. The top bar still works — a pane may not. Reload; if it persists the cause is below.'),
+      }));
       const x = document.createElement('button');
       x.className = 'failbar-x';
       x.textContent = '✕';
-      x.title = 'Dismiss';
+      x.title = t('errors.dismiss', 'Dismiss');
       x.addEventListener('click', () => failBar.remove());
       failBar.appendChild(x);
       // FIRST child, in normal flow: the page shifts down and the top bar stays
@@ -91,14 +93,20 @@ export function guard(where, fn, fallback) {
  */
 const BENIGN = [/ResizeObserver loop/i];
 
-window.addEventListener('error', (e) => {
+// Named functions, not top-level arrows: check-modules refuses an imported binding used
+// at module top level, and these read t() — the handler body runs long after boot.
+function onWindowError(e) {
   if (BENIGN.some((re) => re.test(e.message || ''))) return;
   const err = e.error;
   const at = e.filename ? `${String(e.filename).replace(/^.*\//, '')}:${e.lineno}:${e.colno}` : '';
-  if (err instanceof Error) showFailure(at ? `uncaught error at ${at}` : 'uncaught error', err);
-  else showFailure(at ? `uncaught error at ${at}` : 'uncaught error', e.message);
-});
-window.addEventListener('unhandledrejection', (e) => showFailure('unhandled promise', e.reason));
+  if (err instanceof Error) showFailure(at ? t('errors.uncaught_at', 'uncaught error at {at}', { at }) : t('errors.uncaught', 'uncaught error'), err);
+  else showFailure(at ? t('errors.uncaught_at', 'uncaught error at {at}', { at }) : t('errors.uncaught', 'uncaught error'), e.message);
+}
+function onUnhandledRejection(e) {
+  showFailure(t('errors.unhandled', 'unhandled promise'), e.reason);
+}
+window.addEventListener('error', onWindowError);
+window.addEventListener('unhandledrejection', onUnhandledRejection);
 
 /** Placeholder for a tile that failed to build, so the grid keeps its shape. */
 export function deadTile(i, err) {
@@ -106,8 +114,9 @@ export function deadTile(i, err) {
   el.className = 'tile tile-dead';
   el.innerHTML =
     `<div class="tile-head"><span class="dot off"></span><span class="grow"></span></div>` +
-    `<div class="tile-body"><div class="dead-note">tile ${i + 1} failed to build` +
+    `<div class="tile-body"><div class="dead-note"><span class="dead-what"></span>` +
     `<br><span class="dead-why"></span></div></div>`;
+  el.querySelector('.dead-what').textContent = t('errors.tile_failed', 'tile {n} failed to build', { n: i + 1 });
   el.querySelector('.dead-why').textContent = err && err.message ? err.message : String(err);
   return el;
 }

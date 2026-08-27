@@ -34,9 +34,9 @@
   </head>
   <body>
     <header id="bar">
-      <button id="brandbtn" class="brand" title="⛩ ronin — the session roster">⛩ ronin</button>
+      <button id="brandbtn" class="brand" data-t-title="bar.brand_title" title="⛩ ronin — the session roster">⛩ ronin</button>
       <a id="leaguebtn" class="brand" href="#/league" target="_blank" rel="noopener noreferrer"
-         title="Open League in a new browser tab">League</a>
+         data-t-title="bar.league_title" title="Open League in a new browser tab" data-t="bar.league">League</a>
       <button id="servicesstate" class="services-state" type="button" hidden aria-expanded="false"></button>
       <!-- ＋ opens a SECOND RONIN in a new browser tab. The owner already worked this way by
            opening tabs by hand; the button exists so everyone else discovers it is possible,
@@ -44,7 +44,7 @@
            that people know that this is actually possible." Beside the brand, deliberately not
            among the five verbs on the right — those share one measured width and this is not
            one of them. -->
-      <button id="newtabbtn" class="newtab" title="Open a second Ronin in a new browser tab">＋</button>
+      <button id="newtabbtn" class="newtab" data-t-title="bar.newtab_title" title="Open a second Ronin in a new browser tab">＋</button>
       <!-- RAM_RPM — the box's working reading. A tachometer: always there, mostly
            ignored, so you learn what normal looks like without being told. It sits with
            the brand and NOT among the five verbs on the right, which share one measured
@@ -63,16 +63,10 @@
            ViewHost fills it; what is typed becomes the browser tab's title, per tab. -->
       <span id="viewname" class="wk-view-name"></span>
       <span id="viewmap" class="wk-view-map"></span>
-      <button id="newbtn" title="⌃⇧N — start a new session: pick what it is for, where it works and who it is">か<span class="txt"> New</span></button>
-      <!-- ⛩ is the house mark for "open the Commons", and this is the door: ONE press
-           lands on ⌂ Roster, the first port of call once you are in there. It dropped a
-           registry-fed menu of every room until 2026-08-17; the owner ruled the menu out
-           (a list of nine rooms in front of the one you wanted every time) and took the
-           known cost with his eyes open — the bar no longer reaches a SPECIFIC room in
-           one press. The tab strip inside the Commons is where you pick a room now. -->
-      <button id="commonsbtn" title="⌃⇧C — the CoWorking Commons, straight to ⌂ Roster. The tab strip inside it reaches the other rooms. (⌃⌥C on Linux/Windows.)">⛩<span class="txt"> Commons</span></button>
-      <button id="padbtn" title="Keypad — the Work Louder pad: physical keys fire macros">く<span class="txt"> Keypad</span></button>
-      <button id="mikabtn" title="Mika Assist — ask about Ronin itself: how it works, project roots, starting a session, changing a setting. Starts her if she is not up.">ミ<span class="txt"> Mika Assist</span></button>
+      <button id="newbtn" data-t-title="bar.new_title" title="⌃⇧N — start a new session: pick what it is for, where it works and who it is">か<span class="txt" data-t="bar.new"> New</span></button>
+      <!-- THE BAR IS TWO VERBS NOW (owner, 2026-08-27): か New and ⚙ Admin Desk. ⛩ Commons
+           and ミ Mika Assist left the bar altogether — the Commons is the tile's own ⛩ and
+           ⌃⇧C, Mika is the `mika` tool — and く Keypad became a row on the Admin Desk. -->
       <!-- ⚙ ADMIN DESK — the machine, not a session. It was a page-level sheet under the
            2026-08-16 ruling that install-level facts must not be copied into every tile;
            since 2026-08-18 it opens the admin_desk, which is a TILE and so keeps that
@@ -81,30 +75,37 @@
            logging out, appearance — is not about the box (owner, 2026-08-18).
            The label is 75px in the shipped font, the same as ミ Mika Assist, so it sits
            inside the five verbs' measured 100px box without moving it (see style.css). -->
-      <button id="sysbtn" title="Admin Desk — this machine and this app: configuration, project roots, hotwords, Koshi, gbrain, stats, appearance, updates, log out">⚙<span class="txt"> Admin Desk</span></button>
-      <div class="ctrls" role="group" aria-label="Keys">
-        <button id="k-esc" title="Esc">Esc</button>
-        <button id="k-int" title="Ctrl-C (interrupt)">^C</button>
-        <button id="k-bottom" title="Jump to latest output">⤓</button>
-        <button id="k-more" title="More keys" aria-expanded="false">⋯</button>
+      <!-- THE 1·2·4 COUNT IS PARKED (owner, 2026-08-27: "the 1-2-4 button is going to come
+           off … we can just park it for now"). Hidden, not deleted: the pad's ▚ layout key
+           and the parked grid page still cycle it, and js/viewport.js writes its face. -->
+      <button id="layoutcycle" class="layout-cycle" hidden data-t-title="bar.layout_default_title" title="Four terminals — click for 1">4</button>
+      <button id="sysbtn" data-t-title="bar.desk_title" title="Admin Desk — this machine and this app: configuration, project roots, hotwords, Koshi, gbrain, stats, appearance, updates, log out">⚙<span class="txt" data-t="bar.desk"> Admin Desk</span></button>
+      <div class="ctrls" role="group" data-t-aria="bar.keys" aria-label="Keys">
+        <button id="k-esc" data-t-title="keys.esc" title="Esc" data-t="keys.esc">Esc</button>
+        <button id="k-int" data-t-title="keys.interrupt_title" title="Ctrl-C (interrupt)">^C</button>
+        <button id="k-bottom" data-t-title="keys.latest_title" title="Jump to latest output">⤓</button>
+        <button id="k-more" data-t-title="keys.more" title="More keys" aria-expanded="false">⋯</button>
       </div>
       <!-- The grid count: ONE button wearing the number it is on, tapped to cycle
            1 → 2 → 4 → 1. It was a segmented trio, which spent three boxes saying what
            one says and left two of them permanently dark. js/viewport.js writes the
            face; the same node is relocated into the touch bar by js/layout.js. -->
-      <button id="layoutcycle" class="layout-cycle" title="Four terminals — click for 1">4</button>
     </header>
-    <div id="keypad" role="group" aria-label="More keys">
-      <button data-key="cr" title="Enter">↵</button>
-      <button data-key="tab" title="Tab">Tab</button>
-      <button data-key="stab" title="Shift-Tab">⇧Tab</button>
-      <button data-key="up" title="Up">↑</button>
-      <button data-key="down" title="Down">↓</button>
-      <button data-key="left" title="Left">←</button>
-      <button data-key="right" title="Right">→</button>
+    <div id="keypad" role="group" data-t-aria="keys.more" aria-label="More keys">
+      <button data-key="cr" data-t-title="keys.enter" title="Enter">↵</button>
+      <button data-key="tab" data-t-title="keys.tab" title="Tab" data-t="keys.tab">Tab</button>
+      <button data-key="stab" data-t-title="keys.shift_tab" title="Shift-Tab" data-t="keys.shift_tab_face">⇧Tab</button>
+      <button data-key="up" data-t-title="keys.up" title="Up">↑</button>
+      <button data-key="down" data-t-title="keys.down" title="Down">↓</button>
+      <button data-key="left" data-t-title="keys.left" title="Left">←</button>
+      <button data-key="right" data-t-title="keys.right" title="Right">→</button>
     </div>
     <div id="viewhost">
       <main id="grid" class="layout-4" data-layout="4"></main>
+      <!-- THE COWORK COMMONS at full width — ⚙'s destination on the parked grid page, where
+           there is no workspace to place it in. On the cowork_space it sits IN a workspace
+           instead (js/team-view.js). One surface, two doors: docs/cowork-space.md. -->
+      <section id="cowork-view" class="cc-view" hidden></section>
       <section id="new-team-view" hidden></section>
       <section id="agent-config-view" hidden></section>
     </div>

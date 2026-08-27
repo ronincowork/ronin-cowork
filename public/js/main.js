@@ -19,8 +19,11 @@ import { createTeamView } from './team-view.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createNewTeamView } from './new-team.js';
 import { createLeagueView } from './league-view.js';
+import { coworkCommons } from './cowork-commons.js';
 import { createAgentConfigurationView } from './agent-config.js';
 import { installCustomize } from './customize.js';
+import { t } from './lexicon.js';
+import { applyPageWords } from './pagewords.js';
 
 export async function init() {
   // Ask the operator which optional surfaces are plugged in BEFORE the grid is built,
@@ -50,6 +53,7 @@ export async function init() {
   // RIREKI view is the Output a new tile is born with — so it has to be known before a
   // tile is built. One request; a box that cannot answer gets stock, not a failure.
   try { await loadDeskProfile(); } catch (e) { console.warn('desk profile', e); }
+  guard('page words', applyPageWords); // index.html's static words, through the lexicon
   // After the theme, because a skin outranks it for whatever it names (js/skins.js).
   // The profile's skin is the default; a skin this device picked since still wins.
   guard('restore skin', () => restoreSkin(activeProfile()?.skin || ''));
@@ -106,6 +110,18 @@ export async function init() {
   // this preview is geometry and readings only — no terminal host, no sockets, no Sessions
   // mode — so the existing coworkspace stays the working surface until those gates land.
   guard('register the Team destination', () => workspace.register('team', createTeamView()));
+  // THE COWORK COMMONS at full width — ⚙'s door on the parked grid page, where there is no
+  // workspace to place it in (docs/cowork-space.md). The same one surface the team page
+  // places; entering here takes it, leaving hands it back to whoever places it next.
+  guard('register the cowork destination', () => {
+    const root = document.getElementById('cowork-view');
+    if (!root) throw new Error('cowork root is missing');
+    workspace.register('cowork', {
+      el: root,
+      title: () => t('cowork.commons', 'Cowork commons'),
+      enter: () => { const c = coworkCommons(); root.append(c.el); c.select(c.current()); },
+    });
+  });
   workspace.register('sessions', {
     el: document.getElementById('grid'),
     title: () => tiles[0]?.session || '',
@@ -159,7 +175,7 @@ export async function init() {
   // is an empty picker, which reads as "broken" rather than "server unreachable".
   {
     const r = await fetchSessions();
-    if (!r.ok) showFailure('could not load the session list', new Error(r.message));
+    if (!r.ok) showFailure(t('errors.no_session_list', 'could not load the session list'), new Error(r.message));
   }
   guard('reattach saved sessions', () => {
     saved.map.forEach((s, i) => {

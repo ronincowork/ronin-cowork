@@ -27,7 +27,6 @@ import { retireSession } from './session-retire.js';
 import { refreshHome } from './home.js';
 import { IS_TOUCH, NEW, S, saveState, serviceMissing, tiles } from './state.js';
 import { buildHome } from './commons.js';
-import { installDesk } from './tiledesk.js';
 import { guard } from './errors.js';
 import { buildLadder } from './shingo.js';
 import { buildTileHead, syncTileHead } from './tilehead.js';
@@ -38,6 +37,7 @@ import { TermView } from './termview.js';
 import { TileWire } from './tilewire.js';
 import { buildComposer } from './composer.js';
 import { refreshKaki, setKakiPolicy } from './output.js';
+import { t } from './lexicon.js';
 
 export class Tile {
   constructor(index) {
@@ -77,8 +77,13 @@ export class Tile {
     // the act. See js/tiledocs.js.
     this.showDoc = home.openDoc;
     this.body.appendChild(this.home);
-    // THE ADMIN DESK — a sibling of the Commons, not a room in it (js/tiledesk.js).
-    installDesk(this, home.askPersonalAssistant);
+    // "Ask this of a PersonalAssistant" lands in THIS tile's Commons launcher. It was the
+    // desk's hand-off (js/tiledesk.js, retired 2026-08-27 with the overlay); the cowork
+    // commons now sends the ask to the active tile, which is this method.
+    this.askPersonalAssistant = (prompt) => {
+      this.showHome();
+      home.askPersonalAssistant(prompt);
+    };
 
     // SHINGO 信号: this session's ladder, read off its TEGAMI. The chip (built with the
     // header) is the indicator; tapping it is ALWAYS the ladder, gate or not.
@@ -164,7 +169,6 @@ export class Tile {
    * panel is a place you can come back to rather than a one-way screen.
    */
   showHome(which) {
-    this.lowerDesk(); // one overlay at a time — js/tiledesk.js
     this.home.classList.add('show');
     // Home is where a tile lands — empty or not. New session is one tab away.
     if (which) this.showPane(which);
@@ -217,7 +221,7 @@ export class Tile {
   refreshOptions() {
     const cur = this.session;
     this.select.innerHTML = '';
-    this.select.add(new Option('— pick session —', ''));
+    this.select.add(new Option(t('tile.pick_session', '— pick session —'), ''));
     for (const s of S.sessions) {
       // NO MARK IN THE PICKER. It was prefixed here too, and the collapsed <select> then
       // showed the current session's icon immediately beside the job button showing the
@@ -230,9 +234,9 @@ export class Tile {
     }
     // keep a stale-but-connected session visible even if it left the list
     if (cur && !S.sessions.some((s) => s.name === cur)) {
-      this.select.add(new Option(`${cur}  (gone?)`, cur));
+      this.select.add(new Option(t('tile.gone', '{name}  (gone?)', { name: cur }), cur));
     }
-    this.select.add(new Option('➕ new session…', NEW));
+    this.select.add(new Option(t('tile.new_session', '➕ new session…'), NEW));
     this.select.value = cur || '';
     this.syncHeader();
     this.refreshCtx();
@@ -404,7 +408,7 @@ export class Tile {
   async onSelect() {
     const v = this.select.value;
     if (v === NEW) {
-      const name = (prompt('New tmux session name (letters, digits, _ or -):') || '').trim();
+      const name = (prompt(t('tile.new_session_prompt', 'New tmux session name (letters, digits, _ or -):')) || '').trim();
       this.select.value = this.session || '';
       if (!name) return;
       try {
@@ -479,7 +483,7 @@ export class Tile {
       this.term.writeln('\r\n\x1b[31m[grid] ' + m.m + '\x1b[0m');
       this.setDot('off');
     } else if (m.t === 'exit') {
-      this.term.writeln('\r\n\x1b[33m[grid] session ended.\x1b[0m');
+      this.term.writeln('\r\n\x1b[33m[grid] ' + t('tile.session_ended', 'session ended.') + '\x1b[0m');
       this.setDot('off');
     } else if (m.t === 'ready') {
       // Honest UI: scrollback above the live screen of an alt-screen app is
@@ -531,8 +535,8 @@ export class Tile {
     for (const option of [...sel.options])
       if ((S.streamOff && option.value !== 'locked') || (option.value === 'agent_summary' && serviceMissing('koshi'))) option.remove();
     sel.title = S.streamOff
-      ? 'Output — Locked only. Ronin Services is not installed.'
-      : 'Output — choose the live terminal or a RIREKI view';
+      ? t('output.title_locked', 'Output — Locked only. Ronin Services is not installed.')
+      : t('output.title_choose', 'Output — choose the live terminal or a RIREKI view');
   }
 
   /**

@@ -13,6 +13,7 @@ import { toast } from './ui.js';
 import { roleData, refreshHome } from './home.js';
 import { S, tiles } from './state.js';
 import { openJobMenu } from './widgets.js';
+import { t } from './lexicon.js';
 
 export function pickJobFor(tile, anchor) {
   if (!tile.session) return;
@@ -20,8 +21,8 @@ export function pickJobFor(tile, anchor) {
   const cur = S.sessions.find((x) => x.name === session);
   const isLead = !!(cur && cur.leads?.length);
   const extras = cur && cur.tags?.length ? [{
-    label: isLead ? '人 team lead — step down' : '人 make team lead',
-    title: isLead ? `Leads ${cur.leads.join(', ')} — clear the designation` : `Designate the 人 of ${cur.tags.join(', ')}`,
+    label: isLead ? t('mark.lead_step_down', '人 team lead — step down') : t('mark.lead_make', '人 make team lead'),
+    title: isLead ? t('mark.lead_clear_title', 'Leads {teams} — clear the designation', { teams: cur.leads.join(', ') }) : t('mark.lead_make_title', 'Designate the 人 of {teams}', { teams: cur.tags.join(', ') }),
     on: isLead,
     pick: '@lead',
   }] : [];
