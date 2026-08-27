@@ -31,7 +31,7 @@ import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { createTeamWipeboard } from './team-wipeboard.js';
 import { buildDocs } from './docs.js';
 import { buildLauncher } from './launcher.js';
-import { homeData, loadPresets, refreshHome, statusLabel } from './home.js';
+import { homeData, loadPresets, loadSavedLaunches, refreshHome, roleData, statusLabel } from './home.js';
 import { request } from './request.js';
 import { humanAge } from './shingo.js';
 import { sessionsHandlers, teamPageHandlers } from './events.js';
@@ -305,10 +305,12 @@ export function createTeamView() {
     const from = newIn();
     if (from && from !== id) cellPlace(from, seats[from].surface.el);
     cellPlace(id, newSurface.el);
-    // The board is built from the catalog the Commons poll carries; ask for a read and
-    // draw again when it lands, so a first open is never a blank pane.
+    // The board is the roles catalog — ~0.1s — so it is asked for and drawn on its own;
+    // the home read (~1.3s, every session's status) only feeds the saved-launch row and
+    // must never hold the board back (owner: "why is new session so slow to load?").
     launcher.render();
-    void Promise.all([refreshHome(), loadPresets()]).then(() => launcher.render());
+    if (!roleData) void loadPresets().then(() => launcher.render());
+    void loadSavedLaunches().then(() => launcher.render());
     touch(id);
     remember();
   };
