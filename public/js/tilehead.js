@@ -87,12 +87,6 @@ const HEADER = () => {
   { key: 'select', tag: 'select', cls: 'sess',
     help: t('head.select_help', 'Pick / switch the session shown in this tile') },
 
-  // SHINGO 信号 — beside the name, because it answers "where is this session", which
-  // belongs with "which session is this" and not among the controls on the right.
-  { key: 'chip',
-    widget: (tile) => makeChip(() => tile.toggleLadder()),
-    help: t('head.chip_help', 'Where this session is on its ladder, and how long it has been there. Opens the ladder.') },
-
   // THE MARK — what the session is doing, off its letter. `?` when it has not said.
   { key: 'jobBtn', cls: 'job', needs: 'session',
     help: t('head.job_help', 'What this session is doing'),
@@ -269,6 +263,13 @@ const HEADER = () => {
     help: t('head.kill_help', 'Kill session (ends it + its viewers)'),
     quiet: t('head.kill_quiet', 'Kill session — no session in this tile yet'),
     on: (tile) => tile.kill() },
+
+  // SHINGO 信号 — the light signal, at the RIGHT END of the head since 2026-08-27 (owner:
+  // "remove it [from the left] … and place that light signal" where C and T were).
+  { key: 'chip',
+    widget: (tile) => makeChip(() => tile.toggleLadder()),
+    help: t('head.chip_help', 'Where this session is on its ladder, and how long it has been there. Opens the ladder.') },
+
   ];
   return rows;
 };

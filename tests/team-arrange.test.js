@@ -25,10 +25,10 @@ test('columns: order, hidden, shown, roster=hidden, hidden=none', () => {
 });
 
 test('unknown words are refused with the word named', () => {
-  const { draft, errors } = parseDraft(['workspace3=x', 'order=left', 'workspace1=commons:mail', 'roster=big', 'nonsense', 'workspace2=']);
+  const { draft, errors } = parseDraft(['workspace9=x', 'order=left', 'workspace1=commons:mail', 'roster=big', 'nonsense', 'workspace2=']);
   assert.deepEqual(draft, {});
   assert.deepEqual(errors, [
-    'workspace3: not a draft key',
+    'workspace9: not a draft key',
     'order: no column "left"',
     'workspace1: no commons tab "mail"',
     'roster: hidden or shown',

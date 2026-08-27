@@ -16,7 +16,8 @@ export function createTerminalTileHost(options = {}) {
     // Consumer actions ride the Tile's own head row, beside its buttons — this host is
     // the one seam that touches the Tile, so the consumer never reaches in itself.
     const head = tile.el.querySelector(':scope > .tile-head');
-    for (const action of Array.isArray(options.actions) ? options.actions : []) if (action instanceof Node && head) head.append(action);
+    // ACTIONS GO FIRST (owner, 2026-08-27: "move that C and T button all the way to the left").
+    for (const action of [...(Array.isArray(options.actions) ? options.actions : [])].reverse()) if (action instanceof Node && head) head.prepend(action);
     el.append(tile.el);
     return tile;
   };

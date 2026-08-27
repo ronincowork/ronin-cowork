@@ -290,8 +290,8 @@ async function checkJourneys(page, label, jsErrors) {
   await page.locator('#sysbtn').click();
   await page.waitForSelector('#cowork-view:not([hidden]) .cc', { timeout: 3000 });
   const ccTabs = await page.evaluate(() => [...document.querySelectorAll('#cowork-view .wk-channel-service-tab')].map((b) => b.textContent.trim()));
-  if (ccTabs.length === 6) ok(`${label}: the cowork commons carries its six tabs (${ccTabs.join(' · ')})`);
-  else bad(`${label}: the cowork commons has ${ccTabs.length} tabs, wanted 6`);
+  if (ccTabs.length === 8) ok(`${label}: the cowork commons carries its eight tabs (${ccTabs.join(' · ')})`);
+  else bad(`${label}: the cowork commons has ${ccTabs.length} tabs, wanted 8`);
   await page.locator('#cowork-view .wk-channel-service-tab').nth(1).click(); // Account
   await page.waitForTimeout(200);
   // The Account tab is the desk's rail (owner: "the selectors on the left"): gbrain is a
@@ -389,8 +389,8 @@ async function checkJourneys(page, label, jsErrors) {
     bad(`${label}: the bar's ⚙ did not show the cowork commons`);
   }
   const ccNames = await page.evaluate(() => [...document.querySelectorAll('#cowork-view .wk-channel-service-tab')].map((b) => b.textContent.trim()));
-  if (ccNames.length === 6) ok(`${label}: the cowork commons carries six tabs — ${ccNames.join(' · ')}`);
-  else bad(`${label}: the cowork commons has ${ccNames.length} tabs, wanted 6`);
+  if (ccNames.length === 8) ok(`${label}: the cowork commons carries eight tabs — ${ccNames.join(' · ')}`);
+  else bad(`${label}: the cowork commons has ${ccNames.length} tabs, wanted 8`);
   // The Desk profile tab must DRAW the picker (its pane was missing from the desk's per-room
   // CSS list once, 2026-08-27, and the row counted while showing nothing).
   await ccTab(2);
@@ -401,7 +401,7 @@ async function checkJourneys(page, label, jsErrors) {
   if (profileRows >= 2) ok(`${label}: the Desk profile tab shows the picker — Stock plus ${profileRows - 1} profile(s)`);
   else bad(`${label}: the Desk profile tab shows ${profileRows} visible row(s) — the pane is not drawing`);
   // The Keypad tab holds the pad's card INLINE — not a sheet (owner, 2026-08-27).
-  await ccTab(5);
+  await ccTab(7);
   const padInline = await page.evaluate(() => !!document.querySelector('#cowork-view .cc-pane[data-tab="keypad"] .pad-card .pad-board'));
   if (padInline) ok(`${label}: the Keypad tab holds the pad's board inline`);
   else bad(`${label}: the Keypad tab does not hold the pad's board`);

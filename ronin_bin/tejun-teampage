@@ -14,6 +14,7 @@
 #   workspace2=cowork[:tab]           the cowork commons there: health · account · profile · roots · help · keypad
 #   workspace3=… workspace4=…         the lower cells when count=4 (1 over 3, 2 over 4)
 #   count=2 | count=4                 two workspaces around the roster, or four two-by-two
+#   workspace1=new                    the ＋ New session surface there
 #   workspace1=terminal | empty       the seat back as it was | the seat with nothing in it
 #   order=workspace2,roster,workspace1     hidden=roster    shown=roster    hidden=none
 #

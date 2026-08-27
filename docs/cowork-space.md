@@ -47,11 +47,16 @@ Three kinds of thing, and only three, sit inside the bar:
 |---|---|---|---|
 | **terminal_tile** | one session | **tile head** (`js/tilehead.js`) | the session picker · connection dot · ladder chip · job · branch · output selector · ⛩ · @ · ⚡ · メ · gauge — the unchanged `Tile` head — plus **C** (flip to the commons) appended by the page |
 | **team_commons** | one team | **commons strip** — the channel surface's tab strip | Chat · Wipeboard · Docs · Team Configuration, plus **T** (flip back to the terminal) at its right end |
-| **cowork_commons** | this install and this owner | **commons strip** — the same tab strip | Machine health (Stats) · Account (Configuration · Appearance · Release & update · Hotwords · Koshi · gbrain · Log out — "the rest, as the desk was") · Desk profile · Project roots · Help desk (Mika's door over a reserved chat) · Keypad (the pad's card, inline), plus **T**. `js/cowork-commons.js`; landed 2026-08-27, the `admin_desk` overlay retired with it |
+| **cowork_commons** | this install and this owner | **commons strip** — the same tab strip | Machine health (Stats) · Account (the desk's rail: Configuration · Appearance · Release & update · Hotwords · Koshi · gbrain · Log out) · Desk profile · Project roots · Roster · Archived (the tile commons' two) · Help desk (Mika's door over a reserved chat) · Keypad (the pad's card, inline), plus **T**. `js/cowork-commons.js`; landed 2026-08-27, the `admin_desk` overlay retired with it |
+| **new_session** | one launch | **surface head** — T, then the name | the ＋ New session launcher, placed by ＋ Add team member (roster) or か New (bar), or `workspace1=new`; the newborn lands in that workspace |
+| *(blank)* | — | — | an EMPTY workspace says *Workspace* and holds nothing — never a commons by default (owner, 2026-08-27) |
 | *league* | every team | *a strip* | **[planned]** — the League destination re-hung as a surface; not designed here |
 
 Rules that make them peers:
 
+- **Every head reads the same way**: the flip (**C** on a tile head, **T** on a strip or the
+  new-session head) at the far LEFT; the SHINGO light signal at the far RIGHT of a tile
+  head (owner, 2026-08-27). The selector column's head reads *Roster: <team>*.
 - **One surface per workspace, one head per surface.** A surface never draws over another;
   trading is `place()`. The old `admin_desk` overlay is the one exception and it is going.
 - **Every head is one depth** — `--row-head` (41px). The tile head wraps rather than clips
@@ -100,8 +105,10 @@ Rules that make them peers:
 
 ## What is NOT a workspace surface
 
-- The **session_commons** (⌂ Roster · ＋ New · ▤ Wipeboard · ▧ Docs) lives INSIDE a tile
-  when no session is showing. It is tile-scoped and stays so.
+- The **session_commons** (⌂ Roster · ＋ New · ▤ Wipeboard · ▧ Docs) lived INSIDE a tile
+  when no session is showing. It is OFF the cowork_space (2026-08-27): its rooms moved —
+  Roster and Archived to the cowork commons, ＋ New to the `new_session` surface — and an
+  empty workspace is blank. It still draws in a tile on the parked grid page.
 - The **grid page** (1 / 2 / 4 tiles) is the other destination, not a workspace of this
   one — `docs/team-workspace.md` § Two first-class destinations.
 

@@ -7,6 +7,9 @@ import { buildGbrain } from './gbrain.js';
 import { buildSettei } from './settei.js';
 import { buildStats } from './stats.js';
 import { buildSystemPanel } from './system.js';
+import { buildRoster } from './roster.js';
+import { buildArchives } from './archives.js';
+import { refreshHome } from './home.js';
 import { askMika } from './mika.js';
 import { S, serviceOff } from './state.js';
 import { t } from './lexicon.js';
@@ -188,6 +191,27 @@ export function coworkCommons() {
     return [buildProjectRoots(proj, showing('roots'), null)];
   });
 
+  /* ---- ⌂ Roster and Archived — the tile commons' two, moved here (owner, 2026-08-27) ---- */
+  // "Connect" from either lands the session in the selected workspace on the cowork_space
+  // (`S.connectSession`, team-view.js), or in the active tile on the parked grid page.
+  const seatAdapter = { index: 'cc', connect: (name) => (S.connectSession ? S.connectSession(name) : atTile((tile) => tile.connect(name))) };
+  const rosterPane = pane('roster');
+  const rosterRooms = once(() => {
+    const col = node('div', 'home-col');
+    const sec = node('div', 'home-sec');
+    sec.append(node('div', 'home-h', t('commons.sessions', 'sessions')));
+    col.append(sec);
+    rosterPane.append(col);
+    const r = buildRoster(seatAdapter, sec);
+    return [{ enter: () => { void refreshHome().then(() => r.render()); r.render(); } }];
+  });
+  const archivesPane = pane('archives');
+  const archivesRooms = once(() => {
+    const host = node('div', 'home-archives');
+    archivesPane.append(host);
+    return [buildArchives(seatAdapter, host)];
+  });
+
   /* ---- Help desk: Mika, over a reserved chat ---- */
   const help = pane('help', 'cc-stack');
   const helpRooms = once(() => {
@@ -234,6 +258,8 @@ export function coworkCommons() {
     account: service(account, accountEnter),
     profile: service(profile, enterAll(profileRooms)),
     roots: service(roots, enterAll(rootsRooms)),
+    roster: service(rosterPane, enterAll(rosterRooms)),
+    archives: service(archivesPane, enterAll(archivesRooms)),
     help: service(help, enterAll(helpRooms)),
     keypad: service(keypad, () => { if (mountPad()) S.padPanel.render?.(); }),
   };
@@ -244,6 +270,8 @@ export function coworkCommons() {
       { id: 'account', label: t('cowork.tab_account', 'Account') },
       { id: 'profile', label: t('cowork.tab_profile', 'Desk profile') },
       { id: 'roots', label: t('cowork.tab_roots', 'Project roots') },
+      { id: 'roster', label: t('cowork.tab_roster', 'Roster') },
+      { id: 'archives', label: t('cowork.tab_archives', 'Archived') },
       { id: 'help', label: t('cowork.tab_help', 'Help desk') },
       { id: 'keypad', label: t('cowork.tab_keypad', 'Keypad') },
     ],
@@ -272,8 +300,3 @@ export function coworkCommons() {
   instance = surface;
   return instance;
 }
-
-/** The names a draft may use for a tab (`workspace2=cowork:roots`) — team-arrange.js reads this. */
-export const COWORK_TABS = Object.freeze({
-  health: 'health', account: 'account', profile: 'profile', roots: 'roots', help: 'help', keypad: 'keypad',
-});
