@@ -667,7 +667,7 @@ async function checkJourneys(page, label, jsErrors) {
   // that launches sessions on every verify is a gate spawning work, so what is proven
   // is the refusal contract — manual mode with no name must refuse LOCALLY: focus
   // lands on the name field and no /api/launch request leaves the page.
-  await page.locator('#newbtn').click(); // the real route in: か New opens the launcher
+  await page.keyboard.press('Control+Shift+KeyN'); // the real route in: ⌃⇧N opens the launcher (か New left the bar 2026-08-27)
   await page.waitForTimeout(300);
   const kindBtn = page.locator('.tile.active .ks-btn').first();
   if ((await kindBtn.count()) === 0) {
@@ -814,12 +814,11 @@ async function checkJourneys(page, label, jsErrors) {
     map: [...document.querySelectorAll('select.sess')].map((picker) => picker.value),
     visible: [...document.querySelectorAll('.tile')].filter((tile) => getComputedStyle(tile).display !== 'none').length,
   }));
+  // The 1·2·4 count left the bar on 2026-08-27 (the cowork_space's shape is the roster's
+  // 2 | 4); the parked grid page is set through the module the pad's ▚ key uses.
   const setSessionsLayout = async (wanted) => {
-    for (let turns = 0; turns < 3; turns++) {
-      if ((await sessionsReading()).layout === wanted) break;
-      await page.locator('#layoutcycle').click();
-      await page.waitForTimeout(150);
-    }
+    await page.evaluate((n) => import('/js/viewport.js').then((m) => m.setLayout(n)), wanted);
+    await page.waitForTimeout(150);
     return sessionsReading();
   };
   const waitForProbePaint = async () => {

@@ -15,18 +15,6 @@ export function setLayout(n) {
   n = [1, 2, 4].includes(n) ? n : 4;
   grid.dataset.layout = String(n);
   grid.className = 'layout-' + n;
-  // THE ONE PLACE the count is written. The button wears the number it is on, so the
-  // bar states the layout as well as changing it — and it is the only writer, so every
-  // other way in (the cycle click, the pad's layout key, ⌥⌘1/2/4, boot) lands on a face
-  // that is true. It replaced a segmented 1|2|4: three boxes to say what one says, two
-  // of them dark at any moment, and too narrow to hit on a phone. Null-checked because
-  // setLayout can run before the bar is assembled.
-  const cyc = document.getElementById('layoutcycle');
-  if (cyc) {
-    cyc.textContent = String(n);
-    cyc.title = n === 1 ? t('bar.layout_one', '{n} terminal — click for {next}', { n, next: nextLayout(n) }) : t('bar.layout_many', '{n} terminals — click for {next}', { n, next: nextLayout(n) });
-    cyc.setAttribute('aria-label', cyc.title);
-  }
   // TOUCH: the merged header follows the COUNT, not the device. Tile 1's controls live
   // in the app bar only while tile 1 is the only tile — a per-page bar cannot say which
   // of two tiles it means. Ask for two and the head goes home, so every tile on screen

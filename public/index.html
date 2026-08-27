@@ -63,22 +63,12 @@
            ViewHost fills it; what is typed becomes the browser tab's title, per tab. -->
       <span id="viewname" class="wk-view-name"></span>
       <span id="viewmap" class="wk-view-map"></span>
-      <button id="newbtn" data-t-title="bar.new_title" title="⌃⇧N — start a new session: pick what it is for, where it works and who it is">か<span class="txt" data-t="bar.new"> New</span></button>
-      <!-- THE BAR IS TWO VERBS NOW (owner, 2026-08-27): か New and ⚙ Admin Desk. ⛩ Commons
-           and ミ Mika Assist left the bar altogether — the Commons is the tile's own ⛩ and
-           ⌃⇧C, Mika is the `mika` tool — and く Keypad became a row on the Admin Desk. -->
-      <!-- ⚙ ADMIN DESK — the machine, not a session. It was a page-level sheet under the
-           2026-08-16 ruling that install-level facts must not be copied into every tile;
-           since 2026-08-18 it opens the admin_desk, which is a TILE and so keeps that
-           singleness (drawn where you press ⚙, not in all four) while getting back the
-           full pane a sheet could not give. ADMIN, not INSTALL: half of what it holds —
-           logging out, appearance — is not about the box (owner, 2026-08-18).
-           The label is 75px in the shipped font, the same as ミ Mika Assist, so it sits
-           inside the five verbs' measured 100px box without moving it (see style.css). -->
-      <!-- THE 1·2·4 COUNT IS PARKED (owner, 2026-08-27: "the 1-2-4 button is going to come
-           off … we can just park it for now"). Hidden, not deleted: the pad's ▚ layout key
-           and the parked grid page still cycle it, and js/viewport.js writes its face. -->
-      <button id="layoutcycle" class="layout-cycle" hidden data-t-title="bar.layout_default_title" title="Four terminals — click for 1">4</button>
+      <!-- THE BAR IS ONE VERB (owner, 2026-08-27): ⚙ Admin Desk — the cowork commons. か New
+           went the way of ⛩ Commons, ミ Mika Assist and く Keypad: a new session is a
+           workspace surface (＋ Add team member on the roster, ⌃⇧N), the Commons is the
+           tile's own ⛩ on the parked grid page, Mika is the `mika` tool, Keypad a tab. The
+           1·2·4 count is gone too — the cowork_space's shape is the roster's 2 | 4; the
+           parked grid page still cycles from the pad's ▚ key and ⌃⇧1/2/4. -->
       <button id="sysbtn" data-t-title="bar.desk_title" title="Admin Desk — this machine and this app: configuration, project roots, hotwords, Koshi, gbrain, stats, appearance, updates, log out">⚙<span class="txt" data-t="bar.desk"> Admin Desk</span></button>
       <div class="ctrls" role="group" data-t-aria="bar.keys" aria-label="Keys">
         <button id="k-esc" data-t-title="keys.esc" title="Esc" data-t="keys.esc">Esc</button>

@@ -190,18 +190,14 @@ export function collapseTileHead(tile) {
   // to push a row of buttons to the far edge, and the picker wants that room.
   const dot = head.querySelector('.dot');
   const sel = head.querySelector('select.sess');
-  // BEFORE the grid count, which is the row's right-hand end along with ニ. On first
-  // build the count is the last thing in the bar and appending would land after it;
-  // when the head comes back UP (the count went 2 → 1) the count is already sitting
-  // between メ and ニ. Inserting against it reads left-to-right either way round —
-  // appending was right exactly once, on the first pass.
-  const anchor = bar.querySelector('#layoutcycle');
+  // The grid count left the bar on 2026-08-27, so there is nothing to insert against:
+  // the hoisted controls append, and ニ (added after them) stays the row's right end.
   // ⚡'s menu is anchored to whatever it sits in; it follows its button up here. So does
   // 📄's (2026-08-18) — a menu left in the hidden header is a button that opens nothing.
   const tmac = head.querySelector('.tmac');
   const tdocs = head.querySelector('.tdocs');
   for (const n of [dot, sel, drop.btn, drop.menu, tmac, tdocs]) {
-    if (n) anchor ? bar.insertBefore(n, anchor) : bar.append(n);
+    if (n) bar.append(n);
   }
   // The emptied head STAYS in the tile, hidden by the stylesheet. It is still the
   // anchor the ladder inserts itself after (`toggleLadder`), and removing it would

@@ -369,10 +369,12 @@ anything. Selecting a pane also scrolls its tab back onto the strip — a room c
 entered from somewhere other than its own tab (⚙ Configuration from first-run, ▧ Docs from the
 tile's 📄), and the strip must not disagree with the pane.
 
-**The bar verbs are one width** — New · Admin Desk since 2026-08-27 (Commons, Keypad and
-Mika Assist left the bar by the owner's word: the Commons is the tile's ⛩ and ⌃⇧C, Mika is
-the `mika` tool, Keypad is a row on the Admin Desk) — `min-width` plus centred labels, so
-the row reads even rather than as different kinds of control. The grid count is exempt: it is a number, not a verb. At ≤680px the
+**The bar is one verb** — ⚙ Admin Desk (the cowork commons) since 2026-08-27. Commons,
+Keypad, Mika Assist, New and the 1·2·4 count all left the bar by the owner's word: the
+Commons is the tile's ⛩ and ⌃⇧C on the parked grid page, Mika is the `mika` tool, Keypad
+and Roster are tabs of the cowork commons, a new session is a workspace surface (＋ Add
+team member, ⌃⇧N), and the space's shape is the roster's `2 | 4`. The `min-width` rule
+stays so a second verb, if one returns, sits in the same box. The grid count is exempt: it is a number, not a verb. At ≤680px the
 words go and the width goes with them (a genuine shell change, so a `@media` query).
 
 ## Keyboard and focus
