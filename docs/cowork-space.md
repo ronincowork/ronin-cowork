@@ -26,11 +26,18 @@ you add it there in the same commit.
 └───────────────────────┴──────────────────────┴──────────────────────────────────────────┘
 ```
 
+**Two shapes** (owner, 2026-08-27): **2** — workspace 1 · selector column · workspace 2, as
+drawn; and **4** — a 2×2 of workspaces with the selector column left, centre or right. A
+workspace column is a STACK: workspace 3 sits under 1, workspace 4 under 2, and the count
+(the `2 | 4` control on the selector column's head, or `count=4` from `tejun-teampage`)
+shows or hides the lower cells. The selector's place is the same `order` in both shapes.
+There is no one-workspace shape.
+
 Three kinds of thing, and only three, sit inside the bar:
 
 | kind | what it is | how many |
 |---|---|---|
-| **workspace** | a slot that holds exactly one `workspace_surface` at a time (`workbench.place`); remembers what it holds per tab | two today (`workspace1`, `workspace2`); the Kit's layout map shows, hides and reorders them |
+| **workspace** | a cell that holds exactly one `workspace_surface` at a time; remembers what it holds per tab | two or four (`workspace1`–`workspace4`; 3 under 1, 4 under 2); the Kit's layout map shows, hides and reorders the three columns |
 | **selector column** | a column that PICKS what goes into a workspace; it never holds a surface itself | one today — the **roster** (the team's members as cards; click seats one in a workspace; the 人 pinned hot in workspace 1) |
 | **top header** | the bar: brand, the tab's editable view name, the layout map, か New, ⚙, the grid count | one |
 

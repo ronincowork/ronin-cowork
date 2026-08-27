@@ -294,7 +294,11 @@ async function checkJourneys(page, label, jsErrors) {
   else bad(`${label}: the cowork commons has ${ccTabs.length} tabs, wanted 6`);
   await page.locator('#cowork-view .wk-channel-service-tab').nth(1).click(); // Account
   await page.waitForTimeout(200);
-  const gbrainRow = page.locator('#cowork-view .desk-gbrain').first();
+  // The Account tab is the desk's rail (owner: "the selectors on the left"): gbrain is a
+  // row on it, built when picked — so pick it.
+  await page.locator('#cowork-view .desk-row[data-room="gbrain"]').click();
+  await page.waitForTimeout(300);
+  const gbrainRow = page.locator('#cowork-view .desk-gbrain.show').first();
   if (!hasGbrain) {
     if ((await gbrainRow.count()) > 0) ok(`${label}: gbrain is drawn on the Account tab without its service`);
     else bad(`${label}: gbrain is missing from the Account tab`);
@@ -390,6 +394,9 @@ async function checkJourneys(page, label, jsErrors) {
   // The Desk profile tab must DRAW the picker (its pane was missing from the desk's per-room
   // CSS list once, 2026-08-27, and the row counted while showing nothing).
   await ccTab(2);
+  // The rows arrive after two reads (the skin list, the profile) — wait for them, never a
+  // fixed pause: 700ms lost the race about one run in three (2026-08-27).
+  await page.waitForSelector(`${CC_TAB('profile')} .sys-skin`, { timeout: 8000 }).catch(() => {});
   const profileRows = await page.locator(`${CC_TAB('profile')} .sys-skin:visible`).count();
   if (profileRows >= 2) ok(`${label}: the Desk profile tab shows the picker — Stock plus ${profileRows - 1} profile(s)`);
   else bad(`${label}: the Desk profile tab shows ${profileRows} visible row(s) — the pane is not drawing`);
@@ -399,7 +406,9 @@ async function checkJourneys(page, label, jsErrors) {
   if (padInline) ok(`${label}: the Keypad tab holds the pad's board inline`);
   else bad(`${label}: the Keypad tab does not hold the pad's board`);
 
-  await ccTab(1); // Account: appearance, skins, the flip
+  await ccTab(1); // Account: appearance, skins, the flip — the Appearance row on the rail
+  await page.locator('#cowork-view .desk-row[data-room="appearance"]').click();
+  await page.waitForTimeout(300);
   const darkBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
   await page.locator(`${CC_TAB('account')} .sys-flip`).click();
   await page.waitForTimeout(200);

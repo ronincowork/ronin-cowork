@@ -119,7 +119,7 @@ export function createTeamView() {
     lastSeat = id;
     for (const seat of Object.values(seats)) {
       for (const tile of seat.surface.content.querySelectorAll('.tile')) tile.classList.toggle('active', seat.id === id);
-      workbench.holding(seat.id)?.classList.toggle('tw-selected', seat.id === id);
+      cellHolding(seat.id)?.classList.toggle('tw-selected', seat.id === id);
     }
   };
   // A card dragged onto a workspace lands in that workspace.
@@ -140,14 +140,53 @@ export function createTeamView() {
       arrange({ [id]: { session: name } });
     });
   }
-  const seats = { workspace1: makeSeat('workspace1', t('team.workspace_1', 'Workspace 1')), workspace2: makeSeat('workspace2', t('team.workspace_2', 'Workspace 2')) };
+  const seats = {
+    workspace1: makeSeat('workspace1', t('team.workspace_1', 'Workspace 1')),
+    workspace2: makeSeat('workspace2', t('team.workspace_2', 'Workspace 2')),
+    workspace3: makeSeat('workspace3', t('team.workspace_3', 'Workspace 3')),
+    workspace4: makeSeat('workspace4', t('team.workspace_4', 'Workspace 4')),
+  };
+  // TWO SHAPES (owner, 2026-08-27): TWO workspaces around the selector column, or FOUR as a
+  // 2×2 with the selector column left, centre or right. The Kit's workbench is a row of
+  // columns — order, hide, splitters — so the columns stay three: each workspace column is
+  // a STACK, workspace 1 over 3 on the left column, 2 over 4 on the right, and the count
+  // shows or hides the lower cell. The selector's place is the existing `order`. A seat's
+  // surface (or a commons) sits in its CELL; the Kit slot holds the column for good.
+  const COLUMN_OF = { workspace1: 'workspace1', workspace3: 'workspace1', workspace2: 'workspace2', workspace4: 'workspace2' };
+  const LOWER = ['workspace3', 'workspace4'];
+  const columns = { workspace1: el('div', 'tw-column'), workspace2: el('div', 'tw-column') };
+  const cells = {};
+  for (const id of Object.keys(seats)) {
+    const cell = el('div', 'tw-cell');
+    cell.dataset.workspace = id;
+    cell.append(seats[id].surface.el);
+    cells[id] = cell;
+    columns[COLUMN_OF[id]].append(cell);
+  }
+  const cellPlace = (id, node) => { if (cells[id].firstElementChild !== node) cells[id].replaceChildren(node); };
+  const cellHolding = (id) => cells[id]?.firstElementChild ?? null;
+  let count = 2;
+  const liveSeats = () => Object.keys(seats).filter((id) => count === 4 || !LOWER.includes(id));
 
   const kanban = createSurface({ label: t('team.roster_title', 'Team Roster'), className: 'tw-kanban' });
   // The roster's header — the same depth as a tile head and the commons' tab strip.
   const rosterHead = el('div', 'tw-roster-head');
   const rosterCount = el('span', 'tw-roster-count');
   const rosterNote = el('span', 'tw-roster-note');
-  rosterHead.append(el('span', 'tw-roster-title', t('team.roster_title', 'Team Roster')), rosterCount, rosterNote);
+  // THE SHAPE CONTROL lives on the selector column's head — it is about how the space is
+  // arranged, which is the column's business. Two buttons, one pressed.
+  const countBox = el('div', 'tw-count');
+  const countBtns = {};
+  for (const n of [2, 4]) {
+    const b = el('button', 'tw-count-btn', String(n));
+    b.type = 'button';
+    b.title = n === 2 ? t('team.count_2_title', 'Two workspaces around the roster') : t('team.count_4_title', 'Four workspaces, two by two');
+    b.setAttribute('aria-pressed', 'false');
+    b.addEventListener('click', () => arrange({ count: n }));
+    countBtns[n] = b;
+    countBox.append(b);
+  }
+  rosterHead.append(el('span', 'tw-roster-title', t('team.roster_title', 'Team Roster')), rosterCount, rosterNote, countBox);
   kanban.el.prepend(rosterHead);
   const cards = el('div', 'tw-cards');
   kanban.content.append(cards);
@@ -219,14 +258,14 @@ export function createTeamView() {
   };
   const workbench = createWorkbenchLayout({
     declaration: DECLARATION,
-    surfaces: { workspace1: seats.workspace1.surface.el, roster: kanban.el, workspace2: seats.workspace2.surface.el },
+    surfaces: { workspace1: columns.workspace1, roster: kanban.el, workspace2: columns.workspace2 },
     onStateChange: (arrangement) => ctx?.patchViewState('team', { arrangement }),
   });
   root.append(workbench.host);
 
   /* ---------- in and out ---------- */
-  const commonsIn = () => Object.keys(seats).find((id) => workbench.holding(id) === channels.el) || '';
-  const coworkIn = () => Object.keys(seats).find((id) => workbench.holding(id) === cowork.el) || '';
+  const commonsIn = () => Object.keys(seats).find((id) => cellHolding(id) === channels.el) || '';
+  const coworkIn = () => Object.keys(seats).find((id) => cellHolding(id) === cowork.el) || '';
   /** A surface other than the seat's own is in this workspace. */
   const surfaceIn = (id) => commonsIn() === id || coworkIn() === id;
   const holds = (id) => (commonsIn() === id ? COMMONS : coworkIn() === id ? COWORK : seats[id].pool.active);
@@ -238,18 +277,29 @@ export function createTeamView() {
    *  commons was, that seat's surface comes back. */
   const putCommons = (id, tab = '', doc = '') => {
     const from = commonsIn();
-    if (from && from !== id) workbench.place(from, seats[from].surface.el);
-    workbench.place(id, channels.el);
+    if (from && from !== id) cellPlace(from, seats[from].surface.el);
+    cellPlace(id, channels.el);
     if (doc) { channels.select('docs'); void docs.open(doc); } else if (tab) channels.select(tab);
     touch(id);
+    remember();
+  };
+  /** The shape: 2 or 4. Lowering to 2 leaves seats 3 and 4 as they are, hidden — their
+   *  tiles stay warm under the pool's own cap; a selection down there moves up. */
+  const setCount = (n) => {
+    count = n === 4 ? 4 : 2;
+    for (const col of Object.values(columns)) col.dataset.count = String(count);
+    for (const id of LOWER) cells[id].hidden = count !== 4;
+    for (const [n2, b] of Object.entries(countBtns)) b.setAttribute('aria-pressed', String(Number(n2) === count));
+    if (count === 2 && LOWER.includes(lastSeat)) touch('workspace1');
+    ctx?.patchViewState('team', { count });
     remember();
   };
   /** Cowork commons in: the same trade as the team commons — wherever it was, that seat's
    *  surface comes back; the seat it lands on keeps its tiles while it is out. */
   const putCowork = (id, tab = '') => {
     const from = coworkIn();
-    if (from && from !== id) workbench.place(from, seats[from].surface.el);
-    workbench.place(id, cowork.el);
+    if (from && from !== id) cellPlace(from, seats[from].surface.el);
+    cellPlace(id, cowork.el);
     if (tab) cowork.select(tab);
     else cowork.select(cowork.current());
     touch(id);
@@ -257,7 +307,7 @@ export function createTeamView() {
   };
   /** The seat back, with nothing in it: its tiles go; the lead comes back warm on the next paint. */
   const emptySeat = (id) => {
-    if (surfaceIn(id)) workbench.place(id, seats[id].surface.el);
+    if (surfaceIn(id)) cellPlace(id, seats[id].surface.el);
     seats[id].pool.destroyAll();
     ensureLeadHot(membersOfTeam(team));
     touch(id);
@@ -267,7 +317,7 @@ export function createTeamView() {
   /** Terminal in: the seat's surface comes back as it was; a seat that never showed
    *  anyone gets the lead. */
   const putTerminal = (id) => {
-    workbench.place(id, seats[id].surface.el);
+    cellPlace(id, seats[id].surface.el);
     if (!seats[id].pool.active && lead() && seats[id].pool.has(lead())) seats[id].pool.show(lead(), false);
     touch(id);
     paintSeats();
@@ -276,7 +326,7 @@ export function createTeamView() {
   /** A session in: the terminal comes in if the commons was there, then the tile shows it. */
   const putSession = (name, id, focus = true) => {
     if (!seats[id].pool.has(name)) return false;
-    if (surfaceIn(id)) workbench.place(id, seats[id].surface.el);
+    if (surfaceIn(id)) cellPlace(id, seats[id].surface.el);
     if (!seats[id].pool.show(name, focus)) return false;
     touch(id);
     paintSeats();
@@ -297,6 +347,7 @@ export function createTeamView() {
     putCowork,
     putTerminal,
     emptySeat,
+    setCount,
   });
   const arrange = (draft) => {
     const did = arranger.apply(draft);
@@ -315,12 +366,12 @@ export function createTeamView() {
   const view = () => {
     const a = workbench.arrangement.state();
     const workspaces = {};
-    for (const id of Object.keys(seats)) {
+    for (const id of liveSeats()) {
       const c = commonsIn() === id;
       const k = coworkIn() === id;
       workspaces[id] = c ? { holds: 'commons', tab: channels.current?.() || '' } : k ? { holds: 'cowork', tab: cowork.current?.() || '' } : seats[id].pool.active ? { holds: 'session', session: seats[id].pool.active } : { holds: 'empty' };
     }
-    return { team, selected: lastSeat, order: [...a.order], hidden: [...a.hidden], workspaces };
+    return { team, selected: lastSeat, count, order: [...a.order], hidden: [...a.hidden], workspaces };
   };
   let reportTimer = 0;
   const reportView = () => { if (entered && team) void sendView(team, TAB, view()); };
@@ -342,7 +393,7 @@ export function createTeamView() {
    *  reload the roster is not known yet at enter. */
   let remembered = {};
   const seatTheTeam = () => {
-    for (const id of Object.keys(seats)) {
+    for (const id of liveSeats()) {
       if (holds(id)) continue;
       const wanted = remembered[id];
       if (wanted === COMMONS) putCommons(id);
@@ -559,6 +610,7 @@ export function createTeamView() {
       workbench.restore(!stored && profileOrder.length ? { ...typed.arrangement, order: profileOrder } : typed.arrangement);
       // What each workspace remembers holding; the old one-seat focusedSession lands in
       // the first workspace, once. With nothing remembered: the lead left, the commons right.
+      setCount(context.viewState('team')?.count === 4 ? 4 : 2);
       remembered = { ...typed.seats };
       if (!Object.keys(remembered).length) remembered = typed.focusedSession ? { workspace1: typed.focusedSession, workspace2: COMMONS } : { workspace2: COMMONS };
       const members = membersOfTeam(team);
@@ -566,7 +618,7 @@ export function createTeamView() {
       ensureLeadHot(members);
       seatTheTeam();
       paintSeats();
-      touch(Object.keys(seats).find((id) => holds(id) !== COMMONS && holds(id) !== COWORK) || 'workspace1');
+      touch(liveSeats().find((id) => holds(id) !== COMMONS && holds(id) !== COWORK) || 'workspace1');
       channels.enter(context);
       // ⚙ ON THIS PAGE: the cowork commons into the workspace you are in; pressed again
       // there, the terminal back — the toggle ⛩ taught (layout.js reads this hook).

@@ -14,7 +14,9 @@
  *                                  (health · account · profile · roots · help · keypad)
  *   workspace1=terminal            the workspace's seat back, as it was
  *   workspace1=empty               the seat, with nothing in it
- *   order=workspace2,roster,workspace1
+ *   workspace3=…  workspace4=…      the lower cells of the 2×2 (count=4)
+ *   count=2 | count=4              two workspaces around the roster, or four two-by-two
+ *   order=workspace2,roster,workspace1   (a column word names a STACK: 1 over 3, 2 over 4)
  *   hidden=roster    shown=roster  hidden=none
  *
  * `me` stands for the asking session. Nothing here knows how a workspace shows a
@@ -25,7 +27,7 @@ import { request } from './request.js';
 import { COWORK_TABS } from './cowork-commons.js';
 
 const COLUMNS = ['workspace1', 'roster', 'workspace2'];
-const WORKSPACES = ['workspace1', 'workspace2'];
+const WORKSPACES = ['workspace1', 'workspace2', 'workspace3', 'workspace4'];
 const TABS = { chat: 'chat', wipeboard: 'wipeboard', docs: 'docs', config: 'team-configuration', 'team-configuration': 'team-configuration' };
 
 /** Tokens (`key=value`) → { draft, errors }. Unknown words are errors, not guesses. */
@@ -50,6 +52,11 @@ export function parseDraft(tokens = [], me = '') {
       } else if (what === 'terminal' || what === 'empty') draft[key] = { [what]: true };
       else if (what) draft[key] = { session: what === 'me' ? me : what };
       else errors.push(`${key}: say what goes there`);
+      continue;
+    }
+    if (key === 'count') {
+      if (value === '2' || value === '4') draft.count = Number(value);
+      else errors.push('count: 2 or 4');
       continue;
     }
     if (key === 'roster') {
@@ -92,6 +99,7 @@ export function createArranger(verbs) {
     }
     for (const name of draft.shown || []) { verbs.showColumn(name); did.push(`show ${name}`); }
     for (const name of draft.hidden || []) { verbs.hideColumn(name); did.push(`hide ${name}`); }
+    if (draft.count) { verbs.setCount(draft.count); did.push(`count ${draft.count}`); }
     for (const ws of WORKSPACES) {
       const want = draft[ws];
       if (!want) continue;
