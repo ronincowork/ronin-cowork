@@ -8,7 +8,7 @@ import { buildSettei } from './settei.js';
 import { buildStats } from './stats.js';
 import { buildSystemPanel } from './system.js';
 import { askMika } from './mika.js';
-import { S } from './state.js';
+import { S, serviceOff } from './state.js';
 import { t } from './lexicon.js';
 
 /**
@@ -103,35 +103,74 @@ export function coworkCommons() {
     return [buildStats(stats)];
   });
 
-  /* ---- Account: the rest of the desk, as it was ---- */
-  const account = pane('account', 'cc-stack');
+  /* ---- Account: the rest of the desk, AS IT WAS — the rail, and one room at a time ---- */
+  // Owner, 2026-08-27: *"we should still have the selectors on the left … I liked being
+  // able to select what you wanted to see, so it wasn't just a long laundry list."* So the
+  // desk's nav rail lives on inside this tab: rows on the left, one room on the right,
+  // « to narrow the rail. Only what became a tab of its own left the rail.
+  const account = pane('account', 'cc-rail');
   const appBox = (el) => {
     const box = room('cc-app');
     box.append(el);
     return box;
   };
-  const accountRooms = once(() => {
-    const settei = room('desk-settei');
-    const hotwords = room('desk-hotwords');
-    const koshi = room('desk-koshi');
-    const gbrain = room('desk-gbrain');
-    account.append(
-      heading(t('cowork.h_configuration', 'Configuration')), settei,
-      heading(t('cowork.h_appearance', 'Appearance')), appBox(app.appearance),
-      heading(t('cowork.h_release', 'Release & update')), appBox(app.release),
-      heading(t('cowork.h_hotwords', 'Hotwords')), hotwords,
-      heading(t('cowork.h_koshi', 'Koshi')), koshi,
-      heading(t('cowork.h_gbrain', 'gbrain')), gbrain,
-      heading(t('cowork.h_log_out', 'Log out')), appBox(app.account),
-    );
-    return [
-      buildSettei(settei, showing('account')),
-      buildHotwords(hotwords, showing('account')),
-      buildKoshi(koshi, showing('account')),
-      buildGbrain(gbrain, showing('account'), (prompt) => atTile((tile) => tile.askPersonalAssistant?.(prompt))),
-      app,
-    ];
+  const ACCOUNT_ROWS = [
+    { id: 'settei', label: t('pane.settei', 'Configuration'), glyph: '⚙', build: (host) => buildSettei(host, showing('account')) },
+    { id: 'appearance', label: t('desk.row_appearance', 'Appearance'), glyph: '◐', build: (host) => { host.append(appBox(app.appearance)); return app; } },
+    { id: 'release', label: t('desk.row_release', 'Release & update'), glyph: '↑', build: (host) => { host.append(appBox(app.release)); return app; } },
+    { id: 'hotwords', label: t('pane.hotwords', 'Hotwords'), glyph: '▥', build: (host) => buildHotwords(host, showing('account')) },
+    { id: 'koshi', label: t('pane.koshi', 'Koshi'), glyph: '目', build: (host) => buildKoshi(host, showing('account')) },
+    { id: 'gbrain', label: t('pane.gbrain', 'gbrain'), glyph: '◇', build: (host) => buildGbrain(host, showing('account'), (prompt) => atTile((tile) => tile.askPersonalAssistant?.(prompt))) },
+    { id: 'account', label: t('desk.log_out', 'Log out'), glyph: '⏻', build: (host) => { host.append(appBox(app.account)); return app; } },
+  ];
+  const nav = node('div', 'desk-nav');
+  const railTop = node('div', 'desk-railtop');
+  const railBtn = node('button', 'desk-railbtn', '«');
+  railBtn.type = 'button';
+  railBtn.title = t('desk.rail_collapse', 'Collapse the rail');
+  railTop.append(railBtn);
+  nav.append(railTop, node('div', 'desk-sep', t('desk.group_install', 'This install')));
+  const content = node('div', 'desk-content');
+  account.append(nav, content);
+  let railed = false;
+  railBtn.addEventListener('click', () => {
+    railed = !railed;
+    nav.classList.toggle('railed', railed);
+    railBtn.textContent = railed ? '»' : '«';
+    railBtn.title = railed ? t('desk.rail_expand', 'Expand the rail') : t('desk.rail_collapse', 'Collapse the rail');
   });
+  const accountRows = {};
+  const accountPanes = {};
+  const accountRoom = {};
+  let accountShowing = 'settei';
+  const showAccount = (id) => {
+    accountShowing = id;
+    for (const [rid, b] of Object.entries(accountRows)) b.classList.toggle('on', rid === id);
+    for (const [rid, p] of Object.entries(accountPanes)) p.classList.toggle('show', rid === id);
+    const row = ACCOUNT_ROWS.find((r) => r.id === id);
+    if (row && !accountRoom[id]) accountRoom[id] = row.build(accountPanes[id]) || {};
+    accountRoom[id]?.enter?.();
+  };
+  for (const r of ACCOUNT_ROWS) {
+    const b = node('button', 'desk-row');
+    b.type = 'button';
+    b.dataset.room = r.id;
+    b.append(node('b', '', r.glyph), node('span', '', r.label));
+    if (serviceOff(r.id)) {
+      b.classList.add('off');
+      b.disabled = true;
+      b.setAttribute('aria-label', t('commons.tab_off', '{tab} — off, this service is not installed.', { tab: r.label }));
+    } else b.addEventListener('click', () => showAccount(r.id));
+    accountRows[r.id] = b;
+    nav.append(b);
+    const p = room(`desk-${r.id}`);
+    p.classList.remove('show');
+    p.dataset.room = r.id;
+    accountPanes[r.id] = p;
+    content.append(p);
+  }
+  const accountRooms = once(() => { showAccount(accountShowing); return []; });
+  const accountEnter = () => { accountRooms(); showAccount(accountShowing); };
 
   /* ---- ◫ Desk profile ---- */
   const profile = pane('profile', 'cc-stack');
@@ -192,7 +231,7 @@ export function coworkCommons() {
   const service = (el, enter) => ({ el, mount: () => {}, enter: () => enter?.(), leave: () => {}, destroy: () => {} });
   const services = {
     health: service(health, enterAll(healthRooms)),
-    account: service(account, enterAll(accountRooms)),
+    account: service(account, accountEnter),
     profile: service(profile, enterAll(profileRooms)),
     roots: service(roots, enterAll(rootsRooms)),
     help: service(help, enterAll(helpRooms)),

@@ -31,6 +31,11 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **kind.school:** Learning
 
 ## desk — system.js (the ⚙ desk's own rooms: appearance, the updater, the account)
+- **desk.row_appearance:** Appearance
+- **desk.row_release:** Release & update
+- **desk.rail_collapse:** Collapse the rail
+- **desk.rail_expand:** Expand the rail
+- **desk.group_install:** This install
 - **desk.passkeys:** passkeys
 - **desk.passkey_name_placeholder:** this device
 - **desk.passkey_name:** passkey name
@@ -375,6 +380,10 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team.flip_terminal:** Show the terminal in this workspace
 - **team.workspace_1:** Workspace 1
 - **team.workspace_2:** Workspace 2
+- **team.workspace_3:** Workspace 3
+- **team.workspace_4:** Workspace 4
+- **team.count_2_title:** Two workspaces around the roster
+- **team.count_4_title:** Four workspaces, two by two
 - **team.roster_title:** Team Roster
 - **team.commons:** Team commons
 - **team.arranged_by:** arranged by {from}

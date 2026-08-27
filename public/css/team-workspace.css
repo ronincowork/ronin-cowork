@@ -21,6 +21,18 @@
      on a terminal (style.css), so any surface reads as selectable (owner, 2026-08-27). */
   .tw-selected { outline: var(--edge) solid var(--accent); outline-offset: calc(-1 * var(--edge)); }
 
+  /* THE 2×2 (owner, 2026-08-27): a workspace column is a STACK of cells — one showing in
+     the two-shape, two in the four-shape; the selector column's place is the Kit's order. */
+  .tw-column { display: grid; grid-template-rows: minmax(0, 1fr); gap: var(--space-3); min-height: 0; height: 100%; }
+  .tw-column[data-count='4'] { grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
+  .tw-cell { display: flex; min-height: 0; min-width: 0; }
+  .tw-cell[hidden] { display: none; }
+  .tw-cell > * { flex: 1 1 auto; min-height: 0; min-width: 0; }
+  /* the shape control on the selector column's head: 2 | 4, one pressed */
+  .tw-count { margin-left: auto; display: inline-flex; gap: var(--space-1); }
+  .tw-count-btn { border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); color: var(--muted); padding: 0 var(--space-3); font: inherit; font-size: var(--text-3); cursor: pointer; }
+  .tw-count-btn[aria-pressed='true'] { border-color: var(--kaki); color: var(--fg-strong); }
+
   .tw-note { padding: var(--space-6) var(--space-7); color: var(--muted); font-size: var(--text-3); }
   /* -- Team Configuration: a reading of the team — its record, then its live roster -- */
   .tw-config { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-6) var(--space-7); overflow-y: auto; }

@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1224 keys · 54 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1233 keys · 54 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -186,6 +186,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `desk.cowork_up_to_date` | ✓ cowork up to date — {installed} |  |  |  |  |
 | `desk.dirty` | (dirty) |  |  |  |  |
 | `desk.feed_no_release` | the feed named no cowork release yet (a private repo needs gh auth on the host) |  |  |  |  |
+| `desk.group_install` | This install |  |  |  |  |
 | `desk.install_services` | Install services |  |  |  |  |
 | `desk.install_services_v` | Install services {latest} |  |  |  |  |
 | `desk.installing_services` | installing services {latest} — fetch, verify, contract check, restart. The page blinks at the restart; sessions are untouched… |  |  |  |  |
@@ -206,11 +207,15 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `desk.profile_not_saved` | desk profile not saved — {message} |  |  |  |  |
 | `desk.profile_stock` | Stock |  |  |  |  |
 | `desk.profile_stock_blurb` | No profile — the look, the words and the tile as shipped. |  |  |  |  |
+| `desk.rail_collapse` | Collapse the rail |  |  |  |  |
+| `desk.rail_expand` | Expand the rail |  |  |  |  |
 | `desk.recovery_outstanding` | a recovery code is outstanding until {time} |  |  |  |  |
 | `desk.release_detail` | release · built from {commit} · contract {contract} · started {started} |  |  |  |  |
 | `desk.remove` | Remove |  |  |  |  |
 | `desk.remove_named` | Remove {name} |  |  |  |  |
 | `desk.removed` | removed |  |  |  |  |
+| `desk.row_appearance` | Appearance |  |  |  |  |
+| `desk.row_release` | Release & update |  |  |  |  |
 | `desk.services_available` | services {latest} available |  |  |  |  |
 | `desk.services_available_installed` | services {latest} available (installed: {installed}) |  |  |  |  |
 | `desk.services_list` | services: {list} |  |  |  |  |
@@ -1380,6 +1385,8 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `team.command` | Command |  |  |  |  |
 | `team.commons` | Team commons |  |  |  |  |
 | `team.control` | Control |  |  |  |  |
+| `team.count_2_title` | Two workspaces around the roster |  |  |  |  |
+| `team.count_4_title` | Four workspaces, two by two |  |  |  |  |
 | `team.flip_commons` | Show the Team commons in this workspace |  |  |  |  |
 | `team.flip_terminal` | Show the terminal in this workspace |  |  |  |  |
 | `team.lead_none` | not designated |  |  |  |  |
@@ -1407,6 +1414,8 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `team.wipeboard` | Wipeboard |  |  |  |  |
 | `team.workspace_1` | Workspace 1 |  |  |  |  |
 | `team.workspace_2` | Workspace 2 |  |  |  |  |
+| `team.workspace_3` | Workspace 3 |  |  |  |  |
+| `team.workspace_4` | Workspace 4 |  |  |  |  |
 
 ## team_wipeboard
 

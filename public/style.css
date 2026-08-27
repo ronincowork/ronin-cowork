@@ -1129,7 +1129,7 @@ body {
    primitive now (@layer ui, .ui-sheet), which is why the `#padsheet { position: fixed;
    z-index: 30; … }` block that used to stand here is gone with the JS that toggled it.
    What stays is what is THIS card's: its width, its scroll, and the board inside it. */
-#padsheet .pad-card {
+.pad-card {
   display: flex;
   flex-direction: column;
   width: min(420px, 92vw);
@@ -1139,7 +1139,7 @@ body {
   border: var(--edge) solid var(--line);
   border-radius: var(--radius-xl);
 }
-#padsheet .pad-bar {
+.pad-card .pad-bar {
   display: flex;
   align-items: center;
   gap: var(--space-4);
@@ -1148,13 +1148,13 @@ body {
   background: var(--bg-2);
   border-bottom: var(--edge) solid var(--line);
 }
-#padsheet .pad-title {
+.pad-card .pad-title {
   color: var(--fg);
   font-size: var(--text-5);
   font-weight: 600;
   white-space: nowrap;
 }
-#padsheet .pad-last {
+.pad-card .pad-last {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1163,7 +1163,7 @@ body {
   color: var(--muted);
   font: var(--text-3)/1.4 var(--font-term);
 }
-#padsheet .pad-bar button {
+.pad-card .pad-bar button {
   background: var(--panel);
   color: var(--fg);
   border: var(--edge) solid var(--line);
@@ -1173,28 +1173,28 @@ body {
   font-size: var(--text-5);
   cursor: pointer;
 }
-#padsheet .pad-bar button.armed {
+.pad-card .pad-bar button.armed {
   background: var(--accent);
   color: var(--on-accent);
   border-color: var(--accent);
 }
-#padsheet .pad-board {
+.pad-card .pad-board {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: var(--space-5);
   padding: var(--space-7);
 }
 /* Captured off-layout chords (e.g. ⌥⌘1 dummies) — same key look, own row */
-#padsheet .pad-extras {
+.pad-card .pad-extras {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: var(--space-5);
   padding: 0 var(--space-7) var(--space-7);
 }
-#padsheet .pad-extras:empty {
+.pad-card .pad-extras:empty {
   display: none;
 }
-#padsheet .pad-key {
+.pad-card .pad-key {
   aspect-ratio: 1;
   display: flex;
   flex-direction: column;
@@ -1215,7 +1215,7 @@ body {
    It WRAPS (up to three lines, then clamps) rather than being cut off with an
    ellipsis: a truncated binding name is unreadable on the one surface whose whole
    job is telling you what a key does. */
-#padsheet .pad-key b {
+.pad-card .pad-key b {
   max-width: 92%;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -1229,28 +1229,28 @@ body {
   font-size: var(--text-3);
   font-weight: 600;
 }
-#padsheet .pad-key small {
+.pad-card .pad-key small {
   font: var(--text-micro)/1 var(--font-term);
   color: var(--muted);
 }
-#padsheet .pad-key.bound {
+.pad-card .pad-key.bound {
   border-color: var(--accent);
 }
-#padsheet .pad-key.bound b {
+.pad-card .pad-key.bound b {
   color: var(--accent);
 }
-#padsheet .pad-key.editing {
+.pad-card .pad-key.editing {
   border-color: var(--fg);
 }
-#padsheet .pad-key.hit {
+.pad-card .pad-key.hit {
   background: var(--accent);
   border-color: var(--accent);
 }
-#padsheet .pad-key.hit b,
-#padsheet .pad-key.hit small {
+.pad-card .pad-key.hit b,
+.pad-card .pad-key.hit small {
   color: var(--on-accent);
 }
-#padsheet .pad-widget {
+.pad-card .pad-widget {
   aspect-ratio: 1;
   display: flex;
   align-items: center;
@@ -1262,29 +1262,29 @@ body {
   font-size: var(--text-8);
 }
 /* Universal-key widgets carry symbol + name — smaller type so it fits */
-#padsheet .pad-kesc,
-#padsheet .pad-ktab,
-#padsheet .pad-ent,
-#padsheet .pad-adel,
-#padsheet .pad-aent {
+.pad-card .pad-kesc,
+.pad-card .pad-ktab,
+.pad-card .pad-ent,
+.pad-card .pad-adel,
+.pad-card .pad-aent {
   font-size: var(--text-2);
   font-weight: 600;
   color: var(--fg);
   padding: 0 var(--space-2);
   line-height: 1.3;
 }
-#padsheet .pad-enc,
-#padsheet .pad-joy {
+.pad-card .pad-enc,
+.pad-card .pad-joy {
   border-radius: var(--radius-round);
 }
 /* the encoder / joystick flash too, so you can see what a turn or flick emits */
-#padsheet .pad-widget.hit {
+.pad-card .pad-widget.hit {
   background: var(--accent);
   border-style: solid;
   border-color: var(--accent);
   color: var(--on-accent);
 }
-#padsheet .pad-edit {
+.pad-card .pad-edit {
   display: none;
   flex-direction: column;
   gap: var(--space-4);
@@ -1293,15 +1293,15 @@ body {
   color: var(--fg);
   font-size: var(--text-4);
 }
-#padsheet .pad-edit.open {
+.pad-card .pad-edit.open {
   display: flex;
 }
-#padsheet .pad-erow {
+.pad-card .pad-erow {
   display: flex;
   gap: var(--space-4);
 }
-#padsheet .pad-erow select,
-#padsheet .pad-erow input {
+.pad-card .pad-erow select,
+.pad-card .pad-erow input {
   flex: 1;
   min-width: 0;
   height: 34px;
@@ -1312,7 +1312,7 @@ body {
   padding: 0 var(--space-4);
   font-size: var(--text-4);
 }
-#padsheet .pad-erow button {
+.pad-card .pad-erow button {
   background: var(--panel);
   color: var(--fg);
   border: var(--edge) solid var(--line);
@@ -1322,7 +1322,7 @@ body {
   font-size: var(--text-4);
   cursor: pointer;
 }
-#padsheet .pad-asklbl {
+.pad-card .pad-asklbl {
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -1366,7 +1366,7 @@ body {
   font-size: var(--text-5);
 }
 /* ⚙ program-the-pad row (WebHID) */
-#padsheet .pad-prog {
+.pad-card .pad-prog {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1374,8 +1374,8 @@ body {
   padding: var(--space-5) var(--space-7) max(var(--space-7), env(safe-area-inset-bottom));
   border-top: var(--edge) solid var(--line);
 }
-#padsheet .pad-prog button,
-#padsheet .pad-prog select {
+.pad-card .pad-prog button,
+.pad-card .pad-prog select {
   background: var(--panel);
   color: var(--fg);
   border: var(--edge) solid var(--line);
@@ -1385,11 +1385,11 @@ body {
   font-size: var(--text-4);
   cursor: pointer;
 }
-#padsheet .pad-prog button:disabled {
+.pad-card .pad-prog button:disabled {
   opacity: 0.45;
   cursor: default;
 }
-#padsheet .pad-progmsg {
+.pad-card .pad-progmsg {
   flex-basis: 100%;
   color: var(--muted);
   font-size: var(--text-3);
@@ -2272,6 +2272,165 @@ body {
 .home[data-pane='docs'] .home-docs {
   display: flex;
 }
+/* ---- THE ACCOUNT TAB'S RAIL (js/cowork-commons.js) — the admin desk's nav, kept (owner,
+   2026-08-27: "we should still have the selectors on the left … not get rid of the UI that
+   we have from the previous admin desk, which is actually quite good"). A NAV, NOT A STRIP,
+   inside the tab: pick a room on the left, see one room on the right. The rows that became
+   tabs of their own left it; the rest of the desk is here as it was. */
+.desk-nav {
+  flex: 0 0 154px;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-5) var(--space-3);
+  background: var(--bg-2);
+  border-right: var(--edge) solid var(--line);
+  overflow-y: auto;
+}
+/* THE RAIL'S ONE CONTROL — « narrower — in the RAIL because the rail is chrome. */
+.desk-railtop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-1) var(--space-3);
+}
+.desk-railbtn {
+  border: var(--edge) solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted-3);
+  font-size: var(--text-3);
+  line-height: 1;
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+}
+.desk-railbtn:hover {
+  border-color: var(--line-2);
+  background: var(--well);
+  color: var(--fg-strong);
+}
+.desk-sep {
+  font-size: var(--text-1);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: var(--space-5) var(--space-4) var(--space-2);
+  white-space: nowrap;
+}
+.desk-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted-2);
+  font-size: var(--text-3);
+  font-family: inherit;
+  text-align: left;
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.desk-row b {
+  font-weight: 400;
+  width: 15px;
+  flex: 0 0 auto;
+  text-align: center;
+}
+.desk-row:hover {
+  background: var(--raise);
+}
+.desk-row.on {
+  background: var(--raise);
+  color: var(--fg-strong);
+}
+/* Visible but inert — the same treatment `.home-tabs button.off` gives an absent room,
+   so the desk does not invent a second way of saying "not plugged in". */
+.desk-row.off {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* NAMED BY DEFAULT (owner, 2026-08-18: "glyphs & labels"), and the container query says
+   how a name LAYS OUT, never whether it shows: beside its glyph where there is room,
+   stacked under it in a 4-up tile at 70px rather than 154. 680px is the number the tab
+   strip already breaks at — one breakpoint for the tile, not two. */
+@container (max-width: 680px) {
+  .desk-nav {
+    flex-basis: 70px;
+    padding: var(--space-5) var(--space-3);
+  }
+  .desk-row {
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-3) var(--space-1);
+    text-align: center;
+  }
+  .desk-row span {
+    font-size: var(--text-1);
+    line-height: 1.15;
+    white-space: normal;
+  }
+  .desk-sep {
+    font-size: 0;
+    padding: var(--space-4) 0 var(--space-2);
+    border-top: var(--edge) solid var(--line);
+    margin: var(--space-2) var(--space-3) 0;
+  }
+  .desk-railtop + .desk-sep {
+    border-top: 0;
+    margin-top: 0;
+    padding-top: 0;
+  }
+}
+/* COLLAPSED BY HAND, and it wins at every width because it is the owner's answer rather
+   than the box's. One class more specific than the rules above, which is all it needs:
+   a container query changes WHEN a rule applies, never how strong it is. */
+.desk-nav.railed {
+  flex-basis: 44px;
+  padding: var(--space-5) var(--space-3);
+}
+.desk-nav.railed .desk-row {
+  flex-direction: row;
+  justify-content: center;
+  gap: 0;
+  padding: var(--space-4) var(--space-2);
+}
+.desk-nav.railed .desk-row span {
+  display: none;
+}
+.desk-nav.railed .desk-sep {
+  font-size: 0;
+  padding: var(--space-4) 0 var(--space-2);
+  border-top: var(--edge) solid var(--line);
+  margin: var(--space-2) var(--space-3) 0;
+}
+.desk-nav.railed .desk-railtop {
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-1);
+}
+.desk-nav.railed .desk-railtop + .desk-sep {
+  border-top: 0;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+
+.desk-content {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+/* The Account tab is the rail beside the content, and a container for the rail's query. */
+.cc-pane.cc-rail {
+  container-type: inline-size;
+}
+
 /* ---- THE COWORK COMMONS' ROOMS (js/cowork-commons.js). The admin desk — an overlay a
    tile drew on itself, with a rail, a ✕ and eleven rows — retired on 2026-08-27 (owner:
    "another workspace alternative"); its rooms are re-hung on the Kit's channel surface
@@ -2343,15 +2502,17 @@ body {
   border: var(--edge) dashed var(--line);
   border-radius: var(--radius-md);
 }
-/* The pad's card INLINE: the sheet's width and scroll are the sheet's; here it is the tab. */
+/* The pad's card INLINE — the SAME card, the same graphic, as the sheet showed (owner,
+   2026-08-27: "it should be the exact same graphic we had for the sheet"); every pad rule is
+   scoped to `.pad-card` so it draws the same wherever the card is. Only the sheet's box
+   limits are lifted here: the tab is the box. */
 .cc .pad-card {
   flex: 1;
   min-height: 0;
-  width: auto;
+  width: min(420px, 100%);
   max-height: none;
+  margin: var(--space-5) auto;
   overflow-y: auto;
-  border: 0;
-  border-radius: 0;
 }
 .cc .pad-close {
   display: none;
@@ -6546,7 +6707,9 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 .wk-explorer-rail[data-state='failed'] > .wk-state { color: var(--bad-soft); }
 .wk-explorer-rail[data-state='stale'] > .wk-state { color: var(--warn); }
 .wk-explorer-rail[data-state='unavailable'], .wk-explorer-rail[data-state='inert'] { opacity: .58; pointer-events: none; }
-.wk-channel-service-tabs { display: flex; flex: 0 0 auto; align-items: center; gap: var(--space-2); min-height: var(--row-head); border-bottom: var(--edge) solid var(--line); padding: var(--space-3); overflow-x: auto; }
+/* THE COMMONS STRIP WEARS THE TILE HEAD'S SHADING (owner, 2026-08-27: "it should be the same,
+   at least shading") — one surface_head look for every surface (docs/cowork-space.md). */
+.wk-channel-service-tabs { display: flex; flex: 0 0 auto; align-items: center; gap: var(--space-2); min-height: var(--row-head); background: var(--bg-2); border-bottom: var(--edge) solid var(--line); padding: var(--space-3) var(--space-4); overflow-x: auto; }
 .wk-channel-service-tab { border: 0; border-radius: var(--radius-xs); background: transparent; color: var(--muted); padding: var(--space-3) var(--space-4); white-space: nowrap; }
 .wk-channel-service-tab[aria-selected='true'] { background: var(--raise); color: var(--fg-strong); }
 .wk-channel-surface > .wk-surface-content { display: flex; flex-direction: column; }
