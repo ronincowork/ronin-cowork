@@ -1,5 +1,10 @@
 # TEAM WORKSPACE — current implementation and resume contract
 
+> **The page is the `cowork_space` since 2026-08-27** — the team was its first tenant, not its
+> definition. The surface map and the names (workspace · selector column · terminal_tile ·
+> team_commons · cowork_commons · surface head) are `docs/cowork-space.md`; this file stays
+> the implementation record of the team's use of it.
+
 This is the current README for the Team destination. It records what is landed on `dev`
 as of 2026-08-26, which contracts Team consumes, what was verified, and the exact place to
 resume. It is not a speculative redesign brief. The history of how it got here — the

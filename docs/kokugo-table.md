@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1214 keys · 53 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1221 keys · 53 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -347,7 +347,9 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.commons` | the commons |  |  |  |  |
 | `glossary.configuration` | Configuration |  |  |  |  |
 | `glossary.control` | Control |  |  |  |  |
+| `glossary.cowork_commons` | cowork commons |  |  |  |  |
 | `glossary.cowork_setup` | cowork setup |  |  |  |  |
+| `glossary.cowork_space` | the cowork space |  |  |  |  |
 | `glossary.coworkspace` | the coworkspace |  |  |  |  |
 | `glossary.customization` | your own macros and jobs |  |  |  |  |
 | `glossary.desk` | the desk |  |  |  |  |
@@ -377,17 +379,22 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.ronin` | Ronin |  |  |  |  |
 | `glossary.roster` | the roster |  |  |  |  |
 | `glossary.rung` | rung · leg · phase · gate |  |  |  |  |
+| `glossary.selector_column` | selector column |  |  |  |  |
 | `glossary.services` | Services |  |  |  |  |
 | `glossary.session` | session |  |  |  |  |
 | `glossary.session_menu` | Status · Ladder · Macros · Detach · Kill session |  |  |  |  |
 | `glossary.stats` | Stats |  |  |  |  |
+| `glossary.surface` | surface |  |  |  |  |
 | `glossary.tab` | tab |  |  |  |  |
 | `glossary.team` | Team | Staff |  |  |  |
+| `glossary.team_commons` | team commons |  |  |  |  |
 | `glossary.team_lead` | team lead · 人 |  |  |  |  |
 | `glossary.team_role` | team role |  |  |  |  |
 | `glossary.team_roster` | Team roster |  |  |  |  |
+| `glossary.terminal_tile` | terminal tile |  |  |  |  |
 | `glossary.tile` | tile |  |  |  |  |
 | `glossary.wipeboard` | wipeboard |  |  |  |  |
+| `glossary.workspace` | workspace |  |  |  |  |
 
 ## head
 

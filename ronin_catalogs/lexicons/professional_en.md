@@ -1351,6 +1351,13 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.agent:** agent
 - **glossary.commons:** the commons
 - **glossary.desk:** the desk
+- **glossary.cowork_space:** the cowork space
+- **glossary.workspace:** workspace
+- **glossary.surface:** surface
+- **glossary.terminal_tile:** terminal tile
+- **glossary.team_commons:** team commons
+- **glossary.cowork_commons:** cowork commons
+- **glossary.selector_column:** selector column
 - **glossary.tab:** tab
 - **glossary.cowork_setup:** cowork setup
 - **glossary.locked:** Locked / Unlocked
