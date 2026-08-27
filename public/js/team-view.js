@@ -31,7 +31,7 @@ import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { createTeamWipeboard } from './team-wipeboard.js';
 import { buildDocs } from './docs.js';
 import { buildLauncher } from './launcher.js';
-import { homeData, refreshHome, statusLabel } from './home.js';
+import { homeData, loadPresets, refreshHome, statusLabel } from './home.js';
 import { request } from './request.js';
 import { humanAge } from './shingo.js';
 import { sessionsHandlers, teamPageHandlers } from './events.js';
@@ -305,7 +305,10 @@ export function createTeamView() {
     const from = newIn();
     if (from && from !== id) cellPlace(from, seats[from].surface.el);
     cellPlace(id, newSurface.el);
+    // The board is built from the catalog the Commons poll carries; ask for a read and
+    // draw again when it lands, so a first open is never a blank pane.
     launcher.render();
+    void Promise.all([refreshHome(), loadPresets()]).then(() => launcher.render());
     touch(id);
     remember();
   };

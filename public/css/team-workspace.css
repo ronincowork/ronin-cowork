@@ -39,6 +39,9 @@
   .tw-new-head { display: flex; align-items: center; gap: var(--space-3); flex: 0 0 auto; min-height: var(--row-head); padding: var(--space-3) var(--space-4); background: var(--bg-2); border-bottom: var(--edge) solid var(--line); }
   .tw-new-title { color: var(--fg-strong); }
   .tw-new-body { flex: 1; min-height: 0; overflow-y: auto; }
+  /* the launcher's pane shows only inside `.home[data-pane='new']` by the commons' rule; in a
+     workspace it is the whole surface, so it shows here (owner, 2026-08-27: "nothing showed") */
+  .tw-new-body .home-null { display: flex; }
 
   .tw-note { padding: var(--space-6) var(--space-7); color: var(--muted); font-size: var(--text-3); }
   /* -- Team Configuration: a reading of the team — its record, then its live roster -- */
