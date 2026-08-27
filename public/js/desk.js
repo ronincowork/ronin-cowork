@@ -58,6 +58,7 @@ function appRows() {
     // bar, onto the desk). It is an ACTION, not a pane: the panel is its own sheet
     // (js/pad.js) and opening it from here is exactly what the bar's button did.
     { id: 'keypad', label: t('desk.row_keypad', 'Keypad'), glyph: 'く', action: () => S.padPanel?.open() },
+    { id: 'profile', label: t('desk.row_profile', 'Desk profile'), glyph: '◫' },
     { id: 'appearance', label: t('desk.row_appearance', 'Appearance'), glyph: '◐' },
     { id: 'release', label: t('desk.row_release', 'Release & update'), glyph: '↑' },
     { id: 'account', label: t('desk.log_out', 'Log out'), glyph: '⏻' },
@@ -181,6 +182,7 @@ export function buildDesk(tile) {
   // three elements hang in three panes. `enter` refreshes all of them — it is the old
   // sheet's `open()` with the sheet taken off the front.
   const app = buildSystemPanel();
+  paneEl.profile.appendChild(app.profile);
   paneEl.appearance.appendChild(app.appearance);
   paneEl.release.appendChild(app.release);
   paneEl.account.appendChild(app.account);

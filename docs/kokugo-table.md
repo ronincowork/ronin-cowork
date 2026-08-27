@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1213 keys · 53 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1214 keys · 53 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -201,6 +201,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `desk.removed` | removed |  |  |  |  |
 | `desk.row_appearance` | Appearance |  |  |  |  |
 | `desk.row_keypad` | Keypad |  |  |  |  |
+| `desk.row_profile` | Desk profile |  |  |  |  |
 | `desk.row_release` | Release & update |  |  |  |  |
 | `desk.services_available` | services {latest} available |  |  |  |  |
 | `desk.services_available_installed` | services {latest} available (installed: {installed}) |  |  |  |  |
