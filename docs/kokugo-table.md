@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1208 keys · 53 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1212 keys · 53 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -96,6 +96,8 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `customize.actions_blurb` | The cataloged procedures macros are made of. |  |  |  |  |
 | `customize.actions_read` | Read action |  |  |  |  |
 | `customize.actions_what` | a primitive step macros are composed from |  |  |  |  |
+| `customize.desk_profiles` | Desk profiles |  |  |  |  |
+| `customize.desk_profiles_blurb` | Your standing defaults for the surfaces you work at — a skin, a lexicon, a campaign kind, a Team page arrangement. Choosing one is a setting, on the gear. |  |  |  |  |
 | `customize.empty` | Nothing here yet. That is an ordinary state, not a fault. |  |  |  |  |
 | `customize.entry` | entry |  |  |  |  |
 | `customize.family_summary` | Choose which session roles this Family presents. |  |  |  |  |
@@ -107,6 +109,8 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `customize.handoff_read_only_shelf` | This preview reads this shelf and does not write it. Your own agent can change it |  |  |  |  |
 | `customize.handoff_seed` | Ronin can create your own {file} in your catalogs store — outside every repo, untouched by upgrades. The path is the answer: hand it to your agent, or open it yourself. |  |  |  |  |
 | `customize.handoff_store_hint` | Ask for the store path with: bin/ronin-store catalogs — never spell it by hand. |  |  |  |  |
+| `customize.lexicons` | Lexicons |  |  |  |  |
+| `customize.lexicons_blurb` | The words a surface uses — a wording or a language, one file each. Say only what changes; the rest falls through to the floor. |  |  |  |  |
 | `customize.macros` | Macros |  |  |  |  |
 | `customize.macros_blurb` | Saved instructions you would otherwise have typed to your agent. |  |  |  |  |
 | `customize.macros_what` | a workflow an agent runs when you type +name: |  |  |  |  |
