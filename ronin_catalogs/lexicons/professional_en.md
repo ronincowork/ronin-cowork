@@ -927,7 +927,6 @@ The catalog entry goes. {dir} is not touched.
 - **pane.stats:** Stats
 
 ## desk — desk.js (the desk's rows and tooltips)
-- **desk.row_keypad:** Keypad
 - **cowork.commons:** Cowork commons
 - **cowork.tab_health:** Machine health
 - **cowork.tab_account:** Account
@@ -946,14 +945,8 @@ The catalog entry goes. {dir} is not touched.
 - **cowork.mika_button:** ミ Ask Mika
 - **cowork.mika_text:** Ask about Ronin itself — how it works, project roots, starting a session, changing a setting. She starts if she is not up.
 - **cowork.keypad_missing:** The keypad did not build on this page.
-- **desk.row_appearance:** Appearance
-- **desk.row_release:** Release & update
-- **desk.close_title:** Back to what this tile was showing
-- **desk.rail_collapse:** Collapse the rail
-- **desk.group_app:** This app
 
 ## desk — the install group heading
-- **desk.group_install:** This install
 
 ## dial / gauge / mark — widgets.js (the control dial, the context gauge, the role menu)
 - **gauge.used:** ⛽ {label} {pct}% used
@@ -1135,9 +1128,6 @@ The catalog entry goes. {dir} is not touched.
 - **bar.keys:** Keys
 - **bar.ni_title:** Ronin — keys, home, new session, board, pad
 - **bar.new:** New
-- **bar.mika:** Mika Assist
-- **bar.commons:** Commons
-- **bar.keypad:** Keypad
 - **bar.desk:** Admin Desk
 
 ## me — tiledrop.js (the メ sheet)
@@ -1186,7 +1176,6 @@ The catalog entry goes. {dir} is not touched.
 - **errors.unhandled:** unhandled promise
 
 ## desk — the rail toggle and the inert row
-- **desk.rail_expand:** Expand the rail
 
 ## league — league-board.js (the League board)
 - **league.lead:** lead
@@ -1343,9 +1332,6 @@ The catalog entry goes. {dir} is not touched.
 - **bar.league_title:** Open League in a new browser tab
 - **bar.newtab_title:** Open a second Ronin in a new browser tab
 - **bar.new_title:** ⌃⇧N — start a new session: pick what it is for, where it works and who it is
-- **bar.commons_title:** ⌃⇧C — the CoWorking Commons, straight to ⌂ Roster. The tab strip inside it reaches the other rooms. (⌃⌥C on Linux/Windows.)
-- **bar.keypad_title:** Keypad — the Work Louder pad: physical keys fire macros
-- **bar.mika_title:** Mika Assist — ask about Ronin itself: how it works, project roots, starting a session, changing a setting. Starts her if she is not up.
 - **bar.desk_title:** Admin Desk — this machine and this app: configuration, project roots, hotwords, Koshi, gbrain, stats, appearance, updates, log out
 - **bar.layout_default_title:** Four terminals — click for 1
 - **keys.esc:** Esc
@@ -1421,4 +1407,3 @@ The catalog entry goes. {dir} is not touched.
 - **customize.desk_profiles_blurb:** Your standing defaults for the surfaces you work at — a skin, a lexicon, a campaign kind, a Team page arrangement. Choosing one is a setting, on the gear.
 - **customize.lexicons:** Lexicons
 - **customize.lexicons_blurb:** The words a surface uses — a wording or a language, one file each. Say only what changes; the rest falls through to the floor.
-- **desk.row_profile:** Desk profile

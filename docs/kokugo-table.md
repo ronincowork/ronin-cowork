@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1239 keys · 54 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1224 keys · 54 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -30,12 +30,8 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
 | `bar.brand_title` | ⛩ ronin — the session roster |  |  |  |  |
-| `bar.commons` | Commons |  |  |  |  |
-| `bar.commons_title` | ⌃⇧C — the CoWorking Commons, straight to ⌂ Roster. The tab strip inside it reaches the other rooms. (⌃⌥C on Linux/Windows.) |  |  |  |  |
 | `bar.desk` | Admin Desk |  |  |  |  |
 | `bar.desk_title` | Admin Desk — this machine and this app: configuration, project roots, hotwords, Koshi, gbrain, stats, appearance, updates, log out |  |  |  |  |
-| `bar.keypad` | Keypad |  |  |  |  |
-| `bar.keypad_title` | Keypad — the Work Louder pad: physical keys fire macros |  |  |  |  |
 | `bar.keys` | Keys |  |  |  |  |
 | `bar.keys_title` | Esc, ^C, jump to latest, Tab and the arrows |  |  |  |  |
 | `bar.layout_default_title` | Four terminals — click for 1 |  |  |  |  |
@@ -43,8 +39,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `bar.layout_one` | {n} terminal — click for {next} |  |  |  |  |
 | `bar.league` | League |  |  |  |  |
 | `bar.league_title` | Open League in a new browser tab |  |  |  |  |
-| `bar.mika` | Mika Assist |  |  |  |  |
-| `bar.mika_title` | Mika Assist — ask about Ronin itself: how it works, project roots, starting a session, changing a setting. Starts her if she is not up. |  |  |  |  |
 | `bar.new` | New |  |  |  |  |
 | `bar.new_title` | ⌃⇧N — start a new session: pick what it is for, where it works and who it is |  |  |  |  |
 | `bar.newtab_title` | Open a second Ronin in a new browser tab |  |  |  |  |
@@ -187,14 +181,11 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `desk.check_updates` | Check for updates |  |  |  |  |
 | `desk.check_updates_title` | Ask the release feeds what the latest versions are — both packages, only when pressed |  |  |  |  |
 | `desk.checkout_detail` | a dev checkout, not a release — updated by git, not by the button · started {started} |  |  |  |  |
-| `desk.close_title` | Back to what this tile was showing |  |  |  |  |
 | `desk.cowork_available` | cowork {latest} available (installed: {installed}) |  |  |  |  |
 | `desk.cowork_checkout_latest` | latest cowork release is {latest} — this box runs a checkout, so the button stays off |  |  |  |  |
 | `desk.cowork_up_to_date` | ✓ cowork up to date — {installed} |  |  |  |  |
 | `desk.dirty` | (dirty) |  |  |  |  |
 | `desk.feed_no_release` | the feed named no cowork release yet (a private repo needs gh auth on the host) |  |  |  |  |
-| `desk.group_app` | This app |  |  |  |  |
-| `desk.group_install` | This install |  |  |  |  |
 | `desk.install_services` | Install services |  |  |  |  |
 | `desk.install_services_v` | Install services {latest} |  |  |  |  |
 | `desk.installing_services` | installing services {latest} — fetch, verify, contract check, restart. The page blinks at the restart; sessions are untouched… |  |  |  |  |
@@ -215,17 +206,11 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `desk.profile_not_saved` | desk profile not saved — {message} |  |  |  |  |
 | `desk.profile_stock` | Stock |  |  |  |  |
 | `desk.profile_stock_blurb` | No profile — the look, the words and the tile as shipped. |  |  |  |  |
-| `desk.rail_collapse` | Collapse the rail |  |  |  |  |
-| `desk.rail_expand` | Expand the rail |  |  |  |  |
 | `desk.recovery_outstanding` | a recovery code is outstanding until {time} |  |  |  |  |
 | `desk.release_detail` | release · built from {commit} · contract {contract} · started {started} |  |  |  |  |
 | `desk.remove` | Remove |  |  |  |  |
 | `desk.remove_named` | Remove {name} |  |  |  |  |
 | `desk.removed` | removed |  |  |  |  |
-| `desk.row_appearance` | Appearance |  |  |  |  |
-| `desk.row_keypad` | Keypad |  |  |  |  |
-| `desk.row_profile` | Desk profile |  |  |  |  |
-| `desk.row_release` | Release & update |  |  |  |  |
 | `desk.services_available` | services {latest} available |  |  |  |  |
 | `desk.services_available_installed` | services {latest} available (installed: {installed}) |  |  |  |  |
 | `desk.services_list` | services: {list} |  |  |  |  |
