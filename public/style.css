@@ -2517,6 +2517,20 @@ body {
 .cc .pad-close {
   display: none;
 }
+/* The tile commons' two rooms, re-hung here (2026-08-27): their panes show only inside
+   `.home[data-pane=…]` by the commons' own rule; on these tabs they ARE the tab. */
+.cc-pane[data-tab='archives'] .home-archives {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.cc-pane[data-tab='roster'] .home-col {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
 /* ⚙'s destination on the grid page: the surface at full width. */
 .cc-view {
   display: flex;
