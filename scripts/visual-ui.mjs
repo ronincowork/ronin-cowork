@@ -69,7 +69,7 @@ async function fingerprint(page, entries) {
 }
 
 const DESKTOP = [
-  '#bar', '#brandbtn', '#newbtn', '#mikabtn', '#commonsbtn', '#padbtn', '#layoutcycle',
+  '#bar', '#brandbtn', '#newbtn', '#layoutcycle',
   '.tile .tile-head', '.home-tabs', '.home-tabs button[data-pane="sessions"]', '.home-maxrow',
 ];
 // NOT the session picker: its flex width follows the live session names — content,

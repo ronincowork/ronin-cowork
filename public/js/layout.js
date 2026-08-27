@@ -5,7 +5,6 @@ import { refreshHome } from './home.js';
 import { buildSessionPicker } from './macros.js';
 import { PAD_CODE, firePadBinding, padBinds, padChord } from './pad.js';
 import { buildPadAsk, buildPadPanel } from './padpanel.js';
-import { askMika } from './mika.js';
 import { buildNotePanel, buildTagPanel } from './panels.js';
 import { IS_TOUCH, S, TILE_COUNT, WHEEL_DOWN, grid, tiles } from './state.js';
 
@@ -191,32 +190,6 @@ export function build() {
     const t = S.active || tiles[0];
     if (t) t.showHome('new');
   });
-  // ミ Mika Assist — the house assistant, and the one button whose whole job is "get me
-  // to somebody". It is not a room in the Commons: every room there is a surface the
-  // owner operates, and this is a session they talk to. It sits beside か New for the
-  // same reason か is out of the menu — starting a session and asking for help are the
-  // two things you should never have to go three taps deep to find.
-  //
-  // ミ is her own mark, the same katakana the MikaAssist entry carries, so the button
-  // and the session she opens read as one thing. It is NOT メ, which is a tile's own
-  // header opener meaning "this session" — near neighbours in the kana, and the reason
-  // the label spells out "Mika Assist" rather than leaving the glyph to carry it.
-  key('mikabtn', () => {
-    const t = S.active || tiles[0];
-    if (t) void askMika(t);
-  });
-  // ⛩ ronin — the mark is the way to the roster, and the way back. Not a new room, a
-  // shortcut to the one you return to most: it was reachable only through the Commons
-  // menu, three taps deep on a phone. Both surfaces, by request.
-  //
-  // IT TOGGLES. Tap to see the roster, tap again to drop back into the session you
-  // were reading — the same gesture out and back, so glancing at the roster costs you
-  // nothing and does not strand you on a panel hunting for the ✕.
-  //
-  // Only from the ROSTER, and only when there is a session to return to. Toggling out
-  // of any pane would make the mark mean "close whatever this is", which is the ✕'s
-  // job; and on an empty tile the panel IS the tile, so hiding it leaves a blank
-  // screen and no way back.
   // ＋ — a SECOND RONIN, in a new browser tab, and it opens BLANK: two empty tiles
   // (owner, 2026-08-20 — "i want 2 tiles empty"), not a copy of this tab. Without the
   // directive the new tab would inherit a copy of this tab's sessionStorage (the spec
@@ -233,44 +206,17 @@ export function build() {
     t.toggleHome('sessions');
   });
 
-  // ⛩ Commons — ONE PRESS, straight to ⌂ Roster. No menu.
-  //
-  // It dropped a popover of every room in the pane registry until 2026-08-17, and the
-  // owner ruled that out: the room you want is behind a list of nine you do not, every
-  // single time, and the Commons already carries the same registry as a tab strip you
-  // land on anyway. So the bar's job is the DESTINATION, and the strip is the choosing.
-  //
-  // Roster because it is "the main tab in the Commons and first port of call on hitting
-  // the Commons" (owner, 2026-08-17) — the same pane メ and ⌃⇧C open.
-  //
-  // THE KNOWN COST, taken with eyes open: the bar no longer reaches a SPECIFIC room in
-  // one press. That is the trade, not an oversight; do not reinstate the menu as a
-  // fallback. The glyph is ⛩ — the house mark for "open the Commons".
-  //
-  // THE HISTORY THAT IS STILL LOAD-BEARING, carried down from the menu's own comment:
-  // before the menu there were THREE separate top-bar buttons for three rooms, which
-  // said the Commons was three destinations, and two of the rooms had no way in from
-  // the bar at all. The lesson survives the menu — ONE bar control for ONE destination —
-  // and it is why New and Mika Assist are still out here beside it: starting a session
-  // and asking for help are verbs, not rooms.
-  key('commonsbtn', () => {
-    const t = S.active || tiles.find((x) => x.el.style.display !== 'none') || tiles[0];
-    // TOGGLE, not a one-way door — pressed again it puts the Commons away and gives the
-    // pane back. It called showHome() for a day and pressing ⛩ twice did nothing, which
-    // left the ✕ on the tab strip as the only way out (owner, 2026-08-17). The rule lives
-    // on the tile (`toggleHome`) so this button, the brand and the tile head's ⛩ cannot
-    // drift into three answers.
-    if (t) t.toggleHome('sessions');
-  });
-
-  // Work Louder pad (▦ in the top bar) — both surfaces (owner override). The
+  // ⛩ Commons, ミ Mika Assist and く Keypad LEFT THE BAR on 2026-08-27 (owner). The
+  // Commons is still the tile head's ⛩, the brand mark and ⌃⇧C; Mika is the `mika` tool
+  // and the desk's own asks; the pad panel opens from a row on the ⚙ Admin Desk
+  // (js/desk.js) and its physical keys never needed the button.
+  // Work Louder pad — both surfaces (owner override). The
   // physical pad fires bound macros whether or not the panel is open.
   // Session switcher — the pad key's list (also usable with plain ↑↓/↵ once open).
   guard('session picker', buildSessionPicker);
 
   guard('pad panel', buildPadPanel);
   guard('pad ask', buildPadAsk);
-  key('padbtn', () => S.padPanel && S.padPanel.open());
   // The takeover listener: capture-phase so pad keycodes never reach xterm/tmux.
   // It only ever touches F13–F24, chords Glen explicitly bound, or (while the
   // panel's ⊕ Capture is armed) the one key being captured — every other key on
@@ -420,9 +366,6 @@ export function buildDrawers() {
   // a different action. Two dead round arrows, both gone.
   const APP = [
     ['newbtn', t('bar.new', 'New')],
-    ['mikabtn', t('bar.mika', 'Mika Assist')],
-    ['commonsbtn', t('bar.commons', 'Commons')],
-    ['padbtn', t('bar.keypad', 'Keypad')],
     // Account, not System — the bar's word and this row's word are the same control
     // wearing one name. See the sysbtn wiring above for why only the LABEL moved.
     ['sysbtn', t('bar.desk', 'Admin Desk')],

@@ -251,7 +251,7 @@ async function checkJourneys(page, label, jsErrors) {
   // 1 — ⛩ Commons is a DESTINATION, not a menu (owner's ruling 2026-08-17): one press
   // lands on ⌂ Roster, and nothing drops. This probe asserted the popover's open/close
   // truth until then; the popover went with the menu it existed for.
-  await page.locator('#commonsbtn').click();
+  await page.locator('#brandbtn').click();
   await page.waitForTimeout(300);
   const commons = await page.evaluate(() => ({
     pane: document.querySelector('.home.show')?.dataset.pane,
@@ -872,7 +872,7 @@ async function checkPhoneJourneys(page, label) {
   // A row is a door, and since 2026-08-17 Commons is a door to ONE place: ⌂ Roster.
   // It opened a second menu inside the sheet until then — a sheet dropping a menu over
   // itself was three taps deep on a 402px phone, which is most of why the menu went.
-  await page.tap('#commonsbtn');
+  await page.tap('#brandbtn');
   await page.waitForTimeout(300);
   const pane = await page.evaluate(() => document.querySelector('.home.show')?.dataset.pane);
   if (pane === 'sessions') ok(`${label}: ニ → Commons lands on ⌂ Roster in one tap`);
@@ -923,7 +923,7 @@ async function checkA11y(page, label, axeSrc) {
   await scan('at rest');
   // The Commons panel, not a menu: ⛩ drops nothing since 2026-08-17, so the second
   // state worth scanning is the room it lands in — a tab strip and a live roster.
-  await page.locator('#commonsbtn').click();
+  await page.locator('#brandbtn').click();
   await page.waitForTimeout(300);
   await scan('with the Commons open on ⌂ Roster');
   await page.evaluate(() => document.querySelector('.home.show .home-x')?.click());
