@@ -176,9 +176,17 @@ export function build() {
   // the tile you are in, and a fifth that picked its own would be the odd one out. And it
   // TOGGLES, because ⛩ already learned that lesson — a control that opens a thing and
   // then goes dead is a control you press twice and distrust.
+  // ⚙ — THE COWORK COMMONS, a workspace surface, never a tile overlay (owner, 2026-08-27).
+  // On the cowork_space the team page owns the gesture (`S.showCoworkCommons`: into the
+  // workspace you are in, and back). On the parked grid page there is no workspace to put
+  // it in, so ⚙ is the `cowork` destination — the surface at full width — and ⚙ again is
+  // the way back. Same element, same state, two doors.
   key('sysbtn', () => {
-    const t = S.active || tiles[0];
-    if (t) t.toggleDesk();
+    if (S.showCoworkCommons) return S.showCoworkCommons();
+    const ws = S.workspace;
+    if (!ws) return;
+    if (ws.active?.id === 'cowork') ws.back();
+    else ws.navigate('cowork');
   });
 
   // Session macros (⚡ on each tile head) are the tile's own — built in
@@ -209,7 +217,7 @@ export function build() {
   // ⛩ Commons, ミ Mika Assist and く Keypad LEFT THE BAR on 2026-08-27 (owner). The
   // Commons is still the tile head's ⛩, the brand mark and ⌃⇧C; Mika is the `mika` tool
   // and the desk's own asks; the pad panel opens from a row on the ⚙ Admin Desk
-  // (js/desk.js) and its physical keys never needed the button.
+  // (js/cowork-commons.js) and its physical keys never needed the button.
   // Work Louder pad — both surfaces (owner override). The
   // physical pad fires bound macros whether or not the panel is open.
   // Session switcher — the pad key's list (also usable with plain ↑↓/↵ once open).

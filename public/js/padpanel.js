@@ -123,6 +123,7 @@ export function buildPadPanel() {
   const capBtn = document.createElement('button');
   capBtn.textContent = t('pad.capture', '⊕ Capture');
   const closeBtn = document.createElement('button');
+  closeBtn.className = 'pad-close'; // hidden when the card sits inline in the cowork commons
   closeBtn.textContent = t('pad.close', 'Close');
   bar.append(title, last, capBtn, closeBtn);
   const board = document.createElement('div');
@@ -530,5 +531,7 @@ export function buildPadPanel() {
   // stops it there, so it never reaches the sheet root — the same order that made the
   // old bubble-phase listener behave, kept by construction rather than by luck.
   closeBtn.addEventListener('click', close);
-  S.padPanel = { open, close, isOpen, hit, capturing, capture, stopCapture };
+  // `card` and `render` are for the cowork commons, which mounts the card INLINE on its
+  // Keypad tab (owner, 2026-08-27) and overrides open/isOpen to mean that tab.
+  S.padPanel = { open, close, isOpen, hit, capturing, capture, stopCapture, card: dlg.card, render: renderCaps };
 }

@@ -17,6 +17,9 @@
   .tw-flip-strip { min-width: var(--space-12); min-height: var(--space-11); }
   /* a seat with a card over it — the drop will land here */
   .tw-terminal[data-drop-ready='true'] { outline: var(--edge-2) solid var(--kaki); outline-offset: calc(-1 * var(--edge-2)); }
+  /* The selected workspace, when it holds a commons: the same inset ring `.tile.active` wears
+     on a terminal (style.css), so any surface reads as selectable (owner, 2026-08-27). */
+  .tw-selected { outline: var(--edge) solid var(--accent); outline-offset: calc(-1 * var(--edge)); }
 
   .tw-note { padding: var(--space-6) var(--space-7); color: var(--muted); font-size: var(--text-3); }
   /* -- Team Configuration: a reading of the team — its record, then its live roster -- */

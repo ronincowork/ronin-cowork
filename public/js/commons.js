@@ -11,7 +11,7 @@
  * IT SHRANK AGAIN ON 2026-08-18, and this time the rooms did not move into their own
  * files — they moved to their own SURFACE. Six of the ten were about the install rather
  * than about sessions, and the strip that held all ten measured 871px against a 609px
- * tile. They are the admin_desk's now (js/desk.js); the registry says which surface owns
+ * tile. They are the admin_desk's now (js/cowork-commons.js); the registry says which surface owns
  * a row (`surface`), and this file reads only its own. What is left is four tabs and the
  * frame around them.
  *
@@ -204,7 +204,7 @@ export function buildHome(tile) {
     showPane,
     openDoc: (p) => { showPane('docs'); docs.open(p); },
     /* THE GBRAIN HAND-OFF, which now arrives from another surface. gbrain moved to the
-     * admin_desk (js/desk.js) and its "ask this of a PersonalAssistant" button still has
+     * admin_desk (js/cowork-commons.js) and its "ask this of a PersonalAssistant" button still has
      * to land in ＋ New — which is the commons', and stays the commons'. So the desk asks
      * the tile, the tile asks here, and the launcher never learns it has two callers.
      *

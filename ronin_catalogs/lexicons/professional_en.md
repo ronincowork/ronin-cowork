@@ -928,6 +928,24 @@ The catalog entry goes. {dir} is not touched.
 
 ## desk — desk.js (the desk's rows and tooltips)
 - **desk.row_keypad:** Keypad
+- **cowork.commons:** Cowork commons
+- **cowork.tab_health:** Machine health
+- **cowork.tab_account:** Account
+- **cowork.tab_profile:** Desk profile
+- **cowork.tab_roots:** Project roots
+- **cowork.tab_help:** Help desk
+- **cowork.tab_keypad:** Keypad
+- **cowork.h_configuration:** Configuration
+- **cowork.h_appearance:** Appearance
+- **cowork.h_release:** Release & update
+- **cowork.h_hotwords:** Hotwords
+- **cowork.h_koshi:** Koshi
+- **cowork.h_gbrain:** gbrain
+- **cowork.h_log_out:** Log out
+- **cowork.h_mika:** Mika Assist
+- **cowork.mika_button:** ミ Ask Mika
+- **cowork.mika_text:** Ask about Ronin itself — how it works, project roots, starting a session, changing a setting. She starts if she is not up.
+- **cowork.keypad_missing:** The keypad did not build on this page.
 - **desk.row_appearance:** Appearance
 - **desk.row_release:** Release & update
 - **desk.close_title:** Back to what this tile was showing

@@ -6,9 +6,9 @@
  *
  *   `commons`  the tab strip inside a tile's session_commons — about SESSIONS, and drawn
  *              in every sessionless tile whether or not anyone asked for it. Five rows.
- *   `desk`     the admin_desk (js/desk.js) — about THE MACHINE, drawn in the one tile you
+ *   `desk`     the admin_desk (js/cowork-commons.js) — about THE MACHINE, drawn in the one tile you
  *              press ⚙ in. Six rows, plus the app's own three, which are not rows here
- *              because they are not rooms: see js/desk.js.
+ *              because they are not rooms: see js/cowork-commons.js.
  *
  * THE SIX MOVED because they were on the wrong side of a line the house had already drawn
  * once, for the gear: *release, update, appearance and log out are the install's, not a

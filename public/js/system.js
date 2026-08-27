@@ -17,7 +17,7 @@ import { S } from './state.js';
  * page-level `ui.sheet` off the bar's ⚙. That fixed the copies and cost it the room: a
  * sheet is a small box, and this content wants a pane.
  *
- * Since 2026-08-18 it is neither. These three groups hang in the **admin_desk** (js/desk.js)
+ * Since 2026-08-18 it is neither. These three groups hang in the **admin_desk** (js/cowork-commons.js)
  * under "This app", below the six rooms about the install — one tile, opened where you ask
  * for it, with a full pane to draw in. The line the 2026-08-16 ruling drew was right; what
  * was missing was a surface on the correct side of it. `buildSystemPanel` returns elements

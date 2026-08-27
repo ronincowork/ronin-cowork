@@ -108,7 +108,15 @@ function createReservedSurface(label = 'Reserved') {
 
 const CHANNEL_SERVICES = ['chat', 'wipeboard', 'docs', 'team-configuration'];
 
-/** Geometry and replacement-tab behavior only. Chat intentionally starts as empty space. */
+/**
+ * Geometry and replacement-tab behavior only. Chat intentionally starts as empty space.
+ *
+ * THE SERVICE LIST IS THE CALLER'S since 2026-08-27: `options.channels` is an ordered
+ * `[{ id, label }]`, and absent it is the team commons' four (CHANNEL_SERVICES, labels
+ * below). The cowork_commons is a second surface on this same primitive with six tabs of
+ * its own (js/cowork-commons.js, docs/cowork-space.md) — one strip, one look, one set of
+ * rules, and no second frame. The default tab is the first in the list.
+ */
 function createChannelSurface(options = {}) {
   const surface = createSurface({ label: options.label || t('workspace.channels', 'Team channels') });
   surface.el.classList.add('wk-channel-surface');
@@ -116,14 +124,19 @@ function createChannelSurface(options = {}) {
   tabs.setAttribute('role', 'tablist');
   const services = new Map();
   const buttons = new Map();
-  for (const id of CHANNEL_SERVICES) {
-    // One literal key per service, so the gate can see each of them.
-    const tabLabel = {
-      chat: t('workspace.channel_chat', 'Chat'),
-      wipeboard: t('workspace.channel_wipeboard', 'Wipeboard'),
-      docs: t('workspace.channel_docs', 'Docs'),
-      'team-configuration': t('workspace.channel_team_configuration', 'Team Configuration'),
-    }[id] ?? id[0].toUpperCase() + id.slice(1);
+  // One literal key per team service, so the gate can see each of them.
+  const TEAM_LABELS = () => ({
+    chat: t('workspace.channel_chat', 'Chat'),
+    wipeboard: t('workspace.channel_wipeboard', 'Wipeboard'),
+    docs: t('workspace.channel_docs', 'Docs'),
+    'team-configuration': t('workspace.channel_team_configuration', 'Team Configuration'),
+  });
+  const channels = Array.isArray(options.channels) && options.channels.length
+    ? options.channels.map((c) => ({ id: String(c.id), label: c.label || c.id }))
+    : CHANNEL_SERVICES.map((id) => ({ id, label: TEAM_LABELS()[id] ?? id[0].toUpperCase() + id.slice(1) }));
+  const ids = channels.map((c) => c.id);
+  const first = ids[0];
+  for (const { id, label: tabLabel } of channels) {
     const button = node('button', 'wk-channel-service-tab', tabLabel);
     button.type = 'button';
     button.setAttribute('role', 'tab');
@@ -147,9 +160,9 @@ function createChannelSurface(options = {}) {
     for (const action of options.actions) if (action instanceof Node) tabs.append(action);
   }
   surface.el.prepend(tabs);
-  let current = 'chat';
+  let current = first;
   const select = (requested) => {
-    const id = CHANNEL_SERVICES.includes(requested) ? requested : 'chat';
+    const id = ids.includes(requested) ? requested : first;
     current = id;
     for (const [name, button] of buttons) {
       const on = name === id;
@@ -161,7 +174,7 @@ function createChannelSurface(options = {}) {
   };
   select(options.selected);
   const invoke = (hook, context) => {
-    for (const id of CHANNEL_SERVICES) {
+    for (const id of ids) {
       const mounted = options.services?.[id];
       if (mounted && !(mounted instanceof Node)) mounted[hook]?.(services.get(id), context);
     }

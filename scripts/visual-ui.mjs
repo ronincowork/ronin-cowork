@@ -69,12 +69,12 @@ async function fingerprint(page, entries) {
 }
 
 const DESKTOP = [
-  '#bar', '#brandbtn', '#newbtn', '#layoutcycle',
+  '#bar', '#brandbtn', '#newbtn', '#sysbtn',
   '.tile .tile-head', '.home-tabs', '.home-tabs button[data-pane="sessions"]', '.home-maxrow',
 ];
 // NOT the session picker: its flex width follows the live session names — content,
 // not chrome, and a baseline on content is a baseline that cries wolf.
-const PHONE = ['#bar', '#bar .tdrop-btn.me', '#bar .tdrop-btn.ni', '#bar .layout-cycle'];
+const PHONE = ['#bar', '#bar .tdrop-btn.me', '#bar .tdrop-btn.ni'];
 const LOGIN = ['form', '#pw', '#go', 'h1'];
 
 const browser = await pw.chromium.launch().catch((e) => {
