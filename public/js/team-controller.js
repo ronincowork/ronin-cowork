@@ -51,11 +51,7 @@ export function teamByName(name) {
   return roster ? { ...roster, durable: true } : { name, team_role: '', objective: '', durable: false };
 }
 export function teamsFromState() {
-  const tagged = new Set(sessions().flatMap((s) => s.tags || []));
   const durable = rosters.filter((r) => r.state !== 'archived').map((r) => ({ ...r, durable: true }));
-  const known = new Set(durable.map((r) => r.name));
-  const compatible = [...tagged].filter((name) => !known.has(name))
-    .map((name) => ({ name, team_role: '', objective: '', durable: false }));
-  return [...durable.sort(blankLast('team_role')), ...compatible.sort((a, b) => a.name.localeCompare(b.name)),
+  return [...durable.sort(blankLast('team_role')),
     { name: UNASSIGNED, team_role: '', objective: '', durable: false, holding: true }];
 }

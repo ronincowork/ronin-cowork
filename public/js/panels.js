@@ -86,150 +86,56 @@ export function buildNotePanel() {
   S.notePanel = { open, close: dlg.close };
 }
 
-/* ---------- group tags (🏷) — the session's memberships ---------- */
-// Tags exist to be an ADDRESS, not decoration: "the kojinsa group" resolves to a set of
-// sessions, so an agent can be pointed at the set instead of members named one by one,
-// and picks up a member born after it was briefed. Stored on the tmux session itself
-// (@ronin-tags), like the note and the dial — no registry, dies with the session.
-// Agents read the same truth with `ronin_bin/tejun-team`; this panel is how the OWNER
-// maintains it. Tagging stays the owner's job — agents address groups, they don't edit them.
+/* ---------- the Agent's Team memberships ---------- */
 export function buildTagPanel() {
   let current = null;
-  let list = [];
-  const dlg = sheet({ id: 'tagsheet', cls: 'tg-card', label: t('panels.teams_sheet', 'Session teams'), onClose: () => (current = null) });
+  let selected = [], teams = [];
+  const dlg = sheet({ id: 'tagsheet', cls: 'tg-card', label: t('panels.teams_sheet', 'Agent Teams'), onClose: () => (current = null) });
   dlg.card.innerHTML = `<div class="tg-bar"><span class="tg-title"></span>
         <button class="tg-save"></button><button class="tg-close"></button></div>
-      <div class="tg-chips"></div>
-      <input class="tg-input" type="text" autocapitalize="off" autocorrect="off" spellcheck="false">
-      <div class="tg-known"></div>
-      <div class="tg-hint"></div>`;
-  // The words go in through t(), never through the template: a lexicon's word is text,
-  // and the one sentence with markup in it keeps its <code> by splitting on the placeholder.
+      <div class="tg-known"></div><div class="tg-hint"></div>`;
   dlg.card.querySelector('.tg-save').textContent = t('panels.save', 'Save');
   dlg.card.querySelector('.tg-close').textContent = t('panels.close', 'Close');
-  dlg.card.querySelector('.tg-input').placeholder = t('panels.team_placeholder', 'add a team (letters, digits, - _)');
-  {
-    const hint = dlg.card.querySelector('.tg-hint');
-    const [before, after = ''] = t('panels.team_hint', 'Agents resolve these with {cmd}.').split('{cmd}');
-    hint.append(before, Object.assign(document.createElement('code'), { textContent: 'tejun-team <name>' }), after);
-  }
   const title = dlg.card.querySelector('.tg-title');
   const msg = status('tg-msg');
   title.after(msg.el);
-  const chips = dlg.card.querySelector('.tg-chips');
   const known = dlg.card.querySelector('.tg-known');
-  const inp = dlg.card.querySelector('.tg-input');
-  const inpField = field(inp, { label: t('panels.add_team', 'add a team') });
-  // field() wraps in place: put the wrapper where the input was.
-  dlg.card.insertBefore(inpField.el, known);
-
   const say = (text, bad) => msg.say(text, bad ? 'bad' : '');
-  const clean = (tag) =>
-    String(tag || '')
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9_-]/g, '')
-      .slice(0, 32);
-
-  const renderChips = () => {
-    chips.innerHTML = '';
-    if (!list.length) {
-      const em = document.createElement('span');
-      em.className = 'tg-empty';
-      em.textContent = t('panels.no_team', 'on no team');
-      chips.appendChild(em);
-    }
-    list.forEach((tag, i) => {
-      const c = document.createElement('button');
-      c.className = 'tg-chip on';
-      c.append(document.createTextNode(tag), Object.assign(document.createElement('i'), { textContent: '✕' }));
-      c.title = t('panels.remove', 'remove');
-      c.addEventListener('click', () => {
-        list.splice(i, 1);
-        renderChips();
-        renderKnown();
-      });
-      chips.appendChild(c);
-    });
-  };
-  // Groups already in play elsewhere — one tap to join, so the vocabulary stays small
-  // instead of sprouting kojinsa / kojin-sa / Kojinsa.
   const renderKnown = () => {
-    const all = [...new Set(S.sessions.flatMap((s) => s.tags || []))].sort().filter((t) => !list.includes(t));
     known.innerHTML = '';
-    if (!all.length) return;
-    const lbl = document.createElement('span');
-    lbl.className = 'tg-known-lbl';
-    lbl.textContent = t('panels.join', 'join:');
-    known.appendChild(lbl);
-    all.forEach((t) => {
+    for (const team of teams) {
       const c = document.createElement('button');
-      c.className = 'tg-chip';
-      c.textContent = t;
+      c.type = 'button'; c.className = 'tg-chip' + (selected.includes(team.name) ? ' on' : '');
+      c.textContent = team.name; c.setAttribute('aria-pressed', String(selected.includes(team.name)));
       c.addEventListener('click', () => {
-        list.push(t);
-        list.sort();
-        renderChips();
+        selected = selected.includes(team.name) ? selected.filter((name) => name !== team.name) : [...selected, team.name].sort();
         renderKnown();
       });
       known.appendChild(c);
-    });
-  };
-  const add = () => {
-    const tag = clean(inp.value);
-    inp.value = '';
-    if (!tag || list.includes(tag)) return;
-    list.push(tag);
-    list.sort();
-    renderChips();
-    renderKnown();
+    }
+    dlg.card.querySelector('.tg-hint').textContent = teams.length ? '' : t('panels.no_teams_defined', 'No Teams are defined. Create a Team in League first.');
   };
 
-  const open = async (session) => {
-    if (!session) return;
-    current = session;
-    title.textContent = '🏷 ' + session;
-    list = [];
-    renderChips();
+  const open = async (agent) => {
+    if (!agent) return;
+    current = agent; title.textContent = 'Teams · ' + agent; selected = []; teams = []; say(''); renderKnown(); dlg.open();
+    const [membership, rosters] = await Promise.all([request(`/api/sessions/${encodeURIComponent(agent)}/teams`), request('/api/team-rosters', { cache: 'no-store' })]);
+    if (current !== agent) return;
+    if (!membership.ok || !rosters.ok) { say(t('panels.load_failed', 'could not load — {message}', { message: membership.message || rosters.message }), true); return; }
+    selected = Array.isArray(membership.data.teams) ? membership.data.teams : [];
+    teams = Array.isArray(rosters.data) ? rosters.data.filter((team) => team.state !== 'archived') : [];
     renderKnown();
-    say('');
-    dlg.open();
-    const r = await request('/api/sessions/' + encodeURIComponent(session) + '/tags');
-    if (current !== session) return;
-    if (!r.ok) {
-      say(t('panels.load_failed', 'could not load — {message}', { message: r.message }), true);
-      return;
-    }
-    list = Array.isArray(r.data.tags) ? r.data.tags : [];
-    renderChips();
-    renderKnown();
-    if (!IS_TOUCH) inp.focus(); // don't summon the iOS keyboard on open
   };
-
-  inp.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ',' || e.key === ' ') {
-      e.preventDefault();
-      add();
-    }
-  });
   dlg.card.querySelector('.tg-save').addEventListener('click', async () => {
     if (!current) return;
-    add(); // don't silently drop a tag left sitting in the box
-    const session = current;
+    const agent = current;
     say(t('panels.saving', 'saving…'));
-    const r = await request('/api/sessions/' + encodeURIComponent(session) + '/tags', {
-      method: 'POST',
-      json: { tags: list },
-    });
-    if (!r.ok) {
-      // The membership you assembled stays on screen; the failure says why.
-      say(t('panels.not_saved', 'not saved — {message}', { message: r.message }), true);
-      return;
-    }
-    const s = S.sessions.find((x) => x.name === session);
-    if (s) s.tags = Array.isArray(r.data.tags) ? r.data.tags : list;
+    const r = await request(`/api/sessions/${encodeURIComponent(agent)}/teams`, { method: 'PUT', json: { teams: selected } });
+    if (!r.ok) { say(t('panels.not_saved', 'not saved — {message}', { message: r.message }), true); return; }
+    const s = S.sessions.find((x) => x.name === agent);
+    if (s) s.tags = Array.isArray(r.data.teams) ? r.data.teams : selected;
     tiles.forEach((t) => t.syncHeader());
-    refreshHome(); // home rows + group headings reflect it immediately
+    refreshHome();
     dlg.close();
   });
   dlg.card.querySelector('.tg-close').addEventListener('click', dlg.close);

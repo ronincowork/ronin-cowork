@@ -30,5 +30,10 @@ group with live Agent rows showing role, SHINGO, status, selected agent, model a
 remaining. League-facing copy calls these workers Agents; internal API and persistence
 names remain `session` for compatibility.
 
+Team identity and membership are deliberately separate and singular: a durable roster
+defines a Team; each Agent owns its validated list of Team names. A roster never stores
+members, and there are no free-form Agent labels. Deleting a Team removes that name from
+every Agent after a consequence warning; it is not blocked by active membership.
+
 There is no `#/league` destination, League view module, League board module, League
 stylesheet, roster visibility state, or parallel workspace implementation.

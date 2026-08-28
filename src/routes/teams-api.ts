@@ -25,7 +25,7 @@ import {
 } from '../team-rosters.js';
 import { boardExists } from '../wipeboards.js';
 import { count } from '../counts.js';
-import { getTags, listSessions, setTags } from '../tmux.js';
+import { getLeads, getTags, listSessions, setLeads, setTags } from '../tmux.js';
 import { writeTeams } from '../tegami.js';
 import { announceTeamChanges } from './wipeboards-api.js';
 import { listTeamTemplates, removeTeamTemplate, saveTeamTemplate } from '../team-templates.js';
@@ -131,6 +131,14 @@ export function registerTeams(app: express.Express): void {
   app.delete('/api/team-rosters/:name', async (req, res) => {
     try {
       await deleteTeamRoster(req.params.name);
+      for (const session of await listSessions()) {
+        if (!session.tags.includes(req.params.name)) continue;
+        const teams = await setTags(session.name, session.tags.filter((team) => team !== req.params.name));
+        const leads = await getLeads(session.name);
+        if (leads.includes(req.params.name)) await setLeads(session.name, leads.filter((team) => team !== req.params.name));
+        await writeTeams(session.name, teams).catch(() => {});
+        await announceTeamChanges(session.name, session.tags, teams).catch(() => {});
+      }
       count('team.dissolve');
       res.json({ ok: true });
     } catch (e) {

@@ -47,6 +47,7 @@ import { observeRoleChange, roleDeliveryFault } from '../role-watch.js';
 import { listSessionRoles } from '../definitions.js';
 import { emitSessionEnd } from '../sockets.js';
 import { resumeAgentArgv } from '../agents.js';
+import { listTeamRosters } from '../team-rosters.js';
 import { sessionDir as sessionRecordDir } from '../session-dir.js';
 import {
   listArchives,
@@ -266,10 +267,31 @@ export function registerSessions(app: express.Express): void {
     }
   });
 
-  // Team tags (@ronin-tags): a session's teams, stored on the session itself.
-  // The point of these is ADDRESSING, not decoration — "the kojinsa team" resolves to a
-  // session list, so a coordinator can be pointed at a set instead of named members one
-  // by one. Agents get the same answer from `ronin_bin/tejun-team` without going through HTTP.
+  // Agent-owned Team membership. @ronin-tags remains the storage key for compatibility;
+  // its values are validated Team ids, never free-form labels.
+  const saveTeams = async (name: string, wanted: unknown) => {
+    const list = (Array.isArray(wanted) ? wanted.map(String) : String(wanted ?? '').split(',')).slice(0, 16);
+    const valid = new Set((await listTeamRosters()).filter((team) => team.state !== 'archived').map((team) => team.name));
+    const unknown = list.filter((team) => !valid.has(team));
+    if (unknown.length) throw new Error(`Unknown Team: ${unknown.join(', ')}.`);
+    const before = await getTags(name), teams = await setTags(name, list);
+    const leads = await getLeads(name), keptLeads = leads.filter((team) => teams.includes(team));
+    if (keptLeads.length !== leads.length) await setLeads(name, keptLeads);
+    await writeTeams(name, teams).catch(() => {});
+    return { teams, notices: await announceTeamChanges(name, before, teams) };
+  };
+  app.get('/api/sessions/:name/teams', async (req, res) => {
+    if (!isValidName(req.params.name)) return res.status(400).json({ error: 'Invalid name.' });
+    if (!(await sessionExists(req.params.name))) return res.status(404).json({ error: 'No such session.' });
+    res.json({ teams: await getTags(req.params.name) });
+  });
+  app.put('/api/sessions/:name/teams', async (req, res) => {
+    if (!isValidName(req.params.name)) return res.status(400).json({ error: 'Invalid name.' });
+    if (!(await sessionExists(req.params.name))) return res.status(404).json({ error: 'No such session.' });
+    try { count('team.membership.set'); res.json({ ok: true, ...(await saveTeams(req.params.name, req.body?.teams)) }); }
+    catch (e) { res.status(400).json({ error: String((e as Error)?.message ?? e) }); }
+  });
+  // Compatibility door for older clients; it obeys the same roster validation.
   app.get('/api/sessions/:name/tags', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
@@ -281,25 +303,11 @@ export function registerSessions(app: express.Express): void {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
     if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
-    const body = req.body?.tags;
-    const list = Array.isArray(body) ? body.map(String) : String(body ?? '').split(',');
     try {
-      count('tag.set');
-      // The tag write IS the membership event for a team wipeboard, so the join/leave
-      // notices fire here — for teams whose wipeboard file exists (docs/wipeboards.md).
-      const before = await getTags(name);
-      const tags = await setTags(name, list.slice(0, 16));
-      // Leadership implies membership, so a team this session no longer belongs to is a
-      // team it no longer leads — the designation follows the tag out.
-      const leads = await getLeads(name);
-      const keptLeads = leads.filter((t) => tags.includes(t));
-      if (keptLeads.length !== leads.length) await setLeads(name, keptLeads);
-      // The letter's derived teams block follows membership, at the moment it changes.
-      await writeTeams(name, tags).catch(() => {});
-      const notices = await announceTeamChanges(name, before, tags);
-      res.json({ ok: true, tags, notices });
+      const saved = await saveTeams(name, req.body?.tags);
+      res.json({ ok: true, tags: saved.teams, notices: saved.notices });
     } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
+      res.status(400).json({ error: String((e as Error)?.message ?? e) });
     }
   });
 

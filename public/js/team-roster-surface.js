@@ -16,13 +16,19 @@ export function createTeamRosterSurface() {
 
   const addMembership = async (session, team) => {
     message = t('league.team_roster_saving', 'Adding {session} to {team}…', { session, team }); render();
-    const current = await request(`/api/sessions/${encodeURIComponent(session)}/tags`);
+    const current = await request(`/api/sessions/${encodeURIComponent(session)}/teams`);
     if (!current.ok) { message = current.message; render(); return; }
-    const tags = [...new Set([...(current.data.tags || []), team])].sort();
-    const saved = await request(`/api/sessions/${encodeURIComponent(session)}/tags`, { method: 'POST', json: { tags } });
+    const tags = [...new Set([...(current.data.teams || []), team])].sort();
+    const saved = await request(`/api/sessions/${encodeURIComponent(session)}/teams`, { method: 'PUT', json: { teams: tags } });
     if (!saved.ok) { message = saved.message; render(); return; }
     const live = (S.sessions || []).find((item) => item.name === session);
-    if (live) live.tags = saved.data.tags || tags;
+    if (live) live.tags = saved.data.teams || tags;
+    await refreshTeams(); message = ''; render();
+  };
+  const deleteTeam = async (team, count) => {
+    if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team, count }))) return;
+    const result = await request(`/api/team-rosters/${encodeURIComponent(team)}`, { method: 'DELETE' });
+    if (!result.ok) { message = result.message; render(); return; }
     await refreshTeams(); message = ''; render();
   };
   const render = () => {
@@ -31,7 +37,9 @@ export function createTeamRosterSurface() {
       const members = membersOfTeam(team.name);
       const target = node('section', 'team-roster-team');
       const heading = node('header', 'team-roster-heading');
-      heading.append(node('b', null, team.name), node('span', null, members.length));
+      const remove = node('button', 'team-roster-delete', t('league.delete_team', 'Delete'));
+      remove.type = 'button'; remove.addEventListener('click', () => void deleteTeam(team.name, members.length));
+      heading.append(node('b', null, team.name), node('span', null, members.length), remove);
       target.append(heading);
       for (const session of members) {
         const row = node('div', 'team-roster-session', session.name); row.draggable = true;

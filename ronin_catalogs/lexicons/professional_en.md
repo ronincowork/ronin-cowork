@@ -171,13 +171,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **panels.load_failed:** could not load — {message}
 - **panels.saving:** saving…
 - **panels.not_saved:** not saved — {message}
-- **panels.teams_sheet:** Session teams
-- **panels.team_placeholder:** add a team (letters, digits, - _)
-- **panels.team_hint:** Agents resolve these with {cmd}.
-- **panels.add_team:** add a team
-- **panels.no_team:** on no team
-- **panels.remove:** remove
-- **panels.join:** join:
+- **panels.teams_sheet:** Agent Teams
+- **panels.no_teams_defined:** No Teams are defined. Create a Team in League first.
 
 ## commons — commons.js (the commons shell: tab strip and frame)
 - **commons.tab_off:** {tab} — off, this service is not installed.
@@ -350,8 +345,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **seat.cmd:** Launch command
 - **seat.cmd_desc:** Unset falls to the role’s model bias, then the install default.
 - **seat.mcp_desc:** Unset means whatever the resolved profile says.
-- **seat.tags:** Further teams
-- **seat.tags_desc:** Memberships beyond the birth team.
 - **seat.seed:** Read first
 - **seat.seed_desc:** Paths read before anything else. Assisted mode only.
 - **seat.inject:** Extra instruction
@@ -1444,6 +1437,8 @@ The catalog entry goes. {dir} is not touched.
 - **league.no_agents:** No live Agents
 - **league.new_agent:** New Agent
 - **league.new_agent_summary:** A new Agent, born into the workspace you are in.
+- **league.delete_team:** Delete
+- **league.delete_team_confirm:** Delete {team}? {count} Agents will lose this Team membership.
 - **league.open_workspace:** League workspace
 - **customize.desk_profiles:** Desk profiles
 - **customize.desk_profiles_blurb:** Your standing defaults for the surfaces you work at — a skin, a lexicon, a campaign kind, a Team page arrangement. Choosing one is a setting, on the gear.
