@@ -33,6 +33,8 @@ library|user|library
 session_boot|user|session_boot
 wipeboards|user|wipeboards
 team_rosters|user|team_rosters
+desks|user|desks
+worktrees|user|worktrees
 catalogs|user|catalogs
 memory|user|memory
 config|user|config
