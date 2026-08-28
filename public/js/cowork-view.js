@@ -208,7 +208,7 @@ export function createCoworkView(options = {}) {
   };
   const leagueView = createSurface({ label: t('league.view', 'League view') });
   leagueView.el.prepend(createSurfaceHeader({ label: t('league.view', 'League view') }).el);
-  const leagueBoard = WorkspaceKit.layouts.createLeagueBoard();
+  const leagueBoard = WorkspaceKit.layouts.createLeagueBoard(); leagueBoard.classList.add('league-view-scroll');
   const leagueCards = leagueBoard.querySelector('[data-surface="cards"]');
   leagueView.content.append(leagueBoard);
   const newTeamView = league ? createNewTeamView(WorkspaceKit) : null;
