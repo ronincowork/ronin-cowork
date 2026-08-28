@@ -227,6 +227,14 @@ export const STORES: readonly Store[] = [
     when: 'the gbrain service installed',
   },
   {
+    id: 'promotion_ledger',
+    root: 'data',
+    rel: 'promotion-ledger',
+    what: 'team promotion receipts — one JSON per attempt to move a repository dev ref: exact SHAs, BYOIN proof, which refs advanced; recovery state and failure attribution',
+    createdBy: "cowork's `src/promotion/receipts.ts`",
+    when: 'first team promotion attempted',
+  },
+  {
     id: 'services_secrets',
     root: 'user',
     rel: 'services_secrets',

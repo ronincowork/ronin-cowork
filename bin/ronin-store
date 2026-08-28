@@ -40,6 +40,7 @@ koshi_weights|user|koshi_weights
 koshi_weights_service|user|koshi_weights_service
 gbrain_brain|user|gbrain_brain
 gbrain_service|user|gbrain_service
+promotion_ledger|data|promotion-ledger
 services_secrets|user|services_secrets"
 
 root_dir() {
