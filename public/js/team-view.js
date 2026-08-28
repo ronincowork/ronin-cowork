@@ -86,8 +86,7 @@ export function createTeamView() {
     return { id, surface, pool, empty: null };
   };
   /** The empty surface is built only when no member is shown there. */
-  // AN EMPTY WORKSPACE IS BLANK AND SAYS SO (owner, 2026-08-27) — the tile-level commons
-  // is off this page; its rooms moved (docs/cowork-space.md).
+  // AN EMPTY WORKSPACE IS BLANK AND SAYS SO (owner, 2026-08-27; docs/cowork-space.md).
   const paintSeats = () => {
     for (const seat of Object.values(seats)) {
       if (seat.pool.active) seat.empty?.el.remove();
@@ -221,8 +220,7 @@ export function createTeamView() {
   newSurface.content.append(newBody);
   const extras = new Set(); // sessions shown here that are not (yet) members — a newborn, a picked one
   const launcher = buildLauncher({ index: 'ws', connect: (name) => connectSession(name) }, launcherHost);
-  // Selecting and dropping work on this surface as on any other (owner, 2026-08-28: "stuck
-  // at new session"): capture-phase, because the launcher's own controls stop propagation.
+  // Selects and takes drops like any surface — capture-phase, its controls stop propagation.
   newSurface.el.addEventListener('pointerdown', () => { const id = newIn(); if (id) touch(id); }, true);
   acceptSessionDrops(newSurface.el, () => newIn(), (name, id) => arrange({ [id]: name === COMMONS ? { commons: true } : { session: name } }));
   // Chat is reserved by the Kit and this file adds NOTHING to it — no composer, no fetch,
@@ -283,9 +281,7 @@ export function createTeamView() {
     const from = newIn();
     if (from && from !== id) cellPlace(from, seats[from].surface.el);
     cellPlace(id, newSurface.el);
-    // The board is the roles catalog — ~0.1s — so it is asked for and drawn on its own;
-    // the home read (~1.3s, every session's status) only feeds the saved-launch row and
-    // must never hold the board back (owner: "why is new session so slow to load?").
+    // Drawn off the two fast reads (roles, saved launches) — never the 1.3s home read.
     launcher.render();
     if (!roleData) void loadPresets().then(() => launcher.render());
     void loadSavedLaunches().then(() => launcher.render());
