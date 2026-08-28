@@ -16,27 +16,26 @@ export function createTeamRosterSurface() {
   surface.content.append(layout);
   let message = '';
 
+  const saveMembership = async (session, change) => {
+    const current = await request(`/api/sessions/${encodeURIComponent(session)}/tags`);
+    if (!current.ok) return current;
+    return request(`/api/sessions/${encodeURIComponent(session)}/tags`, { method: 'POST', json: { tags: change(current.data.tags || []) } });
+  };
   const addMembership = async (session, team) => {
     message = t('league.team_roster_saving', 'Adding {session} to {team}…', { session, team }); render();
-    const current = await request(`/api/sessions/${encodeURIComponent(session)}/teams`);
-    if (!current.ok) { message = current.message; render(); return; }
-    const tags = [...new Set([...(current.data.teams || []), team])].sort();
-    const saved = await request(`/api/sessions/${encodeURIComponent(session)}/teams`, { method: 'PUT', json: { teams: tags } });
+    const saved = await saveMembership(session, (teams) => [...new Set([...teams, team])].sort());
     if (!saved.ok) { message = saved.message; render(); return; }
     const live = (S.sessions || []).find((item) => item.name === session);
-    if (live) live.tags = saved.data.teams || tags;
+    if (live) live.tags = saved.data.tags || [];
     await refreshTeams(); message = ''; render();
   };
   const removeMembership = async (session, team) => {
     if (!team) return;
     message = t('league.team_roster_removing', 'Removing {session} from {team}…', { session, team }); render();
-    const current = await request(`/api/sessions/${encodeURIComponent(session)}/teams`);
-    if (!current.ok) { message = current.message; render(); return; }
-    const teams = (current.data.teams || []).filter((name) => name !== team);
-    const saved = await request(`/api/sessions/${encodeURIComponent(session)}/teams`, { method: 'PUT', json: { teams } });
+    const saved = await saveMembership(session, (teams) => teams.filter((name) => name !== team));
     if (!saved.ok) { message = saved.message; render(); return; }
     const live = (S.sessions || []).find((item) => item.name === session);
-    if (live) live.tags = saved.data.teams || teams;
+    if (live) live.tags = saved.data.tags || [];
     await refreshTeams(); message = ''; render();
   };
   const deleteTeam = async (team, count) => {
