@@ -216,8 +216,8 @@ exact `dev → master` candidate. `docs/test-protocols.md` is the current contra
 
 ## Exact resume and dogfood checklist
 
-1. Confirm the branch is `dev`; never touch or merge to `master` without a fresh explicit
-   owner instruction naming that release action.
+1. Work at your repo desk (`ronin_session_boot/assignment/DESK_CONTRACT.md`); never touch
+   or merge to `master` without a fresh explicit owner instruction naming that release action.
 2. Read this file, `docs/workspace-kit.md`'s consumer rules, and
    `docs/test-protocols.md` from the current tree.
 3. Inspect `git status`; preserve every unrelated dirty path. League's core is the three
@@ -241,4 +241,4 @@ exact `dev → master` candidate. `docs/test-protocols.md` is the current contra
 9. Record scoped evidence for the leg. Leave BYOIN to the designated release-candidate
    integrator; report any diagnostic gap honestly.
 10. If a later assignment authorizes landing, stage only named League paths or exact shared
-    hunks, verify the cached list and patch, and commit/push only `dev`.
+    hunks, verify the cached list and patch, commit at your desk and hand in to your team line.

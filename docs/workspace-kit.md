@@ -191,7 +191,8 @@ registry-derived five-room Commons.
 
 ## Exact resume checklist
 
-1. Confirm branch `dev`; never touch or merge `master` without explicit authority.
+1. Work at your repo desk, cut from your team line (`ronin_session_boot/assignment/DESK_CONTRACT.md`);
+   never touch or merge `master` without explicit authority.
 2. Read this file, `docs/test-protocols.md`, and the target consumer document completely.
 3. Inspect `git status`, current diff, recent history, and the canonical files above.
 4. Record unrelated dirty baseline. If exact hunk isolation is unsafe, stop.
@@ -206,6 +207,6 @@ registry-derived five-room Commons.
    target without turning that evidence into a per-leg BYOIN run.
 10. Leave candidate-wide BYOIN to the designated integrator; never report a SKIP as proof.
 11. Stage exact owned paths/hunks, inspect `git diff --cached --check` and the whole cached
-    patch, then commit/push only when authorized.
+    patch, then commit at your desk; hand in only when the work is coherent for the team.
 12. Handoff hash or uncommitted state, verification verdict, exact paths, migration steps,
     unrelated failures, and anything not tested or done.

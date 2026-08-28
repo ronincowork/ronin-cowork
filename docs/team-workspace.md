@@ -227,15 +227,17 @@ The designated integrator runs one BYOIN mode on the release candidate; a SKIP i
 
 ## Exact resume checklist
 
-1. Confirm the branch is `dev`; never act on `master` without a fresh owner instruction.
+1. Work at your repo desk (`ronin_session_boot/assignment/DESK_CONTRACT.md`); never act on
+   `master` without a fresh owner instruction.
 2. Read `wip/buildouts/TEAM_WORKBENCH.md` (HANDOFF first), this file, and `docs/workspace-kit.md`.
-3. Inspect `git status`; preserve unrelated shared-worktree changes.
+3. Inspect `git status`; in a shared checkout, preserve unrelated changes.
 4. Name one bounded behavior; if it needs a new Kit primitive, Tile change, or backend
    contract, stop for the owner.
 5. Route every change to the page through `arrange()`; never a second path.
 6. Keep Tiles lazy and destroyed on `leave()`; keep membership derived from tags; keep the
    Sessions 1/2/4 grid untouched.
-7. Verify by probe, then gates; stage only owned paths; commit as you go on `dev`.
+7. Verify by probe, then scoped diagnostics; stage only owned paths; commit as you go at
+   your desk and hand in when the work is coherent for the team.
 
 ## Exact dogfood checklist
 

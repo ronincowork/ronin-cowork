@@ -245,8 +245,9 @@ Do these in order; stop rather than guessing when a required ruling is missing.
    latest `five-eyes` wipeboard Brief/posts. Persistent docs win over `wip/buildouts`.
 2. Confirm the owner has assigned a bounded Agent Configuration leg; do not infer release,
    master, service or PR authority from the assignment.
-3. Confirm branch `dev`; inspect `git status`, `origin/dev..HEAD`, and history from
-   `9294446..HEAD`. Preserve every unrelated worktree change.
+3. Work at your repo desk (`ronin_session_boot/assignment/DESK_CONTRACT.md`); inspect
+   `git status`, `git branch -vv` (ahead of your team line), and history from
+   `9294446..HEAD`. In a shared checkout, preserve every unrelated change.
 4. Re-read the live versions of all four owned files and the consumed Kit/draft/controller
    seams listed above. Treat this README as a map, not evidence that the tree is unchanged.
 5. State to `@view_mgr` the single bounded leg, touched paths and explicit exclusions before
@@ -261,8 +262,9 @@ Do these in order; stop rather than guessing when a required ruling is missing.
    checklist item and stale limitation. Do not accumulate another historical diary.
 10. Record scoped rendered evidence for the leg; the designated integrator owns the single
     release-candidate BYOIN verdict and reports every SKIP as unverified.
-11. Stage only owned/explicitly authorized paths. Commit and push verified work to `dev`
-    only. Never merge or push `master`; a PR is not authorization to merge.
+11. Stage only owned/explicitly authorized paths. Commit at your desk; hand in coherent
+    work to your team line. Team promotion to `dev` is the lead's. Never merge or push
+    `master`; a PR is not authorization to merge.
 12. Keep this persistent README current. Transient buildouts are not the handoff and must not
     become the only place a decision survives.
 

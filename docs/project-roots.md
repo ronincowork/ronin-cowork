@@ -189,15 +189,25 @@ dev       current integrated development work
 master    released/reviewed line
 ```
 
-Work is committed and pushed to `dev`. The normal review PR is **`dev → master`**. Do not push
-per-feature, per-agent, phase, remediation, or topic branches to the remote; merged PR head
-branches accumulating beside `dev` and `master` are repository clutter and make Admin Desk look
-as though unfinished work remains.
+The repository says which arrangement it uses in `RONIN_REPO` at its root (`mode`, `working`,
+`stable`, `desks`); tools read that file and never infer the arrangement from the branch that
+happens to be checked out (`libexec/ronin-repo-mode`). `dev` and `master` are **funnel
+points**: merged into, never edited in place, and the only two lines that reach the remote.
+The normal review PR is **`dev → master`**, and it carries the team-promotion receipt that
+proved the PR's head commit (`docs/release.md`). Do not push per-feature, per-agent, phase,
+remediation, or topic branches to the remote; merged PR head branches accumulating beside
+`dev` and `master` are repository clutter and make Admin Desk look as though unfinished work
+remains.
 
-An agent may use a temporary local branch or worktree to isolate itself from another dirty
-worktree, but it must integrate that work into `dev` and delete the temporary local branch. It
-must not publish the temporary branch merely to obtain a PR. Coordinate before updating `dev` so
-two active writers do not overwrite one another.
+A session that changes code works at a **repo desk** — its own branch and worktree, cut from
+its team's line (`ronin_session_boot/assignment/DESK_CONTRACT.md`; the model is the lab's
+WORKTREES buildout). Commit preserves work privately at the desk;
+**hand-in** publishes committed work to the team line; the lead's **team promotion** runs the
+one full repository BYOIN and admits the team's state to `dev`. A desk branch is never
+published to the remote and never opened as a PR. Until a repository's desks are enabled, its
+home checkout is shared: stage only your own paths and preserve every unrelated change there
+(the claim guard, `libexec/ronin-claim`, refuses a commit carrying files your session never
+staged).
 
 For a new reviewed repository, agree whether the stable branch is `main` or `master`, create
 `dev` from it, make the stable branch the GitHub default, and enable automatic deletion of

@@ -212,7 +212,7 @@ verdict. The narrow checks and their results are recorded in the final five-eyes
 
 ## Exact resume checklist
 
-1. Work on `dev`, never `master`.
+1. Work at your repo desk (`ronin_session_boot/assignment/DESK_CONTRACT.md`), never on `master`.
 2. Read this file and `docs/workspace-kit.md` completely.
 3. Inspect status, current history, and every owned file; trust the tree over handoffs.
 4. Preserve unrelated dirty work.

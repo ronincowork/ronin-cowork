@@ -206,7 +206,7 @@ Ronin against the live tmux server for UI evidence.
 
 1. Obtain an explicit owner or `view_mgr` assignment for a fresh Customize successor.
 2. Re-read this file, the latest `five-eyes` wipeboard Brief/posts, Workspace Kit ruling, `docs/test-protocols.md`, and current KOTOBA/session-boot contracts.
-3. Confirm `dev`; inspect status, `origin/dev..HEAD`, and changes since `18d9b35`. Identify unrelated worktree edits.
+3. Work at your repo desk (`ronin_session_boot/assignment/DESK_CONTRACT.md`); inspect status, `git branch -vv`, and changes since `18d9b35`. In a shared checkout, identify unrelated edits.
 4. Inspect the four owned modules and current Kit. Verify every claim here against the tree and update stale facts first.
 5. Report committed state, remaining work, current visual verdict, one bounded next leg, requested shared seams, and non-touch scope to `view_mgr`; wait for acknowledgement.
 6. Classify Surface spacing, control styling, and cross-surface layout changes as Kit or
@@ -217,7 +217,7 @@ Ronin against the live tmux server for UI evidence.
 8. Obtain a named seam assignment before editing shared server or shell paths. Never bundle parser, route, malformed-data, or saved-launch policy work by assumption.
 9. Edit only approved paths. Preserve the Sessions 1/2/4 raw Tile grid and every other destination.
 10. Record direct dogfood and scoped diagnostic evidence; leave BYOIN to the designated release integrator.
-11. Stage only owned/approved paths and inspect the staged path list. Commit and push verified work only to `dev`. Never touch `master`, merge a PR, enable auto-merge, repoint the service, or treat a PR as release authorization.
+11. Stage only owned/approved paths and inspect the staged path list. Commit at your desk; hand in coherent work to your team line — team promotion to `dev` is the lead's. Never touch `master`, merge a PR, enable auto-merge, repoint the service, or treat a PR as release authorization.
 12. Delete completed work from this README, refresh verification, and leave the successor one bounded next action—not a historical diary.
 
 ## Active constraints
