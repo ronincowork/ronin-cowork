@@ -63,7 +63,10 @@ export async function runByoin(repo: string, candidate: string, cdir: string, mo
       verdict: 'BYOIN: not present in this repository',
     };
   }
-  const args = mode === 'full' ? [] : [`--${mode}`];
+  // `full` here means the complete REPOSITORY proof. Bare BYOIN additionally checks the
+  // installed machine and user stores, a separate boundary which cannot describe a
+  // detached candidate (and would inspect the currently running app instead).
+  const args = mode === 'full' ? ['--repo'] : [`--${mode}`];
   const r = await run(tool, args, cdir, opts);
   const { gates, verdict } = parseByoinOutput(r.out);
   return { repo, candidate, mode, passed: r.code === 0, gates, verdict: verdict || (r.code === 0 ? 'BYOIN: exit 0' : `BYOIN: exit ${r.code}`) };

@@ -81,12 +81,6 @@ export async function sessionKey(name: string): Promise<string> {
   return ask;
 }
 
-/** Forget a remembered key — for a session that just died, was renamed or was recreated. */
-export function forgetSessionKey(name?: string): void {
-  if (name === undefined) keyCache.clear();
-  else keyCache.delete(name);
-}
-
 /**
  * The pure half of sessionKey: tmux's `#{@ronin-key}\t#{session_created}` output → key.
  * Exported for the unit floor (tests/rireki.test.ts) — the bug below is its spec.

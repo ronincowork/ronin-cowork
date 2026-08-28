@@ -15,8 +15,9 @@ what `bin/ronin-promote` does, what it writes, and what PR/CI reads from it.
 | after `dev` moves | restart from the `dev` worktree; deployment health checks; automatic revert on failure | the one failure that surfaces after the ref moved |
 | installed-box maintenance | full installed-box BYOIN (`docs/test-protocols.md`) | tests the machine, not the repo |
 
-`bin/ronin-byoin` is unchanged: it runs against the worktree it is run in. Promotion runs
-it in the candidate worktree, so the verdict is about the commit that becomes `dev`.
+Promotion runs `bin/ronin-byoin --repo` in the candidate worktree, so the verdict is
+about the commit that becomes `dev`. Bare `bin/ronin-byoin` additionally inspects the
+installed machine and user stores; that remains the distinct maintenance/update boundary.
 
 ## What `bin/ronin-promote <team>` does
 
@@ -30,7 +31,7 @@ it in the candidate worktree, so the verdict is about the commit that becomes `d
 2. **Prove** — each repo's own `bin/ronin-byoin` in its candidate (`--mode full` by
    default; the receipt records which), then the **combined compatibility protocol**
    across the candidates. For cowork + services that is: `CONTRACT_V` agrees between the
-   two `sockets-contract.ts` files, and services' `bin/dev-sync` mirrors the services
+   two `sockets-contract.ts` files, and services' dev-sync tool mirrors the services
    candidate into the cowork candidate, where the seam gate (`check-kyokai`) and `tsc`
    run across the assembled pair. A repo with no BYOIN of its own is a SKIP that the
    compatibility protocol must cover, never a pass it did not earn.

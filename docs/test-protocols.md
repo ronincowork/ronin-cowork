@@ -18,7 +18,7 @@ The schedule (the WORKTREES build-out in ronin-lab, "What runs where"; mechanism
 |---|---|
 | save · commit | none — private to the desk |
 | hand-in → team line | mechanical admission only: the merge, conflict detection, near-instant invariants |
-| **team promotion → `dev`** | **the one full repository BYOIN**, on the exact candidate, run by `bin/ronin-promote` |
+| **team promotion → `dev`** | **the one full repository BYOIN** (`bin/ronin-byoin --repo`), on the exact candidate, run by `bin/ronin-promote` |
 | `dev → master` PR | CI consumes the promotion receipt for the PR head; a `--gates` rerun is assurance, not the first check |
 | after `dev` moves | restart from the `dev` worktree, deployment health checks, automatic revert on failure |
 
