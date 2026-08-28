@@ -267,9 +267,9 @@ export function registerSessions(app: express.Express): void {
     }
   });
 
-  // Agent-owned Team membership. @ronin-tags remains the storage key for compatibility;
-  // its values are validated Team ids, never free-form labels.
-  const saveTeams = async (name: string, wanted: unknown) => {
+  // The Agent's stored tags are its one Team-membership record. The public door speaks
+  // Teams only; every value is a validated Team id, never a free-form label.
+  const saveMembership = async (name: string, wanted: unknown) => {
     const list = (Array.isArray(wanted) ? wanted.map(String) : String(wanted ?? '').split(',')).slice(0, 16);
     const valid = new Set((await listTeamRosters()).filter((team) => team.state !== 'archived').map((team) => team.name));
     const unknown = list.filter((team) => !valid.has(team));
@@ -281,31 +281,19 @@ export function registerSessions(app: express.Express): void {
     return { teams, notices: await announceTeamChanges(name, before, teams) };
   };
   app.get('/api/sessions/:name/teams', async (req, res) => {
-    if (!isValidName(req.params.name)) return res.status(400).json({ error: 'Invalid name.' });
-    if (!(await sessionExists(req.params.name))) return res.status(404).json({ error: 'No such session.' });
-    res.json({ teams: await getTags(req.params.name) });
-  });
-  app.put('/api/sessions/:name/teams', async (req, res) => {
-    if (!isValidName(req.params.name)) return res.status(400).json({ error: 'Invalid name.' });
-    if (!(await sessionExists(req.params.name))) return res.status(404).json({ error: 'No such session.' });
-    try { count('team.membership.set'); res.json({ ok: true, ...(await saveTeams(req.params.name, req.body?.teams)) }); }
-    catch (e) { res.status(400).json({ error: String((e as Error)?.message ?? e) }); }
-  });
-  // Compatibility door for older clients; it obeys the same roster validation.
-  app.get('/api/sessions/:name/tags', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
     if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
-    res.json({ tags: await getTags(name) });
+    res.json({ teams: await getTags(name) });
   });
 
-  app.post('/api/sessions/:name/tags', async (req, res) => {
+  app.put('/api/sessions/:name/teams', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
     if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
     try {
-      const saved = await saveTeams(name, req.body?.tags);
-      res.json({ ok: true, tags: saved.teams, notices: saved.notices });
+      count('team.membership.set');
+      res.json({ ok: true, ...(await saveMembership(name, req.body?.teams)) });
     } catch (e) {
       res.status(400).json({ error: String((e as Error)?.message ?? e) });
     }

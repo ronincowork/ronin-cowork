@@ -17,16 +17,16 @@ export function createTeamRosterSurface() {
   let message = '';
 
   const saveMembership = async (session, change) => {
-    const current = await request(`/api/sessions/${encodeURIComponent(session)}/tags`);
+    const current = await request(`/api/sessions/${encodeURIComponent(session)}/teams`);
     if (!current.ok) return current;
-    return request(`/api/sessions/${encodeURIComponent(session)}/tags`, { method: 'POST', json: { tags: change(current.data.tags || []) } });
+    return request(`/api/sessions/${encodeURIComponent(session)}/teams`, { method: 'PUT', json: { teams: change(current.data.teams || []) } });
   };
   const addMembership = async (session, team) => {
     message = t('league.team_roster_saving', 'Adding {session} to {team}…', { session, team }); render();
     const saved = await saveMembership(session, (teams) => [...new Set([...teams, team])].sort());
     if (!saved.ok) { message = saved.message; render(); return; }
     const live = (S.sessions || []).find((item) => item.name === session);
-    if (live) live.tags = saved.data.tags || [];
+    if (live) live.tags = saved.data.teams || [];
     await refreshTeams(); message = ''; render();
   };
   const removeMembership = async (session, team) => {
@@ -35,7 +35,7 @@ export function createTeamRosterSurface() {
     const saved = await saveMembership(session, (teams) => teams.filter((name) => name !== team));
     if (!saved.ok) { message = saved.message; render(); return; }
     const live = (S.sessions || []).find((item) => item.name === session);
-    if (live) live.tags = saved.data.tags || [];
+    if (live) live.tags = saved.data.teams || [];
     await refreshTeams(); message = ''; render();
   };
   const deleteTeam = async (team, count) => {

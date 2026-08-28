@@ -1,7 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 /** Cowork-space destination; its kind supplies the selector and context. */
 import { WorkspaceKit } from './workspace-kit.js';
-import { membersOfTeam, refreshTeams, subscribe, teamByName, teamsFromState } from './team-controller.js';
+import { membersOfTeam, refreshTeams, subscribe, teamByName, teamsFromState, UNASSIGNED } from './team-controller.js';
 import { createNewTeamView } from './new-team.js';
 import { createLeagueCommons } from './league-commons.js';
 import { renderLeagueView } from './league-view-surface.js';
@@ -32,7 +32,6 @@ const COMMONS = '@commons';
 const COWORK = '@cowork';
 const NEW = '@new';
 const DESK = '@desk';
-
 export function createCoworkView(options = {}) {
   const league = options.kind === 'league';
   const viewKey = league ? 'league-workspace' : 'team';
@@ -40,7 +39,6 @@ export function createCoworkView(options = {}) {
   const { createWorkbenchLayout } = WorkspaceKit.layouts;
   const { createTerminalTileHost } = WorkspaceKit.adapters;
   const { teamWorkspaceState } = WorkspaceKit.contract;
-
   const root = el('main', 'tw-view');
   let ctx = null;
   let team = '';
@@ -406,10 +404,10 @@ export function createCoworkView(options = {}) {
   const leagueTeamSurfaces = new Map();
   const leagueTeamSurface = (name) => {
     if (leagueTeamSurfaces.has(name)) return leagueTeamSurfaces.get(name);
-    const surface = createSurface({ label: name, className: 'league-team-edit' });
+    const label = name === UNASSIGNED ? t('league.ronin', 'Ronin: no team') : name, surface = createSurface({ label, className: 'league-team-edit' });
     const team = teamByName(name);
     const launch = el('button', null, t('league.launch_team', 'Launch')); launch.type = 'button'; launch.addEventListener('click', () => { const url = new URL(location.href); url.hash = `#/team/${encodeURIComponent(name)}`; window.open(url.href, '_blank', 'noopener'); });
-    surface.el.prepend(createSurfaceHeader({ label: name, actions: [launch] }).el);
+    surface.el.prepend(createSurfaceHeader({ label, actions: [launch] }).el);
     surface.content.append(createMetadata({ rows: [
       [t('team.team_role', 'Team role'), team.team_role], [t('team.objective', 'Objective'), team.objective],
       [t('league.agents', 'Agents'), String(membersOfTeam(name).length)], [t('team.project_root', 'Project root'), team.project_root],
@@ -474,7 +472,9 @@ export function createCoworkView(options = {}) {
       add(views, t('league.view', 'League view'), '@league-view');
       add(views, t('cowork.commons', 'Ronin Desk'), DESK, '', null, { cowork: true, tab: 'health' });
       for (const item of teams) { const made = leagueTeamSurface(item.name); add(teamCards, item.name, made.token, item.objective || ''); }
-      renderLeagueView(leagueCards, teams, membersOfTeam, (name) => rows.get(name), (name) => leagueTeamSurface(name).token, DRAG_TYPE, ctx?.viewState(viewKey)?.teamOrder, (teamOrder) => ctx?.patchViewState(viewKey, { teamOrder }));
+      const ronin = leagueTeamSurface(UNASSIGNED); add(teamCards, t('league.ronin', 'Ronin: no team'), ronin.token);
+      const leagueGroups = [...teams, { name: UNASSIGNED, objective: '', nullTeam: true }];
+      renderLeagueView(leagueCards, leagueGroups, membersOfTeam, (name) => rows.get(name), (name) => leagueTeamSurface(name).token, DRAG_TYPE, ctx?.viewState(viewKey)?.teamOrder, (teamOrder) => ctx?.patchViewState(viewKey, { teamOrder }));
       add(newCards, t('new_team.title', 'New Team'), '@new-team', '', 'dotted');
       add(newCards, t('league.new_agent', 'New Agent'), NEW, t('league.new_agent_summary', 'A new Agent, born into the workspace you are in.'), 'dotted');
       return;

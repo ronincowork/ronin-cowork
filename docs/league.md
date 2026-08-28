@@ -8,7 +8,7 @@ recall, sizing and lifecycle as `kind: 'team'`. Its selector exposes League comm
 League view, Team roster, Teams, New Team and New Session. Team roster restores the
 Commons roster's Team-grouped list in a two-column workspace surface. Its rows contain
 only session names; a session can be dragged onto another Team heading to add that Team
-tag through the canonical tags API without removing other Team memberships.
+membership through the canonical Teams API without removing other Team memberships.
 
 The League selector groups its cards into collapsible Views, Teams and New sections.
 Ronin Desk is a View card and opens the shared Cowork commons directly on its Desk tab,
