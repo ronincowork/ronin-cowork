@@ -78,17 +78,34 @@ export function leadMessage(n: LeadNotice): string {
   return `hand-in ${n.receiptId} by ${n.session} CONFLICTS with ${n.line}${n.files?.length ? ` on ${n.files.join(', ')}` : ''}. Your job: adjudicate — the line is untouched; the desk is blocked until you rule.`;
 }
 
-export type Delivery = { to: string; how: 'house-send' | 'wipeboard' | 'none'; detail: string };
+export type Delivery = { to: string; how: 'house-send' | 'wipeboard' | 'self'; detail: string };
+
+/**
+ * No lead set: the job falls to the session that handed in (owner law, 2026-08-28: "the
+ * user is always there — the fallback is the agent handing in; it has to work end to end
+ * with no lead, seamlessly"). Its own words, printed to it by the hand-in it just ran.
+ */
+export function selfMessage(n: LeadNotice): string {
+  if (n.result === 'accepted') {
+    return `no lead is set for ${n.team}, so you hold the lead's job for this hand-in: review the line (tejun-desk receipts --line --accepted) and promote it to dev when it is coherent — bin/ronin-promote ${n.team}. Nothing waits on anyone.`;
+  }
+  return `no lead is set for ${n.team}, so the conflict${n.files?.length ? ` on ${n.files.join(', ')}` : ''} is yours to resolve: tejun-desk sync, resolve the marked files at your desk, commit, hand in again.`;
+}
 
 /**
  * Tell every lead of the line's team. Delivery is the house sender; if it cannot type at
  * the lead (no session, a human draft at the prompt, a dialog open) the notice goes to
  * the team wipeboard instead so it is never lost — and the caller prints what happened.
+ * With no lead at all, the handing-in session is told it holds the job, and the notice is
+ * posted on the wipeboard for the record without interrupting anyone.
  */
 export async function notifyLeads(n: LeadNotice): Promise<Delivery[]> {
   const leads = await findLeads(n.team);
   const msg = leadMessage(n);
-  if (!leads.length) return [{ to: '—', how: 'wipeboard', detail: `no lead is set for ${n.team} → ${await wipeboard(n.team, msg, 'none')}` }];
+  if (!leads.length) {
+    await wipeboard(n.team, `${n.session} holds the lead's job for ${n.receiptId} — ${msg}`, 'none');
+    return [{ to: n.session, how: 'self', detail: selfMessage(n) }];
+  }
   const out: Delivery[] = [];
   for (const lead of leads) {
     try {

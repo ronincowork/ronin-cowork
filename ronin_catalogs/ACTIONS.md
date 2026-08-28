@@ -451,7 +451,10 @@ may prompt it, never perform it for you, and it is not `git push`. Run no full B
 commit or a hand-in. An accepted hand-in, or a conflict, tells your team's lead by itself,
 regardless of the lead's dial — reviewing the team line and promoting it is the lead's
 primary job (owner law 2026-08-28) — so you never need to `tejun-send` the lead about a
-hand-in, and a watch-only lead is not a reason to stop. If your brief lists no desk (manual launch, plain terminal, a
+hand-in, and a watch-only lead is not a reason to stop. If the team has no lead, the
+hand-in tells you so and the job is yours: review the line and `bin/ronin-promote <team>`
+when it is coherent; a conflict is yours to resolve (`tejun-desk sync`, fix, hand in).
+Nothing waits on a lead that was never set. If your brief lists no desk (manual launch, plain terminal, a
 repository under direct publishing) you have none: commit to that repository's declared
 line as its own instructions say, and invent no desk state. Verify per the doc, with
 scoped evidence, before reporting.
