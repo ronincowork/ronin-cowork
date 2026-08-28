@@ -113,11 +113,18 @@ PR head and verifies — `scripts/verify-promotion-receipt.mjs`:
 - `advances[<repo>]` to that SHA: `status == done`;
 - no `reverted_by`.
 
-The receipt rides in the PR body as a fenced block, which `show` prints ready to paste:
+The receipt rides in the PR body as a fenced block. Nobody pastes it: the release PR is
+opened, or updated, from the ledger by one command (owner, 2026-08-28 — agents do not
+assemble `gh` commands by hand):
 
 ```sh
-bin/ronin-promote show <id> --pr-block
+bin/ronin-promote pr <team>
 ```
+
+It refuses if the working line's head is not the last complete receipt's candidate
+(promote first), pushes the working line, writes the template's body with the receipt
+fenced and the SKIPs named, and never merges. `show <id> --pr-block` still prints the
+block alone, for a hand-written PR or for CI's `workflow_dispatch`.
 
 A PR without the block fails CI. Any failure it names still points back through the
 receipt's `hand_in_receipts` and `files` to the desk and session that introduced it.

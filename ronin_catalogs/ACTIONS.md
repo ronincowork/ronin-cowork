@@ -472,12 +472,15 @@ against it and a PR without one FAILS; the PR consumes the proof, it is not the 
 full check. **Never merge.** Merging is the owner's gate (same principle as the control dial:
 the approval must be his hand).
 ```bash
-working=$(libexec/ronin-repo-mode working); stable=$(libexec/ronin-repo-mode stable)
-git push origin "$working"
-gh pr create --base "$stable" --head "$working" --title "<title>" --body "<what + why>\n\n\`\`\`ronin-promotion-receipt\n<the receipt JSON from the promotion ledger>\n\`\`\`"
+bin/ronin-promote pr <team>
 ```
-Report the PR URL. Under direct publishing there is no working line and no PR: this
-action does not apply.
+That is the whole action (owner, 2026-08-28: agents do not assemble `gh` commands or paste
+receipt blocks by hand). It reads the arrangement, takes the team's last complete
+promotion receipt, refuses if the working line's head is not that receipt's candidate
+(promote first), pushes the working line, writes the body in the template's shape with
+the receipt fenced, and creates the PR — or updates the one already open, never a second.
+It finds `gh` itself. Report the URL it prints. Under direct publishing there is no working
+line and no PR: this action does not apply.
 
 ## land-work
 `action_kind: judgement` — this one needs your reasoning; no tool can do it for you.
