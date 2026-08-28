@@ -139,6 +139,28 @@ test('shared checkout: the shim records the claim and the hook refuses a foreign
   assert.equal(all.code, 0, all.err);
 });
 
+test('shared checkout reached by -C from another cwd: the add lands in THAT repo and is claimed there', async () => {
+  // The shim once dropped `-C dir` on the way to ronin-claim, so the add ran in the caller's
+  // cwd — every fixture that reaches its repo by -C broke, and a caller standing in the
+  // shared checkout would have staged there. Run from a non-repo directory to prove the
+  // globals travel.
+  const claimFile = path.join(claimDir, 'by-C-staged');
+  const env = { RONIN_CLAIM_FILE: claimFile };
+  await fs.writeFile(path.join(reviewed, 'byc.txt'), 'via -C\n');
+  const add = await shimGit(claimDir, ['-C', reviewed, 'add', 'byc.txt'], env);
+  assert.equal(add.code, 0, add.err);
+  assert.equal((await realGit(reviewed, ['diff', '--cached', '--name-only'])).out.trim(), 'byc.txt');
+  assert.equal((await fs.readFile(claimFile, 'utf8')).trim(), 'byc.txt');
+  const own = await realGit(reviewed, ['commit', '-q', '-m', 'via -C', '--', 'byc.txt'], env);
+  assert.equal(own.code, 0, own.err);
+  // `git -C dir add -- path` keeps its own `--` for git.
+  await fs.writeFile(path.join(reviewed, '-weird.txt'), 'dash\n');
+  const dashed = await shimGit(claimDir, ['-C', reviewed, 'add', '--', '-weird.txt'], { RONIN_CLAIM_FILE: path.join(claimDir, 'dash') });
+  assert.equal(dashed.code, 0, dashed.err);
+  assert.equal((await fs.readFile(path.join(claimDir, 'dash'), 'utf8')).trim(), '-weird.txt');
+  await realGit(reviewed, ['commit', '-q', '-m', 'dash'], { RONIN_COMMIT_ALL: '1' });
+});
+
 test('desk: the shim passes through, records nothing, and the hook stays silent', async () => {
   const claimFile = path.join(claimDir, 'desk-staged');
   const env = { RONIN_CLAIM_FILE: claimFile };

@@ -48,15 +48,19 @@ if [ "$sub" = "add" ]; then
   fi
   if [ "$claim" = on ]; then
     # ronin-claim runs the real add itself (it snapshots the index either side of it), so
-    # this branch does not fall through. Its exit code is git's.
-    args=()
+    # this branch does not fall through. Its exit code is git's. The GLOBAL options before
+    # `add` (-C dir, -c k=v, --git-dir …) travel with it, before a `--` separator: dropping
+    # them once made `git -C /tmp/x add .` stage the CALLER's cwd — the shared checkout —
+    # and broke every test fixture that reaches its repo by -C.
+    globals=(); args=()
     seen=0
     for a in "$@"; do
-      if [ "$seen" = 0 ] && [ "$a" = "add" ]; then seen=1; continue; fi
-      [ "$seen" = 1 ] && args+=("$a")
+      if [ "$seen" = 0 ]; then
+        if [ "$a" = "add" ]; then seen=1; else globals+=("$a"); fi
+      else args+=("$a"); fi
     done
     PATH="$(printf '%s' "$PATH" | tr ':' '\n' | grep -vxF "$SELF_DIR" | paste -sd:)" \
-      "$CLAIM" add ${args[@]+"${args[@]}"}
+      "$CLAIM" add ${globals[@]+"${globals[@]}"} -- ${args[@]+"${args[@]}"}
     exit $?
   fi
 fi
