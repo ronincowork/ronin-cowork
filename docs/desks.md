@@ -78,6 +78,17 @@ with the line is left as it is (`conflict`), to be contained at its own hand-in.
 
 No BYOIN runs at any step. `dev` never moves here.
 
+**The lead is told, dial or no dial** (owner law, 2026-08-28). An accepted hand-in, or a
+conflict, reaches every lead of the line's team — the 人, `@ronin-lead` on the session —
+through `libexec/ronin-house-send`, which carries no dial check: reviewing the team line
+and promoting it to `dev` is the lead's primary job, and the house telling the lead that
+its job is waiting is house machinery (the same footing as Koshi's marker and
+`write_tegami --at`), not an agent driving a session. `tejun-send` keeps its dial check, so
+no agent gains a bypass. The sender still refuses to overwrite a human's unsubmitted draft
+or to spam Enter into a dialog; when it cannot deliver, or no lead is set, the notice goes
+to the team wipeboard addressed to the lead, and the hand-in output says which happened.
+`src/desks/lead.ts`; `tests/desks-lead.test.ts`.
+
 ## Close, park, recover, discard
 
 `closeDesk(repo, branch, {unmount})`: unsaved files → a `WIP:` commit on the desk; if the
