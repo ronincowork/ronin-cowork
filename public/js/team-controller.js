@@ -32,7 +32,6 @@ export async function refreshTeams() {
   publish();
   return { live, durable, snapshot: snapshot() };
 }
-export const rostersLoaded = () => loaded;
 export const sessionBelongsToTeam = (session, team) => (session.tags || []).includes(team);
 export const leadsTeam = (session, team) => (session.leads || []).includes(team);
 export function unassignedSessions() {
