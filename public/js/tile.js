@@ -28,6 +28,7 @@ import { IS_TOUCH, NEW, S, saveState, serviceMissing, tiles } from './state.js';
 import { guard } from './errors.js';
 import { buildLadder } from './shingo.js';
 import { buildTileHead, syncTileHead } from './tilehead.js';
+import { installTextDrops } from './tiledroptext.js';
 import { pickJobFor } from './tilejob.js';
 import { dvrStep } from './dvr.js';
 import { TapeView } from './tapeview.js';
@@ -56,6 +57,8 @@ export class Tile {
     // references rather than re-queried: on touch these nodes are RELOCATED into the app
     // bar (js/tiledrop.js), and a later `querySelector` on the tile would find nothing.
     Object.assign(this, buildTileHead(this));
+    // Text dropped on the tile — an @mention or a doc reference — lands like a macro's.
+    installTextDrops(this);
 
     // 🔓 THE UNLOCKED VIEW — mounted first, so the tape sits under the panel and the
     // terminal in the stack, exactly as before.
@@ -126,7 +129,9 @@ export class Tile {
     // otherwise iOS closes the <select> picker the instant it opens.
     this.el.addEventListener('focusin', (e) => {
       this.activate();
-      if (!IS_TOUCH && this.body.contains(e.target) && !this.home.contains(e.target)) this.term.focus();
+      // `this.home` (the tile commons) retired on 2026-08-28 with the grid page; a click in
+      // the body threw on it for a few hours and took the terminal's focus with it.
+      if (!IS_TOUCH && this.body.contains(e.target)) this.term.focus();
     });
     this.select.addEventListener('pointerdown', () => this.activate());
     this.select.addEventListener('change', () => this.onSelect());

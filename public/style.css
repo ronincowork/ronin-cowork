@@ -1006,7 +1006,9 @@ body {
   padding: 0;
   line-height: 1;
 }
-.tile .composer.mention-ready textarea { border-color: var(--accent); }
+/* text on its way in — an @mention or a doc reference over the tile (js/tiledroptext.js) */
+.tile .tile-body[data-drop-text='true'] .composer textarea { border-color: var(--accent); }
+.tile .tile-body[data-drop-text='true'] { outline: var(--edge) dashed var(--accent); outline-offset: calc(-1 * var(--edge)); }
 
 /* Tile メ — the rest of the header, dropped in ONE HORIZONTAL STRIP (owner, 2026-08-17:
    "you just see those boxes exactly as they are, but maybe it just drops down
