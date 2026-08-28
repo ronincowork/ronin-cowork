@@ -25,18 +25,27 @@ export type ByoinMode = 'full' | 'gates' | 'ui';
 
 const exists = (p: string): Promise<boolean> => access(p).then(() => true, () => false);
 
-/** BYOIN's own lines, parsed. Anything not in the three shapes is ignored. */
+/**
+ * BYOIN's own lines, parsed. A verdict line opens a gate; the ten-space-indented lines
+ * BYOIN prints under a FAIL (the `not ok` items first, then the tail — see run_gate in
+ * bin/ronin-byoin) become that gate's detail, so the receipt names WHICH test failed
+ * rather than only that check-tests did. Anything else is ignored.
+ */
 export function parseByoinOutput(out: string): { gates: GateResult[]; verdict: string } {
   const gates: GateResult[] = [];
   let verdict = '';
+  let failing: GateResult | undefined;
   for (const raw of out.split('\n')) {
     const m = raw.match(/^\s{2}(ok|FAIL|SKIP)\s{2,}(.*)$/);
     if (m) {
       const [name, ...rest] = m[2].split(' — ');
-      gates.push({ name: name.trim(), status: m[1] as GateResult['status'], ...(rest.length ? { detail: rest.join(' — ').trim() } : {}) });
+      const gate: GateResult = { name: name.trim(), status: m[1] as GateResult['status'], ...(rest.length ? { detail: rest.join(' — ').trim() } : {}) };
+      gates.push(gate);
+      failing = gate.status === 'FAIL' ? gate : undefined;
       continue;
     }
-    if (/^BYOIN:/.test(raw)) verdict = raw.trim();
+    if (/^BYOIN:/.test(raw)) { verdict = raw.trim(); failing = undefined; continue; }
+    if (failing && /^ {10}\S/.test(raw)) failing.detail = failing.detail ? `${failing.detail}\n${raw.trim()}` : raw.trim();
   }
   return { gates, verdict };
 }
