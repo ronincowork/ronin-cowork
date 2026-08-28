@@ -11,6 +11,10 @@
 @layer app {
 
   #league { width: 100%; height: 100%; min-width: 0; min-height: 0; }
+  #league-workspace { width: 100%; height: 100%; min-width: 0; min-height: 0; }
+  #league-workspace .league-cell[data-drop-ready='true'] { outline: var(--edge-2) solid var(--kaki); outline-offset: calc(-1 * var(--edge-2)); }
+  #league-workspace .league-surface-title { margin: var(--space-6); color: var(--fg-strong); }
+  #league-workspace .league-team-metadata { margin: 0 var(--space-6); }
   #league .league-surface { border: 0; background: transparent; }
 
   /* The toolbar occupies the Kit board's full row. Its control chrome is the Kit's. */

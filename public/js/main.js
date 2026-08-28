@@ -18,6 +18,7 @@ import { createTeamView } from './team-view.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createNewTeamView } from './new-team.js';
 import { createLeagueView } from './league-view.js';
+import { createLeagueWorkspaceView } from './league-workspace-view.js';
 import { coworkCommons } from './cowork-commons.js';
 import { createAgentConfigurationView } from './agent-config.js';
 import { installCustomize } from './customize.js';
@@ -139,6 +140,7 @@ export async function init() {
   // remembered destination resolves to it rather than falling back to Sessions. Guarded
   // like its neighbours — a preview destination must never cost the owner their terminals.
   guard('register the League destination', () => workspace.register('league', createLeagueView()));
+  guard('register the League workspace destination', () => workspace.register('league-workspace', createLeagueWorkspaceView()));
   // AGENT CONFIGURATION — two Surfaces, no Tile, no Channel service. It edits ONE seat of
   // New Team's canonical draft and owns no schema of its own; a seat reaches it through
   // `open(draft, seat_id)` rather than being fetched here, because New Team owns the
