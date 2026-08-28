@@ -76,8 +76,6 @@ export function createTeamView() {
   // commons; trading is place(), and the seat keeps its tiles while it is out.
   const makeSeat = (id, label) => {
     const surface = createSurface({ label, className: 'tw-terminal', flush: true });
-    surface.el.addEventListener('pointerdown', () => touch(id));
-    acceptSessionDrops(surface.el, () => id, (name, id) => arrange({ [id]: name === COMMONS ? { commons: true } : { session: name } }));
     const pool = createWarmTerminalPool({
       createHost: (options) => createTerminalTileHost(options),
       container: surface.content,
@@ -128,6 +126,14 @@ export function createTeamView() {
     cell.append(seats[id].surface.el);
     cells[id] = cell;
     columns[COLUMN_OF[id]].append(cell);
+  }
+  // THE CELL OWNS SELECTION AND DROPS, whatever it holds (owner, 2026-08-28: "it doesn't
+  // matter what is on a workspace … everything should function the same"). Capture-phase,
+  // because a surface's own controls stop propagation. A dropped card names a session, or a
+  // surface by its token (SURFACES below) — either way the cell is clobbered with it.
+  for (const [id, cell] of Object.entries(cells)) {
+    cell.addEventListener('pointerdown', () => touch(id), true);
+    acceptSessionDrops(cell, () => id, (name, at) => arrange({ [at]: SURFACES[name] ? { surface: name } : { session: name } }));
   }
   const cellPlace = (id, node) => { if (cells[id].firstElementChild !== node) cells[id].replaceChildren(node); };
   const cellHolding = (id) => cells[id]?.firstElementChild ?? null;
@@ -199,13 +205,9 @@ export function createTeamView() {
     selected: 'docs',
     services: { wipeboard, docs: docsService, 'team-configuration': service(config) },
   });
-  channels.el.addEventListener('pointerdown', () => { const id = commonsIn(); if (id) touch(id); }, true);
-  acceptSessionDrops(channels.el, () => commonsIn(), (name, id) => arrange({ [id]: name === COMMONS ? { commons: true } : { session: name } }));
   // THE COWORK COMMONS — the third surface a workspace can hold (owner, 2026-08-27). One
   // instance for the whole page; its strip carries the same T as the team commons'.
   const cowork = coworkCommons();
-  cowork.el.addEventListener('pointerdown', () => { const id = coworkIn(); if (id) touch(id); }, true);
-  acceptSessionDrops(cowork.el, () => coworkIn(), (name, id) => arrange({ [id]: name === COMMONS ? { commons: true } : { session: name } }));
   // ＋ NEW SESSION IS A SURFACE (owner, 2026-08-27): the commons' launcher, in a workspace.
   // ＋ Add team member on the roster and か New on the bar both put it in the selected
   // workspace; a session born from it lands in that same workspace (`connect`).
@@ -220,9 +222,6 @@ export function createTeamView() {
   newSurface.content.append(newBody);
   const extras = new Set(); // sessions shown here that are not (yet) members — a newborn, a picked one
   const launcher = buildLauncher({ index: 'ws', connect: (name) => connectSession(name) }, launcherHost);
-  // Selects and takes drops like any surface — capture-phase, its controls stop propagation.
-  newSurface.el.addEventListener('pointerdown', () => { const id = newIn(); if (id) touch(id); }, true);
-  acceptSessionDrops(newSurface.el, () => newIn(), (name, id) => arrange({ [id]: name === COMMONS ? { commons: true } : { session: name } }));
   // Chat is reserved by the Kit and this file adds NOTHING to it — no composer, no fetch,
   // no timer. Its emptiness is the owner's ruling, not an unfinished state.
 
@@ -245,26 +244,49 @@ export function createTeamView() {
   root.append(workbench.host);
 
   /* ---------- in and out ---------- */
-  const commonsIn = () => Object.keys(seats).find((id) => cellHolding(id) === channels.el) || '';
-  const coworkIn = () => Object.keys(seats).find((id) => cellHolding(id) === cowork.el) || '';
-  const newIn = () => Object.keys(seats).find((id) => cellHolding(id) === newSurface.el) || '';
+  // THE SURFACE REGISTRY: one entry per workspace_surface that is not a seat — its token
+  // (what a cell remembers, what a card drags), its element, and what "showing it" means.
+  // A new surface (a league view, a new-team form…) is one more entry here and nothing
+  // else: the cells, the drops, the memory, the view report and tejun-teampage's words all
+  // read this table.
+  const SURFACES = {
+    [COMMONS]: { name: 'commons', el: channels.el, show: (tab, doc) => { if (doc) { channels.select('docs'); void docs.open(doc); } else if (tab) channels.select(tab); }, tab: () => channels.current?.() || '' },
+    [COWORK]: { name: 'cowork', el: cowork.el, show: (tab) => cowork.select(tab || cowork.current()), tab: () => cowork.current?.() || '' },
+    [NEW]: { name: 'new', el: newSurface.el, show: () => {
+      // Drawn off the two fast reads (roles, saved launches) — never the 1.3s home read.
+      launcher.render();
+      if (!roleData) void loadPresets().then(() => launcher.render());
+      void loadSavedLaunches().then(() => launcher.render());
+    } },
+  };
+  const tokenOf = (el) => Object.keys(SURFACES).find((k) => SURFACES[k].el === el) || '';
+  /** Which surface token this cell holds, or '' for its own seat. */
+  const heldSurface = (id) => tokenOf(cellHolding(id));
+  const whereIs = (token) => Object.keys(seats).find((id) => cellHolding(id) === SURFACES[token]?.el) || '';
+  const commonsIn = () => whereIs(COMMONS);
   /** A surface other than the seat's own is in this workspace. */
-  const surfaceIn = (id) => commonsIn() === id || coworkIn() === id || newIn() === id;
-  const holds = (id) => (commonsIn() === id ? COMMONS : coworkIn() === id ? COWORK : newIn() === id ? NEW : seats[id].pool.active);
+  const surfaceIn = (id) => !!heldSurface(id);
+  const holds = (id) => heldSurface(id) || seats[id].pool.active;
+  /** ANY surface in: wherever it was, that seat's surface comes back; the cell it lands on
+   *  keeps its tiles while it is out. One trade for every surface, present and future. */
+  const putSurface = (token, id, tab = '', doc = '') => {
+    const s = SURFACES[token];
+    if (!s || !seats[id]) return false;
+    const from = whereIs(token);
+    if (from && from !== id) cellPlace(from, seats[from].surface.el);
+    cellPlace(id, s.el);
+    s.show?.(tab, doc);
+    touch(id);
+    remember();
+    return true;
+  };
   const isShown = (name) => Object.values(seats).some((seat) => seat.pool.active === name && !surfaceIn(seat.id));
   const remember = () => { ctx?.patchViewState('team', { seats: Object.fromEntries(Object.keys(seats).map((id) => [id, holds(id)])) }); reportView(); };
   const lead = () => membersOfTeam(team).find((m) => m.team_lead)?.name || '';
 
-  /** Commons in: the seat's surface (tiles and all) leaves the slot; wherever the
-   *  commons was, that seat's surface comes back. */
-  const putCommons = (id, tab = '', doc = '') => {
-    const from = commonsIn();
-    if (from && from !== id) cellPlace(from, seats[from].surface.el);
-    cellPlace(id, channels.el);
-    if (doc) { channels.select('docs'); void docs.open(doc); } else if (tab) channels.select(tab);
-    touch(id);
-    remember();
-  };
+  const putCommons = (id, tab = '', doc = '') => putSurface(COMMONS, id, tab, doc);
+  const putCowork = (id, tab = '') => putSurface(COWORK, id, tab);
+  const putNew = (id) => putSurface(NEW, id);
   /** The shape: 2 or 4. Lowering to 2 leaves seats 3 and 4 as they are, hidden — their
    *  tiles stay warm under the pool's own cap; a selection down there moves up. */
   const setCount = (n) => {
@@ -276,18 +298,6 @@ export function createTeamView() {
     ctx?.patchViewState('team', { count });
     remember();
   };
-  /** New session in: the launcher, in this workspace. */
-  const putNew = (id) => {
-    const from = newIn();
-    if (from && from !== id) cellPlace(from, seats[from].surface.el);
-    cellPlace(id, newSurface.el);
-    // Drawn off the two fast reads (roles, saved launches) — never the 1.3s home read.
-    launcher.render();
-    if (!roleData) void loadPresets().then(() => launcher.render());
-    void loadSavedLaunches().then(() => launcher.render());
-    touch(id);
-    remember();
-  };
   /** Show ANY live session in the selected workspace — a member, or one the owner picked
    *  from the Roster tab or a newborn from the launcher. Non-members ride the pool as
    *  extras until they leave. */
@@ -296,17 +306,6 @@ export function createTeamView() {
     if (!membersOfTeam(team).some((m) => m.name === name)) extras.add(name);
     syncPools(membersOfTeam(team));
     return putSession(name, id);
-  };
-  /** Cowork commons in: the same trade as the team commons — wherever it was, that seat's
-   *  surface comes back; the seat it lands on keeps its tiles while it is out. */
-  const putCowork = (id, tab = '') => {
-    const from = coworkIn();
-    if (from && from !== id) cellPlace(from, seats[from].surface.el);
-    cellPlace(id, cowork.el);
-    if (tab) cowork.select(tab);
-    else cowork.select(cowork.current());
-    touch(id);
-    remember();
   };
   /** The seat back, with nothing in it: its tiles go; the lead comes back warm on the next paint. */
   const emptySeat = (id) => {
@@ -349,6 +348,7 @@ export function createTeamView() {
     putCommons,
     putCowork,
     putNew,
+    putSurface,
     putTerminal,
     emptySeat,
     setCount,
@@ -371,9 +371,9 @@ export function createTeamView() {
     const a = workbench.arrangement.state();
     const workspaces = {};
     for (const id of liveSeats()) {
-      const c = commonsIn() === id;
-      const k = coworkIn() === id;
-      workspaces[id] = c ? { holds: 'commons', tab: channels.current?.() || '' } : k ? { holds: 'cowork', tab: cowork.current?.() || '' } : newIn() === id ? { holds: 'new' } : seats[id].pool.active ? { holds: 'session', session: seats[id].pool.active } : { holds: 'empty' };
+      const token = heldSurface(id);
+      const s = token ? SURFACES[token] : null;
+      workspaces[id] = s ? { holds: s.name, tab: s.tab?.() || '' } : seats[id].pool.active ? { holds: 'session', session: seats[id].pool.active } : { holds: 'empty' };
     }
     return { team, selected: lastSeat, count, order: [...a.order], hidden: [...a.hidden], workspaces };
   };
@@ -400,9 +400,7 @@ export function createTeamView() {
     for (const id of liveSeats()) {
       if (holds(id)) continue;
       const wanted = remembered[id];
-      if (wanted === COMMONS) putCommons(id);
-      else if (wanted === COWORK) putCowork(id);
-      else if (wanted === NEW) putNew(id);
+      if (SURFACES[wanted]) putSurface(wanted, id);
       else if (wanted && seats[id].pool.has(wanted)) putSession(wanted, id, false);
       // A remembered session the roster does not have: wait while the roster is still
       // arriving, then let it go — a workspace waiting forever is the blank the owner met.
@@ -639,7 +637,7 @@ export function createTeamView() {
       ensureLeadHot(members);
       seatTheTeam();
       paintSeats();
-      touch(liveSeats().find((id) => holds(id) !== COMMONS && holds(id) !== COWORK) || 'workspace1');
+      touch(liveSeats().find((id) => !heldSurface(id)) || 'workspace1');
       channels.enter(context);
       // ⚙ ON THIS PAGE: the cowork commons into the workspace you are in; pressed again
       // there, the terminal back — the toggle ⛩ taught (layout.js reads this hook).
@@ -658,7 +656,7 @@ export function createTeamView() {
       };
       S.showCoworkCommons = (tab = '') => {
         const id = lastSeat || 'workspace1';
-        if (coworkIn() === id && !tab) putTerminal(id);
+        if (heldSurface(id) === COWORK && !tab) putTerminal(id);
         else putCowork(id, tab);
       };
       if (team !== loaded) void load(team);

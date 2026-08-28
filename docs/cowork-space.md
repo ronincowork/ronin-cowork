@@ -58,6 +58,11 @@ Rules that make them peers:
   roster, thinner than a session's, and goes into a workspace like one — click for the
   selected cell, drag onto any cell. The SHINGO light signal sits at the far RIGHT of a
   tile head; the connection dot is gone. The selector column's head reads *Roster: <team>*.
+- **A cell owns selection and drops, whatever it holds** (owner, 2026-08-28): a card dropped on
+  any workspace clobbers what is there — session, commons, launcher, anything to come.
+  Nothing per surface: `team-view.js` keeps ONE registry (`SURFACES`: token · element ·
+  show) and a new surface is one entry in it — the cells, the memory, the view report and
+  `tejun-teampage`'s words all read the table.
 - **One surface per workspace, one head per surface.** A surface never draws over another;
   trading is `place()`. The old `admin_desk` overlay is the one exception and it is going.
 - **Every head is one depth** — `--row-head` (41px). The tile head wraps rather than clips

@@ -108,7 +108,8 @@ export function createArranger(verbs) {
     for (const ws of WORKSPACES) {
       const want = draft[ws];
       if (!want) continue;
-      if (want.commons) { verbs.putCommons(ws, want.tab, want.doc); did.push(`${ws} commons${want.tab ? ':' + want.tab : ''}`); }
+      if (want.surface) { if (verbs.putSurface(want.surface, ws, want.tab)) did.push(`${ws} ${want.surface}`); else did.push(`${ws}: no surface ${want.surface}`); }
+      else if (want.commons) { verbs.putCommons(ws, want.tab, want.doc); did.push(`${ws} commons${want.tab ? ':' + want.tab : ''}`); }
       else if (want.cowork) { verbs.putCowork(ws, want.tab); did.push(`${ws} cowork${want.tab ? ':' + want.tab : ''}`); }
       else if (want.session) { if (verbs.putSession(want.session, ws)) did.push(`${ws} ${want.session}`); else did.push(`${ws}: no session ${want.session}`); }
       else if (want.new) { verbs.putNew(ws); did.push(`${ws} new`); }
