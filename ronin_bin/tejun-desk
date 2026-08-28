@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# tejun-desk — your desks: open, status, sync, hand in, park, recover.
+#
+# Usage: tejun-desk status [--session s | --team t | --repo r]   per desk: clean/dirty · ahead · pending · blocked
+#        tejun-desk open <repo> [--team t]                       a desk on that repo, cut from your team's line
+#        tejun-desk hand-in [<repo>] [--assignment]              hand your committed range in to the team line
+#        tejun-desk sync [<repo>]                                adopt the current team line into your desk
+#        tejun-desk park [<repo>] [--unmount]                    close: WIP-commit unsaved, park what is ahead
+#        tejun-desk parked [--team t]                            the lead's list: gone sessions' work
+#        tejun-desk recover <repo> <branch> [--session s]        remount a parked desk for a session
+#        tejun-desk discard <repo> <branch> --yes                delete an unintegrated tip — explicit, only ever this way
+#        tejun-desk receipts [<repo>] [--line [--accepted|--since <sha>] | --id <id>]   the ledger: your desk, the line, one receipt
+#
+# COMMIT PRESERVES. HAND-IN PUBLISHES (owner, 2026-08-28). A hand-in is mechanical
+# admission to your team's line — merge and conflict detection only, no BYOIN, no `git
+# push`; the line moves atomically or not at all, and a receipt is appended either way.
+# Accepted team state flows down: a clean sibling adopts now, a dirty one is told and
+# marked pending, its files untouched. Nothing here deletes an unintegrated tip except
+# `discard --yes`.
+#
+# THE LOGIC IS NOT HERE. src/desk-cli.ts owns it and src/desks/ is covered by the unit
+# floor (tests/desks.test.ts) — the same arrangement tejun-wipeboard uses.
+set -u
+HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+cd "$HERE" || { echo "NO-REPO: cannot reach the Ronin tree"; exit 1; }
+exec npx tsx src/desk-cli.ts "$@"

@@ -528,6 +528,57 @@ RUN a macro — one call, no hunting through docs, nothing to narrate. A macro n
 an action that does not exist **does not compile** (exit 3), so an undefined step is
 impossible by construction rather than caught by review.
 
+## desk-open — a desk on a repository, cut from your team's line
+`action_kind: mechanical` — run it, don't deliberate.
+A desk is one repository's branch and worktree opened together (`team/<team>/<session>`,
+mounted under the `worktrees` store), cut from the team's line (`team/<team>/dev`) with
+that line as upstream, and recorded in the desk registry. It opens at once — no clock, no
+approval. Refused by name: a funnel point (`dev`, `team/<t>/dev`, the stable line), a
+repository declared `direct` or with no `RONIN_REPO`, and a checkout whose `.git` sits in
+a Syncthing share that does not ignore it. A coding launch opens every desk in the
+assignment before the CLI starts; a session opens one by hand only for a repository its
+brief did not list.
+> Tool: `tejun-desk open <repo> [--team t]`
+
+## desk-status — what is true about each desk, now
+`action_kind: mechanical` — run it, don't deliberate.
+Per desk, derived from git at the moment of asking and never from prose: clean or dirty
+(and which files), commits ahead of the line (committed, not handed in), behind, a
+pending team update (who moved the line, which of your unsaved files it overlaps), the
+last accepted hand-in, and a standing block (a conflict awaiting the lead). Parked desks
+show as such. Remote publication is not desk cleanliness and does not appear here.
+> Tool: `tejun-desk status [--session s | --team t | --repo r]`
+
+## desk-sync — adopt the current team line into your desk
+`action_kind: mechanical` — run it, don't deliberate.
+Merge the team line into the desk. Runs by itself on a clean desk after every accepted
+hand-in; on a dirty desk it records the update as pending and touches nothing, so run it
+by hand at your next safe boundary (after a commit). A conflict between your commits and
+the line is left in place — it is contained at your hand-in — and reported with the files.
+> Tool: `tejun-desk sync [<repo>]`
+
+## hand-in — hand your committed range in to the team line
+`action_kind: mechanical` — run it, don't deliberate.
+Mechanical admission, serialized per line: a throwaway candidate is built at the line's
+tip, your desk is merged into it, and the line advances by compare-and-swap to the
+candidate — or not at all. A conflict is contained in the candidate; the hand-in is
+rejected with the two sides and the files, your desk is marked blocked, and the lead
+adjudicates. No full BYOIN runs here and nothing reaches the remote: that is team
+promotion, the lead's act. One receipt is appended per attempt, accepted or not. After an
+accepted hand-in every sibling desk on the line adopts it (clean) or is told (dirty).
+`--assignment` hands in every desk in your assignment, each to its own repo's line;
+nothing cross-repo is checked here.
+> Tool: `tejun-desk hand-in [<repo>] [--assignment]`
+
+## desk-park — close a desk without losing or publishing anything
+`action_kind: mechanical` — run it, don't deliberate.
+Unsaved files become a `WIP:` commit on the desk's own branch. A desk with commits ahead
+of its line is PARKED — branch kept, worktree optionally unmounted, recorded with owner,
+ahead count and time — and listed for the lead, who chooses hand in · inspect · reassign
+· discard. A desk whose tip is already on the line is deleted. Nothing else deletes;
+`discard --yes` is the one explicit path that removes an unintegrated tip.
+> Tool: `tejun-desk park [<repo>] [--unmount]` · `tejun-desk parked` · `tejun-desk recover <repo> <branch> --session <s>` · `tejun-desk discard <repo> <branch> --yes`
+
 ## check-clean
 `action_kind: mechanical` — run it, don't deliberate.
 Before ending a session, verify nothing of value would vanish with it — **at every desk

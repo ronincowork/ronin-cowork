@@ -52,15 +52,6 @@ export async function revParse(dir: string, ref: string): Promise<string> {
 export const branchExists = async (dir: string, branch: string): Promise<boolean> =>
   (await revParse(dir, `refs/heads/${branch}`)) !== '';
 
-/** The common `.git` directory of a repo — the same for every linked worktree. */
-export const commonDir = (dir: string): Promise<string> =>
-  gitOut(dir, ['rev-parse', '--path-format=absolute', '--git-common-dir']);
-
-export const toplevel = (dir: string): Promise<string> => gitOut(dir, ['rev-parse', '--show-toplevel']);
-
-export const currentBranch = async (dir: string): Promise<string> =>
-  gitOut(dir, ['branch', '--show-current']).catch(() => '');
-
 export interface WorktreeRow { path: string; head: string; branch: string; detached: boolean; bare: boolean }
 
 /** `git worktree list --porcelain`, parsed. The only honest answer to "does this branch have a folder". */

@@ -126,13 +126,6 @@ export async function openDesk(input: OpenInput): Promise<DeskStatus> {
   return deskStatus(rec, a);
 }
 
-/** One desk's status, derived now. */
-export async function statusOf(repo: string, branch: string): Promise<DeskStatus> {
-  const rec = await readDesk(repo, branch);
-  if (!rec) throw new DeskRefused(`no desk recorded for ${repo}:${branch}`);
-  return deskStatus(rec, await arrangementOf(repo));
-}
-
 /**
  * DOWNWARD ADOPTION of the line into one desk — the one function both `desk sync` and an
  * accepted hand-in use. Clean and mounted: merge the line in now. Dirty, or unmounted:

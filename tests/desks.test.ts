@@ -63,8 +63,13 @@ await fs.writeFile(path.join(process.env.RONIN_CATALOGS_DIR!, 'PROJECT_ROOTS.md'
 
 const { parseArrangement, arrangementOf } = await import('../src/desks/arrangement.js');
 const { deriveAssignment, listDesks, readDesk, deskWorktree, candidateWorktree } = await import('../src/desks/registry.js');
-const { openDesk, statusOf, syncDesk, closeDesk, discardDesk, recoverDesk, parkedDesks, resolveAssignmentDesks, DeskRefused } = await import('../src/desks/desk.js');
+const { openDesk, syncDesk, closeDesk, discardDesk, recoverDesk, parkedDesks, resolveAssignmentDesks, DeskRefused } = await import('../src/desks/desk.js');
 const { handIn } = await import('../src/desks/hand-in.js');
+const statusOf = async (repo: string, branch: string) => {
+  const d = (await listDesks({ repo })).find((x) => x.branch === branch);
+  if (!d) throw new Error(`no desk ${repo}:${branch}`);
+  return d;
+};
 const { receiptsForLine, receiptsForDesk, acceptedSince } = await import('../src/desks/receipts.js');
 const { casRef, revParse } = await import('../src/desks/git.js');
 const { lockDir, withLineLock, queueHolder } = await import('../src/desks/queue.js');
