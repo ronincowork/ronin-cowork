@@ -69,7 +69,6 @@ export function createTeamView() {
   let entered = false;
   let lastSeat = 'workspace1'; // the workspace last touched — where the next card lands
 
-  // NO FLIP (owner, 2026-08-28): the team commons is a roster CARD, placed like a session.
   /* ---------- the workspaces: two seats, the roster between them, one commons ---------- */
   // A seat is a surface with its tiles in it: the pool's (one per member shown here,
   // the active one visible) and, when no member is shown, the seat's own empty tile —
@@ -183,7 +182,7 @@ export function createTeamView() {
   // written against; `tw-docs` only gives it the surface's height.
   const docsPane = el('div', 'home-docs tw-docs');
   const docs = buildDocs(null, docsPane, () => entered && docsPane.isConnected,
-    (name) => membersOfTeam(team).some((m) => m.name === name));
+    (name) => membersOfTeam(team).some((m) => m.name === name), () => teamByName(team)?.repos || []);
   const docsService = {
     el: docsPane,
     mount: () => {},

@@ -687,6 +687,14 @@ The catalog entry goes. {dir} is not touched.
 ## docs — docs.js (the ▧ Docs tab)
 - **docs.back_title:** Back to the list
 - **docs.save:** Save
+- **docs.pill_tracked:** Tracked
+- **docs.pill_plans:** Plans
+- **docs.pill_docs:** Docs
+- **docs.shelf_empty:** Nothing on this shelf — a project root names its places on its record (Project roots → docs / plans).
+- **roots.f_docs:** docs
+- **roots.f_docs_hint:** Where this root keeps its documentation — directories or files, relative to the directory
+- **roots.f_plans:** plans
+- **roots.f_plans_hint:** Where this root keeps its build-out plans
 - **docs.open_browser:** Open in browser ↗
 - **docs.frame_title:** document
 - **docs.discard_confirm:** Discard unsaved changes?

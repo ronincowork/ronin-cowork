@@ -177,7 +177,7 @@ export function registerCatalogs(app: express.Express): void {
     const dir = String(req.query.dir ?? '').trim();
     if (!dir) return res.status(400).json({ error: 'A directory is required.' });
     try {
-      res.json(await repoFacts({ name: 'candidate', dir, remit: '', match: [], archived: false }));
+      res.json(await repoFacts({ name: 'candidate', dir, remit: '', match: [], docs: [], plans: [], archived: false }));
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }

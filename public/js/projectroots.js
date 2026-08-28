@@ -95,6 +95,9 @@ export function buildProjectRoots(root, isShowing, tile) {
     mk(t('roots.f_directory', 'directory'), 'dir', existing.dir, t('roots.f_directory_hint', 'Any absolute path, at any depth'), '~/work/api');
     mk(t('roots.f_remit', 'remit'), 'remit', existing.remit, t('roots.f_remit_hint', 'The one line you pick it from in a list'), t('roots.f_remit_placeholder', 'what this is'));
     mk(t('roots.f_match', 'match'), 'match', (existing.match || []).join(', '), t('roots.f_match_hint', 'Words that suggest this project_root from free-form intent'), t('roots.f_match_placeholder', 'comma separated'));
+    // THE DOC SHELVES (owner, 2026-08-28) — where the ▧ Docs tab's Docs and Plans pills look.
+    mk(t('roots.f_docs', 'docs'), 'docs', (existing.docs || []).join(', '), t('roots.f_docs_hint', 'Where this root keeps its documentation — directories or files, relative to the directory'), 'docs, README.md');
+    mk(t('roots.f_plans', 'plans'), 'plans', (existing.plans || []).join(', '), t('roots.f_plans_hint', 'Where this root keeps its build-out plans'), 'wip/buildouts, wip/handoffs');
 
     const row = document.createElement('div');
     row.className = 'pr-frow';

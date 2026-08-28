@@ -59,6 +59,16 @@ export interface ProjectRootInfo {
   match: string[];
   remit: string;
   /**
+   * THE DOC SHELVES (owner, 2026-08-28): where this root keeps its documentation and its
+   * build-out plans — paths relative to `dir`, a directory or a file each. The ▧ Docs tab's
+   * Docs and Plans pills list the `.md`/`.html` under them (src/routes/docs-api.ts) and
+   * nothing else — a doc list, never a file browser. The house conventions are the
+   * defaults, so a fresh root works untouched and a root that names things differently
+   * changes one line on its record.
+   */
+  docs: string[];
+  plans: string[];
+  /**
    * ARCHIVED — off the new-session picker, still on the admin desk.
    *
    * A root the owner has finished with is not a root they want to lose: the directory is
@@ -171,6 +181,12 @@ async function ensureFirstRoot(): Promise<void> {
  * result before committing it (see writeCatalog). Only the fields named below are
  * read; any other `- **key:** value` line — including the retired provider/model
  * lines old user files still carry — is ignored here and preserved on write. */
+/** A comma list, or the shipped default when the record says nothing. */
+const listField = (v: string, dflt: string[]): string[] => {
+  const l = v.split(',').map((x) => x.trim()).filter(Boolean);
+  return l.length ? l : dflt;
+};
+
 function parseRoots(raw: string): ProjectRootInfo[] {
   const roots: ProjectRootInfo[] = [];
   for (const chunk of raw.split(/^## +/m).slice(1)) {
@@ -192,6 +208,8 @@ function parseRoots(raw: string): ProjectRootInfo[] {
         .map((m) => m.trim())
         .filter(Boolean),
       remit: field('remit'),
+      docs: listField(field('docs'), ['docs', 'README.md']),
+      plans: listField(field('plans'), ['wip/buildouts', 'wip/handoffs']),
       // One bit, spelled the way the other catalogs spell theirs (`- **hidden:** yes`
       // in src/catalog.ts). Anything but `yes` — including the line's absence, which is
       // the ordinary case — leaves the root on the picker.
@@ -297,7 +315,7 @@ const NEW_USER_FILE = `# PROJECT_ROOTS — your directories (user scope)
 /** Field order for a block this code creates. Hand-written blocks keep their own.
  * provider/model retired 2026-08-18 (one default, one place) — never written again;
  * blocks that still have them keep them untouched, unread. */
-const FIELD_ORDER = ['dir', 'memory', 'match', 'remit', 'archived'] as const;
+const FIELD_ORDER = ['dir', 'memory', 'match', 'remit', 'docs', 'plans', 'archived'] as const;
 export type RootField = (typeof FIELD_ORDER)[number];
 
 /** A project_root handle: one lowercase word, the `##` heading, the whole shortcut. */

@@ -3176,6 +3176,12 @@ body {
   display: block;
   overflow: auto;
 }
+.home-docs .dc-pills {
+  display: none;
+}
+.home-docs[data-view='list'] .dc-pills {
+  display: flex;
+}
 .home-docs[data-view='edit'] .dc-ed,
 .home-docs[data-view='view'] .dc-ed {
   display: flex;
@@ -3208,6 +3214,45 @@ body {
   font-size: var(--text-3);
   text-decoration: none;
   white-space: nowrap;
+}
+/* THE PILLS — three shelves, one pressed (owner, 2026-08-28) */
+.dc-pills {
+  display: flex;
+  gap: var(--space-2);
+  flex: 0 0 auto;
+  padding: var(--space-3) var(--space-1) 0;
+}
+.dc-pill {
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-round);
+  background: transparent;
+  color: var(--muted);
+  padding: var(--space-2) var(--space-5);
+  font: inherit;
+  font-size: var(--text-2);
+  cursor: pointer;
+}
+.dc-pill[aria-selected='true'] {
+  background: var(--raise);
+  color: var(--fg-strong);
+  border-color: var(--line-3);
+}
+.dc-who.folded {
+  opacity: 0.7;
+}
+.dc-who.folded b::after {
+  content: ' ▸';
+  color: var(--muted);
+}
+.dc-group[hidden] {
+  display: none;
+}
+/* KIIRO — yellow when there is something to save; the ← wears it too so the way out is
+   as easy to find as the way to keep it (owner, 2026-08-28). */
+.dc-back.kiiro,
+.dc-save.kiiro {
+  border-color: var(--warn);
+  color: var(--warn);
 }
 .dc-who {
   display: flex;

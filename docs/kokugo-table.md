@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1236 keys · 54 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1244 keys · 54 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -292,9 +292,13 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `docs.frame_title` | document |  |  |  |  |
 | `docs.loading` | loading… |  |  |  |  |
 | `docs.open_browser` | Open in browser ↗ |  |  |  |  |
+| `docs.pill_docs` | Docs |  |  |  |  |
+| `docs.pill_plans` | Plans |  |  |  |  |
+| `docs.pill_tracked` | Tracked |  |  |  |  |
 | `docs.save` | Save |  |  |  |  |
 | `docs.saved` | saved |  |  |  |  |
 | `docs.saving` | saving… |  |  |  |  |
+| `docs.shelf_empty` | Nothing on this shelf — a project root names its places on its record (Project roots → docs / plans). |  |  |  |  |
 
 ## errors
 
@@ -1002,11 +1006,15 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `roots.exclude_title` | Remove it from the catalog. Nothing on disk is touched. |  |  |  |  |
 | `roots.f_directory` | directory |  |  |  |  |
 | `roots.f_directory_hint` | Any absolute path, at any depth |  |  |  |  |
+| `roots.f_docs` | docs |  |  |  |  |
+| `roots.f_docs_hint` | Where this root keeps its documentation — directories or files, relative to the directory |  |  |  |  |
 | `roots.f_handle` | handle |  |  |  |  |
 | `roots.f_handle_hint` | The short name — this IS the shortcut |  |  |  |  |
 | `roots.f_match` | match |  |  |  |  |
 | `roots.f_match_hint` | Words that suggest this project_root from free-form intent |  |  |  |  |
 | `roots.f_match_placeholder` | comma separated |  |  |  |  |
+| `roots.f_plans` | plans |  |  |  |  |
+| `roots.f_plans_hint` | Where this root keeps its build-out plans |  |  |  |  |
 | `roots.f_remit` | remit |  |  |  |  |
 | `roots.f_remit_hint` | The one line you pick it from in a list |  |  |  |  |
 | `roots.f_remit_placeholder` | what this is |  |  |  |  |
