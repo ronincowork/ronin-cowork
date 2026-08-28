@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1222 keys · 54 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1229 keys · 54 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -973,12 +973,19 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `roots.cancel` | cancel |  |  |  |  |
 | `roots.chip_archived` | archived |  |  |  |  |
 | `roots.chip_archived_title` | Off the new-session picker. Still here, and still launchable by name. |  |  |  |  |
+| `roots.chip_direct` | direct |  |  |  |  |
+| `roots.chip_direct_title` | Direct: commits land on {stable} itself. No desks, no team line. |  |  |  |  |
 | `roots.chip_gone` | directory is gone |  |  |  |  |
 | `roots.chip_gone_title` | Nothing on disk at this path — fix the path or exclude it |  |  |  |  |
 | `roots.chip_no_remote` | repo, no remote |  |  |  |  |
 | `roots.chip_no_remote_title` | A git repo with no origin |  |  |  |  |
 | `roots.chip_no_repo` | no repo |  |  |  |  |
 | `roots.chip_no_repo_title` | Not a git repo — legal, a project_root need not be one |  |  |  |  |
+| `roots.chip_reviewed` | reviewed |  |  |  |  |
+| `roots.chip_reviewed_desks` | reviewed · desks |  |  |  |  |
+| `roots.chip_reviewed_title` | Reviewed: work happens at desks that hand in to a team line; team promotion moves {working}; {stable} moves by PR. The branch mounted here is incidental. |  |  |  |  |
+| `roots.chip_shared` | shared checkout |  |  |  |  |
+| `roots.chip_shared_title` | No RONIN_REPO record: sessions share this checkout and the claim hook guards the index. Add the record to declare reviewed desks or direct publishing. |  |  |  |  |
 | `roots.count_archived` | {n} archived |  |  |  |  |
 | `roots.count_many` | {n} project_roots |  |  |  |  |
 | `roots.count_one` | {n} project_root |  |  |  |  |

@@ -669,6 +669,13 @@ The catalog entry goes. {dir} is not touched.
 - **roots.exclude_failed:** could not exclude it — {message}
 - **roots.empty:** nothing included yet — ＋ include asks Mika to point Ronin at a directory
 - **roots.loading:** loading…
+- **roots.chip_reviewed_desks:** reviewed · desks
+- **roots.chip_reviewed:** reviewed
+- **roots.chip_direct:** direct
+- **roots.chip_reviewed_title:** Reviewed: work happens at desks that hand in to a team line; team promotion moves {working}; {stable} moves by PR. The branch mounted here is incidental.
+- **roots.chip_direct_title:** Direct: commits land on {stable} itself. No desks, no team line.
+- **roots.chip_shared:** shared checkout
+- **roots.chip_shared_title:** No RONIN_REPO record: sessions share this checkout and the claim hook guards the index. Add the record to declare reviewed desks or direct publishing.
 
 ## docs — docs.js (the ▧ Docs tab)
 - **docs.back_title:** Back to the list

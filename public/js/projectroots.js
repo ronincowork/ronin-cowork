@@ -170,6 +170,18 @@ export function buildProjectRoots(root, isShowing, tile) {
       const remote = (r.facts.repo.remote || '').replace(/^.*[/:]([^/]+\/[^/]+?)(\.git)?$/, '$1');
       chip(remote || t('roots.chip_no_remote', 'repo, no remote'), '', r.facts.repo.remote || t('roots.chip_no_remote_title', 'A git repo with no origin'));
       if (r.facts.repo.branch) chip('⑂ ' + r.facts.repo.branch);
+      // HOW THE REPOSITORY IS RUN, apart from the branch mounted here: read from its
+      // checked-in RONIN_REPO. No record = today's shared checkout, said plainly.
+      const a = r.arrangement;
+      if (a && a.source !== 'absent') {
+        const managed = a.mode === 'reviewed' && a.desks === 'managed';
+        chip(managed ? t('roots.chip_reviewed_desks', 'reviewed · desks') : a.mode === 'reviewed' ? t('roots.chip_reviewed', 'reviewed') : t('roots.chip_direct', 'direct'), '',
+          a.mode === 'reviewed'
+            ? t('roots.chip_reviewed_title', 'Reviewed: work happens at desks that hand in to a team line; team promotion moves {working}; {stable} moves by PR. The branch mounted here is incidental.', { working: a.working || 'dev', stable: a.stable || 'master' })
+            : t('roots.chip_direct_title', 'Direct: commits land on {stable} itself. No desks, no team line.', { stable: a.stable || 'main' }));
+      } else if (a) {
+        chip(t('roots.chip_shared', 'shared checkout'), 'muted', t('roots.chip_shared_title', 'No RONIN_REPO record: sessions share this checkout and the claim hook guards the index. Add the record to declare reviewed desks or direct publishing.'));
+      }
     } else {
       // A project_root need not be a project_repo. `~/lab` is one; this is a
       // legal shape, not a warning.
