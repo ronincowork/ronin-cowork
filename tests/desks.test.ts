@@ -322,11 +322,18 @@ test('crash: a lock left by a dead process is reclaimed; a live holder is waited
   const ran = await withLineLock('cowork', 'team/comp/dev', async () => 'ran');
   assert.equal(ran, 'ran');
   assert.ok(!existsSync(dir));
-  // A live holder (us) — a second taker waits and does not run until we let go.
+  // A live holder (us) — a second taker waits and does not run until we let go. The
+  // order is forced by explicit signals, never by the clock: a sleep-based version of
+  // this failed under a loaded suite (2026-08-28) and blocked a promotion.
   let order: string[] = [];
-  const holder = withLineLock('cowork', 'team/comp/dev', async () => { await new Promise((r) => setTimeout(r, 200)); order.push('first'); });
-  await new Promise((r) => setTimeout(r, 30));
+  let acquired!: () => void;
+  const held = new Promise<void>((r) => { acquired = r; });
+  let release!: () => void;
+  const released = new Promise<void>((r) => { release = r; });
+  const holder = withLineLock('cowork', 'team/comp/dev', async () => { acquired(); await released; order.push('first'); });
+  await held;
   const waiter = withLineLock('cowork', 'team/comp/dev', async () => { order.push('second'); });
+  release();
   await Promise.all([holder, waiter]);
   assert.deepEqual(order, ['first', 'second']);
   await assert.rejects(
