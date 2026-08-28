@@ -1,5 +1,5 @@
 /* part of the ronin-cowork client — see js/README.md */
-/** Team and League cowork-space destination over the one managed workbench. */
+/** Cowork-space destination; its kind supplies the selector and context. */
 import { WorkspaceKit } from './workspace-kit.js';
 import { membersOfTeam, refreshTeams, subscribe, teamByName, teamsFromState } from './team-controller.js';
 import { createNewTeamView } from './new-team.js';
@@ -30,8 +30,8 @@ const COMMONS = '@commons'; // what a workspace remembers when it holds the team
 const COWORK = '@cowork'; // …and when it holds the cowork commons (docs/cowork-space.md)
 const NEW = '@new'; // …and when it holds the new-session surface
 
-export function createTeamView(options = {}) {
-  const league = options.selector === 'league';
+export function createCoworkView(options = {}) {
+  const league = options.kind === 'league';
   const viewKey = league ? 'league-workspace' : 'team';
   const { createSurface, createCard, createChannelSurface, createMetadata, setSurfaceState } = WorkspaceKit.primitives;
   const { createWorkbenchLayout } = WorkspaceKit.layouts;
