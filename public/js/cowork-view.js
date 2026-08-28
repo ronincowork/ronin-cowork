@@ -476,6 +476,7 @@ export function createCoworkView(options = {}) {
       add(cards, t('league.view', 'League view'), '@league-view');
       for (const item of teams) { const made = leagueTeamSurface(item.name); add(cards, item.name, made.token, item.objective || ''); add(leagueCards, item.name, made.token, item.objective || ''); }
       add(cards, t('new_team.title', 'New Team'), '@new-team', '', 'dotted');
+      add(cards, t('team.new_session', 'New session'), NEW, t('team.add_member_summary', 'A new session, born into the workspace you are in.'), 'dotted');
       return;
     }
     rosterCount.textContent = members.length ? String(members.length) : '';
