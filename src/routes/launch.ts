@@ -32,6 +32,7 @@ import { classifyStatus, type SessionStatus } from '../status.js';
 import { scanContext, scanModel } from '../ctx.js';
 
 import { count } from '../counts.js';
+import { listTeamRosters } from '../team-rosters.js';
 import { announceTeamChanges } from './wipeboards-api.js';
 import { markRoleDelivered } from '../role-watch.js';
 import { checkoutAt, deriveTeams, parkBrief, seedTegami, withAxes, writeGate } from '../tegami.js';
@@ -125,6 +126,9 @@ export function registerLaunch(app: express.Express): void {
     // naming neither axis, which falls through to launch_bare.
     if (!isValidName(resolved.name)) return res.status(400).json({ error: 'Could not derive a session name.' });
     if (await sessionExists(resolved.name)) return res.status(409).json({ error: `Session "${resolved.name}" already exists.` });
+    const teams = new Set((await listTeamRosters()).filter((item) => item.state !== 'archived').map((item) => item.name));
+    const unknownTeams = resolved.tags.filter((name) => !teams.has(name));
+    if (unknownTeams.length) return res.status(400).json({ error: `Unknown Team: ${unknownTeams.join(', ')}.` });
 
     // THE DESKS ARE OPENED BEFORE THE CLI EXISTS, so its first command runs at a desk. A
     // failure here is the launch's answer — 409, the reason, no session — never a quiet
