@@ -69,9 +69,7 @@ export function createTeamView() {
   let entered = false;
   let lastSeat = 'workspace1'; // the workspace last touched — where the next card lands
 
-  // NO FLIP (owner, 2026-08-28): the team commons is a roster CARD, into a workspace like a
-  // session — click for the selected cell, drag onto any. (C read its cell off the Kit
-  // SLOT = the column, so in the 2×2 it always hit the top cell — the "goofy" behaviour.)
+  // NO FLIP (owner, 2026-08-28): the team commons is a roster CARD, placed like a session.
   /* ---------- the workspaces: two seats, the roster between them, one commons ---------- */
   // A seat is a surface with its tiles in it: the pool's (one per member shown here,
   // the active one visible) and, when no member is shown, the seat's own empty tile —
@@ -90,10 +88,8 @@ export function createTeamView() {
   };
   /** The empty tile is in the seat exactly when no member is shown there. Built on first
    *  need, not at page load: a Tile registers itself with the Sessions grid's roll. */
-  // AN EMPTY WORKSPACE IS BLANK, AND SAYS SO (owner, 2026-08-27: *"it should just say
-  // 'workspace'. That's okay, it's blank"*). It was an empty Tile showing the tile-level
-  // commons — a surface the cowork_space no longer uses (its rooms moved: Roster and
-  // Archived to the cowork commons, ＋ New session to a surface of its own).
+  // AN EMPTY WORKSPACE IS BLANK AND SAYS SO (owner, 2026-08-27) — the tile-level commons
+  // is off this page; its rooms moved (docs/cowork-space.md).
   const paintSeats = () => {
     for (const seat of Object.values(seats)) {
       if (seat.pool.active) seat.empty?.el.remove();
@@ -203,9 +199,7 @@ export function createTeamView() {
   const service = (node) => ({ el: node, mount: () => {}, enter: () => {}, leave: () => {}, destroy: () => {} });
   const channels = createChannelSurface({
     label: t('team.commons', 'Team commons'),
-    // DOCS FIRST, AND NO CHAT (owner, 2026-08-28: "hide the chat (it's dead for the
-    // moment) and move Docs to first tab"). It landed on Chat from 2026-08-25; Chat comes
-    // back to this list when it is a thing.
+    // DOCS FIRST, NO CHAT (owner, 2026-08-28) — Chat returns to this list when it is a thing.
     channels: [
       { id: 'docs', label: t('workspace.channel_docs', 'Docs') },
       { id: 'wipeboard', label: t('workspace.channel_wipeboard', 'Wipeboard') },
