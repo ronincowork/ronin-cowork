@@ -146,13 +146,14 @@ export interface PromotionReceipt {
  * in the private ledger. CI needs only the candidate, its full proof, and its advance.
  */
 export function publicPromotionReceipt(r: PromotionReceipt): object {
+  const publicRepoName = (repo: string): string => repo.replace(/^ronin_/, '');
   return {
     id: `promotion-${r.repos[0]?.candidate.slice(0, 12) || 'pending'}`,
     kind: r.kind,
     state: r.state,
-    repos: r.repos.map(({ repo, candidate }) => ({ repo, candidate })),
-    proofs: r.proofs.map(({ repo, candidate, mode, passed, gates, verdict }) => ({ repo, candidate, mode, passed, gates, verdict })),
-    advances: r.advances.map(({ repo, to, status }) => ({ repo, to, status })),
+    repos: r.repos.map(({ repo, candidate }) => ({ repo: publicRepoName(repo), candidate })),
+    proofs: r.proofs.map(({ repo, candidate, mode, passed, gates, verdict }) => ({ repo: publicRepoName(repo), candidate, mode, passed, gates, verdict })),
+    advances: r.advances.map(({ repo, to, status }) => ({ repo: publicRepoName(repo), to, status })),
     ...(r.reverted_by ? { reverted_by: 'yes' } : {}),
   };
 }

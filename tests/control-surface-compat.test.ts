@@ -287,10 +287,12 @@ test('receipt: it rides the PR body in a ronin-promotion-receipt fence', () => {
 });
 
 test('receipt: its public projection contains proof, never private coordination metadata', () => {
-  const publicReceipt = publicPromotionReceipt(good() as any) as any;
+  const privateReceipt = good() as any;
+  for (const row of [...privateReceipt.repos, ...privateReceipt.proofs, ...privateReceipt.advances]) row.repo = 'ronin_cowork';
+  const publicReceipt = publicPromotionReceipt(privateReceipt) as any;
   assert.equal(receiptProblem(publicReceipt, 'cowork', SHA), null);
   const json = JSON.stringify(publicReceipt);
-  for (const secret of ['"team":"comp"', '"by":"comps"', '/x', 'team/comp/dev', 'hand_in_receipts', 'created_at', 'updated_at', 'history']) {
+  for (const secret of ['"team":"comp"', '"by":"comps"', '"ronin_cowork"', '/x', 'team/comp/dev', 'hand_in_receipts', 'created_at', 'updated_at', 'history']) {
     assert.ok(!json.includes(secret), `public receipt leaked ${secret}: ${json}`);
   }
 });
