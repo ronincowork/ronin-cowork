@@ -200,12 +200,12 @@ export function createTeamView() {
     selected: 'docs',
     services: { wipeboard, docs: docsService, 'team-configuration': service(config) },
   });
-  channels.el.addEventListener('pointerdown', () => { const id = commonsIn(); if (id) touch(id); });
+  channels.el.addEventListener('pointerdown', () => { const id = commonsIn(); if (id) touch(id); }, true);
   acceptSessionDrops(channels.el, () => commonsIn(), (name, id) => arrange({ [id]: name === COMMONS ? { commons: true } : { session: name } }));
   // THE COWORK COMMONS — the third surface a workspace can hold (owner, 2026-08-27). One
   // instance for the whole page; its strip carries the same T as the team commons'.
   const cowork = coworkCommons();
-  cowork.el.addEventListener('pointerdown', () => { const id = coworkIn(); if (id) touch(id); });
+  cowork.el.addEventListener('pointerdown', () => { const id = coworkIn(); if (id) touch(id); }, true);
   acceptSessionDrops(cowork.el, () => coworkIn(), (name, id) => arrange({ [id]: name === COMMONS ? { commons: true } : { session: name } }));
   // ＋ NEW SESSION IS A SURFACE (owner, 2026-08-27): the commons' launcher, in a workspace.
   // ＋ Add team member on the roster and か New on the bar both put it in the selected
@@ -221,7 +221,10 @@ export function createTeamView() {
   newSurface.content.append(newBody);
   const extras = new Set(); // sessions shown here that are not (yet) members — a newborn, a picked one
   const launcher = buildLauncher({ index: 'ws', connect: (name) => connectSession(name) }, launcherHost);
-  newSurface.el.addEventListener('pointerdown', () => { const id = newIn(); if (id) touch(id); });
+  // Selecting and dropping work on this surface as on any other (owner, 2026-08-28: "stuck
+  // at new session"): capture-phase, because the launcher's own controls stop propagation.
+  newSurface.el.addEventListener('pointerdown', () => { const id = newIn(); if (id) touch(id); }, true);
+  acceptSessionDrops(newSurface.el, () => newIn(), (name, id) => arrange({ [id]: name === COMMONS ? { commons: true } : { session: name } }));
   // Chat is reserved by the Kit and this file adds NOTHING to it — no composer, no fetch,
   // no timer. Its emptiness is the owner's ruling, not an unfinished state.
 
