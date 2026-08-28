@@ -4,7 +4,8 @@ import { readTeamRoster } from './team-rosters.js';
 import { readArrangement } from './desks/arrangement.js';
 import { teamLineBranch } from './desks/schema.js';
 import { abandonPromotion, bisectLine, promoteTeam, resumePromotion, revertPromotion } from './promotion/promote.js';
-import { listReceipts, publicPromotionReceipt, readReceipt, summarize, toChangeSet } from './promotion/receipts.js';
+import { lastGoodPromotion, listReceipts, publicPromotionReceipt, readReceipt, summarize, toChangeSet } from './promotion/receipts.js';
+import { openPullRequest } from './promotion/pr.js';
 import type { RepoSpec } from './promotion/candidate.js';
 import type { ByoinMode } from './promotion/byoin.js';
 
@@ -63,6 +64,7 @@ async function main(): Promise<void> {
   const [cmd, ...rest] = positional;
   if (!cmd || flag('--help')) {
     say('usage: ronin-promote <team> [--mode full|gates|ui] [--no-restart] [--dry-run] [--repo name=dir]');
+    say('       ronin-promote pr <team>          open or update the dev → master PR from the last complete receipt');
     say('       ronin-promote resume|abandon|revert|bisect|receipts|show …   (bin/ronin-promote --help for the whole list)');
     process.exit(cmd ? 0 : 2);
   }
@@ -98,6 +100,26 @@ async function main(): Promise<void> {
       for (const r of rs) say(`${r.id}  ${r.state.padEnd(11)} ${summarize(r)}`);
       process.exit(0);
     }
+    case 'pr': {
+      // The release PR, from the ledger — the open-pr action, mechanically. Owner,
+      // 2026-08-28: agents do not assemble gh commands or paste receipt blocks by hand.
+      const team = rest[0]; if (!team) throw new Error('pr needs a team');
+      const specs = await reposForTeam(team);
+      const receipt = await lastGoodPromotion(team);
+      if (!receipt) throw new Error(`team ${team} has no complete promotion to open a PR for — promote first`);
+      let worst = 0;
+      for (const spec of specs) {
+        const arr = await readArrangement(spec.repo, spec.dir);
+        try {
+          const o = await openPullRequest({ repo: spec.repo, dir: spec.dir, working: arr.working, stable: arr.stable, receipt }, { log: say });
+          say(`✓ ${spec.repo}: PR ${o.action} — ${o.url}  (${arr.working}@${o.head.slice(0, 12)} → ${arr.stable}; receipt ${receipt.id}). Merging is the owner's hand.`);
+        } catch (e) {
+          worst = 1;
+          say(`✗ ${spec.repo}: ${(e as Error).message}`);
+        }
+      }
+      process.exit(worst);
+    }
     case 'show': {
       const id = rest[0]; if (!id) throw new Error('show needs a receipt id');
       const r = await readReceipt(id);
@@ -114,8 +136,8 @@ async function main(): Promise<void> {
       const out = await promoteTeam({ team, repos: specs, by, mode, restart: !flag('--no-restart'), dryRun: flag('--dry-run'), log: say });
       if (out.ok && out.receipt?.state === 'complete') {
         say('');
-        say('for the dev → master pull request body, when it is time:');
-        say(`  bin/ronin-promote show ${out.receipt.id} --pr-block`);
+        say('to open the dev → master pull request from this receipt, when it is time:');
+        say(`  bin/ronin-promote pr ${team}`);
       }
       return report(out);
     }
