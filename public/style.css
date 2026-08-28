@@ -700,8 +700,10 @@ body {
 }
 /* Top-bar verbs — BOTH surfaces (owner override of the touch/desktop split) */
 /* The LOOK: one rule, one family. One verb since 2026-08-27 (owner): Commons, Mika
-   Assist, Keypad, New and the grid count all left the bar — see index.html. */
-#sysbtn {
+   Assist, Keypad and New left the bar — see index.html. The shape button rides this rule
+   too; it is the same box. SIZING splits below, because the shape is not a verb. */
+#sysbtn,
+#bar .shape-cycle {
   display: inline-flex;
   align-items: center;
   background: transparent;
@@ -4968,6 +4970,34 @@ button.wb-door:hover b {
     border-color: var(--aiiro-lift);
     color: var(--bg);
   }
+  /* THE SHAPE (2 ⇄ 4), sitting between メ and ニ — the grid count's old seat and look. Deliberately NOT a house colour: the
+     two kana are doors that open a sheet, this one changes the screen under them, and
+     three coloured boxes in a row would read as three of a kind. Furniture instead —
+     panel and line, like the picker beside it — at the same 40px so the row stays even.
+     The face is a digit, so it takes the bar's own font rather than the kana size. */
+  #bar .shape-cycle {
+    flex: 0 0 auto;
+    /* Holds the count and ニ against the right edge when there is no picker up here to
+       fill the row — i.e. at 2 or 4, where each tile wears its own header again. A
+       no-op at 1: the picker is flex:1 and leaves no free space for a margin to take. */
+    margin-left: auto;
+    height: 40px;
+    min-width: 44px;
+    background: var(--panel);
+    color: var(--fg);
+    border: var(--edge) solid var(--line);
+    border-radius: var(--radius-md);
+    font: inherit;
+    font-size: var(--text-7);
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+  }
+  #bar .shape-cycle:active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--on-accent);
+  }
   /* The row is the session: the picker takes every pixel the two openers do not.
      The 50% cap was there to stop it crowding out nine buttons; the buttons are
      gone and the picker is the reason the row exists. */
@@ -6040,6 +6070,31 @@ button.wb-door:hover b {
   border-top: var(--edge) solid var(--line);
 }
 
+/* ---- THE SHAPE BUTTON (owner, 2026-08-28: "put that in the place of the 1,2,4 button …
+   alt between the numbers"). One button wearing the count it is on — 2 or 4 — clicked
+   to alternate; js/team-view.js writes the face and owns the click. It stands where the
+   grid count stood and wears its look. Centred, tabular digits so 2 / 4 do not shift. */
+#bar .shape-cycle {
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+/* Sizing is per-surface and must not cross: the touch block earlier in this file gives
+   it a 44px finger target, and an unscoped min-width down here would quietly undo it. */
+@media (hover: hover) and (pointer: fine) {
+  #bar .shape-cycle {
+    min-width: 34px;
+    padding: 0 var(--space-4);
+  }
+  #bar .shape-cycle:hover {
+    color: var(--fg);
+    border-color: var(--muted);
+  }
+  #bar .shape-cycle:active {
+    background: var(--line);
+    color: var(--fg);
+  }
+}
 /* ---- PROVENANCE: a catalog entry that is the user's own (js/provenance.js).
    Stock gets NOTHING — silence is the right rendering for "as shipped", and the
    common case must not be decorated to serve the rare one. Two glyphs, because

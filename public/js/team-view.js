@@ -162,21 +162,19 @@ export function createTeamView() {
   const rosterHead = el('div', 'tw-roster-head');
   const rosterCount = el('span', 'tw-roster-count');
   const rosterNote = el('span', 'tw-roster-note');
-  // THE SHAPE CONTROL lives on the selector column's head — it is about how the space is
-  // arranged, which is the column's business. Two buttons, one pressed.
-  const countBox = el('div', 'tw-count');
-  const countBtns = {};
-  for (const n of [2, 4]) {
-    const b = el('button', 'tw-count-btn', String(n));
-    b.type = 'button';
-    b.title = n === 2 ? t('team.count_2_title', 'Two workspaces around the roster') : t('team.count_4_title', 'Four workspaces, two by two');
-    b.setAttribute('aria-pressed', 'false');
-    b.addEventListener('click', () => arrange({ count: n }));
-    countBtns[n] = b;
-    countBox.append(b);
-  }
+  // THE SHAPE CONTROL is the bar's #shapecycle (owner, 2026-08-28: the 1·2·4 count's seat,
+  // "alt between the numbers"): this view writes its face and owns its click while it is
+  // entered; the roster head carries no pair.
+  const shapeBtn = document.getElementById('shapecycle');
+  const paintShape = () => {
+    if (!shapeBtn) return;
+    shapeBtn.textContent = String(count);
+    shapeBtn.title = count === 4 ? t('bar.shape_four', 'Four workspaces — click for two') : t('bar.shape_two', 'Two workspaces — click for four');
+    shapeBtn.setAttribute('aria-label', shapeBtn.title);
+  };
+  const onShape = () => arrange({ count: count === 4 ? 2 : 4 });
   const rosterTitle = el('span', 'tw-roster-title', t('team.roster_title', 'Roster'));
-  rosterHead.append(rosterTitle, rosterCount, rosterNote, countBox);
+  rosterHead.append(rosterTitle, rosterCount, rosterNote);
   kanban.el.prepend(rosterHead);
   const cards = el('div', 'tw-cards');
   kanban.content.append(cards);
@@ -295,7 +293,7 @@ export function createTeamView() {
     count = n === 4 ? 4 : 2;
     for (const col of Object.values(columns)) col.dataset.count = String(count);
     for (const id of LOWER) cells[id].hidden = count !== 4;
-    for (const [n2, b] of Object.entries(countBtns)) b.setAttribute('aria-pressed', String(Number(n2) === count));
+    paintShape();
     if (count === 2 && LOWER.includes(lastSeat)) touch('workspace1');
     ctx?.patchViewState('team', { count });
     remember();
@@ -644,6 +642,7 @@ export function createTeamView() {
       workbench.restore(!stored && profileOrder.length ? { ...typed.arrangement, order: profileOrder } : typed.arrangement);
       // What each workspace remembers holding; the old one-seat focusedSession lands in
       // the first workspace, once. With nothing remembered: the lead left, the commons right.
+      if (shapeBtn) { shapeBtn.hidden = false; shapeBtn.addEventListener('click', onShape); }
       setCount(context.viewState('team')?.count === 4 ? 4 : 2);
       remembered = { ...typed.seats };
       if (!Object.keys(remembered).length) remembered = typed.focusedSession ? { workspace1: typed.focusedSession } : {};
@@ -685,6 +684,7 @@ export function createTeamView() {
       if (S.showCoworkCommons) S.showCoworkCommons = null;
       S.showNewSession = null;
       S.connectSession = null;
+      if (shapeBtn) { shapeBtn.hidden = true; shapeBtn.removeEventListener('click', onShape); }
     },
     destroy: () => {
       entered = false;

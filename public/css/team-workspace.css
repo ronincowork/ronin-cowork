@@ -28,10 +28,6 @@
   .tw-cell { display: flex; min-height: 0; min-width: 0; }
   .tw-cell[hidden] { display: none; }
   .tw-cell > * { flex: 1 1 auto; min-height: 0; min-width: 0; }
-  /* the shape control on the selector column's head: 2 | 4, one pressed */
-  .tw-count { margin-left: auto; display: inline-flex; gap: var(--space-1); }
-  .tw-count-btn { border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); color: var(--muted); padding: 0 var(--space-3); font: inherit; font-size: var(--text-3); cursor: pointer; }
-  .tw-count-btn[aria-pressed='true'] { border-color: var(--kaki); color: var(--fg-strong); }
 
   /* a blank workspace: the word, centred, and nothing else (owner, 2026-08-27) */
   .tw-blank-word { margin: auto; font-size: var(--text-5); color: var(--muted); }

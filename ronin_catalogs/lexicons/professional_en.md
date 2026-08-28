@@ -1144,6 +1144,9 @@ The catalog entry goes. {dir} is not touched.
 - **bar.ni_title:** Ronin — keys, home, new session, board, pad
 - **bar.new:** New
 - **bar.desk:** Admin Desk
+- **bar.shape_title:** Two workspaces — click for four
+- **bar.shape_two:** Two workspaces — click for four
+- **bar.shape_four:** Four workspaces — click for two
 
 ## me — tiledrop.js (the メ sheet)
 - **me.status:** Status

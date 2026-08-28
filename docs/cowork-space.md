@@ -29,7 +29,7 @@ you add it there in the same commit.
 **Two shapes** (owner, 2026-08-27): **2** — workspace 1 · selector column · workspace 2, as
 drawn; and **4** — a 2×2 of workspaces with the selector column left, centre or right. A
 workspace column is a STACK: workspace 3 sits under 1, workspace 4 under 2, and the count
-(the `2 | 4` control on the selector column's head, or `count=4` from `tejun-teampage`)
+(the bar's **2 ⇄ 4** button, in the seat the grid count had — one button wearing the count, clicked to alternate — or `count=4` from `tejun-teampage`)
 shows or hides the lower cells. The selector's place is the same `order` in both shapes.
 There is no one-workspace shape.
 

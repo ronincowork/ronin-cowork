@@ -374,6 +374,11 @@ export function buildDrawers() {
     el.querySelector('.txt')?.remove(); // the word is the row's now
     drop.addRow(el, label);
   }
+  // The shape button comes up between メ and ニ — RELOCATED, not rebuilt, so the face
+  // team-view.js writes and the click it owns come along.
+  const shape = document.getElementById('shapecycle');
+  if (shape) bar.append(shape);
+
   bar.append(drop.btn, drop.menu);
 
   // Desktop bar scaffolding, now emptied out on touch.
