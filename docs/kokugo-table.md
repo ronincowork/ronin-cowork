@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1247 keys · 54 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1252 keys · 54 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -85,7 +85,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
-| `cowork.commons` | Cowork commons |  |  |  |  |
+| `cowork.commons` | Ronin Desk |  |  |  |  |
 | `cowork.h_appearance` | Appearance |  |  |  |  |
 | `cowork.h_configuration` | Configuration |  |  |  |  |
 | `cowork.h_gbrain` | gbrain |  |  |  |  |
@@ -99,7 +99,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `cowork.mika_text` | Ask about Ronin itself — how it works, project roots, starting a session, changing a setting. She starts if she is not up. |  |  |  |  |
 | `cowork.tab_account` | Account |  |  |  |  |
 | `cowork.tab_archives` | Archived |  |  |  |  |
-| `cowork.tab_health` | Machine health |  |  |  |  |
+| `cowork.tab_health` | Desk |  |  |  |  |
 | `cowork.tab_help` | Help desk |  |  |  |  |
 | `cowork.tab_keypad` | Keypad |  |  |  |  |
 | `cowork.tab_profile` | Desk profile |  |  |  |  |
@@ -630,7 +630,12 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `league.open_workspace` | League workspace |  |  |  |  |
 | `league.resting` | Resting Team |  |  |  |  |
 | `league.rosters_unavailable` | Durable rosters unavailable — showing live Teams only. |  |  |  |  |
+| `league.selector_new` | New |  |  |  |  |
+| `league.selector_teams` | Teams |  |  |  |  |
+| `league.selector_views` | Views |  |  |  |  |
 | `league.show_rosters` | Show rosters |  |  |  |  |
+| `league.team_roster` | Team roster |  |  |  |  |
+| `league.team_roster_saving` | Adding {session} to {team}… |  |  |  |  |
 | `league.title` | League |  |  |  |  |
 | `league.unassigned` | Unassigned |  |  |  |  |
 | `league.unassigned_summary` | Live sessions that carry no Team membership. |  |  |  |  |

@@ -116,7 +116,7 @@ export async function init() {
     if (!root) throw new Error('cowork root is missing');
     workspace.register('cowork', {
       el: root,
-      title: () => t('cowork.commons', 'Cowork commons'),
+      title: () => t('cowork.commons', 'Ronin Desk'),
       enter: () => { const c = coworkCommons(); root.append(c.el); c.select(c.current()); },
     });
   });

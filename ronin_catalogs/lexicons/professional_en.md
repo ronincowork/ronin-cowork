@@ -964,8 +964,8 @@ The catalog entry goes. {dir} is not touched.
 - **pane.stats:** Stats
 
 ## desk — desk.js (the desk's rows and tooltips)
-- **cowork.commons:** Cowork commons
-- **cowork.tab_health:** Machine health
+- **cowork.commons:** Ronin Desk
+- **cowork.tab_health:** Desk
 - **cowork.tab_account:** Account
 - **cowork.tab_profile:** Desk profile
 - **cowork.tab_roots:** Project roots
@@ -1427,6 +1427,11 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.session_menu:** Status · Ladder · Macros · Detach · Kill session
 - **league.commons:** League commons
 - **league.view:** League view
+- **league.team_roster:** Team roster
+- **league.team_roster_saving:** Adding {session} to {team}…
+- **league.selector_views:** Views
+- **league.selector_teams:** Teams
+- **league.selector_new:** New
 - **league.open_workspace:** League workspace
 - **customize.desk_profiles:** Desk profiles
 - **customize.desk_profiles_blurb:** Your standing defaults for the surfaces you work at — a skin, a lexicon, a campaign kind, a Team page arrangement. Choosing one is a setting, on the gear.

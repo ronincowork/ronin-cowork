@@ -473,7 +473,7 @@ export function createCoworkView(options = {}) {
       add(views, t('league.commons', 'League commons'), '@league-commons');
       add(views, t('league.view', 'League view'), '@league-view');
       add(views, t('league.team_roster', 'Team roster'), '@team-roster');
-      add(views, t('league.desk', 'Desk'), DESK, '', null, { cowork: true, tab: 'health' });
+      add(views, t('cowork.commons', 'Ronin Desk'), DESK, '', null, { cowork: true, tab: 'health' });
       for (const item of teams) { const made = leagueTeamSurface(item.name); add(teamCards, item.name, made.token, item.objective || ''); add(leagueCards, item.name, made.token, item.objective || ''); }
       add(newCards, t('new_team.title', 'New Team'), '@new-team', '', 'dotted');
       add(newCards, t('team.new_session', 'New session'), NEW, t('team.add_member_summary', 'A new session, born into the workspace you are in.'), 'dotted');
