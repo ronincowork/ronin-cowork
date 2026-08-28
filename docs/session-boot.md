@@ -12,6 +12,7 @@ Put a file on the shelf and new sessions read it. That is the whole feature.
 | `root/<project_root>/` | only sessions working in that directory |
 | `role/<session_role>/` | only sessions doing that kind of work — **re-delivered when the session_role changes** |
 | `team_role/<team_role>/` | only sessions born onto a team whose roster names that team_role — the team's own build brief, read once |
+| `assignment/` | only sessions whose launch resolved repo desks — the desk contract (`DESK_CONTRACT.md`: commit → hand-in → team promotion → Git push). A launch given no desk reads nothing here; the level is a fact about the launch, not an axis a static shelf could guess |
 
 The levels are **additive, not a hierarchy**. A session cutting `CutCode` on a
 `development` team in `ronin_cowork` reads all of its levels and nothing overrides

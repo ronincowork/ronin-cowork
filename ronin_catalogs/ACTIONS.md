@@ -460,13 +460,15 @@ to its declared stable line — `dev → master` for Ronin's product repositorie
 `RONIN_REPO`, never assumed to be `main`. Only those two lines ever reach the remote: a
 desk branch or a team line is **never** pushed, and an ordinary session never opens a PR
 for its own work (that is a hand-in, `tejun-desk hand-in`). The head SHA must carry a
-complete team-promotion receipt — the PR consumes the proof, it is not the first full
-check. **Never merge.** Merging is the owner's gate (same principle as the control dial:
+complete team-promotion receipt, and **the PR body carries that receipt** as a fenced
+block (```` ```ronin-promotion-receipt ```` … ```` ``` ````) — CI verifies the exact SHA
+against it and a PR without one FAILS; the PR consumes the proof, it is not the first
+full check. **Never merge.** Merging is the owner's gate (same principle as the control dial:
 the approval must be his hand).
 ```bash
 working=$(libexec/ronin-repo-mode working); stable=$(libexec/ronin-repo-mode stable)
 git push origin "$working"
-gh pr create --base "$stable" --head "$working" --title "<title>" --body "<what + why + receipt id>"
+gh pr create --base "$stable" --head "$working" --title "<title>" --body "<what + why>\n\n\`\`\`ronin-promotion-receipt\n<the receipt JSON from the promotion ledger>\n\`\`\`"
 ```
 Report the PR URL. Under direct publishing there is no working line and no PR: this
 action does not apply.

@@ -41,6 +41,11 @@
  *   team_role/<team_role>/  only sessions born onto a team whose roster names that
  *                           team_role — the team_role's own build brief and reading list
  *                           (R35, 2026-08-23)
+ *   assignment/             only sessions whose launch resolved repo desks — the desk
+ *                           contract (commit → hand-in → team promotion → Git push). A
+ *                           launch given no desk reads nothing here: the level is a fact
+ *                           about the launch, never a guess a static shelf could make
+ *                           (RONIN_CONTROL_SURFACE.md §2, 2026-08-28)
  *
  * They are ADDITIVE, not a hierarchy — nothing overrides anything. `where`, `what now`
  * and `whose team` are independent: the same bug-chasing habits apply in every repo, the
@@ -78,7 +83,7 @@ const STOCK = path.join(__dirname, '..', 'ronin_session_boot');
 const SESSION_MACROS_TEMPLATE = path.join(STOCK, 'SESSION_MACROS.md');
 
 /** The levels, in reading order. `root`, `role` and `team_role` take the launch's own value. */
-export type Level = 'all' | 'root' | 'role' | 'team_role';
+export type Level = 'all' | 'root' | 'role' | 'team_role' | 'assignment';
 
 const userShelf = () => storeDir('session_boot');
 
@@ -200,6 +205,7 @@ export async function ensureShelf(roots: string[] = []): Promise<void> {
     path.join(base, 'root'),
     path.join(base, 'role'),
     path.join(base, 'team_role'),
+    path.join(base, 'assignment'),
     ...roots.map((r) => path.join(base, 'root', r)),
   ];
   await Promise.all(dirs.map((d) => mkdir(d, { recursive: true }).catch(() => {})));
@@ -276,6 +282,7 @@ export async function bootFiles(
   sessionRole: string,
   teamRole: string,
   mcpOn = true,
+  assigned = false,
 ): Promise<string[]> {
   const user = userShelf();
   const dirs: string[] = [path.join(STOCK, 'all'), path.join(user, 'all')];
@@ -287,6 +294,9 @@ export async function bootFiles(
   // A blank axis contributes NOTHING rather than contributing an empty level.
   if (sessionRole) dirs.push(path.join(STOCK, 'role', sessionRole), path.join(user, 'role', sessionRole));
   if (teamRole) dirs.push(path.join(STOCK, 'team_role', teamRole), path.join(user, 'team_role', teamRole));
+  // The desk contract rides only a launch that actually resolved desks — a launch fact,
+  // so it cannot be an axis folder; it is on or off, and off contributes nothing.
+  if (assigned) dirs.push(path.join(STOCK, 'assignment'), path.join(user, 'assignment'));
 
   const byName = new Map<string, string>();
   for (const dir of dirs) for (const f of await filesIn(dir)) byName.set(path.basename(f), f);

@@ -10,6 +10,8 @@ import { storeDir } from './stores.js';
 import { findDefinition, listRoleFamilies } from './definitions.js';
 import { isCreatableTeamName as isTeamName, readTeamRoster, teamRosterFile, type TeamRoster } from './team-rosters.js';
 import { resolveLaunchProfile, type Dial, type LaunchProfile, type StatedBy } from './launch-profile.js';
+import { primaryDesk, renderDeskBlock, resolveLaunchDesks, type DeskChoice } from './launch-desks.js';
+import type { Assignment } from './desks/schema.js';
 
 /**
  * The mechanical executor: a filled form in, a briefed session out.
@@ -111,6 +113,13 @@ export interface SpawnForm {
    * where the work it is looking at actually lives.
    */
   reference?: string;
+  /**
+   * THE DESK CONTROL of the launch box — *own desk · plain root* — pre-answered: absent
+   * means by lifecycle (a coding launch on a reviewed repo gets desks, nothing else does);
+   * `own` asks for one regardless, `none` refuses one. Ignored in manual mode and for a
+   * plain terminal, which never carry a desk (src/launch-desks.ts).
+   */
+  desk?: DeskChoice;
 }
 
 /** What the form resolves to once sentinels are filled from the catalogs. */
@@ -129,6 +138,13 @@ export interface Resolved {
   team_role: string;
   /** Never '' — a session must be born somewhere, and the resolver refuses otherwise. */
   project_root: string;
+  /**
+   * THE ASSIGNMENT — every repo desk this launch was given, or null: a manual launch, a
+   * plain terminal, a non-code role, a direct/undeclared repository, or the switch off.
+   * Null means the brief says nothing about desks and `dir` is the root's own directory.
+   * Derived here, OPENED by the route before the CLI starts (src/launch-desks.ts).
+   */
+  assignment: Assignment | null;
   mode: 'manual' | 'assisted';
   brief: string;
   /**
@@ -191,6 +207,7 @@ export function buildBrief(
   referenceDir?: string,
   boot: string[] = [],
   roster?: TeamRoster | null,
+  assignment?: Assignment | null,
 ): string {
   // MANUAL: what the owner typed, byte for byte. No posture, no reading list, no
   // opening template, no ack rule. If this ever grows a "just one helpful line",
@@ -214,6 +231,12 @@ export function buildBrief(
         `(tejun-team ${form.team}), it has no durable roster, and its wipeboard is "${form.team}" (tejun-wipeboard ${form.team}).`,
     );
   }
+  // THE DESKS, concrete: every repo desk, its path, the line it hands in to, and the four
+  // words — before the reading, because it is the one fact about WHERE this session is
+  // that nothing else in the brief states. A launch with no assignment has no line here:
+  // a brief that mentions desks to a session standing in `dev` is the failure the control
+  // surface exists to prevent (src/launch-desks.ts).
+  if (assignment?.desks.length) parts.push(renderDeskBlock(assignment));
   // THE SESSION BOOT SHELF, listed at this instant rather than remembered. This replaced
   // the project_root's `read:` — a stored list of literal paths that went stale in silence
   // the moment a file moved. Nothing is written down now, so nothing can be wrong: a file
@@ -291,8 +314,9 @@ async function bootReading(
   teamRole: string,
   mcpOn: boolean,
   bornLead = false,
+  assigned = false,
 ): Promise<string[]> {
-  const files = await bootFiles(projectRoot, sessionRole, teamRole, mcpOn);
+  const files = await bootFiles(projectRoot, sessionRole, teamRole, mcpOn, assigned);
   // Route 1 (the coordinating kind of role) — and a session BORN as the 人 (`team_lead`
   // on the form), which leads whatever its role says: the reading follows the 人.
   const leadRole = !!sessionRole && (await listRoleFamilies()).some((f) => f.default_lead_role === sessionRole);
@@ -512,23 +536,38 @@ export async function resolveForm(
       return true;
     });
   };
+  // THE NAME is settled before the desks, because a desk branch carries it.
+  const name = wanted || slugName(profile.session_role || form.team || 'session', form.prompt, taken);
+  // THE DESKS, derived (never opened here — the route opens them, before the CLI starts).
+  // Null is an honest answer for most launches; see src/launch-desks.ts for the three.
+  const assignment = await resolveLaunchDesks({
+    session: name,
+    team: form.team ?? '',
+    project_root: root.name,
+    mode: form.mode === 'manual' ? 'manual' : 'assisted',
+    agent,
+    lifecycle: profile.lifecycle,
+    desk: form.desk,
+  });
   // Compile this once and return the exact same list the brief receives. The browser must
   // never recreate shelf precedence or guess which explicit seeds joined it.
   const shelfReading = agent
-    ? await bootReading(root.name, profile.session_role, roster?.team_role ?? '', !mcpOffWanted, !!form.team_lead && !!form.team)
+    ? await bootReading(root.name, profile.session_role, roster?.team_role ?? '', !mcpOffWanted, !!form.team_lead && !!form.team, !!assignment)
     : [];
   const birthReading = agent && form.mode !== 'manual'
     ? [...shelfReading, ...(form.seed ?? [])].filter(Boolean)
     : [];
 
   return {
-    name: wanted || slugName(profile.session_role || form.team || 'session', form.prompt, taken),
+    name,
     // The profile's own `dir:` WINS over the project_root's, because it is a constant of
     // the launch — the same category as its dial, and a launch must not be able to leave
     // it to chance. Exactly one definition carries one (`mikaassist`, `{install}`): she
     // works on Ronin's own business, so she starts where Ronin's documents are whatever
-    // root was picked.
-    dir: profileDir(profile) || root.dir || '',
+    // root was picked. AN ASSIGNMENT wins over the root: the session starts in its
+    // primary desk, never in the root's funnel checkout (WORKTREES.md, the one rule).
+    dir: profileDir(profile) || (assignment ? primaryDesk(assignment).worktree : '') || root.dir || '',
+    assignment,
     cmd,
     // Born onto a team = tagged into it, through the same membership the roster derives
     // from. The team rides FIRST so a truncated list can never drop the birth team.
@@ -554,6 +593,7 @@ export async function resolveForm(
           referenceDir,
           shelfReading,
           roster,
+          assignment,
         )
       : '',
     agent,
@@ -580,7 +620,8 @@ export async function resolveForm(
     birth_reading: birthReading,
     stated_by: {
       name: form.name ? explicit : system,
-      dir: profile.dir ? profile.stated_by.dir : rootSource,
+      dir: profile.dir ? profile.stated_by.dir : assignment ? system : rootSource,
+      assignment: form.desk ? explicit : system,
       cmd: cmdSource,
       tags: unique(roster ? rosterSource : [], form.tags?.length ? explicit : []),
       dial: profile.stated_by.dial,
