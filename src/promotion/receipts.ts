@@ -1,6 +1,7 @@
 import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { storeDir } from '../stores.js';
+import type { ChangeSetReceipt, ChangeSetRepo, ChangeSetState } from '../desks/schema.js';
 
 /**
  * PROMOTION RECEIPTS — the durable record of every attempt to move a repository's `dev`.
@@ -33,30 +34,28 @@ export type PromotionState =
   | 'failed'      // stopped BEFORE any ref moved — dev untouched, gates named below
   | 'interrupted' // stopped AFTER at least one ref moved — needs `resume` or `abandon`
   | 'reverted'    // health failed after restart; a revert receipt (`revert_of` = this) landed
+  | 'unhealthy'   // every ref moved, the app restarted, health failed and no revert landed — the lead is told
   | 'abandoned';  // an interrupted receipt the lead explicitly gave up on
 
-export const TERMINAL_STATES: readonly PromotionState[] = ['complete', 'failed', 'reverted', 'abandoned'];
-
-/** One repository's part of a change set. */
-export interface RepoCandidate {
-  /** Repository name as the team roster spells it (`cowork`, `services`). */
-  repo: string;
+/**
+ * One repository's part of a change set. Extends Fable 1's `ChangeSetRepo` (the shape the
+ * roster and CI read) with what the executor needs to rebuild it: where the repo is, which
+ * line and target, the line tip, and the files — attribution's raw material.
+ */
+export interface RepoCandidate extends ChangeSetRepo {
   /** The repository's home checkout — where `dev` is mounted and the app runs from. */
   dir: string;
   /** The line being promoted, e.g. `team/comp/dev`. */
   line: string;
   /** The target ref, e.g. `dev`. */
   target: string;
-  /** `target`'s SHA when the candidate was built — the compare-and-swap expectation. */
-  expected_old: string;
   /** The team line's tip that went into the candidate. */
   line_tip: string;
-  /** The candidate commit (target + line tip, merged in the candidate worktree). Absent when the merge conflicted. */
-  candidate?: string;
-  /** Hand-in receipt ids this candidate carries (Fable 1's ledger), or derived merge SHAs until that ledger exists. */
-  hand_in_receipts: string[];
-  /** Files touched between `expected_old` and `candidate` — attribution's raw material. */
+  /** Files touched between `expected_old` and `candidate`. */
   files: string[];
+  /** Why this repo carries no candidate — a conflict, a dirty funnel worktree — or absent. */
+  refused?: string;
+  conflict_files?: string[];
 }
 
 export type GateStatus = 'ok' | 'FAIL' | 'SKIP';
@@ -116,6 +115,8 @@ export interface PromotionReceipt {
   id: string;
   kind: 'team_promotion' | 'team_revert';
   team: string;
+  /** Fable 1's `ChangeSetReceipt.at` — the moment the receipt was opened. */
+  at: string;
   created_at: string;
   updated_at: string;
   state: PromotionState;
@@ -142,11 +143,12 @@ const TRANSITIONS: Record<PromotionState, readonly PromotionState[]> = {
   preparing: ['proving', 'failed'],
   proving: ['advancing', 'failed'],
   advancing: ['restarting', 'complete', 'interrupted'],
-  restarting: ['complete', 'reverted'],
+  restarting: ['complete', 'reverted', 'unhealthy'],
   complete: ['reverted'],
   failed: [],
   interrupted: ['advancing', 'abandoned'],
   reverted: [],
+  unhealthy: [],
   abandoned: [],
 };
 
@@ -164,8 +166,6 @@ export function advanceState(r: PromotionReceipt, next: PromotionState): Promoti
   const at = now();
   return { ...r, state: next, updated_at: at, history: [...r.history, { state: next, at }] };
 }
-
-export const isTerminal = (r: PromotionReceipt): boolean => TERMINAL_STATES.includes(r.state);
 
 /**
  * Whether this receipt BLOCKS a new promotion of the same team: a coordinated promotion
@@ -200,6 +200,7 @@ export function newReceipt(input: {
     id: newReceiptId(input.team, kind),
     kind,
     team: input.team,
+    at,
     created_at: at,
     updated_at: at,
     state: 'preparing',
@@ -265,6 +266,43 @@ export async function lastGoodPromotion(team: string, dir = PROMOTION_LEDGER_DIR
   return null;
 }
 
+/* ---------------------------------------------------------------- the shared shape */
+
+/**
+ * The receipt as Fable 1's `ChangeSetReceipt` — what the roster and CI read. The executor's
+ * finer states fold into the five shared ones; a `failed` promotion never moved a ref, so
+ * it is `abandoned` in the shared vocabulary (nothing to recover). `advanced_to` is filled
+ * from the advances actually done.
+ */
+export function toChangeSet(r: PromotionReceipt): ChangeSetReceipt {
+  const shared: Record<PromotionState, ChangeSetState> = {
+    preparing: 'prepared',
+    proving: 'prepared',
+    advancing: 'advancing',
+    restarting: 'advancing',
+    complete: 'complete',
+    failed: 'abandoned',
+    interrupted: 'interrupted',
+    reverted: 'complete',
+    unhealthy: 'complete',
+    abandoned: 'abandoned',
+  };
+  const done = new Map(r.advances.filter((a) => a.status === 'done').map((a) => [a.repo, a.to]));
+  return {
+    id: r.id,
+    at: r.at,
+    team: r.team,
+    state: shared[r.state],
+    repos: r.repos.map((x) => ({
+      repo: x.repo,
+      expected_old: x.expected_old,
+      candidate: x.candidate,
+      hand_in_receipts: x.hand_in_receipts,
+      advanced_to: done.get(x.repo) ?? '',
+    })),
+  };
+}
+
 /* ---------------------------------------------------------------- the one-line readout */
 
 /** What the roster or a DM says about a receipt: `landing: cowork done, services pending`. */
@@ -272,7 +310,7 @@ export function summarize(r: PromotionReceipt): string {
   const parts = r.advances.map((a) => `${a.repo} ${a.status}`);
   switch (r.state) {
     case 'complete':
-      return `complete — ${r.repos.map((x) => `${x.repo}@${(x.candidate ?? '').slice(0, 7)}`).join(', ')}`;
+      return `complete — ${r.repos.map((x) => `${x.repo}@${x.candidate.slice(0, 7)}`).join(', ')}`;
     case 'failed':
       return `failed at ${r.failure?.stage ?? '?'} — ${r.failure?.message ?? ''}`;
     case 'interrupted':
@@ -280,6 +318,8 @@ export function summarize(r: PromotionReceipt): string {
       return `landing: ${parts.join(', ')}`;
     case 'reverted':
       return `reverted by ${r.reverted_by ?? '?'}`;
+    case 'unhealthy':
+      return `unhealthy — refs moved, health failed, no revert landed`;
     default:
       return r.state;
   }

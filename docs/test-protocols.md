@@ -5,27 +5,42 @@ This is the provider-neutral testing contract. It reaches every coding agent thr
 
 ## Repository development
 
-Ordinary work on `dev` does **not** run BYOIN after a leg, before a commit, before a push,
-or after a service restart. Development uses direct dogfood and the smallest scoped,
-diagnostic evidence needed to understand the change. Individual checks may be run for that
-diagnostic purpose; they are not a substitute release verdict and should not be expanded
-into a private imitation of BYOIN.
+Ordinary work at a desk does **not** run BYOIN — not after a leg, not before a commit,
+not at a hand-in, not after a service restart. Development uses direct dogfood and the
+smallest scoped, diagnostic evidence needed to understand the change. Individual checks
+may be run for that diagnostic purpose; they are not a substitute verdict and should not
+be expanded into a private imitation of BYOIN.
 
-One designated integrator runs exactly one appropriate BYOIN mode against the exact
-`dev → master` release candidate:
+The schedule (the WORKTREES build-out in ronin-lab, "What runs where"; mechanism in
+`docs/team-promotion.md`):
+
+| Boundary | Check |
+|---|---|
+| save · commit | none — private to the desk |
+| hand-in → team line | mechanical admission only: the merge, conflict detection, near-instant invariants |
+| **team promotion → `dev`** | **the one full repository BYOIN**, on the exact candidate, run by `bin/ronin-promote` |
+| `dev → master` PR | CI consumes the promotion receipt for the PR head; a `--gates` rerun is assurance, not the first check |
+| after `dev` moves | restart from the `dev` worktree, deployment health checks, automatic revert on failure |
+
+The full BYOIN therefore runs exactly once per promotion into `dev`, by the lead or
+compiler, in `dev`'s candidate worktree — `current dev + the team line's tip` — and `dev`
+then carries a receipt for its exact SHA (`bin/ronin-store promotion_ledger`):
 
 ```sh
-bin/ronin-byoin --gates   # repository-only candidate; browser checks explicitly SKIP
-bin/ronin-byoin --ui      # candidate changes rendered UI, browser journeys or composition
+bin/ronin-promote <team>             # candidates → full BYOIN → receipt → advance → restart → health
+bin/ronin-promote <team> --dry-run   # prove only; nothing written, nothing moved
 ```
 
-The integrator reads the complete verdict and records every SKIP as unverified. If the
-candidate changes after that run, it is a new candidate and needs a new designated verdict.
-Ordinary contributors do not rerun BYOIN around their individual commits.
+The receipt records which mode ran; CI requires `full`. A SKIP in it is unverified, and
+a candidate that changes after its run is a new candidate. Ordinary contributors do not
+run BYOIN around their commits or hand-ins; a rōnin's `solo/<session>` hands in straight
+to `dev`, so that hand-in *is* the promotion boundary and carries the full BYOIN.
 
-GitHub runs the isolated `--gates` workflow only for a pull request to `master` or an
-explicit `workflow_dispatch`. It does not run on pushes to `dev` or `master`. Local pushes
-have no BYOIN pre-push hook. CI is release-boundary evidence, not dev-loop cadence.
+GitHub runs its workflow only for a pull request to `master` or an explicit
+`workflow_dispatch`, and it begins by verifying the receipt attached to the PR body
+(`scripts/verify-promotion-receipt.mjs`) before any rerun. It does not run on pushes to
+`dev` or `master`. Local pushes have no BYOIN pre-push hook. CI is release-boundary
+evidence, not dev-loop cadence.
 
 ## Installed boxes and user stores
 

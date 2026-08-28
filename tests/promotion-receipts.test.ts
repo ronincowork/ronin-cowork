@@ -26,6 +26,7 @@ const repo = (name: string): import('../src/promotion/receipts.js').RepoCandidat
   candidate: 'c'.repeat(40),
   hand_in_receipts: [],
   files: [],
+  advanced_to: '',
 });
 
 test('a receipt walks forward only — the lie "complete after failed" is impossible', () => {
@@ -39,7 +40,6 @@ test('a receipt walks forward only — the lie "complete after failed" is imposs
   assert.throws(() => R.advanceState(r, 'preparing'), /cannot go from 'complete'/);
   const failed = R.advanceState(R.newReceipt({ team: 'comp', repos: [], by: 'test' }), 'failed');
   assert.throws(() => R.advanceState(failed, 'complete'), /cannot go from 'failed'/);
-  assert.equal(R.isTerminal(failed), true);
 });
 
 test('failed means dev untouched; interrupted means some ref moved — and only the latter blocks', () => {
