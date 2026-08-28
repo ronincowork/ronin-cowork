@@ -1434,6 +1434,9 @@ The catalog entry goes. {dir} is not touched.
 - **league.delete_team:** Delete
 - **league.delete_team_confirm:** Delete {team}? {count} Agents will lose this Team membership.
 - **league.launch_team:** Launch
+- **league.ronin:** Ronin: no team
+- **league.no_ronin:** No Rōnin Agents
+- **league.team_roster_removing:** Removing {session} from {team}…
 - **league.open_workspace:** League workspace
 - **customize.desk_profiles:** Desk profiles
 - **customize.desk_profiles_blurb:** Your standing defaults for the surfaces you work at — a skin, a lexicon, a campaign kind, a Team page arrangement. Choosing one is a setting, on the gear.

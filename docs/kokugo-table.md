@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1254 keys · 54 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1257 keys · 54 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -630,15 +630,18 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `league.new_team_summary` | Define the Team, then build its session roster. |  |  |  |  |
 | `league.no_agents` | No live Agents |  |  |  |  |
 | `league.no_members` | No live members |  |  |  |  |
+| `league.no_ronin` | No Rōnin Agents |  |  |  |  |
 | `league.not_recorded` | Not recorded |  |  |  |  |
 | `league.open_workspace` | League workspace |  |  |  |  |
 | `league.resting` | Resting Team |  |  |  |  |
+| `league.ronin` | Ronin: no team |  |  |  |  |
 | `league.rosters_unavailable` | Durable rosters unavailable — showing live Teams only. |  |  |  |  |
 | `league.selector_new` | New |  |  |  |  |
 | `league.selector_teams` | Teams |  |  |  |  |
 | `league.selector_views` | Views |  |  |  |  |
 | `league.show_rosters` | Show rosters |  |  |  |  |
 | `league.team_roster` | Team roster |  |  |  |  |
+| `league.team_roster_removing` | Removing {session} from {team}… |  |  |  |  |
 | `league.team_roster_saving` | Adding {session} to {team}… |  |  |  |  |
 | `league.template_delete` | Delete |  |  |  |  |
 | `league.template_delete_confirm` | Delete template {name}? |  |  |  |  |
