@@ -10,11 +10,8 @@ export function createLeagueWorkspaceView() {
   const root = node('main', 'tw-view league-workspace'); root.id = 'league-workspace';
   let context = null, selected = 'workspace1', dragged = null;
   const blank = () => { const s = createSurface({ label: t('team.workspace_blank', 'Workspace'), className: 'tw-blank' }); s.content.append(node('p', 'tw-blank-word', t('team.workspace_blank', 'Workspace'))); return s; };
-  const blanks = { workspace1: blank(), workspace2: blank() }, cells = {}, columns = {};
-  for (const id of Object.keys(blanks)) {
-    const c = node('div', 'tw-cell league-cell'), column = node('div', 'tw-column');
-    c.dataset.workspace = id; c.append(blanks[id].el); column.append(c); cells[id] = c; columns[id] = column;
-  }
+  const blanks = { workspace1: blank(), workspace2: blank() }, cells = {};
+  for (const id of Object.keys(blanks)) { const c = node('div', 'tw-cell league-cell'); c.append(blanks[id].el); cells[id] = c; }
   const select = (id) => { selected = id; for (const [name, cell] of Object.entries(cells)) cell.firstElementChild?.classList.toggle('tw-selected', name === id); };
   const place = (surface, id = selected) => {
     if (!surface?.el || !cells[id]) return;
@@ -56,7 +53,7 @@ export function createLeagueWorkspaceView() {
     listingCards.replaceChildren(...teams.map((team) => selectorCard(team.name, teamSurface(team.name), { summary: team.objective })));
   };
   const declaration = { slots: [{ name: 'workspace1', label: 'Workspace 1', width: 40 }, { name: 'roster', label: 'League', width: 20, min: 6, compact: 176 }, { name: 'workspace2', label: 'Workspace 2', width: 40 }] };
-  const workbench = WorkspaceKit.layouts.createWorkbenchLayout({ declaration, surfaces: { workspace1: columns.workspace1, roster: selector.el, workspace2: columns.workspace2 } });
+  const workbench = WorkspaceKit.layouts.createWorkbenchLayout({ declaration, surfaces: { workspace1: cells.workspace1, roster: selector.el, workspace2: cells.workspace2 } });
   root.append(workbench.host);
   return { el: root, arrangement: workbench.arrangement, title: () => t('league.open_workspace', 'League workspace'), enter: async (next) => { context = next; await refreshTeams(); paint(); select('workspace1'); } };
 }
