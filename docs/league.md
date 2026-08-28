@@ -42,9 +42,10 @@ represented by the row being dragged, leaving the Agent's other Team memberships
 A Team surface opened inside League carries a Launch button. Launch opens the existing
 `#/team/:name` cowork view in a new browser tab and leaves the League workspace in place.
 
-Every non-channel surface uses Workspace Kit's shared surface header, whose depth is the
-same `--row-head` as a terminal Tile and a Commons tab strip. Team roster's header reads
-`Team roster`; League view, Team detail, New Agent and blank Workspace use the same frame.
+Every standalone non-channel surface uses Workspace Kit's shared surface header, whose
+depth is the same `--row-head` as a terminal Tile and a Commons tab strip. League view,
+Team detail, New Agent and blank Workspace use the same frame. Team roster is already
+headed by its League Commons tab strip, so it does not add a second header inside the tab.
 
 There is no `#/league` destination, League view module, League board module, League
 stylesheet, roster visibility state, or parallel workspace implementation.

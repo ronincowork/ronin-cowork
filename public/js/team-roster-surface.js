@@ -11,7 +11,6 @@ const node = (tag, cls, text) => { const n = document.createElement(tag); if (cl
 
 export function createTeamRosterSurface() {
   const surface = WorkspaceKit.primitives.createSurface({ label: t('league.team_roster', 'Team roster'), className: 'team-roster-surface' });
-  surface.el.prepend(WorkspaceKit.primitives.createSurfaceHeader({ label: t('league.team_roster', 'Team roster') }).el);
   const layout = node('div', 'team-roster-layout');
   surface.content.append(layout);
   let message = '';
