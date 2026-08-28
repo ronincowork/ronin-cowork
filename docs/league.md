@@ -14,5 +14,9 @@ The League selector groups its cards into collapsible Views, Teams and New secti
 Ronin Desk is a View card and opens the shared Cowork commons directly on its Desk tab,
 which contains Ronin usage statistics; it is not a second desk surface.
 
+Team cards inside the League view surface are drag-only. Clicking one does not replace
+the selected workspace; dragging one onto another workspace opens that Team there. Team
+cards in the League selector remain clickable as well as draggable.
+
 There is no `#/league` destination, League view module, League board module, League
 stylesheet, roster visibility state, or parallel workspace implementation.

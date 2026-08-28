@@ -177,8 +177,7 @@ export function createCoworkView(options = {}) {
   newSurface.content.append(newBody);
   const extras = new Set();
   const launcher = buildLauncher({ index: 'ws', connect: (name) => connectSession(name) }, launcherHost);
-  // Chat is reserved by the Kit and this file adds NOTHING to it — no composer, no fetch,
-  // no timer. Its emptiness is the owner's ruling, not an unfinished state.
+  // Chat is reserved and intentionally empty.
 
   const DECLARATION = {
     slots: [
@@ -465,16 +464,17 @@ export function createCoworkView(options = {}) {
       cards.replaceChildren(); leagueCards.replaceChildren();
       const group = (key, label) => { const section = el('details', 'tw-selector-group'); section.open = !closedGroups.has(key); section.addEventListener('toggle', () => section.open ? closedGroups.delete(key) : closedGroups.add(key)); section.append(el('summary', null, label), el('div', 'tw-selector-group-cards')); cards.append(section); return section.lastElementChild; };
       const views = group('views', t('league.selector_views', 'Views')), teamCards = group('teams', t('league.selector_teams', 'Teams')), newCards = group('new', t('league.selector_new', 'New'));
-      const add = (host, heading, token, summary = '', variant = null, draft = { surface: token }) => {
+      const add = (host, heading, token, summary = '', variant = null, draft = { surface: token }, clickable = true) => {
         const selected = token === DESK ? whereIs(COWORK) && cowork.current() === 'health' : !!whereIs(token);
-        const card = createCard({ heading, summary, variant, selected, action: () => arrange({ [lastSeat]: draft }) });
+        const card = createCard({ heading, summary, variant, selected: clickable ? selected : null, action: clickable ? () => arrange({ [lastSeat]: draft }) : null });
+        if (!clickable) card.el.classList.add('league-drag-card');
         card.el.draggable = true; card.el.addEventListener('dragstart', (event) => { event.dataTransfer.setData(DRAG_TYPE, token); event.dataTransfer.effectAllowed = 'move'; }); host.append(card.el);
       };
       add(views, t('league.commons', 'League commons'), '@league-commons');
       add(views, t('league.view', 'League view'), '@league-view');
       add(views, t('league.team_roster', 'Team roster'), '@team-roster');
       add(views, t('cowork.commons', 'Ronin Desk'), DESK, '', null, { cowork: true, tab: 'health' });
-      for (const item of teams) { const made = leagueTeamSurface(item.name); add(teamCards, item.name, made.token, item.objective || ''); add(leagueCards, item.name, made.token, item.objective || ''); }
+      for (const item of teams) { const made = leagueTeamSurface(item.name); add(teamCards, item.name, made.token, item.objective || ''); add(leagueCards, item.name, made.token, item.objective || '', null, undefined, false); }
       add(newCards, t('new_team.title', 'New Team'), '@new-team', '', 'dotted');
       add(newCards, t('team.new_session', 'New session'), NEW, t('team.add_member_summary', 'A new session, born into the workspace you are in.'), 'dotted');
       return;

@@ -13,6 +13,7 @@
   .tw-selector-group > summary { padding: var(--space-2) 0; color: var(--fg-strong); cursor: pointer; }
   .tw-selector-group-cards { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-2) 0 var(--space-4); }
   .tw-selector-group-cards > [draggable='true'] { cursor: grab; }
+  .league-drag-card { cursor: grab; }
   /* THE TEAM COMMONS CARD — first in the roster, thinner than a session's (owner, 2026-08-28) */
   .tw-commons-card { padding-top: var(--space-2); padding-bottom: var(--space-2); }
   /* a seat with a card over it — the drop will land here */
