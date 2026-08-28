@@ -10,8 +10,8 @@ const node = (tag, cls, text) => { const n = document.createElement(tag); if (cl
 
 export function createTeamRosterSurface() {
   const surface = WorkspaceKit.primitives.createSurface({ label: t('league.team_roster', 'Team roster'), className: 'team-roster-surface' });
-  const layout = node('div', 'team-roster-layout'), sessions = node('section', 'team-roster-column'), teams = node('section', 'team-roster-column');
-  layout.append(sessions, teams); surface.content.append(layout);
+  const layout = node('div', 'team-roster-layout');
+  surface.content.append(layout);
   let message = '';
 
   const addMembership = async (session, team) => {
@@ -26,23 +26,38 @@ export function createTeamRosterSurface() {
     await refreshTeams(); message = ''; render();
   };
   const render = () => {
-    sessions.replaceChildren(node('h2', null, t('stats.sessions', 'Sessions')));
-    for (const session of S.sessions || []) {
-      const card = node('article', 'team-roster-session'); card.draggable = true;
-      card.append(node('b', null, session.name), node('small', null, session.session_role || ''));
-      card.addEventListener('dragstart', (event) => { event.dataTransfer.setData(MIME, session.name); event.dataTransfer.effectAllowed = 'copy'; });
-      sessions.append(card);
-    }
-    teams.replaceChildren(node('h2', null, t('stats.teams', 'Teams')));
+    layout.replaceChildren();
     for (const team of teamsFromState().filter((item) => !item.holding)) {
-      const target = node('article', 'team-roster-team');
-      target.append(node('b', null, team.name), node('small', null, membersOfTeam(team.name).map((member) => member.name).join(', ') || t('team.no_live', 'No live sessions')));
+      const members = membersOfTeam(team.name);
+      const target = node('section', 'team-roster-team');
+      const heading = node('header', 'team-roster-heading');
+      heading.append(node('b', null, team.name), node('span', null, members.length));
+      target.append(heading);
+      for (const session of members) {
+        const row = node('div', 'team-roster-session', session.name); row.draggable = true;
+        row.addEventListener('dragstart', (event) => { event.dataTransfer.setData(MIME, session.name); event.dataTransfer.effectAllowed = 'copy'; });
+        target.append(row);
+      }
+      if (!members.length) target.append(node('span', 'team-roster-empty', t('team.no_live', 'No live sessions')));
       target.addEventListener('dragover', (event) => { if (![...event.dataTransfer.types].includes(MIME)) return; event.preventDefault(); target.dataset.dropReady = 'true'; });
       target.addEventListener('dragleave', () => { delete target.dataset.dropReady; });
       target.addEventListener('drop', (event) => { delete target.dataset.dropReady; const session = event.dataTransfer.getData(MIME); if (!session) return; event.preventDefault(); void addMembership(session, team.name); });
-      teams.append(target);
+      layout.append(target);
     }
-    if (message) teams.append(node('p', 'team-roster-message', message));
+    const loose = (S.sessions || []).filter((session) => !(session.tags || []).length);
+    if (loose.length) {
+      const unassigned = node('section', 'team-roster-team');
+      const heading = node('header', 'team-roster-heading');
+      heading.append(node('b', null, t('roster.no_team', 'no team')), node('span', null, loose.length));
+      unassigned.append(heading);
+      for (const session of loose) {
+        const row = node('div', 'team-roster-session', session.name); row.draggable = true;
+        row.addEventListener('dragstart', (event) => { event.dataTransfer.setData(MIME, session.name); event.dataTransfer.effectAllowed = 'copy'; });
+        unassigned.append(row);
+      }
+      layout.append(unassigned);
+    }
+    if (message) layout.append(node('p', 'team-roster-message', message));
   };
   render();
   return { el: surface.el, render };

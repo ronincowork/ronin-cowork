@@ -36,12 +36,13 @@
   .tw-new-body .home-null { display: flex; }
 
   .tw-note { padding: var(--space-6) var(--space-7); color: var(--muted); font-size: var(--text-3); }
-  .team-roster-layout { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); min-height: 100%; padding: var(--space-4); }
-  .team-roster-column { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
-  .team-roster-column h2 { margin: 0 0 var(--space-2); color: var(--fg-strong); font-size: var(--text-4); }
-  .team-roster-session, .team-roster-team { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-4); border: var(--edge) solid var(--line); border-radius: var(--radius-sm); background: var(--raise); }
+  .team-roster-layout { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: var(--space-4); min-height: 100%; padding: var(--space-4); }
+  .team-roster-team { min-width: 0; border: var(--edge) solid var(--line); border-radius: var(--radius-sm); background: var(--raise); overflow: hidden; }
+  .team-roster-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: var(--edge) solid var(--line); color: var(--fg-strong); }
+  .team-roster-heading span, .team-roster-empty, .team-roster-message { color: var(--muted); }
+  .team-roster-session, .team-roster-empty { display: block; padding: var(--space-3) var(--space-4); border-bottom: var(--edge) solid var(--line); }
+  .team-roster-session:last-child, .team-roster-empty:last-child { border-bottom: 0; }
   .team-roster-session { cursor: grab; }
-  .team-roster-session small, .team-roster-team small, .team-roster-message { color: var(--muted); }
   .team-roster-team[data-drop-ready='true'] { border-color: var(--kaki); background: var(--kaki-lift); }
   /* -- Team Configuration: a reading of the team — its record, then its live roster -- */
   .tw-config { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-6) var(--space-7); overflow-y: auto; }
