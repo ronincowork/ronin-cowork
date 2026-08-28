@@ -86,7 +86,7 @@ That division is the rollout's governing rule.
 
 | Current touchpoint | What it says or does now | Required disposition |
 |---|---|---|
-| `ronin-cowork/AGENTS.md` | Auto-read contract: no dev-loop BYOIN; one full run at `dev → master`. | Replace the stale boundary with a short pointer: desk work uses the desk contract; full repo BYOIN runs at `team → dev`; installed-box BYOIN remains separate. |
+| `AGENTS.md` | Auto-read contract: no dev-loop BYOIN; one full run at `dev → master`. | Replace the stale boundary with a short pointer: desk work uses the desk contract; full repo BYOIN runs at `team → dev`; installed-box BYOIN remains separate. |
 | `ronin_sops/github.md` | Reviewed work is done continuously on shared `dev`, pushed daily; temporary worktrees fold into `dev` and disappear. Direct repos commit/push stable. | Rewrite reviewed mode around private desks, hand-in and team promotion. Preserve direct mode as a declared exception. Distinguish **hand-in/promotion** (local integration operations) from **Git push** (remote publication). |
 | `ronin_sops/ronin_methodology.md` | `+cutcode` and `+land` commit and push coherent work to `dev`. | Describe commit as private preservation, hand-in as publication to the team, and team promotion as lead-owned admission to `dev`. Closing may prompt hand-in or park; it must not silently publish. |
 | `docs/test-protocols.md` | Full BYOIN belongs to the exact `dev → master` candidate; GitHub isolated gates run on the PR. | Make `team → dev` the one full repository BYOIN. A matching SHA receipt travels to PR/CI; CI verifies/consumes it rather than being the first full check. Keep installed-box BYOIN after maintenance/update/store changes. |
@@ -283,7 +283,7 @@ lastGoodPromotion / blockingReceipt / summarize`. Published for others: `GET /ap
 line per repo, `promotion`); `src/desk-state.ts DeskState` (the one shape every surface
 reads — registry first, git-derived for a letter repo with no row, nothing invented);
 TEGAMI `repos[]` entries may carry `worktree` and `line` (tool-written, optional).
-Where each shown fact comes from: `ronin-cowork/docs/desk-state.md`.
+Where each shown fact comes from: `docs/desk-state.md`.
 
 ### Track 5 interfaces — landed on cowork `dev`, 2026-08-28
 
@@ -299,7 +299,7 @@ guard off), the main tree is `home` (shared index, guard on); `bin/shim/git`, `.
 in the PR body as a ```` ```ronin-promotion-receipt ```` fence (the ledger is on the box;
 committing it onto `dev` would change the SHA it proves); `verify.yml` runs
 `scripts/verify-promotion-receipt.mjs` before its `--gates` rerun, and a PR without a receipt
-fails. Hand-back and cutover checklist: `ronin-cowork/docs/control-surface-audit.md`
+fails. Hand-back and cutover checklist: `docs/control-surface-audit.md`
 (row 5's switch is Track 3's `RONIN_DESKS=on`). Only Cowork's `RONIN_REPO` is written; the
 sibling declarations and two §0 Syncthing findings (shiwake, site) are the owner's.
 
@@ -397,7 +397,7 @@ replacement pass is insufficient; the classification is the audit.
   `handInAssignment({desks})`. Per-line lock `src/desks/queue.ts` (`withLineLock`,
   `queueHolder`; dead-pid reclaim). Line advanced only by `casRef` (`update-ref` with
   expected old); line worktree `reset --hard` under the lock after a clean check.
-- **Receipts** `src/desks/receipts.ts`: JSONL per `<repo>/<line>` under `desks/receipts/`;
+- **Receipts** `src/desks/receipts.ts`: JSONL per repo and line under the desks receipts store;
   `appendReceipt`, `receiptsForLine`, `receiptsForDesk`, `receiptById`,
   `acceptedSince(repo, line, lastPromotedLineSha)` — what a change set carries.
 - **Tool** `ronin_bin/tejun-desk` → `src/desk-cli.ts`: `status | open | hand-in
@@ -435,7 +435,7 @@ replacement pass is insufficient; the classification is the audit.
 - **Proof** `src/promotion/byoin.ts`: `runByoin` (the repo's own `bin/ronin-byoin` in the
   candidate; parsed `ok/FAIL/SKIP` lines + verdict; no tool → one SKIP, never a pass),
   `runCompat` — the combined protocol for cowork+services: `CONTRACT_V` equal across the
-  two `sockets-contract.ts`; services' `bin/dev-sync` into the cowork candidate; then
+  two `sockets-contract.ts`; services' dev-sync tool into the cowork candidate; then
   `check-kyokai` + `tsc` there. Matches repos on the `ronin_`-stripped key.
 - **Health** `src/promotion/health.ts`: `restartService` (`ronin`, else `tmux-ronin`),
   `healthCheck({dir})` — `/api/health` ≤40 s, then `scripts/smoke-ui.mjs` (exit 2 = SKIP,

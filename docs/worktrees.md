@@ -320,12 +320,12 @@ candidate.
       team line overnight (the orphan rule, one level up).
    5. **Never per hand-in, never on a fixed timer.**
    The team summary *prompts* (*5 hand-ins since last team push · 4 h · another team
-   touched `roster.ts`*); the lead pushes. With one team: at least once per working
+   touched `public/js/roster.js`*); the lead pushes. With one team: at least once per working
    stretch, and whenever the summary says five.
 
 ## Where BYOIN runs
 
-BYOIN is not a hook (`ronin-cowork/docs/test-protocols.md:28`); it runs against the
+BYOIN is not a hook (`docs/test-protocols.md:28`); it runs against the
 worktree it is run in. Under the corrected schedule it runs **once per promotion into
 `dev`**, in `dev`'s candidate (current `dev` + team-line tip), triggered by the lead or
 compiler. A rōnin's `solo/<session>` pushes straight to `dev`, so its push *is* that
@@ -445,7 +445,7 @@ surface gets a default that needs no understanding, and at most one visible cont
 ## §0 · Precondition found on the box — 2026-08-28
 
 `ronin-cowork/.stignore` excludes only `node_modules`: the working files **and `.git`**
-are two-way synced with the Mac (`dohyo/SYNCTHING_README.md`). `ronin-lab`'s `.stignore`
+are two-way synced with the Mac (as documented in the host's Syncthing README). `ronin-lab`'s `.stignore`
 says why that is dangerous and excludes `.git`. Consequences: some of today's "collisions"
 are the Mac's older copy coming back (it happened to this note twice); worktree metadata
 holds absolute paths, so desks and a synced `.git` cannot coexist.
