@@ -4,10 +4,11 @@ import { t } from './lexicon.js';
 
 const node = (tag, cls, text) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
 const orders = new WeakMap(), wired = new WeakSet();
+const AGENT_MIME = 'application/x-ronin-league-agent', SOURCE_MIME = 'application/x-ronin-league-source';
 
 const rememberOrder = (host, changed) => { const order = [...host.querySelectorAll('.league-roster-team')].map((group) => group.dataset.team); orders.set(host, order); changed(order); };
 
-export function renderLeagueView(host, teams, membersOf, rowOf, tokenOf, dragType, initialOrder = [], changed = () => {}) {
+export function renderLeagueView(host, teams, membersOf, rowOf, tokenOf, dragType, initialOrder = [], changed = () => {}, reassign = () => {}) {
   if (!orders.has(host)) orders.set(host, initialOrder);
   const remembered = orders.get(host) || [];
   teams = [...teams].sort((a, b) => {
@@ -23,16 +24,18 @@ export function renderLeagueView(host, teams, membersOf, rowOf, tokenOf, dragTyp
   for (const team of teams) {
     const members = membersOf(team.name), group = node('section', 'league-roster-team');
     group.dataset.team = team.name; group.dataset.token = tokenOf(team.name);
-    const head = node('header', 'league-roster-head');
-    head.append(node('b', null, team.nullTeam ? t('league.ronin', 'Ronin: no team') : team.name), node('span', null, t('league.agents_count', '{n} Agents', { n: members.length })));
+    const head = node('header', 'league-roster-head'), teamName = node('b', null, team.nullTeam ? t('league.ronin', 'Ronin: no team') : team.name);
+    head.append(teamName, node('span', null, t('league.agents_count', '{n} Agents', { n: members.length })));
     if (team.objective) head.append(node('small', null, team.objective));
-    group.append(head); group.draggable = true;
-    group.addEventListener('dragstart', (event) => { event.dataTransfer.setData(dragType, tokenOf(team.name)); event.dataTransfer.effectAllowed = 'move'; });
-    group.addEventListener('dragover', (event) => { if (![...event.dataTransfer.types].includes(dragType)) return; event.preventDefault(); event.stopPropagation(); group.dataset.dropReady = 'true'; });
+    group.append(head); teamName.draggable = true;
+    teamName.addEventListener('dragstart', (event) => { event.dataTransfer.setData(dragType, tokenOf(team.name)); event.dataTransfer.effectAllowed = 'move'; });
+    const assign = async (agent, source) => { const result = await reassign(agent, source, team.name); if (!result?.ok) group.append(node('p', 'league-roster-empty', result?.message || '')); };
+    group.addEventListener('dragover', (event) => { if (![...event.dataTransfer.types].some((type) => type === dragType || type === AGENT_MIME)) return; event.preventDefault(); event.stopPropagation(); group.dataset.dropReady = 'true'; });
     group.addEventListener('dragleave', () => { delete group.dataset.dropReady; });
-    group.addEventListener('drop', (event) => { const token = event.dataTransfer.getData(dragType), dragged = [...host.children].find((item) => item.dataset.token === token); delete group.dataset.dropReady; event.preventDefault(); event.stopPropagation(); if (!dragged || dragged === group) return; const box = group.getBoundingClientRect(), after = event.clientY > box.top + box.height / 2; host.insertBefore(dragged, after ? group.nextSibling : group); rememberOrder(host, changed); });
+    group.addEventListener('drop', (event) => { const agent = event.dataTransfer.getData(AGENT_MIME), source = event.dataTransfer.getData(SOURCE_MIME); delete group.dataset.dropReady; event.preventDefault(); event.stopPropagation(); if (agent) { if (source !== team.name) void assign(agent, source); return; } const token = event.dataTransfer.getData(dragType), dragged = [...host.children].find((item) => item.dataset.token === token); if (!dragged || dragged === group) return; const box = group.getBoundingClientRect(), after = event.clientY > box.top + box.height / 2; host.insertBefore(dragged, after ? group.nextSibling : group); rememberOrder(host, changed); });
     for (const member of members) {
       const reading = rowOf(member.name) || {}, row = node('div', 'league-agent-row');
+      row.draggable = true; row.addEventListener('dragstart', (event) => { event.stopPropagation(); event.dataTransfer.setData(AGENT_MIME, member.name); event.dataTransfer.setData(SOURCE_MIME, team.name); event.dataTransfer.effectAllowed = 'move'; });
       const role = node('span', 'league-agent-role', member.session_role || '');
       const icon = taskIcon(member); if (icon) role.prepend(node('i', null, icon));
       const shingo = reading.tegami?.chip?.text && reading.tegami?.ladder?.length

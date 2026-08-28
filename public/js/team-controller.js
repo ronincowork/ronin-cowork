@@ -32,6 +32,16 @@ export async function refreshTeams() {
   publish();
   return { live, durable, snapshot: snapshot() };
 }
+export async function updateSessionTeams(session, change) {
+  const path = `/api/sessions/${encodeURIComponent(session)}/teams`, current = await request(path);
+  if (!current.ok) return current;
+  const saved = await request(path, { method: 'PUT', json: { teams: change(current.data.teams || []) } });
+  if (!saved.ok) return saved;
+  const live = sessions().find((item) => item.name === session);
+  if (live) live.tags = saved.data.teams || [];
+  await refreshTeams();
+  return saved;
+}
 export const sessionBelongsToTeam = (session, team) => (session.tags || []).includes(team);
 export const leadsTeam = (session, team) => (session.leads || []).includes(team);
 export function unassignedSessions() {

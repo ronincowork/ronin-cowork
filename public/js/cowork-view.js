@@ -1,7 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 /** Cowork-space destination; its kind supplies the selector and context. */
 import { WorkspaceKit } from './workspace-kit.js';
-import { membersOfTeam, refreshTeams, subscribe, teamByName, teamsFromState, UNASSIGNED } from './team-controller.js';
+import { membersOfTeam, refreshTeams, subscribe, teamByName, teamsFromState, UNASSIGNED, updateSessionTeams } from './team-controller.js';
 import { createNewTeamView } from './new-team.js';
 import { createLeagueCommons } from './league-commons.js';
 import { renderLeagueView } from './league-view-surface.js';
@@ -474,7 +474,7 @@ export function createCoworkView(options = {}) {
       for (const item of teams) { const made = leagueTeamSurface(item.name); add(teamCards, item.name, made.token, item.objective || ''); }
       const ronin = leagueTeamSurface(UNASSIGNED); add(teamCards, t('league.ronin', 'Ronin: no team'), ronin.token);
       const leagueGroups = [...teams, { name: UNASSIGNED, objective: '', nullTeam: true }];
-      renderLeagueView(leagueCards, leagueGroups, membersOfTeam, (name) => rows.get(name), (name) => leagueTeamSurface(name).token, DRAG_TYPE, ctx?.viewState(viewKey)?.teamOrder, (teamOrder) => ctx?.patchViewState(viewKey, { teamOrder }));
+      renderLeagueView(leagueCards, leagueGroups, membersOfTeam, (name) => rows.get(name), (name) => leagueTeamSurface(name).token, DRAG_TYPE, ctx?.viewState(viewKey)?.teamOrder, (teamOrder) => ctx?.patchViewState(viewKey, { teamOrder }), (agent, source, target) => updateSessionTeams(agent, (teams) => target === UNASSIGNED ? teams.filter((name) => name !== source) : [...new Set([...teams.filter((name) => name !== source), target])].sort()));
       add(newCards, t('new_team.title', 'New Team'), '@new-team', '', 'dotted');
       add(newCards, t('league.new_agent', 'New Agent'), NEW, t('league.new_agent_summary', 'A new Agent, born into the workspace you are in.'), 'dotted');
       return;
