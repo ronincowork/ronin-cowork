@@ -34,9 +34,6 @@ const by = opt('--by') ?? process.env.RONIN_SESSION ?? process.env.USER ?? 'lead
 const mode = (opt('--mode') ?? 'full') as ByoinMode;
 if (!['full', 'gates', 'ui'].includes(mode)) { say(`ronin-promote: --mode is full, gates or ui`); process.exit(2); }
 
-/** The repo key compat matches on: the project_root name with a `ronin_`/`ronin-` prefix stripped. */
-const repoKey = (root: string): string => root.replace(/^ronin[-_]/, '');
-
 async function reposForTeam(team: string): Promise<RepoSpec[]> {
   const roster = await readTeamRoster(team);
   if (!roster) throw new Error(`no team roster '${team}'`);
@@ -50,7 +47,7 @@ async function reposForTeam(team: string): Promise<RepoSpec[]> {
     if (!dir) throw new Error(`repo '${name}' is not a project_root here — pass --repo ${name}=/path`);
     const arr = await readArrangement(name, dir);
     if (arr.mode === 'direct') throw new Error(`${name} is declared direct (${arr.source}) — a direct repository has no team line to promote`);
-    specs.push({ repo: repoKey(name), dir, line: roster.branch || teamLineBranch(team), target: arr.working });
+    specs.push({ repo: name, dir, line: roster.branch || teamLineBranch(team), target: arr.working });
   }
   return specs;
 }
@@ -87,7 +84,7 @@ async function main(): Promise<void> {
       const team = rest[0]; if (!team) throw new Error('bisect needs a team');
       const specs = await reposForTeam(team);
       const want = opt('--repo');
-      const spec = want ? specs.find((s) => s.repo === repoKey(want)) : specs[0];
+      const spec = want ? specs.find((s) => s.repo === want) : specs[0];
       if (!spec) throw new Error(`no repo '${want}' on team ${team}`);
       const b = await bisectLine({ spec, from: opt('--from'), mode, log: say });
       say('');

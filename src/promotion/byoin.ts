@@ -112,8 +112,9 @@ export interface CompatInput {
  */
 export async function runCompat(inputs: CompatInput[], opts: RunOptions = {}): Promise<CompatProof> {
   const checks: GateResult[] = [];
-  const cowork = inputs.find((i) => i.repo === 'cowork' || (i.repo !== 'services' && inputs.length === 1));
-  const services = inputs.find((i) => i.repo === 'services');
+  const key = (repo: string): string => repo.replace(/^ronin[-_]/, '');
+  const cowork = inputs.find((i) => key(i.repo) === 'cowork');
+  const services = inputs.find((i) => key(i.repo) === 'services');
   if (!cowork || !services) {
     checks.push({ name: 'compat', status: 'SKIP', detail: `nothing cross-repo to check for ${inputs.map((i) => i.repo).join(' + ') || 'no repos'}` });
     return { passed: true, checks };

@@ -53,6 +53,8 @@ export interface RepoCandidate extends ChangeSetRepo {
   line_tip: string;
   /** Files touched between `expected_old` and `candidate`. */
   files: string[];
+  /** The sessions whose hand-ins this candidate carries — from the desks ledger; empty when derived from git. */
+  sessions: string[];
   /** Why this repo carries no candidate — a conflict, a dirty funnel worktree — or absent. */
   refused?: string;
   conflict_files?: string[];
@@ -109,6 +111,7 @@ export interface PromotionFailure {
   /** Attribution: which files changed and which hand-ins carried them. */
   files?: string[];
   hand_in_receipts?: string[];
+  sessions?: string[];
 }
 
 export interface PromotionReceipt {

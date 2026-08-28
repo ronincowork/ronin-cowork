@@ -2,6 +2,7 @@ import { access, symlink } from 'node:fs/promises';
 import path from 'node:path';
 import { storeDir } from '../stores.js';
 import { changedFiles, git, gitOut, isAncestor, mergeInto, revParse, worktreeAddDetached, worktreeList, casRef } from '../desks/git.js';
+import { acceptedSince } from '../desks/receipts.js';
 import type { RepoCandidate } from './receipts.js';
 
 /**
@@ -81,9 +82,14 @@ export interface PrepareResult {
  * worktree is dirty, the line does not exist, or the merge conflicts — `dev` is never
  * touched in any of those cases.
  */
+export interface HandIns { ids: string[]; sessions: string[] }
+export type HandInSource = (spec: RepoSpec, from: string, to: string, sinceLineTip: string) => Promise<HandIns>;
+
 export async function prepareCandidate(
   spec: RepoSpec,
-  handInsFor: (spec: RepoSpec, from: string, to: string) => Promise<string[]> = derivedHandIns,
+  handInsFor: HandInSource = ledgerHandIns,
+  /** The line tip the last complete promotion of this repo carried — where the ledger read starts. */
+  sinceLineTip = '',
 ): Promise<PrepareResult> {
   const expected_old = await revParse(spec.dir, `refs/heads/${spec.target}`);
   const line_tip = await revParse(spec.dir, `refs/heads/${spec.line}`);
@@ -96,6 +102,7 @@ export async function prepareCandidate(
     line_tip,
     candidate: '',
     hand_in_receipts: [],
+    sessions: [],
     files: [],
     advanced_to: '',
   };
@@ -117,11 +124,13 @@ export async function prepareCandidate(
     return { candidate: { ...base, refused: 'the merge conflicts', conflict_files: merge.conflicts }, nothing: false, cdir };
   }
   const candidate = await revParse(cdir, 'HEAD');
+  const handIns = await handInsFor(spec, expected_old, line_tip, sinceLineTip);
   return {
     candidate: {
       ...base,
       candidate,
-      hand_in_receipts: await handInsFor(spec, expected_old, line_tip),
+      hand_in_receipts: handIns.ids,
+      sessions: handIns.sessions,
       files: await changedFiles(spec.dir, expected_old, candidate),
     },
     nothing: false,
@@ -130,13 +139,30 @@ export async function prepareCandidate(
 }
 
 /**
- * Hand-in ids until Fable 1's ledger answers: the first-parent commits that carried the
- * line from `from` to `to` — one per accepted hand-in, oldest first. `promote.ts` swaps
- * this for the desks ledger's `receiptsForDesk` when it compiles.
+ * The hand-ins a candidate carries, from the desks ledger (Fable 1's `acceptedSince`):
+ * every accepted receipt on the line after the tip the last complete promotion carried,
+ * kept only if its resulting line SHA is actually in the tip being promoted. A line with
+ * no ledger rows (it predates the ledger, or was advanced by hand) falls back to the
+ * first-parent commits — one per hand-in, oldest first — so attribution is never empty
+ * when git can still answer.
  */
-export async function derivedHandIns(spec: RepoSpec, from: string, to: string): Promise<string[]> {
+export async function ledgerHandIns(spec: RepoSpec, from: string, to: string, sinceLineTip: string): Promise<HandIns> {
+  const rows = await acceptedSince(spec.repo, spec.line, sinceLineTip).catch(() => []);
+  const ids: string[] = [];
+  const sessions = new Set<string>();
+  for (const r of rows) {
+    if (r.line_sha && !(await isAncestor(spec.dir, r.line_sha, to))) continue;
+    ids.push(r.id);
+    if (r.session) sessions.add(r.session);
+  }
+  if (ids.length) return { ids, sessions: [...sessions] };
+  return derivedHandIns(spec, from, to);
+}
+
+/** The git-only answer: first-parent commits that carried the line from `from` to `to`. */
+export async function derivedHandIns(spec: RepoSpec, from: string, to: string): Promise<HandIns> {
   const out = await gitOut(spec.dir, ['rev-list', '--first-parent', '--reverse', `${from}..${to}`]).catch(() => '');
-  return out.split('\n').filter(Boolean);
+  return { ids: out.split('\n').filter(Boolean), sessions: [] };
 }
 
 export interface AdvanceOutcome {

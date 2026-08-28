@@ -88,7 +88,7 @@ test('happy path: candidate = dev + line, full BYOIN on that exact SHA, CAS adva
   const c = r.repos[0];
   assert.equal(c.expected_old, cw.base);
   assert.equal(c.line_tip, cw.line[1]);
-  assert.deepEqual(c.hand_in_receipts, cw.line, 'one derived hand-in per first-parent commit, oldest first');
+  assert.deepEqual(c.hand_in_receipts, cw.line, 'one derived hand-in per first-parent commit, oldest first (no ledger rows in this fixture)');
   assert.deepEqual(c.files.sort(), ['hand-in-1.txt', 'hand-in-2.txt']);
   assert.equal(sh(cw.dir, 'rev-parse', 'dev'), c.candidate, 'dev is at the candidate');
   assert.equal(sh(cw.dir, 'rev-parse', 'HEAD'), c.candidate, 'the mounted worktree followed');

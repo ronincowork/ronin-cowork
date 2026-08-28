@@ -1,9 +1,9 @@
 import { git, gitOut, revParse } from '../desks/git.js';
-import { advanceTarget, candidateDir, derivedHandIns, prepareCandidate, resetCandidate, targetAt, type RepoSpec } from './candidate.js';
+import { advanceTarget, candidateDir, ledgerHandIns, prepareCandidate, resetCandidate, targetAt, type HandInSource, type RepoSpec } from './candidate.js';
 import { runByoin, runCompat, type ByoinMode } from './byoin.js';
 import { healthCheck, notifyTeam, restartService } from './health.js';
 import {
-  advanceState, anyAdvanced, blockingReceipt, newReceipt, readReceipt, writeReceipt, PROMOTION_LEDGER_DIR,
+  advanceState, anyAdvanced, blockingReceipt, lastGoodPromotion, newReceipt, readReceipt, writeReceipt, PROMOTION_LEDGER_DIR,
   type CompatProof, type HealthResult, type PromotionReceipt, type RefAdvance, type RepoCandidate, type RepoProof,
 } from './receipts.js';
 
@@ -31,8 +31,8 @@ export interface Effects {
   restart: () => Promise<PromotionReceipt['restart']>;
   health: (primaryDir: string) => Promise<HealthResult>;
   notify: (primaryDir: string, team: string, text: string) => Promise<string>;
-  /** The hand-in receipt ids a candidate carries — Fable 1's ledger once it answers. */
-  handInsFor: (spec: RepoSpec, from: string, to: string) => Promise<string[]>;
+  /** The hand-ins a candidate carries — the desks ledger, with git as the fallback. */
+  handInsFor: HandInSource;
   /** Test seam: runs between advances, so a race can be injected after the first ref moved. */
   beforeAdvance?: (repo: string, index: number) => Promise<void>;
 }
@@ -43,7 +43,7 @@ export const realEffects: Effects = {
   restart: restartService,
   health: (dir) => healthCheck({ dir }),
   notify: notifyTeam,
-  handInsFor: derivedHandIns,
+  handInsFor: ledgerHandIns,
 };
 
 export interface PromoteOptions {
@@ -103,8 +103,10 @@ export async function promoteTeam(o: PromoteOptions): Promise<PromoteOutcome> {
   // ---- prepare
   log(`→ preparing candidates for team ${o.team}`);
   const prepared: { c: RepoCandidate; cdir?: string; nothing: boolean }[] = [];
+  const lastGood = await lastGoodPromotion(o.team, ledger);
   for (const spec of o.repos) {
-    const p = await prepareCandidate(spec, fx.handInsFor);
+    const since = lastGood?.repos.find((x) => x.repo === spec.repo && x.line === spec.line)?.line_tip ?? '';
+    const p = await prepareCandidate(spec, fx.handInsFor, since);
     prepared.push({ c: p.candidate, cdir: p.cdir, nothing: p.nothing });
     log(p.nothing ? `  —     ${spec.repo}: ${spec.line} is already in ${spec.target}` : p.candidate.refused ? `  FAIL  ${spec.repo}: ${p.candidate.refused}${p.candidate.conflict_files?.length ? ` (${p.candidate.conflict_files.join(', ')})` : ''}` : `  ok    ${spec.repo}: candidate ${p.candidate.candidate.slice(0, 7)} = ${spec.target}@${p.candidate.expected_old.slice(0, 7)} + ${spec.line}@${p.candidate.line_tip.slice(0, 7)} (${p.candidate.files.length} files, ${p.candidate.hand_in_receipts.length} hand-ins)`);
   }
@@ -140,6 +142,7 @@ export async function promoteTeam(o: PromoteOptions): Promise<PromoteOutcome> {
       gates: verdict.failedGates,
       files: active.flatMap((p) => p.c.files),
       hand_in_receipts: active.flatMap((p) => p.c.hand_in_receipts),
+      sessions: [...new Set(active.flatMap((p) => p.c.sessions))],
     };
     if (!o.dryRun) await writeReceipt(r, ledger);
     return { ok: false, receipt: r, nothing: false, message: `${r.failure.message}: ${verdict.failedGates.join(', ')}` };
@@ -413,7 +416,7 @@ export async function bisectLine(o: BisectOptions): Promise<BisectResult> {
       return { culprit: sha, files: [], steps };
     }
     const cand = await revParse(wt, 'HEAD');
-    const proof = await fx.byoin({ repo: o.spec.repo, dir: o.spec.dir, line: o.spec.line, target: o.spec.target, expected_old: from, line_tip: sha, candidate: cand, hand_in_receipts: [sha], files: [], advanced_to: '' }, wt, o.mode ?? 'full');
+    const proof = await fx.byoin({ repo: o.spec.repo, dir: o.spec.dir, line: o.spec.line, target: o.spec.target, expected_old: from, line_tip: sha, candidate: cand, hand_in_receipts: [sha], sessions: [], files: [], advanced_to: '' }, wt, o.mode ?? 'full');
     steps.push({ sha, passed: proof.passed, verdict: proof.verdict });
     log(`  ${proof.passed ? 'ok   ' : 'FAIL '} ${sha.slice(0, 7)}: ${proof.verdict}`);
     if (!proof.passed) {

@@ -25,6 +25,7 @@ const repo = (name: string): import('../src/promotion/receipts.js').RepoCandidat
   line_tip: 'b'.repeat(40),
   candidate: 'c'.repeat(40),
   hand_in_receipts: [],
+  sessions: [],
   files: [],
   advanced_to: '',
 });

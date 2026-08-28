@@ -92,9 +92,12 @@ failure       stage · message · gates[] · files[] · hand_in_receipts[]
 revert_of / reverted_by
 ```
 
-`hand_in_receipts[]` are the desks ledger's ids (`src/desks/schema.ts`, `HandInReceipt`)
-once that ledger answers; until then, the first-parent commits that carried the line
-from `expected_old` to `line_tip`, oldest first — one per accepted hand-in either way.
+`hand_in_receipts[]` are the desks ledger's ids (`src/desks/schema.ts`, `HandInReceipt`):
+every accepted hand-in on the line after the tip the last complete promotion carried,
+read through `acceptedSince` in `src/desks/receipts.ts`, and `sessions[]` beside them
+names who handed them in. A line with no ledger rows falls back to the first-parent
+commits that carried it from `expected_old` to `line_tip`, oldest first — one per
+hand-in either way, so attribution is never empty while git can still answer.
 `toChangeSet()` projects a receipt onto Fable 1's `ChangeSetReceipt`, the shape the
 roster reads (`show <id> --shared`).
 
