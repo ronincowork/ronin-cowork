@@ -18,6 +18,7 @@
 import { IS_TOUCH, S } from './state.js';
 import { CAN_RECORD, wireDictation } from './voice.js';
 import { MENTION_MIME } from './tilementions.js';
+import { DOC_MIME } from './team-drag.js';
 import { t } from './lexicon.js';
 
 /**
@@ -140,24 +141,39 @@ export function buildComposer(body, hooks) {
     }
   }
   ta.addEventListener('input', grow);
-  ta.addEventListener('dragover', (e) => {
-    if (!e.dataTransfer.types.includes(MENTION_MIME)) return;
+  // TWO THINGS DROP INTO THE BOX: a session (an @mention, js/tilementions.js) and a doc
+  // off the ▧ Docs list (its short reference, js/docs.js — owner, 2026-08-28). Both land
+  // at the caret with a space before if one is needed and one after. They are accepted on
+  // the WHOLE TILE BODY, not only the textarea: "onto a terminal tile" is the gesture, and
+  // the terminal covers most of it.
+  const carried = (e) => (e.dataTransfer.types.includes(MENTION_MIME) ? 'mention' : e.dataTransfer.types.includes(DOC_MIME) ? 'doc' : '');
+  const insertAtCaret = (text) => {
+    const start = ta.selectionStart;
+    const lead = start > 0 && !/\s/.test(ta.value[start - 1]) ? ' ' : '';
+    ta.setRangeText(`${lead}${text} `, start, ta.selectionEnd, 'end');
+    grow();
+    ta.focus();
+  };
+  const onDragOver = (e) => {
+    if (!carried(e)) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'copy';
     wrap.classList.add('mention-ready');
-  });
-  ta.addEventListener('dragleave', () => wrap.classList.remove('mention-ready'));
-  ta.addEventListener('drop', (e) => {
-    const name = e.dataTransfer.getData(MENTION_MIME);
-    if (!name) return;
+  };
+  const onDrop = (e) => {
+    const kind = carried(e);
+    if (!kind) return;
+    const data = e.dataTransfer.getData(kind === 'mention' ? MENTION_MIME : DOC_MIME);
+    if (!data) return;
     e.preventDefault();
     wrap.classList.remove('mention-ready');
-    const start = ta.selectionStart;
-    const lead = start > 0 && !/\s/.test(ta.value[start - 1]) ? ' ' : '';
-    ta.setRangeText(`${lead}@${name} `, start, ta.selectionEnd, 'end');
-    grow();
-    ta.focus();
-  });
+    insertAtCaret(kind === 'mention' ? `@${data}` : data);
+  };
+  for (const node of [ta, body]) {
+    node.addEventListener('dragover', onDragOver);
+    node.addEventListener('dragleave', () => wrap.classList.remove('mention-ready'));
+    node.addEventListener('drop', onDrop);
+  }
   ta.addEventListener('focus', () => {
     hooks.activate();
     // TOUCH: typing is the way back to the pane. The ladder and the letter cover

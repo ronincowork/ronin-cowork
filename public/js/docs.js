@@ -3,6 +3,7 @@ import { request } from './request.js';
 import { status } from './ui.js';
 import { homeData } from './home.js';
 import { t } from './lexicon.js';
+import { DOC_MIME } from './team-drag.js';
 
 /**
  * MDEDIT — the ▧ Docs tab: every session's listed docs, and a plain editor for one.
@@ -214,6 +215,17 @@ export function buildDocs(tile, root, isShowing, only = null) {
           Object.assign(document.createElement('span'), { textContent: parts.slice(-2).join('/') }),
         );
         b.addEventListener('click', () => open(p));
+        // DRAG A DOC ONTO A TILE (owner, 2026-08-28): the row carries the SHORT reference —
+        // the last directory and the name, what the row shows — and the tile's composer
+        // takes it the way it takes a dropped @mention (js/composer.js). Not the absolute
+        // path: a reference in a message is for reading, and the agent can find the file.
+        b.draggable = true;
+        b.addEventListener('dragstart', (event) => {
+          const short = p.split('/').slice(-2).join('/');
+          event.dataTransfer.setData(DOC_MIME, short);
+          event.dataTransfer.setData('text/plain', short);
+          event.dataTransfer.effectAllowed = 'copy';
+        });
         list.appendChild(b);
       }
     }
