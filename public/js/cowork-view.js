@@ -3,6 +3,7 @@
 import { WorkspaceKit } from './workspace-kit.js';
 import { membersOfTeam, refreshTeams, subscribe, teamByName, teamsFromState } from './team-controller.js';
 import { createNewTeamView } from './new-team.js';
+import { createTeamRosterSurface } from './team-roster-surface.js';
 import { activeProfile } from './desk-profile.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { createTeamWipeboard } from './team-wipeboard.js';
@@ -119,8 +120,7 @@ export function createCoworkView(options = {}) {
   kanban.el.prepend(rosterHead);
   const cards = el('div', 'tw-cards');
   kanban.content.append(cards);
-  // Keyboard through the roster: arrows move between cards, Enter or Space picks (a
-  // card is a button, so the pick is the button's own click).
+  // Keyboard through the roster: arrows move; Enter or Space uses the card's click.
   cards.addEventListener('keydown', (event) => {
     if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return;
     const all = [...cards.querySelectorAll('.wk-card[aria-pressed]')];
@@ -170,7 +170,6 @@ export function createCoworkView(options = {}) {
   // ＋ Add team member on the roster and か New on the bar both put it in the selected
   // workspace; a session born from it lands in that same workspace (`connect`).
   const newSurface = createSurface({ label: t('team.new_session', 'New session'), className: 'tw-new' });
-  // Its own head and body (feature classes; the Kit's own nodes are the Kit's to style).
   const newHead = el('div', 'tw-new-head');
   newHead.append(el('span', 'tw-new-title', t('team.new_session', 'New session')));
   newSurface.el.prepend(newHead);
@@ -184,9 +183,7 @@ export function createCoworkView(options = {}) {
   // no timer. Its emptiness is the owner's ruling, not an unfinished state.
 
   /* ---------- geometry: the whole of it is this declaration ---------- */
-  // Three slots by name; the Kit's frame draws them and the Kit's layout map in the bar
-  // shows, hides and reorders them. The roster goes down to 6% and turns compact under
-  // 11rem (176px) — the frame writes data-width on its slot and the Kit's card CSS reads it.
+  // The Kit draws, shows, hides and reorders slots. The roster compacts under 11rem.
   const DECLARATION = {
     slots: [
       { name: 'workspace1', label: t('team.workspace_1', 'Workspace 1'), width: 40 },
@@ -224,10 +221,12 @@ export function createCoworkView(options = {}) {
   const leagueCards = leagueBoard.querySelector('[data-surface="cards"]');
   leagueView.content.append(leagueBoard);
   const newTeamView = league ? createNewTeamView(WorkspaceKit) : null;
+  const teamRoster = league ? createTeamRosterSurface() : null;
   if (league) {
     SURFACES['@league-commons'] = { name: 'league-commons', el: leagueCommons.el };
     SURFACES['@league-view'] = { name: 'league-view', el: leagueView.el };
     SURFACES['@new-team'] = { name: 'new-team', el: newTeamView.el, show: () => newTeamView.enter(ctx) };
+    SURFACES['@team-roster'] = { name: 'team-roster', el: teamRoster.el, show: () => teamRoster.render() };
   }
   const tokenOf = (el) => Object.keys(SURFACES).find((k) => SURFACES[k].el === el) || '';
   /** Which surface token this cell holds, or '' for its own seat. */
@@ -474,6 +473,7 @@ export function createCoworkView(options = {}) {
       };
       add(cards, t('league.commons', 'League commons'), '@league-commons');
       add(cards, t('league.view', 'League view'), '@league-view');
+      add(cards, t('league.team_roster', 'Team roster'), '@team-roster');
       for (const item of teams) { const made = leagueTeamSurface(item.name); add(cards, item.name, made.token, item.objective || ''); add(leagueCards, item.name, made.token, item.objective || ''); }
       add(cards, t('new_team.title', 'New Team'), '@new-team', '', 'dotted');
       add(cards, t('team.new_session', 'New session'), NEW, t('team.add_member_summary', 'A new session, born into the workspace you are in.'), 'dotted');
