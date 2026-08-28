@@ -1,0 +1,102 @@
+/* part of the ronin-cowork client — see js/README.md */
+/**
+ * DESKS — one read of `/api/desks`, and the words every surface says about it.
+ *
+ * The control surface's visible half (Fable 4). A desk is one repository's branch and
+ * the worktree on it; a session has one per repo it is changing. The server DERIVES
+ * every fact here from git and the desk registry at the moment of asking — nothing an
+ * agent maintains in prose — so a reading is never stale by more than one poll.
+ *
+ * THREE READERS, ONE FETCH. The tile head's ⑂ button, the roster's desk column and the
+ * Team page's readings all ask on the same clock, so the fetch is shared and deduped:
+ * concurrent callers ride one request, and a read younger than `FRESH_MS` is answered
+ * from memory. The server memoises too; between the two, N tiles cost one git pass.
+ *
+ * The roll-up (`2 desks · 1 pending · 3 private`) keeps paths and SHAs OUT of the row
+ * (WORKTREES.md "Surfaces that change": detail behind inspection). The tooltip carries
+ * one line per desk: repo, branch, line, ahead/behind, dirt, pending, parked, blocked.
+ */
+import { request } from './request.js';
+import { clampTip } from './shingo.js';
+import { t } from './lexicon.js';
+
+let data = new Map(); // session name -> { desks: [], rollup: {} }
+let readAt = 0;
+let inflight = null;
+const FRESH_MS = 3000;
+
+let seen = '';
+
+/** Re-read every session's desks; shared and deduped. Resolves true when the answer changed. */
+export async function refreshDesks(force = false) {
+  if (inflight) return inflight;
+  if (!force && Date.now() - readAt < FRESH_MS) return false;
+  inflight = (async () => {
+    const r = await request('/api/desks', { cache: 'no-store' });
+    // A failed read keeps the last answer rather than blanking every ⑂ — the poll heals it.
+    if (!r.ok || !r.data || typeof r.data !== 'object') return false;
+    data = new Map(Object.entries(r.data));
+    readAt = Date.now();
+    const now = JSON.stringify(r.data);
+    const changed = now !== seen;
+    seen = now;
+    return changed;
+  })().finally(() => { inflight = null; });
+  return inflight;
+}
+
+/** One session's desks and roll-up, or null when nothing has been read for it. */
+export const desksOf = (name) => (name && data.get(name)) || null;
+
+/** The ⑂ label: one desk says its branch; several say how many; none says `?`. */
+export function deskLabel(entry) {
+  const desks = entry?.desks || [];
+  if (desks.length === 1) return '⑂ ' + (desks[0].branch || t('desks.detached', '(detached)'));
+  return desks.length ? '⑂ ' + desks.length : '⑂ ?';
+}
+
+/**
+ * The roll-up sentence — only the parts that are non-zero, so a plain single checkout
+ * reads `1 desk` and a busy assignment reads `2 desks · 1 pending · 3 private · 1 parked`.
+ * Null when nothing is known, so a row can leave the column empty rather than say `0 desks`.
+ */
+export function deskReadout(entry) {
+  const r = entry?.rollup;
+  if (!r || !r.desks) return null;
+  const parts = [r.desks === 1 ? t('desks.count_one', '1 desk') : t('desks.count_many', '{n} desks', { n: r.desks })];
+  if (r.pending) parts.push(t('desks.pending_n', '{n} pending', { n: r.pending }));
+  if (r.private) parts.push(t('desks.private_n', '{n} private', { n: r.private }));
+  if (r.dirty) parts.push(t('desks.dirty_n', '{n} dirty', { n: r.dirty }));
+  if (r.parked) parts.push(t('desks.parked_n', '{n} parked', { n: r.parked }));
+  if (r.blocked) parts.push(t('desks.blocked_n', '{n} blocked', { n: r.blocked }));
+  return parts.join(' · ');
+}
+
+/** One line per desk, for a tooltip. Paths and SHAs stay out; this is the inspection short of them. */
+export function deskTip(entry) {
+  const desks = entry?.desks || [];
+  if (!desks.length) return t('desks.none', 'No desk listed yet. A coding launch opens one; the session lists its repos in TEGAMI.');
+  return clampTip(desks.map((d) => {
+    const bits = [`${d.short || d.repo} — ${d.branch || t('desks.detached', '(detached)')}`];
+    if (d.line) bits.push(t('desks.line', '→ {line}', { line: d.line }));
+    if (d.ahead) bits.push(t('desks.ahead', 'ahead {n}', { n: d.ahead }));
+    if (d.behind) bits.push(t('desks.behind', 'behind {n}', { n: d.behind }));
+    if (d.dirty) bits.push(t('desks.dirty_files', '{n} unsaved', { n: d.dirty_files?.length || 0 }));
+    if (d.registry?.pending) bits.push(t('desks.pending_by', 'update pending, by {who}', { who: d.registry.pending.by || '?' }));
+    if (d.readout === 'parked') bits.push(t('desks.parked', 'parked'));
+    if (d.readout === 'unknown') bits.push(t('desks.unknown', 'not found on this box'));
+    if (d.registry?.blocked) bits.push(t('desks.blocked', 'blocked: {why}', { why: d.registry.blocked }));
+    return bits.join(' · ');
+  }).join('\n'));
+}
+
+/**
+ * THE TEAM LINE PER REPOSITORY, read off the members' desks — `ronin-cowork → team/comp/dev
+ * · ronin-services → team/comp/dev`. One roster `branch` cannot name two repos' lines
+ * (RONIN_CONTROL_SURFACE.md § 5); this is the derived row the Team page shows instead.
+ */
+export function deskLinesText(names) {
+  const lines = {};
+  for (const n of names) for (const d of desksOf(n)?.desks || []) if (d.line && !lines[d.short]) lines[d.short] = d.line;
+  return Object.entries(lines).map(([repo, line]) => `${repo} → ${line}`).join(' · ') || '—';
+}

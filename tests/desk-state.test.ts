@@ -12,7 +12,7 @@ import { promisify } from 'node:util';
 const exec = promisify(execFile);
 const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-desk-state-'));
 process.env.RONIN_SESSION_DIR = path.join(root, 'sessions');
-const { deriveDesk, deriveDesks, rollup, locatorFrom, shortRepo } = await import('../src/desk-state.js');
+const { deriveDesk, fromStatus, rollup, locatorFrom, shortRepo } = await import('../src/desk-state.js');
 const { readRepos, tegamiPath } = await import('../src/tegami.js');
 const { sessionKey } = await import('../src/session-dir.js');
 
@@ -49,7 +49,8 @@ test('a plain checkout is one desk with no line — nothing invented', async () 
   assert.equal(d.dirty, false);
   assert.equal(d.root, 'plain');
   assert.ok(d.tip);
-  assert.equal(d.registry, null);
+  assert.equal(d.source, 'git');
+  assert.equal(d.pending, null);
   const r = rollup([d]);
   assert.deepEqual(r, { desks: 1, private: 0, dirty: 0, pending: 0, parked: 0, blocked: 0, lined: 0 });
 });
@@ -98,19 +99,27 @@ test('the line is implied from the branch path when no upstream is set, only if 
   assert.equal(none.line, null, 'team/other/dev does not exist, so no line is invented');
 });
 
-test('registry facts ride the adapter seam and reach the roll-up; a missing registry is null', async () => {
-  const { home } = await repoWithDesk('registry');
-  const facts = async () => ({ pending: { line_sha: 'l1', by: 'wispr', at: '2026-08-28T00:00:00Z', overlap: [] }, last_hand_in: 'hi_1', blocked: 'candidate conflicted on a.txt' });
-  const d = await deriveDesk({ repo: home, branch: 'team/comp/fable' }, { root: 'r', dir: home }, 'fable', facts);
-  assert.equal(d.registry?.pending?.by, 'wispr');
-  assert.equal(d.registry?.last_hand_in, 'hi_1');
+test('a registry DeskStatus maps into the same shape, and its facts reach the roll-up', async () => {
+  const st = {
+    repo: 'cowork', root: 'cowork', branch: 'team/comp/fable', worktree: '/w/cowork/team/comp/fable', line: 'team/comp/dev',
+    mode: 'reviewed' as const, session: 'fable', team: 'comp', assignment: 'fable@comp', state: 'parked' as const, opened_at: 'x',
+    mounted: false, tip: 'abc', line_tip: 'def', dirty: false, dirty_files: [], ahead: 3, behind: 1,
+    pending: { line_sha: 'def', by: 'wispr', at: 'y', overlap: ['a.txt'] }, last_hand_in: 'hi_1', blocked: 'candidate conflicted on a.txt',
+  };
+  const d = fromStatus(st);
+  assert.equal(d.source, 'registry');
+  assert.equal(d.readout, 'parked');
+  assert.equal(d.worktree, null, 'unmounted: no path is claimed');
+  assert.equal(d.dirty, null);
+  assert.equal(d.ahead, 3);
+  assert.equal(d.pending?.by, 'wispr');
+  assert.equal(d.last_hand_in, 'hi_1');
   const r = rollup([d]);
-  assert.equal(r.pending, 1);
-  assert.equal(r.blocked, 1);
+  assert.deepEqual(r, { desks: 1, private: 3, dirty: 0, pending: 1, parked: 1, blocked: 1, lined: 1 });
 });
 
 test('an unlocatable repo is an unknown desk, not an error', async () => {
-  const [d] = await deriveDesks('s', [{ repo: 'https://example.invalid/x.git', branch: 'dev' }], async () => null);
+  const d = await deriveDesk({ repo: 'https://example.invalid/x.git', branch: 'dev' }, null, 's');
   assert.equal(d.readout, 'unknown');
   assert.equal(d.short, 'x');
   assert.equal(shortRepo('https://github.com/ronincowork/ronin-cowork.git'), 'ronin-cowork');

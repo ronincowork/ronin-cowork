@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1207 keys · 53 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1222 keys · 54 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -240,6 +240,28 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `desk.yours` | yours |  |  |  |  |
 | `desk.yours_shadowing` | yours (replaces ours) |  |  |  |  |
 
+## desks
+
+| key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
+|---|---|---|---|---|---|
+| `desks.ahead` | ahead {n} |  |  |  |  |
+| `desks.behind` | behind {n} |  |  |  |  |
+| `desks.blocked` | blocked: {why} |  |  |  |  |
+| `desks.blocked_n` | {n} blocked |  |  |  |  |
+| `desks.count_many` | {n} desks |  |  |  |  |
+| `desks.count_one` | 1 desk |  |  |  |  |
+| `desks.detached` | (detached) |  |  |  |  |
+| `desks.dirty_files` | {n} unsaved |  |  |  |  |
+| `desks.dirty_n` | {n} dirty |  |  |  |  |
+| `desks.line` | → {line} |  |  |  |  |
+| `desks.none` | No desk listed yet. A coding launch opens one; the session lists its repos in TEGAMI. |  |  |  |  |
+| `desks.parked` | parked |  |  |  |  |
+| `desks.parked_n` | {n} parked |  |  |  |  |
+| `desks.pending_by` | update pending, by {who} |  |  |  |  |
+| `desks.pending_n` | {n} pending |  |  |  |  |
+| `desks.private_n` | {n} private |  |  |  |  |
+| `desks.unknown` | not found on this box |  |  |  |  |
+
 ## dial
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
@@ -414,12 +436,9 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
-| `head.branch_help` | Branches this session is working on |  |  |  |  |
-| `head.branch_no_michi` | Branches — michi is not installed, so TEGAMI checkout data is unavailable |  |  |  |  |
-| `head.branch_none` | No branch listed yet. The session keeps its repos list current in TEGAMI. |  |  |  |  |
-| `head.branch_quiet` | Branches — no session in this tile yet |  |  |  |  |
+| `head.branch_help` | Desks this session is working at — repo, branch, and what is ahead, pending or parked |  |  |  |  |
+| `head.branch_quiet` | Desks — no session in this tile yet |  |  |  |  |
 | `head.chip_help` | Where this session is on its ladder, and how long it has been there. Opens the ladder. |  |  |  |  |
-| `head.detached` | (detached) |  |  |  |  |
 | `head.dial_help` | Who may touch this session: 👤 owner only · 👁 outside agents watch · 🤖 outside agents type. Yours to turn; agents never flip it. |  |  |  |  |
 | `head.dial_quiet` | Control dial — no session in this tile yet |  |  |  |  |
 | `head.dot_help` | Connection: green = attached, grey = disconnected |  |  |  |  |
@@ -1390,6 +1409,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `team.flip_commons` | Show the Team commons in this workspace |  |  |  |  |
 | `team.flip_terminal` | Show the terminal in this workspace |  |  |  |  |
 | `team.lead_none` | not designated |  |  |  |  |
+| `team.lines` | Team lines |  |  |  |  |
 | `team.live_roster_n` | Live roster · {n} |  |  |  |  |
 | `team.live_roster_none` | Live roster · none |  |  |  |  |
 | `team.mcp` | MCP |  |  |  |  |

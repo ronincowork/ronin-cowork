@@ -36,6 +36,7 @@ import { TermView } from './termview.js';
 import { TileWire } from './tilewire.js';
 import { buildComposer } from './composer.js';
 import { refreshKaki, setKakiPolicy } from './output.js';
+import { refreshDesks } from './desks.js';
 import { t } from './lexicon.js';
 
 export class Tile {
@@ -202,11 +203,16 @@ export class Tile {
    */
   async refreshTegami() {
     const session = this.session;
+    // The desks ride the same clock as the letter and are cowork's own (`/api/desks`),
+    // so the ⑂ reading is live on a box with no services at all.
+    if (session) await refreshDesks().catch(() => {});
+    if (this.session !== session) return;
     // The letter is MICHI's. No michi = no /tegami routes at all, so don't fetch into
     // a 404 — the chip simply never shows, same as a session with no letter.
     if (!session || serviceMissing('michi')) {
       this.chip.set(null);
       this.closeLadder();
+      syncTileHead(this);
       return;
     }
     const r = await request('/api/sessions/' + encodeURIComponent(session) + '/tegami', { cache: 'no-store' });

@@ -58,6 +58,7 @@ import { clampTip, makeChip } from './shingo.js';
 import { buildTileMacros } from './tilemacros.js';
 import { buildTileMore } from './tilemore.js';
 import { buildTileMentions } from './tilementions.js';
+import { deskLabel, deskReadout, deskTip, desksOf } from './desks.js';
 import { isCoarse } from './tiledrop.js';
 import { S, serviceMissing } from './state.js';
 import { taskIcon } from './home.js';
@@ -112,25 +113,26 @@ const HEADER = () => {
                  : t('head.job_unmarked', 'Not marked — click to say what this session is doing');
     } },
 
-  // THE CHECKOUTS — one button, because branch and repository are one paired fact rather
-  // than two controls. One checkout says its branch; several say how many. The ladder it
-  // opens writes every branch beside its repository without spending a second header slot.
-  { key: 'branchBtn', cls: 'checkout branch', needs: 'session michi',
-    help: t('head.branch_help', 'Branches this session is working on'),
-    quiet: { session: t('head.branch_quiet', 'Branches — no session in this tile yet'),
-      michi: t('head.branch_no_michi', 'Branches — michi is not installed, so TEGAMI checkout data is unavailable') },
+  // THE DESKS — one button, because branch and repository are one paired fact rather
+  // than two controls. One desk says its branch; several say how many. The reading is
+  // DERIVED on the server from git and the desk registry (`/api/desks`, src/desk-state.ts):
+  // the line it hands in to, ahead/behind, unsaved files, pending, parked, blocked — never
+  // a fact the agent keeps in prose. It works with no michi: the desks are cowork's.
+  { key: 'branchBtn', cls: 'checkout branch', needs: 'session',
+    help: t('head.branch_help', 'Desks this session is working at — repo, branch, and what is ahead, pending or parked'),
+    quiet: { session: t('head.branch_quiet', 'Desks — no session in this tile yet') },
     on: (tile) => tile.toggleLadder(),
     read: (tile, el) => {
-      const repos = tile.tegami?.repos || [];
-      const branches = repos.map((x) => x.branch).filter(Boolean);
-      el.textContent = repos.length === 1 ? '⑂ ' + (branches[0] || '?') : repos.length ? '⑂ ' + repos.length : '⑂ ?';
-      el.classList.toggle('unset', !repos.length);
-      return repos.length
-        // The repo by its short name and its branch, nothing else (owner, 2026-08-26:
-        // "just the repo name and the branch name — that's all you need"). The ladder it
-        // opens still shows the whole URL.
-        ? clampTip(repos.map((x) => `${String(x.repo || '').replace(/\.git$/, '').split('/').filter(Boolean).pop() || x.repo} — ${x.branch || t('head.detached', '(detached)')}`).join(' · '))
-        : t('head.branch_none', 'No branch listed yet. The session keeps its repos list current in TEGAMI.');
+      const entry = desksOf(tile.session);
+      const desks = entry?.desks || [];
+      el.textContent = deskLabel(entry);
+      el.classList.toggle('unset', !desks.length);
+      el.classList.toggle('attn', !!(entry?.rollup?.pending || entry?.rollup?.blocked));
+      // The repo by its short name and its branch, then the roll-up (owner, 2026-08-26:
+      // "just the repo name and the branch name — that's all you need"; the control
+      // surface adds what is ahead, pending or parked, and keeps paths and SHAs out).
+      const readout = deskReadout(entry);
+      return readout ? readout + '\n' + deskTip(entry) : deskTip(entry);
     } },
 
   { grow: true },

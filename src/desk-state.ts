@@ -10,13 +10,13 @@
  * registry already knows. Asking an agent to keep those in its letter is how a readout
  * goes stale, so this module reads them at the moment they are asked for.
  *
- * TWO SOURCES, ONE SEAM. Git answers the local facts (worktree, upstream, counts,
- * dirt) and is always present. The desk registry and its receipts (Track 1, Fable 1 —
- * `src/desks/`) answer pending / last hand-in / blocked; they are consumed through
- * `DeskFacts`, an adapter the caller injects, so this module compiles and is honest
- * before that registry is wired: a fact nobody can answer is null, never invented.
- * Field names and types follow `src/desks/schema.ts`'s `DeskStatus` so the roster reads
- * one shape whether the fact came from git here or from the registry there.
+ * TWO SOURCES, ONE SHAPE. A desk the registry recorded (Track 1, Fable 1 — `src/desks/`)
+ * is read through the registry's own `DeskStatus`, which already derives tip, dirt and
+ * ahead/behind from git and adds what only the registry knows: pending update, last
+ * accepted hand-in, a standing block, parked. A repo the letter lists that the registry
+ * has no row for (today's shared checkout; a session that added a repo by hand) is
+ * derived from git here, and its registry-only facts are null — never invented. Field
+ * names follow `DeskStatus` so every surface reads one shape, whichever answered.
  *
  * HONEST ON A PLAIN CHECKOUT. A session on today's shared `dev` checkout has one
  * "desk" whose branch is `dev` with no team line: `line` is null, ahead/behind are
@@ -26,27 +26,18 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { envWithoutGitLocation, type TegamiCheckout } from './tegami.js';
-import type { DeskStatus } from './desks/schema.js';
+import type { DeskStatus, PendingUpdate } from './desks/schema.js';
 
 const exec = promisify(execFile);
-
-/** The facts only the desk registry / receipt ledger can answer — `DeskStatus`'s own. */
-export type DeskRegistryFacts = Pick<DeskStatus, 'pending' | 'last_hand_in' | 'blocked'> & Partial<Pick<DeskStatus, 'state'>>;
-
-/** The adapter seam: a desk's identity in, the registry's facts out — or null for none. */
-export type DeskFacts = (desk: { repo: string; root: string; branch: string; session: string }) => Promise<DeskRegistryFacts | null>;
-
-/** The adapter used when no registry is wired: every registry fact is unknown. */
-export const noDeskFacts: DeskFacts = async () => null;
 
 /** `open`/`parked` are the registry's words (`schema.ts`); `unknown` is git's silence. */
 export type DeskReadout = 'open' | 'parked' | 'unknown';
 
 /** One desk, derived. */
 export interface DeskState {
-  /** The letter's identity for the repo — a remote URL or a path. */
+  /** The letter's identity for the repo — a remote URL or a path — or the root name for a registry desk. */
   repo: string;
-  /** The project_root this repo is known by, when a root matched; '' otherwise. */
+  /** The project_root this repo is known by, when known; '' otherwise. */
   root: string;
   /** The short repository name — `ronin-cowork` — for a label. */
   short: string;
@@ -67,8 +58,14 @@ export interface DeskState {
   dirty: boolean | null;
   dirty_files: string[];
   readout: DeskReadout;
-  /** The registry's facts, or null when no registry answered. */
-  registry: DeskRegistryFacts | null;
+  /** The session the desk belongs to. */
+  session: string;
+  /** Registry-only facts — null / '' when no registry row answered. */
+  pending: PendingUpdate | null;
+  last_hand_in: string;
+  blocked: string;
+  /** Which source answered. */
+  source: 'registry' | 'git';
 }
 
 /** The per-session roll-up the tile and roster show: `2 desks · 1 pending · 3 private`. */
@@ -140,12 +137,7 @@ async function lineOf(dir: string, branch: string): Promise<string | null> {
 }
 
 /** One desk's git facts, from the checkout entry the letter carries. */
-export async function deriveDesk(
-  entry: TegamiCheckout,
-  at: RepoLocation | null,
-  session: string,
-  facts: DeskFacts = noDeskFacts,
-): Promise<DeskState> {
+export async function deriveDesk(entry: TegamiCheckout, at: RepoLocation | null, session: string): Promise<DeskState> {
   const d: DeskState = {
     repo: entry.repo,
     root: at?.root ?? '',
@@ -161,9 +153,12 @@ export async function deriveDesk(
     dirty: null,
     dirty_files: [],
     readout: 'unknown',
-    registry: null,
+    session,
+    pending: null,
+    last_hand_in: '',
+    blocked: '',
+    source: 'git',
   };
-  d.registry = await facts({ repo: entry.repo, root: d.root, branch: entry.branch, session }).catch(() => null);
   if (!at || !entry.branch) return d;
   const dir = at.dir;
   try {
@@ -190,23 +185,38 @@ export async function deriveDesk(
         d.worktree = null; // recorded, but not on disk: a parked desk's folder went
       }
     }
-    // A branch with no mounted worktree is a parked desk when the branch (or the
-    // registry) says so; a branch nobody has is unknown, not invented.
-    if (!d.mounted) d.readout = d.tip || d.registry?.state === 'parked' ? 'parked' : 'unknown';
+    // A branch with no mounted worktree is a parked desk when the branch exists; a
+    // branch nobody has is unknown, not invented.
+    if (!d.mounted) d.readout = d.tip ? 'parked' : 'unknown';
   } catch {
     /* git could not answer; what is filled in is the honest readout */
   }
   return d;
 }
 
-/** Every desk of one session, from its letter's `repos[]`. */
-export async function deriveDesks(
-  session: string,
-  repos: TegamiCheckout[],
-  locate: LocateRepo,
-  facts: DeskFacts = noDeskFacts,
-): Promise<DeskState[]> {
-  return Promise.all(repos.map(async (entry) => deriveDesk(entry, await locate(entry.repo).catch(() => null), session, facts)));
+/** The registry's status in this shape — the same fields, plus what only it knows. */
+export function fromStatus(st: DeskStatus): DeskState {
+  return {
+    repo: st.repo,
+    root: st.root || st.repo,
+    short: shortRepo(st.repo),
+    branch: st.branch,
+    worktree: st.mounted ? st.worktree : null,
+    mounted: st.mounted,
+    tip: st.tip,
+    line: st.line || null,
+    line_tip: st.line_tip,
+    ahead: st.line ? st.ahead : null,
+    behind: st.line ? st.behind : null,
+    dirty: st.mounted ? st.dirty : null,
+    dirty_files: st.dirty_files,
+    readout: st.state === 'parked' ? 'parked' : st.tip ? 'open' : 'unknown',
+    session: st.session,
+    pending: st.pending,
+    last_hand_in: st.last_hand_in,
+    blocked: st.blocked,
+    source: 'registry',
+  };
 }
 
 /** The numbers the tile and roster roll up. */
@@ -216,9 +226,9 @@ export function rollup(desks: DeskState[]): DeskRollup {
     if (d.line) r.lined++;
     if (d.ahead) r.private += d.ahead;
     if (d.dirty) r.dirty++;
-    if (d.registry?.pending) r.pending++;
+    if (d.pending) r.pending++;
     if (d.readout === 'parked') r.parked++;
-    if (d.registry?.blocked) r.blocked++;
+    if (d.blocked) r.blocked++;
   }
   return r;
 }

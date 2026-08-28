@@ -4048,11 +4048,12 @@ button.wb-door:hover b {
   --hr-shingo: 132px;
   --hr-status: 70px;
   --hr-ctx: 48px;
+  --hr-desks: 96px; /* `⑂ team/comp/fable` in the micro mono, clipped past that (the help has it whole) */
   --hr-stack: 76px;
   display: grid;
   grid-template-columns:
     var(--hr-mark) minmax(0, 1fr) var(--hr-shingo) var(--hr-status) var(--hr-ctx)
-    var(--hr-stack);
+    var(--hr-desks) var(--hr-stack);
   align-items: center;
   gap: var(--space-4);
   width: 100%;
@@ -4100,13 +4101,17 @@ button.wb-door:hover b {
 .home-row > .home-ctx {
   grid-column: 5;
 }
-.home-row > .home-stack {
+.home-row > .home-desks {
   grid-column: 6;
+}
+.home-row > .home-stack {
+  grid-column: 7;
 }
 /* Each reading starts at its own track's left edge and stops at its right one. */
 .home-row > .home-shingo,
 .home-row > .home-status,
 .home-row > .home-ctx,
+.home-row > .home-desks,
 .home-row > .home-stack {
   justify-self: start;
   max-width: 100%;
@@ -4147,6 +4152,7 @@ button.wb-door:hover b {
     grid-template-columns:
       var(--hr-mark) minmax(0, 1fr) var(--hr-shingo) var(--hr-status) var(--hr-ctx);
   }
+  .home-row > .home-desks,
   .home-row > .home-stack {
     display: none;
   }
@@ -4192,6 +4198,19 @@ button.wb-door:hover b {
   font-size: var(--text-2);
   color: var(--muted);
   white-space: nowrap;
+}
+/* WHICH DESK — `⑂ team/comp/fable`, derived from git and the desk registry on the server,
+   never the agent's prose. Amber when an update is pending or a hand-in is blocked: the
+   two readings a lead acts on (WORKTREES.md "Koshi / roster"). */
+.home-desks {
+  font-family: var(--font-term);
+  font-size: var(--text-micro);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.home-desks.attn,
+.tilehead .checkout.attn {
+  color: var(--warn);
 }
 /* WHAT THE SESSION IS RUNNING — `codex · openai · gpt-5-codex`. Drawn exactly like the
    other secondary readings on the row (11px, muted, one line): it is a label on the

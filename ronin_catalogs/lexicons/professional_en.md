@@ -259,6 +259,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team.repos:** Repositories
 - **new_team.repos_desc:** Optional, comma-separated.
 - **team.branch:** Branch
+- **team.lines:** Team lines
 - **new_team.optional:** Optional.
 - **team.wipeboard:** Wipeboard
 - **new_team.wipeboard_desc:** Optional. Blank uses the Team’s own name.
@@ -373,6 +374,25 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team_wipeboard.read_failed:** Could not read the board — {message}
 - **team_wipeboard.post_failed:** Could not post — {message} (your text is still in the box)
 - **team_wipeboard.no_team:** No Team resolved — nothing to read.
+
+## desks — desks.js (the ⑂ desk readings: tile head, roster column, Team page)
+- **desks.detached:** (detached)
+- **desks.count_one:** 1 desk
+- **desks.count_many:** {n} desks
+- **desks.pending_n:** {n} pending
+- **desks.private_n:** {n} private
+- **desks.dirty_n:** {n} dirty
+- **desks.parked_n:** {n} parked
+- **desks.blocked_n:** {n} blocked
+- **desks.none:** No desk listed yet. A coding launch opens one; the session lists its repos in TEGAMI.
+- **desks.line:** → {line}
+- **desks.ahead:** ahead {n}
+- **desks.behind:** behind {n}
+- **desks.dirty_files:** {n} unsaved
+- **desks.pending_by:** update pending, by {who}
+- **desks.parked:** parked
+- **desks.unknown:** not found on this box
+- **desks.blocked:** blocked: {why}
 
 ## team — team-view.js (the Team page)
 - **team.flip_commons:** Show the Team commons in this workspace
@@ -1080,11 +1100,8 @@ The catalog entry goes. {dir} is not touched.
 - **head.job_quiet:** What a session is doing — no session in this tile yet
 - **head.job_read:** {job} — click to change what this session is doing
 - **head.job_unmarked:** Not marked — click to say what this session is doing
-- **head.branch_help:** Branches this session is working on
-- **head.branch_quiet:** Branches — no session in this tile yet
-- **head.branch_no_michi:** Branches — michi is not installed, so TEGAMI checkout data is unavailable
-- **head.detached:** (detached)
-- **head.branch_none:** No branch listed yet. The session keeps its repos list current in TEGAMI.
+- **head.branch_help:** Desks this session is working at — repo, branch, and what is ahead, pending or parked
+- **head.branch_quiet:** Desks — no session in this tile yet
 - **head.output_help:** Output — live terminal or one of RIREKI’s unlocked views
 - **head.mention_help:** Mention another session — choose a name to add it to the message box
 - **head.mention_quiet:** Mentions — no session in this tile yet
