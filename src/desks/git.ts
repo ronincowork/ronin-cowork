@@ -15,6 +15,9 @@ import { envWithoutGitLocation } from '../tegami.js';
 
 const execFileP = promisify(execFile);
 
+/** Machine-authored commits must not depend on a user's or CI runner's global Git config. */
+export const AUTOMATION_IDENTITY = ['-c', 'user.name=Ronin', '-c', 'user.email=ronin@localhost'] as const;
+
 export class GitError extends Error {
   constructor(readonly args: string[], readonly stderr: string, readonly code: number | string | null) {
     super(`git ${args.join(' ')} failed (${code}): ${stderr.trim()}`);
@@ -139,7 +142,7 @@ export interface MergeOutcome { ok: boolean; conflicts: string[] }
  */
 export async function mergeInto(wt: string, ref: string, message?: string): Promise<MergeOutcome> {
   try {
-    await git(wt, ['merge', '--no-edit', ...(message ? ['-m', message] : []), ref]);
+    await git(wt, [...AUTOMATION_IDENTITY, 'merge', '--no-edit', ...(message ? ['-m', message] : []), ref]);
     return { ok: true, conflicts: [] };
   } catch {
     const out = await gitOut(wt, ['diff', '--name-only', '--diff-filter=U']).catch(() => '');
@@ -189,7 +192,7 @@ export async function commitAll(wt: string, message: string): Promise<string> {
   await git(wt, ['add', '-A']);
   const staged = await gitOut(wt, ['diff', '--cached', '--name-only']);
   if (!staged) return '';
-  await git(wt, ['commit', '--no-verify', '-q', '-m', message]);
+  await git(wt, [...AUTOMATION_IDENTITY, 'commit', '--no-verify', '-q', '-m', message]);
   return revParse(wt, 'HEAD');
 }
 

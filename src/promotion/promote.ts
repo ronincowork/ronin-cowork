@@ -1,4 +1,4 @@
-import { git, gitOut, revParse } from '../desks/git.js';
+import { AUTOMATION_IDENTITY, git, gitOut, revParse } from '../desks/git.js';
 import { advanceTarget, candidateDir, ledgerHandIns, prepareCandidate, resetCandidate, targetAt, type HandInSource, type RepoSpec } from './candidate.js';
 import { runByoin, runCompat, type ByoinMode } from './byoin.js';
 import { healthCheck, notifyTeam, restartService } from './health.js';
@@ -346,8 +346,8 @@ export async function revertPromotion(o: RevertOptions): Promise<PromoteOutcome>
     await git(wt, ['checkout', '--quiet', branch]);
     const isMerge = (await gitOut(wt, ['rev-list', '--parents', '-n', '1', c.candidate])).split(' ').length > 2;
     try {
-      if (isMerge) await git(wt, ['revert', '--no-edit', '-m', '1', c.candidate]);
-      else await git(wt, ['revert', '--no-edit', `${c.expected_old}..${c.candidate}`]);
+      if (isMerge) await git(wt, [...AUTOMATION_IDENTITY, 'revert', '--no-edit', '-m', '1', c.candidate]);
+      else await git(wt, [...AUTOMATION_IDENTITY, 'revert', '--no-edit', `${c.expected_old}..${c.candidate}`]);
     } catch (e) {
       await git(wt, ['revert', '--abort']).catch(() => undefined);
       await git(wt, ['checkout', '--detach', '--quiet', head]).catch(() => undefined);
@@ -408,7 +408,7 @@ export async function bisectLine(o: BisectOptions): Promise<BisectResult> {
   const cdir = candidateDir(o.spec.repo, `${o.spec.target}-bisect`);
   for (const sha of shas) {
     const wt = await resetCandidate(o.spec, from, cdir);
-    const m = await git(wt, ['merge', '--no-edit', sha]).then(() => true, () => false);
+    const m = await git(wt, [...AUTOMATION_IDENTITY, 'merge', '--no-edit', sha]).then(() => true, () => false);
     if (!m) {
       await git(wt, ['merge', '--abort']).catch(() => undefined);
       steps.push({ sha, passed: false, verdict: 'the merge conflicts' });
