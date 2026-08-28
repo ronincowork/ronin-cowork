@@ -173,3 +173,69 @@ test('direct-mode regression: a declared-direct shared checkout behaves as it al
   const own = await realGit(direct, ['commit', '-q', '-m', 'idea', '--', 'idea.md'], env);
   assert.equal(own.code, 0, own.err);
 });
+
+/* ------------------------------------------------------------ the receipt at the PR */
+// The dev → master PR consumes the team-promotion receipt (src/promotion/receipts.ts)
+// instead of being the first full check. scripts/verify-promotion-receipt.mjs is what
+// CI runs; these pin what it accepts and every way it refuses.
+import { extractReceipt, receiptProblem } from '../scripts/verify-promotion-receipt.mjs';
+
+const SHA = 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678';
+const good = () => ({
+  id: '20260828T090000Z-promote-comp-ab12', kind: 'team_promotion', team: 'comp', by: 'comps',
+  created_at: 't', updated_at: 't', state: 'complete', history: [],
+  repos: [{ repo: 'cowork', dir: '/x', line: 'team/comp/dev', target: 'dev', expected_old: '000', line_tip: '111', candidate: SHA, hand_in_receipts: [], files: [] }],
+  proofs: [{ repo: 'cowork', candidate: SHA, mode: 'full', passed: true, gates: [{ name: 'tsc', status: 'ok' }], verdict: 'BYOIN ok' }],
+  advances: [{ repo: 'cowork', target: 'dev', from: '000', to: SHA, status: 'done' }],
+});
+
+test('receipt: a complete receipt whose full proof and advance name this commit is proof', () => {
+  assert.equal(receiptProblem(good(), 'cowork', SHA), null);
+  assert.equal(receiptProblem(good(), 'cowork', SHA.slice(0, 12)), null, 'a short SHA that prefixes the candidate is the same commit');
+});
+
+test('receipt: every way it refuses names the reason', () => {
+  const cases: [string, (r: any) => void, RegExp][] = [
+    ['not complete', (r) => { r.state = 'advancing'; }, /'advancing', and only 'complete'/],
+    ['other repo', (r) => { r.repos[0].repo = 'services'; }, /no candidate for repository 'cowork'/],
+    ['other commit', (r) => { r.repos[0].candidate = 'ffff' + SHA.slice(4); }, /proves ffff.* not a1b2/],
+    ['no proof', (r) => { r.proofs = []; }, /no BYOIN proof/],
+    ['proof failed', (r) => { r.proofs[0].passed = false; }, /did not pass/],
+    ['gates-only proof', (r) => { r.proofs[0].mode = 'gates'; }, /'gates', not the full/],
+    ['advance raced', (r) => { r.advances[0].status = 'raced'; }, /'raced', not done/],
+    ['reverted', (r) => { r.reverted_by = 'rev-1'; }, /reverted by rev-1/],
+    ['wrong kind', (r) => { r.kind = 'hand_in'; }, /unknown receipt kind/],
+  ];
+  for (const [name, mutate, re] of cases) {
+    const r = good(); mutate(r);
+    const why = receiptProblem(r, 'cowork', SHA);
+    assert.ok(why && re.test(why), `${name}: got ${why}`);
+  }
+  assert.match(receiptProblem(null, 'cowork', SHA)!, /not a JSON object/);
+});
+
+test('receipt: it rides the PR body in a ronin-promotion-receipt fence', () => {
+  const body = `what + why\n\n\`\`\`ronin-promotion-receipt\n${JSON.stringify(good())}\n\`\`\`\n\nhow verified: receipt above`;
+  const text = extractReceipt(body);
+  assert.ok(text);
+  assert.equal(receiptProblem(JSON.parse(text!), 'cowork', SHA), null);
+  assert.equal(extractReceipt('no block here'), null);
+  assert.equal(extractReceipt('```json\n{}\n```'), null, 'only the named fence counts');
+});
+
+test('receipt: the CLI exits 1 without a receipt and 0 with a proving one', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-receipt-'));
+  const cli = path.join(REPO, 'scripts', 'verify-promotion-receipt.mjs');
+  await fs.writeFile(path.join(dir, 'body.md'), 'a PR with no receipt');
+  const none = await sh(dir, 'node', [cli, '--sha', SHA, '--pr-body', path.join(dir, 'body.md')]);
+  assert.equal(none.code, 1);
+  assert.match(none.out, /receipt FAIL — the pull request body carries no/);
+  await fs.writeFile(path.join(dir, 'r.json'), JSON.stringify(good()));
+  const ok = await sh(dir, 'node', [cli, '--sha', SHA, '--repo', 'cowork', '--receipt', path.join(dir, 'r.json')]);
+  assert.equal(ok.code, 0, ok.out + ok.err);
+  assert.match(ok.out, /receipt ok — 20260828T090000Z-promote-comp-ab12 .* proves cowork@/);
+  const wrong = await sh(dir, 'node', [cli, '--sha', 'deadbeef', '--receipt', path.join(dir, 'r.json')]);
+  assert.equal(wrong.code, 1);
+  assert.match(wrong.out, /not deadbeef/);
+  await fs.rm(dir, { recursive: true, force: true });
+});

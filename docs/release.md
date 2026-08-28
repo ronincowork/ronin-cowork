@@ -8,15 +8,22 @@ it.** Two deliberate acts stand between an edit and the grid — the tag, and th
 
 ## Cutting a release (the producing half)
 
-1. Work lands on `dev`; a PR to `master` runs the byoin_checks in CI
-   (`.github/workflows/verify.yml`, `bin/ronin-byoin --gates` — browser UI is explicitly
-   outside this fast tier and each omitted check is named as a SKIP).
+1. Work reaches `dev` by **team promotion** — the lead's admission of a team line, which
+   runs the one full repository BYOIN on the exact candidate and leaves `dev` carrying a
+   promotion receipt for its exact SHA (`docs/test-protocols.md`, WORKTREES.md). A PR
+   `dev → master` carries that receipt in its body (a ```ronin-promotion-receipt block);
+   CI (`.github/workflows/verify.yml`) verifies the receipt names and proves the PR's
+   head commit — `scripts/verify-promotion-receipt.mjs` — and only then reruns the
+   isolated `--gates` tier for release assurance. CI is not the first full check, and a
+   PR without a receipt fails.
 2. A person merges. Master moving is a record of what is releasable, not a release.
 3. A person fetches and checks out `master`, confirms it is current, then pushes a tag
    `vX.Y.Z` on that commit. That is the release act. The release workflow
    (`.github/workflows/release.yml`) first refuses any tag whose commit is not on
    `origin/master`, then builds ONCE with `bin/ronin-build`, and
-   attaches the artifact to a GitHub Release.
+   attaches the artifact to a GitHub Release. `bin/ronin-build` itself refuses a commit
+   that is not on the declared stable line (`RONIN_REPO`): acceptance is the commit's
+   place on that line, never the checkout that happens to be open.
 
 The build is a **stamp, a prune and a tarball** — there is no compiler in this stack
 (`tsx` runs the TypeScript; the client is native ES modules):

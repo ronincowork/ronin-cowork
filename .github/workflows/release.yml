@@ -1,7 +1,7 @@
 # THE RELEASE — a tag becomes the ronin_artifact, built once for every box.
 #
-# Pushing a tag vX.Y.Z builds the already-verified master candidate with
-# bin/ronin-build — the plain tarball plus a bundle per vendor.lock platform, each
+# Pushing a tag vX.Y.Z builds the accepted master commit — one that reached master by
+# PR from dev, where verify.yml consumed its team-promotion receipt — with bin/ronin-build — the plain tarball plus a bundle per vendor.lock platform, each
 # carrying its own Node, static tmux, and node_modules — and attaches them to a
 # GitHub Release together with their checksums. Nothing compiles here: the static
 # tmux comes pre-proven from a tmux-static-vN release (tmux-static.yml).
