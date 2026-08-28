@@ -79,5 +79,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const why = receiptProblem(r, repo, sha);
   if (why) fail(why);
   const proof = r.proofs.find((p) => p.repo === repo);
-  console.log(`receipt ok — ${r.id} (${r.kind} by ${r.by}, team ${r.team}) proves ${repo}@${sha}: full BYOIN passed (${proof.gates?.length ?? 0} gates), advance done ${r.updated_at}`);
+  console.log(`receipt ok — ${r.id} (${r.kind}) proves ${repo}@${sha}: full BYOIN passed (${proof.gates?.length ?? 0} gates), advance done`);
 }

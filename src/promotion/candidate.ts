@@ -119,7 +119,9 @@ export async function prepareCandidate(
   }
 
   const cdir = await resetCandidate(spec, expected_old);
-  const merge = await mergeInto(cdir, line_tip, `team promotion: ${spec.line} → ${spec.target}`);
+  // Commit messages leave the box when the target branch is pushed. Keep the local
+  // team/line identity in the private ledger, never in repository history.
+  const merge = await mergeInto(cdir, line_tip, `Promote accepted team work to ${spec.target}`);
   if (!merge.ok) {
     return { candidate: { ...base, refused: 'the merge conflicts', conflict_files: merge.conflicts }, nothing: false, cdir };
   }

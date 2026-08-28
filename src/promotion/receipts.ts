@@ -140,6 +140,23 @@ export interface PromotionReceipt {
   by: string;
 }
 
+/**
+ * The minimum proof that may cross the box boundary in a pull-request body.
+ * Team, session, local-path, branch, hand-in, timing, and operator metadata remain
+ * in the private ledger. CI needs only the candidate, its full proof, and its advance.
+ */
+export function publicPromotionReceipt(r: PromotionReceipt): object {
+  return {
+    id: `promotion-${r.repos[0]?.candidate.slice(0, 12) || 'pending'}`,
+    kind: r.kind,
+    state: r.state,
+    repos: r.repos.map(({ repo, candidate }) => ({ repo, candidate })),
+    proofs: r.proofs.map(({ repo, candidate, mode, passed, gates, verdict }) => ({ repo, candidate, mode, passed, gates, verdict })),
+    advances: r.advances.map(({ repo, to, status }) => ({ repo, to, status })),
+    ...(r.reverted_by ? { reverted_by: 'yes' } : {}),
+  };
+}
+
 /* ---------------------------------------------------------------- state machine */
 
 const TRANSITIONS: Record<PromotionState, readonly PromotionState[]> = {

@@ -224,6 +224,7 @@ test('direct-mode regression: a declared-direct shared checkout behaves as it al
 // instead of being the first full check. scripts/verify-promotion-receipt.mjs is what
 // CI runs; these pin what it accepts and every way it refuses.
 import { extractReceipt, receiptProblem } from '../scripts/verify-promotion-receipt.mjs';
+import { publicPromotionReceipt } from '../src/promotion/receipts.js';
 process.env.BIND ??= '127.0.0.1'; // src/ imports must not wake the tailscale probe (check-tests.mjs)
 const { candidateEnv } = await import('../src/promotion/byoin.js');
 
@@ -283,6 +284,15 @@ test('receipt: it rides the PR body in a ronin-promotion-receipt fence', () => {
   assert.equal(receiptProblem(JSON.parse(text!), 'cowork', SHA), null);
   assert.equal(extractReceipt('no block here'), null);
   assert.equal(extractReceipt('```json\n{}\n```'), null, 'only the named fence counts');
+});
+
+test('receipt: its public projection contains proof, never private coordination metadata', () => {
+  const publicReceipt = publicPromotionReceipt(good() as any) as any;
+  assert.equal(receiptProblem(publicReceipt, 'cowork', SHA), null);
+  const json = JSON.stringify(publicReceipt);
+  for (const secret of ['"team":"comp"', '"by":"comps"', '/x', 'team/comp/dev', 'hand_in_receipts', 'created_at', 'updated_at', 'history']) {
+    assert.ok(!json.includes(secret), `public receipt leaked ${secret}: ${json}`);
+  }
 });
 
 test('receipt: the CLI exits 1 without a receipt and 0 with a proving one', async () => {

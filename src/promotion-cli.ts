@@ -3,7 +3,7 @@ import { readTeamRoster } from './team-rosters.js';
 import { readArrangement } from './desks/arrangement.js';
 import { teamLineBranch } from './desks/schema.js';
 import { abandonPromotion, bisectLine, promoteTeam, resumePromotion, revertPromotion } from './promotion/promote.js';
-import { listReceipts, readReceipt, summarize, toChangeSet } from './promotion/receipts.js';
+import { listReceipts, publicPromotionReceipt, readReceipt, summarize, toChangeSet } from './promotion/receipts.js';
 import type { RepoSpec } from './promotion/candidate.js';
 import type { ByoinMode } from './promotion/byoin.js';
 
@@ -101,7 +101,7 @@ async function main(): Promise<void> {
       const id = rest[0]; if (!id) throw new Error('show needs a receipt id');
       const r = await readReceipt(id);
       if (!r) throw new Error(`no receipt ${id}`);
-      if (flag('--pr-block')) say('```ronin-promotion-receipt\n' + JSON.stringify(r) + '\n```');
+      if (flag('--pr-block')) say('```ronin-promotion-receipt\n' + JSON.stringify(publicPromotionReceipt(r)) + '\n```');
       else if (flag('--shared')) say(JSON.stringify(toChangeSet(r), null, 2));
       else say(JSON.stringify(r, null, 2));
       process.exit(0);
