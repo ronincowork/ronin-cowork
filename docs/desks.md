@@ -85,8 +85,16 @@ and promoting it to `dev` is the lead's primary job, and the house telling the l
 its job is waiting is house machinery (the same footing as Koshi's marker and
 `write_tegami --at`), not an agent driving a session. `tejun-send` keeps its dial check, so
 no agent gains a bypass. The sender still refuses to overwrite a human's unsubmitted draft
-or to spam Enter into a dialog; when it cannot deliver, or no lead is set, the notice goes
-to the team wipeboard addressed to the lead, and the hand-in output says which happened.
+or to spam Enter into a dialog; when it cannot deliver, the notice goes to the team
+wipeboard addressed to the lead, and the hand-in output says which happened.
+
+**No lead set: the handing-in session holds the job** (owner law, 2026-08-28: *"the
+fallback is the agent handing in — it has to work end to end with no lead"*). The hand-in
+prints `YOU ARE THE LEAD FOR THIS ONE` with the words: review the line, promote when
+coherent (`bin/ronin-promote <team>`); a conflict is yours to resolve at your desk. A
+record goes on the wipeboard without interrupting anyone. Promotion is not restricted to a
+designated lead — the receipt records who ran it — so nothing is ever tied up waiting for a
+人 that was never set. A lead is still the better arrangement; it is not a prerequisite.
 `src/desks/lead.ts`; `tests/desks-lead.test.ts`.
 
 ## Close, park, recover, discard

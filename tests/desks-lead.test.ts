@@ -3,7 +3,7 @@
 // lead is told. The tmux read and the house sender are exercised by hand, not here.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SEP, leadMessage, leadsFor, parseSessionRows, teamOfLine } from '../src/desks/lead.js';
+import { SEP, leadMessage, leadsFor, parseSessionRows, selfMessage, teamOfLine } from '../src/desks/lead.js';
 
 const rows = parseSessionRows([
   ['comps', 'ronin_comps', 'ronin_comps'].join(SEP),
@@ -39,4 +39,14 @@ test('the lead is told what happened and what to do, in one line', () => {
   const bad = leadMessage({ team: 'ronin_comps', line: 'team/ronin_comps/dev', session: 'comp_fable', receiptId: 'hi_2', result: 'conflict', files: ['a.ts', 'b.ts'] });
   assert.match(bad, /CONFLICTS with team\/ronin_comps\/dev on a\.ts, b\.ts/);
   assert.match(bad, /adjudicate/);
+});
+
+test('with no lead, the handing-in session holds the job — told how to promote, or how to resolve; nothing waits', () => {
+  const ok = selfMessage({ team: 'ronin_comps', line: 'team/ronin_comps/dev', session: 'comp_fable', receiptId: 'hi_1', result: 'accepted' });
+  assert.match(ok, /no lead is set for ronin_comps/);
+  assert.match(ok, /bin\/ronin-promote ronin_comps/);
+  assert.match(ok, /Nothing waits on anyone/);
+  const bad = selfMessage({ team: 'ronin_comps', line: 'team/ronin_comps/dev', session: 'comp_fable', receiptId: 'hi_2', result: 'conflict', files: ['a.ts'] });
+  assert.match(bad, /conflict on a\.ts is yours to resolve/);
+  assert.match(bad, /tejun-desk sync/);
 });
