@@ -203,10 +203,15 @@ export function createTeamView() {
   const service = (node) => ({ el: node, mount: () => {}, enter: () => {}, leave: () => {}, destroy: () => {} });
   const channels = createChannelSurface({
     label: t('team.commons', 'Team commons'),
-    // Land on CHAT, by the owner's word (2026-08-25: "I don't want to land on the
-    // whiteboard. I want to land on chat. That's fine that it's empty.") — explicit,
-    // not the accident of an unqualified default.
-    selected: 'chat',
+    // DOCS FIRST, AND NO CHAT (owner, 2026-08-28: "hide the chat (it's dead for the
+    // moment) and move Docs to first tab"). It landed on Chat from 2026-08-25; Chat comes
+    // back to this list when it is a thing.
+    channels: [
+      { id: 'docs', label: t('workspace.channel_docs', 'Docs') },
+      { id: 'wipeboard', label: t('workspace.channel_wipeboard', 'Wipeboard') },
+      { id: 'team-configuration', label: t('workspace.channel_team_configuration', 'Team Configuration') },
+    ],
+    selected: 'docs',
     services: { wipeboard, docs: docsService, 'team-configuration': service(config) },
   });
   channels.el.addEventListener('pointerdown', () => { const id = commonsIn(); if (id) touch(id); });
