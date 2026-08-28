@@ -4,6 +4,7 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { membersOfTeam, refreshTeams, subscribe, teamByName, teamsFromState } from './team-controller.js';
 import { createNewTeamView } from './new-team.js';
 import { createLeagueCommons } from './league-commons.js';
+import { renderLeagueView } from './league-view-surface.js';
 import { activeProfile } from './desk-profile.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { createTeamWipeboard } from './team-wipeboard.js';
@@ -389,8 +390,7 @@ export function createCoworkView(options = {}) {
     seats.workspace1.pool.setPinned(leads);
     for (const name of leads) seats.workspace1.pool.keepHot(name);
   };
-  // The hover flourish: a pointer resting on a card pre-warms that member's tile in the
-  // workspace the click would land in.
+  // A pointer resting on a card pre-warms the workspace it would land in.
   let dwellTimer = 0;
   const armPrewarm = (name) => {
     window.clearTimeout(dwellTimer);
@@ -398,7 +398,6 @@ export function createCoworkView(options = {}) {
   };
   const disarmPrewarm = () => window.clearTimeout(dwellTimer);
 
-  /* ---------- the roster's cards ---------- */
   // THE CARD IS A READING, NOT A LABEL (owner, 2026-08-25: "shingo, model, ready, session
   // taken"). The readings ride /api/home's row — the same row the Commons roster reads:
   // MICHI's SHINGO chip, the status, the model, the context gauge. Read on entry and every
@@ -413,7 +412,7 @@ export function createCoworkView(options = {}) {
     const team = teamByName(name);
     surface.content.append(el('p', 'tw-config-head', name), createMetadata({ rows: [
       [t('team.team_role', 'Team role'), team.team_role], [t('team.objective', 'Objective'), team.objective],
-      [t('stats.sessions', 'Sessions'), String(membersOfTeam(name).length)], [t('team.project_root', 'Project root'), team.project_root],
+      [t('league.agents', 'Agents'), String(membersOfTeam(name).length)], [t('team.project_root', 'Project root'), team.project_root],
     ] }).el);
     const token = '@team:' + name;
     SURFACES[token] = { name: 'team', el: surface.el };
@@ -474,9 +473,10 @@ export function createCoworkView(options = {}) {
       add(views, t('league.commons', 'League commons'), '@league-commons');
       add(views, t('league.view', 'League view'), '@league-view');
       add(views, t('cowork.commons', 'Ronin Desk'), DESK, '', null, { cowork: true, tab: 'health' });
-      for (const item of teams) { const made = leagueTeamSurface(item.name); add(teamCards, item.name, made.token, item.objective || ''); add(leagueCards, item.name, made.token, item.objective || '', null, undefined, false); }
+      for (const item of teams) { const made = leagueTeamSurface(item.name); add(teamCards, item.name, made.token, item.objective || ''); }
+      renderLeagueView(leagueCards, teams, membersOfTeam, (name) => rows.get(name), (name) => leagueTeamSurface(name).token, DRAG_TYPE);
       add(newCards, t('new_team.title', 'New Team'), '@new-team', '', 'dotted');
-      add(newCards, t('team.new_session', 'New session'), NEW, t('team.add_member_summary', 'A new session, born into the workspace you are in.'), 'dotted');
+      add(newCards, t('league.new_agent', 'New Agent'), NEW, t('league.new_agent_summary', 'A new Agent, born into the workspace you are in.'), 'dotted');
       return;
     }
     rosterCount.textContent = members.length ? String(members.length) : '';

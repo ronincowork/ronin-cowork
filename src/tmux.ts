@@ -23,6 +23,8 @@ export interface SessionInfo {
   /** The durable identity (`<name>-<created-epoch>`), stamped copy preferred — off the
    *  same exec, so callers stop paying one `sessionKey` subprocess per session. */
   key: string;
+  /** CLI selected for this Agent, stamped at birth (codex, claude, gemini…). */
+  agent: string;
 }
 
 /** tmux user option holding a session's post-it note. Lives and dies with the session. */
@@ -129,13 +131,13 @@ export async function listSessions(): Promise<SessionInfo[]> {
     const { stdout } = await pexec('tmux', [
       'list-sessions',
       '-F',
-      `#{session_name}\t#{session_windows}\t#{?session_attached,1,0}\t#{session_created}\t#{?${NOTE_OPT},1,0}\t#{${TAGS_OPT}}\t#{${LEAD_OPT}}\t#{@ronin-control}\t#{@ronin-key}`,
+      `#{session_name}\t#{session_windows}\t#{?session_attached,1,0}\t#{session_created}\t#{?${NOTE_OPT},1,0}\t#{${TAGS_OPT}}\t#{${LEAD_OPT}}\t#{@ronin-control}\t#{@ronin-key}\t#{${AGENT_OPT}}`,
     ]);
     return stdout
       .split('\n')
       .filter(Boolean)
       .map((line) => {
-        const [name, windows, attached, created, hasNote, tags, leads, control, key] = line.split('\t');
+        const [name, windows, attached, created, hasNote, tags, leads, control, key, agent] = line.split('\t');
         return {
           name,
           windows: Number(windows) || 0,
@@ -146,6 +148,7 @@ export async function listSessions(): Promise<SessionInfo[]> {
           leads: parseTags(leads),
           control: control === 'user' || control === 'read' ? (control as Control) : 'write',
           key: key?.trim() || `${name}-${Number(created) || 0}`,
+          agent: agent?.trim() || '',
         };
       })
       .filter((s) => !s.name.startsWith(config.viewerPrefix))

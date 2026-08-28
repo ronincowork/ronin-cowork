@@ -1439,6 +1439,11 @@ The catalog entry goes. {dir} is not touched.
 - **league.template_delete:** Delete
 - **league.template_delete_confirm:** Delete template {name}?
 - **league.templates_empty:** No Team templates yet.
+- **league.agents_count:** {n} Agents
+- **league.agents:** Agents
+- **league.no_agents:** No live Agents
+- **league.new_agent:** New Agent
+- **league.new_agent_summary:** A new Agent, born into the workspace you are in.
 - **league.open_workspace:** League workspace
 - **customize.desk_profiles:** Desk profiles
 - **customize.desk_profiles_blurb:** Your standing defaults for the surfaces you work at — a skin, a lexicon, a campaign kind, a Team page arrangement. Choosing one is a setting, on the gear.

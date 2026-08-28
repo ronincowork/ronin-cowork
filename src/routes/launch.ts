@@ -290,12 +290,8 @@ export function registerLaunch(app: express.Express): void {
   // scrapes. The model rides this capture rather than earning its own tmux call: it sits
   // on the very status line the gauge is read off (src/ctx.ts), so it is free here.
   //
-  // THE MODEL IS THE WHOLE COLUMN. It shipped for one commit as `agent · provider · model`,
-  // read from a birth stamp; the owner cut it to the model alone, because `opus 5` already
-  // says Claude and `gpt-5.6-sol` already says Codex. The `launchStamps()` board read that
-  // served the other two went with them. The upside of what is left is that scraping needs
-  // no stamp, so this is right for every session on the box today rather than only for
-  // those born after a restart.
+  // Model is scraped from the live pane; the selected Agent rides listSessions' birth
+  // stamp. League View shows both because they answer different operational questions.
   app.get('/api/home', async (_req, res) => {
     try {
       const list = await withAxes(await listSessions());

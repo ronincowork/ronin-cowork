@@ -38,7 +38,7 @@ export function createTeamRosterSurface() {
         row.addEventListener('dragstart', (event) => { event.dataTransfer.setData(MIME, session.name); event.dataTransfer.effectAllowed = 'copy'; });
         target.append(row);
       }
-      if (!members.length) target.append(node('span', 'team-roster-empty', t('team.no_live', 'No live sessions')));
+      if (!members.length) target.append(node('span', 'team-roster-empty', t('league.no_agents', 'No live Agents')));
       target.addEventListener('dragover', (event) => { if (![...event.dataTransfer.types].includes(MIME)) return; event.preventDefault(); target.dataset.dropReady = 'true'; });
       target.addEventListener('dragleave', () => { delete target.dataset.dropReady; });
       target.addEventListener('drop', (event) => { delete target.dataset.dropReady; const session = event.dataTransfer.getData(MIME); if (!session) return; event.preventDefault(); void addMembership(session, team.name); });
