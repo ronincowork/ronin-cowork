@@ -22,5 +22,8 @@ export function createLeagueCommons(options) {
   });
   const select = surface.select;
   surface.select = (id) => { const picked = select(id); services[picked]?.enter(); return picked; };
+  surface.tabs.addEventListener('click', (event) => {
+    if (event.target.closest('.wk-channel-service-tab')) services[surface.current()]?.enter();
+  });
   return surface;
 }
