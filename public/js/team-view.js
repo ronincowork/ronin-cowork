@@ -36,7 +36,7 @@ import { humanAge } from './shingo.js';
 import { sessionsHandlers, teamPageHandlers } from './events.js';
 import { createArranger, parseDraft, reportView as sendView } from './team-arrange.js';
 import { t } from './lexicon.js';
-import { deskLinesText, deskReadout, desksOf, refreshDesks } from './desks.js';
+import { deskReadout, desksOf, refreshDesks, refreshTeamDesks, teamDeskRows } from './desks.js';
 import { coworkCommons } from './cowork-commons.js';
 import { DRAG_TYPE, acceptDrops as acceptSessionDrops } from './team-drag.js';
 import { S } from './state.js';
@@ -444,7 +444,7 @@ export function createTeamView() {
   let rows = new Map(); // name -> the /api/home row
   let homeTimer = 0;
   const readRows = async () => {
-    const [r] = await Promise.all([request('/api/home', { cache: 'no-store' }), refreshDesks().catch(() => false)]);
+    const [r] = await Promise.all([request('/api/home', { cache: 'no-store' }), refreshDesks().catch(() => false), refreshTeamDesks(team).catch(() => {})]);
     if (!r.ok || !Array.isArray(r.data) || !entered) return;
     rows = new Map(r.data.map((row) => [row.name, row]));
     onSessions();
@@ -540,7 +540,7 @@ export function createTeamView() {
     const record = roster
       ? [[t('team.team_role', 'Team role'), roster.team_role], [t('team.objective', 'Objective'), roster.objective], [t('team.project_root', 'Project root'), roster.project_root],
         [t('team.repos', 'Repositories'), (roster.repos || []).join(', ')], [t('team.branch', 'Branch'), roster.branch],
-        [t('team.lines', 'Team lines'), deskLinesText(live.map((m) => m.name))], // per repo, off the desks — one `branch` cannot name two repos' lines
+        ...teamDeskRows(team), // team lines per repo, promotion state, parked desks — desks.js
         [t('team.wipeboard', 'Wipeboard'), roster.wipeboard || team], [t('team.state', 'State'), roster.state]]
       : [[t('team.record', 'Record'), t('team.record_tag_only', 'tag-only — no durable roster; the team is its sessions’ tags')], [t('team.wipeboard', 'Wipeboard'), team]];
     config.append(createMetadata({ className: 'tw-config-metadata', rows: record }).el);

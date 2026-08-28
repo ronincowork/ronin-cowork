@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1229 keys · 54 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1236 keys · 54 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -256,10 +256,15 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `desks.line` | → {line} |  |  |  |  |
 | `desks.none` | No desk listed yet. A coding launch opens one; the session lists its repos in TEGAMI. |  |  |  |  |
 | `desks.parked` | parked |  |  |  |  |
+| `desks.parked_gone` | {name} · gone · {n} ahead |  |  |  |  |
 | `desks.parked_n` | {n} parked |  |  |  |  |
+| `desks.parked_none` | none |  |  |  |  |
 | `desks.pending_by` | update pending, by {who} |  |  |  |  |
 | `desks.pending_n` | {n} pending |  |  |  |  |
 | `desks.private_n` | {n} private |  |  |  |  |
+| `desks.promotion_blocking` | ⚠ {state} — {summary} ({id}) |  |  |  |  |
+| `desks.promotion_last` | last {summary} · {id} · by {who} |  |  |  |  |
+| `desks.promotion_none` | none yet |  |  |  |  |
 | `desks.unknown` | not found on this box |  |  |  |  |
 
 ## dial
@@ -1426,7 +1431,9 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `team.none_selected` | No Team selected |  |  |  |  |
 | `team.none_selected_dot` | No Team selected. |  |  |  |  |
 | `team.objective` | Objective |  |  |  |  |
+| `team.parked_desks` | Parked desks |  |  |  |  |
 | `team.project_root` | Project root |  |  |  |  |
+| `team.promotion` | Promotion |  |  |  |  |
 | `team.read_failed` | Could not read this Team — {message} |  |  |  |  |
 | `team.reading` | Reading the Team… |  |  |  |  |
 | `team.record` | Record |  |  |  |  |

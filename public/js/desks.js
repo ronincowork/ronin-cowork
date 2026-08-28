@@ -90,13 +90,37 @@ export function deskTip(entry) {
   }).join('\n'));
 }
 
+let teams = new Map(); // team -> the /api/teams/:name/desks answer
+
+/** Re-read one team's desks view (lines, parked desks of gone sessions, promotion state). */
+export async function refreshTeamDesks(team) {
+  if (!team) return;
+  const r = await request('/api/teams/' + encodeURIComponent(team) + '/desks', { cache: 'no-store' });
+  if (r.ok && r.data) teams.set(team, r.data);
+}
+
 /**
- * THE TEAM LINE PER REPOSITORY, read off the members' desks — `ronin-cowork → team/comp/dev
- * · ronin-services → team/comp/dev`. One roster `branch` cannot name two repos' lines
- * (RONIN_CONTROL_SURFACE.md § 5); this is the derived row the Team page shows instead.
+ * THE TEAM PAGE'S ROWS, for its read-only configuration: the team line per repository
+ * (`ronin-cowork → team/comp/dev` — one roster `branch` cannot name two repos' lines,
+ * RONIN_CONTROL_SURFACE.md § 5), the promotion state off the ledger (the last complete
+ * team promotion, or the receipt still blocking the team — an interrupted coordinated
+ * advance is shown, never hidden), and the parked desks whose session is gone — the
+ * lead's *hand in · inspect · reassign · discard* list (WORKTREES.md "Session loss").
  */
-export function deskLinesText(names) {
-  const lines = {};
-  for (const n of names) for (const d of desksOf(n)?.desks || []) if (d.line && !lines[d.short]) lines[d.short] = d.line;
-  return Object.entries(lines).map(([repo, line]) => `${repo} → ${line}`).join(' · ') || '—';
+export function teamDeskRows(team) {
+  const v = teams.get(team);
+  if (!v) return [];
+  const lines = Object.entries(v.lines || {}).map(([repo, line]) => `${repo} → ${line}`).join(' · ') || '—';
+  const p = v.promotion || {};
+  const promotion = p.blocking
+    ? t('desks.promotion_blocking', '⚠ {state} — {summary} ({id})', { state: p.blocking.state, summary: p.blocking.summary, id: p.blocking.id })
+    : p.last_good
+      ? t('desks.promotion_last', 'last {summary} · {id} · by {who}', { summary: p.last_good.summary, id: p.last_good.id, who: p.last_good.by || '?' })
+      : t('desks.promotion_none', 'none yet');
+  const parked = (v.members || []).filter((m) => !m.live).map((m) => t('desks.parked_gone', '{name} · gone · {n} ahead', { name: m.session, n: m.rollup?.private || 0 })).join(' · ');
+  return [
+    [t('team.lines', 'Team lines'), lines],
+    [t('team.promotion', 'Promotion'), promotion],
+    [t('team.parked_desks', 'Parked desks'), parked || t('desks.parked_none', 'none')],
+  ];
 }

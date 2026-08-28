@@ -20,6 +20,7 @@ import type express from 'express';
 import { listProjectRoots, repoFacts } from '../project-roots.js';
 import { deriveDesk, fromStatus, locatorFrom, rollup, type DeskRollup, type DeskState, type LocateRepo } from '../desk-state.js';
 import { listDesks } from '../desks/registry.js';
+import { blockingReceipt, lastGoodPromotion, summarize } from '../promotion/receipts.js';
 import { readRepos } from '../tegami.js';
 import { isValidName, listSessions, sessionExists } from '../tmux.js';
 
@@ -116,7 +117,15 @@ export function registerDesks(app: express.Express): void {
       for (const [session, desks] of gone) rows.push({ session, live: false, desks, rollup: rollup(desks) });
       const lines: Record<string, string> = {};
       for (const r of rows) for (const d of r.desks) if (d.line && !lines[d.short]) lines[d.short] = d.line;
-      res.json({ team: name, members: rows, rollup: sum(rows.map((r) => r.rollup)), lines });
+      // THE PROMOTION STATE, off Track 2's ledger: the last complete team promotion, and
+      // any receipt still blocking the team — advancing, or interrupted mid-advance, which
+      // the roster must show as `landing: cowork done, services pending` rather than hide.
+      const [good, blocking] = await Promise.all([lastGoodPromotion(name).catch(() => null), blockingReceipt(name).catch(() => null)]);
+      const brief = (r: NonNullable<typeof good>) => ({ id: r.id, kind: r.kind, state: r.state, at: r.updated_at || r.at, by: r.by, summary: summarize(r) });
+      res.json({
+        team: name, members: rows, rollup: sum(rows.map((r) => r.rollup)), lines,
+        promotion: { last_good: good ? brief(good) : null, blocking: blocking ? brief(blocking) : null },
+      });
     } catch (e) {
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }

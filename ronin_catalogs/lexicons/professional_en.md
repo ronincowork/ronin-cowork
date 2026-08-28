@@ -260,6 +260,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.repos_desc:** Optional, comma-separated.
 - **team.branch:** Branch
 - **team.lines:** Team lines
+- **team.promotion:** Promotion
+- **team.parked_desks:** Parked desks
 - **new_team.optional:** Optional.
 - **team.wipeboard:** Wipeboard
 - **new_team.wipeboard_desc:** Optional. Blank uses the Team’s own name.
@@ -393,6 +395,11 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **desks.parked:** parked
 - **desks.unknown:** not found on this box
 - **desks.blocked:** blocked: {why}
+- **desks.promotion_blocking:** ⚠ {state} — {summary} ({id})
+- **desks.promotion_last:** last {summary} · {id} · by {who}
+- **desks.promotion_none:** none yet
+- **desks.parked_gone:** {name} · gone · {n} ahead
+- **desks.parked_none:** none
 
 ## team — team-view.js (the Team page)
 - **team.flip_commons:** Show the Team commons in this workspace
