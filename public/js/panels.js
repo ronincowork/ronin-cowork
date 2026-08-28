@@ -1,6 +1,5 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { request } from './request.js';
-import { refreshHome } from './home.js';
 import { field, sheet, status } from './ui.js';
 import { IS_TOUCH, S, tiles } from './state.js';
 import { t } from './lexicon.js';
@@ -84,62 +83,6 @@ export function buildNotePanel() {
   });
   closeBtn.addEventListener('click', dlg.close);
   S.notePanel = { open, close: dlg.close };
-}
-
-/* ---------- the Agent's Team memberships ---------- */
-export function buildTagPanel() {
-  let current = null;
-  let selected = [], teams = [];
-  const dlg = sheet({ id: 'tagsheet', cls: 'tg-card', label: t('panels.teams_sheet', 'Agent Teams'), onClose: () => (current = null) });
-  dlg.card.innerHTML = `<div class="tg-bar"><span class="tg-title"></span>
-        <button class="tg-save"></button><button class="tg-close"></button></div>
-      <div class="tg-known"></div><div class="tg-hint"></div>`;
-  dlg.card.querySelector('.tg-save').textContent = t('panels.save', 'Save');
-  dlg.card.querySelector('.tg-close').textContent = t('panels.close', 'Close');
-  const title = dlg.card.querySelector('.tg-title');
-  const msg = status('tg-msg');
-  title.after(msg.el);
-  const known = dlg.card.querySelector('.tg-known');
-  const say = (text, bad) => msg.say(text, bad ? 'bad' : '');
-  const renderKnown = () => {
-    known.innerHTML = '';
-    for (const team of teams) {
-      const c = document.createElement('button');
-      c.type = 'button'; c.className = 'tg-chip' + (selected.includes(team.name) ? ' on' : '');
-      c.textContent = team.name; c.setAttribute('aria-pressed', String(selected.includes(team.name)));
-      c.addEventListener('click', () => {
-        selected = selected.includes(team.name) ? selected.filter((name) => name !== team.name) : [...selected, team.name].sort();
-        renderKnown();
-      });
-      known.appendChild(c);
-    }
-    dlg.card.querySelector('.tg-hint').textContent = teams.length ? '' : t('panels.no_teams_defined', 'No Teams are defined. Create a Team in League first.');
-  };
-
-  const open = async (agent) => {
-    if (!agent) return;
-    current = agent; title.textContent = 'Teams · ' + agent; selected = []; teams = []; say(''); renderKnown(); dlg.open();
-    const [membership, rosters] = await Promise.all([request(`/api/sessions/${encodeURIComponent(agent)}/teams`), request('/api/team-rosters', { cache: 'no-store' })]);
-    if (current !== agent) return;
-    if (!membership.ok || !rosters.ok) { say(t('panels.load_failed', 'could not load — {message}', { message: membership.message || rosters.message }), true); return; }
-    selected = Array.isArray(membership.data.teams) ? membership.data.teams : [];
-    teams = Array.isArray(rosters.data) ? rosters.data.filter((team) => team.state !== 'archived') : [];
-    renderKnown();
-  };
-  dlg.card.querySelector('.tg-save').addEventListener('click', async () => {
-    if (!current) return;
-    const agent = current;
-    say(t('panels.saving', 'saving…'));
-    const r = await request(`/api/sessions/${encodeURIComponent(agent)}/teams`, { method: 'PUT', json: { teams: selected } });
-    if (!r.ok) { say(t('panels.not_saved', 'not saved — {message}', { message: r.message }), true); return; }
-    const s = S.sessions.find((x) => x.name === agent);
-    if (s) s.tags = Array.isArray(r.data.teams) ? r.data.teams : selected;
-    tiles.forEach((t) => t.syncHeader());
-    refreshHome();
-    dlg.close();
-  });
-  dlg.card.querySelector('.tg-close').addEventListener('click', dlg.close);
-  S.tagPanel = { open, close: dlg.close };
 }
 
 /** Clipboard write with http fallback (the copy-sheet textarea trick). */

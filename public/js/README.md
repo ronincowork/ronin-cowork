@@ -72,7 +72,7 @@ written contract those modules enforce.
 | `tilejob.js` | 55 | `pickJobFor` — the job pick off a tile head: the session_role, and the 人 team-lead toggle beneath it; split out of tile.js at the ceiling |
 | `team-arrange.js` | 95 | `parseDraft`, `createArranger` — the team page's one controller: a draft (what changes; the rest stays) from a button or from an agent's `tejun-teampage`, run through the page's own verbs |
 | `voice.js` | 181 | dictation: `makeClipRecorder` + `wireDictation` (the 🎤 on the tile's compose box) |
-| `panels.js` | 248 | `buildNotePanel` 📝, `buildTagPanel` 🏷 (on `ui.sheet`), `toClipboard` |
+| `panels.js` | 248 | `buildNotePanel` 📝 (on `ui.sheet`), `toClipboard` |
 | `macros.js` | 103 | `buildSessionPicker` — the pad key's session switcher (on `ui.sheet`) |
 | `pad.js` | 246 | keypad — bindings, chords, firing |
 | `padpanel.js` | 533 | keypad — the ▦ panel and ask-on-press (both on `ui.sheet`) |

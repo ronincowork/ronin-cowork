@@ -171,8 +171,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **panels.load_failed:** could not load — {message}
 - **panels.saving:** saving…
 - **panels.not_saved:** not saved — {message}
-- **panels.teams_sheet:** Agent Teams
-- **panels.no_teams_defined:** No Teams are defined. Create a Team in League first.
 
 ## commons — commons.js (the commons shell: tab strip and frame)
 - **commons.tab_off:** {tab} — off, this service is not installed.
@@ -1122,10 +1120,6 @@ The catalog entry goes. {dir} is not touched.
 - **head.mention_quiet:** Mentions — no session in this tile yet
 - **head.macros_quiet:** Macros — no session in this tile yet
 - **head.more_help:** This session's other controls — 🏷 teams, ⛽ context, 🎛 control, 📄 docs, 📝 note, 🗑 kill
-- **head.tags_help:** Teams this session is on
-- **head.tags_quiet:** Teams — no session in this tile yet
-- **head.tags_read:** Teams: {teams}
-- **head.tags_none:** Teams (none yet)
 - **head.gauge_help:** Context gauge — how full this session's context window is, read off the pane's own status line. Hidden until there is a reading.
 - **head.dial_quiet:** Control dial — no session in this tile yet
 - **head.note_help:** Session note (post-it)

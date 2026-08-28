@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1260 keys · 54 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1254 keys · 54 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -473,10 +473,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `head.rename_prompt` | Rename session |  |  |  |  |
 | `head.rename_quiet` | Rename session — no session in this tile yet |  |  |  |  |
 | `head.select_help` | Pick / switch the session shown in this tile |  |  |  |  |
-| `head.tags_help` | Teams this session is on |  |  |  |  |
-| `head.tags_none` | Teams (none yet) |  |  |  |  |
-| `head.tags_quiet` | Teams — no session in this tile yet |  |  |  |  |
-| `head.tags_read` | Teams: {teams} |  |  |  |  |
 
 ## home
 
@@ -916,14 +912,12 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `panels.close` | Close |  |  |  |  |
 | `panels.load_failed` | could not load — {message} |  |  |  |  |
 | `panels.loading` | loading… |  |  |  |  |
-| `panels.no_teams_defined` | No Teams are defined. Create a Team in League first. |  |  |  |  |
 | `panels.not_saved` | not saved — {message} |  |  |  |  |
 | `panels.note` | session note |  |  |  |  |
 | `panels.note_placeholder` | What's this session working on? |  |  |  |  |
 | `panels.note_sheet` | Session note |  |  |  |  |
 | `panels.save` | Save |  |  |  |  |
 | `panels.saving` | saving… |  |  |  |  |
-| `panels.teams_sheet` | Agent Teams |  |  |  |  |
 
 ## preview
 

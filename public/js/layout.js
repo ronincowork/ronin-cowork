@@ -5,7 +5,7 @@ import { refreshHome } from './home.js';
 import { buildSessionPicker } from './macros.js';
 import { PAD_CODE, firePadBinding, padBinds, padChord } from './pad.js';
 import { buildPadAsk, buildPadPanel } from './padpanel.js';
-import { buildNotePanel, buildTagPanel } from './panels.js';
+import { buildNotePanel } from './panels.js';
 import { IS_TOUCH, S, WHEEL_DOWN, tiles } from './state.js';
 import { isCoarse, makeDrop } from './tiledrop.js';
 import { t } from './lexicon.js';
@@ -126,7 +126,6 @@ export function build() {
 
   // Per-session note editor (📝 on each tile head) — works the same on desktop and touch.
   guard('note panel', buildNotePanel);
-  guard('tag panel', buildTagPanel);
   // ⚙ Account — ONE sheet at page level (js/system.js); the bar's gear opens it.
   //
   // THE LABEL MOVED, NOT THE DESTINATION (2026-08-17). The owner wants this to read

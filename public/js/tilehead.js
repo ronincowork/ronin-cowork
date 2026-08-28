@@ -179,17 +179,7 @@ const HEADER = () => {
   // at all, and dimming it would hide the six explanations of why its contents are dim.
   { key: 'moreBtn', hosts: true,
     widget: () => buildTileMore(),
-    help: t('head.more_help', "This session's other controls — 🏷 teams, ⛽ context, 🎛 control, 📄 docs, 📝 note, 🗑 kill") },
-
-  { key: 'tagBtn', cls: 'tags', text: '🏷', drop: true, modal: true, needs: 'session',
-    help: t('head.tags_help', 'Teams this session is on'),
-    quiet: t('head.tags_quiet', 'Teams — no session in this tile yet'),
-    on: (tile) => tile.openTags(),
-    read: (tile, el) => {
-      const tags = S.sessions.find((x) => x.name === tile.session)?.tags || [];
-      el.classList.toggle('has-tags', !!tags.length);
-      return tags.length ? t('head.tags_read', 'Teams: {teams}', { teams: tags.join(', ') }) : t('head.tags_none', 'Teams (none yet)');
-    } },
+    help: t('head.more_help', "This session's other controls — ⛽ context, 🎛 control, 📄 docs, 📝 note, 🗑 kill") },
 
   // Hidden until there is a reading — a plain shell pane has no context, and that is fine.
   //

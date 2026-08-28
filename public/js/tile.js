@@ -328,10 +328,6 @@ export class Tile {
     if (S.notePanel) S.notePanel.open(this.session);
   }
 
-  openTags() {
-    if (S.tagPanel) S.tagPanel.open(this.session);
-  }
-
   /**
    * THE HEADER'S STATE, in one pass.
    *
