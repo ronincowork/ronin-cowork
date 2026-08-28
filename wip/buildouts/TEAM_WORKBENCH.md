@@ -187,7 +187,7 @@ finish on what the page shows:
    uses the same head, so what changes here changes there — measure both.
 2. **The commons' tabs** — Docs and Team Configuration are read-only slices; Chat is
    reserved and empty by ruling. Finish them as the owner wants them to work on the
-   team page (`createChannelSurface`, `team-view.js`'s `docsService` and `renderConfig`).
+   team page (`createChannelSurface`, `cowork-view.js`'s `docsService` and `renderConfig`).
 3. Keep the shape: one controller (`arrange()`), one tab one team, no hidden, no overlay.
 
 **Traps a successor should know (beyond the ones under LANDED):**
@@ -198,7 +198,7 @@ finish on what the page shows:
 - Any Tile built while the team page is not entered, or left in its DOM after `leave()`,
   is counted by the Sessions grid's smoke checks (`select.sess` pickers, `.tile`
   elements). Build tiles on first need; destroy every one on `leave()`.
-- The Kit gate (`check-workspace-kit.mjs`) reads `team-view.js` for any `/api/teams/`
+- The Kit gate (`check-workspace-kit.mjs`) reads `cowork-view.js` for any `/api/teams/`
   request and calls it a feature-local projection — the page's view report therefore
   lives in `team-arrange.js`.
 - The owner edits this file in the browser; a stale editor buffer once wrote over two
@@ -686,7 +686,7 @@ written with `ctx.patchViewState('team', { arrangement })` — the per-view stor
 already exists and today goes unused by the team page — not `patchState`. Leg 2 keys it
 by team param (`arrangements[team]`); the shape does not change again.
 
-### 6. The team page after the cut (`team-view.js`)
+### 6. The team page after the cut (`cowork-view.js`)
 
 ```js
 const workbench = createWorkbenchLayout({

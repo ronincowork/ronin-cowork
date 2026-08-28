@@ -75,7 +75,7 @@ Persistence is per browser tab (sessionStorage); one tab is one team.
 ## The page takes instructions (`tejun-teampage`)
 
 Everything that changes the page goes through one controller, `arrange(draft)` in
-`team-view.js`, built by `createArranger` (`team-arrange.js`). The C/T buttons and the
+`cowork-view.js`, built by `createArranger` (`team-arrange.js`). The C/T buttons and the
 roster cards call it — and so does a **draft** an agent hands in with `tejun-teampage`
 (`ronin_bin/`, catalogued in `ronin_catalogs/TOOLS.md`; actions `team-page-read` and
 `team-page-draft` in `ACTIONS.md`). The tool's bare form prints the view (the roster;
@@ -106,7 +106,7 @@ read-only.
 
 ## Owned files
 
-- `public/js/team-view.js` — the page: seats, roster cards, C/T, `arrange()`, lifecycle.
+- `public/js/cowork-view.js` — the shared cowork-space page: workspaces, selector, placement and lifecycle.
 - `public/js/team-arrange.js` — `parseDraft` and `createArranger`: the one parser and
   the one controller; `reportView`, the tab's view to Ronin.
 - `public/js/team-terminal-pool.js` — one pool per workspace: warm, hot, cold, pinned,

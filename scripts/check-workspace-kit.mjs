@@ -4,7 +4,7 @@ import fs from 'node:fs';
 const problems = [];
 const read = (file) => fs.readFileSync(file, 'utf8');
 const league = read('public/js/league-view.js') + read('public/js/league-board.js');
-const team = read('public/js/team-view.js');
+const team = read('public/js/cowork-view.js');
 const controller = read('public/js/team-controller.js');
 const kit = read('public/js/workspace-kit.js') + read('public/js/workspace-adapters.js');
 const layouts = read('public/js/workspace-layouts.js');
@@ -75,7 +75,7 @@ for (const contract of ['.ac-field {', '.ac-actions[data-dirty=', '.ac-preview-b
 }
 if (!preflight.includes('proposedRoster') || !preflight.includes('isCreatableTeamName')) problems.push('Preflight must use proposed Team defaults and canonical name availability.');
 if (!rosters.includes("isReservedTeamName = (s: string): boolean => s === 'unassigned'")) problems.push('The canonical Team store must reserve the Unassigned holding token.');
-for (const file of ['league-board.js', 'team-view.js', 'new-team.js']) {
+for (const file of ['league-board.js', 'cowork-view.js', 'new-team.js']) {
   const source = read(`public/js/${file}`);
   if (/className\s*=\s*['"](?:action-bar|metadata)['"]/.test(source)) problems.push(`${file} copies a shared foundation primitive.`);
 }

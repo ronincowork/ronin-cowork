@@ -60,7 +60,7 @@ Rules that make them peers:
   tile head; the connection dot is gone. The selector column's head reads *Roster: <team>*.
 - **A cell owns selection and drops, whatever it holds** (owner, 2026-08-28): a card dropped on
   any workspace clobbers what is there — session, commons, launcher, anything to come.
-  Nothing per surface: `team-view.js` keeps ONE registry (`SURFACES`: token · element ·
+  Nothing per surface: `cowork-view.js` keeps ONE registry (`SURFACES`: token · element ·
   show) and a new surface is one entry in it — the cells, the memory, the view report and
   `tejun-teampage`'s words all read the table.
 - **One surface per workspace, one head per surface.** A surface never draws over another;
@@ -82,7 +82,7 @@ Rules that make them peers:
 - **workspace_surface** — the genus: what a workspace holds. Say *a surface*.
 - **terminal_tile** — a tile when it is the surface in a workspace. Say *the terminal
   tile* when the contrast with a commons matters; *the tile* is still right on the grid
-  page. Not "terminal seat" — *seat* is a code word in `team-view.js` for the slot's pool
+  page. Not "terminal seat" — *seat* is a code word in `cowork-view.js` for the slot's pool
   of tiles and is not a house noun.
 - **team_commons** — the team's shared surface. Say *the team commons*.
 - **cowork_commons** — the install's shared surface. Say *the cowork commons*. Never

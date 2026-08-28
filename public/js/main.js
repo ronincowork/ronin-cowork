@@ -14,7 +14,7 @@ import { installTips } from './tips.js';
 import { buildCoworkSetup } from './cowork-setup.js';
 import { installServicesStatus } from './services-activation.js';
 import { createWorkspace } from './workspace.js';
-import { createTeamView } from './team-view.js';
+import { createCoworkView } from './cowork-view.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createNewTeamView } from './new-team.js';
 import { createLeagueView } from './league-view.js';
@@ -108,7 +108,7 @@ export async function init() {
   // The Team destination. Registered beside the compatibility Sessions grid, not over it:
   // this preview is geometry and readings only — no terminal host, no sockets, no Sessions
   // mode — so the existing coworkspace stays the working surface until those gates land.
-  guard('register the Team destination', () => workspace.register('team', createTeamView()));
+  guard('register the Team destination', () => workspace.register('team', createCoworkView({ kind: 'team' })));
   // THE COWORK COMMONS at full width — ⚙'s door on the parked grid page, where there is no
   // workspace to place it in (docs/cowork-space.md). The same one surface the team page
   // places; entering here takes it, leaving hands it back to whoever places it next.
@@ -139,7 +139,7 @@ export async function init() {
   // remembered destination resolves to it rather than falling back to Sessions. Guarded
   // like its neighbours — a preview destination must never cost the owner their terminals.
   guard('register the League destination', () => workspace.register('league', createLeagueView()));
-  guard('register the League workspace destination', () => workspace.register('league-workspace', createTeamView({ selector: 'league' })));
+  guard('register the League workspace destination', () => workspace.register('league-workspace', createCoworkView({ kind: 'league' })));
   // AGENT CONFIGURATION — two Surfaces, no Tile, no Channel service. It edits ONE seat of
   // New Team's canonical draft and owns no schema of its own; a seat reaches it through
   // `open(draft, seat_id)` rather than being fetched here, because New Team owns the
