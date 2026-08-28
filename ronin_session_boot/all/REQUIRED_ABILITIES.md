@@ -89,6 +89,17 @@ the whole team an interruption and tells them nothing. Being pointed at a board 
 instruction to post on it. A board name (`tejun-wipeboard <board> post …`) is only for a
 board that is not your team's. `docs/wipeboards.md`.
 
+## Your desk, if you were given one
+
+A coding launch on a reviewed repository is born at a **desk** — that repository's private
+branch and worktree, opened before you existed. The desks are listed in your brief and on
+your letter (`repos[]`); the contract is `DESK_CONTRACT.md`, handed to you beside this file
+only when you have one. Four words, used strictly: **commit** preserves (yours, private);
+**hand-in** publishes your committed range to your team line (`tejun-desk hand-in`);
+**team promotion** is the lead admitting the team line to `dev`, where the one full BYOIN
+runs; **Git push** is remote publication and never yours. A brief that lists no desk gave
+you none — do not invent one; that session works as its repository's own instructions say.
+
 ## This machine
 
 Facts about the box are **measured, never remembered** — nothing written down about a
