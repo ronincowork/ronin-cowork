@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { listProjectRoots } from './project-roots.js';
 import { readTeamRoster } from './team-rosters.js';
 import { readArrangement } from './desks/arrangement.js';

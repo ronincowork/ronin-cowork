@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process';
 import { access } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
+import { tailnetIp } from '../config.js';
 import { envWithoutGitLocation } from '../tegami.js';
 import type { GateResult, HealthResult } from './receipts.js';
 
@@ -53,7 +54,7 @@ export interface HealthOptions {
 
 export function defaultUrl(): string {
   const port = process.env.PORT ?? '3006';
-  const host = process.env.BIND?.trim() || '127.0.0.1';
+  const host = process.env.BIND?.trim() || tailnetIp();
   return process.env.RONIN_GATE_URL ?? `http://${host}:${port}/`;
 }
 
