@@ -390,7 +390,6 @@ export function createCoworkView(options = {}) {
     seats.workspace1.pool.setPinned(leads);
     for (const name of leads) seats.workspace1.pool.keepHot(name);
   };
-  // A pointer resting on a card pre-warms the workspace it would land in.
   let dwellTimer = 0;
   const armPrewarm = (name) => {
     window.clearTimeout(dwellTimer);
@@ -410,7 +409,8 @@ export function createCoworkView(options = {}) {
     if (leagueTeamSurfaces.has(name)) return leagueTeamSurfaces.get(name);
     const surface = createSurface({ label: name, className: 'league-team-edit' });
     const team = teamByName(name);
-    surface.content.append(el('p', 'tw-config-head', name), createMetadata({ rows: [
+    const head = el('div', 'league-team-edit-head'), launch = el('button', null, t('league.launch_team', 'Launch')); launch.type = 'button'; launch.addEventListener('click', () => { const url = new URL(location.href); url.hash = `#/team/${encodeURIComponent(name)}`; window.open(url.href, '_blank', 'noopener'); }); head.append(el('p', 'tw-config-head', name), launch);
+    surface.content.append(head, createMetadata({ rows: [
       [t('team.team_role', 'Team role'), team.team_role], [t('team.objective', 'Objective'), team.objective],
       [t('league.agents', 'Agents'), String(membersOfTeam(name).length)], [t('team.project_root', 'Project root'), team.project_root],
     ] }).el);

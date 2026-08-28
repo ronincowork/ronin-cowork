@@ -35,5 +35,8 @@ defines a Team; each Agent owns its validated list of Team names. A roster never
 members, and there are no free-form Agent labels. Deleting a Team removes that name from
 every Agent after a consequence warning; it is not blocked by active membership.
 
+A Team surface opened inside League carries a Launch button. Launch opens the existing
+`#/team/:name` cowork view in a new browser tab and leaves the League workspace in place.
+
 There is no `#/league` destination, League view module, League board module, League
 stylesheet, roster visibility state, or parallel workspace implementation.
