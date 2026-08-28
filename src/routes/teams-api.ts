@@ -28,6 +28,7 @@ import { count } from '../counts.js';
 import { getTags, listSessions, setTags } from '../tmux.js';
 import { writeTeams } from '../tegami.js';
 import { announceTeamChanges } from './wipeboards-api.js';
+import { listTeamTemplates, removeTeamTemplate, saveTeamTemplate } from '../team-templates.js';
 
 const errMsg = (e: unknown): string => String((e as Error)?.message ?? e);
 
@@ -64,6 +65,17 @@ function editOf(body: unknown): RosterEdit {
 }
 
 export function registerTeams(app: express.Express): void {
+  app.get('/api/team-templates', async (_req, res) => {
+    try { res.json(await listTeamTemplates()); } catch (e) { res.status(500).json({ error: errMsg(e) }); }
+  });
+  app.post('/api/team-templates', async (req, res) => {
+    try { await saveTeamTemplate(String(req.body?.name ?? '').trim().toLowerCase(), req.body?.draft ?? {}); res.json({ ok: true }); }
+    catch (e) { res.status(400).json({ error: errMsg(e) }); }
+  });
+  app.delete('/api/team-templates/:name', async (req, res) => {
+    try { await removeTeamTemplate(req.params.name); res.json({ ok: true }); }
+    catch (e) { res.status(400).json({ error: errMsg(e) }); }
+  });
   // THE LEAGUE LIST — every durable team, zero-member teams included, with whether its
   // board file exists yet (boards materialize on first post, per docs/wipeboards.md).
   app.get('/api/team-rosters', async (_req, res) => {

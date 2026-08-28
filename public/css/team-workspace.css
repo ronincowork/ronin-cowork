@@ -14,6 +14,13 @@
   .tw-selector-group-cards { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-2) 0 var(--space-4); }
   .tw-selector-group-cards > [draggable='true'] { cursor: grab; }
   .league-drag-card { cursor: grab; }
+  .team-templates { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-5); overflow-y: auto; }
+  .team-template-add { display: flex; gap: var(--space-3); }
+  .team-template-add input { flex: 1 1 auto; min-width: 0; }
+  .team-template-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+  .team-template-card { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-4); border: var(--edge) solid var(--line); border-radius: var(--radius-sm); background: var(--raise); }
+  .team-template-actions { display: flex; gap: var(--space-2); }
+  .team-template-note, .team-template-empty { color: var(--muted); }
   /* THE TEAM COMMONS CARD — first in the roster, thinner than a session's (owner, 2026-08-28) */
   .tw-commons-card { padding-top: var(--space-2); padding-bottom: var(--space-2); }
   /* a seat with a card over it — the drop will land here */

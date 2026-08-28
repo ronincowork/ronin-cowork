@@ -14,6 +14,12 @@ The League selector groups its cards into collapsible Views, Teams and New secti
 Ronin Desk is a View card and opens the shared Cowork commons directly on its Desk tab,
 which contains Ronin usage statistics; it is not a second desk surface.
 
+League commons is a shared tabbed surface: Project roots, Team roster and Templates.
+Team roster is the same grouped membership view formerly exposed as its own selector
+card. Templates are durable user-scope copies of the canonical New Team draft. Saving a
+template clears Team identity and transaction state; using one fills New Team but never
+launches it automatically.
+
 Team cards inside the League view surface are drag-only. Clicking one does not replace
 the selected workspace; dragging one onto another workspace opens that Team there. Team
 cards in the League selector remain clickable as well as draggable.

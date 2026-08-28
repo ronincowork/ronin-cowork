@@ -1432,6 +1432,13 @@ The catalog entry goes. {dir} is not touched.
 - **league.selector_views:** Views
 - **league.selector_teams:** Teams
 - **league.selector_new:** New
+- **league.templates:** Templates
+- **league.template_name:** template-name
+- **league.template_save:** Save current New Team draft
+- **league.template_use:** Use template
+- **league.template_delete:** Delete
+- **league.template_delete_confirm:** Delete template {name}?
+- **league.templates_empty:** No Team templates yet.
 - **league.open_workspace:** League workspace
 - **customize.desk_profiles:** Desk profiles
 - **customize.desk_profiles_blurb:** Your standing defaults for the surfaces you work at — a skin, a lexicon, a campaign kind, a Team page arrangement. Choosing one is a setting, on the gear.

@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1252 keys · 54 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1259 keys · 54 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -636,6 +636,13 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `league.show_rosters` | Show rosters |  |  |  |  |
 | `league.team_roster` | Team roster |  |  |  |  |
 | `league.team_roster_saving` | Adding {session} to {team}… |  |  |  |  |
+| `league.template_delete` | Delete |  |  |  |  |
+| `league.template_delete_confirm` | Delete template {name}? |  |  |  |  |
+| `league.template_name` | template-name |  |  |  |  |
+| `league.template_save` | Save current New Team draft |  |  |  |  |
+| `league.template_use` | Use template |  |  |  |  |
+| `league.templates` | Templates |  |  |  |  |
+| `league.templates_empty` | No Team templates yet. |  |  |  |  |
 | `league.title` | League |  |  |  |  |
 | `league.unassigned` | Unassigned |  |  |  |  |
 | `league.unassigned_summary` | Live sessions that carry no Team membership. |  |  |  |  |
