@@ -59,7 +59,10 @@ if (nested.length) {
   console.log('machine, so they are run deliberately (see each file\'s header) or by CI.');
 }
 console.log(`running ${files.length} test file(s) in tests/`);
-const r = spawnSync('node', ['--import', 'tsx', '--test', ...files], {
+// Several suites exercise real Git locks and compare-and-swap races. Running test files
+// concurrently makes those machine-level fixtures contend on smaller CI runners and
+// produces false promotion failures; the unit floor is deterministic, one file at a time.
+const r = spawnSync('node', ['--import', 'tsx', '--test', '--test-concurrency=1', ...files], {
   cwd: ROOT,
   stdio: 'inherit',
   env: { ...process.env, BIND: process.env.BIND || '127.0.0.1' },
