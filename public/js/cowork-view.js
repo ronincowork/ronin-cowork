@@ -36,7 +36,7 @@ const DESK = '@desk';
 export function createCoworkView(options = {}) {
   const league = options.kind === 'league';
   const viewKey = league ? 'league-workspace' : 'team';
-  const { createSurface, createCard, createChannelSurface, createMetadata, setSurfaceState } = WorkspaceKit.primitives;
+  const { createSurface, createSurfaceHeader, createCard, createChannelSurface, createMetadata, setSurfaceState } = WorkspaceKit.primitives;
   const { createWorkbenchLayout } = WorkspaceKit.layouts;
   const { createTerminalTileHost } = WorkspaceKit.adapters;
   const { teamWorkspaceState } = WorkspaceKit.contract;
@@ -65,6 +65,7 @@ export function createCoworkView(options = {}) {
       if (seat.pool.active) seat.empty?.el.remove();
       else if (!seat.empty) {
         const blank = createSurface({ label: t('team.workspace_blank', 'Workspace'), className: 'tw-blank' });
+        blank.el.prepend(createSurfaceHeader({ label: t('team.workspace_blank', 'Workspace') }).el);
         blank.content.append(el('p', 'tw-blank-word', t('team.workspace_blank', 'Workspace')));
         seat.empty = { el: blank.el, mount: () => {}, destroy: () => blank.el.remove() };
         seat.surface.content.append(seat.empty.el);
@@ -166,12 +167,10 @@ export function createCoworkView(options = {}) {
   // instance for the whole page; its strip carries the same T as the team commons'.
   const cowork = coworkCommons();
   // ＋ NEW SESSION IS A SURFACE (owner, 2026-08-27): the commons' launcher, in a workspace.
-  // ＋ Add team member on the roster and か New on the bar both put it in the selected
-  // workspace; a session born from it lands in that same workspace (`connect`).
-  const newSurface = createSurface({ label: t('team.new_session', 'New session'), className: 'tw-new' });
-  const newHead = el('div', 'tw-new-head');
-  newHead.append(el('span', 'tw-new-title', t('team.new_session', 'New session')));
-  newSurface.el.prepend(newHead);
+  // Roster add and bar New both put the new session in the selected workspace (`connect`).
+  const newLabel = league ? t('league.new_agent', 'New Agent') : t('team.new_session', 'New session');
+  const newSurface = createSurface({ label: newLabel, className: 'tw-new' });
+  newSurface.el.prepend(createSurfaceHeader({ label: newLabel }).el);
   const newBody = el('div', 'tw-new-body');
   const launcherHost = el('div', 'home-null');
   newBody.append(launcherHost);
@@ -179,7 +178,6 @@ export function createCoworkView(options = {}) {
   const extras = new Set();
   const launcher = buildLauncher({ index: 'ws', connect: (name) => connectSession(name) }, launcherHost);
   // Chat is reserved and intentionally empty.
-
   const DECLARATION = {
     slots: [
       { name: 'workspace1', label: t('team.workspace_1', 'Workspace 1'), width: 40 },
@@ -211,6 +209,7 @@ export function createCoworkView(options = {}) {
     } },
   };
   const leagueView = createSurface({ label: t('league.view', 'League view') });
+  leagueView.el.prepend(createSurfaceHeader({ label: t('league.view', 'League view') }).el);
   const leagueBoard = WorkspaceKit.layouts.createLeagueBoard();
   const leagueCards = leagueBoard.querySelector('[data-surface="cards"]');
   leagueView.content.append(leagueBoard);
@@ -409,8 +408,9 @@ export function createCoworkView(options = {}) {
     if (leagueTeamSurfaces.has(name)) return leagueTeamSurfaces.get(name);
     const surface = createSurface({ label: name, className: 'league-team-edit' });
     const team = teamByName(name);
-    const head = el('div', 'league-team-edit-head'), launch = el('button', null, t('league.launch_team', 'Launch')); launch.type = 'button'; launch.addEventListener('click', () => { const url = new URL(location.href); url.hash = `#/team/${encodeURIComponent(name)}`; window.open(url.href, '_blank', 'noopener'); }); head.append(el('p', 'tw-config-head', name), launch);
-    surface.content.append(head, createMetadata({ rows: [
+    const launch = el('button', null, t('league.launch_team', 'Launch')); launch.type = 'button'; launch.addEventListener('click', () => { const url = new URL(location.href); url.hash = `#/team/${encodeURIComponent(name)}`; window.open(url.href, '_blank', 'noopener'); });
+    surface.el.prepend(createSurfaceHeader({ label: name, actions: [launch] }).el);
+    surface.content.append(createMetadata({ rows: [
       [t('team.team_role', 'Team role'), team.team_role], [t('team.objective', 'Objective'), team.objective],
       [t('league.agents', 'Agents'), String(membersOfTeam(name).length)], [t('team.project_root', 'Project root'), team.project_root],
     ] }).el);

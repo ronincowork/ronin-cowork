@@ -42,6 +42,15 @@ function createSurface(options = {}) {
   return { el, content, controls, collapse, setState: (kind, message) => setSurfaceState(el, kind, message) };
 }
 
+function createSurfaceHeader(options = {}) {
+  const el = node('header', 'wk-surface-header');
+  const title = node('span', 'wk-surface-header-title', options.label ?? '');
+  const actions = node('div', 'wk-surface-header-actions');
+  for (const action of options.actions || []) actions.append(action?.el ?? action);
+  el.append(title, actions);
+  return { el, title, actions };
+}
+
 function createCard(options = {}) {
   const tag = options.action ? 'button' : 'article';
   const el = node(tag, `wk-card${options.className ? ` ${options.className}` : ''}`);
@@ -447,6 +456,7 @@ export const WorkspacePrimitives = Object.freeze({
   createTabName,
   setSurfaceState,
   createSurface,
+  createSurfaceHeader,
   createCard,
   createAction,
   createActionBar,
