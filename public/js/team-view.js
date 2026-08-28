@@ -1,30 +1,8 @@
 /* part of the ronin-cowork client — see js/README.md */
-/**
- * THE TEAM DESTINATION — Eye 2's first deployable preview.
- *
- * What this is: the Team workbench over the hardened Workspace Kit. Its boundaries are
- * deliberate:
- *
- *   Full existing Tiles only — one warm Kit host per live member per workspace.
- *   NO Chat protocol — Chat is a reserved Channel service and stays inert (owner's ruling).
- *   NO mutations — Team Configuration READS the roster and offers no write.
- *
- * TAXONOMY (owner, 2026-08-23): a *pane* is only tmux's own object. Ronin renders session
- * output into a TILE. A SURFACE is a coworkspace region hosting a terminal Tile, the Kanban
- * or Channel services. Chat, Wipeboard, Docs and Team Configuration are CHANNEL SERVICES.
- *
- * Workbench layout, collapse, resize and persistence are owned by the managed Workspace
- * Kit composition. This feature supplies only Team content and behavior.
- *
- * THE SHAPE (owner, 2026-08-25): two workspaces around the roster. A workspace holds one
- * thing — its terminal seat, or the team commons — and trades between them with one
- * button: C on the seat's tile head, T on the commons' tab strip. The workspaces are not
- * connected: each seat has its own pool of tiles (team-terminal-pool.js — the warm and
- * hold rules; cap two per seat, four in all; the lead pinned hot in workspace 1). A
- * roster card goes into the workspace last touched, or the one it is dropped on.
- */
+/** Team and League cowork-space destination over the one managed workbench. */
 import { WorkspaceKit } from './workspace-kit.js';
-import { membersOfTeam, refreshTeams, subscribe, teamByName } from './team-controller.js';
+import { membersOfTeam, refreshTeams, subscribe, teamByName, teamsFromState } from './team-controller.js';
+import { createNewTeamView } from './new-team.js';
 import { activeProfile } from './desk-profile.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { createTeamWipeboard } from './team-wipeboard.js';
@@ -52,10 +30,9 @@ const COMMONS = '@commons'; // what a workspace remembers when it holds the team
 const COWORK = '@cowork'; // …and when it holds the cowork commons (docs/cowork-space.md)
 const NEW = '@new'; // …and when it holds the new-session surface
 
-export function createTeamView() {
-  // Resolved INSIDE the factory, never at module top level: a top-level read of an imported
-  // binding is the load-order fragility public/js/README.md rule 4 forbids, and the module
-  // gate enforces it.
+export function createTeamView(options = {}) {
+  const league = options.selector === 'league';
+  const viewKey = league ? 'league-workspace' : 'team';
   const { createSurface, createCard, createChannelSurface, createMetadata, setSurfaceState } = WorkspaceKit.primitives;
   const { createWorkbenchLayout } = WorkspaceKit.layouts;
   const { createTerminalTileHost } = WorkspaceKit.adapters;
@@ -70,10 +47,6 @@ export function createTeamView() {
   let lastSeat = 'workspace1'; // the workspace last touched — where the next card lands
 
   /* ---------- the workspaces: two seats, the roster between them, one commons ---------- */
-  // A seat is a surface with its tiles in it: the pool's (one per member shown here,
-  // the active one visible) and, when no member is shown, the seat's own empty tile —
-  // head row and C, no session. The Kit slot holds EITHER the seat's surface OR the
-  // commons; trading is place(), and the seat keeps its tiles while it is out.
   const makeSeat = (id, label) => {
     const surface = createSurface({ label, className: 'tw-terminal', flush: true });
     const pool = createWarmTerminalPool({
@@ -83,8 +56,6 @@ export function createTeamView() {
     });
     return { id, surface, pool, empty: null };
   };
-  /** The empty surface is built only when no member is shown there. */
-  // AN EMPTY WORKSPACE IS BLANK AND SAYS SO (owner, 2026-08-27; docs/cowork-space.md).
   const paintSeats = () => {
     for (const seat of Object.values(seats)) {
       if (seat.pool.active) seat.empty?.el.remove();
@@ -110,12 +81,6 @@ export function createTeamView() {
     workspace3: makeSeat('workspace3', t('team.workspace_3', 'Workspace 3')),
     workspace4: makeSeat('workspace4', t('team.workspace_4', 'Workspace 4')),
   };
-  // TWO SHAPES (owner, 2026-08-27): TWO workspaces around the selector column, or FOUR as a
-  // 2×2 with the selector column left, centre or right. The Kit's workbench is a row of
-  // columns — order, hide, splitters — so the columns stay three: each workspace column is
-  // a STACK, workspace 1 over 3 on the left column, 2 over 4 on the right, and the count
-  // shows or hides the lower cell. The selector's place is the existing `order`. A seat's
-  // surface (or a commons) sits in its CELL; the Kit slot holds the column for good.
   const COLUMN_OF = { workspace1: 'workspace1', workspace3: 'workspace1', workspace2: 'workspace2', workspace4: 'workspace2' };
   const LOWER = ['workspace3', 'workspace4'];
   const columns = { workspace1: el('div', 'tw-column'), workspace2: el('div', 'tw-column') };
@@ -127,10 +92,6 @@ export function createTeamView() {
     cells[id] = cell;
     columns[COLUMN_OF[id]].append(cell);
   }
-  // THE CELL OWNS SELECTION AND DROPS, whatever it holds (owner, 2026-08-28: "it doesn't
-  // matter what is on a workspace … everything should function the same"). Capture-phase,
-  // because a surface's own controls stop propagation. A dropped card names a session, or a
-  // surface by its token (SURFACES below) — either way the cell is clobbered with it.
   for (const [id, cell] of Object.entries(cells)) {
     cell.addEventListener('pointerdown', () => touch(id), true);
     acceptSessionDrops(cell, () => id, (name, at) => arrange({ [at]: SURFACES[name] ? { surface: name } : { session: name } }));
@@ -145,9 +106,6 @@ export function createTeamView() {
   const rosterHead = el('div', 'tw-roster-head');
   const rosterCount = el('span', 'tw-roster-count');
   const rosterNote = el('span', 'tw-roster-note');
-  // THE SHAPE CONTROL is the bar's #shapecycle (owner, 2026-08-28: the 1·2·4 count's seat,
-  // "alt between the numbers"): this view writes its face and owns its click while it is
-  // entered; the roster head carries no pair.
   const shapeBtn = document.getElementById('shapecycle');
   const paintShape = () => {
     if (!shapeBtn) return;
@@ -232,14 +190,14 @@ export function createTeamView() {
   const DECLARATION = {
     slots: [
       { name: 'workspace1', label: t('team.workspace_1', 'Workspace 1'), width: 40 },
-      { name: 'roster', label: t('team.roster_title', 'Team Roster'), width: 20, min: 6, compact: 176 },
+      { name: 'roster', label: league ? t('league.title', 'League') : t('team.roster_title', 'Team Roster'), width: 20, min: 6, compact: 176 },
       { name: 'workspace2', label: t('team.workspace_2', 'Workspace 2'), width: 40 },
     ],
   };
   const workbench = createWorkbenchLayout({
     declaration: DECLARATION,
     surfaces: { workspace1: columns.workspace1, roster: kanban.el, workspace2: columns.workspace2 },
-    onStateChange: (arrangement) => ctx?.patchViewState('team', { arrangement }),
+    onStateChange: (arrangement) => ctx?.patchViewState(viewKey, { arrangement }),
   });
   root.append(workbench.host);
 
@@ -259,6 +217,18 @@ export function createTeamView() {
       void loadSavedLaunches().then(() => launcher.render());
     } },
   };
+  const leagueCommons = createSurface({ label: t('league.commons', 'League commons') });
+  leagueCommons.content.append(el('p', 'tw-note', t('league.commons', 'League commons')));
+  const leagueView = createSurface({ label: t('league.view', 'League view') });
+  const leagueBoard = WorkspaceKit.layouts.createLeagueBoard();
+  const leagueCards = leagueBoard.querySelector('[data-surface="cards"]');
+  leagueView.content.append(leagueBoard);
+  const newTeamView = league ? createNewTeamView(WorkspaceKit) : null;
+  if (league) {
+    SURFACES['@league-commons'] = { name: 'league-commons', el: leagueCommons.el };
+    SURFACES['@league-view'] = { name: 'league-view', el: leagueView.el };
+    SURFACES['@new-team'] = { name: 'new-team', el: newTeamView.el, show: () => newTeamView.enter(ctx) };
+  }
   const tokenOf = (el) => Object.keys(SURFACES).find((k) => SURFACES[k].el === el) || '';
   /** Which surface token this cell holds, or '' for its own seat. */
   const heldSurface = (id) => tokenOf(cellHolding(id));
@@ -281,7 +251,7 @@ export function createTeamView() {
     return true;
   };
   const isShown = (name) => Object.values(seats).some((seat) => seat.pool.active === name && !surfaceIn(seat.id));
-  const remember = () => { ctx?.patchViewState('team', { seats: Object.fromEntries(Object.keys(seats).map((id) => [id, holds(id)])) }); reportView(); };
+  const remember = () => { ctx?.patchViewState(viewKey, { seats: Object.fromEntries(Object.keys(seats).map((id) => [id, holds(id)])) }); reportView(); };
   const lead = () => membersOfTeam(team).find((m) => m.team_lead)?.name || '';
 
   const putCommons = (id, tab = '', doc = '') => putSurface(COMMONS, id, tab, doc);
@@ -295,7 +265,7 @@ export function createTeamView() {
     for (const id of LOWER) cells[id].hidden = count !== 4;
     paintShape();
     if (count === 2 && LOWER.includes(lastSeat)) touch('workspace1');
-    ctx?.patchViewState('team', { count });
+    ctx?.patchViewState(viewKey, { count });
     remember();
   };
   /** Show ANY live session in the selected workspace — a member, or one the owner picked
@@ -441,6 +411,19 @@ export function createTeamView() {
   // reading is absent. RIREKI's cherry-pick or summary joins the row when the service
   // contributes it; there is no field for it today.
   let rows = new Map(); // name -> the /api/home row
+  const leagueTeamSurfaces = new Map();
+  const leagueTeamSurface = (name) => {
+    if (leagueTeamSurfaces.has(name)) return leagueTeamSurfaces.get(name);
+    const surface = createSurface({ label: name, className: 'league-team-edit' });
+    const team = teamByName(name);
+    surface.content.append(el('p', 'tw-config-head', name), createMetadata({ rows: [
+      [t('team.team_role', 'Team role'), team.team_role], [t('team.objective', 'Objective'), team.objective],
+      [t('stats.sessions', 'Sessions'), String(membersOfTeam(name).length)], [t('team.project_root', 'Project root'), team.project_root],
+    ] }).el);
+    const token = '@team:' + name;
+    SURFACES[token] = { name: 'team', el: surface.el };
+    const out = { token, surface }; leagueTeamSurfaces.set(name, out); return out;
+  };
   let homeTimer = 0;
   const readRows = async () => {
     const [r] = await Promise.all([request('/api/home', { cache: 'no-store' }), refreshDesks().catch(() => false), refreshTeamDesks(team).catch(() => {})]);
@@ -480,6 +463,21 @@ export function createTeamView() {
     ].filter(Boolean);
   };
   function renderCards(members) {
+    if (league) {
+      const teams = teamsFromState().filter((candidate) => !candidate.holding);
+      rosterTitle.textContent = t('league.title', 'League');
+      rosterCount.textContent = teams.length ? String(teams.length) : '';
+      cards.replaceChildren(); leagueCards.replaceChildren();
+      const add = (host, heading, token, summary = '', variant = null) => {
+        const card = createCard({ heading, summary, variant, selected: !!whereIs(token), action: () => arrange({ [lastSeat]: { surface: token } }) });
+        card.el.draggable = true; card.el.addEventListener('dragstart', (event) => { event.dataTransfer.setData(DRAG_TYPE, token); event.dataTransfer.effectAllowed = 'move'; }); host.append(card.el);
+      };
+      add(cards, t('league.commons', 'League commons'), '@league-commons');
+      add(cards, t('league.view', 'League view'), '@league-view');
+      for (const item of teams) { const made = leagueTeamSurface(item.name); add(cards, item.name, made.token, item.objective || ''); add(leagueCards, item.name, made.token, item.objective || ''); }
+      add(cards, t('new_team.title', 'New Team'), '@new-team', '', 'dotted');
+      return;
+    }
     rosterCount.textContent = members.length ? String(members.length) : '';
     cards.replaceChildren();
     // THE TEAM COMMONS IS THE FIRST CARD (owner, 2026-08-28), thin, addressed like one.
@@ -602,13 +600,14 @@ export function createTeamView() {
     // is the team's own name with createWorkspace's tabTitle() adding "Ronin". Per tab,
     // like everything else here — one tab is one team.
     title: ({ param, viewState }) => {
+      if (league) return t('league.open_workspace', 'League workspace');
       const name = viewState?.('team')?.tabName;
       return name ? { bare: `${name} · ${param || t('team.team', 'Team')}` } : (param || t('team.team', 'Team'));
     },
     tabName: {
-      get: () => ctx?.viewState('team')?.tabName || '',
+      get: () => league ? '' : ctx?.viewState('team')?.tabName || '',
       placeholder: () => team || t('team.team', 'Team'),
-      set: (value) => ctx?.patchViewState('team', { tabName: String(value || '').trim() }),
+      set: (value) => { if (!league) ctx?.patchViewState('team', { tabName: String(value || '').trim() }); },
     },
     mount: (_host, context) => {
       ctx = context;
@@ -621,17 +620,17 @@ export function createTeamView() {
       ctx = context;
       entered = true;
       for (const seat of Object.values(seats)) seat.pool.destroyAll();
-      team = context.param || context.state?.team || '';
-      const typed = teamWorkspaceState(context.state, context.viewState('team'), DECLARATION);
+      team = league ? '' : context.param || context.state?.team || '';
+      const typed = teamWorkspaceState(context.state, context.viewState(viewKey), DECLARATION);
       // THE DESK PROFILE'S ORDER (R38) when this tab has no arrangement of its own — the
       // owner's standing default, never an override of what a tab already arranged.
-      const stored = context.viewState('team')?.arrangement;
+      const stored = context.viewState(viewKey)?.arrangement;
       const profileOrder = activeProfile()?.team_arrangement || [];
       workbench.restore(!stored && profileOrder.length ? { ...typed.arrangement, order: profileOrder } : typed.arrangement);
       // What each workspace remembers holding; the old one-seat focusedSession lands in
       // the first workspace, once. With nothing remembered: the lead left, the commons right.
       if (shapeBtn) { shapeBtn.hidden = false; shapeBtn.addEventListener('click', onShape); }
-      setCount(context.viewState('team')?.count === 4 ? 4 : 2);
+      setCount(context.viewState(viewKey)?.count === 4 ? 4 : 2);
       remembered = { ...typed.seats };
       if (!Object.keys(remembered).length) remembered = typed.focusedSession ? { workspace1: typed.focusedSession } : {};
       const members = membersOfTeam(team);
@@ -661,7 +660,8 @@ export function createTeamView() {
         if (heldSurface(id) === COWORK && !tab) putTerminal(id);
         else putCowork(id, tab);
       };
-      if (team !== loaded) void load(team);
+      if (league) void refreshTeams().then(() => renderCards([]));
+      else if (team !== loaded) void load(team);
       void readRows();
       window.clearInterval(homeTimer);
       homeTimer = window.setInterval(() => void readRows(), 5000);

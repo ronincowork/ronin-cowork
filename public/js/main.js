@@ -139,6 +139,7 @@ export async function init() {
   // remembered destination resolves to it rather than falling back to Sessions. Guarded
   // like its neighbours — a preview destination must never cost the owner their terminals.
   guard('register the League destination', () => workspace.register('league', createLeagueView()));
+  guard('register the League workspace destination', () => workspace.register('league-workspace', createTeamView({ selector: 'league' })));
   // AGENT CONFIGURATION — two Surfaces, no Tile, no Channel service. It edits ONE seat of
   // New Team's canonical draft and owns no schema of its own; a seat reaches it through
   // `open(draft, seat_id)` rather than being fetched here, because New Team owns the
