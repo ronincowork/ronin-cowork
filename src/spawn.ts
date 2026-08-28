@@ -565,7 +565,7 @@ export async function resolveForm(
     // it to chance. Exactly one definition carries one (`mikaassist`, `{install}`): she
     // works on Ronin's own business, so she starts where Ronin's documents are whatever
     // root was picked. AN ASSIGNMENT wins over the root: the session starts in its
-    // primary desk, never in the root's funnel checkout (WORKTREES.md, the one rule).
+    // primary desk, never in the root's funnel checkout (docs/worktrees.md, the one rule).
     dir: profileDir(profile) || (assignment ? primaryDesk(assignment).worktree : '') || root.dir || '',
     assignment,
     cmd,

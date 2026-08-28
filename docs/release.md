@@ -10,7 +10,7 @@ it.** Two deliberate acts stand between an edit and the grid — the tag, and th
 
 1. Work reaches `dev` by **team promotion** — the lead's admission of a team line, which
    runs the one full repository BYOIN on the exact candidate and leaves `dev` carrying a
-   promotion receipt for its exact SHA (`docs/test-protocols.md`, WORKTREES.md). A PR
+   promotion receipt for its exact SHA (`docs/test-protocols.md`, docs/worktrees.md). A PR
    `dev → master` carries that receipt in its body (a ```ronin-promotion-receipt block);
    CI (`.github/workflows/verify.yml`) verifies the receipt names and proves the PR's
    head commit — `scripts/verify-promotion-receipt.mjs` — and only then reruns the

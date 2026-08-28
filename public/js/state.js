@@ -70,7 +70,6 @@ export const S = {
   // not on the roster is drawn opaque-and-inert and never fetched (sockets.ts's rule).
   services: null,
   lastSelection: '', // last non-empty terminal selection (see below)
-  tagPanel: null, // session-groups editor { open(session), close } — all devices
   sessPicker: null, // pad-key session switcher { open, close, isOpen, move, commit }
   workspace: null, // AppShell runtime; the one writer for destination/workspace state
 };

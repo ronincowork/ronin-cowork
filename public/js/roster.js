@@ -343,21 +343,21 @@ export function buildRoster(tile, host) {
           };
           // Read immediately before writing so a drop never erases a group added from
           // another tile since this roster's last poll.
-          const current = await request('/api/sessions/' + encodeURIComponent(name) + '/tags');
+          const current = await request('/api/sessions/' + encodeURIComponent(name) + '/teams');
           if (!current.ok) {
             fail(current.message);
             return;
           }
-          const tags = [...new Set([...(current.data.tags || []), text])].sort();
-          const result = await request('/api/sessions/' + encodeURIComponent(name) + '/tags', {
-            method: 'POST',
-            json: { tags },
+          const tags = [...new Set([...(current.data.teams || []), text])].sort();
+          const result = await request('/api/sessions/' + encodeURIComponent(name) + '/teams', {
+            method: 'PUT',
+            json: { teams: tags },
           });
           if (!result.ok) {
             fail(result.message);
             return;
           }
-          const saved = Array.isArray(result.data.tags) ? result.data.tags : tags;
+          const saved = Array.isArray(result.data.teams) ? result.data.teams : tags;
           session.tags = saved;
           if (base) base.tags = saved;
           tiles.forEach((t) => t.syncHeader());

@@ -173,7 +173,6 @@ function startProbe() {
   // Ronin's own session creation, not a bypass in a test script.
   tmux(['set-option', '-t', PROBE, '@ronin-control', 'user']);
   tmux(['set-option', '-t', PROBE, '@ronin_note', 'throwaway — the render gate, killed when it finishes']);
-  tmux(['set-option', '-t', PROBE, '@ronin-tags', 'smoke']);
   for (let i = 0; i < 30; i++) tmux(['send-keys', '-t', PROBE, `echo ${BANNER} ${i}`, 'Enter']);
   return true;
 }
@@ -261,9 +260,9 @@ async function checkJourneys(page, label, jsErrors) {
     };
   });
   if (leagueDoor.visible && leagueDoor.text === 'League' && leagueDoor.sameOrigin
-    && leagueDoor.hash === '#/league' && leagueDoor.target === '_blank'
+    && leagueDoor.hash === '#/league-workspace' && leagueDoor.target === '_blank'
     && leagueDoor.rel.includes('noopener')) {
-    ok(`${label}: header League link opens same-origin #/league in a noopener new tab`);
+    ok(`${label}: header League link opens same-origin #/league-workspace in a noopener new tab`);
   } else {
     bad(`${label}: header League new-tab contract is broken — ${JSON.stringify(leagueDoor)}`);
   }
@@ -521,7 +520,7 @@ async function checkJourneys(page, label, jsErrors) {
       ['square', 'soft', 'tight', 'roomy', 'paper', 'mono'].map((name) => [name, {}]),
     );
     for (const [view, route, targets] of [
-      ['League', '#/league', { shape: '.league-new', surface: '.league-surface', feature: '.league-new', backdrop: true }],
+      ['League', '#/league-workspace', { shape: '.league-selector', surface: '.tw-cell', feature: '.league-selector .wk-card', backdrop: true }],
       ['Team', '#/team', { shape: '.tw-kanban', surface: '.tw-kanban', feature: '.tw-cards' }],
       ['New Team', '#/new-team', { shape: '.nt-definition', surface: '.nt-definition', feature: '.nt-definition h2' }],
     ]) {
@@ -858,7 +857,7 @@ async function checkJourneys(page, label, jsErrors) {
       return;
     }
 
-    const route = destination === 'team' ? '#/team' : '#/league';
+    const route = destination === 'team' ? '#/team' : '#/league-workspace';
     await page.goto(URL_.replace(/#.*$/, '') + route, { waitUntil: 'networkidle', timeout: 30_000 });
     await page.waitForSelector(`[data-workspace-view="${destination}"]:not([hidden])`, { timeout: 5000 });
     await page.goto(URL_.replace(/#.*$/, '') + '#/sessions', { waitUntil: 'networkidle', timeout: 30_000 });
@@ -963,13 +962,17 @@ async function checkA11y(page, label, axeSrc) {
 async function runPass({ label, browser, contextOpts }) {
   const { page, jsErrors, netFails } = await openPage(browser, contextOpts);
   try {
-    await page.goto(URL_.replace(/#.*$/, '') + '#/team/smoke', { waitUntil: 'networkidle', timeout: 30_000 });
+    await page.goto(URL_.replace(/#.*$/, '') + '#/team/%20unassigned', { waitUntil: 'networkidle', timeout: 30_000 });
   } catch (e) {
     bad(`${label}: page did not load: ${e.message}`);
   }
   await page.waitForTimeout(3000);
   const probeCard = page.locator('.wk-card', { hasText: PROBE }).first();
   if (await probeCard.count()) { await probeCard.click(); await page.waitForTimeout(1200); }
+  // API health can answer before the phone workbench finishes constructing its Tiles.
+  // Readiness is the first session picker, not an arbitrary sleep; checkDom still reports
+  // the same failure below when it never arrives.
+  await page.locator('select.sess').first().waitFor({ state: 'attached', timeout: 10_000 }).catch(() => {});
 
   // THIS is the check that catches a constructor throw — the 2026-08-08 outage.
   if (jsErrors.length) bad(`${label}: uncaught JS errors:\n         ` + jsErrors.join('\n         '));

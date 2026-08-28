@@ -8,7 +8,7 @@ import type { RepoCandidate } from './receipts.js';
 /**
  * THE CANDIDATE — where a team promotion is built and proved before `dev` moves.
  *
- * A funnel point is merged into and never written into (WORKTREES.md). So the merge of
+ * A funnel point is merged into and never written into (docs/worktrees.md). So the merge of
  * the team line into `dev` happens in a throwaway worktree detached at `dev`'s tip: a
  * conflict is contained there and `dev` is untouched; BYOIN runs there against the exact
  * commit that would become `dev`; and only then does the ref move — by compare-and-swap,
@@ -16,7 +16,7 @@ import type { RepoCandidate } from './receipts.js';
  * kept between promotions, reset each time.
  *
  * Where: under Fable 1's `worktrees` store, `.candidates/<repo>/<target>` — beside the
- * desks and out of their way, the layout WORKTREES.md draws.
+ * desks and out of their way, the layout docs/worktrees.md draws.
  */
 
 export interface RepoSpec {
@@ -60,7 +60,7 @@ export async function resetCandidate(spec: RepoSpec, sha: string, cdir = candida
   return cdir;
 }
 
-/** node_modules from the home checkout, by symlink — the shared store WORKTREES.md costs out. */
+/** node_modules from the home checkout, by symlink — the shared store docs/worktrees.md costs out. */
 async function shareNodeModules(from: string, to: string): Promise<void> {
   const src = path.join(from, 'node_modules');
   const dst = path.join(to, 'node_modules');

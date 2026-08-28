@@ -11,7 +11,7 @@ export const defaultWorkspaceState = () => ({
   version: WORKSPACE_STATE_VERSION,
   // Sessions is the safe compatibility destination on dev. League becomes the default
   // only at the explicit cutover gate; the shell must not force an unfinished workflow.
-  view: 'league',
+  view: 'league-workspace',
   team: '',
   teamMode: 'team',
   focusedSession: '',
@@ -19,7 +19,7 @@ export const defaultWorkspaceState = () => ({
   widths: { left: null, right: null },
   // Each destination owns one namespace inside this tab. Empty objects and null drafts
   // are valid; the shell stores state but never interprets a feature's workflow.
-  views: { league: { rostersVisible: null }, 'new-team': { draft: null } },
+  views: { 'league-workspace': {}, 'new-team': { draft: null } },
   returnTo: null,
 });
 
@@ -126,7 +126,7 @@ export function createWorkspace(host, options = {}) {
   const views = new Map();
   const state = readState();
   const onError = options.onError || (() => {});
-  const safeView = options.safeView || 'league';
+  const safeView = options.safeView || 'league-workspace';
   let active = null;
   let started = false;
   let destroyed = false;

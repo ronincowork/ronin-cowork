@@ -45,7 +45,7 @@
  *                           contract (commit → hand-in → team promotion → Git push). A
  *                           launch given no desk reads nothing here: the level is a fact
  *                           about the launch, never a guess a static shelf could make
- *                           (RONIN_CONTROL_SURFACE.md §2, 2026-08-28)
+ *                           (docs/control-surface.md §2, 2026-08-28)
  *
  * They are ADDITIVE, not a hierarchy — nothing overrides anything. `where`, `what now`
  * and `whose team` are independent: the same bug-chasing habits apply in every repo, the

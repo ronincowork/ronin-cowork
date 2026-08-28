@@ -5,7 +5,7 @@
  *   node scripts/verify-promotion-receipt.mjs --sha <sha> [--repo cowork] \
  *        (--receipt <file.json> | --pr-body <file.md>)
  *
- * The one full repository BYOIN runs at team → dev (WORKTREES.md, "What runs where"),
+ * The one full repository BYOIN runs at team → dev (docs/worktrees.md, "What runs where"),
  * and dev then carries a promotion receipt for its exact SHA. A dev → master pull request
  * is NOT the first full check: CI consumes that receipt — names it, checks that it is
  * complete, that its proof for this repository passed on exactly the PR's head commit, and

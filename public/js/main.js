@@ -17,7 +17,6 @@ import { createWorkspace } from './workspace.js';
 import { createCoworkView } from './cowork-view.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createNewTeamView } from './new-team.js';
-import { createLeagueView } from './league-view.js';
 import { coworkCommons } from './cowork-commons.js';
 import { createAgentConfigurationView } from './agent-config.js';
 import { installCustomize } from './customize.js';
@@ -117,7 +116,7 @@ export async function init() {
     if (!root) throw new Error('cowork root is missing');
     workspace.register('cowork', {
       el: root,
-      title: () => t('cowork.commons', 'Cowork commons'),
+      title: () => t('cowork.commons', 'Ronin Desk'),
       enter: () => { const c = coworkCommons(); root.append(c.el); c.select(c.current()); },
     });
   });
@@ -135,10 +134,7 @@ export async function init() {
   // contained here rather than taking the compatibility Sessions grid down with it —
   // a preview destination must never cost the owner their terminals.
   guard('register the Customize destination', () => installCustomize(workspace));
-  // League: the Team board. Registered BEFORE start() so a direct #/league entry or a
-  // remembered destination resolves to it rather than falling back to Sessions. Guarded
-  // like its neighbours — a preview destination must never cost the owner their terminals.
-  guard('register the League destination', () => workspace.register('league', createLeagueView()));
+  // League is another selector/context on the same cowork view used by Team.
   guard('register the League workspace destination', () => workspace.register('league-workspace', createCoworkView({ kind: 'league' })));
   // AGENT CONFIGURATION — two Surfaces, no Tile, no Channel service. It edits ONE seat of
   // New Team's canonical draft and owns no schema of its own; a seat reaches it through

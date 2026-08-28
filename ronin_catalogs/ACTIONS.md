@@ -448,7 +448,10 @@ your brief and on your letter (`repos[]`); never edit `dev` or a team line, whic
 funnel points. **Commit** coherent checkpoints privately as you go. At each DONE leg,
 **offer a hand-in** — `tejun-desk hand-in` when the work is coherent for the team; a leg
 may prompt it, never perform it for you, and it is not `git push`. Run no full BYOIN at a
-commit or a hand-in. If your brief lists no desk (manual launch, plain terminal, a
+commit or a hand-in. An accepted hand-in, or a conflict, tells your team's lead by itself,
+regardless of the lead's dial — reviewing the team line and promoting it is the lead's
+primary job (owner law 2026-08-28) — so you never need to `tejun-send` the lead about a
+hand-in, and a watch-only lead is not a reason to stop. If your brief lists no desk (manual launch, plain terminal, a
 repository under direct publishing) you have none: commit to that repository's declared
 line as its own instructions say, and invent no desk state. Verify per the doc, with
 scoped evidence, before reporting.

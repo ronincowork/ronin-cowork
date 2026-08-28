@@ -32,6 +32,7 @@ import { classifyStatus, type SessionStatus } from '../status.js';
 import { scanContext, scanModel } from '../ctx.js';
 
 import { count } from '../counts.js';
+import { listTeamRosters } from '../team-rosters.js';
 import { announceTeamChanges } from './wipeboards-api.js';
 import { markRoleDelivered } from '../role-watch.js';
 import { checkoutAt, deriveTeams, parkBrief, seedTegami, withAxes, writeGate } from '../tegami.js';
@@ -125,11 +126,14 @@ export function registerLaunch(app: express.Express): void {
     // naming neither axis, which falls through to launch_bare.
     if (!isValidName(resolved.name)) return res.status(400).json({ error: 'Could not derive a session name.' });
     if (await sessionExists(resolved.name)) return res.status(409).json({ error: `Session "${resolved.name}" already exists.` });
+    const teams = new Set((await listTeamRosters()).filter((item) => item.state !== 'archived').map((item) => item.name));
+    const unknownTeams = resolved.tags.filter((name) => !teams.has(name));
+    if (unknownTeams.length) return res.status(400).json({ error: `Unknown Team: ${unknownTeams.join(', ')}.` });
 
     // THE DESKS ARE OPENED BEFORE THE CLI EXISTS, so its first command runs at a desk. A
     // failure here is the launch's answer — 409, the reason, no session — never a quiet
     // start in the root's funnel checkout with a brief that says otherwise
-    // (RONIN_CONTROL_SURFACE.md §2). Nothing was created yet, so there is nothing to undo.
+    // (docs/control-surface.md §2). Nothing was created yet, so there is nothing to undo.
     if (resolved.assignment) {
       try {
         resolved.assignment = await prepareLaunchDesks(resolved.assignment);
@@ -290,12 +294,8 @@ export function registerLaunch(app: express.Express): void {
   // scrapes. The model rides this capture rather than earning its own tmux call: it sits
   // on the very status line the gauge is read off (src/ctx.ts), so it is free here.
   //
-  // THE MODEL IS THE WHOLE COLUMN. It shipped for one commit as `agent · provider · model`,
-  // read from a birth stamp; the owner cut it to the model alone, because `opus 5` already
-  // says Claude and `gpt-5.6-sol` already says Codex. The `launchStamps()` board read that
-  // served the other two went with them. The upside of what is left is that scraping needs
-  // no stamp, so this is right for every session on the box today rather than only for
-  // those born after a restart.
+  // Model is scraped from the live pane; the selected Agent rides listSessions' birth
+  // stamp. League View shows both because they answer different operational questions.
   app.get('/api/home', async (_req, res) => {
     try {
       const list = await withAxes(await listSessions());

@@ -1,7 +1,7 @@
 /**
  * The compatibility edge of the control surface, as executable assertions.
  *
- * WORKTREES.md moves reviewed work into managed repo desks — linked worktrees, each with
+ * docs/worktrees.md moves reviewed work into managed repo desks — linked worktrees, each with
  * its own index. The legacy claim guard (bin/shim/git · .githooks/pre-commit ·
  * libexec/ronin-claim) exists for the opposite arrangement: many sessions in ONE shared
  * index. libexec/ronin-repo-mode is the single place that decides which of the two a
@@ -287,10 +287,12 @@ test('receipt: it rides the PR body in a ronin-promotion-receipt fence', () => {
 });
 
 test('receipt: its public projection contains proof, never private coordination metadata', () => {
-  const publicReceipt = publicPromotionReceipt(good() as any) as any;
+  const privateReceipt = good() as any;
+  for (const row of [...privateReceipt.repos, ...privateReceipt.proofs, ...privateReceipt.advances]) row.repo = 'ronin_cowork';
+  const publicReceipt = publicPromotionReceipt(privateReceipt) as any;
   assert.equal(receiptProblem(publicReceipt, 'cowork', SHA), null);
   const json = JSON.stringify(publicReceipt);
-  for (const secret of ['"team":"comp"', '"by":"comps"', '/x', 'team/comp/dev', 'hand_in_receipts', 'created_at', 'updated_at', 'history']) {
+  for (const secret of ['"team":"comp"', '"by":"comps"', '"ronin_cowork"', '/x', 'team/comp/dev', 'hand_in_receipts', 'created_at', 'updated_at', 'history']) {
     assert.ok(!json.includes(secret), `public receipt leaked ${secret}: ${json}`);
   }
 });

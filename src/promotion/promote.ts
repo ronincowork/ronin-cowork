@@ -22,7 +22,7 @@ import {
  *
  * Every effect that touches a machine is behind `Effects`, so the crash/race tests run the
  * whole executor against a scratch git repo with fakes for BYOIN, restart and health.
- * Nothing here decides when to promote — that is the lead's call (WORKTREES.md, cadence).
+ * Nothing here decides when to promote — that is the lead's call (docs/worktrees.md, cadence).
  */
 
 export interface Effects {

@@ -25,7 +25,7 @@ import { t } from './lexicon.js';
  * workspace (`team-view.js` places it; the grid page shows it as the `cowork` destination).
  * No room is rewritten: each tab hangs the room builders the desk already had.
  *
- *   Machine health   ▦ Stats
+ *   Desk             ▦ Ronin usage stats
  *   Account          "the rest, as the current Admin Desk" (owner): ⚙ Configuration ·
  *                    ◐ Appearance · ↑ Release & update · ▥ Hotwords · 目 Koshi · ◇ gbrain ·
  *                    ⏻ Log out
@@ -98,7 +98,7 @@ export function coworkCommons() {
     };
   };
 
-  /* ---- ▦ Machine health ---- */
+  /* ---- ▦ Desk: Ronin usage stats ---- */
   const health = pane('health');
   const healthRooms = once(() => {
     const stats = room('desk-stats');
@@ -264,9 +264,9 @@ export function coworkCommons() {
     keypad: service(keypad, () => { if (mountPad()) S.padPanel.render?.(); }),
   };
   surface = createChannelSurface({
-    label: t('cowork.commons', 'Cowork commons'),
+    label: t('cowork.commons', 'Ronin Desk'),
     channels: [
-      { id: 'health', label: t('cowork.tab_health', 'Machine health') },
+      { id: 'health', label: t('cowork.tab_health', 'Desk') },
       { id: 'account', label: t('cowork.tab_account', 'Account') },
       { id: 'profile', label: t('cowork.tab_profile', 'Desk profile') },
       { id: 'roots', label: t('cowork.tab_roots', 'Project roots') },

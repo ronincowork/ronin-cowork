@@ -1,7 +1,7 @@
 # Desk state — what the owner and the lead see, derived, never prose
 
-> The visible half of the control surface (`ronin-lab/wip/buildouts/RONIN_CONTROL_SURFACE.md`
-> § 5; the desk model is `WORKTREES.md` there). The registry and hand-in have their own
+> The visible half of the control surface (`docs/control-surface.md`
+> § 5; the desk model is `docs/worktrees.md` there). The registry and hand-in have their own
 > page (Track 1's); team promotion has its own (Track 2's). This page is only about what
 > is SHOWN, where, and where each fact comes from.
 
@@ -50,7 +50,7 @@ the sum of commits ahead of a line, i.e. what nobody else can see yet.
 | Team page | the roll-up among each member's readings; a **Team lines** row (`ronin-cowork → team/comp/dev · ronin-services → team/comp/dev`) beside the roster's single `Branch`; a **Promotion** row (last complete, or the receipt blocking the team — amber); a **Parked desks** row (`name · gone · 3 ahead`) |
 | ▣ Project roots | a chip for the **arrangement**, read from the repo's checked-in `RONIN_REPO`: `reviewed · desks`, `reviewed`, `direct`, or `shared checkout` when there is no record — apart from whichever branch happens to be mounted at the root |
 
-Paths and SHAs stay out of every row (WORKTREES.md, "Surfaces that change": detail
+Paths and SHAs stay out of every row (docs/worktrees.md, "Surfaces that change": detail
 behind inspection); the API carries them for anyone who asks.
 
 ## What this page does not cover

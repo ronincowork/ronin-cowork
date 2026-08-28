@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1247 keys · 54 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1256 keys · 54 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -85,7 +85,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
-| `cowork.commons` | Cowork commons |  |  |  |  |
+| `cowork.commons` | Ronin Desk |  |  |  |  |
 | `cowork.h_appearance` | Appearance |  |  |  |  |
 | `cowork.h_configuration` | Configuration |  |  |  |  |
 | `cowork.h_gbrain` | gbrain |  |  |  |  |
@@ -99,7 +99,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `cowork.mika_text` | Ask about Ronin itself — how it works, project roots, starting a session, changing a setting. She starts if she is not up. |  |  |  |  |
 | `cowork.tab_account` | Account |  |  |  |  |
 | `cowork.tab_archives` | Archived |  |  |  |  |
-| `cowork.tab_health` | Machine health |  |  |  |  |
+| `cowork.tab_health` | Desk |  |  |  |  |
 | `cowork.tab_help` | Help desk |  |  |  |  |
 | `cowork.tab_keypad` | Keypad |  |  |  |  |
 | `cowork.tab_profile` | Desk profile |  |  |  |  |
@@ -473,10 +473,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `head.rename_prompt` | Rename session |  |  |  |  |
 | `head.rename_quiet` | Rename session — no session in this tile yet |  |  |  |  |
 | `head.select_help` | Pick / switch the session shown in this tile |  |  |  |  |
-| `head.tags_help` | Teams this session is on |  |  |  |  |
-| `head.tags_none` | Teams (none yet) |  |  |  |  |
-| `head.tags_quiet` | Teams — no session in this tile yet |  |  |  |  |
-| `head.tags_read` | Teams: {teams} |  |  |  |  |
 
 ## home
 
@@ -618,19 +614,41 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
 | `league.active` | Active Team |  |  |  |  |
+| `league.agents` | Agents |  |  |  |  |
 | `league.commons` | League commons |  |  |  |  |
 | `league.controls` | League controls |  |  |  |  |
+| `league.delete_team` | Delete |  |  |  |  |
+| `league.delete_team_confirm` | Delete {team}? {count} Agents will lose this Team membership. |  |  |  |  |
 | `league.hide_rosters` | Hide rosters |  |  |  |  |
 | `league.holding` | Holding area |  |  |  |  |
 | `league.holding_empty` | Every live session is on a Team |  |  |  |  |
+| `league.launch_team` | Launch |  |  |  |  |
 | `league.lead` | lead |  |  |  |  |
+| `league.new_agent` | New Agent |  |  |  |  |
+| `league.new_agent_summary` | A new Agent, born into the workspace you are in. |  |  |  |  |
 | `league.new_team_summary` | Define the Team, then build its session roster. |  |  |  |  |
+| `league.no_agents` | No live Agents |  |  |  |  |
 | `league.no_members` | No live members |  |  |  |  |
+| `league.no_ronin` | No Rōnin Agents |  |  |  |  |
 | `league.not_recorded` | Not recorded |  |  |  |  |
 | `league.open_workspace` | League workspace |  |  |  |  |
 | `league.resting` | Resting Team |  |  |  |  |
+| `league.ronin` | Ronin: no team |  |  |  |  |
 | `league.rosters_unavailable` | Durable rosters unavailable — showing live Teams only. |  |  |  |  |
+| `league.selector_new` | New |  |  |  |  |
+| `league.selector_teams` | Teams |  |  |  |  |
+| `league.selector_views` | Views |  |  |  |  |
 | `league.show_rosters` | Show rosters |  |  |  |  |
+| `league.team_roster` | Team roster |  |  |  |  |
+| `league.team_roster_removing` | Removing {session} from {team}… |  |  |  |  |
+| `league.team_roster_saving` | Adding {session} to {team}… |  |  |  |  |
+| `league.template_delete` | Delete |  |  |  |  |
+| `league.template_delete_confirm` | Delete template {name}? |  |  |  |  |
+| `league.template_name` | template-name |  |  |  |  |
+| `league.template_save` | Save current New Team draft |  |  |  |  |
+| `league.template_use` | Use template |  |  |  |  |
+| `league.templates` | Templates |  |  |  |  |
+| `league.templates_empty` | No Team templates yet. |  |  |  |  |
 | `league.title` | League |  |  |  |  |
 | `league.unassigned` | Unassigned |  |  |  |  |
 | `league.unassigned_summary` | Live sessions that carry no Team membership. |  |  |  |  |
@@ -893,22 +911,15 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
-| `panels.add_team` | add a team |  |  |  |  |
 | `panels.close` | Close |  |  |  |  |
-| `panels.join` | join: |  |  |  |  |
 | `panels.load_failed` | could not load — {message} |  |  |  |  |
 | `panels.loading` | loading… |  |  |  |  |
-| `panels.no_team` | on no team |  |  |  |  |
 | `panels.not_saved` | not saved — {message} |  |  |  |  |
 | `panels.note` | session note |  |  |  |  |
 | `panels.note_placeholder` | What's this session working on? |  |  |  |  |
 | `panels.note_sheet` | Session note |  |  |  |  |
-| `panels.remove` | remove |  |  |  |  |
 | `panels.save` | Save |  |  |  |  |
 | `panels.saving` | saving… |  |  |  |  |
-| `panels.team_hint` | Agents resolve these with {cmd}. |  |  |  |  |
-| `panels.team_placeholder` | add a team (letters, digits, - _) |  |  |  |  |
-| `panels.teams_sheet` | Session teams |  |  |  |  |
 
 ## preview
 
@@ -1095,8 +1106,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `seat.seed_desc` | Paths read before anything else. Assisted mode only. |  |  |  |  |
 | `seat.session_role` | Session role |  |  |  |  |
 | `seat.session_role_desc` | What this session is doing. Blank is a real launch — no reading, no mark. |  |  |  |  |
-| `seat.tags` | Further teams |  |  |  |  |
-| `seat.tags_desc` | Memberships beyond the birth team. |  |  |  |  |
 | `seat.title` | Agent Configuration |  |  |  |  |
 
 ## services

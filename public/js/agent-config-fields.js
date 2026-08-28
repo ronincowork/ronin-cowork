@@ -55,8 +55,6 @@ function seatFields() {
       description: t('seat.cmd_desc', 'Unset falls to the role’s model bias, then the install default.') },
     { key: 'mcp', label: t('seat.mcp', 'gbrain'), kind: 'tristate',
       description: t('seat.mcp_desc', 'Unset means whatever the resolved profile says.') },
-    { key: 'tags', label: t('seat.tags', 'Further teams'), kind: 'list',
-      description: t('seat.tags_desc', 'Memberships beyond the birth team.') },
     { key: 'seed', label: t('seat.seed', 'Read first'), kind: 'list',
       description: t('seat.seed_desc', 'Paths read before anything else. Assisted mode only.') },
     { key: 'inject', label: t('seat.inject', 'Extra instruction'), kind: 'text',

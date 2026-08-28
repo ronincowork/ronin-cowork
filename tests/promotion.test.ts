@@ -1,7 +1,7 @@
 /**
  * TEAM PROMOTION — the executor against a scratch git repository, every machine effect faked.
  *
- * What is load-bearing (RONIN_CONTROL_SURFACE.md, strict gates): a failed proof leaves
+ * What is load-bearing (docs/control-surface.md, strict gates): a failed proof leaves
  * `dev` untouched; a conflict is contained in the candidate; refs move by compare-and-swap
  * in receipt order and the first race STOPS the rest; an interrupted receipt blocks the
  * team until resumed or abandoned; resume rebuilds from current tips; a health failure is

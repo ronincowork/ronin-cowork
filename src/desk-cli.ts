@@ -18,6 +18,7 @@ import { listSessions } from './tmux.js';
 import { deriveAssignment, listDesks, readAssignment, assignmentId } from './desks/registry.js';
 import { closeDesk, discardDesk, DeskRefused, openDesk, parkedDesks, recoverDesk, syncDesk } from './desks/desk.js';
 import { handIn, handInAssignment } from './desks/hand-in.js';
+import { notifyLeads, teamOfLine } from './desks/lead.js';
 import { acceptedSince, receiptById, receiptsForDesk, receiptsForLine } from './desks/receipts.js';
 import { queueHolder } from './desks/queue.js';
 import { deskId, type DeskNotice, type DeskStatus, type HandInReceipt } from './desks/schema.js';
@@ -167,6 +168,17 @@ async function main(): Promise<void> {
           out(`${receipt.result.toUpperCase()} ${deskId(d)} → ${d.line}${receipt.result === 'accepted' ? ` now ${receipt.line_sha.slice(0, 10)}` : ''}${receipt.reason ? ` — ${receipt.reason}` : ''}${receipt.conflict_files.length ? ` — files: ${receipt.conflict_files.join(', ')}` : ''}  [${receipt.id}]`);
           for (const n of notices) if (n.kind !== 'adopted' || n.desk === d.branch) out(noticeLine(n));
           if (receipt.result !== 'accepted') worst = 4;
+          // The lead is told, dial or no dial: review and promote is its primary job
+          // (owner law 2026-08-28; src/desks/lead.ts). Accepted → "promote when coherent";
+          // a conflict → "adjudicate". Anything else (refused: nothing ahead, dirty
+          // funnel) is the session's own to fix and does not reach the lead.
+          const team = teamOfLine(d.line);
+          const outcome = receipt.result === 'accepted' ? 'accepted' : receipt.conflict_files.length ? 'conflict' : null;
+          if (team && outcome) {
+            for (const dlv of await notifyLeads({ team, line: d.line, session, receiptId: receipt.id, result: outcome, lineSha: receipt.line_sha, files: receipt.conflict_files })) {
+              out(`  lead ${dlv.to}: ${dlv.how === 'house-send' ? 'told' : dlv.how === 'wipeboard' ? 'not reachable at the tile — posted on the team wipeboard' : 'not told'} — ${dlv.detail}`);
+            }
+          }
         }
         process.exit(worst);
       }

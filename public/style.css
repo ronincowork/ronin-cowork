@@ -4417,102 +4417,6 @@ button.wb-door:hover b {
   font-size: var(--text-2);
 }
 
-/* ---- group tags (🏷): a session's memberships, the address agents resolve ---- */
-.tile-head button.tags.has-tags {
-  opacity: 1;
-  border-color: var(--accent);
-}
-.tile-head button.tags:disabled {
-  opacity: 0.3;
-}
-#tagsheet .tg-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-  width: min(460px, 92vw);
-  background: var(--bg);
-  border: var(--edge) solid var(--accent);
-  border-radius: var(--radius-xl);
-  padding: var(--space-6) var(--space-7) var(--space-7);
-}
-#tagsheet .tg-bar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-}
-#tagsheet .tg-title {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--accent);
-  font-size: var(--text-4);
-}
-#tagsheet .tg-bar button {
-  background: transparent;
-  border: var(--edge) solid var(--line);
-  color: var(--fg);
-  border-radius: var(--radius-md);
-  padding: var(--space-3) var(--space-6);
-  font-size: var(--text-3);
-  cursor: pointer;
-}
-#tagsheet .tg-bar button.tg-save {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-#tagsheet .tg-chips,
-#tagsheet .tg-known {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3);
-  min-height: 26px;
-}
-#tagsheet .tg-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-3);
-  background: transparent;
-  border: var(--edge) solid var(--line);
-  color: var(--muted);
-  border-radius: var(--radius-pill);
-  padding: var(--space-2) var(--space-5);
-  font-size: var(--text-3);
-  cursor: pointer;
-}
-#tagsheet .tg-chip.on {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-#tagsheet .tg-chip i {
-  font-style: normal;
-  opacity: 0.6;
-}
-#tagsheet .tg-empty,
-#tagsheet .tg-known-lbl {
-  color: var(--muted);
-  font-size: var(--text-3);
-}
-#tagsheet .tg-input {
-  height: 34px;
-  background: var(--panel);
-  color: var(--fg);
-  border: var(--edge) solid var(--line);
-  border-radius: var(--radius-md);
-  padding: 0 var(--space-5);
-  font-size: var(--text-5);
-}
-#tagsheet .tg-hint {
-  color: var(--muted);
-  font-size: var(--text-2);
-}
-#tagsheet .tg-hint code {
-  color: var(--accent);
-}
-
-
 /* ---------- KOSHI_DASHI receipt + launcher extras ---------- */
 /* The receipt is the price of launching without a confirm screen: it says what the
    session was born with and lets you undo it in one tap. */
@@ -6217,15 +6121,13 @@ button.wb-door:hover b {
   line-height: 1.4;
 }
 
-/* Inline result lines on the note and tag sheets: saving…, not saved — why. */
-#notesheet .ns-msg,
-#tagsheet .tg-msg {
+/* Inline result line on the note sheet: saving…, not saved — why. */
+#notesheet .ns-msg {
   color: var(--muted);
   font-size: var(--text-2);
   white-space: nowrap;
 }
-#notesheet .ns-msg.bad,
-#tagsheet .tg-msg.bad {
+#notesheet .ns-msg.bad {
   color: var(--bad-soft);
 }
 

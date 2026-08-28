@@ -171,13 +171,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **panels.load_failed:** could not load — {message}
 - **panels.saving:** saving…
 - **panels.not_saved:** not saved — {message}
-- **panels.teams_sheet:** Session teams
-- **panels.team_placeholder:** add a team (letters, digits, - _)
-- **panels.team_hint:** Agents resolve these with {cmd}.
-- **panels.add_team:** add a team
-- **panels.no_team:** on no team
-- **panels.remove:** remove
-- **panels.join:** join:
 
 ## commons — commons.js (the commons shell: tab strip and frame)
 - **commons.tab_off:** {tab} — off, this service is not installed.
@@ -350,8 +343,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **seat.cmd:** Launch command
 - **seat.cmd_desc:** Unset falls to the role’s model bias, then the install default.
 - **seat.mcp_desc:** Unset means whatever the resolved profile says.
-- **seat.tags:** Further teams
-- **seat.tags_desc:** Memberships beyond the birth team.
 - **seat.seed:** Read first
 - **seat.seed_desc:** Paths read before anything else. Assisted mode only.
 - **seat.inject:** Extra instruction
@@ -964,8 +955,8 @@ The catalog entry goes. {dir} is not touched.
 - **pane.stats:** Stats
 
 ## desk — desk.js (the desk's rows and tooltips)
-- **cowork.commons:** Cowork commons
-- **cowork.tab_health:** Machine health
+- **cowork.commons:** Ronin Desk
+- **cowork.tab_health:** Desk
 - **cowork.tab_account:** Account
 - **cowork.tab_profile:** Desk profile
 - **cowork.tab_roots:** Project roots
@@ -1129,10 +1120,6 @@ The catalog entry goes. {dir} is not touched.
 - **head.mention_quiet:** Mentions — no session in this tile yet
 - **head.macros_quiet:** Macros — no session in this tile yet
 - **head.more_help:** This session's other controls — 🏷 teams, ⛽ context, 🎛 control, 📄 docs, 📝 note, 🗑 kill
-- **head.tags_help:** Teams this session is on
-- **head.tags_quiet:** Teams — no session in this tile yet
-- **head.tags_read:** Teams: {teams}
-- **head.tags_none:** Teams (none yet)
 - **head.gauge_help:** Context gauge — how full this session's context window is, read off the pane's own status line. Hidden until there is a reading.
 - **head.dial_quiet:** Control dial — no session in this tile yet
 - **head.note_help:** Session note (post-it)
@@ -1427,6 +1414,28 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.session_menu:** Status · Ladder · Macros · Detach · Kill session
 - **league.commons:** League commons
 - **league.view:** League view
+- **league.team_roster:** Team roster
+- **league.team_roster_saving:** Adding {session} to {team}…
+- **league.selector_views:** Views
+- **league.selector_teams:** Teams
+- **league.selector_new:** New
+- **league.templates:** Templates
+- **league.template_name:** template-name
+- **league.template_save:** Save current New Team draft
+- **league.template_use:** Use template
+- **league.template_delete:** Delete
+- **league.template_delete_confirm:** Delete template {name}?
+- **league.templates_empty:** No Team templates yet.
+- **league.agents:** Agents
+- **league.no_agents:** No live Agents
+- **league.new_agent:** New Agent
+- **league.new_agent_summary:** A new Agent, born into the workspace you are in.
+- **league.delete_team:** Delete
+- **league.delete_team_confirm:** Delete {team}? {count} Agents will lose this Team membership.
+- **league.launch_team:** Launch
+- **league.ronin:** Ronin: no team
+- **league.no_ronin:** No Rōnin Agents
+- **league.team_roster_removing:** Removing {session} from {team}…
 - **league.open_workspace:** League workspace
 - **customize.desk_profiles:** Desk profiles
 - **customize.desk_profiles_blurb:** Your standing defaults for the surfaces you work at — a skin, a lexicon, a campaign kind, a Team page arrangement. Choosing one is a setting, on the gear.
