@@ -21,8 +21,9 @@ template clears Team identity and transaction state; using one fills New Team bu
 launches it automatically.
 
 Team cards inside the League view surface are drag-only. Clicking one does not replace
-the selected workspace; dragging one onto another workspace opens that Team there. Team
-cards in the League selector remain clickable as well as draggable.
+the selected workspace. Dropping one within League view reorders the Team groups; dragging
+one onto another workspace opens that Team there. Team cards in the League selector remain
+clickable as well as draggable.
 
 League view is an operational Agent roster, not a tile board. Each Team is one full-width
 group with live Agent rows showing role, SHINGO, status, selected agent, model and context
