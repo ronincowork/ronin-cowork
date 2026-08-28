@@ -1,15 +1,25 @@
 #!/usr/bin/env bash
-# git shim — record what THIS session staged, so the pre-commit guard has something to
-# judge against. Vendor-neutral, like bin/shim/tmux beside it: any agent, any CLI, a human
-# typing at a pane — if bin/shim is on the PATH, the claim gets recorded.
+# git shim — in a SHARED checkout, record what THIS session staged so the pre-commit guard
+# has something to judge against. Vendor-neutral, like bin/shim/tmux beside it: any agent,
+# any CLI, a human typing at a pane — if bin/shim is on the PATH, the claim gets recorded.
+#
+# WHERE IT APPLIES. The claim exists for one hazard only: several sessions staging into
+# ONE git index — the repository's home checkout, shared by every shell on the box. A
+# managed repo desk (WORKTREES.md) is a linked worktree with an index of its own, so there
+# the hazard does not exist and this shim is a plain pass-through. Which of the two you
+# are standing in is measured, not remembered: libexec/ronin-repo-mode answers, and the
+# hooks ask it the same question. Shared checkouts are the transition arrangement and the
+# declared-direct arrangement (RONIN_REPO), not the target for reviewed work.
 #
 # IT CHANGES NO HABITS. `git add x` and `git commit -m '...'` keep working exactly as they
-# always have. The only thing that happens differently is that an `add` also writes down
-# what it staged, and the pre-commit hook uses that to refuse a commit carrying files this
-# session never touched. Everything else is passed straight through, untouched.
+# always have. The only thing that happens differently, in a shared checkout, is that an
+# `add` also writes down what it staged, and the pre-commit hook uses that to refuse a
+# commit carrying files this session never touched. Everything else is passed straight
+# through, untouched.
 #
 # Speed bump, not physics: /usr/bin/git still exists. Going around this is a deliberate,
 # visible act rather than an accident — the same posture as the tmux shim.
+# Overrides: RONIN_CLAIM_MODE=shared|off (RONIN_CLAIM_OFF=1 still means off).
 set -u
 SELF_DIR=$(cd "$(dirname "$0")" && pwd)
 REAL=$(PATH=$(printf '%s' "$PATH" | tr ':' '\n' | grep -vxF "$SELF_DIR" | paste -sd:) command -v git)
@@ -26,9 +36,17 @@ for a in "$@"; do
   esac
 done
 
-if [ "$sub" = "add" ] && [ "${RONIN_CLAIM_OFF:-0}" != 1 ]; then
+if [ "$sub" = "add" ]; then
   CLAIM="$SELF_DIR/../../libexec/ronin-claim"
-  if [ -x "$CLAIM" ]; then
+  MODE="$SELF_DIR/../../libexec/ronin-repo-mode"
+  # The mode is asked of the tree the add targets: `git -C dir add …` resolves in dir.
+  cdir=""; prev=""
+  for a in "$@"; do [ "$prev" = "-C" ] && cdir="$a"; prev="$a"; done
+  claim=off
+  if [ -x "$CLAIM" ] && [ -x "$MODE" ]; then
+    claim=$(cd "${cdir:-.}" 2>/dev/null && "$MODE" claim 2>/dev/null || echo off)
+  fi
+  if [ "$claim" = on ]; then
     # ronin-claim runs the real add itself (it snapshots the index either side of it), so
     # this branch does not fall through. Its exit code is git's.
     args=()
