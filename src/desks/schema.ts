@@ -6,7 +6,7 @@
  * receipts from it, promotion (Track 2) consumes hand-in receipts and produces change-set
  * receipts in the shape declared here, and the compatibility audit (Track 5) supplies the
  * checked-in `RONIN_REPO` record that `RepoArrangement` is read from. Types only — no
- * I/O, no git, nothing that could wake a machine. The words are WORKTREES.md's, used
+ * I/O, no git, nothing that could wake a machine. The words are docs/worktrees.md's, used
  * strictly: a BRANCH is a bookmark, a WORKTREE is a folder, a DESK is one repository's
  * branch and worktree opened together, an ASSIGNMENT is what a session is changing
  * (one desk per repo), a FUNNEL POINT is merged into and never written into, a
@@ -202,5 +202,5 @@ export const teamLineBranch = (team: string): string => `team/${team}/dev`;
 export const teamDeskBranch = (team: string, session: string): string => `team/${team}/${session}`;
 export const soloDeskBranch = (session: string): string => `solo/${session}`;
 
-/** A desk's identity as a string: `repo:branch` — WORKTREES.md's spelling. */
+/** A desk's identity as a string: `repo:branch` — docs/worktrees.md's spelling. */
 export const deskId = (d: Pick<RepoDesk, 'repo' | 'branch'>): string => `${d.repo}:${d.branch}`;

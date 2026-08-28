@@ -13,7 +13,7 @@
  * from memory. The server memoises too; between the two, N tiles cost one git pass.
  *
  * The roll-up (`2 desks · 1 pending · 3 private`) keeps paths and SHAs OUT of the row
- * (WORKTREES.md "Surfaces that change": detail behind inspection). The tooltip carries
+ * (docs/worktrees.md "Surfaces that change": detail behind inspection). The tooltip carries
  * one line per desk: repo, branch, line, ahead/behind, dirt, pending, parked, blocked.
  */
 import { request } from './request.js';
@@ -102,10 +102,10 @@ export async function refreshTeamDesks(team) {
 /**
  * THE TEAM PAGE'S ROWS, for its read-only configuration: the team line per repository
  * (`ronin-cowork → team/comp/dev` — one roster `branch` cannot name two repos' lines,
- * RONIN_CONTROL_SURFACE.md § 5), the promotion state off the ledger (the last complete
+ * docs/control-surface.md § 5), the promotion state off the ledger (the last complete
  * team promotion, or the receipt still blocking the team — an interrupted coordinated
  * advance is shown, never hidden), and the parked desks whose session is gone — the
- * lead's *hand in · inspect · reassign · discard* list (WORKTREES.md "Session loss").
+ * lead's *hand in · inspect · reassign · discard* list (docs/worktrees.md "Session loss").
  */
 export function teamDeskRows(team) {
   const v = teams.get(team);

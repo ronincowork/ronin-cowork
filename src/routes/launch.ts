@@ -129,7 +129,7 @@ export function registerLaunch(app: express.Express): void {
     // THE DESKS ARE OPENED BEFORE THE CLI EXISTS, so its first command runs at a desk. A
     // failure here is the launch's answer — 409, the reason, no session — never a quiet
     // start in the root's funnel checkout with a brief that says otherwise
-    // (RONIN_CONTROL_SURFACE.md §2). Nothing was created yet, so there is nothing to undo.
+    // (docs/control-surface.md §2). Nothing was created yet, so there is nothing to undo.
     if (resolved.assignment) {
       try {
         resolved.assignment = await prepareLaunchDesks(resolved.assignment);

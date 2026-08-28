@@ -6,7 +6,7 @@ import type { ChangeSetReceipt, ChangeSetRepo, ChangeSetState } from '../desks/s
 /**
  * PROMOTION RECEIPTS — the durable record of every attempt to move a repository's `dev`.
  *
- * A team promotion is the one boundary where the full repository BYOIN runs (WORKTREES.md,
+ * A team promotion is the one boundary where the full repository BYOIN runs (docs/worktrees.md,
  * "Team push — the one full BYOIN"). Git cannot advance refs in two repositories at once,
  * so the receipt is what makes an interrupted coordinated promotion VISIBLE and FINISHABLE
  * rather than silently half-landed: for every repo it carries the expected old ref, the
@@ -190,7 +190,7 @@ export function advanceState(r: PromotionReceipt, next: PromotionState): Promoti
 /**
  * Whether this receipt BLOCKS a new promotion of the same team: a coordinated promotion
  * that moved some refs and not others must be resumed or abandoned before anything else
- * touches those lines (RONIN_CONTROL_SURFACE.md, strict gates). `advancing` counts too —
+ * touches those lines (docs/control-surface.md, strict gates). `advancing` counts too —
  * a process that died mid-advance leaves exactly that state behind.
  */
 export const blocksTeam = (r: PromotionReceipt): boolean => r.state === 'advancing' || r.state === 'interrupted';

@@ -152,7 +152,7 @@ export function registerCatalogs(app: express.Express): void {
       // THE ARRANGEMENT, apart from the branch that happens to be mounted at the root:
       // reviewed or direct, managed desks or a shared checkout, read from the repo's
       // checked-in RONIN_REPO (absent = today's behaviour, reported as such — never
-      // guessed from the branch). RONIN_CONTROL_SURFACE.md § 5, "Project-root Admin".
+      // guessed from the branch). docs/control-surface.md § 5, "Project-root Admin".
       const arrangements = await Promise.all(
         facts.map((f, i) => (f.repo ? readArrangement(roots[i].name, f.dir).catch(() => null) : Promise.resolve(null))),
       );

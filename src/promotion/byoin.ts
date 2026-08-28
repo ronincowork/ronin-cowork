@@ -10,7 +10,7 @@ const execFileP = promisify(execFile);
 /**
  * BYOIN AT THE PROMOTION BOUNDARY — the one full repository check, run in the candidate.
  *
- * The schedule (WORKTREES.md, "What runs where"): nothing at save or commit, mechanical
+ * The schedule (docs/worktrees.md, "What runs where"): nothing at save or commit, mechanical
  * admission at hand-in, and the FULL repository BYOIN exactly once, here, on the exact
  * commit that would become `dev`. `dev → master` consumes the receipt this produces.
  *

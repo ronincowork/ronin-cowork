@@ -1,7 +1,7 @@
 /**
  * The compatibility edge of the control surface, as executable assertions.
  *
- * WORKTREES.md moves reviewed work into managed repo desks — linked worktrees, each with
+ * docs/worktrees.md moves reviewed work into managed repo desks — linked worktrees, each with
  * its own index. The legacy claim guard (bin/shim/git · .githooks/pre-commit ·
  * libexec/ronin-claim) exists for the opposite arrangement: many sessions in ONE shared
  * index. libexec/ronin-repo-mode is the single place that decides which of the two a

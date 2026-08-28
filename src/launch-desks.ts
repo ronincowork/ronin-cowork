@@ -74,7 +74,7 @@ export function primaryDesk(a: Assignment): RepoDesk {
  * same three facts and opens each desk (branch cut from the line, worktree mounted,
  * upstream set, record written). Imported at call time so this module compiles before it
  * exists; at launch its absence, or any desk that will not open, is a refusal with the
- * reason in it — never a silent fallback (RONIN_CONTROL_SURFACE.md §2: "launch may not
+ * reason in it — never a silent fallback (docs/control-surface.md §2: "launch may not
  * silently fall back to a funnel checkout"). The assignment handed back carries the
  * worktree paths as opened.
  */
