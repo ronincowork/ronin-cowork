@@ -9,8 +9,7 @@ import { activeProfile, loadDeskProfile } from './desk-profile.js';
 import { connectEvents } from './events.js';
 import { loadMacros, loadPresets, loadProjects, loadSavedLaunches, refreshHome } from './home.js';
 import { build } from './layout.js';
-import { S, TILE_COUNT, loadState, tiles } from './state.js';
-import { setLayout } from './viewport.js';
+import { S, tiles } from './state.js';
 import { installTips } from './tips.js';
 import { buildCoworkSetup } from './cowork-setup.js';
 import { installServicesStatus } from './services-activation.js';
@@ -122,10 +121,6 @@ export async function init() {
       enter: () => { const c = coworkCommons(); root.append(c.el); c.select(c.current()); },
     });
   });
-  workspace.register('sessions', {
-    el: document.getElementById('grid'),
-    title: () => tiles[0]?.session || '',
-  });
   // NEW TEAM — one Surface, no Tile, no Channel services of its own. Registered beside
   // Sessions rather than replacing it: Sessions remains the default destination on `dev`
   // until the explicit cutover, so this is reachable and not yet in anybody's way.
@@ -160,28 +155,14 @@ export async function init() {
   });
   workspace.start();
 
-  guard('build the grid', build);
+  guard('install workspace controls', build);
   guard('services activation status', installServicesStatus);
-  const saved = guard('read saved state', loadState, { map: [], layout: TILE_COUNT });
-  // A phone OPENS on one terminal, always — not just on first run. A 2x2 grid of tiny
-  // terminals is not usable at 402px, and it is what makes the merged header honest:
-  // the tile's controls are hoisted into the app bar (js/tiledrop.js), and a bar cannot
-  // say WHICH of two tiles it means. It is a starting point, not a cage — the bar's
-  // layout button (js/layout.js) cycles 1 / 2 / 4 on touch too, and at this width 2 and
-  // 4 stack into a scroll column rather than shrinking. iPad and desktop keep saved/4.
-  const phone = window.matchMedia('(max-width: 680px)').matches;
-  guard('set layout', () => setLayout(phone ? 1 : saved.layout));
   // The session list is the one step worth reporting loudly: without it every tile
   // is an empty picker, which reads as "broken" rather than "server unreachable".
   {
     const r = await fetchSessions();
     if (!r.ok) showFailure(t('errors.no_session_list', 'could not load the session list'), new Error(r.message));
   }
-  guard('reattach saved sessions', () => {
-    saved.map.forEach((s, i) => {
-      if (s && tiles[i]) tiles[i].connect(s);
-    });
-  });
   guard('session event stream', connectEvents); // births & deaths push over this
   guard('load macros', loadMacros); // macro forms for the home panels
   guard('load projects', loadProjects); // PROJECT_ROOTS.md — WHERE a spawn happens

@@ -30,19 +30,11 @@ workspace shell, or control system. Specifically:
 - never move Kit layout, splitter, responsive, or persistence behavior into Team;
 - never replace or narrow the existing Sessions destination.
 
-## Two first-class destinations
+## Destination boundary
 
-Team and Sessions are deliberately separate first-class destinations:
-
-- **Team:** `#/team/:name` — two workspaces, the roster between them.
-- **Sessions:** the existing raw **1 / 2 / 4 Tile grid** — the familiar unrestricted
-  coworkspace of complete Tiles.
-
-The Sessions grid is not a compatibility shim and is not a mode inside Team. Preserve its
-raw Tile composition, full controls, session pickers, layout choices, and behavior. Team
-work must not scope, wrap, replace, or retire it. **Any Tile built by the Team page while
-it is not entered, or left in its DOM after `leave()`, is counted by the Sessions grid's
-checks** — build tiles on first need and destroy every one on leave.
+`#/team/:name` is the terminal-bearing cowork-space destination. The former raw Sessions
+1 / 2 / 4 grid was retired on 2026-08-28. Team still builds Tiles lazily and destroys every
+one on leave so no transport survives outside the entered destination.
 
 ## `#/team/:name` user flow
 

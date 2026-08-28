@@ -5,46 +5,28 @@ export const WORKSPACE_STATE_KEY = 'ronin.workspace.v2';
 export const WORKSPACE_STATE_VERSION = 2;
 const PREVIOUS_WORKSPACE_STATE_KEY = 'ronin.workspace.v1';
 
-const validLayout = (value) => ([1, 2, 4].includes(Number(value)) ? Number(value) : 4);
 const text = (value) => (typeof value === 'string' ? value : '');
 
 export const defaultWorkspaceState = () => ({
   version: WORKSPACE_STATE_VERSION,
   // Sessions is the safe compatibility destination on dev. League becomes the default
   // only at the explicit cutover gate; the shell must not force an unfinished workflow.
-  view: 'sessions',
+  view: 'league',
   team: '',
   teamMode: 'team',
   focusedSession: '',
   surfaces: { terminalTile: false, kanban: false, channels: false },
   widths: { left: null, right: null },
-  sessions: { map: [], layout: 4 },
   // Each destination owns one namespace inside this tab. Empty objects and null drafts
   // are valid; the shell stores state but never interprets a feature's workflow.
   views: { league: { rostersVisible: null }, 'new-team': { draft: null } },
   returnTo: null,
 });
 
-function legacySessions() {
-  const read = (store) => {
-    const raw = store.getItem('tmuxgrid.sessions');
-    if (raw === null) return null;
-    const map = JSON.parse(raw);
-    if (!Array.isArray(map)) return null;
-    return { map: map.map(text).slice(0, 4), layout: validLayout(store.getItem('tmuxgrid.layout')) };
-  };
-  try {
-    return read(sessionStorage) || read(localStorage);
-  } catch (_) {
-    return null;
-  }
-}
-
 /** Normalize is deliberately forgiving: null, empty and older partial records are valid. */
 export function migrateWorkspaceState(candidate) {
   const base = defaultWorkspaceState();
   const parsed = candidate && typeof candidate === 'object' ? candidate : {};
-  const sessions = parsed.sessions && typeof parsed.sessions === 'object' ? parsed.sessions : legacySessions() || {};
   // `panes` is the serialized v1 key only. Normalize its left/right geometry into the
   // corrected Surface/Tile taxonomy; no current API exposes that retired spelling.
   const storedSurfaces = parsed.surfaces && typeof parsed.surfaces === 'object'
@@ -60,10 +42,6 @@ export function migrateWorkspaceState(candidate) {
     focusedSession: text(parsed.focusedSession),
     surfaces: { ...base.surfaces, ...storedSurfaces },
     widths: { ...base.widths, ...(parsed.widths && typeof parsed.widths === 'object' ? parsed.widths : {}) },
-    sessions: {
-      map: Array.isArray(sessions.map) ? sessions.map.map(text).slice(0, 4) : [],
-      layout: validLayout(sessions.layout),
-    },
     views: parsed.views && typeof parsed.views === 'object' && !Array.isArray(parsed.views)
       ? { ...base.views, ...parsed.views }
       : base.views,
@@ -148,7 +126,7 @@ export function createWorkspace(host, options = {}) {
   const views = new Map();
   const state = readState();
   const onError = options.onError || (() => {});
-  const safeView = options.safeView || 'sessions';
+  const safeView = options.safeView || 'league';
   let active = null;
   let started = false;
   let destroyed = false;

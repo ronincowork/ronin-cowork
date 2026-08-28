@@ -167,6 +167,11 @@ export async function sessionExists(name: string): Promise<boolean> {
   }
 }
 
+/** Rename one real tmux session exactly. Ronin identity and team options move with it. */
+export async function renameSession(name: string, next: string): Promise<void> {
+  await pexec('tmux', ['rename-session', '-t', exactSession(name), next]);
+}
+
 /**
  * `agent` — will something be launched into this pane, or is it a bare shell?
  *

@@ -89,7 +89,7 @@ Wipeboard channel — the thread and the owner's composer, nothing else; the Bri
 Team Configuration. The slice is `public/js/team-wipeboard.js`, documented in
 `docs/team-workspace.md`; opening it materializes the board server-side, so it never shows
 a void — an empty thread is the conversation that has not started yet. The old ▤ commons
-tab (`public/js/wipeboard.js`) predates the transport model and is superseded by the team
+tab predates the transport model and was retired in favor of the team
 page; it is not updated and goes with the new UI's arrival.
 
 **An addressed post is not a private message.** Everyone on the board still receives it on

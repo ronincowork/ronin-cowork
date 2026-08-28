@@ -8,7 +8,6 @@
  *   Full existing Tiles only — one warm Kit host per live member per workspace.
  *   NO Chat protocol — Chat is a reserved Channel service and stays inert (owner's ruling).
  *   NO mutations — Team Configuration READS the roster and offers no write.
- *   NO Sessions mode — Gates C and D remain later work.
  *
  * TAXONOMY (owner, 2026-08-23): a *pane* is only tmux's own object. Ronin renders session
  * output into a TILE. A SURFACE is a coworkspace region hosting a terminal Tile, the Kanban
@@ -86,8 +85,7 @@ export function createTeamView() {
     });
     return { id, surface, pool, empty: null };
   };
-  /** The empty tile is in the seat exactly when no member is shown there. Built on first
-   *  need, not at page load: a Tile registers itself with the Sessions grid's roll. */
+  /** The empty surface is built only when no member is shown there. */
   // AN EMPTY WORKSPACE IS BLANK AND SAYS SO (owner, 2026-08-27) — the tile-level commons
   // is off this page; its rooms moved (docs/cowork-space.md).
   const paintSeats = () => {
@@ -101,13 +99,7 @@ export function createTeamView() {
       } else if (!seat.empty.el.isConnected) seat.surface.content.append(seat.empty.el);
     }
   };
-  // The selected workspace carries the highlight the Sessions grid gives its active
-  // tile (`.tile.active`) — that is where the next card lands.
-  // ANY SURFACE CAN BE SELECTED (owner, 2026-08-27: *"I should be able to select any
-  // workspace at any point … when I click admin desk, it populates the selected
-  // workspace"*): the mark goes on whatever the workspace holds — a tile gets `.active`
-  // as on the grid, a commons gets `.tw-selected` on its surface — so a workspace holding
-  // the team commons is as selectable as one holding a terminal.
+  // The selected workspace is where the next roster card lands; every surface can carry it.
   const touch = (id) => {
     lastSeat = id;
     for (const seat of Object.values(seats)) {
@@ -554,14 +546,12 @@ export function createTeamView() {
     config.append(createMetadata({ className: 'tw-config-metadata', rows: record }).el);
     config.append(el('p', 'tw-config-head', live.length ? t('team.live_roster_n', 'Live roster · {n}', { n: live.length }) : t('team.live_roster_none', 'Live roster · none')));
     if (!live.length) return;
-    const lead = live.filter((m) => m.team_lead).map((m) => m.name);
-    const table = el('div', 'tw-config-roster');
+    const lead = live.filter((m) => m.team_lead).map((m) => m.name), table = el('div', 'tw-config-roster');
     const line = (name, reading) => table.append(el('span', 'tw-config-name', name), el('span', 'tw-config-reading', reading));
     line('人', lead.length ? lead.join(', ') : t('team.lead_none', 'not designated'));
     for (const m of live) line(m.team_lead ? `人 ${m.name}` : m.name, readingsOf(m).join(' · ') || '—');
     config.append(table);
   }
-
   /* ---------- reading ---------- */
   const paint = () => {
     const members = membersOfTeam(team);
@@ -654,8 +644,19 @@ export function createTeamView() {
       channels.enter(context);
       // ⚙ ON THIS PAGE: the cowork commons into the workspace you are in; pressed again
       // there, the terminal back — the toggle ⛩ taught (layout.js reads this hook).
-      S.showNewSession = () => putNew(lastSeat || 'workspace1');
+      S.showNewSession = (prompt = '') => {
+        putNew(lastSeat || 'workspace1');
+        if (prompt) void launcher.open('PersonalAssistant', prompt);
+      };
       S.connectSession = (name) => connectSession(name);
+      S.onSessionRenamed = (before, next) => {
+        const showing = liveSeats().filter((id) => holds(id) === before);
+        if (extras.delete(before)) extras.add(next);
+        for (const [id, held] of Object.entries(remembered)) if (held === before) remembered[id] = next;
+        syncPools(membersOfTeam(team));
+        showing.forEach((id) => putSession(next, id));
+        renderCards(membersOfTeam(team));
+      };
       S.showCoworkCommons = (tab = '') => {
         const id = lastSeat || 'workspace1';
         if (coworkIn() === id && !tab) putTerminal(id);
@@ -676,12 +677,12 @@ export function createTeamView() {
       disarmPrewarm();
       window.clearInterval(homeTimer);
       window.clearInterval(reportTimer);
-      // Every Tile goes — the pools' and the empty ones. A Tile left in this view's DOM
-      // is still a Tile to the Sessions grid's roll, and the smoke gate counts it.
+      // No transport survives outside the entered Team destination.
       for (const seat of Object.values(seats)) { seat.pool.destroyAll(); seat.empty?.destroy(); seat.empty = null; }
       channels.leave();
       if (S.showCoworkCommons) S.showCoworkCommons = null;
       S.showNewSession = null;
+      S.onSessionRenamed = null;
       S.connectSession = null;
       if (shapeBtn) { shapeBtn.hidden = true; shapeBtn.removeEventListener('click', onShape); }
     },

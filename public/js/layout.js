@@ -1,33 +1,16 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { fetchSessions } from './api.js';
-import { deadTile, guard, showFailure } from './errors.js';
+import { guard } from './errors.js';
 import { refreshHome } from './home.js';
 import { buildSessionPicker } from './macros.js';
 import { PAD_CODE, firePadBinding, padBinds, padChord } from './pad.js';
 import { buildPadAsk, buildPadPanel } from './padpanel.js';
 import { buildNotePanel, buildTagPanel } from './panels.js';
-import { IS_TOUCH, S, TILE_COUNT, WHEEL_DOWN, grid, tiles } from './state.js';
-
-import { Tile } from './tile.js';
-import { collapseTileHead, isCoarse, makeDrop } from './tiledrop.js';
-import { curLayout, nextLayout, setLayout } from './viewport.js';
+import { IS_TOUCH, S, WHEEL_DOWN, tiles } from './state.js';
+import { isCoarse, makeDrop } from './tiledrop.js';
 import { t } from './lexicon.js';
 
 export function build() {
-  // Per-tile guard: a constructor that throws costs ONE tile, not the grid. The
-  // tiles array stays dense (no nulls) so every tiles.forEach stays safe.
-  for (let i = 0; i < TILE_COUNT; i++) {
-    let tile = null;
-    try {
-      tile = new Tile(i);
-    } catch (e) {
-      showFailure(t('errors.tile_failed', 'tile {n} failed to build', { n: i + 1 }), e);
-      grid.appendChild(deadTile(i, e));
-      continue;
-    }
-    tiles.push(tile);
-    grid.appendChild(tile.el);
-  }
   // Each wiring block is guarded separately: losing one control must not cost the
   // rest of the header, which is exactly what happened on 2026-08-08.
   // Resumed tab (esp. mobile — a backgrounded page can live for days): re-fetch the list.
@@ -77,18 +60,8 @@ export function build() {
         if (e.code === 'KeyN') {
           // ⌃⇧N is the keyboard's ＋ New session: a workspace surface on the cowork_space
           // (team-view.js), the tile's launcher on the parked grid page.
-          if (S.showNewSession) { S.showNewSession(); e.preventDefault(); e.stopPropagation(); return; }
-          const t = S.active || tiles.find((x) => x.el.style.display !== 'none');
-          if (!t) return;
-          t.showHome('new');
-          e.preventDefault();
-          e.stopPropagation();
-          return;
-        }
-        if (e.code === 'KeyC') {
-          const t = S.active || tiles.find((x) => x.el.style.display !== 'none');
-          if (!t) return;
-          t.showHome('sessions');
+          if (!S.showNewSession) return;
+          S.showNewSession();
           e.preventDefault();
           e.stopPropagation();
           return;
@@ -111,11 +84,6 @@ export function build() {
         // set. It used to focus tile N, which is the wrong verb for a number: 1-2-4 is
         // written on the buttons as a COUNT, so the chord means the same thing the
         // button does. 3 is deliberately dead — there is no 3-up layout to go to.
-        const m = /^(?:Digit|Numpad)([124])$/.exec(e.code);
-        if (!m) return;
-        setLayout(Number(m[1]));
-        e.preventDefault();
-        e.stopPropagation();
       },
       true, // capture: beat xterm's own keydown so the chord never reaches the pty
     );
@@ -198,13 +166,7 @@ export function build() {
   //
   // `location.pathname`, not `location.href`: href could carry workspace directives into a tab that is
   // not asking for the first-run flow.
-  key('newtabbtn', () => window.open(location.pathname + '?tiles=,', '_blank'));
-
-  key('brandbtn', () => {
-    const t = S.active || tiles.find((x) => x.el.style.display !== 'none') || tiles[0];
-    if (!t) return;
-    t.toggleHome('sessions');
-  });
+  key('newtabbtn', () => window.open(location.pathname, '_blank'));
 
   // ⛩ Commons, ミ Mika Assist and く Keypad LEFT THE BAR on 2026-08-27 (owner). The
   // Commons is still the tile head's ⛩, the brand mark and ⌃⇧C; Mika is the `mika` tool
@@ -272,10 +234,6 @@ export function build() {
         b.addEventListener('click', () => S.active && S.active.sendRaw(KEYPAD[b.dataset.key]));
       });
     }
-    // ORDER MATTERS — both of these append to #bar, and the row reads left to right:
-    // ⛩ ronin │ [ session ▾ ] │ メ │ ニ. The session and its メ go up first.
-    // A phone shows ONE tile (main.js pins the layout), so tiles[0] is THE tile.
-    guard('hoist the tile header', () => collapseTileHead(tiles[0]));
     guard('drawers', buildDrawers);
   } else {
     // Copy = hold the force-selection modifier and drag, then ⌘C / Ctrl-C. The modifier

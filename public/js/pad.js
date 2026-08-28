@@ -1,8 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
-import { IS_TOUCH, S, WHEEL_DOWN, WHEEL_UP, grid, tiles } from './state.js';
+import { IS_TOUCH, S, WHEEL_DOWN, WHEEL_UP, tiles } from './state.js';
 import { request } from './request.js';
 import { toast } from './ui.js';
-import { curLayout, nextLayout, setLayout } from './viewport.js';
 import { t } from './lexicon.js';
 
 export const LS_PAD = 'tmuxgrid.worklouder';
@@ -172,33 +171,12 @@ export function firePadBinding(bind) {
       } else S.active.term.scrollLines(k.scroll * 3);
       return;
     }
-    if (bind.key === 'commons') {
-      // Same tile resolution as the ⛩ Commons button: the active tile, else the
-      // first one actually on screen — so the key still lands somewhere when
-      // nothing has been clicked yet.
-      const t = S.active || tiles.find((x) => x.el.style.display !== 'none') || tiles[0];
-      if (!t) return;
-      // The key TOGGLES: press again and you are back on the session you left.
-      // A tile with no session has nothing behind the panel to go back to, so
-      // there the second press just re-lands on Roster rather than blanking it.
-      if (t.homeVisible() && t.session) t.hideHome();
-      else t.showHome('sessions');
-      return;
-    }
-    if (bind.key === 'layoutcycle') {
-      setLayout(nextLayout(curLayout())); // same ring as the bar button — one statement of it
-      return;
-    }
     if (k.dir) {
-      // Joystick: move the active tile directionally in the current layout.
-      const n = Number(grid.dataset.layout) || 4;
-      if (n === 1) return;
-      const cur = Math.max(0, tiles.indexOf(S.active));
-      let col = n === 4 ? cur % 2 : cur;
-      let row = n === 4 ? cur >> 1 : 0;
-      col = Math.max(0, Math.min(n === 4 ? 1 : 1, col + k.dir[0]));
-      row = Math.max(0, Math.min(n === 4 ? 1 : 0, row + k.dir[1]));
-      const t = tiles[n === 4 ? row * 2 + col : col];
+      const visible = tiles.filter((tile) => tile.el.style.display !== 'none');
+      if (visible.length < 2) return;
+      const at = Math.max(0, visible.indexOf(S.active));
+      const step = k.dir[0] < 0 || k.dir[1] < 0 ? -1 : 1;
+      const t = visible[(at + step + visible.length) % visible.length];
       if (!t || t.el.style.display === 'none' || t === S.active) return;
       if (IS_TOUCH) t.activate();
       else t.focusTerminal();

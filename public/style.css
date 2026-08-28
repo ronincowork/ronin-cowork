@@ -1408,25 +1408,6 @@ body {
 #viewhost > [data-workspace-view][hidden] {
   display: none;
 }
-#grid {
-  flex: 1 1 auto;
-  display: grid;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  min-height: 0;
-}
-#grid.layout-1 {
-  grid-template-columns: 1fr;
-  grid-template-rows: 1fr;
-}
-#grid.layout-2 {
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr;
-}
-#grid.layout-4 {
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-}
 
 /* ---- tile ---- */
 .tile {
@@ -1506,11 +1487,8 @@ body {
 .tile-head button:hover {
   border-color: var(--accent);
 }
-/* ⛩ the Commons and メ its drop. Wider, because a torii and a katakana are not icon
-   glyphs and get clipped in a 26px square. (This said "メ — the way into commons" until
-   2026-08-17: ⛩ took the Commons on every surface that day, and メ came back on the same
-   header as the button the other six controls drop out of — see js/tilemore.js.) */
-.tile-head button.menu,
+/* The Torii rename and メ drop need a little more room than square icon glyphs. */
+.tile-head button.torii,
 .tile-head button.tmore-btn {
   width: 28px;
   font-size: var(--text-4);
@@ -1962,36 +1940,6 @@ body {
   #keypad button:active {
     background: var(--accent);
     color: var(--on-accent);
-  }
-}
-
-/* ---- mobile: single terminal fills the screen; 2/4 stack in a scroll column ---- */
-@media (max-width: 680px) {
-  #grid.layout-2,
-  #grid.layout-4 {
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-  }
-  #grid.layout-2 .tile,
-  #grid.layout-4 .tile {
-    flex: 0 0 auto;
-    height: 82dvh;
-  }
-  /* single terminal: drop the panel chrome and use the whole screen */
-  #grid.layout-1 {
-    padding: 0;
-    gap: 0;
-  }
-  #grid.layout-1 .tile {
-    border: none;
-    border-radius: 0;
-  }
-  #grid.layout-1 .tile.active {
-    box-shadow: none;
-  }
-  #grid.layout-1 .tile-body {
-    padding: var(--space-1) 0 0 var(--space-2);
   }
 }
 

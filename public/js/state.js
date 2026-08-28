@@ -3,11 +3,7 @@
 
 import { tabTitle } from './workspace.js';
 
-export const grid = document.getElementById('grid');
 export const NEW = '__new__';
-export const TILE_COUNT = 4;
-export const LS_SESSIONS = 'tmuxgrid.sessions';
-export const LS_LAYOUT = 'tmuxgrid.layout';
 
 // Touch device (iPhone/iPad): a tap must NOT auto-focus the terminal (which pops
 // the keyboard); scrolling is driven by drag + buttons that inject wheel events.
@@ -139,25 +135,8 @@ export const tiles = [];
  *   2. No single tile or step can take the whole page down.
  */
 export function saveState() {
-  const map = tiles.map((t) => t.session || '');
-  const layoutNumber = Number(grid.dataset.layout || TILE_COUNT);
-  const sessions = JSON.stringify(map);
-  const layout = String(layoutNumber);
-  // sessionStorage is this TAB's own truth — per tab, survives refresh. localStorage is
-  // only the seed a brand-new tab starts from (the most recent save, anywhere). One
-  // shared copy used to be the whole state, so tabs clobbered each other and a refresh
-  // brought back some other tab's tiles (owner, 2026-08-20).
-  try {
-    sessionStorage.setItem(LS_SESSIONS, sessions);
-    sessionStorage.setItem(LS_LAYOUT, layout);
-  } catch (_) {
-    /* storage denied — the shared seed below still works, as before */
-  }
-  localStorage.setItem(LS_SESSIONS, sessions);
-  localStorage.setItem(LS_LAYOUT, layout);
   S.workspace?.patchState({
     focusedSession: S.active?.session || '',
-    sessions: { map, layout: layoutNumber },
   });
   syncTitle();
 }
@@ -195,71 +174,3 @@ function syncTitle() {
   if (S.workspace) S.workspace.refreshTitle();
   else document.title = tabTitle(first);
 }
-/**
- * ONE STATE, THREE SCOPES — first answer wins:
- *
- *   1. `?tiles=a,b,c[&layout=n]` — a one-shot directive: a URL tells THIS tab what to
- *      show. Consumed into the tab's own memory and
- *      stripped from the address, so a refresh keeps it and a bookmark never replays
- *      it. It exists so the landing can choose what greets a person coming out of
- *      setup (wip/buildouts/TILE_CONTROL.md in ronin-lab).
- *   2. sessionStorage — this tab's own memory. A tab opened from here (＋, duplicate)
- *      starts as a copy of its opener and then diverges freely.
- *   3. localStorage — the seed a hand-opened new tab starts from: the most recent save.
- *
- * The device still rules HOW MANY tiles show — main.js's phone override reads the
- * returned layout and forces 1 on a narrow screen, directive or not.
- */
-export function loadState() {
-  const params = new URLSearchParams(location.search);
-  if (params.has('tiles')) {
-    const map = params.get('tiles').split(',').map((s) => s.trim());
-    // The comma structure declares the grid: `?tiles=claude` is one tile, `?tiles=,,,`
-    // is a blank four — SLOTS decide the layout, not how many carry a session name.
-    const layout = Number(params.get('layout')) || (map.length <= 1 ? 1 : map.length <= 2 ? 2 : TILE_COUNT);
-    try {
-      sessionStorage.setItem(LS_SESSIONS, JSON.stringify(map));
-      sessionStorage.setItem(LS_LAYOUT, String(layout));
-    } catch (_) {
-      /* storage denied — the directive still applies to this load */
-    }
-    params.delete('tiles');
-    params.delete('layout');
-    const rest = params.toString();
-    history.replaceState(null, '', location.pathname + (rest ? '?' + rest : '') + location.hash);
-    const directed = { map, layout };
-    S.workspace?.patchState({ sessions: directed });
-    return directed;
-  }
-  const workspaceSessions = S.workspace?.state?.sessions;
-  // An explicitly empty slot map is a complete, valid answer. Falling through here used
-  // to resurrect legacy/localStorage sessions and forced work back into an empty tab.
-  if (Array.isArray(workspaceSessions?.map)) {
-    return { map: workspaceSessions.map, layout: Number(workspaceSessions.layout) || TILE_COUNT };
-  }
-  const read = (store) => {
-    const raw = store.getItem(LS_SESSIONS);
-    if (raw === null) return null;
-    let map;
-    try {
-      map = JSON.parse(raw);
-    } catch (_) {
-      return null;
-    }
-    if (!Array.isArray(map)) return null;
-    return { map, layout: Number(store.getItem(LS_LAYOUT)) || TILE_COUNT };
-  };
-  let state = null;
-  try {
-    state = read(sessionStorage);
-  } catch (_) {
-    /* storage denied — fall through to the seed */
-  }
-  if (!state) state = read(localStorage);
-  const loaded = state || { map: [], layout: TILE_COUNT };
-  S.workspace?.patchState({ sessions: loaded });
-  return loaded;
-}
-
-/* ---------- server calls ---------- */
-/* ---------- layout ---------- */

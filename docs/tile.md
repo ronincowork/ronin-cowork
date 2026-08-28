@@ -455,7 +455,7 @@ steps and a memory test for a fact the tile already knows about itself.
 a write, and by the 30s poll. So there is no loading state and no failure state here to
 design: the read that already exists refuses to fetch without michi rather than 404ing,
 discards a response if the tile switched session mid-flight, and keeps its last value on a
-failed read. `public/js/tiledocs.js` renders what that left behind.
+failed read. The Team commons Docs surface renders what that left behind.
 
 **Opening one clobbers the terminal**, which is the owner's own reasoning: *"it would just
 open in place on that session, clobbering the session I'm looking at, which is fine because

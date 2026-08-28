@@ -29,7 +29,7 @@ export let homeInflight = false;
 export let homeFault = null;
 
 export async function refreshHome() {
-  if (homeInflight || !tiles.some((t) => t.homeVisible())) return;
+  if (homeInflight) return;
   homeInflight = true;
   const r = await request('/api/home', { cache: 'no-store' });
   if (r.ok && Array.isArray(r.data)) {
@@ -39,7 +39,7 @@ export async function refreshHome() {
     homeFault = r.message; // keep the last good list; say why it may be stale
   }
   homeInflight = false;
-  tiles.forEach((t) => t.renderHome());
+  tiles.forEach((tile) => tile.renderHome?.());
 }
 
 export let projectData = null; // /api/project-roots: [{name, dir, read[], provider, model, match[], remit, cmd}]
@@ -52,7 +52,7 @@ export async function loadProjects() {
   ]);
   if (pr.ok && Array.isArray(pr.data)) projectData = pr.data;
   if (br.ok && Array.isArray(br.data)) launchSpecData = br.data;
-  tiles.forEach((t) => t.renderHome());
+  tiles.forEach((tile) => tile.renderHome?.());
 }
 
 /* ---------- the launcher board: session_role × team × project_root ----------
@@ -76,7 +76,7 @@ export async function loadPresets() {
   const [families, roles] = await Promise.all([request('/api/role-families'), request('/api/session-roles')]);
   if (families.ok && Array.isArray(families.data)) familyData = families.data;
   if (roles.ok && Array.isArray(roles.data)) roleData = roles.data;
-  tiles.forEach((t) => t.renderHome());
+  tiles.forEach((tile) => tile.renderHome?.());
 }
 
 /** The resolved profile for one pick — the server's cascade, never a copy of it. */
@@ -118,7 +118,7 @@ export const taskIcon = (s) =>
 export async function loadMacros() {
   const r = await request('/api/macros');
   if (r.ok && Array.isArray(r.data)) macroData = r.data;
-  tiles.forEach((t) => t.renderHome());
+  tiles.forEach((tile) => tile.renderHome?.());
 }
 
 /** /api/saved-launches — the launcher form, filled in ahead of time and named.
@@ -128,7 +128,7 @@ export let savedLaunchData = null;
 export async function loadSavedLaunches() {
   const r = await request('/api/saved-launches');
   if (r.ok && Array.isArray(r.data)) savedLaunchData = r.data;
-  tiles.forEach((t) => t.renderHome());
+  tiles.forEach((tile) => tile.renderHome?.());
 }
 
 /** The status word for a row — a function, not a table, because the lexicon is loaded

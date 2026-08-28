@@ -45,7 +45,7 @@ Three kinds of thing, and only three, sit inside the bar:
 
 | `workspace_surface` | about | its head | what the head holds |
 |---|---|---|---|
-| **terminal_tile** | one session | **tile head** (`js/tilehead.js`) | the session picker · connection dot · ladder chip · job · branch · output selector · ⛩ · @ · ⚡ · メ · gauge — the unchanged `Tile` head (the connection dot retired 2026-08-28) |
+| **terminal_tile** | one session | **tile head** (`js/tilehead.js`) | ⛩ rename · session picker · job · branch · output selector · @ · ⚡ · メ · gauge · ladder chip. The Torii is first, immediately before the session name. |
 | **team_commons** | one team | **commons strip** — the channel surface's tab strip | Chat · Wipeboard · Docs · Team Configuration. Reached from the **Team commons card**, first on the roster |
 | **cowork_commons** | this install and this owner | **commons strip** — the same tab strip | Machine health (Stats) · Account (the desk's rail: Configuration · Appearance · Release & update · Hotwords · Koshi · gbrain · Log out) · Desk profile · Project roots · Roster · Archived (the tile commons' two) · Help desk (Mika's door over a reserved chat) · Keypad (the pad's card, inline). `js/cowork-commons.js`; landed 2026-08-27, the `admin_desk` overlay retired with it |
 | **new_session** | one launch | **surface head** — T, then the name | the ＋ New session launcher, placed by ＋ Add team member (roster) or か New (bar), or `workspace1=new`; the newborn lands in that workspace |
@@ -96,22 +96,15 @@ Rules that make them peers:
 - **On the parked grid page:** there is no workspace to place it in, so ⚙ is the
   `cowork` destination — the surface at full width — and ⚙ again is the way back.
 
-## Parked
+## Retired
 
-- **The 1·2·4 count** left the bar on 2026-08-27 (owner: *"the 1-2-4 button is going to
-  come off"*). Hidden, not deleted: the pad's ▚ layout key still cycles it.
-- **The grid page** (1 / 2 / 4 tiles, the `sessions` destination) is parked with it —
-  reachable, unchanged, and to be removed once the cowork_space carries everything it
-  did. Its `#layoutcycle` and its tile-pool rules are the parts that go with it.
+The raw Sessions 1 / 2 / 4 grid and the `session_commons` embedded inside every Tile were
+removed on 2026-08-28. A terminal Tile is now only a terminal surface. Roster, Archives,
+New Session, Docs and Wipeboard live in the cowork-space surfaces named above.
 
 ## What is NOT a workspace surface
 
-- The **session_commons** (⌂ Roster · ＋ New · ▤ Wipeboard · ▧ Docs) lived INSIDE a tile
-  when no session is showing. It is OFF the cowork_space (2026-08-27): its rooms moved —
-  Roster and Archived to the cowork commons, ＋ New to the `new_session` surface — and an
-  empty workspace is blank. It still draws in a tile on the parked grid page.
-- The **grid page** (1 / 2 / 4 tiles) is the other destination, not a workspace of this
-  one — `docs/team-workspace.md` § Two first-class destinations.
+- The retired **session_commons** and raw **grid page** are not surfaces or destinations.
 
 ## Records
 

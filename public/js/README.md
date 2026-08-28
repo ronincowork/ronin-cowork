@@ -30,7 +30,7 @@ Forty-four modules, 8,916 lines. Counts below are `wc -l`, measured against the 
 
 The platform row (request/ui/panes/theme) landed 2026-08-16 with the UI/UX
 professionalisation pass: transport, dialog behaviour, the pane registry and the theme
-became shared contracts instead of per-feature re-inventions, and `commons.js` gave its
+became shared contracts instead of per-feature re-inventions, and the retired Commons gave its
 two resident rooms (`roster.js`, `launcher.js`) their own modules. `docs/ui.md` is the
 written contract those modules enforce.
 
@@ -40,18 +40,14 @@ written contract those modules enforce.
 | `errors.js` | 115 | `showFailure`, `guard`, `deadTile` — the containment layer |
 | `request.js` | 88 | the ONE transport contract — every JSON call's "what happened" |
 | `ui.js` | 280 | the primitives: sheet, toast, field, status, button, tabs (docs/ui.md) |
-| `panes.js` | 38 | the pane registry — the Commons' rooms, spelled once for its tab strip |
 | `theme.js` | 107 | dark/light: the saved choice, `termTheme()` read off the CSS tokens, the flip |
-| `viewport.js` | 41 | `setLayout` — its own module because three others need it |
 | `api.js` | 44 | the `/api/sessions` calls |
 | `widgets.js` | 225 | `makeDial`, `makeGauge`, `setInert`, the job menu |
 | `events.js` | 96 | the `/events` socket, birth/death chips, `openSessionSomewhere` |
 | `home.js` | 158 | THE DATA CACHE — `refreshHome` + the catalog loaders, `homeFault`, `showReceipt` |
-| `commons.js` | 158 | `buildHome` — the control-plane SHELL: tab strip, panes, room mounting |
 | `roster.js` | 258 | the ⌂ Roster room — the session list, the session max, the stale line |
 | `archives.js` | — | the Archived room — stopped, resumable sessions backed by manifests |
 | `launcher.js` | 480 | the ＋ New session room — the koshidashi board, form, saved launches |
-| `wipeboard.js` | 292 | `buildWipeboard` — the ▤ Wipeboard pane |
 | `projectroots.js` | 245 | `buildProjectRoots` — the ▣ Roots pane |
 | `hotwords.js` | 132 | `buildHotwords` — the ▥ Hotwords pane, the dictation glossary |
 | `stats.js` | 413 | `buildStats` — the ▦ Stats pane (TOMODACHI usage readout) |
@@ -73,7 +69,6 @@ written contract those modules enforce.
 | `tilemacros.js` | 231 | `buildTileMacros` — the ⚡ button on a tile head; the `preview:` macros as teaching cards, prefills `+name: `, never runs |
 | `tilementions.js` | — | `buildTileMentions` — the @ button on a tile head; click or drag a live session name into the composer |
 | `tilemore.js` | 158 | DESKTOP ONLY — `buildTileMore`: メ on a tile head and the controls it drops in one strip; `fitDropToTile`, shared by every drop off that header |
-| `tiledocs.js` | 126 | `buildTileDocs` — 📄 on a tile head: THIS session's listed docs, read off the letter the tile already holds, opened over the tile |
 | `tilejob.js` | 55 | `pickJobFor` — the job pick off a tile head: the session_role, and the 人 team-lead toggle beneath it; split out of tile.js at the ceiling |
 | `team-arrange.js` | 95 | `parseDraft`, `createArranger` — the team page's one controller: a draft (what changes; the rest stays) from a button or from an agent's `tejun-teampage`, run through the page's own verbs |
 | `voice.js` | 181 | dictation: `makeClipRecorder` + `wireDictation` (the 🎤 on the tile's compose box) |
