@@ -341,7 +341,7 @@ export function createCoworkView(options = {}) {
     return { team, selected: lastSeat, count, order: [...a.order], hidden: [...a.hidden], workspaces };
   };
   let reportTimer = 0;
-  const reportView = () => { if (entered && team) void sendView(team, TAB, view()); };
+  const reportView = () => { if (entered && team && team !== UNASSIGNED) void sendView(team, TAB, view()); };
   // A draft from an agent: for this tab if it names it (the tab that shows the agent),
   // else for every tab on the team. A line in the roster header says who arranged it.
   let noteTimer = 0;
@@ -418,7 +418,7 @@ export function createCoworkView(options = {}) {
   };
   let homeTimer = 0;
   const readRows = async () => {
-    const [r] = await Promise.all([request('/api/home', { cache: 'no-store' }), refreshDesks().catch(() => false), refreshTeamDesks(team).catch(() => {})]);
+    const [r] = await Promise.all([request('/api/home', { cache: 'no-store' }), refreshDesks().catch(() => false), team === UNASSIGNED ? Promise.resolve() : refreshTeamDesks(team).catch(() => {})]);
     if (!r.ok || !Array.isArray(r.data) || !entered) return;
     rows = new Map(r.data.map((row) => [row.name, row]));
     onSessions();
@@ -535,7 +535,7 @@ export function createCoworkView(options = {}) {
       return;
     }
     config.append(el('p', 'tw-config-head', team));
-    const record = roster
+    const record = team === UNASSIGNED ? [[t('team.record', 'Record'), t('league.ronin', 'Ronin: no team')]] : roster
       ? [[t('team.team_role', 'Team role'), roster.team_role], [t('team.objective', 'Objective'), roster.objective], [t('team.project_root', 'Project root'), roster.project_root],
         [t('team.repos', 'Repositories'), (roster.repos || []).join(', ')], [t('team.branch', 'Branch'), roster.branch],
         ...teamDeskRows(team), // team lines per repo, promotion state, parked desks — desks.js
@@ -563,7 +563,7 @@ export function createCoworkView(options = {}) {
     renderConfig(roster.durable ? roster : null, members);
     // THE BOARD IS ASSUMED: the roster's wipeboard id, or the team's own name for a
     // tag-only team. The server creates it on open, so the slice never meets a void.
-    wipeboard.setBoard((roster.durable && roster.wipeboard) || team);
+    wipeboard.setBoard(team === UNASSIGNED ? '' : (roster.durable && roster.wipeboard) || team);
   };
 
   async function load(name) {

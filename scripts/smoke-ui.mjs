@@ -173,7 +173,6 @@ function startProbe() {
   // Ronin's own session creation, not a bypass in a test script.
   tmux(['set-option', '-t', PROBE, '@ronin-control', 'user']);
   tmux(['set-option', '-t', PROBE, '@ronin_note', 'throwaway — the render gate, killed when it finishes']);
-  tmux(['set-option', '-t', PROBE, '@ronin-tags', 'smoke']);
   for (let i = 0; i < 30; i++) tmux(['send-keys', '-t', PROBE, `echo ${BANNER} ${i}`, 'Enter']);
   return true;
 }
@@ -963,13 +962,17 @@ async function checkA11y(page, label, axeSrc) {
 async function runPass({ label, browser, contextOpts }) {
   const { page, jsErrors, netFails } = await openPage(browser, contextOpts);
   try {
-    await page.goto(URL_.replace(/#.*$/, '') + '#/team/smoke', { waitUntil: 'networkidle', timeout: 30_000 });
+    await page.goto(URL_.replace(/#.*$/, '') + '#/team/%20unassigned', { waitUntil: 'networkidle', timeout: 30_000 });
   } catch (e) {
     bad(`${label}: page did not load: ${e.message}`);
   }
   await page.waitForTimeout(3000);
   const probeCard = page.locator('.wk-card', { hasText: PROBE }).first();
   if (await probeCard.count()) { await probeCard.click(); await page.waitForTimeout(1200); }
+  // API health can answer before the phone workbench finishes constructing its Tiles.
+  // Readiness is the first session picker, not an arbitrary sleep; checkDom still reports
+  // the same failure below when it never arrives.
+  await page.locator('select.sess').first().waitFor({ state: 'attached', timeout: 10_000 }).catch(() => {});
 
   // THIS is the check that catches a constructor throw — the 2026-08-08 outage.
   if (jsErrors.length) bad(`${label}: uncaught JS errors:\n         ` + jsErrors.join('\n         '));
