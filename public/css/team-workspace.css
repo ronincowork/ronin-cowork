@@ -9,12 +9,8 @@
   .tw-cards { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4); }
   .tw-cards [data-inert='true'] { cursor: default; }
   .tw-cards > [draggable='true'] { cursor: grab; }
-  /* the flip — C on a terminal's head row, T on the commons' tab strip; one letter, one click.
-     On the head it is sized by the head's own button rule (26×24, like ⛩ @ ⚡ メ — this
-     sheet sets no width there); on the strip it stands at tab height. */
-  .tw-flip { border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); color: var(--fg); padding: 0 var(--space-3); font: inherit; font-size: var(--text-3); cursor: pointer; }
-  .tw-flip:hover { border-color: var(--kaki); color: var(--fg-strong); }
-  .tw-flip-strip { min-width: var(--space-12); min-height: var(--space-11); }
+  /* THE TEAM COMMONS CARD — first in the roster, thinner than a session's (owner, 2026-08-28) */
+  .tw-commons-card { padding-top: var(--space-2); padding-bottom: var(--space-2); }
   /* a seat with a card over it — the drop will land here */
   .tw-terminal[data-drop-ready='true'] { outline: var(--edge-2) solid var(--kaki); outline-offset: calc(-1 * var(--edge-2)); }
   /* The selected workspace, when it holds a commons: the same inset ring `.tile.active` wears

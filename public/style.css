@@ -1475,23 +1475,6 @@ body {
 .tile-head .grow {
   flex: 1;
 }
-.dot {
-  width: 9px;
-  height: 9px;
-  border-radius: var(--radius-round);
-  background: var(--muted);
-  flex: 0 0 auto;
-}
-.dot.on {
-  background: var(--ok);
-  box-shadow: 0 0 6px var(--ok);
-}
-.dot.wait {
-  background: var(--warn);
-}
-.dot.off {
-  background: var(--bad);
-}
 /* The select yields; the controls don't. Without this every button in the row is
    shrinkable (they carry a fixed width but the default flex-shrink: 1), so one more
    control squashes them all to slivers on a narrow tile instead of narrowing the
@@ -5012,9 +4995,6 @@ button.wb-door:hover b {
     border-radius: var(--radius-md);
     padding: 0 var(--space-4);
     font-size: var(--text-5);
-  }
-  #bar .dot {
-    flex: 0 0 auto;
   }
   /* The brand yields first — the session name matters more than the word "ronin". */
   #bar .brand {

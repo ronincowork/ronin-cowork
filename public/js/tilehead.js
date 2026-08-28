@@ -81,9 +81,8 @@ let rows = null;
 const HEADER = () => {
   if (rows) return rows;
   rows = [
-  { key: 'dot', tag: 'span', cls: 'dot off',
-    help: t('head.dot_help', 'Connection: green = attached, grey = disconnected') },
-
+  // The connection dot left the head on 2026-08-28 (owner: "this colored light ball next to
+  // the session name … should be gone"); the picker's own state and the pane say it.
   { key: 'select', tag: 'select', cls: 'sess',
     help: t('head.select_help', 'Pick / switch the session shown in this tile') },
 

@@ -69,19 +69,9 @@ export function createTeamView() {
   let entered = false;
   let lastSeat = 'workspace1'; // the workspace last touched — where the next card lands
 
-  /* ---------- the flip: one button in the header row, C or T ---------- */
-  const flipButton = (letter) => {
-    // C is sized by the tile head's own button rule; T stands at tab height on the strip.
-    const button = el('button', letter === 'T' ? 'tw-flip tw-flip-strip' : 'tw-flip', letter);
-    button.type = 'button';
-    button.title = letter === 'C' ? t('team.flip_commons', 'Show the Team commons in this workspace') : t('team.flip_terminal', 'Show the terminal in this workspace');
-    button.addEventListener('click', () => {
-      const id = button.closest('[data-surface]')?.dataset.surface;
-      if (seats[id]) arrange({ [id]: letter === 'C' ? { commons: true } : { terminal: true } });
-    });
-    return button;
-  };
-
+  // NO FLIP (owner, 2026-08-28): the team commons is a roster CARD, into a workspace like a
+  // session — click for the selected cell, drag onto any. (C read its cell off the Kit
+  // SLOT = the column, so in the 2×2 it always hit the top cell — the "goofy" behaviour.)
   /* ---------- the workspaces: two seats, the roster between them, one commons ---------- */
   // A seat is a surface with its tiles in it: the pool's (one per member shown here,
   // the active one visible) and, when no member is shown, the seat's own empty tile —
@@ -90,9 +80,9 @@ export function createTeamView() {
   const makeSeat = (id, label) => {
     const surface = createSurface({ label, className: 'tw-terminal', flush: true });
     surface.el.addEventListener('pointerdown', () => touch(id));
-    acceptSessionDrops(surface.el, () => id, (name, id) => arrange({ [id]: { session: name } }));
+    acceptSessionDrops(surface.el, () => id, (name, id) => arrange({ [id]: name === COMMONS ? { commons: true } : { session: name } }));
     const pool = createWarmTerminalPool({
-      createHost: (options) => createTerminalTileHost({ ...options, actions: [flipButton('C')] }),
+      createHost: (options) => createTerminalTileHost(options),
       container: surface.content,
       streamCap: 2,
     });
@@ -218,25 +208,21 @@ export function createTeamView() {
     // not the accident of an unqualified default.
     selected: 'chat',
     services: { wipeboard, docs: docsService, 'team-configuration': service(config) },
-    actions: [flipButton('T')],
   });
   channels.el.addEventListener('pointerdown', () => { const id = commonsIn(); if (id) touch(id); });
-  acceptSessionDrops(channels.el, () => commonsIn(), (name, id) => arrange({ [id]: { session: name } }));
+  acceptSessionDrops(channels.el, () => commonsIn(), (name, id) => arrange({ [id]: name === COMMONS ? { commons: true } : { session: name } }));
   // THE COWORK COMMONS — the third surface a workspace can hold (owner, 2026-08-27). One
   // instance for the whole page; its strip carries the same T as the team commons'.
   const cowork = coworkCommons();
-  if (!cowork.tabs.querySelector('.tw-flip-strip')) {
-    cowork.tabs.append(el('span', 'wk-channel-service-grow'), flipButton('T'));
-  }
   cowork.el.addEventListener('pointerdown', () => { const id = coworkIn(); if (id) touch(id); });
-  acceptSessionDrops(cowork.el, () => coworkIn(), (name, id) => arrange({ [id]: { session: name } }));
+  acceptSessionDrops(cowork.el, () => coworkIn(), (name, id) => arrange({ [id]: name === COMMONS ? { commons: true } : { session: name } }));
   // ＋ NEW SESSION IS A SURFACE (owner, 2026-08-27): the commons' launcher, in a workspace.
   // ＋ Add team member on the roster and か New on the bar both put it in the selected
   // workspace; a session born from it lands in that same workspace (`connect`).
   const newSurface = createSurface({ label: t('team.new_session', 'New session'), className: 'tw-new' });
   // Its own head and body (feature classes; the Kit's own nodes are the Kit's to style).
   const newHead = el('div', 'tw-new-head');
-  newHead.append(flipButton('T'), el('span', 'tw-new-title', t('team.new_session', 'New session')));
+  newHead.append(el('span', 'tw-new-title', t('team.new_session', 'New session')));
   newSurface.el.prepend(newHead);
   const newBody = el('div', 'tw-new-body');
   const launcherHost = el('div', 'home-null');
@@ -507,6 +493,20 @@ export function createTeamView() {
   function renderCards(members) {
     rosterCount.textContent = members.length ? String(members.length) : '';
     cards.replaceChildren();
+    // THE TEAM COMMONS IS THE FIRST CARD (owner, 2026-08-28), thin, addressed like one.
+    const commonsCard = createCard({
+      heading: t('team.commons_card', 'Team commons'),
+      className: 'tw-commons-card',
+      selected: !!commonsIn(),
+      action: () => arrange({ [lastSeat || 'workspace1']: { commons: true } }),
+    });
+    commonsCard.el.draggable = true;
+    commonsCard.el.addEventListener('dragstart', (event) => {
+      event.dataTransfer.setData(DRAG_TYPE, COMMONS);
+      event.dataTransfer.setData('text/plain', t('team.commons_card', 'Team commons'));
+      event.dataTransfer.effectAllowed = 'move';
+    });
+    cards.append(commonsCard.el);
     for (const m of members) {
       const readings = readingsOf(m);
       const card = createCard({

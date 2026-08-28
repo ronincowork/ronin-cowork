@@ -171,7 +171,7 @@ select `.wk-*` internals or restyle `.tile-head`.
 ## Existing Tile and header contract
 
 A workspace's terminal is obtained only through
-`createTerminalTileHost({ mode: 'full', actions: [flipButton('C')] })`. Full mode
+`createTerminalTileHost({ mode: 'full' })` (the C flip was retired 2026-08-28). Full mode
 instantiates the existing `Tile` unchanged — picker, SHINGO ladder, role mark, branch
 reading, ⛩, @, ⚡, メ, output selector, dials, terminal, tape, composer — and appends the
 given actions to its own head row. Team never reaches into Tile DOM.
@@ -201,7 +201,7 @@ The tab strip carries **T** at its right end through `createChannelSurface({ act
 
 A tile's head, the commons' tab strip and the roster's head share one depth, the
 `--row-head` token in `style.css` (41px). **C** on a tile head is sized by the head's own
-button rule, like ⛩ @ ⚡ メ; **T** on the strip stands at tab height (`tw-flip-strip`).
+button rule, like ⛩ @ ⚡ メ; C and T were retired on 2026-08-28 — the team commons is a roster card.
 A tile head wraps rather than clips when its workspace is squeezed, so the picker stays
 readable and every control — C included — stays reachable at the workspace floor.
 

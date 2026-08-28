@@ -188,7 +188,6 @@ export function collapseTileHead(tile) {
   // The connection lamp and the picker come up to the bar as they are — they ARE the
   // header, and the header is now the bar's middle. `.grow` stays behind: it existed
   // to push a row of buttons to the far edge, and the picker wants that room.
-  const dot = head.querySelector('.dot');
   const sel = head.querySelector('select.sess');
   // The grid count left the bar on 2026-08-27, so there is nothing to insert against:
   // the hoisted controls append, and ニ (added after them) stays the row's right end.
@@ -196,7 +195,7 @@ export function collapseTileHead(tile) {
   // 📄's (2026-08-18) — a menu left in the hidden header is a button that opens nothing.
   const tmac = head.querySelector('.tmac');
   const tdocs = head.querySelector('.tdocs');
-  for (const n of [dot, sel, drop.btn, drop.menu, tmac, tdocs]) {
+  for (const n of [sel, drop.btn, drop.menu, tmac, tdocs]) {
     if (n) bar.append(n);
   }
   // The emptied head STAYS in the tile, hidden by the stylesheet. It is still the

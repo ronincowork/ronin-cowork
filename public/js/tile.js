@@ -589,8 +589,8 @@ export class Tile {
   }
 
   setDot(state) {
-    this.dot.className = 'dot ' + state;
-    this.dot.title = state === 'on' ? 'connected' : state === 'wait' ? 'connecting…' : 'disconnected';
+    // The dot left the head on 2026-08-28; the state still rides the tile for the stylesheet.
+    this.el.dataset.link = state;
   }
 
   detach() {

@@ -18,8 +18,8 @@ you add it there in the same commit.
 │      workspace 1      │   selector column    │              workspace 2                 │
 │                       │      (the roster)    │                                          │
 │  ┌ surface head ────┐ │  ┌ column head ────┐ │  ┌ surface head ──────────────────────┐  │
-│  │ terminal_tile:   │ │  │ team name · 人  │ │  │ team_commons: tab strip · T        │  │
-│  │ tile head (C)    │ │  │ output selector │ │  │ cowork_commons: tab strip · T      │  │
+│  │ terminal_tile:   │ │  │ Roster: team    │ │  │ team_commons: tab strip            │  │
+│  │ tile head        │ │  │ ▸ Team commons  │ │  │ cowork_commons: tab strip          │  │
 │  └──────────────────┘ │  └─────────────────┘ │  └────────────────────────────────────┘  │
 │                       │  member cards…       │                                          │
 │  one workspace_surface│  (click → workspace) │  one workspace_surface                   │
@@ -38,25 +38,26 @@ Three kinds of thing, and only three, sit inside the bar:
 | kind | what it is | how many |
 |---|---|---|
 | **workspace** | a cell that holds exactly one `workspace_surface` at a time; remembers what it holds per tab | two or four (`workspace1`–`workspace4`; 3 under 1, 4 under 2); the Kit's layout map shows, hides and reorders the three columns |
-| **selector column** | a column that PICKS what goes into a workspace; it never holds a surface itself | one today — the **roster** (the team's members as cards; click seats one in a workspace; the 人 pinned hot in workspace 1) |
+| **selector column** | a column that PICKS what goes into a workspace; it never holds a surface itself | one today — the **roster**: the Team commons card first (thin), then the members as cards, then ＋ Add team member; click seats one in the selected workspace, drag onto any cell; the 人 pinned hot in workspace 1 |
 | **top header** | the bar: brand, the tab's editable view name, the layout map, か New, ⚙, the grid count | one |
 
 ## The workspace surfaces — peers, each able to occupy a workspace
 
 | `workspace_surface` | about | its head | what the head holds |
 |---|---|---|---|
-| **terminal_tile** | one session | **tile head** (`js/tilehead.js`) | the session picker · connection dot · ladder chip · job · branch · output selector · ⛩ · @ · ⚡ · メ · gauge — the unchanged `Tile` head — plus **C** (flip to the commons) appended by the page |
-| **team_commons** | one team | **commons strip** — the channel surface's tab strip | Chat · Wipeboard · Docs · Team Configuration, plus **T** (flip back to the terminal) at its right end |
-| **cowork_commons** | this install and this owner | **commons strip** — the same tab strip | Machine health (Stats) · Account (the desk's rail: Configuration · Appearance · Release & update · Hotwords · Koshi · gbrain · Log out) · Desk profile · Project roots · Roster · Archived (the tile commons' two) · Help desk (Mika's door over a reserved chat) · Keypad (the pad's card, inline), plus **T**. `js/cowork-commons.js`; landed 2026-08-27, the `admin_desk` overlay retired with it |
+| **terminal_tile** | one session | **tile head** (`js/tilehead.js`) | the session picker · connection dot · ladder chip · job · branch · output selector · ⛩ · @ · ⚡ · メ · gauge — the unchanged `Tile` head (the connection dot retired 2026-08-28) |
+| **team_commons** | one team | **commons strip** — the channel surface's tab strip | Chat · Wipeboard · Docs · Team Configuration. Reached from the **Team commons card**, first on the roster |
+| **cowork_commons** | this install and this owner | **commons strip** — the same tab strip | Machine health (Stats) · Account (the desk's rail: Configuration · Appearance · Release & update · Hotwords · Koshi · gbrain · Log out) · Desk profile · Project roots · Roster · Archived (the tile commons' two) · Help desk (Mika's door over a reserved chat) · Keypad (the pad's card, inline). `js/cowork-commons.js`; landed 2026-08-27, the `admin_desk` overlay retired with it |
 | **new_session** | one launch | **surface head** — T, then the name | the ＋ New session launcher, placed by ＋ Add team member (roster) or か New (bar), or `workspace1=new`; the newborn lands in that workspace |
 | *(blank)* | — | — | an EMPTY workspace says *Workspace* and holds nothing — never a commons by default (owner, 2026-08-27) |
 | *league* | every team | *a strip* | **[planned]** — the League destination re-hung as a surface; not designed here |
 
 Rules that make them peers:
 
-- **Every head reads the same way**: the flip (**C** on a tile head, **T** on a strip or the
-  new-session head) at the far LEFT; the SHINGO light signal at the far RIGHT of a tile
-  head (owner, 2026-08-27). The selector column's head reads *Roster: <team>*.
+- **No flip on any head** (owner, 2026-08-28): the team commons is the FIRST CARD of the
+  roster, thinner than a session's, and goes into a workspace like one — click for the
+  selected cell, drag onto any cell. The SHINGO light signal sits at the far RIGHT of a
+  tile head; the connection dot is gone. The selector column's head reads *Roster: <team>*.
 - **One surface per workspace, one head per surface.** A surface never draws over another;
   trading is `place()`. The old `admin_desk` overlay is the one exception and it is going.
 - **Every head is one depth** — `--row-head` (41px). The tile head wraps rather than clips
@@ -85,7 +86,7 @@ Rules that make them peers:
 - **selector column** — a column that picks; the **roster** is one.
 - **top header** — the bar. Say *the bar*.
 - **surface head** — the genus for a surface's top row: *tile head*, *commons strip*,
-  *column head*.
+  *column head*. No head carries a flip — a surface gets into a workspace from the selector column, or by drag.
 
 ## Where ⚙ puts it
 
