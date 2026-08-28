@@ -1,7 +1,7 @@
 /* Runtime-checked workspace state and navigation values for Kit consumers. */
 import { migrateWorkbenchState } from './workspace-arrangement.js';
 export const WORKSPACE_DESTINATIONS = Object.freeze([
-  'league', 'team', 'customize', 'new-team', 'agent-config', 'commons', 'configuration',
+  'league', 'league-workspace', 'team', 'customize', 'new-team', 'agent-config', 'commons', 'configuration',
 ]);
 
 const destinationSet = new Set(WORKSPACE_DESTINATIONS);

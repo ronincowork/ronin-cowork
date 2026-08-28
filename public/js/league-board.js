@@ -130,6 +130,11 @@ export function createBoard({ context, rostersVisible }) {
     const toggle = createAction({ className: 'league-rosters', label: visible ? t('league.hide_rosters', 'Hide rosters') : t('league.show_rosters', 'Show rosters') }).el;
     toggle.dataset.leagueRosters = '';
     bar.append(toggle);
+    const openWorkspace = createAction({ label: t('league.open_workspace', 'League workspace'), kind: 'primary', action: () => {
+      const { navigateWorkspace, workspaceTarget } = kit().contract;
+      navigateWorkspace(context, workspaceTarget('league-workspace'));
+    } });
+    bar.append(openWorkspace.el);
     cards.append(bar.el);
 
     const teams = teamsFromState();
