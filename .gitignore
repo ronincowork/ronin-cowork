@@ -1,4 +1,6 @@
-node_modules/
+# A managed desk links this path to the home checkout. No trailing slash: Git does not
+# consider a symlink a directory, so `node_modules/` left every fresh desk dirty at birth.
+node_modules
 dist/
 # bin/ronin-build's output — tarballs are published to GitHub Releases, never committed.
 release/
