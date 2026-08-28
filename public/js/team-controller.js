@@ -42,6 +42,11 @@ export async function updateSessionTeams(session, change) {
   await refreshTeams();
   return saved;
 }
+export async function deleteTeamRoster(team) {
+  const result = await request(`/api/team-rosters/${encodeURIComponent(team)}`, { method: 'DELETE' });
+  if (result.ok) await refreshTeams();
+  return result;
+}
 export const sessionBelongsToTeam = (session, team) => (session.tags || []).includes(team);
 export const leadsTeam = (session, team) => (session.leads || []).includes(team);
 export function unassignedSessions() {

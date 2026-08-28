@@ -1,7 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 /** Cowork-space destination; its kind supplies the selector and context. */
 import { WorkspaceKit } from './workspace-kit.js';
-import { membersOfTeam, refreshTeams, subscribe, teamByName, teamsFromState, UNASSIGNED, updateSessionTeams } from './team-controller.js';
+import { deleteTeamRoster, membersOfTeam, refreshTeams, subscribe, teamByName, teamsFromState, UNASSIGNED, updateSessionTeams } from './team-controller.js';
 import { createNewTeamView } from './new-team.js';
 import { createLeagueCommons } from './league-commons.js';
 import { renderLeagueView } from './league-view-surface.js';
@@ -401,13 +401,13 @@ export function createCoworkView(options = {}) {
   // reading is absent. RIREKI's cherry-pick or summary joins the row when the service
   // contributes it; there is no field for it today.
   let rows = new Map(); // name -> the /api/home row
-  const leagueTeamSurfaces = new Map();
+  const leagueTeamSurfaces = new Map(), openTeam = (name) => { const url = new URL(location.href); url.hash = `#/team/${encodeURIComponent(name)}`; window.open(url.href, '_blank', 'noopener'); };
   const leagueTeamSurface = (name) => {
     if (leagueTeamSurfaces.has(name)) return leagueTeamSurfaces.get(name);
-    const label = name === UNASSIGNED ? t('league.ronin', 'Ronin: no team') : name, surface = createSurface({ label, className: 'league-team-edit' });
-    const team = teamByName(name);
-    const launch = el('button', null, t('league.launch_team', 'Launch')); launch.type = 'button'; launch.addEventListener('click', () => { const url = new URL(location.href); url.hash = `#/team/${encodeURIComponent(name)}`; window.open(url.href, '_blank', 'noopener'); });
-    surface.el.prepend(createSurfaceHeader({ label, actions: [launch] }).el);
+    const label = name === UNASSIGNED ? t('league.ronin', 'Ronin: no team') : name, surface = createSurface({ label, className: 'league-team-edit' }), team = teamByName(name);
+    const launch = el('button', null, t('league.launch_team', 'Launch')); launch.type = 'button'; launch.addEventListener('click', () => openTeam(name));
+    const remove = el('button', null, t('league.delete_team', 'Delete')); remove.type = 'button'; remove.addEventListener('click', async () => { const count = membersOfTeam(name).length; if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team: name, count }))) return; const result = await deleteTeamRoster(name); if (!result.ok) { surface.setState('failed', result.message); return; } const seat = whereIs(token); leagueTeamSurfaces.delete(name); if (seat) emptySeat(seat); });
+    surface.el.prepend(createSurfaceHeader({ label, actions: name === UNASSIGNED ? [launch] : [launch, remove] }).el);
     surface.content.append(createMetadata({ rows: [
       [t('team.team_role', 'Team role'), team.team_role], [t('team.objective', 'Objective'), team.objective],
       [t('league.agents', 'Agents'), String(membersOfTeam(name).length)], [t('team.project_root', 'Project root'), team.project_root],
@@ -474,7 +474,7 @@ export function createCoworkView(options = {}) {
       for (const item of teams) { const made = leagueTeamSurface(item.name); add(teamCards, item.name, made.token, item.objective || ''); }
       const ronin = leagueTeamSurface(UNASSIGNED); add(teamCards, t('league.ronin', 'Ronin: no team'), ronin.token);
       const leagueGroups = [...teams, { name: UNASSIGNED, objective: '', nullTeam: true }];
-      renderLeagueView(leagueCards, leagueGroups, membersOfTeam, (name) => rows.get(name), (name) => leagueTeamSurface(name).token, DRAG_TYPE, ctx?.viewState(viewKey)?.teamOrder, (teamOrder) => ctx?.patchViewState(viewKey, { teamOrder }), (agent, source, target) => updateSessionTeams(agent, (teams) => target === UNASSIGNED ? teams.filter((name) => name !== source) : [...new Set([...teams.filter((name) => name !== source), target])].sort()));
+      renderLeagueView(leagueCards, leagueGroups, membersOfTeam, (name) => rows.get(name), (name) => leagueTeamSurface(name).token, DRAG_TYPE, ctx?.viewState(viewKey)?.teamOrder, (teamOrder) => ctx?.patchViewState(viewKey, { teamOrder }), (agent, source, target) => updateSessionTeams(agent, (teams) => target === UNASSIGNED ? teams.filter((name) => name !== source) : [...new Set([...teams.filter((name) => name !== source), target])].sort()), openTeam);
       add(newCards, t('new_team.title', 'New Team'), '@new-team', '', 'dotted');
       add(newCards, t('league.new_agent', 'New Agent'), NEW, t('league.new_agent_summary', 'A new Agent, born into the workspace you are in.'), 'dotted');
       return;

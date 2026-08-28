@@ -8,7 +8,7 @@ const AGENT_MIME = 'application/x-ronin-league-agent', SOURCE_MIME = 'applicatio
 
 const rememberOrder = (host, changed) => { const order = [...host.querySelectorAll('.league-roster-team')].map((group) => group.dataset.team); orders.set(host, order); changed(order); };
 
-export function renderLeagueView(host, teams, membersOf, rowOf, tokenOf, dragType, initialOrder = [], changed = () => {}, reassign = () => {}) {
+export function renderLeagueView(host, teams, membersOf, rowOf, tokenOf, dragType, initialOrder = [], changed = () => {}, reassign = () => {}, launch = () => {}) {
   if (!orders.has(host)) orders.set(host, initialOrder);
   const remembered = orders.get(host) || [];
   teams = [...teams].sort((a, b) => {
@@ -24,8 +24,8 @@ export function renderLeagueView(host, teams, membersOf, rowOf, tokenOf, dragTyp
   for (const team of teams) {
     const members = membersOf(team.name), group = node('section', 'league-roster-team');
     group.dataset.team = team.name; group.dataset.token = tokenOf(team.name);
-    const head = node('header', 'league-roster-head'), teamName = node('b', null, team.nullTeam ? t('league.ronin', 'Ronin: no team') : team.name);
-    head.append(teamName, node('span', null, t('league.agents_count', '{n} Agents', { n: members.length })));
+    const head = node('header', 'league-roster-head'), teamName = node('b', null, team.nullTeam ? t('league.ronin', 'Ronin: no team') : team.name), launchButton = node('button', null, t('league.launch_team', 'Launch'));
+    launchButton.type = 'button'; launchButton.addEventListener('click', () => launch(team.name)); head.append(teamName, launchButton);
     if (team.objective) head.append(node('small', null, team.objective));
     group.append(head); teamName.draggable = true;
     teamName.addEventListener('dragstart', (event) => { event.dataTransfer.setData(dragType, tokenOf(team.name)); event.dataTransfer.effectAllowed = 'move'; });

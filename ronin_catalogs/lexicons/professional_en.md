@@ -1426,7 +1426,6 @@ The catalog entry goes. {dir} is not touched.
 - **league.template_delete:** Delete
 - **league.template_delete_confirm:** Delete template {name}?
 - **league.templates_empty:** No Team templates yet.
-- **league.agents_count:** {n} Agents
 - **league.agents:** Agents
 - **league.no_agents:** No live Agents
 - **league.new_agent:** New Agent

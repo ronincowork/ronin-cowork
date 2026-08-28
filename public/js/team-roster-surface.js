@@ -1,7 +1,6 @@
 /* Team roster workspace surface: plain sessions → Team membership drop targets. */
-import { request } from './request.js';
 import { S } from './state.js';
-import { membersOfTeam, refreshTeams, teamsFromState, updateSessionTeams } from './team-controller.js';
+import { deleteTeamRoster, membersOfTeam, teamsFromState, updateSessionTeams } from './team-controller.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
 
@@ -30,9 +29,9 @@ export function createTeamRosterSurface() {
   };
   const deleteTeam = async (team, count) => {
     if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team, count }))) return;
-    const result = await request(`/api/team-rosters/${encodeURIComponent(team)}`, { method: 'DELETE' });
+    const result = await deleteTeamRoster(team);
     if (!result.ok) { message = result.message; render(); return; }
-    await refreshTeams(); message = ''; render();
+    message = ''; render();
   };
   const render = () => {
     layout.replaceChildren();
@@ -42,7 +41,7 @@ export function createTeamRosterSurface() {
       const heading = node('header', 'team-roster-heading');
       const remove = node('button', 'team-roster-delete', t('league.delete_team', 'Delete'));
       remove.type = 'button'; remove.addEventListener('click', () => void deleteTeam(team.name, members.length));
-      heading.append(node('b', null, team.name), node('span', null, members.length), remove);
+      heading.append(node('b', null, team.name), remove);
       target.append(heading);
       for (const session of members) {
         const row = node('div', 'team-roster-session', session.name); row.draggable = true;
@@ -58,7 +57,7 @@ export function createTeamRosterSurface() {
     const loose = (S.sessions || []).filter((session) => !(session.tags || []).length);
     const unassigned = node('section', 'team-roster-team');
     const heading = node('header', 'team-roster-heading');
-    heading.append(node('b', null, t('league.ronin', 'Ronin: no team')), node('span', null, loose.length));
+    heading.append(node('b', null, t('league.ronin', 'Ronin: no team')));
     unassigned.append(heading);
     for (const session of loose) {
       const row = node('div', 'team-roster-session', session.name); row.draggable = true;
