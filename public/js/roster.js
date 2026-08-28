@@ -17,6 +17,7 @@ import { homeData, homeFault, statusLabel, taskIcon } from './home.js';
 import { S, tiles } from './state.js';
 import { clampTip, humanAge } from './shingo.js';
 import { t } from './lexicon.js';
+import { deskLabel, deskReadout, deskTip, desksOf, refreshDesks } from './desks.js';
 
 /**
  * @param {object} tile  rows connect into this tile
@@ -210,6 +211,17 @@ export function buildRoster(tile, host) {
       cx.textContent = '⛽ ' + s.ctx + '%';
       r.appendChild(cx);
     }
+    // THE DESKS — derived on the server (git + the desk registry), never the agent's
+    // prose: `⑂ team/comp/fable` or `⑂ 2`, and the roll-up in the help. Amber when an
+    // update is pending or a hand-in is blocked — the two readings a lead acts on.
+    const dk = desksOf(s.name);
+    if (dk && dk.desks?.length) {
+      const dd = document.createElement('span');
+      dd.className = 'home-desks' + (dk.rollup.pending || dk.rollup.blocked ? ' attn' : '');
+      dd.textContent = deskLabel(dk);
+      dd.title = [deskReadout(dk), deskTip(dk)].filter(Boolean).join('\n');
+      r.appendChild(dd);
+    }
     // WHICH MODEL IS ANSWERING — that is the whole column (owner's ruling 2026-08-17).
     //
     // It shipped for an hour as `agent · provider · model` — `codex · openai · gpt-5.6-sol`
@@ -267,6 +279,9 @@ export function buildRoster(tile, host) {
   };
 
   const render = () => {
+    // The desk column rides the roster's refresh: a changed answer redraws once; a fresh
+    // one (younger than the module's window) resolves false and nothing loops.
+    void refreshDesks().then((changed) => { if (changed) render(); }).catch(() => {});
     // The max line rides the roster's own refresh — no second timer, and it never
     // overwrites the field while it has focus (see loadMax).
     void loadMax();

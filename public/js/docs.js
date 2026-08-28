@@ -3,6 +3,7 @@ import { request } from './request.js';
 import { status } from './ui.js';
 import { homeData } from './home.js';
 import { t } from './lexicon.js';
+import { DOC_MIME } from './team-drag.js';
 
 /**
  * MDEDIT — the ▧ Docs tab: every session's listed docs, and a plain editor for one.
@@ -29,7 +30,14 @@ import { t } from './lexicon.js';
  * @param only  optional predicate on a session name — keep it in the list, or not. Absent,
  *              every session that listed a doc is shown (the Commons).
  */
-export function buildDocs(tile, root, isShowing, only = null) {
+/**
+ * THREE PILLS (owner, 2026-08-28): TRACKED is the list above; PLANS and DOCS are the
+ * files under the places each project_root names on its record (`plans:` / `docs:`,
+ * src/routes/docs-api.ts), grouped by root — merged into one list, never mixed. Still no
+ * file browser: only what a root's record names is listed. On the team page the team's
+ * own repos come first and the rest start folded (`reposFirst`).
+ */
+export function buildDocs(tile, root, isShowing, only = null, reposFirst = () => []) {
   let openPath = null; // null = the list is showing
   let dirty = false; // the owner has typed since the last load or save
   // Only rebuild the list when it actually changed — see refresh(). null, not '', so the
@@ -37,7 +45,25 @@ export function buildDocs(tile, root, isShowing, only = null) {
   // 'loading…' standing over a list that is legitimately empty.
   let sig = null;
 
-  /* ---------- the list ---------- */
+  /* ---------- the pills, then the list ---------- */
+  let shelf = 'tracked';
+  const shelves = { plans: null, docs: null }; // fetched on demand, kept for the session
+  const pills = document.createElement('div');
+  pills.className = 'dc-pills';
+  pills.setAttribute('role', 'tablist');
+  const pill = {};
+  for (const [id, label] of [['tracked', t('docs.pill_tracked', 'Tracked')], ['plans', t('docs.pill_plans', 'Plans')], ['docs', t('docs.pill_docs', 'Docs')]]) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'dc-pill';
+    b.setAttribute('role', 'tab');
+    b.textContent = label;
+    b.addEventListener('click', () => { shelf = id; sig = null; paintPills(); refresh(true); });
+    pill[id] = b;
+    pills.append(b);
+  }
+  const paintPills = () => { for (const [id, b] of Object.entries(pill)) b.setAttribute('aria-selected', String(id === shelf)); };
+  paintPills();
   const list = document.createElement('div');
   list.className = 'dc-list';
 
@@ -78,7 +104,7 @@ export function buildDocs(tile, root, isShowing, only = null) {
   area.autocomplete = 'off';
   area.setAttribute('autocorrect', 'off');
   ed.append(bar, frame, area);
-  root.append(list, ed);
+  root.append(pills, list, ed);
   const isPage = (p) => /\.html?$/i.test(p);
   const rawUrl = (p) => '/raw' + p.split('/').map(encodeURIComponent).join('/');
 
@@ -88,6 +114,10 @@ export function buildDocs(tile, root, isShowing, only = null) {
   show('list');
 
   const say = (text, bad) => note.say(text, bad ? 'bad' : '');
+  // KIIRO WHEN THERE IS SOMETHING TO SAVE (owner, 2026-08-28): the Save button and the ←
+  // both go yellow the moment the text differs, so the way out is as easy to find as the
+  // way to keep it. Cleared on save, on open, on back.
+  const markDirty = (on) => { dirty = on; save.classList.toggle('kiiro', on); back.classList.toggle('kiiro', on); };
 
   /* ---------- opening and saving ---------- */
 
@@ -120,7 +150,7 @@ export function buildDocs(tile, root, isShowing, only = null) {
     pop.removeAttribute('href');
     area.value = '';
     area.disabled = true;
-    dirty = false;
+    markDirty(false);
     say(t('docs.loading', 'loading…'));
     show('edit');
     const r = await request('/api/file?path=' + encodeURIComponent(path), { cache: 'no-store' });
@@ -132,7 +162,7 @@ export function buildDocs(tile, root, isShowing, only = null) {
     }
     area.value = r.data.text ?? '';
     area.disabled = false;
-    dirty = false;
+    markDirty(false);
     say('');
   };
 
@@ -148,14 +178,14 @@ export function buildDocs(tile, root, isShowing, only = null) {
     });
     if (!r.ok) say(r.message, true);
     else {
-      dirty = false;
+      markDirty(false);
       say(t('docs.saved', 'saved'));
     }
     save.disabled = false;
   };
 
   area.addEventListener('input', () => {
-    dirty = true;
+    markDirty(true);
     say('');
   });
   save.addEventListener('click', doSave);
@@ -170,7 +200,7 @@ export function buildDocs(tile, root, isShowing, only = null) {
   back.addEventListener('click', () => {
     if (dirty && !confirm(t('docs.discard_confirm', 'Discard unsaved changes?'))) return;
     openPath = null;
-    dirty = false;
+    markDirty(false);
     frame.src = 'about:blank'; // stop the page's scripts; the list is what's showing now
     show('list');
     refresh();
@@ -189,7 +219,8 @@ export function buildDocs(tile, root, isShowing, only = null) {
   const render = (rows) => {
     list.innerHTML = '';
     if (!rows.length) {
-      empty(only ? t('docs.empty_team', 'No session on this Team has listed a doc yet. An agent lists one with: write_tegami --doc <path>') : t('docs.empty', 'No session has listed a doc yet. An agent lists one with: write_tegami --doc <path>'));
+      if (shelf !== 'tracked') empty(t('docs.shelf_empty', 'Nothing on this shelf — a project root names its places on its record (Project roots → docs / plans).'));
+      else empty(only ? t('docs.empty_team', 'No session on this Team has listed a doc yet. An agent lists one with: write_tegami --doc <path>') : t('docs.empty', 'No session has listed a doc yet. An agent lists one with: write_tegami --doc <path>'));
       return;
     }
     for (const s of rows) {
@@ -202,6 +233,13 @@ export function buildDocs(tile, root, isShowing, only = null) {
         }),
       );
       list.appendChild(h);
+      // A group folds: on a shelf, the team's own repos come open and the rest closed.
+      const body = document.createElement('div');
+      body.className = 'dc-group';
+      body.hidden = !!s.folded;
+      h.addEventListener('click', () => { body.hidden = !body.hidden; h.classList.toggle('folded', body.hidden); });
+      h.classList.toggle('folded', body.hidden);
+      list.appendChild(body);
       for (const p of s.docs) {
         const parts = p.split('/');
         const b = document.createElement('button');
@@ -214,7 +252,18 @@ export function buildDocs(tile, root, isShowing, only = null) {
           Object.assign(document.createElement('span'), { textContent: parts.slice(-2).join('/') }),
         );
         b.addEventListener('click', () => open(p));
-        list.appendChild(b);
+        // DRAG A DOC ONTO A TILE (owner, 2026-08-28): the row carries the SHORT reference —
+        // the last directory and the name, what the row shows — and the tile's composer
+        // takes it the way it takes a dropped @mention (js/composer.js). Not the absolute
+        // path: a reference in a message is for reading, and the agent can find the file.
+        b.draggable = true;
+        b.addEventListener('dragstart', (event) => {
+          const short = p.split('/').slice(-2).join('/');
+          event.dataTransfer.setData(DOC_MIME, short);
+          event.dataTransfer.setData('text/plain', short);
+          event.dataTransfer.effectAllowed = 'copy';
+        });
+        body.appendChild(b);
       }
     }
   };
@@ -227,13 +276,35 @@ export function buildDocs(tile, root, isShowing, only = null) {
    * buttons — blowing them away mid-click is the bug the wipeboard's member row already
    * paid for once.
    */
-  const refresh = () => {
+  const refresh = (force = false) => {
     if (openPath) return; // the editor is up; the list underneath can wait
+    if (shelf !== 'tracked') {
+      if (!shelves[shelf] || force) {
+        if (!shelves[shelf]) empty(t('docs.loading', 'loading…'));
+        void request('/api/docs?shelf=' + shelf, { cache: 'no-store' }).then((r) => {
+          if (!r.ok) { empty(r.message); return; }
+          shelves[shelf] = r.data.groups || [];
+          sig = null;
+          refresh();
+        });
+        return;
+      }
+      const first = new Set(reposFirst());
+      const rows = shelves[shelf]
+        .filter((g) => g.files.length)
+        .map((g) => ({ name: g.root, docs: g.files, folded: first.size ? !first.has(g.root) : g.archived }))
+        .sort((a, b) => Number(!!a.folded) - Number(!!b.folded));
+      const next = shelf + rows.map((s) => s.name + ':' + s.docs.join('|')).join('\n');
+      if (next === sig) return;
+      sig = next;
+      render(rows);
+      return;
+    }
     if (!homeData) return; // nothing read yet: 'loading…' is the truth, not "no docs"
     const rows = homeData
       .filter((s) => (!only || only(s.name)) && s.tegami && (s.tegami.docs || []).length)
       .map((s) => ({ name: s.name, docs: s.tegami.docs }));
-    const next = rows.map((s) => s.name + ':' + s.docs.join('|')).join('\n');
+    const next = 'tracked' + rows.map((s) => s.name + ':' + s.docs.join('|')).join('\n');
     if (next === sig) return;
     sig = next;
     render(rows);
@@ -248,7 +319,7 @@ export function buildDocs(tile, root, isShowing, only = null) {
   return {
     enter() {
       sig = null; // returning to the tab always redraws, however stale the signature
-      refresh();
+      refresh(shelf !== 'tracked'); // a shelf re-reads on entry: files come and go
     },
     // ONE-DIRECTIONAL, deliberately: this pane learns nothing about tiles or headers in
     // return. It takes a path and shows it; who asked, and why, stays the caller's.

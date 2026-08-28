@@ -149,69 +149,6 @@ export function makeDrop(glyph, title, kind) {
   return { btn, menu, addRow, close };
 }
 
-/**
- * Hoist the tile's header into the app bar, behind メ. Called for the ONE tile a phone
- * shows; the tile's own header row is then empty and the stylesheet hides it.
- */
-export function collapseTileHead(tile) {
-  if (!isCoarse()) return;
-  const head = tile.el.querySelector('.tile-head');
-  const bar = document.getElementById('bar');
-  if (!head || !bar) return;
-
-  // ⟳ Reconnect goes, and does not come back. It is `connect(this.session)` — the
-  // same thing re-picking the session in the <select> already does — and the round
-  // arrow read as the top bar's ⟳ Refresh, which is a different action entirely.
-  head.querySelector('.rc')?.remove();
-
-  if (tile.headKids) return; // already up there
-  // Everything that is about to leave, in the order it sits in now. `expandTileHead`
-  // puts the list back with one `append`, so the head is restored exactly — no second
-  // list of what goes where, which is the copy that would rot. Snapshotted AFTER ⟳ is
-  // removed, because ⟳ does not come back.
-  tile.headKids = [...head.children];
-
-  const drop = makeDrop('メ', t('me.title', 'This session — status, ladder, TEGAMI, macros, groups, docs, note, control'), 'me');
-  tile.headDrop = drop;
-  for (const [sel, label] of items()) {
-    const ctl = head.querySelector(sel);
-    if (!ctl) continue;
-    const word = drop.addRow(ctl, label, MODE[sel]);
-    // The status row's word is live text, not a label: setFooter writes the reading
-    // into it. Handed to the tile so there is one writer, as with every other widget.
-    if (sel === '.gauge') {
-      word.className = 'tdrop-status';
-      tile.dropStatus = word;
-    }
-  }
-
-  // The connection lamp and the picker come up to the bar as they are — they ARE the
-  // header, and the header is now the bar's middle. `.grow` stays behind: it existed
-  // to push a row of buttons to the far edge, and the picker wants that room.
-  const dot = head.querySelector('.dot');
-  const sel = head.querySelector('select.sess');
-  // BEFORE the grid count, which is the row's right-hand end along with ニ. On first
-  // build the count is the last thing in the bar and appending would land after it;
-  // when the head comes back UP (the count went 2 → 1) the count is already sitting
-  // between メ and ニ. Inserting against it reads left-to-right either way round —
-  // appending was right exactly once, on the first pass.
-  const anchor = bar.querySelector('#layoutcycle');
-  // ⚡'s menu is anchored to whatever it sits in; it follows its button up here. So does
-  // 📄's (2026-08-18) — a menu left in the hidden header is a button that opens nothing.
-  const tmac = head.querySelector('.tmac');
-  const tdocs = head.querySelector('.tdocs');
-  for (const n of [dot, sel, drop.btn, drop.menu, tmac, tdocs]) {
-    if (n) anchor ? bar.insertBefore(n, anchor) : bar.append(n);
-  }
-  // The emptied head STAYS in the tile, hidden by the stylesheet. It is still the
-  // anchor the ladder inserts itself after (`toggleLadder`), and removing it would
-  // make that a null dereference — the cheapest possible way to blank a tile.
-  head.classList.add('hoisted');
-
-  // The reading may already have arrived before the drop existed — repaint it into
-  // the row we just built rather than waiting 30s for the next poll.
-  tile.setFooter(tile.ctxPct ?? null, tile.ctxModel ?? null);
-}
 
 /**
  * TOUCH: give the tile its head back — the merge undone, because it stopped being true.
@@ -231,20 +168,3 @@ export function collapseTileHead(tile) {
  * MOVE, so this reverses the hoist exactly and every live widget (needle, pointer, chip)
  * keeps the owner it always had. Idempotent: no snapshot means nothing was hoisted.
  */
-export function expandTileHead(tile) {
-  const kids = tile?.headKids;
-  if (!kids) return;
-  const head = tile.el.querySelector('.tile-head');
-  if (!head) return;
-
-  head.append(...kids); // append MOVES each node back, in the order it was taken
-  // メ is the bar's half of the merge and has no meaning beside a header that is back in
-  // its tile. Dropped rather than hidden, so the next collapse builds a fresh one against
-  // whatever the header holds by then.
-  tile.headDrop?.btn.remove();
-  tile.headDrop?.menu.remove();
-  head.classList.remove('hoisted');
-  tile.headDrop = null;
-  tile.headKids = null;
-  tile.dropStatus = null; // the status row went with the sheet; setFooter checks for it
-}

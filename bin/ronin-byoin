@@ -2,7 +2,8 @@
 # RONIN BYOIN (病院) — the whole health check, in one command.
 #
 #   bin/ronin-byoin           every repo check, then every readout, then one verdict
-#   bin/ronin-byoin --gates   fast repo checks (no browser UI, no live machine)
+#   bin/ronin-byoin --repo    every repository-only check that can prove this worktree
+#   bin/ronin-byoin --gates   fast repo checks (alias of --repo; retained for CI/tools)
 #   bin/ronin-byoin --ui      every repo check, including browser UI; no readouts
 #
 # BYOKI (病気) is the condition — what is running is not what is written. BYOIN is where
@@ -30,9 +31,10 @@ cd "$ROOT"
 MODE="full"
 case "${1:-}" in
   "") ;;
+  --repo) MODE="gates" ;;
   --gates) MODE="gates" ;;
   --ui) MODE="ui" ;;
-  *) echo "usage: bin/ronin-byoin [--gates|--ui]" >&2; exit 2 ;;
+  *) echo "usage: bin/ronin-byoin [--repo|--gates|--ui]" >&2; exit 2 ;;
 esac
 
 PASS=0; FAIL=0; SKIP=0
@@ -81,8 +83,8 @@ for g in $(sed -n 's/.*"verify": "\(.*\)".*/\1/p' package.json | grep -o 'script
   name="$(basename "$g")"; name="${name%.*}"
   # Fast repository verification deliberately omits browser UI, but says so in
   # the verdict. Full BYOIN and --ui still run the same complete package roster.
-  if [ "$MODE" = "gates" ] && { [ "$name" = "smoke-ui" ] || [ "$name" = "visual-ui" ]; }; then
-    skip_ "$name — fast repo mode does not drive browser UI; run bin/ronin-byoin --ui"
+  if [ "$MODE" = "gates" ] && { [ "$name" = "check-tips" ] || [ "$name" = "smoke-ui" ] || [ "$name" = "visual-ui" ]; }; then
+    skip_ "$name — repository-only mode does not drive a live UI; run bin/ronin-byoin --ui against a running candidate"
     continue
   fi
   # The render gate is the one that needs a browser; it gets the honest-skip treatment.

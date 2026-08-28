@@ -91,29 +91,43 @@ for. Tegami answers *where that session is*; its transcript answers *what it has
 doing*; the build-out answers *what remains*; the wipeboard answers *what the group just
 learned*.
 
-### 4. Integrate continuously on the repository's declared line
+### 4. Commit privately, hand in deliberately, let the lead promote
 
-Under the reviewed arrangement, each repository declares its working and stable branch.
-Ronin's current product repositories use:
+Under the reviewed arrangement (`github.md`, declared in each repository's `RONIN_REPO`),
+Ronin's product repositories use:
 
 ```text
-dev       current integrated development work
-master    reviewed/released line
+team/<team>/<session>   your desk — a private branch and its worktree, one per repo you change
+team/<team>/dev         the team's line — a funnel point: handed in to, never edited
+dev                     the repository-wide pool, and the live app — moves by team promotion
+master                  reviewed/released line — moves by PR from dev
 ```
 
-**`+cutcode`** builds from an agreed build-out, deleting each item from the doc as it
-lands. Verified work is committed and pushed to `dev` as it becomes usable, and
-`open-pr` never merges what it opens. Coordinate before updating `dev` when several agents
-are writing. Temporary local branches or worktrees are fine for isolation — and a worktree
-is the right answer when the checkout you are in is shared with other live sessions — but
-they are folded into `dev` and removed; they do not become a garden of remote feature
-branches.
+Three scopes, kept distinct. **Commit** preserves: a checkpoint on your desk, as often as
+coherent, partial ones included; nothing propagates and no gate runs. **Hand-in**
+publishes: `tejun-desk hand-in` admits your committed range to the team line by mechanical
+admission (merge, conflict check, near-instant invariants) — a conflict is contained in a
+candidate, the line is untouched, and the lead adjudicates. **Team promotion** is the
+lead's or compiler's act: the team line admitted to `dev` on a candidate that passed the
+one full repository BYOIN, with a receipt for the exact SHA; `dev` restarts. Full BYOIN
+runs there and nowhere else in the loop — never at a commit, never at a hand-in
+(`docs/test-protocols.md`).
 
-The final review is one pull request from the declared working branch to the declared stable
-branch—`dev → master` for these repositories, but `dev → main` is the same arrangement. The
-agent reports the gate and does not merge it for the owner. This is the reviewed arrangement
-named in `github.md`. A Ronin repository under the direct arrangement instead publishes to its
-declared `main` or `master`: no ordinary PR, and published history is not rewritten.
+**`+cutcode`** builds from an agreed build-out, deleting each item from the doc as it
+lands, working in the assignment's desks. At each DONE leg it *offers* a hand-in — the
+session decides when its work is coherent for the team, and a tool never decides that for
+it. It opens no pull request. A launch whose brief lists no desk (manual, plain terminal,
+direct repository, non-code job) has none: it commits to the repository's declared line as
+that repository's own instructions say, and invents no desk state.
+
+Accepted team state flows back down: a clean sibling desk adopts it at once; a dirty one
+is told — with the files and the diff when they overlap — and adopts at its next commit or
+`tejun-desk sync`. Read the notice before you go on; it is the cross-purposes catch.
+
+The final review is one pull request from `dev` to the stable line, opened by the release
+process with the promotion receipt, never by an ordinary session, and never merged by an
+agent. A Ronin repository under the direct arrangement instead publishes to its declared
+`main` or `master`: no desk, no ordinary PR, and published history is not rewritten.
 
 ### 5. Land the state, then retire the session
 
@@ -125,13 +139,17 @@ essential knowledge in a pane or in `wip/`:
   what exists and how it works now (`land-work`);
 - add the single manifest pointer when the project uses a manifest — `land-manifest` is
   one line, an index entry and not a history;
-- verify, commit and push before ending the session, and report the paths, the PR and the
-  manifest line **before** `harakiri`, not after.
+- close every desk explicitly: hand in what is coherent (`tejun-desk hand-in`), and park
+  the rest (`tejun-desk park` — a `WIP:` commit, branch kept, listed for the lead to hand
+  in, inspect, reassign or discard). Closing never publishes silently and never deletes;
+  under direct publishing, commit and push instead;
+- report the paths, what was handed in, what was parked, and the manifest line **before**
+  `harakiri`, not after.
 
 The standing document is not a retrospective. Decisions that still constrain the system
 belong there; conversation, abandoned options and a chronology do not. A scratch session
 that produced nothing worth retaining may simply be deleted, but a session with an
-artifact, finding, uncommitted change or unpushed commit must land instead.
+artifact, finding, uncommitted change or commit not yet handed in must land instead.
 
 ## The provider boundary
 

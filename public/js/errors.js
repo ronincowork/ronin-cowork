@@ -108,17 +108,5 @@ function onUnhandledRejection(e) {
 window.addEventListener('error', onWindowError);
 window.addEventListener('unhandledrejection', onUnhandledRejection);
 
-/** Placeholder for a tile that failed to build, so the grid keeps its shape. */
-export function deadTile(i, err) {
-  const el = document.createElement('section');
-  el.className = 'tile tile-dead';
-  el.innerHTML =
-    `<div class="tile-head"><span class="dot off"></span><span class="grow"></span></div>` +
-    `<div class="tile-body"><div class="dead-note"><span class="dead-what"></span>` +
-    `<br><span class="dead-why"></span></div></div>`;
-  el.querySelector('.dead-what').textContent = t('errors.tile_failed', 'tile {n} failed to build', { n: i + 1 });
-  el.querySelector('.dead-why').textContent = err && err.message ? err.message : String(err);
-  return el;
-}
 
 /* ---------- persistence ---------- */

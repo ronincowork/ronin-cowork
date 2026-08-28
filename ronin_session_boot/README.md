@@ -1,6 +1,6 @@
 # ronin_session_boot — what a NEW SESSION reads before anything else
 
-**test_protocols:** ordinary dev work does not run BYOIN; the integrator runs it once at the `dev → master` boundary — `docs/test-protocols.md` is the contract.
+**test_protocols:** ordinary dev work does not run BYOIN — not at a commit, not at a hand-in; the one full repository BYOIN is the lead's team promotion at `team → dev` — `docs/test-protocols.md` is the contract.
 
 Named for booting a **session**, never the application: nothing here runs when Ronin
 starts. It is read once, when a session is born.
@@ -18,6 +18,7 @@ same name replaces ours whole; a new name sits beside it.
 | `root/<project_root>/` | only sessions working in that directory |
 | `role/<session_role>/` | only sessions doing that kind of work — **re-delivered when the session_role changes** |
 | `team_role/<team_role>/` | only sessions born onto a team whose roster names that team_role — the team's build brief, read once (R35: a later join is not re-briefed) |
+| `assignment/` | only sessions whose launch resolved repo desks — the desk contract, `DESK_CONTRACT.md`. A launch given no desk reads nothing here |
 
 A session cutting `CutCode` on a `development` team in `ronin_cowork` reads all of its
 levels. Nothing overrides anything — *where* the work happens, *what* it is doing now and
@@ -39,8 +40,9 @@ somewhere gets on the shelf without being copied and without drifting from the o
 A link whose target has gone simply stops appearing; nothing goes stale, because nothing
 is written down.
 
-**This README is not read by anyone.** Only `all/`, `root/*`, `role/*` and `task/*` are scanned, one
-level deep, so an explainer at the shelf root is never handed to a session.
+**This README is not read by anyone.** Only `all/`, `assignment/`, `root/*`, `role/*` and
+`team_role/*` are scanned, one level deep, so an explainer at the shelf root is never
+handed to a session.
 
 ## What ships
 

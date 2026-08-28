@@ -298,8 +298,8 @@ a `destroy()` owner at that moment, not speculatively.
 
 ## Navigation
 
-The Commons' rooms live in ONE registry — `public/js/panes.js` — consumed by the tab
-strip (`commons.js`). A row carries a full label, an optional compact label for the
+The retired embedded Commons' rooms lived in one pane registry consumed by its tab
+strip. A row carried a full label and an optional compact label for the
 402px strip, and a hint. A new room is one registry row plus one feature module;
 service gating stays `serviceOff()` in `state.js`.
 
@@ -313,7 +313,7 @@ a fallback. ONE surface reads the registry now: the tab strip. The registry stil
 as a registry because the drift it was written against — two hand-kept lists of rooms —
 is what happens the moment a second surface needs them.
 
-`commons.js` is the control-plane shell only; the roster and the launcher are rooms
+The retired embedded Commons was the control-plane shell only; the roster and launcher were rooms
 (`roster.js`, `launcher.js`) like Wipeboard and Docs.
 
 ⚙ Account is deliberately NOT a room: install-level facts (release, updates,
@@ -353,7 +353,7 @@ the desk was up, because an empty tile has nothing behind its overlays. ⚙ togg
 `@container tile` query says how a name lays out (beside its glyph, or stacked at 70px in a
 4-up), the button says whether names show at all.
 
-**One registry, two readers.** `js/panes.js` gives every row a `surface` — `commons` or
+**Historical rule:** one registry gave every row a `surface` — `commons` or
 `desk` — and each surface filters to its own. That is the same file that exists because the
 strip and the old き menu drifted; a row now states which surface owns it, so they cannot.
 
@@ -363,16 +363,18 @@ strip and the old き menu drifted; a row now states which surface owns it, so t
 The bar used to be that signal on a mouse, drawn across the bottom edge of a 26px strip
 on overflow, with a permanently reserved `scrollbar-gutter` behind it to stop the strip's
 height flapping. It is off at every width now: each end of the strip fades out when there
-are tabs behind it, `commons.js` writes `data-edge` from the scroll position, and the
+were tabs behind it, the embedded shell wrote `data-edge` from the scroll position, and the
 stylesheet owns the look. Nothing draws, so the height is constant without reserving
 anything. Selecting a pane also scrolls its tab back onto the strip — a room can be
 entered from somewhere other than its own tab (⚙ Configuration from first-run, ▧ Docs from the
 tile's 📄), and the strip must not disagree with the pane.
 
-**The bar verbs are one width** — New · Admin Desk since 2026-08-27 (Commons, Keypad and
-Mika Assist left the bar by the owner's word: the Commons is the tile's ⛩ and ⌃⇧C, Mika is
-the `mika` tool, Keypad is a row on the Admin Desk) — `min-width` plus centred labels, so
-the row reads even rather than as different kinds of control. The grid count is exempt: it is a number, not a verb. At ≤680px the
+**The bar is one verb** — ⚙ Admin Desk (the cowork commons) since 2026-08-27. Commons,
+Keypad, Mika Assist, New and the 1·2·4 count all left the bar by the owner's word: the
+Commons is the tile's ⛩ and ⌃⇧C on the parked grid page, Mika is the `mika` tool, Keypad
+and Roster are tabs of the cowork commons, a new session is a workspace surface (＋ Add
+team member, ⌃⇧N), and the space's shape is the roster's `2 | 4`. The `min-width` rule
+stays so a second verb, if one returns, sits in the same box. The grid count is exempt: it is a number, not a verb. At ≤680px the
 words go and the width goes with them (a genuine shell change, so a `@media` query).
 
 ## Keyboard and focus
@@ -395,7 +397,7 @@ words go and the width goes with them (a genuine shell change, so a `@media` que
   a pop-up. There doesn't need to be anything on hover. Just get rid of it"). A tab's label
   already says what its room is, so a panel restating it in a sentence was cost with no
   reader — and it was landing over the strip it described. The registry's `hint` column
-  went with the line that read it, rather than staying unread (`panes.js`). A room that
+  went with the line that read it rather than staying unread. A room that
   needs more than its label needs a better label. An `off` tab's reason is its
   `aria-label`, not a `title`: a title is a pop-up waiting to happen, and a disabled
   button was never hoverable anyway.

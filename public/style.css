@@ -699,12 +699,11 @@ body {
   flex: 1;
 }
 /* Top-bar verbs — BOTH surfaces (owner override of the touch/desktop split) */
-/* The LOOK: one rule, one family. The grid count rides this rule too; it is the same
-   box. SIZING splits below, because the count is not a verb. Two verbs since 2026-08-27
-   (owner): Commons, Mika Assist and Keypad left the bar — see index.html. */
-#newbtn,
+/* The LOOK: one rule, one family. One verb since 2026-08-27 (owner): Commons, Mika
+   Assist, Keypad and New left the bar — see index.html. The shape button rides this rule
+   too; it is the same box. SIZING splits below, because the shape is not a verb. */
 #sysbtn,
-#bar .layout-cycle {
+#bar .shape-cycle {
   display: inline-flex;
   align-items: center;
   background: transparent;
@@ -735,7 +734,6 @@ body {
    to reach ⚙ Account is a worse defect than 6px of slack, so the row takes the number
    that always fits. Rename a verb longer than this and RE-MEASURE at 681px; do not just
    nudge it up. */
-#newbtn,
 #sysbtn {
   min-width: 100px;
   justify-content: center;
@@ -747,11 +745,9 @@ body {
    what the width was for. `min-width: auto` hands each glyph back its own small box.
    One rule, every verb on the bar, no exceptions. */
 @media (max-width: 680px) {
-  #newbtn .txt,
   #sysbtn .txt {
     display: none; /* icon-only on phones — bar space is tight */
   }
-  #newbtn,
   #sysbtn {
     min-width: auto;
   }
@@ -1010,7 +1006,9 @@ body {
   padding: 0;
   line-height: 1;
 }
-.tile .composer.mention-ready textarea { border-color: var(--accent); }
+/* text on its way in — an @mention or a doc reference over the tile (js/tiledroptext.js) */
+.tile .tile-body[data-drop-text='true'] .composer textarea { border-color: var(--accent); }
+.tile .tile-body[data-drop-text='true'] { outline: var(--edge) dashed var(--accent); outline-offset: calc(-1 * var(--edge)); }
 
 /* Tile メ — the rest of the header, dropped in ONE HORIZONTAL STRIP (owner, 2026-08-17:
    "you just see those boxes exactly as they are, but maybe it just drops down
@@ -1412,25 +1410,6 @@ body {
 #viewhost > [data-workspace-view][hidden] {
   display: none;
 }
-#grid {
-  flex: 1 1 auto;
-  display: grid;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  min-height: 0;
-}
-#grid.layout-1 {
-  grid-template-columns: 1fr;
-  grid-template-rows: 1fr;
-}
-#grid.layout-2 {
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr;
-}
-#grid.layout-4 {
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-}
 
 /* ---- tile ---- */
 .tile {
@@ -1479,23 +1458,6 @@ body {
 .tile-head .grow {
   flex: 1;
 }
-.dot {
-  width: 9px;
-  height: 9px;
-  border-radius: var(--radius-round);
-  background: var(--muted);
-  flex: 0 0 auto;
-}
-.dot.on {
-  background: var(--ok);
-  box-shadow: 0 0 6px var(--ok);
-}
-.dot.wait {
-  background: var(--warn);
-}
-.dot.off {
-  background: var(--bad);
-}
 /* The select yields; the controls don't. Without this every button in the row is
    shrinkable (they carry a fixed width but the default flex-shrink: 1), so one more
    control squashes them all to slivers on a narrow tile instead of narrowing the
@@ -1527,11 +1489,8 @@ body {
 .tile-head button:hover {
   border-color: var(--accent);
 }
-/* ⛩ the Commons and メ its drop. Wider, because a torii and a katakana are not icon
-   glyphs and get clipped in a 26px square. (This said "メ — the way into commons" until
-   2026-08-17: ⛩ took the Commons on every surface that day, and メ came back on the same
-   header as the button the other six controls drop out of — see js/tilemore.js.) */
-.tile-head button.menu,
+/* The Torii rename and メ drop need a little more room than square icon glyphs. */
+.tile-head button.torii,
 .tile-head button.tmore-btn {
   width: 28px;
   font-size: var(--text-4);
@@ -1983,36 +1942,6 @@ body {
   #keypad button:active {
     background: var(--accent);
     color: var(--on-accent);
-  }
-}
-
-/* ---- mobile: single terminal fills the screen; 2/4 stack in a scroll column ---- */
-@media (max-width: 680px) {
-  #grid.layout-2,
-  #grid.layout-4 {
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-  }
-  #grid.layout-2 .tile,
-  #grid.layout-4 .tile {
-    flex: 0 0 auto;
-    height: 82dvh;
-  }
-  /* single terminal: drop the panel chrome and use the whole screen */
-  #grid.layout-1 {
-    padding: 0;
-    gap: 0;
-  }
-  #grid.layout-1 .tile {
-    border: none;
-    border-radius: 0;
-  }
-  #grid.layout-1 .tile.active {
-    box-shadow: none;
-  }
-  #grid.layout-1 .tile-body {
-    padding: var(--space-1) 0 0 var(--space-2);
   }
 }
 
@@ -2516,6 +2445,20 @@ body {
 }
 .cc .pad-close {
   display: none;
+}
+/* The tile commons' two rooms, re-hung here (2026-08-27): their panes show only inside
+   `.home[data-pane=…]` by the commons' own rule; on these tabs they ARE the tab. */
+.cc-pane[data-tab='archives'] .home-archives {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.cc-pane[data-tab='roster'] .home-col {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 /* ⚙'s destination on the grid page: the surface at full width. */
 .cc-view {
@@ -3233,6 +3176,12 @@ body {
   display: block;
   overflow: auto;
 }
+.home-docs .dc-pills {
+  display: none;
+}
+.home-docs[data-view='list'] .dc-pills {
+  display: flex;
+}
 .home-docs[data-view='edit'] .dc-ed,
 .home-docs[data-view='view'] .dc-ed {
   display: flex;
@@ -3265,6 +3214,45 @@ body {
   font-size: var(--text-3);
   text-decoration: none;
   white-space: nowrap;
+}
+/* THE PILLS — three shelves, one pressed (owner, 2026-08-28) */
+.dc-pills {
+  display: flex;
+  gap: var(--space-2);
+  flex: 0 0 auto;
+  padding: var(--space-3) var(--space-1) 0;
+}
+.dc-pill {
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-round);
+  background: transparent;
+  color: var(--muted);
+  padding: var(--space-2) var(--space-5);
+  font: inherit;
+  font-size: var(--text-2);
+  cursor: pointer;
+}
+.dc-pill[aria-selected='true'] {
+  background: var(--raise);
+  color: var(--fg-strong);
+  border-color: var(--line-3);
+}
+.dc-who.folded {
+  opacity: 0.7;
+}
+.dc-who.folded b::after {
+  content: ' ▸';
+  color: var(--muted);
+}
+.dc-group[hidden] {
+  display: none;
+}
+/* KIIRO — yellow when there is something to save; the ← wears it too so the way out is
+   as easy to find as the way to keep it (owner, 2026-08-28). */
+.dc-back.kiiro,
+.dc-save.kiiro {
+  border-color: var(--warn);
+  color: var(--warn);
 }
 .dc-who {
   display: flex;
@@ -4105,11 +4093,12 @@ button.wb-door:hover b {
   --hr-shingo: 132px;
   --hr-status: 70px;
   --hr-ctx: 48px;
+  --hr-desks: 96px; /* `⑂ team/comp/fable` in the micro mono, clipped past that (the help has it whole) */
   --hr-stack: 76px;
   display: grid;
   grid-template-columns:
     var(--hr-mark) minmax(0, 1fr) var(--hr-shingo) var(--hr-status) var(--hr-ctx)
-    var(--hr-stack);
+    var(--hr-desks) var(--hr-stack);
   align-items: center;
   gap: var(--space-4);
   width: 100%;
@@ -4157,13 +4146,17 @@ button.wb-door:hover b {
 .home-row > .home-ctx {
   grid-column: 5;
 }
-.home-row > .home-stack {
+.home-row > .home-desks {
   grid-column: 6;
+}
+.home-row > .home-stack {
+  grid-column: 7;
 }
 /* Each reading starts at its own track's left edge and stops at its right one. */
 .home-row > .home-shingo,
 .home-row > .home-status,
 .home-row > .home-ctx,
+.home-row > .home-desks,
 .home-row > .home-stack {
   justify-self: start;
   max-width: 100%;
@@ -4204,6 +4197,7 @@ button.wb-door:hover b {
     grid-template-columns:
       var(--hr-mark) minmax(0, 1fr) var(--hr-shingo) var(--hr-status) var(--hr-ctx);
   }
+  .home-row > .home-desks,
   .home-row > .home-stack {
     display: none;
   }
@@ -4249,6 +4243,19 @@ button.wb-door:hover b {
   font-size: var(--text-2);
   color: var(--muted);
   white-space: nowrap;
+}
+/* WHICH DESK — `⑂ team/comp/fable`, derived from git and the desk registry on the server,
+   never the agent's prose. Amber when an update is pending or a hand-in is blocked: the
+   two readings a lead acts on (WORKTREES.md "Koshi / roster"). */
+.home-desks {
+  font-family: var(--font-term);
+  font-size: var(--text-micro);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.home-desks.attn,
+.tilehead .checkout.attn {
+  color: var(--warn);
 }
 /* WHAT THE SESSION IS RUNNING — `codex · openai · gpt-5-codex`. Drawn exactly like the
    other secondary readings on the row (11px, muted, one line): it is a label on the
@@ -4505,14 +4512,6 @@ button.wb-door:hover b {
   color: var(--accent);
 }
 
-
-/* ＋ New in the top bar — same weight as the other verbs, accented because it is
-   the one that creates something. */
-#newbtn.armed,
-#newbtn:hover {
-  color: var(--fg);
-  border-color: var(--accent);
-}
 
 /* ---------- KOSHI_DASHI receipt + launcher extras ---------- */
 /* The receipt is the price of launching without a confirm screen: it says what the
@@ -4968,12 +4967,12 @@ button.wb-door:hover b {
     border-color: var(--aiiro-lift);
     color: var(--bg);
   }
-  /* The grid count, sitting between メ and ニ. Deliberately NOT a house colour: the
+  /* THE SHAPE (2 ⇄ 4), sitting between メ and ニ — the grid count's old seat and look. Deliberately NOT a house colour: the
      two kana are doors that open a sheet, this one changes the screen under them, and
      three coloured boxes in a row would read as three of a kind. Furniture instead —
      panel and line, like the picker beside it — at the same 40px so the row stays even.
      The face is a digit, so it takes the bar's own font rather than the kana size. */
-  #bar .layout-cycle {
+  #bar .shape-cycle {
     flex: 0 0 auto;
     /* Holds the count and ニ against the right edge when there is no picker up here to
        fill the row — i.e. at 2 or 4, where each tile wears its own header again. A
@@ -4991,7 +4990,7 @@ button.wb-door:hover b {
     line-height: 1;
     cursor: pointer;
   }
-  #bar .layout-cycle:active {
+  #bar .shape-cycle:active {
     background: var(--accent);
     border-color: var(--accent);
     color: var(--on-accent);
@@ -5010,9 +5009,6 @@ button.wb-door:hover b {
     border-radius: var(--radius-md);
     padding: 0 var(--space-4);
     font-size: var(--text-5);
-  }
-  #bar .dot {
-    flex: 0 0 auto;
   }
   /* The brand yields first — the session name matters more than the word "ronin". */
   #bar .brand {
@@ -6068,18 +6064,11 @@ button.wb-door:hover b {
   border-top: var(--edge) solid var(--line);
 }
 
-/* The grid count wears the verbs' CHROME (it joins their look rule above) but not their
-   width: the five verbs are one width so the row reads even, and the count is exempt by
-   the owner's own wording — "each of the boxes on the right, EXCEPT FOR THE NUMBER,
-   which is a number of tiles viewable" (2026-08-17). A single digit stretched to 120px
-   would be a hole in the row, not symmetry.
-
-   It was a segmented 1|2|4 inside that box: three cells to say what one says, two of
-   them dark at any moment, and 24px each — too narrow to hit with a finger, which is why
-   touch deleted the whole thing rather than inherit it. One button wearing the number it
-   is on, clicked to cycle, is the same control on both surfaces. Centred, and monospaced
-   digits so 1 / 2 / 4 do not shift the box. */
-#bar .layout-cycle {
+/* ---- THE SHAPE BUTTON (owner, 2026-08-28: "put that in the place of the 1,2,4 button …
+   alt between the numbers"). One button wearing the count it is on — 2 or 4 — clicked
+   to alternate; js/team-view.js writes the face and owns the click. It stands where the
+   grid count stood and wears its look. Centred, tabular digits so 2 / 4 do not shift. */
+#bar .shape-cycle {
   justify-content: center;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
@@ -6087,15 +6076,15 @@ button.wb-door:hover b {
 /* Sizing is per-surface and must not cross: the touch block earlier in this file gives
    it a 44px finger target, and an unscoped min-width down here would quietly undo it. */
 @media (hover: hover) and (pointer: fine) {
-  #bar .layout-cycle {
+  #bar .shape-cycle {
     min-width: 34px;
     padding: 0 var(--space-4);
   }
-  #bar .layout-cycle:hover {
+  #bar .shape-cycle:hover {
     color: var(--fg);
     border-color: var(--muted);
   }
-  #bar .layout-cycle:active {
+  #bar .shape-cycle:active {
     background: var(--line);
     color: var(--fg);
   }

@@ -57,8 +57,8 @@ import { CONTROL_POSITIONS, makeDial, makeGauge, setInert } from './widgets.js';
 import { clampTip, makeChip } from './shingo.js';
 import { buildTileMacros } from './tilemacros.js';
 import { buildTileMore } from './tilemore.js';
-import { buildTileDocs } from './tiledocs.js';
 import { buildTileMentions } from './tilementions.js';
+import { deskLabel, deskReadout, deskTip, desksOf } from './desks.js';
 import { isCoarse } from './tiledrop.js';
 import { S, serviceMissing } from './state.js';
 import { taskIcon } from './home.js';
@@ -81,9 +81,15 @@ let rows = null;
 const HEADER = () => {
   if (rows) return rows;
   rows = [
-  { key: 'dot', tag: 'span', cls: 'dot off',
-    help: t('head.dot_help', 'Connection: green = attached, grey = disconnected') },
+  // The Torii stays as a house mark, but the dead embedded Commons does not. It is the
+  // first control, immediately before the session name, and renames that session.
+  { key: 'renameBtn', cls: 'torii rename', text: '⛩', needs: 'session',
+    help: t('head.rename_help', 'Rename this session'),
+    quiet: t('head.rename_quiet', 'Rename session — no session in this tile yet'),
+    on: (tile) => void tile.rename() },
 
+  // The connection dot left the head on 2026-08-28 (owner: "this colored light ball next to
+  // the session name … should be gone"); the picker's own state and the pane say it.
   { key: 'select', tag: 'select', cls: 'sess',
     help: t('head.select_help', 'Pick / switch the session shown in this tile') },
 
@@ -107,25 +113,26 @@ const HEADER = () => {
                  : t('head.job_unmarked', 'Not marked — click to say what this session is doing');
     } },
 
-  // THE CHECKOUTS — one button, because branch and repository are one paired fact rather
-  // than two controls. One checkout says its branch; several say how many. The ladder it
-  // opens writes every branch beside its repository without spending a second header slot.
-  { key: 'branchBtn', cls: 'checkout branch', needs: 'session michi',
-    help: t('head.branch_help', 'Branches this session is working on'),
-    quiet: { session: t('head.branch_quiet', 'Branches — no session in this tile yet'),
-      michi: t('head.branch_no_michi', 'Branches — michi is not installed, so TEGAMI checkout data is unavailable') },
+  // THE DESKS — one button, because branch and repository are one paired fact rather
+  // than two controls. One desk says its branch; several say how many. The reading is
+  // DERIVED on the server from git and the desk registry (`/api/desks`, src/desk-state.ts):
+  // the line it hands in to, ahead/behind, unsaved files, pending, parked, blocked — never
+  // a fact the agent keeps in prose. It works with no michi: the desks are cowork's.
+  { key: 'branchBtn', cls: 'checkout branch', needs: 'session',
+    help: t('head.branch_help', 'Desks this session is working at — repo, branch, and what is ahead, pending or parked'),
+    quiet: { session: t('head.branch_quiet', 'Desks — no session in this tile yet') },
     on: (tile) => tile.toggleLadder(),
     read: (tile, el) => {
-      const repos = tile.tegami?.repos || [];
-      const branches = repos.map((x) => x.branch).filter(Boolean);
-      el.textContent = repos.length === 1 ? '⑂ ' + (branches[0] || '?') : repos.length ? '⑂ ' + repos.length : '⑂ ?';
-      el.classList.toggle('unset', !repos.length);
-      return repos.length
-        // The repo by its short name and its branch, nothing else (owner, 2026-08-26:
-        // "just the repo name and the branch name — that's all you need"). The ladder it
-        // opens still shows the whole URL.
-        ? clampTip(repos.map((x) => `${String(x.repo || '').replace(/\.git$/, '').split('/').filter(Boolean).pop() || x.repo} — ${x.branch || t('head.detached', '(detached)')}`).join(' · '))
-        : t('head.branch_none', 'No branch listed yet. The session keeps its repos list current in TEGAMI.');
+      const entry = desksOf(tile.session);
+      const desks = entry?.desks || [];
+      el.textContent = deskLabel(entry);
+      el.classList.toggle('unset', !desks.length);
+      el.classList.toggle('attn', !!(entry?.rollup?.pending || entry?.rollup?.blocked));
+      // The repo by its short name and its branch, then the roll-up (owner, 2026-08-26:
+      // "just the repo name and the branch name — that's all you need"; the control
+      // surface adds what is ahead, pending or parked, and keeps paths and SHAs out).
+      const readout = deskReadout(entry);
+      return readout ? readout + '\n' + deskTip(entry) : deskTip(entry);
     } },
 
   { grow: true },
@@ -137,23 +144,6 @@ const HEADER = () => {
   // the RIREKI flavours are one click away on every tile while they are being judged.
   { key: 'outputEl', widget: (tile) => makeOutput(tile),
     help: t('head.output_help', 'Output — live terminal or one of RIREKI’s unlocked views') },
-
-  // ⛩ IS THE COMMONS, EVERYWHERE (owner's ruling 2026-08-17). It was メ here and き in
-  // the bar, for the same act, while ⛩ meant "the letter" on this very header — one
-  // glyph for two things and two glyphs for one. Now the torii means exactly one thing
-  // wherever it appears: the way in to the Commons. The bar's button changed in the same
-  // pass; the tegami torii that used to sit beside this one is gone (see below).
-  //
-  // A way in AND a way back out since 2026-08-17: pressing ⛩ again puts the Commons away
-  // (`toggleHome`, tile.js). It only opened for a day, and a button that goes dead on the
-  // second press is one you stop trusting. The session keeps streaming behind the panel
-  // either way, and ✕ on the tab strip still works. It needs no session — it is the way to
-  // GET one — which is why it is the only button on the right with no `needs`, and also
-  // why an EMPTY tile keeps the one-way behaviour: there is nothing behind the panel to
-  // give back.
-  { key: 'menuBtn', cls: 'menu', text: '⛩',
-    help: t('head.commons_help', '⌃⇧C — the CoWorking Commons: roster, new session, wipeboard, docs, roots, hotwords. Opens over this tile; ✕ comes back.'),
-    on: (tile) => tile.toggleHome('sessions') },
 
   { key: 'mentionBtn', needs: 'session',
     widget: (tile) => buildTileMentions(tile),
@@ -217,37 +207,6 @@ const HEADER = () => {
   { key: 'dial', drop: true, needs: 'session', holds: true,
     widget: (tile) => makeDial(CONTROL_POSITIONS(), (v) => tile.pickControl(v)),
     help: dialTitle(), quiet: t('head.dial_quiet', 'Control dial — no session in this tile yet') },
-
-  // 📄 — THIS session's listed docs, one press from the tile that already knows them
-  // (owner, 2026-08-18). Beside 📝 because they are the two things a session keeps in
-  // writing: the post-it it wrote for you, and the documents it is working in.
-  //
-  // `session michi` — the list is TEGAMI data and TEGAMI is michi's, exactly as the
-  // SHINGO chip is. No michi, no doc list, and the honest answer is a dimmed button
-  // saying which of the two is missing rather than an empty drop.
-  //
-  // The list itself is already ON the tile (`tile.tegami.docs`, from `refreshTegami`),
-  // so this fetches nothing — see js/tiledocs.js, which also records why narrowing the
-  // ▧ Docs list to one session is not the file browser the owner ruled out.
-  { key: 'docsBtn', drop: true, needs: 'session michi',
-    widget: (tile) => buildTileDocs(tile),
-    help: t('head.docs_help', "This session's docs — open one over this tile"),
-    quiet: {
-      session: t('head.docs_quiet', "This session's docs — no session in this tile yet"),
-      michi: t('head.docs_no_michi', "This session's docs — michi is not installed, so no session keeps a doc list"),
-    },
-    // Lit when there is something behind it, the same reading 🏷 and 📝 carry: a control
-    // you must open to find out it is empty is one you stop opening.
-    read: (tile, el) => {
-      // `tile.session &&` because `detach` syncs the header BEFORE it clears the letter, so
-      // reading `tegami` alone leaves a detached tile lit for the docs of the session that
-      // just left it. The session is the truth about whether there is anything to count.
-      const n = ((tile.session && tile.tegami?.docs) || []).length;
-      el.classList.toggle('has-docs', !!n);
-      return n
-        ? t('head.docs_read', 'Docs — {n} listed by this session. Opens one over this tile; ✕ comes back.', { n })
-        : t('head.docs_none', 'Docs — this session has listed none yet. An agent lists one with write_tegami --doc');
-    } },
 
   { key: 'noteBtn', cls: 'note', text: '📝', drop: true, modal: true, needs: 'session',
     help: t('head.note_help', 'Session note (post-it)'),

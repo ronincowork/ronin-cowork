@@ -171,6 +171,22 @@ export const STORES: readonly Store[] = [
     when: 'first team roster written',
   },
   {
+    id: 'desks',
+    root: 'user',
+    rel: 'desks',
+    what: "the desk registry and its receipts — every open or parked desk, every hand-in receipt, one line per attempt; recovery state, so it outlives the install",
+    createdBy: "cowork's `src/desks/registry.ts`",
+    when: 'first desk opened',
+  },
+  {
+    id: 'worktrees',
+    root: 'user',
+    rel: 'worktrees',
+    what: "managed desks — one git worktree per repo desk under <repo>/<branch>, team lines under <repo>/team/<team>/dev, candidates under .candidates/; the owner's work, never ours to delete",
+    createdBy: "cowork's `src/desks/desk.ts`",
+    when: 'first desk opened',
+  },
+  {
     id: 'catalogs',
     root: 'user',
     rel: 'catalogs',
@@ -225,6 +241,14 @@ export const STORES: readonly Store[] = [
     what: 'the gbrain service\'s own state — admin bootstrap env (0600), minted CLI tokens, the installed-by-ronin stamp',
     createdBy: "the gbrain service's setup.sh",
     when: 'the gbrain service installed',
+  },
+  {
+    id: 'promotion_ledger',
+    root: 'data',
+    rel: 'promotion-ledger',
+    what: 'team promotion receipts — one JSON per attempt to move a repository dev ref: exact SHAs, BYOIN proof, which refs advanced; recovery state and failure attribution',
+    createdBy: "cowork's `src/promotion/receipts.ts`",
+    when: 'first team promotion attempted',
   },
   {
     id: 'services_secrets',

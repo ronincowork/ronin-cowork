@@ -1,14 +1,23 @@
-# CI tier 1 — the byoin_checks at the release boundary: a pull request to master,
-# or an explicit workflow_dispatch.
+# CI at the release boundary — a pull request to master, or an explicit workflow_dispatch.
+#
+# NOT THE FIRST FULL CHECK (control-surface cutover, 2026-08-28). The one full repository
+# BYOIN runs at team → dev, on the exact candidate, before dev moves; dev then carries a
+# promotion receipt for its exact SHA (WORKTREES.md "What runs where";
+# src/promotion/receipts.ts). This workflow CONSUMES that receipt: it names it, checks it
+# is complete, that its full-BYOIN proof passed on exactly this PR's head commit, and that
+# the ref advance was done. Only then does it rerun the isolated --gates tier for release
+# assurance — a deliberate second look on a clean runner, never the verdict the receipt
+# already gave. A PR with no receipt fails here: that is a candidate nobody proved where
+# the contract says it must be.
+#
+# HOW THE RECEIPT ARRIVES: in the PR body, as a ```ronin-promotion-receipt fenced block
+# (the ledger lives on the box, and committing it onto dev would change the SHA it
+# proves). A workflow_dispatch supplies the same JSON as its `receipt` input, and the
+# commit it proves as `sha` (default: the checked-out HEAD).
 #
 # WHY NOT DEV PUSHES (owner, 2026-08-24): dev is the continuous dogfood lane. Running
 # the umbrella gate after every micro-step made the gate slower and more disruptive than
-# the work. The designated integrator runs the complete local release-candidate check
-# once, then this isolated runner checks the dev-to-master PR.
-#
-# WHY --gates: it is the isolated repository tier. It does not launch smoke-ui or
-# visual-ui and names both as SKIPs WITH THEIR REASON. The designated integrator supplies
-# the appropriate one-time local candidate verdict; ordinary contributors do not.
+# the work.
 #
 # Tier 2 — a real render check on a runner (tmux + Playwright + a started server + a
 # seeded session) — is a separate, later piece of work. Not this file.
@@ -18,6 +27,15 @@ on:
   pull_request:
     branches: [master]
   workflow_dispatch:
+    inputs:
+      receipt:
+        description: 'the promotion receipt JSON that proves the commit (from bin/ronin-store promotion_ledger)'
+        required: false
+        type: string
+      sha:
+        description: 'the commit the receipt proves (default: the checked-out HEAD)'
+        required: false
+        type: string
 
 jobs:
   byoin:
@@ -28,6 +46,21 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+      - name: the promotion receipt names and proves this exact commit
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_SHA: ${{ github.event.pull_request.head.sha }}
+          IN_RECEIPT: ${{ inputs.receipt }}
+          IN_SHA: ${{ inputs.sha }}
+        run: |
+          sha="${PR_SHA:-${IN_SHA:-$(git rev-parse HEAD)}}"
+          if [ -n "$IN_RECEIPT" ]; then
+            printf '%s' "$IN_RECEIPT" > receipt.json
+            node scripts/verify-promotion-receipt.mjs --sha "$sha" --repo cowork --receipt receipt.json
+          else
+            printf '%s' "$PR_BODY" > pr-body.md
+            node scripts/verify-promotion-receipt.mjs --sha "$sha" --repo cowork --pr-body pr-body.md
+          fi
       # NO `apt-get install tmux` HERE, and it is not an oversight (removed 2026-08-19).
       # The step existed on the claim that "several checks shell out to tmux". Measured:
       # sixteen of the seventeen gates never touch it, and the seventeenth — smoke-ui —
@@ -40,5 +73,5 @@ jobs:
       # for nothing. If a runner ever does drive a real render check (tier 2, above), it
       # brings its own tmux back with it, next to the browser it will also need.
       - run: npm ci
-      - name: BYOIN — every check, then one verdict
+      - name: release assurance — rerun the isolated gates on the receipted commit
         run: bin/ronin-byoin --gates

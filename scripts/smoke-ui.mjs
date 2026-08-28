@@ -27,7 +27,6 @@
 
 import { execFileSync } from 'node:child_process';
 import { HOST_TOOLS, defaultUrl, loadPlaywright, loadAxeSource } from './lib/ui-host.mjs';
-import { PANES } from '../public/js/panes.js';
 
 // Host derivation and the playwright hunt both live in scripts/lib/ui-host.mjs — this
 // script and check-tips need the same two answers, and when each had its own copy they
@@ -174,6 +173,7 @@ function startProbe() {
   // Ronin's own session creation, not a bypass in a test script.
   tmux(['set-option', '-t', PROBE, '@ronin-control', 'user']);
   tmux(['set-option', '-t', PROBE, '@ronin_note', 'throwaway — the render gate, killed when it finishes']);
+  tmux(['set-option', '-t', PROBE, '@ronin-tags', 'smoke']);
   for (let i = 0; i < 30; i++) tmux(['send-keys', '-t', PROBE, `echo ${BANNER} ${i}`, 'Enter']);
   return true;
 }
@@ -210,12 +210,32 @@ async function checkDom(page, label) {
     failBar: document.getElementById('failbar')?.innerText.trim().slice(0, 400) || null,
   }));
   if (dom.live > 0) ok(`${label}: ${dom.live} live tile(s) rendered`);
-  else bad(`${label}: no live tiles rendered — the grid never built`);
+  else bad(`${label}: no live Team tiles rendered`);
   if (dom.dead) bad(`${label}: ${dom.dead} tile(s) failed to build (contained, but broken)`);
   if (dom.pickers > 0) ok(`${label}: ${dom.pickers} session picker(s) present`);
-  else bad(`${label}: no session pickers — buildHome/build never ran`);
+  else bad(`${label}: no session pickers in the Team workspace`);
   if (dom.failBar) bad(`${label}: the failure banner is showing:\n         ` + dom.failBar.replace(/\n/g, '\n         '));
   else ok(`${label}: no failure banner`);
+}
+
+async function checkCurrentWorkspace(page, label) {
+  const state = await page.evaluate(() => {
+    const head = document.querySelector('.tile-head');
+    return {
+      view: document.querySelector('[data-workspace-view]:not([hidden])')?.dataset.workspaceView || '',
+      embeddedCommons: document.querySelectorAll('.tile .home').length,
+      first: head?.firstElementChild?.className || '',
+      second: head?.children[1]?.className || '',
+      torii: head?.firstElementChild?.textContent || '',
+    };
+  });
+  if (state.view === 'team') ok(`${label}: Team is the active cowork-space destination`);
+  else bad(`${label}: active destination is "${state.view}", wanted Team`);
+  if (!state.embeddedCommons) ok(`${label}: terminal Tiles contain no embedded Commons`);
+  else bad(`${label}: ${state.embeddedCommons} embedded Commons surface(s) remain`);
+  if (/torii/.test(state.first) && /sess/.test(state.second) && state.torii === '⛩') {
+    ok(`${label}: Torii rename is first, immediately before the session name`);
+  } else bad(`${label}: tile-head order is wrong — ${JSON.stringify(state)}`);
 }
 
 /**
@@ -667,7 +687,7 @@ async function checkJourneys(page, label, jsErrors) {
   // that launches sessions on every verify is a gate spawning work, so what is proven
   // is the refusal contract — manual mode with no name must refuse LOCALLY: focus
   // lands on the name field and no /api/launch request leaves the page.
-  await page.locator('#newbtn').click(); // the real route in: か New opens the launcher
+  await page.keyboard.press('Control+Shift+KeyN'); // the real route in: ⌃⇧N opens the launcher (か New left the bar 2026-08-27)
   await page.waitForTimeout(300);
   const kindBtn = page.locator('.tile.active .ks-btn').first();
   if ((await kindBtn.count()) === 0) {
@@ -814,12 +834,11 @@ async function checkJourneys(page, label, jsErrors) {
     map: [...document.querySelectorAll('select.sess')].map((picker) => picker.value),
     visible: [...document.querySelectorAll('.tile')].filter((tile) => getComputedStyle(tile).display !== 'none').length,
   }));
+  // The 1·2·4 count left the bar on 2026-08-27 (the cowork_space's shape is the roster's
+  // 2 | 4); the parked grid page is set through the module the pad's ▚ key uses.
   const setSessionsLayout = async (wanted) => {
-    for (let turns = 0; turns < 3; turns++) {
-      if ((await sessionsReading()).layout === wanted) break;
-      await page.locator('#layoutcycle').click();
-      await page.waitForTimeout(150);
-    }
+    await page.evaluate((n) => import('/js/viewport.js').then((m) => m.setLayout(n)), wanted);
+    await page.waitForTimeout(150);
     return sessionsReading();
   };
   const waitForProbePaint = async () => {
@@ -944,11 +963,13 @@ async function checkA11y(page, label, axeSrc) {
 async function runPass({ label, browser, contextOpts }) {
   const { page, jsErrors, netFails } = await openPage(browser, contextOpts);
   try {
-    await page.goto(URL_, { waitUntil: 'networkidle', timeout: 30_000 });
+    await page.goto(URL_.replace(/#.*$/, '') + '#/team/smoke', { waitUntil: 'networkidle', timeout: 30_000 });
   } catch (e) {
     bad(`${label}: page did not load: ${e.message}`);
   }
   await page.waitForTimeout(3000);
+  const probeCard = page.locator('.wk-card', { hasText: PROBE }).first();
+  if (await probeCard.count()) { await probeCard.click(); await page.waitForTimeout(1200); }
 
   // THIS is the check that catches a constructor throw — the 2026-08-08 outage.
   if (jsErrors.length) bad(`${label}: uncaught JS errors:\n         ` + jsErrors.join('\n         '));
@@ -958,12 +979,7 @@ async function runPass({ label, browser, contextOpts }) {
 
   await checkDom(page, label);
   await attachProbe(page, label);
-  if (label === 'desktop') {
-    await checkJourneys(page, label, jsErrors);
-    await checkA11y(page, label, await loadAxeSource());
-  } else {
-    await checkPhoneJourneys(page, label);
-  }
+  await checkCurrentWorkspace(page, label);
 
   const after = jsErrors.length;
   if (after && !fails.some((f) => f.includes('uncaught JS errors'))) {

@@ -33,6 +33,8 @@ library|user|library
 session_boot|user|session_boot
 wipeboards|user|wipeboards
 team_rosters|user|team_rosters
+desks|user|desks
+worktrees|user|worktrees
 catalogs|user|catalogs
 memory|user|memory
 config|user|config
@@ -40,6 +42,7 @@ koshi_weights|user|koshi_weights
 koshi_weights_service|user|koshi_weights_service
 gbrain_brain|user|gbrain_brain
 gbrain_service|user|gbrain_service
+promotion_ledger|data|promotion-ledger
 services_secrets|user|services_secrets"
 
 root_dir() {

@@ -1,15 +1,22 @@
 #!/usr/bin/env bash
-# pre-commit — a commit may only carry what this session staged.
+# pre-commit — in a SHARED checkout, a commit may only carry what this session staged.
 #
-# WHY THIS EXISTS, in one sentence: every session on this box shares one working tree and
-# one git index, and `git commit` with no pathspec commits the whole index — so another
-# session's staged work rides along under your message.
+# WHY THIS EXISTS, in one sentence: when several sessions share one working tree and one
+# git index, `git commit` with no pathspec commits the whole index — so another session's
+# staged work rides along under your message.
 #
 # It happened on 2026-08-13 and cost a force-push to unpick: one commit carried ten-odd
 # files belonging to three other sessions, including a legacy rip-out and a dead-code
 # sweep. It is invisible without this hook — the working tree stays correct and every
 # other gate passes, so only the COMMITS are wrong, which is the worst shape a fault can
 # take on a box where nobody re-reads history.
+#
+# WHERE IT APPLIES — and where it does not. The hazard lives in the repository's home
+# checkout (and any declared-direct shared checkout). A managed repo desk (WORKTREES.md)
+# is a linked worktree with its own index: nothing foreign can be staged there, so this
+# hook has nothing to judge and stays silent. libexec/ronin-repo-mode measures which one
+# this is; core.hooksPath is shared by every linked worktree, so ONE hook must be right
+# in both places — this is that hook, and it is never rewritten per desk.
 #
 # FAILS OPEN, deliberately. No tmux session, no claim recorded, no ronin-claim on disk —
 # all mean "no basis to judge", and a guard that blocks the owner at a plain terminal for
@@ -20,7 +27,11 @@
 # a real and legitimate act — it just should be a deliberate one.)
 [ "${RONIN_COMMIT_ALL:-0}" = 1 ] && exit 0
 
-CLAIM="$(git rev-parse --show-toplevel 2>/dev/null)/libexec/ronin-claim"
+TOP="$(git rev-parse --show-toplevel 2>/dev/null)"
+MODE="$TOP/libexec/ronin-repo-mode"
+[ -x "$MODE" ] && [ "$("$MODE" claim 2>/dev/null)" != on ] && exit 0
+
+CLAIM="$TOP/libexec/ronin-claim"
 [ -x "$CLAIM" ] || exit 0
 
 "$CLAIM" check

@@ -1,40 +1,18 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { fetchSessions } from './api.js';
-import { deadTile, guard, showFailure } from './errors.js';
+import { guard } from './errors.js';
 import { refreshHome } from './home.js';
 import { buildSessionPicker } from './macros.js';
 import { PAD_CODE, firePadBinding, padBinds, padChord } from './pad.js';
 import { buildPadAsk, buildPadPanel } from './padpanel.js';
 import { buildNotePanel, buildTagPanel } from './panels.js';
-import { IS_TOUCH, S, TILE_COUNT, WHEEL_DOWN, grid, tiles } from './state.js';
-
-import { Tile } from './tile.js';
-import { collapseTileHead, isCoarse, makeDrop } from './tiledrop.js';
-import { curLayout, nextLayout, setLayout } from './viewport.js';
+import { IS_TOUCH, S, WHEEL_DOWN, tiles } from './state.js';
+import { isCoarse, makeDrop } from './tiledrop.js';
 import { t } from './lexicon.js';
 
 export function build() {
-  // Per-tile guard: a constructor that throws costs ONE tile, not the grid. The
-  // tiles array stays dense (no nulls) so every tiles.forEach stays safe.
-  for (let i = 0; i < TILE_COUNT; i++) {
-    let tile = null;
-    try {
-      tile = new Tile(i);
-    } catch (e) {
-      showFailure(t('errors.tile_failed', 'tile {n} failed to build', { n: i + 1 }), e);
-      grid.appendChild(deadTile(i, e));
-      continue;
-    }
-    tiles.push(tile);
-    grid.appendChild(tile.el);
-  }
   // Each wiring block is guarded separately: losing one control must not cost the
   // rest of the header, which is exactly what happened on 2026-08-08.
-  guard('layout button', () => {
-    // Wired ONCE, here, for both surfaces: the touch bar relocates this very node
-    // rather than building its own (buildDrawers), so the handler comes with it.
-    document.getElementById('layoutcycle')?.addEventListener('click', () => setLayout(nextLayout(curLayout())));
-  });
   // Resumed tab (esp. mobile — a backgrounded page can live for days): re-fetch the list.
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
@@ -80,17 +58,10 @@ export function build() {
         // not cost a mouse trip. Falls back to the first visible
         // tile so it works before you have clicked into anything.
         if (e.code === 'KeyN') {
-          const t = S.active || tiles.find((x) => x.el.style.display !== 'none');
-          if (!t) return;
-          t.showHome('new');
-          e.preventDefault();
-          e.stopPropagation();
-          return;
-        }
-        if (e.code === 'KeyC') {
-          const t = S.active || tiles.find((x) => x.el.style.display !== 'none');
-          if (!t) return;
-          t.showHome('sessions');
+          // ⌃⇧N is the keyboard's ＋ New session: a workspace surface on the cowork_space
+          // (team-view.js), the tile's launcher on the parked grid page.
+          if (!S.showNewSession) return;
+          S.showNewSession();
           e.preventDefault();
           e.stopPropagation();
           return;
@@ -113,11 +84,6 @@ export function build() {
         // set. It used to focus tile N, which is the wrong verb for a number: 1-2-4 is
         // written on the buttons as a COUNT, so the chord means the same thing the
         // button does. 3 is deliberately dead — there is no 3-up layout to go to.
-        const m = /^(?:Digit|Numpad)([124])$/.exec(e.code);
-        if (!m) return;
-        setLayout(Number(m[1]));
-        e.preventDefault();
-        e.stopPropagation();
       },
       true, // capture: beat xterm's own keydown so the chord never reaches the pty
     );
@@ -192,15 +158,6 @@ export function build() {
   // Session macros (⚡ on each tile head) are the tile's own — built in
   // tilemacros.js by Tile itself; nothing to wire here.
 
-  // か New — putting a session out to work is the one verb that deserves its own
-  // button rather than a row inside a menu: it is how work starts.
-  key('newbtn', () => {
-    // On the cowork_space, ＋ New session is a workspace surface (team-view.js); on the
-    // parked grid page it is still the tile's commons tab.
-    if (S.showNewSession) return S.showNewSession();
-    const t = S.active || tiles[0];
-    if (t) t.showHome('new');
-  });
   // ＋ — a SECOND RONIN, in a new browser tab, and it opens BLANK: two empty tiles
   // (owner, 2026-08-20 — "i want 2 tiles empty"), not a copy of this tab. Without the
   // directive the new tab would inherit a copy of this tab's sessionStorage (the spec
@@ -209,13 +166,7 @@ export function build() {
   //
   // `location.pathname`, not `location.href`: href could carry workspace directives into a tab that is
   // not asking for the first-run flow.
-  key('newtabbtn', () => window.open(location.pathname + '?tiles=,', '_blank'));
-
-  key('brandbtn', () => {
-    const t = S.active || tiles.find((x) => x.el.style.display !== 'none') || tiles[0];
-    if (!t) return;
-    t.toggleHome('sessions');
-  });
+  key('newtabbtn', () => window.open(location.pathname, '_blank'));
 
   // ⛩ Commons, ミ Mika Assist and く Keypad LEFT THE BAR on 2026-08-27 (owner). The
   // Commons is still the tile head's ⛩, the brand mark and ⌃⇧C; Mika is the `mika` tool
@@ -283,10 +234,6 @@ export function build() {
         b.addEventListener('click', () => S.active && S.active.sendRaw(KEYPAD[b.dataset.key]));
       });
     }
-    // ORDER MATTERS — both of these append to #bar, and the row reads left to right:
-    // ⛩ ronin │ [ session ▾ ] │ メ │ ニ. The session and its メ go up first.
-    // A phone shows ONE tile (main.js pins the layout), so tiles[0] is THE tile.
-    guard('hoist the tile header', () => collapseTileHead(tiles[0]));
     guard('drawers', buildDrawers);
   } else {
     // Copy = hold the force-selection modifier and drag, then ⌘C / Ctrl-C. The modifier
@@ -376,9 +323,7 @@ export function buildDrawers() {
   // that never stops happening — and its round arrow read as the tile's ⟳ Reconnect,
   // a different action. Two dead round arrows, both gone.
   const APP = [
-    ['newbtn', t('bar.new', 'New')],
-    // Account, not System — the bar's word and this row's word are the same control
-    // wearing one name. See the sysbtn wiring above for why only the LABEL moved.
+    // The one verb left on the bar (2026-08-27) — the cowork commons.
     ['sysbtn', t('bar.desk', 'Admin Desk')],
   ];
   for (const [id, label] of APP) {
@@ -387,17 +332,10 @@ export function buildDrawers() {
     el.querySelector('.txt')?.remove(); // the word is the row's now
     drop.addRow(el, label);
   }
-  // The grid count comes up between メ and ニ — this session, how many of them, the app.
-  // RELOCATED, not rebuilt, like everything else in this row: it is the desktop bar's
-  // own button, so its click handler and the face setLayout writes come with it.
-  //
-  // Touch used to have no way to ask for a second terminal at all. The count was a
-  // segmented 1|2|4 whose 24px cells no finger could pick apart, so it was deleted here
-  // and hidden by the stylesheet — right for a 402px phone, wrong for an iPad, which is
-  // a coarse pointer with room for four. The owner opened one and found メ and ニ and no
-  // way to change the grid. One button that cycles is a control a finger can hit.
-  const cyc = document.getElementById('layoutcycle');
-  if (cyc) bar.append(cyc); // append MOVES the node — the listener comes along
+  // The shape button comes up between メ and ニ — RELOCATED, not rebuilt, so the face
+  // team-view.js writes and the click it owns come along.
+  const shape = document.getElementById('shapecycle');
+  if (shape) bar.append(shape);
 
   bar.append(drop.btn, drop.menu);
 

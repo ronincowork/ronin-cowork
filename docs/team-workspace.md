@@ -30,19 +30,11 @@ workspace shell, or control system. Specifically:
 - never move Kit layout, splitter, responsive, or persistence behavior into Team;
 - never replace or narrow the existing Sessions destination.
 
-## Two first-class destinations
+## Destination boundary
 
-Team and Sessions are deliberately separate first-class destinations:
-
-- **Team:** `#/team/:name` — two workspaces, the roster between them.
-- **Sessions:** the existing raw **1 / 2 / 4 Tile grid** — the familiar unrestricted
-  coworkspace of complete Tiles.
-
-The Sessions grid is not a compatibility shim and is not a mode inside Team. Preserve its
-raw Tile composition, full controls, session pickers, layout choices, and behavior. Team
-work must not scope, wrap, replace, or retire it. **Any Tile built by the Team page while
-it is not entered, or left in its DOM after `leave()`, is counted by the Sessions grid's
-checks** — build tiles on first need and destroy every one on leave.
+`#/team/:name` is the terminal-bearing cowork-space destination. The former raw Sessions
+1 / 2 / 4 grid was retired on 2026-08-28. Team still builds Tiles lazily and destroys every
+one on leave so no transport survives outside the entered destination.
 
 ## `#/team/:name` user flow
 
@@ -83,7 +75,7 @@ Persistence is per browser tab (sessionStorage); one tab is one team.
 ## The page takes instructions (`tejun-teampage`)
 
 Everything that changes the page goes through one controller, `arrange(draft)` in
-`team-view.js`, built by `createArranger` (`team-arrange.js`). The C/T buttons and the
+`cowork-view.js`, built by `createArranger` (`team-arrange.js`). The C/T buttons and the
 roster cards call it — and so does a **draft** an agent hands in with `tejun-teampage`
 (`ronin_bin/`, catalogued in `ronin_catalogs/TOOLS.md`; actions `team-page-read` and
 `team-page-draft` in `ACTIONS.md`). The tool's bare form prints the view (the roster;
@@ -114,7 +106,7 @@ read-only.
 
 ## Owned files
 
-- `public/js/team-view.js` — the page: seats, roster cards, C/T, `arrange()`, lifecycle.
+- `public/js/cowork-view.js` — the shared cowork-space page: workspaces, selector, placement and lifecycle.
 - `public/js/team-arrange.js` — `parseDraft` and `createArranger`: the one parser and
   the one controller; `reportView`, the tab's view to Ronin.
 - `public/js/team-terminal-pool.js` — one pool per workspace: warm, hot, cold, pinned,
@@ -171,7 +163,7 @@ select `.wk-*` internals or restyle `.tile-head`.
 ## Existing Tile and header contract
 
 A workspace's terminal is obtained only through
-`createTerminalTileHost({ mode: 'full', actions: [flipButton('C')] })`. Full mode
+`createTerminalTileHost({ mode: 'full' })` (the C flip was retired 2026-08-28). Full mode
 instantiates the existing `Tile` unchanged — picker, SHINGO ladder, role mark, branch
 reading, ⛩, @, ⚡, メ, output selector, dials, terminal, tape, composer — and appends the
 given actions to its own head row. Team never reaches into Tile DOM.
@@ -201,7 +193,7 @@ The tab strip carries **T** at its right end through `createChannelSurface({ act
 
 A tile's head, the commons' tab strip and the roster's head share one depth, the
 `--row-head` token in `style.css` (41px). **C** on a tile head is sized by the head's own
-button rule, like ⛩ @ ⚡ メ; **T** on the strip stands at tab height (`tw-flip-strip`).
+button rule, like ⛩ @ ⚡ メ; C and T were retired on 2026-08-28 — the team commons is a roster card.
 A tile head wraps rather than clips when its workspace is squeezed, so the picker stays
 readable and every control — C included — stays reachable at the workspace floor.
 
@@ -235,15 +227,17 @@ The designated integrator runs one BYOIN mode on the release candidate; a SKIP i
 
 ## Exact resume checklist
 
-1. Confirm the branch is `dev`; never act on `master` without a fresh owner instruction.
+1. Work at your repo desk (`ronin_session_boot/assignment/DESK_CONTRACT.md`); never act on
+   `master` without a fresh owner instruction.
 2. Read `wip/buildouts/TEAM_WORKBENCH.md` (HANDOFF first), this file, and `docs/workspace-kit.md`.
-3. Inspect `git status`; preserve unrelated shared-worktree changes.
+3. Inspect `git status`; in a shared checkout, preserve unrelated changes.
 4. Name one bounded behavior; if it needs a new Kit primitive, Tile change, or backend
    contract, stop for the owner.
 5. Route every change to the page through `arrange()`; never a second path.
 6. Keep Tiles lazy and destroyed on `leave()`; keep membership derived from tags; keep the
    Sessions 1/2/4 grid untouched.
-7. Verify by probe, then gates; stage only owned paths; commit as you go on `dev`.
+7. Verify by probe, then scoped diagnostics; stage only owned paths; commit as you go at
+   your desk and hand in when the work is coherent for the team.
 
 ## Exact dogfood checklist
 

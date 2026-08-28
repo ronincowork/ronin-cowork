@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1239 keys · 54 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1247 keys · 54 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -34,15 +34,15 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `bar.desk_title` | Admin Desk — this machine and this app: configuration, project roots, hotwords, Koshi, gbrain, stats, appearance, updates, log out |  |  |  |  |
 | `bar.keys` | Keys |  |  |  |  |
 | `bar.keys_title` | Esc, ^C, jump to latest, Tab and the arrows |  |  |  |  |
-| `bar.layout_default_title` | Four terminals — click for 1 |  |  |  |  |
-| `bar.layout_many` | {n} terminals — click for {next} |  |  |  |  |
-| `bar.layout_one` | {n} terminal — click for {next} |  |  |  |  |
 | `bar.league` | League |  |  |  |  |
 | `bar.league_title` | Open League in a new browser tab |  |  |  |  |
 | `bar.new` | New |  |  |  |  |
 | `bar.new_title` | ⌃⇧N — start a new session: pick what it is for, where it works and who it is |  |  |  |  |
 | `bar.newtab_title` | Open a second Ronin in a new browser tab |  |  |  |  |
 | `bar.ni_title` | Ronin — keys, home, new session, board, pad |  |  |  |  |
+| `bar.shape_four` | Four workspaces — click for two |  |  |  |  |
+| `bar.shape_title` | Two workspaces — click for four |  |  |  |  |
+| `bar.shape_two` | Two workspaces — click for four |  |  |  |  |
 
 ## (bare)
 
@@ -69,7 +69,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
-| `commons.close_title` | Back to the terminal |  |  |  |  |
 | `commons.sessions` | sessions |  |  |  |  |
 | `commons.tab_off` | {tab} — off, this service is not installed. |  |  |  |  |
 
@@ -241,6 +240,33 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `desk.yours` | yours |  |  |  |  |
 | `desk.yours_shadowing` | yours (replaces ours) |  |  |  |  |
 
+## desks
+
+| key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
+|---|---|---|---|---|---|
+| `desks.ahead` | ahead {n} |  |  |  |  |
+| `desks.behind` | behind {n} |  |  |  |  |
+| `desks.blocked` | blocked: {why} |  |  |  |  |
+| `desks.blocked_n` | {n} blocked |  |  |  |  |
+| `desks.count_many` | {n} desks |  |  |  |  |
+| `desks.count_one` | 1 desk |  |  |  |  |
+| `desks.detached` | (detached) |  |  |  |  |
+| `desks.dirty_files` | {n} unsaved |  |  |  |  |
+| `desks.dirty_n` | {n} dirty |  |  |  |  |
+| `desks.line` | → {line} |  |  |  |  |
+| `desks.none` | No desk listed yet. A coding launch opens one; the session lists its repos in TEGAMI. |  |  |  |  |
+| `desks.parked` | parked |  |  |  |  |
+| `desks.parked_gone` | {name} · gone · {n} ahead |  |  |  |  |
+| `desks.parked_n` | {n} parked |  |  |  |  |
+| `desks.parked_none` | none |  |  |  |  |
+| `desks.pending_by` | update pending, by {who} |  |  |  |  |
+| `desks.pending_n` | {n} pending |  |  |  |  |
+| `desks.private_n` | {n} private |  |  |  |  |
+| `desks.promotion_blocking` | ⚠ {state} — {summary} ({id}) |  |  |  |  |
+| `desks.promotion_last` | last {summary} · {id} · by {who} |  |  |  |  |
+| `desks.promotion_none` | none yet |  |  |  |  |
+| `desks.unknown` | not found on this box |  |  |  |  |
+
 ## dial
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
@@ -266,9 +292,13 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `docs.frame_title` | document |  |  |  |  |
 | `docs.loading` | loading… |  |  |  |  |
 | `docs.open_browser` | Open in browser ↗ |  |  |  |  |
+| `docs.pill_docs` | Docs |  |  |  |  |
+| `docs.pill_plans` | Plans |  |  |  |  |
+| `docs.pill_tracked` | Tracked |  |  |  |  |
 | `docs.save` | Save |  |  |  |  |
 | `docs.saved` | saved |  |  |  |  |
 | `docs.saving` | saving… |  |  |  |  |
+| `docs.shelf_empty` | Nothing on this shelf — a project root names its places on its record (Project roots → docs / plans). |  |  |  |  |
 
 ## errors
 
@@ -276,7 +306,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 |---|---|---|---|---|---|
 | `errors.dismiss` | Dismiss |  |  |  |  |
 | `errors.no_session_list` | could not load the session list |  |  |  |  |
-| `errors.tile_failed` | tile {n} failed to build |  |  |  |  |
 | `errors.title` | ⚠ Ronin hit an error. The top bar still works — a pane may not. Reload; if it persists the cause is below. |  |  |  |  |
 | `errors.uncaught` | uncaught error |  |  |  |  |
 | `errors.uncaught_at` | uncaught error at {at} |  |  |  |  |
@@ -416,20 +445,11 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
-| `head.branch_help` | Branches this session is working on |  |  |  |  |
-| `head.branch_no_michi` | Branches — michi is not installed, so TEGAMI checkout data is unavailable |  |  |  |  |
-| `head.branch_none` | No branch listed yet. The session keeps its repos list current in TEGAMI. |  |  |  |  |
-| `head.branch_quiet` | Branches — no session in this tile yet |  |  |  |  |
+| `head.branch_help` | Desks this session is working at — repo, branch, and what is ahead, pending or parked |  |  |  |  |
+| `head.branch_quiet` | Desks — no session in this tile yet |  |  |  |  |
 | `head.chip_help` | Where this session is on its ladder, and how long it has been there. Opens the ladder. |  |  |  |  |
-| `head.commons_help` | ⌃⇧C — the CoWorking Commons: roster, new session, wipeboard, docs, roots, hotwords. Opens over this tile; ✕ comes back. |  |  |  |  |
-| `head.detached` | (detached) |  |  |  |  |
 | `head.dial_help` | Who may touch this session: 👤 owner only · 👁 outside agents watch · 🤖 outside agents type. Yours to turn; agents never flip it. |  |  |  |  |
 | `head.dial_quiet` | Control dial — no session in this tile yet |  |  |  |  |
-| `head.docs_help` | This session's docs — open one over this tile |  |  |  |  |
-| `head.docs_no_michi` | This session's docs — michi is not installed, so no session keeps a doc list |  |  |  |  |
-| `head.docs_none` | Docs — this session has listed none yet. An agent lists one with write_tegami --doc |  |  |  |  |
-| `head.docs_quiet` | This session's docs — no session in this tile yet |  |  |  |  |
-| `head.docs_read` | Docs — {n} listed by this session. Opens one over this tile; ✕ comes back. |  |  |  |  |
 | `head.dot_help` | Connection: green = attached, grey = disconnected |  |  |  |  |
 | `head.gauge_help` | Context gauge — how full this session's context window is, read off the pane's own status line. Hidden until there is a reading. |  |  |  |  |
 | `head.job_help` | What this session is doing |  |  |  |  |
@@ -448,6 +468,10 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `head.note_help` | Session note (post-it) |  |  |  |  |
 | `head.note_quiet` | Session note — no session in this tile yet |  |  |  |  |
 | `head.output_help` | Output — live terminal or one of RIREKI’s unlocked views |  |  |  |  |
+| `head.rename_failed` | Could not rename session: {reason} |  |  |  |  |
+| `head.rename_help` | Rename this session |  |  |  |  |
+| `head.rename_prompt` | Rename session |  |  |  |  |
+| `head.rename_quiet` | Rename session — no session in this tile yet |  |  |  |  |
 | `head.select_help` | Pick / switch the session shown in this tile |  |  |  |  |
 | `head.tags_help` | Teams this session is on |  |  |  |  |
 | `head.tags_none` | Teams (none yet) |  |  |  |  |
@@ -594,6 +618,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
 | `league.active` | Active Team |  |  |  |  |
+| `league.commons` | League commons |  |  |  |  |
 | `league.controls` | League controls |  |  |  |  |
 | `league.hide_rosters` | Hide rosters |  |  |  |  |
 | `league.holding` | Holding area |  |  |  |  |
@@ -602,12 +627,14 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `league.new_team_summary` | Define the Team, then build its session roster. |  |  |  |  |
 | `league.no_members` | No live members |  |  |  |  |
 | `league.not_recorded` | Not recorded |  |  |  |  |
+| `league.open_workspace` | League workspace |  |  |  |  |
 | `league.resting` | Resting Team |  |  |  |  |
 | `league.rosters_unavailable` | Durable rosters unavailable — showing live Teams only. |  |  |  |  |
 | `league.show_rosters` | Show rosters |  |  |  |  |
 | `league.title` | League |  |  |  |  |
 | `league.unassigned` | Unassigned |  |  |  |  |
 | `league.unassigned_summary` | Live sessions that carry no Team membership. |  |  |  |  |
+| `league.view` | League view |  |  |  |  |
 
 ## machine
 
@@ -958,12 +985,19 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `roots.cancel` | cancel |  |  |  |  |
 | `roots.chip_archived` | archived |  |  |  |  |
 | `roots.chip_archived_title` | Off the new-session picker. Still here, and still launchable by name. |  |  |  |  |
+| `roots.chip_direct` | direct |  |  |  |  |
+| `roots.chip_direct_title` | Direct: commits land on {stable} itself. No desks, no team line. |  |  |  |  |
 | `roots.chip_gone` | directory is gone |  |  |  |  |
 | `roots.chip_gone_title` | Nothing on disk at this path — fix the path or exclude it |  |  |  |  |
 | `roots.chip_no_remote` | repo, no remote |  |  |  |  |
 | `roots.chip_no_remote_title` | A git repo with no origin |  |  |  |  |
 | `roots.chip_no_repo` | no repo |  |  |  |  |
 | `roots.chip_no_repo_title` | Not a git repo — legal, a project_root need not be one |  |  |  |  |
+| `roots.chip_reviewed` | reviewed |  |  |  |  |
+| `roots.chip_reviewed_desks` | reviewed · desks |  |  |  |  |
+| `roots.chip_reviewed_title` | Reviewed: work happens at desks that hand in to a team line; team promotion moves {working}; {stable} moves by PR. The branch mounted here is incidental. |  |  |  |  |
+| `roots.chip_shared` | shared checkout |  |  |  |  |
+| `roots.chip_shared_title` | No RONIN_REPO record: sessions share this checkout and the claim hook guards the index. Add the record to declare reviewed desks or direct publishing. |  |  |  |  |
 | `roots.count_archived` | {n} archived |  |  |  |  |
 | `roots.count_many` | {n} project_roots |  |  |  |  |
 | `roots.count_one` | {n} project_root |  |  |  |  |
@@ -975,11 +1009,15 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `roots.exclude_title` | Remove it from the catalog. Nothing on disk is touched. |  |  |  |  |
 | `roots.f_directory` | directory |  |  |  |  |
 | `roots.f_directory_hint` | Any absolute path, at any depth |  |  |  |  |
+| `roots.f_docs` | docs |  |  |  |  |
+| `roots.f_docs_hint` | Where this root keeps its documentation — directories or files, relative to the directory |  |  |  |  |
 | `roots.f_handle` | handle |  |  |  |  |
 | `roots.f_handle_hint` | The short name — this IS the shortcut |  |  |  |  |
 | `roots.f_match` | match |  |  |  |  |
 | `roots.f_match_hint` | Words that suggest this project_root from free-form intent |  |  |  |  |
 | `roots.f_match_placeholder` | comma separated |  |  |  |  |
+| `roots.f_plans` | plans |  |  |  |  |
+| `roots.f_plans_hint` | Where this root keeps its build-out plans |  |  |  |  |
 | `roots.f_remit` | remit |  |  |  |  |
 | `roots.f_remit_hint` | The one line you pick it from in a list |  |  |  |  |
 | `roots.f_remit_placeholder` | what this is |  |  |  |  |
@@ -1387,12 +1425,14 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `team.branch` | Branch |  |  |  |  |
 | `team.command` | Command |  |  |  |  |
 | `team.commons` | Team commons |  |  |  |  |
+| `team.commons_card` | Team commons |  |  |  |  |
 | `team.control` | Control |  |  |  |  |
 | `team.count_2_title` | Two workspaces around the roster |  |  |  |  |
 | `team.count_4_title` | Four workspaces, two by two |  |  |  |  |
 | `team.flip_commons` | Show the Team commons in this workspace |  |  |  |  |
 | `team.flip_terminal` | Show the terminal in this workspace |  |  |  |  |
 | `team.lead_none` | not designated |  |  |  |  |
+| `team.lines` | Team lines |  |  |  |  |
 | `team.live_roster_n` | Live roster · {n} |  |  |  |  |
 | `team.live_roster_none` | Live roster · none |  |  |  |  |
 | `team.mcp` | MCP |  |  |  |  |
@@ -1402,7 +1442,9 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `team.none_selected` | No Team selected |  |  |  |  |
 | `team.none_selected_dot` | No Team selected. |  |  |  |  |
 | `team.objective` | Objective |  |  |  |  |
+| `team.parked_desks` | Parked desks |  |  |  |  |
 | `team.project_root` | Project root |  |  |  |  |
+| `team.promotion` | Promotion |  |  |  |  |
 | `team.read_failed` | Could not read this Team — {message} |  |  |  |  |
 | `team.reading` | Reading the Team… |  |  |  |  |
 | `team.record` | Record |  |  |  |  |
@@ -1456,7 +1498,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 |---|---|---|---|---|---|
 | `tile.gone` | {name}  (gone?) |  |  |  |  |
 | `tile.new_session` | ➕ new session… |  |  |  |  |
-| `tile.new_session_prompt` | New tmux session name (letters, digits, _ or -): |  |  |  |  |
 | `tile.pick_session` | — pick session — |  |  |  |  |
 | `tile.session_ended` | session ended. |  |  |  |  |
 
@@ -1467,39 +1508,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `voice.failed` | Dictation failed ({why}) |  |  |  |  |
 | `voice.failed_network` | Dictation failed (network) |  |  |  |  |
 | `voice.mic_blocked` | Mic blocked — open Ronin over the https url and allow the microphone |  |  |  |  |
-
-## wipeboard
-
-| key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
-|---|---|---|---|---|---|
-| `wipeboard.add` | ＋ wipeboard |  |  |  |  |
-| `wipeboard.add_failed` | could not add — {message} |  |  |  |  |
-| `wipeboard.add_member` | ＋ add… |  |  |  |  |
-| `wipeboard.add_prompt` | Name the wipeboard (letters, digits, - _): |  |  |  |  |
-| `wipeboard.add_title` | Start a custom wipeboard — a team already has one automatically |  |  |  |  |
-| `wipeboard.back` | ‹ wipeboards |  |  |  |  |
-| `wipeboard.back_title` | Back to the wipeboard listing |  |  |  |  |
-| `wipeboard.brief` | brief |  |  |  |  |
-| `wipeboard.brief_label` | wipeboard brief |  |  |  |  |
-| `wipeboard.brief_not_saved` | brief not saved — {message} (your text is still in the box) |  |  |  |  |
-| `wipeboard.brief_placeholder` | what this wipeboard is for, and what is to be discussed |  |  |  |  |
-| `wipeboard.brief_title` | Show / hide the brief |  |  |  |  |
-| `wipeboard.kind_custom` | custom wipeboard |  |  |  |  |
-| `wipeboard.kind_team` | team wipeboard |  |  |  |  |
-| `wipeboard.membership_follows` | membership follows the team — tag sessions in the ⌂ Roster |  |  |  |  |
-| `wipeboard.no_teams` | no teams yet — tag sessions in the ⌂ Roster and each team gets its own wipeboard |  |  |  |  |
-| `wipeboard.not_notified` | On the wipeboard, but not notified — its dial is not 🤖 |  |  |  |  |
-| `wipeboard.nothing_posted` | nothing posted yet |  |  |  |  |
-| `wipeboard.open_custom` | Open the custom wipeboard "{name}" |  |  |  |  |
-| `wipeboard.open_team` | Open the {team} team's wipeboard |  |  |  |  |
-| `wipeboard.post_failed` | could not post — {message} (your text is still in the box) |  |  |  |  |
-| `wipeboard.read_failed` | could not read this wipeboard |  |  |  |  |
-| `wipeboard.remove_failed` | could not remove {name} — {message} |  |  |  |  |
-| `wipeboard.remove_member` | Remove {name} from this wipeboard |  |  |  |  |
-| `wipeboard.say_label` | post to this wipeboard |  |  |  |  |
-| `wipeboard.say_placeholder` | say something to everyone on this wipeboard |  |  |  |  |
-| `wipeboard.start_failed` | could not start a wipeboard — {message} |  |  |  |  |
-| `wipeboard.team_option` | +{team} (team) |  |  |  |  |
 
 ## workspace
 

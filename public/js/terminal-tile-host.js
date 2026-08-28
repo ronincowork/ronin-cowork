@@ -1,5 +1,6 @@
 /* One lifecycle owner for the existing Tile transport/render machinery. */
 import { Tile } from './tile.js';
+import { tiles } from './state.js';
 
 export function createTerminalTileHost(options = {}) {
   const mode = options.mode === 'full' ? 'full' : 'reduced';
@@ -12,6 +13,7 @@ export function createTerminalTileHost(options = {}) {
   const ensure = () => {
     if (tile) return tile;
     tile = new Tile(Number(options.index) || 0);
+    tiles.push(tile);
     tile.el.classList.add('wk-hosted-tile');
     // Consumer actions ride the Tile's own head row, beside its buttons — this host is
     // the one seam that touches the Tile, so the consumer never reaches in itself.
@@ -52,6 +54,8 @@ export function createTerminalTileHost(options = {}) {
     tile.ro?.disconnect();
     if (tile.kakiTimer) clearInterval(tile.kakiTimer);
     tile.el.remove();
+    const at = tiles.indexOf(tile);
+    if (at >= 0) tiles.splice(at, 1);
     tile = null;
     parked = true;
   };

@@ -36,6 +36,7 @@ import { announceTeamChanges } from './wipeboards-api.js';
 import { markRoleDelivered } from '../role-watch.js';
 import { checkoutAt, deriveTeams, parkBrief, seedTegami, withAxes, writeGate } from '../tegami.js';
 import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFields } from '../sockets.js';
+import { prepareLaunchDesks } from '../launch-desks.js';
 
 /* ---------- ONE door to a new session: POST /api/launch ----------
  * Two variants, chosen by what the body carries — never two endpoints:
@@ -91,6 +92,7 @@ export function registerLaunch(app: express.Express): void {
       seed: Array.isArray(req.body?.seed) ? req.body.seed.map(String) : [],
       inject: String(req.body?.inject ?? '').trim() || undefined,
       reference: String(req.body?.reference ?? '').trim() || undefined,
+      desk: req.body?.desk === 'own' || req.body?.desk === 'none' ? req.body.desk : undefined,
     };
     // Manual adds no wording of ours — including the name. You name it.
     if (form.mode === 'manual' && !form.name) return res.status(400).json({ error: 'Name the session.' });
@@ -123,6 +125,19 @@ export function registerLaunch(app: express.Express): void {
     // naming neither axis, which falls through to launch_bare.
     if (!isValidName(resolved.name)) return res.status(400).json({ error: 'Could not derive a session name.' });
     if (await sessionExists(resolved.name)) return res.status(409).json({ error: `Session "${resolved.name}" already exists.` });
+
+    // THE DESKS ARE OPENED BEFORE THE CLI EXISTS, so its first command runs at a desk. A
+    // failure here is the launch's answer — 409, the reason, no session — never a quiet
+    // start in the root's funnel checkout with a brief that says otherwise
+    // (RONIN_CONTROL_SURFACE.md §2). Nothing was created yet, so there is nothing to undo.
+    if (resolved.assignment) {
+      try {
+        resolved.assignment = await prepareLaunchDesks(resolved.assignment);
+      } catch (e) {
+        void appendLedger(form, resolved, false);
+        return res.status(409).json({ error: String((e as Error)?.message ?? e) });
+      }
+    }
 
     try {
       await emitSessionWillBorn(resolved.name); // rireki resets a reused name's stale tape here
@@ -225,6 +240,9 @@ export function registerLaunch(app: express.Express): void {
         tags: resolved.tags,
         mcp: resolved.mcp,
         team_lead: !!form.team_lead && !!resolved.team,
+        // The receipt says which desks this session was born with — repo, branch, path,
+        // line — or an empty list, which is the honest receipt for most launches.
+        desks: resolved.assignment?.desks.map((d) => ({ repo: d.repo, branch: d.branch, worktree: d.worktree, line: d.line })) ?? [],
       },
     });
     void appendLedger(form, resolved, true);

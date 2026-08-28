@@ -18,8 +18,8 @@ you add it there in the same commit.
 │      workspace 1      │   selector column    │              workspace 2                 │
 │                       │      (the roster)    │                                          │
 │  ┌ surface head ────┐ │  ┌ column head ────┐ │  ┌ surface head ──────────────────────┐  │
-│  │ terminal_tile:   │ │  │ team name · 人  │ │  │ team_commons: tab strip · T        │  │
-│  │ tile head (C)    │ │  │ output selector │ │  │ cowork_commons: tab strip · T      │  │
+│  │ terminal_tile:   │ │  │ Roster: team    │ │  │ team_commons: tab strip            │  │
+│  │ tile head        │ │  │ ▸ Team commons  │ │  │ cowork_commons: tab strip          │  │
 │  └──────────────────┘ │  └─────────────────┘ │  └────────────────────────────────────┘  │
 │                       │  member cards…       │                                          │
 │  one workspace_surface│  (click → workspace) │  one workspace_surface                   │
@@ -29,7 +29,7 @@ you add it there in the same commit.
 **Two shapes** (owner, 2026-08-27): **2** — workspace 1 · selector column · workspace 2, as
 drawn; and **4** — a 2×2 of workspaces with the selector column left, centre or right. A
 workspace column is a STACK: workspace 3 sits under 1, workspace 4 under 2, and the count
-(the `2 | 4` control on the selector column's head, or `count=4` from `tejun-teampage`)
+(the bar's **2 ⇄ 4** button, in the seat the grid count had — one button wearing the count, clicked to alternate — or `count=4` from `tejun-teampage`)
 shows or hides the lower cells. The selector's place is the same `order` in both shapes.
 There is no one-workspace shape.
 
@@ -38,25 +38,31 @@ Three kinds of thing, and only three, sit inside the bar:
 | kind | what it is | how many |
 |---|---|---|
 | **workspace** | a cell that holds exactly one `workspace_surface` at a time; remembers what it holds per tab | two or four (`workspace1`–`workspace4`; 3 under 1, 4 under 2); the Kit's layout map shows, hides and reorders the three columns |
-| **selector column** | a column that PICKS what goes into a workspace; it never holds a surface itself | one today — the **roster** (the team's members as cards; click seats one in a workspace; the 人 pinned hot in workspace 1) |
+| **selector column** | a column that PICKS what goes into a workspace; it never holds a surface itself | one today — the **roster**: the Team commons card first (thin), then the members as cards, then ＋ Add team member; click seats one in the selected workspace, drag onto any cell; the 人 pinned hot in workspace 1 |
 | **top header** | the bar: brand, the tab's editable view name, the layout map, か New, ⚙, the grid count | one |
 
 ## The workspace surfaces — peers, each able to occupy a workspace
 
 | `workspace_surface` | about | its head | what the head holds |
 |---|---|---|---|
-| **terminal_tile** | one session | **tile head** (`js/tilehead.js`) | the session picker · connection dot · ladder chip · job · branch · output selector · ⛩ · @ · ⚡ · メ · gauge — the unchanged `Tile` head — plus **C** (flip to the commons) appended by the page |
-| **team_commons** | one team | **commons strip** — the channel surface's tab strip | Chat · Wipeboard · Docs · Team Configuration, plus **T** (flip back to the terminal) at its right end |
-| **cowork_commons** | this install and this owner | **commons strip** — the same tab strip | Machine health (Stats) · Account (the desk's rail: Configuration · Appearance · Release & update · Hotwords · Koshi · gbrain · Log out) · Desk profile · Project roots · Roster · Archived (the tile commons' two) · Help desk (Mika's door over a reserved chat) · Keypad (the pad's card, inline), plus **T**. `js/cowork-commons.js`; landed 2026-08-27, the `admin_desk` overlay retired with it |
+| **terminal_tile** | one session | **tile head** (`js/tilehead.js`) | ⛩ rename · session picker · job · branch · output selector · @ · ⚡ · メ · gauge · ladder chip. The Torii is first, immediately before the session name. |
+| **team_commons** | one team | **commons strip** — the channel surface's tab strip | Docs (three pills: **Tracked** — what agents listed; **Plans** and **Docs** — the files under the places each project root names on its record, grouped by root, the team's repos first) · Wipeboard · Team Configuration (Chat hidden until it is a thing — owner, 2026-08-28). Reached from the **Team commons card**, first on the roster |
+| **cowork_commons** | this install and this owner | **commons strip** — the same tab strip | Machine health (Stats) · Account (the desk's rail: Configuration · Appearance · Release & update · Hotwords · Koshi · gbrain · Log out) · Desk profile · Project roots · Roster · Archived (the tile commons' two) · Help desk (Mika's door over a reserved chat) · Keypad (the pad's card, inline). `js/cowork-commons.js`; landed 2026-08-27, the `admin_desk` overlay retired with it |
 | **new_session** | one launch | **surface head** — T, then the name | the ＋ New session launcher, placed by ＋ Add team member (roster) or か New (bar), or `workspace1=new`; the newborn lands in that workspace |
 | *(blank)* | — | — | an EMPTY workspace says *Workspace* and holds nothing — never a commons by default (owner, 2026-08-27) |
 | *league* | every team | *a strip* | **[planned]** — the League destination re-hung as a surface; not designed here |
 
 Rules that make them peers:
 
-- **Every head reads the same way**: the flip (**C** on a tile head, **T** on a strip or the
-  new-session head) at the far LEFT; the SHINGO light signal at the far RIGHT of a tile
-  head (owner, 2026-08-27). The selector column's head reads *Roster: <team>*.
+- **No flip on any head** (owner, 2026-08-28): the team commons is the FIRST CARD of the
+  roster, thinner than a session's, and goes into a workspace like one — click for the
+  selected cell, drag onto any cell. The SHINGO light signal sits at the far RIGHT of a
+  tile head; the connection dot is gone. The selector column's head reads *Roster: <team>*.
+- **A cell owns selection and drops, whatever it holds** (owner, 2026-08-28): a card dropped on
+  any workspace clobbers what is there — session, commons, launcher, anything to come.
+  Nothing per surface: `cowork-view.js` keeps ONE registry (`SURFACES`: token · element ·
+  show) and a new surface is one entry in it — the cells, the memory, the view report and
+  `tejun-teampage`'s words all read the table.
 - **One surface per workspace, one head per surface.** A surface never draws over another;
   trading is `place()`. The old `admin_desk` overlay is the one exception and it is going.
 - **Every head is one depth** — `--row-head` (41px). The tile head wraps rather than clips
@@ -76,7 +82,7 @@ Rules that make them peers:
 - **workspace_surface** — the genus: what a workspace holds. Say *a surface*.
 - **terminal_tile** — a tile when it is the surface in a workspace. Say *the terminal
   tile* when the contrast with a commons matters; *the tile* is still right on the grid
-  page. Not "terminal seat" — *seat* is a code word in `team-view.js` for the slot's pool
+  page. Not "terminal seat" — *seat* is a code word in `cowork-view.js` for the slot's pool
   of tiles and is not a house noun.
 - **team_commons** — the team's shared surface. Say *the team commons*.
 - **cowork_commons** — the install's shared surface. Say *the cowork commons*. Never
@@ -85,7 +91,7 @@ Rules that make them peers:
 - **selector column** — a column that picks; the **roster** is one.
 - **top header** — the bar. Say *the bar*.
 - **surface head** — the genus for a surface's top row: *tile head*, *commons strip*,
-  *column head*.
+  *column head*. No head carries a flip — a surface gets into a workspace from the selector column, or by drag.
 
 ## Where ⚙ puts it
 
@@ -95,22 +101,15 @@ Rules that make them peers:
 - **On the parked grid page:** there is no workspace to place it in, so ⚙ is the
   `cowork` destination — the surface at full width — and ⚙ again is the way back.
 
-## Parked
+## Retired
 
-- **The 1·2·4 count** left the bar on 2026-08-27 (owner: *"the 1-2-4 button is going to
-  come off"*). Hidden, not deleted: the pad's ▚ layout key still cycles it.
-- **The grid page** (1 / 2 / 4 tiles, the `sessions` destination) is parked with it —
-  reachable, unchanged, and to be removed once the cowork_space carries everything it
-  did. Its `#layoutcycle` and its tile-pool rules are the parts that go with it.
+The raw Sessions 1 / 2 / 4 grid and the `session_commons` embedded inside every Tile were
+removed on 2026-08-28. A terminal Tile is now only a terminal surface. Roster, Archives,
+New Session, Docs and Wipeboard live in the cowork-space surfaces named above.
 
 ## What is NOT a workspace surface
 
-- The **session_commons** (⌂ Roster · ＋ New · ▤ Wipeboard · ▧ Docs) lived INSIDE a tile
-  when no session is showing. It is OFF the cowork_space (2026-08-27): its rooms moved —
-  Roster and Archived to the cowork commons, ＋ New to the `new_session` surface — and an
-  empty workspace is blank. It still draws in a tile on the parked grid page.
-- The **grid page** (1 / 2 / 4 tiles) is the other destination, not a workspace of this
-  one — `docs/team-workspace.md` § Two first-class destinations.
+- The retired **session_commons** and raw **grid page** are not surfaces or destinations.
 
 ## Records
 

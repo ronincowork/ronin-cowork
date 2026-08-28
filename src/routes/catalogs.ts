@@ -27,6 +27,7 @@ import {
   isValidRootName,
   type RootField,
 } from '../project-roots.js';
+import { readArrangement } from '../desks/arrangement.js';
 import {
   listSavedLaunches,
   saveLaunch,
@@ -148,6 +149,13 @@ export function registerCatalogs(app: express.Express): void {
     try {
       const [roots, bySession] = await Promise.all([listProjectRoots(), projectRootsOfSessions()]);
       const facts = await Promise.all(roots.map((r) => repoFacts(r)));
+      // THE ARRANGEMENT, apart from the branch that happens to be mounted at the root:
+      // reviewed or direct, managed desks or a shared checkout, read from the repo's
+      // checked-in RONIN_REPO (absent = today's behaviour, reported as such — never
+      // guessed from the branch). RONIN_CONTROL_SURFACE.md § 5, "Project-root Admin".
+      const arrangements = await Promise.all(
+        facts.map((f, i) => (f.repo ? readArrangement(roots[i].name, f.dir).catch(() => null) : Promise.resolve(null))),
+      );
       const counts: Record<string, number> = {};
       let untagged = 0;
       for (const root of Object.values(bySession)) {
@@ -155,7 +163,7 @@ export function registerCatalogs(app: express.Express): void {
         else untagged++;
       }
       res.json({
-        roots: roots.map((r, i) => ({ ...r, facts: facts[i], sessions: counts[r.name] ?? 0 })),
+        roots: roots.map((r, i) => ({ ...r, facts: facts[i], arrangement: arrangements[i], sessions: counts[r.name] ?? 0 })),
         untagged,
       });
     } catch (e) {
@@ -169,7 +177,7 @@ export function registerCatalogs(app: express.Express): void {
     const dir = String(req.query.dir ?? '').trim();
     if (!dir) return res.status(400).json({ error: 'A directory is required.' });
     try {
-      res.json(await repoFacts({ name: 'candidate', dir, remit: '', match: [], archived: false }));
+      res.json(await repoFacts({ name: 'candidate', dir, remit: '', match: [], docs: [], plans: [], archived: false }));
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }

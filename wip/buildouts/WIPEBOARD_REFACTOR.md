@@ -59,7 +59,7 @@ Calls made in building this, reversible and flagged:
 placeholder paragraph, met by the owner on the live page. `public/js/team-wipeboard.js`
 is the real channel service — the thread and the owner's loud compose row, board id from
 the roster, polling only while entered. The tab deferral is over; what remains deferred
-is only the OLD ▤ commons tab (`public/js/wipeboard.js`), which the new UI replaces.
+was only the OLD ▤ commons tab, which the new UI replaced.
 
 **Create-on-open LANDED** (2026-08-24, third ruling of the day): "should always have a
 board — if there isn't one at team open it should fall back to create one." `GET
@@ -89,7 +89,7 @@ whiteboard. There should be none of this other shit where it was like the team b
 selecting which whiteboard to look at."* Opening a team shows **that team's wipeboard and
 nothing else** — no brief panel, no wipeboard picker. Done then, directly, not now.
 
-Until then `public/js/wipeboard.js` stays broken against the server (it compares
+Until retirement the old tile wipeboard stayed broken against the server (it compared
 `r.data.mtime`, which the API no longer sends: the thread renders once and then never
 updates). Known, accepted, and not worth fixing into a surface that is being replaced.
 

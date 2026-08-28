@@ -1,0 +1,23 @@
+# RONIN_REPO — this repository's declared arrangement. Read by tools; not inferred.
+#
+# A repository chooses REVIEWED desks or DIRECT publishing; it is never decided by
+# whichever branch happens to be checked out (ronin_sops/github.md). The desk model and
+# its boundaries: ronin-lab/wip/buildouts/WORKTREES.md; the network around it:
+# RONIN_CONTROL_SURFACE.md. Keys are key=value, one per line, like VERSION.
+#
+#   mode     reviewed | direct
+#   working  the shared development line (reviewed only): funnel point, merged into by
+#            team promotion, never edited in place
+#   stable   the reviewed/released line; moves only by PR from `working`
+#   desks    managed | none — whether sessions work in managed repo desks
+#            (branch + worktree cut from their team line) or in the home checkout
+#   publish  optional: the lines that may reach the remote, comma-separated
+#            (default `dev,master` — only those two ever do, ruled 2026-08-20);
+#            read by src/desks/arrangement.ts
+#
+# A repository without this file is treated as an undeclared shared checkout: the
+# legacy commit guard (libexec/ronin-claim) stays on and nothing pretends a desk exists.
+mode=reviewed
+working=dev
+stable=master
+desks=managed

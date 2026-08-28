@@ -181,7 +181,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 
 ## commons — commons.js (the commons shell: tab strip and frame)
 - **commons.tab_off:** {tab} — off, this service is not installed.
-- **commons.close_title:** Back to the terminal
 - **commons.sessions:** sessions
 
 ## home — home.js (the status words and the launch receipt)
@@ -260,6 +259,9 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team.repos:** Repositories
 - **new_team.repos_desc:** Optional, comma-separated.
 - **team.branch:** Branch
+- **team.lines:** Team lines
+- **team.promotion:** Promotion
+- **team.parked_desks:** Parked desks
 - **new_team.optional:** Optional.
 - **team.wipeboard:** Wipeboard
 - **new_team.wipeboard_desc:** Optional. Blank uses the Team’s own name.
@@ -375,11 +377,36 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team_wipeboard.post_failed:** Could not post — {message} (your text is still in the box)
 - **team_wipeboard.no_team:** No Team resolved — nothing to read.
 
+## desks — desks.js (the ⑂ desk readings: tile head, roster column, Team page)
+- **desks.detached:** (detached)
+- **desks.count_one:** 1 desk
+- **desks.count_many:** {n} desks
+- **desks.pending_n:** {n} pending
+- **desks.private_n:** {n} private
+- **desks.dirty_n:** {n} dirty
+- **desks.parked_n:** {n} parked
+- **desks.blocked_n:** {n} blocked
+- **desks.none:** No desk listed yet. A coding launch opens one; the session lists its repos in TEGAMI.
+- **desks.line:** → {line}
+- **desks.ahead:** ahead {n}
+- **desks.behind:** behind {n}
+- **desks.dirty_files:** {n} unsaved
+- **desks.pending_by:** update pending, by {who}
+- **desks.parked:** parked
+- **desks.unknown:** not found on this box
+- **desks.blocked:** blocked: {why}
+- **desks.promotion_blocking:** ⚠ {state} — {summary} ({id})
+- **desks.promotion_last:** last {summary} · {id} · by {who}
+- **desks.promotion_none:** none yet
+- **desks.parked_gone:** {name} · gone · {n} ahead
+- **desks.parked_none:** none
+
 ## team — team-view.js (the Team page)
 - **team.flip_commons:** Show the Team commons in this workspace
 - **team.flip_terminal:** Show the terminal in this workspace
 - **team.workspace_1:** Workspace 1
 - **team.workspace_2:** Workspace 2
+- **team.commons_card:** Team commons
 - **team.roster_of:** Roster: {team}
 - **team.workspace_blank:** Workspace
 - **team.new_session:** New session
@@ -630,28 +657,8 @@ The pad's current config downloads as a backup first.
 - **pad.key_tile_right:** 🕹 Tile right
 
 ## wipeboard — wipeboard.js (the ▤ Wipeboard tab)
-- **wipeboard.back:** ‹ wipeboards
-- **wipeboard.back_title:** Back to the wipeboard listing
-- **wipeboard.brief:** brief
-- **wipeboard.brief_title:** Show / hide the brief
-- **wipeboard.brief_placeholder:** what this wipeboard is for, and what is to be discussed
-- **wipeboard.brief_label:** wipeboard brief
-- **wipeboard.say_placeholder:** say something to everyone on this wipeboard
-- **wipeboard.say_label:** post to this wipeboard
-- **wipeboard.open_team:** Open the {team} team's wipeboard
-- **wipeboard.open_custom:** Open the custom wipeboard "{name}"
-- **wipeboard.add:** ＋ wipeboard
-- **wipeboard.add_title:** Start a custom wipeboard — a team already has one automatically
-- **wipeboard.add_prompt:** Name the wipeboard (letters, digits, - _):
-- **wipeboard.not_notified:** On the wipeboard, but not notified — its dial is not 🤖
-- **wipeboard.remove_member:** Remove {name} from this wipeboard
-- **wipeboard.membership_follows:** membership follows the team — tag sessions in the ⌂ Roster
-- **wipeboard.add_member:** ＋ add…
-- **wipeboard.team_option:** +{team} (team)
 
 ## wipeboard — the kind note
-- **wipeboard.kind_team:** team wipeboard
-- **wipeboard.kind_custom:** custom wipeboard
 
 ## roots — projectroots.js (the ▣ Project roots tab)
 - **roots.include:** ＋ include
@@ -669,10 +676,25 @@ The catalog entry goes. {dir} is not touched.
 - **roots.exclude_failed:** could not exclude it — {message}
 - **roots.empty:** nothing included yet — ＋ include asks Mika to point Ronin at a directory
 - **roots.loading:** loading…
+- **roots.chip_reviewed_desks:** reviewed · desks
+- **roots.chip_reviewed:** reviewed
+- **roots.chip_direct:** direct
+- **roots.chip_reviewed_title:** Reviewed: work happens at desks that hand in to a team line; team promotion moves {working}; {stable} moves by PR. The branch mounted here is incidental.
+- **roots.chip_direct_title:** Direct: commits land on {stable} itself. No desks, no team line.
+- **roots.chip_shared:** shared checkout
+- **roots.chip_shared_title:** No RONIN_REPO record: sessions share this checkout and the claim hook guards the index. Add the record to declare reviewed desks or direct publishing.
 
 ## docs — docs.js (the ▧ Docs tab)
 - **docs.back_title:** Back to the list
 - **docs.save:** Save
+- **docs.pill_tracked:** Tracked
+- **docs.pill_plans:** Plans
+- **docs.pill_docs:** Docs
+- **docs.shelf_empty:** Nothing on this shelf — a project root names its places on its record (Project roots → docs / plans).
+- **roots.f_docs:** docs
+- **roots.f_docs_hint:** Where this root keeps its documentation — directories or files, relative to the directory
+- **roots.f_plans:** plans
+- **roots.f_plans_hint:** Where this root keeps its build-out plans
 - **docs.open_browser:** Open in browser ↗
 - **docs.frame_title:** document
 - **docs.discard_confirm:** Discard unsaved changes?
@@ -1073,8 +1095,6 @@ The catalog entry goes. {dir} is not touched.
 - **output.title:** Output shown in this tile
 
 ## bar — viewport.js (the layout button)
-- **bar.layout_one:** {n} terminal — click for {next}
-- **bar.layout_many:** {n} terminals — click for {next}
 
 ## term — termview.js (the copy hint)
 - **term.copy_hint:** Trying to copy? Hold {mod} while you drag, then ⌘C.
@@ -1093,18 +1113,18 @@ The catalog entry goes. {dir} is not touched.
 - **head.dial_help:** Who may touch this session: 👤 owner only · 👁 outside agents watch · 🤖 outside agents type. Yours to turn; agents never flip it.
 - **head.dot_help:** Connection: green = attached, grey = disconnected
 - **head.select_help:** Pick / switch the session shown in this tile
+- **head.rename_help:** Rename this session
+- **head.rename_quiet:** Rename session — no session in this tile yet
+- **head.rename_prompt:** Rename session
+- **head.rename_failed:** Could not rename session: {reason}
 - **head.chip_help:** Where this session is on its ladder, and how long it has been there. Opens the ladder.
 - **head.job_help:** What this session is doing
 - **head.job_quiet:** What a session is doing — no session in this tile yet
 - **head.job_read:** {job} — click to change what this session is doing
 - **head.job_unmarked:** Not marked — click to say what this session is doing
-- **head.branch_help:** Branches this session is working on
-- **head.branch_quiet:** Branches — no session in this tile yet
-- **head.branch_no_michi:** Branches — michi is not installed, so TEGAMI checkout data is unavailable
-- **head.detached:** (detached)
-- **head.branch_none:** No branch listed yet. The session keeps its repos list current in TEGAMI.
+- **head.branch_help:** Desks this session is working at — repo, branch, and what is ahead, pending or parked
+- **head.branch_quiet:** Desks — no session in this tile yet
 - **head.output_help:** Output — live terminal or one of RIREKI’s unlocked views
-- **head.commons_help:** ⌃⇧C — the CoWorking Commons: roster, new session, wipeboard, docs, roots, hotwords. Opens over this tile; ✕ comes back.
 - **head.mention_help:** Mention another session — choose a name to add it to the message box
 - **head.mention_quiet:** Mentions — no session in this tile yet
 - **head.macros_quiet:** Macros — no session in this tile yet
@@ -1115,11 +1135,6 @@ The catalog entry goes. {dir} is not touched.
 - **head.tags_none:** Teams (none yet)
 - **head.gauge_help:** Context gauge — how full this session's context window is, read off the pane's own status line. Hidden until there is a reading.
 - **head.dial_quiet:** Control dial — no session in this tile yet
-- **head.docs_help:** This session's docs — open one over this tile
-- **head.docs_quiet:** This session's docs — no session in this tile yet
-- **head.docs_no_michi:** This session's docs — michi is not installed, so no session keeps a doc list
-- **head.docs_read:** Docs — {n} listed by this session. Opens one over this tile; ✕ comes back.
-- **head.docs_none:** Docs — this session has listed none yet. An agent lists one with write_tegami --doc
 - **head.note_help:** Session note (post-it)
 - **head.note_quiet:** Session note — no session in this tile yet
 - **head.note_has:** Session note (has notes)
@@ -1139,11 +1154,13 @@ The catalog entry goes. {dir} is not touched.
 - **pad.w_wispr:** Wispr push-to-talk (right ⌥) — Wispr handles it, Ronin stays out of the way
 
 ## bar — layout.js (the ニ sheet)
-- **errors.tile_failed:** tile {n} failed to build
 - **bar.keys:** Keys
 - **bar.ni_title:** Ronin — keys, home, new session, board, pad
 - **bar.new:** New
 - **bar.desk:** Admin Desk
+- **bar.shape_title:** Two workspaces — click for four
+- **bar.shape_two:** Two workspaces — click for four
+- **bar.shape_four:** Four workspaces — click for two
 
 ## me — tiledrop.js (the メ sheet)
 - **me.status:** Status
@@ -1233,17 +1250,8 @@ The catalog entry goes. {dir} is not touched.
 - **stats.desktop_touch:** desktop : touch
 
 ## wipeboard — the status lines
-- **wipeboard.brief_not_saved:** brief not saved — {message} (your text is still in the box)
-- **wipeboard.no_teams:** no teams yet — tag sessions in the ⌂ Roster and each team gets its own wipeboard
-- **wipeboard.start_failed:** could not start a wipeboard — {message}
-- **wipeboard.remove_failed:** could not remove {name} — {message}
-- **wipeboard.add_failed:** could not add — {message}
-- **wipeboard.nothing_posted:** nothing posted yet
-- **wipeboard.read_failed:** could not read this wipeboard
-- **wipeboard.post_failed:** could not post — {message} (your text is still in the box)
 
 ## tile — the prompt, the ended line, the picker tooltips
-- **tile.new_session_prompt:** New tmux session name (letters, digits, _ or -):
 - **tile.session_ended:** session ended.
 - **output.title_locked:** Output — Locked only. Ronin Services is not installed.
 - **output.title_choose:** Output — choose the live terminal or a RIREKI view
@@ -1348,7 +1356,6 @@ The catalog entry goes. {dir} is not touched.
 - **bar.newtab_title:** Open a second Ronin in a new browser tab
 - **bar.new_title:** ⌃⇧N — start a new session: pick what it is for, where it works and who it is
 - **bar.desk_title:** Admin Desk — this machine and this app: configuration, project roots, hotwords, Koshi, gbrain, stats, appearance, updates, log out
-- **bar.layout_default_title:** Four terminals — click for 1
 - **keys.esc:** Esc
 - **keys.interrupt_title:** Ctrl-C (interrupt)
 - **keys.latest_title:** Jump to latest output
@@ -1418,6 +1425,9 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.egress_log:** where Ronin has connected
 - **glossary.services:** Services
 - **glossary.session_menu:** Status · Ladder · Macros · Detach · Kill session
+- **league.commons:** League commons
+- **league.view:** League view
+- **league.open_workspace:** League workspace
 - **customize.desk_profiles:** Desk profiles
 - **customize.desk_profiles_blurb:** Your standing defaults for the surfaces you work at — a skin, a lexicon, a campaign kind, a Team page arrangement. Choosing one is a setting, on the gear.
 - **customize.lexicons:** Lexicons

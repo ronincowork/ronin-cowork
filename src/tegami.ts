@@ -60,6 +60,15 @@ const exec = promisify(execFile);
 export interface TegamiCheckout {
   repo: string;
   branch: string;
+  /**
+   * DESK FIELDS, OPTIONAL — written by the tool that opened the desk (Track 1's
+   * `desk open`), never asked of the agent: the worktree mounted on the branch and the
+   * team line it hands in to. Everything else about a desk (dirty, ahead/behind, parked,
+   * pending, last hand-in, blocked) is DERIVED at read time by `src/desk-state.ts` —
+   * mechanical facts stay tool-owned, not prose the session maintains.
+   */
+  worktree?: string;
+  line?: string;
 }
 
 /**
@@ -280,6 +289,33 @@ async function readAxis(name: string, key: 'session_role'): Promise<string> {
 
 /** WHAT the session is doing now — the mark, and the one session-authored axis. */
 export const readSessionRole = (name: string): Promise<string> => readAxis(name, 'session_role');
+
+/**
+ * THE DESKS a session says it is working at — `repos[]` out of its letter, the same
+ * keyhole discipline as `readAxis`: a missing or malformed letter reads as no desks,
+ * and an entry keeps only the keys this shape knows. A session with none listed is a
+ * legal state (a non-code session), not a fault.
+ */
+export async function readRepos(name: string): Promise<TegamiCheckout[]> {
+  try {
+    const text = await fs.readFile(tegamiPath(await sessionKey(name)), 'utf8');
+    const fenced = text.match(/```(?:json)?\s*\n([\s\S]*?)\n```/);
+    const raw = fenced ? fenced[1] : text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1);
+    const v = (JSON.parse(raw) as Record<string, unknown>)['repos'];
+    if (!Array.isArray(v)) return [];
+    return v
+      .filter((e): e is Record<string, unknown> => !!e && typeof e === 'object')
+      .map((e) => {
+        const out: TegamiCheckout = { repo: String(e.repo ?? '').trim(), branch: String(e.branch ?? '').trim() };
+        if (typeof e.worktree === 'string' && e.worktree.trim()) out.worktree = e.worktree.trim();
+        if (typeof e.line === 'string' && e.line.trim()) out.line = e.line.trim();
+        return out;
+      })
+      .filter((e) => e.repo || e.branch);
+  } catch {
+    return [];
+  }
+}
 
 /**
  * THE OWNER'S HAND ON THE TASK — set what a session is doing, from the tile.

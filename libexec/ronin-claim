@@ -1,17 +1,30 @@
 #!/usr/bin/env bash
 # ronin-claim — which session staged what, so a commit can only carry its own work.
 #
-# THE PROBLEM IT SOLVES. Every session on this box shares ONE working tree and ONE git
-# index. `git add` writes to that shared index, and `git commit` with no pathspec commits
-# ALL of it — so anything another session staged between your add and your commit rides
-# along under your message. Staging explicit paths does not help: the theft happens at
-# commit time, not add time.
+# THE PROBLEM IT SOLVES. In a SHARED checkout — the repository's home working tree, the
+# one every shell on the box can stand in — several sessions write to ONE git index.
+# `git add` writes to that shared index, and `git commit` with no pathspec commits ALL of
+# it — so anything another session staged between your add and your commit rides along
+# under your message. Staging explicit paths does not help: the theft happens at commit
+# time, not add time.
 #
 # It is a race, so it is rare and it is invisible. Every gate still passes, the tree is
 # still correct, and only the COMMITS are wrong — which is the worst possible shape,
 # because nothing on the box shows it.
 #
-#   ronin-claim add <paths...>   stage-and-record: what this session actually staged
+# WHERE IT APPLIES. Only where the index is shared: the home checkout during the
+# transition to managed desks, and a declared-direct repository's shared checkout. A
+# managed repo desk (WORKTREES.md) is a linked worktree with a private index, so the
+# hazard is absent and the shim and hooks never call this there — libexec/ronin-repo-mode
+# is the one place that decides, and `check` asks it too, so a stray direct call in a
+# desk still says nothing. Do not read this file as a description of how reviewed work is
+# meant to be arranged: it is the guard for the arrangement being left behind.
+#
+#   ronin-claim add [<git globals>] -- <add args...>
+#                                stage-and-record: what this session actually staged.
+#                                Globals are git's own (-C dir, -c k=v …), as the shim
+#                                received them before `add`; they steer the snapshot and
+#                                the add alike, so the repo judged is the repo staged.
 #   ronin-claim check            does the index hold anything this session did not stage?
 #   ronin-claim clear            forget this session's claim (after a successful commit)
 #   ronin-claim show             what this session has staged
@@ -67,26 +80,50 @@ key_of() {
 STORE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ronin-store"
 [ -x "$STORE" ] || STORE=ronin-store
 
-# The claim file for this session, or empty if we cannot tell who we are.
+# Git's global options for THIS invocation (set by `add` from what precedes `--`; empty for
+# check/clear/show, which the hooks run inside the repo already). Every git call here
+# carries them, so a `-C dir` steers the snapshot, the add and the toplevel alike.
+# The real git binary, never a shim: the shim hands it down as RONIN_REAL_GIT (it has
+# already stripped every Ronin shim from PATH); a direct call falls back to /usr/bin/git,
+# so this tool can never be the second half of a shim-calls-shim loop.
+GIT=${RONIN_REAL_GIT:-}
+[ -n "$GIT" ] && [ -x "$GIT" ] || GIT=/usr/bin/git
+G=()
+g() { "$GIT" ${G[@]+"${G[@]}"} "$@"; }
+
+# The claim file for this session AND this repository, or empty if we cannot tell who we
+# are. Per repository, because one session can stage in several (a fixture repo in a test,
+# a desk, the shared checkout) and a claim made in one must never be judged — or
+# recorded — in another. RONIN_CLAIM_FILE is the test seam (tests/control-surface-
+# compat.test.ts): the unit floor has no tmux and no store, so it names the file outright.
 claim_file() {
-  local name key dir
+  local name key dir top tag
+  if [ -n "${RONIN_CLAIM_FILE:-}" ]; then printf '%s\n' "$RONIN_CLAIM_FILE"; return 0; fi
+  top=$(g rev-parse --show-toplevel 2>/dev/null) || return 1
+  tag=$(printf '%s' "$top" | cksum | cut -d' ' -f1)
   name=$(me) || return 1
   key=$(key_of "$name") || return 1
   dir="$("$STORE" session 2>/dev/null)" || return 1
   [ -n "$dir" ] || return 1
-  printf '%s/%s/staged\n' "$dir" "$key"
+  printf '%s/%s/staged-%s\n' "$dir" "$key" "$tag"
 }
 
 # One index snapshot: "<blob> <path>" per staged file. Blob included so that RE-staging a
 # file with new content registers as this session's act even when the path was already
 # staged by someone else.
-snapshot() { git ls-files -s 2>/dev/null | awk '{print $2, $4}'; }
+snapshot() { g ls-files -s 2>/dev/null | awk '{print $2, $4}'; }
 
 case "${1:-}" in
   add)
     shift
+    # Everything before the first `--` is git's globals; the rest is the add's own argv
+    # (which may itself contain a later `--`, and that one is git add's).
+    while [ $# -gt 0 ]; do
+      [ "$1" = "--" ] && { shift; break; }
+      G+=("$1"); shift
+    done
     before=$(snapshot)
-    git add "$@" || exit $?
+    g add "$@" || exit $?
     after=$(snapshot)
     cf=$(claim_file) || exit 0     # not in a session: stage normally, record nothing
     mkdir -p "$(dirname "$cf")" 2>/dev/null || exit 0
@@ -99,11 +136,14 @@ case "${1:-}" in
     ;;
 
   check)
+    # Not a shared index (a desk, or an explicit off) -> nothing to judge. Fails OPEN.
+    MODE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ronin-repo-mode"
+    [ -x "$MODE" ] && [ "$("$MODE" claim 2>/dev/null)" != on ] && exit 0
     cf=$(claim_file) || exit 0     # cannot tell who we are -> never block. Fails OPEN.
     # No claim file means this session has staged nothing through the shim, so there is no
     # basis on which to judge it. Silence, not suspicion.
     [ -s "$cf" ] || exit 0
-    staged=$(git diff --cached --name-only 2>/dev/null | sort -u)
+    staged=$(g diff --cached --name-only 2>/dev/null | sort -u)
     [ -n "$staged" ] || exit 0
     extra=$(comm -23 <(printf '%s\n' "$staged") <(sort -u "$cf"))
     [ -n "$extra" ] || exit 0
@@ -114,10 +154,11 @@ case "${1:-}" in
       echo
       printf '%s\n' "$extra" | sed 's/^/    /'
       echo
-      echo "  Every session on this box shares one working tree and one git index."
+      echo "  This is a SHARED checkout: every session standing here shares one git index."
       echo "  \`git commit\` with no pathspec commits the WHOLE index, so another session's"
       echo "  staged work rides along under your message. Nothing else shows this: the tree"
       echo "  stays correct and every gate still passes — only the commits are wrong."
+      echo "  (A managed repo desk has its own index and never sees this message.)"
       echo
       echo "  Commit just yours, which also leaves theirs safely staged:"
       echo

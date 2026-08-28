@@ -1,8 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 import { reconcileSessions } from './api.js';
 import { refreshHome } from './home.js';
-import { IS_TOUCH, S, TILE_COUNT, grid, tiles } from './state.js';
-import { setLayout } from './viewport.js';
+import { S, tiles } from './state.js';
 import { t } from './lexicon.js';
 
 export function connectEvents() {
@@ -80,17 +79,11 @@ export function hideChip() {
  * single-tile — the picker is the way back).
  */
 export function openSessionSomewhere(name) {
-  let t = tiles.find((x) => x.el.style.display !== 'none' && !x.session);
-  if (!t && !IS_TOUCH) {
-    const n = Number(grid.dataset.layout) || TILE_COUNT;
-    if (n < TILE_COUNT) {
-      setLayout(n === 1 ? 2 : 4);
-      t = tiles.find((x) => x.el.style.display !== 'none' && !x.session);
-    }
-  }
-  t = t || S.active || tiles[0];
-  t.connect(name);
-  t.activate();
+  if (S.connectSession?.(name)) return;
+  const tile = S.active || tiles.find((candidate) => candidate.el.style.display !== 'none') || tiles[0];
+  if (!tile) return;
+  tile.connect(name);
+  tile.activate();
 }
 
 /* ---------- commons — the admin pane inside a tile (tab label: ⌂ Roster) ----------

@@ -7,7 +7,7 @@
  *
  *   workspace1=view_mgr            a session's tile in that workspace
  *   workspace2=commons             the commons there (on the tab it was last on)
- *   workspace2=commons:docs        the commons, on that tab (chat · wipeboard · docs · config)
+ *   workspace2=commons:docs        the commons, on that tab (docs · wipeboard · config)
  *   workspace2=commons:docs:<path> the commons on ▧ Docs, with that file open
  *   workspace2=cowork              the cowork commons there (on the tab it was last on)
  *   workspace2=cowork:roots        the cowork commons, on that tab
@@ -33,7 +33,7 @@ const COWORK_TABS = { health: 'health', account: 'account', profile: 'profile', 
 
 const COLUMNS = ['workspace1', 'roster', 'workspace2'];
 const WORKSPACES = ['workspace1', 'workspace2', 'workspace3', 'workspace4'];
-const TABS = { chat: 'chat', wipeboard: 'wipeboard', docs: 'docs', config: 'team-configuration', 'team-configuration': 'team-configuration' };
+const TABS = { wipeboard: 'wipeboard', docs: 'docs', config: 'team-configuration', 'team-configuration': 'team-configuration' }; // chat is hidden (owner, 2026-08-28)
 
 /** Tokens (`key=value`) → { draft, errors }. Unknown words are errors, not guesses. */
 export function parseDraft(tokens = [], me = '') {
@@ -108,7 +108,8 @@ export function createArranger(verbs) {
     for (const ws of WORKSPACES) {
       const want = draft[ws];
       if (!want) continue;
-      if (want.commons) { verbs.putCommons(ws, want.tab, want.doc); did.push(`${ws} commons${want.tab ? ':' + want.tab : ''}`); }
+      if (want.surface) { if (verbs.putSurface(want.surface, ws, want.tab)) did.push(`${ws} ${want.surface}`); else did.push(`${ws}: no surface ${want.surface}`); }
+      else if (want.commons) { verbs.putCommons(ws, want.tab, want.doc); did.push(`${ws} commons${want.tab ? ':' + want.tab : ''}`); }
       else if (want.cowork) { verbs.putCowork(ws, want.tab); did.push(`${ws} cowork${want.tab ? ':' + want.tab : ''}`); }
       else if (want.session) { if (verbs.putSession(want.session, ws)) did.push(`${ws} ${want.session}`); else did.push(`${ws}: no session ${want.session}`); }
       else if (want.new) { verbs.putNew(ws); did.push(`${ws} new`); }

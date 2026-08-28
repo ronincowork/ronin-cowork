@@ -31,8 +31,10 @@ export async function fetchSessions() {
   return r;
 }
 
-export async function createSession(name) {
-  const r = await request('/api/launch', { method: 'POST', json: { name } });
+export async function renameSession(name, next) {
+  const r = await request('/api/sessions/' + encodeURIComponent(name) + '/rename', {
+    method: 'POST', json: { name: next },
+  });
   if (!r.ok) throw new Error(r.message);
   return r.data.name;
 }

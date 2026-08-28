@@ -9,12 +9,8 @@
   .tw-cards { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4); }
   .tw-cards [data-inert='true'] { cursor: default; }
   .tw-cards > [draggable='true'] { cursor: grab; }
-  /* the flip — C on a terminal's head row, T on the commons' tab strip; one letter, one click.
-     On the head it is sized by the head's own button rule (26×24, like ⛩ @ ⚡ メ — this
-     sheet sets no width there); on the strip it stands at tab height. */
-  .tw-flip { border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); color: var(--fg); padding: 0 var(--space-3); font: inherit; font-size: var(--text-3); cursor: pointer; }
-  .tw-flip:hover { border-color: var(--kaki); color: var(--fg-strong); }
-  .tw-flip-strip { min-width: var(--space-12); min-height: var(--space-11); }
+  /* THE TEAM COMMONS CARD — first in the roster, thinner than a session's (owner, 2026-08-28) */
+  .tw-commons-card { padding-top: var(--space-2); padding-bottom: var(--space-2); }
   /* a seat with a card over it — the drop will land here */
   .tw-terminal[data-drop-ready='true'] { outline: var(--edge-2) solid var(--kaki); outline-offset: calc(-1 * var(--edge-2)); }
   /* The selected workspace, when it holds a commons: the same inset ring `.tile.active` wears
@@ -28,10 +24,6 @@
   .tw-cell { display: flex; min-height: 0; min-width: 0; }
   .tw-cell[hidden] { display: none; }
   .tw-cell > * { flex: 1 1 auto; min-height: 0; min-width: 0; }
-  /* the shape control on the selector column's head: 2 | 4, one pressed */
-  .tw-count { margin-left: auto; display: inline-flex; gap: var(--space-1); }
-  .tw-count-btn { border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); color: var(--muted); padding: 0 var(--space-3); font: inherit; font-size: var(--text-3); cursor: pointer; }
-  .tw-count-btn[aria-pressed='true'] { border-color: var(--kaki); color: var(--fg-strong); }
 
   /* a blank workspace: the word, centred, and nothing else (owner, 2026-08-27) */
   .tw-blank-word { margin: auto; font-size: var(--text-5); color: var(--muted); }
@@ -39,6 +31,9 @@
   .tw-new-head { display: flex; align-items: center; gap: var(--space-3); flex: 0 0 auto; min-height: var(--row-head); padding: var(--space-3) var(--space-4); background: var(--bg-2); border-bottom: var(--edge) solid var(--line); }
   .tw-new-title { color: var(--fg-strong); }
   .tw-new-body { flex: 1; min-height: 0; overflow-y: auto; }
+  /* the launcher's pane shows only inside `.home[data-pane='new']` by the commons' rule; in a
+     workspace it is the whole surface, so it shows here (owner, 2026-08-27: "nothing showed") */
+  .tw-new-body .home-null { display: flex; }
 
   .tw-note { padding: var(--space-6) var(--space-7); color: var(--muted); font-size: var(--text-3); }
   /* -- Team Configuration: a reading of the team — its record, then its live roster -- */

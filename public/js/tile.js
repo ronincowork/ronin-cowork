@@ -20,16 +20,15 @@
  * nineteen lines early — threw in this constructor and took the whole UI down on
  * 2026-08-08. Views mount in DOM order: tape, then the commons panel, then xterm.
  */
-import { createSession, fetchSessions } from './api.js';
+import { fetchSessions, renameSession } from './api.js';
 import { request } from './request.js';
 import { toast } from './ui.js';
 import { retireSession } from './session-retire.js';
-import { refreshHome } from './home.js';
 import { IS_TOUCH, NEW, S, saveState, serviceMissing, tiles } from './state.js';
-import { buildHome } from './commons.js';
 import { guard } from './errors.js';
 import { buildLadder } from './shingo.js';
 import { buildTileHead, syncTileHead } from './tilehead.js';
+import { installTextDrops } from './tiledroptext.js';
 import { pickJobFor } from './tilejob.js';
 import { dvrStep } from './dvr.js';
 import { TapeView } from './tapeview.js';
@@ -37,6 +36,7 @@ import { TermView } from './termview.js';
 import { TileWire } from './tilewire.js';
 import { buildComposer } from './composer.js';
 import { refreshKaki, setKakiPolicy } from './output.js';
+import { refreshDesks } from './desks.js';
 import { t } from './lexicon.js';
 
 export class Tile {
@@ -58,6 +58,8 @@ export class Tile {
     // references rather than re-queried: on touch these nodes are RELOCATED into the app
     // bar (js/tiledrop.js), and a later `querySelector` on the tile would find nothing.
     Object.assign(this, buildTileHead(this));
+    // Text dropped on the tile — an @mention or a doc reference — lands like a macro's.
+    installTextDrops(this);
 
     // 🔓 THE UNLOCKED VIEW — mounted first, so the tape sits under the panel and the
     // terminal in the stack, exactly as before.
@@ -67,23 +69,6 @@ export class Tile {
       onSummaryPolicy: (policy) => void this.setKakiPolicy(policy),
     });
 
-    // Home panel (the default state of a sessionless tile — and where a tile lands
-    // when its session dies). Overlays the terminal; hidden while connected.
-    const home = buildHome(this);
-    this.home = home.el;
-    this.renderHome = home.render;
-    this.showPane = home.showPane;
-    // ▧ Docs on ONE file. Raw: it shows a pane, it does not raise the panel — `openDoc` is
-    // the act. See js/tiledocs.js.
-    this.showDoc = home.openDoc;
-    this.body.appendChild(this.home);
-    // "Ask this of a PersonalAssistant" lands in THIS tile's Commons launcher. It was the
-    // desk's hand-off (js/tiledesk.js, retired 2026-08-27 with the overlay); the cowork
-    // commons now sends the ask to the active tile, which is this method.
-    this.askPersonalAssistant = (prompt) => {
-      this.showHome();
-      home.askPersonalAssistant(prompt);
-    };
 
     // SHINGO 信号: this session's ladder, read off its TEGAMI. The chip (built with the
     // header) is the indicator; tapping it is ALWAYS the ladder, gate or not.
@@ -120,7 +105,7 @@ export class Tile {
       this.body.addEventListener('pointerdown', () => this.activate());
       this.term.wireDragScroll({
         isLocked: () => this.locked,
-        overHome: (el) => this.home.contains(el),
+        overHome: () => false,
         sendRaw: (d) => this.sendRaw(d),
         activate: () => this.activate(),
       });
@@ -128,16 +113,12 @@ export class Tile {
       // Desktop: click focuses the terminal. Works great — left untouched.
       // (Home-panel clicks must NOT steal focus into the terminal, though.)
       this.body.addEventListener('pointerdown', (e) => {
-        if (this.home.contains(e.target)) {
-          this.activate();
-          return;
-        }
         this.focusTerminal();
       });
       // A drag that was meant to be a copy and silently was not — say the key.
       this.term.wireCopyHint({
         isLocked: () => this.locked,
-        overHome: (el) => this.home.contains(el),
+        overHome: () => false,
       });
     }
     // The wheel is xterm's business in BOTH modes now.
@@ -149,7 +130,9 @@ export class Tile {
     // otherwise iOS closes the <select> picker the instant it opens.
     this.el.addEventListener('focusin', (e) => {
       this.activate();
-      if (!IS_TOUCH && this.body.contains(e.target) && !this.home.contains(e.target)) this.term.focus();
+      // `this.home` (the tile commons) retired on 2026-08-28 with the grid page; a click in
+      // the body threw on it for a few hours and took the terminal's focus with it.
+      if (!IS_TOUCH && this.body.contains(e.target)) this.term.focus();
     });
     this.select.addEventListener('pointerdown', () => this.activate());
     this.select.addEventListener('change', () => this.onSelect());
@@ -159,63 +142,21 @@ export class Tile {
     this.ro.observe(this.body);
 
     this.refreshOptions();
-    this.showHome();
   }
 
-  /**
-   * Show the admin panel over the terminal. `which` picks the pane — 'sessions'
-   * (Home: the list + macro forms) or 'new' (put a session out). An empty tile
-   * lands on Home; a connected tile keeps whatever you last looked at, so the
-   * panel is a place you can come back to rather than a one-way screen.
-   */
-  showHome(which) {
-    this.home.classList.add('show');
-    // Home is where a tile lands — empty or not. New session is one tab away.
-    if (which) this.showPane(which);
-    else if (!this.session) this.showPane('sessions');
-    this.renderHome();
-    refreshHome(); // pull fresh status/gauge readings for the list
-  }
-
-  hideHome() {
-    this.home.classList.remove('show');
-  }
-
-  /** Open one of this session's docs over this tile — 📄 on the header (2026-08-18; why it
-   *  clobbers the terminal is the owner's own reasoning, in js/tiledocs.js). `showHome()`
-   *  bare on purpose: it raises the panel and leaves the pane alone, because `showDoc` is
-   *  about to name it — naming it twice redraws ▧ Docs' list before opening the file. */
-  openDoc(path) {
-    this.showHome();
-    this.showDoc(path);
-  }
-
-  /**
-   * ⛩ IS A TOGGLE — press it again and the Commons goes away (owner, 2026-08-17).
-   *
-   * It was a one-way door for a day: ⛩ called showHome() and pressing it a second time
-   * did nothing at all, so the only way back to the pane was the ✕ on the tab strip. A
-   * control that opens a thing and then goes dead is a control you press twice and
-   * distrust. `#brandbtn` had carried the right logic since long before — this is that
-   * logic, moved here so the bar's ⛩, the brand and the tile head's ⛩ cannot drift into
-   * three answers to one question.
-   *
-   * THE `this.session` GUARD IS LOAD-BEARING and is the reason this is not a plain flip:
-   * an empty tile has NOTHING behind the Commons, so hiding it would leave the owner
-   * staring at a blank cell with no way back in. On a tile with no session ⛩ stays a
-   * one-way door, on purpose.
-   *
-   * The pane check means ⛩ closes the Commons only when it is showing the room ⛩ opens.
-   * Pressed while you are reading Docs it takes you to ⌂ Roster — the destination it
-   * promises — rather than dismissing the panel out from under you.
-   */
-  toggleHome(which = 'sessions') {
-    if (this.homeVisible() && this.home.dataset.pane === which && this.session) this.hideHome();
-    else this.showHome(which);
-  }
-
-  homeVisible() {
-    return this.el.style.display !== 'none' && this.home.classList.contains('show');
+  async rename() {
+    if (!this.session) return;
+    const before = this.session;
+    const wanted = window.prompt(t('head.rename_prompt', 'Rename session'), before);
+    if (wanted == null || wanted.trim() === before) return;
+    try {
+      const next = await renameSession(before, wanted.trim());
+      await fetchSessions();
+      if (S.onSessionRenamed) S.onSessionRenamed(before, next);
+      else this.connect(next);
+    } catch (e) {
+      toast(t('head.rename_failed', 'Could not rename session: {reason}', { reason: e.message }), false);
+    }
   }
 
   refreshOptions() {
@@ -262,11 +203,16 @@ export class Tile {
    */
   async refreshTegami() {
     const session = this.session;
+    // The desks ride the same clock as the letter and are cowork's own (`/api/desks`),
+    // so the ⑂ reading is live on a box with no services at all.
+    if (session) await refreshDesks().catch(() => {});
+    if (this.session !== session) return;
     // The letter is MICHI's. No michi = no /tegami routes at all, so don't fetch into
     // a 404 — the chip simply never shows, same as a session with no letter.
     if (!session || serviceMissing('michi')) {
       this.chip.set(null);
       this.closeLadder();
+      syncTileHead(this);
       return;
     }
     const r = await request('/api/sessions/' + encodeURIComponent(session) + '/tegami', { cache: 'no-store' });
@@ -408,16 +354,8 @@ export class Tile {
   async onSelect() {
     const v = this.select.value;
     if (v === NEW) {
-      const name = (prompt(t('tile.new_session_prompt', 'New tmux session name (letters, digits, _ or -):')) || '').trim();
       this.select.value = this.session || '';
-      if (!name) return;
-      try {
-        await createSession(name);
-        await fetchSessions();
-        this.connect(name);
-      } catch (e) {
-        toast('could not create the session — ' + e.message, false);
-      }
+      S.showNewSession?.();
       return;
     }
     if (!v) {
@@ -589,8 +527,8 @@ export class Tile {
   }
 
   setDot(state) {
-    this.dot.className = 'dot ' + state;
-    this.dot.title = state === 'on' ? 'connected' : state === 'wait' ? 'connecting…' : 'disconnected';
+    // The dot left the head on 2026-08-28; the state still rides the tile for the stylesheet.
+    this.el.dataset.link = state;
   }
 
   detach() {
@@ -605,7 +543,6 @@ export class Tile {
     this.closeLadder();
     this.setDot('off');
     this.term.reset();
-    this.showHome();
     saveState();
   }
 
@@ -620,7 +557,6 @@ export class Tile {
   }
 
   connect(session) {
-    this.hideHome();
     this.session = session;
     // make sure the option exists & is selected
     if (![...this.select.options].some((o) => o.value === session)) {
