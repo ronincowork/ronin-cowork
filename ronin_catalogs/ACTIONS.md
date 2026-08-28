@@ -443,19 +443,33 @@ Implement from a buildout doc. Two independent dials, both stated by the owner:
   `live` = other work/agents/services depend on this, so sequence deliberately and
   say what must land in what order.
 Rules: **delete each item from the buildout doc as it is completed** (the doc shrinks
-to nothing; it is never a log). Work on a branch — never commit to main/master
-directly unless that repo's CLAUDE.md says otherwise. Verify per the doc before
-reporting.
+to nothing; it is never a log). **Work in your assignment's desks** — the repo desks in
+your brief and on your letter (`repos[]`); never edit `dev` or a team line, which are
+funnel points. **Commit** coherent checkpoints privately as you go. At each DONE leg,
+**offer a hand-in** — `tejun-desk hand-in` when the work is coherent for the team; a leg
+may prompt it, never perform it for you, and it is not `git push`. Run no full BYOIN at a
+commit or a hand-in. If your brief lists no desk (manual launch, plain terminal, a
+repository under direct publishing) you have none: commit to that repository's declared
+line as its own instructions say, and invent no desk state. Verify per the doc, with
+scoped evidence, before reporting.
 
 ## open-pr
 `action_kind: mechanical` — run it, don't deliberate.
-Push the branch and open a PR for the owner to approve. **Never merge.** Merging is
-the owner's gate (same principle as the control dial: the approval must be his hand).
+**Release-only.** Open the one pull request from the repository's declared working line
+to its declared stable line — `dev → master` for Ronin's product repositories, read from
+`RONIN_REPO`, never assumed to be `main`. Only those two lines ever reach the remote: a
+desk branch or a team line is **never** pushed, and an ordinary session never opens a PR
+for its own work (that is a hand-in, `tejun-desk hand-in`). The head SHA must carry a
+complete team-promotion receipt — the PR consumes the proof, it is not the first full
+check. **Never merge.** Merging is the owner's gate (same principle as the control dial:
+the approval must be his hand).
 ```bash
-git push -u origin <branch>
-gh pr create --base main --title "<title>" --body "<what + why + how verified>"
+working=$(libexec/ronin-repo-mode working); stable=$(libexec/ronin-repo-mode stable)
+git push origin "$working"
+gh pr create --base "$stable" --head "$working" --title "<title>" --body "<what + why + receipt id>"
 ```
-Report the PR URL.
+Report the PR URL. Under direct publishing there is no working line and no PR: this
+action does not apply.
 
 ## land-work
 `action_kind: judgement` — this one needs your reasoning; no tool can do it for you.
@@ -465,6 +479,11 @@ Close out finished work so nothing transient survives.
 1. Write/refresh a **persistent README** where the code lives (not in wip/) —
    what it is, how to run it, the decisions worth keeping.
 2. **Delete** the build-out doc — it has served its purpose (the documents library page's first landing question).
+3. **Close every desk explicitly.** Hand in what is coherent (`tejun-desk hand-in`,
+   or `--assignment` for every repo at once); park what is not (`tejun-desk park` — a
+   `WIP:` commit, branch kept, listed for the lead to hand in, inspect, reassign or
+   discard). Closing never publishes silently and never deletes. No desk (direct
+   publishing, shared checkout): commit and push the declared line instead.
 
 ## land-manifest — ONE LINE. READ THIS TWICE.
 `action_kind: judgement` — this one needs your reasoning; no tool can do it for you.
@@ -509,14 +528,18 @@ impossible by construction rather than caught by review.
 
 ## check-clean
 `action_kind: mechanical` — run it, don't deliberate.
-Before ending a session, verify nothing of value would vanish with it.
+Before ending a session, verify nothing of value would vanish with it — **at every desk
+of your assignment**, not just the one your shell is in.
 ```bash
-git status --short && git log --oneline -3
+tejun-desk status                    # per desk: dirty · ahead (not handed in) · pending update · blocked
+git status --short && git log --oneline -3   # no desk: the checkout you are in
 ```
-Clean tree and everything pushed → safe to end. Uncommitted work, an unpushed commit,
-or an artifact the owner would want kept → **STOP and say so**: that case is a `land`,
-not a `delete`. Judgement, not just git: a written doc or finding that exists only in
-your pane also counts as unsaved.
+Every desk saved, handed in and accepted (or parked on purpose) → safe to end. Unsaved
+files, commits ahead of the team line not yet handed in, a refused hand-in awaiting the
+lead, or an artifact the owner would want kept → **STOP and say so**: that case is a
+`land`, not a `delete`. Remote publication is not session cleanliness — "pushed" is not
+the question at a desk. Judgement, not just git: a written doc or finding that exists
+only in your pane also counts as unsaved.
 
 ## read-work-record
 `action_kind: judgement` — this one needs your reasoning; no tool can do it for you.
@@ -607,8 +630,9 @@ success message to print: the proof is that the session is gone. If you are stil
 able to type after this step, you did not perform it. Never claim a landing is
 complete while your pane still exists.
 
-This is the LAST step, after the README, the manifest line, the push, and your report
-to the owner. Nothing of value may exist only in your pane when you do this. Requires
+This is the LAST step, after the README, the manifest line, every desk handed in or
+parked, and your report to the owner. Nothing of value may exist only in your pane — or
+only in a desk nobody has been told about — when you do this. Requires
 dial `write`. Never perform harakiri on another session — the tool refuses.
 
 If Ronin is unreachable the tool reports `STUCK` and your session stays. That is the

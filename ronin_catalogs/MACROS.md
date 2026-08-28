@@ -231,22 +231,23 @@ edits the doc before any cutting starts.
 ## cutcode
 - **class:** session_macro.workflow
 - **label:** Build what the plan says
-- **blurb:** Point the agent at a plan you have already agreed and it builds from it — one step at a time, or all the way to the end. It opens a pull request for you to approve and never merges anything itself.
+- **blurb:** Point the agent at a plan you have already agreed and it builds from it — one step at a time, or all the way to the end. It works at its own desk, saves checkpoints privately, and hands finished work in to the team when a step is whole; it never opens a pull request or merges anything itself.
 Build from a buildout doc. "cutcode: <doc> leg" / "cutcode: <doc> finish"
 (add `live` if sequencing matters; default is `dev`).
 
 | # | Action | With |
 |---|---|---|
-| 1 | cut-code | scope `leg`\|`finish`, coordination `dev`\|`live`; delete each completed item from the doc as you go |
-| 2 | open-pr | branch → PR for the owner's approval; never merge |
-| 3 | report-outcome | what got cut, what remains in the doc, the PR link |
+| 1 | cut-code | scope `leg`\|`finish`, coordination `dev`\|`live`; work in your desks; commit privately; delete each completed item from the doc as you go |
+| 2 | report-outcome | what got cut, what remains in the doc, what was handed in and what is still private on the desk |
 
-Report: what got cut, what remains in the doc, the PR link. On `leg`, stop and wait.
+Report: what got cut, what remains in the doc, what was handed in (`tejun-desk hand-in`,
+offered at each DONE leg — your call, never automatic) and what is still private on the
+desk. No PR: that is the release process's, from `dev`. On `leg`, stop and wait.
 
 ## land
 - **class:** session_macro.workflow
 - **label:** Finish up, then close this session
-- **blurb:** Writes the work down where it will last — a README beside the code, a pull request for anything uncommitted, one line in the index of finished work — and then ends the session for good. Use it when the work is done: the pane closes and there is nothing to come back to.
+- **blurb:** Writes the work down where it will last — a README beside the code, every desk handed in or parked, one line in the index of finished work — and then ends the session for good. Use it when the work is done: the pane closes and there is nothing to come back to.
 **Land YOURSELF.** No args: finish the work of THIS session, leave the record, end
 this session. The buildout doc you were working from is your own wip;
 if you truly can't tell what you were building, ask — don't guess.
@@ -255,13 +256,13 @@ which does not exist yet. Don't improvise it.)
 
 | # | Action | With |
 |---|---|---|
-| 1 | land-work | persistent README where the code lives; DELETE the wip buildout doc |
-| 2 | open-pr | if anything is uncommitted |
-| 3 | land-manifest | ONE line appended to the manifest (location per the documents SOP) — an index entry, not history |
-| 4 | report-outcome | README path, PR link, manifest line — BEFORE you end |
-| 5 | harakiri | end this session — last act, after everything is pushed and reported |
+| 1 | land-work | persistent README where the code lives; DELETE the wip buildout doc; close every desk — hand in what is coherent, park the rest |
+| 2 | land-manifest | ONE line appended to the manifest (location per the documents SOP) — an index entry, not history |
+| 3 | report-outcome | README path, what was handed in and what was parked, manifest line — BEFORE you end |
+| 4 | harakiri | end this session — last act, after every desk is handed in or parked and reported |
 
-Report to the owner (before step 4): the README path, the PR link, the manifest line.
+Report to the owner (before step 4): the README path, the hand-in receipts and any parked
+desk, the manifest line. No PR is opened here: `dev → master` belongs to the release process.
 Sessions are disposable: nothing of value may live only in a pane.
 
 ## delete
@@ -274,11 +275,11 @@ no manifest line, no PR. It just goes away.
 
 | # | Action | With |
 |---|---|---|
-| 1 | check-clean | uncommitted work or an unsaved artifact → STOP: that is a `land`, not a `delete` |
+| 1 | check-clean | unsaved files, commits not handed in, or an unsaved artifact at any desk → STOP: that is a `land`, not a `delete` |
 | 2 | report-outcome | one line: what you were, that nothing was kept |
 | 3 | harakiri | end this session |
 
-Contrast with `land`: land RECORDS (README + manifest + PR) then dies; delete just dies.
+Contrast with `land`: land RECORDS (README + manifest + hand-in/park) then dies; delete just dies.
 
 ## team
 - **class:** session_macro.lookup
