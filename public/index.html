@@ -27,7 +27,6 @@
          still the absolute /vendor path shared by live and staging) so every app rule
          outranks vendor rules by layer order rather than by accident of load order. -->
     <link rel="stylesheet" href="style.css" />
-    <link rel="stylesheet" href="css/league.css" />
     <link rel="stylesheet" href="css/team-workspace.css" />
     <link rel="stylesheet" href="css/new-team.css" />
     <link rel="stylesheet" href="css/agent-configuration.css" />
@@ -35,7 +34,7 @@
   <body>
     <header id="bar">
       <button id="brandbtn" class="brand" data-t-title="bar.brand_title" title="⛩ ronin — the session roster">⛩ ronin</button>
-      <a id="leaguebtn" class="brand" href="#/league" target="_blank" rel="noopener noreferrer"
+      <a id="leaguebtn" class="brand" href="#/league-workspace" target="_blank" rel="noopener noreferrer"
          data-t-title="bar.league_title" title="Open League in a new browser tab" data-t="bar.league">League</a>
       <button id="servicesstate" class="services-state" type="button" hidden aria-expanded="false"></button>
       <!-- ＋ opens a SECOND RONIN in a new browser tab. The owner already worked this way by

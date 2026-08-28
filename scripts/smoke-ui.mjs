@@ -261,9 +261,9 @@ async function checkJourneys(page, label, jsErrors) {
     };
   });
   if (leagueDoor.visible && leagueDoor.text === 'League' && leagueDoor.sameOrigin
-    && leagueDoor.hash === '#/league' && leagueDoor.target === '_blank'
+    && leagueDoor.hash === '#/league-workspace' && leagueDoor.target === '_blank'
     && leagueDoor.rel.includes('noopener')) {
-    ok(`${label}: header League link opens same-origin #/league in a noopener new tab`);
+    ok(`${label}: header League link opens same-origin #/league-workspace in a noopener new tab`);
   } else {
     bad(`${label}: header League new-tab contract is broken — ${JSON.stringify(leagueDoor)}`);
   }
@@ -521,7 +521,7 @@ async function checkJourneys(page, label, jsErrors) {
       ['square', 'soft', 'tight', 'roomy', 'paper', 'mono'].map((name) => [name, {}]),
     );
     for (const [view, route, targets] of [
-      ['League', '#/league', { shape: '.league-new', surface: '.league-surface', feature: '.league-new', backdrop: true }],
+      ['League', '#/league-workspace', { shape: '.league-selector', surface: '.tw-cell', feature: '.league-selector .wk-card', backdrop: true }],
       ['Team', '#/team', { shape: '.tw-kanban', surface: '.tw-kanban', feature: '.tw-cards' }],
       ['New Team', '#/new-team', { shape: '.nt-definition', surface: '.nt-definition', feature: '.nt-definition h2' }],
     ]) {
@@ -858,7 +858,7 @@ async function checkJourneys(page, label, jsErrors) {
       return;
     }
 
-    const route = destination === 'team' ? '#/team' : '#/league';
+    const route = destination === 'team' ? '#/team' : '#/league-workspace';
     await page.goto(URL_.replace(/#.*$/, '') + route, { waitUntil: 'networkidle', timeout: 30_000 });
     await page.waitForSelector(`[data-workspace-view="${destination}"]:not([hidden])`, { timeout: 5000 });
     await page.goto(URL_.replace(/#.*$/, '') + '#/sessions', { waitUntil: 'networkidle', timeout: 30_000 });
