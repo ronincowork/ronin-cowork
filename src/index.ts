@@ -28,6 +28,7 @@ import { registerLaunchPreflight } from './routes/launch-preflight.js';
 import { registerPasskeyLogin, registerPasskeyManage } from './routes/passkey-api.js';
 import { registerSessions } from './routes/sessions-api.js';
 import { registerTeams } from './routes/teams-api.js';
+import { registerDesks } from './routes/desks-api.js';
 import { registerTeamPage } from './routes/team-page-api.js';
 import { startTomodachiSender } from './activation/tomodachi.js';
 import { registerServicesActivation, resumeInstallWatch } from './routes/services-activation-api.js';
@@ -250,6 +251,7 @@ registerLaunch(app); // /api/launch (both variants), /api/sessions, /api/home, s
 registerLaunchPreflight(app); // /api/launch/preflight — the dry run: resolveForm with no session and no roster — src/routes/launch-preflight.ts
 registerCatalogs(app); // /api/macros, /api/hotwords*, /api/project-roots*, /api/session-launch-specs, /api/role-families*, /api/session-roles, /api/team-roles, /api/launch-profile — src/routes/catalogs.ts
 registerTeams(app); // /api/team-rosters* — the durable half of every team — src/routes/teams-api.ts
+registerDesks(app); // /api/sessions/:name/desks, /api/teams/:name/desks — derived desk state, the control surface's visible half — src/routes/desks-api.ts
 registerTeamPage(app); // /api/teams/:team/page — the team page's view, and drafts an agent hands it — src/routes/team-page-api.ts
 registerVersion(app); // /api/version — release string, or the commit this process started from — src/routes/version.ts
 registerUpdate(app); // /api/update/* — the ⚙ gear's check + run, press-only — src/routes/update-api.ts
