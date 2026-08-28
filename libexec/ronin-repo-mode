@@ -34,6 +34,10 @@
 # FAILS OPEN like everything beside it: outside a git tree every fact is empty and the
 # claim decision is `off`, because a guard with no basis to judge should say nothing.
 set -u
+# Real git only (the shim passes RONIN_REAL_GIT down); a shim answering `rev-parse` is
+# harmless, but this tool must never be part of a shim-calls-shim loop.
+GIT=${RONIN_REAL_GIT:-}; [ -n "$GIT" ] && [ -x "$GIT" ] || GIT=/usr/bin/git
+git() { "$GIT" "$@"; }
 
 want="${1:-}"
 top="$(git rev-parse --show-toplevel 2>/dev/null || true)"

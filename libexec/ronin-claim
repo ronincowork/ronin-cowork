@@ -83,8 +83,13 @@ STORE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ronin-store"
 # Git's global options for THIS invocation (set by `add` from what precedes `--`; empty for
 # check/clear/show, which the hooks run inside the repo already). Every git call here
 # carries them, so a `-C dir` steers the snapshot, the add and the toplevel alike.
+# The real git binary, never a shim: the shim hands it down as RONIN_REAL_GIT (it has
+# already stripped every Ronin shim from PATH); a direct call falls back to /usr/bin/git,
+# so this tool can never be the second half of a shim-calls-shim loop.
+GIT=${RONIN_REAL_GIT:-}
+[ -n "$GIT" ] && [ -x "$GIT" ] || GIT=/usr/bin/git
 G=()
-g() { git ${G[@]+"${G[@]}"} "$@"; }
+g() { "$GIT" ${G[@]+"${G[@]}"} "$@"; }
 
 # The claim file for this session AND this repository, or empty if we cannot tell who we
 # are. Per repository, because one session can stage in several (a fixture repo in a test,

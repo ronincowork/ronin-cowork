@@ -69,11 +69,31 @@ export async function runByoin(repo: string, candidate: string, cdir: string, mo
   return { repo, candidate, mode, passed: r.code === 0, gates, verdict: verdict || (r.code === 0 ? 'BYOIN: exit 0' : `BYOIN: exit ${r.code}`) };
 }
 
+/**
+ * THE CANDIDATE'S ENVIRONMENT — the repository proof runs OUTSIDE the live session's
+ * interception layer. Every `*​/bin/shim` directory is removed from PATH: the promotion
+ * runner is the one thing that puts a second checkout (the candidate, with its own
+ * bin/shim) beside the home checkout's, and two stacked Ronin shims call each other
+ * forever (found in the first real candidate, 2026-08-28: git, then tmux). The candidate's
+ * checks that want a shim invoke it explicitly by path; nothing inherits one. Git's
+ * location variables are dropped for the same reason `envWithoutGitLocation` exists.
+ */
+export function candidateEnv(from: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+  const env = envWithoutGitLocation(from);
+  env.PATH = (from.PATH ?? '')
+    .split(':')
+    .filter((d) => d && !/\/bin\/shim\/?$/.test(d))
+    .join(':');
+  delete env.RONIN_REAL_GIT;
+  env.BIND = from.BIND ?? '127.0.0.1';
+  return env;
+}
+
 async function run(cmd: string, args: string[], cwd: string, opts: RunOptions): Promise<{ code: number; out: string }> {
   try {
     const r = await execFileP(cmd, args, {
       cwd,
-      env: { ...envWithoutGitLocation(), BIND: process.env.BIND ?? '127.0.0.1' },
+      env: candidateEnv(),
       timeout: opts.timeoutMs ?? 20 * 60_000,
       maxBuffer: 64 * 1024 * 1024,
     });

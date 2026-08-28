@@ -161,6 +161,29 @@ test('shared checkout reached by -C from another cwd: the add lands in THAT repo
   await realGit(reviewed, ['commit', '-q', '-m', 'dash'], { RONIN_COMMIT_ALL: '1' });
 });
 
+test('stacked shims: a candidate checkout\'s shim ahead of the home shim still returns and stages once', async () => {
+  // The first real promotion candidate put candidate/bin/shim before home/bin/shim on PATH.
+  // A shim that strips only itself hands ronin-claim the OTHER shim's git, which strips
+  // itself and reveals the first: two shims calling each other forever. Build a second
+  // "candidate" copy of the shim tree and put it FIRST.
+  const cand = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-compat-candidate-'));
+  await fs.mkdir(path.join(cand, 'bin', 'shim'), { recursive: true });
+  await fs.mkdir(path.join(cand, 'libexec'));
+  await fs.copyFile(path.join(SHIM_DIR, 'git'), path.join(cand, 'bin', 'shim', 'git'));
+  for (const f of ['ronin-claim', 'ronin-repo-mode']) await fs.copyFile(path.join(REPO, 'libexec', f), path.join(cand, 'libexec', f));
+  const claimFile = path.join(claimDir, 'stacked-staged');
+  await fs.writeFile(path.join(reviewed, 'stacked.txt'), 'stacked\n');
+  const stackedPath = `${path.join(cand, 'bin', 'shim')}:${SHIM_DIR}:${CLEAN_ENV.PATH ?? ''}`;
+  const run = sh(reviewed, 'git', ['add', 'stacked.txt'], { RONIN_CLAIM_FILE: claimFile, PATH: stackedPath });
+  const timeout = new Promise<Run>((_, rej) => setTimeout(() => rej(new Error('the stacked shims never returned — shim-calls-shim loop')), 15000));
+  const add = await Promise.race([run, timeout]);
+  assert.equal(add.code, 0, add.err);
+  assert.equal((await fs.readFile(claimFile, 'utf8')).trim(), 'stacked.txt');
+  assert.equal((await realGit(reviewed, ['diff', '--cached', '--name-only'])).out.trim(), 'stacked.txt', 'staged exactly once, in the right repo');
+  await realGit(reviewed, ['commit', '-q', '-m', 'stacked'], { RONIN_CLAIM_FILE: claimFile });
+  await fs.rm(cand, { recursive: true, force: true });
+});
+
 test('desk: the shim passes through, records nothing, and the hook stays silent', async () => {
   const claimFile = path.join(claimDir, 'desk-staged');
   const env = { RONIN_CLAIM_FILE: claimFile };
@@ -201,6 +224,23 @@ test('direct-mode regression: a declared-direct shared checkout behaves as it al
 // instead of being the first full check. scripts/verify-promotion-receipt.mjs is what
 // CI runs; these pin what it accepts and every way it refuses.
 import { extractReceipt, receiptProblem } from '../scripts/verify-promotion-receipt.mjs';
+process.env.BIND ??= '127.0.0.1'; // src/ imports must not wake the tailscale probe (check-tests.mjs)
+const { candidateEnv } = await import('../src/promotion/byoin.js');
+
+test('the promotion runner spawns candidate checks outside every Ronin shim', () => {
+  const from = {
+    PATH: '/cand/bin/shim:/home/x/ronin-cowork/bin/shim/:/home/x/ronin-cowork/ronin_bin:/usr/local/bin:/usr/bin:/bin:/opt/shimmer/bin',
+    GIT_DIR: '/leak/.git', GIT_WORK_TREE: '/leak', RONIN_REAL_GIT: '/usr/bin/git', HOME: '/home/x',
+  } as NodeJS.ProcessEnv;
+  const env = candidateEnv(from);
+  assert.equal(env.PATH, '/home/x/ronin-cowork/ronin_bin:/usr/local/bin:/usr/bin:/bin:/opt/shimmer/bin', 'every */bin/shim entry is gone, nothing else is');
+  assert.equal(env.GIT_DIR, undefined);
+  assert.equal(env.GIT_WORK_TREE, undefined);
+  assert.equal(env.RONIN_REAL_GIT, undefined);
+  assert.equal(env.HOME, '/home/x');
+  assert.equal(env.BIND, '127.0.0.1');
+  assert.equal(candidateEnv({ PATH: '/usr/bin', BIND: '0.0.0.0' } as NodeJS.ProcessEnv).BIND, '0.0.0.0');
+});
 
 const SHA = 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678';
 const good = () => ({

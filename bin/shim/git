@@ -22,8 +22,17 @@
 # Overrides: RONIN_CLAIM_MODE=shared|off (RONIN_CLAIM_OFF=1 still means off).
 set -u
 SELF_DIR=$(cd "$(dirname "$0")" && pwd)
-REAL=$(PATH=$(printf '%s' "$PATH" | tr ':' '\n' | grep -vxF "$SELF_DIR" | paste -sd:) command -v git)
+# THE REAL GIT, RESOLVED ONCE, PAST EVERY RONIN SHIM — not just this one. A promotion
+# candidate is a second checkout with its own bin/shim; with both on PATH, a shim that
+# strips only itself hands ronin-claim a `git` that is the OTHER shim, which strips itself
+# and reveals the first again: two shims calling each other, never returning (found in
+# the first real candidate, 2026-08-28). So every */bin/shim directory is removed, and
+# the answer travels to ronin-claim as RONIN_REAL_GIT so nothing below re-resolves.
+CLEAN_PATH=$(printf '%s' "$PATH" | tr ':' '\n' | grep -v '/bin/shim$' | grep -vxF "$SELF_DIR" | paste -sd:)
+REAL=${RONIN_REAL_GIT:-}
+[ -n "$REAL" ] && [ -x "$REAL" ] || REAL=$(PATH="$CLEAN_PATH" command -v git)
 [ -n "${REAL:-}" ] || REAL=/usr/bin/git
+export RONIN_REAL_GIT="$REAL"
 
 # Only `add` is intercepted, and only to record. Note the subcommand is the first argument
 # that is not a global option, so `git -C dir add …` is still an add.
@@ -59,8 +68,7 @@ if [ "$sub" = "add" ]; then
         if [ "$a" = "add" ]; then seen=1; else globals+=("$a"); fi
       else args+=("$a"); fi
     done
-    PATH="$(printf '%s' "$PATH" | tr ':' '\n' | grep -vxF "$SELF_DIR" | paste -sd:)" \
-      "$CLAIM" add ${globals[@]+"${globals[@]}"} -- ${args[@]+"${args[@]}"}
+    PATH="$CLEAN_PATH" "$CLAIM" add ${globals[@]+"${globals[@]}"} -- ${args[@]+"${args[@]}"}
     exit $?
   fi
 fi
