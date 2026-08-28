@@ -11,8 +11,8 @@ only session names; a session can be dragged onto another Team heading to add th
 tag through the canonical tags API without removing other Team memberships.
 
 The League selector groups its cards into collapsible Views, Teams and New sections.
-Admin Desk is a View card and opens the shared Cowork commons directly on Account; it is
-not a second desk surface.
+Desk is a View card and opens the shared Cowork commons directly on Machine health; it
+is not a second desk surface.
 
 There is no `#/league` destination, League view module, League board module, League
 stylesheet, roster visibility state, or parallel workspace implementation.

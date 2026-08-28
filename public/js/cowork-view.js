@@ -30,7 +30,7 @@ const el = (tag, cls, text) => {
 const COMMONS = '@commons';
 const COWORK = '@cowork';
 const NEW = '@new';
-const ADMIN = '@admin-desk';
+const DESK = '@desk';
 
 export function createCoworkView(options = {}) {
   const league = options.kind === 'league';
@@ -96,7 +96,7 @@ export function createCoworkView(options = {}) {
   }
   for (const [id, cell] of Object.entries(cells)) {
     cell.addEventListener('pointerdown', () => touch(id), true);
-    acceptSessionDrops(cell, () => id, (name, at) => arrange({ [at]: name === ADMIN ? { cowork: true, tab: 'account' } : SURFACES[name] ? { surface: name } : { session: name } }));
+    acceptSessionDrops(cell, () => id, (name, at) => arrange({ [at]: name === DESK ? { cowork: true, tab: 'health' } : SURFACES[name] ? { surface: name } : { session: name } }));
   }
   const cellPlace = (id, node) => { if (cells[id].firstElementChild !== node) cells[id].replaceChildren(node); };
   const cellHolding = (id) => cells[id]?.firstElementChild ?? null;
@@ -466,14 +466,14 @@ export function createCoworkView(options = {}) {
       const group = (key, label) => { const section = el('details', 'tw-selector-group'); section.open = !closedGroups.has(key); section.addEventListener('toggle', () => section.open ? closedGroups.delete(key) : closedGroups.add(key)); section.append(el('summary', null, label), el('div', 'tw-selector-group-cards')); cards.append(section); return section.lastElementChild; };
       const views = group('views', t('league.selector_views', 'Views')), teamCards = group('teams', t('league.selector_teams', 'Teams')), newCards = group('new', t('league.selector_new', 'New'));
       const add = (host, heading, token, summary = '', variant = null, draft = { surface: token }) => {
-        const selected = token === ADMIN ? whereIs(COWORK) && cowork.current() === 'account' : !!whereIs(token);
+        const selected = token === DESK ? whereIs(COWORK) && cowork.current() === 'health' : !!whereIs(token);
         const card = createCard({ heading, summary, variant, selected, action: () => arrange({ [lastSeat]: draft }) });
         card.el.draggable = true; card.el.addEventListener('dragstart', (event) => { event.dataTransfer.setData(DRAG_TYPE, token); event.dataTransfer.effectAllowed = 'move'; }); host.append(card.el);
       };
       add(views, t('league.commons', 'League commons'), '@league-commons');
       add(views, t('league.view', 'League view'), '@league-view');
       add(views, t('league.team_roster', 'Team roster'), '@team-roster');
-      add(views, t('bar.desk', 'Admin Desk'), ADMIN, '', null, { cowork: true, tab: 'account' });
+      add(views, t('league.desk', 'Desk'), DESK, '', null, { cowork: true, tab: 'health' });
       for (const item of teams) { const made = leagueTeamSurface(item.name); add(teamCards, item.name, made.token, item.objective || ''); add(leagueCards, item.name, made.token, item.objective || ''); }
       add(newCards, t('new_team.title', 'New Team'), '@new-team', '', 'dotted');
       add(newCards, t('team.new_session', 'New session'), NEW, t('team.add_member_summary', 'A new session, born into the workspace you are in.'), 'dotted');
