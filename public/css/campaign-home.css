@@ -197,44 +197,56 @@
     background: var(--ch-fill-manage);
   }
 
-  /* ── Campaign: select, create, archive ── */
-  .cm-view {
-    --cm-frame-w: 660px;
-    --ch-box: 2px;
-    display: grid;
-    place-items: start center;
+  /* ── CAMPAIGN MANAGE — the same bedrock as the Cowork space, Campaign-level surfaces.
+     Geometry only: the workbench, the selector column and the two workspaces. Everything
+     inside a surface is the Kit's own. ── */
+  .cv-view {
+    --cv-blank-h: 120px;
+    --cv-cup: 0;
     height: 100%;
-    padding: var(--space-11) var(--space-10);
-    overflow: auto;
+    min-height: 0;
+    overflow: hidden;
   }
-  .cm-frame { width: 100%; max-width: var(--cm-frame-w); display: flex; flex-direction: column; gap: var(--space-6); }
-  .cm-list { display: flex; flex-direction: column; gap: var(--space-4); }
-
-  .cm-row {
+  .cv-cell {
     display: flex;
-    align-items: center;
-    gap: var(--space-6);
-    padding: var(--space-6) var(--space-8);
-    border: var(--edge) solid var(--line-2);
-    border-radius: var(--ch-box);
-    background: var(--panel);
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    border: var(--edge) solid transparent;
   }
-  .cm-row[data-archived='true'] { opacity: .55; }
-  .cm-open { flex: 1; min-width: 0; text-align: left; border: 0; background: none; cursor: pointer; color: inherit; padding: 0; }
-  .cm-open b { display: block; font-size: var(--text-6); font-weight: 600; color: var(--fg-strong); }
-  .cm-desc { display: block; font-size: var(--text-3); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .cm-open:hover b { color: var(--accent); }
-  .cm-meta { display: flex; align-items: center; gap: var(--space-4); }
-  .cm-profile {
-    font-family: var(--font-mono);
-    font-size: var(--text-2);
-    padding: var(--space-2) var(--space-4);
+  .cv-cell > * { flex: 1; min-width: 0; }
+  .cv-cell.cv-selected { border-color: var(--line-2); }
+  .cv-cell[data-drop-ready='true'] { border-color: var(--accent); }
+  .cv-surface, .cv-blank { display: flex; flex-direction: column; min-height: 0; }
+  .cv-blank { align-items: center; justify-content: center; min-height: var(--cv-blank-h); }
+  .cv-blank-word { margin: 0; color: var(--dim); font-size: var(--text-3); }
+
+  .cv-selector { display: flex; flex-direction: column; min-height: 0; }
+  .cv-selector-head {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-4);
+    padding: var(--space-5) var(--space-6);
+    border-bottom: var(--edge) solid var(--line);
+  }
+  .cv-selector-title { font-size: var(--text-4); font-weight: 600; color: var(--fg-strong); }
+  .cv-selector-cards { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-5); }
+
+  .cv-body { display: flex; flex-direction: column; gap: var(--space-6); padding: var(--space-8); }
+  .cv-field { display: flex; flex-direction: column; gap: var(--space-2); }
+  .cv-input {
+    padding: var(--space-4);
     border: var(--edge) solid var(--line-2);
+    border-radius: var(--cv-cup);
     background: var(--well);
-    color: var(--muted-2);
+    color: var(--fg);
+    font-family: var(--font-ui);
+    font-size: var(--text-4);
   }
-  .cm-archived { font-size: var(--text-2); color: var(--muted); }
-  .cm-archive, .cm-new, .cm-button {
+  .cv-input:focus { border-color: var(--accent); outline: none; }
+  .cv-cards { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-5); }
+  .cv-actions { display: flex; justify-content: flex-end; gap: var(--space-4); }
+  .cv-button {
     padding: var(--space-3) var(--space-6);
     border: var(--edge) solid var(--line-2);
     background: transparent;
@@ -243,35 +255,7 @@
     cursor: pointer;
     transition: border-color var(--motion-quick) var(--ease), color var(--motion-quick) var(--ease);
   }
-  .cm-archive:hover, .cm-button:hover { border-color: var(--bad); color: var(--bad-soft); }
-  .cm-new { border-style: dashed; border-color: var(--line-3); font-size: var(--text-4); }
-  .cm-new:hover { border-color: var(--accent); color: var(--fg-strong); }
-  .cm-button[data-primary='true'] { border-color: var(--accent); color: var(--accent); }
-  .cm-button[data-primary='true']:hover { border-color: var(--accent); color: var(--fg-strong); }
-
-  .cm-draft {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-6);
-    padding: var(--space-8);
-    border: var(--edge) solid var(--line-2);
-    background: var(--panel);
-  }
-  .cm-draft h2 { margin: 0; font-size: var(--text-7); color: var(--fg-strong); }
-  .cm-field { display: flex; flex-direction: column; gap: var(--space-2); }
-  .cm-label { font-size: var(--text-3); font-weight: 650; color: var(--fg-strong); }
-  .cm-hint { font-size: var(--text-2); color: var(--muted); }
-  .cm-input {
-    padding: var(--space-4);
-    border: var(--edge) solid var(--line-2);
-    background: var(--well);
-    color: var(--fg);
-    font-family: var(--font-ui);
-    font-size: var(--text-4);
-  }
-  .cm-input:focus { border-color: var(--accent); outline: none; }
-  .cm-actions { display: flex; justify-content: flex-end; gap: var(--space-4); }
-  .cm-empty { margin: 0; font-size: var(--text-3); color: var(--muted); }
-  .cm-note { margin: 0; font-size: var(--text-3); color: var(--muted); }
-  .cm-note[data-bad='true'] { color: var(--bad-soft); }
+  .cv-button[data-primary='true'] { border-color: var(--accent); color: var(--accent); }
+  .cv-button:hover { border-color: var(--accent); color: var(--fg-strong); }
+  .cv-empty { margin: 0; padding: var(--space-5); font-size: var(--text-3); color: var(--muted); }
 }

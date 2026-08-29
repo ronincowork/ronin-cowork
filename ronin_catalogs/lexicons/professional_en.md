@@ -196,6 +196,16 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **commons.tab_off:** {tab} — off, this service is not installed.
 - **commons.sessions:** sessions
 
+## campaign_view — campaign-view.js (Campaign Manage: the selector's Campaign-level surfaces)
+
+- **campaign_view.campaign_summary:** What this body of work is called, and what it is for.
+- **campaign_view.profile_summary:** The words, the skin and the templates this Campaign opens on.
+- **campaign_view.roots_summary:** The folders this Campaign is allowed to work in.
+- **campaign_view.templates_summary:** The Cowork templates this Campaign offers.
+- **campaign_view.new_summary:** Set the stage. It creates no Cowork and launches no Agent.
+- **campaign_view.none_selected:** No Campaign selected.
+- **campaign_view.no_profiles:** No desk profiles on this install.
+
 ## campaign_home — campaign-home.js (the root arrival: Campaign, Coworks, Agents)
 
 - **campaign_home.title:** Ronin

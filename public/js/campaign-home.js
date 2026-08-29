@@ -102,7 +102,7 @@ export function createCampaignHome() {
   /* ---------- going through a door ---------- */
   const go = (key) => {
     if (!ctx) return;
-    if (key === 'campaign') return void ctx.navigate('cowork');
+    if (key === 'campaign') return void ctx.navigate('campaign');
     if (key === 'coworks') {
       const row = cowork();
       return void (row && ctx.navigate('team', { param: row.name }));
