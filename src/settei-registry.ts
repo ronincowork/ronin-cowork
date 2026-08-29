@@ -333,3 +333,45 @@ export const SETTEI_SCHEMA = {
     prompt: 'Finish what setup still needs. Your task shelf says how: read GET /api/settei at start — needed[] is your reading list, and set is what the owner already answered; never re-ask it.',
   },
 };
+
+/**
+ * ONE ROW PER PROVIDER — the preferred model to use when a launch names that provider
+ * and no model (owner, 2026-08-29).
+ *
+ * WHY THIS IS NOT A STATIC FIELD. Every other leaf in this registry is declared here
+ * because the set of leaves is the house's, fixed. Providers are not: they are rows in
+ * `ronin_catalogs/PROJECT_ROOTS.md`, and the whole point of that table is that adding a
+ * provider is a row and never a code path. A static field per provider would put a
+ * vendor's name in this file and break that promise the first time somebody added one.
+ * So the SHAPE is declared here, once, and the record stamps it out per provider it
+ * finds in the table — which is still one declaration, still data, still no renderer
+ * that knows a field.
+ *
+ * They land at `agents.sessions.by_provider.<provider>` and hold a bare model name: the
+ * provider is already the key, so storing it again in the value would be two places to
+ * disagree. That is why `shape` is plain text here and `provider-model` on the general
+ * default, which must carry both.
+ *
+ * A provider left unanswered is not a gap — `src/spawn.ts` falls back to that provider's
+ * FIRST COLUMN in the launch table, which is why the table's column order is worth
+ * keeping deliberate.
+ */
+export function providerModelFields(providers: string[]) {
+  return providers.map((provider) => ({
+    id: `model_${provider}`,
+    sec: 'defaults',
+    kind: 'select',
+    ask: false,
+    label: `Preferred ${provider} model`,
+    short: `${provider} prefers`,
+    hint: 'Used when a launch names this provider but not a model.',
+    options: `models_for:${provider}`,
+    from: `set.agents.sessions.by_provider.${provider}`,
+    shape: 'text',
+    lands: { family: 'agents', key: `sessions.by_provider.${provider}` },
+    omit: 'blank',
+  }));
+}
+
+/** One generated per-provider row, for the record's widened `schema.fields`. */
+export type ProviderModelField = ReturnType<typeof providerModelFields>[number];

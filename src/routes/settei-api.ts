@@ -88,7 +88,10 @@ const FAMILY_WRITERS: Record<string, (body: Record<string, unknown>) => Promise<
    * actually present in the body move.
    */
   agents: async (body) => {
-    const sessions = (body.sessions ?? {}) as { default?: Record<string, unknown> };
+    const sessions = (body.sessions ?? {}) as {
+      default?: Record<string, unknown>;
+      by_provider?: Record<string, unknown>;
+    };
     const d = (sessions.default ?? {}) as Record<string, unknown>;
     const jobsIn = (body.jobs ?? {}) as Record<string, Record<string, unknown>>;
 
@@ -103,11 +106,34 @@ const FAMILY_WRITERS: Record<string, (body: Record<string, unknown>) => Promise<
     }
     const prior = await readAgentsSection();
     const priorJobs = (prior.jobs ?? {}) as Record<string, unknown>;
-    const priorSessions = (prior.sessions ?? {}) as { default?: Record<string, unknown> };
+    const priorSessions = (prior.sessions ?? {}) as {
+      default?: Record<string, unknown>;
+      by_provider?: Record<string, unknown>;
+    };
+    // THE TWO SESSION SETTINGS MERGE INDEPENDENTLY, and this is the same hazard the
+    // jobs map above already documents, one level deeper. ⚙ saves ONE row at a time, so
+    // a body carrying only `sessions.default` used to replace the whole `sessions`
+    // object and take `by_provider` with it — and a body carrying only a per-provider
+    // preference would have taken the general default. Each key moves only when the
+    // body actually carries it.
+    const byProviderIn = (sessions.by_provider ?? {}) as Record<string, unknown>;
+    const priorByProvider = (priorSessions.by_provider ?? {}) as Record<string, unknown>;
+    const byProvider: Record<string, unknown> = { ...priorByProvider };
+    // A blank arrives as null, not as an empty string. Null says the owner has no
+    // preference for a provider this box knows, which is a different fact from never
+    // having seen it — and `src/spawn.ts` reads both the same way, falling back to that
+    // provider's first column. (⚙ itself omits blanks by the registry's `omit: 'blank'`
+    // rule, as it does for every text row, so a clear arrives through the API.)
+    for (const [provider, model] of Object.entries(byProviderIn)) byProvider[provider] = str(model)?.trim() || null;
     await writeAgentsSection({
       sessions: body.sessions === undefined
         ? priorSessions
-        : { default: { provider: str(d.provider) ?? null, model: str(d.model) ?? null } },
+        : {
+            default: sessions.default === undefined
+              ? (priorSessions.default ?? { provider: null, model: null })
+              : { provider: str(d.provider) ?? null, model: str(d.model) ?? null },
+            by_provider: byProvider,
+          },
       jobs: body.jobs === undefined ? priorJobs : { ...priorJobs, ...jobs },
     });
     return { ok: true };
