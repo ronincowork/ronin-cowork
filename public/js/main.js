@@ -17,6 +17,7 @@ import { createWorkspace } from './workspace.js';
 import { createCoworkView } from './cowork-view.js';
 import { createCampaignHome } from './campaign-home.js';
 import { createCampaignView } from './campaign-view.js';
+import { installWorkspaceHeader } from './workspace-header.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { installCustomize } from './customize.js';
 import { t } from './lexicon.js';
@@ -95,14 +96,18 @@ export async function init() {
 
   const viewhost = document.getElementById('viewhost');
   if (!viewhost) throw new Error('workspace ViewHost is missing');
+  let refreshWorkspaceHeader = () => {};
   const workspace = createWorkspace(viewhost, {
     onError: (where, error) => showFailure(`workspace ${where}`, error),
     // The bar's slots for the tab name and the layout map; the ViewHost fills them per active view.
     nameSlot: document.getElementById('viewname'),
     mapSlot: document.getElementById('viewmap'),
+    onNavigate: () => refreshWorkspaceHeader(),
   });
   workspace.kit = WorkspaceKit;
   S.workspace = workspace;
+  refreshWorkspaceHeader = installWorkspaceHeader(workspace);
+  S.refreshWorkspaceHeader = refreshWorkspaceHeader;
   // The Team destination. Registered beside the compatibility Sessions grid, not over it:
   // this preview is geometry and readings only — no terminal host, no sockets, no Sessions
   // mode — so the existing coworkspace stays the working surface until those gates land.
@@ -115,10 +120,10 @@ export async function init() {
   guard('register the Cowork destination', () => workspace.register('cowork', createCoworkView({ kind: 'cowork' })));
   // THE ROOT ARRIVAL (owner, 2026-08-29): three doors — Campaign, Coworks, Agents —
   // over one Campaign selection the other two inherit. Registered after Cowork because
-  // its Campaign door opens that destination, and guarded like every other: the landing
+  // its Campaign door opens that Campaign's Cowork collection, and guarded like every other: the landing
   // page failing must cost the owner a page, never their terminals. `safeView` is this
   // one, so its own failure is reported rather than looping.
-  guard('register the Campaign Home destination', () => workspace.register('home', createCampaignHome()));
+  guard('register the Ronin Home destination', () => workspace.register('home', createCampaignHome()));
   // CAMPAIGN MANAGE — a Cowork Space whose surfaces are Campaign-level (owner, 2026-08-29):
   // the same workbench, selector column, persistence, recall and drag/drop as the Cowork
   // space, offering a Campaign's own configuration instead of its Coworks and Agents.

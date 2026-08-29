@@ -151,8 +151,6 @@ export function build() {
   // Session macros (⚡ on each tile head) are the tile's own — built in
   // tilemacros.js by Tile itself; nothing to wire here.
 
-  key('brandbtn', () => S.workspace?.navigate('cowork'));
-
   // ⛩ Commons, ミ Mika Assist and く Keypad LEFT THE BAR on 2026-08-27 (owner). The
   // Commons is still the tile head's ⛩, the brand mark and ⌃⇧C; Mika is the `mika` tool
   // and the desk's own asks; the pad panel opens from a row on the ⚙ Admin Desk

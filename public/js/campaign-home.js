@@ -1,12 +1,12 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * CAMPAIGN HOME — the root arrival, and three doors out of it.
+ * RONIN HOME — the root arrival, and three doors out of it.
  *
  *   ⛩ Campaign · 人々 Coworks · 人 Agents
  *
  * Torii, hitobito, hito: the body of work, its people, one of them. Each door carries
- * ONE loaded default and going through it takes you straight there — the Campaign's
- * Cowork space, that Cowork's page, that Agent at work. The page holds no list, no
+ * ONE loaded default. Campaign opens that Campaign's complete Cowork collection,
+ * Coworks opens the loaded Cowork, and Agent opens that Agent at work. The page holds no list, no
  * count and no reading; those live behind the doors, which is the point of a door.
  *
  * THE CHIP IS THE DIAL. Every door shows what it is loaded with, and the thing that
@@ -102,10 +102,10 @@ export function createCampaignHome() {
   /* ---------- going through a door ---------- */
   const go = (key) => {
     if (!ctx) return;
-    if (key === 'campaign') return void ctx.navigate('campaign');
+    if (key === 'campaign') return void ctx.navigate('cowork');
     if (key === 'coworks') {
       const row = cowork();
-      return void (row && ctx.navigate('team', { param: row.name }));
+      return void (row ? ctx.navigate('team', { param: row.name }) : ctx.navigate('cowork'));
     }
     // AN AGENT IS NOT A PAGE — it is a tile in a workspace. So its door opens the Cowork
     // it works in with that Agent already up, which is the Agent's page in the only sense
@@ -139,45 +139,76 @@ export function createCampaignHome() {
     return agentsHere().map((row) => ({ id: row.name, label: row.name, on: row.name === now }));
   };
 
-  const choose = (key, id) => {
+  const choose = (key, id, close = true) => {
     if (key === 'campaign') loadCampaign(id);
     else ctx?.patchViewState('home', key === 'coworks' ? { cowork: id } : { agent: id });
-    open = '';
+    if (close) open = '';
     paint();
   };
 
-  // Manage is the one door out of a tray: the tray SELECTS, and everything that changes
-  // a record — new, edit, archive — is behind it. Each goes to the surface that owns that
-  // record today rather than to a placeholder. Coworks and Agents both land on the Cowork
-  // space, which is where New Team and New Agent live as SURFACES since @new_team's
-  // 2026-08-29 cut — `new-team` is no longer a destination and navigating to it would
-  // fall silently back to this page.
-  const manage = (key) => {
+  const launchAgent = (id) => {
+    const row = agentsHere().find((candidate) => candidate.name === id);
+    if (!row) return;
+    const team = (row.tags || []).find((name) => coworksHere().some((c) => c.name === name)) || '';
+    if (!team) return void ctx?.navigate('cowork');
+    ctx?.patchViewState('team', { seats: { workspace1: row.name } });
+    ctx?.navigate('team', { param: team });
+  };
+
+  const act = (key, id) => {
+    choose(key, id);
+    if (key === 'campaign') ctx?.navigate('campaign');
+    else if (key === 'coworks') ctx?.navigate('team', { param: id });
+    else launchAgent(id);
+  };
+
+  const create = (key) => {
     open = '';
     paint();
-    ctx?.navigate(key === 'campaign' ? 'campaign' : 'cowork');
+    if (key === 'campaign') {
+      ctx?.patchViewState('campaign', { seats: { workspace1: '@new-campaign' } });
+      ctx?.navigate('campaign');
+    } else {
+      ctx?.patchViewState('cowork', { seats: { workspace1: key === 'coworks' ? '@new-team' : '@new' } });
+      ctx?.navigate('cowork');
+    }
   };
 
   function paintTray() {
     tray.hidden = !open;
-    if (!open) return;
+    if (!open) {
+      delete tray.dataset.for;
+      tray.replaceChildren();
+      return;
+    }
     tray.dataset.for = open;
     tray.replaceChildren();
-    const rows = rowsFor(open);
+    const key = open;
+    const rows = rowsFor(key);
     for (const row of rows) {
-      const pill = el('button', 'ch-pill', row.label);
-      pill.type = 'button';
-      pill.dataset.on = String(row.on);
-      pill.addEventListener('click', () => choose(open, row.id));
-      tray.append(pill);
+      const line = el('div', 'ch-menu-row');
+      line.dataset.loaded = String(row.on);
+      const star = el('button', 'ch-menu-star', row.on ? '★' : '☆');
+      star.type = 'button';
+      star.dataset.on = String(row.on);
+      star.setAttribute('aria-label', row.on ? 'The default' : `Make ${row.label} the default`);
+      star.addEventListener('click', () => choose(key, row.id, false));
+      const name = el('button', 'ch-menu-name', row.label);
+      name.type = 'button';
+      name.addEventListener('click', () => choose(key, row.id));
+      const action = el('button', 'ch-menu-action', key === 'campaign' ? `✎ ${t('roots.edit', 'Edit')}` : `▶ ${t('league.launch_team', 'Launch')}`);
+      action.type = 'button';
+      action.addEventListener('click', () => act(key, row.id));
+      line.append(star, name, action);
+      tray.append(line);
     }
     if (!rows.length) tray.append(el('p', 'ch-empty', t('campaign_home.tray_empty', 'Nothing here yet.')));
-    tray.append(el('span', 'ch-sep'));
-    const button = el('button', 'ch-manage');
-    button.type = 'button';
-    button.append(el('i', null, '✳'), el('span', null, t('campaign_home.manage', 'Manage')));
-    button.addEventListener('click', () => manage(open));
-    tray.append(button);
+    const foot = el('button', 'ch-menu-foot', key === 'campaign'
+      ? `＋ ${t('campaign.new', 'New Campaign')}`
+      : key === 'coworks' ? `＋ New ${t('campaign.cowork', 'Cowork')}` : `＋ ${t('league.new_agent', 'New Agent')}`);
+    foot.type = 'button';
+    foot.addEventListener('click', () => create(key));
+    tray.append(foot);
   }
 
   function paintDoors() {
@@ -218,12 +249,16 @@ export function createCampaignHome() {
     enter: async (context) => {
       ctx = context;
       entered = true;
+      // Ronin Home is above every workspace. Its bar is only the house mark; Cowork
+      // identity, machine readings and workspace controls return when a door is opened.
+      document.body.classList.add('ronin-home-active');
       open = '';
       paint();
       // Three reads, none of which the page waits on together: the Campaign list (which
       // synthesizes when no store answers yet), and the rosters/sessions behind them.
       await loadCampaigns();
       if (!entered) return;
+      S.refreshWorkspaceHeader?.();
       paint();
       await refreshTeams();
       if (!entered) return;
@@ -231,7 +266,15 @@ export function createCampaignHome() {
       else delete root.dataset.failed;
       paint();
     },
-    leave: () => { entered = false; open = ''; },
-    destroy: () => { entered = false; ctx = null; },
+    leave: () => {
+      entered = false;
+      open = '';
+      document.body.classList.remove('ronin-home-active');
+    },
+    destroy: () => {
+      entered = false;
+      ctx = null;
+      document.body.classList.remove('ronin-home-active');
+    },
   };
 }

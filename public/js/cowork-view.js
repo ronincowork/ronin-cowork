@@ -52,10 +52,7 @@ export function createCoworkView(options = {}) {
   let lastSeat = 'workspace1'; // the workspace last touched — where the next card lands
   const closedGroups = new Set();
   const readableTeam = (name) => teamByName(name)?.title || name.split(/[_-]+/).filter(Boolean).map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' ');
-  const setBarLabel = () => {
-    const label = document.getElementById('coworklabel');
-    if (label) label.textContent = campaign ? 'Cowork Spaces' : `Cowork Space: ${readableTeam(team)}`;
-  };
+  const setBarLabel = () => S.refreshWorkspaceHeader?.();
 
   /* ---------- the workspaces: two seats, the roster between them, one commons ---------- */
   const makeSeat = (id, label) => {
@@ -676,8 +673,7 @@ export function createCoworkView(options = {}) {
       S.onSessionRenamed = null;
       S.connectSession = null;
       if (shapeBtn) { shapeBtn.hidden = true; shapeBtn.removeEventListener('click', onShape); }
-      const label = document.getElementById('coworklabel');
-      if (label) label.textContent = 'Cowork Spaces';
+      S.refreshWorkspaceHeader?.();
     },
     destroy: () => {
       entered = false;
