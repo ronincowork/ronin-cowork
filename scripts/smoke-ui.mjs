@@ -278,8 +278,8 @@ async function checkJourneys(page, label, jsErrors) {
     chrome: [...document.querySelectorAll('#bar > :not(#brandbtn)')]
       .filter((node) => getComputedStyle(node).display !== 'none').length,
   }));
-  if (roninHome.hash === '#/home' && roninHome.visible && roninHome.doors === 3 && roninHome.chrome === 0) ok(`${label}: ⛩ ronin opens Ronin Home`);
-  else bad(`${label}: ⛩ ronin did not open Ronin Home — ${JSON.stringify(roninHome)}`);
+  if (roninHome.hash === '' && roninHome.visible && roninHome.doors === 3 && roninHome.chrome === 0) ok(`${label}: ⛩ ronin opens the root landing`);
+  else bad(`${label}: ⛩ ronin did not open the root landing — ${JSON.stringify(roninHome)}`);
   // The strip once carried ten rooms and two kinds of thing. Install rooms moved to the
   // admin_desk; Archives later became the fifth session room. The expected count comes
   // from the same static registry the product renders, so this probe checks DOM convergence
@@ -895,9 +895,9 @@ async function checkPhoneJourneys(page, label) {
   // The Torii is the root Ronin door on phone too.
   await page.tap('#brandbtn');
   await page.waitForTimeout(300);
-  const atHome = await page.evaluate(() => location.hash === '#/home' && !document.querySelector('.ch-view')?.hidden);
-  if (atHome) ok(`${label}: ニ → ⛩ ronin lands on Ronin Home in one tap`);
-  else bad(`${label}: ニ → ⛩ ronin did not land on Ronin Home`);
+  const atHome = await page.evaluate(() => location.hash === '' && !document.querySelector('.ch-view')?.hidden);
+  if (atHome) ok(`${label}: ニ → ⛩ ronin lands at the root in one tap`);
+  else bad(`${label}: ニ → ⛩ ronin did not land at the root`);
   const sheetGone = await page.evaluate(() => !document.querySelector('.tdrop.open'));
   if (sheetGone) ok(`${label}: the sheet closed behind the door it opened`);
   else bad(`${label}: the ニ sheet stayed open over the pane`);

@@ -224,6 +224,7 @@ export function createCampaignHome() {
       // synthesizes when no store answers yet), and the rosters/sessions behind them.
       await loadCampaigns();
       if (!entered) return;
+      S.refreshWorkspaceHeader?.();
       paint();
       await refreshTeams();
       if (!entered) return;

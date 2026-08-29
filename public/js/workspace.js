@@ -168,6 +168,7 @@ export function createWorkspace(host, options = {}) {
   const views = new Map();
   const state = readState();
   const onError = options.onError || (() => {});
+  const onNavigate = options.onNavigate || (() => {});
   const safeView = options.safeView || 'home';
   let active = null;
   let started = false;
@@ -261,6 +262,7 @@ export function createWorkspace(host, options = {}) {
     state.view = id;
     if (id === 'team') state.team = param;
     writeState(state);
+    try { onNavigate({ id, param, state }); } catch (error) { report('header navigation', error); }
     document.title = tabTitle(invoke(id, 'title', () => next.title?.(context)));
     setTabGlyph(next.glyph);
     const target = hashFor(id, param);
@@ -280,7 +282,7 @@ export function createWorkspace(host, options = {}) {
     // destination; it must not turn the product's front door into whichever room this
     // browser happened to leave last.
     const id = route?.view || safeView;
-    navigate(id, { param: route?.param || (id === 'team' ? state.team : ''), replace: true });
+    navigate(id, { param: route?.param || (id === 'team' ? state.team : ''), replace: true, fromHistory: !route });
     window.addEventListener('popstate', onPopState);
   };
 
