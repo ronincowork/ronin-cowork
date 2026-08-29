@@ -120,9 +120,10 @@ export function selfMessage(n: LeadNotice): string {
 }
 
 /**
- * Tell every lead of the line's team. Delivery is the house sender; if it cannot type at
- * the lead (no session, a human draft at the prompt, a dialog open) the notice goes to
- * the team wipeboard instead so it is never lost — and the caller prints what happened.
+ * Tell every lead of the line's team. Delivery is the house sender; at a recognizable
+ * prompt it preserves any draft/suggestion, appends the notice and submits both together
+ * (owner, 2026-08-29). If there is no session or a dialog is open, the notice goes to the
+ * team wipeboard instead so it is never lost — and the caller prints what happened.
  * With no lead at all, the handing-in session is told it holds the job, and the notice is
  * posted on the wipeboard for the record without interrupting anyone.
  */

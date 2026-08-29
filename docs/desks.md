@@ -92,7 +92,8 @@ No BYOIN runs at any step. `dev` never moves here.
 
 **The lead is told, dial or no dial** (owner law, 2026-08-28). An accepted hand-in, or a
 conflict, reaches every lead of the line's team — the 人, `@ronin-lead` on the session —
-through `libexec/ronin-house-send`, which carries no dial check: reviewing the team line
+through `libexec/ronin-house-send`, which carries no dial check and appends to any existing
+prompt input so the draft and notice are submitted together: reviewing the team line
 and promoting it to `dev` is the lead's primary job, and the house telling the lead that
 its job is waiting is house machinery (the same footing as Koshi's marker and
 `write_tegami --at`), not an agent driving a session. `tejun-send` keeps its dial check, so
