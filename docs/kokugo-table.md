@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1271 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1270 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -952,7 +952,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `preview.lifecycle` | Lifecycle |  |  |  |  |
 | `preview.mcp_always` | gbrain locked on |  |  |  |  |
 | `preview.mcp_default` | gbrain default |  |  |  |  |
-| `preview.model` | Model bias |  |  |  |  |
 | `preview.no` | no |  |  |  |  |
 | `preview.no_reading` | No birth reading reported. |  |  |  |  |
 | `preview.nothing_yet` | Nothing to preview yet. |  |  |  |  |
@@ -1095,7 +1094,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `seat.check` | Check |  |  |  |  |
 | `seat.check_title` | Run the real resolver against this seat without creating anything |  |  |  |  |
 | `seat.cmd` | Launch command |  |  |  |  |
-| `seat.cmd_desc` | Unset falls to the role’s model bias, then the install default. |  |  |  |  |
+| `seat.cmd_desc` | Unset falls to your session default in ⚙ Configuration. |  |  |  |  |
 | `seat.cmd_no_agent` | This seat launches no agent, so it cannot carry a command. |  |  |  |  |
 | `seat.configuration` | Seat configuration |  |  |  |  |
 | `seat.inherit` | inherit |  |  |  |  |

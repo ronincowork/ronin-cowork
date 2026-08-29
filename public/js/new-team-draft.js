@@ -14,7 +14,7 @@
  * treat an absent key differently from a stated one:
  *
  *   mcp           null -> the profile's own `mcp:` default   (false is an OPINION)
- *   cmd           null -> the model bias, then the install default
+ *   cmd           null -> the owner's session default (⚙ Configuration)
  *   project_root  null -> the team's default, then the top active root
  *   name          null -> slugged from the role and the prompt
  *

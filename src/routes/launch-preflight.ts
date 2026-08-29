@@ -67,7 +67,7 @@ type Verdict = 'ok' | 'warn' | 'refuse';
  * The seat as the draft holds it. `null` means UNSET and is not the same as empty: only
  * these four fields distinguish the two, because only for these does the server itself
  * treat an absent key differently from a stated one (`mcp` inherits the profile's
- * default, `cmd` falls to the model bias then the install default, `project_root` to the
+ * default, `cmd` falls to the owner's session default, `project_root` to the
  * team's then the top active root, `name` to a slug). Everywhere else `''` and `[]` are
  * STATED values — most sharply `session_role: ''`, which is a real blank-role launch and
  * never "the owner has not picked yet".
@@ -138,7 +138,6 @@ export function previewResolved(resolved: Resolved) {
     capExempt: resolved.capExempt,
     mcp: resolved.mcp,
     launchAgent: resolved.launchAgent,
-    model: resolved.model,
     permissions: resolved.permissions,
     ack: resolved.ack,
     opening: resolved.opening,

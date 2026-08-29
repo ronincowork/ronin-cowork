@@ -113,8 +113,8 @@ named runtime input such as `launch request` or `proposed Team draft` otherwise.
 does not inspect draft fields or reproduce precedence. Additive readings may name multiple
 sources. A missing key is rendered as “source not reported”, never guessed.
 
-The same payload carries the complete server-resolved launch-profile readings (`model`,
-permissions, acknowledgement gate, opening template, posture, label and MCP default/lock),
+The same payload carries the complete server-resolved launch-profile readings
+(permissions, acknowledgement gate, opening template, posture, label and MCP default/lock),
 durable Team context (objective, repositories, branch, wipeboard and state), and
 `birth_reading`. `birth_reading` is the literal assisted-mode list passed into brief
 construction after the server combines the boot shelf with explicit seeds; manual and

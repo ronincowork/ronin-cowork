@@ -322,7 +322,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **preview.dir:** Directory
 - **preview.agent:** Launches an agent
 - **preview.label:** Agent label
-- **preview.model:** Model bias
 - **preview.permissions:** Permissions
 - **preview.posture:** Posture
 - **preview.opening:** Opening template
@@ -352,7 +351,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **seat.prompt_desc:** The agent's first message.
 - **seat.project_root_desc:** Unset falls to the Team's root, then the top active root.
 - **seat.cmd:** Launch command
-- **seat.cmd_desc:** Unset falls to the role’s model bias, then the install default.
+- **seat.cmd_desc:** Unset falls to your session default in ⚙ Configuration.
 - **seat.mcp_desc:** Unset means whatever the resolved profile says.
 - **seat.seed:** Read first
 - **seat.seed_desc:** Paths read before anything else. Assisted mode only.

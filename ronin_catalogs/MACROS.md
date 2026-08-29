@@ -145,7 +145,7 @@ Params: `topic` (short slug), `dir` (working directory; default: current repo ro
 `team` (which team the new session joins; default: the origin session's own teams, so a
 fork stays addressable with its parent. Ask the owner if the origin has none),
 `role_family` (default: **the origin session's own role**), `session_role` (default:
-`DraftPlan`), `model` (default: **omit it** — the cascade answers).
+`DraftPlan`), `model` (default: **omit it** — the owner's session default answers).
 
 **Use the same launch contract the ＋ New form uses. Do not rebuild it.** Forks were
 starting from a bare `tmux new-session` and then typing a CLI at it, which is a second,
@@ -174,9 +174,12 @@ one door, and it is the only thing that can stamp a role.
   the new task's reading automatically. So it may default silently where the role may not.
 
 **The model is the third field to resolve, and the honest default is to say nothing.**
-Omit it and the cascade answers — the task's `model:` bias, else the role's, else the
-install default. Pass one only when the owner named one; an explicit model beats every
-layer. It must be a real cell from the launch table, never a command you composed.
+Omit it and the owner's own session default answers — the one thing set in ⚙
+Configuration (`agents.sessions.default`). A `session_role` states no model and biases
+none (owner, 2026-08-29), so there is no layer in between and nothing a fork inherits
+about the model from the task it is given. Pass one only when the owner named one; an
+explicit model beats the default. It must be a real cell from the launch table, never a
+command you composed.
 
 State both resolved axes in the report. The owner is one glance from seeing a wrong
 role and one kill from fixing it, which is only true if the report says what was chosen.

@@ -103,11 +103,14 @@ test('forkit reuses the canonical launch contract and gets the whole Build Brief
   assert.match(text, /understanding gate/i);
 });
 
-test('forkit leaves the model to the cascade unless the owner named one', async () => {
+test("forkit leaves the model to the owner's default unless the owner named one", async () => {
   const text = await forkit();
   assert.match(text, /`model`/, 'the model is a parameter');
-  assert.match(text, /omit it\*\* — the cascade answers/i, 'and its default is silence');
-  assert.match(text, /an explicit model beats every\s+layer/i);
+  assert.match(text, /omit it\*\* — the owner's session default answers/i, 'and its default is silence');
+  assert.match(text, /an\s+explicit model beats the default/i);
+  // The role-model bias was removed with the field (owner, 2026-08-29), so the macro must
+  // not teach a fork that the task it is handed says anything about the model.
+  assert.match(text, /`session_role` states no model and biases\s+none/i);
   assert.match(text, /real cell from the launch table/i, 'never a composed command');
 });
 

@@ -86,9 +86,10 @@ a real launch — but **an agent-launching fork must RESOLVE them deliberately r
 omit them by accident** (owner, 2026-08-22). The receipt names what was actually resolved;
 read it back and report it.
 
-**THE MODEL — leave it out unless the owner named one.** Omit `cmd` and the launch resolves
-it through the cascade: the `model:` bias of the selected task, else of the role, else the
-install's own default. Passing `cmd` is the explicit pick and beats all of them. It must be
+**THE MODEL — leave it out unless the owner named one.** Omit `cmd` and the launch is born
+on the owner's own session default (⚙ Configuration, `agents.sessions.default`); a
+`session_role` states no model and biases none, so nothing sits between that default and
+an explicit pick. Passing `cmd` is the explicit pick and beats it. It must be
 a real `session_launch_spec` cell from the launch table (`ronin_catalogs/PROJECT_ROOTS.md`),
 never a command you composed — a hand-typed command matches no table row, so the launch
 cannot honor an MCP-off choice for it.

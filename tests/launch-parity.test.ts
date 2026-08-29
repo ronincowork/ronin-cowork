@@ -52,6 +52,14 @@ process.env.RONIN_CATALOGS_DIR = catalogs;
 process.env.RONIN_SESSION_BOOT_DIR = path.join(temp, 'shelf');
 process.env.RONIN_SESSION_BOOT_CACHE_DIR = path.join(temp, 'generated');
 process.env.RONIN_CONFIG_DIR = path.join(temp, 'config');
+// The owner's own session default, because since 2026-08-29 it is the ONLY thing under an
+// explicit pick — no session_role biases the model any more, so a launch that names
+// nothing must land here for both callers alike.
+await fs.mkdir(path.join(temp, 'config'), { recursive: true });
+await fs.writeFile(
+  path.join(temp, 'config', 'ronin.json'),
+  JSON.stringify({ agents: { sessions: { default: { provider: 'anthropic', model: 'fable' } } } }),
+);
 process.env.RONIN_LEDGER_DIR = path.join(temp, 'ledger');
 
 // A book on each level, so the reading list has something to be identical ABOUT.
@@ -187,11 +195,13 @@ test('project_root defaulting is the mechanism\'s — top active root, or the TE
 });
 
 test('the model cascade is the mechanism\'s: blank inherits, explicit wins, identically', async () => {
-  // BLANK — the resolved `model:` bias of the task answers, for both callers.
+  // BLANK — the OWNER'S session default answers, for both callers. It used to be the
+  // task's `model:` bias; that field and its resolution path were removed on 2026-08-29,
+  // so a definition can no longer put itself between the owner and their own default.
   const commons = await resolveForm(commonsForm({ cmd: undefined }), new Set());
   const forkit = await resolveForm(forkitForm({ cmd: undefined }), new Set());
   assert.equal(forkit.cmd, commons.cmd);
-  assert.match(commons.cmd, /opus/, 'DraftPlan biases opus, and the bias is now read');
+  assert.match(commons.cmd, /fable/, 'the configured session default answers, not the role');
 
   // EXPLICIT — the owner named one, and it beats every layer. Same input, same answer.
   // The resolved cmd may carry the provider's own MCP-off flags on the end, because this
@@ -250,14 +260,12 @@ test('preflight publishes resolver attribution unchanged', async () => {
   assert.deepEqual(preview.stated_by.lifecycle, resolved.stated_by.lifecycle);
   assert.strictEqual(preview.birth_reading, resolved.birth_reading);
   assert.strictEqual(preview.posture, resolved.posture);
-  assert.equal(preview.model, resolved.model);
   assert.equal(preview.permissions, resolved.permissions);
   assert.equal(preview.opening, resolved.opening);
 });
 
 test('server resolution returns profile and durable Team context without browser reconstruction', async () => {
   const resolved = await resolveForm(forkitForm(), new Set());
-  assert.equal(resolved.model, 'opus');
   assert.equal(resolved.permissions, 'default');
   assert.equal(resolved.team_objective, 'prove the parity');
   assert.deepEqual(resolved.team_repos, []);

@@ -52,7 +52,7 @@ function seatFields() {
     { key: 'project_root', label: t('team.project_root', 'Project root'), kind: 'text',
       description: t('seat.project_root_desc', "Unset falls to the Team's root, then the top active root.") },
     { key: 'cmd', label: t('seat.cmd', 'Launch command'), kind: 'text',
-      description: t('seat.cmd_desc', 'Unset falls to the role’s model bias, then the install default.') },
+      description: t('seat.cmd_desc', 'Unset falls to your session default in ⚙ Configuration.') },
     { key: 'mcp', label: t('seat.mcp', 'gbrain'), kind: 'tristate',
       description: t('seat.mcp_desc', 'Unset means whatever the resolved profile says.') },
     { key: 'seed', label: t('seat.seed', 'Read first'), kind: 'list',
@@ -205,7 +205,7 @@ export function createSeatFields({ seat, onChange } = {}) {
     const cmd = fields.get('cmd');
     cmd.control.disabled = !agent;
     cmd.field.description.textContent = agent
-      ? t('seat.cmd_desc', 'Unset falls to the role’s model bias, then the install default.')
+      ? t('seat.cmd_desc', 'Unset falls to your session default in ⚙ Configuration.')
       : t('seat.cmd_no_agent', 'This seat launches no agent, so it cannot carry a command.');
     const prompt = fields.get('prompt');
     prompt.field.description.textContent = agent

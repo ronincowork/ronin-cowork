@@ -43,7 +43,6 @@ function resolvedRows() {
     ['dir', t('preview.dir', 'Directory')],
     ['agent', t('preview.agent', 'Launches an agent')],
     ['label', t('preview.label', 'Agent label')],
-    ['model', t('preview.model', 'Model bias')],
     ['permissions', t('preview.permissions', 'Permissions')],
     ['posture', t('preview.posture', 'Posture')],
     ['opening', t('preview.opening', 'Opening template')],

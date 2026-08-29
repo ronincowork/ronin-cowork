@@ -38,7 +38,16 @@ test('absence inherits from the system, and a stated field wins', async () => {
   assert.equal(p.dial, 'read', 'the definition states dial, so it wins');
   assert.equal(p.permissions, 'default', 'silence falls through to the system');
   assert.equal(p.lifecycle, '', 'nothing states it, and the system says none');
-  assert.equal(p.model, '', 'a bias nobody stated is no bias');
+});
+
+test('a definition has no model to state, and the resolver has none to report', () => {
+  // Owner, 2026-08-29: the `model:` field and its resolution path are GONE, not merely
+  // unused. A definition that writes one is writing prose — it reaches no profile field
+  // and no `stated_by` reading, so nothing downstream can rank it above the owner's own
+  // session default. The model's cascade is the owner's default, then this launch.
+  const p = resolveLaunchProfile(def('CutCode', { model: 'sonnet', dial: 'write' }));
+  assert.ok(!('model' in p), 'the profile carries no model reading');
+  assert.ok(!('model' in p.stated_by), 'and attribution has no model row to answer for');
 });
 
 test('the system answers when the session_role is blank, and blank is a legal launch', () => {
@@ -77,7 +86,6 @@ test('`agent: none` refuses agent-only fields stated beside it', () => {
   const shell = def('OpenShell', { agent: 'none', dial: 'user' });
   const p = resolveLaunchProfile(shell);
   assert.equal(p.agent, false);
-  assert.equal(p.model, '');
   assert.equal(p.permissions, '');
   assert.equal(p.opening, '');
   assert.equal(p.ack, false);
@@ -87,7 +95,7 @@ test('`agent: none` refuses agent-only fields stated beside it', () => {
   // A definition asserting an agent field beside `agent: none` is a contradiction
   // somebody wrote down, so it is refused by name.
   assert.throws(
-    () => resolveLaunchProfile(def('Broken', { agent: 'none', model: 'opus' })),
+    () => resolveLaunchProfile(def('Broken', { agent: 'none', opening: 'go: {prompt}' })),
     (e: Error) => /launches no agent/.test(e.message) && e.message.includes('/definitions/Broken.md'),
   );
 });

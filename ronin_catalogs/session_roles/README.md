@@ -19,8 +19,8 @@ opens it next, including the `#` heading — the filename is the token, not the 
 
 **Fields:** `icon` · `label` · `blurb` (what the button does) · `ask` (the form's prompt) ·
 `remit` (one line: what this session is, for humans and Koshi) · `posture` (how it
-behaves — inlined into the boot brief) · `model` (bias: which model this way of working
-usually deserves) · `match` (intent words) · `dial` · `permissions` · `lifecycle` (the
+behaves — inlined into the boot brief) · `match` (intent words) · `dial` ·
+`permissions` · `lifecycle` (the
 michi it starts in) · `ack` · `opening` (first-message template; `{prompt}` is what the
 owner typed) · `agent` · `cap` · `dir` · `mcp` · `hidden`.
 
@@ -33,9 +33,20 @@ system default  <  role_family  <  session_role  <  explicit choice on this laun
 ```
 
 Absence means inherit. An explicit `off` is a value, not an absence. `mcp: always` is a
-**lock** — a lower layer may not contradict it. `agent: none` makes `model`,
-`permissions`, `posture`, `opening` and `ack` **inapplicable**, and a definition that
-states one alongside it is refused rather than half-honored.
+**lock** — a lower layer may not contradict it. `agent: none` makes `permissions`,
+`posture`, `opening` and `ack` **inapplicable**, and a definition that states one
+alongside it is refused rather than half-honored.
+
+**A session_role never states a model** (owner, 2026-08-29). There is no `model:` field
+here and there is no role-model bias in resolution: a new session launches on the
+owner's own default (⚙ Configuration, `agents.sessions.default`) unless the launch
+itself names a model or a command. A role that could bias the model was a standing
+maintenance burden and could switch an OpenAI-default box onto Anthropic because it
+matched a model NAME. The cascade for the model is two layers and says so:
+
+```text
+the owner's session default  <  the model or cmd this launch names
+```
 
 **Two launch modes.** In **manual** mode none of this directory's wording is used at all:
 what the owner typed IS the prompt, byte for byte, and only the mechanical constants

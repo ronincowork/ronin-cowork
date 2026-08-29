@@ -168,7 +168,6 @@ export interface Resolved {
    */
   launchAgent: string;
   /** The complete server-resolved profile readings used to construct this birth. */
-  model: string;
   permissions: string;
   ack: boolean;
   opening: string;
@@ -423,21 +422,14 @@ export async function resolveForm(
   const defaultCmd = dflt?.provider && dflt?.model
     ? launchSpecs.find((s) => s.provider === dflt.provider && s.model === dflt.model)?.cmd
     : undefined;
-  // THE `model:` BIAS, RESOLVED — and until 2026-08-22 it was decorative. Every definition
-  // carried one ("which model this way of working usually deserves"), the cascade resolved
-  // one, and nothing whatever read it: the install default won every launch that did not
-  // name a command explicitly. So the field said one thing and the box did another.
-  //
-  // It sits BETWEEN the install default and the explicit pick, which is the cascade's own
-  // order — system < role_family < session_role < this launch. The bias is a model NAME and
-  // is matched against the launch table's own model column, never turned into a command
-  // string here: the table is the one place a provider is a row and a model is a column.
-  // The owner's default provider is preferred when two of them offer the same name, so
-  // biasing toward `sonnet` on a Codex box stays on Codex.
-  const biasCmd = profile.model
-    ? (launchSpecs.find((s) => s.model === profile.model && s.provider === dflt?.provider)
-        ?? launchSpecs.find((s) => s.model === profile.model))?.cmd
-    : undefined;
+  // NO ROLE-MODEL BIAS SITS BETWEEN THEM (owner, 2026-08-29). A session_role used to be
+  // able to state `model:`, and it was resolved here into a command that OUTRANKED the
+  // owner's own default. It is gone, field and path together: the definitions were a
+  // maintenance burden nobody kept true, and because a bias was matched by model NAME
+  // against the launch table, a role naming an Anthropic model switched an
+  // OpenAI-default box onto Anthropic — the owner's provider choice, silently reversed
+  // by a catalog file. The model's whole cascade is now the two layers below: the
+  // owner's session default, and whatever THIS launch named.
   // THE NAMED MODEL — one field, filled or not. Named, it is the model; blank, the
   // session's usual default applies, as for every other field. It is not a precedence
   // game: `cmd` is a raw command string that already carries a model, so naming both is
@@ -456,7 +448,7 @@ export async function resolveForm(
       throw new Error(`Unknown model "${form.model}" — this box's launch table offers: ${known || 'nothing yet (see ⚙ Configuration)'}.`);
     }
   }
-  let cmd = agent ? form.cmd || modelCmd || biasCmd || defaultCmd || defaultAgentCommand() : '';
+  let cmd = agent ? form.cmd || modelCmd || defaultCmd || defaultAgentCommand() : '';
   // The row this cmd came out of, matched BEFORE the MCP-off flags are appended below —
   // appending changes the very string the match is on, and looking it up afterwards would
   // find nothing for exactly the launches that asked for something unusual. It carried the
@@ -514,11 +506,9 @@ export async function resolveForm(
     : roster?.project_root
       ? rosterSource
       : [{ layer: 'system', source: USER_PROJECT_ROOTS_MD }];
-  const cmdSource: StatedBy[] = form.cmd
-    ? explicit
-    : biasCmd
-      ? profile.stated_by.model
-      : system;
+  // Explicit when the launch named either half of it — a raw `cmd` or a model name.
+  // Everything else is the install's own default, which is the system's answer.
+  const cmdSource: StatedBy[] = form.cmd || modelCmd ? explicit : system;
   const defaultMcpWasUndeliverable = agent && !mcpWanted && !mcpOffWanted;
   const mcpSource: StatedBy[] = !agent
     ? profile.stated_by.agent
@@ -604,7 +594,6 @@ export async function resolveForm(
     // is free to name a path. RIREKI's decoder keys are bare binary names, and this value
     // is written into the option RIREKI reads, so it has to arrive in RIREKI's spelling.
     launchAgent: agent ? path.basename(cmd.trim().split(/\s+/)[0] ?? '') : '',
-    model: profile.model,
     permissions: profile.permissions,
     ack: profile.ack,
     opening: profile.opening,
@@ -636,7 +625,6 @@ export async function resolveForm(
       capExempt: profile.stated_by.capExempt,
       mcp: mcpSource,
       launchAgent: cmdSource,
-      model: profile.stated_by.model,
       permissions: profile.stated_by.permissions,
       ack: profile.stated_by.ack,
       opening: profile.stated_by.opening,
