@@ -42,11 +42,25 @@ const die = (verdict: string, code: number): never => {
 };
 
 /**
+ * `--session <name>`, when the environment cannot say who is typing.
+ *
+ * A session's identity normally comes from its pane and nothing else — but `TMUX_PANE`
+ * and `$TMUX` can both be absent (a tool run from a detached shell, a hook, a harness),
+ * and the refusal that follows is total: no board, no post, no read. This is the same
+ * claim `RONIN_SESSION` already makes, with a spelling a person can type, and it is
+ * checked no harder for the same reason — a box where another session can run this tool
+ * is a box where it could already export that variable.
+ */
+let claimedSession = '';
+const claimSession = (name: string): void => { claimedSession = name; };
+
+/**
  * Which session is typing. A tile watching a session shares its pane through a grouped
  * viewer, so a pane resolves to its NON-viewer owner. RONIN_SESSION is the test seam —
  * the unit floor never shells tmux.
  */
 async function whoami(): Promise<string> {
+  if (claimedSession) return claimedSession;
   if (process.env.RONIN_SESSION) return process.env.RONIN_SESSION;
   const pane = process.env.TMUX_PANE;
   if (!pane) return '';
@@ -252,13 +266,20 @@ async function find(board: string, needle: string): Promise<number> {
  * dangerous.
  */
 async function post(named: string | null, argv: string[]): Promise<number> {
-  const me = await whoami();
+  let me = await whoami();
   let to: string[] = [];
   let toAll = false;
   let silent = false;
   const words: string[] = [];
+  // FLAGS LEAD, THEN EVERYTHING IS WHAT YOU SAID. An unrecognized flag used to be pushed
+  // into `words` and posted as message text — a typo'd `--too` or a stale `--session`
+  // silently became the first thing the board said, and nothing reported it. It is
+  // refused now. The rule stops at the first ordinary word so a post can still carry a
+  // diff, where `--- a/file` is text and must never be read as a flag.
+  let leading = true;
   for (let i = 0; i < argv.length; i++) {
-    if (argv[i] === '--to') {
+    const arg = argv[i];
+    if (leading && arg === '--to') {
       const v = (argv[++i] ?? '').trim();
       if (!v) return die('BAD-ADDRESSEE: --to needs names, or the word none. Leave it off to reach everyone', 2);
       if (v === 'none') silent = true;
@@ -266,7 +287,18 @@ async function post(named: string | null, argv: string[]): Promise<number> {
       else to = v.split(',').map((t) => t.trim()).filter(Boolean);
       continue;
     }
-    words.push(argv[i]);
+    if (leading && arg === '--session') {
+      const v = (argv[++i] ?? '').trim();
+      if (!v) return die('BAD-SESSION: --session needs a session name — it signs the post', 2);
+      claimSession(v);
+      me = v;
+      continue;
+    }
+    if (leading && /^--[a-z][a-z0-9-]*$/.test(arg)) {
+      return die(`BAD-FLAG: '${arg}' is not one of this tool's flags (--to, --session), and a post's flags are never folded into what it says`, 2);
+    }
+    leading = false;
+    words.push(arg);
   }
   const text = words.join(' ').trim();
   if (!text) return die('usage: tejun-wipeboard post [--to a,b|all|none] <text…>   (a board name only for a board that is not your team\'s)', 2);
@@ -331,6 +363,16 @@ async function notify(session: string, message: string): Promise<string> {
 /* ------------------------------------------------------------------------------ main */
 
 const argv = process.argv.slice(2);
+// `--session <name>` LEADS THE WHOLE COMMAND, so it reaches the forms that carry no text
+// of their own — the bare unread check, `boards`, `read`. Position 0 only: anywhere else
+// it could be something a post or a search actually said, and this tool may not decide
+// that a word a person typed was a flag.
+if (argv[0] === '--session') {
+  const name = (argv[1] ?? '').trim();
+  if (!name) die('BAD-SESSION: --session needs a session name', 2);
+  claimSession(name);
+  argv.splice(0, 2);
+}
 let code = 0;
 if (!argv.length) code = await check();
 else if (argv[0] === 'boards') code = await boards();

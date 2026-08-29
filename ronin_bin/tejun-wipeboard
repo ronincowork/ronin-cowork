@@ -6,7 +6,8 @@
 #        tejun-wipeboard <wipeboard>                  the brief + what it still holds
 #        tejun-wipeboard <wipeboard> read [n]         the last n, explicitly
 #        tejun-wipeboard <wipeboard> find <text…>     search what it still holds
-#        tejun-wipeboard <wipeboard> post [--to a,b|none] <text…>
+#        tejun-wipeboard <wipeboard> post [--to a,b|none] [--session s] <text…>
+#        tejun-wipeboard --session <s> …             who is typing, when $TMUX is unset
 #
 # A WIPEBOARD IS A TRANSPORT, NOT A RECORD (owner, 2026-08-23). Posts are delivered and
 # then reaped — when every reader they were for has read them, or when they age out. It
