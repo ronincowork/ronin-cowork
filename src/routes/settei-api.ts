@@ -39,6 +39,7 @@ import {
   writeMachineSection,
   writeOwner,
   writeDeskSection,
+  writeCampaignSection,
 } from '../user-config.js';
 
 const errMsg = (e: unknown): string => String((e as Error)?.message ?? e);
@@ -52,6 +53,10 @@ const str = (v: unknown): string | undefined => (typeof v === 'string' ? v : und
  * never changes. Each writer returns the body of its 200.
  */
 const FAMILY_WRITERS: Record<string, (body: Record<string, unknown>) => Promise<unknown>> = {
+  campaign: async (body) => {
+    await writeCampaignSection({ name: str(body.name), description: str(body.description) });
+    return { ok: true };
+  },
   /** What you call yourself. A blank name is how you ask for the default back, not an
    * error; `writeOwner` republishes to the tmux option so bash tools agree at once. */
   owner: async (body) => ({ name: await writeOwner(String(body.name ?? '').trim()) }),

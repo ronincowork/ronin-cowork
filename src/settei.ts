@@ -58,6 +58,7 @@ import {
   readSetupSection,
   liveCount,
   readDeskSection,
+  readCampaignSection,
 } from './user-config.js';
 
 const pexec = promisify(execFile);
@@ -299,6 +300,7 @@ async function readSet(): Promise<Record<string, unknown>> {
   const agents = await readAgentsSection();
   const gbrain = await readSection<Record<string, unknown>>('gbrain', {});
   const desk = await readDeskSection();
+  const campaign = await readCampaignSection();
   const setup = await readSetupSection();
   const roots = await listProjectRoots();
 
@@ -310,6 +312,7 @@ async function readSet(): Promise<Record<string, unknown>> {
 
   const activation = await readServicesActivation();
   return {
+    campaign: { name: typedStr(campaign.name), description: typedStr(campaign.description) },
     owner: { name: typedStr(owner.name) },
     machine: {
       name: typedStr(machine.name),

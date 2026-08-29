@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1256 keys · 54 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1265 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -64,6 +64,17 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `save_template` | Save as template |  | Save build |  |  |
 | `squad` | Team | Staff | Squad |  | Squad |
 | `team_kit` | Shared toolkit | Mise en place | Team kit |  | Team kit |
+
+## campaign
+
+| key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
+|---|---|---|---|---|---|
+| `campaign.commons` | Campaign commons |  |  |  |  |
+| `campaign.description` | Description |  |  |  |  |
+| `campaign.description_placeholder` | What this campaign is for |  |  |  |  |
+| `campaign.name` | Campaign name |  |  |  |  |
+| `campaign.name_placeholder` | My campaign |  |  |  |  |
+| `campaign.view` | Campaign view |  |  |  |  |
 
 ## commons
 
@@ -388,7 +399,9 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.behaviour` | behaviour |  |  |  |  |
 | `glossary.brief` | Brief |  |  |  |  |
 | `glossary.build` | build |  |  |  |  |
-| `glossary.commons` | the commons |  |  |  |  |
+| `glossary.campaign` | campaign |  |  |  |  |
+| `glossary.campaign_commons` | the commons |  |  |  |  |
+| `glossary.commons` | session commons |  |  |  |  |
 | `glossary.configuration` | Configuration |  |  |  |  |
 | `glossary.control` | Control |  |  |  |  |
 | `glossary.cowork_commons` | cowork commons |  |  |  |  |
@@ -1174,6 +1187,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `settei.cores_ram` | {cores} cores · {ram} GB |  |  |  |  |
 | `settei.dir_gone` | ✕ {dir} is gone |  |  |  |  |
 | `settei.group_agents` | agent installations |  |  |  |  |
+| `settei.group_campaign` | campaign |  |  |  |  |
 | `settei.group_capacity` | capacity |  |  |  |  |
 | `settei.group_models` | how work gets a model |  |  |  |  |
 | `settei.group_needed` | still needed |  |  |  |  |

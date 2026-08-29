@@ -8,6 +8,12 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign:** Campaign
 - **campaigns:** Campaigns
 - **campaign_kind:** Kind
+- **campaign.name:** Campaign name
+- **campaign.name_placeholder:** My campaign
+- **campaign.description:** Description
+- **campaign.description_placeholder:** What this campaign is for
+- **campaign.commons:** Campaign commons
+- **campaign.view:** Campaign view
 - **squad:** Team
 - **player_one:** Lead session
 - **team_kit:** Shared toolkit
@@ -195,6 +201,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **settei.blurb:** What this install is set to — and what it is running on.
 - **settei.measured:** measured {time}
 - **settei.group_you:** you and this machine
+- **settei.group_campaign:** campaign
 - **settei.hardware:** hardware
 - **settei.virtual:** virtual
 - **settei.physical:** physical
@@ -1362,13 +1369,15 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.tile:** tile
 - **glossary.session:** session
 - **glossary.agent:** agent
-- **glossary.commons:** the commons
+- **glossary.commons:** session commons
 - **glossary.desk:** the desk
 - **glossary.cowork_space:** the cowork space
 - **glossary.workspace:** workspace
 - **glossary.surface:** surface
 - **glossary.terminal_tile:** terminal tile
 - **glossary.team_commons:** team commons
+- **glossary.campaign:** campaign
+- **glossary.campaign_commons:** the commons
 - **glossary.cowork_commons:** cowork commons
 - **glossary.selector_column:** selector column
 - **glossary.tab:** tab

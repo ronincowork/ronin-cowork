@@ -45,8 +45,14 @@ export function createCoworkView(options = {}) {
   let loaded = ''; // the team whose roster reading is currently drawn
   let unsubscribe = null;
   let entered = false;
+  let campaignName = '';
   let lastSeat = 'workspace1'; // the workspace last touched — where the next card lands
   const closedGroups = new Set();
+  const onCampaignChange = (event) => {
+    campaignName = String(event.detail?.name || '').trim();
+    campaignViewHead.title.textContent = campaignName || t('campaign.view', 'Campaign view');
+    if (entered && league) renderCards([]);
+  };
 
   /* ---------- the workspaces: two seats, the roster between them, one commons ---------- */
   const makeSeat = (id, label) => {
@@ -206,8 +212,9 @@ export function createCoworkView(options = {}) {
       void loadSavedLaunches().then(() => launcher.render());
     } },
   };
-  const leagueView = createSurface({ label: t('league.view', 'League view') });
-  leagueView.el.prepend(createSurfaceHeader({ label: t('league.view', 'League view') }).el);
+  const leagueView = createSurface({ label: t('campaign.view', 'Campaign view') });
+  const campaignViewHead = createSurfaceHeader({ label: t('campaign.view', 'Campaign view') });
+  leagueView.el.prepend(campaignViewHead.el);
   const leagueBoard = WorkspaceKit.layouts.createLeagueBoard(); leagueBoard.classList.add('league-view-scroll');
   const leagueCards = leagueBoard.querySelector('[data-surface="cards"]');
   leagueView.content.append(leagueBoard);
@@ -457,7 +464,7 @@ export function createCoworkView(options = {}) {
   function renderCards(members) {
     if (league) {
       const teams = teamsFromState().filter((candidate) => !candidate.holding);
-      rosterTitle.textContent = t('league.title', 'League');
+      rosterTitle.textContent = campaignName || t('campaign', 'Campaign');
       rosterCount.textContent = teams.length ? String(teams.length) : '';
       cards.replaceChildren(); leagueCards.replaceChildren();
       const group = (key, label) => { const section = el('details', 'tw-selector-group'); section.open = !closedGroups.has(key); section.addEventListener('toggle', () => section.open ? closedGroups.delete(key) : closedGroups.add(key)); section.append(el('summary', null, label), el('div', 'tw-selector-group-cards')); cards.append(section); return section.lastElementChild; };
@@ -468,8 +475,8 @@ export function createCoworkView(options = {}) {
         if (!clickable) card.el.classList.add('league-drag-card');
         card.el.draggable = true; card.el.addEventListener('dragstart', (event) => { event.dataTransfer.setData(DRAG_TYPE, token); event.dataTransfer.effectAllowed = 'move'; }); host.append(card.el);
       };
-      add(views, t('league.commons', 'League commons'), '@league-commons');
-      add(views, t('league.view', 'League view'), '@league-view');
+      add(views, t('campaign.commons', 'Campaign commons'), '@league-commons');
+      add(views, campaignName || t('campaign.view', 'Campaign view'), '@league-view');
       add(views, t('cowork.commons', 'Ronin Desk'), DESK, '', null, { cowork: true, tab: 'health' });
       for (const item of teams) { const made = leagueTeamSurface(item.name); add(teamCards, item.name, made.token, item.objective || ''); }
       const ronin = leagueTeamSurface(UNASSIGNED); add(teamCards, t('league.ronin', 'Ronin: no team'), ronin.token);
@@ -616,10 +623,17 @@ export function createCoworkView(options = {}) {
       unsubscribe = subscribe(() => { if (entered && team) paint(); });
       teamPageHandlers.add(onDraft);
       sessionsHandlers.add(onSessions);
+      window.addEventListener('ronin:campaign-change', onCampaignChange);
     },
     enter: (context) => {
       ctx = context;
       entered = true;
+      if (league) void request('/api/settei').then((r) => {
+        if (!r.ok) return;
+        campaignName = String(r.data?.set?.campaign?.name || '').trim();
+        campaignViewHead.title.textContent = campaignName || t('campaign.view', 'Campaign view');
+        renderCards([]);
+      });
       for (const seat of Object.values(seats)) seat.pool.destroyAll();
       team = league ? '' : context.param || context.state?.team || '';
       const typed = teamWorkspaceState(context.state, context.viewState(viewKey), DECLARATION);
@@ -688,6 +702,7 @@ export function createCoworkView(options = {}) {
     },
     destroy: () => {
       entered = false;
+      window.removeEventListener('ronin:campaign-change', onCampaignChange);
       unsubscribe?.();
       unsubscribe = null;
       teamPageHandlers.delete(onDraft);

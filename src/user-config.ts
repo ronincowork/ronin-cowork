@@ -293,6 +293,16 @@ export const writeMachineSection = (v: { name?: string; where?: string; monitor?
     doc.machine = m;
   });
 
+/** This install's campaign — one named body of work today, held in SETTEI. */
+export const readCampaignSection = (): Promise<{ name?: string; description?: string }> => readSection('campaign', {});
+export const writeCampaignSection = (v: { name?: string; description?: string }): Promise<void> =>
+  updateConfig((doc) => {
+    const c = ((doc.campaign ?? {}) as Record<string, unknown>) || {};
+    if (v.name !== undefined) c.name = String(v.name).trim().slice(0, 120);
+    if (v.description !== undefined) c.description = String(v.description).trim().slice(0, 500);
+    doc.campaign = c;
+  });
+
 /** THE DESK — which desk_profile the owner works at (R38). `profile` is a token in
  * `ronin_catalogs/desk_profiles/` or ''; nothing here checks it exists, because a
  * profile can be removed after it was chosen and the reader answers null for that. */

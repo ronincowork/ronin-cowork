@@ -164,6 +164,9 @@ export function buildSettei(root, isShowing) {
     blurb.textContent = t('settei.blurb', 'What this install is set to — and what it is running on.');
     stamp.textContent = t('settei.measured', 'measured {time}', { time: new Date(observed.observed_at).toLocaleString() });
 
+    group(t('settei.group_campaign', 'campaign'));
+    for (const row of fieldsIn((f) => f.sec === 'campaign' && f.lands)) body.appendChild(row);
+
     /* you and this machine — the typed rows are the registry's, in its order */
     group(t('settei.group_you', 'you and this machine'));
     for (const row of fieldsIn((f) => (f.sec === 'you' || f.sec === 'machine') && f.lands)) body.appendChild(row);

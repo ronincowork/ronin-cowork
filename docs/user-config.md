@@ -20,6 +20,7 @@ src/settei.ts                     the assembled record the ⚙ Configuration tab
 
 | Section | What | Written by | Bus option |
 |---|---|---|---|
+| `campaign.name` · `campaign.description` | the one Campaign this configuration serves | `PUT /api/settei/campaign` | none |
 | `sessions.max` | how many sessions may run at once | `PUT /api/session-max` — ⌂ Roster and ⚙ Configuration, **one route** | `@ronin-session-max` |
 | `owner.name` | what to call the owner | `PUT /api/settei/owner` | `@ronin-owner` |
 | `machine.name` · `machine.where` | what this box is called, and where it is | `PUT /api/settei/machine` | none |

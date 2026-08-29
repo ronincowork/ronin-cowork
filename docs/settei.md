@@ -58,7 +58,7 @@ from one of these, and adding a source is adding a row here.
 
 | Source | Contributes | Provenance | The rule that binds it |
 |---|---|---|---|
-| **`ronin.json`** — the `config` store, user scope | owner · machine · sessions.max · agents · gbrain · services · setup | **typed — the only persisted half** | written only through `updateConfig()`; the file also hosts `auth` and `passkeys`, which are **not settei** — the file is storage, not the object |
+| **`ronin.json`** — the `config` store, user scope | campaign · owner · machine · sessions.max · agents · gbrain · services · setup | **typed — the only persisted half** | written only through `updateConfig()`; the file also hosts `auth` and `passkeys`, which are **not settei** — the file is storage, not the object |
 | **the catalogs store** — `PROJECT_ROOTS.md` | projects, with their remits | typed, **by reference** | settei reads it in and never owns it; ▣ Project root and the owner's editor stay its writers |
 | **the mechanical scans** — eight families today, extensible | machine & OS (DMI, cores, kernel) · agent CLIs (login-shell probe) · API-key presence · host tools · the install's identity and services roster · reach and exposure (web + ssh) · the work (project dirs, live sessions) | **found** — per read, never stored | a stored measurement is a lie the moment the machine changes; every answer carries `observed_at` |
 | **`.env`** (+ the unit) — `docs/env.md` | **only a name and a boolean** — which key variables exist and whether each is set | found (presence only) | the value never crosses into settei in either direction; secrets live in `.env` and nowhere else |

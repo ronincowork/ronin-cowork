@@ -60,6 +60,11 @@
 export const SETTEI_SCHEMA = {
   sections: [
     {
+      id: 'campaign',
+      title: 'Campaign',
+      lede: 'This Ronin instance is one campaign. Name the body of work its projects, teams and agents belong to.',
+    },
+    {
       id: 'machine',
       title: 'This machine',
       lede: 'Ronin is now installed on this machine — laptop, home server or a VM somewhere, it makes no difference to what follows. This page is already talking to it.',
@@ -90,6 +95,16 @@ export const SETTEI_SCHEMA = {
   ],
 
   fields: [
+    {
+      id: 'campaignName', sec: 'campaign', kind: 'text', ask: false,
+      label: 'Campaign name', short: 'campaign name', placeholder: 'My campaign',
+      from: 'set.campaign.name', lands: { family: 'campaign', key: 'name' }, omit: 'blank',
+    },
+    {
+      id: 'campaignDescription', sec: 'campaign', kind: 'text', ask: false,
+      label: 'Description', short: 'campaign description', placeholder: 'What this campaign is for',
+      from: 'set.campaign.description', lands: { family: 'campaign', key: 'description' }, omit: 'blank',
+    },
     {
       id: 'machineName',
       sec: 'machine',
