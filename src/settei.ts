@@ -36,12 +36,12 @@ import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { config, authEnabled, tailnetIp } from './config.js';
-import { SETTEI_SCHEMA } from './settei-registry.js';
+import { SETTEI_SCHEMA, providerModelFields, type ProviderModelField } from './settei-registry.js';
 import { secureUrl } from './passkey.js';
 import { listServices } from './sockets.js';
 import { CONTRACT_V } from './sockets-contract.js';
 import { roninIdentity } from './routes/version.js';
-import { listProjectRoots } from './project-roots.js';
+import { listProjectRoots, listSessionLaunchSpecs } from './project-roots.js';
 import { storeDir } from './stores.js';
 import { AGENTS, listAgentAvailability } from './agents.js';
 import {
@@ -57,10 +57,12 @@ import {
   readSection,
   readSetupSection,
   liveCount,
-  readDeskSection,
   readDesksSection,
-  readCampaignSection,
 } from './user-config.js';
+// THE CAMPAIGN'S OWN LEAVES. `set.campaign.{name,description}` and `set.desk.profile` keep
+// the shapes this record has always served, but the fact behind them is now the initial
+// campaign_config rather than a section of ronin.json — one writable Campaign record.
+import { readCampaignSection, readDeskSection } from './campaign-config.js';
 
 const pexec = promisify(execFile);
 
@@ -96,7 +98,9 @@ export interface SetteiRecord {
    * The list is served already partitioned that way — one read, and a surface renders
    * the three kinds by filtering, never by re-deciding what it is looking at. */
   needed: Array<{ leaf: string; needs: string; how: string; met_by: MetBy }>;
-  schema: typeof SETTEI_SCHEMA;
+  /** The registry, plus one generated row per provider the launch table carries. */
+  schema: Omit<typeof SETTEI_SCHEMA, 'fields'>
+    & { fields: Array<(typeof SETTEI_SCHEMA)['fields'][number] | ProviderModelField> };
 }
 
 /** The choke: what kind of hand closes a requirement. Declared per row in the registry,
@@ -295,6 +299,12 @@ async function localWeights(): Promise<Array<Record<string, unknown>>> {
 const typedStr = (v: unknown): string | null =>
   typeof v === 'string' && v.trim() !== '' ? v : null;
 
+/** The owner's two session defaults, both always present in the record. */
+const sessionDefaults = (v: unknown): Record<string, unknown> => ({
+  default: (v as Record<string, unknown>)?.default ?? { provider: null, model: null },
+  by_provider: (v as Record<string, unknown>)?.by_provider ?? {},
+});
+
 async function readSet(): Promise<Record<string, unknown>> {
   const owner = await readSection<Record<string, unknown>>('owner', {});
   const machine = await readMachineSection();
@@ -321,10 +331,9 @@ async function readSet(): Promise<Record<string, unknown>> {
     },
     sessions: { max: await readMax() },
     projects,
-    agents: {
-      sessions: (agents.sessions as unknown) ?? { default: { provider: null, model: null } },
-      jobs: (agents.jobs as unknown) ?? {},
-    },
+    // `by_provider` is normalized so a row reading `…by_provider.<name>` finds a blank
+    // rather than walking off a missing branch.
+    agents: { sessions: sessionDefaults(agents.sessions), jobs: (agents.jobs as unknown) ?? {} },
     gbrain: { enabled: gbrain.enabled === true },
     // THE DESK (R38) — which desk_profile the surfaces read their defaults from; '' is
     // "as stock", the ordinary state of every install older than the catalog.
@@ -683,6 +692,9 @@ export async function readSettei(): Promise<SetteiRecord> {
     observed,
     status: await computeStatus(set, observed),
     needed: computeNeeded(set, observed),
-    schema: SETTEI_SCHEMA,
+    // The registry plus one row per provider the launch table knows — generated because
+    // providers are data on disk, not a list this house may hard-code.
+    schema: { ...SETTEI_SCHEMA, fields: [...SETTEI_SCHEMA.fields,
+      ...providerModelFields([...new Set((await listSessionLaunchSpecs()).map((s) => s.provider))])] },
   };
 }

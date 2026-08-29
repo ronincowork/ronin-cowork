@@ -1,7 +1,7 @@
 import { appendFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { defaultAgentCommand } from './agents.js';
+import { resolveLaunchCommand, type SessionsDefaults } from './launch-command.js';
 import { REPO_ROOT } from './config.js';
 import { bootFiles, ensureShelf } from './session-boot.js';
 import { listProjectRoots, listSessionLaunchSpecs, USER_PROJECT_ROOTS_MD, type ProjectRootInfo } from './project-roots.js';
@@ -65,6 +65,14 @@ export interface SpawnForm {
    * place a model is a column.
    */
   model?: string;
+  /**
+   * WHICH PROVIDER, WITHOUT NAMING A MODEL (owner, 2026-08-29). Until this, naming a
+   * vendor meant naming one of its models, so *"give me Anthropic"* had no spelling.
+   * Resolves to that provider's preferred model (`agents.sessions.by_provider` in ⚙
+   * Configuration), else its first column. With `model` it narrows; with `cmd` it is
+   * refused, as `model` is.
+   */
+  provider?: string;
   prompt: string;
   /**
    * What the session is called. MANDATORY in manual mode: manual means Ronin adds
@@ -394,61 +402,26 @@ export async function resolveForm(
   // compose, so both resolve EMPTY here rather than falling through to the default
   // `claude`: the tile is meant to be left at a shell prompt, untouched.
   const agent = profile.agent;
-  // An explicit command for a launch that launches nothing is a contradiction somebody
-  // typed, as against a default that merely cannot apply — so it is refused rather than
-  // dropped. (`mcp` is not: it is meaningless without a CLI and has always been ignored.)
-  if (!agent && form.cmd) {
-    throw new Error(
-      `This launch starts no agent (\`agent: none\`), so it cannot be given the command "${form.cmd}".`,
-    );
-  }
-
-  // MCP off: append the provider's own declared flags to the cmd — data from the same
-  // table the cmd came from, matched by the cmd string itself so a hand-typed cmd
-  // (no table row) is honestly unsupported. No flags declared = REFUSE, because a
-  // session the owner asked to launch disconnected must never launch connected.
-  // THE INSTALL DEFAULT — what a new session launches as when the form names none.
-  // A root never chooses a model (owner, 2026-08-18: one default, one place).
-  // It is stored as `provider` + `model` and resolved through the
-  // launch table HERE, never as a command string: the table is the one place a provider
-  // is a row and a model is a column, and a stored cmd would freeze a vendor's flags into
-  // the owner's config where no table edit could reach them.
+  // WHICH COMMAND — every rule, every refusal and both owner defaults live in
+  // `src/launch-command.ts`. It is the one concern on this path that is decided by data
+  // the owner controls rather than by anything the launch form knows, and it had grown
+  // three interleaved layers of comment inside this function.
   //
-  // Before this existed the fallback was a bare `claude` — a string matching no table
-  // row, so MCP-off refused it and a fresh box launched wrong. The bare literal stays as
-  // the last resort for a box with no table at all, and it is the only Anthropic name in
-  // this file for that reason.
-  const dflt = (agentsSet.sessions as { default?: { provider?: string; model?: string } } | undefined)?.default;
-  const defaultCmd = dflt?.provider && dflt?.model
-    ? launchSpecs.find((s) => s.provider === dflt.provider && s.model === dflt.model)?.cmd
-    : undefined;
-  // NO ROLE-MODEL BIAS SITS BETWEEN THEM (owner, 2026-08-29). A session_role used to be
-  // able to state `model:`, and it was resolved here into a command that OUTRANKED the
-  // owner's own default. It is gone, field and path together: the definitions were a
-  // maintenance burden nobody kept true, and because a bias was matched by model NAME
-  // against the launch table, a role naming an Anthropic model switched an
-  // OpenAI-default box onto Anthropic — the owner's provider choice, silently reversed
-  // by a catalog file. The model's whole cascade is now the two layers below: the
-  // owner's session default, and whatever THIS launch named.
-  // THE NAMED MODEL — one field, filled or not. Named, it is the model; blank, the
-  // session's usual default applies, as for every other field. It is not a precedence
-  // game: `cmd` is a raw command string that already carries a model, so naming both is
-  // a contradiction and is refused rather than ranked (owner, 2026-08-26: "it shouldn't
-  // be overwriting anything, it should just be one of the fields"). The owner's default
-  // provider wins a name two providers both offer, as for the bias.
-  let modelCmd: string | undefined;
-  if (form.model && form.cmd) {
-    throw new Error('Name a model OR a cmd, not both — the cmd already says which model it runs.');
-  }
-  if (agent && form.model) {
-    modelCmd = (launchSpecs.find((s) => s.model === form.model && s.provider === dflt?.provider)
-      ?? launchSpecs.find((s) => s.model === form.model))?.cmd;
-    if (!modelCmd) {
-      const known = [...new Set(launchSpecs.map((s) => s.model))].join(', ');
-      throw new Error(`Unknown model "${form.model}" — this box's launch table offers: ${known || 'nothing yet (see ⚙ Configuration)'}.`);
-    }
-  }
-  let cmd = agent ? form.cmd || modelCmd || defaultCmd || defaultAgentCommand() : '';
+  // MCP off, below, appends the provider's own declared flags to whatever comes back —
+  // data from the same table the cmd came from, matched by the cmd string itself, so a
+  // hand-typed cmd (no table row) is honestly unsupported. No flags declared = REFUSE,
+  // because a session the owner asked to launch disconnected must never launch connected.
+  const sessionsSet = agentsSet.sessions as SessionsDefaults | undefined;
+  const chosen = resolveLaunchCommand({
+    agent,
+    cmd: form.cmd,
+    model: form.model,
+    provider: form.provider,
+    specs: launchSpecs,
+    sessions: sessionsSet,
+  });
+  const dflt = sessionsSet?.default;
+  let cmd = chosen.cmd;
   // The row this cmd came out of, matched BEFORE the MCP-off flags are appended below —
   // appending changes the very string the match is on, and looking it up afterwards would
   // find nothing for exactly the launches that asked for something unusual. It carried the
@@ -508,7 +481,14 @@ export async function resolveForm(
       : [{ layer: 'system', source: USER_PROJECT_ROOTS_MD }];
   // Explicit when the launch named either half of it — a raw `cmd` or a model name.
   // Everything else is the install's own default, which is the system's answer.
-  const cmdSource: StatedBy[] = form.cmd || modelCmd ? explicit : system;
+  // The resolver already said who decided; this only spells its answer as a reading.
+  // `settei_provider` is the half-explicit case — this launch named the vendor, ⚙ named
+  // the model — and it must not read as though the code chose either.
+  const cmdSource: StatedBy[] = chosen.source === 'explicit_launch'
+    ? explicit
+    : chosen.source === 'settei_provider'
+      ? [{ layer: 'system', source: '⚙ Configuration (agents.sessions)' }]
+      : system;
   const defaultMcpWasUndeliverable = agent && !mcpWanted && !mcpOffWanted;
   const mcpSource: StatedBy[] = !agent
     ? profile.stated_by.agent
