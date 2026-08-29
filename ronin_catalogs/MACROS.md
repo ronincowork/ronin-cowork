@@ -145,7 +145,8 @@ Params: `topic` (short slug), `dir` (working directory; default: current repo ro
 `team` (which team the new session joins; default: the origin session's own teams, so a
 fork stays addressable with its parent. Ask the owner if the origin has none),
 `role_family` (default: **the origin session's own role**), `session_role` (default:
-`DraftPlan`), `model` (default: **omit it** — the owner's session default answers).
+`DraftPlan`), `provider` and `model` (default for both: **omit them** — the owner's
+session default answers).
 
 **Use the same launch contract the ＋ New form uses. Do not rebuild it.** Forks were
 starting from a bare `tmux new-session` and then typing a CLI at it, which is a second,
@@ -173,13 +174,20 @@ one door, and it is the only thing that can stamp a role.
   self-correcting: a wrong task costs one `write_tegami`, and re-marking hands the session
   the new task's reading automatically. So it may default silently where the role may not.
 
-**The model is the third field to resolve, and the honest default is to say nothing.**
-Omit it and the owner's own session default answers — the one thing set in ⚙
-Configuration (`agents.sessions.default`). A `session_role` states no model and biases
-none (owner, 2026-08-29), so there is no layer in between and nothing a fork inherits
-about the model from the task it is given. Pass one only when the owner named one; an
-explicit model beats the default. It must be a real cell from the launch table, never a
-command you composed.
+**THREE WAYS TO ASK, AND SAYING NOTHING IS THE FIRST ONE** (owner, 2026-08-29). Say
+only as much as the owner actually said, and let the rest load lazily:
+
+| The owner said | You pass | What is born on |
+|---|---|---|
+| *"give me an agent to do XYZ"* | neither field | the owner's session default — `agents.sessions.default` |
+| *"give me an Anthropic agent"* | `provider: anthropic` | that provider's preferred model in ⚙ Configuration, else its first column |
+| *"open a fable five session"* | `model: fable` | that model |
+
+A `session_role` states no model and biases none, so there is no layer in between and
+nothing a fork inherits about the model from the task it is given. **Never invent the
+next field down** — passing a model because the owner named a vendor is you deciding
+something they left open. A model must be a real cell from the launch table and a
+provider a real row; never a command you composed, and never both a `cmd` and either.
 
 State both resolved axes in the report. The owner is one glance from seeing a wrong
 role and one kill from fixing it, which is only true if the report says what was chosen.
@@ -189,7 +197,7 @@ role and one kill from fixing it, which is only true if the report says what was
 | 1 | read-letter | your OWN letter — the `role_family` you will pass on, and your teams |
 | 2 | write-handoff-doc | a wip handoff doc (location per the documents SOP) — distill THIS conversation's context on the topic: goal in the owner's words, constraints, verification, definition of done |
 | 3 | propose-and-confirm | ONLY when the origin's `role_family` is blank: name the role you would give the fork and wait for the yes |
-| 4 | session-launch | name `<topic>`, `role_family` `<role>`, `session_role` `<task>`, `project_root`/dir `<dir>`, tags `<team>`, `cmd` only if the owner named a model, and the prompt below |
+| 4 | session-launch | name `<topic>`, `role_family` `<role>`, `session_role` `<task>`, `project_root`/dir `<dir>`, tags `<team>`, `provider` or `model` only as far as the owner actually named one, and the prompt below |
 | 5 | confirm-started | the fork has ACKNOWLEDGED — it reported its understanding and is waiting, not working |
 | 6 | report-outcome | session name, topic, resolved `role_family` + `session_role`, handoff doc path, how to open it |
 
