@@ -226,6 +226,10 @@ export function registerLaunchPreflight(app: express.Express): void {
         // that differs, and it is reported as unresolved rather than faked.
         const proposedRoster: TeamRoster | undefined = nameValid && !existing ? {
           name,
+          // A PROPOSED roster, not a stored one: nothing has chosen its Campaign yet, and
+          // '' is the honest unmarked value rather than a guess the preflight would be
+          // making on the owner's behalf. Stage 1's real create is where it is stamped.
+          campaign_id: String(teamBody.campaign_id ?? '').trim(),
           title: String(teamBody.title ?? '').trim() || name,
           team_role: String(teamBody.team_role ?? '').trim(),
           objective: String(teamBody.objective ?? '').trim(),
