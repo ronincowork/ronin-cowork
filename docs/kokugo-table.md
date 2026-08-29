@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1269 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1271 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -1035,6 +1035,8 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `roots.exclude_confirm` | Exclude "{name}" from your Ronin? |  |  |  |  |
 | `roots.exclude_failed` | could not exclude it — {message} |  |  |  |  |
 | `roots.exclude_title` | Remove it from the catalog. Nothing on disk is touched. |  |  |  |  |
+| `roots.f_desks` | desks |  |  |  |  |
+| `roots.f_desks_hint` | Checked: coding sessions work at their own branch and worktree and hand in to the team (RONIN_REPO desks=managed). Unchecked: they work in the checkout (desks=none). Written into the repository; commit it there. |  |  |  |  |
 | `roots.f_directory` | directory |  |  |  |  |
 | `roots.f_directory_hint` | Any absolute path, at any depth |  |  |  |  |
 | `roots.f_docs` | docs |  |  |  |  |

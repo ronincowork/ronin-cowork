@@ -82,6 +82,44 @@ export async function declareArrangement(dir: string, desks: 'managed' | 'none')
   return text;
 }
 
+/**
+ * FLIP DESKS FOR ONE PROJECT (owner, 2026-08-29): the checkbox on the project-root editor.
+ * `managed` → desks=managed, and a direct record becomes reviewed dev → master (a desk
+ * needs a working line); `none` → desks=none, mode and lines untouched. No file yet →
+ * written fresh by declareArrangement. Comment lines and unknown keys are kept as they
+ * are; only the keys named change. Not a git repo → refused.
+ */
+export async function setDesks(dir: string, desks: 'managed' | 'none'): Promise<RepoArrangement> {
+  try { await access(path.join(dir, '.git')); } catch { throw new Error(`${dir} is not a git repository — desks need a repository to declare`); }
+  const file = path.join(dir, RONIN_REPO_FILE);
+  let text: string | null = null;
+  try { text = await readFile(file, 'utf8'); } catch { text = null; }
+  if (text === null) {
+    await declareArrangement(dir, desks);
+    return readArrangement(path.basename(dir), dir);
+  }
+  const lines = text.split('\n');
+  const set = (key: string, value: string) => {
+    const at = lines.findIndex((l) => l.trim().startsWith(`${key}=`));
+    if (at >= 0) lines[at] = `${key}=${value}`;
+    else {
+      let last = -1;
+      lines.forEach((l, i) => { if (/^[a-z]+=/.test(l.trim())) last = i; });
+      lines.splice(last + 1, 0, `${key}=${value}`);
+    }
+  };
+  const has = (key: string) => lines.some((l) => l.trim().startsWith(`${key}=`));
+  const current = parseArrangement(path.basename(dir), dir, text);
+  if (desks === 'managed' && current.mode !== 'reviewed') {
+    set('mode', 'reviewed');
+    if (!has('working')) set('working', 'dev');
+    set('stable', current.stable && current.stable !== 'main' ? current.stable : 'master');
+  }
+  set('desks', desks);
+  await writeFile(file, lines.join('\n').replace(/\n*$/, '\n'), 'utf8');
+  return readArrangement(path.basename(dir), dir);
+}
+
 /** Read the record from a directory. */
 export async function readArrangement(repo: string, dir: string): Promise<RepoArrangement> {
   let text: string | null = null;

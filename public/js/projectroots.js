@@ -99,6 +99,24 @@ export function buildProjectRoots(root, isShowing, tile) {
     mk(t('roots.f_docs', 'docs'), 'docs', (existing.docs || []).join(', '), t('roots.f_docs_hint', 'Where this root keeps its documentation — directories or files, relative to the directory'), 'docs, README.md');
     mk(t('roots.f_plans', 'plans'), 'plans', (existing.plans || []).join(', '), t('roots.f_plans_hint', 'Where this root keeps its build-out plans'), 'wip/buildouts, wip/handoffs');
 
+    // THE DESKS SWITCH (owner, 2026-08-29): one box, for a repository only. It writes the
+    // repo's RONIN_REPO — the one gate for desks — not the catalog. Checked = coding
+    // sessions get their own desk and hand in; unchecked = they work in the checkout.
+    let desksBox = null;
+    const desksNow = !!(existing.arrangement && existing.arrangement.source !== 'absent' && existing.arrangement.desks === 'managed');
+    if (existing.facts?.repo) {
+      const wrap = document.createElement('label');
+      wrap.className = 'pr-f pr-check';
+      desksBox = document.createElement('input');
+      desksBox.type = 'checkbox';
+      desksBox.checked = desksNow;
+      const l = document.createElement('span');
+      l.textContent = t('roots.f_desks', 'desks');
+      l.title = t('roots.f_desks_hint', 'Checked: coding sessions work at their own branch and worktree and hand in to the team (RONIN_REPO desks=managed). Unchecked: they work in the checkout (desks=none). Written into the repository; commit it there.');
+      wrap.append(desksBox, l);
+      f.appendChild(wrap);
+    }
+
     const row = document.createElement('div');
     row.className = 'pr-frow';
     const save = document.createElement('button');
@@ -130,6 +148,17 @@ export function buildProjectRoots(root, isShowing, tile) {
         err.say(r.message, 'bad');
         save.disabled = false;
         return;
+      }
+      if (desksBox && desksBox.checked !== desksNow) {
+        const d = await request('/api/project-roots/' + encodeURIComponent(existing.name) + '/desks', {
+          method: 'PUT',
+          json: { desks: desksBox.checked ? 'managed' : 'none' },
+        });
+        if (!d.ok) {
+          err.say(d.message, 'bad');
+          save.disabled = false;
+          return;
+        }
       }
       editing = null;
       await loadProjects(); // the launcher's picker reads the same catalog
