@@ -35,12 +35,6 @@
       <button id="brandbtn" class="brand brand-home" title="Ronin Home">⛩ ronin</button>
       <span id="coworklabel" class="bar-cowork-name">Cowork Spaces</span>
       <button id="servicesstate" class="services-state" type="button" hidden aria-expanded="false"></button>
-      <!-- RAM_RPM — the box's working reading. A tachometer: always there, mostly
-           ignored, so you learn what normal looks like without being told. It sits with
-           the brand and NOT among the five verbs on the right, which share one measured
-           width and are all things you press; this is a readout and does nothing when
-           clicked. js/ramrpm.js writes the face and the title. -->
-      <span id="ramrpm" class="ramrpm" hidden></span>
       <span class="grow"></span>
       <!-- THE LAYOUT MAP — the workspace drawn small: one rectangle per column, click
            to show or hide, drag to reorder. Empty unless the active view has columns
@@ -53,6 +47,12 @@
            ViewHost fills it; what is typed becomes the browser tab's title, per tab. -->
       <span id="viewname" class="wk-view-name"></span>
       <span id="viewmap" class="wk-view-map"></span>
+      <!-- RAM_RPM — the box's working reading. A tachometer: always there, mostly
+           ignored, so you learn what normal looks like without being told. On the RIGHT,
+           with the readouts and verbs — the left of the bar is navigation only (owner,
+           2026-08-29); it stays outside the verbs' measured width because it is a readout
+           and does nothing when clicked. js/ramrpm.js writes the face and the title. -->
+      <span id="ramrpm" class="ramrpm" hidden></span>
       <!-- THE BAR IS ONE VERB (owner, 2026-08-27): ⚙ Admin Desk — the cowork commons. か New
            went the way of ⛩ Commons, ミ Mika Assist and く Keypad: a new session is a
            workspace surface (＋ Add team member on the roster, ⌃⇧N), the Commons is the
