@@ -142,24 +142,17 @@ export function build() {
   // the tile you are in, and a fifth that picked its own would be the odd one out. And it
   // TOGGLES, because ⛩ already learned that lesson — a control that opens a thing and
   // then goes dead is a control you press twice and distrust.
-  // ⚙ — THE COWORK COMMONS, a workspace surface, never a tile overlay (owner, 2026-08-27).
-  // On the cowork_space the team page owns the gesture (`S.showCoworkCommons`: into the
-  // workspace you are in, and back). On the parked grid page there is no workspace to put
-  // it in, so ⚙ is the `cowork` destination — the surface at full width — and ⚙ again is
-  // the way back. Same element, same state, two doors.
+  // ⚙ — THE COWORK COMMONS, a workspace surface, never a page-level destination.
+  // The active cowork view owns the gesture and places the shared surface in its workspace.
   key('sysbtn', () => {
-    if (S.showCoworkCommons) return S.showCoworkCommons();
-    const ws = S.workspace;
-    if (!ws) return;
-    if (ws.active?.id === 'cowork') ws.back();
-    else ws.navigate('cowork');
+    if (S.showCoworkCommons) S.showCoworkCommons();
   });
 
   // Session macros (⚡ on each tile head) are the tile's own — built in
   // tilemacros.js by Tile itself; nothing to wire here.
 
   const campaignButton = document.getElementById('campaignbtn');
-  key('campaignbtn', () => S.workspace?.navigate('campaign'));
+  key('campaignbtn', () => S.workspace?.navigate('cowork'));
   const coworkers = document.getElementById('coworkbtn');
   const loadCampaignNav = async () => {
     const campaign = await request('/api/settei', { cache: 'no-store' });

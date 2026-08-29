@@ -34,8 +34,8 @@ const COWORK = '@cowork';
 const NEW = '@new';
 const DESK = '@desk';
 export function createCoworkView(options = {}) {
-  const campaign = options.kind === 'campaign';
-  const viewKey = campaign ? 'campaign' : 'team';
+  const campaign = options.kind === 'cowork';
+  const viewKey = campaign ? 'cowork' : 'team';
   const { createSurface, createSurfaceHeader, createCard, createChannelSurface, createMetadata, setSurfaceState } = WorkspaceKit.primitives;
   const { createWorkbenchLayout } = WorkspaceKit.layouts;
   const { createTerminalTileHost } = WorkspaceKit.adapters;

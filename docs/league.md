@@ -1,7 +1,7 @@
 # Campaign cowork view
 
-Campaign exists at `#/campaign`, rendered by
-`createCoworkView({ kind: 'campaign' })` in `public/js/cowork-view.js`.
+The Cowork collection exists at `#/cowork`, rendered by
+`createCoworkView({ kind: 'cowork' })` in `public/js/cowork-view.js`.
 
 It uses the same workspaces, two/four shape, selector column, placement, drag/drop,
 recall, sizing and lifecycle as `kind: 'team'`. Its selector exposes Campaign Commons,
@@ -48,4 +48,4 @@ Team detail, New Agent and blank Workspace use the same frame. Team roster is al
 headed by its Campaign Commons tab strip, so it does not add a second header inside the tab.
 
 There is no League destination or parallel workspace implementation. The legacy
-`#/league-workspace` hash migrates to `#/campaign`.
+`#/league-workspace` and temporary `#/campaign` hashes migrate to `#/cowork`.

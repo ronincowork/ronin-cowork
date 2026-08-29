@@ -9,9 +9,9 @@ const text = (value) => (typeof value === 'string' ? value : '');
 
 export const defaultWorkspaceState = () => ({
   version: WORKSPACE_STATE_VERSION,
-  // Sessions is the safe compatibility destination on dev. League becomes the default
-  // only at the explicit cutover gate; the shell must not force an unfinished workflow.
-  view: 'campaign',
+  // The Cowork collection is the install's landing page. Campaign remains configuration,
+  // not a destination, until an install can actually contain more than one campaign.
+  view: 'cowork',
   team: '',
   teamMode: 'team',
   focusedSession: '',
@@ -19,7 +19,7 @@ export const defaultWorkspaceState = () => ({
   widths: { left: null, right: null },
   // Each destination owns one namespace inside this tab. Empty objects and null drafts
   // are valid; the shell stores state but never interprets a feature's workflow.
-  views: { campaign: {}, 'new-team': { draft: null } },
+  views: { cowork: {}, 'new-team': { draft: null } },
   returnTo: null,
 });
 
@@ -34,17 +34,23 @@ export function migrateWorkspaceState(candidate) {
     : parsed.panes && typeof parsed.panes === 'object'
       ? { terminalTile: parsed.panes.left, kanban: parsed.panes.kanban, channels: parsed.panes.right }
       : {};
+  const storedViews = parsed.views && typeof parsed.views === 'object' && !Array.isArray(parsed.views)
+    ? parsed.views
+    : {};
+  // `campaign` briefly named this same collection view. Carry its arrangement forward;
+  // the spelling changes, the workspace does not.
+  const views = { ...base.views, ...storedViews };
+  if (!storedViews.cowork && storedViews.campaign) views.cowork = storedViews.campaign;
+  delete views.campaign;
   return {
     ...base,
-    view: text(parsed.view) === 'league-workspace' ? 'campaign' : text(parsed.view) || base.view,
+    view: ['league-workspace', 'campaign'].includes(text(parsed.view)) ? 'cowork' : text(parsed.view) || base.view,
     team: text(parsed.team),
     teamMode: parsed.teamMode === 'sessions' ? 'sessions' : 'team',
     focusedSession: text(parsed.focusedSession),
     surfaces: { ...base.surfaces, ...storedSurfaces },
     widths: { ...base.widths, ...(parsed.widths && typeof parsed.widths === 'object' ? parsed.widths : {}) },
-    views: parsed.views && typeof parsed.views === 'object' && !Array.isArray(parsed.views)
-      ? { ...base.views, ...parsed.views }
-      : base.views,
+    views,
     returnTo: parsed.returnTo && typeof parsed.returnTo === 'object' ? parsed.returnTo : null,
     version: WORKSPACE_STATE_VERSION,
   };
@@ -72,7 +78,7 @@ export function routeFromHash(hash = location.hash) {
   if (!raw) return null;
   try {
     const [view, ...rest] = raw.split('/').map(decodeURIComponent);
-    return view ? { view: view === 'league-workspace' ? 'campaign' : view, param: rest.join('/') } : null;
+    return view ? { view: ['league-workspace', 'campaign'].includes(view) ? 'cowork' : view, param: rest.join('/') } : null;
   } catch (_) {
     return null;
   }
@@ -134,7 +140,7 @@ export function createWorkspace(host, options = {}) {
   const views = new Map();
   const state = readState();
   const onError = options.onError || (() => {});
-  const safeView = options.safeView || 'campaign';
+  const safeView = options.safeView || 'cowork';
   let active = null;
   let started = false;
   let destroyed = false;

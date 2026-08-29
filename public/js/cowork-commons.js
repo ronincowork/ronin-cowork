@@ -22,7 +22,7 @@ import { t } from './lexicon.js';
  * OVERLAY a tile drew on itself; the owner's ruling: *"too many things in one thing … it
  * should be another workspace alternative"*. So this is the Kit's channel surface — the
  * same primitive, strip and look as the `team_commons` — with SIX tabs, and it sits IN a
- * workspace (`team-view.js` places it; the grid page shows it as the `cowork` destination).
+ * workspace (`cowork-view.js` places it). It has no page-level destination.
  * No room is rewritten: each tab hangs the room builders the desk already had.
  *
  *   Desk             ▦ Ronin usage stats
@@ -37,9 +37,8 @@ import { t } from './lexicon.js';
  *   Keypad           く the pad panel, INLINE (owner: *"no reason to have it separate"*) —
  *                    padpanel.js still builds the card; this tab is where the card lives
  *
- * ONE INSTANCE. A surface element can be in one place at a time, and the two doors
- * (⚙ on the team page, ⚙ on the grid page) must show the same thing with the same state,
- * so `coworkCommons()` is memoised and both callers place the one element.
+ * ONE INSTANCE. A surface element can be in one place at a time, so `coworkCommons()` is
+ * memoised and every cowork view places the same element with the same state.
  *
  * WHERE AN ASK GOES. gbrain's "ask a PersonalAssistant" used to be handed the desk's own
  * tile; a surface has no tile, so the ask goes to the ACTIVE tile's Commons launcher
@@ -73,11 +72,7 @@ export function coworkCommons() {
   let surface = null;
   const showing = (id) => () => !!surface && surface.el.isConnected && !surface.el.closest('[hidden]') && surface.current() === id;
 
-  // AN ASK CROSSES SURFACES: on the grid page the commons is the `cowork` destination, and
-  // the tile the ask lands in is on the Sessions destination behind it — so go back first,
-  // or the launcher opens filled-in and invisible (smoke-ui's gbrain journey is the record).
   const atTile = (fn) => {
-    if (S.workspace?.active?.id === 'cowork') S.workspace.back();
     const tile = S.active;
     if (tile) fn(tile);
   };

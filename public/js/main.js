@@ -17,7 +17,6 @@ import { createWorkspace } from './workspace.js';
 import { createCoworkView } from './cowork-view.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createNewTeamView } from './new-team.js';
-import { coworkCommons } from './cowork-commons.js';
 import { createAgentConfigurationView } from './agent-config.js';
 import { installCustomize } from './customize.js';
 import { t } from './lexicon.js';
@@ -108,18 +107,6 @@ export async function init() {
   // this preview is geometry and readings only — no terminal host, no sockets, no Sessions
   // mode — so the existing coworkspace stays the working surface until those gates land.
   guard('register the Team destination', () => workspace.register('team', createCoworkView({ kind: 'team' })));
-  // THE COWORK COMMONS at full width — ⚙'s door on the parked grid page, where there is no
-  // workspace to place it in (docs/cowork-space.md). The same one surface the team page
-  // places; entering here takes it, leaving hands it back to whoever places it next.
-  guard('register the cowork destination', () => {
-    const root = document.getElementById('cowork-view');
-    if (!root) throw new Error('cowork root is missing');
-    workspace.register('cowork', {
-      el: root,
-      title: () => t('cowork.commons', 'Ronin Desk'),
-      enter: () => { const c = coworkCommons(); root.append(c.el); c.select(c.current()); },
-    });
-  });
   // NEW TEAM — one Surface, no Tile, no Channel services of its own. Registered beside
   // Sessions rather than replacing it: Sessions remains the default destination on `dev`
   // until the explicit cutover, so this is reachable and not yet in anybody's way.
@@ -134,8 +121,8 @@ export async function init() {
   // contained here rather than taking the compatibility Sessions grid down with it —
   // a preview destination must never cost the owner their terminals.
   guard('register the Customize destination', () => installCustomize(workspace));
-  // Campaign and Team are two contexts on the same cowork-space bedrock.
-  guard('register the Campaign destination', () => workspace.register('campaign', createCoworkView({ kind: 'campaign' })));
+  // Cowork collection and Team detail are two contexts on the same cowork-space bedrock.
+  guard('register the Cowork destination', () => workspace.register('cowork', createCoworkView({ kind: 'cowork' })));
   // AGENT CONFIGURATION — two Surfaces, no Tile, no Channel service. It edits ONE seat of
   // New Team's canonical draft and owns no schema of its own; a seat reaches it through
   // `open(draft, seat_id)` rather than being fetched here, because New Team owns the
