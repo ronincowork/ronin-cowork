@@ -117,6 +117,43 @@ export const campaignById = (id) => campaigns().find((row) => row.id === id) || 
 export const initialCampaignId = () => campaigns()[0]?.id || '';
 export const campaignsFailed = () => !!read && !read.ok;
 export const campaignsMessage = () => read?.message || '';
+/** Did the last read invent its list because no Campaign API answered? */
+export const isSynthesized = () => !!read?.synthesized;
+
+/**
+ * Save fields onto one `campaign_config`.
+ *
+ * WHILE THE STORE IS ABSENT THE SAME FIELDS STILL HAVE A HOME, and it is not this record:
+ * the title and description are `settei.campaign`, and the desk profile is the install's
+ * one `set.desk.profile`. So a write during the compatibility window goes THERE rather
+ * than failing against a route that does not exist yet — the surface behaves identically
+ * either side of the store landing, and nothing here invents a second writer. The whole
+ * branch is deleted with the fallback.
+ */
+export async function saveCampaign(id, fields) {
+  if (!isSynthesized()) {
+    const r = await request(`/api/campaigns/${encodeURIComponent(id)}`, { method: 'PATCH', json: fields });
+    if (r.ok) await loadCampaigns();
+    return r;
+  }
+  if ('desk_profile' in fields) {
+    const r = await request('/api/settei/desk', { method: 'PUT', json: { profile: text(fields.desk_profile) } });
+    if (!r.ok) return r;
+  }
+  if ('title' in fields || 'description' in fields) {
+    const now = campaignById(id) || {};
+    const r = await request('/api/settei/campaign', {
+      method: 'PUT',
+      json: {
+        name: 'title' in fields ? text(fields.title) : now.title,
+        description: 'description' in fields ? text(fields.description) : now.description,
+      },
+    });
+    if (!r.ok) return r;
+  }
+  await loadCampaigns();
+  return { ok: true, status: 200, data: campaignById(id) || {} };
+}
 
 /**
  * HEAL A STORED SELECTION AGAINST WHAT ACTUALLY EXISTS (CAMPAIGN_SCOPING § UI model).

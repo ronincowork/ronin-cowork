@@ -16,7 +16,7 @@ import { installServicesStatus } from './services-activation.js';
 import { createWorkspace } from './workspace.js';
 import { createCoworkView } from './cowork-view.js';
 import { createCampaignHome } from './campaign-home.js';
-import { createCampaignManage } from './campaign-manage.js';
+import { createCampaignView } from './campaign-view.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { installCustomize } from './customize.js';
 import { t } from './lexicon.js';
@@ -119,9 +119,10 @@ export async function init() {
   // page failing must cost the owner a page, never their terminals. `safeView` is this
   // one, so its own failure is reported rather than looping.
   guard('register the Campaign Home destination', () => workspace.register('home', createCampaignHome()));
-  // Campaign select/create/archive — the surface behind the home's ✳ Manage. New Campaign
-  // saves a campaign_config and stops; it creates no Cowork and launches no Agent.
-  guard('register the Campaign destination', () => workspace.register('campaign', createCampaignManage()));
+  // CAMPAIGN MANAGE — a Cowork Space whose surfaces are Campaign-level (owner, 2026-08-29):
+  // the same workbench, selector column, persistence, recall and drag/drop as the Cowork
+  // space, offering a Campaign's own configuration instead of its Coworks and Agents.
+  guard('register the Campaign destination', () => workspace.register('campaign', createCampaignView()));
   workspace.start();
 
   guard('install workspace controls', build);
