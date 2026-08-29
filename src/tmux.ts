@@ -25,6 +25,13 @@ export interface SessionInfo {
   key: string;
   /** CLI selected for this Agent, stamped at birth (codex, claude, gemini…). */
   agent: string;
+  /**
+   * The Campaign this Agent belongs to — one, never many. '' means UNSTAMPED: an Agent
+   * born before Campaigns, which the compatibility read maps onto the initial Campaign.
+   * Rides this list rather than being fetched per session, so every surface that lists
+   * Agents sees the same answer at the same cost.
+   */
+  campaign_id: string;
 }
 
 /** tmux user option holding a session's post-it note. Lives and dies with the session. */
@@ -131,13 +138,13 @@ export async function listSessions(): Promise<SessionInfo[]> {
     const { stdout } = await pexec('tmux', [
       'list-sessions',
       '-F',
-      `#{session_name}\t#{session_windows}\t#{?session_attached,1,0}\t#{session_created}\t#{?${NOTE_OPT},1,0}\t#{${TAGS_OPT}}\t#{${LEAD_OPT}}\t#{@ronin-control}\t#{@ronin-key}\t#{${AGENT_OPT}}`,
+      `#{session_name}\t#{session_windows}\t#{?session_attached,1,0}\t#{session_created}\t#{?${NOTE_OPT},1,0}\t#{${TAGS_OPT}}\t#{${LEAD_OPT}}\t#{@ronin-control}\t#{@ronin-key}\t#{${AGENT_OPT}}\t#{${CAMPAIGN_OPT}}`,
     ]);
     return stdout
       .split('\n')
       .filter(Boolean)
       .map((line) => {
-        const [name, windows, attached, created, hasNote, tags, leads, control, key, agent] = line.split('\t');
+        const [name, windows, attached, created, hasNote, tags, leads, control, key, agent, campaign] = line.split('\t');
         return {
           name,
           windows: Number(windows) || 0,
@@ -149,6 +156,7 @@ export async function listSessions(): Promise<SessionInfo[]> {
           control: control === 'user' || control === 'read' ? (control as Control) : 'write',
           key: key?.trim() || `${name}-${Number(created) || 0}`,
           agent: agent?.trim() || '',
+          campaign_id: campaign?.trim() || '',
         };
       })
       .filter((s) => !s.name.startsWith(config.viewerPrefix))
@@ -514,6 +522,46 @@ export async function setProjectRoot(name: string, root: string): Promise<string
     await pexec('tmux', ['set-option', '-t', exactPane(name), PROJECT_ROOT_OPT, clean]);
   } else {
     await pexec('tmux', ['set-option', '-t', exactPane(name), '-u', PROJECT_ROOT_OPT]).catch(() => {});
+  }
+  return clean;
+}
+
+/**
+ * THE CAMPAIGN THIS AGENT SERVES — one value, like the project_root beside it and for the
+ * same reason: an Agent belongs to exactly one Campaign, and to any number of Coworks.
+ *
+ * A TMUX OPTION AND NOT A DERIVATION FROM MEMBERSHIP, which the plan is explicit about:
+ * every Agent has a Campaign *even when it belongs to no Cowork*, so a rōnin must still
+ * filter correctly. Deriving it from `@ronin-tags` would leave every teamless session
+ * belonging to nothing and invisible to every view.
+ *
+ * IT IS ALSO WHAT LETS A RUNNING AGENT JOIN A CAMPAIGN WITHOUT DYING. The migration
+ * publishes the initial id onto every live session with `set-option` and no restart — the
+ * plan's step 4, and the gate that says changing a browser selection sends no kill.
+ *
+ * Empty means UNSTAMPED, and that is a real answer that must stay visible rather than a
+ * silently-guessed id: the compatibility read maps it onto the initial Campaign in one
+ * place, exactly as it does for an unmarked team_roster.
+ */
+const CAMPAIGN_OPT = '@ronin-campaign';
+
+/** The Campaign a session serves, or '' when nobody has stamped one. */
+export async function getCampaign(name: string): Promise<string> {
+  try {
+    const { stdout } = await pexec('tmux', ['show-options', '-t', exactPane(name), '-qv', CAMPAIGN_OPT]);
+    return stdout.trim();
+  } catch {
+    return '';
+  }
+}
+
+/** Set (or, when empty, clear) the Campaign a session serves. No restart, by design. */
+export async function setCampaign(name: string, campaign: string): Promise<string> {
+  const clean = campaign.trim();
+  if (clean) {
+    await pexec('tmux', ['set-option', '-t', exactPane(name), CAMPAIGN_OPT, clean]);
+  } else {
+    await pexec('tmux', ['set-option', '-t', exactPane(name), '-u', CAMPAIGN_OPT]).catch(() => {});
   }
   return clean;
 }

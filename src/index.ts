@@ -35,6 +35,7 @@ import { registerServicesActivation, resumeInstallWatch } from './routes/service
 import { registerSettei } from './routes/settei-api.js';
 import { registerCampaigns } from './routes/campaigns-api.js';
 import { ensureInitialCampaign } from './campaign-config.js';
+import { migrateCampaignScope } from './campaign-scope.js';
 import { stampFreshInstall } from './user-config.js';
 import { registerUpdate } from './routes/update-api.js';
 import { registerVersion } from './routes/version.js';
@@ -270,7 +271,13 @@ void stampFreshInstall();
 // archived ones included, has already migrated and this touches nothing. Best-effort like
 // the stamp above — a store we cannot write is a different failure, and throwing here would
 // cost the whole boot — src/campaign-config.ts.
-void ensureInitialCampaign().catch(() => {});
+// THE SCOPE MIGRATION runs behind the seed and in the same spirit: additive, idempotent,
+// and only ever stamping a record that carries no Campaign. It re-homes unmarked
+// team_rosters under the initial Campaign, marks project_roots and saved templates, and
+// publishes the id onto every LIVE Agent with no restart — src/campaign-scope.ts.
+void ensureInitialCampaign()
+  .then(() => migrateCampaignScope())
+  .catch(() => {});
 
 // Services register, then their routes mount — AFTER core's, which is safe because
 // every service path (/api/tomodachi/*, /api/transcribe, /api/koshi*) is disjoint

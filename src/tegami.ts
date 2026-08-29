@@ -482,10 +482,18 @@ export type SessionWithAxes = SessionInfo & { session_role: string };
  * that need it ask the teams routes.
  */
 export async function withAxes(list: SessionInfo[]): Promise<SessionWithAxes[]> {
+  // THE CAMPAIGN IS RESOLVED HERE, once per list rather than once per row: an Agent born
+  // before Campaigns carries no id, and every surface must see it as the Campaign the
+  // migration seeded rather than as belonging to nothing. This is the compatibility read
+  // (src/campaign-scope.ts), and it is the ONLY place a session list applies it — which is
+  // what makes the fallback removable in one edit when the window closes.
+  const { campaignResolver } = await import('./campaign-scope.js');
+  const resolve = await campaignResolver();
   return Promise.all(
     list.map(async (s) => ({
       ...s,
       session_role: await readSessionRole(s.name),
+      campaign_id: resolve(s.campaign_id),
     })),
   );
 }

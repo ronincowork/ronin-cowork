@@ -241,9 +241,21 @@ must not become a filesystem deletion by assumption.
 - Ronin API unavailable: report the service failure. Do not create a competing write path.
 - Browser does not show an API-verified root: diagnose the read/render path, not the catalog data.
 
+## Which campaign a root belongs to
+
+A project_root carries a `- **campaign_id:**` line naming the body of work it belongs to.
+An Agent and a Cowork may reference only a root in their own campaign, and the refusal names
+both. Root **names stay globally unique** — the catalog keys them by heading — so a combined
+multi-campaign view groups roots by campaign rather than merging same-looking names.
+
+A root written before campaigns has no line, which reads as unmarked and resolves to the
+initial campaign until the boot migration stamps it. The full contract, including why a
+roster nests its storage where a root does not, is `docs/campaign-scope.md`.
+
 ## Implementation authority
 
 - Catalog storage and validation: `src/project-roots.ts`
+- Campaign scoping, the refusals and the migration: `src/campaign-scope.ts` · `docs/campaign-scope.md`
 - HTTP API and live facts: `src/routes/catalogs.ts`
 - Session identity: `src/tmux.ts` and `src/routes/sessions-api.ts`
 - Assisted owner workflow: `ronin_catalogs/MIKA_MACROS.md` (`project_root`)

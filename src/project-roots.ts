@@ -82,6 +82,15 @@ export interface ProjectRootInfo {
    * working, because a name that used to launch must never stop meaning what it meant.
    */
   archived: boolean;
+  /**
+   * The Campaign this root belongs to — one, never many. An Agent and a Cowork may
+   * reference only a Project root in their own Campaign, and a combined multi-Campaign
+   * view groups roots by Campaign rather than merging same-looking names.
+   *
+   * '' MEANS UNMARKED, read through the compatibility mapping onto the initial Campaign.
+   * Root names stay globally unique this cut, by the plan's own ruling.
+   */
+  campaign_id: string;
 }
 
 /** Every launchable `provider · model` the table knows, in table order. */
@@ -214,6 +223,12 @@ function parseRoots(raw: string): ProjectRootInfo[] {
       // in src/catalog.ts). Anything but `yes` — including the line's absence, which is
       // the ordinary case — leaves the root on the picker.
       archived: /^yes$/i.test(field('archived')),
+      // THE CAMPAIGN THIS ROOT BELONGS TO. Unlike a team_roster this is a FIELD and not a
+      // directory: the plan keeps root names globally unique in this cut because the
+      // catalog keys them by heading, and says so explicitly — removing that incidental
+      // constraint is a later storage decision, not a reason to fork the UI. '' is
+      // unmarked and reads through the same compatibility mapping as everything else.
+      campaign_id: field('campaign_id'),
     });
   }
   return roots;
@@ -324,7 +339,7 @@ const NEW_USER_FILE = `# PROJECT_ROOTS — your directories (user scope)
 /** Field order for a block this code creates. Hand-written blocks keep their own.
  * provider/model retired 2026-08-18 (one default, one place) — never written again;
  * blocks that still have them keep them untouched, unread. */
-const FIELD_ORDER = ['dir', 'memory', 'match', 'remit', 'docs', 'plans', 'archived'] as const;
+const FIELD_ORDER = ['dir', 'memory', 'match', 'remit', 'docs', 'plans', 'archived', 'campaign_id'] as const;
 export type RootField = (typeof FIELD_ORDER)[number];
 
 /** A project_root handle: one lowercase word, the `##` heading, the whole shortcut. */

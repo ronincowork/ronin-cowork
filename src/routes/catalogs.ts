@@ -27,6 +27,7 @@ import {
   isValidRootName,
   type RootField,
 } from '../project-roots.js';
+import { campaignFilter, campaignResolver } from '../campaign-scope.js';
 import { readArrangement, setDesks } from '../desks/arrangement.js';
 import {
   listSavedLaunches,
@@ -126,9 +127,17 @@ export function registerCatalogs(app: express.Express): void {
   // FILTER ON ONE LIST, never a deletion: /api/project-roots/detail still carries it,
   // and every path that resolves a root BY NAME (spawn, saved launches, the tag on a
   // running session) reads listProjectRoots() whole, so nothing that used to launch stops.
-  app.get('/api/project-roots', async (_req, res) => {
+  app.get('/api/project-roots', async (req, res) => {
     try {
-      res.json((await listProjectRoots()).filter((r) => !r.archived));
+      const resolve = await campaignResolver();
+      // Same filter contract as /api/team-rosters: name none and you get every Campaign.
+      const wanted = ([] as string[]).concat((req.query?.campaign_id as string | string[]) ?? []).filter(Boolean);
+      const keep = await campaignFilter(wanted);
+      res.json(
+        (await listProjectRoots())
+          .filter((r) => !r.archived && keep(r.campaign_id))
+          .map((r) => ({ ...r, campaign_id: resolve(r.campaign_id) })),
+      );
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }
@@ -177,7 +186,9 @@ export function registerCatalogs(app: express.Express): void {
     const dir = String(req.query.dir ?? '').trim();
     if (!dir) return res.status(400).json({ error: 'A directory is required.' });
     try {
-      res.json(await repoFacts({ name: 'candidate', dir, remit: '', match: [], docs: [], plans: [], archived: false }));
+      // A CANDIDATE, not a root: nothing has been included yet, so it belongs to no
+      // Campaign. `repoFacts` reads the directory and never the Campaign.
+      res.json(await repoFacts({ name: 'candidate', dir, remit: '', match: [], docs: [], plans: [], archived: false, campaign_id: '' }));
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }

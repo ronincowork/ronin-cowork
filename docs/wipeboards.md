@@ -166,6 +166,14 @@ a single whiteboard. I don't care what the names are."*
 - **Names do not decide anything.** A roster may point its board anywhere, and the board is
   that team's because the roster says so. (This used to be matched on the name, which sent
   a roster pointing elsewhere to a board it had no members on.)
+- **A new team is allocated a token nothing else holds**, which is how two campaigns can
+  each have a Cowork called `dev` without sharing a board: the first keeps `dev`, the second
+  gets `home-dev`. Only the DEFAULT is allocated — a `wipeboard:` the owner states is taken
+  as given. **Nothing about this store changed for campaigns**: no directory is namespaced,
+  no board moves, no post or cursor is touched, and `house` and the roster-less boards keep
+  the addresses they have. Namespacing was rejected because a wipeboard *is* a directory, so
+  nothing on disk could distinguish a campaign directory from a board of the same name.
+  `docs/campaign-scope.md` § Wipeboards.
 - **Membership is the team's, derived at every read.** Tag a session into the team and it
   is on that team's board; untag it and it is off. The two cannot drift because they are
   one fact. There is no other membership: **custom enrolment is cut** (owner, 2026-08-24 —
