@@ -127,6 +127,13 @@ const IGNORE = {
   'docs/user-config.md': ['ronin.json'],
   'docs/README.md': ['ronin.json'],
   'docs/settei.md': ['ronin.json'],
+  // The campaign pages name the owner's config file for exactly the reason the entries
+  // around them do — created at runtime in the config store, real on the box, never in
+  // this repo. Both cite it to say what LEFT it: the campaign's name, description and
+  // desk_profile moved to the `campaigns` store on 2026-08-29, and the old keys stay
+  // behind as the migration's seed until the old writable surface goes.
+  'docs/campaigns.md': ['ronin.json'],
+  'docs/desk-profiles.md': ['ronin.json'],
   'docs/env.md': ['ronin.json'],
   'docs/wanted-needed.md': ['ronin.json'],
   // The wipeboard's TTL and grace are SETTEI, so the page that documents them names the

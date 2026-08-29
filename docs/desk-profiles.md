@@ -14,12 +14,19 @@ name (`docs/shadowing.md`). The directory's `README.md` carries the fields. Five
 `terminal` · `vibe_code` · `professional` · `home` · `league` (League is the gamer one, goofy on purpose). Every field is optional and a blank
 means "as stock".
 
-## Which one is active is settei's
+## Which one is active is the campaign's
 
 `set.desk.profile` — one leaf, read by `GET /api/settei` like every other and written by
 `PUT /api/settei/desk` (`{ profile }`; blank goes back to stock). A choice that must hold
 across browsers is not a browser's to keep, which is why this is not `localStorage` the
-way the skin pick alone used to be. `GET /api/desk-profiles` serves the list (with
+way the skin pick alone used to be.
+
+**The leaf and its route are unchanged; what moved is where the fact is stored.** Since
+2026-08-29 a `desk_profile` belongs to a **campaign** — it decides that body of work's
+vocabulary, skin and offered templates — so it lives on the `campaign_config` rather than
+in `ronin.json`, and both the read and the write resolve through `src/campaign-config.ts`.
+An install running several campaigns has one profile per campaign, and a combined view
+paints in the primary campaign's. `docs/campaigns.md`. `GET /api/desk-profiles` serves the list (with
 `origin`, so the picker can say which are yours) and the active name in one answer, and
 the client reads it once at boot (`public/js/desk-profile.js`). No profile chosen —
 `active: ''` — is the ordinary state of every install older than the catalog, and
