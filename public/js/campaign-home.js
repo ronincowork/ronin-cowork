@@ -218,6 +218,9 @@ export function createCampaignHome() {
     enter: async (context) => {
       ctx = context;
       entered = true;
+      // Ronin Home is above every workspace. Its bar is only the house mark; Cowork
+      // identity, machine readings and workspace controls return when a door is opened.
+      document.body.classList.add('ronin-home-active');
       open = '';
       paint();
       // Three reads, none of which the page waits on together: the Campaign list (which
@@ -231,7 +234,15 @@ export function createCampaignHome() {
       else delete root.dataset.failed;
       paint();
     },
-    leave: () => { entered = false; open = ''; },
-    destroy: () => { entered = false; ctx = null; },
+    leave: () => {
+      entered = false;
+      open = '';
+      document.body.classList.remove('ronin-home-active');
+    },
+    destroy: () => {
+      entered = false;
+      ctx = null;
+      document.body.classList.remove('ronin-home-active');
+    },
   };
 }

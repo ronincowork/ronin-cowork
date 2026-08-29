@@ -1,5 +1,9 @@
 /* Ronin Home composition only; tokens and primitives stay foundations'. */
 @layer app {
+  /* The root is not a Cowork workspace. Match the approved Ronin Home composition:
+     the house mark alone in the bar, then the three doors. */
+  body.ronin-home-active #bar > :not(#brandbtn) { display: none !important; }
+
   /* MASU — the square sake cup (owner, 2026-08-29). The box keeps a hairline corner so it
      reads as JOINED rather than cut; the cups sitting in it are true right angles. These
      are one-off measurements, and a `--name:` line is their one legal home (check-css 6).

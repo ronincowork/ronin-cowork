@@ -275,8 +275,10 @@ async function checkJourneys(page, label, jsErrors) {
     hash: location.hash,
     visible: !document.querySelector('.ch-view')?.hidden,
     doors: document.querySelectorAll('.ch-view .ch-go').length,
+    chrome: [...document.querySelectorAll('#bar > :not(#brandbtn)')]
+      .filter((node) => getComputedStyle(node).display !== 'none').length,
   }));
-  if (roninHome.hash === '#/home' && roninHome.visible && roninHome.doors === 3) ok(`${label}: ⛩ ronin opens Ronin Home`);
+  if (roninHome.hash === '#/home' && roninHome.visible && roninHome.doors === 3 && roninHome.chrome === 0) ok(`${label}: ⛩ ronin opens Ronin Home`);
   else bad(`${label}: ⛩ ronin did not open Ronin Home — ${JSON.stringify(roninHome)}`);
   // The strip once carried ten rooms and two kinds of thing. Install rooms moved to the
   // admin_desk; Archives later became the fifth session room. The expected count comes
