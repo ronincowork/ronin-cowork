@@ -1,7 +1,7 @@
 /* Workspace Kit interaction primitives added after the frozen base sheet. */
 @layer app {
   .wk-action-bar { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
-  .wk-surface-header { display: flex; flex: 0 0 auto; align-items: center; gap: var(--space-4); min-height: var(--row-head); padding: var(--space-3) var(--space-4); border-bottom: var(--edge) solid var(--line); background: var(--bg-2); color: var(--fg-strong); }
+  .wk-surface-header { display: flex; flex: 0 0 auto; align-items: center; gap: var(--space-4); min-height: var(--row-head); padding: var(--space-3) var(--space-4); border-bottom: var(--edge) solid var(--line); background: var(--cowork-head-bg); color: var(--fg-strong); }
   .wk-surface-header-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .wk-surface-header-actions { display: flex; align-items: center; gap: var(--space-3); margin-left: auto; }
   .wk-action { min-height: 2.25rem; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); color: var(--fg); padding: var(--space-3) var(--space-5); font: inherit; cursor: pointer; }

@@ -14,6 +14,10 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign.description_placeholder:** What this campaign is for
 - **campaign.commons:** Campaign commons
 - **campaign.view:** Campaign view
+- **campaign.commons_short:** Commons
+- **campaign.cowork_view:** Cowork View
+- **campaign.coworks:** Coworks
+- **campaign.cowork:** Cowork
 - **squad:** Team
 - **player_one:** Lead session
 - **team_kit:** Shared toolkit
