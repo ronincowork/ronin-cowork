@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1194 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1196 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -116,7 +116,9 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `campaign_view.none_selected` | No Campaign selected. |  |  |  |  |
 | `campaign_view.profile_summary` | The words, the skin and the templates this Campaign opens on. |  |  |  |  |
 | `campaign_view.roots_summary` | The folders this Campaign is allowed to work in. |  |  |  |  |
-| `campaign_view.templates_summary` | The Cowork templates this Campaign offers. |  |  |  |  |
+| `campaign_view.template_prefs` | Template preferences |  |  |  |  |
+| `campaign_view.template_prefs_soon` | Which Cowork templates {campaign} offers. The selections land here once templates carry a Campaign. |  |  |  |  |
+| `campaign_view.templates_summary` | Which Cowork templates this Campaign offers. |  |  |  |  |
 
 ## commons
 

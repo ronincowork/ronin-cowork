@@ -4,7 +4,8 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { deleteTeamRoster, membersOfTeam, refreshTeams, subscribe, teamByName, teamsFromState, UNASSIGNED, updateSessionTeams } from './team-controller.js';
 import { createNewTeamView } from './new-team.js';
 import { createTeamRosterSurface } from './team-roster-surface.js';
-import { renderLeagueView } from './league-view-surface.js';
+import { createTeamTemplatesSurface } from './team-templates-surface.js';
+import { createLeagueTeamSurfaces, renderCampaignSelector, renderLeagueView } from './league-view-surface.js';
 import { activeProfile } from './desk-profile.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { createTeamWipeboard } from './team-wipeboard.js';
@@ -235,7 +236,16 @@ export function createCoworkView(options = {}) {
   // The Team roster stayed — a Cowork is not Campaign configuration — and is its own
   // surface rather than the one tab left in a strip.
   const teamRoster = campaign ? createTeamRosterSurface() : null;
+  // THE TEMPLATE MANAGER IS A RUNNING TOOL, so it lives here beside New Team and not on
+  // the Campaign page: saving a draft, using a template and deleting one all end in a
+  // Cowork being born, which is running, not configuring. The Campaign page keeps only
+  // the PREFERENCES — which templates that Campaign offers.
+  const templates = campaign ? createTeamTemplatesSurface({
+    draft: () => newTeamView.draft(),
+    use: (draft) => { ctx?.patchViewState('new-team', { draft }); arrange({ [lastSeat]: { surface: '@new-team' } }); },
+  }) : null;
   if (campaign) {
+    SURFACES['@templates'] = { name: 'templates', el: templates.el, show: () => templates.enter() };
     SURFACES['@league-view'] = { name: 'league-view', el: leagueView.el };
     SURFACES['@new-team'] = { name: 'new-team', el: newTeamView.el, show: () => newTeamView.enter(ctx) };
     SURFACES['@team-roster'] = { name: 'team-roster', el: teamRoster.el, show: () => teamRoster.render() };
@@ -419,21 +429,13 @@ export function createCoworkView(options = {}) {
   // reading is absent. RIREKI's cherry-pick or summary joins the row when the service
   // contributes it; there is no field for it today.
   let rows = new Map(); // name -> the /api/home row
-  const leagueTeamSurfaces = new Map(), openTeam = (name) => { const url = new URL(location.href); url.hash = `#/team/${encodeURIComponent(name)}`; window.open(url.href, '_blank', 'noopener'); };
-  const leagueTeamSurface = (name) => {
-    if (leagueTeamSurfaces.has(name)) return leagueTeamSurfaces.get(name);
-    const label = name === UNASSIGNED ? t('league.ronin', 'Ronin: no team') : readableTeam(name), surface = createSurface({ label, className: 'league-team-edit' }), team = teamByName(name);
-    const launch = el('button', null, t('league.launch_team', 'Launch')); launch.type = 'button'; launch.addEventListener('click', () => openTeam(name));
-    const remove = el('button', null, t('league.delete_team', 'Delete')); remove.type = 'button'; remove.addEventListener('click', async () => { const count = membersOfTeam(name).length; if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team: name, count }))) return; const result = await deleteTeamRoster(name); if (!result.ok) { surface.setState('failed', result.message); return; } const seat = whereIs(token); leagueTeamSurfaces.delete(name); if (seat) emptySeat(seat); });
-    surface.el.prepend(createSurfaceHeader({ label, actions: name === UNASSIGNED ? [launch] : [launch, remove] }).el);
-    surface.content.append(createMetadata({ rows: [
-      [t('team.team_role', 'Team role'), team.team_role], [t('team.objective', 'Objective'), team.objective],
-      [t('league.agents', 'Agents'), String(membersOfTeam(name).length)], [t('team.project_root', 'Project root'), team.project_root],
-    ] }).el);
-    const token = '@team:' + name;
-    SURFACES[token] = { name: 'team', el: surface.el };
-    const out = { token, surface }; leagueTeamSurfaces.set(name, out); return out;
-  };
+  const openTeam = (name) => { const url = new URL(location.href); url.hash = `#/team/${encodeURIComponent(name)}`; window.open(url.href, '_blank', 'noopener'); };
+  const leagueTeamSurface = createLeagueTeamSurfaces({
+    kit: { createSurface, createSurfaceHeader, createMetadata }, t, unassigned: UNASSIGNED,
+    readableTeam, teamByName, membersOfTeam, deleteTeamRoster, openTeam,
+    register: (token, node) => { SURFACES[token] = { name: 'team', el: node }; },
+    onDeleted: (token) => { const seat = whereIs(token); delete SURFACES[token]; if (seat) emptySeat(seat); },
+  });
   let homeTimer = 0;
   const readRows = async () => {
     const [r] = await Promise.all([request('/api/home', { cache: 'no-store' }), refreshDesks().catch(() => false)]);
@@ -477,24 +479,16 @@ export function createCoworkView(options = {}) {
       const teams = teamsFromState().filter((candidate) => !candidate.holding);
       rosterTitle.textContent = campaignIdentity.name() || t('campaign', 'Campaign');
       rosterCount.textContent = teams.length ? String(teams.length) : '';
-      cards.replaceChildren(); leagueCards.replaceChildren();
-      const group = (key, label) => { const section = el('details', 'tw-selector-group'); section.open = !closedGroups.has(key); section.addEventListener('toggle', () => section.open ? closedGroups.delete(key) : closedGroups.add(key)); section.append(el('summary', null, label), el('div', 'tw-selector-group-cards')); cards.append(section); return section.lastElementChild; };
-      const views = group('views', t('league.selector_views', 'Views')), teamCards = group('coworks', t('campaign.coworks', 'Coworks')), newCards = group('new', t('league.selector_new', 'New'));
-      const add = (host, heading, token, summary = '', variant = null, draft = { surface: token }, clickable = true) => {
-        const selected = token === DESK ? whereIs(COWORK) && cowork.current() === 'health' : !!whereIs(token);
-        const card = createCard({ heading, summary, variant, selected: clickable ? selected : null, action: clickable ? () => arrange({ [lastSeat]: draft }) : null });
-        if (!clickable) card.el.classList.add('league-drag-card');
-        card.el.draggable = true; card.el.addEventListener('dragstart', (event) => { event.dataTransfer.setData(DRAG_TYPE, token); event.dataTransfer.effectAllowed = 'move'; }); host.append(card.el);
-      };
-      add(views, t('campaign.cowork_view', 'Cowork View'), '@league-view');
-      add(views, t('league.team_roster', 'Team roster'), '@team-roster');
-      add(views, t('cowork.commons', 'Ronin Desk'), DESK, '', null, { cowork: true, tab: 'health' });
-      for (const item of teams) { const made = leagueTeamSurface(item.name); add(teamCards, item.title || readableTeam(item.name), made.token, item.objective || ''); }
-      const ronin = leagueTeamSurface(UNASSIGNED); add(teamCards, t('league.ronin', 'Ronin: no team'), ronin.token);
+      leagueCards.replaceChildren();
+      renderCampaignSelector(cards, {
+        groups: { closed: closedGroups }, teams, unassigned: UNASSIGNED, dragType: DRAG_TYPE, t, createCard,
+        madeSurface: leagueTeamSurface,
+        readableTeam,
+        seated: (token, draft) => (token === DESK ? !!whereIs(COWORK) && cowork.current() === 'health' : !!whereIs(token)),
+        put: (draft) => arrange({ [lastSeat]: draft }),
+      });
       const leagueGroups = [...teams, { name: UNASSIGNED, objective: '', nullTeam: true }];
       renderLeagueView(leagueCards, leagueGroups, membersOfTeam, (name) => rows.get(name), (name) => leagueTeamSurface(name).token, DRAG_TYPE, ctx?.viewState(viewKey)?.teamOrder, (teamOrder) => ctx?.patchViewState(viewKey, { teamOrder }), (agent, source, target) => updateSessionTeams(agent, (teams) => target === UNASSIGNED ? teams.filter((name) => name !== source) : [...new Set([...teams.filter((name) => name !== source), target])].sort()), openTeam);
-      add(newCards, t('new_team.title', 'New Team'), '@new-team', '', 'dotted');
-      add(newCards, t('league.new_agent', 'New Agent'), NEW, t('league.new_agent_summary', 'A new Agent, born into the workspace you are in.'), 'dotted');
       return;
     }
     rosterCount.textContent = members.length ? String(members.length) : '';

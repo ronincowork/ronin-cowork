@@ -23,9 +23,8 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
 import { S } from './state.js';
 import { campaignById, campaigns, campaignsFailed, campaignsMessage, createCampaign, loadCampaigns, normalizeSelection } from './campaigns.js';
-import { createCampaignIdentitySurface, createDeskProfileSurface, createNewCampaignSurface } from './campaign-surfaces.js';
+import { createCampaignIdentitySurface, createDeskProfileSurface, createNewCampaignSurface, createTemplatePreferencesSurface } from './campaign-surfaces.js';
 import { buildProjectRoots } from './projectroots.js';
-import { createTeamTemplatesSurface } from './team-templates-surface.js';
 import { DRAG_TYPE, acceptDrops } from './team-drag.js';
 
 const el = (tag, cls, text) => {
@@ -65,27 +64,7 @@ export function createCampaignView() {
   rootsSurface.el.prepend(createSurfaceHeader({ label: t('cowork.tab_roots', 'Project roots') }).el);
   rootsSurface.content.append(rootsHost);
   const rootsRoom = buildProjectRoots(rootsHost, () => entered && rootsHost.isConnected, null);
-  /**
-   * TEMPLATES SIT HERE, BUT A COWORK IS STILL BORN THERE (owner, 2026-08-29).
-   *
-   * "Use template" hands its draft to @new_team's New Team surface and goes to the Cowork
-   * space — the flow is theirs, is untouched, and is never reimplemented on this page.
-   * The handoff is the one it already uses (`views['new-team'].draft`); the extra half is
-   * seating New Team on arrival, which the Cowork space's own recall does when its stored
-   * seats name that surface. When campaign_id reaches templates, this is the call site
-   * that will carry the selected Campaign into the draft.
-   *
-   * Saving a template still reads the New Team draft that page holds, so a Campaign with
-   * no draft in flight saves nothing rather than saving an empty one.
-   */
-  const templates = createTeamTemplatesSurface({
-    draft: () => ctx?.viewState('new-team')?.draft || null,
-    use: (draft) => {
-      ctx?.patchViewState('new-team', { draft });
-      ctx?.patchViewState('cowork', { seats: { workspace1: '@new-team' } });
-      ctx?.navigate('cowork');
-    },
-  });
+  const templates = createTemplatePreferencesSurface(selected);
   const newCampaign = createNewCampaignSurface(async (fields) => {
     const r = await createCampaign(fields);
     if (r.ok) {
@@ -102,7 +81,7 @@ export function createCampaignView() {
     [CAMPAIGN]: { name: 'campaign', el: identity.el, show: () => identity.enter() },
     [PROFILE]: { name: 'profile', el: profile.el, show: () => profile.enter() },
     [ROOTS]: { name: 'roots', el: rootsSurface.el, show: () => rootsRoom.enter() },
-    [TEMPLATES]: { name: 'templates', el: templates.el, show: () => templates.enter?.() },
+    [TEMPLATES]: { name: 'templates', el: templates.el, show: () => templates.enter() },
     [NEW]: { name: 'new-campaign', el: newCampaign.el, show: () => newCampaign.enter() },
   };
 
@@ -171,7 +150,7 @@ export function createCampaignView() {
       { token: CAMPAIGN, heading: t('campaign', 'Campaign'), summary: t('campaign_view.campaign_summary', 'What this body of work is called, and what it is for.') },
       { token: PROFILE, heading: t('cowork.tab_profile', 'Desk profile'), summary: t('campaign_view.profile_summary', 'The words, the skin and the templates this Campaign opens on.') },
       { token: ROOTS, heading: t('cowork.tab_roots', 'Project roots'), summary: t('campaign_view.roots_summary', 'The folders this Campaign is allowed to work in.') },
-      { token: TEMPLATES, heading: t('league.templates', 'Templates'), summary: t('campaign_view.templates_summary', 'The Cowork templates this Campaign offers.') },
+      { token: TEMPLATES, heading: t('campaign_view.template_prefs', 'Template preferences'), summary: t('campaign_view.templates_summary', 'Which Cowork templates this Campaign offers.') },
     ];
   }
 

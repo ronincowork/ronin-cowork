@@ -201,7 +201,9 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.campaign_summary:** What this body of work is called, and what it is for.
 - **campaign_view.profile_summary:** The words, the skin and the templates this Campaign opens on.
 - **campaign_view.roots_summary:** The folders this Campaign is allowed to work in.
-- **campaign_view.templates_summary:** The Cowork templates this Campaign offers.
+- **campaign_view.templates_summary:** Which Cowork templates this Campaign offers.
+- **campaign_view.template_prefs:** Template preferences
+- **campaign_view.template_prefs_soon:** Which Cowork templates {campaign} offers. The selections land here once templates carry a Campaign.
 - **campaign_view.new_summary:** Set the stage. It creates no Cowork and launches no Agent.
 - **campaign_view.none_selected:** No Campaign selected.
 - **campaign_view.no_profiles:** No desk profiles on this install.

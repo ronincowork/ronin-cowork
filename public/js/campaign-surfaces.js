@@ -183,3 +183,39 @@ export function createNewCampaignSurface(onCreated) {
     },
   };
 }
+
+/**
+ * TEMPLATE PREFERENCES — which Cowork templates this Campaign offers.
+ *
+ * DELIBERATELY THIN, and it should stay thin until the selections are defined (owner,
+ * 2026-08-29: "we don't really run templates yet but will add selections soon"). What it
+ * is NOT is the template manager: saving a draft, using a template and deleting one are
+ * RUNNING actions — a Cowork is born from a template — and they live beside New Team in
+ * the Cowork space. A config surface that could launch a Cowork would cross the one line
+ * the 4+1 model draws: desk_profile, project roots and template preferences are chosen
+ * here; team_rosters and agent_sessions are managed while running.
+ *
+ * An empty-but-correct surface beats a full one pointed the wrong way — there is nothing
+ * to un-build when the field arrives.
+ */
+export function createTemplatePreferencesSurface(campaign) {
+  const { createSurface, createSurfaceHeader, setSurfaceState } = WorkspaceKit.primitives;
+  const label = t('campaign_view.template_prefs', 'Template preferences');
+  const surface = createSurface({ label, className: 'cv-surface' });
+  surface.el.prepend(createSurfaceHeader({ label }).el);
+  const body = el('div', 'cv-body');
+  surface.content.append(body);
+
+  return {
+    el: surface.el,
+    enter: () => {
+      const row = campaign();
+      body.replaceChildren(el('p', 'cv-note', t(
+        'campaign_view.template_prefs_soon',
+        'Which Cowork templates {campaign} offers. The selections land here once templates carry a Campaign.',
+        { campaign: row?.title || t('campaign', 'Campaign') },
+      )));
+      setSurfaceState(surface.el, row ? 'inert' : 'empty', row ? '' : t('campaign_view.none_selected', 'No Campaign selected.'));
+    },
+  };
+}

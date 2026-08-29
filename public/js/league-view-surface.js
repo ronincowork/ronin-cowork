@@ -51,3 +51,86 @@ export function renderLeagueView(host, teams, membersOf, rowOf, tokenOf, dragTyp
     host.append(group);
   }
 }
+
+/**
+ * THE CAMPAIGN SELECTOR COLUMN — the Cowork space's own card list, in three groups.
+ *
+ * Lifted out of cowork-view.js when that module reached its 700-line ceiling. It is
+ * rendering and nothing else: every decision it needs — what a card does, which token is
+ * seated, how a team surface is made — arrives as a function, so this file knows about
+ * workspaces, arrangement and seats exactly as much as it did before, which is nothing.
+ */
+export function renderCampaignSelector(host, opts) {
+  const { groups, teams, unassigned, madeSurface, readableTeam, seated, put, dragType, t } = opts;
+  host.replaceChildren();
+  const group = (key, label) => {
+    const section = node('details', 'tw-selector-group');
+    section.open = !groups.closed.has(key);
+    section.addEventListener('toggle', () => (section.open ? groups.closed.delete(key) : groups.closed.add(key)));
+    section.append(node('summary', null, label), node('div', 'tw-selector-group-cards'));
+    host.append(section);
+    return section.lastElementChild;
+  };
+  const views = group('views', t('league.selector_views', 'Views'));
+  const teamCards = group('coworks', t('campaign.coworks', 'Coworks'));
+  const newCards = group('new', t('league.selector_new', 'New'));
+  const add = (where, heading, token, summary = '', variant = null, draft = { surface: token }) => {
+    const card = opts.createCard({ heading, summary, variant, selected: seated(token, draft), action: () => put(draft) });
+    card.el.draggable = true;
+    card.el.addEventListener('dragstart', (event) => {
+      event.dataTransfer.setData(dragType, token);
+      event.dataTransfer.effectAllowed = 'move';
+    });
+    where.append(card.el);
+  };
+  add(views, t('campaign.cowork_view', 'Cowork View'), '@league-view');
+  add(views, t('league.team_roster', 'Team roster'), '@team-roster');
+  add(views, t('cowork.commons', 'Ronin Desk'), '@desk', '', null, { cowork: true, tab: 'health' });
+  for (const item of teams) add(teamCards, item.title || readableTeam(item.name), madeSurface(item.name).token, item.objective || '');
+  add(teamCards, t('league.ronin', 'Ronin: no team'), madeSurface(unassigned).token);
+  add(newCards, t('new_team.title', 'New Team'), '@new-team', '', 'dotted');
+  add(newCards, t('league.templates', 'Templates'), '@templates', '', 'dotted');
+  add(newCards, t('league.new_agent', 'New Agent'), '@new', t('league.new_agent_summary', 'A new Agent, born into the workspace you are in.'), 'dotted');
+}
+
+/**
+ * ONE COWORK'S CARD-SIZED SURFACE — its readings, Launch, and Delete.
+ *
+ * Lifted out of cowork-view.js with the selector, for the same reason. It caches per
+ * Cowork because a surface that is seated must survive a repaint; `forget` drops one when
+ * its roster is deleted so a stale element cannot be seated again.
+ */
+export function createLeagueTeamSurfaces(deps) {
+  const { kit, t, unassigned, readableTeam, teamByName, membersOfTeam, deleteTeamRoster, register, onDeleted, openTeam } = deps;
+  const made = new Map();
+  const build = (name) => {
+    if (made.has(name)) return made.get(name);
+    const label = name === unassigned ? t('league.ronin', 'Ronin: no team') : readableTeam(name);
+    const surface = kit.createSurface({ label, className: 'league-team-edit' });
+    const team = teamByName(name);
+    const token = '@team:' + name;
+    const launch = node('button', null, t('league.launch_team', 'Launch'));
+    launch.type = 'button';
+    launch.addEventListener('click', () => openTeam(name));
+    const remove = node('button', null, t('league.delete_team', 'Delete'));
+    remove.type = 'button';
+    remove.addEventListener('click', async () => {
+      const count = membersOfTeam(name).length;
+      if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team: name, count }))) return;
+      const result = await deleteTeamRoster(name);
+      if (!result.ok) return surface.setState('failed', result.message);
+      made.delete(name);
+      onDeleted(token);
+    });
+    surface.el.prepend(kit.createSurfaceHeader({ label, actions: name === unassigned ? [launch] : [launch, remove] }).el);
+    surface.content.append(kit.createMetadata({ rows: [
+      [t('team.team_role', 'Team role'), team.team_role], [t('team.objective', 'Objective'), team.objective],
+      [t('league.agents', 'Agents'), String(membersOfTeam(name).length)], [t('team.project_root', 'Project root'), team.project_root],
+    ] }).el);
+    register(token, surface.el);
+    const out = { token, surface };
+    made.set(name, out);
+    return out;
+  };
+  return build;
+}
