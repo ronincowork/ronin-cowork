@@ -99,8 +99,6 @@ export const campaigns = () => read?.campaigns ?? [];
 /** The ones a selector may offer: archived hides by default and kills nothing. */
 export const visibleCampaigns = () => campaigns().filter((row) => row.state !== 'archived');
 export const campaignById = (id) => campaigns().find((row) => row.id === id) || null;
-/** Did the last read invent its list because no Campaign API answered? */
-export const isSynthesized = () => !!read?.synthesized;
 
 /**
  * THE INITIAL CAMPAIGN — what an UNMARKED record belongs to while the migration window
@@ -117,19 +115,8 @@ export const isSynthesized = () => !!read?.synthesized;
  * to it. This reads `campaigns()` rather than `visibleCampaigns()` for exactly that reason.
  */
 export const initialCampaignId = () => campaigns()[0]?.id || '';
-/** Has a read happened at all, and did it succeed? */
-export const campaignsLoaded = () => !!read;
 export const campaignsFailed = () => !!read && !read.ok;
 export const campaignsMessage = () => read?.message || '';
-
-/** A Campaign's readable name, falling back to its id — never blank. */
-export const campaignTitle = (id) => campaignById(id)?.title || id || '';
-
-/** The default selection before anyone has chosen: the first visible Campaign, focused. */
-export function defaultSelection() {
-  const first = visibleCampaigns()[0]?.id || '';
-  return { mode: 'selected', campaign_ids: first ? [first] : [], primary_campaign_id: first };
-}
 
 /**
  * HEAL A STORED SELECTION AGAINST WHAT ACTUALLY EXISTS (CAMPAIGN_SCOPING § UI model).
@@ -161,9 +148,6 @@ export function selectedIds(selection) {
   return healed.mode === 'all' ? visibleCampaigns().map((row) => row.id) : healed.campaign_ids;
 }
 
-/** Is this selection showing more than one Campaign? Grouping and creation gating ask. */
-export const isPlural = (selection) => selectedIds(selection).length > 1;
-
 /** The Campaign whose desk_profile paints the combined face, or null. */
 export const primaryCampaign = (selection) => campaignById(normalizeSelection(selection).primary_campaign_id);
 
@@ -173,25 +157,6 @@ export const primaryCampaign = (selection) => campaignById(normalizeSelection(se
  * the board while the migration window is open. This is the ONE place that mapping is made.
  */
 export const campaignOf = (record) => text(record?.campaign_id) || initialCampaignId();
-
-/** Does this record belong to the selection? */
-export function inSelection(record, selection) {
-  const ids = selectedIds(selection);
-  if (!ids.length) return true; // nothing to filter by yet: show the install as it is
-  return ids.includes(campaignOf(record));
-}
-
-/** Group records into the selection's order: `[{ campaign, records }]`, empties dropped. */
-export function groupByCampaign(records, selection) {
-  const ids = selectedIds(selection);
-  const rows = Array.isArray(records) ? records : [];
-  const out = [];
-  for (const id of ids) {
-    const mine = rows.filter((record) => campaignOf(record) === id);
-    if (mine.length) out.push({ campaign: campaignById(id) || { id, title: id }, records: mine });
-  }
-  return out;
-}
 
 /** Create one, then take the store's own record as the truth. Never touches anything else. */
 export async function createCampaign({ title, description, desk_profile }) {

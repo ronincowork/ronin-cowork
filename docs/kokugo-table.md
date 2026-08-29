@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1270 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1291 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -69,16 +69,42 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
+| `campaign.archive` | Archive |  |  |  |  |
+| `campaign.archive_confirm` | Archive {title}? It stops nothing — its Agents keep running. |  |  |  |  |
+| `campaign.archived` | archived |  |  |  |  |
 | `campaign.commons` | Campaign commons |  |  |  |  |
 | `campaign.commons_short` | Commons |  |  |  |  |
 | `campaign.cowork` | Cowork |  |  |  |  |
 | `campaign.cowork_view` | Cowork View |  |  |  |  |
 | `campaign.coworks` | Coworks |  |  |  |  |
+| `campaign.create` | Create Campaign |  |  |  |  |
 | `campaign.description` | Description |  |  |  |  |
 | `campaign.description_placeholder` | What this campaign is for |  |  |  |  |
 | `campaign.name` | Campaign name |  |  |  |  |
+| `campaign.name_needed` | A Campaign needs a name. |  |  |  |  |
 | `campaign.name_placeholder` | My campaign |  |  |  |  |
+| `campaign.new` | New Campaign |  |  |  |  |
+| `campaign.none` | No Campaigns yet. |  |  |  |  |
+| `campaign.profile_hint` | Sets the words, the skin and the templates this Campaign opens with. |  |  |  |  |
+| `campaign.read_failed` | Could not read Campaigns — {message} |  |  |  |  |
+| `campaign.saving` | saving… |  |  |  |  |
 | `campaign.view` | Campaign view |  |  |  |  |
+
+## campaign_home
+
+| key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
+|---|---|---|---|---|---|
+| `campaign_home.agents_is` | One Agent, one job |  |  |  |  |
+| `campaign_home.campaign_is` | A named body of work |  |  |  |  |
+| `campaign_home.change` | Change |  |  |  |  |
+| `campaign_home.coworks_is` | Coworking space for Agents |  |  |  |  |
+| `campaign_home.manage` | Manage |  |  |  |  |
+| `campaign_home.no_agent` | No Agent |  |  |  |  |
+| `campaign_home.no_campaign` | No Campaign |  |  |  |  |
+| `campaign_home.no_cowork` | No Cowork |  |  |  |  |
+| `campaign_home.selected_n` | {n} selected |  |  |  |  |
+| `campaign_home.title` | Ronin |  |  |  |  |
+| `campaign_home.tray_empty` | Nothing here yet. |  |  |  |  |
 
 ## commons
 

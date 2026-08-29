@@ -18,6 +18,16 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign.cowork_view:** Cowork View
 - **campaign.coworks:** Coworks
 - **campaign.cowork:** Cowork
+- **campaign.new:** New Campaign
+- **campaign.create:** Create Campaign
+- **campaign.none:** No Campaigns yet.
+- **campaign.saving:** saving…
+- **campaign.name_needed:** A Campaign needs a name.
+- **campaign.profile_hint:** Sets the words, the skin and the templates this Campaign opens with.
+- **campaign.read_failed:** Could not read Campaigns — {message}
+- **campaign.archive:** Archive
+- **campaign.archived:** archived
+- **campaign.archive_confirm:** Archive {title}? It stops nothing — its Agents keep running.
 - **squad:** Team
 - **player_one:** Lead session
 - **team_kit:** Shared toolkit
@@ -185,6 +195,20 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 ## commons — commons.js (the commons shell: tab strip and frame)
 - **commons.tab_off:** {tab} — off, this service is not installed.
 - **commons.sessions:** sessions
+
+## campaign_home — campaign-home.js (the root arrival: Campaign, Coworks, Agents)
+
+- **campaign_home.title:** Ronin
+- **campaign_home.campaign_is:** A named body of work
+- **campaign_home.coworks_is:** Coworking space for Agents
+- **campaign_home.agents_is:** One Agent, one job
+- **campaign_home.change:** Change
+- **campaign_home.manage:** Manage
+- **campaign_home.selected_n:** {n} selected
+- **campaign_home.no_campaign:** No Campaign
+- **campaign_home.no_cowork:** No Cowork
+- **campaign_home.no_agent:** No Agent
+- **campaign_home.tray_empty:** Nothing here yet.
 
 ## home — home.js (the status words and the launch receipt)
 - **home.status_ready:** ready

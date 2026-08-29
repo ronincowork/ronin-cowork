@@ -15,6 +15,8 @@ import { buildCoworkSetup } from './cowork-setup.js';
 import { installServicesStatus } from './services-activation.js';
 import { createWorkspace } from './workspace.js';
 import { createCoworkView } from './cowork-view.js';
+import { createCampaignHome } from './campaign-home.js';
+import { createCampaignManage } from './campaign-manage.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { createNewTeamView } from './new-team.js';
 import { createAgentConfigurationView } from './agent-config.js';
@@ -123,6 +125,15 @@ export async function init() {
   guard('register the Customize destination', () => installCustomize(workspace));
   // Cowork collection and Team detail are two contexts on the same cowork-space bedrock.
   guard('register the Cowork destination', () => workspace.register('cowork', createCoworkView({ kind: 'cowork' })));
+  // THE ROOT ARRIVAL (owner, 2026-08-29): three doors — Campaign, Coworks, Agents —
+  // over one Campaign selection the other two inherit. Registered after Cowork because
+  // its Campaign door opens that destination, and guarded like every other: the landing
+  // page failing must cost the owner a page, never their terminals. `safeView` is this
+  // one, so its own failure is reported rather than looping.
+  guard('register the Campaign Home destination', () => workspace.register('home', createCampaignHome()));
+  // Campaign select/create/archive — the surface behind the home's ✳ Manage. New Campaign
+  // saves a campaign_config and stops; it creates no Cowork and launches no Agent.
+  guard('register the Campaign destination', () => workspace.register('campaign', createCampaignManage()));
   // AGENT CONFIGURATION — two Surfaces, no Tile, no Channel service. It edits ONE seat of
   // New Team's canonical draft and owns no schema of its own; a seat reaches it through
   // `open(draft, seat_id)` rather than being fetched here, because New Team owns the

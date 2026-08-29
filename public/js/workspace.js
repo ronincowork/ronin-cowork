@@ -2,24 +2,40 @@
 import { WorkspacePrimitives } from './workspace-primitives.js';
 
 export const WORKSPACE_STATE_KEY = 'ronin.workspace.v2';
-export const WORKSPACE_STATE_VERSION = 2;
+/**
+ * VERSION 3 (2026-08-29) — the Campaign cut. Two things changed that a stored v2 record
+ * cannot be read correctly without knowing about:
+ *
+ *   1. `campaign` is a REAL destination again (Campaign select/create/manage). It briefly
+ *      named the Cowork collection, and v2 carried `views.campaign` forward into
+ *      `views.cowork` for that reason. Run that carry-forward for v2 and older ONLY —
+ *      applied to a v3 record it would eat the reclaimed namespace.
+ *   2. `campaignSelection` joins the top level, because the home, Coworks and Agents
+ *      doors share ONE selection. It is per tab on purpose (never SETTEI), so two tabs
+ *      may inspect different Campaigns without fighting.
+ */
+export const WORKSPACE_STATE_VERSION = 3;
 const PREVIOUS_WORKSPACE_STATE_KEY = 'ronin.workspace.v1';
 
 const text = (value) => (typeof value === 'string' ? value : '');
 
 export const defaultWorkspaceState = () => ({
   version: WORKSPACE_STATE_VERSION,
-  // The Cowork collection is the install's landing page. Campaign remains configuration,
-  // not a destination, until an install can actually contain more than one campaign.
-  view: 'cowork',
+  // The three-door home is the install's root arrival (owner, 2026-08-29): Campaign,
+  // Coworks, Agents. The Cowork collection is one of the three doors, not the landing.
+  view: 'home',
   team: '',
   teamMode: 'team',
   focusedSession: '',
   surfaces: { terminalTile: false, kanban: false, channels: false },
   widths: { left: null, right: null },
+  // Which Campaigns this TAB is looking at — `{ mode, campaign_ids[], primary_campaign_id }`.
+  // Shared by the home and the doors it opens; healed on read against what exists
+  // (js/campaigns.js `normalizeSelection`), so a stale or archived id cannot strand a tab.
+  campaignSelection: null,
   // Each destination owns one namespace inside this tab. Empty objects and null drafts
   // are valid; the shell stores state but never interprets a feature's workflow.
-  views: { cowork: {}, 'new-team': { draft: null } },
+  views: { home: {}, cowork: {}, campaign: {}, 'new-team': { draft: null } },
   returnTo: null,
 });
 
@@ -37,14 +53,24 @@ export function migrateWorkspaceState(candidate) {
   const storedViews = parsed.views && typeof parsed.views === 'object' && !Array.isArray(parsed.views)
     ? parsed.views
     : {};
-  // `campaign` briefly named this same collection view. Carry its arrangement forward;
-  // the spelling changes, the workspace does not.
+  // `campaign` briefly named this same collection view, and v2 and older carried its
+  // arrangement forward. From v3 `campaign` is a destination of its own, so this runs
+  // for the old records only — applied to a v3 record it would eat the reclaimed
+  // namespace and hand the Campaign surface someone's Cowork arrangement.
+  const storedVersion = Number(parsed.version) || 0;
   const views = { ...base.views, ...storedViews };
-  if (!storedViews.cowork && storedViews.campaign) views.cowork = storedViews.campaign;
-  delete views.campaign;
+  if (storedVersion < 3) {
+    if (!storedViews.cowork && storedViews.campaign) views.cowork = storedViews.campaign;
+    delete views.campaign;
+  }
   return {
     ...base,
-    view: ['league-workspace', 'campaign'].includes(text(parsed.view)) ? 'cowork' : text(parsed.view) || base.view,
+    // Only `league-workspace` is still a legacy spelling of the collection. `campaign` is
+    // a real destination again and resolves to itself.
+    view: text(parsed.view) === 'league-workspace' ? 'cowork' : text(parsed.view) || base.view,
+    campaignSelection: parsed.campaignSelection && typeof parsed.campaignSelection === 'object'
+      ? parsed.campaignSelection
+      : base.campaignSelection,
     team: text(parsed.team),
     teamMode: parsed.teamMode === 'sessions' ? 'sessions' : 'team',
     focusedSession: text(parsed.focusedSession),
@@ -78,7 +104,9 @@ export function routeFromHash(hash = location.hash) {
   if (!raw) return null;
   try {
     const [view, ...rest] = raw.split('/').map(decodeURIComponent);
-    return view ? { view: ['league-workspace', 'campaign'].includes(view) ? 'cowork' : view, param: rest.join('/') } : null;
+    // `#/campaign` is the Campaign destination and no longer an alias; only the retired
+    // `#/league-workspace` still resolves to the Cowork collection.
+    return view ? { view: view === 'league-workspace' ? 'cowork' : view, param: rest.join('/') } : null;
   } catch (_) {
     return null;
   }
@@ -140,7 +168,7 @@ export function createWorkspace(host, options = {}) {
   const views = new Map();
   const state = readState();
   const onError = options.onError || (() => {});
-  const safeView = options.safeView || 'cowork';
+  const safeView = options.safeView || 'home';
   let active = null;
   let started = false;
   let destroyed = false;
