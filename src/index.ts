@@ -34,6 +34,8 @@ import { registerTeamPage } from './routes/team-page-api.js';
 import { startTomodachiSender } from './activation/tomodachi.js';
 import { registerServicesActivation, resumeInstallWatch } from './routes/services-activation-api.js';
 import { registerSettei } from './routes/settei-api.js';
+import { registerCampaigns } from './routes/campaigns-api.js';
+import { ensureInitialCampaign } from './campaign-config.js';
 import { stampFreshInstall } from './user-config.js';
 import { registerUpdate } from './routes/update-api.js';
 import { registerVersion } from './routes/version.js';
@@ -258,11 +260,19 @@ registerTeamPage(app); // /api/teams/:team/page — the team page's view, and dr
 registerVersion(app); // /api/version — release string, or the commit this process started from — src/routes/version.ts
 registerUpdate(app); // /api/update/* — the ⚙ gear's check + run, press-only — src/routes/update-api.ts
 registerSettei(app); // /api/settei — the install record, and writes BY NAME only — src/routes/settei-api.ts
+registerCampaigns(app); // /api/campaigns* — the durable record of each body of work — src/routes/campaigns-api.ts
 startTomodachiSender(); // AGERU's weekly packet actually leaves here — src/activation/tomodachi.ts
 registerServicesActivation(app); // /api/services/activation* — the Ronin Services request, local-only; no secret crosses this surface — src/routes/services-activation-api.ts
 // A box being born says so, ONCE, and only when ronin.json does not exist yet. Absence of
 // the key means an install older than the key, which must stay quiet — src/user-config.ts.
 void stampFreshInstall();
+
+// THE INITIAL CAMPAIGN — seeded once, from the campaign name, description and desk_profile
+// this install already had. Idempotent by existence: a box with any campaign_config,
+// archived ones included, has already migrated and this touches nothing. Best-effort like
+// the stamp above — a store we cannot write is a different failure, and throwing here would
+// cost the whole boot — src/campaign-config.ts.
+void ensureInitialCampaign().catch(() => {});
 
 // Services register, then their routes mount — AFTER core's, which is safe because
 // every service path (/api/tomodachi/*, /api/transcribe, /api/koshi*) is disjoint

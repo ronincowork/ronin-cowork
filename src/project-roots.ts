@@ -223,7 +223,14 @@ function parseRoots(raw: string): ProjectRootInfo[] {
  * The launch table: `| provider | opus | sonnet | haiku |` with one row per
  * provider and one column per model. The HEADING ROW names the models — so the
  * dropdown says "anthropic · opus", and a new model is a new column, no code.
- * Each provider's FIRST column is its default.
+ *
+ * COLUMN ORDER IS PICKER ORDER AND NOTHING ELSE. Three places used to claim each
+ * provider's first column was "that provider's default"; no code ever read one, and the
+ * parser below has no concept of a default — it pushes every cell in table order. The
+ * install's one default is `agents.sessions.default`, which names a provider and a model
+ * together (owner, 2026-08-18: one default, one place). The only "first" that is real is
+ * the setup form's seed, `models:first` in public/js/settei-schema.js, and that is the
+ * first row of the WHOLE table, not of a provider.
  */
 function parseLaunchTable(raw: string): SessionLaunchSpec[] {
   const cellsOf = (line: string) => {
