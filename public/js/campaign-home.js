@@ -147,14 +147,15 @@ export function createCampaignHome() {
   };
 
   // Manage is the one door out of a tray: the tray SELECTS, and everything that changes
-  // a record — new, edit, archive — is behind it. Each goes to the surface that owns
-  // that record today rather than to a placeholder.
+  // a record — new, edit, archive — is behind it. Each goes to the surface that owns that
+  // record today rather than to a placeholder. Coworks and Agents both land on the Cowork
+  // space, which is where New Team and New Agent live as SURFACES since @new_team's
+  // 2026-08-29 cut — `new-team` is no longer a destination and navigating to it would
+  // fall silently back to this page.
   const manage = (key) => {
     open = '';
     paint();
-    if (key === 'campaign') ctx?.navigate('campaign');
-    else if (key === 'coworks') ctx?.navigate('new-team');
-    else ctx?.navigate('cowork');
+    ctx?.navigate(key === 'campaign' ? 'campaign' : 'cowork');
   };
 
   function paintTray() {

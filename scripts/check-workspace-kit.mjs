@@ -11,12 +11,7 @@ const layouts = read('public/js/workspace-layouts.js');
 const terminal = read('public/js/terminal-tile-host.js');
 const primitives = read('public/js/workspace-primitives.js');
 const newTeam = read('public/js/new-team.js');
-const agentConfig = read('public/js/agent-config.js');
-const agentFields = read('public/js/agent-config-fields.js');
-const agentPreview = read('public/js/agent-config-preview.js');
-const agentStyles = read('public/css/agent-configuration.css').replace(/\s+/g, ' ');
 const styles = read('public/workspace-kit.css').replace(/\s+/g, ' ');
-const preflight = read('src/routes/launch-preflight.ts');
 const rosters = read('src/team-rosters.ts');
 const leagueCards = /\.wk-league-board \[data-surface='cards'\] \{[^}]*display: grid;[^}]*grid-template-columns: repeat\(auto-fill, minmax\(17rem, 1fr\)\);[^}]*gap: var\(--space-6\);[^}]*align-content: start;[^}]*\}/;
 const leagueCardsPhone = /@media \(max-width: 680px\) \{[^}]*\.wk-league-board \[data-surface='cards'\] \{[^}]*grid-template-columns: 1fr;[^}]*\}/;
@@ -56,24 +51,18 @@ for (const hook of ['mount', 'enter', 'leave', 'destroy']) {
   if (!primitives.includes(`invoke('${hook}'`)) problems.push(`Channel services are missing ${hook} lifecycle.`);
 }
 if (!team.includes('teamWorkspaceState(context.state,')) problems.push('Team must consume typed workspace state.');
-if (!newTeam.includes("workspaceTarget('agent-config'")) problems.push('New Team must use typed navigation for seat configuration.');
-if (!newTeam.includes('registerTeamDraft') || !newTeam.includes("patchViewState('new-team'")) problems.push('New Team must use the canonical persisted draft controller.');
-for (const contract of ['createAction', 'createActionBar', 'fields.form.actions.append(actions.el)']) {
-  if (!agentConfig.includes(contract)) problems.push(`Agent Configuration must consume the Kit form-action contract: ${contract}.`);
+// NEW TEAM CREATES A TEAM AND HANDS THE WORKSPACE TO IT (owner, 2026-08-29): one write
+// through the canonical roster door, and no seat-building, launch or retry path of its
+// own — staffing is the New Agent launcher's, which already names the Team at birth.
+if (!newTeam.includes("patchViewState('new-team'")) problems.push('New Team must persist its draft through the typed view state.');
+if (!newTeam.includes("request('/api/team-rosters'")) problems.push('New Team must create through the canonical roster door.');
+for (const retired of ['new-team-launch.js', 'new-team-preflight.js', 'team-draft-controller.js', 'agent-config']) {
+  if (newTeam.includes(`'./${retired}'`) || newTeam.includes(`'${retired}'`)) problems.push(`New Team retired ${retired}; a Team is created and then staffed with New Agent.`);
 }
-if (/document\.createElement\(['"]button['"]\)/.test(agentConfig)) problems.push('Agent Configuration must not construct feature-local action buttons.');
-for (const contract of ['ac-form', 'ac-fields', 'ac-field', 'ac-control']) {
-  if (!agentFields.includes(contract)) problems.push(`Agent Configuration fields are missing the governed feature hook ${contract}.`);
+for (const gone of ['public/js/new-team-launch.js', 'public/js/new-team-preflight.js', 'public/js/team-draft-controller.js', 'public/js/agent-config.js', 'src/routes/launch-preflight.ts']) {
+  if (fs.existsSync(gone)) problems.push(`${gone} is a retired New Team seat path; the surface creates a Team and stops.`);
 }
-if (!agentPreview.includes('ac-preview-body')) problems.push('Agent Configuration preview is missing its governed feature hierarchy hook.');
-if (!agentPreview.includes('resolved.stated_by?.[key]')) problems.push('Agent Configuration must render server-returned stated_by attribution.');
-if (!agentPreview.includes('resolved.birth_reading')) problems.push('Agent Configuration must render the server-returned birth reading list.');
-if (!preflight.includes('stated_by: resolved.stated_by')) problems.push('Launch preflight must publish canonical resolver attribution unchanged.');
-if (!preflight.includes('birth_reading: resolved.birth_reading')) problems.push('Launch preflight must publish canonical birth readings unchanged.');
-for (const contract of ['.ac-field {', '.ac-actions[data-dirty=', '.ac-preview-brief {', '.ac-preview-rows {']) {
-  if (!agentStyles.includes(contract)) problems.push(`Agent Configuration feature styling is missing ${contract}.`);
-}
-if (!preflight.includes('proposedRoster') || !preflight.includes('isCreatableTeamName')) problems.push('Preflight must use proposed Team defaults and canonical name availability.');
+if (!read('public/js/cowork-view.js').includes('createNewTeamView(WorkspaceKit, {')) problems.push('The Cowork space must own where New Team lands after a create.');
 if (!rosters.includes("isReservedTeamName = (s: string): boolean => s === 'unassigned'")) problems.push('The canonical Team store must reserve the Unassigned holding token.');
 for (const file of ['cowork-view.js', 'new-team.js']) {
   const source = read(`public/js/${file}`);

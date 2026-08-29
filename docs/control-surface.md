@@ -102,7 +102,7 @@ That division is the rollout's governing rule.
 | Repository `CLAUDE.md`, README and project docs | Several implementation checklists say “confirm branch dev,” preserve shared-checkout dirt, and commit/push to dev. Koe explicitly declares direct `main`; Lab is direct history-as-artifact. | Migrate reviewed-product docs. Keep explicit direct repos direct unless the owner changes their arrangement. A repo declaration chooses **reviewed desks** or **direct**, not whichever branch happens to be open. |
 
 The known stale implementation documents include `docs/project-roots.md`,
-`docs/agent-configuration.md`, `docs/team-workspace.md`, `docs/workspace-kit.md` and the
+`docs/team-workspace.md`, `docs/workspace-kit.md` and the
 generated/reference copies that quote their resume checklists. Search and migrate the
 semantic phrases, not merely literal `dev`, because `push`, “clean,” “land” and “branch”
 all change meaning.

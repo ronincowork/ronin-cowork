@@ -271,9 +271,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **settei.setup_failed:** could not start
 - **settei.reading:** reading…
 
-## new_team / team — new-team.js (the New Team view; team.* rows are shared by the Team page family)
+## new_team / team — new-team.js (the New Team surface; team.* rows are shared by the Team page family)
 - **new_team.define:** Define the Team
-- **new_team.define_eyebrow:** 1 · Define the Team
 - **new_team.definition:** Team definition
 - **new_team.name:** Team name
 - **new_team.name_desc:** Lowercase letters, digits, _ and - . This is also the tag its sessions carry.
@@ -293,104 +292,21 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.optional:** Optional.
 - **team.wipeboard:** Wipeboard
 - **new_team.wipeboard_desc:** Optional. Blank uses the Team’s own name.
-- **new_team.build_roster:** Build the roster
-- **new_team.build_roster_eyebrow:** 2 · Build the roster
-- **new_team.sessions_heading:** Sessions · one or many
-- **new_team.roster_notice:** A Team with no sessions is complete and valid. Add one or more proposed sessions, check them against the real launch resolver, then raise them in order.
-- **new_team.add_seat:** Add proposed session
-- **new_team.check_seats:** Check seats
-- **new_team.create_and_raise:** Create Team and raise sessions
-- **new_team.roster_actions:** Roster actions
-- **new_team.transaction:** Team transaction
-- **new_team.open_team:** Open Team
-- **new_team.proposed_session:** Proposed session
-- **new_team.no_brief:** No brief yet.
-- **new_team.preflight:** preflight {verdict}
-- **new_team.resolved_name:** Resolved name
 - **team.project_root:** Project root
 - **team.command:** Command
 - **team.control:** Control
 - **team.mcp:** MCP
-- **new_team.edit_session:** Edit session
-- **new_team.designate_lead:** Designate as lead
-- **new_team.no_lead:** No lead
-- **new_team.remove_proposal:** Remove proposal
-- **new_team.seat_actions:** Proposed session actions
-- **new_team.retry_unresolved:** Retry unresolved sessions
 - **new_team.create:** Create Team
+- **new_team.team_actions:** Team actions
+- **new_team.creating:** Creating the Team…
 - **team.team:** Team
 - **team.roster:** Roster
-- **new_team.completed:** Completed
-- **new_team.error:** Error
 - **team.status:** Status
 - **team.mode:** Mode
 - **team.role:** Role
-- **new_team.reason:** Reason
-- **new_team.retry_seat:** Retry this seat
-- **new_team.lead_line:** Lead: {status}
 - **new_team.name_invalid:** Lowercase letters, digits, _ and - only.
-- **new_team.name_taken:** "{name}" already has a roster.
-- **new_team.preflight_unreachable:** The dry run could not be reached — {message}
-- **new_team.raising:** Checking the roster, then raising sessions in order…
 - **new_team.root_default:** — the box’s default —
 - **new_team.title:** New Team
-
-## preview / seat — agent-config-preview.js (the seat preview half of Agent Configuration)
-- **seat.session_role:** Session role
-- **seat.name:** Name
-- **preview.team_objective:** Team objective
-- **preview.team_repos:** Team repositories
-- **preview.team_branch:** Team branch
-- **preview.team_wipeboard:** Team wipeboard
-- **preview.team_state:** Team state
-- **preview.dir:** Directory
-- **preview.agent:** Launches an agent
-- **preview.label:** Agent label
-- **preview.permissions:** Permissions
-- **preview.posture:** Posture
-- **preview.opening:** Opening template
-- **preview.ack:** Acknowledgement gate
-- **preview.cli:** CLI
-- **seat.mcp:** gbrain
-- **preview.mcp_default:** gbrain default
-- **preview.mcp_always:** gbrain locked on
-- **preview.lifecycle:** Lifecycle
-- **preview.cap_exempt:** Exempt from the session max
-- **preview.yes:** yes
-- **preview.no:** no
-- **preview.title:** Preview
-- **preview.brief_head:** The brief this session is born with
-- **preview.resolved_head:** What it resolves to
-- **preview.reading_head:** Read at birth
-- **preview.nothing_yet:** Nothing to preview yet.
-- **preview.unresolved:** This seat did not resolve far enough to preview.
-- **preview.no_reading:** No birth reading reported.
-- **preview.source_unknown:** source not reported
-
-## seat — agent-config-fields.js (the seat form half of Agent Configuration)
-- **seat.session_role_desc:** What this session is doing. Blank is a real launch — no reading, no mark.
-- **seat.name_desc:** Left unset, the server derives it from the role and the prompt.
-- **seat.mode_desc:** Manual sends your words untouched. Assisted composes the brief.
-- **seat.prompt:** What it is for
-- **seat.prompt_desc:** The agent's first message.
-- **seat.project_root_desc:** Unset falls to the Team's root, then the top active root.
-- **seat.cmd:** Launch command
-- **seat.cmd_desc:** Unset falls to your session default in ⚙ Configuration.
-- **seat.mcp_desc:** Unset means whatever the resolved profile says.
-- **seat.seed:** Read first
-- **seat.seed_desc:** Paths read before anything else. Assisted mode only.
-- **seat.inject:** Extra instruction
-- **seat.inject_desc:** Appended verbatim. Assisted mode only.
-- **seat.reference:** Pointed at
-- **seat.reference_desc:** One session this one is aimed at.
-- **seat.inherit:** inherit
-- **seat.on:** on
-- **seat.off:** off
-- **seat.manual:** manual
-- **seat.assisted:** assisted
-- **seat.inherit_title:** Return {field} to unset — the resolved profile answers it
-- **seat.cmd_no_agent:** This seat launches no agent, so it cannot carry a command.
-- **seat.prompt_no_agent:** A plain terminal has nobody to tell — an empty prompt is valid here.
 
 ## team_wipeboard — team-wipeboard.js (the team wipeboard channel on the Team page)
 - **team_wipeboard.placeholder:** say something to the team — every member is interrupted
@@ -1199,20 +1115,8 @@ The catalog entry goes. {dir} is not touched.
 - **me.title:** This session — status, ladder, TEGAMI, macros, groups, docs, note, control
 
 ## new_team — new-team-launch.js (the transaction's own sentences)
-- **new_team.preflight_refused:** Preflight refused this seat.
-- **new_team.none_passed:** No proposed session passed preflight. The Team was not created.
-- **new_team.halted:** Not attempted after Ronin could not complete the previous launch: {message}
-- **new_team.lead_not_born:** The designated lead seat was not born.
 
 ## new_team — new-team-preflight.js (the preflight notes)
-- **new_team.preflight_broken:** the preflight could not run
-- **new_team.note_name:** A Team name is lowercase letters, digits, _ and - — and it is also the tag. "unassigned" is reserved for the holding area.
-- **new_team.note_taken:** Team "{name}" already has a roster. Open it instead of creating it.
-- **new_team.note_adopts_one:** {n} live session already carries this name and becomes a member the moment the Team exists: {sessions}. Membership is derived from the sessions, so the Team arrives already staffed.
-- **new_team.note_adopts_many:** {n} live sessions already carry this name and become members the moment the Team exists: {sessions}. Membership is derived from the sessions, so the Team arrives already staffed.
-- **new_team.note_tagged:** Those members were tagged, not born onto this Team, so none of them reads the team_role shelf — that reading happens at birth only. Sessions raised from the roster afterwards do.
-- **new_team.note_wipeboard:** A wipeboard named "{name}" already exists and this Team adopts its thread — the team wins its name.
-- **new_team.note_capacity:** This box allows {max} live sessions and {live} are running. This roster would need {over} more than there is room for.
 
 ## pad — weblink.js (the pad's failure sentences)
 - **pad.open_failed:** could not open the pad — 1) System Settings → Privacy & Security → 
@@ -1342,20 +1246,6 @@ The catalog entry goes. {dir} is not touched.
 ## provenance — the mark tooltips
 - **provenance.shadowed:** Yours — this replaces Ronin's shipped entry of the same name. Upgrades to that entry will not reach you.
 - **provenance.own:** Yours — added by you, in your catalogs store. An upgrade cannot touch it.
-
-## seat — agent-config.js (the Agent Configuration view)
-- **seat.configuration:** Seat configuration
-- **seat.check:** Check
-- **seat.check_title:** Run the real resolver against this seat without creating anything
-- **seat.apply:** Apply
-- **seat.apply_title:** Write this seat into the Team draft — the only durable effect this Surface has
-- **seat.revert:** Revert
-- **seat.revert_title:** Restore the last applied seat. Not the defaults — reverting into defaults would materialise inheritance
-- **seat.actions:** Seat configuration actions
-- **seat.resolving:** Resolving…
-- **seat.none_selected:** No seat selected. Open one from the Team roster.
-- **seat.not_resolved:** Not resolved yet — press Check.
-- **seat.title:** Agent Configuration
 
 ## workspace — workspace-primitives.js (the Kit's own words)
 - **workspace.channels:** Team channels
