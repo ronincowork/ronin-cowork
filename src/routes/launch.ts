@@ -22,6 +22,7 @@ import {
   setLaunchStamp,
   setLeads,
   setProviderSessionId,
+  setCampaign,
   setProjectRoot,
   setTags,
 } from '../tmux.js';
@@ -40,6 +41,18 @@ import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFiel
 import { DESK_LIFECYCLES, prepareLaunchDesks } from '../launch-desks.js';
 import { readArrangement } from '../desks/arrangement.js';
 import { listProjectRoots } from '../project-roots.js';
+import { initialCampaignId } from '../campaign-scope.js';
+import { readTeamRoster } from '../team-rosters.js';
+
+/**
+ * The Campaign a newborn Agent joins: its Cowork's when it is born onto one, else the
+ * initial Campaign. A rōnin gets a real Campaign rather than a blank, because the plan
+ * requires every Agent to filter correctly whether or not it belongs to a Cowork.
+ */
+async function birthCampaign(team: string): Promise<string> {
+  const roster = team ? await readTeamRoster(team).catch(() => null) : null;
+  return roster?.campaign_id || (await initialCampaignId());
+}
 
 /**
  * Why a coding launch got no desk, in one line — or '' when it got one, or wanted none.
@@ -195,6 +208,11 @@ export function registerLaunch(app: express.Express): void {
       // reliably happens. Two shipped tools (tejun-recall, tejun-remember) read this to
       // scope a memory and nothing used to set it.
       if (resolved.project_root) await setProjectRoot(resolved.name, resolved.project_root);
+      // THE CAMPAIGN, beside the project_root and for the same reason: one value, known at
+      // birth, and the axis every view filters on. It is taken from the Cowork the Agent is
+      // born onto when there is one, and otherwise from the initial Campaign — a rōnin has
+      // a Campaign too, which is exactly why this is not derived from membership.
+      await setCampaign(resolved.name, await birthCampaign(resolved.team));
       // WHICH CLI, written at birth for the same reason the project_root is: this is the
       // one moment it is known. The cmd names the CLI, and a minute from now tmux can only
       // say the pane is running `node`. NOT for the roster — that column is the scraped

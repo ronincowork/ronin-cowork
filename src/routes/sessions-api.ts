@@ -13,6 +13,7 @@ import {
   getWipeboards,
   getProviderSessionId,
   getNote,
+  getCampaign,
   getProjectRoot,
   getTags,
   isValidName,
@@ -48,6 +49,7 @@ import { listSessionRoles } from '../definitions.js';
 import { emitSessionEnd } from '../sockets.js';
 import { resumeAgentArgv } from '../agents.js';
 import { listTeamRosters } from '../team-rosters.js';
+import { assertSameCampaignRoot, assertSameCampaignTeams } from '../campaign-scope.js';
 import { sessionDir as sessionRecordDir } from '../session-dir.js';
 import {
   listArchives,
@@ -236,6 +238,12 @@ export function registerSessions(app: express.Express): void {
     if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
     const root = String(req.body?.project_root ?? '').trim();
     if (root && !isValidRootName(root)) return res.status(400).json({ error: 'Invalid project_root handle.' });
+    // An Agent may serve only a Project root in its own Campaign.
+    try {
+      await assertSameCampaignRoot(await getCampaign(name), root);
+    } catch (e) {
+      return res.status(400).json({ error: String((e as Error)?.message ?? e) });
+    }
     if (root && !(await listProjectRoots()).some((r) => r.name === root)) {
       return res.status(404).json({ error: `"${root}" is not in the catalog.` });
     }
@@ -274,6 +282,9 @@ export function registerSessions(app: express.Express): void {
     const valid = new Set((await listTeamRosters()).filter((team) => team.state !== 'archived').map((team) => team.name));
     const unknown = list.filter((team) => !valid.has(team));
     if (unknown.length) throw new Error(`Unknown Team: ${unknown.join(', ')}.`);
+    // A COWORK AND ITS AGENTS ARE ONE CAMPAIGN'S. Refused rather than silently corrected:
+    // quietly rewriting the caller's intent is how a scoping bug becomes invisible.
+    await assertSameCampaignTeams(name, list);
     const before = await getTags(name), teams = await setTags(name, list);
     const leads = await getLeads(name), keptLeads = leads.filter((team) => teams.includes(team));
     if (keptLeads.length !== leads.length) await setLeads(name, keptLeads);

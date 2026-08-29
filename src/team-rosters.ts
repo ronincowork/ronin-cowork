@@ -255,6 +255,41 @@ function render(name: string, r: TeamRoster): string {
 }
 
 /**
+ * THE BOARD TOKEN A NEW COWORK GETS, and why the collision is solved by ALLOCATION rather
+ * than by namespacing the wipeboard store.
+ *
+ * The plan says a team wipeboard "must avoid collisions between equal Cowork names in two
+ * Campaigns" and does not say how. Nesting the store — `wipeboards/<campaign_id>/<name>/` —
+ * is genuinely ambiguous, because a wipeboard IS a directory: nothing on disk distinguishes
+ * a Campaign directory called `health` from a board called `health`, and `house` plus every
+ * roster-less board would have to be special-cased out of the migration.
+ *
+ * So nothing about the wipeboard store changes. A roster's `wipeboard:` is ALREADY an
+ * opaque pointer that may point anywhere — "names do not decide anything… the board is that
+ * team's because the roster says so" (docs/wipeboards.md) — so the fix is to hand a new
+ * Cowork a token nothing else holds. `dev` in the first Campaign keeps `dev`; `dev` in the
+ * second gets `health-dev`. Uniqueness is what the requirement actually needs; the token
+ * never has to be decomposed back into its parts, so it needs no parseable separator.
+ *
+ * Nothing already on disk moves, no post or cursor is touched, and `house` and the
+ * roster-less boards keep the addresses they have.
+ */
+async function freeBoardToken(name: string, campaign_id: string): Promise<string> {
+  // Dynamic, mirroring how wipeboards.ts reaches back here: a static edge in both
+  // directions is the cycle `check-modules` refuses.
+  const { boardExists } = await import('./wipeboards.js');
+  const taken = new Set((await listTeamRosters()).map((r) => r.wipeboard).filter(Boolean));
+  const free = async (token: string) => !taken.has(token) && !(await boardExists(token));
+  if (await free(name)) return name;
+  if (campaign_id && (await free(`${campaign_id}-${name}`))) return `${campaign_id}-${name}`;
+  for (let n = 2; n < 100; n++) {
+    const candidate = campaign_id ? `${campaign_id}-${name}-${n}` : `${name}-${n}`;
+    if (await free(candidate)) return candidate;
+  }
+  throw new Error(`No free wipeboard token for "${name}".`);
+}
+
+/**
  * CREATE — Build Team's first act. Refuses a name that already has a roster: creating
  * over a team is a different intent from editing one, and the refusal keeps them apart.
  */
@@ -273,7 +308,10 @@ export async function createTeamRoster(name: string, edit: RosterEdit, campaign_
     project_root: edit.project_root ?? '',
     repos: edit.repos ?? [],
     branch: edit.branch ?? '',
-    wipeboard: edit.wipeboard || name,
+    // An explicit token is the owner's and is taken as given; only the DEFAULT is allocated,
+    // because the default is the only thing that could collide with another Campaign's
+    // same-named Cowork.
+    wipeboard: edit.wipeboard || (await freeBoardToken(name, campaign_id)),
     state: edit.state ?? 'active',
   };
   await mkdir(campaignDir(campaign_id), { recursive: true });
