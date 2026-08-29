@@ -160,7 +160,11 @@ export function createCampaignHome() {
 
   function paintTray() {
     tray.hidden = !open;
-    if (!open) return;
+    if (!open) {
+      delete tray.dataset.for;
+      tray.replaceChildren();
+      return;
+    }
     tray.dataset.for = open;
     tray.replaceChildren();
     const rows = rowsFor(open);

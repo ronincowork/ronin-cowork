@@ -151,6 +151,7 @@
     border-radius: var(--ch-box);
     background: var(--bg-2);
   }
+  .ch-tray[hidden] { display: none; }
   .ch-tray[data-for='campaign'] { --ch-tone: var(--accent); }
   .ch-tray[data-for='coworks'] { --ch-tone: var(--accent-2); }
   .ch-tray[data-for='agents'] { --ch-tone: var(--ok-2); }
