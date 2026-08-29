@@ -39,6 +39,7 @@ import {
   writeMachineSection,
   writeOwner,
   writeDeskSection,
+  writeDesksSection,
   writeCampaignSection,
 } from '../user-config.js';
 
@@ -116,6 +117,11 @@ const FAMILY_WRITERS: Record<string, (body: Record<string, unknown>) => Promise<
    * reads back as null (a profile can be removed after it was chosen). */
   desk: async (body) => {
     await writeDeskSection({ profile: str(body.profile) ?? '' });
+    return { ok: true };
+  },
+  /** NEW PROJECTS AND DESKS — the default a new project's RONIN_REPO is written from. */
+  desks: async (body) => {
+    await writeDesksSection({ new_project: str(body.new_project) ?? 'managed' });
     return { ok: true };
   },
 

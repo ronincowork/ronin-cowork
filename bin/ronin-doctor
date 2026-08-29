@@ -393,6 +393,24 @@ if [ -x "$ROOT/libexec/ronin-repo-mode" ]; then
     direct)   ok "RONIN_REPO: direct, publishes $("$ROOT/libexec/ronin-repo-mode" stable); this checkout is the ${rm_chk} (claim guard $rm_claim)" ;;
     *)        note "no RONIN_REPO — the arrangement is undeclared, so tools treat this as a shared checkout (claim guard $rm_claim) and never invent a desk; declare it (ronin_sops/github.md)" ;;
   esac
+  # And every project root on this box — the file is the one gate for desks (owner,
+  # 2026-08-29), so "which of my projects get desks, and why" is answered here, per root.
+  if [ -x "$ROOT/bin/ronin-store" ]; then
+    roots_md="$("$ROOT/bin/ronin-store" catalogs 2>/dev/null)/PROJECT_ROOTS.md"
+    if [ -f "$roots_md" ]; then
+      awk '/^## /{name=$2} /^- \*\*dir:\*\*/{sub(/^- \*\*dir:\*\* */,""); print name "\t" $0}' "$roots_md" | while IFS=$'\t' read -r r_name r_dir; do
+        r_dir="${r_dir/#\~/$HOME}"
+        [ -d "$r_dir" ] || { note "project root $r_name: $r_dir is not a directory"; continue; }
+        [ -e "$r_dir/.git" ] || continue
+        r_arr="$(cd "$r_dir" && "$ROOT/libexec/ronin-repo-mode" arrangement 2>/dev/null)"
+        case "$r_arr" in
+          reviewed) ok "project root $r_name: desks $(cd "$r_dir" && "$ROOT/libexec/ronin-repo-mode" desks) — reviewed $(cd "$r_dir" && "$ROOT/libexec/ronin-repo-mode" working) → $(cd "$r_dir" && "$ROOT/libexec/ronin-repo-mode" stable)" ;;
+          direct)   ok "project root $r_name: no desks — declared direct on $(cd "$r_dir" && "$ROOT/libexec/ronin-repo-mode" stable)" ;;
+          *)        note "project root $r_name: no desks — $r_dir has no RONIN_REPO; coding sessions start in the checkout. Add the file (ronin-cowork/RONIN_REPO is the model) to give it desks" ;;
+        esac
+      done
+    fi
+  fi
 fi
 
 # Syncthing and .git — the precondition found on 2026-08-28 (WORKTREES.md §0). A checkout

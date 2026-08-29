@@ -58,6 +58,7 @@ import {
   readSetupSection,
   liveCount,
   readDeskSection,
+  readDesksSection,
   readCampaignSection,
 } from './user-config.js';
 
@@ -328,6 +329,9 @@ async function readSet(): Promise<Record<string, unknown>> {
     // THE DESK (R38) — which desk_profile the surfaces read their defaults from; '' is
     // "as stock", the ordinary state of every install older than the catalog.
     desk: { profile: typedStr(desk.profile) },
+    // NEW PROJECTS AND DESKS (owner, 2026-08-29) — the default written into a new
+    // project's RONIN_REPO; the file, not this, is the gate.
+    desks: { new_project: typedStr((await readDesksSection()).new_project) },
     // THE WANT LIST — typed intents, each judged against found per read (computeNeeded).
     // The want persists; the needed entry it produces never does.
     wanted: (await readSection<Array<{ kind?: unknown; name?: unknown }>>('wanted', []))

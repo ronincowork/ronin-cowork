@@ -17,18 +17,6 @@ import { bootFiles } from '../src/session-boot.js';
 import type { LaunchProfile } from '../src/launch-profile.js';
 import type { Assignment } from '../src/desks/schema.js';
 
-const withSwitch = async (value: string | undefined, fn: () => Promise<void> | void) => {
-  const old = process.env.RONIN_DESKS;
-  if (value === undefined) delete process.env.RONIN_DESKS;
-  else process.env.RONIN_DESKS = value;
-  try {
-    await fn();
-  } finally {
-    if (old === undefined) delete process.env.RONIN_DESKS;
-    else process.env.RONIN_DESKS = old;
-  }
-};
-
 const assignment: Assignment = {
   id: 'fable@comp',
   session: 'fable',
@@ -43,37 +31,29 @@ const assignment: Assignment = {
 
 const profile = { session_role: 'CutCode', label: 'cut code', posture: [], opening: '{prompt}', ack: false, agent: true } as LaunchProfile;
 
-test('the switch off means no launch wants a desk, whatever it is', async () => {
-  await withSwitch(undefined, () => {
-    assert.equal(wantsDesk({ mode: 'assisted', agent: true, lifecycle: 'coding' }), false);
-    assert.equal(wantsDesk({ mode: 'assisted', agent: true, lifecycle: 'coding', desk: 'own' }), false);
-  });
-  await withSwitch('off', () => {
-    assert.equal(wantsDesk({ mode: 'assisted', agent: true, lifecycle: 'coding', desk: 'own' }), false);
-  });
-});
-
-test('with the switch on, only an assisted agent launch that changes code wants a desk', async () => {
-  await withSwitch('on', () => {
-    for (const lifecycle of DESK_LIFECYCLES) assert.equal(wantsDesk({ mode: 'assisted', agent: true, lifecycle }), true, lifecycle);
-    for (const lifecycle of ['designing', 'review', 'orchestrating', 'none', '']) {
-      assert.equal(wantsDesk({ mode: 'assisted', agent: true, lifecycle }), false, `${lifecycle || 'blank'} changes no code`);
-    }
-    // Manual adds no wording of ours — and a desk is wording. A plain terminal has no agent to brief.
-    assert.equal(wantsDesk({ mode: 'manual', agent: true, lifecycle: 'coding' }), false);
-    assert.equal(wantsDesk({ mode: 'manual', agent: true, lifecycle: 'coding', desk: 'own' }), false);
-    assert.equal(wantsDesk({ mode: 'assisted', agent: false, lifecycle: 'coding', desk: 'own' }), false);
-    // The launch box's one control, either way.
-    assert.equal(wantsDesk({ mode: 'assisted', agent: true, lifecycle: 'review', desk: 'own' }), true);
-    assert.equal(wantsDesk({ mode: 'assisted', agent: true, lifecycle: 'coding', desk: 'none' }), false);
-  });
+test('only an assisted agent launch that changes code wants a desk — there is no install switch', () => {
+  for (const lifecycle of DESK_LIFECYCLES) assert.equal(wantsDesk({ mode: 'assisted', agent: true, lifecycle }), true, lifecycle);
+  for (const lifecycle of ['designing', 'review', 'orchestrating', 'none', '']) {
+    assert.equal(wantsDesk({ mode: 'assisted', agent: true, lifecycle }), false, `${lifecycle || 'blank'} changes no code`);
+  }
+  // Manual adds no wording of ours — and a desk is wording. A plain terminal has no agent to brief.
+  assert.equal(wantsDesk({ mode: 'manual', agent: true, lifecycle: 'coding' }), false);
+  assert.equal(wantsDesk({ mode: 'manual', agent: true, lifecycle: 'coding', desk: 'own' }), false);
+  assert.equal(wantsDesk({ mode: 'assisted', agent: false, lifecycle: 'coding', desk: 'own' }), false);
+  // The launch box's one control, either way.
+  assert.equal(wantsDesk({ mode: 'assisted', agent: true, lifecycle: 'review', desk: 'own' }), true);
+  assert.equal(wantsDesk({ mode: 'assisted', agent: true, lifecycle: 'coding', desk: 'none' }), false);
 });
 
 test('a launch that wants no desk resolves null without touching any registry', async () => {
-  await withSwitch(undefined, async () => {
-    const a = await resolveLaunchDesks({ session: 'x', team: '', project_root: 'nowhere', mode: 'assisted', agent: true, lifecycle: 'coding' });
-    assert.equal(a, null);
-  });
+  const a = await resolveLaunchDesks({ session: 'x', team: '', project_root: 'nowhere', mode: 'assisted', agent: true, lifecycle: 'review' });
+  assert.equal(a, null);
+});
+
+test('a coding launch on a repository with no RONIN_REPO resolves null — the file is the gate', async () => {
+  // `nowhere` is no project_root on this box, so its arrangement is absent → no desk.
+  const a = await resolveLaunchDesks({ session: 'x', team: '', project_root: 'nowhere', mode: 'assisted', agent: true, lifecycle: 'coding' });
+  assert.equal(a, null);
 });
 
 test('the brief carries every desk, the primary, the line, and the four words — or nothing at all', () => {

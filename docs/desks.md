@@ -40,6 +40,16 @@ open or parked, a pending update, the last accepted hand-in, a standing block. T
 dirty files, ahead/behind and whether the folder is mounted are read from git at the
 moment of asking (`deskStatus`). Nothing here is prose an agent maintains.
 
+## The gate
+
+**`RONIN_REPO` in the repository is the one switch** (owner, 2026-08-29). `desks=managed`
+gives a coding launch its desk, the contract in its brief, the desk actions and the tools;
+`desks=none`, or no file, gives none of them and the session starts in the checkout. There
+is no install-wide switch. ⚙ *New projects use desks?* is the default a new project root's
+file is written from (`declareArrangement`, `src/desks/arrangement.ts`); edit the file to
+change one project. A coding launch that gets no desk says why on its receipt (*no desk —
+`<root>` has no RONIN_REPO*), and `bin/ronin-doctor` lists every project root's answer.
+
 ## Open
 
 `openDesk({repo, session, team})` — refused when the repository is `direct`, has no

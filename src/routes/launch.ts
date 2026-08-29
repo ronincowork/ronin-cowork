@@ -37,7 +37,24 @@ import { announceTeamChanges } from './wipeboards-api.js';
 import { markRoleDelivered } from '../role-watch.js';
 import { checkoutAt, deriveTeams, parkBrief, seedTegami, withAxes, writeGate } from '../tegami.js';
 import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFields } from '../sockets.js';
-import { prepareLaunchDesks } from '../launch-desks.js';
+import { DESK_LIFECYCLES, prepareLaunchDesks } from '../launch-desks.js';
+import { readArrangement } from '../desks/arrangement.js';
+import { listProjectRoots } from '../project-roots.js';
+
+/**
+ * Why a coding launch got no desk, in one line — or '' when it got one, or wanted none.
+ * The file in the repository is the gate; when it is absent or says none, say so.
+ */
+async function deskNote(r: { assignment?: unknown; mode: string; lifecycle?: string; project_root?: string; agent?: unknown; cmd?: string }): Promise<string> {
+  if (r.assignment || r.mode === 'manual' || !r.cmd || !DESK_LIFECYCLES.has(r.lifecycle ?? '') || !r.project_root) return '';
+  const root = (await listProjectRoots()).find((x) => x.name === r.project_root);
+  if (!root) return '';
+  const a = await readArrangement(root.name, root.dir).catch(() => null);
+  if (!a) return `no desk — ${root.name}'s RONIN_REPO could not be read`;
+  if (a.source === 'absent') return `no desk — ${root.name} has no RONIN_REPO (add one: mode=reviewed working=dev stable=master desks=managed)`;
+  if (a.desks !== 'managed') return `no desk — ${root.name} is declared ${a.mode}, desks ${a.desks}`;
+  return '';
+}
 
 /* ---------- ONE door to a new session: POST /api/launch ----------
  * Two variants, chosen by what the body carries — never two endpoints:
@@ -247,6 +264,9 @@ export function registerLaunch(app: express.Express): void {
         // The receipt says which desks this session was born with — repo, branch, path,
         // line — or an empty list, which is the honest receipt for most launches.
         desks: resolved.assignment?.desks.map((d) => ({ repo: d.repo, branch: d.branch, worktree: d.worktree, line: d.line })) ?? [],
+        // And WHY a coding launch got none, when it did — "off by absence" is never silent
+        // (owner, 2026-08-29): the receipt names the file that decides.
+        desk_note: await deskNote(resolved),
       },
     });
     void appendLedger(form, resolved, true);

@@ -22,7 +22,7 @@ Turn on only when all of these hold, in this order. Each row names its owner and
 | 2 | `.git` is in the `.stignore` of every Syncthing share holding a checkout | 5 / owner | `bin/ronin-doctor` — the Syncthing row is `ok` on every machine |
 | 3 | Desk registry, open/status/sync/park, serialized hand-in with compare-and-swap, sibling adoption and desk receipts exist with crash/race tests | 1 | `tests/desks*.test.ts` green; `docs/desks.md` |
 | 4 | Team promotion runs full BYOIN on the exact candidate, writes the receipt, advances by compare-and-swap, restarts `dev`, health-checks, reverts on failure | 2 | `tests/promotion*.test.ts` green; `docs/team-promotion.md`; one receipt with `state=complete` in `bin/ronin-store promotion_ledger` |
-| 5 | A coding launch resolves desks before spawn, starts in the primary desk, and carries the desk block; every other launch gets no desk state | 3 | `tests/launch-desks.test.ts` green; `RONIN_DESKS=on` is the switch (read at launch; off = today's launch exactly) |
+| 5 | A coding launch resolves desks before spawn, starts in the primary desk, and carries the desk block; every other launch gets no desk state | 3 | `tests/launch-desks.test.ts` green; the repository's `RONIN_REPO` (`desks=managed`) is the one gate — no install switch (owner, 2026-08-29); a coding launch that gets none says why on its receipt |
 | 6 | TEGAMI `repos[]`, roster and team page show desk state (private · pending · accepted · parked · blocked) from derived facts | 4 | `tests/desk-state.test.ts` green; `GET /api/sessions/:name/desks` |
 | 7 | The legacy claim guard runs only where an index is shared; a desk is a pass-through | 5 | `tests/control-surface-compat.test.ts` — shared/desk/direct through the real shim and hooks |
 | 8 | `dev → master` CI consumes the promotion receipt before its `--gates` rerun; a PR without a receipt fails | 5 | `.github/workflows/verify.yml`; `scripts/verify-promotion-receipt.mjs`; `.github/pull_request_template.md` carries the fence |
@@ -30,10 +30,10 @@ Turn on only when all of these hold, in this order. Each row names its owner and
 | 10 | No reviewed-session instruction says commit/push `dev`, "full BYOIN first at master", or generic `open-pr --base main` | 3 / 5 | the inventory below is fully classified with no open **session behavior** row |
 | 11 | The first dogfood assignment spans Cowork **and** Services; Koe and Lab run direct alongside | lead | assignment on the roster; `ronin-repo-mode` in each says what it should |
 
-**Flipping it:** the lead sets `RONIN_DESKS=on` for the launch path (track 3) once rows 1–10
-are true, opens the Cowork+Services assignment, and the managing session alone calls the
-candidate ready. Scaling back is the owner's call, in response to measured failure, never a
-partly activated architecture left behind.
+**It is on.** Rows 1–10 hold; desks follow each repository's `RONIN_REPO` and nothing else.
+A new project root writes its own `RONIN_REPO` from ⚙ *New projects use desks?* (default:
+desks); `bin/ronin-doctor` lists every root's answer. Scaling back is per repository —
+`desks=none` in its file — never a partly activated architecture left behind.
 
 ## Repository declarations — measured 2026-08-28
 

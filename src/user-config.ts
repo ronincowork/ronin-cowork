@@ -314,6 +314,22 @@ export const writeDeskSection = (v: { profile?: string }): Promise<void> =>
     doc.desk = d;
   });
 
+/** NEW PROJECTS AND DESKS (owner, 2026-08-29) — the default written into a project's
+ * `RONIN_REPO` when its root is added: `managed` (desks, hand-in, team promotion) or
+ * `none` (work in the checkout). A default, never a gate: the file in the repository is
+ * the one switch, and this only decides what that file says at birth. Unset = managed. */
+export type NewProjectDesks = 'managed' | 'none';
+export const readDesksSection = async (): Promise<{ new_project: NewProjectDesks }> => {
+  const s = await readSection<{ new_project?: unknown }>('desks', {});
+  return { new_project: s.new_project === 'none' ? 'none' : 'managed' };
+};
+export const writeDesksSection = (v: { new_project?: string }): Promise<void> =>
+  updateConfig((doc) => {
+    const d = ((doc.desks ?? {}) as Record<string, unknown>) || {};
+    if (v.new_project !== undefined) d.new_project = v.new_project === 'none' ? 'none' : 'managed';
+    doc.desks = d;
+  });
+
 /**
  * HOW WORK GETS A MODEL — two different questions, and merging them is the trap.
  *

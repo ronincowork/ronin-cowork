@@ -16,8 +16,12 @@
  *
  * The repo is keyed by its project_root NAME; the record is read from the root's `dir`.
  */
-import { readFile } from 'node:fs/promises';
+import { access, readFile, writeFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import path from 'node:path';
+
+const run = promisify(execFile);
 import { listProjectRoots, type ProjectRootInfo } from '../project-roots.js';
 import type { RepoArrangement, RepoMode } from './schema.js';
 
@@ -45,6 +49,37 @@ export function parseArrangement(repo: string, dir: string, text: string | null)
   const publish = (kv.get('publish') || (mode === 'reviewed' ? `${working},${stable}` : stable))
     .split(',').map((s) => s.trim()).filter(Boolean);
   return { repo, dir, mode, working, stable, desks: desksRaw, publish, source: 'RONIN_REPO' };
+}
+
+/**
+ * WRITE THE RECORD FOR A NEW PROJECT (owner, 2026-08-29): the one gate is this file, so
+ * adding a project root writes it — from SETTEI's "new projects use desks?" default —
+ * rather than leaving the project silently undeclared. Writes only when the directory is
+ * a git repository and has no RONIN_REPO yet; never overwrites a declaration. `managed`
+ * declares the house arrangement (reviewed, dev → master); `none` declares direct on the
+ * branch the checkout is on. The file is left for the owner to commit — it is theirs.
+ * Returns what was written, or null when nothing was.
+ */
+export async function declareArrangement(dir: string, desks: 'managed' | 'none'): Promise<string | null> {
+  const file = path.join(dir, RONIN_REPO_FILE);
+  try { await access(path.join(dir, '.git')); } catch { return null; }
+  try { await access(file); return null; } catch { /* absent — write it */ }
+  let branch = 'main';
+  // symbolic-ref, not rev-parse: a repository with no commits yet has an unborn branch
+  // that rev-parse cannot name, and a new project is often exactly that.
+  try { branch = (await run('git', ['-C', dir, 'symbolic-ref', '--short', 'HEAD'])).stdout.trim() || 'main'; } catch { /* detached or bare — keep main */ }
+  const body = desks === 'managed'
+    ? ['mode=reviewed', 'working=dev', 'stable=master', 'desks=managed']
+    : ['mode=direct', `stable=${branch}`, 'desks=none'];
+  const text = [
+    `# ${RONIN_REPO_FILE} — this repository's declared arrangement. Read by tools; not inferred.`,
+    '# Written when the project root was added, from ⚙ "New projects use desks?". Edit here to',
+    '# change this one project; format and meaning: ronin-cowork/RONIN_REPO.',
+    ...body,
+    '',
+  ].join('\n');
+  await writeFile(file, text, 'utf8');
+  return text;
 }
 
 /** Read the record from a directory. */

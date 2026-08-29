@@ -411,6 +411,15 @@ export async function upsertProjectRoot(name: string, fields: Partial<Record<Roo
     if (fields.dir && got.dir !== expand(fields.dir)) return `"${name}" did not take the directory given.`;
     return null;
   });
+
+  // A NEW ROOT DECLARES ITS REPOSITORY (owner, 2026-08-29): RONIN_REPO is the one gate for
+  // desks, so it is written now, from the ⚙ default, instead of leaving the project
+  // silently undeclared. Only on creation, only for a git repo, never over an existing file.
+  if (!found && fields.dir) {
+    const { declareArrangement } = await import('./desks/arrangement.js');
+    const { readDesksSection } = await import('./user-config.js');
+    await declareArrangement(expand(fields.dir), (await readDesksSection()).new_project).catch(() => null);
+  }
 }
 
 /** Drop a project_root from the catalog. The directory on disk is never touched. */

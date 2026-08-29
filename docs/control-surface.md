@@ -306,9 +306,10 @@ guard off), the main tree is `home` (shared index, guard on); `bin/shim/git`, `.
 in the PR body as a ```` ```ronin-promotion-receipt ```` fence (the ledger is on the box;
 committing it onto `dev` would change the SHA it proves); `verify.yml` runs
 `scripts/verify-promotion-receipt.mjs` before its `--gates` rerun, and a PR without a receipt
-fails. Hand-back and cutover checklist: `docs/control-surface-audit.md`
-(row 5's switch is Track 3's `RONIN_DESKS=on`). Only Cowork's `RONIN_REPO` is written; the
-sibling declarations and two §0 Syncthing findings (shiwake, site) are the owner's.
+fails. Hand-back and cutover checklist: `docs/control-surface-audit.md`. Every product
+repository carries its `RONIN_REPO` (cowork, services, shiwake, site reviewed; koe and lab
+direct), and that file is the one gate for desks — there is no install switch (owner,
+2026-08-29).
 
 ### Integration rules for the five tracks
 

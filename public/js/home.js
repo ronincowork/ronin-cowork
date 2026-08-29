@@ -162,6 +162,8 @@ export function showReceipt(name, receipt) {
     `${dialIcon} ${receipt.dial}`,
     receipt.lifecycle ? `⟳ ${receipt.lifecycle}` : '',
     ...(receipt.tags || []).map((g) => `🏷 ${g}`),
+    // The desks it was born with, or why a coding launch got none — never silence.
+    ...(receipt.desks?.length ? receipt.desks.map((d) => `🪑 ${d.repo}:${d.branch}`) : receipt.desk_note ? [`🪑 ${receipt.desk_note}`] : []),
   ].filter(Boolean);
   const head = document.createElement('b');
   head.textContent = name;
