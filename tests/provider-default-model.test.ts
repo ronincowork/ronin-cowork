@@ -53,6 +53,30 @@ const launch = (over: Partial<SpawnForm> = {}): SpawnForm => ({
   ...over,
 });
 
+test('the three ways an agent may ask, against one configuration', async () => {
+  // Owner, 2026-08-29 — the agent-facing door has exactly three entry points, and the
+  // first is saying nothing. An agent must pass only as much as the owner actually said;
+  // inventing the next field down is the agent deciding something left open. Each case is
+  // proven on its own below — this states them together, because the CONTRACT is that
+  // they are three answers to one question and it is the shape that must not drift.
+  await agents({
+    default: { provider: 'openai', model: 'gpt-5.6-sol' },
+    by_provider: { anthropic: 'fable', openai: 'gpt-5.6-terra' },
+  });
+  //  "give me an agent to do XYZ"  -> the install default, vendor and model both
+  const lazy = await resolveForm(launch(), new Set());
+  assert.ok(lazy.cmd.startsWith('codex --model gpt-5.6-sol'), `lazy: got "${lazy.cmd}"`);
+  //  "give me an Anthropic agent"  -> that vendor's preferred model
+  const vendor = await resolveForm(launch({ provider: 'anthropic' }), new Set());
+  assert.ok(vendor.cmd.startsWith('claude --model fable'), `vendor: got "${vendor.cmd}"`);
+  //  "open a fable five session"   -> that model
+  const named = await resolveForm(launch({ model: 'opus' }), new Set());
+  assert.ok(named.cmd.startsWith('claude --model opus'), `named: got "${named.cmd}"`);
+  // Three different commands from three different asks — if any two of these ever agree,
+  // one layer has started answering a question it was not asked.
+  assert.equal(new Set([lazy.cmd, vendor.cmd, named.cmd]).size, 3);
+});
+
 test("the owner's scenario: default is OpenAI, the launch says anthropic, and it gets anthropic's preferred model", async () => {
   await agents({
     default: { provider: 'openai', model: 'gpt-5.6-sol' },

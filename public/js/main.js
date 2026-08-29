@@ -15,9 +15,9 @@ import { buildCoworkSetup } from './cowork-setup.js';
 import { installServicesStatus } from './services-activation.js';
 import { createWorkspace } from './workspace.js';
 import { createCoworkView } from './cowork-view.js';
+import { createCampaignHome } from './campaign-home.js';
+import { createCampaignView } from './campaign-view.js';
 import { WorkspaceKit } from './workspace-kit.js';
-import { createNewTeamView } from './new-team.js';
-import { createAgentConfigurationView } from './agent-config.js';
 import { installCustomize } from './customize.js';
 import { t } from './lexicon.js';
 import { applyPageWords } from './pagewords.js';
@@ -107,36 +107,22 @@ export async function init() {
   // this preview is geometry and readings only — no terminal host, no sockets, no Sessions
   // mode — so the existing coworkspace stays the working surface until those gates land.
   guard('register the Team destination', () => workspace.register('team', createCoworkView({ kind: 'team' })));
-  // NEW TEAM — one Surface, no Tile, no Channel services of its own. Registered beside
-  // Sessions rather than replacing it: Sessions remains the default destination on `dev`
-  // until the explicit cutover, so this is reachable and not yet in anybody's way.
-  guard('register the New Team destination', () => {
-    const view = createNewTeamView(WorkspaceKit);
-    const root = document.getElementById('new-team-view');
-    if (!root) throw new Error('New Team root is missing');
-    root.append(view.el);
-    workspace.register('new-team', { el: root, title: view.title, enter: view.enter });
-  });
   // Customize is a first-class destination on the frozen Kit. Registration failure is
   // contained here rather than taking the compatibility Sessions grid down with it —
   // a preview destination must never cost the owner their terminals.
   guard('register the Customize destination', () => installCustomize(workspace));
   // Cowork collection and Team detail are two contexts on the same cowork-space bedrock.
   guard('register the Cowork destination', () => workspace.register('cowork', createCoworkView({ kind: 'cowork' })));
-  // AGENT CONFIGURATION — two Surfaces, no Tile, no Channel service. It edits ONE seat of
-  // New Team's canonical draft and owns no schema of its own; a seat reaches it through
-  // `open(draft, seat_id)` rather than being fetched here, because New Team owns the
-  // draft's lifetime. Guarded like its neighbours: a preview destination must never cost
-  // the owner their terminals.
-  guard('register the Agent Configuration destination', () => {
-    const view = createAgentConfigurationView(WorkspaceKit);
-    const root = document.getElementById('agent-config-view');
-    if (!root) throw new Error('Agent Configuration root is missing');
-    root.append(view.el);
-    workspace.register('agent-config', {
-      el: root, title: view.title, enter: view.enter, leave: view.leave,
-    });
-  });
+  // THE ROOT ARRIVAL (owner, 2026-08-29): three doors — Campaign, Coworks, Agents —
+  // over one Campaign selection the other two inherit. Registered after Cowork because
+  // its Campaign door opens that destination, and guarded like every other: the landing
+  // page failing must cost the owner a page, never their terminals. `safeView` is this
+  // one, so its own failure is reported rather than looping.
+  guard('register the Campaign Home destination', () => workspace.register('home', createCampaignHome()));
+  // CAMPAIGN MANAGE — a Cowork Space whose surfaces are Campaign-level (owner, 2026-08-29):
+  // the same workbench, selector column, persistence, recall and drag/drop as the Cowork
+  // space, offering a Campaign's own configuration instead of its Coworks and Agents.
+  guard('register the Campaign destination', () => workspace.register('campaign', createCampaignView()));
   workspace.start();
 
   guard('install workspace controls', build);

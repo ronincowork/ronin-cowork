@@ -1,0 +1,261 @@
+/* Campaign Home composition only; tokens and primitives stay foundations'. */
+@layer app {
+  /* MASU — the square sake cup (owner, 2026-08-29). The box keeps a hairline corner so it
+     reads as JOINED rather than cut; the cups sitting in it are true right angles. These
+     are one-off measurements, and a `--name:` line is their one legal home (check-css 6).
+     The tone mixes are named here too: a color-mix belongs on a token line, never inline. */
+  .ch-view {
+    --ch-box: 2px;
+    --ch-cup: 0;
+    --ch-glyph: 30px;
+    --ch-frame-w: 860px;
+    --ch-door-h: 208px;
+    display: grid;
+    place-items: center;
+    min-height: 0;
+    height: 100%;
+    padding: var(--space-11) var(--space-10);
+    overflow: auto;
+  }
+  .ch-frame {
+    width: 100%;
+    max-width: var(--ch-frame-w);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-7);
+  }
+
+  .ch-doors { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-8); }
+
+  .ch-door {
+    --ch-edge-hover: color-mix(in srgb, var(--ch-tone) 45%, var(--line-3));
+    --ch-edge-open: color-mix(in srgb, var(--ch-tone) 60%, transparent);
+    --ch-fill-open: color-mix(in srgb, var(--ch-tone) 8%, var(--panel));
+    --ch-edge-chip: color-mix(in srgb, var(--ch-tone) 55%, transparent);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: var(--space-11) var(--space-9) var(--space-9);
+    min-height: var(--ch-door-h);
+    border: var(--edge) solid var(--line-2);
+    border-radius: var(--ch-box);
+    background: var(--panel);
+    transition:
+      border-color var(--motion-quick) var(--ease),
+      transform var(--motion-quick) var(--ease),
+      box-shadow var(--motion-quick) var(--ease),
+      opacity var(--motion-settle) var(--ease);
+  }
+  /* the one colour moment, and the door's own tone */
+  .ch-door::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: var(--edge-2);
+    border-radius: var(--ch-box) 0 0 var(--ch-box);
+    background: var(--ch-tone);
+  }
+  .ch-door[data-door='campaign'] { --ch-tone: var(--accent); }
+  .ch-door[data-door='coworks'] { --ch-tone: var(--accent-2); }
+  .ch-door[data-door='agents'] { --ch-tone: var(--ok-2); }
+
+  .ch-door:not([data-inert]):hover {
+    border-color: var(--ch-edge-hover);
+    transform: translateY(calc(var(--edge-2) * -1));
+    box-shadow: var(--shadow-menu);
+  }
+  /* a tray is open on another door: this one is out of reach until it closes */
+  .ch-door[data-inert] { opacity: .3; pointer-events: none; }
+  .ch-door[data-open] {
+    border-color: var(--ch-edge-open);
+    background: var(--ch-fill-open);
+  }
+
+  /* the whole card is the way in; the chip below sits on top of it */
+  .ch-go { text-align: left; padding: 0; border: 0; background: none; cursor: pointer; color: inherit; }
+  .ch-go::after { content: ''; position: absolute; inset: 0; border-radius: var(--ch-box); }
+  .ch-glyph { display: block; font-size: var(--ch-glyph); line-height: 1; color: var(--ch-tone); }
+  .ch-go h2 {
+    margin: var(--space-9) 0 0;
+    font-size: var(--text-9);
+    font-weight: 600;
+    line-height: 1.15;
+    color: var(--fg-strong);
+  }
+  /* WHAT THE DOOR IS, on approach only. The line keeps its space at rest, so the row
+     never reflows and nothing is ever drawn over anything — a reveal, not a bubble. */
+  .ch-is {
+    margin: var(--space-3) 0 0;
+    font-size: var(--text-4);
+    line-height: 1.4;
+    color: var(--muted-2);
+    opacity: 0;
+    transform: translateY(calc(var(--space-2) * -1));
+    transition: opacity var(--motion-settle) var(--ease), transform var(--motion-settle) var(--ease);
+  }
+  .ch-door:not([data-inert]):hover .ch-is,
+  .ch-door:not([data-inert]):focus-within .ch-is {
+    opacity: 1;
+    transform: none;
+    transition-delay: var(--motion-quick);
+  }
+
+  /* the loaded default, and the one control that changes it */
+  .ch-chip {
+    position: relative;
+    z-index: 1;
+    margin-top: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-4);
+    max-width: 100%;
+    padding: var(--space-3) var(--space-5);
+    border: var(--edge) solid var(--line);
+    border-radius: var(--ch-cup);
+    background: transparent;
+    cursor: pointer;
+    transition: border-color var(--motion-quick) var(--ease), background var(--motion-quick) var(--ease);
+  }
+  .ch-chip:hover,
+  .ch-door[data-open] .ch-chip {
+    border-color: var(--ch-edge-chip);
+    background: var(--well);
+  }
+  .ch-chip b {
+    font-size: var(--text-4);
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--ch-tone);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ch-chip i { font-style: normal; font-size: var(--text-1); line-height: 1; color: var(--muted); }
+  .ch-chip:hover i { color: var(--fg-strong); }
+
+  /* ── the tray: whichever door is open fills it ── */
+  .ch-tray {
+    --ch-fill-on: color-mix(in srgb, var(--ch-tone) 16%, var(--panel));
+    --ch-fill-manage: color-mix(in srgb, var(--ch-tone) 8%, transparent);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-7) var(--space-8);
+    border: var(--edge) solid var(--line-2);
+    border-radius: var(--ch-box);
+    background: var(--bg-2);
+  }
+  .ch-tray[data-for='campaign'] { --ch-tone: var(--accent); }
+  .ch-tray[data-for='coworks'] { --ch-tone: var(--accent-2); }
+  .ch-tray[data-for='agents'] { --ch-tone: var(--ok-2); }
+
+  .ch-pill {
+    padding: var(--space-3) var(--space-6);
+    border: var(--edge) solid var(--line-2);
+    border-radius: var(--ch-cup);
+    background: var(--panel);
+    font-size: var(--text-4);
+    line-height: 1;
+    color: var(--muted-2);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: border-color var(--motion-quick) var(--ease), color var(--motion-quick) var(--ease), background var(--motion-quick) var(--ease);
+  }
+  .ch-pill:hover { border-color: var(--line-3); color: var(--fg-strong); }
+  .ch-pill[data-on='true'] {
+    border-color: var(--ch-tone);
+    background: var(--ch-fill-on);
+    color: var(--fg-strong);
+    font-weight: 600;
+  }
+
+  .ch-empty { margin: 0; font-size: var(--text-3); color: var(--muted); }
+  .ch-sep { width: var(--edge); align-self: stretch; min-height: var(--space-10); background: var(--line-2); margin: 0 var(--space-2); }
+
+  /* the tray selects; everything that CHANGES a record is behind this one door */
+  .ch-manage {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-6);
+    border: var(--edge) solid var(--line-2);
+    border-radius: var(--ch-cup);
+    background: transparent;
+    font-size: var(--text-4);
+    line-height: 1;
+    color: var(--muted);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: border-color var(--motion-quick) var(--ease), color var(--motion-quick) var(--ease), background var(--motion-quick) var(--ease);
+  }
+  .ch-manage i { font-style: normal; font-size: var(--text-3); line-height: 1; color: var(--ch-tone); }
+  .ch-manage:hover {
+    border-color: var(--ch-tone);
+    color: var(--fg-strong);
+    background: var(--ch-fill-manage);
+  }
+
+  /* ── CAMPAIGN MANAGE — the same bedrock as the Cowork space, Campaign-level surfaces.
+     Geometry only: the workbench, the selector column and the two workspaces. Everything
+     inside a surface is the Kit's own. ── */
+  .cv-view {
+    --cv-blank-h: 120px;
+    --cv-cup: 0;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .cv-cell {
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    border: var(--edge) solid transparent;
+  }
+  .cv-cell > * { flex: 1; min-width: 0; }
+  .cv-cell.cv-selected { border-color: var(--line-2); }
+  .cv-cell[data-drop-ready='true'] { border-color: var(--accent); }
+  .cv-surface, .cv-blank { display: flex; flex-direction: column; min-height: 0; }
+  .cv-blank { align-items: center; justify-content: center; min-height: var(--cv-blank-h); }
+  .cv-blank-word { margin: 0; color: var(--dim); font-size: var(--text-3); }
+
+  .cv-selector { display: flex; flex-direction: column; min-height: 0; }
+  .cv-selector-head {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-4);
+    padding: var(--space-5) var(--space-6);
+    border-bottom: var(--edge) solid var(--line);
+  }
+  .cv-selector-title { font-size: var(--text-4); font-weight: 600; color: var(--fg-strong); }
+  .cv-selector-cards { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-5); }
+
+  .cv-body { display: flex; flex-direction: column; gap: var(--space-6); padding: var(--space-8); }
+  .cv-field { display: flex; flex-direction: column; gap: var(--space-2); }
+  .cv-input {
+    padding: var(--space-4);
+    border: var(--edge) solid var(--line-2);
+    border-radius: var(--cv-cup);
+    background: var(--well);
+    color: var(--fg);
+    font-family: var(--font-ui);
+    font-size: var(--text-4);
+  }
+  .cv-input:focus { border-color: var(--accent); outline: none; }
+  .cv-cards { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-5); }
+  .cv-actions { display: flex; justify-content: flex-end; gap: var(--space-4); }
+  .cv-button {
+    padding: var(--space-3) var(--space-6);
+    border: var(--edge) solid var(--line-2);
+    background: transparent;
+    font-size: var(--text-3);
+    color: var(--muted-2);
+    cursor: pointer;
+    transition: border-color var(--motion-quick) var(--ease), color var(--motion-quick) var(--ease);
+  }
+  .cv-button[data-primary='true'] { border-color: var(--accent); color: var(--accent); }
+  .cv-button:hover { border-color: var(--accent); color: var(--fg-strong); }
+  .cv-empty { margin: 0; padding: var(--space-5); font-size: var(--text-3); color: var(--muted); }
+}

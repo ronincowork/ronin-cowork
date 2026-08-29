@@ -3,7 +3,7 @@
 ## Purpose and boundary
 
 Workspace Kit is the one shared browser foundation for Team-oriented workspace views. It
-keeps League, Team, Customize, New Team, Agent Configuration, Commons, and Configuration
+keeps League, Team, Customize, New Team, Commons, and Configuration
 on the same Surfaces, cards, controls, layouts, navigation, state, terminal hosting, and
 service lifecycle instead of allowing separate UI kits.
 
@@ -22,13 +22,12 @@ in the shared `ViewHost`; they never replace, wrap, or reinterpret the Sessions 
 |---|---|---|
 | Kit facade | `public/js/workspace-kit.js` | The single `WorkspaceKit` namespace and Kit stylesheet loading |
 | Primitives | `public/js/workspace-primitives.js` | Surface, Card, actions, metadata, forms, fields, notices, ExplorerRail, Channel Surface and standard states |
-| Layouts | `public/js/workspace-layouts.js` | LeagueBoard, managed Workbench, SessionGrid, Explorer, Agent Configuration and New Team compositions |
+| Layouts | `public/js/workspace-layouts.js` | LeagueBoard, managed Workbench, SessionGrid, Explorer and New Team compositions |
 | Adapters | `public/js/workspace-adapters.js` | Room workspace adapters and terminal Tile-host export |
 | Terminal host | `public/js/terminal-tile-host.js` | The one Tile transport/render/focus/fit/composer lifecycle seam |
 | Routing/state contract | `public/js/workspace-contract.js` | Destinations, typed navigation and Team workspace-state normalization |
 | ViewHost/state | `public/js/workspace.js` | Registration, navigation, titles, history, per-tab state and lifecycle |
 | Team projection | `public/js/team-controller.js` | Durable roster refresh and live session-derived membership selectors |
-| New Team draft handoff | `public/js/team-draft-controller.js` | One draft shared with Agent Configuration |
 | Foundation CSS | `public/style.css`, `public/workspace-kit.css` | Tokens, primitives, named geometry and responsive machinery |
 | Feature CSS | `public/css/*.css` | Namespaced feature composition only |
 
@@ -178,7 +177,6 @@ registry-derived five-room Commons.
 - Registration idioms may differ where reachability/lifecycle are correct. Normalize only
   for a demonstrated defect.
 - Tiny DOM helpers and resource-free views are not foundation gaps.
-- Agent Configuration action primitives remain pre-PR cleanup, not a separate kit.
 - ExplorerRail programmatic reconciliation is not yet silent: `setSections()` calls
   `select()`, which fires `onSelect`. The approved foundation cleanup is to notify only on
   real user selection and then remove any consumer suppression workaround after audit.

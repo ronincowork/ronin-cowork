@@ -3,7 +3,7 @@
 import { WorkspaceKit } from './workspace-kit.js';
 import { deleteTeamRoster, membersOfTeam, refreshTeams, subscribe, teamByName, teamsFromState, UNASSIGNED, updateSessionTeams } from './team-controller.js';
 import { createNewTeamView } from './new-team.js';
-import { createLeagueCommons } from './league-commons.js';
+import { createTeamRosterSurface } from './team-roster-surface.js';
 import { renderLeagueView } from './league-view-surface.js';
 import { activeProfile } from './desk-profile.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
@@ -218,16 +218,27 @@ export function createCoworkView(options = {}) {
   const leagueBoard = WorkspaceKit.layouts.createLeagueBoard(); leagueBoard.classList.add('league-view-scroll');
   const leagueCards = leagueBoard.querySelector('[data-surface="cards"]');
   leagueView.content.append(leagueBoard);
-  const newTeamView = campaign ? createNewTeamView(WorkspaceKit) : null;
-  const leagueCommons = campaign ? createLeagueCommons({
-    draft: () => newTeamView.draft(),
-    use: (draft) => { ctx?.patchViewState('new-team', { draft }); arrange({ [lastSeat]: { surface: '@new-team' } }); },
+  // CREATE THE TEAM AND LAND IN IT (owner, 2026-08-29). The Team is the record the
+  // moment its roster exists, so the surface that made it hands the workspace over to
+  // it — the same arrangement clicking its Cowork card would make — and goes back to an
+  // empty form. Staffing happens from inside the Team, through New Agent.
+  const newTeamView = campaign ? createNewTeamView(WorkspaceKit, {
+    created: async (name) => {
+      const where = whereIs('@new-team') || lastSeat || 'workspace1';
+      await refreshTeams();
+      arrange({ [where]: { surface: leagueTeamSurface(name).token } });
+    },
   }) : null;
+  // CAMPAIGN CONFIGURATION HAS LEFT THIS PAGE (owner, 2026-08-29). The Campaign commons
+  // carried Campaign identity, Project roots and Templates behind a tab strip here; those
+  // are Campaign-level and are now surfaces of Campaign Manage (js/campaign-view.js).
+  // The Team roster stayed — a Cowork is not Campaign configuration — and is its own
+  // surface rather than the one tab left in a strip.
+  const teamRoster = campaign ? createTeamRosterSurface() : null;
   if (campaign) {
-    SURFACES['@league-commons'] = { name: 'league-commons', el: leagueCommons.el, show: (tab) => leagueCommons.select(tab || leagueCommons.current()) };
     SURFACES['@league-view'] = { name: 'league-view', el: leagueView.el };
     SURFACES['@new-team'] = { name: 'new-team', el: newTeamView.el, show: () => newTeamView.enter(ctx) };
-    SURFACES['@team-roster'] = { name: 'team-roster', el: leagueCommons.el, show: () => leagueCommons.select('roster') };
+    SURFACES['@team-roster'] = { name: 'team-roster', el: teamRoster.el, show: () => teamRoster.render() };
   }
   const tokenOf = (el) => Object.keys(SURFACES).find((k) => SURFACES[k].el === el) || '';
   /** Which surface token this cell holds, or '' for its own seat. */
@@ -475,8 +486,8 @@ export function createCoworkView(options = {}) {
         if (!clickable) card.el.classList.add('league-drag-card');
         card.el.draggable = true; card.el.addEventListener('dragstart', (event) => { event.dataTransfer.setData(DRAG_TYPE, token); event.dataTransfer.effectAllowed = 'move'; }); host.append(card.el);
       };
-      add(views, t('campaign.commons_short', 'Commons'), '@league-commons');
       add(views, t('campaign.cowork_view', 'Cowork View'), '@league-view');
+      add(views, t('league.team_roster', 'Team roster'), '@team-roster');
       add(views, t('cowork.commons', 'Ronin Desk'), DESK, '', null, { cowork: true, tab: 'health' });
       for (const item of teams) { const made = leagueTeamSurface(item.name); add(teamCards, item.title || readableTeam(item.name), made.token, item.objective || ''); }
       const ronin = leagueTeamSurface(UNASSIGNED); add(teamCards, t('league.ronin', 'Ronin: no team'), ronin.token);

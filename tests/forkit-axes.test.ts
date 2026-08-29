@@ -103,14 +103,19 @@ test('forkit reuses the canonical launch contract and gets the whole Build Brief
   assert.match(text, /understanding gate/i);
 });
 
-test("forkit leaves the model to the owner's default unless the owner named one", async () => {
+test('forkit teaches all three ways to ask, and silence is the first of them', async () => {
   const text = await forkit();
-  assert.match(text, /`model`/, 'the model is a parameter');
-  assert.match(text, /omit it\*\* — the owner's session default answers/i, 'and its default is silence');
-  assert.match(text, /an\s+explicit model beats the default/i);
+  // The owner's three entry points, 2026-08-29: say nothing and get the install default;
+  // name a VENDOR and get that vendor's preferred model; name a MODEL and get it. A fork
+  // that only knew `model` had to invent one whenever the owner named a vendor.
+  assert.match(text, /`provider` and `model`/, 'both are parameters');
+  assert.match(text, /omit them\*\* — the owner's\s+session default answers/i, 'and silence is the default');
+  assert.match(text, /provider: anthropic/, 'naming a vendor alone is a documented way to ask');
+  assert.match(text, /that provider's preferred model in ⚙ Configuration, else its first column/i);
   // The role-model bias was removed with the field (owner, 2026-08-29), so the macro must
   // not teach a fork that the task it is handed says anything about the model.
   assert.match(text, /`session_role` states no model and biases\s+none/i);
+  assert.match(text, /Never invent the\s+next field down/i, 'a vendor is not permission to pick a model');
   assert.match(text, /real cell from the launch table/i, 'never a composed command');
 });
 

@@ -13,9 +13,13 @@
 # The house telling the lead "a hand-in is waiting" is the same category as Koshi moving
 # the marker (LAW 2 in libexec/koshi) and `write_tegami --at`: house, not agent.
 #
-# WHAT IT STILL REFUSES: overwriting a human's unsubmitted draft at the prompt, and
-# spamming Enter into an open dialog. Those protect the PERSON at the tile, not the
-# dial, and they stand. On refusal the caller falls back to the team wipeboard.
+# CONTROL-PLANE DELIVERY JOINS THE PROMPT (owner, 2026-08-29). Suggested text and a
+# person's unsubmitted draft are not distinguishable reliably in Claude/Codex's TUI.
+# Treating either as a blocker loses hand-in notices forever, because the fallback sees
+# the same occupied prompt and there is no later retry. At a recognizable prompt we
+# therefore append the notice to what is already there and submit BOTH — both is better
+# than losing either one. An open dialog is still refused: it has no recognizable prompt,
+# so nothing is typed and Enter is never spammed into it.
 set -u
 [ $# -ge 2 ] || { echo "usage: ronin-house-send <session> <message...>" >&2; exit 2; }
 S="$1"; shift; MSG="$*"
@@ -27,17 +31,13 @@ tmux has-session -t "$S" 2>/dev/null || { echo "NO-SESSION: '$S' does not exist"
 # DELIVERED with the text still sitting in the box (owner, 2026-08-29). So: both glyphs,
 # and when neither is found the verdict is UNVERIFIED, never DELIVERED.
 prompt_line() { tmux capture-pane -p -e -t "$S" | tail -6 | grep -a '[❯›]' | tail -1; }
-strip() { sed 's/\x1b\[[0-9;]*m//g'; }
-pending() { printf '%s' "$1" | strip | sed 's/\xc2\xa0/ /g; s/^.*[❯›] *//; s/[[:space:]]*$//; s/^[[:space:]]*$//'; }
-ghost() { printf '%s' "$1" | grep -q $'\x1b\[2m'; }
 
-line=$(prompt_line); content=$(pending "$line")
-if [ -n "$content" ] && ! ghost "$line"; then
-  echo "BLOCKED: real unsubmitted text at '$S' prompt (not ghost): \"$content\" — not overwriting a draft."
-  exit 5
-fi
+line=$(prompt_line)
 [ -n "$line" ] || { echo "UNVERIFIED: no prompt (❯ or ›) visible at '$S' — an unknown CLI, or a dialog; nothing typed."; exit 7; }
 
+# Preserve whatever the TUI currently presents as prompt input and add the house notice
+# after it. The TUI owns wrapping/newline presentation; the sender submits the combined
+# input once, deliberately.
 tmux send-keys -t "$S" -l "$MSG"
 sleep 0.4   # let the TUI finish treating the text as input before Enter arrives — a fast Enter can be swallowed as part of a paste
 tmux send-keys -t "$S" Enter
