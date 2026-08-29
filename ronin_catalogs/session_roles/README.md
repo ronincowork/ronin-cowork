@@ -37,16 +37,9 @@ Absence means inherit. An explicit `off` is a value, not an absence. `mcp: alway
 `posture`, `opening` and `ack` **inapplicable**, and a definition that states one
 alongside it is refused rather than half-honored.
 
-**A session_role never states a model** (owner, 2026-08-29). There is no `model:` field
-here and there is no role-model bias in resolution: a new session launches on the
-owner's own default (⚙ Configuration, `agents.sessions.default`) unless the launch
-itself names a model or a command. A role that could bias the model was a standing
-maintenance burden and could switch an OpenAI-default box onto Anthropic because it
-matched a model NAME. The cascade for the model is two layers and says so:
-
-```text
-the owner's session default  <  the model or cmd this launch names
-```
+**A session_role never states a model** (owner, 2026-08-29). No `model:` field, no bias:
+a session launches on the owner's default (⚙ Configuration) unless the launch names a
+model or a cmd.
 
 **Two launch modes.** In **manual** mode none of this directory's wording is used at all:
 what the owner typed IS the prompt, byte for byte, and only the mechanical constants

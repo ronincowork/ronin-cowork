@@ -39,15 +39,9 @@
  *                naming the file. That asymmetry is what lets `OpenShell` be shelved on
  *                any role without the role's ordinary defaults blowing it up.
  *
- * NO MODEL LIVES HERE (owner, 2026-08-29). A definition used to be able to state
- * `model:` and the resolver cascaded it into a launch bias, ranked ABOVE the owner's own
- * `agents.sessions.default`. Two things were wrong with that: it was a per-role
- * maintenance burden nobody was keeping true, and because the bias matched a model NAME
- * against the launch table, a role biased to an Anthropic name switched an
- * OpenAI-default box onto Anthropic. The field is gone rather than kept and ignored — a
- * field a definition may write is a field the definition is entitled to have honored.
- * The model's own cascade is now two layers and lives entirely in `src/spawn.ts`:
- * the owner's session default, then whatever this launch explicitly named.
+ * NO MODEL LIVES HERE (owner, 2026-08-29). A `model:` bias outranked the owner's own
+ * `agents.sessions.default` and, matching by model NAME, switched an OpenAI box onto
+ * Anthropic. Field and path both removed; the model resolves in `src/spawn.ts` alone.
  *
  * EVERY REFUSAL NAMES A FILE. A definition directory has many small files and a wrong
  * field is worth nothing to the owner if the message says only "the catalog".
