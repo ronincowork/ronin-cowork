@@ -152,7 +152,16 @@ export function buildSettei(root, isShowing) {
     specs.map((sp) => {
       const have = rec.observed.agents[sp.cmd.split(' ')[0]]?.installed;
       const spec = `${sp.provider} · ${sp.model}`;
-      return { label: have ? spec : t('settei.spec_not_installed', '{spec} — not installed', { spec }), value: pm(sp) };
+      const notInstalled = (label) => t('settei.spec_not_installed', '{spec} — not installed', { spec: label });
+      return {
+        label: have ? spec : notInstalled(spec),
+        value: pm(sp),
+        // The same row said in its parts, for a per-provider select whose options are
+        // model names alone — the provider is the row, not the option.
+        provider: sp.provider,
+        model: sp.model,
+        model_label: have ? sp.model : notInstalled(sp.model),
+      };
     });
 
   const render = () => {

@@ -101,6 +101,9 @@ export function registerLaunch(app: express.Express): void {
       project_root: String(req.body?.project_root ?? '').trim() || undefined,
       cmd: String(req.body?.cmd ?? '').trim() || undefined,
       model: String(req.body?.model ?? '').trim() || undefined,
+      // Whose CLI, without naming a model — resolved through that provider's preferred
+      // model in ⚙ Configuration (owner, 2026-08-29).
+      provider: String(req.body?.provider ?? '').trim() || undefined,
       // Only an explicit boolean is an opinion. Absent hands the choice to the resolved
       // profile's `mcp:` default (off for every ordinary launch, owner 2026-08-22)
       // rather than meaning "on", so a caller with nothing to say cannot connect a

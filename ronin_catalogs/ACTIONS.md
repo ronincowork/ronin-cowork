@@ -89,7 +89,13 @@ read it back and report it.
 **THE MODEL — leave it out unless the owner named one.** Omit `cmd` and the launch is born
 on the owner's own session default (⚙ Configuration, `agents.sessions.default`); a
 `session_role` states no model and biases none, so nothing sits between that default and
-an explicit pick. Passing `cmd` is the explicit pick and beats it. It must be
+an explicit pick. Passing `cmd` is the explicit pick and beats it.
+
+**Naming a VENDOR without naming a model is its own field: `provider`.** *"Give me
+Anthropic"* is `provider: anthropic` and nothing else — the model comes from that
+provider's preferred model in ⚙ Configuration, falling back to its first column in the
+launch table. Use it when the owner names a vendor rather than a model; `model` still
+wins when they name one, and naming `provider` beside `cmd` is refused. It must be
 a real `session_launch_spec` cell from the launch table (`ronin_catalogs/PROJECT_ROOTS.md`),
 never a command you composed — a hand-typed command matches no table row, so the launch
 cannot honor an MCP-off choice for it.
