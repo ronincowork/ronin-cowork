@@ -701,16 +701,12 @@ body {
 }
 #bar .brand-home:focus-visible { outline-color: var(--kaki); }
 
-#bar .bar-crumb {
-  color: var(--fg);
+#bar .bar-context {
+  color: var(--muted-2);
   white-space: nowrap;
 }
-#bar .bar-crumb::before {
-  content: '/';
-  margin-right: var(--space-5);
-  color: var(--dim);
-}
-#bar .bar-crumb:hover { color: var(--fg-strong); }
+#bar .bar-nav { color: var(--fg-strong); white-space: nowrap; }
+#bar .bar-nav:hover { color: var(--accent); }
 #bar .bar-cowork-name { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #bar .grow {
   flex: 1;
