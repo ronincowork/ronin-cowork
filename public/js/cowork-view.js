@@ -20,6 +20,7 @@ import { deskReadout, desksOf, refreshDesks, refreshTeamDesks, teamDeskRows } fr
 import { coworkCommons } from './cowork-commons.js';
 import { DRAG_TYPE, acceptDrops as acceptSessionDrops } from './team-drag.js';
 import { S } from './state.js';
+import { createCampaignIdentity } from './campaign.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -45,14 +46,8 @@ export function createCoworkView(options = {}) {
   let loaded = ''; // the team whose roster reading is currently drawn
   let unsubscribe = null;
   let entered = false;
-  let campaignName = '';
   let lastSeat = 'workspace1'; // the workspace last touched — where the next card lands
   const closedGroups = new Set();
-  const onCampaignChange = (event) => {
-    campaignName = String(event.detail?.name || '').trim();
-    campaignViewHead.title.textContent = campaignName || t('campaign.view', 'Campaign view');
-    if (entered && league) renderCards([]);
-  };
 
   /* ---------- the workspaces: two seats, the roster between them, one commons ---------- */
   const makeSeat = (id, label) => {
@@ -137,11 +132,8 @@ export function createCoworkView(options = {}) {
   });
 
   const wipeboard = createTeamWipeboard();
-  // DOCS IS THE COMMONS' ▧ DOCS PANE, NOT A TEAM COPY (owner, 2026-08-25: "the docs don't
-  // show like it does on the commons"). `buildDocs` is mdedit itself — the same list over
-  // the same `/api/home` letters, the same editor — narrowed to the roster's members. The
-  // wrapper carries `home-docs` because that is the class mdedit's list/editor switch is
-  // written against; `tw-docs` only gives it the surface's height.
+  // The Team Docs surface is the shared mdedit list, narrowed to roster members.
+  // `home-docs` carries mdedit's switch; `tw-docs` supplies the surface height.
   const docsPane = el('div', 'home-docs tw-docs');
   const docs = buildDocs(null, docsPane, () => entered && docsPane.isConnected,
     (name) => membersOfTeam(team).some((m) => m.name === name), () => teamByName(team)?.repos || []);
@@ -197,11 +189,8 @@ export function createCoworkView(options = {}) {
   root.append(workbench.host);
 
   /* ---------- in and out ---------- */
-  // THE SURFACE REGISTRY: one entry per workspace_surface that is not a seat — its token
-  // (what a cell remembers, what a card drags), its element, and what "showing it" means.
-  // A new surface (a league view, a new-team form…) is one more entry here and nothing
-  // else: the cells, the drops, the memory, the view report and tejun-teampage's words all
-  // read this table.
+  // Every non-seat workspace_surface declares its token, element and show behavior here;
+  // cells, drops, recall, reporting and tejun-teampage all consume this table.
   const SURFACES = {
     [COMMONS]: { name: 'commons', el: channels.el, show: (tab, doc) => { if (doc) { channels.select('docs'); void docs.open(doc); } else if (tab) channels.select(tab); }, tab: () => channels.current?.() || '' },
     [COWORK]: { name: 'cowork', el: cowork.el, show: (tab) => cowork.select(tab || cowork.current()), tab: () => cowork.current?.() || '' },
@@ -214,6 +203,10 @@ export function createCoworkView(options = {}) {
   };
   const leagueView = createSurface({ label: t('campaign.view', 'Campaign view') });
   const campaignViewHead = createSurfaceHeader({ label: t('campaign.view', 'Campaign view') });
+  const campaignIdentity = createCampaignIdentity((name) => {
+    campaignViewHead.title.textContent = name || t('campaign.view', 'Campaign view');
+    if (entered && league) renderCards([]);
+  });
   leagueView.el.prepend(campaignViewHead.el);
   const leagueBoard = WorkspaceKit.layouts.createLeagueBoard(); leagueBoard.classList.add('league-view-scroll');
   const leagueCards = leagueBoard.querySelector('[data-surface="cards"]');
@@ -464,7 +457,7 @@ export function createCoworkView(options = {}) {
   function renderCards(members) {
     if (league) {
       const teams = teamsFromState().filter((candidate) => !candidate.holding);
-      rosterTitle.textContent = campaignName || t('campaign', 'Campaign');
+      rosterTitle.textContent = campaignIdentity.name() || t('campaign', 'Campaign');
       rosterCount.textContent = teams.length ? String(teams.length) : '';
       cards.replaceChildren(); leagueCards.replaceChildren();
       const group = (key, label) => { const section = el('details', 'tw-selector-group'); section.open = !closedGroups.has(key); section.addEventListener('toggle', () => section.open ? closedGroups.delete(key) : closedGroups.add(key)); section.append(el('summary', null, label), el('div', 'tw-selector-group-cards')); cards.append(section); return section.lastElementChild; };
@@ -476,7 +469,7 @@ export function createCoworkView(options = {}) {
         card.el.draggable = true; card.el.addEventListener('dragstart', (event) => { event.dataTransfer.setData(DRAG_TYPE, token); event.dataTransfer.effectAllowed = 'move'; }); host.append(card.el);
       };
       add(views, t('campaign.commons', 'Campaign commons'), '@league-commons');
-      add(views, campaignName || t('campaign.view', 'Campaign view'), '@league-view');
+      add(views, campaignIdentity.name() || t('campaign.view', 'Campaign view'), '@league-view');
       add(views, t('cowork.commons', 'Ronin Desk'), DESK, '', null, { cowork: true, tab: 'health' });
       for (const item of teams) { const made = leagueTeamSurface(item.name); add(teamCards, item.name, made.token, item.objective || ''); }
       const ronin = leagueTeamSurface(UNASSIGNED); add(teamCards, t('league.ronin', 'Ronin: no team'), ronin.token);
@@ -602,11 +595,8 @@ export function createCoworkView(options = {}) {
     el: root,
     // The ViewHost draws the Kit's layout map in the bar for this while the view is active.
     arrangement: workbench.arrangement,
-    // THE NAME IS THE OWNER'S (2026-08-26): three tabs each titled "team · Ronin" cannot
-    // be told apart, so the bar's field lets each tab say what it is for. Named, the tab
-    // reads `<name> · <team>` and nothing else — the house only rides the default, which
-    // is the team's own name with createWorkspace's tabTitle() adding "Ronin". Per tab,
-    // like everything else here — one tab is one team.
+    // The owner's per-tab name distinguishes several Team tabs; otherwise the Team name
+    // is the default and createWorkspace adds Ronin.
     title: ({ param, viewState }) => {
       if (league) return t('league.open_workspace', 'League workspace');
       const name = viewState?.('team')?.tabName;
@@ -623,17 +613,11 @@ export function createCoworkView(options = {}) {
       unsubscribe = subscribe(() => { if (entered && team) paint(); });
       teamPageHandlers.add(onDraft);
       sessionsHandlers.add(onSessions);
-      window.addEventListener('ronin:campaign-change', onCampaignChange);
     },
     enter: (context) => {
       ctx = context;
       entered = true;
-      if (league) void request('/api/settei').then((r) => {
-        if (!r.ok) return;
-        campaignName = String(r.data?.set?.campaign?.name || '').trim();
-        campaignViewHead.title.textContent = campaignName || t('campaign.view', 'Campaign view');
-        renderCards([]);
-      });
+      if (league) void campaignIdentity.load();
       for (const seat of Object.values(seats)) seat.pool.destroyAll();
       team = league ? '' : context.param || context.state?.team || '';
       const typed = teamWorkspaceState(context.state, context.viewState(viewKey), DECLARATION);
@@ -702,7 +686,7 @@ export function createCoworkView(options = {}) {
     },
     destroy: () => {
       entered = false;
-      window.removeEventListener('ronin:campaign-change', onCampaignChange);
+      campaignIdentity.destroy();
       unsubscribe?.();
       unsubscribe = null;
       teamPageHandlers.delete(onDraft);
