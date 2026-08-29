@@ -30,6 +30,8 @@ import { storeDir } from './stores.js';
 export interface TeamRoster {
   /** The team's name — the tag sessions carry, and the filename. */
   name: string;
+  /** Readable owner-facing name; the stable name remains the filename and membership key. */
+  title: string;
   /** The team's own defining role. Mutable; blank is valid (owner, 2026-08-23). */
   team_role: string;
   objective: string;
@@ -67,6 +69,7 @@ function parse(name: string, raw: string): TeamRoster {
   };
   return {
     name,
+    title: get('title') || name.split(/[_-]+/).filter(Boolean).map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' '),
     team_role: get('team_role'),
     objective: get('objective'),
     project_root: get('project_root'),
@@ -109,6 +112,7 @@ export async function listTeamRosters(): Promise<TeamRoster[]> {
  *  they are derived facts and a roster carrying them would be the drift this store
  *  exists to prevent. */
 export interface RosterEdit {
+  title?: string;
   team_role?: string;
   objective?: string;
   project_root?: string;
@@ -118,13 +122,14 @@ export interface RosterEdit {
   state?: 'active' | 'archived';
 }
 
-const KEYS: (keyof RosterEdit)[] = ['team_role', 'objective', 'project_root', 'repos', 'branch', 'wipeboard', 'state'];
+const KEYS: (keyof RosterEdit)[] = ['title', 'team_role', 'objective', 'project_root', 'repos', 'branch', 'wipeboard', 'state'];
 
 function render(name: string, r: TeamRoster): string {
   const line = (k: string, v: string) => `- **${k}:** ${v || BLANK}`;
   return [
     `# ${name}`,
     '',
+    line('title', r.title),
     line('team_role', r.team_role),
     line('objective', r.objective),
     line('project_root', r.project_root),
@@ -145,6 +150,7 @@ export async function createTeamRoster(name: string, edit: RosterEdit): Promise<
   if (await readTeamRoster(name)) throw new Error(`Team "${name}" already has a roster — edit it instead.`);
   const roster: TeamRoster = {
     name,
+    title: edit.title?.trim() || name.split(/[_-]+/).filter(Boolean).map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' '),
     team_role: edit.team_role ?? '',
     objective: edit.objective ?? '',
     project_root: edit.project_root ?? '',

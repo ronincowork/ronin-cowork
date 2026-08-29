@@ -41,7 +41,7 @@ export function createTeamRosterSurface() {
       const heading = node('header', 'team-roster-heading');
       const remove = node('button', 'team-roster-delete', t('league.delete_team', 'Delete'));
       remove.type = 'button'; remove.addEventListener('click', () => void deleteTeam(team.name, members.length));
-      heading.append(node('b', null, team.name), remove);
+      heading.append(node('b', null, team.title || team.name), remove);
       target.append(heading);
       for (const session of members) {
         const row = node('div', 'team-roster-session', session.name); row.draggable = true;

@@ -16,11 +16,12 @@ import { humanAge } from './shingo.js';
 import { sessionsHandlers, teamPageHandlers } from './events.js';
 import { createArranger, parseDraft, reportView as sendView } from './team-arrange.js';
 import { t } from './lexicon.js';
-import { deskReadout, desksOf, refreshDesks, refreshTeamDesks, teamDeskRows } from './desks.js';
+import { deskReadout, desksOf, refreshDesks } from './desks.js';
 import { coworkCommons } from './cowork-commons.js';
 import { DRAG_TYPE, acceptDrops as acceptSessionDrops } from './team-drag.js';
 import { S } from './state.js';
 import { createCampaignIdentity } from './campaign.js';
+import { renderTeamConfiguration } from './team-configuration.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -49,6 +50,11 @@ export function createCoworkView(options = {}) {
   let entered = false;
   let lastSeat = 'workspace1'; // the workspace last touched — where the next card lands
   const closedGroups = new Set();
+  const readableTeam = (name) => teamByName(name)?.title || name.split(/[_-]+/).filter(Boolean).map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' ');
+  const setBarLabel = () => {
+    const label = document.getElementById('coworklabel');
+    if (label) label.textContent = campaign ? 'Cowork Spaces' : `Cowork Space: ${readableTeam(team)}`;
+  };
 
   /* ---------- the workspaces: two seats, the roster between them, one commons ---------- */
   const makeSeat = (id, label) => {
@@ -405,7 +411,7 @@ export function createCoworkView(options = {}) {
   const leagueTeamSurfaces = new Map(), openTeam = (name) => { const url = new URL(location.href); url.hash = `#/team/${encodeURIComponent(name)}`; window.open(url.href, '_blank', 'noopener'); };
   const leagueTeamSurface = (name) => {
     if (leagueTeamSurfaces.has(name)) return leagueTeamSurfaces.get(name);
-    const label = name === UNASSIGNED ? t('league.ronin', 'Ronin: no team') : name, surface = createSurface({ label, className: 'league-team-edit' }), team = teamByName(name);
+    const label = name === UNASSIGNED ? t('league.ronin', 'Ronin: no team') : readableTeam(name), surface = createSurface({ label, className: 'league-team-edit' }), team = teamByName(name);
     const launch = el('button', null, t('league.launch_team', 'Launch')); launch.type = 'button'; launch.addEventListener('click', () => openTeam(name));
     const remove = el('button', null, t('league.delete_team', 'Delete')); remove.type = 'button'; remove.addEventListener('click', async () => { const count = membersOfTeam(name).length; if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team: name, count }))) return; const result = await deleteTeamRoster(name); if (!result.ok) { surface.setState('failed', result.message); return; } const seat = whereIs(token); leagueTeamSurfaces.delete(name); if (seat) emptySeat(seat); });
     surface.el.prepend(createSurfaceHeader({ label, actions: name === UNASSIGNED ? [launch] : [launch, remove] }).el);
@@ -419,7 +425,7 @@ export function createCoworkView(options = {}) {
   };
   let homeTimer = 0;
   const readRows = async () => {
-    const [r] = await Promise.all([request('/api/home', { cache: 'no-store' }), refreshDesks().catch(() => false), team === UNASSIGNED ? Promise.resolve() : refreshTeamDesks(team).catch(() => {})]);
+    const [r] = await Promise.all([request('/api/home', { cache: 'no-store' }), refreshDesks().catch(() => false)]);
     if (!r.ok || !Array.isArray(r.data) || !entered) return;
     rows = new Map(r.data.map((row) => [row.name, row]));
     onSessions();
@@ -472,7 +478,7 @@ export function createCoworkView(options = {}) {
       add(views, t('campaign.commons_short', 'Commons'), '@league-commons');
       add(views, t('campaign.cowork_view', 'Cowork View'), '@league-view');
       add(views, t('cowork.commons', 'Ronin Desk'), DESK, '', null, { cowork: true, tab: 'health' });
-      for (const item of teams) { const made = leagueTeamSurface(item.name); add(teamCards, item.name, made.token, item.objective || ''); }
+      for (const item of teams) { const made = leagueTeamSurface(item.name); add(teamCards, item.title || readableTeam(item.name), made.token, item.objective || ''); }
       const ronin = leagueTeamSurface(UNASSIGNED); add(teamCards, t('league.ronin', 'Ronin: no team'), ronin.token);
       const leagueGroups = [...teams, { name: UNASSIGNED, objective: '', nullTeam: true }];
       renderLeagueView(leagueCards, leagueGroups, membersOfTeam, (name) => rows.get(name), (name) => leagueTeamSurface(name).token, DRAG_TYPE, ctx?.viewState(viewKey)?.teamOrder, (teamOrder) => ctx?.patchViewState(viewKey, { teamOrder }), (agent, source, target) => updateSessionTeams(agent, (teams) => target === UNASSIGNED ? teams.filter((name) => name !== source) : [...new Set([...teams.filter((name) => name !== source), target])].sort()), openTeam);
@@ -523,33 +529,12 @@ export function createCoworkView(options = {}) {
     cards.append(add.el);
   }
 
-  /* ---------- Team Configuration: READ ONLY ---------- */
-  // A READING OF THE TEAM, whether or not it has a durable record. Most teams on a box are
-  // tag-only, and a tag-only team still has facts worth a page: who is on it, who leads
-  // it, what each member is doing, and which board it writes on (the server opens the
-  // team's own name as its wipeboard). The durable record, when there is one, reads first.
-  // Nothing here writes — membership is the sessions' tags, the 人 is set from a tile.
   function renderConfig(roster, live) {
-    config.replaceChildren();
-    if (!team) {
-      config.append(el('p', 'tw-config-head', t('team.none_selected', 'No Team selected')));
-      return;
-    }
-    config.append(el('p', 'tw-config-head', team));
-    const record = team === UNASSIGNED ? [[t('team.record', 'Record'), t('league.ronin', 'Ronin: no team')]] : roster
-      ? [[t('team.team_role', 'Team role'), roster.team_role], [t('team.objective', 'Objective'), roster.objective], [t('team.project_root', 'Project root'), roster.project_root],
-        [t('team.repos', 'Repositories'), (roster.repos || []).join(', ')], [t('team.branch', 'Branch'), roster.branch],
-        ...teamDeskRows(team), // team lines per repo, promotion state, parked desks — desks.js
-        [t('team.wipeboard', 'Wipeboard'), roster.wipeboard || team], [t('team.state', 'State'), roster.state]]
-      : [[t('team.record', 'Record'), t('team.record_tag_only', 'tag-only — no durable roster; the team is its sessions’ tags')], [t('team.wipeboard', 'Wipeboard'), team]];
-    config.append(createMetadata({ className: 'tw-config-metadata', rows: record }).el);
-    config.append(el('p', 'tw-config-head', live.length ? t('team.live_roster_n', 'Live roster · {n}', { n: live.length }) : t('team.live_roster_none', 'Live roster · none')));
-    if (!live.length) return;
-    const lead = live.filter((m) => m.team_lead).map((m) => m.name), table = el('div', 'tw-config-roster');
-    const line = (name, reading) => table.append(el('span', 'tw-config-name', name), el('span', 'tw-config-reading', reading));
-    line('人', lead.length ? lead.join(', ') : t('team.lead_none', 'not designated'));
-    for (const m of live) line(m.team_lead ? `人 ${m.name}` : m.name, readingsOf(m).join(' · ') || '—');
-    config.append(table);
+    renderTeamConfiguration(config, roster && { ...roster, durable: true }, { onSaved: async (saved, renamed) => {
+      await refreshTeams();
+      if (renamed) S.workspace?.navigate('team', saved.name);
+      else { setBarLabel(); renderConfig(saved, live); paint(); }
+    } });
   }
   /* ---------- reading ---------- */
   const paint = () => {
@@ -580,7 +565,8 @@ export function createCoworkView(options = {}) {
     const result = await refreshTeams();
     if (!entered || team !== name) return; // the destination moved while this was in flight
     loaded = name;
-    rosterTitle.textContent = t('team.roster_of', 'Roster: {team}', { team: name });
+    setBarLabel();
+    rosterTitle.textContent = t('team.roster_of', 'Roster: {team}', { team: readableTeam(name) });
     if (!result.live.ok) {
       setSurfaceState(kanban.el, 'failed', t('team.read_failed', 'Could not read this Team — {message}', { message: result.live.message }));
       renderCards([]);
@@ -621,6 +607,7 @@ export function createCoworkView(options = {}) {
       if (campaign) void campaignIdentity.load();
       for (const seat of Object.values(seats)) seat.pool.destroyAll();
       team = campaign ? '' : context.param || context.state?.team || '';
+      setBarLabel();
       const typed = teamWorkspaceState(context.state, context.viewState(viewKey), DECLARATION);
       // THE DESK PROFILE'S ORDER (R38) when this tab has no arrangement of its own — the
       // owner's standing default, never an override of what a tab already arranged.
@@ -684,6 +671,8 @@ export function createCoworkView(options = {}) {
       S.onSessionRenamed = null;
       S.connectSession = null;
       if (shapeBtn) { shapeBtn.hidden = true; shapeBtn.removeEventListener('click', onShape); }
+      const label = document.getElementById('coworklabel');
+      if (label) label.textContent = 'Cowork Spaces';
     },
     destroy: () => {
       entered = false;

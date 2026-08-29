@@ -32,9 +32,8 @@
   </head>
   <body>
     <header id="bar">
-      <button id="brandbtn" class="brand" data-t-title="bar.brand_title" title="⛩ ronin — the session roster">⛩ ronin</button>
-      <button id="campaignbtn" class="brand" type="button" data-t="campaign">Campaign</button>
-      <select id="coworkbtn" class="bar-cowork" aria-label="Cowork"><option value="">Cowork</option></select>
+      <button id="brandbtn" class="brand brand-home" title="Back to Coworks">⛩ ronin</button>
+      <span id="coworklabel" class="bar-cowork-name">Cowork Spaces</span>
       <button id="servicesstate" class="services-state" type="button" hidden aria-expanded="false"></button>
       <!-- RAM_RPM — the box's working reading. A tachometer: always there, mostly
            ignored, so you learn what normal looks like without being told. It sits with
@@ -86,7 +85,6 @@
       <button data-key="right" data-t-title="keys.right" title="Right">→</button>
     </div>
     <div id="viewhost">
-      <!-- Full-width fallback for the cowork commons outside a Team destination. -->
       <section id="cowork-view" class="cc-view" hidden></section>
       <section id="new-team-view" hidden></section>
       <section id="agent-config-view" hidden></section>

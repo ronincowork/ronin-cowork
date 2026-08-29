@@ -45,6 +45,7 @@ function editOf(body: unknown): RosterEdit {
     }
   }
   const edit: RosterEdit = {};
+  if (b.title !== undefined) edit.title = String(b.title).trim().slice(0, 100);
   if (b.team_role !== undefined) edit.team_role = String(b.team_role).trim().slice(0, 64);
   if (b.objective !== undefined) edit.objective = String(b.objective).trim().slice(0, 2000);
   if (b.project_root !== undefined) edit.project_root = String(b.project_root).trim().slice(0, 128);
@@ -122,7 +123,16 @@ export function registerTeams(app: express.Express): void {
   app.post('/api/team-rosters/:name/rename', async (req, res) => {
     const to = String(req.body?.to ?? '').trim();
     try {
-      res.json({ ok: true, roster: await renameTeamRoster(req.params.name, to) });
+      const roster = await renameTeamRoster(req.params.name, to);
+      for (const session of await listSessions()) {
+        if (!session.tags.includes(req.params.name)) continue;
+        const teams = await setTags(session.name, [...new Set(session.tags.map((team) => team === req.params.name ? to : team))]);
+        const leads = await getLeads(session.name);
+        if (leads.includes(req.params.name)) await setLeads(session.name, [...new Set(leads.map((team) => team === req.params.name ? to : team))]);
+        await writeTeams(session.name, teams).catch(() => {});
+        await announceTeamChanges(session.name, session.tags, teams).catch(() => {});
+      }
+      res.json({ ok: true, roster });
     } catch (e) {
       res.status(400).json({ error: errMsg(e) });
     }

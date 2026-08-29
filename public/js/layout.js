@@ -151,22 +151,7 @@ export function build() {
   // Session macros (⚡ on each tile head) are the tile's own — built in
   // tilemacros.js by Tile itself; nothing to wire here.
 
-  const campaignButton = document.getElementById('campaignbtn');
-  key('campaignbtn', () => S.workspace?.navigate('cowork'));
-  const coworkers = document.getElementById('coworkbtn');
-  const loadCampaignNav = async () => {
-    const campaign = await request('/api/settei', { cache: 'no-store' });
-    if (campaign.ok && campaignButton) campaignButton.textContent = campaign.data?.set?.campaign?.name || t('campaign', 'Campaign');
-    const r = await request('/api/team-rosters', { cache: 'no-store' });
-    if (!r.ok || !coworkers) return;
-    const selected = coworkers.value;
-    coworkers.replaceChildren(new Option(t('campaign.cowork', 'Cowork'), ''));
-    for (const row of r.data || []) if (row.state !== 'archived') coworkers.add(new Option(row.name, row.name));
-    coworkers.value = selected;
-  };
-  coworkers?.addEventListener('focus', () => void loadCampaignNav());
-  coworkers?.addEventListener('change', () => { if (coworkers.value) S.workspace?.navigate('team', coworkers.value); coworkers.value = ''; });
-  void loadCampaignNav();
+  key('brandbtn', () => S.workspace?.navigate('cowork'));
 
   // ⛩ Commons, ミ Mika Assist and く Keypad LEFT THE BAR on 2026-08-27 (owner). The
   // Commons is still the tile head's ⛩, the brand mark and ⌃⇧C; Mika is the `mika` tool

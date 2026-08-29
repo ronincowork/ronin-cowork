@@ -227,6 +227,7 @@ export function registerLaunchPreflight(app: express.Express): void {
         // that differs, and it is reported as unresolved rather than faked.
         const proposedRoster: TeamRoster | undefined = nameValid && !existing ? {
           name,
+          title: String(teamBody.title ?? '').trim() || name,
           team_role: String(teamBody.team_role ?? '').trim(),
           objective: String(teamBody.objective ?? '').trim(),
           project_root: String(teamBody.project_root ?? '').trim(),

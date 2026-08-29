@@ -34,6 +34,7 @@ test('create → read → list: a zero-member team is a real, openable record', 
     branch: 'dev',
   });
   assert.equal(r.team_role, 'development');
+  assert.equal(r.title, 'Alpha');
   assert.equal(r.wipeboard, 'alpha', 'the board defaults to the team’s own token');
   assert.equal(r.state, 'active');
 
@@ -43,8 +44,9 @@ test('create → read → list: a zero-member team is a real, openable record', 
 });
 
 test('team_role is MUTABLE, and an edit touches only what it states', async () => {
-  const r = await writeTeamRoster('alpha', { team_role: 'platform' });
+  const r = await writeTeamRoster('alpha', { team_role: 'platform', title: 'Alpha Platform' });
   assert.equal(r.team_role, 'platform', 'the owner changed what the team IS — legal by ruling');
+  assert.equal(r.title, 'Alpha Platform');
   assert.equal(r.objective, 'ship the teams cut', 'unstated fields survive');
 });
 

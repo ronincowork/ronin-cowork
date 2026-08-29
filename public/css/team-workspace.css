@@ -70,13 +70,14 @@
   .team-roster-session:last-child, .team-roster-empty:last-child { border-bottom: 0; }
   .team-roster-session { cursor: grab; }
   .team-roster-team[data-drop-ready='true'] { border-color: var(--kaki); background: var(--kaki-lift); }
-  /* -- Team Configuration: a reading of the team — its record, then its live roster -- */
-  .tw-config { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-6) var(--space-7); overflow-y: auto; }
-  .tw-config-head { margin-top: var(--space-3); color: var(--fg-strong); }
-  /* the live roster: a member's name, then the same readings its card carries */
-  .tw-config-roster { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3) var(--space-5); }
-  .tw-config-name { color: var(--fg); }
-  .tw-config-reading { min-width: 0; color: var(--muted); font-size: var(--text-3); overflow-wrap: anywhere; }
+  .tw-config { padding: var(--space-6) var(--space-7); overflow-y: auto; }
+  .tw-config-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); }
+  .tw-config-field { display: flex; flex-direction: column; gap: var(--space-2); color: var(--muted); font-size: var(--text-3); }
+  .tw-config-field:nth-child(3) { grid-column: 1 / -1; }
+  .tw-config-field input, .tw-config-field textarea { width: 100%; box-sizing: border-box; border: var(--edge) solid var(--line-2); border-radius: var(--radius-sm); background: var(--bg-2); color: var(--fg); padding: var(--space-3); font: inherit; }
+  .tw-config-field textarea { min-height: calc(var(--space-12) * 3); resize: vertical; }
+  .tw-config-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; align-items: center; gap: var(--space-4); }
+  .tw-config-status, .tw-config-empty { color: var(--muted); }
 
   /* -- the docs slice: mdedit's own pane (.home-docs, style.css), given the surface's height -- */
   .tw-docs { display: flex; height: 100%; }

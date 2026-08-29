@@ -24,7 +24,7 @@ export function renderLeagueView(host, teams, membersOf, rowOf, tokenOf, dragTyp
   for (const team of teams) {
     const members = membersOf(team.name), group = node('section', 'league-roster-team');
     group.dataset.team = team.name; group.dataset.token = tokenOf(team.name);
-    const head = node('header', 'league-roster-head'), teamName = node('b', null, team.nullTeam ? t('league.ronin', 'Ronin: no team') : team.name), launchButton = node('button', null, t('league.launch_team', 'Launch'));
+    const head = node('header', 'league-roster-head'), teamName = node('b', null, team.nullTeam ? t('league.ronin', 'Ronin: no team') : team.title || team.name), launchButton = node('button', null, t('league.launch_team', 'Launch'));
     launchButton.type = 'button'; launchButton.addEventListener('click', () => launch(team.name)); head.append(teamName, launchButton);
     if (team.objective) head.append(node('small', null, team.objective));
     group.append(head); teamName.draggable = true;
