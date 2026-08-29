@@ -50,7 +50,7 @@ Three kinds of thing, and only three, sit inside the bar:
 | **cowork_commons** | this install and this owner | **Ronin Desk strip** — the same tab strip | Desk (Ronin usage stats) · Account (the desk's rail: Configuration · Appearance · Release & update · Hotwords · Koshi · gbrain · Log out) · Desk profile · Project roots · Roster · Archived (the tile commons' two) · Help desk (Mika's door over a reserved chat) · Keypad (the pad's card, inline). `js/cowork-commons.js`; landed 2026-08-27, the `admin_desk` overlay retired with it |
 | **new_session** | one launch | **surface head** — T, then the name | the ＋ New session launcher, placed by ＋ Add team member (roster) or か New (bar), or `workspace1=new`; the newborn lands in that workspace |
 | *(blank)* | — | — | an EMPTY workspace says *Workspace* and holds nothing — never a commons by default (owner, 2026-08-27) |
-| *league* | every team | *a strip* | **[planned]** — the League destination re-hung as a surface; not designed here |
+| `campaign_commons` | this campaign | Campaign Commons strip | Campaign · Project roots · Team roster · Templates |
 
 Rules that make them peers:
 

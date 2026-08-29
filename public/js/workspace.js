@@ -11,7 +11,7 @@ export const defaultWorkspaceState = () => ({
   version: WORKSPACE_STATE_VERSION,
   // Sessions is the safe compatibility destination on dev. League becomes the default
   // only at the explicit cutover gate; the shell must not force an unfinished workflow.
-  view: 'league-workspace',
+  view: 'campaign',
   team: '',
   teamMode: 'team',
   focusedSession: '',
@@ -19,7 +19,7 @@ export const defaultWorkspaceState = () => ({
   widths: { left: null, right: null },
   // Each destination owns one namespace inside this tab. Empty objects and null drafts
   // are valid; the shell stores state but never interprets a feature's workflow.
-  views: { 'league-workspace': {}, 'new-team': { draft: null } },
+  views: { campaign: {}, 'new-team': { draft: null } },
   returnTo: null,
 });
 
@@ -36,7 +36,7 @@ export function migrateWorkspaceState(candidate) {
       : {};
   return {
     ...base,
-    view: text(parsed.view) || base.view,
+    view: text(parsed.view) === 'league-workspace' ? 'campaign' : text(parsed.view) || base.view,
     team: text(parsed.team),
     teamMode: parsed.teamMode === 'sessions' ? 'sessions' : 'team',
     focusedSession: text(parsed.focusedSession),
@@ -72,7 +72,7 @@ export function routeFromHash(hash = location.hash) {
   if (!raw) return null;
   try {
     const [view, ...rest] = raw.split('/').map(decodeURIComponent);
-    return view ? { view, param: rest.join('/') } : null;
+    return view ? { view: view === 'league-workspace' ? 'campaign' : view, param: rest.join('/') } : null;
   } catch (_) {
     return null;
   }
@@ -122,11 +122,19 @@ export const tabTitle = (what) => {
   return what ? `${what} · ${HOUSE}` : HOUSE;
 };
 
+const setTabGlyph = (glyph = '') => {
+  const icon = document.getElementById('tabicon');
+  if (!icon) return;
+  if (!glyph) { icon.href = '/brand/nin-mark.svg'; return; }
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><text x="32" y="49" text-anchor="middle" font-size="48" font-family="sans-serif">${glyph}</text></svg>`;
+  icon.href = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+};
+
 export function createWorkspace(host, options = {}) {
   const views = new Map();
   const state = readState();
   const onError = options.onError || (() => {});
-  const safeView = options.safeView || 'league-workspace';
+  const safeView = options.safeView || 'campaign';
   let active = null;
   let started = false;
   let destroyed = false;
@@ -220,6 +228,7 @@ export function createWorkspace(host, options = {}) {
     if (id === 'team') state.team = param;
     writeState(state);
     document.title = tabTitle(invoke(id, 'title', () => next.title?.(context)));
+    setTabGlyph(next.glyph);
     const target = hashFor(id, param);
     if (!nav.fromHistory && location.hash !== target) history[nav.replace ? 'replaceState' : 'pushState'](null, '', target);
     return requested === id;

@@ -9,6 +9,7 @@ import { buildNotePanel } from './panels.js';
 import { IS_TOUCH, S, WHEEL_DOWN, tiles } from './state.js';
 import { isCoarse, makeDrop } from './tiledrop.js';
 import { t } from './lexicon.js';
+import { request } from './request.js';
 
 export function build() {
   // Each wiring block is guarded separately: losing one control must not cost the
@@ -157,15 +158,22 @@ export function build() {
   // Session macros (⚡ on each tile head) are the tile's own — built in
   // tilemacros.js by Tile itself; nothing to wire here.
 
-  // ＋ — a SECOND RONIN, in a new browser tab, and it opens BLANK: two empty tiles
-  // (owner, 2026-08-20 — "i want 2 tiles empty"), not a copy of this tab. Without the
-  // directive the new tab would inherit a copy of this tab's sessionStorage (the spec
-  // copies it to opened tabs) and read as a clone; `?tiles=,` is state.js's one-shot
-  // directive — two slots, no sessions — consumed at boot and stripped from the address.
-  //
-  // `location.pathname`, not `location.href`: href could carry workspace directives into a tab that is
-  // not asking for the first-run flow.
-  key('newtabbtn', () => window.open(location.pathname, '_blank'));
+  const campaignButton = document.getElementById('campaignbtn');
+  key('campaignbtn', () => S.workspace?.navigate('campaign'));
+  const coworkers = document.getElementById('coworkbtn');
+  const loadCampaignNav = async () => {
+    const campaign = await request('/api/settei', { cache: 'no-store' });
+    if (campaign.ok && campaignButton) campaignButton.textContent = campaign.data?.set?.campaign?.name || t('campaign', 'Campaign');
+    const r = await request('/api/team-rosters', { cache: 'no-store' });
+    if (!r.ok || !coworkers) return;
+    const selected = coworkers.value;
+    coworkers.replaceChildren(new Option(t('campaign.cowork', 'Cowork'), ''));
+    for (const row of r.data || []) if (row.state !== 'archived') coworkers.add(new Option(row.name, row.name));
+    coworkers.value = selected;
+  };
+  coworkers?.addEventListener('focus', () => void loadCampaignNav());
+  coworkers?.addEventListener('change', () => { if (coworkers.value) S.workspace?.navigate('team', coworkers.value); coworkers.value = ''; });
+  void loadCampaignNav();
 
   // ⛩ Commons, ミ Mika Assist and く Keypad LEFT THE BAR on 2026-08-27 (owner). The
   // Commons is still the tile head's ⛩, the brand mark and ⌃⇧C; Mika is the `mika` tool

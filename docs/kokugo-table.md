@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1265 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1269 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -70,6 +70,10 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
 | `campaign.commons` | Campaign commons |  |  |  |  |
+| `campaign.commons_short` | Commons |  |  |  |  |
+| `campaign.cowork` | Cowork |  |  |  |  |
+| `campaign.cowork_view` | Cowork View |  |  |  |  |
+| `campaign.coworks` | Coworks |  |  |  |  |
 | `campaign.description` | Description |  |  |  |  |
 | `campaign.description_placeholder` | What this campaign is for |  |  |  |  |
 | `campaign.name` | Campaign name |  |  |  |  |

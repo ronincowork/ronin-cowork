@@ -134,8 +134,8 @@ export async function init() {
   // contained here rather than taking the compatibility Sessions grid down with it —
   // a preview destination must never cost the owner their terminals.
   guard('register the Customize destination', () => installCustomize(workspace));
-  // League is another selector/context on the same cowork view used by Team.
-  guard('register the League workspace destination', () => workspace.register('league-workspace', createCoworkView({ kind: 'league' })));
+  // Campaign and Team are two contexts on the same cowork-space bedrock.
+  guard('register the Campaign destination', () => workspace.register('campaign', createCoworkView({ kind: 'campaign' })));
   // AGENT CONFIGURATION — two Surfaces, no Tile, no Channel service. It edits ONE seat of
   // New Team's canonical draft and owns no schema of its own; a seat reaches it through
   // `open(draft, seat_id)` rather than being fetched here, because New Team owns the

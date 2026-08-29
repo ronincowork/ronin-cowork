@@ -34,13 +34,14 @@ const COWORK = '@cowork';
 const NEW = '@new';
 const DESK = '@desk';
 export function createCoworkView(options = {}) {
-  const league = options.kind === 'league';
-  const viewKey = league ? 'league-workspace' : 'team';
+  const campaign = options.kind === 'campaign';
+  const viewKey = campaign ? 'campaign' : 'team';
   const { createSurface, createSurfaceHeader, createCard, createChannelSurface, createMetadata, setSurfaceState } = WorkspaceKit.primitives;
   const { createWorkbenchLayout } = WorkspaceKit.layouts;
   const { createTerminalTileHost } = WorkspaceKit.adapters;
   const { teamWorkspaceState } = WorkspaceKit.contract;
   const root = el('main', 'tw-view');
+  root.dataset.coworkKind = campaign ? 'campaign' : 'team';
   let ctx = null;
   let team = '';
   let loaded = ''; // the team whose roster reading is currently drawn
@@ -164,7 +165,7 @@ export function createCoworkView(options = {}) {
   const cowork = coworkCommons();
   // ＋ NEW SESSION IS A SURFACE (owner, 2026-08-27): the commons' launcher, in a workspace.
   // Roster add and bar New both put the new session in the selected workspace (`connect`).
-  const newLabel = league ? t('league.new_agent', 'New Agent') : t('team.new_session', 'New session');
+  const newLabel = campaign ? t('league.new_agent', 'New Agent') : t('team.new_session', 'New session');
   const newSurface = createSurface({ label: newLabel, className: 'tw-new' });
   newSurface.el.prepend(createSurfaceHeader({ label: newLabel }).el);
   const newBody = el('div', 'tw-new-body');
@@ -177,7 +178,7 @@ export function createCoworkView(options = {}) {
   const DECLARATION = {
     slots: [
       { name: 'workspace1', label: t('team.workspace_1', 'Workspace 1'), width: 40 },
-      { name: 'roster', label: league ? t('league.title', 'League') : t('team.roster_title', 'Team Roster'), width: 20, min: 6, compact: 176 },
+      { name: 'roster', label: campaign ? t('campaign', 'Campaign') : t('team.roster_title', 'Team Roster'), width: 20, min: 6, compact: 176 },
       { name: 'workspace2', label: t('team.workspace_2', 'Workspace 2'), width: 40 },
     ],
   };
@@ -205,18 +206,18 @@ export function createCoworkView(options = {}) {
   const campaignViewHead = createSurfaceHeader({ label: t('campaign.view', 'Campaign view') });
   const campaignIdentity = createCampaignIdentity((name) => {
     campaignViewHead.title.textContent = name || t('campaign.view', 'Campaign view');
-    if (entered && league) renderCards([]);
+    if (entered && campaign) renderCards([]);
   });
   leagueView.el.prepend(campaignViewHead.el);
   const leagueBoard = WorkspaceKit.layouts.createLeagueBoard(); leagueBoard.classList.add('league-view-scroll');
   const leagueCards = leagueBoard.querySelector('[data-surface="cards"]');
   leagueView.content.append(leagueBoard);
-  const newTeamView = league ? createNewTeamView(WorkspaceKit) : null;
-  const leagueCommons = league ? createLeagueCommons({
+  const newTeamView = campaign ? createNewTeamView(WorkspaceKit) : null;
+  const leagueCommons = campaign ? createLeagueCommons({
     draft: () => newTeamView.draft(),
     use: (draft) => { ctx?.patchViewState('new-team', { draft }); arrange({ [lastSeat]: { surface: '@new-team' } }); },
   }) : null;
-  if (league) {
+  if (campaign) {
     SURFACES['@league-commons'] = { name: 'league-commons', el: leagueCommons.el, show: (tab) => leagueCommons.select(tab || leagueCommons.current()) };
     SURFACES['@league-view'] = { name: 'league-view', el: leagueView.el };
     SURFACES['@new-team'] = { name: 'new-team', el: newTeamView.el, show: () => newTeamView.enter(ctx) };
@@ -455,21 +456,21 @@ export function createCoworkView(options = {}) {
     ].filter(Boolean);
   };
   function renderCards(members) {
-    if (league) {
+    if (campaign) {
       const teams = teamsFromState().filter((candidate) => !candidate.holding);
       rosterTitle.textContent = campaignIdentity.name() || t('campaign', 'Campaign');
       rosterCount.textContent = teams.length ? String(teams.length) : '';
       cards.replaceChildren(); leagueCards.replaceChildren();
       const group = (key, label) => { const section = el('details', 'tw-selector-group'); section.open = !closedGroups.has(key); section.addEventListener('toggle', () => section.open ? closedGroups.delete(key) : closedGroups.add(key)); section.append(el('summary', null, label), el('div', 'tw-selector-group-cards')); cards.append(section); return section.lastElementChild; };
-      const views = group('views', t('league.selector_views', 'Views')), teamCards = group('teams', t('league.selector_teams', 'Teams')), newCards = group('new', t('league.selector_new', 'New'));
+      const views = group('views', t('league.selector_views', 'Views')), teamCards = group('coworks', t('campaign.coworks', 'Coworks')), newCards = group('new', t('league.selector_new', 'New'));
       const add = (host, heading, token, summary = '', variant = null, draft = { surface: token }, clickable = true) => {
         const selected = token === DESK ? whereIs(COWORK) && cowork.current() === 'health' : !!whereIs(token);
         const card = createCard({ heading, summary, variant, selected: clickable ? selected : null, action: clickable ? () => arrange({ [lastSeat]: draft }) : null });
         if (!clickable) card.el.classList.add('league-drag-card');
         card.el.draggable = true; card.el.addEventListener('dragstart', (event) => { event.dataTransfer.setData(DRAG_TYPE, token); event.dataTransfer.effectAllowed = 'move'; }); host.append(card.el);
       };
-      add(views, t('campaign.commons', 'Campaign commons'), '@league-commons');
-      add(views, campaignIdentity.name() || t('campaign.view', 'Campaign view'), '@league-view');
+      add(views, t('campaign.commons_short', 'Commons'), '@league-commons');
+      add(views, t('campaign.cowork_view', 'Cowork View'), '@league-view');
       add(views, t('cowork.commons', 'Ronin Desk'), DESK, '', null, { cowork: true, tab: 'health' });
       for (const item of teams) { const made = leagueTeamSurface(item.name); add(teamCards, item.name, made.token, item.objective || ''); }
       const ronin = leagueTeamSurface(UNASSIGNED); add(teamCards, t('league.ronin', 'Ronin: no team'), ronin.token);
@@ -592,20 +593,20 @@ export function createCoworkView(options = {}) {
   }
 
   return {
-    el: root,
+    el: root, glyph: campaign ? '⛩' : '人',
     // The ViewHost draws the Kit's layout map in the bar for this while the view is active.
     arrangement: workbench.arrangement,
     // The owner's per-tab name distinguishes several Team tabs; otherwise the Team name
     // is the default and createWorkspace adds Ronin.
     title: ({ param, viewState }) => {
-      if (league) return t('league.open_workspace', 'League workspace');
+      if (campaign) return campaignIdentity.name() || t('campaign', 'Campaign');
       const name = viewState?.('team')?.tabName;
       return name ? { bare: `${name} · ${param || t('team.team', 'Team')}` } : (param || t('team.team', 'Team'));
     },
     tabName: {
-      get: () => league ? '' : ctx?.viewState('team')?.tabName || '',
+      get: () => campaign ? '' : ctx?.viewState('team')?.tabName || '',
       placeholder: () => team || t('team.team', 'Team'),
-      set: (value) => { if (!league) ctx?.patchViewState('team', { tabName: String(value || '').trim() }); },
+      set: (value) => { if (!campaign) ctx?.patchViewState('team', { tabName: String(value || '').trim() }); },
     },
     mount: (_host, context) => {
       ctx = context;
@@ -617,9 +618,9 @@ export function createCoworkView(options = {}) {
     enter: (context) => {
       ctx = context;
       entered = true;
-      if (league) void campaignIdentity.load();
+      if (campaign) void campaignIdentity.load();
       for (const seat of Object.values(seats)) seat.pool.destroyAll();
-      team = league ? '' : context.param || context.state?.team || '';
+      team = campaign ? '' : context.param || context.state?.team || '';
       const typed = teamWorkspaceState(context.state, context.viewState(viewKey), DECLARATION);
       // THE DESK PROFILE'S ORDER (R38) when this tab has no arrangement of its own — the
       // owner's standing default, never an override of what a tab already arranged.
@@ -659,7 +660,7 @@ export function createCoworkView(options = {}) {
         if (heldSurface(id) === COWORK && !tab) putTerminal(id);
         else putCowork(id, tab);
       };
-      if (league) void refreshTeams().then(() => renderCards([]));
+      if (campaign) void refreshTeams().then(() => renderCards([]));
       else if (team !== loaded) void load(team);
       void readRows();
       window.clearInterval(homeTimer);

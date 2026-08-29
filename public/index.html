@@ -11,8 +11,7 @@
          where and why. SVG first so a retina tab and a bookmark bar stay sharp at any size;
          the 32px PNG is the fallback for anything that will not take one. The 256 is what
          iOS puts on a home screen, which is the arrival REMOTE_ACCESS is built around. -->
-    <link rel="icon" type="image/svg+xml" href="/brand/nin-mark.svg" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/brand/nin-mark-32.png" />
+    <link id="tabicon" rel="icon" type="image/svg+xml" href="/brand/nin-mark.svg" />
     <link rel="apple-touch-icon" href="/brand/nin-mark-256.png" />
     <!-- The saved theme, applied BEFORE the stylesheet paints — a light-theme reload
          must not flash dark. Inline and tiny on purpose; js/theme.js owns the rest. -->
@@ -34,16 +33,9 @@
   <body>
     <header id="bar">
       <button id="brandbtn" class="brand" data-t-title="bar.brand_title" title="⛩ ronin — the session roster">⛩ ronin</button>
-      <a id="leaguebtn" class="brand" href="#/league-workspace" target="_blank" rel="noopener noreferrer"
-         data-t-title="bar.league_title" title="Open League in a new browser tab" data-t="bar.league">League</a>
+      <button id="campaignbtn" class="brand" type="button" data-t="campaign">Campaign</button>
+      <select id="coworkbtn" class="bar-cowork" aria-label="Cowork"><option value="">Cowork</option></select>
       <button id="servicesstate" class="services-state" type="button" hidden aria-expanded="false"></button>
-      <!-- ＋ opens a SECOND RONIN in a new browser tab. The owner already worked this way by
-           opening tabs by hand; the button exists so everyone else discovers it is possible,
-           which was his reason: "if it could launch another tab, that would make it easier so
-           that people know that this is actually possible." Beside the brand, deliberately not
-           among the five verbs on the right — those share one measured width and this is not
-           one of them. -->
-      <button id="newtabbtn" class="newtab" data-t-title="bar.newtab_title" title="Open a second Ronin in a new browser tab">＋</button>
       <!-- RAM_RPM — the box's working reading. A tachometer: always there, mostly
            ignored, so you learn what normal looks like without being told. It sits with
            the brand and NOT among the five verbs on the right, which share one measured
