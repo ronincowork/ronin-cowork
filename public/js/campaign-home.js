@@ -139,23 +139,39 @@ export function createCampaignHome() {
     return agentsHere().map((row) => ({ id: row.name, label: row.name, on: row.name === now }));
   };
 
-  const choose = (key, id) => {
+  const choose = (key, id, close = true) => {
     if (key === 'campaign') loadCampaign(id);
     else ctx?.patchViewState('home', key === 'coworks' ? { cowork: id } : { agent: id });
-    open = '';
+    if (close) open = '';
     paint();
   };
 
-  // Manage is the one door out of a tray: the tray SELECTS, and everything that changes
-  // a record — new, edit, archive — is behind it. Each goes to the surface that owns that
-  // record today rather than to a placeholder. Coworks and Agents both land on the Cowork
-  // space, which is where New Team and New Agent live as SURFACES since @new_team's
-  // 2026-08-29 cut — `new-team` is no longer a destination and navigating to it would
-  // fall silently back to this page.
-  const manage = (key) => {
+  const launchAgent = (id) => {
+    const row = agentsHere().find((candidate) => candidate.name === id);
+    if (!row) return;
+    const team = (row.tags || []).find((name) => coworksHere().some((c) => c.name === name)) || '';
+    if (!team) return void ctx?.navigate('cowork');
+    ctx?.patchViewState('team', { seats: { workspace1: row.name } });
+    ctx?.navigate('team', { param: team });
+  };
+
+  const act = (key, id) => {
+    choose(key, id);
+    if (key === 'campaign') ctx?.navigate('campaign');
+    else if (key === 'coworks') ctx?.navigate('team', { param: id });
+    else launchAgent(id);
+  };
+
+  const create = (key) => {
     open = '';
     paint();
-    ctx?.navigate(key === 'campaign' ? 'campaign' : 'cowork');
+    if (key === 'campaign') {
+      ctx?.patchViewState('campaign', { seats: { workspace1: '@new-campaign' } });
+      ctx?.navigate('campaign');
+    } else {
+      ctx?.patchViewState('cowork', { seats: { workspace1: key === 'coworks' ? '@new-team' : '@new' } });
+      ctx?.navigate('cowork');
+    }
   };
 
   function paintTray() {
@@ -167,21 +183,32 @@ export function createCampaignHome() {
     }
     tray.dataset.for = open;
     tray.replaceChildren();
-    const rows = rowsFor(open);
+    const key = open;
+    const rows = rowsFor(key);
     for (const row of rows) {
-      const pill = el('button', 'ch-pill', row.label);
-      pill.type = 'button';
-      pill.dataset.on = String(row.on);
-      pill.addEventListener('click', () => choose(open, row.id));
-      tray.append(pill);
+      const line = el('div', 'ch-menu-row');
+      line.dataset.loaded = String(row.on);
+      const star = el('button', 'ch-menu-star', row.on ? '★' : '☆');
+      star.type = 'button';
+      star.dataset.on = String(row.on);
+      star.setAttribute('aria-label', row.on ? 'The default' : `Make ${row.label} the default`);
+      star.addEventListener('click', () => choose(key, row.id, false));
+      const name = el('button', 'ch-menu-name', row.label);
+      name.type = 'button';
+      name.addEventListener('click', () => choose(key, row.id));
+      const action = el('button', 'ch-menu-action', key === 'campaign' ? `✎ ${t('roots.edit', 'Edit')}` : `▶ ${t('league.launch_team', 'Launch')}`);
+      action.type = 'button';
+      action.addEventListener('click', () => act(key, row.id));
+      line.append(star, name, action);
+      tray.append(line);
     }
     if (!rows.length) tray.append(el('p', 'ch-empty', t('campaign_home.tray_empty', 'Nothing here yet.')));
-    tray.append(el('span', 'ch-sep'));
-    const button = el('button', 'ch-manage');
-    button.type = 'button';
-    button.append(el('i', null, '✳'), el('span', null, t('campaign_home.manage', 'Manage')));
-    button.addEventListener('click', () => manage(open));
-    tray.append(button);
+    const foot = el('button', 'ch-menu-foot', key === 'campaign'
+      ? `＋ ${t('campaign.new', 'New Campaign')}`
+      : key === 'coworks' ? `＋ New ${t('campaign.cowork', 'Cowork')}` : `＋ ${t('league.new_agent', 'New Agent')}`);
+    foot.type = 'button';
+    foot.addEventListener('click', () => create(key));
+    tray.append(foot);
   }
 
   function paintDoors() {
