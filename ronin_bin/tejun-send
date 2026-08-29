@@ -19,31 +19,37 @@ case "$dial" in
 esac
 
 # The live input line is at the BOTTOM of the pane — only look in the last few rows.
-# (Submitted messages also render with a ❯ prefix up in the scrollback; searching the
-# whole pane mistakes that history for pending input.)
-prompt_line() { tmux capture-pane -p -e -t "$S" | tail -6 | grep -a '❯' | tail -1; }
+# (Submitted messages also render with a prompt prefix up in the scrollback; searching
+# the whole pane mistakes that history for pending input.)
+# THE PROMPT GLYPH IS THE CLI'S: Claude Code draws ❯, Codex draws ›. Knowing only ❯ meant
+# a send into a Codex tile reported DELIVERED with the text still in the box (owner,
+# 2026-08-29). Both glyphs; no prompt found = UNVERIFIED, never DELIVERED.
+prompt_line() { tmux capture-pane -p -e -t "$S" | tail -6 | grep -a '[❯›]' | tail -1; }
 strip() { sed 's/\x1b\[[0-9;]*m//g'; }
+pending() { printf '%s' "$1" | strip | sed 's/\xc2\xa0/ /g; s/^.*[❯›] *//; s/[[:space:]]*$//; s/^[[:space:]]*$//'; }
+ghost() { printf '%s' "$1" | grep -q $'\x1b\[2m'; }
 
 # Pre-send check: real (non-dim) pending text at the prompt = a human draft. Abort.
-line=$(prompt_line)
-content=$(printf '%s' "$line" | strip | sed 's/\xc2\xa0/ /g; s/^.*❯ *//; s/[[:space:]]*$//; s/^[[:space:]]*$//')
-if [ -n "$content" ] && ! printf '%s' "$line" | grep -q $'\x1b\[2m'; then
+line=$(prompt_line); content=$(pending "$line")
+if [ -n "$content" ] && ! ghost "$line"; then
   echo "BLOCKED: real unsubmitted text at '$S' prompt (not ghost): \"$content\" — not overwriting a draft."
   exit 5
 fi
+[ -n "$line" ] || { echo "UNVERIFIED: no prompt (❯ or ›) visible at '$S' — an unknown CLI, or a dialog; nothing typed."; exit 7; }
 
 tmux send-keys -t "$S" -l "$MSG"
+sleep 0.4   # a fast Enter right behind the text can be swallowed as part of a paste
 tmux send-keys -t "$S" Enter
 sleep 2
 
 # Confirm-started: our text should no longer sit at the prompt (ghost text is fine).
-line=$(prompt_line); content=$(printf '%s' "$line" | strip | sed 's/\xc2\xa0/ /g; s/^.*❯ *//; s/[[:space:]]*$//; s/^[[:space:]]*$//')
-if [ -n "$content" ] && ! printf '%s' "$line" | grep -q $'\x1b\[2m'; then
+line=$(prompt_line); content=$(pending "$line")
+if [ -n "$content" ] && ! ghost "$line"; then
   tmux send-keys -t "$S" Enter   # retry once
   sleep 2
-  line=$(prompt_line); content=$(printf '%s' "$line" | strip | sed 's/\xc2\xa0/ /g; s/^.*❯ *//; s/[[:space:]]*$//; s/^[[:space:]]*$//')
-  if [ -n "$content" ] && ! printf '%s' "$line" | grep -q $'\x1b\[2m'; then
-    echo "STUCK: text still at '$S' prompt after retry — a dialog may be open. Not spamming Enter."
+  line=$(prompt_line); content=$(pending "$line")
+  if [ -n "$content" ] && ! ghost "$line"; then
+    echo "STUCK: text still at '$S' prompt after retry — a dialog may be open, or the CLI is mid-turn and holding it. Not spamming Enter."
     exit 6
   fi
 fi

@@ -22,26 +22,33 @@ S="$1"; shift; MSG="$*"
 
 tmux has-session -t "$S" 2>/dev/null || { echo "NO-SESSION: '$S' does not exist"; exit 3; }
 
-prompt_line() { tmux capture-pane -p -e -t "$S" | tail -6 | grep -a '❯' | tail -1; }
+# THE PROMPT GLYPH IS THE CLI'S, not ours: Claude Code draws ❯, Codex draws ›. A sender
+# that only knew ❯ typed into a Codex tile, saw no prompt it understood, and reported
+# DELIVERED with the text still sitting in the box (owner, 2026-08-29). So: both glyphs,
+# and when neither is found the verdict is UNVERIFIED, never DELIVERED.
+prompt_line() { tmux capture-pane -p -e -t "$S" | tail -6 | grep -a '[❯›]' | tail -1; }
 strip() { sed 's/\x1b\[[0-9;]*m//g'; }
-pending() { printf '%s' "$1" | strip | sed 's/\xc2\xa0/ /g; s/^.*❯ *//; s/[[:space:]]*$//; s/^[[:space:]]*$//'; }
+pending() { printf '%s' "$1" | strip | sed 's/\xc2\xa0/ /g; s/^.*[❯›] *//; s/[[:space:]]*$//; s/^[[:space:]]*$//'; }
+ghost() { printf '%s' "$1" | grep -q $'\x1b\[2m'; }
 
 line=$(prompt_line); content=$(pending "$line")
-if [ -n "$content" ] && ! printf '%s' "$line" | grep -q $'\x1b\[2m'; then
+if [ -n "$content" ] && ! ghost "$line"; then
   echo "BLOCKED: real unsubmitted text at '$S' prompt (not ghost): \"$content\" — not overwriting a draft."
   exit 5
 fi
+[ -n "$line" ] || { echo "UNVERIFIED: no prompt (❯ or ›) visible at '$S' — an unknown CLI, or a dialog; nothing typed."; exit 7; }
 
 tmux send-keys -t "$S" -l "$MSG"
+sleep 0.4   # let the TUI finish treating the text as input before Enter arrives — a fast Enter can be swallowed as part of a paste
 tmux send-keys -t "$S" Enter
 sleep 2
 line=$(prompt_line); content=$(pending "$line")
-if [ -n "$content" ] && ! printf '%s' "$line" | grep -q $'\x1b\[2m'; then
+if [ -n "$content" ] && ! ghost "$line"; then
   tmux send-keys -t "$S" Enter
   sleep 2
   line=$(prompt_line); content=$(pending "$line")
-  if [ -n "$content" ] && ! printf '%s' "$line" | grep -q $'\x1b\[2m'; then
-    echo "STUCK: text still at '$S' prompt after retry — a dialog may be open. Not spamming Enter."
+  if [ -n "$content" ] && ! ghost "$line"; then
+    echo "STUCK: text still at '$S' prompt after retry — a dialog may be open, or the CLI is mid-turn and holding it. Not spamming Enter."
     exit 6
   fi
 fi
