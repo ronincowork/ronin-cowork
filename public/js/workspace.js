@@ -276,7 +276,10 @@ export function createWorkspace(host, options = {}) {
     if (started || destroyed) return;
     started = true;
     const route = routeFromHash();
-    const id = route?.view || state.view || safeView;
+    // A bare Ronin URL is HOME, every time. Workspace recall belongs inside an explicit
+    // destination; it must not turn the product's front door into whichever room this
+    // browser happened to leave last.
+    const id = route?.view || safeView;
     navigate(id, { param: route?.param || (id === 'team' ? state.team : ''), replace: true });
     window.addEventListener('popstate', onPopState);
   };
