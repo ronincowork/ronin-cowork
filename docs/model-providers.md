@@ -75,7 +75,7 @@ every terminal agent behaves like Claude.
 | provider | The service/CLI identity shown before the dot in the picker |
 | model | The provider's real model ID, taken from a column heading |
 | cmd | The complete interactive agent command stored in that cell |
-| first model column | That provider's Ronin default |
+| column order | The order the picker offers that provider's models in. **The table states no default** — the install's one default is `agents.sessions.default` |
 
 The heading and command must agree. For example, `openai · gpt-5.6-terra` resolves to a
 Codex command carrying `--model gpt-5.6-terra`; it must never resolve to bare `codex` and
