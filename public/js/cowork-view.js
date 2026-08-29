@@ -176,7 +176,11 @@ export function createCoworkView(options = {}) {
   newBody.append(launcherHost);
   newSurface.content.append(newBody);
   const extras = new Set();
-  const launcher = buildLauncher({ index: 'ws', connect: (name) => connectSession(name) }, launcherHost);
+  // Empty Teams exist only in the durable roster projection; a Team page defaults to
+  // staffing the Team it shows.
+  const launcher = buildLauncher({ index: 'ws', connect: (name) => connectSession(name),
+    teams: () => teamsFromState().filter((candidate) => !candidate.holding), team: () => campaign || team === UNASSIGNED ? '' : team,
+  }, launcherHost);
   // Chat is reserved and intentionally empty.
   const DECLARATION = {
     slots: [
