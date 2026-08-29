@@ -3,9 +3,9 @@
 # Usage: ronin-house-send <session> <message...>
 #
 # NOBODY TYPES THIS. It lives in libexec, off the agents' PATH, and is called by house
-# machinery only — today, the desk hand-in telling a team lead that its job is waiting
-# (src/desks/lead.ts). `tejun-send`, the tool agents type, keeps its dial check; this
-# one deliberately has none.
+# machinery only — desk hand-in notices and receipt-bound lead replies
+# (src/desks/lead.ts). `tejun-send`, the tool agents type, keeps its dial check; this one
+# deliberately has none.
 #
 # WHY NO DIAL CHECK (owner law, 2026-08-28): reviewing the team line and promoting it to
 # dev is the lead's primary job, so every team agent's hand-in must reach the lead

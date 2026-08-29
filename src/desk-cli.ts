@@ -18,7 +18,7 @@ import { listSessions } from './tmux.js';
 import { deriveAssignment, listDesks, readAssignment, assignmentId } from './desks/registry.js';
 import { closeDesk, discardDesk, DeskRefused, openDesk, parkedDesks, recoverDesk, syncDesk } from './desks/desk.js';
 import { handIn, handInAssignment } from './desks/hand-in.js';
-import { notifyLeads, teamOfLine } from './desks/lead.js';
+import { notifyLeads, replyToHandIn, teamOfLine } from './desks/lead.js';
 import { acceptedSince, receiptById, receiptsForDesk, receiptsForLine } from './desks/receipts.js';
 import { queueHolder } from './desks/queue.js';
 import { deskId, type DeskNotice, type DeskStatus, type HandInReceipt } from './desks/schema.js';
@@ -81,6 +81,7 @@ const USAGE = `usage: tejun-desk status [--session s | --team t | --repo r]
        tejun-desk parked [--team t] [--repo r]
        tejun-desk recover <repo> <branch> [--session s]
        tejun-desk discard <repo> <branch> --yes
+       tejun-desk reply <repo> <receipt id> <message…>
        tejun-desk receipts [<repo>] [--line [--accepted | --since <line sha>] | --id <receipt id>]`;
 
 function row(d: DeskStatus): string {
@@ -223,6 +224,24 @@ async function main(): Promise<void> {
         if (!flags.get('yes')) die(`REFUSED: discard deletes ${repo}:${branch} and every commit only it holds — say --yes`, 4);
         await discardDesk(repo, branch);
         out(`DISCARDED ${repo}:${branch}`);
+        return;
+      }
+      case 'reply': {
+        const [repo, id, ...words] = positional;
+        const message = words.join(' ').trim();
+        if (!repo || !id || !message) die('usage: tejun-desk reply <repo> <receipt id> <message…>', 2);
+        if (!session) die('NO-SESSION: not inside a session and no --session', 3);
+        const receipt = await receiptById(repo, id);
+        if (!receipt) die(`NONE: no receipt ${id} on ${repo}`, 3);
+        const team = teamOfLine(receipt.line);
+        if (!team || team !== receipt.team) die(`REFUSED: ${id} is not a team-line hand-in`, 4);
+        let delivery;
+        try {
+          delivery = await replyToHandIn({ team, from: session, to: receipt.session, receiptId: id, message });
+        } catch (e) {
+          die(`REFUSED: ${(e as Error).message}`, 4);
+        }
+        out(`REPLIED ${id} → ${receipt.session}: ${delivery.how === 'house-send' ? 'delivered regardless of dial' : 'tile unavailable; saved on team wipeboard'} — ${delivery.detail}`);
         return;
       }
       case 'receipts': {

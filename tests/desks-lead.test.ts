@@ -3,7 +3,7 @@
 // lead is told. The tmux read and the house sender are exercised by hand, not here.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SEP, leadMessage, leadsFor, parseSessionRows, selfMessage, teamOfLine } from '../src/desks/lead.js';
+import { SEP, leadMessage, leadsFor, parseSessionRows, replyMessage, selfMessage, teamOfLine } from '../src/desks/lead.js';
 
 const rows = parseSessionRows([
   ['comps', 'ronin_comps', 'ronin_comps'].join(SEP),
@@ -49,4 +49,11 @@ test('with no lead, the handing-in session holds the job — told how to promote
   const bad = selfMessage({ team: 'ronin_comps', line: 'team/ronin_comps/dev', session: 'comp_fable', receiptId: 'hi_2', result: 'conflict', files: ['a.ts'] });
   assert.match(bad, /conflict on a\.ts is yours to resolve/);
   assert.match(bad, /tejun-desk sync/);
+});
+
+test('a lead reply is visibly bound to its hand-in receipt', () => {
+  assert.equal(
+    replyMessage('hi_123', 'comps', 'split the oversized module and hand in again'),
+    'lead reply on hand-in hi_123 from comps: split the oversized module and hand in again',
+  );
 });
