@@ -57,10 +57,12 @@ import {
   readSection,
   readSetupSection,
   liveCount,
-  readDeskSection,
   readDesksSection,
-  readCampaignSection,
 } from './user-config.js';
+// THE CAMPAIGN'S OWN LEAVES. `set.campaign.{name,description}` and `set.desk.profile` keep
+// the shapes this record has always served, but the fact behind them is now the initial
+// campaign_config rather than a section of ronin.json — one writable Campaign record.
+import { readCampaignSection, readDeskSection } from './campaign-config.js';
 
 const pexec = promisify(execFile);
 

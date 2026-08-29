@@ -32,6 +32,7 @@ sops|user|sops
 library|user|library
 session_boot|user|session_boot
 wipeboards|user|wipeboards
+campaigns|user|campaigns
 team_rosters|user|team_rosters
 desks|user|desks
 worktrees|user|worktrees
