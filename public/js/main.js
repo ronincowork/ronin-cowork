@@ -120,7 +120,7 @@ export async function init() {
   guard('register the Cowork destination', () => workspace.register('cowork', createCoworkView({ kind: 'cowork' })));
   // THE ROOT ARRIVAL (owner, 2026-08-29): three doors — Campaign, Coworks, Agents —
   // over one Campaign selection the other two inherit. Registered after Cowork because
-  // its Campaign door opens that destination, and guarded like every other: the landing
+  // its Campaign door opens that Campaign's Cowork collection, and guarded like every other: the landing
   // page failing must cost the owner a page, never their terminals. `safeView` is this
   // one, so its own failure is reported rather than looping.
   guard('register the Ronin Home destination', () => workspace.register('home', createCampaignHome()));

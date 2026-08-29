@@ -5,8 +5,8 @@
  *   ⛩ Campaign · 人々 Coworks · 人 Agents
  *
  * Torii, hitobito, hito: the body of work, its people, one of them. Each door carries
- * ONE loaded default. Campaign opens its management space, Coworks opens the complete
- * Cowork collection, and Agent opens that Agent at work. The page holds no list, no
+ * ONE loaded default. Campaign opens that Campaign's complete Cowork collection,
+ * Coworks opens the loaded Cowork, and Agent opens that Agent at work. The page holds no list, no
  * count and no reading; those live behind the doors, which is the point of a door.
  *
  * THE CHIP IS THE DIAL. Every door shows what it is loaded with, and the thing that
@@ -102,8 +102,11 @@ export function createCampaignHome() {
   /* ---------- going through a door ---------- */
   const go = (key) => {
     if (!ctx) return;
-    if (key === 'campaign') return void ctx.navigate('campaign');
-    if (key === 'coworks') return void ctx.navigate('cowork');
+    if (key === 'campaign') return void ctx.navigate('cowork');
+    if (key === 'coworks') {
+      const row = cowork();
+      return void (row ? ctx.navigate('team', { param: row.name }) : ctx.navigate('cowork'));
+    }
     // AN AGENT IS NOT A PAGE — it is a tile in a workspace. So its door opens the Cowork
     // it works in with that Agent already up, which is the Agent's page in the only sense
     // Ronin has one. A rōnin (no Cowork) opens the Cowork space rather than nowhere.
