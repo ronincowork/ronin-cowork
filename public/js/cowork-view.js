@@ -218,7 +218,17 @@ export function createCoworkView(options = {}) {
   const leagueBoard = WorkspaceKit.layouts.createLeagueBoard(); leagueBoard.classList.add('league-view-scroll');
   const leagueCards = leagueBoard.querySelector('[data-surface="cards"]');
   leagueView.content.append(leagueBoard);
-  const newTeamView = campaign ? createNewTeamView(WorkspaceKit) : null;
+  // CREATE THE TEAM AND LAND IN IT (owner, 2026-08-29). The Team is the record the
+  // moment its roster exists, so the surface that made it hands the workspace over to
+  // it — the same arrangement clicking its Cowork card would make — and goes back to an
+  // empty form. Staffing happens from inside the Team, through New Agent.
+  const newTeamView = campaign ? createNewTeamView(WorkspaceKit, {
+    created: async (name) => {
+      const where = whereIs('@new-team') || lastSeat || 'workspace1';
+      await refreshTeams();
+      arrange({ [where]: { surface: leagueTeamSurface(name).token } });
+    },
+  }) : null;
   const leagueCommons = campaign ? createLeagueCommons({
     draft: () => newTeamView.draft(),
     use: (draft) => { ctx?.patchViewState('new-team', { draft }); arrange({ [lastSeat]: { surface: '@new-team' } }); },

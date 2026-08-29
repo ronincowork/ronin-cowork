@@ -20,14 +20,9 @@ const layout = (name, surfaces) => {
 const createLeagueBoard = (cards = null) => layout('league-board', { cards });
 const createSessionGrid = (tiles = null) => layout('session-grid', { tiles });
 const createExplorerLayout = (rail = null, content = null) => layout('explorer-layout', { rail, content });
-// Agent Configuration has configuration and resolved-profile preview surfaces. It does
-// not imply or reserve a terminal Tile.
-const createAgentConfigurationLayout = (configuration = null, preview = null) =>
-  layout('agent-configuration-layout', { configuration, preview });
-// Transaction is the durable home for preflight, progress, receipts, partial failure and
-// retry. New Team decides their behavior; the Kit guarantees they are not transient toast.
-const createNewTeamLayout = (definition = null, roster = null, transaction = null) =>
-  layout('new-team-layout', { definition, roster, transaction });
+// One Surface: the Team definition. New Team creates a durable record and hands the
+// workspace to the Team it made, so there is no second stage and no transaction region.
+const createNewTeamLayout = (definition = null) => layout('new-team-layout', { definition });
 
 /**
  * THE MANAGED WORKBENCH — N slots, arranged.
@@ -204,7 +199,6 @@ export const WorkspaceLayouts = Object.freeze({
   createLeagueBoard,
   createSessionGrid,
   createExplorerLayout,
-  createAgentConfigurationLayout,
   createNewTeamLayout,
   createWorkbenchLayout,
 });

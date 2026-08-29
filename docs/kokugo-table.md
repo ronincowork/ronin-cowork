@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1270 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1166 keys · 53 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -742,62 +742,23 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
-| `new_team.add_seat` | Add proposed session |  |  |  |  |
-| `new_team.build_roster` | Build the roster |  |  |  |  |
-| `new_team.build_roster_eyebrow` | 2 · Build the roster |  |  |  |  |
-| `new_team.check_seats` | Check seats |  |  |  |  |
-| `new_team.completed` | Completed |  |  |  |  |
 | `new_team.create` | Create Team |  |  |  |  |
-| `new_team.create_and_raise` | Create Team and raise sessions |  |  |  |  |
+| `new_team.creating` | Creating the Team… |  |  |  |  |
 | `new_team.define` | Define the Team |  |  |  |  |
-| `new_team.define_eyebrow` | 1 · Define the Team |  |  |  |  |
 | `new_team.definition` | Team definition |  |  |  |  |
-| `new_team.designate_lead` | Designate as lead |  |  |  |  |
-| `new_team.edit_session` | Edit session |  |  |  |  |
-| `new_team.error` | Error |  |  |  |  |
-| `new_team.halted` | Not attempted after Ronin could not complete the previous launch: {message} |  |  |  |  |
-| `new_team.lead_line` | Lead: {status} |  |  |  |  |
-| `new_team.lead_not_born` | The designated lead seat was not born. |  |  |  |  |
 | `new_team.name` | Team name |  |  |  |  |
 | `new_team.name_desc` | Lowercase letters, digits, _ and - . This is also the tag its sessions carry. |  |  |  |  |
 | `new_team.name_invalid` | Lowercase letters, digits, _ and - only. |  |  |  |  |
-| `new_team.name_taken` | "{name}" already has a roster. |  |  |  |  |
-| `new_team.no_brief` | No brief yet. |  |  |  |  |
-| `new_team.no_lead` | No lead |  |  |  |  |
-| `new_team.none_passed` | No proposed session passed preflight. The Team was not created. |  |  |  |  |
-| `new_team.note_adopts_many` | {n} live sessions already carry this name and become members the moment the Team exists: {sessions}. Membership is derived from the sessions, so the Team arrives already staffed. |  |  |  |  |
-| `new_team.note_adopts_one` | {n} live session already carries this name and becomes a member the moment the Team exists: {sessions}. Membership is derived from the sessions, so the Team arrives already staffed. |  |  |  |  |
-| `new_team.note_capacity` | This box allows {max} live sessions and {live} are running. This roster would need {over} more than there is room for. |  |  |  |  |
-| `new_team.note_name` | A Team name is lowercase letters, digits, _ and - — and it is also the tag. "unassigned" is reserved for the holding area. |  |  |  |  |
-| `new_team.note_tagged` | Those members were tagged, not born onto this Team, so none of them reads the team_role shelf — that reading happens at birth only. Sessions raised from the roster afterwards do. |  |  |  |  |
-| `new_team.note_taken` | Team "{name}" already has a roster. Open it instead of creating it. |  |  |  |  |
-| `new_team.note_wipeboard` | A wipeboard named "{name}" already exists and this Team adopts its thread — the team wins its name. |  |  |  |  |
 | `new_team.objective_desc` | Optional. Rides the brief of every session born onto this Team. |  |  |  |  |
-| `new_team.open_team` | Open Team |  |  |  |  |
 | `new_team.optional` | Optional. |  |  |  |  |
-| `new_team.preflight` | preflight {verdict} |  |  |  |  |
-| `new_team.preflight_broken` | the preflight could not run |  |  |  |  |
-| `new_team.preflight_refused` | Preflight refused this seat. |  |  |  |  |
-| `new_team.preflight_unreachable` | The dry run could not be reached — {message} |  |  |  |  |
-| `new_team.proposed_session` | Proposed session |  |  |  |  |
-| `new_team.raising` | Checking the roster, then raising sessions in order… |  |  |  |  |
-| `new_team.reason` | Reason |  |  |  |  |
-| `new_team.remove_proposal` | Remove proposal |  |  |  |  |
 | `new_team.repos_desc` | Optional, comma-separated. |  |  |  |  |
-| `new_team.resolved_name` | Resolved name |  |  |  |  |
-| `new_team.retry_seat` | Retry this seat |  |  |  |  |
-| `new_team.retry_unresolved` | Retry unresolved sessions |  |  |  |  |
 | `new_team.role_desc` | Optional. Blank is an unclassified Team, which is a valid state. |  |  |  |  |
 | `new_team.role_placeholder` | development — or leave blank |  |  |  |  |
 | `new_team.root` | Default project root |  |  |  |  |
 | `new_team.root_default` | — the box’s default — |  |  |  |  |
 | `new_team.root_desc` | Optional. Seeds where sessions are born; a launch may override it. |  |  |  |  |
-| `new_team.roster_actions` | Roster actions |  |  |  |  |
-| `new_team.roster_notice` | A Team with no sessions is complete and valid. Add one or more proposed sessions, check them against the real launch resolver, then raise them in order. |  |  |  |  |
-| `new_team.seat_actions` | Proposed session actions |  |  |  |  |
-| `new_team.sessions_heading` | Sessions · one or many |  |  |  |  |
+| `new_team.team_actions` | Team actions |  |  |  |  |
 | `new_team.title` | New Team |  |  |  |  |
-| `new_team.transaction` | Team transaction |  |  |  |  |
 | `new_team.wipeboard_desc` | Optional. Blank uses the Team’s own name. |  |  |  |  |
 
 ## output
@@ -938,38 +899,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `panels.save` | Save |  |  |  |  |
 | `panels.saving` | saving… |  |  |  |  |
 
-## preview
-
-| key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
-|---|---|---|---|---|---|
-| `preview.ack` | Acknowledgement gate |  |  |  |  |
-| `preview.agent` | Launches an agent |  |  |  |  |
-| `preview.brief_head` | The brief this session is born with |  |  |  |  |
-| `preview.cap_exempt` | Exempt from the session max |  |  |  |  |
-| `preview.cli` | CLI |  |  |  |  |
-| `preview.dir` | Directory |  |  |  |  |
-| `preview.label` | Agent label |  |  |  |  |
-| `preview.lifecycle` | Lifecycle |  |  |  |  |
-| `preview.mcp_always` | gbrain locked on |  |  |  |  |
-| `preview.mcp_default` | gbrain default |  |  |  |  |
-| `preview.no` | no |  |  |  |  |
-| `preview.no_reading` | No birth reading reported. |  |  |  |  |
-| `preview.nothing_yet` | Nothing to preview yet. |  |  |  |  |
-| `preview.opening` | Opening template |  |  |  |  |
-| `preview.permissions` | Permissions |  |  |  |  |
-| `preview.posture` | Posture |  |  |  |  |
-| `preview.reading_head` | Read at birth |  |  |  |  |
-| `preview.resolved_head` | What it resolves to |  |  |  |  |
-| `preview.source_unknown` | source not reported |  |  |  |  |
-| `preview.team_branch` | Team branch |  |  |  |  |
-| `preview.team_objective` | Team objective |  |  |  |  |
-| `preview.team_repos` | Team repositories |  |  |  |  |
-| `preview.team_state` | Team state |  |  |  |  |
-| `preview.team_wipeboard` | Team wipeboard |  |  |  |  |
-| `preview.title` | Preview |  |  |  |  |
-| `preview.unresolved` | This seat did not resolve far enough to preview. |  |  |  |  |
-| `preview.yes` | yes |  |  |  |  |
-
 ## provenance
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
@@ -1082,49 +1011,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `roster.team_name` | team name |  |  |  |  |
 | `roster.team_name_aria` | New team name |  |  |  |  |
 | `roster.team_name_rule` | use letters, digits, - or _ |  |  |  |  |
-
-## seat
-
-| key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
-|---|---|---|---|---|---|
-| `seat.actions` | Seat configuration actions |  |  |  |  |
-| `seat.apply` | Apply |  |  |  |  |
-| `seat.apply_title` | Write this seat into the Team draft — the only durable effect this Surface has |  |  |  |  |
-| `seat.assisted` | assisted |  |  |  |  |
-| `seat.check` | Check |  |  |  |  |
-| `seat.check_title` | Run the real resolver against this seat without creating anything |  |  |  |  |
-| `seat.cmd` | Launch command |  |  |  |  |
-| `seat.cmd_desc` | Unset falls to your session default in ⚙ Configuration. |  |  |  |  |
-| `seat.cmd_no_agent` | This seat launches no agent, so it cannot carry a command. |  |  |  |  |
-| `seat.configuration` | Seat configuration |  |  |  |  |
-| `seat.inherit` | inherit |  |  |  |  |
-| `seat.inherit_title` | Return {field} to unset — the resolved profile answers it |  |  |  |  |
-| `seat.inject` | Extra instruction |  |  |  |  |
-| `seat.inject_desc` | Appended verbatim. Assisted mode only. |  |  |  |  |
-| `seat.manual` | manual |  |  |  |  |
-| `seat.mcp` | gbrain |  |  |  |  |
-| `seat.mcp_desc` | Unset means whatever the resolved profile says. |  |  |  |  |
-| `seat.mode_desc` | Manual sends your words untouched. Assisted composes the brief. |  |  |  |  |
-| `seat.name` | Name |  |  |  |  |
-| `seat.name_desc` | Left unset, the server derives it from the role and the prompt. |  |  |  |  |
-| `seat.none_selected` | No seat selected. Open one from the Team roster. |  |  |  |  |
-| `seat.not_resolved` | Not resolved yet — press Check. |  |  |  |  |
-| `seat.off` | off |  |  |  |  |
-| `seat.on` | on |  |  |  |  |
-| `seat.project_root_desc` | Unset falls to the Team's root, then the top active root. |  |  |  |  |
-| `seat.prompt` | What it is for |  |  |  |  |
-| `seat.prompt_desc` | The agent's first message. |  |  |  |  |
-| `seat.prompt_no_agent` | A plain terminal has nobody to tell — an empty prompt is valid here. |  |  |  |  |
-| `seat.reference` | Pointed at |  |  |  |  |
-| `seat.reference_desc` | One session this one is aimed at. |  |  |  |  |
-| `seat.resolving` | Resolving… |  |  |  |  |
-| `seat.revert` | Revert |  |  |  |  |
-| `seat.revert_title` | Restore the last applied seat. Not the defaults — reverting into defaults would materialise inheritance |  |  |  |  |
-| `seat.seed` | Read first |  |  |  |  |
-| `seat.seed_desc` | Paths read before anything else. Assisted mode only. |  |  |  |  |
-| `seat.session_role` | Session role |  |  |  |  |
-| `seat.session_role_desc` | What this session is doing. Blank is a real launch — no reading, no mark. |  |  |  |  |
-| `seat.title` | Agent Configuration |  |  |  |  |
 
 ## services
 

@@ -252,18 +252,6 @@ test('stated_by is resolved on the server across explicit, Team, role, and syste
   assert.deepEqual(system.stated_by.dial, [{ layer: 'system', source: 'src/launch-profile.ts' }]);
 });
 
-test('preflight publishes resolver attribution unchanged', async () => {
-  const { previewResolved } = await import('../src/routes/launch-preflight.js');
-  const resolved = await resolveForm(commonsForm(), new Set());
-  const preview = previewResolved(resolved);
-  assert.strictEqual(preview.stated_by, resolved.stated_by);
-  assert.deepEqual(preview.stated_by.lifecycle, resolved.stated_by.lifecycle);
-  assert.strictEqual(preview.birth_reading, resolved.birth_reading);
-  assert.strictEqual(preview.posture, resolved.posture);
-  assert.equal(preview.permissions, resolved.permissions);
-  assert.equal(preview.opening, resolved.opening);
-});
-
 test('server resolution returns profile and durable Team context without browser reconstruction', async () => {
   const resolved = await resolveForm(forkitForm(), new Set());
   assert.equal(resolved.permissions, 'default');

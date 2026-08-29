@@ -46,8 +46,7 @@
   .wk-layout-surface[data-width='compact'] .wk-card { padding: var(--space-3); }
   .wk-layout-surface[data-width='compact'] .wk-card-summary, .wk-layout-surface[data-width='compact'] .wk-card-meta { display: none; }
   .wk-layout-surface[data-width='compact'] .wk-card-heading { font-size: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .wk-new-team-layout { grid-template-columns: minmax(0, 3fr) minmax(16rem, 2fr); align-items: start; }
-  .wk-new-team-layout .wk-layout-surface-transaction { grid-column: 1 / -1; }
+  .wk-new-team-layout { grid-template-columns: minmax(0, 1fr); align-items: start; }
   @media (max-width: 680px) {
     .wk-league-board [data-surface='cards'] { grid-template-columns: 1fr; }
     .wk-workbench-host { flex-direction: column; }

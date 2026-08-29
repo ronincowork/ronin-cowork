@@ -134,7 +134,7 @@ Recorded because these changed under other people's code, not because they are u
 
 | Seam | Consequence |
 |---|---|
-| `boardExists()` now means **a directory exists** | `routes/teams-api.ts` (`wipeboard_exists`) and `routes/launch-preflight.ts` (`adoptsWipeboard`) report **false** for every legacy single-file wipeboard. Lands on New Team / preflight |
+| `boardExists()` now means **a directory exists** | `routes/teams-api.ts` (`wipeboard_exists`) reports **false** for every legacy single-file wipeboard. (The launch preflight route that also read it was retired with New Team's seat path, 2026-08-29.) |
 | `boardPath()` returns a **directory** | `src/lookup.ts` prints it in `+wipeboard:` output |
 | `src/routes/wipeboards-api.ts` | `mtime` → `newest`; new `GET /:name/unread`. `announceTeamChanges` keeps its signature, so `routes/launch.ts` and `routes/sessions-api.ts` are unaffected |
 | `src/user-config.ts` | **appended to only** — `readWipeboardSettings` and two private helpers. Nothing existing altered |
