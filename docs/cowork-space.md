@@ -103,6 +103,26 @@ Ronin  <selected Campaign>     Coworks  <selected Cowork or blank>
 there are no slash separators. The root landing shows only Ronin. Both doors consume the
 shared `.ui-bar-nav` primitive and both readings consume `.ui-bar-value` from
 `docs/ui.md`; a feature must not restyle either.
+
+### The root landing
+
+The bare `/` route is the landing, not a remembered workspace and not a Campaign editor.
+It has three loaded doors: Campaign, Coworks and Agents. The large door launches what is
+loaded: Campaign opens that Campaign's all-Coworks page; Coworks opens the loaded Cowork;
+Agents opens the loaded Agent in its Cowork.
+
+The value chip opens that door's selector. Every row has one star and one explicit action:
+
+| selector | star means | row action | footer |
+|---|---|---|---|
+| Campaign | load this Campaign and re-home the other defaults | Edit | New Campaign |
+| Coworks | load this Cowork | Launch | New Cowork |
+| Agents | load this Agent | Launch | New Agent |
+
+A star updates the loaded default and leaves the selector open. A row name loads it and
+closes; Edit or Launch acts on that row and closes. A closed selector has no box, height or
+stale children. The approved composition is the Campaign Home concept in Ronin Lab; the
+live owner is `public/js/campaign-home.js`, never a simplified second interaction.
 - **surface head** — the genus for a surface's top row: *tile head*, *commons strip*,
   *column head*. No head carries a flip — a surface gets into a workspace from the selector column, or by drag.
 
