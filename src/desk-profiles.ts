@@ -13,7 +13,9 @@
  */
 import { type Origin } from './catalog.js';
 import { readDefinitions, type Definition } from './definitions.js';
-import { readDeskSection } from './user-config.js';
+// The profile is the CAMPAIGN's (its vocabulary, skin and offered templates), so the
+// chosen name comes from the initial campaign_config, not from ronin.json. Same shape.
+import { readDeskSection } from './campaign-config.js';
 
 export interface DeskProfileInfo {
   name: string;

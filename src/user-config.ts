@@ -293,26 +293,25 @@ export const writeMachineSection = (v: { name?: string; where?: string; monitor?
     doc.machine = m;
   });
 
-/** This install's campaign — one named body of work today, held in SETTEI. */
-export const readCampaignSection = (): Promise<{ name?: string; description?: string }> => readSection('campaign', {});
-export const writeCampaignSection = (v: { name?: string; description?: string }): Promise<void> =>
-  updateConfig((doc) => {
-    const c = ((doc.campaign ?? {}) as Record<string, unknown>) || {};
-    if (v.name !== undefined) c.name = String(v.name).trim().slice(0, 120);
-    if (v.description !== undefined) c.description = String(v.description).trim().slice(0, 500);
-    doc.campaign = c;
-  });
-
-/** THE DESK — which desk_profile the owner works at (R38). `profile` is a token in
- * `ronin_catalogs/desk_profiles/` or ''; nothing here checks it exists, because a
- * profile can be removed after it was chosen and the reader answers null for that. */
-export const readDeskSection = (): Promise<{ profile?: string }> => readSection('desk', {});
-export const writeDeskSection = (v: { profile?: string }): Promise<void> =>
-  updateConfig((doc) => {
-    const d = ((doc.desk ?? {}) as Record<string, unknown>) || {};
-    if (v.profile !== undefined) d.profile = String(v.profile).trim().slice(0, 64);
-    doc.desk = d;
-  });
+/**
+ * THE CAMPAIGN AND THE DESK PROFILE LIVE IN `campaign_config` NOW, NOT HERE.
+ *
+ * `doc.campaign` (name, description) and `doc.desk` (profile) were this file's until
+ * 2026-08-29. They describe a BODY OF WORK, and `ronin.json` is the record of a MACHINE —
+ * so when a Campaign became a durable object of its own they moved to its store, and
+ * `src/campaign-config.ts` is the one writer of both. Its `readCampaignSection` /
+ * `readDeskSection` keep exactly the shapes that used to live here, so `src/settei.ts`,
+ * `src/routes/settei-api.ts` and `src/desk-profiles.ts` changed an import and nothing else.
+ *
+ * The two old keys are still IN the file on an upgraded install and are read exactly once
+ * more, by `ensureInitialCampaign()`, to seed the initial record — through the generic
+ * `readSection` above, which is why nothing campaign-shaped needs to remain here. They are
+ * inert after that; removing them is build-out leg 5, with the old writable surface.
+ *
+ * The dependency runs ONE WAY — `campaign-config.ts` reads this module, never the reverse.
+ * That is what makes "one writable Campaign record" structural rather than a convention,
+ * and it is what keeps `check-modules` free of a cycle.
+ */
 
 /** NEW PROJECTS AND DESKS (owner, 2026-08-29) — the default written into a project's
  * `RONIN_REPO` when its root is added: `managed` (desks, hand-in, team promotion) or

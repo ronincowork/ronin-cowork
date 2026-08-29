@@ -38,10 +38,11 @@ import {
   writeGbrainSection,
   writeMachineSection,
   writeOwner,
-  writeDeskSection,
   writeDesksSection,
-  writeCampaignSection,
 } from '../user-config.js';
+// The Campaign and its desk_profile are one durable record now; these two writers land in
+// the initial campaign_config, which is the only writable Campaign record on the box.
+import { writeCampaignSection, writeDeskSection } from '../campaign-config.js';
 
 const errMsg = (e: unknown): string => String((e as Error)?.message ?? e);
 
