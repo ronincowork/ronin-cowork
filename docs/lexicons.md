@@ -6,6 +6,10 @@ campaign) and a translation (*Français*) are the same kind of file, and that is
 (KOTOBA `lexicon`, ruled with R38 on 2026-08-27). A **desk profile** names one the way it
 names a skin (`docs/desk-profiles.md`).
 
+`Cowork` is the owner-facing lexicon word for the canonical `team` / `team_roster`
+layer. It introduces no `cowork` record: APIs, durable files and agent-facing machinery
+continue to say Team. `Team Commons` is the deliberate exception and is always explicit.
+
 ## The catalog
 
 `ronin_catalogs/lexicons/<name>.md`, one file per lexicon, shadowable whole-file by name

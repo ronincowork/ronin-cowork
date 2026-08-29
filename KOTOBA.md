@@ -403,6 +403,12 @@ distinction wearing two names.
 **The team is what the house organizes around** (owner, 2026-08-23 — R35). Its durable
 half is the **`team_roster`**; its live half is derived from the sessions, always.
 
+**Cowork is the reading-face word for this layer, not another object** (owner,
+2026-08-29). Code, records and agent-facing machinery keep `team` and `team_roster`;
+the owner-facing Campaign surfaces may say **Cowork** for one roster-backed collaboration
+and **Coworks** for the collection. It replaces neither `campaign` nor `project_root`.
+The explicit surface name **Team Commons** remains unchanged so “commons” stays scoped.
+
 | Term | Scope | Means | Record |
 |---|---|---|---|
 | **team** (`@ronin-tags`) | system_scope | **a set of collaborating sessions, addressable as one** — the sessions carrying the same tag, derived fresh on every ask. Anyone may change a session's teams — the owner, a lead, the session itself: **membership has little to absolutely no rules, by ruling**. A session may be on several teams. `session_team` and `group` are the retired spellings (R32, R35) | `ronin_bin/tejun-team` |

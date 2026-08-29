@@ -1390,7 +1390,7 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.roster:** the roster
 - **glossary.launch:** launch
 - **glossary.family:** Family
-- **glossary.team_roster:** Team roster
+- **glossary.team_roster:** Cowork record
 - **glossary.team_role:** team role
 - **glossary.team_lead:** team lead · 人
 - **glossary.wipeboard:** wipeboard
@@ -1403,7 +1403,7 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.customization:** your own macros and jobs
 - **glossary.pad:** Pad
 - **glossary.control:** Control
-- **glossary.team:** Team
+- **glossary.team:** Cowork
 - **glossary.note:** Note
 - **glossary.doing:** what it's doing
 - **glossary.ladder:** ladder

@@ -448,11 +448,11 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.stats` | Stats |  |  |  |  |
 | `glossary.surface` | surface |  |  |  |  |
 | `glossary.tab` | tab |  |  |  |  |
-| `glossary.team` | Team | Staff |  |  |  |
+| `glossary.team` | Cowork | Staff |  |  |  |
 | `glossary.team_commons` | team commons |  |  |  |  |
 | `glossary.team_lead` | team lead · 人 |  |  |  |  |
 | `glossary.team_role` | team role |  |  |  |  |
-| `glossary.team_roster` | Team roster |  |  |  |  |
+| `glossary.team_roster` | Cowork record |  |  |  |  |
 | `glossary.terminal_tile` | terminal tile |  |  |  |  |
 | `glossary.tile` | tile |  |  |  |  |
 | `glossary.wipeboard` | wipeboard |  |  |  |  |
