@@ -151,7 +151,9 @@ export function build() {
   // Session macros (⚡ on each tile head) are the tile's own — built in
   // tilemacros.js by Tile itself; nothing to wire here.
 
-  key('brandbtn', () => S.workspace?.navigate('cowork'));
+  // The Torii is Ronin's mark, not the active Cowork's Commons door. It always returns
+  // to the root arrival where Campaign, Coworks and Agents are chosen.
+  key('brandbtn', () => S.workspace?.navigate('home'));
 
   // ⛩ Commons, ミ Mika Assist and く Keypad LEFT THE BAR on 2026-08-27 (owner). The
   // Commons is still the tile head's ⛩, the brand mark and ⌃⇧C; Mika is the `mika` tool

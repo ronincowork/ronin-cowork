@@ -118,7 +118,7 @@ export async function init() {
   // its Campaign door opens that destination, and guarded like every other: the landing
   // page failing must cost the owner a page, never their terminals. `safeView` is this
   // one, so its own failure is reported rather than looping.
-  guard('register the Campaign Home destination', () => workspace.register('home', createCampaignHome()));
+  guard('register the Ronin Home destination', () => workspace.register('home', createCampaignHome()));
   // CAMPAIGN MANAGE — a Cowork Space whose surfaces are Campaign-level (owner, 2026-08-29):
   // the same workbench, selector column, persistence, recall and drag/drop as the Cowork
   // space, offering a Campaign's own configuration instead of its Coworks and Agents.

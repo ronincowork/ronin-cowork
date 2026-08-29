@@ -1,6 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * CAMPAIGN HOME — the root arrival, and three doors out of it.
+ * RONIN HOME — the root arrival, and three doors out of it.
  *
  *   ⛩ Campaign · 人々 Coworks · 人 Agents
  *

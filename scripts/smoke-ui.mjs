@@ -267,20 +267,17 @@ async function checkJourneys(page, label, jsErrors) {
     bad(`${label}: header League new-tab contract is broken — ${JSON.stringify(leagueDoor)}`);
   }
 
-  // 1 — ⛩ Commons is a DESTINATION, not a menu (owner's ruling 2026-08-17): one press
-  // lands on ⌂ Roster, and nothing drops. This probe asserted the popover's open/close
-  // truth until then; the popover went with the menu it existed for.
+  // 1 — ⛩ ronin is the root door: Campaign, Coworks and Agents, never one Cowork's
+  // Commons. The Cowork Commons remains the workspace surface behind ⚙.
   await page.locator('#brandbtn').click();
   await page.waitForTimeout(300);
-  const commons = await page.evaluate(() => ({
-    pane: document.querySelector('.home.show')?.dataset.pane,
-    // ONE strip, not every tile's. A sessionless tile shows its own home panel, so an
-    // unscoped count returns 4 × 10 and "10 rooms" would silently never be what was checked.
-    tabs: document.querySelector('.home.show .home-tabrow')?.querySelectorAll('button').length,
-    menu: !!document.querySelector('.commons-menu'),
+  const roninHome = await page.evaluate(() => ({
+    hash: location.hash,
+    visible: !document.querySelector('.ch-view')?.hidden,
+    doors: document.querySelectorAll('.ch-view .ch-go').length,
   }));
-  if (commons.pane === 'sessions' && !commons.menu) ok(`${label}: ⛩ Commons goes straight to ⌂ Roster, and drops nothing`);
-  else bad(`${label}: ⛩ Commons landed on "${commons.pane}"${commons.menu ? ' and dropped a menu' : ''}, wanted the roster`);
+  if (roninHome.hash === '#/home' && roninHome.visible && roninHome.doors === 3) ok(`${label}: ⛩ ronin opens Ronin Home`);
+  else bad(`${label}: ⛩ ronin did not open Ronin Home — ${JSON.stringify(roninHome)}`);
   // The strip once carried ten rooms and two kinds of thing. Install rooms moved to the
   // admin_desk; Archives later became the fifth session room. The expected count comes
   // from the same static registry the product renders, so this probe checks DOM convergence
@@ -893,14 +890,12 @@ async function checkPhoneJourneys(page, label) {
   const niOpen = await page.evaluate(() => !!document.querySelector('.tdrop.open'));
   if (niOpen) ok(`${label}: ニ opens the app sheet`);
   else return bad(`${label}: ニ did not open its sheet`);
-  // A row is a door, and since 2026-08-17 Commons is a door to ONE place: ⌂ Roster.
-  // It opened a second menu inside the sheet until then — a sheet dropping a menu over
-  // itself was three taps deep on a 402px phone, which is most of why the menu went.
+  // The Torii is the root Ronin door on phone too.
   await page.tap('#brandbtn');
   await page.waitForTimeout(300);
-  const pane = await page.evaluate(() => document.querySelector('.home.show')?.dataset.pane);
-  if (pane === 'sessions') ok(`${label}: ニ → Commons lands on ⌂ Roster in one tap`);
-  else bad(`${label}: ニ → Commons landed on "${pane}", wanted "sessions"`);
+  const atHome = await page.evaluate(() => location.hash === '#/home' && !document.querySelector('.ch-view')?.hidden);
+  if (atHome) ok(`${label}: ニ → ⛩ ronin lands on Ronin Home in one tap`);
+  else bad(`${label}: ニ → ⛩ ronin did not land on Ronin Home`);
   const sheetGone = await page.evaluate(() => !document.querySelector('.tdrop.open'));
   if (sheetGone) ok(`${label}: the sheet closed behind the door it opened`);
   else bad(`${label}: the ニ sheet stayed open over the pane`);
@@ -945,12 +940,10 @@ async function checkA11y(page, label, axeSrc) {
     else ok(`${label}: axe ${state} — no serious/critical violations`);
   };
   await scan('at rest');
-  // The Commons panel, not a menu: ⛩ drops nothing since 2026-08-17, so the second
-  // state worth scanning is the room it lands in — a tab strip and a live roster.
+  // Ronin Home is the root state behind the Torii.
   await page.locator('#brandbtn').click();
   await page.waitForTimeout(300);
-  await scan('with the Commons open on ⌂ Roster');
-  await page.evaluate(() => document.querySelector('.home.show .home-x')?.click());
+  await scan('on Ronin Home');
   // 📝 lives behind メ since 2026-08-17 — six controls came off the row into its drop.
   await page.locator('.tile .tile-head button.tmore-btn').first().click();
   await page.locator('.tile .tile-head button.note').first().click();
