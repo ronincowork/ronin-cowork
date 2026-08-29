@@ -132,7 +132,11 @@ export const isSynthesized = () => !!read?.synthesized;
  */
 export async function saveCampaign(id, fields) {
   if (!isSynthesized()) {
-    const r = await request(`/api/campaigns/${encodeURIComponent(id)}`, { method: 'PATCH', json: fields });
+    // PUT is the store's one edit door and it takes ONLY THE KEYS STATED
+    // (src/routes/campaigns-api.ts) — so a partial edit stays partial and the keys this
+    // call does not name are left alone. There is no PATCH route; sending one 404s, which
+    // is how the Identity and Desk Profile saves failed silently before.
+    const r = await request(`/api/campaigns/${encodeURIComponent(id)}`, { method: 'PUT', json: fields });
     if (r.ok) await loadCampaigns();
     return r;
   }
