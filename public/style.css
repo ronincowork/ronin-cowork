@@ -244,6 +244,8 @@
   --bar-nav-hover: var(--accent);
   --bar-nav-focus: var(--accent);
   --bar-value-fg: var(--muted-2);
+  --bar-brand-mark-h: 27px;
+  --bar-brand-track: -0.005em;
 
   /* ---- EDGES. Every border in the app is one hairline; the token exists so that a
      heavier-lined theme is one edit and not four hundred. */
@@ -706,12 +708,17 @@ body {
   gap: var(--space-5);
   font-weight: 600;
   letter-spacing: 0.3px;
-  padding: 0 var(--space-2);
+  padding: 0;
   color: var(--fg);
   text-decoration: none;
 }
-#bar .brand-mark { display: block; width: var(--space-11); height: var(--space-10); }
-#bar .brand-word { font-size: var(--text-9); }
+#bar .brand-mark { display: block; width: auto; height: var(--bar-brand-mark-h); }
+#bar .brand-word {
+  color: var(--fg-strong);
+  font-size: var(--text-9);
+  font-weight: 600;
+  letter-spacing: var(--bar-brand-track);
+}
 #bar .brand-home,
 #bar .brand-home:hover,
 #bar .brand-home:active { color: var(--kaki); }
