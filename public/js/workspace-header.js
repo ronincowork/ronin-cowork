@@ -1,6 +1,6 @@
 /* part of the ronin-cowork client — see js/README.md */
 /** The one navigation header shared by every Ronin workspace. */
-import { normalizeSelection, primaryCampaign } from './campaigns.js';
+import { loadCampaigns, normalizeSelection, primaryCampaign } from './campaigns.js';
 
 const readable = (name = '') => String(name).split(/[_-]+/).filter(Boolean)
   .map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' ');
@@ -35,5 +35,8 @@ export function installWorkspaceHeader(workspace) {
     }
   };
   refresh();
+  // A direct #/cowork or #/team arrival has not passed through the root selector, so
+  // resolve the selected Campaign here too. The bar must never depend on visit order.
+  void loadCampaigns().then(refresh);
   return refresh;
 }

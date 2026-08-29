@@ -236,6 +236,15 @@
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-term: Menlo, 'DejaVu Sans Mono', Consolas, monospace;
 
+  /* ---- BAR NAVIGATION. A label is a door; the value beside it is context, never a
+     second door. These semantic roles keep native button chrome and feature-local
+     guesses out of the app bar. */
+  --bar-nav-bg: transparent;
+  --bar-nav-fg: var(--fg-strong);
+  --bar-nav-hover: var(--accent);
+  --bar-nav-focus: var(--accent);
+  --bar-value-fg: var(--muted-2);
+
   /* ---- EDGES. Every border in the app is one hairline; the token exists so that a
      heavier-lined theme is one edit and not four hundred. */
   --edge: 1px;
@@ -450,6 +459,31 @@ body {
 }
 
 @layer ui {
+
+/* A top-bar navigation label and the plain value loaded beside it. Every bar door uses
+   this reset; a raw <button> in the bar is not a navigation primitive. */
+.ui-bar-nav {
+  appearance: none;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  background: var(--bar-nav-bg);
+  color: var(--bar-nav-fg);
+  font: inherit;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ui-bar-nav:hover { color: var(--bar-nav-hover); }
+.ui-bar-nav:focus-visible {
+  outline: var(--edge-2) solid var(--bar-nav-focus);
+  outline-offset: var(--space-1);
+  border-radius: var(--radius-sm);
+}
+.ui-bar-value {
+  color: var(--bar-value-fg);
+  white-space: nowrap;
+}
 /* ---- ui-sheet / ui-card — the modal primitive (js/ui.js `sheet`) ----
    Dialog semantics, focus entry/trap/return and dismissal live in JS; this is the
    look: a scrim, a centered card. Consumers size their card and may accent its
@@ -669,18 +703,9 @@ body {
 #bar .brand {
   font-weight: 600;
   letter-spacing: 0.3px;
-  /* a <button> brings its own everything — strip it back to the wordmark */
-  appearance: none;
-  background: transparent;
-  border: 0;
   padding: 0 var(--space-2);
-  margin: 0;
-  font-family: inherit;
-  font-size: inherit;
   color: var(--fg);
   text-decoration: none;
-  line-height: 1;
-  cursor: pointer;
 }
 #bar .brand-home,
 #bar .brand-home:hover,
@@ -693,33 +718,7 @@ body {
     color: var(--accent);
   }
 }
-/* Keyboard users get a visible ring; pointer users never see one. */
-#bar .brand:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
-}
 #bar .brand-home:focus-visible { outline-color: var(--kaki); }
-
-#bar .bar-context {
-  color: var(--muted-2);
-  white-space: nowrap;
-}
-#bar .bar-nav {
-  appearance: none;
-  border: 0;
-  padding: 0;
-  background: transparent;
-  color: var(--fg-strong);
-  font: inherit;
-  white-space: nowrap;
-  cursor: pointer;
-}
-#bar .bar-nav:hover { color: var(--accent); }
-#bar .bar-nav:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: var(--space-1);
-}
 #bar .bar-cowork-name { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #bar .grow {
   flex: 1;
