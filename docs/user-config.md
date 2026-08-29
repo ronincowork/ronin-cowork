@@ -24,7 +24,7 @@ src/settei.ts                     the assembled record the ⚙ Configuration tab
 | `sessions.max` | how many sessions may run at once | `PUT /api/session-max` — ⌂ Roster and ⚙ Configuration, **one route** | `@ronin-session-max` |
 | `owner.name` | what to call the owner | `PUT /api/settei/owner` | `@ronin-owner` |
 | `machine.name` · `machine.where` | what this box is called, and where it is | `PUT /api/settei/machine` | none |
-| `agents.sessions.default` · `agents.jobs` | how work gets a model | `PUT /api/settei/agents` | none |
+| `agents.sessions.default` · `agents.sessions.by_provider` · `agents.jobs` | how work gets a model — the install's one default, each provider's preferred model, and what a house job asks | `PUT /api/settei/agents` — merges per key, so saving one never drops another | none |
 | `gbrain.enabled` | whether the owner turned gbrain on | `PUT /api/settei/gbrain` | none |
 | `koshi` | which outlet each koshi job asks | the 目 Koshi tab | none |
 | `auth` | the login record — scrypt params **and the session signing secret** | `bin/ronin-passwd` | none |

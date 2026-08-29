@@ -105,7 +105,8 @@ known. `⚙` = edit it in the ⚙ Configuration view unless another editor is na
 
 | Looking for | It lives | Known / edited |
 |---|---|---|
-| the default for new sessions | `ronin.json` `agents.sessions.default` | typed · ⚙ |
+| the default for new sessions | `ronin.json` `agents.sessions.default` | typed · ⚙ — names a provider AND a model |
+| which model a given provider prefers | `ronin.json` `agents.sessions.by_provider.<provider>` | typed · ⚙ — one row per provider the launch table carries, generated from it; answers a launch that names the provider and no model, falling back to that provider's first column |
 | which model answers Mika / a house job | `ronin.json` `agents.jobs.<name>` | typed · ⚙ (koshi jobs point in 目) |
 | the env-var **name** a job bills through | `ronin.json` `agents.jobs.<name>.key_env` | typed — a name is a setting |
 | which CLIs are installed, and where | nowhere — login-shell probe per read | found · `observed.agents` |
