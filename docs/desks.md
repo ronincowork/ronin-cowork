@@ -46,8 +46,10 @@ moment of asking (`deskStatus`). Nothing here is prose an agent maintains.
 gives a coding launch its desk, the contract in its brief, the desk actions and the tools;
 `desks=none`, or no file, gives none of them and the session starts in the checkout. There
 is no install-wide switch. ⚙ *New projects use desks?* is the default a new project root's
-file is written from (`declareArrangement`, `src/desks/arrangement.ts`); edit the file to
-change one project. A coding launch that gets no desk says why on its receipt (*no desk —
+file is written from (`declareArrangement`, `src/desks/arrangement.ts`); to change one
+project, tick or untick **desks** on its project-root editor (`PUT
+/api/project-roots/:name/desks`, `setDesks` — writes the repository's file, which is yours
+to commit) or edit the file. A coding launch that gets no desk says why on its receipt (*no desk —
 `<root>` has no RONIN_REPO*), and `bin/ronin-doctor` lists every project root's answer.
 
 ## Open
