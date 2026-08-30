@@ -369,19 +369,17 @@ export function createCoworkView(options = {}) {
     const remove = createAction({ label: t('league.delete_team', 'Delete team'), kind: 'danger', action: async () => { const count = membersOfTeam(name).length; if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team: name, count }))) return; const result = await deleteTeamRoster(name); if (!result.ok) { surface.setState('failed', result.message); return; } for (const seat of bench.locations(WB_TYPES.team, name)) emptySeat(seat); for (const key of [...leagueTeamSurfaces.keys()]) if (key.endsWith(`\0${name}`)) leagueTeamSurfaces.delete(key); } });
     const surface = createSurface({ label, className: 'league-team-edit', actions: name === UNASSIGNED ? [launch] : [launch, remove] });
     surface.content.classList.add('league-team-edit-content');
-    if (name === UNASSIGNED) {
-      const out = { el: surface.el }; leagueTeamSurfaces.set(cacheKey, out); return out;
-    }
     const render = () => {
+      const holding = name === UNASSIGNED;
       const current = teamByName(name), members = membersOfTeam(name);
       const metadata = createMetadata({ className: 'league-team-metadata', rows: [
         [t('team.team_role', 'Team role'), current.team_role], [t('team.objective', 'Objective'), current.objective],
         [t('team.project_root', 'Project root'), current.project_root],
       ] }).el;
       const roster = el('section', 'league-team-roster');
-      roster.append(el('h3', 'league-team-roster-title', t('league.members', 'Team members')));
+      roster.append(el('h3', 'league-team-roster-title', holding ? t('league.agents', 'Agents') : t('league.members', 'Team members')));
       const list = el('div', 'league-team-member-list');
-      if (!members.length) list.append(el('p', 'league-team-empty', t('league.no_members', 'No Agents assigned yet.')));
+      if (!members.length) list.append(el('p', 'league-team-empty', holding ? t('league.no_ronin', 'No Rōnin Agents') : t('league.no_members', 'No Agents assigned yet.')));
       for (const member of members) {
         const row = el('article', 'league-team-member');
         const identity = el('div', 'league-team-member-identity');
@@ -389,6 +387,7 @@ export function createCoworkView(options = {}) {
         const words = el('div', 'league-team-member-words');
         words.append(el('strong', null, member.name), el('span', null, member.session_role || t('league.role_unset', 'Role not set')));
         identity.append(mark, words);
+        if (holding) { row.append(identity); list.append(row); continue; }
         const lead = el('button', 'league-team-lead', member.team_lead ? t('league.team_lead', 'Team lead') : t('league.make_team_lead', 'Make team lead'));
         lead.type = 'button'; lead.setAttribute('aria-pressed', String(member.team_lead));
         lead.addEventListener('click', async () => { const result = await setTeamLead(member.name, name, !member.team_lead); if (!result.ok) return surface.setState('failed', result.message); surface.setState(); render(); });
@@ -398,6 +397,7 @@ export function createCoworkView(options = {}) {
         row.append(identity, lead, eject); list.append(row);
       }
       roster.append(list);
+      if (holding) { surface.content.replaceChildren(roster); return; }
       const available = sessionsAvailableToTeam(name), add = el('div', 'league-team-add');
       const select = el('select', null); select.setAttribute('aria-label', t('league.choose_member', 'Choose an Agent to add'));
       select.append(new Option(available.length ? t('league.choose_member', 'Choose an Agent to add') : t('league.no_available_members', 'No other Agents available'), ''));
