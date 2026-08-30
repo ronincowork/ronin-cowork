@@ -87,15 +87,6 @@ stores.
 
 **There is no delete.** Nothing on a button deletes a record other objects still point at.
 
-### Fresh-install population
-
-`FRESH_CAMPAIGNS` in `src/campaign-config.ts` is the declarative collection installed
-when the Campaign store is empty. It contains one object today: stable id `ronin_home`,
-title `Ronin Home`. SETTEI ensures that record exists before it answers Atarashi, so the
-setup seat receives a real Campaign object rather than synthesizing one. Existing installs
-keep their previously named Campaign unchanged, and the collection is never a mutable
-"default Campaign" pointer.
-
 ## The SETTEI boundary
 
 Before 2026-08-29 the install's one implicit campaign lived in `ronin.json` as
@@ -128,7 +119,7 @@ the same reason: a store we cannot write is a different failure, and throwing th
 cost the whole boot.
 
 1. Derive one id from the install's current campaign name. An install that never named
-   one — every fresh install — is born with the one home Campaign, `ronin_home`, titled
+   one — every fresh install — is born with the one home Campaign, `home`, titled
    "Ronin Home" (owner, 2026-08-30); the name is free to change afterwards. **On a box
    whose owner named their campaign, the id is derived from that name, never hard-coded**,
    and anything assuming a literal id is wrong there.

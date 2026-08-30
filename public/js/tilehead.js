@@ -54,14 +54,12 @@
  * reading the header left to right — and then, past メ, left to right inside its drop.
  */
 import { CONTROL_POSITIONS, makeDial, makeGauge, setInert } from './widgets.js';
-import { clampTip, makeChip } from './shingo.js';
+import { clampTip } from './shingo.js';
 import { buildTileMacros } from './tilemacros.js';
 import { buildTileMore } from './tilemore.js';
 import { buildTileMentions } from './tilementions.js';
-import { deskLabel, deskReadout, deskTip, desksOf } from './desks.js';
 import { isCoarse } from './tiledrop.js';
 import { S, serviceMissing } from './state.js';
-import { taskIcon } from './home.js';
 import { makeOutput } from './output.js';
 import { t } from './lexicon.js';
 
@@ -92,51 +90,11 @@ const HEADER = () => {
   // happens by placing or dragging a roster card into the workspace, never in its head.
   { key: 'sessionName', tag: 'span', cls: 'sess' },
 
-  // THE MARK — what the session is doing, off its letter. `?` when it has not said.
-  { key: 'jobBtn', cls: 'job', needs: 'session',
-    help: t('head.job_help', 'What this session is doing'),
-    quiet: t('head.job_quiet', 'What a session is doing — no session in this tile yet'),
-    on: (tile, el) => tile.pickJob(el),
-    // `?` when nothing has been said, not blank: an empty button among eight others is
-    // invisible, and the owner could not find the control at all. `?` is not a guessed
-    // mark — it is the honest reading, drawn so it can be seen and pressed.
-    read: (tile, el) => {
-      const s = S.sessions.find((x) => x.name === tile.session);
-      const job = (s && s.session_role) || '';
-      // The job NAME on the element, so style can reach ONE mark: glyphs differ in how
-      // heavily their font draws them (style.css, `[data-job=…]`).
-      el.dataset.job = job;
-      el.textContent = taskIcon(s) || '?';
-      el.classList.toggle('unset', !job);
-      return job ? t('head.job_read', '{job} — click to change what this session is doing', { job })
-                 : t('head.job_unmarked', 'Not marked — click to say what this session is doing');
-    } },
-
-  // THE DESKS — one button. One desk says its worktree name; several say how many. The reading is
-  // DERIVED on the server from git and the desk registry (`/api/desks`, src/desk-state.ts):
-  // the line it hands in to, ahead/behind, unsaved files, pending, parked, blocked — never
-  // a fact the agent keeps in prose. It works with no michi: the desks are cowork's.
-  { key: 'branchBtn', cls: 'checkout branch', needs: 'session',
-    help: t('head.branch_help', 'Desks this session is working at — worktree, repo, branch, and what is ahead, pending or parked'),
-    quiet: { session: t('head.branch_quiet', 'Desks — no session in this tile yet') },
-    on: (tile) => tile.toggleLadder(),
-    read: (tile, el) => {
-      const entry = desksOf(tile.session);
-      const desks = entry?.desks || [];
-      el.textContent = deskLabel(entry);
-      el.classList.toggle('unset', !desks.length);
-      el.classList.toggle('attn', !!(entry?.rollup?.pending || entry?.rollup?.blocked));
-      // The worktree/desk is on the header. Expansion carries its full path, repository,
-      // branch and line, followed by the live roll-up.
-      const readout = deskReadout(entry);
-      return readout ? readout + '\n' + deskTip(entry) : deskTip(entry);
-    } },
-
-  // SHINGO's public word is WORK RECORD. It belongs beside the desk reading: where the
-  // session is working, then what it says it is doing there.
-  { key: 'chip',
-    widget: (tile) => makeChip(() => tile.toggleLadder()),
-    help: t('head.chip_help', "This session's work record — what it has done, what it is doing, what comes next, and the documents it has listed. Opens the work record.") },
+  { key: 'workRecordBtn', cls: 'work-record',
+    text: t('head.view_work_record', 'View Work Record'), needs: 'session',
+    help: t('head.work_record_help', 'View repositories, current action, and the work record'),
+    quiet: t('head.work_record_quiet', 'View Work Record — no Agent in this workspace'),
+    on: (tile) => tile.toggleLadder() },
 
   { grow: true },
 
