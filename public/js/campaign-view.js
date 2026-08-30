@@ -155,12 +155,14 @@ export function createCampaignView() {
    * value is what draws the eye. Same Kit cards, same selector groups the Cowork
    * workbench uses; nothing here is a second column implementation.
    */
+  // ONE HEADER, THE KIT'S. The column wears the same wk-surface-header every seated
+  // surface wears; nothing here draws its own band.
   const column = createSurface({ label: t('campaign', 'Campaign'), className: 'cv-selector' });
-  const columnHead = el('div', 'cv-selector-head');
-  const columnTitle = el('span', 'cv-selector-title', t('campaign', 'Campaign'));
+  const columnHead = createSurfaceHeader({ label: t('campaign', 'Campaign') });
+  const columnTitle = columnHead.title;
   const columnFace = el('span', 'cv-selector-face');
-  columnHead.append(columnTitle, columnFace);
-  column.el.prepend(columnHead);
+  columnHead.actions.append(columnFace);
+  column.el.prepend(columnHead.el);
   // THE RECORD: what this Campaign has, counted live. Reading only — the doors to the
   // work are the app bar's, not this column's.
   const record = el('div', 'cv-record');
