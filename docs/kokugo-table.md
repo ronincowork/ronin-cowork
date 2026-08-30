@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1236 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1237 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -1015,6 +1015,9 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
+| `roots.add` | ＋ Add a project root |  |  |  |  |
+| `roots.add_hint` | A directory on this machine that Agents here may work in. |  |  |  |  |
+| `roots.add_save` | Add |  |  |  |  |
 | `roots.archive` | archive |  |  |  |  |
 | `roots.archive_failed` | could not archive it — {message} |  |  |  |  |
 | `roots.archive_title` | Take it off the new-session picker. It stays on this pane, and sessions already using it are untouched. |  |  |  |  |
@@ -1038,7 +1041,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `roots.count_many` | {n} project_roots |  |  |  |  |
 | `roots.count_one` | {n} project_root |  |  |  |  |
 | `roots.edit` | edit |  |  |  |  |
-| `roots.empty` | nothing included yet — ＋ include asks Mika to point Ronin at a directory |  |  |  |  |
+| `roots.empty` | No project roots yet — add one below. |  |  |  |  |
 | `roots.exclude` | exclude |  |  |  |  |
 | `roots.exclude_confirm` | Exclude "{name}" from your Ronin? |  |  |  |  |
 | `roots.exclude_failed` | could not exclude it — {message} |  |  |  |  |
@@ -1059,8 +1062,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `roots.f_remit` | remit |  |  |  |  |
 | `roots.f_remit_hint` | The one line you pick it from in a list |  |  |  |  |
 | `roots.f_remit_placeholder` | what this is |  |  |  |  |
-| `roots.include` | ＋ include… ask Mika |  |  |  |  |
-| `roots.include_title` | Ask Mika to include a directory — she reads it and proposes the entry |  |  |  |  |
 | `roots.loading` | loading… |  |  |  |  |
 | `roots.read_failed` | could not read the catalog — {message} |  |  |  |  |
 | `roots.save` | save |  |  |  |  |

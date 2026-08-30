@@ -3090,6 +3090,11 @@ body {
   padding: var(--space-4) var(--space-5);
   background: var(--panel);
 }
+/* The add card: the last block in the list, the shape of a root, drawn as a place to fill. */
+.pr-block.pr-add {
+  border-style: dashed;
+  background: transparent;
+}
 .pr-block.gone {
   border-color: var(--bad-line);
 }

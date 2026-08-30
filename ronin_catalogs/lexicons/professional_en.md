@@ -660,8 +660,9 @@ The pad's current config downloads as a backup first.
 ## wipeboard — the kind note
 
 ## roots — projectroots.js (the ▣ Project roots tab)
-- **roots.include:** ＋ include… ask Mika
-- **roots.include_title:** Ask Mika to include a directory — she reads it and proposes the entry
+- **roots.add:** ＋ Add a project root
+- **roots.add_hint:** A directory on this machine that Agents here may work in.
+- **roots.add_save:** Add
 - **roots.read_failed:** could not read the catalog — {message}
 - **roots.save:** save
 - **roots.cancel:** cancel
@@ -673,7 +674,7 @@ The pad's current config downloads as a backup first.
 
 The catalog entry goes. {dir} is not touched.
 - **roots.exclude_failed:** could not exclude it — {message}
-- **roots.empty:** nothing included yet — ＋ include asks Mika to point Ronin at a directory
+- **roots.empty:** No project roots yet — add one below.
 - **roots.loading:** loading…
 - **roots.chip_reviewed_desks:** reviewed · desks
 - **roots.chip_reviewed:** reviewed
