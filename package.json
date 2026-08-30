@@ -14,7 +14,7 @@
     "stage": "node scripts/stage.mjs",
     "check:modules": "node scripts/check-modules.mjs",
     "check:workspace-kit": "node scripts/check-workspace-kit.mjs",
-    "check:workbench-ui": "node scripts/check-workbench-ui.mjs",
+    "workbench:ui": "node scripts/workbench-ui.mjs",
     "check:css": "node scripts/check-css.mjs",
     "check:lexicon": "node scripts/check-lexicon.mjs",
     "check:src": "node scripts/check-src.mjs",
@@ -28,7 +28,7 @@
     "check:launch-ready": "tsx scripts/check-launch-ready.ts",
     "stores:map": "node scripts/stores-map.mjs --write",
     "byoin": "bin/ronin-byoin",
-    "verify": "for f in public/js/*.js; do node --check \"$f\" || exit 1; done && node scripts/check-modules.mjs && node scripts/check-workspace-kit.mjs && node scripts/check-css.mjs && node scripts/check-lexicon.mjs && node scripts/check-src.mjs && node scripts/check-kyokai.mjs && node scripts/check-tomodachi.mjs && node scripts/check-docs.mjs && node scripts/check-kotoba.mjs && node scripts/check-dead.mjs && node scripts/check-stores.mjs && tsx scripts/check-catalogs.ts && node scripts/check-place.mjs && node scripts/stores-map.mjs && node scripts/check-tests.mjs && tsc --noEmit && node scripts/check-workbench-ui.mjs && node scripts/smoke-ui.mjs && node scripts/visual-ui.mjs && node scripts/check-tips.mjs",
+    "verify": "for f in public/js/*.js; do node --check \"$f\" || exit 1; done && node scripts/check-modules.mjs && node scripts/check-workspace-kit.mjs && node scripts/check-css.mjs && node scripts/check-lexicon.mjs && node scripts/check-src.mjs && node scripts/check-kyokai.mjs && node scripts/check-tomodachi.mjs && node scripts/check-docs.mjs && node scripts/check-kotoba.mjs && node scripts/check-dead.mjs && node scripts/check-stores.mjs && tsx scripts/check-catalogs.ts && node scripts/check-place.mjs && node scripts/stores-map.mjs && node scripts/check-tests.mjs && tsc --noEmit && node scripts/workbench-ui.mjs && node scripts/smoke-ui.mjs && node scripts/visual-ui.mjs && node scripts/check-tips.mjs",
     "verify:staging": "node scripts/smoke-ui.mjs --staging",
     "check:tips": "node scripts/check-tips.mjs"
   },
