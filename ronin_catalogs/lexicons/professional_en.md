@@ -251,8 +251,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.roles_help:** What a launch here offers an Agent to be. Templates for a whole Team do not exist yet.
 - **campaign_view.roles_none:** No session roles on this install.
 - **campaign_view.roles_loose:** No family
-- **campaign_view.machine:** Machine
-- **campaign_view.machine_summary:** This Ronin: health, account, updates, hotwords, Koshi, gbrain, archived sessions.
+- **campaign_view.machine_summary:** The rest of the desk: Desk · Account · Archived · Help desk · Keypad.
 
 ## campaign_home — campaign-home.js (the root arrival: Machine Settings, Coworks, Launch)
 

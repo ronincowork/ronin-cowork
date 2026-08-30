@@ -54,7 +54,7 @@ function registerCampaignSurfaces() {
   // settings — health, account (configuration, updates, hotwords, Koshi, gbrain, log out),
   // archived sessions, help desk, keypad — are a surface here, the cowork commons with the
   // two tabs this page already has as surfaces left out.
-  add({ type: TYPES.machine, header: 'channels', label: () => t('campaign_view.machine', 'Machine'), summary: () => t('campaign_view.machine_summary', 'This Ronin: health, account, updates, hotwords, Koshi, gbrain, archived sessions.'), create: () => { const surface = coworkCommons({ tabs: MACHINE_TABS, label: t('campaign_view.machine', 'Machine') }); return { el: surface.el, show: () => surface.select(surface.current() || 'health') }; } });
+  add({ type: TYPES.machine, header: 'channels', label: () => t('cowork.commons', 'Ronin Desk'), summary: () => t('campaign_view.machine_summary', 'The rest of the desk: Desk · Account · Archived · Help desk · Keypad.'), create: () => { const surface = coworkCommons({ tabs: MACHINE_TABS, label: t('cowork.commons', 'Ronin Desk') }); return { el: surface.el, show: () => surface.select(surface.current() || 'health') }; } });
   // The card says Templates (owner, 2026-08-30); what opens is the session roles, which are
   // the templates that exist.
   add({ type: TYPES.roles, header: 'surface', label: () => t('league.templates', 'Templates'), summary: () => t('campaign_view.roles_summary', 'What a launch here offers an Agent to be.'), create: () => { const surface = createSessionRolesSurface(); return { el: surface.el, show: () => surface.enter() }; } });
