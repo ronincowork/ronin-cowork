@@ -257,11 +257,9 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 ## campaign_home — campaign-home.js (the root arrival: Campaign, Coworks, Agents)
 
 - **campaign_home.title:** Ronin
-- **campaign_home.machine:** Machine settings
-- **campaign_home.machine_is:** This Ronin — its look, roots and defaults
+- **campaign_home.campaign_is:** A named body of work
 - **campaign_home.coworks_is:** Coworking space for Agents
-- **campaign_home.new_is:** Launch a solo Agent, or a whole Team
-- **campaign_home.solo_agent:** Solo Agent
+- **campaign_home.agents_is:** One Agent, one job
 - **campaign_home.change:** Change
 - **campaign_home.manage:** Manage
 - **campaign_home.selected_n:** {n} selected
