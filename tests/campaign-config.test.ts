@@ -94,6 +94,36 @@ test('config merges per sub-bucket, so a caller cannot drop a bucket it never he
   assert.deepEqual(c.config.template_defaults, {});
 });
 
+test('a desk profile is applied as a template, then the Campaign owns editable settings', async () => {
+  const applied = await writeCampaign('ronin', { desk_profile: 'terminal' });
+  assert.equal(applied.desk_profile, 'terminal', 'the template name remains provenance');
+  assert.equal(applied.desk.skin, 'mono');
+  assert.equal(applied.desk.lexicon, 'terminal_en');
+  assert.equal(applied.desk.theme, 'dark');
+
+  const customized = await writeCampaign('ronin', { desk: { theme: 'light', skin: 'stock' } });
+  assert.equal(customized.desk_profile, 'terminal', 'customizing does not pretend it is another template');
+  assert.equal(customized.desk.theme, 'light');
+  assert.equal(customized.desk.skin, 'stock');
+  assert.equal(customized.desk.lexicon, 'terminal_en', 'unstated effective settings survive');
+
+  const reapplied = await writeCampaign('ronin', { desk_profile: 'terminal' });
+  assert.equal(reapplied.desk.theme, 'dark', 'reapply explicitly overwrites customization');
+  assert.equal(reapplied.desk.skin, 'mono');
+});
+
+test('a legacy profile reference is copied once into the Campaign record', async () => {
+  await fs.writeFile(path.join(temp, 'legacy.json'), JSON.stringify({
+    title: 'Legacy', desk_profile: 'professional', state: 'active', created_at: '2020-01-01T00:00:00.000Z',
+  }), 'utf8');
+  const migrated = (await readCampaign('legacy'))!;
+  assert.equal(migrated.desk.skin, 'stock');
+  assert.equal(migrated.desk.theme, 'light');
+  const raw = JSON.parse(await fs.readFile(path.join(temp, 'legacy.json'), 'utf8'));
+  assert.deepEqual(raw.desk, migrated.desk, 'resolved values persist instead of being recomputed by each view');
+  await fs.unlink(path.join(temp, 'legacy.json'));
+});
+
 test('creating over an existing Campaign is refused — editing is a different intent', async () => {
   await assert.rejects(() => createCampaign({ id: 'ronin', title: 'Other' }), /already exists/);
 });

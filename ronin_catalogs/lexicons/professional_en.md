@@ -198,28 +198,24 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 
 ## campaign_view — campaign-view.js (Campaign Manage: the selector's Campaign-level surfaces)
 
-- **campaign_view.group_what:** What it is
-- **campaign_view.group_reads:** How it reads
-- **campaign_view.group_where:** Where it works
-- **campaign_view.group_offers:** What launch offers
-- **campaign_view.group_new:** Another
+- **campaign_view.campaign_summary:** What this body of work is called, and what it is for.
+- **campaign_view.desk_summary:** This Ronin install, its owner and its workspace configuration.
+- **campaign_view.profile_summary:** The words, the skin and the templates this Campaign opens on.
+- **campaign_view.roots_summary:** The folders this Campaign is allowed to work in.
+- **campaign_view.templates_summary:** The Cowork templates this Campaign offers.
+- **campaign_view.new_summary:** Set the stage. It creates no Cowork and launches no Agent.
+- **campaign_view.none_selected:** No Campaign selected.
+- **campaign_view.no_profiles:** No desk profiles on this install.
 - **campaign_view.no_description:** No description yet.
 - **campaign_view.no_profile:** As stock — none chosen.
 - **campaign_view.roots_n:** {n} roots
 - **campaign_view.roots_none:** None — an Agent here has nowhere to work.
-- **campaign_view.templates_none:** Nothing to set yet.
-- **campaign_view.agents:** Agents
 - **campaign_view.name_help:** On the door, the browser tab and the address.
 - **campaign_view.description_help:** What this body of work is for. Shown on its card.
 - **campaign_view.id:** Id
 - **campaign_view.id_help:** Fixed at creation — the address and the storage key. Rename freely; the id stays.
 - **campaign_view.looks:** Looks: {skin}
 - **campaign_view.tile_shows:** Tile: {view}
-- **campaign_view.template_prefs:** Template preferences
-- **campaign_view.template_prefs_soon:** Which Cowork templates {campaign} offers. The selections land here once templates carry a Campaign.
-- **campaign_view.new_summary:** Set the stage. It creates no Cowork and launches no Agent.
-- **campaign_view.none_selected:** No Campaign selected.
-- **campaign_view.no_profiles:** No desk profiles on this install.
 
 ## campaign_home — campaign-home.js (the root arrival: Campaign, Coworks, Agents)
 
@@ -1315,7 +1311,7 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.agent:** agent
 - **glossary.commons:** session commons
 - **glossary.desk:** the desk
-- **glossary.cowork_space:** the cowork space
+- **glossary.workbench:** the workbench
 - **glossary.workspace:** workspace
 - **glossary.surface:** surface
 - **glossary.terminal_tile:** terminal tile

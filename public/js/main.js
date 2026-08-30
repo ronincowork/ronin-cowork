@@ -52,9 +52,12 @@ export async function init() {
   // tile is built. One request; a box that cannot answer gets stock, not a failure.
   try { await loadDeskProfile(); } catch (e) { console.warn('desk profile', e); }
   guard('page words', applyPageWords); // index.html's static words, through the lexicon
-  // After the theme, because a skin outranks it for whatever it names (js/skins.js).
-  // The profile's skin is the default; a skin this device picked since still wins.
-  guard('restore skin', () => restoreSkin(activeProfile()?.skin || ''));
+  // Resolve the root palette before revealing the document. A profile skin is not a
+  // second paint: it is the one root token set this boot uses. The boot class prevents
+  // stock surfaces painting while the catalog read is still resolving.
+  try { await restoreSkin(activeProfile()?.skin || ''); }
+  catch (e) { console.warn('restore skin', e); }
+  finally { document.documentElement.classList.remove('boot-pending'); }
 
   // FIRST LOAD. A fresh install lands here; everyone else never sees it.
   //
@@ -116,7 +119,7 @@ export async function init() {
   // contained here rather than taking the compatibility Sessions grid down with it —
   // a preview destination must never cost the owner their terminals.
   guard('register the Customize destination', () => installCustomize(workspace));
-  // Cowork collection and Team detail are two contexts on the same cowork-space bedrock.
+  // Cowork collection and Team detail are two scopes of the same discovery workbench.
   guard('register the Cowork destination', () => workspace.register('cowork', createCoworkView({ kind: 'cowork' })));
   // THE ROOT ARRIVAL (owner, 2026-08-29): three doors — Campaign, Coworks, Agents —
   // over one Campaign selection the other two inherit. Registered after Cowork because
@@ -124,7 +127,7 @@ export async function init() {
   // page failing must cost the owner a page, never their terminals. `safeView` is this
   // one, so its own failure is reported rather than looping.
   guard('register the Ronin Home destination', () => workspace.register('home', createCampaignHome()));
-  // CAMPAIGN MANAGE — a Cowork Space whose surfaces are Campaign-level (owner, 2026-08-29):
+  // CAMPAIGN MANAGE — the Campaign-scoped discovery workbench (owner, 2026-08-29):
   // the same workbench, selector column, persistence, recall and drag/drop as the Cowork
   // space, offering a Campaign's own configuration instead of its Coworks and Agents.
   guard('register the Campaign destination', () => workspace.register('campaign', createCampaignView()));

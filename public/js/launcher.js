@@ -41,7 +41,9 @@ import { t } from './lexicon.js';
  * A second cascade in this file would be correct exactly until somebody edited one of
  * them, which is the whole reason there is an endpoint for it.
  *
- * @param {object} tile  a launched session opens in this tile
+ * @param {object} tile  a launched session opens in this tile. `teams()` supplies the
+ * durable team_rosters (including empty Teams); `team()` is the Team this launcher is
+ * currently staffing and becomes the fresh form's default.
  * @param {HTMLElement} host  the null pane (`.home-null`)
  * @returns {{render: () => void, open: (task: string, prompt?: string) => void}}
  */
@@ -51,11 +53,18 @@ export function buildLauncher(tile, host) {
   const NEWGRP = '\u0000new';
   const fillGroups = (sel) => {
     const cur = sel.value;
+    const preferred = String(tile.team?.() || '').trim();
     sel.innerHTML = '';
     sel.add(new Option(t('launcher.team_none', '— team —'), ''));
-    for (const g of [...new Set(S.sessions.flatMap((x) => x.tags || []))].sort()) sel.add(new Option(g, g));
+    const durable = typeof tile.teams === 'function' ? tile.teams() : [];
+    const names = [
+      ...(Array.isArray(durable) ? durable : []),
+      ...S.sessions.flatMap((x) => x.tags || []),
+    ].map((team) => typeof team === 'string' ? team : team?.name).filter(Boolean);
+    for (const g of [...new Set(names)].sort()) sel.add(new Option(g, g));
     sel.add(new Option(t('launcher.team_new', '＋ new team…'), NEWGRP));
-    sel.value = [...sel.options].some((o) => o.value === cur) ? cur : '';
+    const wanted = preferred || cur;
+    sel.value = [...sel.options].some((o) => o.value === wanted) ? wanted : '';
   };
   const wireNewGroup = (sel) =>
     sel.addEventListener('change', () => {

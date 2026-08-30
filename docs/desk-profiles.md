@@ -1,10 +1,10 @@
 # Desk profiles — the owner's standing defaults for the surfaces they work at
 
-A **desk_profile** (KOTOBA R38, 2026-08-27) is the set of defaults the owner chooses
-once and keeps: which **skin** (the look — `SKINS.md`, tokens only, unchanged by this),
+A **desk_profile** (KOTOBA R38, revised 2026-08-30) is a template of defaults: which
+**skin** (the look — `SKINS.md`, tokens only, unchanged by this), which **theme**,
 which **lexicon** (the words — `docs/lexicons.md`), which **campaign kind** the board
 opens on, the **Team page's default arrangement**, and the RIREKI **detail level** a new
-tile shows. **A desk_profile is not a skin; each one has a skin.** It is configuration,
+tile shows. **A desk_profile is not a skin; each one has a skin and theme.** It is configuration,
 never a step in any run.
 
 ## The catalog
@@ -22,8 +22,11 @@ across browsers is not a browser's to keep, which is why this is not `localStora
 way the skin pick alone used to be.
 
 **The leaf and its route are unchanged; what moved is where the fact is stored.** Since
-2026-08-29 a `desk_profile` belongs to a **campaign** — it decides that body of work's
-vocabulary, skin and offered templates — so it lives on the `campaign_config` rather than
+2026-08-29 desk settings belong to a **campaign**. Applying a catalog profile copies all
+controlled values into `campaign_config.desk`; the Campaign can then change any one of
+them. Reapplying a profile deliberately overwrites those values. The saved profile name
+is provenance, not a live reference, so later catalog edits cannot silently repaint an
+existing Campaign. The effective vocabulary, skin, theme and defaults live here rather than
 in `ronin.json`, and both the read and the write resolve through `src/campaign-config.ts`.
 An install running several campaigns has one profile per campaign, and a combined view
 paints in the primary campaign's. `docs/campaigns.md`. `GET /api/desk-profiles` serves the list (with
@@ -37,6 +40,7 @@ renders exactly as before.
 | Field | Read by | When |
 |---|---|---|
 | `skin` | `public/js/skins.js` | at boot: the profile's skin is put up and mirrored to the device cache; a device may still pick another skin in ⚙, which wins on that device until the next profile pick |
+| `theme` | root presentation boot | `light`, `dark`, or `automatic`, resolved before reveal |
 | `lexicon` | `public/js/lexicon.js` | at boot and on a pick; every `t()` |
 | `rireki_view` | `public/js/desk-profile.js` → `S.output` | a NEW tile's Output, when nothing was saved for it; a tile's own choice is never overwritten |
 | `team_arrangement` | `public/js/cowork-view.js` | the Team cowork view, when a tab has no arrangement of its own |

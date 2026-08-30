@@ -36,10 +36,9 @@ const el = (tag, cls, text) => {
  * address and the storage key, fixed at creation, and a person should see that it is.
  */
 export function createCampaignIdentitySurface(campaign) {
-  const { createSurface, createSurfaceHeader, createField } = WorkspaceKit.primitives;
+  const { createSurface, createField } = WorkspaceKit.primitives;
   const surface = createSurface({ label: t('campaign', 'Campaign'), className: 'cv-surface' });
-  const head = createSurfaceHeader({ label: t('campaign', 'Campaign') });
-  surface.el.prepend(head.el);
+  const head = surface.header;
   const body = el('div', 'cv-body');
   surface.content.append(body);
 
@@ -85,7 +84,7 @@ export function createCampaignIdentitySurface(campaign) {
 }
 
 /** A skin token, said as a word: `stock` → Stock. The catalog's labels are these. */
-const skinWord = (skin) => (skin ? skin[0].toUpperCase() + skin.slice(1) : '');
+export const skinWord = (skin) => (skin ? skin[0].toUpperCase() + skin.slice(1) : '');
 /** A rireki_view token, in the words the Output picker already uses — one literal key each, so the gate can see them. */
 const tileWord = (view) => ({
   locked: t('output.locked', 'Locked'),
@@ -103,10 +102,9 @@ const tileWord = (view) => ({
  * which is why the Campaign record carries no kind of its own.
  */
 export function createDeskProfileSurface(campaign) {
-  const { createSurface, createSurfaceHeader, createCard, setSurfaceState } = WorkspaceKit.primitives;
+  const { createSurface, createCard, setSurfaceState } = WorkspaceKit.primitives;
   const label = t('cowork.tab_profile', 'Desk profile');
   const surface = createSurface({ label, className: 'cv-surface' });
-  surface.el.prepend(createSurfaceHeader({ label }).el);
   const cards = el('div', 'cv-cards');
   surface.content.append(cards);
 
@@ -150,10 +148,9 @@ export function createDeskProfileSurface(campaign) {
 
 /** New Campaign: the stage is set here and nothing else is born with it. */
 export function createNewCampaignSurface(onCreated) {
-  const { createSurface, createSurfaceHeader } = WorkspaceKit.primitives;
+  const { createSurface } = WorkspaceKit.primitives;
   const label = t('campaign.new', 'New Campaign');
   const surface = createSurface({ label, className: 'cv-surface' });
-  surface.el.prepend(createSurfaceHeader({ label }).el);
   const form = el('form', 'cv-body');
   surface.content.append(form);
 
@@ -206,42 +203,6 @@ export function createNewCampaignSurface(onCreated) {
       }
       select.disabled = !deskProfiles().length;
       title.f.say('');
-    },
-  };
-}
-
-/**
- * TEMPLATE PREFERENCES — which Cowork templates this Campaign offers.
- *
- * DELIBERATELY THIN, and it should stay thin until the selections are defined (owner,
- * 2026-08-29: "we don't really run templates yet but will add selections soon"). What it
- * is NOT is the template manager: saving a draft, using a template and deleting one are
- * RUNNING actions — a Cowork is born from a template — and they live beside New Team in
- * the Cowork space. A config surface that could launch a Cowork would cross the one line
- * the 4+1 model draws: desk_profile, project roots and template preferences are chosen
- * here; team_rosters and agent_sessions are managed while running.
- *
- * An empty-but-correct surface beats a full one pointed the wrong way — there is nothing
- * to un-build when the field arrives.
- */
-export function createTemplatePreferencesSurface(campaign) {
-  const { createSurface, createSurfaceHeader, setSurfaceState } = WorkspaceKit.primitives;
-  const label = t('campaign_view.template_prefs', 'Template preferences');
-  const surface = createSurface({ label, className: 'cv-surface' });
-  surface.el.prepend(createSurfaceHeader({ label }).el);
-  const body = el('div', 'cv-body');
-  surface.content.append(body);
-
-  return {
-    el: surface.el,
-    enter: () => {
-      const row = campaign();
-      body.replaceChildren(el('p', 'cv-note', t(
-        'campaign_view.template_prefs_soon',
-        'Which Cowork templates {campaign} offers. The selections land here once templates carry a Campaign.',
-        { campaign: row?.title || t('campaign', 'Campaign') },
-      )));
-      setSurfaceState(surface.el, row ? 'inert' : 'empty', row ? '' : t('campaign_view.none_selected', 'No Campaign selected.'));
     },
   };
 }

@@ -48,6 +48,18 @@ export interface CampaignSettings {
   template_defaults: Record<string, unknown>;
 }
 
+/** The Campaign's effective desk settings. A catalog desk_profile is only a template
+ * copied here; surfaces read this object and never dereference mutable catalog data. */
+export interface CampaignDeskSettings {
+  skin: string;
+  lexicon: string;
+  theme: string;
+  campaign_kind: string;
+  rireki_view: string;
+  team_arrangement: string[];
+  defaults: Record<string, unknown>;
+}
+
 export interface CampaignConfig {
   /** Stable lowercase token — storage and URL identity. IMMUTABLE in the first cut. */
   id: string;
@@ -58,6 +70,7 @@ export interface CampaignConfig {
    *  never checked for existence — a desk_profile can be removed after it was chosen, and
    *  `src/desk-profiles.ts` already answers null for that rather than throwing. */
   desk_profile: string;
+  desk: CampaignDeskSettings;
   /** `archived` hides by default and KILLS NOTHING — no Agent stops, no desk is dropped. */
   state: CampaignState;
   /** Stamped once at create, never edited. Provenance and order only. */
@@ -73,6 +86,7 @@ export interface CampaignEdit {
   title?: string;
   description?: string;
   desk_profile?: string;
+  desk?: Partial<CampaignDeskSettings>;
   state?: CampaignState;
   config?: Partial<CampaignSettings>;
 }
@@ -113,6 +127,7 @@ const str = (v: unknown, max: number): string =>
 const TITLE_MAX = 120;
 const DESCRIPTION_MAX = 500;
 const DESK_PROFILE_MAX = 64;
+const DESK_VALUE_MAX = 120;
 
 /** A plain object, or an empty one. Never an array, never null — both parse as objects in
  *  JavaScript and neither is a settings bucket. */
@@ -127,6 +142,49 @@ const settings = (v: unknown): CampaignSettings => {
     template_defaults: bucket(c.template_defaults),
   };
 };
+
+const stringList = (v: unknown): string[] => Array.isArray(v)
+  ? v.map((x) => str(x, DESK_VALUE_MAX)).filter(Boolean)
+  : [];
+
+const deskSettings = (v: unknown): CampaignDeskSettings => {
+  const d = bucket(v);
+  return {
+    skin: str(d.skin, DESK_VALUE_MAX),
+    lexicon: str(d.lexicon, DESK_VALUE_MAX),
+    theme: str(d.theme, DESK_VALUE_MAX),
+    campaign_kind: str(d.campaign_kind, DESK_VALUE_MAX),
+    rireki_view: str(d.rireki_view, DESK_VALUE_MAX),
+    team_arrangement: stringList(d.team_arrangement),
+    defaults: bucket(d.defaults),
+  };
+};
+
+const emptyDeskSettings = (): CampaignDeskSettings => deskSettings({});
+
+const mergeDeskSettings = (
+  base: CampaignDeskSettings,
+  edit: Partial<CampaignDeskSettings>,
+): CampaignDeskSettings => ({
+  ...base,
+  ...(edit.skin !== undefined ? { skin: str(edit.skin, DESK_VALUE_MAX) } : {}),
+  ...(edit.lexicon !== undefined ? { lexicon: str(edit.lexicon, DESK_VALUE_MAX) } : {}),
+  ...(edit.theme !== undefined ? { theme: str(edit.theme, DESK_VALUE_MAX) } : {}),
+  ...(edit.campaign_kind !== undefined ? { campaign_kind: str(edit.campaign_kind, DESK_VALUE_MAX) } : {}),
+  ...(edit.rireki_view !== undefined ? { rireki_view: str(edit.rireki_view, DESK_VALUE_MAX) } : {}),
+  ...(edit.team_arrangement !== undefined ? { team_arrangement: stringList(edit.team_arrangement) } : {}),
+  ...(edit.defaults !== undefined ? { defaults: bucket(edit.defaults) } : {}),
+});
+
+async function settingsFromTemplate(name: string): Promise<CampaignDeskSettings> {
+  if (!name) return emptyDeskSettings();
+  // Dynamic to keep campaign_config the storage owner while desk-profiles retains its
+  // compatibility active-name reader back into this module.
+  const { listDeskProfiles } = await import('./desk-profiles.js');
+  const p = (await listDeskProfiles()).find((row) => row.name === name);
+  if (!p) return emptyDeskSettings();
+  return deskSettings(p);
+}
 
 /**
  * Parse one record. Every field is coerced rather than trusted: the file is under the
@@ -148,6 +206,7 @@ function parse(id: string, raw: string): CampaignConfig | null {
     title: str(doc.title, TITLE_MAX) || id,
     description: str(doc.description, DESCRIPTION_MAX),
     desk_profile: str(doc.desk_profile, DESK_PROFILE_MAX),
+    desk: deskSettings(doc.desk),
     state: doc.state === 'archived' ? 'archived' : 'active',
     created_at: typeof doc.created_at === 'string' && doc.created_at ? doc.created_at : '',
     config: settings(doc.config),
@@ -170,7 +229,17 @@ async function writeRecord(c: CampaignConfig): Promise<CampaignConfig> {
 export async function readCampaign(id: string): Promise<CampaignConfig | null> {
   if (!isValidCampaignId(id)) return null;
   try {
-    return parse(id, await readFile(campaignFile(id), 'utf8'));
+    const raw = await readFile(campaignFile(id), 'utf8');
+    const parsed = parse(id, raw);
+    if (!parsed) return null;
+    const doc = JSON.parse(raw) as Record<string, unknown>;
+    if (!Object.prototype.hasOwnProperty.call(doc, 'desk')) {
+      // One-time, lossless migration: the old reference is resolved against the catalog
+      // once and copied. Later catalog edits cannot silently repaint this Campaign.
+      parsed.desk = await settingsFromTemplate(parsed.desk_profile);
+      await writeRecord(parsed);
+    }
+    return parsed;
   } catch {
     return null;
   }
@@ -217,11 +286,15 @@ export async function createCampaign(edit: CampaignEdit & { id?: string }): Prom
   if (await readCampaign(id)) {
     throw new Error(`Campaign "${id}" already exists — edit it instead.`);
   }
+  const profile = str(edit.desk_profile, DESK_PROFILE_MAX);
   return writeRecord({
     id,
     title: title || id,
     description: str(edit.description, DESCRIPTION_MAX),
-    desk_profile: str(edit.desk_profile, DESK_PROFILE_MAX),
+    desk_profile: profile,
+    desk: edit.desk === undefined
+      ? await settingsFromTemplate(profile)
+      : mergeDeskSettings(await settingsFromTemplate(profile), edit.desk),
     state: edit.state === 'archived' ? 'archived' : 'active',
     created_at: new Date().toISOString(),
     config: settings(edit.config),
@@ -240,11 +313,15 @@ export async function createCampaign(edit: CampaignEdit & { id?: string }): Prom
 export async function writeCampaign(id: string, edit: CampaignEdit): Promise<CampaignConfig> {
   const existing = await readCampaign(id);
   if (!existing) throw new Error(`Campaign "${id}" does not exist.`);
+  const appliedDesk = edit.desk_profile !== undefined
+    ? await settingsFromTemplate(str(edit.desk_profile, DESK_PROFILE_MAX))
+    : existing.desk;
   const merged: CampaignConfig = {
     ...existing,
     ...(edit.title !== undefined ? { title: str(edit.title, TITLE_MAX) || existing.id } : {}),
     ...(edit.description !== undefined ? { description: str(edit.description, DESCRIPTION_MAX) } : {}),
     ...(edit.desk_profile !== undefined ? { desk_profile: str(edit.desk_profile, DESK_PROFILE_MAX) } : {}),
+    desk: edit.desk === undefined ? appliedDesk : mergeDeskSettings(appliedDesk, edit.desk),
     ...(edit.state !== undefined ? { state: edit.state === 'archived' ? 'archived' : 'active' } : {}),
     ...(edit.config !== undefined
       ? {

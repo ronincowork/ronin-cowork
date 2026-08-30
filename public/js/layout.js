@@ -59,7 +59,7 @@ export function build() {
         // not cost a mouse trip. Falls back to the first visible
         // tile so it works before you have clicked into anything.
         if (e.code === 'KeyN') {
-          // ⌃⇧N is the keyboard's ＋ New session: a workspace surface on the cowork_space
+          // ⌃⇧N is the keyboard's ＋ New session: a workspace surface on the discovery workbench
           // (team-view.js), the tile's launcher on the parked grid page.
           if (!S.showNewSession) return;
           S.showNewSession();
