@@ -20,6 +20,24 @@ and shelf map, Routine resolution, minimum command delivery, Control initializat
 the birth receipt. Ordinary working behaviours such as fork, tell and wipeboard belong to
 Ronin Base rather than being made permanently available through the floor.
 
+The floor is mandatory only for a **managed Agent**. Ronin offers three distinct launch
+kinds:
+
+| Kind | What starts | Ronin birth |
+|---|---|---|
+| Terminal | A shell, with no Agent CLI. | None |
+| Bare-metal Agent | The selected CLI directly in the tmux session. | None |
+| Managed Agent | The selected CLI through the unified Agent birth transaction. | Routine floor, then resolved Routines |
+
+A bare-metal Agent has a session name, working directory and inherited environment. It
+does not receive Campaign or Team resolution, project root or role, a Ronin brief or shelf
+reading, Routine resolution, Ronin-added MCP, a work record, a managed desk, or a managed-
+birth receipt. Host-level tmux safety and the session maximum still apply because they
+govern the machine rather than equip the Agent.
+
+Bare metal is not “all Routines off.” A managed Agent with every switch off still receives
+the Routine floor. Bare metal explicitly bypasses the managed birth transaction.
+
 **Ronin Base** and **Ronin Control** are separate. A Team can use Ronin's normal macros
 without acquiring repository worktrees. Repository arrangement states whether Ronin
 Control's desk behaviour applies to a repository; it is not another Routine switch.

@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1260 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1263 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -501,6 +501,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
 | `glossary.agent` | agent |  |  |  |  |
+| `glossary.bare_metal_agent` | bare-metal Agent |  |  |  |  |
 | `glossary.behaviour` | behaviour |  |  |  |  |
 | `glossary.brief` | Brief |  |  |  |  |
 | `glossary.build` | build |  |  |  |  |
@@ -527,6 +528,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.locked` | Locked / Unlocked |  |  |  |  |
 | `glossary.macro` | macro |  |  |  |  |
 | `glossary.macros` | macros |  |  |  |  |
+| `glossary.managed_agent` | managed Agent |  |  |  |  |
 | `glossary.mandate` | mandate |  |  |  |  |
 | `glossary.memory` | memory |  |  |  |  |
 | `glossary.new_session` | new session |  |  |  |  |
@@ -556,6 +558,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.team_lead` | team lead · 人 |  |  |  |  |
 | `glossary.team_role` | team role |  |  |  |  |
 | `glossary.team_roster` | Cowork record |  |  |  |  |
+| `glossary.terminal` | terminal |  |  |  |  |
 | `glossary.terminal_tile` | terminal tile |  |  |  |  |
 | `glossary.tile` | tile |  |  |  |  |
 | `glossary.wipeboard` | wipeboard |  |  |  |  |
