@@ -38,7 +38,14 @@ import {
   isValidLaunchName,
   type LaunchField,
 } from '../catalog.js';
-import { findDefinition, listRoleFamilies, listSessionRoles, listTeamRoles, writeRoleTasks } from '../definitions.js';
+import {
+  findDefinition,
+  listRoleFamilies,
+  listRoutines,
+  listSessionRoles,
+  listTeamRoles,
+  writeRoleTasks,
+} from '../definitions.js';
 import { resolveLaunchProfile } from '../launch-profile.js';
 
 // fs errors carry absolute paths (`ENOENT: open '/home/…'`); the browser gets the
@@ -355,6 +362,16 @@ export function registerCatalogs(app: express.Express): void {
   app.get('/api/team-roles', async (_req, res) => {
     try {
       res.json(await listTeamRoles());
+    } catch (e) {
+      res.status(500).json({ error: errMsg(e) });
+    }
+  });
+
+  // Routine definitions are one shared catalog for every surface which offers
+  // a way-of-working switch; consumers do not maintain private copies.
+  app.get('/api/routines', async (_req, res) => {
+    try {
+      res.json(await listRoutines());
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }

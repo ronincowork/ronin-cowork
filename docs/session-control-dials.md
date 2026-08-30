@@ -38,8 +38,8 @@ context gauge (`makeGauge`, `public/js/widgets.js:74`) is the readout counterpar
 
 Each tile mounts one in its header — `class Tile`'s constructor calls `makeDial`
 (`public/js/tile.js:118`). `refreshControl()`
-(`public/js/tile.js:421`) re-reads the dial from the server whenever the tile's session list
-refreshes (`refreshOptions()`, `public/js/tile.js:282`) and points the widget at the truth; a sessionless tile
+(`public/js/tile.js:271`) re-reads the dial from the server whenever the tile header
+synchronizes (`syncHeader()`, `public/js/tile.js:325`) and points the widget at the truth; a sessionless tile
 gets a disabled dial. `pickControl()` (`public/js/tile.js:439`) POSTs the new position and
 then re-reads rather than assuming the write took.
 

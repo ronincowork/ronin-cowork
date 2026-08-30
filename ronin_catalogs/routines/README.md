@@ -1,7 +1,7 @@
 # routines — behaviours delivered together, one file per Routine
 
 A Routine definition is the single membership list for a switchable way of working. The
-stock directory and the owner's `catalogs/routines/` directory resolve with whole-file
+stock directory and the owner's routines definition directory in the catalogs store resolve with whole-file
 shadowing. `routine_floor` is deliberately absent: it is mandatory machinery, not a
 Routine definition.
 
