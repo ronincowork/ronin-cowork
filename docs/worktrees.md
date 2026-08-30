@@ -169,13 +169,39 @@ moved"*), and no tool ever writes into a worktree an agent is editing.
 - An explicit desk-close action offers to capture unsaved files in a `WIP:` commit on
   the desk branch. Session loss never silently commits or publishes them; it leaves the
   desk visible for recovery.
-- Committed but not handed in work becomes a **parked desk**: the branch is kept, the worktree
-  may be unmounted. Branch-without-worktree is a valid, recorded state, not a leftover.
+- ~~Committed but not handed in work becomes a **parked desk**~~ — **superseded, ruled
+  2026-08-30**: there is no parked desk. See "Hand in or close" below.
 - The lead sees: *session gone · N commits ahead · last activity* and chooses **hand in ·
   inspect · reassign · discard**. Discard is explicit; nothing else deletes.
-- A desk branch is deleted only when its tip is integrated, archived/recoverable, or
-  explicitly discarded. Local commits are not backups; a parked tip needs that policy
-  before any cleanup runs.
+- A desk branch is deleted only when its tip is integrated or explicitly discarded. Local
+  commits are not backups.
+
+### Hand in or close — a desk always has a living owner (ruled 2026-08-30)
+
+The concern is orphaned code: work that should roll up is dropped on the floor because an
+agent did not finish, and the worktree sits under a name nobody answers to. Found that
+day: `team/campaign_config/campaign_ui` open under session `campaign_ui`, gone; its
+successor had no desk; a hand-in's *pending* marker waited for nobody. The owner's rulings:
+
+1. **No parking.** *Park* — keep the branch, unmount the worktree, list it for the lead —
+   is a stash-pop world and must not be possible. At every moment the answer is one of
+   two: **the code moves forward, or the work dies with the worktree.** Desk work is
+   **handed in** or the desk is **closed**; there is no in-between.
+2. **A desk has owners — one or more, never zero.** Ownership changes two ways: the desk
+   is **handed off** to another session, or another session is **added** as a co-owner.
+   A desk whose only owner is gone is a defect, not a state.
+3. **Ending a session is checked against its desks.** Archive, delete or kill runs a
+   mechanical check for any open desk of which that session is the *sole* owner. If
+   there is one, a **red warning** that code is about to have no owner, and the person is
+   pointed at the agent to do one of three things first: **hand off** the desk, **hand
+   in** the work, or **close** the desk — the work dies with it, said out loud.
+4. *Recover* and *parked* go with *park*; hand-off replaces them. `discard --yes` stays
+   the one path that deletes an unintegrated tip, and *close* on a desk whose tip is not
+   on the line is that path — same `--yes`, same receipt naming what died.
+
+Build-out and the open choices (refuse the ending, or warn and allow; co-owner semantics
+on hand-in): the lab's DESK_OWNERSHIP build-out (wip/buildouts in ronin-lab). Until it
+lands, `docs/desks.md` describes the code as it still is.
 
 ### Multi-desk sessions are the normal case — addendum, 2026-08-28
 
@@ -307,8 +333,8 @@ candidate.
 1. **When the environment prompts a hand-in.** Proposed: at each DONE leg on the
    ladder, and at close — a prompt to the session, not an automatic hand-in, since only the
    session knows when its work is coherent.
-2. **Parked-desk retention.** Proposed: a parked desk is listed on the roster until the
-   lead acts; nothing ages out on its own.
+2. ~~**Parked-desk retention.**~~ **Ruled 2026-08-30: nothing is parked.** See "Hand in or
+   close" under Session loss.
 3. **Team-promotion cadence — guidance, not a clock** (owner asked 2026-08-28: *"frequent, but
    not too frequent — what is the guidance?"*). The lead's call, triggered by state.
    Costs of promoting: one full BYOIN and a restart of the live app. Costs of waiting: a
