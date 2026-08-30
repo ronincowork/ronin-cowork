@@ -86,7 +86,7 @@ export function buildLauncher(tile, host) {
   // The spawn form: which pair you pressed, then the two things only you can answer —
   // what the work is, and where it happens. Hidden until something is chosen.
   const form = document.createElement('div');
-  form.className = 'ks-form';
+  form.className = 'ks-form assisted';
   const formHead = document.createElement('div');
   formHead.className = 'ks-form-h';
   // Credit, when the launch runs on somebody else's work (`credit:` in a definition): a REAL
@@ -101,8 +101,7 @@ export function buildLauncher(tile, host) {
   // Two text blocks, in the order you answer them: what it's CALLED, then what it's
   // TOLD. The name is how you address the session afterwards (`+tag:`, tejun-send,
   // the tile header), so with a dozen of these running it is not a detail — in
-  // manual mode it is required, because a name slugged off your first 28 characters
-  // would be Ronin putting words in your mouth, which is the one thing manual isn't.
+  // both are optional; the server derives a collision-free name when this is blank.
   const nameInp = document.createElement('input');
   nameInp.type = 'text';
   nameInp.className = 'ks-name';
@@ -181,57 +180,13 @@ export function buildLauncher(tile, host) {
   // is hand-editable and existing presets still render below; only the write-from-the-form
   // door is gone.
   formRow.append(whereSel, modelSel, groupSel, mcpBtn, cancelBtn, startBtn);
-  // Two ways to start a session, toggled here.
-  //  manual   — your text IS the prompt, sent byte for byte. Ronin does only the
-  //             mechanical part (directory, CLI, dial, tags). No wording of ours.
-  //  assisted — say it long-form up here, fix a few things below if you want, and
-  //             the brief is composed (role posture, reading list, opening, ack).
-  //             This is the seat Koshi will fill.
-  const modeRow = document.createElement('div');
-  modeRow.className = 'ks-mode';
-  const mkMode = (v, label, hint) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.dataset.mode = v;
-    b.textContent = label;
-    b.title = hint;
-    return b;
-  };
-  const manualBtn = mkMode('manual', t('launcher.mode_manual', 'manual'), t('launcher.mode_manual_title', 'Your text is the whole prompt — nothing added, nothing templated'));
-  const assistBtn = mkMode('assisted', t('launcher.mode_assisted', 'assisted'), t('launcher.mode_assisted_title', 'Say it long-form; Ronin composes the brief around it'));
-  const modeNote = document.createElement('small');
-  modeRow.append(manualBtn, assistBtn, modeNote);
-  // A sentence under the toggle saying plainly what each mode does with your words.
-  // Nobody should have to guess whether their text is being rewritten.
+  // Ronin always composes the mechanical boot around any optional instruction.
   const modeSay = document.createElement('p');
   modeSay.className = 'ks-say';
-  let mode = 'manual'; // the honest default: what you type is what the agent gets
-  const applyMode = () => {
-    manualBtn.classList.toggle('on', mode === 'manual');
-    assistBtn.classList.toggle('on', mode === 'assisted');
-    form.classList.toggle('assisted', mode === 'assisted');
-    modeNote.textContent = mode === 'manual' ? t('launcher.mode_manual_note', 'your words, untouched') : t('launcher.mode_assisted_note', 'Koshi fills the rest');
-    modeSay.textContent =
-      mode === 'manual'
-        ? t('launcher.mode_manual_say', 'Sent word for word — nothing added.')
-        : t('launcher.mode_assisted_say', 'Say it in plain terms and Koshi your AI admin will handle the rest; the below selections are optional.');
-    what.placeholder =
-      mode === 'manual'
-        ? (pick && (pick.task || pick.role)?.ask) || t('launcher.what_placeholder', 'exactly what you want said to the agent')
-        : t('launcher.what_placeholder_assisted', 'Describe in plain terms what this session should do and cover…');
-    nameInp.placeholder =
-      mode === 'manual' ? t('launcher.name_placeholder', 'session name (required)') : t('launcher.name_placeholder_assisted', 'session name (optional — named from your text)');
-    nameInp.classList.toggle('req', mode === 'manual');
-  };
-  manualBtn.addEventListener('click', () => {
-    mode = 'manual';
-    applyMode();
-  });
-  assistBtn.addEventListener('click', () => {
-    mode = 'assisted';
-    applyMode();
-  });
-  // Optional extras — assisted only; in manual they would be wording we inject.
+  modeSay.textContent = t('launcher.mode_assisted_say', 'Everything is optional. Ronin supplies the startup reading and uses your choices when present.');
+  what.placeholder = t('launcher.what_placeholder', 'what this session should do (optional)');
+  nameInp.placeholder = t('launcher.name_placeholder', 'session name (optional)');
+  // Optional extras.
   const extrasHead = document.createElement('div');
   extrasHead.className = 'ks-extras-h';
   extrasHead.textContent = t('launcher.optional', 'optional');
@@ -260,7 +215,7 @@ export function buildLauncher(tile, host) {
     for (const s of S.sessions) refSel.add(new Option('@' + s.name, s.name));
     refSel.value = [...refSel.options].some((o) => o.value === cur) ? cur : '';
   };
-  form.append(formHead, creditEl, modeRow, modeSay, nameField.el, whatField.el, formRow, err.el, extrasHead, extras);
+  form.append(formHead, creditEl, modeSay, nameField.el, whatField.el, formRow, err.el, extrasHead, extras);
   const grid2 = document.createElement('div');
   grid2.className = 'ks-grid';
   /* ---- family roles: the sections of this board (js/rolefamilies.js) ---- */
@@ -357,9 +312,7 @@ export function buildLauncher(tile, host) {
     const face = task || role;
     // `agent: none` — a plain terminal. No session_launch_spec to pick, no brief to
     // compose, so the form drops to the two things that still mean something: what it is
-    // called and where it opens. Manual is not a "mode" here, it is the only truth
-    // available: nothing is sent at all.
-    if (!profile.agent) mode = 'manual';
+    // called and where it opens; nothing is sent to a plain terminal.
     form.classList.toggle('noagent', !profile.agent);
     // The resolved `mcp:` default decides which way the toggle opens — a fresh pick is a
     // fresh answer, so choosing again re-reads it rather than carrying the last one over.
@@ -401,7 +354,6 @@ export function buildLauncher(tile, host) {
     fillModels();
     fillGroups(groupSel);
     fillRef();
-    applyMode();
     form.classList.add('open');
     board.classList.add('picking');
     // Board-wide, not grid2: a shelved task's button lives in its role's fold.
@@ -453,7 +405,6 @@ export function buildLauncher(tile, host) {
         l.session_role,
         l.project_root && `▣ ${l.project_root}`,
         l.group && `🏷 ${l.group}`,
-        l.mode,
       ]
         .filter(Boolean)
         .join(' · ');
@@ -476,7 +427,6 @@ export function buildLauncher(tile, host) {
           if (![...groupSel.options].some((o) => o.value === l.group)) groupSel.add(new Option(l.group, l.group), groupSel.options.length - 1);
           groupSel.value = l.group;
         }
-        if (l.mode === 'assisted') assistBtn.click();
         if (l.prompt) what.value = l.prompt;
       });
       savedRow.appendChild(b);
@@ -532,16 +482,8 @@ export function buildLauncher(tile, host) {
   startBtn.addEventListener('click', async () => {
     if (!pick || startBtn.disabled) return; // disabled == in flight: two taps, one session
     const wantName = nameInp.value.trim().replace(/^[_-]+|[_-]+$/g, '');
-    if (mode === 'manual' && !wantName) {
-      nameInp.focus(); // required in manual — see the SpawnForm.name note
-      return;
-    }
     const bare = !pick.profile.agent; // no agent: there is nothing to say to it
     const text = what.value.trim();
-    if (!bare && !text) {
-      what.focus();
-      return;
-    }
     startBtn.disabled = true;
     sayErr('');
     // The server owns the spawn: it resolves the form against the catalogs,
@@ -553,13 +495,10 @@ export function buildLauncher(tile, host) {
         // THE AXIS. The family the button sat under is presentation and is not sent —
         // a launch is a session_role (and optionally a team), nothing else (R35).
         session_role: pick.task?.name ?? '',
-        mode,
         prompt: text,
-        name: wantName, // empty (assisted only) = derive it from the pick + prompt
+        name: wantName,
 
         project_root: whereSel.value,
-        // Manual sends only the mechanical picks. Seed and inject are all
-        // WORDING — in manual mode they would be text we put in your mouth.
         // An agentless launch sends no command at all; the server REFUSES one rather
         // than dropping it (src/spawn.ts resolveForm).
         cmd: bare ? '' : modelSel.value,
@@ -567,15 +506,9 @@ export function buildLauncher(tile, host) {
         // agent, so a bare pick sends nothing and the resolved default applies.
         mcp: bare ? undefined : mcpOn,
         tags: groupSel.value && groupSel.value !== NEWGRP ? [groupSel.value] : [],
-        seed:
-          mode === 'manual'
-            ? []
-            : seedInp.value
-                .split(',')
-                .map((s) => s.trim())
-                .filter(Boolean),
-        inject: mode === 'manual' ? '' : injectInp.value.trim(),
-        reference: mode === 'manual' ? '' : refSel.value,
+        seed: seedInp.value.split(',').map((s) => s.trim()).filter(Boolean),
+        inject: injectInp.value.trim(),
+        reference: refSel.value,
       },
     });
     if (!r.ok) {
@@ -624,7 +557,6 @@ export function buildLauncher(tile, host) {
     // pure presentation either way (R35).
     const owners = (familyData || []).filter((r) => (r.session_roles ?? []).includes(name));
     await choose(owners.length === 1 ? owners[0] : null, task, promptText);
-    assistBtn.click();
     what.focus();
   };
 

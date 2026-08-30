@@ -139,7 +139,7 @@ export function statusLabel(status) {
 
 /**
  * KOSHI_DASHI — the receipt for a spawn. It says what the session was actually born
- * with (mode, role, task, root, spec, dial, groups) and carries a kill next to it: wrong
+ * with (role, root, spec, Control, teams) and carries a kill next to it: wrong
  * fill, one tap, gone. The price of launching with no confirm screen.
  */
 export function showReceipt(name, receipt) {
@@ -149,7 +149,6 @@ export function showReceipt(name, receipt) {
   el.id = 'kdashi';
   const dialIcon = { user: '👤', read: '👁', write: '🤖' }[receipt.dial] || '';
   const bits = [
-    receipt.mode === 'manual' ? t('home.receipt_manual', 'manual') : t('home.receipt_assisted', 'assisted'),
     // BOTH AXES ON THE RECEIPT, and a blank one is simply absent from it: the receipt
     // exists so a wrong fill is visible immediately, and "no task" is a fill that can be
     // wrong just as "CutCode" can.

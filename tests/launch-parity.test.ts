@@ -90,7 +90,6 @@ const commonsForm = (over: Partial<SpawnForm> = {}): SpawnForm => ({
   session_role: 'DraftPlan',
   project_root: 'alpha',
   prompt: 'Work out the shape of the thing.',
-  mode: 'assisted',
   ...over,
 });
 
@@ -155,15 +154,12 @@ test('and to the same reading list — all + root + role, compiled once', async 
   assert.deepEqual(fromForkit.birth_reading.map((file) => path.basename(file)).sort(), forkBooks);
 });
 
-test('resolved birth readings include explicit seeds, while manual mode reads nothing at birth', async () => {
+test('resolved birth readings include the startup shelves and explicit seeds', async () => {
   const seed = path.join(temp, 'OWNER_SEED.md');
   const assisted = await resolveForm(commonsForm({ seed: [seed] }), new Set());
   assert.ok(assisted.birth_reading.includes(seed));
   assert.deepEqual(reading(assisted.brief), assisted.birth_reading.map((file) => path.basename(file)).sort());
 
-  const manual = await resolveForm(commonsForm({ mode: 'manual', seed: [seed] }), new Set());
-  assert.deepEqual(manual.birth_reading, []);
-  assert.equal(manual.brief, commonsForm().prompt);
 });
 
 test("forkit's own inputs change its words and nothing about the mechanism", async () => {
@@ -235,9 +231,8 @@ test('stated_by is resolved on the server across explicit, Team, role, and syste
     project_root: 'beta',
     cmd: 'claude --model haiku',
     mcp: true,
-    mode: 'manual',
   }), new Set());
-  for (const key of ['name', 'project_root', 'cmd', 'mcp', 'mode', 'session_role']) {
+  for (const key of ['name', 'project_root', 'cmd', 'mcp', 'session_role']) {
     assert.deepEqual(explicit.stated_by[key], [{ layer: 'explicit_launch', source: 'launch request' }], key);
   }
   assert.equal(explicit.stated_by.lifecycle[0]?.layer, 'session_role');
