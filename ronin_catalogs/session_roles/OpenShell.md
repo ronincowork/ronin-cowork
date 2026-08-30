@@ -4,9 +4,9 @@
 prompt with nothing typed into it.
 
 Every field that describes an agent is **absent** rather than filled with a polite blank:
-no `model` (no session_launch_spec is resolved), no `posture`, no `opening`, no `ack`,
-no `permissions` (that is a CLI's permission mode, and there is no CLI). What it carries
-is the mechanical constants that still mean something for a terminal.
+no `posture`, no `opening`, no `ack`, no `permissions` (that is a CLI's permission mode,
+and there is no CLI) — and no session_launch_spec is resolved at all. What it carries is
+the mechanical constants that still mean something for a terminal.
 
 `dial: user` 👤 is the other constant it exists to fix — the dial says who OTHER than the
 owner may touch a session, and a terminal the owner opened for their own hands is the one

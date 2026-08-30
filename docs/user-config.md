@@ -23,7 +23,7 @@ src/settei.ts                     the assembled record the ⚙ Configuration tab
 | `sessions.max` | how many sessions may run at once | `PUT /api/session-max` — ⌂ Roster and ⚙ Configuration, **one route** | `@ronin-session-max` |
 | `owner.name` | what to call the owner | `PUT /api/settei/owner` | `@ronin-owner` |
 | `machine.name` · `machine.where` | what this box is called, and where it is | `PUT /api/settei/machine` | none |
-| `agents.sessions.default` · `agents.jobs` | how work gets a model | `PUT /api/settei/agents` | none |
+| `agents.sessions.default` · `agents.sessions.by_provider` · `agents.jobs` | how work gets a model — the install's one default, each provider's preferred model, and what a house job asks | `PUT /api/settei/agents` — merges per key, so saving one never drops another | none |
 | `gbrain.enabled` | whether the owner turned gbrain on | `PUT /api/settei/gbrain` | none |
 | `koshi` | which outlet each koshi job asks | the 目 Koshi tab | none |
 | `auth` | the login record — scrypt params **and the session signing secret** | `bin/ronin-passwd` | none |
@@ -136,6 +136,14 @@ What survives, and what every reader must keep true:
   their directory still resolves, and links to ▣ Project root to change them; it is not
   their second owner. Said here because both surfaces that write settings pass close enough
   to this to assume otherwise.
+- **A campaign, and anything that varies with one.** The campaign's name and description
+  and its `desk_profile` were sections here until 2026-08-29; they describe a **body of
+  work**, and this file describes a **machine**. They live in the `campaigns` store now, one
+  `campaign_config` per record, written only through `src/campaign-config.ts` — one writable
+  campaign record and no parallel one. `PUT /api/settei/campaign` and `PUT /api/settei/desk`
+  still exist and still work; they land there. The old `campaign` and `desk` keys survive in
+  `ronin.json` on an upgraded install as the migration's seed, are never written again, and
+  go when the old writable surface does. `docs/campaigns.md`.
 - **Device state.** The theme and the grid layout are per browser and belong in
   `localStorage` — a phone showing one tile while a Mac shows a 2×2 grid is correct.
 - **A credential the owner types.** There is no such field today, and adding one is a

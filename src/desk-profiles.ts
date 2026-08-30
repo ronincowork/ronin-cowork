@@ -13,7 +13,9 @@
  */
 import { type Origin } from './catalog.js';
 import { readDefinitions, type Definition } from './definitions.js';
-import { readDeskSection } from './user-config.js';
+// The profile is the CAMPAIGN's (its vocabulary, skin and offered templates), so the
+// chosen name comes from the initial campaign_config, not from ronin.json. Same shape.
+import { readDeskSection } from './campaign-config.js';
 
 export interface DeskProfileInfo {
   name: string;
@@ -23,10 +25,14 @@ export interface DeskProfileInfo {
   shadowed: boolean;
   skin: string;
   lexicon: string;
+  /** Light/dark/automatic is part of the template, not inferred from its skin. */
+  theme: string;
   campaign_kind: string;
   rireki_view: string;
   /** Slot names in order, as written — the Team page validates against its declaration. */
   team_arrangement: string[];
+  /** Reserved, typed expansion point copied whole when a template is applied. */
+  defaults: Record<string, unknown>;
 }
 
 const row = (d: Definition): DeskProfileInfo => ({
@@ -37,9 +43,11 @@ const row = (d: Definition): DeskProfileInfo => ({
   shadowed: d.shadowed,
   skin: d.get('skin').trim(),
   lexicon: d.get('lexicon').trim(),
+  theme: d.get('theme').trim(),
   campaign_kind: d.get('campaign_kind').trim(),
   rireki_view: d.get('rireki_view').trim(),
   team_arrangement: d.get('team_arrangement').split(',').map((s) => s.trim()).filter(Boolean),
+  defaults: {},
 });
 
 export async function listDeskProfiles(): Promise<DeskProfileInfo[]> {

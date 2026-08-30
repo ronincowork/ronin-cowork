@@ -7,7 +7,6 @@ import { buildGbrain } from './gbrain.js';
 import { buildSettei } from './settei.js';
 import { buildStats } from './stats.js';
 import { buildSystemPanel } from './system.js';
-import { buildRoster } from './roster.js';
 import { buildArchives } from './archives.js';
 import { refreshHome } from './home.js';
 import { askMika } from './mika.js';
@@ -22,7 +21,7 @@ import { t } from './lexicon.js';
  * OVERLAY a tile drew on itself; the owner's ruling: *"too many things in one thing … it
  * should be another workspace alternative"*. So this is the Kit's channel surface — the
  * same primitive, strip and look as the `team_commons` — with SIX tabs, and it sits IN a
- * workspace (`team-view.js` places it; the grid page shows it as the `cowork` destination).
+ * workspace (`cowork-view.js` places it). It has no page-level destination.
  * No room is rewritten: each tab hangs the room builders the desk already had.
  *
  *   Desk             ▦ Ronin usage stats
@@ -37,19 +36,15 @@ import { t } from './lexicon.js';
  *   Keypad           く the pad panel, INLINE (owner: *"no reason to have it separate"*) —
  *                    padpanel.js still builds the card; this tab is where the card lives
  *
- * ONE INSTANCE. A surface element can be in one place at a time, and the two doors
- * (⚙ on the team page, ⚙ on the grid page) must show the same thing with the same state,
- * so `coworkCommons()` is memoised and both callers place the one element.
+ * ONE INSTANCE PER WORKSPACE. The catalog and backing services are shared facts, but a
+ * workspace owns its rendered surface, selected tab, scroll position and lifecycle.
  *
  * WHERE AN ASK GOES. gbrain's "ask a PersonalAssistant" used to be handed the desk's own
  * tile; a surface has no tile, so the ask goes to the ACTIVE tile's Commons launcher
  * (`S.active.askPersonalAssistant`), which is where that tile sent it anyway. Mika is
  * asked through `askMika(S.active)`, the way the bar's ミ did before it left (2026-08-27).
  */
-let instance = null;
-
 export function coworkCommons() {
-  if (instance) return instance;
   const { createChannelSurface } = WorkspaceKit.primitives;
 
   const node = (tag, cls, text) => {
@@ -73,11 +68,7 @@ export function coworkCommons() {
   let surface = null;
   const showing = (id) => () => !!surface && surface.el.isConnected && !surface.el.closest('[hidden]') && surface.current() === id;
 
-  // AN ASK CROSSES SURFACES: on the grid page the commons is the `cowork` destination, and
-  // the tile the ask lands in is on the Sessions destination behind it — so go back first,
-  // or the launcher opens filled-in and invisible (smoke-ui's gbrain journey is the record).
   const atTile = (fn) => {
-    if (S.workspace?.active?.id === 'cowork') S.workspace.back();
     const tile = S.active;
     if (tile) fn(tile);
   };
@@ -191,20 +182,8 @@ export function coworkCommons() {
     return [buildProjectRoots(proj, showing('roots'), null)];
   });
 
-  /* ---- ⌂ Roster and Archived — the tile commons' two, moved here (owner, 2026-08-27) ---- */
-  // "Connect" from either lands the session in the selected workspace on the cowork_space
-  // (`S.connectSession`, team-view.js), or in the active tile on the parked grid page.
+  /* ---- Archived — retained here; the Team roster moved to the Cowork workbench. ---- */
   const seatAdapter = { index: 'cc', connect: (name) => (S.connectSession ? S.connectSession(name) : atTile((tile) => tile.connect(name))) };
-  const rosterPane = pane('roster');
-  const rosterRooms = once(() => {
-    const col = node('div', 'home-col');
-    const sec = node('div', 'home-sec');
-    sec.append(node('div', 'home-h', t('commons.sessions', 'sessions')));
-    col.append(sec);
-    rosterPane.append(col);
-    const r = buildRoster(seatAdapter, sec);
-    return [{ enter: () => { void refreshHome().then(() => r.render()); r.render(); } }];
-  });
   const archivesPane = pane('archives');
   const archivesRooms = once(() => {
     const host = node('div', 'home-archives');
@@ -258,7 +237,6 @@ export function coworkCommons() {
     account: service(account, accountEnter),
     profile: service(profile, enterAll(profileRooms)),
     roots: service(roots, enterAll(rootsRooms)),
-    roster: service(rosterPane, enterAll(rosterRooms)),
     archives: service(archivesPane, enterAll(archivesRooms)),
     help: service(help, enterAll(helpRooms)),
     keypad: service(keypad, () => { if (mountPad()) S.padPanel.render?.(); }),
@@ -270,7 +248,6 @@ export function coworkCommons() {
       { id: 'account', label: t('cowork.tab_account', 'Account') },
       { id: 'profile', label: t('cowork.tab_profile', 'Desk profile') },
       { id: 'roots', label: t('cowork.tab_roots', 'Project roots') },
-      { id: 'roster', label: t('cowork.tab_roster', 'Roster') },
       { id: 'archives', label: t('cowork.tab_archives', 'Archived') },
       { id: 'help', label: t('cowork.tab_help', 'Help desk') },
       { id: 'keypad', label: t('cowork.tab_keypad', 'Keypad') },
@@ -297,6 +274,5 @@ export function coworkCommons() {
   // `isOpen` is the pad key handler's "you are working the pad" test (layout.js).
   // Nothing is entered here: the first `select` — the cowork destination's enter, or the
   // team page's putCowork — enters the landing tab, so no room fetches on a page load.
-  instance = surface;
-  return instance;
+  return surface;
 }

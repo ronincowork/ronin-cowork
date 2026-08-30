@@ -230,3 +230,58 @@ test('the lead posting is not interrupted by their own post', async () => {
   assert.equal(r.code, 0);
   assert.doesNotMatch(r.out, /gamma\s+not notified/, 'never the poster, lead or not');
 });
+
+/**
+ * WHO IS TYPING, AND WHAT IS BEING SAID — the two things a post must not confuse.
+ *
+ * Found in use, 2026-08-29: `post --session x --to y <text>` posted as `shell` and put
+ * the literal words `--session x` at the FRONT of the message. Two defects in one line.
+ * The tool took no `--session`, so identity fell back to the pane — which was unset,
+ * because `$TMUX` and `TMUX_PANE` can both be absent (a detached shell, a hook, a
+ * harness) — and every unrecognized flag was pushed into the message body with nothing
+ * reported. A board is a transport people read; a flag must never become what it says.
+ */
+const seamless = { RONIN_SESSION: '' };
+
+test('--session says who is typing when the pane cannot, and it signs the post', async () => {
+  // No RONIN_SESSION and no pane: exactly the state that produced `shell`.
+  const posted = await run('', ['crew', 'post', '--session', 'alpha', 'signed by the flag'], seamless);
+  assert.equal(posted.code, 0);
+  assert.match(posted.out, /POSTED to 'crew' as @alpha/, 'the flag signs it, not `shell`');
+  const beta = await run('beta', []);
+  assert.match(beta.out, /@alpha/);
+  assert.match(beta.out, /signed by the flag/);
+  assert.doesNotMatch(beta.out, /--session/, 'and the flag is nowhere in what was said');
+});
+
+test('--session leads the whole command, so the formless reads can use it too', async () => {
+  // The bare unread check carries no text of its own, and without a pane it could not
+  // say whose boards to look at. Position 0 is unambiguous — nothing there is text.
+  const check = await run('', ['--session', 'gamma'], seamless);
+  assert.equal(check.code, 0);
+  assert.match(check.out, /signed by the flag/, "gamma is on the board and had not read it");
+});
+
+test('an unknown flag is refused, never folded into what the board says', async () => {
+  const typo = await run('alpha', ['crew', 'post', '--too', 'beta', 'the rail is yours']);
+  assert.equal(typo.code, 2, 'refused, not posted');
+  assert.match(typo.out, /BAD-FLAG: '--too'/);
+  assert.match(typo.out, /--to, --session/, 'and it names the flags there are');
+  const beta = await run('beta', []);
+  assert.doesNotMatch(beta.out, /the rail is yours/, 'nothing reached the board');
+});
+
+test('a blank --session is refused rather than signing as nobody', async () => {
+  const blank = await run('alpha', ['crew', 'post', '--session']);
+  assert.equal(blank.code, 2);
+  assert.match(blank.out, /BAD-SESSION/);
+});
+
+test('after the first ordinary word everything is text, so a post can carry a diff', async () => {
+  // `--- a/file` is what a unified diff starts with. It is text and must survive: the
+  // flag rule stops at the first word that is not a flag.
+  const diff = await run('alpha', ['crew', 'post', '--to', 'beta', 'here is the hunk:', '---', 'a/src/x.ts']);
+  assert.equal(diff.code, 0, 'a diff is not a flag error');
+  const beta = await run('beta', []);
+  assert.match(beta.out, /here is the hunk: --- a\/src\/x\.ts/);
+});

@@ -38,8 +38,8 @@ funnel worktree is refused). Three layers, same sentence.
 | **desk** | **repository-specific**: one repo's branch **and** the worktree mounted on it, opened together. Identified by repo + branch: `cowork:team/comp/fable`, `services:team/comp/fable`. May be *parked*: branch kept, worktree unmounted (valid — see "Session loss") | a session; a session has one desk *per repo it is changing* |
 | **assignment** | what a session is changing: a change set spanning one or more repos, hence one or more desks. `session → assignment → repos[] → desk` — never `session = desk` | |
 | **funnel point** | a line that is merged into and never written into: `team/<xyz>/dev`, `dev`. No session is launched at one | a place to work |
-| **candidate** | a throwaway integration worktree, detached at the target line's tip, where a hand-in or team push is built and gated *before* the line moves | the line itself |
-| **`dev`** | the repository-wide common pool **and the live app**: branch `dev` + worktree `~/dohyo/ronin-cowork`, which the service runs from. Moves only by team push; restarts when it moves (ruled 2026-08-28: *"dev is live"*) | a place to work; a separate `dev-live` (retired) |
+| **candidate** | a throwaway integration worktree, detached at the target line's tip, where a hand-in or team promotion is built and gated *before* the line moves | the line itself |
+| **`dev`** | the repository-wide common pool **and the live app**: branch `dev` + worktree `~/dohyo/ronin-cowork`, which the service runs from. Moves only by team promotion; restarts when it moves (ruled 2026-08-28: *"dev is live"*) | a place to work; a separate `dev-live` (retired) |
 | **`solo/<session>`** | a rōnin session's desk, cut from `dev`, handing in to `dev` | |
 | **`master`** | a branch only. Moves by PR from `dev` | a desk |
 
@@ -70,7 +70,7 @@ often carry the same content, but the extra reference is cheap and the structure
 same when a second team appears. The team line supplies a combined team state, a
 lead/compiler boundary, team gates, a base for new sibling desks, and a place to hold
 work before common integration. (This settles the earlier "pass-through by default"
-recommendation: the team line is a real stage, advanced by an explicit team push.)
+recommendation: the team line is a real stage, advanced by an explicit hand-in.)
 
 Only `dev` and `master` ever reach the remote (ruled 2026-08-20).
 
@@ -109,7 +109,7 @@ auto-lands; that ruling is retained below under "Superseded".
 6. **Never merge the canonical line first and reset it on failure.** A funnel point never
    holds a half-merged state.
 
-### Team push — the one full BYOIN, close to the code and its lead
+### Team promotion — the one full BYOIN, close to the code and its lead
 
 Promotion of `team/<xyz>/dev` into repository-wide `dev` is the closest shared-code
 boundary: the lead still owns the context, knows which desks contributed, and can route a
@@ -120,8 +120,8 @@ other bounds while responsibility is still local to the team.
 
 - **Failure leaves `dev` untouched** and returns the named gates plus attribution to the
   lead and team: changed files and contributing sessions, from the ledger.
-- **The team-push receipt** lists every hand-in receipt since the prior successful team
-  push. Where a failing gate does not identify the culprit, **replay or bisect the ordered
+- **The team-promotion receipt** lists every hand-in receipt since the prior successful
+  team promotion. Where a failing gate does not identify the culprit, **replay or bisect the ordered
   hand-in candidates** to find the first failing contribution. The lead then feeds it
   to that session, or reassigns a parked desk.
 - **After success, `dev` carries a full-BYOIN receipt for its exact SHA.**
@@ -133,12 +133,12 @@ other bounds while responsibility is still local to the team.
 | save | none | private |
 | commit | none | private; agents may run focused tests as part of their work, but that is not the boundary protocol |
 | hand-in → team line | mechanical admission only (merge, conflict, near-instant invariants) | shares work with the team; nothing has entered `dev` |
-| **team push → `dev`** | **full repository BYOIN, once, on the combined candidate** | the closest shared-code boundary; the lead can attribute a failure |
+| **team promotion → `dev`** | **full repository BYOIN, once, on the combined candidate** | the closest shared-code boundary; the lead can attribute a failure |
 | `dev → master` | **not the first full check.** CI may verify the exact SHA, but it consumes and preserves the existing receipt; any failure still points through the team/desk ledger | `dev` already carries a receipt for that SHA |
-| restart after team push | deployment health checks (the app comes up, answers, readouts sane); on failure, automatic revert-and-restart and a DM to the lead | the one failure that can surface *after* `dev` moved |
+| restart after team promotion | deployment health checks (the app comes up, answers, readouts sane); on failure, automatic revert-and-restart and a DM to the lead | the one failure that can surface *after* `dev` moved |
 | maintenance / update / store changes | full *installed-box* BYOIN | it tests a different thing — the machine, not the repo |
 
-**Governing sentence:** hand-in shares work with the team; team push proves the team's
+**Governing sentence:** hand-in shares work with the team; team promotion proves the team's
 combined work is fit for the Ronin-wide `dev` pool. Full BYOIN runs at that second
 boundary, close to the code and its responsible lead — not at every step, and not first
 at `master`.
@@ -166,14 +166,42 @@ moved"*), and no tool ever writes into a worktree an agent is editing.
 
 ### Session loss or close — nothing lost, nothing silently published
 
-- Unsaved files are captured in a `WIP:` commit on the desk branch.
-- Committed but not handed in work becomes a **parked desk**: the branch is kept, the worktree
-  may be unmounted. Branch-without-worktree is a valid, recorded state, not a leftover.
+- An explicit desk-close action offers to capture unsaved files in a `WIP:` commit on
+  the desk branch. Session loss never silently commits or publishes them; it leaves the
+  desk visible for recovery.
+- ~~Committed but not handed in work becomes a **parked desk**~~ — **superseded, ruled
+  2026-08-30**: there is no parked desk. See "Hand in or close" below.
 - The lead sees: *session gone · N commits ahead · last activity* and chooses **hand in ·
   inspect · reassign · discard**. Discard is explicit; nothing else deletes.
-- A desk branch is deleted only when its tip is integrated, archived/recoverable, or
-  explicitly discarded. Local commits are not backups; a parked tip needs that policy
-  before any cleanup runs.
+- A desk branch is deleted only when its tip is integrated or explicitly discarded. Local
+  commits are not backups.
+
+### Hand in or close — a desk always has a living owner (ruled 2026-08-30)
+
+The concern is orphaned code: work that should roll up is dropped on the floor because an
+agent did not finish, and the worktree sits under a name nobody answers to. Found that
+day: `team/campaign_config/campaign_ui` open under session `campaign_ui`, gone; its
+successor had no desk; a hand-in's *pending* marker waited for nobody. The owner's rulings:
+
+1. **No parking.** *Park* — keep the branch, unmount the worktree, list it for the lead —
+   is a stash-pop world and must not be possible. At every moment the answer is one of
+   two: **the code moves forward, or the work dies with the worktree.** Desk work is
+   **handed in** or the desk is **closed**; there is no in-between.
+2. **A desk has owners — one or more, never zero.** Ownership changes two ways: the desk
+   is **handed off** to another session, or another session is **added** as a co-owner.
+   A desk whose only owner is gone is a defect, not a state.
+3. **Ending a session is checked against its desks.** Archive, delete or kill runs a
+   mechanical check for any open desk of which that session is the *sole* owner. If
+   there is one, a **red warning** that code is about to have no owner, and the person is
+   pointed at the agent to do one of three things first: **hand off** the desk, **hand
+   in** the work, or **close** the desk — the work dies with it, said out loud.
+4. *Recover* and *parked* go with *park*; hand-off replaces them. `discard --yes` stays
+   the one path that deletes an unintegrated tip, and *close* on a desk whose tip is not
+   on the line is that path — same `--yes`, same receipt naming what died.
+
+Build-out and the open choices (refuse the ending, or warn and allow; co-owner semantics
+on hand-in): the lab's DESK_OWNERSHIP build-out (wip/buildouts in ronin-lab). Until it
+lands, `docs/desks.md` describes the code as it still is.
 
 ### Multi-desk sessions are the normal case — addendum, 2026-08-28
 
@@ -200,10 +228,10 @@ roster says so without pretending their filesystem states are one git operation.
 **Hand-in has two forms:**
 
 - **hand in one desk** — publish only that repository's committed range, exactly as above.
-- **push the assignment** — offer the related tips from every participating repo desk as
+- **hand in the assignment** — offer the related tips from every participating repo desk as
   one coordinated unit.
 
-**Coordinated push protocol.** Git cannot advance refs in two repositories atomically, so
+**Coordinated promotion protocol.** Git cannot advance refs in two repositories atomically, so
 the protocol makes an interrupted promotion *visible and finishable* rather than silently
 half-landed:
 
@@ -234,18 +262,18 @@ session-level roll-up shows both.
 ### The pattern composes upward
 
 ```
-files → commit → session branch → HAND IN → team/<xyz>/dev → TEAM PUSH → dev → PR → master
+files → commit → session branch → HAND IN → team/<xyz>/dev → TEAM PROMOTION → dev → GIT PUSH → PR → master
 ```
 
 - The **session** decides when its desk work is coherent for the team (hand-in).
 - The **lead or compiler** decides when the combined team work is coherent for `dev`
-  (team push — same candidate/gate/compare-and-swap, full BYOIN, target `dev`).
-- The **release process** decides when `dev` becomes `master` (PR, squash, CI).
-- **`dev` is live** (ruled 2026-08-28). A successful team push ends by restarting the
+  (team promotion — same candidate/gate/compare-and-swap, full BYOIN, target `dev`).
+- The **release process** decides when `dev` becomes `master` (Git push, PR, CI, owner merge).
+- **`dev` is live** (ruled 2026-08-28). A successful team promotion ends by restarting the
   service from the `dev` worktree and running deployment health checks. There is no
   separate pinned checkout and no promote step: by the time work is on `dev` it has
   passed the full BYOIN, so it should fire. Rollback is a **revert**, landed on `dev`
-  through the same team-push door, not a pin.
+  through the same team-promotion door, not a pin.
 
 ## The rules — ruled, with what the decision changed
 
@@ -254,7 +282,7 @@ encourage agent behaviours"*). The environment makes the desk the path of least
 resistance (the launch box opens one; the brief says *save, commit, hand in*). The agent
 still chooses; a shell that wanders into a funnel point meets a speed bump — *this is a
 funnel point; open a desk* — not a wall. The only hard refusals protect the shared lines:
-a hand-in is rejected if its candidate conflicts, a team push if its candidate fails BYOIN, and a line never moves except by a passed
+a hand-in is rejected if its candidate conflicts, a team promotion if its candidate fails BYOIN, and a line never moves except by a passed
 candidate.
 
 1. **Every team gets a `team/<xyz>/dev` line regardless** (ruled 2026-08-27; the memo
@@ -266,15 +294,16 @@ candidate.
    told what the session intends to touch (the claim) and may redirect afterwards.
 5. **Save is private. Commit is private. Hand-in publishes** (decision memo). A session
    may commit as often as it likes; nothing leaves the desk until it hands in.
-6. **A hand-in or team push is accepted or rejected whole**, on a candidate, and the line advances
-   atomically or not at all (decision memo). A *desk* push is rejected only for a conflict
-   (the lead adjudicates — ruled) or a near-instant invariant; a *team* push is rejected
+6. **A hand-in or team promotion is accepted or rejected whole**, on a candidate, and the line advances
+   atomically or not at all (decision memo). A hand-in is rejected only for a conflict
+   (the lead adjudicates — ruled) or a near-instant invariant; a team promotion is rejected
    by full BYOIN, with attribution from the ledger (BYOIN boundary correction).
 7. **Accepted team state flows down** to every sibling: immediately when clean, at the
    next safe boundary when dirty, always with an immediate notice (decision memo; meets
    the owner's 2026-08-28 requirement).
-8. **The lead manages the seams above**: team push to `dev`, the PR to `master`, and
-   `dev-live` promotion (ruled 2026-08-27, extended).
+8. **The lead manages the local seam above**: team promotion to `dev`. The release
+   process owns Git publication and the PR to `master`. The earlier separate `dev-live`
+   promotion is retired; `dev` itself is live.
 9. **A `team_compiler` is optional** (ruled): a session whose only job is the queue,
    the candidates and the adjudications. Without one, the lead does it.
 10. **The lead gets a regular mechanical summary** (ruled), now including parked desks,
@@ -292,9 +321,9 @@ candidate.
   construction; the merge-then-reset macro could leave a funnel point in a failing state;
   a loose post-commit hook is not a serialized, atomic integration.
 - *Team line as a pass-through by default* (assessment, 2026-08-28). Replaced: the team
-  line is a deliberate stage advanced by team push.
+  line is a deliberate stage advanced by hand-in.
 - *A branch without a worktree is always a leftover.* Replaced: it may be a parked desk.
-- *`--gates` on every hand-in, full BYOIN on team push, full again at `dev → master`
+- *`--gates` on every hand-in, full BYOIN on team promotion, full again at `dev → master`
   and at promote* (decision memo, first draft, 2026-08-28). Replaced the same day by the
   BYOIN boundary correction: full repository BYOIN once, at team → `dev`; mechanical
   admission at hand-in; `dev → master` consumes the receipt; promote runs health checks.
@@ -304,23 +333,23 @@ candidate.
 1. **When the environment prompts a hand-in.** Proposed: at each DONE leg on the
    ladder, and at close — a prompt to the session, not an automatic hand-in, since only the
    session knows when its work is coherent.
-2. **Parked-desk retention.** Proposed: a parked desk is listed on the roster until the
-   lead acts; nothing ages out on its own.
-3. **Team push cadence — guidance, not a clock** (owner asked 2026-08-28: *"frequent, but
+2. ~~**Parked-desk retention.**~~ **Ruled 2026-08-30: nothing is parked.** See "Hand in or
+   close" under Session loss.
+3. **Team-promotion cadence — guidance, not a clock** (owner asked 2026-08-28: *"frequent, but
    not too frequent — what is the guidance?"*). The lead's call, triggered by state.
-   Costs of pushing: one full BYOIN and a restart of the live app. Costs of waiting: a
+   Costs of promoting: one full BYOIN and a restart of the live app. Costs of waiting: a
    longer ledger (a bisect walks more candidates), drift from `dev` and other teams,
    unproven work sleeping on the team line. In order of strength:
    1. **When the house needs it** — another team, a rōnin desk, or the owner is waiting
       on something this team landed. Overrides everything.
    2. **At coherent points** — a leg DONE across the team's desks, a feature whole.
    3. **Before the ledger gets expensive** — about five hand-ins since the last team
-      push.
+      promotion.
    4. **Before the lead goes away** — end of a working stretch; nothing sleeps on the
       team line overnight (the orphan rule, one level up).
    5. **Never per hand-in, never on a fixed timer.**
-   The team summary *prompts* (*5 hand-ins since last team push · 4 h · another team
-   touched `public/js/roster.js`*); the lead pushes. With one team: at least once per working
+   The team summary *prompts* (*5 hand-ins since last team promotion · 4 h · another team
+   touched `public/js/roster.js`*); the lead promotes. With one team: at least once per working
    stretch, and whenever the summary says five.
 
 ## Where BYOIN runs
@@ -350,25 +379,26 @@ Names are placeholders; KOTOBA settles the words. `L=team/comp/dev`,
   reject with the two sides, DM the lead and the session; **no BYOIN here** — mechanical
   admission only; →
   `git update-ref refs/heads/$L $(git -C $C rev-parse HEAD) $old` → if the swap fails
-  (line moved), re-queue; then `git -C $T merge --ff-only $L`; append the desk-push
+  (line moved), re-queue; then `git -C $T merge --ff-only $L`; append the hand-in
   receipt `{session, desk, source_range, candidate, team_line_sha}` to the team's ledger;
   then downward adoption
   (below) for every desk on the team, the desk that handed in included.
 - **`desk sync`** — adopt the current line into a desk: `git merge --no-edit $L` in the
-  desk's worktree. Runs automatically for a clean desk on every accepted push, and at any
+  desk's worktree. Runs automatically for a clean desk on every accepted hand-in, and at any
   desk's next commit if an update is pending; runnable by hand. Never runs into a dirty
   worktree; on a dirty desk it records *pending* and DMs (files + diff if overlapping).
-- **`desk close`** — `WIP:` commit of anything unsaved; if commits are ahead of `$L`, the
+- **`desk close`** — an explicit close offers a `WIP:` commit for anything unsaved; it
+  never silently commits on session loss. If commits are ahead of `$L`, the
   desk is **parked** (worktree may be unmounted, branch kept, recorded with owner, ahead
   count, last activity) and the lead is told with the four choices; the branch is
-  deleted only after push, archive, or explicit discard.
+  deleted only after hand-in, archive, or explicit discard.
 - **`assignment hand-in`** — the session's coordinated form: a `hand_in` per repo in its
   `repos[]`, each mechanical admission only, landing on that repo's team line. Nothing
-  cross-repo is checked here; that belongs to `team push`.
-- **`team push`** — the one full boundary. Per repo: candidate = current `dev` + team-line
+  cross-repo is checked here; that belongs to team promotion.
+- **`team promotion`** (`ronin-promote`) — the one full boundary. Per repo: candidate = current `dev` + team-line
   tip, in `dev`'s candidate worktree; **full `bin/ronin-byoin`** there; for a cross-repo
   assignment, then the combined install/compatibility protocol across the candidates;
-  write the team-push receipt (`{repo, expected_old, candidate, hand_in_receipts[]}`);
+  write the team-promotion receipt (`{repo, expected_old, candidate, hand_in_receipts[]}`);
   compare-and-swap each `dev` ref in receipt order, stopping on the first race; mark
   complete; `dev` now carries a full-BYOIN receipt for its exact SHA; **then restart the
   service from the `dev` worktree and run the deployment health checks** — if they fail,
@@ -376,12 +406,12 @@ Names are placeholders; KOTOBA settles the words. `L=team/comp/dev`,
   untouched; report the named gates, changed files and contributing sessions from the
   ledger; if the gate does not name the culprit, `team bisect` replays the ordered
   hand-in candidates to find the first failing contribution. `team resume` finishes or
-  rebuilds an interrupted push from its receipt. Lead or compiler.
+  rebuilds an interrupted promotion from its receipt. Lead or compiler.
 - **`team bisect`** — rebuild the team line's candidates one hand-in at a time from the
-  last good team push, running full BYOIN at each step until it fails; report the desk,
+  last good team promotion, running full BYOIN at each step until it fails; report the desk,
   session and range. The lead feeds it to that session or reassigns a parked desk.
 - **`team revert`** — the rollback, since `dev` is live: a revert commit of the last team
-  push's range, landed on `dev` through the same `team push` door (its full BYOIN passes
+  promotion's range, landed on `dev` through the same team-promotion door (its full BYOIN passes
   quickly for a revert), then restart and health checks. Run automatically when the
   post-restart health checks fail; runnable by the lead when a passed change misbehaves
   live. The reverted range stays in the ledger, attributed, for the session to fix.
@@ -390,7 +420,7 @@ Names are placeholders; KOTOBA settles the words. `L=team/comp/dev`,
   `dev` worktree.
 - **`team summary`** — no model; `git worktree list`, `git branch -vv --list
   'team/comp/*'`, `git status --short | wc -l` per desk, last-commit age, session alive
-  (Koshi), last push result, **pending update** flags, **parked desks** with ahead counts,
+  (Koshi), last promotion result, **pending update** flags, **parked desks** with ahead counts,
   the overlap check, leftovers. On a cadence by DM or wipeboard; the team page's natural
   content.
 
@@ -404,8 +434,8 @@ often, and let the merge detect the rest. Ronin's version, from parts it has:
   off at `desk close`. Information, never a lock.
 - **The overlap check**: `git diff --name-only $L...team/comp/<s>` per desk, intersected
   across desks and claims by the summary; both sessions and the lead told before anyone
-  pushes. Same-file is a warning; same-file-and-both-dirty is what the lead wants first.
-- Under the decision, overlap is *also* caught at every accepted push by the downward
+  hands in. Same-file is a warning; same-file-and-both-dirty is what the lead wants first.
+- Under the decision, overlap is *also* caught at every accepted hand-in by the downward
   notice with files and diff.
 
 ## Surfaces that change
@@ -418,25 +448,25 @@ surface gets a default that needs no understanding, and at most one visible cont
 | **Team roster** (`project_root`, `repos`, `branch`) | `branch` defaults to `team/<xyz>/dev`; creating a team creates the line and its worktree; `project_root` stays the identity (what to read, what to recall) |
 | **New session box** | with a coding assignment on a repo: opens a desk cut from the team line; one control — *own desk · plain root* — pre-answered. Non-code sessions get no desk |
 | **Project roots** | `dir` stays the repo's home checkout; a desk is a derived dir; `read` and `memory` still resolve from the root |
-| **TEGAMI** | `repos[]` = one entry per desk: repo/root, desk branch, worktree handle, upstream line, ahead/behind, dirty, pending update, last accepted hand-in, blocked reason; plus the assignment's receipt state while a coordinated push is landing |
+| **TEGAMI** | `repos[]` = one entry per desk: repo/root, desk branch, worktree handle, upstream line, ahead/behind, dirty, pending update, last accepted hand-in, blocked reason; plus the assignment's receipt state while a coordinated promotion is landing |
 | **Player One** | launched onto `solo/player_one` if it will touch code; otherwise no desk |
-| **Briefs** | one line for every coding role: *save is yours, commit is yours, hand-in publishes — push when it is coherent for the team; you will be told what your siblings pushed* |
-| **Koshi / roster** | desk, ahead-unpushed, pending update, last push; parked desks listed with owner and choices |
+| **Briefs** | one line for every coding role: *save is yours, commit is yours, hand-in publishes — hand in when it is coherent for the team; you will be told what your siblings handed in* |
+| **Koshi / roster** | desk, ahead-not-handed-in, pending update, last hand-in; parked desks listed with owner and choices |
 | **`ronin-doctor`** | the Syncthing check (§0) |
 
 ## What it costs — stated
 
 - Node modules per desk (shared store); gitignored files copied at open.
-- A candidate worktree per target line, kept between pushes; the queue is serial per
-  line. Hand-ins are near-instant (merge only), so six desks pushing at once barely
-  queue; the full BYOIN cost is paid once per team push.
+- A candidate worktree per target line, kept between admissions; the queue is serial per
+  line. Hand-ins are near-instant (merge only), so six desks handing in at once barely
+  queue; the full BYOIN cost is paid once per team promotion.
 - A ledger of hand-in receipts per team line, and a bisect that can cost several full
   BYOIN runs when a gate fails without naming its culprit — paid rarely, by the lead.
 - Parked desks accumulate until the lead acts — visible on the roster, by design.
-- The agent must remember to push. The ladder prompts at DONE legs and at close (open
-  ruling 1); the summary shows *ahead, unpushed* so a forgotten push is seen, not lost.
-- `dev` is live, so every team push restarts the app the owner and every session use.
-  Tiles survive (tmux owns them); the browser reloads. Pushes are gated and deliberate,
+- The agent must remember to hand in. The ladder prompts at DONE legs and at close (open
+  ruling 1); the summary shows *ahead, not handed in* so forgotten work is seen, not lost.
+- `dev` is live, so every team promotion restarts the app the owner and every session use.
+  Tiles survive (tmux owns them); the browser reloads. Promotions are gated and deliberate,
   so this is a few times a day, chosen by the lead — not on every commit.
 - BYOIN proves the repo, not the runtime. A passed change can still misbehave with real
   stores and sessions; the health checks and `team revert` are the answer, and they act
@@ -479,12 +509,12 @@ home, other machines get a view, never a checkout.
   2026-08-28) **no staged sequencing**: cross-repo, receipts, restart and revert included
   in the first dogfood; scale back afterwards only if it has to be. The local act is a
   **hand-in** (`hand_in`); `push` is git's word only — open, save, commit,
-  push, adopt, park, recover, team push, restart, revert — even if it is constructed behind a flag
+  hand in, adopt, park, recover, team promotion, restart, revert — even if it is constructed behind a flag
   in smaller pieces.
 
 ## Where this stops short of Orca — on purpose
 
 Orca puts the worktree at the centre of the screen. The house's person, and its clients,
 do not think in branches and must not be made to. Everything above is a macro and a
-roster line: a desk opens with the session, *push* is a word in the brief and a button,
+roster line: a desk opens with the session, *hand in* is a word in the brief and a button,
 the roster says what is ahead, pending, parked or blocked. No diff panel.

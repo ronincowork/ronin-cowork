@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="boot-pending">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -11,8 +11,7 @@
          where and why. SVG first so a retina tab and a bookmark bar stay sharp at any size;
          the 32px PNG is the fallback for anything that will not take one. The 256 is what
          iOS puts on a home screen, which is the arrival REMOTE_ACCESS is built around. -->
-    <link rel="icon" type="image/svg+xml" href="/brand/nin-mark.svg" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/brand/nin-mark-32.png" />
+    <link id="tabicon" rel="icon" type="image/svg+xml" href="/brand/nin-mark.svg" />
     <link rel="apple-touch-icon" href="/brand/nin-mark-256.png" />
     <!-- The saved theme, applied BEFORE the stylesheet paints — a light-theme reload
          must not flash dark. Inline and tiny on purpose; js/theme.js owns the rest. -->
@@ -29,27 +28,18 @@
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="css/team-workspace.css" />
     <link rel="stylesheet" href="css/new-team.css" />
-    <link rel="stylesheet" href="css/agent-configuration.css" />
+    <link rel="stylesheet" href="css/campaign-home.css" />
   </head>
   <body>
     <header id="bar">
-      <button id="brandbtn" class="brand" data-t-title="bar.brand_title" title="⛩ ronin — the session roster">⛩ ronin</button>
-      <a id="leaguebtn" class="brand" href="#/league-workspace" target="_blank" rel="noopener noreferrer"
-         data-t-title="bar.league_title" title="Open League in a new browser tab" data-t="bar.league">League</a>
+      <button id="brandbtn" class="brand brand-home ui-bar-nav" aria-label="Ronin">
+        <img class="brand-mark" src="brand/nin-mark.svg" alt="" />
+        <span class="brand-word">RoninCowork</span>
+      </button>
+      <span id="campaignvalue" class="ui-bar-value" hidden></span>
+      <button id="coworksbtn" class="ui-bar-nav" type="button" hidden>Coworks</button>
+      <span id="teamvalue" class="ui-bar-value" hidden></span>
       <button id="servicesstate" class="services-state" type="button" hidden aria-expanded="false"></button>
-      <!-- ＋ opens a SECOND RONIN in a new browser tab. The owner already worked this way by
-           opening tabs by hand; the button exists so everyone else discovers it is possible,
-           which was his reason: "if it could launch another tab, that would make it easier so
-           that people know that this is actually possible." Beside the brand, deliberately not
-           among the five verbs on the right — those share one measured width and this is not
-           one of them. -->
-      <button id="newtabbtn" class="newtab" data-t-title="bar.newtab_title" title="Open a second Ronin in a new browser tab">＋</button>
-      <!-- RAM_RPM — the box's working reading. A tachometer: always there, mostly
-           ignored, so you learn what normal looks like without being told. It sits with
-           the brand and NOT among the five verbs on the right, which share one measured
-           width and are all things you press; this is a readout and does nothing when
-           clicked. js/ramrpm.js writes the face and the title. -->
-      <span id="ramrpm" class="ramrpm" hidden></span>
       <span class="grow"></span>
       <!-- THE LAYOUT MAP — the workspace drawn small: one rectangle per column, click
            to show or hide, drag to reorder. Empty unless the active view has columns
@@ -62,6 +52,12 @@
            ViewHost fills it; what is typed becomes the browser tab's title, per tab. -->
       <span id="viewname" class="wk-view-name"></span>
       <span id="viewmap" class="wk-view-map"></span>
+      <!-- RAM_RPM — the box's working reading. A tachometer: always there, mostly
+           ignored, so you learn what normal looks like without being told. On the RIGHT,
+           with the readouts and verbs — the left of the bar is navigation only (owner,
+           2026-08-29); it stays outside the verbs' measured width because it is a readout
+           and does nothing when clicked. js/ramrpm.js writes the face and the title. -->
+      <span id="ramrpm" class="ramrpm" hidden></span>
       <!-- THE BAR IS ONE VERB (owner, 2026-08-27): ⚙ Admin Desk — the cowork commons. か New
            went the way of ⛩ Commons, ミ Mika Assist and く Keypad: a new session is a
            workspace surface (＋ Add team member on the roster, ⌃⇧N), the Commons is the
@@ -94,10 +90,7 @@
       <button data-key="right" data-t-title="keys.right" title="Right">→</button>
     </div>
     <div id="viewhost">
-      <!-- Full-width fallback for the cowork commons outside a Team destination. -->
       <section id="cowork-view" class="cc-view" hidden></section>
-      <section id="new-team-view" hidden></section>
-      <section id="agent-config-view" hidden></section>
     </div>
 
     <!-- /vendor stays absolute: served from node_modules, shared by live and staging.

@@ -24,7 +24,6 @@ import { cleanupViewers, listSessions, publishRoninUrl } from './tmux.js';
 import { publishMax, publishOwner } from './user-config.js';
 import { registerCatalogs } from './routes/catalogs.js';
 import { registerLaunch } from './routes/launch.js';
-import { registerLaunchPreflight } from './routes/launch-preflight.js';
 import { registerPasskeyLogin, registerPasskeyManage } from './routes/passkey-api.js';
 import { registerSessions } from './routes/sessions-api.js';
 import { registerTeams } from './routes/teams-api.js';
@@ -34,6 +33,9 @@ import { registerTeamPage } from './routes/team-page-api.js';
 import { startTomodachiSender } from './activation/tomodachi.js';
 import { registerServicesActivation, resumeInstallWatch } from './routes/services-activation-api.js';
 import { registerSettei } from './routes/settei-api.js';
+import { registerCampaigns } from './routes/campaigns-api.js';
+import { ensureInitialCampaign } from './campaign-config.js';
+import { migrateCampaignScope } from './campaign-scope.js';
 import { stampFreshInstall } from './user-config.js';
 import { registerUpdate } from './routes/update-api.js';
 import { registerVersion } from './routes/version.js';
@@ -249,7 +251,6 @@ app.get('/api/health', (_req, res) =>
 
 registerPasskeyManage(app); // /api/passkey/{list,register-options,register,remove} — BEHIND the gate on purpose
 registerLaunch(app); // /api/launch (both variants), /api/sessions, /api/home, session-max, owner — src/routes/launch.ts
-registerLaunchPreflight(app); // /api/launch/preflight — the dry run: resolveForm with no session and no roster — src/routes/launch-preflight.ts
 registerCatalogs(app); // /api/macros, /api/hotwords*, /api/project-roots*, /api/session-launch-specs, /api/role-families*, /api/session-roles, /api/team-roles, /api/launch-profile — src/routes/catalogs.ts
 registerDocs(app); // /api/docs?shelf=plans|docs — the ▧ Docs tab's shelves — src/routes/docs-api.ts
 registerTeams(app); // /api/team-rosters* — the durable half of every team — src/routes/teams-api.ts
@@ -258,11 +259,25 @@ registerTeamPage(app); // /api/teams/:team/page — the team page's view, and dr
 registerVersion(app); // /api/version — release string, or the commit this process started from — src/routes/version.ts
 registerUpdate(app); // /api/update/* — the ⚙ gear's check + run, press-only — src/routes/update-api.ts
 registerSettei(app); // /api/settei — the install record, and writes BY NAME only — src/routes/settei-api.ts
+registerCampaigns(app); // /api/campaigns* — the durable record of each body of work — src/routes/campaigns-api.ts
 startTomodachiSender(); // AGERU's weekly packet actually leaves here — src/activation/tomodachi.ts
 registerServicesActivation(app); // /api/services/activation* — the Ronin Services request, local-only; no secret crosses this surface — src/routes/services-activation-api.ts
 // A box being born says so, ONCE, and only when ronin.json does not exist yet. Absence of
 // the key means an install older than the key, which must stay quiet — src/user-config.ts.
 void stampFreshInstall();
+
+// THE INITIAL CAMPAIGN — seeded once, from the campaign name, description and desk_profile
+// this install already had. Idempotent by existence: a box with any campaign_config,
+// archived ones included, has already migrated and this touches nothing. Best-effort like
+// the stamp above — a store we cannot write is a different failure, and throwing here would
+// cost the whole boot — src/campaign-config.ts.
+// THE SCOPE MIGRATION runs behind the seed and in the same spirit: additive, idempotent,
+// and only ever stamping a record that carries no Campaign. It re-homes unmarked
+// team_rosters under the initial Campaign, marks project_roots and saved templates, and
+// publishes the id onto every LIVE Agent with no restart — src/campaign-scope.ts.
+void ensureInitialCampaign()
+  .then(() => migrateCampaignScope())
+  .catch(() => {});
 
 // Services register, then their routes mount — AFTER core's, which is safe because
 // every service path (/api/tomodachi/*, /api/transcribe, /api/koshi*) is disjoint

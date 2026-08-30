@@ -50,8 +50,15 @@ session → project-root checkout on dev → git commit/push origin/dev → PR �
 
 target
 session → assignment → repo desk(s) → hand-in → team/<team>/dev
-        → team promotion + full BYOIN → local dev + restart → PR/CI receipt → master
+        → team promotion + full BYOIN → local dev + restart
+        → Git push → PR/CI receipt → stable
 ```
+
+That chain is canonical across the three authorities. This document owns why the whole
+network exists and where its boundaries sit. `docs/worktrees.md` owns the local desk,
+hand-in and team-promotion mechanics. `ronin_sops/github.md` owns the operator procedure
+for Git publication, PR verification and the owner-controlled merge. “Push” without
+“Git” never names a local integration action.
 
 Today Ronin repeatedly teaches and assumes the first path. Changing one SOP will not
 change session behavior because the same behavior also comes from launch cwd, birth
@@ -95,7 +102,7 @@ That division is the rollout's governing rule.
 | Repository `CLAUDE.md`, README and project docs | Several implementation checklists say “confirm branch dev,” preserve shared-checkout dirt, and commit/push to dev. Koe explicitly declares direct `main`; Lab is direct history-as-artifact. | Migrate reviewed-product docs. Keep explicit direct repos direct unless the owner changes their arrangement. A repo declaration chooses **reviewed desks** or **direct**, not whichever branch happens to be open. |
 
 The known stale implementation documents include `docs/project-roots.md`,
-`docs/agent-configuration.md`, `docs/team-workspace.md`, `docs/workspace-kit.md` and the
+`docs/team-workspace.md`, `docs/workspace-kit.md` and the
 generated/reference copies that quote their resume checklists. Search and migrate the
 semantic phrases, not merely literal `dev`, because `push`, “clean,” “land” and “branch”
 all change meaning.
@@ -299,9 +306,10 @@ guard off), the main tree is `home` (shared index, guard on); `bin/shim/git`, `.
 in the PR body as a ```` ```ronin-promotion-receipt ```` fence (the ledger is on the box;
 committing it onto `dev` would change the SHA it proves); `verify.yml` runs
 `scripts/verify-promotion-receipt.mjs` before its `--gates` rerun, and a PR without a receipt
-fails. Hand-back and cutover checklist: `docs/control-surface-audit.md`
-(row 5's switch is Track 3's `RONIN_DESKS=on`). Only Cowork's `RONIN_REPO` is written; the
-sibling declarations and two §0 Syncthing findings (shiwake, site) are the owner's.
+fails. Hand-back and cutover checklist: `docs/control-surface-audit.md`. Every product
+repository carries its `RONIN_REPO` (cowork, services, shiwake, site reviewed; koe and lab
+direct), and that file is the one gate for desks — there is no install switch (owner,
+2026-08-29).
 
 ### Integration rules for the five tracks
 

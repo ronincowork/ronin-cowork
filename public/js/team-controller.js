@@ -40,16 +40,6 @@ export async function refreshTeams() {
   publish();
   return { live, durable, snapshot: snapshot() };
 }
-export async function updateSessionTeams(session, change) {
-  const path = `/api/sessions/${encodeURIComponent(session)}/teams`, current = await request(path);
-  if (!current.ok) return current;
-  const saved = await request(path, { method: 'PUT', json: { teams: change(current.data.teams || []) } });
-  if (!saved.ok) return saved;
-  const live = sessions().find((item) => item.name === session);
-  if (live) live.tags = saved.data.teams || [];
-  await refreshTeams();
-  return saved;
-}
 export async function deleteTeamRoster(team) {
   const result = await request(`/api/team-rosters/${encodeURIComponent(team)}`, { method: 'DELETE' });
   if (result.ok) await refreshTeams();

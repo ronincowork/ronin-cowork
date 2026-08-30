@@ -40,6 +40,18 @@ open or parked, a pending update, the last accepted hand-in, a standing block. T
 dirty files, ahead/behind and whether the folder is mounted are read from git at the
 moment of asking (`deskStatus`). Nothing here is prose an agent maintains.
 
+## The gate
+
+**`RONIN_REPO` in the repository is the one switch** (owner, 2026-08-29). `desks=managed`
+gives a coding launch its desk, the contract in its brief, the desk actions and the tools;
+`desks=none`, or no file, gives none of them and the session starts in the checkout. There
+is no install-wide switch. ⚙ *New projects use desks?* is the default a new project root's
+file is written from (`declareArrangement`, `src/desks/arrangement.ts`); to change one
+project, tick or untick **desks** on its project-root editor (`PUT
+/api/project-roots/:name/desks`, `setDesks` — writes the repository's file, which is yours
+to commit) or edit the file. A coding launch that gets no desk says why on its receipt (*no desk —
+`<root>` has no RONIN_REPO*), and `bin/ronin-doctor` lists every project root's answer.
+
 ## Open
 
 `openDesk({repo, session, team})` — refused when the repository is `direct`, has no
@@ -80,7 +92,8 @@ No BYOIN runs at any step. `dev` never moves here.
 
 **The lead is told, dial or no dial** (owner law, 2026-08-28). An accepted hand-in, or a
 conflict, reaches every lead of the line's team — the 人, `@ronin-lead` on the session —
-through `libexec/ronin-house-send`, which carries no dial check: reviewing the team line
+through `libexec/ronin-house-send`, which carries no dial check and appends to any existing
+prompt input so the draft and notice are submitted together: reviewing the team line
 and promoting it to `dev` is the lead's primary job, and the house telling the lead that
 its job is waiting is house machinery (the same footing as Koshi's marker and
 `write_tegami --at`), not an agent driving a session. `tejun-send` keeps its dial check, so
@@ -98,6 +111,13 @@ designated lead — the receipt records who ran it — so nothing is ever tied u
 `src/desks/lead.ts`; `tests/desks-lead.test.ts`.
 
 ## Close, park, recover, discard
+
+> **Park is retired (owner, ruled 2026-08-30 — `docs/worktrees.md` § Hand in or close).**
+> A desk is handed in or closed; a desk always has a living owner; ending a session checks
+> for desks it solely owns. This section describes the code as it still is until the
+> lab's DESK_OWNERSHIP build-out lands: `park`, `parkedDesks` and
+> `recoverDesk` go; `close` off the line takes `--yes` and receipts the loss; hand-off
+> and add-owner replace recover.
 
 `closeDesk(repo, branch, {unmount})`: unsaved files → a `WIP:` commit on the desk; if the
 tip is already reachable from the line the worktree is removed, the branch deleted and the

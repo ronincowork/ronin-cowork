@@ -83,7 +83,7 @@ fi
 # Not up. Born through /api/launch like every other session — the session_role carries her
 # dial, her posture and her opening, and `cap: exempt` is why this works at a full box.
 out=$(api -X POST "$url/api/launch" -H 'content-type: application/json' \
-  -d "{\"session_role\":\"MikaAssist\",\"name\":\"mika\",\"mode\":\"assisted\",\"tags\":[\"mika\"],\"prompt\":\"$(esc "$msg")\"}")
+  -d "{\"session_role\":\"MikaAssist\",\"name\":\"mika\",\"tags\":[\"mika\"],\"prompt\":\"$(esc "$msg")\"}")
 
 case "$out" in
   '') echo "STUCK: could not reach Ronin at $url." >&2; exit 5 ;;

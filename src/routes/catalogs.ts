@@ -27,7 +27,8 @@ import {
   isValidRootName,
   type RootField,
 } from '../project-roots.js';
-import { readArrangement } from '../desks/arrangement.js';
+import { campaignFilter, campaignResolver } from '../campaign-scope.js';
+import { readArrangement, setDesks } from '../desks/arrangement.js';
 import {
   listSavedLaunches,
   saveLaunch,
@@ -126,9 +127,17 @@ export function registerCatalogs(app: express.Express): void {
   // FILTER ON ONE LIST, never a deletion: /api/project-roots/detail still carries it,
   // and every path that resolves a root BY NAME (spawn, saved launches, the tag on a
   // running session) reads listProjectRoots() whole, so nothing that used to launch stops.
-  app.get('/api/project-roots', async (_req, res) => {
+  app.get('/api/project-roots', async (req, res) => {
     try {
-      res.json((await listProjectRoots()).filter((r) => !r.archived));
+      const resolve = await campaignResolver();
+      // Same filter contract as /api/team-rosters: name none and you get every Campaign.
+      const wanted = ([] as string[]).concat((req.query?.campaign_id as string | string[]) ?? []).filter(Boolean);
+      const keep = await campaignFilter(wanted);
+      res.json(
+        (await listProjectRoots())
+          .filter((r) => !r.archived && keep(r.campaign_id))
+          .map((r) => ({ ...r, campaign_id: resolve(r.campaign_id) })),
+      );
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }
@@ -177,7 +186,9 @@ export function registerCatalogs(app: express.Express): void {
     const dir = String(req.query.dir ?? '').trim();
     if (!dir) return res.status(400).json({ error: 'A directory is required.' });
     try {
-      res.json(await repoFacts({ name: 'candidate', dir, remit: '', match: [], docs: [], plans: [], archived: false }));
+      // A CANDIDATE, not a root: nothing has been included yet, so it belongs to no
+      // Campaign. `repoFacts` reads the directory and never the Campaign.
+      res.json(await repoFacts({ name: 'candidate', dir, remit: '', match: [], docs: [], plans: [], archived: false, campaign_id: '' }));
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }
@@ -200,12 +211,18 @@ export function registerCatalogs(app: express.Express): void {
     if (!isValidRootName(name)) return res.status(400).json({ error: 'Handle: lowercase letters, digits, - and _.' });
     const fields = bodyFields(req.body);
     if (!fields.dir) return res.status(400).json({ error: 'A directory is required.' });
+    // THE DESKS SWITCH AT BIRTH (owner, 2026-08-29): every way a root is added passes
+    // through here, so the choice is made here — `desks: managed|none` in the body wins;
+    // absent, the ⚙ default writes the repository's RONIN_REPO (upsertProjectRoot).
+    const desks = req.body?.desks === 'managed' ? 'managed' : req.body?.desks === 'none' ? 'none' : null;
     try {
       if ((await listProjectRoots()).some((r) => r.name === name)) {
         return res.status(409).json({ error: `"${name}" is already in the catalog.` });
       }
       await upsertProjectRoot(name, fields);
-      res.json({ ok: true });
+      const root = (await listProjectRoots()).find((r) => r.name === name);
+      const arrangement = root && desks ? await setDesks(root.dir, desks).catch(() => null) : root ? await readArrangement(root.name, root.dir).catch(() => null) : null;
+      res.json({ ok: true, arrangement });
     } catch (e) {
       res.status(400).json({ error: errMsg(e) });
     }
@@ -218,6 +235,23 @@ export function registerCatalogs(app: express.Express): void {
     try {
       await upsertProjectRoot(name, bodyFields(req.body));
       res.json({ ok: true });
+    } catch (e) {
+      res.status(400).json({ error: errMsg(e) });
+    }
+  });
+
+  // THE DESKS CHECKBOX on the editor (owner, 2026-08-29): flip one project's RONIN_REPO —
+  // the one gate for desks. Writes into the repository, not the catalog; the file is the
+  // owner's to commit.
+  app.put('/api/project-roots/:name/desks', async (req, res) => {
+    const { name } = req.params;
+    if (!isValidRootName(name)) return res.status(400).json({ error: 'Invalid handle.' });
+    const desks = req.body?.desks === 'managed' ? 'managed' : req.body?.desks === 'none' ? 'none' : null;
+    if (!desks) return res.status(400).json({ error: 'desks must be managed or none.' });
+    try {
+      const root = (await listProjectRoots()).find((r) => r.name === name);
+      if (!root) return res.status(404).json({ error: `"${name}" is not in the catalog.` });
+      res.json({ ok: true, arrangement: await setDesks(root.dir, desks) });
     } catch (e) {
       res.status(400).json({ error: errMsg(e) });
     }

@@ -54,7 +54,21 @@ export function initialOf(f, ctx) {
 /** The options a select offers — resolved from the surface's own ctx. */
 export function optionsOf(f, ctx) {
   if (f.options === 'models') return ctx.modelOpts ?? [];
+  // ONE PROVIDER'S MODELS, by bare name. The registry cannot spell a vendor, so the
+  // provider rides the option source and is read back off it here. The value is the
+  // model alone — the provider is already the key the row lands at.
+  if (String(f.options ?? '').startsWith('models_for:')) {
+    const provider = String(f.options).slice('models_for:'.length);
+    return (ctx.modelOpts ?? [])
+      .filter((o) => o.provider === provider)
+      .map((o) => ({ label: o.model_label ?? o.model, value: o.model }));
+  }
   if (f.options === 'desk_profiles') return (ctx.deskProfiles ?? []).map((p) => ({ label: p.label, value: p.name }));
+  // New projects and desks (owner, 2026-08-29): two answers, written into RONIN_REPO at add time.
+  if (f.options === 'new_project_desks') return [
+    { label: 'Desks — each coding session at its own branch and worktree, hand-in, team promotion', value: 'managed' },
+    { label: 'None — sessions work in the checkout', value: 'none' },
+  ];
   return [];
 }
 

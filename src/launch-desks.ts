@@ -8,19 +8,19 @@
  * concrete block the brief carries. It mutates no ref itself and holds no state.
  *
  * THREE HONEST ANSWERS, and no fourth:
- *   - `null`       this launch gets no desk — manual, plain terminal, a non-code role, a
- *                  direct or undeclared repository, or the switch is off. The brief says
+ *   - `null`       this launch gets no desk — plain terminal, a non-code role, or
+ *                  a repository whose RONIN_REPO says direct or is absent. The brief says
  *                  nothing about desks, and nothing downstream pretends one exists.
  *   - assignment   desks derived and (at launch) opened; the session starts in `primary`.
  *   - a refusal    desks were wanted and could not be prepared. The launch does NOT fall
  *                  back to the shared checkout: a session told "you have a desk" that is
  *                  standing in `dev` is the exact failure the control surface exists for.
  *
- * THE SWITCH. `RONIN_DESKS=on` turns desk launches on; anything else is today's launch.
- * One flag, one place, read at launch: the rollout is one compatibility cutover (owner,
- * 2026-08-28), and until the tools, launch, prose and visible state all meet there, a
- * launch that opened desks would teach the new contract to a session with no `hand-in`
- * to perform it. Track 5's cutover checklist flips it; nothing else reads it.
+ * THE ONE GATE IS THE REPOSITORY'S OWN FILE (owner, 2026-08-29). `RONIN_REPO` with
+ * `desks=managed` gives a coding launch its desk, the contract, the actions and the
+ * tools; `desks=none`, or no file, gives none of them. There is no install-wide switch:
+ * two switches can only disagree. SETTEI's "new projects use desks?" is a default that
+ * writes the file when a project root is added (src/desks/arrangement.ts), not a gate.
  */
 import type { Assignment, RepoDesk } from './desks/schema.js';
 import { deriveAssignment } from './desks/registry.js';
@@ -28,18 +28,14 @@ import { deriveAssignment } from './desks/registry.js';
 /** The lifecycles that change code, and so get a desk: a plan, a review, a chat do not. */
 export const DESK_LIFECYCLES: ReadonlySet<string> = new Set(['coding', 'debug']);
 
-export const desksEnabled = (): boolean => (process.env.RONIN_DESKS ?? '').trim().toLowerCase() === 'on';
-
 /** The launch box's one control, pre-answered: `own` forces a desk, `none` refuses one, absent = by lifecycle. */
 export type DeskChoice = 'own' | 'none';
 
 /**
- * Whether THIS launch wants desks at all. Manual launches never do (manual adds no
- * wording of ours, and a desk is wording); a plain terminal has no agent to brief.
+ * Whether THIS launch wants desks at all. A plain terminal has no agent to brief.
  */
-export function wantsDesk(input: { mode: 'manual' | 'assisted'; agent: boolean; lifecycle: string; desk?: DeskChoice }): boolean {
-  if (!desksEnabled()) return false;
-  if (input.mode === 'manual' || !input.agent) return false;
+export function wantsDesk(input: { agent: boolean; lifecycle: string; desk?: DeskChoice }): boolean {
+  if (!input.agent) return false;
   if (input.desk === 'none') return false;
   if (input.desk === 'own') return true;
   return DESK_LIFECYCLES.has(input.lifecycle);
@@ -53,7 +49,6 @@ export async function resolveLaunchDesks(input: {
   session: string;
   team: string;
   project_root: string;
-  mode: 'manual' | 'assisted';
   agent: boolean;
   lifecycle: string;
   desk?: DeskChoice;
@@ -85,7 +80,7 @@ export async function prepareLaunchDesks(a: Assignment): Promise<Assignment> {
   } catch (e) {
     throw new Error(
       `Desk preparation is not available on this install (${(e as Error)?.message ?? e}). ` +
-        'The launch was refused rather than started in the shared checkout: set RONIN_DESKS off, or install the desk tools.',
+        'The launch was refused rather than started in the shared checkout: install the desk tools, or declare the repository direct (RONIN_REPO desks=none).',
     );
   }
   let opened: Assignment;

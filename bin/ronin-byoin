@@ -83,7 +83,7 @@ for g in $(sed -n 's/.*"verify": "\(.*\)".*/\1/p' package.json | grep -o 'script
   name="$(basename "$g")"; name="${name%.*}"
   # Fast repository verification deliberately omits browser UI, but says so in
   # the verdict. Full BYOIN and --ui still run the same complete package roster.
-  if [ "$MODE" = "gates" ] && { [ "$name" = "check-tips" ] || [ "$name" = "smoke-ui" ] || [ "$name" = "visual-ui" ]; }; then
+  if [ "$MODE" = "gates" ] && { [ "$name" = "check-tips" ] || [ "$name" = "smoke-ui" ] || [ "$name" = "visual-ui" ] || [ "$name" = "workbench-ui" ]; }; then
     skip_ "$name — repository-only mode does not drive a live UI; run bin/ronin-byoin --ui against a running candidate"
     continue
   fi

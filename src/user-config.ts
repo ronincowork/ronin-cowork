@@ -293,15 +293,40 @@ export const writeMachineSection = (v: { name?: string; where?: string; monitor?
     doc.machine = m;
   });
 
-/** THE DESK — which desk_profile the owner works at (R38). `profile` is a token in
- * `ronin_catalogs/desk_profiles/` or ''; nothing here checks it exists, because a
- * profile can be removed after it was chosen and the reader answers null for that. */
-export const readDeskSection = (): Promise<{ profile?: string }> => readSection('desk', {});
-export const writeDeskSection = (v: { profile?: string }): Promise<void> =>
+/**
+ * THE CAMPAIGN AND THE DESK PROFILE LIVE IN `campaign_config` NOW, NOT HERE.
+ *
+ * `doc.campaign` (name, description) and `doc.desk` (profile) were this file's until
+ * 2026-08-29. They describe a BODY OF WORK, and `ronin.json` is the record of a MACHINE —
+ * so when a Campaign became a durable object of its own they moved to its store, and
+ * `src/campaign-config.ts` is the one writer of both. Its `readCampaignSection` /
+ * `readDeskSection` keep exactly the shapes that used to live here, so `src/settei.ts`,
+ * `src/routes/settei-api.ts` and `src/desk-profiles.ts` changed an import and nothing else.
+ *
+ * The two old keys are still IN the file on an upgraded install and are read exactly once
+ * more, by `ensureInitialCampaign()`, to seed the initial record — through the generic
+ * `readSection` above, which is why nothing campaign-shaped needs to remain here. They are
+ * inert after that; removing them is build-out leg 5, with the old writable surface.
+ *
+ * The dependency runs ONE WAY — `campaign-config.ts` reads this module, never the reverse.
+ * That is what makes "one writable Campaign record" structural rather than a convention,
+ * and it is what keeps `check-modules` free of a cycle.
+ */
+
+/** NEW PROJECTS AND DESKS (owner, 2026-08-29) — the default written into a project's
+ * `RONIN_REPO` when its root is added: `managed` (desks, hand-in, team promotion) or
+ * `none` (work in the checkout). A default, never a gate: the file in the repository is
+ * the one switch, and this only decides what that file says at birth. Unset = managed. */
+export type NewProjectDesks = 'managed' | 'none';
+export const readDesksSection = async (): Promise<{ new_project: NewProjectDesks }> => {
+  const s = await readSection<{ new_project?: unknown }>('desks', {});
+  return { new_project: s.new_project === 'none' ? 'none' : 'managed' };
+};
+export const writeDesksSection = (v: { new_project?: string }): Promise<void> =>
   updateConfig((doc) => {
-    const d = ((doc.desk ?? {}) as Record<string, unknown>) || {};
-    if (v.profile !== undefined) d.profile = String(v.profile).trim().slice(0, 64);
-    doc.desk = d;
+    const d = ((doc.desks ?? {}) as Record<string, unknown>) || {};
+    if (v.new_project !== undefined) d.new_project = v.new_project === 'none' ? 'none' : 'managed';
+    doc.desks = d;
   });
 
 /**

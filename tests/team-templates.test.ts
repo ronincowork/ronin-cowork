@@ -17,7 +17,11 @@ test('Team templates persist a reusable draft without Team identity or transacti
     });
     const [saved] = await listTeamTemplates();
     assert.equal(saved.name, 'dev-team');
-    assert.deepEqual(saved.draft.team, { name: '', wipeboard: '', objective: 'Build it' });
+    // `campaign_id` joined `name` and `wipeboard` as a blanked identity field when Campaign
+    // scoping landed: those three say WHICH team a draft came from, and a template is a
+    // shape to build a new team with. The row's own campaign_id says which library the
+    // template lives in — see tests/campaign-scope.test.ts.
+    assert.deepEqual(saved.draft.team, { name: '', wipeboard: '', objective: 'Build it', campaign_id: '' });
     assert.equal(saved.draft.transaction, undefined);
     await removeTeamTemplate('dev-team');
     assert.deepEqual(await listTeamTemplates(), []);

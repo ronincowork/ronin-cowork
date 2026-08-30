@@ -52,6 +52,14 @@ process.env.RONIN_CATALOGS_DIR = catalogs;
 process.env.RONIN_SESSION_BOOT_DIR = path.join(temp, 'shelf');
 process.env.RONIN_SESSION_BOOT_CACHE_DIR = path.join(temp, 'generated');
 process.env.RONIN_CONFIG_DIR = path.join(temp, 'config');
+// The owner's own session default, because since 2026-08-29 it is the ONLY thing under an
+// explicit pick — no session_role biases the model any more, so a launch that names
+// nothing must land here for both callers alike.
+await fs.mkdir(path.join(temp, 'config'), { recursive: true });
+await fs.writeFile(
+  path.join(temp, 'config', 'ronin.json'),
+  JSON.stringify({ agents: { sessions: { default: { provider: 'anthropic', model: 'fable' } } } }),
+);
 process.env.RONIN_LEDGER_DIR = path.join(temp, 'ledger');
 
 // A book on each level, so the reading list has something to be identical ABOUT.
@@ -82,7 +90,6 @@ const commonsForm = (over: Partial<SpawnForm> = {}): SpawnForm => ({
   session_role: 'DraftPlan',
   project_root: 'alpha',
   prompt: 'Work out the shape of the thing.',
-  mode: 'assisted',
   ...over,
 });
 
@@ -147,15 +154,12 @@ test('and to the same reading list — all + root + role, compiled once', async 
   assert.deepEqual(fromForkit.birth_reading.map((file) => path.basename(file)).sort(), forkBooks);
 });
 
-test('resolved birth readings include explicit seeds, while manual mode reads nothing at birth', async () => {
+test('resolved birth readings include the startup shelves and explicit seeds', async () => {
   const seed = path.join(temp, 'OWNER_SEED.md');
   const assisted = await resolveForm(commonsForm({ seed: [seed] }), new Set());
   assert.ok(assisted.birth_reading.includes(seed));
   assert.deepEqual(reading(assisted.brief), assisted.birth_reading.map((file) => path.basename(file)).sort());
 
-  const manual = await resolveForm(commonsForm({ mode: 'manual', seed: [seed] }), new Set());
-  assert.deepEqual(manual.birth_reading, []);
-  assert.equal(manual.brief, commonsForm().prompt);
 });
 
 test("forkit's own inputs change its words and nothing about the mechanism", async () => {
@@ -187,11 +191,13 @@ test('project_root defaulting is the mechanism\'s — top active root, or the TE
 });
 
 test('the model cascade is the mechanism\'s: blank inherits, explicit wins, identically', async () => {
-  // BLANK — the resolved `model:` bias of the task answers, for both callers.
+  // BLANK — the OWNER'S session default answers, for both callers. It used to be the
+  // task's `model:` bias; that field and its resolution path were removed on 2026-08-29,
+  // so a definition can no longer put itself between the owner and their own default.
   const commons = await resolveForm(commonsForm({ cmd: undefined }), new Set());
   const forkit = await resolveForm(forkitForm({ cmd: undefined }), new Set());
   assert.equal(forkit.cmd, commons.cmd);
-  assert.match(commons.cmd, /opus/, 'DraftPlan biases opus, and the bias is now read');
+  assert.match(commons.cmd, /fable/, 'the configured session default answers, not the role');
 
   // EXPLICIT — the owner named one, and it beats every layer. Same input, same answer.
   // The resolved cmd may carry the provider's own MCP-off flags on the end, because this
@@ -225,9 +231,8 @@ test('stated_by is resolved on the server across explicit, Team, role, and syste
     project_root: 'beta',
     cmd: 'claude --model haiku',
     mcp: true,
-    mode: 'manual',
   }), new Set());
-  for (const key of ['name', 'project_root', 'cmd', 'mcp', 'mode', 'session_role']) {
+  for (const key of ['name', 'project_root', 'cmd', 'mcp', 'session_role']) {
     assert.deepEqual(explicit.stated_by[key], [{ layer: 'explicit_launch', source: 'launch request' }], key);
   }
   assert.equal(explicit.stated_by.lifecycle[0]?.layer, 'session_role');
@@ -242,22 +247,8 @@ test('stated_by is resolved on the server across explicit, Team, role, and syste
   assert.deepEqual(system.stated_by.dial, [{ layer: 'system', source: 'src/launch-profile.ts' }]);
 });
 
-test('preflight publishes resolver attribution unchanged', async () => {
-  const { previewResolved } = await import('../src/routes/launch-preflight.js');
-  const resolved = await resolveForm(commonsForm(), new Set());
-  const preview = previewResolved(resolved);
-  assert.strictEqual(preview.stated_by, resolved.stated_by);
-  assert.deepEqual(preview.stated_by.lifecycle, resolved.stated_by.lifecycle);
-  assert.strictEqual(preview.birth_reading, resolved.birth_reading);
-  assert.strictEqual(preview.posture, resolved.posture);
-  assert.equal(preview.model, resolved.model);
-  assert.equal(preview.permissions, resolved.permissions);
-  assert.equal(preview.opening, resolved.opening);
-});
-
 test('server resolution returns profile and durable Team context without browser reconstruction', async () => {
   const resolved = await resolveForm(forkitForm(), new Set());
-  assert.equal(resolved.model, 'opus');
   assert.equal(resolved.permissions, 'default');
   assert.equal(resolved.team_objective, 'prove the parity');
   assert.deepEqual(resolved.team_repos, []);

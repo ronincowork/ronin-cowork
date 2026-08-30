@@ -8,15 +8,13 @@ const team = read('public/js/cowork-view.js');
 const controller = read('public/js/team-controller.js');
 const kit = read('public/js/workspace-kit.js') + read('public/js/workspace-adapters.js');
 const layouts = read('public/js/workspace-layouts.js');
+const arrangement = read('public/js/workspace-arrangement.js');
+const campaign = read('public/js/campaign-view.js');
+const workbench = read('public/js/workbench.js');
 const terminal = read('public/js/terminal-tile-host.js');
 const primitives = read('public/js/workspace-primitives.js');
 const newTeam = read('public/js/new-team.js');
-const agentConfig = read('public/js/agent-config.js');
-const agentFields = read('public/js/agent-config-fields.js');
-const agentPreview = read('public/js/agent-config-preview.js');
-const agentStyles = read('public/css/agent-configuration.css').replace(/\s+/g, ' ');
 const styles = read('public/workspace-kit.css').replace(/\s+/g, ' ');
-const preflight = read('src/routes/launch-preflight.ts');
 const rosters = read('src/team-rosters.ts');
 const leagueCards = /\.wk-league-board \[data-surface='cards'\] \{[^}]*display: grid;[^}]*grid-template-columns: repeat\(auto-fill, minmax\(17rem, 1fr\)\);[^}]*gap: var\(--space-6\);[^}]*align-content: start;[^}]*\}/;
 const leagueCardsPhone = /@media \(max-width: 680px\) \{[^}]*\.wk-league-board \[data-surface='cards'\] \{[^}]*grid-template-columns: 1fr;[^}]*\}/;
@@ -36,12 +34,18 @@ for (const retired of ['wk-workbench-rails', 'wk-workbench-expand', 'wk-workbenc
 }
 if (!primitives.includes('createLayoutMap')) problems.push('The Kit primitives must own the layout map.');
 if (!read('public/js/workspace.js').includes('createLayoutMap')) problems.push('The ViewHost must draw the layout map for a view that exposes an arrangement.');
-if (/createWorkbenchLayout\([^{)]/.test(team)) problems.push('Team must hand the Workbench a declaration, not positional surfaces.');
-if (!team.includes('declaration:') || !team.includes('arrangement: workbench.arrangement')) problems.push('Team must declare its slots and expose its arrangement.');
+if (!layouts.includes('createSurfaceHeader') || !layouts.includes('dataset.workbenchHeader')) problems.push('The Workbench layout must own the permanent header of every ordinary declared slot.');
+if (!arrangement.includes('composite: slot.composite === true')) problems.push('The Workbench declaration must preserve composite workspace stacks so the frame cannot double-head them.');
+for (const contract of ['WorkbenchLibrary', 'WorkbenchProfiles', 'WORKBENCH_IDS', "['workspace1', 'workspace2', 'workspace3', 'workspace4']", 'tenant', 'profile.types', 'definition.create']) if (!workbench.includes(contract)) problems.push(`The sealed Workbench is missing ${contract}.`);
+for (const [name, source] of [['Campaign', campaign], ['Cowork/Team', team]]) {
+  if (!source.includes('WorkspaceKit.workbench.create({')) problems.push(`${name} must instantiate the one high-level Workbench.`);
+  if (/createWorkbenchLayout|\b(?:cv-selector-head|tw-roster-head|tw-column|tw-cell)\b/.test(source)) problems.push(`${name} owns Workbench frame/header geometry instead of supplying a profile and tenant.`);
+}
+if (read('public/js/workspace-kit.js').includes('createWorkbenchLayout')) problems.push('The low-level Workbench layout must not be exposed to consumers; only WorkspaceKit.workbench.create is public.');
 for (const file of fs.readdirSync('public/js')) {
-  if (file.startsWith('workspace-')) continue;
+  if (['workspace-layouts.js', 'workbench.js'].includes(file)) continue;
   const source = read(`public/js/${file}`);
-  if (/gridTemplateColumns|wk-workbench-splitter/.test(source)) problems.push(`${file} reaches into Workbench geometry; only the Kit lays out slots.`);
+  if (/createWorkbenchLayout|gridTemplateColumns|wk-workbench-(?:splitter|column|cell|selector)/.test(source)) problems.push(`${file} reaches into Workbench construction; only workbench.js owns it.`);
 }
 if (!/@media \(max-width: 680px\) \{.*\.wk-workbench-host \{[^}]*flex-direction: column;/.test(styles)) problems.push('The Kit must own managed Workbench phone composition.');
 if (!league.includes("'./team-controller.js'")) problems.push('League must consume the shared Team controller.');
@@ -56,24 +60,18 @@ for (const hook of ['mount', 'enter', 'leave', 'destroy']) {
   if (!primitives.includes(`invoke('${hook}'`)) problems.push(`Channel services are missing ${hook} lifecycle.`);
 }
 if (!team.includes('teamWorkspaceState(context.state,')) problems.push('Team must consume typed workspace state.');
-if (!newTeam.includes("workspaceTarget('agent-config'")) problems.push('New Team must use typed navigation for seat configuration.');
-if (!newTeam.includes('registerTeamDraft') || !newTeam.includes("patchViewState('new-team'")) problems.push('New Team must use the canonical persisted draft controller.');
-for (const contract of ['createAction', 'createActionBar', 'fields.form.actions.append(actions.el)']) {
-  if (!agentConfig.includes(contract)) problems.push(`Agent Configuration must consume the Kit form-action contract: ${contract}.`);
+// NEW TEAM CREATES A TEAM AND HANDS THE WORKSPACE TO IT (owner, 2026-08-29): one write
+// through the canonical roster door, and no seat-building, launch or retry path of its
+// own — staffing is the New Agent launcher's, which already names the Team at birth.
+if (!newTeam.includes("patchViewState('new-team'")) problems.push('New Team must persist its draft through the typed view state.');
+if (!newTeam.includes("request('/api/team-rosters'")) problems.push('New Team must create through the canonical roster door.');
+for (const retired of ['new-team-launch.js', 'new-team-preflight.js', 'team-draft-controller.js', 'agent-config']) {
+  if (newTeam.includes(`'./${retired}'`) || newTeam.includes(`'${retired}'`)) problems.push(`New Team retired ${retired}; a Team is created and then staffed with New Agent.`);
 }
-if (/document\.createElement\(['"]button['"]\)/.test(agentConfig)) problems.push('Agent Configuration must not construct feature-local action buttons.');
-for (const contract of ['ac-form', 'ac-fields', 'ac-field', 'ac-control']) {
-  if (!agentFields.includes(contract)) problems.push(`Agent Configuration fields are missing the governed feature hook ${contract}.`);
+for (const gone of ['public/js/new-team-launch.js', 'public/js/new-team-preflight.js', 'public/js/team-draft-controller.js', 'public/js/agent-config.js', 'src/routes/launch-preflight.ts']) {
+  if (fs.existsSync(gone)) problems.push(`${gone} is a retired New Team seat path; the surface creates a Team and stops.`);
 }
-if (!agentPreview.includes('ac-preview-body')) problems.push('Agent Configuration preview is missing its governed feature hierarchy hook.');
-if (!agentPreview.includes('resolved.stated_by?.[key]')) problems.push('Agent Configuration must render server-returned stated_by attribution.');
-if (!agentPreview.includes('resolved.birth_reading')) problems.push('Agent Configuration must render the server-returned birth reading list.');
-if (!preflight.includes('stated_by: resolved.stated_by')) problems.push('Launch preflight must publish canonical resolver attribution unchanged.');
-if (!preflight.includes('birth_reading: resolved.birth_reading')) problems.push('Launch preflight must publish canonical birth readings unchanged.');
-for (const contract of ['.ac-field {', '.ac-actions[data-dirty=', '.ac-preview-brief {', '.ac-preview-rows {']) {
-  if (!agentStyles.includes(contract)) problems.push(`Agent Configuration feature styling is missing ${contract}.`);
-}
-if (!preflight.includes('proposedRoster') || !preflight.includes('isCreatableTeamName')) problems.push('Preflight must use proposed Team defaults and canonical name availability.');
+if (!read('public/js/cowork-view.js').includes('createNewTeamView(WorkspaceKit, {')) problems.push('The Cowork space must own where New Team lands after a create.');
 if (!rosters.includes("isReservedTeamName = (s: string): boolean => s === 'unassigned'")) problems.push('The canonical Team store must reserve the Unassigned holding token.');
 for (const file of ['cowork-view.js', 'new-team.js']) {
   const source = read(`public/js/${file}`);

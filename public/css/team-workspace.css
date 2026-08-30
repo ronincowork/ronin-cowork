@@ -2,10 +2,6 @@
 @layer app {
   .tw-cards[hidden], .tw-config[hidden] { display: none; }
 
-  /* the roster's header — the one header depth (--row-head) a tile head and the commons' tab strip share */
-  .tw-roster-head { display: flex; align-items: center; gap: var(--space-3); flex: 0 0 auto; min-height: var(--row-head); padding: 0 var(--space-4); border-bottom: var(--edge) solid var(--line); color: var(--fg-strong); }
-  .tw-roster-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .tw-roster-count { color: var(--muted); font-size: var(--text-3); }
   .tw-cards { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4); }
   .tw-cards [data-inert='true'] { cursor: default; }
   .tw-cards > [draggable='true'] { cursor: grab; }
@@ -14,19 +10,6 @@
   .tw-selector-group-cards { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-2) 0 var(--space-4); }
   .tw-selector-group-cards > [draggable='true'] { cursor: grab; }
   .league-drag-card { cursor: grab; }
-  .league-view-scroll { height: 100%; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
-  .league-roster-team { grid-column: 1 / -1; border: var(--edge) solid var(--line); border-radius: var(--radius-sm); background: var(--raise); overflow: hidden; }
-  .league-roster-team[data-drop-ready='true'] { border-color: var(--kaki); background: var(--kaki-lift); }
-  .league-roster-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2) var(--space-4); padding: var(--space-3) var(--space-4); border-bottom: var(--edge) solid var(--line); background: var(--bg-2); }
-  .league-roster-head b, .league-agent-row { cursor: grab; }
-  .league-roster-head span, .league-roster-head small, .league-roster-empty { color: var(--muted); }
-  .league-roster-head small { grid-column: 1 / -1; }
-  .league-agent-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2fr) auto auto auto auto; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: var(--edge) solid var(--line); }
-  .league-agent-row:last-child { border-bottom: 0; }
-  .league-agent-row > * { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .league-agent-role, .league-agent-shingo, .league-agent-status, .league-agent-agent, .league-agent-model, .league-agent-ctx { color: var(--muted); font-size: var(--text-3); }
-  .league-agent-role i { margin-right: var(--space-2); font-style: normal; }
-  .league-roster-empty { padding: var(--space-4); }
   .team-templates { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-5); overflow-y: auto; }
   .team-template-add { display: flex; gap: var(--space-3); }
   .team-template-add input { flex: 1 1 auto; min-width: 0; }
@@ -38,18 +21,6 @@
   .tw-commons-card { padding-top: var(--space-2); padding-bottom: var(--space-2); }
   /* a seat with a card over it — the drop will land here */
   .tw-terminal[data-drop-ready='true'] { outline: var(--edge-2) solid var(--kaki); outline-offset: calc(-1 * var(--edge-2)); }
-  /* The selected workspace, when it holds a commons: the same inset ring `.tile.active` wears
-     on a terminal (style.css), so any surface reads as selectable (owner, 2026-08-27). */
-  .tw-selected { outline: var(--edge) solid var(--accent); outline-offset: calc(-1 * var(--edge)); }
-
-  /* THE 2×2 (owner, 2026-08-27): a workspace column is a STACK of cells — one showing in
-     the two-shape, two in the four-shape; the selector column's place is the Kit's order. */
-  .tw-column { display: grid; grid-template-rows: minmax(0, 1fr); gap: var(--space-3); min-height: 0; height: 100%; }
-  .tw-column[data-count='4'] { grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
-  .tw-cell { display: flex; min-height: 0; min-width: 0; }
-  .tw-cell[hidden] { display: none; }
-  .tw-cell > * { flex: 1 1 auto; min-height: 0; min-width: 0; }
-
   /* a blank workspace: the word, centred, and nothing else (owner, 2026-08-27) */
   .tw-blank-word { margin: auto; font-size: var(--text-5); color: var(--muted); }
   /* the new-session surface: T on the left of its head, then the name; the launcher below */
@@ -59,22 +30,17 @@
   .tw-new-body .home-null { display: flex; }
 
   .tw-note { padding: var(--space-6) var(--space-7); color: var(--muted); font-size: var(--text-3); }
-  .team-roster-layout { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: var(--space-4); min-height: 100%; padding: var(--space-4); }
-  .team-roster-team { min-width: 0; border: var(--edge) solid var(--line); border-radius: var(--radius-sm); background: var(--raise); overflow: hidden; }
-  .team-roster-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: var(--edge) solid var(--line); color: var(--fg-strong); }
-  .team-roster-heading b { margin-right: auto; }
-  .team-roster-heading span, .team-roster-empty, .team-roster-message { color: var(--muted); }
-  .team-roster-session, .team-roster-empty { display: block; padding: var(--space-3) var(--space-4); border-bottom: var(--edge) solid var(--line); }
-  .team-roster-session:last-child, .team-roster-empty:last-child { border-bottom: 0; }
-  .team-roster-session { cursor: grab; }
-  .team-roster-team[data-drop-ready='true'] { border-color: var(--kaki); background: var(--kaki-lift); }
-  /* -- Team Configuration: a reading of the team — its record, then its live roster -- */
-  .tw-config { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-6) var(--space-7); overflow-y: auto; }
-  .tw-config-head { margin-top: var(--space-3); color: var(--fg-strong); }
-  /* the live roster: a member's name, then the same readings its card carries */
-  .tw-config-roster { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3) var(--space-5); }
-  .tw-config-name { color: var(--fg); }
-  .tw-config-reading { min-width: 0; color: var(--muted); font-size: var(--text-3); overflow-wrap: anywhere; }
+  .team-roster-detail { margin: var(--space-4); overflow-y: auto; }
+  .team-roster-detail .home-maxrow, .team-roster-detail .home-group-add { display: none; }
+  .home-grp-actions.tile-head { min-height: 0; padding: 0; border: 0; background: transparent; flex-wrap: nowrap; }
+  .tw-config { padding: var(--space-6) var(--space-7); overflow-y: auto; }
+  .tw-config-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); }
+  .tw-config-field { display: flex; flex-direction: column; gap: var(--space-2); color: var(--muted); font-size: var(--text-3); }
+  .tw-config-field:nth-child(3) { grid-column: 1 / -1; }
+  .tw-config-field input, .tw-config-field textarea { width: 100%; box-sizing: border-box; border: var(--edge) solid var(--line-2); border-radius: var(--radius-sm); background: var(--bg-2); color: var(--fg); padding: var(--space-3); font: inherit; }
+  .tw-config-field textarea { min-height: calc(var(--space-12) * 3); resize: vertical; }
+  .tw-config-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; align-items: center; gap: var(--space-4); }
+  .tw-config-status, .tw-config-empty { color: var(--muted); }
 
   /* -- the docs slice: mdedit's own pane (.home-docs, style.css), given the surface's height -- */
   .tw-docs { display: flex; height: 100%; }

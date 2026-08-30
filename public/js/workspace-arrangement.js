@@ -9,10 +9,12 @@
  * commons on the left by reordering one array.
  *
  * A DECLARATION is what a destination hands the frame:
- *   { slots: [ { name, label, width, min, compact }, ... ] }
+ *   { slots: [ { name, label, width, min, compact, composite }, ... ] }
  *   width    default share of the row, percent, summing to 100 across the declaration
  *   min      the floor a resize may reach, percent (the action column goes to 6)
  *   compact  a pixel width under which the frame marks the slot data-width="compact"
+ *   composite the slot contains independently headed workspace seats; the outer frame
+ *             must not add a second header above their permanent Kit headers
  * A bare string is a slot with defaults.
  *
  * The STATE it keeps and a destination persists:
@@ -43,6 +45,7 @@ export function declareArrangement(declaration = {}) {
       width: finite(slot.width, 0),
       min: Math.max(1, finite(slot.min, MIN_DEFAULT)),
       compact: Math.max(0, finite(slot.compact, 0)),
+      composite: slot.composite === true,
     });
   }
   if (!slots.length) throw new Error('an arrangement needs at least one slot');

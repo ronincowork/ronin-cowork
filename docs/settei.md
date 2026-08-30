@@ -59,6 +59,7 @@ from one of these, and adding a source is adding a row here.
 | Source | Contributes | Provenance | The rule that binds it |
 |---|---|---|---|
 | **`ronin.json`** — the `config` store, user scope | owner · machine · sessions.max · agents · gbrain · services · setup | **typed — the only persisted half** | written only through `updateConfig()`; the file also hosts `auth` and `passkeys`, which are **not settei** — the file is storage, not the object |
+| **the `campaigns` store** — one `campaign_config` per record | the campaign's name and description, and its `desk_profile` | typed, **by reference** | settei reads the initial campaign and never owns it; `src/campaign-config.ts` is the one writer. `set.campaign` and `set.desk` keep the shapes they always had — the home changed, not the record. `docs/campaigns.md` |
 | **the catalogs store** — `PROJECT_ROOTS.md` | projects, with their remits | typed, **by reference** | settei reads it in and never owns it; ▣ Project root and the owner's editor stay its writers |
 | **the mechanical scans** — eight families today, extensible | machine & OS (DMI, cores, kernel) · agent CLIs (login-shell probe) · API-key presence · host tools · the install's identity and services roster · reach and exposure (web + ssh) · the work (project dirs, live sessions) | **found** — per read, never stored | a stored measurement is a lie the moment the machine changes; every answer carries `observed_at` |
 | **`.env`** (+ the unit) — `docs/env.md` | **only a name and a boolean** — which key variables exist and whether each is set | found (presence only) | the value never crosses into settei in either direction; secrets live in `.env` and nowhere else |
@@ -105,7 +106,8 @@ known. `⚙` = edit it in the ⚙ Configuration view unless another editor is na
 
 | Looking for | It lives | Known / edited |
 |---|---|---|
-| the default for new sessions | `ronin.json` `agents.sessions.default` | typed · ⚙ |
+| the default for new sessions | `ronin.json` `agents.sessions.default` | typed · ⚙ — names a provider AND a model |
+| which model a given provider prefers | `ronin.json` `agents.sessions.by_provider.<provider>` | typed · ⚙ — one row per provider the launch table carries, generated from it; answers a launch that names the provider and no model, falling back to that provider's first column |
 | which model answers Mika / a house job | `ronin.json` `agents.jobs.<name>` | typed · ⚙ (koshi jobs point in 目) |
 | the env-var **name** a job bills through | `ronin.json` `agents.jobs.<name>.key_env` | typed — a name is a setting |
 | which CLIs are installed, and where | nowhere — login-shell probe per read | found · `observed.agents` |

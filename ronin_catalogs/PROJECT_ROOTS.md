@@ -31,8 +31,16 @@ whole of what vendor-neutrality requires.
 The extension contract and third-party provider checklist live in
 `docs/model-providers.md`.
 
-The column headings ARE the model names the UI shows, and the **first column is
-the provider's default**.
+The column headings ARE the model names the UI shows, and **column order is the order the
+picker offers them in**.
+
+**Two defaults, both set in ⚙ Configuration, neither of them stated in this table.** The
+install's own is `agents.sessions.default` — it names a provider AND a model, and it is
+what a launch that names nothing gets. Each provider also has a preferred model
+(`agents.sessions.by_provider.<provider>`), which is what a launch that names the provider
+and no model gets. **A provider with no preference set falls back to its FIRST COLUMN
+here** — so column order is worth choosing deliberately, but it is a fallback, never a
+stored default.
 
 **A provider whose models are its own gets its own table.** The columns are model
 names, and OpenAI's are not Anthropic's — so a `| provider | …` heading row simply

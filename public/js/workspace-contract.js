@@ -1,7 +1,7 @@
 /* Runtime-checked workspace state and navigation values for Kit consumers. */
 import { migrateWorkbenchState } from './workspace-arrangement.js';
 export const WORKSPACE_DESTINATIONS = Object.freeze([
-  'league-workspace', 'team', 'customize', 'new-team', 'agent-config', 'commons', 'configuration',
+  'campaign', 'cowork', 'team', 'customize', 'commons', 'configuration',
 ]);
 
 const destinationSet = new Set(WORKSPACE_DESTINATIONS);
@@ -31,7 +31,10 @@ export function teamWorkspaceState(state = {}, viewState = null, declaration = n
   // SEATS: which member is up in which workspace slot, by slot name. The one-seat
   // `focusedSession` of the shell's top-level state is read once, into the first seat.
   const seats = {};
-  for (const [slot, name] of Object.entries(view.seats && typeof view.seats === 'object' ? view.seats : {})) if (text(name)) seats[slot] = name;
+  for (const [slot, value] of Object.entries(view.seats && typeof view.seats === 'object' ? view.seats : {})) {
+    if (text(value)) seats[slot] = value;
+    else if (value && typeof value === 'object' && text(value.type)) seats[slot] = Object.freeze({ type: value.type, key: text(value.key) });
+  }
   return Object.freeze({
     team: text(state.team),
     mode: state.teamMode === 'sessions' ? 'sessions' : 'team',

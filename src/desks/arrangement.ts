@@ -16,8 +16,12 @@
  *
  * The repo is keyed by its project_root NAME; the record is read from the root's `dir`.
  */
-import { readFile } from 'node:fs/promises';
+import { access, readFile, writeFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import path from 'node:path';
+
+const run = promisify(execFile);
 import { listProjectRoots, type ProjectRootInfo } from '../project-roots.js';
 import type { RepoArrangement, RepoMode } from './schema.js';
 
@@ -45,6 +49,75 @@ export function parseArrangement(repo: string, dir: string, text: string | null)
   const publish = (kv.get('publish') || (mode === 'reviewed' ? `${working},${stable}` : stable))
     .split(',').map((s) => s.trim()).filter(Boolean);
   return { repo, dir, mode, working, stable, desks: desksRaw, publish, source: 'RONIN_REPO' };
+}
+
+/**
+ * WRITE THE RECORD FOR A NEW PROJECT (owner, 2026-08-29): the one gate is this file, so
+ * adding a project root writes it — from SETTEI's "new projects use desks?" default —
+ * rather than leaving the project silently undeclared. Writes only when the directory is
+ * a git repository and has no RONIN_REPO yet; never overwrites a declaration. `managed`
+ * declares the house arrangement (reviewed, dev → master); `none` declares direct on the
+ * branch the checkout is on. The file is left for the owner to commit — it is theirs.
+ * Returns what was written, or null when nothing was.
+ */
+export async function declareArrangement(dir: string, desks: 'managed' | 'none'): Promise<string | null> {
+  const file = path.join(dir, RONIN_REPO_FILE);
+  try { await access(path.join(dir, '.git')); } catch { return null; }
+  try { await access(file); return null; } catch { /* absent — write it */ }
+  let branch = 'main';
+  // symbolic-ref, not rev-parse: a repository with no commits yet has an unborn branch
+  // that rev-parse cannot name, and a new project is often exactly that.
+  try { branch = (await run('git', ['-C', dir, 'symbolic-ref', '--short', 'HEAD'])).stdout.trim() || 'main'; } catch { /* detached or bare — keep main */ }
+  const body = desks === 'managed'
+    ? ['mode=reviewed', 'working=dev', 'stable=master', 'desks=managed']
+    : ['mode=direct', `stable=${branch}`, 'desks=none'];
+  const text = [
+    `# ${RONIN_REPO_FILE} — this repository's declared arrangement. Read by tools; not inferred.`,
+    '# Written when the project root was added, from ⚙ "New projects use desks?". Edit here to',
+    '# change this one project; format and meaning: ronin-cowork/RONIN_REPO.',
+    ...body,
+    '',
+  ].join('\n');
+  await writeFile(file, text, 'utf8');
+  return text;
+}
+
+/**
+ * FLIP DESKS FOR ONE PROJECT (owner, 2026-08-29): the checkbox on the project-root editor.
+ * `managed` → desks=managed, and a direct record becomes reviewed dev → master (a desk
+ * needs a working line); `none` → desks=none, mode and lines untouched. No file yet →
+ * written fresh by declareArrangement. Comment lines and unknown keys are kept as they
+ * are; only the keys named change. Not a git repo → refused.
+ */
+export async function setDesks(dir: string, desks: 'managed' | 'none'): Promise<RepoArrangement> {
+  try { await access(path.join(dir, '.git')); } catch { throw new Error(`${dir} is not a git repository — desks need a repository to declare`); }
+  const file = path.join(dir, RONIN_REPO_FILE);
+  let text: string | null = null;
+  try { text = await readFile(file, 'utf8'); } catch { text = null; }
+  if (text === null) {
+    await declareArrangement(dir, desks);
+    return readArrangement(path.basename(dir), dir);
+  }
+  const lines = text.split('\n');
+  const set = (key: string, value: string) => {
+    const at = lines.findIndex((l) => l.trim().startsWith(`${key}=`));
+    if (at >= 0) lines[at] = `${key}=${value}`;
+    else {
+      let last = -1;
+      lines.forEach((l, i) => { if (/^[a-z]+=/.test(l.trim())) last = i; });
+      lines.splice(last + 1, 0, `${key}=${value}`);
+    }
+  };
+  const has = (key: string) => lines.some((l) => l.trim().startsWith(`${key}=`));
+  const current = parseArrangement(path.basename(dir), dir, text);
+  if (desks === 'managed' && current.mode !== 'reviewed') {
+    set('mode', 'reviewed');
+    if (!has('working')) set('working', 'dev');
+    set('stable', current.stable && current.stable !== 'main' ? current.stable : 'master');
+  }
+  set('desks', desks);
+  await writeFile(file, lines.join('\n').replace(/\n*$/, '\n'), 'utf8');
+  return readArrangement(path.basename(dir), dir);
 }
 
 /** Read the record from a directory. */

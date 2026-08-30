@@ -1,7 +1,7 @@
 import { appendFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { defaultAgentCommand } from './agents.js';
+import { resolveLaunchCommand, type SessionsDefaults } from './launch-command.js';
 import { REPO_ROOT } from './config.js';
 import { bootFiles, ensureShelf } from './session-boot.js';
 import { listProjectRoots, listSessionLaunchSpecs, USER_PROJECT_ROOTS_MD, type ProjectRootInfo } from './project-roots.js';
@@ -10,6 +10,7 @@ import { storeDir } from './stores.js';
 import { findDefinition, listRoleFamilies } from './definitions.js';
 import { isCreatableTeamName as isTeamName, readTeamRoster, teamRosterFile, type TeamRoster } from './team-rosters.js';
 import { resolveLaunchProfile, type Dial, type LaunchProfile, type StatedBy } from './launch-profile.js';
+import { readCampaign } from './campaign-config.js';
 import { primaryDesk, renderDeskBlock, resolveLaunchDesks, type DeskChoice } from './launch-desks.js';
 import type { Assignment } from './desks/schema.js';
 
@@ -65,26 +66,22 @@ export interface SpawnForm {
    * place a model is a column.
    */
   model?: string;
-  prompt: string;
   /**
-   * What the session is called. MANDATORY in manual mode: manual means Ronin adds
-   * no wording of its own, and a name derived from the first 28 characters of your
-   * prompt is exactly that — wording. You are about to run many of these side by
-   * side; the name is how you address one, so you name it. Left empty (assisted
-   * only) the name is slugged from the role or task + prompt as before.
+   * WHICH PROVIDER, WITHOUT NAMING A MODEL (owner, 2026-08-29). Until this, naming a
+   * vendor meant naming one of its models, so *"give me Anthropic"* had no spelling.
+   * Resolves to that provider's preferred model (`agents.sessions.by_provider` in ⚙
+   * Configuration), else its first column. With `model` it narrows; with `cmd` it is
+   * refused, as `model` is.
    */
+  provider?: string;
+  /** Campaign whose Agent defaults apply. The route inherits this from the caller. */
+  campaign_id?: string;
+  /** Optional first instruction. Blank still launches a fully booted Agent. */
+  prompt?: string;
+  /** What the session is called. Blank is derived and de-duplicated. */
   name?: string;
-  /**
-   * 'manual'   — your text is the ENTIRE prompt. Nothing is prepended, appended
-   *              or templated. Ronin only does the mechanical part (directory,
-   *              CLI, dial, tags). Adding "helpful" wording here would defeat the
-   *              whole point of the mode.
-   * 'assisted' — the composed boot brief: the role's and task's postures + the
-   *              reading list + the resolved opening template + your inject + the
-   *              ack rule.
-   *              This is the seat Koshi will eventually fill from one big text.
-   */
-  mode?: 'manual' | 'assisted';
+  /** Explicit Control choice. Blank uses the resolved role default, then write. */
+  dial?: Dial;
   project_root?: string;
   cmd?: string;
   /**
@@ -116,8 +113,7 @@ export interface SpawnForm {
   /**
    * THE DESK CONTROL of the launch box — *own desk · plain root* — pre-answered: absent
    * means by lifecycle (a coding launch on a reviewed repo gets desks, nothing else does);
-   * `own` asks for one regardless, `none` refuses one. Ignored in manual mode and for a
-   * plain terminal, which never carry a desk (src/launch-desks.ts).
+   * `own` asks for one regardless, `none` refuses one. Ignored for a plain terminal.
    */
   desk?: DeskChoice;
 }
@@ -145,7 +141,6 @@ export interface Resolved {
    * Derived here, OPENED by the route before the CLI starts (src/launch-desks.ts).
    */
   assignment: Assignment | null;
-  mode: 'manual' | 'assisted';
   brief: string;
   /**
    * False when the profile resolves `agent: none` — a plain terminal. `cmd` and `brief` are
@@ -168,7 +163,6 @@ export interface Resolved {
    */
   launchAgent: string;
   /** The complete server-resolved profile readings used to construct this birth. */
-  model: string;
   permissions: string;
   ack: boolean;
   opening: string;
@@ -209,11 +203,6 @@ export function buildBrief(
   roster?: TeamRoster | null,
   assignment?: Assignment | null,
 ): string {
-  // MANUAL: what the owner typed, byte for byte. No posture, no reading list, no
-  // opening template, no ack rule. If this ever grows a "just one helpful line",
-  // the mode is a lie.
-  if (form.mode === 'manual') return form.prompt.trim();
-
   const parts: string[] = [];
   if (profile.posture.length) parts.push(`You are the ${profile.label}. ${profile.posture.join(' ')}`);
   // THE TEAM, before the reading: who you work with and what that team is for. The
@@ -243,7 +232,9 @@ export function buildBrief(
   // that is gone simply is not named. See src/session-boot.ts.
   const reading = [...boot, ...(form.seed ?? [])].filter(Boolean);
   if (reading.length) parts.push(`Read first: ${reading.join(', ')}.`);
-  parts.push(profile.opening.replace(/\{prompt\}/g, form.prompt));
+  const prompt = form.prompt?.trim() ?? '';
+  const opening = (profile.opening ?? '').replace(/\{prompt\}/g, prompt).trim();
+  if (opening) parts.push(opening);
   if (form.reference) {
     parts.push(
       // RIREKI's tape is the taught-normal catch-up (owner's ruling, 2026-08-20): it is
@@ -336,11 +327,12 @@ export async function resolveForm(
   referenceDir?: string,
   proposedRoster?: TeamRoster,
 ): Promise<Resolved> {
-  const [taskDef, roots, launchSpecs, agentsSet] = await Promise.all([
+  const [taskDef, roots, launchSpecs, agentsSet, campaign] = await Promise.all([
     findDefinition('session_roles', form.session_role ?? ''),
     listProjectRoots(),
     listSessionLaunchSpecs(),
     readAgentsSection(),
+    form.campaign_id ? readCampaign(form.campaign_id) : null,
   ]);
   // A NAMED axis that does not resolve is a refusal, never a silent blank. Blank and
   // wrong are different launches, and only one of them is what the caller asked for.
@@ -395,68 +387,30 @@ export async function resolveForm(
   // compose, so both resolve EMPTY here rather than falling through to the default
   // `claude`: the tile is meant to be left at a shell prompt, untouched.
   const agent = profile.agent;
-  // An explicit command for a launch that launches nothing is a contradiction somebody
-  // typed, as against a default that merely cannot apply — so it is refused rather than
-  // dropped. (`mcp` is not: it is meaningless without a CLI and has always been ignored.)
-  if (!agent && form.cmd) {
-    throw new Error(
-      `This launch starts no agent (\`agent: none\`), so it cannot be given the command "${form.cmd}".`,
-    );
-  }
-
-  // MCP off: append the provider's own declared flags to the cmd — data from the same
-  // table the cmd came from, matched by the cmd string itself so a hand-typed cmd
-  // (no table row) is honestly unsupported. No flags declared = REFUSE, because a
-  // session the owner asked to launch disconnected must never launch connected.
-  // THE INSTALL DEFAULT — what a new session launches as when the form names none.
-  // A root never chooses a model (owner, 2026-08-18: one default, one place).
-  // It is stored as `provider` + `model` and resolved through the
-  // launch table HERE, never as a command string: the table is the one place a provider
-  // is a row and a model is a column, and a stored cmd would freeze a vendor's flags into
-  // the owner's config where no table edit could reach them.
+  // WHICH COMMAND — every rule, every refusal and both owner defaults live in
+  // `src/launch-command.ts`. It is the one concern on this path that is decided by data
+  // the owner controls rather than by anything the launch form knows, and it had grown
+  // three interleaved layers of comment inside this function.
   //
-  // Before this existed the fallback was a bare `claude` — a string matching no table
-  // row, so MCP-off refused it and a fresh box launched wrong. The bare literal stays as
-  // the last resort for a box with no table at all, and it is the only Anthropic name in
-  // this file for that reason.
-  const dflt = (agentsSet.sessions as { default?: { provider?: string; model?: string } } | undefined)?.default;
-  const defaultCmd = dflt?.provider && dflt?.model
-    ? launchSpecs.find((s) => s.provider === dflt.provider && s.model === dflt.model)?.cmd
-    : undefined;
-  // THE `model:` BIAS, RESOLVED — and until 2026-08-22 it was decorative. Every definition
-  // carried one ("which model this way of working usually deserves"), the cascade resolved
-  // one, and nothing whatever read it: the install default won every launch that did not
-  // name a command explicitly. So the field said one thing and the box did another.
-  //
-  // It sits BETWEEN the install default and the explicit pick, which is the cascade's own
-  // order — system < role_family < session_role < this launch. The bias is a model NAME and
-  // is matched against the launch table's own model column, never turned into a command
-  // string here: the table is the one place a provider is a row and a model is a column.
-  // The owner's default provider is preferred when two of them offer the same name, so
-  // biasing toward `sonnet` on a Codex box stays on Codex.
-  const biasCmd = profile.model
-    ? (launchSpecs.find((s) => s.model === profile.model && s.provider === dflt?.provider)
-        ?? launchSpecs.find((s) => s.model === profile.model))?.cmd
-    : undefined;
-  // THE NAMED MODEL — one field, filled or not. Named, it is the model; blank, the
-  // session's usual default applies, as for every other field. It is not a precedence
-  // game: `cmd` is a raw command string that already carries a model, so naming both is
-  // a contradiction and is refused rather than ranked (owner, 2026-08-26: "it shouldn't
-  // be overwriting anything, it should just be one of the fields"). The owner's default
-  // provider wins a name two providers both offer, as for the bias.
-  let modelCmd: string | undefined;
-  if (form.model && form.cmd) {
-    throw new Error('Name a model OR a cmd, not both — the cmd already says which model it runs.');
-  }
-  if (agent && form.model) {
-    modelCmd = (launchSpecs.find((s) => s.model === form.model && s.provider === dflt?.provider)
-      ?? launchSpecs.find((s) => s.model === form.model))?.cmd;
-    if (!modelCmd) {
-      const known = [...new Set(launchSpecs.map((s) => s.model))].join(', ');
-      throw new Error(`Unknown model "${form.model}" — this box's launch table offers: ${known || 'nothing yet (see ⚙ Configuration)'}.`);
-    }
-  }
-  let cmd = agent ? form.cmd || modelCmd || biasCmd || defaultCmd || defaultAgentCommand() : '';
+  // MCP off, below, appends the provider's own declared flags to whatever comes back —
+  // data from the same table the cmd came from, matched by the cmd string itself, so a
+  // hand-typed cmd (no table row) is honestly unsupported. No flags declared = REFUSE,
+  // because a session the owner asked to launch disconnected must never launch connected.
+  const sessionsSet = agentsSet.sessions as SessionsDefaults | undefined;
+  const campaignAgent = campaign?.config.agent_defaults ?? {};
+  const campaignProvider = typeof campaignAgent.provider === 'string' ? campaignAgent.provider.trim() : '';
+  const campaignModel = typeof campaignAgent.model === 'string' ? campaignAgent.model.trim() : '';
+  const explicitSelection = !!form.provider || !!form.model;
+  const chosen = resolveLaunchCommand({
+    agent,
+    cmd: form.cmd,
+    model: form.model ?? (!form.cmd && !explicitSelection ? campaignModel || undefined : undefined),
+    provider: form.provider ?? (!form.cmd && !explicitSelection ? campaignProvider || undefined : undefined),
+    specs: launchSpecs,
+    sessions: sessionsSet,
+  });
+  const dflt = sessionsSet?.default;
+  let cmd = chosen.cmd;
   // The row this cmd came out of, matched BEFORE the MCP-off flags are appended below —
   // appending changes the very string the match is on, and looking it up afterwards would
   // find nothing for exactly the launches that asked for something unusual. It carried the
@@ -514,10 +468,15 @@ export async function resolveForm(
     : roster?.project_root
       ? rosterSource
       : [{ layer: 'system', source: USER_PROJECT_ROOTS_MD }];
-  const cmdSource: StatedBy[] = form.cmd
+  // Explicit when the launch named either half of it — a raw `cmd` or a model name.
+  // Everything else is the install's own default, which is the system's answer.
+  // The resolver already said who decided; this only spells its answer as a reading.
+  // `settei_provider` is the half-explicit case — this launch named the vendor, ⚙ named
+  // the model — and it must not read as though the code chose either.
+  const cmdSource: StatedBy[] = chosen.source === 'explicit_launch'
     ? explicit
-    : biasCmd
-      ? profile.stated_by.model
+    : chosen.source === 'settei_provider'
+      ? [{ layer: 'system', source: '⚙ Configuration (agents.sessions)' }]
       : system;
   const defaultMcpWasUndeliverable = agent && !mcpWanted && !mcpOffWanted;
   const mcpSource: StatedBy[] = !agent
@@ -537,14 +496,13 @@ export async function resolveForm(
     });
   };
   // THE NAME is settled before the desks, because a desk branch carries it.
-  const name = wanted || slugName(profile.session_role || form.team || 'session', form.prompt, taken);
+  const name = wanted || slugName(profile.session_role || form.team || 'session', form.prompt ?? '', taken);
   // THE DESKS, derived (never opened here — the route opens them, before the CLI starts).
   // Null is an honest answer for most launches; see src/launch-desks.ts for the three.
   const assignment = await resolveLaunchDesks({
     session: name,
     team: form.team ?? '',
     project_root: root.name,
-    mode: form.mode === 'manual' ? 'manual' : 'assisted',
     agent,
     lifecycle: profile.lifecycle,
     desk: form.desk,
@@ -554,9 +512,7 @@ export async function resolveForm(
   const shelfReading = agent
     ? await bootReading(root.name, profile.session_role, roster?.team_role ?? '', !mcpOffWanted, !!form.team_lead && !!form.team, !!assignment)
     : [];
-  const birthReading = agent && form.mode !== 'manual'
-    ? [...shelfReading, ...(form.seed ?? [])].filter(Boolean)
-    : [];
+  const birthReading = agent ? [...shelfReading, ...(form.seed ?? [])].filter(Boolean) : [];
 
   return {
     name,
@@ -575,13 +531,12 @@ export async function resolveForm(
       .filter(Boolean)
       .filter((t, i, a) => a.indexOf(t) === i)
       .slice(0, 16),
-    dial: profile.dial,
+    dial: form.dial ?? profile.dial,
     lifecycle: profile.lifecycle,
     session_role: profile.session_role,
     team: form.team ?? '',
     team_role: roster?.team_role ?? '',
     project_root: root.name,
-    mode: form.mode === 'manual' ? 'manual' : 'assisted',
     // The shelf follows the toggle (owner's ruling, 2026-08-17): a session launched with
     // MCP off reads no *_connected shelf — the tools and the reading list about them ride
     // the same choice. The root, role and task shelves are untouched by it.
@@ -604,7 +559,6 @@ export async function resolveForm(
     // is free to name a path. RIREKI's decoder keys are bare binary names, and this value
     // is written into the option RIREKI reads, so it has to arrive in RIREKI's spelling.
     launchAgent: agent ? path.basename(cmd.trim().split(/\s+/)[0] ?? '') : '',
-    model: profile.model,
     permissions: profile.permissions,
     ack: profile.ack,
     opening: profile.opening,
@@ -624,19 +578,17 @@ export async function resolveForm(
       assignment: form.desk ? explicit : system,
       cmd: cmdSource,
       tags: unique(roster ? rosterSource : [], form.tags?.length ? explicit : []),
-      dial: profile.stated_by.dial,
       lifecycle: profile.stated_by.lifecycle,
       session_role: form.session_role !== undefined ? explicit : profile.stated_by.session_role,
       team: form.team ? explicit : system,
       team_role: roster ? rosterSource : system,
       project_root: rootSource,
-      mode: form.mode !== undefined ? explicit : system,
+      dial: form.dial !== undefined ? explicit : profile.stated_by.dial,
       brief: unique(explicit, profile.stated_by.opening, roster ? rosterSource : [], rootSource),
       agent: profile.stated_by.agent,
       capExempt: profile.stated_by.capExempt,
       mcp: mcpSource,
       launchAgent: cmdSource,
-      model: profile.stated_by.model,
       permissions: profile.stated_by.permissions,
       ack: profile.stated_by.ack,
       opening: profile.stated_by.opening,
@@ -671,7 +623,6 @@ export async function appendLedger(form: SpawnForm, resolved: Resolved, ok: bool
         ts: new Date().toISOString(),
         session_role: form.session_role ?? '',
         team: form.team ?? '',
-        mode: form.mode ?? 'assisted',
         intent: form.prompt,
         picks: {
           project_root: form.project_root,
@@ -681,6 +632,7 @@ export async function appendLedger(form: SpawnForm, resolved: Resolved, ok: bool
         },
         fill: null, // reserved: what Koshi filled, once the smart fill exists
         resolved: { name: resolved.name, dir: resolved.dir, cmd: resolved.cmd, dial: resolved.dial },
+        boot: ok ? { state: 'open', opened_at: new Date().toISOString() } : { state: 'failed' },
         spawn: { name: resolved.name, ok },
         outcome: null, // reserved: the evaluation loop
       }) + '\n',

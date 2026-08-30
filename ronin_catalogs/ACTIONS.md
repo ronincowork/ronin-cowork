@@ -86,21 +86,28 @@ a real launch — but **an agent-launching fork must RESOLVE them deliberately r
 omit them by accident** (owner, 2026-08-22). The receipt names what was actually resolved;
 read it back and report it.
 
-**THE MODEL — leave it out unless the owner named one.** Omit `cmd` and the launch resolves
-it through the cascade: the `model:` bias of the selected task, else of the role, else the
-install's own default. Passing `cmd` is the explicit pick and beats all of them. It must be
+**THE MODEL — leave it out unless the owner named one.** Omit `cmd` and the launch is born
+on the owner's own session default (⚙ Configuration, `agents.sessions.default`); a
+`session_role` states no model and biases none, so nothing sits between that default and
+an explicit pick. Passing `cmd` is the explicit pick and beats it.
+
+**Naming a VENDOR without naming a model is its own field: `provider`.** *"Give me
+Anthropic"* is `provider: anthropic` and nothing else — the model comes from that
+provider's preferred model in ⚙ Configuration, falling back to its first column in the
+launch table. Use it when the owner names a vendor rather than a model; `model` still
+wins when they name one, and naming `provider` beside `cmd` is refused. It must be
 a real `session_launch_spec` cell from the launch table (`ronin_catalogs/PROJECT_ROOTS.md`),
 never a command you composed — a hand-typed command matches no table row, so the launch
 cannot honor an MCP-off choice for it.
 
-**IT DELIVERS THE WHOLE BUILD BRIEF, which is the other half of why this is the door.** An
-assisted launch composes the posture, the reading list — `all/` + `root/<project_root>/` +
-`role/<role_family>/` + `task/<session_role>/`, plus any connected level when the brain is on
+**IT DELIVERS THE WHOLE BUILD BRIEF, which is the other half of why this is the door.** A
+launch composes the posture, the reading list — `all/` + `root/<project_root>/` +
+Team + `role/<session_role>/`, plus any connected level when the brain is on
 — the task's opening template with your prompt in it, and the acknowledgement rule. A
 session made with `tmux new-session` gets NONE of that: no reading list, no posture, no
 letter, and no role, ever.
 
-The response carries `receipt` — `role_family`, `session_role`, `project_root`, `dial`,
+The response carries `receipt` — `session_role`, Team, `project_root`, `dial`,
 `cmd`, `mcp`. A launch that refuses answers 400 with the reason written for the owner (an
 unknown axis, a locked `mcp:` contradicted, an agentless launch handed a command); report
 the reason, do not retry around it.

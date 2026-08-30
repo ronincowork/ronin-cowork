@@ -51,6 +51,7 @@
   --ok: #b5bd68;
   --ok-2: #7fd4a8;
   --warn: #f0c674;
+  --cowork-head-bg: var(--bg-2);
   --bad: #cc6666;
   --bad-soft: #e6a1a1;
   --bad-deep: #a33c33;
@@ -234,6 +235,17 @@
   --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-term: Menlo, 'DejaVu Sans Mono', Consolas, monospace;
+
+  /* ---- BAR NAVIGATION. A label is a door; the value beside it is context, never a
+     second door. These semantic roles keep native button chrome and feature-local
+     guesses out of the app bar. */
+  --bar-nav-bg: transparent;
+  --bar-nav-fg: var(--fg-strong);
+  --bar-nav-hover: var(--accent);
+  --bar-nav-focus: var(--accent);
+  --bar-value-fg: var(--muted-2);
+  --bar-brand-mark-h: 27px;
+  --bar-brand-track: -0.005em;
 
   /* ---- EDGES. Every border in the app is one hairline; the token exists so that a
      heavier-lined theme is one edit and not four hundred. */
@@ -449,6 +461,31 @@ body {
 }
 
 @layer ui {
+
+/* A top-bar navigation label and the plain value loaded beside it. Every bar door uses
+   this reset; a raw <button> in the bar is not a navigation primitive. */
+.ui-bar-nav {
+  appearance: none;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  background: var(--bar-nav-bg);
+  color: var(--bar-nav-fg);
+  font: inherit;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ui-bar-nav:hover { color: var(--bar-nav-hover); }
+.ui-bar-nav:focus-visible {
+  outline: var(--edge-2) solid var(--bar-nav-focus);
+  outline-offset: var(--space-1);
+  border-radius: var(--radius-sm);
+}
+.ui-bar-value {
+  color: var(--bar-value-fg);
+  white-space: nowrap;
+}
 /* ---- ui-sheet / ui-card — the modal primitive (js/ui.js `sheet`) ----
    Dialog semantics, focus entry/trap/return and dismissal live in JS; this is the
    look: a scrim, a centered card. Consumers size their card and may accent its
@@ -666,21 +703,25 @@ body {
 }
 
 #bar .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-5);
   font-weight: 600;
   letter-spacing: 0.3px;
-  /* a <button> brings its own everything — strip it back to the wordmark */
-  appearance: none;
-  background: transparent;
-  border: 0;
-  padding: 0 var(--space-2);
-  margin: 0;
-  font-family: inherit;
-  font-size: inherit;
+  padding: 0;
   color: var(--fg);
   text-decoration: none;
-  line-height: 1;
-  cursor: pointer;
 }
+#bar .brand-mark { display: block; width: auto; height: var(--bar-brand-mark-h); }
+#bar .brand-word {
+  color: var(--fg-strong);
+  font-size: var(--text-9);
+  font-weight: 600;
+  letter-spacing: var(--bar-brand-track);
+}
+#bar .brand-home,
+#bar .brand-home:hover,
+#bar .brand-home:active { color: var(--kaki); }
 #bar .brand:active {
   color: var(--accent);
 }
@@ -689,12 +730,8 @@ body {
     color: var(--accent);
   }
 }
-/* Keyboard users get a visible ring; pointer users never see one. */
-#bar .brand:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
-}
+#bar .brand-home:focus-visible { outline-color: var(--kaki); }
+#bar .bar-cowork-name { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #bar .grow {
   flex: 1;
 }
@@ -6575,7 +6612,8 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 .wk-card-mark { color: var(--kaki); margin-right: var(--space-3); }
 .wk-league-board { grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); align-content: start; }
 .wk-session-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); overflow: hidden; }
-.wk-explorer-layout, .wk-agent-configuration-layout, .wk-new-team-layout { grid-template-columns: minmax(12rem, 2fr) minmax(0, 5fr); overflow: hidden; }
+.wk-explorer-layout { grid-template-columns: minmax(12rem, 2fr) minmax(0, 5fr); overflow: hidden; }
+.wk-new-team-layout { grid-template-columns: minmax(0, 1fr); align-items: start; overflow: auto; }
 /* Rows were unconstrained: the single row grew to the tallest surface and the grid's
    overflow:hidden CLIPPED the rest — the 2026-08-25 "cannot scroll the wipeboard" bug.
    minmax(0,1fr) is what makes every surface's bounded height real. */
@@ -6600,7 +6638,7 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 .wk-explorer-rail[data-state='unavailable'], .wk-explorer-rail[data-state='inert'] { opacity: .58; pointer-events: none; }
 /* THE COMMONS STRIP WEARS THE TILE HEAD'S SHADING (owner, 2026-08-27: "it should be the same,
    at least shading") — one surface_head look for every surface (docs/cowork-space.md). */
-.wk-channel-service-tabs { display: flex; flex: 0 0 auto; align-items: center; gap: var(--space-2); min-height: var(--row-head); background: var(--bg-2); border-bottom: var(--edge) solid var(--line); padding: var(--space-3) var(--space-4); overflow-x: auto; }
+.wk-channel-service-tabs { display: flex; flex: 0 0 auto; align-items: center; gap: var(--space-2); min-height: var(--row-head); background: var(--cowork-head-bg); border-bottom: var(--edge) solid var(--line); padding: var(--space-3) var(--space-4); overflow-x: auto; }
 .wk-channel-service-tab { border: 0; border-radius: var(--radius-xs); background: transparent; color: var(--muted); padding: var(--space-3) var(--space-4); white-space: nowrap; }
 .wk-channel-service-tab[aria-selected='true'] { background: var(--raise); color: var(--fg-strong); }
 .wk-channel-surface > .wk-surface-content { display: flex; flex-direction: column; }
@@ -6619,9 +6657,8 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 .wk-notice[data-kind='warning'] { color: var(--warn); }
 .wk-notice[data-kind='success'] { color: var(--ok-2); }
 .wk-form-actions { display: flex; justify-content: flex-end; gap: var(--space-3); }
-.wk-new-team-layout .wk-layout-surface-transaction { grid-column: 1 / -1; }
 @media (max-width: 680px) {
-  .wk-workbench-layout, .wk-explorer-layout, .wk-agent-configuration-layout, .wk-new-team-layout, .wk-session-grid { display: flex; flex-direction: column; overflow: auto; }
+  .wk-workbench-layout, .wk-explorer-layout, .wk-new-team-layout, .wk-session-grid { display: flex; flex-direction: column; overflow: auto; }
   .wk-layout-surface { flex: 1 0 80%; }
   .wk-explorer-rail[data-drawer='closed'] { display: none; }
   .wk-explorer-rail[data-drawer='open'] { position: absolute; inset: 0; z-index: 2; max-width: 85%; }

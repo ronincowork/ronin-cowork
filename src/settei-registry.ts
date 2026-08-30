@@ -60,6 +60,11 @@
 export const SETTEI_SCHEMA = {
   sections: [
     {
+      id: 'campaign',
+      title: 'Campaign',
+      lede: 'This Ronin instance is one campaign. Name the body of work its projects, teams and agents belong to.',
+    },
+    {
       id: 'machine',
       title: 'This machine',
       lede: 'Ronin is now installed on this machine — laptop, home server or a VM somewhere, it makes no difference to what follows. This page is already talking to it.',
@@ -90,6 +95,16 @@ export const SETTEI_SCHEMA = {
   ],
 
   fields: [
+    {
+      id: 'campaignName', sec: 'campaign', kind: 'text', ask: false,
+      label: 'Campaign name', short: 'campaign name', placeholder: 'My campaign',
+      from: 'set.campaign.name', lands: { family: 'campaign', key: 'name' }, omit: 'blank',
+    },
+    {
+      id: 'campaignDescription', sec: 'campaign', kind: 'text', ask: false,
+      label: 'Description', short: 'campaign description', placeholder: 'What this campaign is for',
+      from: 'set.campaign.description', lands: { family: 'campaign', key: 'description' }, omit: 'blank',
+    },
     {
       id: 'machineName',
       sec: 'machine',
@@ -176,6 +191,21 @@ export const SETTEI_SCHEMA = {
       shape: 'provider-model',
       lands: { family: 'agents', key: 'sessions.default' },
       omit: 'blank',
+    },
+    {
+      // NEW PROJECTS AND DESKS (owner, 2026-08-29): what a project's RONIN_REPO says when
+      // its root is added — desks (reviewed dev → master, hand-in, team promotion) or
+      // none (work in the checkout). A default for the file, not a switch: the file in
+      // the repository is the one gate, and it can be changed there afterwards.
+      id: 'newProjectDesks',
+      sec: 'defaults',
+      kind: 'select',
+      label: 'New projects use desks?',
+      short: 'new projects',
+      hint: 'Desks: each coding session works at its own branch and worktree and hands in to the team. None: sessions work in the checkout. Written into the project\'s RONIN_REPO when you add it; edit that file to change one project.',
+      options: 'new_project_desks',
+      from: 'set.desks.new_project',
+      lands: { family: 'desks', key: 'new_project' },
     },
     {
       // THE DESK PROFILE (R38): the owner's standing defaults for the surfaces they work
@@ -303,3 +333,45 @@ export const SETTEI_SCHEMA = {
     prompt: 'Finish what setup still needs. Your task shelf says how: read GET /api/settei at start — needed[] is your reading list, and set is what the owner already answered; never re-ask it.',
   },
 };
+
+/**
+ * ONE ROW PER PROVIDER — the preferred model to use when a launch names that provider
+ * and no model (owner, 2026-08-29).
+ *
+ * WHY THIS IS NOT A STATIC FIELD. Every other leaf in this registry is declared here
+ * because the set of leaves is the house's, fixed. Providers are not: they are rows in
+ * `ronin_catalogs/PROJECT_ROOTS.md`, and the whole point of that table is that adding a
+ * provider is a row and never a code path. A static field per provider would put a
+ * vendor's name in this file and break that promise the first time somebody added one.
+ * So the SHAPE is declared here, once, and the record stamps it out per provider it
+ * finds in the table — which is still one declaration, still data, still no renderer
+ * that knows a field.
+ *
+ * They land at `agents.sessions.by_provider.<provider>` and hold a bare model name: the
+ * provider is already the key, so storing it again in the value would be two places to
+ * disagree. That is why `shape` is plain text here and `provider-model` on the general
+ * default, which must carry both.
+ *
+ * A provider left unanswered is not a gap — `src/spawn.ts` falls back to that provider's
+ * FIRST COLUMN in the launch table, which is why the table's column order is worth
+ * keeping deliberate.
+ */
+export function providerModelFields(providers: string[]) {
+  return providers.map((provider) => ({
+    id: `model_${provider}`,
+    sec: 'defaults',
+    kind: 'select',
+    ask: false,
+    label: `Preferred ${provider} model`,
+    short: `${provider} prefers`,
+    hint: 'Used when a launch names this provider but not a model.',
+    options: `models_for:${provider}`,
+    from: `set.agents.sessions.by_provider.${provider}`,
+    shape: 'text',
+    lands: { family: 'agents', key: `sessions.by_provider.${provider}` },
+    omit: 'blank',
+  }));
+}
+
+/** One generated per-provider row, for the record's widened `schema.fields`. */
+export type ProviderModelField = ReturnType<typeof providerModelFields>[number];

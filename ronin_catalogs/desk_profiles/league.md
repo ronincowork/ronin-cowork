@@ -7,6 +7,7 @@ concept drew it, cut corners and all.
 - **blurb:** The gamer one — campaigns, squads, loadouts, GLHF. Goofy on purpose.
 - **order:** 50
 - **skin:** square
+- **theme:** dark
 - **lexicon:** league_en
 - **campaign_kind:** coding
 - **rireki_view:** condensed

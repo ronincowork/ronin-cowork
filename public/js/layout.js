@@ -9,6 +9,7 @@ import { buildNotePanel } from './panels.js';
 import { IS_TOUCH, S, WHEEL_DOWN, tiles } from './state.js';
 import { isCoarse, makeDrop } from './tiledrop.js';
 import { t } from './lexicon.js';
+import { request } from './request.js';
 
 export function build() {
   // Each wiring block is guarded separately: losing one control must not cost the
@@ -58,7 +59,7 @@ export function build() {
         // not cost a mouse trip. Falls back to the first visible
         // tile so it works before you have clicked into anything.
         if (e.code === 'KeyN') {
-          // ⌃⇧N is the keyboard's ＋ New session: a workspace surface on the cowork_space
+          // ⌃⇧N is the keyboard's ＋ New session: a workspace surface on the discovery workbench
           // (team-view.js), the tile's launcher on the parked grid page.
           if (!S.showNewSession) return;
           S.showNewSession();
@@ -141,31 +142,14 @@ export function build() {
   // the tile you are in, and a fifth that picked its own would be the odd one out. And it
   // TOGGLES, because ⛩ already learned that lesson — a control that opens a thing and
   // then goes dead is a control you press twice and distrust.
-  // ⚙ — THE COWORK COMMONS, a workspace surface, never a tile overlay (owner, 2026-08-27).
-  // On the cowork_space the team page owns the gesture (`S.showCoworkCommons`: into the
-  // workspace you are in, and back). On the parked grid page there is no workspace to put
-  // it in, so ⚙ is the `cowork` destination — the surface at full width — and ⚙ again is
-  // the way back. Same element, same state, two doors.
+  // ⚙ — THE COWORK COMMONS, a workspace surface, never a page-level destination.
+  // The active cowork view owns the gesture and places the shared surface in its workspace.
   key('sysbtn', () => {
-    if (S.showCoworkCommons) return S.showCoworkCommons();
-    const ws = S.workspace;
-    if (!ws) return;
-    if (ws.active?.id === 'cowork') ws.back();
-    else ws.navigate('cowork');
+    if (S.showCoworkCommons) S.showCoworkCommons();
   });
 
   // Session macros (⚡ on each tile head) are the tile's own — built in
   // tilemacros.js by Tile itself; nothing to wire here.
-
-  // ＋ — a SECOND RONIN, in a new browser tab, and it opens BLANK: two empty tiles
-  // (owner, 2026-08-20 — "i want 2 tiles empty"), not a copy of this tab. Without the
-  // directive the new tab would inherit a copy of this tab's sessionStorage (the spec
-  // copies it to opened tabs) and read as a clone; `?tiles=,` is state.js's one-shot
-  // directive — two slots, no sessions — consumed at boot and stripped from the address.
-  //
-  // `location.pathname`, not `location.href`: href could carry workspace directives into a tab that is
-  // not asking for the first-run flow.
-  key('newtabbtn', () => window.open(location.pathname, '_blank'));
 
   // ⛩ Commons, ミ Mika Assist and く Keypad LEFT THE BAR on 2026-08-27 (owner). The
   // Commons is still the tile head's ⛩, the brand mark and ⌃⇧C; Mika is the `mika` tool

@@ -47,7 +47,7 @@ rides this tool.
 
 **Fork a topic:** `+forkit:` is **owner-invoked only**. Never fork on your own
 initiative — if a fork seems right, propose it and wait. When the owner invokes it,
-compile first (`tejun forkit`): the shape is a handoff document, a new session, an
+compile first (`tejun forkit`): the shape is a handoff document, `tejun-fork`, an
 understanding report, and a stop until the owner says go.
 
 **The owner's words route two different kinds of delegation.** `forkit`, **fork it**, and

@@ -15,10 +15,10 @@ import { buildCoworkSetup } from './cowork-setup.js';
 import { installServicesStatus } from './services-activation.js';
 import { createWorkspace } from './workspace.js';
 import { createCoworkView } from './cowork-view.js';
+import { createCampaignHome } from './campaign-home.js';
+import { createCampaignView } from './campaign-view.js';
+import { installWorkspaceHeader } from './workspace-header.js';
 import { WorkspaceKit } from './workspace-kit.js';
-import { createNewTeamView } from './new-team.js';
-import { coworkCommons } from './cowork-commons.js';
-import { createAgentConfigurationView } from './agent-config.js';
 import { installCustomize } from './customize.js';
 import { t } from './lexicon.js';
 import { applyPageWords } from './pagewords.js';
@@ -52,9 +52,12 @@ export async function init() {
   // tile is built. One request; a box that cannot answer gets stock, not a failure.
   try { await loadDeskProfile(); } catch (e) { console.warn('desk profile', e); }
   guard('page words', applyPageWords); // index.html's static words, through the lexicon
-  // After the theme, because a skin outranks it for whatever it names (js/skins.js).
-  // The profile's skin is the default; a skin this device picked since still wins.
-  guard('restore skin', () => restoreSkin(activeProfile()?.skin || ''));
+  // Resolve the root palette before revealing the document. A profile skin is not a
+  // second paint: it is the one root token set this boot uses. The boot class prevents
+  // stock surfaces painting while the catalog read is still resolving.
+  try { await restoreSkin(activeProfile()?.skin || ''); }
+  catch (e) { console.warn('restore skin', e); }
+  finally { document.documentElement.classList.remove('boot-pending'); }
 
   // FIRST LOAD. A fresh install lands here; everyone else never sees it.
   //
@@ -96,60 +99,38 @@ export async function init() {
 
   const viewhost = document.getElementById('viewhost');
   if (!viewhost) throw new Error('workspace ViewHost is missing');
+  let refreshWorkspaceHeader = () => {};
   const workspace = createWorkspace(viewhost, {
     onError: (where, error) => showFailure(`workspace ${where}`, error),
     // The bar's slots for the tab name and the layout map; the ViewHost fills them per active view.
     nameSlot: document.getElementById('viewname'),
     mapSlot: document.getElementById('viewmap'),
+    onNavigate: () => refreshWorkspaceHeader(),
   });
   workspace.kit = WorkspaceKit;
   S.workspace = workspace;
+  refreshWorkspaceHeader = installWorkspaceHeader(workspace);
+  S.refreshWorkspaceHeader = refreshWorkspaceHeader;
   // The Team destination. Registered beside the compatibility Sessions grid, not over it:
   // this preview is geometry and readings only — no terminal host, no sockets, no Sessions
   // mode — so the existing coworkspace stays the working surface until those gates land.
   guard('register the Team destination', () => workspace.register('team', createCoworkView({ kind: 'team' })));
-  // THE COWORK COMMONS at full width — ⚙'s door on the parked grid page, where there is no
-  // workspace to place it in (docs/cowork-space.md). The same one surface the team page
-  // places; entering here takes it, leaving hands it back to whoever places it next.
-  guard('register the cowork destination', () => {
-    const root = document.getElementById('cowork-view');
-    if (!root) throw new Error('cowork root is missing');
-    workspace.register('cowork', {
-      el: root,
-      title: () => t('cowork.commons', 'Ronin Desk'),
-      enter: () => { const c = coworkCommons(); root.append(c.el); c.select(c.current()); },
-    });
-  });
-  // NEW TEAM — one Surface, no Tile, no Channel services of its own. Registered beside
-  // Sessions rather than replacing it: Sessions remains the default destination on `dev`
-  // until the explicit cutover, so this is reachable and not yet in anybody's way.
-  guard('register the New Team destination', () => {
-    const view = createNewTeamView(WorkspaceKit);
-    const root = document.getElementById('new-team-view');
-    if (!root) throw new Error('New Team root is missing');
-    root.append(view.el);
-    workspace.register('new-team', { el: root, title: view.title, enter: view.enter });
-  });
   // Customize is a first-class destination on the frozen Kit. Registration failure is
   // contained here rather than taking the compatibility Sessions grid down with it —
   // a preview destination must never cost the owner their terminals.
   guard('register the Customize destination', () => installCustomize(workspace));
-  // League is another selector/context on the same cowork view used by Team.
-  guard('register the League workspace destination', () => workspace.register('league-workspace', createCoworkView({ kind: 'league' })));
-  // AGENT CONFIGURATION — two Surfaces, no Tile, no Channel service. It edits ONE seat of
-  // New Team's canonical draft and owns no schema of its own; a seat reaches it through
-  // `open(draft, seat_id)` rather than being fetched here, because New Team owns the
-  // draft's lifetime. Guarded like its neighbours: a preview destination must never cost
-  // the owner their terminals.
-  guard('register the Agent Configuration destination', () => {
-    const view = createAgentConfigurationView(WorkspaceKit);
-    const root = document.getElementById('agent-config-view');
-    if (!root) throw new Error('Agent Configuration root is missing');
-    root.append(view.el);
-    workspace.register('agent-config', {
-      el: root, title: view.title, enter: view.enter, leave: view.leave,
-    });
-  });
+  // Cowork collection and Team detail are two scopes of the same discovery workbench.
+  guard('register the Cowork destination', () => workspace.register('cowork', createCoworkView({ kind: 'cowork' })));
+  // THE ROOT ARRIVAL (owner, 2026-08-29): three doors — Campaign, Coworks, Agents —
+  // over one Campaign selection the other two inherit. Registered after Cowork because
+  // its Campaign door opens that Campaign's Cowork collection, and guarded like every other: the landing
+  // page failing must cost the owner a page, never their terminals. `safeView` is this
+  // one, so its own failure is reported rather than looping.
+  guard('register the Ronin Home destination', () => workspace.register('home', createCampaignHome()));
+  // CAMPAIGN MANAGE — the Campaign-scoped discovery workbench (owner, 2026-08-29):
+  // the same workbench, selector column, persistence, recall and drag/drop as the Cowork
+  // space, offering a Campaign's own configuration instead of its Coworks and Agents.
+  guard('register the Campaign destination', () => workspace.register('campaign', createCampaignView()));
   workspace.start();
 
   guard('install workspace controls', build);

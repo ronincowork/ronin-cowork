@@ -45,7 +45,7 @@ test('forkit is still a previewed workflow macro the compiler can find', async (
 
 test('forkit launches through the one door, not by hand-rolling tmux', async () => {
   const text = await forkit();
-  assert.match(text, /session-launch/, 'the launch step is the door');
+  assert.match(text, /`tejun-fork`/, 'the one agent-facing command uses the launch door');
   // The three steps the door replaces. Typing a CLI into a pane and waiting for its
   // prompt is what LAUNCH_READY retired, and it is also what skipped the letter.
   assert.doesNotMatch(text, /\|\s*session-create\s*\|/, 'session-create cannot stamp a role');
@@ -53,25 +53,14 @@ test('forkit launches through the one door, not by hand-rolling tmux', async () 
   assert.doesNotMatch(text, /\|\s*wait-ready\s*\|/, 'there is no prompt to wait for');
 });
 
-test('forkit resolves both launch axes, and says how each defaults', async () => {
+test('forkit makes every input optional and invents no role', async () => {
   const text = await forkit();
-  assert.match(text, /`role_family`/, 'the role is a parameter');
   assert.match(text, /`session_role`/, 'the task is a parameter');
-
-  // THE ASYMMETRY IS THE RULING. The role is inherited because it cannot be repaired
-  // later; the task may default because it can.
-  assert.match(text, /role_family` is INHERITED from the origin/i);
-  assert.match(text, /immutable/i, 'the reason the role may not be guessed');
-  assert.match(text, /session_role` DEFAULTS to `DraftPlan`/i);
-  assert.match(text, /mutable/i, 'the reason the task may be');
-
-  // A blank origin role must become a QUESTION, never a blank passed through — that is
-  // the exact failure the two measured forks hit.
-  assert.match(text, /ASK the owner which role/i);
-  assert.match(text, /propose-and-confirm/, 'and it asks through the action that waits for a yes');
-
-  // Both resolved values reach the owner, or a wrong role is invisible until much later.
-  assert.match(text, /resolved `role_family` \+ `session_role`/);
+  assert.match(text, /Every launch input is optional/);
+  assert.match(text, /blank role is valid/i);
+  assert.match(text, /no mandatory role decision/i);
+  assert.match(text, /do not stop to ask for one/i);
+  assert.doesNotMatch(text, /propose-and-confirm/);
 });
 
 test('forkit says team, and no longer says group', async () => {
@@ -96,25 +85,31 @@ test('a fork still proves it understood before it works', async () => {
 
 test('forkit reuses the canonical launch contract and gets the whole Build Brief', async () => {
   const text = await forkit();
-  assert.match(text, /Do not rebuild it/i, 'no second bespoke launch implementation');
+  assert.match(text, /same launch contract as the ＋ New form/i, 'no second bespoke launch implementation');
   assert.match(text, /zero Build Brief/i, 'and the measured reason a bare tmux session is wrong');
   // The four reading levels the compiled brief carries. A fork made the old way got none.
-  assert.match(text, /all-session reading \+ the project_root's \+ the\s+role_family's \+ the session_role's/);
-  assert.match(text, /understanding gate/i);
+  assert.match(text, /all-session reading \+ the project_root's \+ the\s+Team's \+ the session_role's/);
 });
 
-test('forkit leaves the model to the cascade unless the owner named one', async () => {
+test('forkit teaches all three ways to ask, and silence is the first of them', async () => {
   const text = await forkit();
-  assert.match(text, /`model`/, 'the model is a parameter');
-  assert.match(text, /omit it\*\* — the cascade answers/i, 'and its default is silence');
-  assert.match(text, /an explicit model beats every\s+layer/i);
+  // The owner's three entry points, 2026-08-29: say nothing and get the install default;
+  // name a VENDOR and get that vendor's preferred model; name a MODEL and get it. A fork
+  // that only knew `model` had to invent one whenever the owner named a vendor.
+  assert.match(text, /`provider`, `model`/, 'both are parameters');
+  assert.match(text, /neither\s+uses the Campaign's Agent defaults, then the install defaults/i, 'and silence is the default');
+  assert.match(text, /provider: anthropic/, 'naming a vendor alone is a documented way to ask');
+  assert.match(text, /that provider's preferred model in ⚙ Configuration, else its first column/i);
+  // The role-model bias was removed with the field (owner, 2026-08-29), so the macro must
+  // not teach a fork that the task it is handed says anything about the model.
+  assert.match(text, /`session_role` states no model and biases\s+none/i);
+  assert.match(text, /Never invent the\s+next field down/i, 'a vendor is not permission to pick a model');
   assert.match(text, /real cell from the launch table/i, 'never a composed command');
 });
 
-test('a fork owns its task afterwards, and never its role', async () => {
+test('a fork owns its task afterwards', async () => {
   const text = await forkit();
   assert.match(text, /re-marks itself with `write_tegami` and Ronin hands it that task's reading/);
-  assert.match(text, /`role_family` does not move with it, and nothing can change it/);
 });
 
 test('forkit is still owner-invoked only', async () => {

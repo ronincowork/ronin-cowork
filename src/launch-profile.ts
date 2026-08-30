@@ -19,7 +19,7 @@
  *
  * FOUR CLASSES OF FIELD, and every field is exactly one of them:
  *
- *   CASCADING    model · dial · permissions · lifecycle · mcp · cap · agent · dir ·
+ *   CASCADING    dial · permissions · lifecycle · mcp · cap · agent · dir ·
  *                ack · opening. The last layer to state it wins.
  *
  *   ADDITIVE     the boot shelf's reading levels: `role/<session_role>/` and
@@ -31,13 +31,17 @@
  *                `personalassistant` carries it: an assistant defined by its brain must
  *                not be launchable without the door to it.
  *
- *   INAPPLICABLE `agent: none` voids model, permissions, posture, opening and ack —
- *                there is no CLI to hold a permission mode, nobody to brief, and nobody
+ *   INAPPLICABLE `agent: none` voids permissions, posture, opening and ack — there is
+ *                no CLI to hold a permission mode, nobody to brief, and nobody
  *                to acknowledge. Values inherited from a layer BELOW the one that
  *                declared it are dropped in silence, because that layer could not have
  *                known; a value stated at or above it is a contradiction and is REFUSED,
  *                naming the file. That asymmetry is what lets `OpenShell` be shelved on
  *                any role without the role's ordinary defaults blowing it up.
+ *
+ * NO MODEL LIVES HERE (owner, 2026-08-29). A `model:` bias outranked the owner's own
+ * `agents.sessions.default` and, matching by model NAME, switched an OpenAI box onto
+ * Anthropic. Field and path both removed; the model resolves in `src/spawn.ts` alone.
  *
  * EVERY REFUSAL NAMES A FILE. A definition directory has many small files and a wrong
  * field is worth nothing to the owner if the message says only "the catalog".
@@ -64,7 +68,6 @@ export interface StatedBy {
  * the owner turns the brain on for the launch that wants it.
  */
 const SYSTEM: Record<string, string> = {
-  model: '',
   dial: 'write',
   permissions: 'default',
   lifecycle: '',
@@ -77,7 +80,7 @@ const SYSTEM: Record<string, string> = {
 };
 
 /** Fields that describe an AGENT, and therefore mean nothing without one. */
-const AGENT_ONLY = ['model', 'permissions', 'posture', 'opening', 'ack'] as const;
+const AGENT_ONLY = ['permissions', 'posture', 'opening', 'ack'] as const;
 
 /** The one legal value of `dir:`. A literal path would be a shipped file naming a machine. */
 const INSTALL_SENTINEL = '{install}';
@@ -87,8 +90,6 @@ export interface LaunchProfile {
   session_role: string;
   /** Is a CLI launched at all? False for `agent: none` — a plain terminal. */
   agent: boolean;
-  /** Bias only; the launch's explicit pick wins. Empty when inapplicable. */
-  model: string;
   dial: Dial;
   permissions: string;
   lifecycle: string;
@@ -198,7 +199,6 @@ export function resolveLaunchProfile(task: Definition | undefined): LaunchProfil
   return {
     session_role: task?.name ?? '',
     agent,
-    model: agent ? pick(layers, 'model') : '',
     dial: (dial === 'user' || dial === 'read' ? dial : 'write') as Dial,
     permissions: agent ? pick(layers, 'permissions') || 'default' : '',
     lifecycle: (() => {
@@ -220,7 +220,6 @@ export function resolveLaunchProfile(task: Definition | undefined): LaunchProfil
         ? [{ layer: 'session_role', source: task.file }]
         : [{ layer: 'system', source: SYSTEM_SOURCE }],
       agent: sourceOf(layers, 'agent'),
-      model: sourceOf(layers, 'model'),
       dial: sourceOf(layers, 'dial'),
       permissions: sourceOf(layers, 'permissions'),
       lifecycle: sourceOf(layers, 'lifecycle'),

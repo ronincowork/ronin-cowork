@@ -72,6 +72,7 @@ export const S = {
   lastSelection: '', // last non-empty terminal selection (see below)
   sessPicker: null, // pad-key session switcher { open, close, isOpen, move, commit }
   workspace: null, // AppShell runtime; the one writer for destination/workspace state
+  refreshWorkspaceHeader: null, // breadcrumb repaint after Campaign selection changes
 };
 
 // Which service owns which optional commons pane. A pane not listed is core and always

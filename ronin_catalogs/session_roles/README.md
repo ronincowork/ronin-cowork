@@ -19,8 +19,8 @@ opens it next, including the `#` heading — the filename is the token, not the 
 
 **Fields:** `icon` · `label` · `blurb` (what the button does) · `ask` (the form's prompt) ·
 `remit` (one line: what this session is, for humans and Koshi) · `posture` (how it
-behaves — inlined into the boot brief) · `model` (bias: which model this way of working
-usually deserves) · `match` (intent words) · `dial` · `permissions` · `lifecycle` (the
+behaves — inlined into the boot brief) · `match` (intent words) · `dial` ·
+`permissions` · `lifecycle` (the
 michi it starts in) · `ack` · `opening` (first-message template; `{prompt}` is what the
 owner typed) · `agent` · `cap` · `dir` · `mcp` · `hidden`.
 
@@ -33,13 +33,16 @@ system default  <  role_family  <  session_role  <  explicit choice on this laun
 ```
 
 Absence means inherit. An explicit `off` is a value, not an absence. `mcp: always` is a
-**lock** — a lower layer may not contradict it. `agent: none` makes `model`,
-`permissions`, `posture`, `opening` and `ack` **inapplicable**, and a definition that
-states one alongside it is refused rather than half-honored.
+**lock** — a lower layer may not contradict it. `agent: none` makes `permissions`,
+`posture`, `opening` and `ack` **inapplicable**, and a definition that states one
+alongside it is refused rather than half-honored.
 
-**Two launch modes.** In **manual** mode none of this directory's wording is used at all:
-what the owner typed IS the prompt, byte for byte, and only the mechanical constants
-apply. The `opening:`, the `posture:` and the ack rule belong to **assisted** mode.
+**A session_role never states a model** (owner, 2026-08-29). No `model:` field, no bias:
+a session launches on the owner's default (⚙ Configuration) unless the launch names a
+model or a cmd.
+
+Every Agent launch uses the same composed boot. The role's `opening:`, `posture:`, reading
+and acknowledgement join any optional launch instruction; no mode may strip them.
 
 **Yours and ours.** A file of the same name in your catalogs store replaces ours
 **whole** — never field by field, or neither file would tell the truth. A new name adds a

@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1256 keys · 54 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1205 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -64,6 +64,70 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `save_template` | Save as template |  | Save build |  |  |
 | `squad` | Team | Staff | Squad |  | Squad |
 | `team_kit` | Shared toolkit | Mise en place | Team kit |  | Team kit |
+
+## campaign
+
+| key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
+|---|---|---|---|---|---|
+| `campaign.archive` | Archive |  |  |  |  |
+| `campaign.archive_confirm` | Archive {title}? It stops nothing — its Agents keep running. |  |  |  |  |
+| `campaign.archived` | archived |  |  |  |  |
+| `campaign.commons` | Campaign commons |  |  |  |  |
+| `campaign.commons_short` | Commons |  |  |  |  |
+| `campaign.cowork` | Cowork |  |  |  |  |
+| `campaign.cowork_view` | Cowork View |  |  |  |  |
+| `campaign.coworks` | Coworks |  |  |  |  |
+| `campaign.create` | Create Campaign |  |  |  |  |
+| `campaign.description` | Description |  |  |  |  |
+| `campaign.description_placeholder` | What this campaign is for |  |  |  |  |
+| `campaign.name` | Campaign name |  |  |  |  |
+| `campaign.name_needed` | A Campaign needs a name. |  |  |  |  |
+| `campaign.name_placeholder` | My campaign |  |  |  |  |
+| `campaign.new` | New Campaign |  |  |  |  |
+| `campaign.none` | No Campaigns yet. |  |  |  |  |
+| `campaign.profile_hint` | Sets the words, the skin and the templates this Campaign opens with. |  |  |  |  |
+| `campaign.read_failed` | Could not read Campaigns — {message} |  |  |  |  |
+| `campaign.saving` | saving… |  |  |  |  |
+| `campaign.view` | Campaign view |  |  |  |  |
+
+## campaign_home
+
+| key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
+|---|---|---|---|---|---|
+| `campaign_home.agents_is` | One Agent, one job |  |  |  |  |
+| `campaign_home.campaign_is` | A named body of work |  |  |  |  |
+| `campaign_home.change` | Change |  |  |  |  |
+| `campaign_home.coworks_is` | Coworking space for Agents |  |  |  |  |
+| `campaign_home.manage` | Manage |  |  |  |  |
+| `campaign_home.no_agent` | No Agent |  |  |  |  |
+| `campaign_home.no_campaign` | No Campaign |  |  |  |  |
+| `campaign_home.no_cowork` | No Cowork |  |  |  |  |
+| `campaign_home.selected_n` | {n} selected |  |  |  |  |
+| `campaign_home.title` | Ronin |  |  |  |  |
+| `campaign_home.tray_empty` | Nothing here yet. |  |  |  |  |
+
+## campaign_view
+
+| key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
+|---|---|---|---|---|---|
+| `campaign_view.campaign_summary` | What this body of work is called, and what it is for. |  |  |  |  |
+| `campaign_view.description_help` | What this body of work is for. Shown on its card. |  |  |  |  |
+| `campaign_view.desk_summary` | This Ronin install, its owner and its workspace configuration. |  |  |  |  |
+| `campaign_view.id` | Id |  |  |  |  |
+| `campaign_view.id_help` | Fixed at creation — the address and the storage key. Rename freely; the id stays. |  |  |  |  |
+| `campaign_view.looks` | Looks: {skin} |  |  |  |  |
+| `campaign_view.name_help` | On the door, the browser tab and the address. |  |  |  |  |
+| `campaign_view.new_summary` | Set the stage. It creates no Cowork and launches no Agent. |  |  |  |  |
+| `campaign_view.no_description` | No description yet. |  |  |  |  |
+| `campaign_view.no_profile` | As stock — none chosen. |  |  |  |  |
+| `campaign_view.no_profiles` | No desk profiles on this install. |  |  |  |  |
+| `campaign_view.none_selected` | No Campaign selected. |  |  |  |  |
+| `campaign_view.profile_summary` | The words, the skin and the templates this Campaign opens on. |  |  |  |  |
+| `campaign_view.roots_n` | {n} roots |  |  |  |  |
+| `campaign_view.roots_none` | None — an Agent here has nowhere to work. |  |  |  |  |
+| `campaign_view.roots_summary` | The folders this Campaign is allowed to work in. |  |  |  |  |
+| `campaign_view.templates_summary` | The Cowork templates this Campaign offers. |  |  |  |  |
+| `campaign_view.tile_shows` | Tile: {view} |  |  |  |  |
 
 ## commons
 
@@ -388,12 +452,13 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.behaviour` | behaviour |  |  |  |  |
 | `glossary.brief` | Brief |  |  |  |  |
 | `glossary.build` | build |  |  |  |  |
-| `glossary.commons` | the commons |  |  |  |  |
+| `glossary.campaign` | campaign |  |  |  |  |
+| `glossary.campaign_commons` | the commons |  |  |  |  |
+| `glossary.commons` | session commons |  |  |  |  |
 | `glossary.configuration` | Configuration |  |  |  |  |
 | `glossary.control` | Control |  |  |  |  |
 | `glossary.cowork_commons` | cowork commons |  |  |  |  |
 | `glossary.cowork_setup` | cowork setup |  |  |  |  |
-| `glossary.cowork_space` | the cowork space |  |  |  |  |
 | `glossary.coworkspace` | the coworkspace |  |  |  |  |
 | `glossary.customization` | your own macros and jobs |  |  |  |  |
 | `glossary.desk` | the desk |  |  |  |  |
@@ -431,14 +496,15 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.stats` | Stats |  |  |  |  |
 | `glossary.surface` | surface |  |  |  |  |
 | `glossary.tab` | tab |  |  |  |  |
-| `glossary.team` | Team | Staff |  |  |  |
+| `glossary.team` | Cowork | Staff |  |  |  |
 | `glossary.team_commons` | team commons |  |  |  |  |
 | `glossary.team_lead` | team lead · 人 |  |  |  |  |
 | `glossary.team_role` | team role |  |  |  |  |
-| `glossary.team_roster` | Team roster |  |  |  |  |
+| `glossary.team_roster` | Cowork record |  |  |  |  |
 | `glossary.terminal_tile` | terminal tile |  |  |  |  |
 | `glossary.tile` | tile |  |  |  |  |
 | `glossary.wipeboard` | wipeboard |  |  |  |  |
+| `glossary.workbench` | the workbench |  |  |  |  |
 | `glossary.workspace` | workspace |  |  |  |  |
 
 ## head
@@ -576,7 +642,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `launcher.launch_failed` | could not put a session out — {message} |  |  |  |  |
 | `launcher.mode_assisted` | assisted |  |  |  |  |
 | `launcher.mode_assisted_note` | Koshi fills the rest |  |  |  |  |
-| `launcher.mode_assisted_say` | Say it in plain terms and Koshi your AI admin will handle the rest; the below selections are optional. |  |  |  |  |
+| `launcher.mode_assisted_say` | Everything is optional. Ronin supplies the startup reading and uses your choices when present. |  |  |  |  |
 | `launcher.mode_assisted_title` | Say it long-form; Ronin composes the brief around it |  |  |  |  |
 | `launcher.mode_manual` | manual |  |  |  |  |
 | `launcher.mode_manual_note` | your words, untouched |  |  |  |  |
@@ -584,7 +650,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `launcher.mode_manual_title` | Your text is the whole prompt — nothing added, nothing templated |  |  |  |  |
 | `launcher.model_title` | Which session_launch_spec to launch |  |  |  |  |
 | `launcher.name` | session name |  |  |  |  |
-| `launcher.name_placeholder` | session name (required) |  |  |  |  |
+| `launcher.name_placeholder` | session name (optional) |  |  |  |  |
 | `launcher.name_placeholder_assisted` | session name (optional — named from your text) |  |  |  |  |
 | `launcher.name_title` | session name — how you address this session afterwards |  |  |  |  |
 | `launcher.no_roles` | no session_roles in ronin_catalogs/session_roles/ |  |  |  |  |
@@ -604,7 +670,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `launcher.team_none` | — team — |  |  |  |  |
 | `launcher.team_title` | Team the new session joins (tag) |  |  |  |  |
 | `launcher.what` | what this session is told |  |  |  |  |
-| `launcher.what_placeholder` | exactly what you want said to the agent |  |  |  |  |
+| `launcher.what_placeholder` | what this session should do (optional) |  |  |  |  |
 | `launcher.what_placeholder_assisted` | Describe in plain terms what this session should do and cover… |  |  |  |  |
 | `launcher.where_none` | — no project_roots — |  |  |  |  |
 | `launcher.where_title` | project_root — where the work happens (sets the directory + reading list) |  |  |  |  |
@@ -725,62 +791,23 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
-| `new_team.add_seat` | Add proposed session |  |  |  |  |
-| `new_team.build_roster` | Build the roster |  |  |  |  |
-| `new_team.build_roster_eyebrow` | 2 · Build the roster |  |  |  |  |
-| `new_team.check_seats` | Check seats |  |  |  |  |
-| `new_team.completed` | Completed |  |  |  |  |
 | `new_team.create` | Create Team |  |  |  |  |
-| `new_team.create_and_raise` | Create Team and raise sessions |  |  |  |  |
+| `new_team.creating` | Creating the Team… |  |  |  |  |
 | `new_team.define` | Define the Team |  |  |  |  |
-| `new_team.define_eyebrow` | 1 · Define the Team |  |  |  |  |
 | `new_team.definition` | Team definition |  |  |  |  |
-| `new_team.designate_lead` | Designate as lead |  |  |  |  |
-| `new_team.edit_session` | Edit session |  |  |  |  |
-| `new_team.error` | Error |  |  |  |  |
-| `new_team.halted` | Not attempted after Ronin could not complete the previous launch: {message} |  |  |  |  |
-| `new_team.lead_line` | Lead: {status} |  |  |  |  |
-| `new_team.lead_not_born` | The designated lead seat was not born. |  |  |  |  |
 | `new_team.name` | Team name |  |  |  |  |
 | `new_team.name_desc` | Lowercase letters, digits, _ and - . This is also the tag its sessions carry. |  |  |  |  |
 | `new_team.name_invalid` | Lowercase letters, digits, _ and - only. |  |  |  |  |
-| `new_team.name_taken` | "{name}" already has a roster. |  |  |  |  |
-| `new_team.no_brief` | No brief yet. |  |  |  |  |
-| `new_team.no_lead` | No lead |  |  |  |  |
-| `new_team.none_passed` | No proposed session passed preflight. The Team was not created. |  |  |  |  |
-| `new_team.note_adopts_many` | {n} live sessions already carry this name and become members the moment the Team exists: {sessions}. Membership is derived from the sessions, so the Team arrives already staffed. |  |  |  |  |
-| `new_team.note_adopts_one` | {n} live session already carries this name and becomes a member the moment the Team exists: {sessions}. Membership is derived from the sessions, so the Team arrives already staffed. |  |  |  |  |
-| `new_team.note_capacity` | This box allows {max} live sessions and {live} are running. This roster would need {over} more than there is room for. |  |  |  |  |
-| `new_team.note_name` | A Team name is lowercase letters, digits, _ and - — and it is also the tag. "unassigned" is reserved for the holding area. |  |  |  |  |
-| `new_team.note_tagged` | Those members were tagged, not born onto this Team, so none of them reads the team_role shelf — that reading happens at birth only. Sessions raised from the roster afterwards do. |  |  |  |  |
-| `new_team.note_taken` | Team "{name}" already has a roster. Open it instead of creating it. |  |  |  |  |
-| `new_team.note_wipeboard` | A wipeboard named "{name}" already exists and this Team adopts its thread — the team wins its name. |  |  |  |  |
 | `new_team.objective_desc` | Optional. Rides the brief of every session born onto this Team. |  |  |  |  |
-| `new_team.open_team` | Open Team |  |  |  |  |
 | `new_team.optional` | Optional. |  |  |  |  |
-| `new_team.preflight` | preflight {verdict} |  |  |  |  |
-| `new_team.preflight_broken` | the preflight could not run |  |  |  |  |
-| `new_team.preflight_refused` | Preflight refused this seat. |  |  |  |  |
-| `new_team.preflight_unreachable` | The dry run could not be reached — {message} |  |  |  |  |
-| `new_team.proposed_session` | Proposed session |  |  |  |  |
-| `new_team.raising` | Checking the roster, then raising sessions in order… |  |  |  |  |
-| `new_team.reason` | Reason |  |  |  |  |
-| `new_team.remove_proposal` | Remove proposal |  |  |  |  |
 | `new_team.repos_desc` | Optional, comma-separated. |  |  |  |  |
-| `new_team.resolved_name` | Resolved name |  |  |  |  |
-| `new_team.retry_seat` | Retry this seat |  |  |  |  |
-| `new_team.retry_unresolved` | Retry unresolved sessions |  |  |  |  |
 | `new_team.role_desc` | Optional. Blank is an unclassified Team, which is a valid state. |  |  |  |  |
 | `new_team.role_placeholder` | development — or leave blank |  |  |  |  |
 | `new_team.root` | Default project root |  |  |  |  |
 | `new_team.root_default` | — the box’s default — |  |  |  |  |
 | `new_team.root_desc` | Optional. Seeds where sessions are born; a launch may override it. |  |  |  |  |
-| `new_team.roster_actions` | Roster actions |  |  |  |  |
-| `new_team.roster_notice` | A Team with no sessions is complete and valid. Add one or more proposed sessions, check them against the real launch resolver, then raise them in order. |  |  |  |  |
-| `new_team.seat_actions` | Proposed session actions |  |  |  |  |
-| `new_team.sessions_heading` | Sessions · one or many |  |  |  |  |
+| `new_team.team_actions` | Team actions |  |  |  |  |
 | `new_team.title` | New Team |  |  |  |  |
-| `new_team.transaction` | Team transaction |  |  |  |  |
 | `new_team.wipeboard_desc` | Optional. Blank uses the Team’s own name. |  |  |  |  |
 
 ## output
@@ -921,39 +948,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `panels.save` | Save |  |  |  |  |
 | `panels.saving` | saving… |  |  |  |  |
 
-## preview
-
-| key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
-|---|---|---|---|---|---|
-| `preview.ack` | Acknowledgement gate |  |  |  |  |
-| `preview.agent` | Launches an agent |  |  |  |  |
-| `preview.brief_head` | The brief this session is born with |  |  |  |  |
-| `preview.cap_exempt` | Exempt from the session max |  |  |  |  |
-| `preview.cli` | CLI |  |  |  |  |
-| `preview.dir` | Directory |  |  |  |  |
-| `preview.label` | Agent label |  |  |  |  |
-| `preview.lifecycle` | Lifecycle |  |  |  |  |
-| `preview.mcp_always` | gbrain locked on |  |  |  |  |
-| `preview.mcp_default` | gbrain default |  |  |  |  |
-| `preview.model` | Model bias |  |  |  |  |
-| `preview.no` | no |  |  |  |  |
-| `preview.no_reading` | No birth reading reported. |  |  |  |  |
-| `preview.nothing_yet` | Nothing to preview yet. |  |  |  |  |
-| `preview.opening` | Opening template |  |  |  |  |
-| `preview.permissions` | Permissions |  |  |  |  |
-| `preview.posture` | Posture |  |  |  |  |
-| `preview.reading_head` | Read at birth |  |  |  |  |
-| `preview.resolved_head` | What it resolves to |  |  |  |  |
-| `preview.source_unknown` | source not reported |  |  |  |  |
-| `preview.team_branch` | Team branch |  |  |  |  |
-| `preview.team_objective` | Team objective |  |  |  |  |
-| `preview.team_repos` | Team repositories |  |  |  |  |
-| `preview.team_state` | Team state |  |  |  |  |
-| `preview.team_wipeboard` | Team wipeboard |  |  |  |  |
-| `preview.title` | Preview |  |  |  |  |
-| `preview.unresolved` | This seat did not resolve far enough to preview. |  |  |  |  |
-| `preview.yes` | yes |  |  |  |  |
-
 ## provenance
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
@@ -1018,6 +1012,8 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `roots.exclude_confirm` | Exclude "{name}" from your Ronin? |  |  |  |  |
 | `roots.exclude_failed` | could not exclude it — {message} |  |  |  |  |
 | `roots.exclude_title` | Remove it from the catalog. Nothing on disk is touched. |  |  |  |  |
+| `roots.f_desks` | desks |  |  |  |  |
+| `roots.f_desks_hint` | Checked: coding sessions work at their own branch and worktree and hand in to the team (RONIN_REPO desks=managed). Unchecked: they work in the checkout (desks=none). Written into the repository; commit it there. |  |  |  |  |
 | `roots.f_directory` | directory |  |  |  |  |
 | `roots.f_directory_hint` | Any absolute path, at any depth |  |  |  |  |
 | `roots.f_docs` | docs |  |  |  |  |
@@ -1064,49 +1060,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `roster.team_name` | team name |  |  |  |  |
 | `roster.team_name_aria` | New team name |  |  |  |  |
 | `roster.team_name_rule` | use letters, digits, - or _ |  |  |  |  |
-
-## seat
-
-| key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
-|---|---|---|---|---|---|
-| `seat.actions` | Seat configuration actions |  |  |  |  |
-| `seat.apply` | Apply |  |  |  |  |
-| `seat.apply_title` | Write this seat into the Team draft — the only durable effect this Surface has |  |  |  |  |
-| `seat.assisted` | assisted |  |  |  |  |
-| `seat.check` | Check |  |  |  |  |
-| `seat.check_title` | Run the real resolver against this seat without creating anything |  |  |  |  |
-| `seat.cmd` | Launch command |  |  |  |  |
-| `seat.cmd_desc` | Unset falls to the role’s model bias, then the install default. |  |  |  |  |
-| `seat.cmd_no_agent` | This seat launches no agent, so it cannot carry a command. |  |  |  |  |
-| `seat.configuration` | Seat configuration |  |  |  |  |
-| `seat.inherit` | inherit |  |  |  |  |
-| `seat.inherit_title` | Return {field} to unset — the resolved profile answers it |  |  |  |  |
-| `seat.inject` | Extra instruction |  |  |  |  |
-| `seat.inject_desc` | Appended verbatim. Assisted mode only. |  |  |  |  |
-| `seat.manual` | manual |  |  |  |  |
-| `seat.mcp` | gbrain |  |  |  |  |
-| `seat.mcp_desc` | Unset means whatever the resolved profile says. |  |  |  |  |
-| `seat.mode_desc` | Manual sends your words untouched. Assisted composes the brief. |  |  |  |  |
-| `seat.name` | Name |  |  |  |  |
-| `seat.name_desc` | Left unset, the server derives it from the role and the prompt. |  |  |  |  |
-| `seat.none_selected` | No seat selected. Open one from the Team roster. |  |  |  |  |
-| `seat.not_resolved` | Not resolved yet — press Check. |  |  |  |  |
-| `seat.off` | off |  |  |  |  |
-| `seat.on` | on |  |  |  |  |
-| `seat.project_root_desc` | Unset falls to the Team's root, then the top active root. |  |  |  |  |
-| `seat.prompt` | What it is for |  |  |  |  |
-| `seat.prompt_desc` | The agent's first message. |  |  |  |  |
-| `seat.prompt_no_agent` | A plain terminal has nobody to tell — an empty prompt is valid here. |  |  |  |  |
-| `seat.reference` | Pointed at |  |  |  |  |
-| `seat.reference_desc` | One session this one is aimed at. |  |  |  |  |
-| `seat.resolving` | Resolving… |  |  |  |  |
-| `seat.revert` | Revert |  |  |  |  |
-| `seat.revert_title` | Restore the last applied seat. Not the defaults — reverting into defaults would materialise inheritance |  |  |  |  |
-| `seat.seed` | Read first |  |  |  |  |
-| `seat.seed_desc` | Paths read before anything else. Assisted mode only. |  |  |  |  |
-| `seat.session_role` | Session role |  |  |  |  |
-| `seat.session_role_desc` | What this session is doing. Blank is a real launch — no reading, no mark. |  |  |  |  |
-| `seat.title` | Agent Configuration |  |  |  |  |
 
 ## services
 
@@ -1174,6 +1127,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `settei.cores_ram` | {cores} cores · {ram} GB |  |  |  |  |
 | `settei.dir_gone` | ✕ {dir} is gone |  |  |  |  |
 | `settei.group_agents` | agent installations |  |  |  |  |
+| `settei.group_campaign` | campaign |  |  |  |  |
 | `settei.group_capacity` | capacity |  |  |  |  |
 | `settei.group_models` | how work gets a model |  |  |  |  |
 | `settei.group_needed` | still needed |  |  |  |  |

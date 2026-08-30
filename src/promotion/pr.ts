@@ -102,8 +102,6 @@ export async function openPullRequest(input: PrInput, opts: { exec?: Exec; gh?: 
   if (receipt.state !== 'complete') throw new Error(`receipt ${receipt.id} is ${receipt.state}, not complete`);
 
   await exec('git', ['fetch', '-q', 'origin', stable], dir).catch(() => '');
-  await exec('git', ['push', '-q', 'origin', working], dir);
-  log(`  pushed ${working} → origin (${head.slice(0, 12)})`);
   const subjects = (await exec('git', ['log', '--format=%s', `origin/${stable}..${working}`], dir)).split('\n').map((s) => s.trim()).filter(Boolean);
   const body = prBody({ receipt, repo, subjects, head });
   const title = prTitle(subjects, working, stable);
@@ -111,9 +109,16 @@ export async function openPullRequest(input: PrInput, opts: { exec?: Exec; gh?: 
 
   const open = JSON.parse((await exec(gh, ['pr', 'list', '--base', stable, '--head', working, '--state', 'open', '--json', 'number,url'], dir)) || '[]') as Array<{ number: number; url: string }>;
   if (open.length) {
+    // EDIT BEFORE PUSH. A push triggers the PR workflow immediately, and that event
+    // snapshots the body. Pushing first made CI verify the new head against the old
+    // receipt even though this edit landed milliseconds later.
     await exec(gh, ['pr', 'edit', String(open[0]!.number), '--title', title, '--body', body], dir);
+    await exec('git', ['push', '-q', 'origin', working], dir);
+    log(`  pushed ${working} → origin (${head.slice(0, 12)})`);
     return { repo, url: open[0]!.url, action: 'updated', head };
   }
+  await exec('git', ['push', '-q', 'origin', working], dir);
+  log(`  pushed ${working} → origin (${head.slice(0, 12)})`);
   const url = (await exec(gh, ['pr', 'create', '--base', stable, '--head', working, '--title', title, '--body', body], dir)).trim().split('\n').pop() ?? '';
   return { repo, url, action: 'created', head };
 }

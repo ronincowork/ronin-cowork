@@ -20,7 +20,7 @@ Never write bare *push* where two of these could be meant.
 
 ## The two arrangements
 
-### Reviewed: desk → hand-in → team line → team promotion → working line → PR → stable
+### Reviewed: desk → hand-in → team line → team promotion → working line → Git push → PR → stable
 
 Use this for Ronin product repositories and any project where the owner wants a review
 gate. The repository declares both line names: commonly `dev → master`, but `dev → main`
@@ -46,6 +46,9 @@ merged into, never written into. Nobody's shell sits in one to edit.
   remote. A desk branch has no upstream on the remote and is never pushed; the PR from
   working to stable is opened by the release process, never by an ordinary session, and
   never merged by an agent.
+- **Desk close is explicit.** It offers to preserve unsaved files in a private `WIP:`
+  commit or to leave the desk mounted for recovery; session loss never silently commits,
+  hands in, or publishes work. Unintegrated committed work is parked and remains visible.
 
 The stable branch is the reviewed/released line. The working line is the repository-wide
 pool. A pull request is the owner's gate between them. The gate, not whether the stable

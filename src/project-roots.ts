@@ -82,6 +82,15 @@ export interface ProjectRootInfo {
    * working, because a name that used to launch must never stop meaning what it meant.
    */
   archived: boolean;
+  /**
+   * The Campaign this root belongs to — one, never many. An Agent and a Cowork may
+   * reference only a Project root in their own Campaign, and a combined multi-Campaign
+   * view groups roots by Campaign rather than merging same-looking names.
+   *
+   * '' MEANS UNMARKED, read through the compatibility mapping onto the initial Campaign.
+   * Root names stay globally unique this cut, by the plan's own ruling.
+   */
+  campaign_id: string;
 }
 
 /** Every launchable `provider · model` the table knows, in table order. */
@@ -214,6 +223,12 @@ function parseRoots(raw: string): ProjectRootInfo[] {
       // in src/catalog.ts). Anything but `yes` — including the line's absence, which is
       // the ordinary case — leaves the root on the picker.
       archived: /^yes$/i.test(field('archived')),
+      // THE CAMPAIGN THIS ROOT BELONGS TO. Unlike a team_roster this is a FIELD and not a
+      // directory: the plan keeps root names globally unique in this cut because the
+      // catalog keys them by heading, and says so explicitly — removing that incidental
+      // constraint is a later storage decision, not a reason to fork the UI. '' is
+      // unmarked and reads through the same compatibility mapping as everything else.
+      campaign_id: field('campaign_id'),
     });
   }
   return roots;
@@ -223,7 +238,16 @@ function parseRoots(raw: string): ProjectRootInfo[] {
  * The launch table: `| provider | opus | sonnet | haiku |` with one row per
  * provider and one column per model. The HEADING ROW names the models — so the
  * dropdown says "anthropic · opus", and a new model is a new column, no code.
- * Each provider's FIRST column is its default.
+ *
+ * THE TABLE STATES NO DEFAULT — it never did. Three places used to claim each provider's
+ * first column WAS "that provider's default" and no code read one; the parser below still
+ * has no concept of a default, it pushes every cell in table order.
+ *
+ * Both defaults live in ⚙ Configuration: `agents.sessions.default` (provider AND model,
+ * for a launch that names neither) and `agents.sessions.by_provider.<provider>` (a model,
+ * for a launch that names the provider alone — owner, 2026-08-29). A provider with no
+ * preference set falls back to its first column, which is the one thing column order
+ * decides besides picker order, and `src/spawn.ts` is where that fallback is taken.
  */
 function parseLaunchTable(raw: string): SessionLaunchSpec[] {
   const cellsOf = (line: string) => {
@@ -315,7 +339,7 @@ const NEW_USER_FILE = `# PROJECT_ROOTS — your directories (user scope)
 /** Field order for a block this code creates. Hand-written blocks keep their own.
  * provider/model retired 2026-08-18 (one default, one place) — never written again;
  * blocks that still have them keep them untouched, unread. */
-const FIELD_ORDER = ['dir', 'memory', 'match', 'remit', 'docs', 'plans', 'archived'] as const;
+const FIELD_ORDER = ['dir', 'memory', 'match', 'remit', 'docs', 'plans', 'archived', 'campaign_id'] as const;
 export type RootField = (typeof FIELD_ORDER)[number];
 
 /** A project_root handle: one lowercase word, the `##` heading, the whole shortcut. */
@@ -411,6 +435,15 @@ export async function upsertProjectRoot(name: string, fields: Partial<Record<Roo
     if (fields.dir && got.dir !== expand(fields.dir)) return `"${name}" did not take the directory given.`;
     return null;
   });
+
+  // A NEW ROOT DECLARES ITS REPOSITORY (owner, 2026-08-29): RONIN_REPO is the one gate for
+  // desks, so it is written now, from the ⚙ default, instead of leaving the project
+  // silently undeclared. Only on creation, only for a git repo, never over an existing file.
+  if (!found && fields.dir) {
+    const { declareArrangement } = await import('./desks/arrangement.js');
+    const { readDesksSection } = await import('./user-config.js');
+    await declareArrangement(expand(fields.dir), (await readDesksSection()).new_project).catch(() => null);
+  }
 }
 
 /** Drop a project_root from the catalog. The directory on disk is never touched. */

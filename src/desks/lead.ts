@@ -80,6 +80,33 @@ export function leadMessage(n: LeadNotice): string {
 
 export type Delivery = { to: string; how: 'house-send' | 'wipeboard' | 'self'; detail: string };
 
+/** A lead's ruling goes back along the receipt, not through the chatter dial. */
+export function replyMessage(receiptId: string, lead: string, message: string): string {
+  return `lead reply on hand-in ${receiptId} from ${lead}: ${message}`;
+}
+
+/**
+ * Deliver a reply to the session named by a hand-in receipt.  The receipt makes this
+ * control-plane traffic: callers cannot use the command to force arbitrary messages
+ * into arbitrary sessions.  Only a currently named lead of the receipt's team may send
+ * it.  Tile-safety refusal falls back to the team wipeboard, exactly like the inbound
+ * hand-in notice.
+ */
+export async function replyToHandIn(input: {
+  team: string; from: string; to: string; receiptId: string; message: string;
+}): Promise<Delivery> {
+  const leads = await findLeads(input.team);
+  if (!leads.includes(input.from)) throw new Error(`${input.from} is not a lead of ${input.team}`);
+  const msg = replyMessage(input.receiptId, input.from, input.message);
+  try {
+    const { stdout } = await run(path.join(REPO, 'libexec', 'ronin-house-send'), [input.to, msg]);
+    return { to: input.to, how: 'house-send', detail: stdout.trim() };
+  } catch (e) {
+    const err = e as { stdout?: string; message?: string };
+    return { to: input.to, how: 'wipeboard', detail: `${(err.stdout ?? err.message ?? '').trim()} → ${await wipeboard(input.team, msg, input.to)}` };
+  }
+}
+
 /**
  * No lead set: the job falls to the session that handed in (owner law, 2026-08-28: "the
  * user is always there — the fallback is the agent handing in; it has to work end to end
@@ -93,9 +120,10 @@ export function selfMessage(n: LeadNotice): string {
 }
 
 /**
- * Tell every lead of the line's team. Delivery is the house sender; if it cannot type at
- * the lead (no session, a human draft at the prompt, a dialog open) the notice goes to
- * the team wipeboard instead so it is never lost — and the caller prints what happened.
+ * Tell every lead of the line's team. Delivery is the house sender; at a recognizable
+ * prompt it preserves any draft/suggestion, appends the notice and submits both together
+ * (owner, 2026-08-29). If there is no session or a dialog is open, the notice goes to the
+ * team wipeboard instead so it is never lost — and the caller prints what happened.
  * With no lead at all, the handing-in session is told it holds the job, and the notice is
  * posted on the wipeboard for the record without interrupting anyone.
  */

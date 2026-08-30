@@ -18,6 +18,9 @@ declared first:
 - **foundations** — the design tokens (both themes), reset, page chrome, and the one
   universal `:focus-visible` ring.
 - **ui** — the shared primitives: `.ui-sheet`/`.ui-card`, `#toast`, the help box.
+- **ui** also owns the app-bar navigation pair: `.ui-bar-nav` is a clickable label and
+  `.ui-bar-value` is the plain loaded value beside it. Native button chrome and
+  feature-local bar styling are forbidden.
 - **app** — every composition and feature rule, in source order.
 
 Later layers win, so the cascade guarantees exactly one direction: every Ronin rule
@@ -50,6 +53,7 @@ and could not get a radius right.
 | edge | `--edge` `--edge-2` | border widths — a heavier-lined theme is one edit, not four hundred |
 | motion | `--motion-quick/settle/slow/hint`, `--ease` `--ease-out` | four speeds; nothing animates for decoration |
 | elevation | `--scrim` `--shadow-menu` `--shadow-sheet` | |
+| bar navigation | `--bar-nav-bg/fg/hover/focus` · `--bar-value-fg` | the shared clickable label and its non-clickable context value |
 
 These are **theme-independent** and defined once: a square corner is square in both shells.
 Only the colour roles are redefined under `:root[data-theme='light']`.
@@ -339,7 +343,7 @@ not a tile's* — and the six were on the wrong side of it.
 They were the **`admin_desk`**'s from 2026-08-18, and since 2026-08-27 they are the
 **`cowork_commons`**'s (`js/cowork-commons.js`, `docs/cowork-space.md`) — a workspace
 surface with six tabs, never an overlay: ⚙ places it in the workspace you are in on the
-cowork_space, and shows it at full width as the `cowork` destination on the parked grid
+workbench, and shows it at full width as the `cowork` destination on the parked grid
 page. The rest of this section is the desk's history. The desk was a
 TILE, not a page-level sheet (owner: *"page level surface? cant it just be a tile?"*): the
 copies were never about a surface being able to live in a tile, they were about six rooms

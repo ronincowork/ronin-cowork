@@ -2,6 +2,7 @@ import { AUTOMATION_IDENTITY, git, gitOut, revParse } from '../desks/git.js';
 import { advanceTarget, candidateDir, ledgerHandIns, prepareCandidate, resetCandidate, targetAt, type HandInSource, type RepoSpec } from './candidate.js';
 import { runByoin, runCompat, type ByoinMode } from './byoin.js';
 import { healthCheck, notifyTeam, restartService } from './health.js';
+import { routeProvingFailure } from './routing.js';
 import {
   advanceState, anyAdvanced, blockingReceipt, lastGoodPromotion, newReceipt, readReceipt, writeReceipt, PROMOTION_LEDGER_DIR,
   type CompatProof, type HealthResult, type PromotionReceipt, type RefAdvance, type RepoCandidate, type RepoProof,
@@ -145,6 +146,12 @@ export async function promoteTeam(o: PromoteOptions): Promise<PromoteOutcome> {
       sessions: [...new Set(active.flatMap((p) => p.c.sessions))],
     };
     if (!o.dryRun) await writeReceipt(r, ledger);
+    // Route remediation by the failed file's owning receipt, never by newest hand-in.
+    if (!o.dryRun && fx === realEffects) {
+      const routed = await routeProvingFailure({ team: o.team, lead: o.by, candidates: active.map((p) => p.c), proofs: r.proofs });
+      if (routed.length) log(`  routed remediation: ${routed.join('; ')}`);
+      else log('  attribution: no failed file mapped to a hand-in — no session guessed; use bin/ronin-promote bisect');
+    }
     return { ok: false, receipt: r, nothing: false, message: `${r.failure.message}: ${verdict.failedGates.join(', ')}` };
   }
   if (o.dryRun) return { ok: true, receipt: r, nothing: false, message: 'dry run: candidates proved; nothing written, nothing moved' };

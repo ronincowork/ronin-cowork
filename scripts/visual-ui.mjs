@@ -68,13 +68,19 @@ async function fingerprint(page, entries) {
   }, entries);
 }
 
+// THE ROOT ARRIVAL IS THE CAMPAIGN HOME (2026-08-29): three doors in a frame over a
+// tray. The sessions home it replaced (.home-tabs, .home-maxrow, a tile head) is gone
+// from this route by design, so its selectors are gone from here. On the home every bar
+// control but the brand is hidden (campaign-home.css) — #shapecycle and #sysbtn are
+// pinned at their hidden box precisely so their reappearance would show.
 const DESKTOP = [
   '#bar', '#brandbtn', '#shapecycle', '#sysbtn',
-  '.tile .tile-head', '.home-tabs', '.home-tabs button[data-pane="sessions"]', '.home-maxrow',
+  '.ch-frame', '.ch-doors', '.ch-door', '.ch-tray',
 ];
 // NOT the session picker: its flex width follows the live session names — content,
 // not chrome, and a baseline on content is a baseline that cries wolf.
-const PHONE = ['#bar', '#bar .tdrop-btn.me', '#bar .tdrop-btn.ni'];
+// メ went with the Sessions grid (73ebd6e); ニ remains, hidden on the home like the rest.
+const PHONE = ['#bar', '#bar .tdrop-btn.ni'];
 const LOGIN = ['form', '#pw', '#go', 'h1'];
 
 const browser = await pw.chromium.launch().catch((e) => {
@@ -87,11 +93,15 @@ const shot = { platform: PLATFORM, viewport: '1400x900 / 402x681', surfaces: {} 
 {
   const page = await (await browser.newContext({ viewport: { width: 1400, height: 900 }, colorScheme: 'dark' })).newPage();
   await page.goto(URL_, { waitUntil: 'networkidle', timeout: 30_000 });
+  await page.waitForFunction(() => !document.documentElement.classList.contains('boot-pending'));
   await page.waitForTimeout(1500);
   shot.surfaces.desktop = await fingerprint(page, DESKTOP);
   // Both themes, same chrome: the token flip is part of the composition contract.
   await page.evaluate(() => (document.documentElement.dataset.theme = 'light'));
-  shot.surfaces['desktop-light'] = await fingerprint(page, ['#bar', '.tile .tile-head', '.home-tabs']);
+  // Themeable borders transition through intermediate colours. Measure the settled
+  // light composition, never whichever interpolation frame the browser happened to paint.
+  await page.waitForTimeout(300);
+  shot.surfaces['desktop-light'] = await fingerprint(page, ['#bar', '.ch-frame', '.ch-door']);
   await page.close();
 }
 {
@@ -102,6 +112,7 @@ const shot = { platform: PLATFORM, viewport: '1400x900 / 402x681', surfaces: {} 
     colorScheme: 'dark', // the shell follows the device now; the baseline is the dark shell
   })).newPage();
   await page.goto(URL_, { waitUntil: 'networkidle', timeout: 30_000 });
+  await page.waitForFunction(() => !document.documentElement.classList.contains('boot-pending'));
   await page.waitForTimeout(1500);
   shot.surfaces.phone = await fingerprint(page, PHONE);
   await page.close();
