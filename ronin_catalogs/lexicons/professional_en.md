@@ -1418,7 +1418,7 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.specialized_routine:** specialized routine
 - **glossary.terminal:** terminal
 - **glossary.bare_metal_agent:** bare-metal Agent
-- **glossary.managed_agent:** managed Agent
+- **glossary.cowork_agent:** Cowork Agent
 - **glossary.build:** build
 - **glossary.mandate:** mandate
 - **glossary.fork:** fork

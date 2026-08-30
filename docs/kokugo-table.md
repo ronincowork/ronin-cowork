@@ -510,6 +510,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.commons` | session commons |  |  |  |  |
 | `glossary.configuration` | Configuration |  |  |  |  |
 | `glossary.control` | Control |  |  |  |  |
+| `glossary.cowork_agent` | Cowork Agent |  |  |  |  |
 | `glossary.cowork_commons` | cowork commons |  |  |  |  |
 | `glossary.cowork_setup` | cowork setup |  |  |  |  |
 | `glossary.coworkspace` | the coworkspace |  |  |  |  |
@@ -528,7 +529,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.locked` | Locked / Unlocked |  |  |  |  |
 | `glossary.macro` | macro |  |  |  |  |
 | `glossary.macros` | macros |  |  |  |  |
-| `glossary.managed_agent` | managed Agent |  |  |  |  |
 | `glossary.mandate` | mandate |  |  |  |  |
 | `glossary.memory` | memory |  |  |  |  |
 | `glossary.new_session` | new session |  |  |  |  |
