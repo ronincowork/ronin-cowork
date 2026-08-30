@@ -77,7 +77,7 @@ export function makeChip(onTap) {
     age.textContent = quiet;
     btn.classList.toggle('gate', !!letter.chip.gate);
     btn.classList.toggle('side', !!letter.ladder_state);
-    const held = letter.chip.gate ? t('ladder.held', 'Held at a gate') : t('ladder.tap', 'Tap for the ladder');
+    const held = letter.chip.gate ? t('ladder.held', 'Held at a gate') : t('ladder.tap', 'Open work record');
     // The objective is AGENT-AUTHORED and unbounded; the help box is three lines.
     // Clamp here at the source, or any session that writes a long objective overflows
     // the box and fails check-tips for everyone (it measures the live DOM).
@@ -87,7 +87,7 @@ export function makeChip(onTap) {
     // to `clampTip` is what stops the two of them adding up past the box — they used to,
     // and check-tips caught it at 165 chars on a live session (2026-08-17). Clamping the
     // JOINED string instead would have trimmed the wrong end.
-    const tail = held + (quiet ? ' · ' + t('ladder.unchanged_for', 'ladder unchanged for {age}', { age: quiet }) : '');
+    const tail = held + (quiet ? ' · ' + t('ladder.unchanged_for', 'work record unchanged for {age}', { age: quiet }) : '');
     const ob = letter.objective ? clampTip(letter.objective, 120 - tail.length - 1) + '\n' : '';
     btn.title = ob + tail;
     return letter;
@@ -121,7 +121,7 @@ export function buildLadder(letter) {
   if (letter.ladder_state) {
     const sr = document.createElement('div');
     sr.className = 'sl-side';
-    sr.textContent = '↳ ' + t('ladder.side', '{state} — the ladder below is held, not stale', { state: letter.ladder_state.replace(/_/g, ' ') });
+    sr.textContent = '↳ ' + t('ladder.side', '{state} — the work record below is held, not stale', { state: letter.ladder_state.replace(/_/g, ' ') });
     box.appendChild(sr);
   }
 
@@ -180,7 +180,7 @@ export function buildLadder(letter) {
   if (!letter.ladder?.length) {
     const empty = document.createElement('div');
     empty.className = 'sl-empty';
-    empty.textContent = t('ladder.none', 'no ladder up yet');
+    empty.textContent = t('ladder.none', 'no work record yet');
     box.appendChild(empty);
     return box;
   }

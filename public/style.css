@@ -3360,6 +3360,13 @@ body {
   padding: var(--space-5) var(--space-1);
 }
 
+.dc-work-record-note {
+  margin: var(--space-4) var(--space-3) var(--space-3);
+  color: var(--muted);
+  font-size: var(--text-3);
+  line-height: 1.45;
+}
+
 /* ---- WIPEBOARD: one surface a set of agents all read and write. A file and a tmux
    option, rendered. Single column on every width — a thread wants one column, and a
    home panel is sized by its TILE, so a media query would be the wrong instrument. ---- */

@@ -595,7 +595,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **koshi.restarting:** restarting…
 - **koshi.restart_failed:** it did not come back up
 - **koshi.blurb_running:** Which model each Koshi job asks. Changes apply within a minute — no restart needed.
-- **koshi.blurb_stopped:** Koshi is NOT running. Nothing is watching any ladder.
+- **koshi.blurb_stopped:** Koshi is NOT running. Nothing is watching any work record.
 - **koshi.outlet_not_built:** {outlet} — not built
 - **koshi.pick_title:** Which outlet this job asks
 - **koshi.not_built:** Not built yet
@@ -726,6 +726,7 @@ The catalog entry goes. {dir} is not touched.
 - **docs.loading:** loading…
 - **docs.saving:** saving…
 - **docs.saved:** saved
+- **docs.work_record_note:** Note: If you don't see a document your agent is working on, ask it to update its work record.
 
 ## roots — the count line and chips
 - **roots.chip_archived:** archived
@@ -777,7 +778,7 @@ The catalog entry goes. {dir} is not touched.
 - **stats.lifetime:** Lifetime
 - **stats.ctx_unused:** Context unused at close
 - **stats.model:** Model
-- **stats.ladder_height:** How far up the ladder
+- **stats.ladder_height:** Work record progress
 - **stats.at_gate:** {n} at a gate — waiting on you
 - **stats.plan_docs:** Plan docs
 - **stats.plans_in_flight:** in flight
@@ -785,7 +786,7 @@ The catalog entry goes. {dir} is not touched.
 - **stats.plans_legs_done:** legs completed
 - **stats.plans_stale:** stale 14d+
 - **stats.plans_legs_median:** legs per plan (median)
-- **stats.ladders_plans:** Ladders & plans
+- **stats.ladders_plans:** Work records & plans
 - **stats.n_live:** {n} live
 - **stats.surfaces:** Ronin surfaces
 - **stats.macro_runs:** {n} macro runs
@@ -1031,7 +1032,7 @@ The catalog entry goes. {dir} is not touched.
 - **tape.fold_code:** ⌨ code
 
 ## ladder — shingo.js (the ladder chip and panel)
-- **ladder.none:** no ladder up yet
+- **ladder.none:** no work record yet
 - **ladder.gate:** GATE
 - **ladder.legs_undetermined:** — legs undetermined
 - **ladder.quiet:** quiet {age}
@@ -1142,7 +1143,7 @@ The catalog entry goes. {dir} is not touched.
 - **head.rename_quiet:** Rename session — no session in this tile yet
 - **head.rename_prompt:** Rename session
 - **head.rename_failed:** Could not rename session: {reason}
-- **head.chip_help:** Where this session is on its ladder, and how long it has been there. Opens the ladder.
+- **head.chip_help:** This session's work record — what it has done, what it is doing, what comes next, and the documents it has listed. Opens the work record.
 - **head.job_help:** What this session is doing
 - **head.job_quiet:** What a session is doing — no session in this tile yet
 - **head.job_read:** {job} — click to change what this session is doing
@@ -1184,7 +1185,7 @@ The catalog entry goes. {dir} is not touched.
 
 ## me — tiledrop.js (the メ sheet)
 - **me.status:** Status
-- **me.ladder:** Ladder
+- **me.ladder:** Work record
 - **me.branches:** Branches
 - **me.macros:** Macros
 - **me.mention:** Mention session
@@ -1193,7 +1194,7 @@ The catalog entry goes. {dir} is not touched.
 - **me.note:** Note
 - **me.control:** Control
 - **me.kill:** Kill session
-- **me.title:** This session — status, ladder, TEGAMI, macros, groups, docs, note, control
+- **me.title:** This session — status, work record, macros, groups, docs, note, control
 
 ## new_team — new-team-launch.js (the transaction's own sentences)
 
@@ -1288,9 +1289,9 @@ The catalog entry goes. {dir} is not touched.
 
 ## ladder — the chip tooltip and side line
 - **ladder.held:** Held at a gate
-- **ladder.tap:** Tap for the ladder
-- **ladder.unchanged_for:** ladder unchanged for {age}
-- **ladder.side:** {state} — the ladder below is held, not stale
+- **ladder.tap:** Open work record
+- **ladder.unchanged_for:** work record unchanged for {age}
+- **ladder.side:** {state} — the work record below is held, not stale
 
 ## errors — main.js (the session-list failure)
 - **errors.no_session_list:** could not load the session list
@@ -1401,7 +1402,7 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.team:** Cowork
 - **glossary.note:** Note
 - **glossary.doing:** what it's doing
-- **glossary.ladder:** ladder
+- **glossary.work_record:** work record
 - **glossary.rung:** rung · leg · phase · gate
 - **glossary.memory:** memory
 - **glossary.stats:** Stats
@@ -1419,7 +1420,7 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.packet:** what gets sent
 - **glossary.egress_log:** where Ronin has connected
 - **glossary.services:** Services
-- **glossary.session_menu:** Status · Ladder · Macros · Detach · Kill session
+- **glossary.session_menu:** Status · Work record · Macros · Detach · Kill session
 - **league.commons:** League commons
 - **league.view:** League view
 - **league.team_roster:** Team roster

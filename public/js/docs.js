@@ -214,6 +214,14 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
     e.className = 'dc-empty';
     e.textContent = msg;
     list.appendChild(e);
+    if (only && shelf === 'tracked') appendWorkRecordNote();
+  };
+
+  const appendWorkRecordNote = () => {
+    const foot = document.createElement('p');
+    foot.className = 'dc-work-record-note';
+    foot.textContent = t('docs.work_record_note', "Note: If you don't see a document your agent is working on, ask it to update its work record.");
+    list.appendChild(foot);
   };
 
   const render = (rows) => {
@@ -266,6 +274,7 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
         body.appendChild(b);
       }
     }
+    if (only && shelf === 'tracked') appendWorkRecordNote();
   };
 
   /**

@@ -133,6 +133,12 @@ const HEADER = () => {
       return readout ? readout + '\n' + deskTip(entry) : deskTip(entry);
     } },
 
+  // SHINGO's public word is WORK RECORD. It belongs beside the desk reading: where the
+  // session is working, then what it says it is doing there.
+  { key: 'chip',
+    widget: (tile) => makeChip(() => tile.toggleLadder()),
+    help: t('head.chip_help', "This session's work record — what it has done, what it is doing, what comes next, and the documents it has listed. Opens the work record.") },
+
   { grow: true },
 
   // THE OUTPUT SELECTOR IS ON THE ROW, not in メ's drop (owner, 2026-08-26: "add the
@@ -210,12 +216,6 @@ const HEADER = () => {
     help: t('head.kill_help', 'Kill session (ends it + its viewers)'),
     quiet: t('head.kill_quiet', 'Kill session — no session in this tile yet'),
     on: (tile) => tile.kill() },
-
-  // SHINGO 信号 — the light signal, at the RIGHT END of the head since 2026-08-27 (owner:
-  // "remove it [from the left] … and place that light signal" where C and T were).
-  { key: 'chip',
-    widget: (tile) => makeChip(() => tile.toggleLadder()),
-    help: t('head.chip_help', 'Where this session is on its ladder, and how long it has been there. Opens the ladder.') },
 
   ];
   return rows;

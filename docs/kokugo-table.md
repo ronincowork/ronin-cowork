@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1255 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1256 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -414,6 +414,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `docs.saved` | saved |  |  |  |  |
 | `docs.saving` | saving… |  |  |  |  |
 | `docs.shelf_empty` | Nothing on this shelf — a project root names its places on its record (Project roots → docs / plans). |  |  |  |  |
+| `docs.work_record_note` | Note: If you don't see a document your agent is working on, ask it to update its work record. |  |  |  |  |
 
 ## errors
 
@@ -522,7 +523,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.harakiri` | harakiri |  |  |  |  |
 | `glossary.hotwords` | Hotwords |  |  |  |  |
 | `glossary.invocation` | typing a macro |  |  |  |  |
-| `glossary.ladder` | ladder |  |  |  |  |
 | `glossary.launch` | launch |  |  |  |  |
 | `glossary.locked` | Locked / Unlocked |  |  |  |  |
 | `glossary.macro` | macro |  |  |  |  |
@@ -543,7 +543,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.selector_column` | selector column |  |  |  |  |
 | `glossary.services` | Services |  |  |  |  |
 | `glossary.session` | session |  |  |  |  |
-| `glossary.session_menu` | Status · Ladder · Macros · Detach · Kill session |  |  |  |  |
+| `glossary.session_menu` | Status · Work record · Macros · Detach · Kill session |  |  |  |  |
 | `glossary.stats` | Stats |  |  |  |  |
 | `glossary.surface` | surface |  |  |  |  |
 | `glossary.tab` | tab |  |  |  |  |
@@ -555,6 +555,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.terminal_tile` | terminal tile |  |  |  |  |
 | `glossary.tile` | tile |  |  |  |  |
 | `glossary.wipeboard` | wipeboard |  |  |  |  |
+| `glossary.work_record` | work record |  |  |  |  |
 | `glossary.workbench` | the workbench |  |  |  |  |
 | `glossary.workspace` | workspace |  |  |  |  |
 
@@ -564,7 +565,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 |---|---|---|---|---|---|
 | `head.branch_help` | Desks this session is working at — worktree, repo, branch, and what is ahead, pending or parked |  |  |  |  |
 | `head.branch_quiet` | Desks — no session in this tile yet |  |  |  |  |
-| `head.chip_help` | Where this session is on its ladder, and how long it has been there. Opens the ladder. |  |  |  |  |
+| `head.chip_help` | This session's work record — what it has done, what it is doing, what comes next, and the documents it has listed. Opens the work record. |  |  |  |  |
 | `head.dial_help` | Who may touch this session: 👤 owner only · 👁 outside agents watch · 🤖 outside agents type. Yours to turn; agents never flip it. |  |  |  |  |
 | `head.dial_quiet` | Control dial — no session in this tile yet |  |  |  |  |
 | `head.dot_help` | Connection: green = attached, grey = disconnected |  |  |  |  |
@@ -653,7 +654,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
 | `koshi.blurb_running` | Which model each Koshi job asks. Changes apply within a minute — no restart needed. |  |  |  |  |
-| `koshi.blurb_stopped` | Koshi is NOT running. Nothing is watching any ladder. |  |  |  |  |
+| `koshi.blurb_stopped` | Koshi is NOT running. Nothing is watching any work record. |  |  |  |  |
 | `koshi.not_built` | Not built yet |  |  |  |  |
 | `koshi.not_built_note` | Not built yet — nothing asks anything. |  |  |  |  |
 | `koshi.outlet_not_built` | {outlet} — not built |  |  |  |  |
@@ -671,11 +672,11 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `ladder.gate` | GATE |  |  |  |  |
 | `ladder.held` | Held at a gate |  |  |  |  |
 | `ladder.legs_undetermined` | — legs undetermined |  |  |  |  |
-| `ladder.none` | no ladder up yet |  |  |  |  |
+| `ladder.none` | no work record yet |  |  |  |  |
 | `ladder.quiet` | quiet {age} |  |  |  |  |
-| `ladder.side` | {state} — the ladder below is held, not stale |  |  |  |  |
-| `ladder.tap` | Tap for the ladder |  |  |  |  |
-| `ladder.unchanged_for` | ladder unchanged for {age} |  |  |  |  |
+| `ladder.side` | {state} — the work record below is held, not stale |  |  |  |  |
+| `ladder.tap` | Open work record |  |  |  |  |
+| `ladder.unchanged_for` | work record unchanged for {age} |  |  |  |  |
 
 ## launch
 
@@ -834,12 +835,12 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `me.docs` | Docs |  |  |  |  |
 | `me.groups` | Groups |  |  |  |  |
 | `me.kill` | Kill session |  |  |  |  |
-| `me.ladder` | Ladder |  |  |  |  |
+| `me.ladder` | Work record |  |  |  |  |
 | `me.macros` | Macros |  |  |  |  |
 | `me.mention` | Mention session |  |  |  |  |
 | `me.note` | Note |  |  |  |  |
 | `me.status` | Status |  |  |  |  |
-| `me.title` | This session — status, ladder, TEGAMI, macros, groups, docs, note, control |  |  |  |  |
+| `me.title` | This session — status, work record, macros, groups, docs, note, control |  |  |  |  |
 
 ## new_team
 
@@ -1373,8 +1374,8 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `stats.faults_many` | ⚠ {n} stats probes are broken — counting has stopped for these. Paste this into a session to fix. |  |  |  |  |
 | `stats.faults_one` | ⚠ {n} stats probe is broken — counting has stopped for this. Paste this into a session to fix. |  |  |  |  |
 | `stats.foot` | Counted on this machine — no code, no prompts, no names. See README/STATS.md. |  |  |  |  |
-| `stats.ladder_height` | How far up the ladder |  |  |  |  |
-| `stats.ladders_plans` | Ladders & plans |  |  |  |  |
+| `stats.ladder_height` | Work record progress |  |  |  |  |
+| `stats.ladders_plans` | Work records & plans |  |  |  |  |
 | `stats.lifetime` | Lifetime |  |  |  |  |
 | `stats.live_now` | Live now |  |  |  |  |
 | `stats.macro_runs` | {n} macro runs |  |  |  |  |

@@ -450,14 +450,16 @@ never names the coordinator — that is the 人's job, and the two are separate 
 
 ---
 
-## § LADDER — the window onto what a session is doing
+## § WORK RECORD — the one living account of a session's work
 
-**A ladder is a view**, not a file. It shows the_owner what an agent has done, what it is doing
-now, and what it will do next. It is the readout; the session's TEGAMI holds the record.
+**Work record is the public and agent-facing name for the whole living record.** It shows
+the_owner what an agent has done, what it is doing now, what it knows comes next, the
+Teams and repositories it works through, and the documents it has listed. TEGAMI is the
+internal file; SHINGO is its compact indicator. Neither name reaches a person's face.
 
-**Work goes better with a ladder up first.** Research, cut and verify are much easier to
-follow — for the_owner and for the agent — when there is something to hang them on, even a
-one-rung ladder. A session still talking has none, and that is fine: its readout is its role.
+**Say “update your work record.”** Research, cut and verify are easier to follow when the
+record is current. This one instruction also covers its listed documents: a missing doc
+is fixed by updating the work record, not by teaching a second TEGAMI/ladder vocabulary.
 
 ```
   GATE      approval to proceed
@@ -470,17 +472,18 @@ one-rung ladder. A session still talking has none, and that is fine: its readout
   phase 2 · (legs undetermined — nothing rendered)
 ```
 
-**A gate always has rungs after it.** That is what makes it a gate — it is holding
-something back. A ladder often *begins* with one: the plan is drawn up, the whole thing
+**A gate always has work after it.** That is what makes it a gate — it is holding
+something back. A work record often *begins* with one: the plan is drawn up, the whole thing
 waits on approval, and the go-ahead releases it.
 
-**The honesty rule: an undetermined rung is not rendered.** The ladder does not pad itself
-with guesses. A short ladder means the future genuinely is not known yet, which is more
+**The honesty rule: undetermined work is not rendered.** The work record does not pad itself
+with guesses. A short record means the future genuinely is not known yet, which is more
 useful to the_owner than an invented one.
 
 | Term | Scope | Means | Record |
 |---|---|---|---|
-| **ladder** | system_scope | the window onto a session: rungs behind it, the rung it is on, the rungs it knows are coming | `reading-list/TEGAMI.md` |
+| **work_record** | system_scope | the canonical public and agent-facing name for the whole living session record: current work, progress, Teams, repos and listed documents. Say **update your work record** | `reading-list/TEGAMI.md` |
+| **ladder** | system_scope | compatibility key for the progress array inside the work record. Never taught as a second concept | `reading-list/TEGAMI.md` |
 | **rung** | system_scope | one line on the ladder | `reading-list/TEGAMI.md` |
 | **rung_kind** | system_scope | what a rung *is*: `leg` \| `phase` \| `gate` | `reading-list/TEGAMI.md` |
 | **ladder_state** | system_scope | whether the session is walking its ladder at all: `on track` \| `on tangent`. Absent means on track. **Not** `on hold` — waiting on a person is a `gate` rung | `src/services/michi/tegami.ts` |
@@ -492,7 +495,7 @@ useful to the_owner than an invented one.
 | **plan** | system_scope | the phases and legs of a ladder, however far ahead they are determined | `docs/plan-format.md` |
 | **side_ladder** | system_scope | work in nobody's plan — a ladder off the main one. **MICHI vocabulary, not TEGAMI: it is not a key in the letter and nothing reads one** **[planned]** | `co-working/user_repo/wip/buildouts/MICHI.md` |
 | **SHINGO** (信号) | system_scope | the ladder made visible: the chip in the tile header, the ladder unrolled over the pane, and the same fields per session on the ⌂ Roster. An indicator, never a channel | `public/js/shingo.js` |
-| **MICHI** (道) | system_scope | the **umbrella** over `ladder` + `TEGAMI` + `SHINGO`. Not a service of its own and **not unbuilt** — `src/services/michi/tegami.ts`, `public/js/shingo.js` and `ronin_bin/read_tegami`/`write_tegami` are live. Not user-facing — say **ladder** | `src/services/michi/tegami.ts` |
+| **MICHI** (道) | system_scope | the internal machinery over the work record: TEGAMI storage and SHINGO display. Not a service of its own and not user-facing — say **work record** | `src/services/michi/tegami.ts` |
 
 ---
 
@@ -500,7 +503,7 @@ useful to the_owner than an invented one.
 
 | Term | Scope | Means | Record |
 |---|---|---|---|
-| **TEGAMI** | system_scope | the ONE agent-maintained file per session: a markdown shell around ONE json block — the block is the entire machine-read payload **[planned]** | `co-working/user_repo/wip/buildouts/TEGAMI.md` |
+| **TEGAMI** | system_scope | the internal file implementing the ONE agent-maintained **work record** per session: a markdown shell around one JSON block. Commands retain `read_tegami` / `write_tegami`; instructions call the thing being updated the work record | `src/tegami.ts` |
 | **shell** | system_scope | the markdown around the block; `>` lines teach at the moment of opening, parsed by nothing | `co-working/user_repo/wip/buildouts/TEGAMI.md` |
 | **block** | system_scope | the fenced json: `v`, `objective`, `role`, `kind`, `plan`, `stack`, `next`, `asks`, `blocked`, `decided`, `handoff` | `michi/schema.json` **[planned]** |
 | **leg vs title** | system_scope | a leg is counted by number and status, never by name; `title` is the agent's words, displayed never counted | `docs/plan-format.md` |
