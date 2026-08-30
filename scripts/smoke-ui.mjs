@@ -182,9 +182,11 @@ function stopProbe() { tmux(['kill-session', '-t', `=${PROBE}`]); }
 async function attachProbe(page, label) {
   // Session switching belongs to the Workbench selector now. runPass seats the
   // probe through its roster card; the Tile header is the resulting source of truth.
-  const seated = page.locator('.tile-head .sess', { hasText: PROBE }).first();
+  const seated = page.locator(`[data-workbench-surface="session.terminal"][data-workbench-resource="${PROBE}"] .tile-head .sess`).first();
   if (!(await seated.count())) {
-    bad(`${label}: the gate's own session ${PROBE} was not seated from the Workbench selector`);
+    const offered = await page.locator('.wk-card-heading').allTextContents();
+    const seats = await page.locator('.tile-head .sess').evaluateAll((nodes) => nodes.map((node) => ({ text: node.textContent, title: node.title })));
+    bad(`${label}: the gate's own session ${PROBE} was not seated from the Workbench selector (seats: ${JSON.stringify(seats)}; offered: ${offered.join(', ')})`);
     return;
   }
   for (let i = 0; i < 14; i++) {
@@ -972,7 +974,7 @@ async function runPass({ label, browser, contextOpts }) {
   // API health can answer before the phone workbench finishes constructing its Tiles.
   // Readiness is the probe seated through the selector, not an arbitrary sleep;
   // checkDom still reports the same failure below when it never arrives.
-  await page.locator('.tile-head .sess', { hasText: PROBE }).first()
+  await page.locator(`[data-workbench-surface="session.terminal"][data-workbench-resource="${PROBE}"] .tile-head .sess`).first()
     .waitFor({ state: 'attached', timeout: 10_000 }).catch(() => {});
 
   // THIS is the check that catches a constructor throw — the 2026-08-08 outage.
