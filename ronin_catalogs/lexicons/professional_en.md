@@ -212,17 +212,29 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.roots_none:** None — an Agent here has nowhere to work.
 - **campaign_view.name_help:** On the door, the browser tab and the address.
 - **campaign_view.description_help:** What this body of work is for. Shown on its card.
-- **campaign_view.id:** Id
-- **campaign_view.id_help:** Fixed at creation — the address and the storage key. Rename freely; the id stays.
-- **campaign_view.looks:** Looks: {skin}
-- **campaign_view.tile_shows:** Tile: {view}
-- **campaign_view.desk_own:** This Campaign’s desk
+- **campaign_view.head:** Campaign: {name}
+- **campaign_view.presets:** Presets
+- **campaign_view.presets_help:** A preset copies all of its components into this Campaign. Change any one of them afterwards; the preset is not consulted again.
+- **campaign_view.apply:** Apply
+- **campaign_view.applied:** applied — every component below is now this Campaign’s own
+- **campaign_view.applied_tag:** applied
 - **campaign_view.skin:** Skin
 - **campaign_view.skin_help:** The look — colours, corners, faces. The page wears it now.
+- **campaign_view.theme:** Theme
+- **campaign_view.theme_help:** Light or dark, or whatever the device prefers.
+- **campaign_view.theme_light:** Light
+- **campaign_view.theme_dark:** Dark
+- **campaign_view.theme_auto:** Automatic
 - **campaign_view.output:** Output
 - **campaign_view.output_help:** What an Agent’s tile shows. Terminal Mirror is the one that ships; Detailed, Condensed and Cherry Pick arrive with Ronin Services.
-- **campaign_view.desk_from:** Start from a desk profile
-- **campaign_view.desk_from_help:** Copies that profile’s settings into this Campaign. Changing them here afterwards changes no profile.
+- **campaign_view.with_services:** Ronin Services
+- **campaign_view.services_title:** Arrives with Ronin Services.
+- **campaign_view.kind:** Kind
+- **campaign_view.kind_help:** What sort of body of work this is. The board opens on it.
+- **campaign_view.lexicon:** Lexicon
+- **campaign_view.lexicon_help:** The words. Held to one lexicon for now, so nothing on this page is offered.
+- **campaign_view.arrangement:** Arrangement
+- **campaign_view.arrangement_help:** The Team page’s default column order, when a tab has none of its own.
 - **campaign_view.agent_defaults:** Agent defaults
 - **campaign_view.defaults_help:** What a new Agent here starts on when the launch does not say. A row this Campaign has not answered uses the machine’s SETTEI answer, marked as such.
 - **campaign_view.defaults_scope:** Role, reach and who may read an Agent are set when it is launched, not here.

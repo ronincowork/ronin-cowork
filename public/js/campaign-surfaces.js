@@ -19,7 +19,6 @@ import { field } from './ui.js';
 import { deskProfiles } from './desk-profile.js';
 import { saveCampaign } from './campaigns.js';
 import { WorkspaceKit } from './workspace-kit.js';
-import { listSkins, setSkin } from './skins.js';
 import { request } from './request.js';
 
 const el = (tag, cls, text) => {
@@ -55,8 +54,7 @@ export function createCampaignIdentitySurface(campaign) {
   const title = make(t('campaign.name', 'Campaign name'), el('input'), t('campaign_view.name_help', 'On the door, the browser tab and the address.'), 120, t('campaign.name_placeholder', 'My campaign'));
   const description = make(t('campaign.description', 'Description'), el('textarea'), t('campaign_view.description_help', 'What this body of work is for. Shown on its card.'), 500, t('campaign.description_placeholder', 'What this campaign is for'));
   description.control.rows = 3;
-  const id = make(t('campaign_view.id', 'Id'), el('input'), t('campaign_view.id_help', 'Fixed at creation — the address and the storage key. Rename freely; the id stays.'));
-  id.control.readOnly = true;
+  // The id is not shown: it is the address every campaign_id points at, not a choice.
 
   const save = async (fields, f) => {
     const row = campaign();
@@ -74,10 +72,9 @@ export function createCampaignIdentitySurface(campaign) {
     el: surface.el,
     enter: () => {
       const row = campaign();
-      head.title.textContent = row?.title || t('campaign', 'Campaign');
+      head.title.textContent = row?.title ? t('campaign_view.head', 'Campaign: {name}', { name: row.title }) : t('campaign', 'Campaign');
       title.control.value = row?.title || '';
       description.control.value = row?.description || '';
-      id.control.value = row?.id || '';
       title.f.setValidation('', '');
       description.f.setValidation('', '');
       surface.setState(row ? null : 'empty', row ? '' : t('campaign_view.none_selected', 'No Campaign selected.'));
@@ -85,115 +82,6 @@ export function createCampaignIdentitySurface(campaign) {
   };
 }
 
-/** A skin token, said as a word: `stock` → Stock. The catalog's labels are these. */
-export const skinWord = (skin) => (skin ? skin[0].toUpperCase() + skin.slice(1) : '');
-/** A rireki_view token, in the words the Output picker already uses — one literal key each, so the gate can see them. */
-const tileWord = (view) => ({
-  locked: t('output.locked', 'Locked'),
-  terminal_mirror: t('output.terminal_mirror', 'Terminal Mirror'),
-  detailed: t('output.detailed', 'Detailed'),
-  condensed: t('output.condensed', 'Condensed'),
-  cherry_pick: t('output.cherry_pick', 'Cherry Pick'),
-}[view] || view);
-
-/**
- * THE LOBBY, as a surface: which desk profile this Campaign opens on.
- *
- * A desk_profile is not a skin — it HAS one, plus the lexicon, the campaign kind and the
- * Team page's default arrangement (KOTOBA R38). Picking one here settles the kind too,
- * which is why the Campaign record carries no kind of its own.
- */
-/**
- * THE CAMPAIGN'S OWN DESK, then the templates (owner, 2026-08-30). A desk_profile is
- * three things — the skin, the agent tile's Output, the lexicon — and a Campaign holds
- * its own copy (`desk`, CampaignDeskSettings): a catalog profile is a template copied in,
- * never a live reference. So the surface shows the Campaign's settings first — the skin
- * as the live choice, the Output as a value (Terminal Mirror is the one that ships; the
- * Services positions are named, not offered), the lexicon held to one and not shown —
- * and the profiles below as "start from", which copies whole and then leaves the
- * Campaign's settings its own.
- */
-export function createDeskProfileSurface(campaign) {
-  const { createSurface, createCard, createField, setSurfaceState } = WorkspaceKit.primitives;
-  const label = t('cowork.tab_profile', 'Desk profile');
-  const surface = createSurface({ label, className: 'cv-surface' });
-  const own = el('div', 'cv-body');
-  const cards = el('div', 'cv-cards');
-  surface.content.append(own, cards);
-  let skins = [];
-
-  const choose = async (name) => {
-    const row = campaign();
-    if (!row) return;
-    const r = await saveCampaign(row.id, { desk_profile: name });
-    if (!r.ok) return setSurfaceState(surface.el, 'failed', r.message);
-    setSurfaceState(surface.el, null, '');
-    const skin = campaign()?.desk?.skin;
-    if (skin) setSkin(skin);
-    paint();
-  };
-  const setDesk = async (patch, f) => {
-    const row = campaign();
-    if (!row) return;
-    f.setValidation('pending', t('campaign.saving', 'saving…'));
-    const r = await saveCampaign(row.id, { desk: patch });
-    f.setValidation(r.ok ? 'valid' : 'invalid', r.ok ? t('settei.saved', 'saved') : r.message);
-    if (r.ok && patch.skin) setSkin(patch.skin);
-  };
-
-  function paintOwn(row) {
-    own.replaceChildren();
-    if (!row) return;
-    own.append(el('span', 'cv-eyebrow', t('campaign_view.desk_own', 'This Campaign’s desk')));
-    const skin = el('select', 'cv-input');
-    for (const s of skins) skin.add(new Option(s.label || s.name, s.name));
-    skin.value = row.desk?.skin || '';
-    const skinField = createField({ label: t('campaign_view.skin', 'Skin'), control: skin, description: t('campaign_view.skin_help', 'The look — colours, corners, faces. The page wears it now.') });
-    skin.addEventListener('change', () => void setDesk({ skin: skin.value }, skinField));
-    const output = el('input', 'cv-input');
-    output.readOnly = true;
-    output.value = tileWord(row.desk?.rireki_view || '') || t('settei.none_set', '— none set —');
-    const outputField = createField({ label: t('campaign_view.output', 'Output'), control: output, description: t('campaign_view.output_help', 'What an Agent’s tile shows. Terminal Mirror is the one that ships; Detailed, Condensed and Cherry Pick arrive with Ronin Services.') });
-    own.append(skinField.el, outputField.el);
-    own.append(el('span', 'cv-eyebrow', t('campaign_view.desk_from', 'Start from a desk profile')));
-    own.append(el('p', 'cv-note', t('campaign_view.desk_from_help', 'Copies that profile’s settings into this Campaign. Changing them here afterwards changes no profile.')));
-  }
-
-  function paint() {
-    const row = campaign();
-    paintOwn(row);
-    cards.replaceChildren();
-    const profiles = deskProfiles();
-    if (!profiles.length) {
-      setSurfaceState(surface.el, 'empty', t('campaign_view.no_profiles', 'No desk profiles on this install.'));
-      return;
-    }
-    setSurfaceState(surface.el, row ? null : 'empty', row ? '' : t('campaign_view.none_selected', 'No Campaign selected.'));
-    for (const profile of profiles) {
-      // What a profile is, in words a person can compare: the look, and what a tile
-      // shows — not the catalog's tokens.
-      const card = createCard({
-        heading: profile.label || profile.name,
-        summary: profile.blurb || '',
-        metadata: [
-          profile.skin ? t('campaign_view.looks', 'Looks: {skin}', { skin: skinWord(profile.skin) }) : '',
-          profile.rireki_view ? t('campaign_view.tile_shows', 'Tile: {view}', { view: tileWord(profile.rireki_view) }) : '',
-        ].filter(Boolean),
-        selected: profile.name === row?.desk_profile,
-        action: () => void choose(profile.name),
-      });
-      cards.append(card.el);
-    }
-  }
-
-  return {
-    el: surface.el,
-    enter: () => {
-      paint();
-      if (!skins.length) void listSkins().then((rows) => { skins = rows; paint(); });
-    },
-  };
-}
 
 /**
  * SESSION ROLES — what a launch in this Campaign offers, read-only (owner, 2026-08-30).

@@ -3,7 +3,8 @@
 import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
 import { campaignById, campaignOf, createCampaign, loadCampaigns, normalizeSelection } from './campaigns.js';
-import { createCampaignIdentitySurface, createDeskProfileSurface, createNewCampaignSurface, createSessionRolesSurface, skinWord } from './campaign-surfaces.js';
+import { createCampaignIdentitySurface, createNewCampaignSurface, createSessionRolesSurface } from './campaign-surfaces.js';
+import { createDeskProfileSurface, skinWord } from './campaign-desk.js';
 import { createAgentDefaultsSurface, defaultsSummary } from './campaign-defaults.js';
 import { buildProjectRoots } from './projectroots.js';
 import { deskProfiles } from './desk-profile.js';
@@ -46,7 +47,9 @@ function registerCampaignSurfaces() {
   add({ type: TYPES.profile, header: 'surface', label: () => t('cowork.tab_profile', 'Desk profile'), summary: (_tenant, e) => currently.profile(e), create: ({ environment: e }) => { const surface = createDeskProfileSurface(e.selected); return { el: surface.el, show: () => surface.enter() }; } });
   add({ type: TYPES.roots, header: 'surface', label: () => t('cowork.tab_roots', 'Project roots'), summary: (_tenant, e) => currently.roots(e), create: ({ environment: e }) => { const surface = WorkspaceKit.primitives.createSurface({ label: t('cowork.tab_roots', 'Project roots'), className: 'cv-surface' }); const host = elem('div', 'desk-pane desk-proj show'); surface.content.append(host); const room = buildProjectRoots(host, () => e.entered() && host.isConnected, null); return { el: surface.el, show: () => room.enter() }; } });
   add({ type: TYPES.defaults, header: 'surface', label: () => t('campaign_view.agent_defaults', 'Agent defaults'), summary: (_tenant, e) => currently.defaults(e), create: ({ environment: e }) => { const surface = createAgentDefaultsSurface(e.selected); return { el: surface.el, show: () => surface.enter() }; } });
-  add({ type: TYPES.roles, header: 'surface', label: () => t('campaign_view.roles', 'Session roles'), summary: () => t('campaign_view.roles_summary', 'What a launch here offers an Agent to be.'), create: () => { const surface = createSessionRolesSurface(); return { el: surface.el, show: () => surface.enter() }; } });
+  // The card says Templates (owner, 2026-08-30); what opens is the session roles, which are
+  // the templates that exist.
+  add({ type: TYPES.roles, header: 'surface', label: () => t('league.templates', 'Templates'), summary: () => t('campaign_view.roles_summary', 'What a launch here offers an Agent to be.'), create: () => { const surface = createSessionRolesSurface(); return { el: surface.el, show: () => surface.enter() }; } });
   add({ type: TYPES.create, header: 'surface', label: () => t('campaign.new', 'New Campaign'), summary: () => t('campaign_view.new_summary', 'Set the stage. It creates no Cowork and launches no Agent.'), variant: 'dotted', create: ({ workspace, environment: e }) => { const surface = createNewCampaignSurface(async (fields) => { const result = await createCampaign(fields); if (result.ok) { e.ctx()?.patchState({ campaignSelection: { mode: 'selected', campaign_ids: [result.data.id], primary_campaign_id: result.data.id } }); e.ctx()?.patchViewState('home', { cowork: '', agent: '' }); e.workbench()?.place(TYPES.identity, workspace); } return result; }); return { el: surface.el, show: () => surface.enter() }; } });
   profiles.define(PROFILE, Object.values(TYPES));
 }
