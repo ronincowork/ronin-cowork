@@ -38,13 +38,12 @@
   .tw-config-field { display: flex; flex-direction: column; gap: var(--space-2); color: var(--muted); font-size: var(--text-3); }
   .tw-config-field:nth-child(3) { grid-column: 1 / -1; }
   .tw-config-field input, .tw-config-field textarea { width: 100%; box-sizing: border-box; border: var(--edge) solid var(--line-2); border-radius: var(--radius-sm); background: var(--bg-2); color: var(--fg); padding: var(--space-3); font: inherit; }
-  .tw-config-field textarea { min-height: calc(var(--space-12) * 3); resize: vertical; }
+  .tw-config-field textarea { min-height: calc(var(--space-12) * 2); resize: vertical; }
   .tw-config-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; align-items: center; gap: var(--space-4); }
   .tw-config-status, .tw-config-empty { color: var(--muted); }
 
   /* A Team dropped into the Cowork bench becomes a quiet roster, not an admin form. */
   .league-team-edit-content { display: flex; flex-direction: column; gap: var(--space-7); }
-  .league-team-metadata:empty { display: none; }
   .league-team-roster { display: flex; flex-direction: column; min-height: 0; }
   .league-team-roster-title { margin: 0 0 var(--space-3); color: var(--muted); font-size: var(--text-2); font-weight: inherit; letter-spacing: .08em; text-transform: uppercase; }
   .league-team-member-list { border-top: var(--edge) solid var(--line); }

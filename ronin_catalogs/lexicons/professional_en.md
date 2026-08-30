@@ -429,6 +429,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team.workspace_1:** Workspace 1
 - **team.workspace_2:** Workspace 2
 - **team.commons_card:** Team commons
+- **team.commons_summary:** See Docs / Wipeboard / Configuration
 - **team.roster_of:** Roster: {team}
 - **team.workspace_blank:** Workspace
 - **team.new_session:** New session

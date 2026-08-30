@@ -36,7 +36,7 @@ const WB_PROFILES = Object.freeze({ cowork: 'cowork', team: 'team' });
 function registerWorkbenchCatalog() {
   const { library, profiles } = WorkspaceKit.workbench;
   const add = (definition) => { if (!library.has(definition.type)) library.register(definition); };
-  add({ type: WB_TYPES.commons, header: 'channels', label: () => t('team.commons_card', 'Team commons'), create: ({ workspace, environment }) => environment.teamCommons(workspace) });
+  add({ type: WB_TYPES.commons, header: 'channels', label: () => t('team.commons_card', 'Team commons'), summary: () => t('team.commons_summary', 'See Docs / Wipeboard / Configuration'), create: ({ workspace, environment }) => environment.teamCommons(workspace) });
   add({ type: WB_TYPES.desk, header: 'channels', label: () => t('cowork.commons', 'Ronin Desk'), create: ({ workspace, environment }) => environment.desk(workspace) });
   add({ type: WB_TYPES.newSession, header: 'surface', label: () => t('league.new_agent', 'New Agent'), variant: 'dotted', create: ({ workspace, environment }) => environment.newSession(workspace) });
   add({ type: WB_TYPES.terminal, header: 'terminal', discover: (_tenant, environment) => environment.sessions(), create: ({ workspace, detail, environment }) => environment.terminal(workspace, detail) });
@@ -50,7 +50,7 @@ export function createCoworkView(options = {}) {
   registerWorkbenchCatalog();
   const campaign = options.kind === 'cowork';
   const viewKey = campaign ? 'cowork' : 'team';
-  const { createSurface, createChannelSurface, createMetadata, createAction, createActionBar } = WorkspaceKit.primitives;
+  const { createSurface, createChannelSurface, createAction, createActionBar } = WorkspaceKit.primitives;
   const { createTerminalTileHost } = WorkspaceKit.adapters;
   const { teamWorkspaceState } = WorkspaceKit.contract;
   const root = el('main', 'tw-view');
@@ -372,10 +372,6 @@ export function createCoworkView(options = {}) {
     const render = () => {
       const holding = name === UNASSIGNED;
       const current = teamByName(name), members = membersOfTeam(name);
-      const metadata = createMetadata({ className: 'league-team-metadata', rows: [
-        [t('team.team_role', 'Team role'), current.team_role], [t('team.objective', 'Objective'), current.objective],
-        [t('team.project_root', 'Project root'), current.project_root],
-      ] }).el;
       const roster = el('section', 'league-team-roster');
       roster.append(el('h3', 'league-team-roster-title', holding ? t('league.agents', 'Agents') : t('league.members', 'Team members')));
       const list = el('div', 'league-team-member-list');
@@ -402,7 +398,17 @@ export function createCoworkView(options = {}) {
       const assign = createAction({ label: t('league.assign_member', 'Assign'), size: 'compact', disabled: true, action: async () => { if (!select.value) return; const result = await setTeamMembership(select.value, name, true); if (!result.ok) return surface.setState('failed', result.message); surface.setState(); render(); } });
       select.addEventListener('change', () => assign.setDisabled(!select.value));
       add.append(select, assign.el); roster.append(add);
-      surface.content.replaceChildren(metadata, roster);
+      const config = el('section', 'league-team-config');
+      config.append(el('h3', 'league-team-roster-title', t('workspace.channel_team_configuration', 'Team Configuration')));
+      const fields = el('div', null); config.append(fields);
+      renderTeamConfiguration(fields, { ...current, durable: true }, { createAction, onSaved: async (saved, renamed) => {
+        await refreshTeams();
+        if (!renamed) { render(); return; }
+        const locations = bench.locations(WB_TYPES.team, name);
+        for (const key of [...leagueTeamSurfaces.keys()]) if (key.endsWith(`\0${name}`)) leagueTeamSurfaces.delete(key);
+        for (const seat of locations) bench.place(WB_TYPES.team, seat, { key: saved.name, label: saved.title || readableTeam(saved.name) });
+      } });
+      surface.content.replaceChildren(config, roster);
     };
     render();
     const out = { el: surface.el, render }; leagueTeamSurfaces.set(cacheKey, out); return out;
@@ -455,7 +461,7 @@ export function createCoworkView(options = {}) {
 
   function renderConfig(roster, live) {
     for (const commons of Object.values(teamCommons)) {
-      renderTeamConfiguration(commons.config, roster && { ...roster, durable: true }, { onSaved: async (saved, renamed) => {
+      renderTeamConfiguration(commons.config, roster && { ...roster, durable: true }, { createAction, onSaved: async (saved, renamed) => {
         await refreshTeams();
         if (renamed) S.workspace?.navigate('team', saved.name);
         else { setBarLabel(); renderConfig(saved, live); paint(); }

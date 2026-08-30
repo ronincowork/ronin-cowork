@@ -36,22 +36,23 @@ export function renderTeamConfiguration(host, roster, options = {}) {
   field(form, 'Wipeboard', 'wipeboard', roster.wipeboard);
   const actions = el('div', 'tw-config-actions');
   const status = el('span', 'tw-config-status');
-  const save = el('button', null, 'Save'); save.type = 'submit';
+  const saveAction = options.createAction?.({ label: 'Save', size: 'compact' });
+  const save = saveAction?.el || el('button', null, 'Save'); save.type = 'submit';
   actions.append(status, save); form.append(actions); host.append(form);
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
-    save.disabled = true; status.textContent = 'Saving…';
+    if (saveAction) saveAction.setDisabled(true); else save.disabled = true; status.textContent = 'Saving…';
     const data = Object.fromEntries(new FormData(form));
     const nextName = String(data.name || '').trim();
     if (nextName !== roster.name) {
       const renamed = await request(`/api/team-rosters/${encodeURIComponent(roster.name)}/rename`, { method: 'POST', json: { to: nextName } });
-      if (!renamed.ok) { status.textContent = renamed.message; save.disabled = false; return; }
+      if (!renamed.ok) { status.textContent = renamed.message; if (saveAction) saveAction.setDisabled(false); else save.disabled = false; return; }
     }
     delete data.name;
     data.repos = String(data.repos || '').split(',').map((repo) => repo.trim()).filter(Boolean);
     const saved = await request(`/api/team-rosters/${encodeURIComponent(nextName)}`, { method: 'PUT', json: data });
     status.textContent = saved.ok ? 'Saved' : saved.message;
-    save.disabled = false;
+    if (saveAction) saveAction.setDisabled(false); else save.disabled = false;
     if (saved.ok) options.onSaved?.(saved.data.roster, nextName !== roster.name);
   });
 }
