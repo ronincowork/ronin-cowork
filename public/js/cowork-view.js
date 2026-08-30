@@ -38,7 +38,7 @@ function registerWorkbenchCatalog() {
   const add = (definition) => { if (!library.has(definition.type)) library.register(definition); };
   add({ type: WB_TYPES.commons, header: 'channels', label: () => t('team.commons_card', 'Team commons'), create: ({ workspace, environment }) => environment.teamCommons(workspace) });
   add({ type: WB_TYPES.desk, header: 'channels', label: () => t('cowork.commons', 'Ronin Desk'), create: ({ workspace, environment }) => environment.desk(workspace) });
-  add({ type: WB_TYPES.newSession, header: 'surface', label: (_tenant) => t('team.new_session', 'New session'), variant: 'dotted', create: ({ workspace, environment }) => environment.newSession(workspace) });
+  add({ type: WB_TYPES.newSession, header: 'surface', label: () => t('league.new_agent', 'New Agent'), variant: 'dotted', create: ({ workspace, environment }) => environment.newSession(workspace) });
   add({ type: WB_TYPES.terminal, header: 'terminal', discover: (_tenant, environment) => environment.sessions(), create: ({ workspace, detail, environment }) => environment.terminal(workspace, detail) });
   add({ type: WB_TYPES.roster, header: 'surface', label: () => t('league.team_roster', 'Team roster'), create: ({ workspace, environment }) => environment.roster(workspace) });
   add({ type: WB_TYPES.newTeam, header: 'surface', label: () => t('new_team.title', 'New Team'), variant: 'dotted', create: ({ workspace, environment }) => environment.newTeam(workspace) });
@@ -136,7 +136,7 @@ export function createCoworkView(options = {}) {
   const teamCommons = Object.fromEntries(Object.keys(seats).map((id) => [id, createTeamCommons()]));
   // ＋ NEW SESSION IS A SURFACE (owner, 2026-08-27): the commons' launcher, in a workspace.
   // Roster add and bar New both put the new session in the selected workspace (`connect`).
-  const newLabel = campaign ? t('league.new_agent', 'New Agent') : t('team.new_session', 'New session');
+  const newLabel = t('league.new_agent', 'New Agent');
   const extras = new Set();
   const newBySeat = Object.fromEntries(Object.keys(seats).map((id) => {
     const surface = createSurface({ label: newLabel, className: 'tw-new' });
