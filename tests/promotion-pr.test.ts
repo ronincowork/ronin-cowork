@@ -66,5 +66,8 @@ test('pushes the working line, then creates the PR; an open one is updated, neve
   assert.equal(updated.action, 'updated');
   assert.equal(updated.url, 'https://github.com/x/y/pull/39');
   assert.ok(st2.calls.some((c) => c[1] === 'pr' && c[2] === 'edit' && c[3] === '39'));
+  const editAt = st2.calls.findIndex((c) => c[1] === 'pr' && c[2] === 'edit');
+  const pushAt = st2.calls.findIndex((c) => c[0] === 'git' && c[1] === 'push');
+  assert.ok(editAt >= 0 && pushAt > editAt, 'an existing PR gets the new receipt before the push triggers CI');
   assert.ok(!st2.calls.some((c) => c[1] === 'pr' && c[2] === 'create'));
 });
