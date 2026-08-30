@@ -141,10 +141,10 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **launcher.mode_manual_note:** your words, untouched
 - **launcher.mode_assisted_note:** Koshi fills the rest
 - **launcher.mode_manual_say:** Sent word for word — nothing added.
-- **launcher.mode_assisted_say:** Say it in plain terms and Koshi your AI admin will handle the rest; the below selections are optional.
-- **launcher.what_placeholder:** exactly what you want said to the agent
+- **launcher.mode_assisted_say:** Everything is optional. Ronin supplies the startup reading and uses your choices when present.
+- **launcher.what_placeholder:** what this session should do (optional)
 - **launcher.what_placeholder_assisted:** Describe in plain terms what this session should do and cover…
-- **launcher.name_placeholder:** session name (required)
+- **launcher.name_placeholder:** session name (optional)
 - **launcher.name_placeholder_assisted:** session name (optional — named from your text)
 - **launcher.optional:** optional
 - **launcher.seed_placeholder:** read first (optional): paths, comma-separated

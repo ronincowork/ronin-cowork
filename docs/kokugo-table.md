@@ -642,7 +642,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `launcher.launch_failed` | could not put a session out — {message} |  |  |  |  |
 | `launcher.mode_assisted` | assisted |  |  |  |  |
 | `launcher.mode_assisted_note` | Koshi fills the rest |  |  |  |  |
-| `launcher.mode_assisted_say` | Say it in plain terms and Koshi your AI admin will handle the rest; the below selections are optional. |  |  |  |  |
+| `launcher.mode_assisted_say` | Everything is optional. Ronin supplies the startup reading and uses your choices when present. |  |  |  |  |
 | `launcher.mode_assisted_title` | Say it long-form; Ronin composes the brief around it |  |  |  |  |
 | `launcher.mode_manual` | manual |  |  |  |  |
 | `launcher.mode_manual_note` | your words, untouched |  |  |  |  |
@@ -650,7 +650,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `launcher.mode_manual_title` | Your text is the whole prompt — nothing added, nothing templated |  |  |  |  |
 | `launcher.model_title` | Which session_launch_spec to launch |  |  |  |  |
 | `launcher.name` | session name |  |  |  |  |
-| `launcher.name_placeholder` | session name (required) |  |  |  |  |
+| `launcher.name_placeholder` | session name (optional) |  |  |  |  |
 | `launcher.name_placeholder_assisted` | session name (optional — named from your text) |  |  |  |  |
 | `launcher.name_title` | session name — how you address this session afterwards |  |  |  |  |
 | `launcher.no_roles` | no session_roles in ronin_catalogs/session_roles/ |  |  |  |  |
@@ -670,7 +670,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `launcher.team_none` | — team — |  |  |  |  |
 | `launcher.team_title` | Team the new session joins (tag) |  |  |  |  |
 | `launcher.what` | what this session is told |  |  |  |  |
-| `launcher.what_placeholder` | exactly what you want said to the agent |  |  |  |  |
+| `launcher.what_placeholder` | what this session should do (optional) |  |  |  |  |
 | `launcher.what_placeholder_assisted` | Describe in plain terms what this session should do and cover… |  |  |  |  |
 | `launcher.where_none` | — no project_roots — |  |  |  |  |
 | `launcher.where_title` | project_root — where the work happens (sets the directory + reading list) |  |  |  |  |

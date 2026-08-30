@@ -100,14 +100,14 @@ a real `session_launch_spec` cell from the launch table (`ronin_catalogs/PROJECT
 never a command you composed — a hand-typed command matches no table row, so the launch
 cannot honor an MCP-off choice for it.
 
-**IT DELIVERS THE WHOLE BUILD BRIEF, which is the other half of why this is the door.** An
-assisted launch composes the posture, the reading list — `all/` + `root/<project_root>/` +
-`role/<role_family>/` + `task/<session_role>/`, plus any connected level when the brain is on
+**IT DELIVERS THE WHOLE BUILD BRIEF, which is the other half of why this is the door.** A
+launch composes the posture, the reading list — `all/` + `root/<project_root>/` +
+Team + `role/<session_role>/`, plus any connected level when the brain is on
 — the task's opening template with your prompt in it, and the acknowledgement rule. A
 session made with `tmux new-session` gets NONE of that: no reading list, no posture, no
 letter, and no role, ever.
 
-The response carries `receipt` — `role_family`, `session_role`, `project_root`, `dial`,
+The response carries `receipt` — `session_role`, Team, `project_root`, `dial`,
 `cmd`, `mcp`. A launch that refuses answers 400 with the reason written for the owner (an
 unknown axis, a locked `mcp:` contradicted, an agentless launch handed a command); report
 the reason, do not retry around it.

@@ -35,6 +35,7 @@ process.env.RONIN_SESSION_BOOT_CACHE_DIR = path.join(temp, 'generated');
 process.env.RONIN_CONFIG_DIR = path.join(temp, 'config');
 process.env.RONIN_LEDGER_DIR = path.join(temp, 'ledger');
 process.env.RONIN_TEAM_ROSTERS_DIR = path.join(temp, 'team_rosters');
+process.env.RONIN_CAMPAIGNS_DIR = path.join(temp, 'campaigns');
 await fs.mkdir(path.join(temp, 'config'), { recursive: true });
 
 /** The whole `agents` section as the owner's file would hold it. */
@@ -49,7 +50,6 @@ const launch = (over: Partial<SpawnForm> = {}): SpawnForm => ({
   session_role: 'CutCode',
   project_root: 'alpha',
   prompt: 'Cut the leg in the plan doc.',
-  mode: 'assisted',
   ...over,
 });
 
@@ -75,6 +75,22 @@ test('the three ways an agent may ask, against one configuration', async () => {
   // Three different commands from three different asks — if any two of these ever agree,
   // one layer has started answering a question it was not asked.
   assert.equal(new Set([lazy.cmd, vendor.cmd, named.cmd]).size, 3);
+});
+
+test('Campaign Agent defaults answer before install defaults, and an explicit ask still wins', async () => {
+  await agents({
+    default: { provider: 'openai', model: 'gpt-5.6-sol' },
+    by_provider: { anthropic: 'fable' },
+  });
+  await fs.mkdir(path.join(temp, 'campaigns'), { recursive: true });
+  await fs.writeFile(path.join(temp, 'campaigns', 'work.json'), JSON.stringify({
+    title: 'Work',
+    config: { agent_defaults: { provider: 'anthropic' } },
+  }));
+  const inherited = await resolveForm(launch({ campaign_id: 'work' }), new Set());
+  assert.ok(inherited.cmd.startsWith('claude --model fable'), inherited.cmd);
+  const explicit = await resolveForm(launch({ campaign_id: 'work', model: 'gpt-5.6-terra' }), new Set());
+  assert.ok(explicit.cmd.startsWith('codex --model gpt-5.6-terra'), explicit.cmd);
 });
 
 test("the owner's scenario: default is OpenAI, the launch says anthropic, and it gets anthropic's preferred model", async () => {

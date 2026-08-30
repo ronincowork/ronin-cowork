@@ -193,6 +193,8 @@ export async function renameSession(name: string, next: string): Promise<void> {
  */
 export interface CreateOpts {
   agent?: boolean;
+  /** Initial Control set in the same tmux command that creates the session. */
+  control?: Control;
   /**
    * `cap: exempt` in the resolved launch profile — create it even at the max. It still COUNTS
    * afterwards, so the NEXT spawn is the one refused; this exempts the spawn, never the
@@ -248,6 +250,7 @@ export async function createSession(name: string, dir?: string, opts: CreateOpts
     const a = ['new-session', '-d', '-s', name];
     if (withDir && cwd) a.push('-c', cwd);
     if (opts.argv?.length) a.push('--', ...opts.argv, ';', 'set-option', '-w', '-t', name, 'remain-on-exit', 'on');
+    if (opts.control) a.push(';', 'set-option', '-t', name, CONTROL_OPT, opts.control);
     return a;
   };
   try {

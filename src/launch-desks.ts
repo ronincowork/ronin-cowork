@@ -8,7 +8,7 @@
  * concrete block the brief carries. It mutates no ref itself and holds no state.
  *
  * THREE HONEST ANSWERS, and no fourth:
- *   - `null`       this launch gets no desk — manual, plain terminal, a non-code role, or
+ *   - `null`       this launch gets no desk — plain terminal, a non-code role, or
  *                  a repository whose RONIN_REPO says direct or is absent. The brief says
  *                  nothing about desks, and nothing downstream pretends one exists.
  *   - assignment   desks derived and (at launch) opened; the session starts in `primary`.
@@ -32,11 +32,10 @@ export const DESK_LIFECYCLES: ReadonlySet<string> = new Set(['coding', 'debug'])
 export type DeskChoice = 'own' | 'none';
 
 /**
- * Whether THIS launch wants desks at all. Manual launches never do (manual adds no
- * wording of ours, and a desk is wording); a plain terminal has no agent to brief.
+ * Whether THIS launch wants desks at all. A plain terminal has no agent to brief.
  */
-export function wantsDesk(input: { mode: 'manual' | 'assisted'; agent: boolean; lifecycle: string; desk?: DeskChoice }): boolean {
-  if (input.mode === 'manual' || !input.agent) return false;
+export function wantsDesk(input: { agent: boolean; lifecycle: string; desk?: DeskChoice }): boolean {
+  if (!input.agent) return false;
   if (input.desk === 'none') return false;
   if (input.desk === 'own') return true;
   return DESK_LIFECYCLES.has(input.lifecycle);
@@ -50,7 +49,6 @@ export async function resolveLaunchDesks(input: {
   session: string;
   team: string;
   project_root: string;
-  mode: 'manual' | 'assisted';
   agent: boolean;
   lifecycle: string;
   desk?: DeskChoice;

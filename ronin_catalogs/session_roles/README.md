@@ -41,9 +41,8 @@ alongside it is refused rather than half-honored.
 a session launches on the owner's default (⚙ Configuration) unless the launch names a
 model or a cmd.
 
-**Two launch modes.** In **manual** mode none of this directory's wording is used at all:
-what the owner typed IS the prompt, byte for byte, and only the mechanical constants
-apply. The `opening:`, the `posture:` and the ack rule belong to **assisted** mode.
+Every Agent launch uses the same composed boot. The role's `opening:`, `posture:`, reading
+and acknowledgement join any optional launch instruction; no mode may strip them.
 
 **Yours and ours.** A file of the same name in your catalogs store replaces ours
 **whole** — never field by field, or neither file would tell the truth. A new name adds a

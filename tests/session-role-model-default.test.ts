@@ -64,7 +64,6 @@ const cutCode = (over: Partial<SpawnForm> = {}): SpawnForm => ({
   session_role: 'CutCode',
   project_root: 'alpha',
   prompt: 'Cut the leg in the plan doc.',
-  mode: 'assisted',
   ...over,
 });
 

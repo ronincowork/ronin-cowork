@@ -267,7 +267,7 @@ async function writeCatalogFile(file: string, text: string): Promise<void> {
 
 /**
  * SAVED_LAUNCHES — a named binding of the launcher that already exists:
- * `role_family` × `session_role` × `project_root` × group × mode, as a pressable tile.
+ * `role_family` × `session_role` × `project_root` × group, as a pressable tile.
  *
  * The owner's words are what this is: *"organize these tiles under new sessions to be
  * like, okay, I have ronin and watch crew."* (Quoted as said; `watch crew` has since been
@@ -292,8 +292,6 @@ export interface SavedLaunchInfo {
   session_role: string;
   project_root: string;
   group: string;
-  /** `manual` (your words, untouched) or `assisted`. Anything else reads as manual. */
-  mode: 'manual' | 'assisted';
   /** Optional text the form opens with — a starting point, never auto-sent. */
   prompt: string;
 }
@@ -311,7 +309,6 @@ export async function listSavedLaunches(): Promise<SavedLaunchInfo[]> {
       // The team the session is born into. `group:` is the retired spelling, read from
       // files written before R32; the wire field keeps its name (an internal seam).
       group: e.get('team') || e.get('group'),
-      mode: (e.get('mode').toLowerCase() === 'assisted' ? 'assisted' : 'manual') as SavedLaunchInfo['mode'],
       prompt: e.get('prompt'),
     }))
     // A saved launch naming NEITHER axis cannot fill the form it exists to fill — but
@@ -324,7 +321,7 @@ export const isValidLaunchName = (n: string) => /^[a-z0-9][a-z0-9_-]*$/.test(n) 
 
 // `team` is the documented field (KOTOBA R32); `group:` in an existing file is still
 // read — see listSavedLaunches — but a save always writes the word that exists.
-const LAUNCH_FIELDS = ['label', 'role_family', 'session_role', 'project_root', 'team', 'mode', 'prompt'] as const;
+const LAUNCH_FIELDS = ['label', 'role_family', 'session_role', 'project_root', 'team', 'prompt'] as const;
 export type LaunchField = (typeof LAUNCH_FIELDS)[number];
 
 /**
