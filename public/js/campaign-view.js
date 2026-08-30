@@ -103,9 +103,13 @@ export function createCampaignView() {
     blank.content.append(el('p', 'cv-blank-word', label));
     return { id, blank: blank.el };
   };
+  // FOUR SEATS, ONE PER SETTING (owner, 2026-08-30): the page opens as the whole record,
+  // every surface already up, not two seats and a list to click through.
   const seats = {
     workspace1: makeSeat('workspace1', t('team.workspace_1', 'Workspace 1')),
     workspace2: makeSeat('workspace2', t('team.workspace_2', 'Workspace 2')),
+    workspace3: makeSeat('workspace3', t('team.workspace_3', 'Workspace 3')),
+    workspace4: makeSeat('workspace4', t('team.workspace_4', 'Workspace 4')),
   };
   const cells = {};
   for (const id of Object.keys(seats)) {
@@ -254,26 +258,33 @@ export function createCampaignView() {
 
   const DECLARATION = {
     slots: [
-      { name: 'workspace1', label: t('team.workspace_1', 'Workspace 1'), width: 40 },
-      { name: 'selector', label: t('campaign', 'Campaign'), width: 20, min: 6, compact: 176 },
-      { name: 'workspace2', label: t('team.workspace_2', 'Workspace 2'), width: 40 },
+      { name: 'selector', label: t('campaign', 'Campaign'), width: 16, min: 6, compact: 176 },
+      { name: 'workspace1', label: t('team.workspace_1', 'Workspace 1'), width: 21 },
+      { name: 'workspace2', label: t('team.workspace_2', 'Workspace 2'), width: 21 },
+      { name: 'workspace3', label: t('team.workspace_3', 'Workspace 3'), width: 21 },
+      { name: 'workspace4', label: t('team.workspace_4', 'Workspace 4'), width: 21 },
     ],
   };
   const workbench = createWorkbenchLayout({
     declaration: DECLARATION,
-    surfaces: { workspace1: cells.workspace1, selector: column.el, workspace2: cells.workspace2 },
+    surfaces: { selector: column.el, ...cells },
     onStateChange: (arrangement) => ctx?.patchViewState('campaign', { arrangement }),
   });
   root.append(workbench.host);
 
-  /** What each workspace remembered holding; with nothing remembered, Campaign on the left. */
+  /** The opening position: the four settings, one per seat, in the column's order. */
+  const OPENING = { workspace1: CAMPAIGN, workspace2: PROFILE, workspace3: ROOTS, workspace4: TEMPLATES };
+
+  /**
+   * What each workspace remembered holding, then the opening position for any seat the
+   * memory does not mention — so a tab that knew only two seats gets the other two
+   * filled, and a surface already up somewhere is not seated twice.
+   */
   const seatTheCampaign = (remembered) => {
-    let any = false;
-    for (const id of Object.keys(seats)) {
-      const wanted = remembered[id];
-      if (SURFACES[wanted]) { putSurface(wanted, id); any = true; }
+    for (const id of Object.keys(seats)) if (SURFACES[remembered[id]]) putSurface(remembered[id], id);
+    for (const [id, token] of Object.entries(OPENING)) {
+      if (!(id in remembered) && !heldSurface(id) && !whereIs(token)) putSurface(token, id);
     }
-    if (!any) putSurface(CAMPAIGN, 'workspace1');
   };
 
   return {
