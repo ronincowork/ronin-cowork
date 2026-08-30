@@ -93,10 +93,14 @@ const shot = { platform: PLATFORM, viewport: '1400x900 / 402x681', surfaces: {} 
 {
   const page = await (await browser.newContext({ viewport: { width: 1400, height: 900 }, colorScheme: 'dark' })).newPage();
   await page.goto(URL_, { waitUntil: 'networkidle', timeout: 30_000 });
+  await page.waitForFunction(() => !document.documentElement.classList.contains('boot-pending'));
   await page.waitForTimeout(1500);
   shot.surfaces.desktop = await fingerprint(page, DESKTOP);
   // Both themes, same chrome: the token flip is part of the composition contract.
   await page.evaluate(() => (document.documentElement.dataset.theme = 'light'));
+  // Themeable borders transition through intermediate colours. Measure the settled
+  // light composition, never whichever interpolation frame the browser happened to paint.
+  await page.waitForTimeout(300);
   shot.surfaces['desktop-light'] = await fingerprint(page, ['#bar', '.ch-frame', '.ch-door']);
   await page.close();
 }
@@ -108,6 +112,7 @@ const shot = { platform: PLATFORM, viewport: '1400x900 / 402x681', surfaces: {} 
     colorScheme: 'dark', // the shell follows the device now; the baseline is the dark shell
   })).newPage();
   await page.goto(URL_, { waitUntil: 'networkidle', timeout: 30_000 });
+  await page.waitForFunction(() => !document.documentElement.classList.contains('boot-pending'));
   await page.waitForTimeout(1500);
   shot.surfaces.phone = await fingerprint(page, PHONE);
   await page.close();
