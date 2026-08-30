@@ -33,6 +33,7 @@
 
   .ch-door {
     --ch-edge-hover: color-mix(in srgb, var(--ch-tone) 45%, var(--line-3));
+    --ch-caption-line: color-mix(in srgb, var(--ch-tone) 28%, var(--line));
     position: relative;
     display: flex;
     flex-direction: column;
@@ -73,21 +74,27 @@
   }
   .ch-glyph { display: block; font-size: var(--ch-glyph); line-height: 1; color: var(--ch-tone); }
   .ch-door h2 {
-    margin: var(--space-7) 0 0;
+    margin: var(--space-10) 0 0;
     font-size: var(--text-9);
     font-weight: 600;
     line-height: 1.15;
     color: var(--fg-strong);
   }
-  /* WHAT THE DOOR IS, on approach only. The line keeps its space at rest, so the row
-     never reflows and nothing is ever drawn over anything — a reveal, not a bubble. */
+  /* The caption waits at the garden's far edge instead of clinging to the title: the
+     empty middle stays empty, and a quiet path line leads into the words on approach. */
   .ch-is {
-    margin: var(--space-3) 0 0;
+    position: absolute;
+    right: var(--space-9);
+    bottom: var(--space-7);
+    left: var(--space-9);
+    margin: 0;
+    padding-top: var(--space-4);
+    border-top: var(--edge) solid var(--ch-caption-line);
     font-size: var(--text-6);
     line-height: 1.4;
     color: var(--muted-2);
     opacity: 0;
-    transform: translateY(calc(var(--space-2) * -1));
+    transform: translateY(var(--space-2));
     transition: opacity var(--motion-settle) var(--ease), transform var(--motion-settle) var(--ease);
   }
   .ch-door:hover .ch-is,
