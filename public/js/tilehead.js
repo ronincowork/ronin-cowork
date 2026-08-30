@@ -18,7 +18,7 @@
  *   cls      its class — also its handle for `tiledrop.js`, which RELOCATES these exact
  *            nodes into the phone's app bar rather than cloning them
  *   text     the glyph, for a plain button
- *   tag      for the two that are not buttons (the dot, the picker)
+ *   tag      for an element that is not a button (the session name)
  *   widget   for the four that are built by someone else and come back as {el, set}
  *   help     the hover text. A function when it has to be computed at build time.
  *   on       the click. Given (tile, el) — the tile owns what any of it means.
@@ -88,10 +88,9 @@ const HEADER = () => {
     quiet: t('head.rename_quiet', 'Rename session — no session in this tile yet'),
     on: (tile) => void tile.rename() },
 
-  // The connection dot left the head on 2026-08-28 (owner: "this colored light ball next to
-  // the session name … should be gone"); the picker's own state and the pane say it.
-  { key: 'select', tag: 'select', cls: 'sess',
-    help: t('head.select_help', 'Pick / switch the session shown in this tile') },
+  // A workspace owns which Agent it holds. The tile only names that session; switching
+  // happens by placing or dragging a roster card into the workspace, never in its head.
+  { key: 'sessionName', tag: 'span', cls: 'sess' },
 
   // THE MARK — what the session is doing, off its letter. `?` when it has not said.
   { key: 'jobBtn', cls: 'job', needs: 'session',
@@ -173,7 +172,7 @@ const HEADER = () => {
     quiet: t('head.macros_quiet', 'Macros — no session in this tile yet') },
 
   // メ — AND EVERY ROW BELOW IT IS INSIDE ITS DROP (owner's ruling 2026-08-17). Eight
-  // controls ended this row and a session picker has to fit a name; at four tiles up
+  // controls ended this row and the session name has to remain readable; at four tiles up
   // there was not room for both. Three stay on top — ⛩ ⚡ メ — and the six that were
   // left drop out of メ in one horizontal strip, unchanged. See tilemore.js for the
   // glyph's history (it was the Commons button here until ⛩ took that everywhere) and
@@ -292,9 +291,6 @@ export function buildTileHead(tile) {
     if (!made) {
       node.className = row.cls;
       if (node.tagName === 'BUTTON') node.type = 'button';
-      // A non-interactive indicator (the dot) carries an accessible name via its
-      // help text, and a bare <span> may not hold one — role=img is the lamp's role.
-      if (node.tagName === 'SPAN') node.setAttribute('role', 'img');
       if (row.text) node.textContent = row.text;
     }
     if (row.holds) node.dataset.holdsHelp = '1';

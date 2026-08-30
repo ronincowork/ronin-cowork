@@ -2,7 +2,7 @@
 /**
  * THE TILE — one cell of the coworkspace, and nothing more.
  *
- * A tile is a header (session picker, dials, chip, buttons), a mount point, and the
+ * A tile is a header (session name, dials, chip, buttons), a mount point, and the
  * commons panel that overlays it when no session is showing. It COMPOSES one of two
  * views and never owns the machinery of either:
  *
@@ -24,7 +24,7 @@ import { fetchSessions, renameSession } from './api.js';
 import { request } from './request.js';
 import { toast } from './ui.js';
 import { retireSession } from './session-retire.js';
-import { IS_TOUCH, NEW, S, saveState, serviceMissing, tiles } from './state.js';
+import { IS_TOUCH, S, saveState, serviceMissing, tiles } from './state.js';
 import { guard } from './errors.js';
 import { buildLadder } from './shingo.js';
 import { buildTileHead, syncTileHead } from './tilehead.js';
@@ -52,7 +52,7 @@ export class Tile {
     this.output = S.streamOff ? 'locked' : (S.output || (S.locked ? 'locked' : 'terminal_mirror'));
     this.locked = this.output === 'locked';
 
-    // The header — the picker, the dials, the chip, the buttons. Construction only;
+    // The header — the session name, the dials, the chip, the buttons. Construction only;
     // every callback in it lands back here.
     // Every control the table declared, under the name the table gave it. Held as
     // references rather than re-queried: on touch these nodes are RELOCATED into the app
@@ -127,21 +127,19 @@ export class Tile {
     // tmux — exactly as the mirror always had it, untouched.
     // Tape-fed: the transcript is a plain scrollable div and the browser scrolls it.
     // Marking a tile active on header focus, without stealing keyboard focus —
-    // otherwise iOS closes the <select> picker the instant it opens.
+    // without stealing keyboard focus from controls in the head.
     this.el.addEventListener('focusin', (e) => {
       this.activate();
       // `this.home` (the tile commons) retired on 2026-08-28 with the grid page; a click in
       // the body threw on it for a few hours and took the terminal's focus with it.
       if (!IS_TOUCH && this.body.contains(e.target)) this.term.focus();
     });
-    this.select.addEventListener('pointerdown', () => this.activate());
-    this.select.addEventListener('change', () => this.onSelect());
     this.syncOutput();
 
     this.ro = new ResizeObserver(() => this.doFit());
     this.ro.observe(this.body);
 
-    this.refreshOptions();
+    this.refreshSessionName();
   }
 
   async rename() {
@@ -159,26 +157,8 @@ export class Tile {
     }
   }
 
-  refreshOptions() {
-    const cur = this.session;
-    this.select.innerHTML = '';
-    this.select.add(new Option(t('tile.pick_session', '— pick session —'), ''));
-    for (const s of S.sessions) {
-      // NO MARK IN THE PICKER. It was prefixed here too, and the collapsed <select> then
-      // showed the current session's icon immediately beside the job button showing the
-      // same icon — the same fact twice, an inch apart. The button is the one that keeps
-      // it: it is pressable, it carries the name in its tooltip, and it says `?` when
-      // nobody has said. Surveying every session's job is the ⌂ Roster's work, and the
-      // roster draws them all.
-      const label = `${s.name}${s.attached ? ' •' : ''}`;
-      this.select.add(new Option(label, s.name));
-    }
-    // keep a stale-but-connected session visible even if it left the list
-    if (cur && !S.sessions.some((s) => s.name === cur)) {
-      this.select.add(new Option(t('tile.gone', '{name}  (gone?)', { name: cur }), cur));
-    }
-    this.select.add(new Option(t('tile.new_session', '➕ new session…'), NEW));
-    this.select.value = cur || '';
+  refreshSessionName() {
+    this.sessionName.textContent = this.session || '';
     this.syncHeader();
     this.refreshCtx();
     this.refreshTegami();
@@ -345,20 +325,6 @@ export class Tile {
   syncHeader() {
     this.refreshControl(); // async: the dial's position is the server's truth
     syncTileHead(this);
-  }
-
-  async onSelect() {
-    const v = this.select.value;
-    if (v === NEW) {
-      this.select.value = this.session || '';
-      S.showNewSession?.();
-      return;
-    }
-    if (!v) {
-      this.detach();
-      return;
-    }
-    this.connect(v);
   }
 
   /** Mark this tile active (visual highlight + keystroke target) without grabbing keyboard focus. */
@@ -531,7 +497,7 @@ export class Tile {
     this.tape.setAltNote(false);
     this.wire.close();
     this.session = null;
-    this.select.value = '';
+    this.sessionName.textContent = '';
     this.syncHeader();
     this.gauge.set(null);
     this.tegami = null;
@@ -554,11 +520,7 @@ export class Tile {
 
   connect(session) {
     this.session = session;
-    // make sure the option exists & is selected
-    if (![...this.select.options].some((o) => o.value === session)) {
-      this.select.add(new Option(session, session), this.select.options.length - 1);
-    }
-    this.select.value = session;
+    this.sessionName.textContent = session;
     this.syncHeader();
     this.refreshCtx();
     this.refreshTegami();

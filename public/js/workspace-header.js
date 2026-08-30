@@ -7,24 +7,33 @@ export function installWorkspaceHeader(workspace) {
   const ronin = document.getElementById('brandbtn');
   const separator = document.getElementById('coworkssep');
   const coworkers = document.getElementById('coworksbtn');
+  const teamSeparator = document.getElementById('teamsep');
   const team = document.getElementById('teamvalue');
 
   const root = () => {
     history.pushState(null, '', location.pathname + location.search);
     workspace.navigate('home', { fromHistory: true });
   };
-  ronin?.addEventListener('click', root);
-  coworkers?.addEventListener('click', () => workspace.navigate('cowork'));
+  const plainRoute = (action) => (event) => {
+    // Preserve native link behavior for new-tab/window gestures and context-menu opens.
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    action();
+  };
+  ronin?.addEventListener('click', plainRoute(root));
+  coworkers?.addEventListener('click', plainRoute(() => workspace.navigate('cowork')));
 
   const refresh = () => {
     const active = workspace.active;
     const landing = !active || active.id === 'home';
     if (separator) separator.hidden = landing;
     if (coworkers) coworkers.hidden = landing;
+    const teamPage = active?.id === 'team';
+    if (teamSeparator) teamSeparator.hidden = !teamPage;
     if (team) {
-      const name = active?.id === 'team' ? active.param : '';
+      const name = teamPage ? active.param : '';
       team.textContent = readable(name);
-      team.hidden = landing;
+      team.hidden = !teamPage;
     }
   };
   refresh();

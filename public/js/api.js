@@ -15,7 +15,7 @@ import { S, tiles } from './state.js';
  */
 export function reconcileSessions(list) {
   S.sessions = list;
-  tiles.forEach((t) => t.refreshOptions());
+  tiles.forEach((t) => t.refreshSessionName());
 }
 
 /**
@@ -27,7 +27,7 @@ export function reconcileSessions(list) {
 export async function fetchSessions() {
   const r = await request('/api/sessions', { cache: 'no-store' });
   if (r.ok && Array.isArray(r.data)) reconcileSessions(r.data);
-  else tiles.forEach((t) => t.refreshOptions());
+  else tiles.forEach((t) => t.refreshSessionName());
   return r;
 }
 

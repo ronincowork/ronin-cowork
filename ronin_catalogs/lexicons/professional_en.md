@@ -429,6 +429,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team.workspace_1:** Workspace 1
 - **team.workspace_2:** Workspace 2
 - **team.commons_card:** Team commons
+- **team.commons_summary:** See Docs / Wipeboard / Configuration
 - **team.roster_of:** Roster: {team}
 - **team.workspace_blank:** Workspace
 - **team.new_session:** New session
@@ -1037,10 +1038,7 @@ The catalog entry goes. {dir} is not touched.
 - **ladder.legs_undetermined:** — legs undetermined
 - **ladder.quiet:** quiet {age}
 
-## tile — tile.js (the session picker)
-- **tile.pick_session:** — pick session —
-- **tile.gone:** {name}  (gone?)
-- **tile.new_session:** ➕ new session…
+## tile — tile.js (the Agent terminal tile)
 
 ## macros — tilemacros.js (the ⚡ menu)
 - **macros.button_title:** Macros — drop one into this session's input
@@ -1138,7 +1136,6 @@ The catalog entry goes. {dir} is not touched.
 ## head — tilehead.js (the tile head's help and quiet words)
 - **head.dial_help:** Who may touch this session: 👤 owner only · 👁 outside agents watch · 🤖 outside agents type. Yours to turn; agents never flip it.
 - **head.dot_help:** Connection: green = attached, grey = disconnected
-- **head.select_help:** Pick / switch the session shown in this tile
 - **head.rename_help:** Rename this session
 - **head.rename_quiet:** Rename session — no session in this tile yet
 - **head.rename_prompt:** Rename session
@@ -1440,8 +1437,18 @@ The catalog entry goes. {dir} is not touched.
 - **league.no_agents:** No live Agents
 - **league.new_agent:** New Agent
 - **league.new_agent_summary:** A new Agent, born into the workspace you are in.
-- **league.delete_team:** Delete
+- **league.delete_team:** Delete team
 - **league.delete_team_confirm:** Delete {team}? {count} Agents will lose this Team membership.
+- **league.members:** Team members
+- **league.no_members:** No Agents assigned yet.
+- **league.role_unset:** Role not set
+- **league.team_lead:** Team lead
+- **league.make_team_lead:** Make team lead
+- **league.remove_member:** Remove
+- **league.remove_named_member:** Remove {name} from this team
+- **league.choose_member:** Choose an Agent to add
+- **league.no_available_members:** No other Agents available
+- **league.assign_member:** Assign
 - **league.launch_team:** Launch
 - **league.ronin:** Ronin: no team
 - **league.no_ronin:** No Rōnin Agents

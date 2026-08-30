@@ -129,6 +129,13 @@ const srcFiles = [];
 (function walk(dir) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, e.name);
+    // src/services/ is the installed, gitignored RONIN_SERVICES overlay, not this
+    // repository's source. Its own repo owns dead-export checks for those modules.
+    // Do not let an installed or deliberately disabled service make Cowork's gate
+    // depend on machine-local overlay state. The connector boundary is still checked
+    // from this side: core exports used only by services must carry @service below,
+    // and check-kyokai validates the mounted seam when an overlay is present.
+    if (e.isDirectory() && dir === path.join(ROOT, 'src') && e.name === 'services') continue;
     if (e.isDirectory()) walk(p);
     else if (e.name.endsWith('.ts')) srcFiles.push(p);
   }

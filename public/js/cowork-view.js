@@ -1,7 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 /** Workbench; its Campaign, Cowork or Team scope limits what cards are offered. */
 import { WorkspaceKit } from './workspace-kit.js';
-import { deleteTeamRoster, membersOfTeam, refreshTeams, subscribe, teamByName, teamsFromState, UNASSIGNED } from './team-controller.js';
+import { deleteTeamRoster, membersOfTeam, refreshTeams, sessionsAvailableToTeam, setTeamLead, setTeamMembership, subscribe, teamByName, teamsFromState, UNASSIGNED } from './team-controller.js';
 import { createNewTeamView } from './new-team.js';
 import { createTeamRosterSurface } from './team-roster-surface.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
@@ -36,9 +36,9 @@ const WB_PROFILES = Object.freeze({ cowork: 'cowork', team: 'team' });
 function registerWorkbenchCatalog() {
   const { library, profiles } = WorkspaceKit.workbench;
   const add = (definition) => { if (!library.has(definition.type)) library.register(definition); };
-  add({ type: WB_TYPES.commons, header: 'channels', label: () => t('team.commons_card', 'Team commons'), create: ({ workspace, environment }) => environment.teamCommons(workspace) });
+  add({ type: WB_TYPES.commons, header: 'channels', label: () => t('team.commons_card', 'Team commons'), summary: () => t('team.commons_summary', 'See Docs / Wipeboard / Configuration'), create: ({ workspace, environment }) => environment.teamCommons(workspace) });
   add({ type: WB_TYPES.desk, header: 'channels', label: () => t('cowork.commons', 'Ronin Desk'), create: ({ workspace, environment }) => environment.desk(workspace) });
-  add({ type: WB_TYPES.newSession, header: 'surface', label: (_tenant) => t('team.new_session', 'New session'), variant: 'dotted', create: ({ workspace, environment }) => environment.newSession(workspace) });
+  add({ type: WB_TYPES.newSession, header: 'surface', label: () => t('league.new_agent', 'New Agent'), variant: 'dotted', create: ({ workspace, environment }) => environment.newSession(workspace) });
   add({ type: WB_TYPES.terminal, header: 'terminal', discover: (_tenant, environment) => environment.sessions(), create: ({ workspace, detail, environment }) => environment.terminal(workspace, detail) });
   add({ type: WB_TYPES.roster, header: 'surface', label: () => t('league.team_roster', 'Team roster'), create: ({ workspace, environment }) => environment.roster(workspace) });
   add({ type: WB_TYPES.newTeam, header: 'surface', label: () => t('new_team.title', 'New Team'), variant: 'dotted', create: ({ workspace, environment }) => environment.newTeam(workspace) });
@@ -50,7 +50,7 @@ export function createCoworkView(options = {}) {
   registerWorkbenchCatalog();
   const campaign = options.kind === 'cowork';
   const viewKey = campaign ? 'cowork' : 'team';
-  const { createSurface, createChannelSurface, createMetadata } = WorkspaceKit.primitives;
+  const { createSurface, createChannelSurface, createAction, createActionBar } = WorkspaceKit.primitives;
   const { createTerminalTileHost } = WorkspaceKit.adapters;
   const { teamWorkspaceState } = WorkspaceKit.contract;
   const root = el('main', 'tw-view');
@@ -136,7 +136,7 @@ export function createCoworkView(options = {}) {
   const teamCommons = Object.fromEntries(Object.keys(seats).map((id) => [id, createTeamCommons()]));
   // ＋ NEW SESSION IS A SURFACE (owner, 2026-08-27): the commons' launcher, in a workspace.
   // Roster add and bar New both put the new session in the selected workspace (`connect`).
-  const newLabel = campaign ? t('league.new_agent', 'New Agent') : t('team.new_session', 'New session');
+  const newLabel = t('league.new_agent', 'New Agent');
   const extras = new Set();
   const newBySeat = Object.fromEntries(Object.keys(seats).map((id) => {
     const surface = createSurface({ label: newLabel, className: 'tw-new' });
@@ -361,16 +361,60 @@ export function createCoworkView(options = {}) {
   const leagueTeamSurfaces = new Map(), openTeam = (name) => { const url = new URL(location.href); url.hash = `#/team/${encodeURIComponent(name)}`; window.open(url.href, '_blank', 'noopener'); };
   const createLeagueTeamSurface = (name, id) => {
     const cacheKey = `${id}\0${name}`;
-    if (leagueTeamSurfaces.has(cacheKey)) return leagueTeamSurfaces.get(cacheKey);
+    if (leagueTeamSurfaces.has(cacheKey)) {
+      const cached = leagueTeamSurfaces.get(cacheKey); cached.render?.(); return cached;
+    }
     const label = name === UNASSIGNED ? t('league.ronin', 'Ronin: no team') : readableTeam(name), team = teamByName(name);
-    const launch = el('button', null, t('league.launch_team', 'Launch')); launch.type = 'button'; launch.addEventListener('click', () => openTeam(name));
-    const remove = el('button', null, t('league.delete_team', 'Delete')); remove.type = 'button'; remove.addEventListener('click', async () => { const count = membersOfTeam(name).length; if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team: name, count }))) return; const result = await deleteTeamRoster(name); if (!result.ok) { surface.setState('failed', result.message); return; } for (const seat of bench.locations(WB_TYPES.team, name)) emptySeat(seat); for (const key of [...leagueTeamSurfaces.keys()]) if (key.endsWith(`\0${name}`)) leagueTeamSurfaces.delete(key); });
+    const launch = createAction({ label: t('league.launch_team', 'Launch'), size: 'compact', action: () => openTeam(name) });
+    const remove = createAction({ label: t('league.delete_team', 'Delete team'), kind: 'danger', size: 'compact', action: async () => { const count = membersOfTeam(name).length; if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team: name, count }))) return; const result = await deleteTeamRoster(name); if (!result.ok) { surface.setState('failed', result.message); return; } for (const seat of bench.locations(WB_TYPES.team, name)) emptySeat(seat); for (const key of [...leagueTeamSurfaces.keys()]) if (key.endsWith(`\0${name}`)) leagueTeamSurfaces.delete(key); } });
     const surface = createSurface({ label, className: 'league-team-edit', actions: name === UNASSIGNED ? [launch] : [launch, remove] });
-    surface.content.append(createMetadata({ rows: [
-      [t('team.team_role', 'Team role'), team.team_role], [t('team.objective', 'Objective'), team.objective],
-      [t('team.project_root', 'Project root'), team.project_root],
-    ] }).el);
-    const out = { el: surface.el }; leagueTeamSurfaces.set(cacheKey, out); return out;
+    surface.content.classList.add('league-team-edit-content');
+    const render = () => {
+      const holding = name === UNASSIGNED;
+      const current = teamByName(name), members = membersOfTeam(name);
+      const roster = el('section', 'league-team-roster');
+      roster.append(el('h3', 'league-team-roster-title', holding ? t('league.agents', 'Agents') : t('league.members', 'Team members')));
+      const list = el('div', 'league-team-member-list');
+      if (!members.length) list.append(el('p', 'league-team-empty', holding ? t('league.no_ronin', 'No Rōnin Agents') : t('league.no_members', 'No Agents assigned yet.')));
+      for (const member of members) {
+        const row = el('article', 'league-team-member');
+        const identity = el('div', 'league-team-member-identity');
+        const mark = el('span', 'league-team-member-mark', member.team_lead ? '人' : ''); mark.setAttribute('aria-hidden', 'true');
+        const words = el('div', 'league-team-member-words');
+        words.append(el('strong', null, member.name), el('span', null, member.session_role || t('league.role_unset', 'Role not set')));
+        identity.append(mark, words);
+        if (holding) { row.append(identity); list.append(row); continue; }
+        const lead = createAction({ label: member.team_lead ? t('league.team_lead', 'Team lead') : t('league.make_team_lead', 'Make team lead'), size: 'compact', selected: member.team_lead, action: async () => { const result = await setTeamLead(member.name, name, !member.team_lead); if (!result.ok) return surface.setState('failed', result.message); surface.setState(); render(); } });
+        const eject = createAction({ label: t('league.remove_member', 'Remove'), title: t('league.remove_named_member', 'Remove {name} from this team', { name: member.name }), size: 'compact', action: async () => { const result = await setTeamMembership(member.name, name, false); if (!result.ok) return surface.setState('failed', result.message); surface.setState(); render(); } });
+        const actions = createActionBar({ className: 'league-team-member-actions', actions: [lead, eject] });
+        row.append(identity, actions.el); list.append(row);
+      }
+      roster.append(list);
+      if (holding) { surface.content.replaceChildren(roster); return; }
+      const available = sessionsAvailableToTeam(name), add = el('div', 'league-team-add');
+      const select = el('select', null); select.setAttribute('aria-label', t('league.choose_member', 'Choose an Agent to add'));
+      select.append(new Option(available.length ? t('league.choose_member', 'Choose an Agent to add') : t('league.no_available_members', 'No other Agents available'), ''));
+      for (const session of available) select.append(new Option(session.name + (session.session_role ? ` — ${session.session_role}` : ''), session.name));
+      const assign = createAction({ label: t('league.assign_member', 'Assign'), size: 'compact', disabled: true, action: async () => { if (!select.value) return; const result = await setTeamMembership(select.value, name, true); if (!result.ok) return surface.setState('failed', result.message); surface.setState(); render(); } });
+      select.addEventListener('change', () => assign.setDisabled(!select.value));
+      add.append(select, assign.el); roster.append(add);
+      const config = el('section', 'league-team-config');
+      config.append(el('h3', 'league-team-roster-title', t('workspace.channel_team_configuration', 'Team Configuration')));
+      const fields = el('div', null); config.append(fields);
+      renderTeamConfiguration(fields, { ...current, durable: true }, { createAction, onSaved: async (saved, renamed) => {
+        await refreshTeams();
+        if (!renamed) { render(); return; }
+        const locations = bench.locations(WB_TYPES.team, name);
+        for (const key of [...leagueTeamSurfaces.keys()]) if (key.endsWith(`\0${name}`)) leagueTeamSurfaces.delete(key);
+        for (const seat of locations) bench.place(WB_TYPES.team, seat, { key: saved.name, label: saved.title || readableTeam(saved.name) });
+      } });
+      surface.content.replaceChildren(roster, config);
+    };
+    render();
+    const out = { el: surface.el, render }; leagueTeamSurfaces.set(cacheKey, out); return out;
+  };
+  const refreshLeagueTeamSurfaces = () => {
+    for (const view of leagueTeamSurfaces.values()) view.render?.();
   };
   let homeTimer = 0;
   const readRows = async () => {
@@ -417,7 +461,7 @@ export function createCoworkView(options = {}) {
 
   function renderConfig(roster, live) {
     for (const commons of Object.values(teamCommons)) {
-      renderTeamConfiguration(commons.config, roster && { ...roster, durable: true }, { onSaved: async (saved, renamed) => {
+      renderTeamConfiguration(commons.config, roster && { ...roster, durable: true }, { createAction, onSaved: async (saved, renamed) => {
         await refreshTeams();
         if (renamed) S.workspace?.navigate('team', saved.name);
         else { setBarLabel(); renderConfig(saved, live); paint(); }
@@ -483,7 +527,11 @@ export function createCoworkView(options = {}) {
     mount: (_host, context) => {
       ctx = context;
       for (const commons of Object.values(teamCommons)) commons.channels.mount(context);
-      unsubscribe = subscribe(() => { if (entered && team) paint(); });
+      unsubscribe = subscribe(() => {
+        if (!entered) return;
+        refreshLeagueTeamSurfaces();
+        if (team) paint();
+      });
       teamPageHandlers.add(onDraft);
       sessionsHandlers.add(onSessions);
     },
