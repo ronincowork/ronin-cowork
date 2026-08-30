@@ -217,8 +217,9 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.looks:** Looks: {skin}
 - **campaign_view.tile_shows:** Tile: {view}
 
-## campaign_home — campaign-home.js (the root arrival: Campaign, Coworks, Agents)
+## campaign_home — campaign-home.js (the root arrival: Machine Settings, Coworks, Launch)
 
+- **campaign_home.machine_settings:** Machine Settings
 - **campaign_home.campaign_is:** Admin Desk configuration
 - **campaign_home.coworks_is:** Coworking space for Agents
 - **campaign_home.launch:** Launch

@@ -12,7 +12,7 @@ const el = (tag, cls, text) => {
 
 function DOORS() {
   return [
-    { key: 'campaign', glyph: '⛩', name: t('campaign', 'Campaign'), is: t('campaign_home.campaign_is', 'Admin Desk configuration') },
+    { key: 'campaign', glyph: '⛩', name: t('campaign_home.machine_settings', 'Machine Settings'), is: t('campaign_home.campaign_is', 'Admin Desk configuration') },
     { key: 'cowork', glyph: '人々', name: t('campaign.coworks', 'Coworks'), is: t('campaign_home.coworks_is', 'Coworking space for Agents') },
     { key: 'launch', glyph: '＋', name: t('campaign_home.launch', 'Launch'), is: t('campaign_home.launch_is', 'Start a new Team or Agent') },
   ];
