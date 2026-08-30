@@ -34,12 +34,18 @@ let read = null;
 
 const text = (value) => (typeof value === 'string' ? value.trim() : '');
 
-/** One record as the client uses it; anything the server did not say is ''. */
+const bucket = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
+
+/** One record as the client uses it; anything the server did not say is '' or {}. The
+ *  Campaign's own desk settings and its typed config ride along — the Desk profile and
+ *  Agent defaults surfaces read them; a synthesized record has neither. */
 const shape = (row) => ({
   id: text(row?.id),
   title: text(row?.title) || text(row?.id),
   description: text(row?.description),
   desk_profile: text(row?.desk_profile),
+  desk: bucket(row?.desk),
+  config: bucket(row?.config),
   state: row?.state === 'archived' ? 'archived' : 'active',
 });
 

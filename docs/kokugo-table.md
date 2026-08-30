@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1205 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1222 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -110,22 +110,45 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
+| `campaign_view.agent_defaults` | Agent defaults |  |  |  |  |
 | `campaign_view.campaign_summary` | What this body of work is called, and what it is for. |  |  |  |  |
+| `campaign_view.col_default` | Default |  |  |  |  |
+| `campaign_view.col_model` | Preferred model |  |  |  |  |
+| `campaign_view.col_provider` | Provider |  |  |  |  |
+| `campaign_view.default_help` | The row a launch that names nothing starts from. |  |  |  |  |
+| `campaign_view.defaults_from_settei` | {line} (from SETTEI) |  |  |  |  |
+| `campaign_view.defaults_help` | What a new Agent here starts on when the launch does not say. A row this Campaign has not answered uses the machine’s SETTEI answer, marked as such. |  |  |  |  |
+| `campaign_view.defaults_none` | None set — a launch must name a model. |  |  |  |  |
+| `campaign_view.defaults_scope` | Role, reach and who may read an Agent are set when it is launched, not here. |  |  |  |  |
 | `campaign_view.description_help` | What this body of work is for. Shown on its card. |  |  |  |  |
+| `campaign_view.desk_from` | Start from a desk profile |  |  |  |  |
+| `campaign_view.desk_from_help` | Copies that profile’s settings into this Campaign. Changing them here afterwards changes no profile. |  |  |  |  |
+| `campaign_view.desk_own` | This Campaign’s desk |  |  |  |  |
 | `campaign_view.desk_summary` | This Ronin install, its owner and its workspace configuration. |  |  |  |  |
+| `campaign_view.from_settei` | from SETTEI |  |  |  |  |
 | `campaign_view.id` | Id |  |  |  |  |
 | `campaign_view.id_help` | Fixed at creation — the address and the storage key. Rename freely; the id stays. |  |  |  |  |
 | `campaign_view.looks` | Looks: {skin} |  |  |  |  |
 | `campaign_view.name_help` | On the door, the browser tab and the address. |  |  |  |  |
 | `campaign_view.new_summary` | Set the stage. It creates no Cowork and launches no Agent. |  |  |  |  |
 | `campaign_view.no_description` | No description yet. |  |  |  |  |
+| `campaign_view.no_launch_table` | No launch table on this install. |  |  |  |  |
 | `campaign_view.no_profile` | As stock — none chosen. |  |  |  |  |
 | `campaign_view.no_profiles` | No desk profiles on this install. |  |  |  |  |
 | `campaign_view.none_selected` | No Campaign selected. |  |  |  |  |
+| `campaign_view.output` | Output |  |  |  |  |
+| `campaign_view.output_help` | What an Agent’s tile shows. Terminal Mirror is the one that ships; Detailed, Condensed and Cherry Pick arrive with Ronin Services. |  |  |  |  |
 | `campaign_view.profile_summary` | The words, the skin and the templates this Campaign opens on. |  |  |  |  |
+| `campaign_view.roles` | Session roles |  |  |  |  |
+| `campaign_view.roles_help` | What a launch here offers an Agent to be. Templates for a whole Team do not exist yet. |  |  |  |  |
+| `campaign_view.roles_loose` | No family |  |  |  |  |
+| `campaign_view.roles_none` | No session roles on this install. |  |  |  |  |
+| `campaign_view.roles_summary` | What a launch here offers an Agent to be. |  |  |  |  |
 | `campaign_view.roots_n` | {n} roots |  |  |  |  |
 | `campaign_view.roots_none` | None — an Agent here has nowhere to work. |  |  |  |  |
 | `campaign_view.roots_summary` | The folders this Campaign is allowed to work in. |  |  |  |  |
+| `campaign_view.skin` | Skin |  |  |  |  |
+| `campaign_view.skin_help` | The look — colours, corners, faces. The page wears it now. |  |  |  |  |
 | `campaign_view.templates_summary` | The Cowork templates this Campaign offers. |  |  |  |  |
 | `campaign_view.tile_shows` | Tile: {view} |  |  |  |  |
 
@@ -708,13 +731,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `league.team_roster` | Team roster |  |  |  |  |
 | `league.team_roster_removing` | Removing {session} from {team}… |  |  |  |  |
 | `league.team_roster_saving` | Adding {session} to {team}… |  |  |  |  |
-| `league.template_delete` | Delete |  |  |  |  |
-| `league.template_delete_confirm` | Delete template {name}? |  |  |  |  |
-| `league.template_name` | template-name |  |  |  |  |
-| `league.template_save` | Save current New Team draft |  |  |  |  |
-| `league.template_use` | Use template |  |  |  |  |
 | `league.templates` | Templates |  |  |  |  |
-| `league.templates_empty` | No Team templates yet. |  |  |  |  |
 | `league.title` | League |  |  |  |  |
 | `league.unassigned` | Unassigned |  |  |  |  |
 | `league.unassigned_summary` | Live sessions that carry no Team membership. |  |  |  |  |

@@ -216,6 +216,29 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.id_help:** Fixed at creation — the address and the storage key. Rename freely; the id stays.
 - **campaign_view.looks:** Looks: {skin}
 - **campaign_view.tile_shows:** Tile: {view}
+- **campaign_view.desk_own:** This Campaign’s desk
+- **campaign_view.skin:** Skin
+- **campaign_view.skin_help:** The look — colours, corners, faces. The page wears it now.
+- **campaign_view.output:** Output
+- **campaign_view.output_help:** What an Agent’s tile shows. Terminal Mirror is the one that ships; Detailed, Condensed and Cherry Pick arrive with Ronin Services.
+- **campaign_view.desk_from:** Start from a desk profile
+- **campaign_view.desk_from_help:** Copies that profile’s settings into this Campaign. Changing them here afterwards changes no profile.
+- **campaign_view.agent_defaults:** Agent defaults
+- **campaign_view.defaults_help:** What a new Agent here starts on when the launch does not say. A row this Campaign has not answered uses the machine’s SETTEI answer, marked as such.
+- **campaign_view.defaults_scope:** Role, reach and who may read an Agent are set when it is launched, not here.
+- **campaign_view.defaults_none:** None set — a launch must name a model.
+- **campaign_view.defaults_from_settei:** {line} (from SETTEI)
+- **campaign_view.default_help:** The row a launch that names nothing starts from.
+- **campaign_view.from_settei:** from SETTEI
+- **campaign_view.col_provider:** Provider
+- **campaign_view.col_model:** Preferred model
+- **campaign_view.col_default:** Default
+- **campaign_view.no_launch_table:** No launch table on this install.
+- **campaign_view.roles:** Session roles
+- **campaign_view.roles_summary:** What a launch here offers an Agent to be.
+- **campaign_view.roles_help:** What a launch here offers an Agent to be. Templates for a whole Team do not exist yet.
+- **campaign_view.roles_none:** No session roles on this install.
+- **campaign_view.roles_loose:** No family
 
 ## campaign_home — campaign-home.js (the root arrival: Campaign, Coworks, Agents)
 
@@ -1369,12 +1392,6 @@ The catalog entry goes. {dir} is not touched.
 - **league.selector_teams:** Teams
 - **league.selector_new:** New
 - **league.templates:** Templates
-- **league.template_name:** template-name
-- **league.template_save:** Save current New Team draft
-- **league.template_use:** Use template
-- **league.template_delete:** Delete
-- **league.template_delete_confirm:** Delete template {name}?
-- **league.templates_empty:** No Team templates yet.
 - **league.agents:** Agents
 - **league.no_agents:** No live Agents
 - **league.new_agent:** New Agent
