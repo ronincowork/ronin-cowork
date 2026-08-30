@@ -111,15 +111,29 @@ export function createCampaignView() {
     workspace3: makeSeat('workspace3', t('team.workspace_3', 'Workspace 3')),
     workspace4: makeSeat('workspace4', t('team.workspace_4', 'Workspace 4')),
   };
+  // THE 2×2 (docs/cowork-space.md, "Two shapes"): a workspace column is a STACK — 3 under
+  // 1, 4 under 2 — and the selector keeps its one place. Same tw-column / tw-cell the
+  // Cowork workbench stacks with; the layout still sees three slots.
+  const COLUMN_OF = { workspace1: 'workspace1', workspace3: 'workspace1', workspace2: 'workspace2', workspace4: 'workspace2' };
+  const LOWER = ['workspace3', 'workspace4'];
+  const columns = { workspace1: el('div', 'tw-column'), workspace2: el('div', 'tw-column') };
   const cells = {};
   for (const id of Object.keys(seats)) {
-    const cell = el('div', 'cv-cell');
+    const cell = el('div', 'tw-cell cv-cell');
     cell.dataset.workspace = id;
     cell.append(seats[id].blank);
     cells[id] = cell;
+    columns[COLUMN_OF[id]].append(cell);
     cell.addEventListener('pointerdown', () => touch(id), true);
     acceptDrops(cell, () => id, (token, at) => { if (SURFACES[token]) putSurface(token, at); });
   }
+  let count = 4;
+  const setCount = (n) => {
+    count = n === 2 ? 2 : 4;
+    for (const col of Object.values(columns)) col.dataset.count = String(count);
+    for (const id of LOWER) cells[id].hidden = count !== 4;
+    if (count === 2 && LOWER.includes(lastSeat)) touch('workspace1');
+  };
   const holding = (id) => cells[id]?.firstElementChild ?? null;
   const tokenOf = (node) => Object.keys(SURFACES).find((key) => SURFACES[key].el === node) || '';
   const heldSurface = (id) => tokenOf(holding(id));
@@ -258,21 +272,19 @@ export function createCampaignView() {
 
   const DECLARATION = {
     slots: [
-      { name: 'selector', label: t('campaign', 'Campaign'), width: 16, min: 6, compact: 176 },
-      { name: 'workspace1', label: t('team.workspace_1', 'Workspace 1'), width: 21 },
-      { name: 'workspace2', label: t('team.workspace_2', 'Workspace 2'), width: 21 },
-      { name: 'workspace3', label: t('team.workspace_3', 'Workspace 3'), width: 21 },
-      { name: 'workspace4', label: t('team.workspace_4', 'Workspace 4'), width: 21 },
+      { name: 'selector', label: t('campaign', 'Campaign'), width: 20, min: 6, compact: 176 },
+      { name: 'workspace1', label: t('team.workspace_1', 'Workspace 1'), width: 40 },
+      { name: 'workspace2', label: t('team.workspace_2', 'Workspace 2'), width: 40 },
     ],
   };
   const workbench = createWorkbenchLayout({
     declaration: DECLARATION,
-    surfaces: { selector: column.el, ...cells },
+    surfaces: { selector: column.el, workspace1: columns.workspace1, workspace2: columns.workspace2 },
     onStateChange: (arrangement) => ctx?.patchViewState('campaign', { arrangement }),
   });
   root.append(workbench.host);
 
-  /** The opening position: the four settings, one per seat, in the column's order. */
+  /** The opening position, count 4: Campaign over Project roots, Desk profile over Templates. */
   const OPENING = { workspace1: CAMPAIGN, workspace2: PROFILE, workspace3: ROOTS, workspace4: TEMPLATES };
 
   /**
@@ -298,6 +310,7 @@ export function createCampaignView() {
       entered = true;
       const typed = teamWorkspaceState(context.state, context.viewState('campaign'), DECLARATION);
       workbench.restore(typed.arrangement);
+      setCount(context.viewState('campaign')?.count === 2 ? 2 : 4);
       paintCards();
       await Promise.all([loadCampaigns(), refreshTeams(), readRoots()]);
       if (!entered) return;
