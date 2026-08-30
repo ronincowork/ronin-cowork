@@ -29,7 +29,7 @@ export function pickJobFor(tile, anchor) {
   const settled = () => {
     tiles.forEach((t) => {
       t.syncHeader();
-      t.refreshOptions();
+      t.refreshSessionName();
     });
     refreshHome();
   };

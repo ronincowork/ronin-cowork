@@ -1037,10 +1037,7 @@ The catalog entry goes. {dir} is not touched.
 - **ladder.legs_undetermined:** — legs undetermined
 - **ladder.quiet:** quiet {age}
 
-## tile — tile.js (the session picker)
-- **tile.pick_session:** — pick session —
-- **tile.gone:** {name}  (gone?)
-- **tile.new_session:** ➕ new session…
+## tile — tile.js (the Agent terminal tile)
 
 ## macros — tilemacros.js (the ⚡ menu)
 - **macros.button_title:** Macros — drop one into this session's input
@@ -1138,7 +1135,6 @@ The catalog entry goes. {dir} is not touched.
 ## head — tilehead.js (the tile head's help and quiet words)
 - **head.dial_help:** Who may touch this session: 👤 owner only · 👁 outside agents watch · 🤖 outside agents type. Yours to turn; agents never flip it.
 - **head.dot_help:** Connection: green = attached, grey = disconnected
-- **head.select_help:** Pick / switch the session shown in this tile
 - **head.rename_help:** Rename this session
 - **head.rename_quiet:** Rename session — no session in this tile yet
 - **head.rename_prompt:** Rename session

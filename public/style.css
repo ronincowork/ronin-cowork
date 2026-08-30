@@ -813,7 +813,7 @@ body {
   border-color: var(--accent);
 }
 /* The MARK — what this session is doing, beside the name rather than out among the
-   controls on the right. Sits with the picker and the ladder chip: "who is this, and
+   controls on the right. Sits with the name and the ladder chip: "who is this, and
    where are they". */
 /* THE MARK'S WEIGHT. Half the catalog's icons are TEXT glyphs (✂ ❯ • ミ) and half are
    colour emoji (🏈 💭 🗺 🐞 🔎). The two do not sit at the same visual weight: a text
@@ -982,7 +982,7 @@ body {
   border-color: var(--line);
 }
 
-/* The @ picker is deliberately the same native control as the session picker. */
+/* The @ picker is a compact native control in the tile head. */
 .tile-head select.tmention-btn {
   flex: 0 0 auto;
   width: 26px;
@@ -1446,7 +1446,7 @@ body {
   align-items: center;
   /* WRAPS rather than clips. A tile in a squeezed team workspace (236px at its floor)
      used to push ⚡ メ and the way to the commons off its right edge and squash the
-     picker to a 14px stub — a row you could neither read nor use. Now the controls take
+     session name to a 14px stub — a row you could neither read nor use. Now the controls take
      a second line when the first is full: a squeezed tile costs one row of terminal and
      keeps every control (measured 2026-08-26). A Sessions tile never reaches that
      width at 4-up, so the grid never sees the second line. */
@@ -1461,22 +1461,19 @@ body {
 .tile-head .grow {
   flex: 1;
 }
-/* The select yields; the controls don't. Without this every button in the row is
+/* The session name yields; the controls don't. Without this every button in the row is
    shrinkable (they carry a fixed width but the default flex-shrink: 1), so one more
-   control squashes them all to slivers on a narrow tile instead of narrowing the
-   session name. Whatever gets added to this header later, the buttons stay 26px. */
-.tile-head select {
+   control squashes them all to slivers on a narrow tile. */
+.tile-head .sess {
   flex: 0 1 auto;
-  /* The picker yields, but not to nothing: a session name is what the row is FOR, so
-     below a readable width the row wraps instead (see .tile-head). */
   min-width: 6rem;
-  background: var(--panel);
-  color: var(--fg);
-  border: var(--edge) solid var(--line);
-  border-radius: var(--radius-sm);
   padding: var(--space-2) var(--space-3);
-  font-size: var(--text-3);
+  color: var(--fg-strong);
+  font-size: var(--text-5);
   max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .tile-head button {
   flex: 0 0 auto;
@@ -1897,7 +1894,7 @@ body {
     height: 32px;
     font-size: var(--text-5);
   }
-  .tile-head select {
+  .tile-head .sess {
     max-width: 50%;
   }
   /* top-bar control keys */
@@ -4889,13 +4886,13 @@ button.wb-door:hover b {
   /* THE SHAPE (2 ⇄ 4), sitting between メ and ニ — the grid count's old seat and look. Deliberately NOT a house colour: the
      two kana are doors that open a sheet, this one changes the screen under them, and
      three coloured boxes in a row would read as three of a kind. Furniture instead —
-     panel and line, like the picker beside it — at the same 40px so the row stays even.
+     panel and line at the same 40px so the row stays even.
      The face is a digit, so it takes the bar's own font rather than the kana size. */
   #bar .shape-cycle {
     flex: 0 0 auto;
-    /* Holds the count and ニ against the right edge when there is no picker up here to
+    /* Holds the count and ニ against the right edge when there is no session name up here to
        fill the row — i.e. at 2 or 4, where each tile wears its own header again. A
-       no-op at 1: the picker is flex:1 and leaves no free space for a margin to take. */
+       no-op at 1: the name is flex:1 and leaves no free space for a margin to take. */
     margin-left: auto;
     height: 40px;
     min-width: 44px;
@@ -4914,19 +4911,16 @@ button.wb-door:hover b {
     border-color: var(--accent);
     color: var(--on-accent);
   }
-  /* The row is the session: the picker takes every pixel the two openers do not.
-     The 50% cap was there to stop it crowding out nine buttons; the buttons are
-     gone and the picker is the reason the row exists. */
-  #bar select.sess {
+  /* The row is the session: its name takes every pixel the two openers do not. */
+  #bar .sess {
     flex: 1 1 auto;
     min-width: 0;
     max-width: none;
     height: 40px;
-    background: var(--panel);
-    color: var(--fg);
-    border: var(--edge) solid var(--line);
-    border-radius: var(--radius-md);
-    padding: 0 var(--space-4);
+    display: flex;
+    align-items: center;
+    color: var(--fg-strong);
+    padding: 0 var(--space-3);
     font-size: var(--text-5);
   }
   /* The brand yields first — the session name matters more than the word "ronin". */
