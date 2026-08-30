@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1237 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1239 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -30,8 +30,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
 | `bar.brand_title` | ⛩ ronin — the session roster |  |  |  |  |
-| `bar.desk` | Admin Desk |  |  |  |  |
-| `bar.desk_title` | Admin Desk — this machine and this app: configuration, project roots, hotwords, Koshi, gbrain, stats, appearance, updates, log out |  |  |  |  |
 | `bar.keys` | Keys |  |  |  |  |
 | `bar.keys_title` | Esc, ^C, jump to latest, Tab and the arrows |  |  |  |  |
 | `bar.league` | League |  |  |  |  |
@@ -94,17 +92,17 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
-| `campaign_home.agents_is` | One Agent, one job |  |  |  |  |
-| `campaign_home.campaign_is` | A named body of work |  |  |  |  |
-| `campaign_home.change` | Change |  |  |  |  |
+| `campaign_home.campaign_is` | Admin Desk configuration |  |  |  |  |
+| `campaign_home.check_unavailable` | Available after the next restart |  |  |  |  |
+| `campaign_home.check_updates` | Check for updates |  |  |  |  |
+| `campaign_home.checking` | Checking… |  |  |  |  |
 | `campaign_home.coworks_is` | Coworking space for Agents |  |  |  |  |
-| `campaign_home.manage` | Manage |  |  |  |  |
-| `campaign_home.no_agent` | No Agent |  |  |  |  |
-| `campaign_home.no_campaign` | No Campaign |  |  |  |  |
-| `campaign_home.no_cowork` | No Cowork |  |  |  |  |
-| `campaign_home.selected_n` | {n} selected |  |  |  |  |
-| `campaign_home.title` | Ronin |  |  |  |  |
-| `campaign_home.tray_empty` | Nothing here yet. |  |  |  |  |
+| `campaign_home.launch` | Launch |  |  |  |  |
+| `campaign_home.launch_is` | Start a new Team or Agent |  |  |  |  |
+| `campaign_home.machine_settings` | Machine Settings |  |  |  |  |
+| `campaign_home.up_to_date` | Up to date |  |  |  |  |
+| `campaign_home.update_available` | {version} available |  |  |  |  |
+| `campaign_home.version` | v1.3 |  |  |  |  |
 
 ## campaign_view
 
@@ -662,6 +660,15 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `ladder.side` | {state} — the ladder below is held, not stale |  |  |  |  |
 | `ladder.tap` | Tap for the ladder |  |  |  |  |
 | `ladder.unchanged_for` | ladder unchanged for {age} |  |  |  |  |
+
+## launch
+
+| key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
+|---|---|---|---|---|---|
+| `launch.new_agent` | New Agent |  |  |  |  |
+| `launch.new_agent_summary` | Start an Agent in a Team or on its own. |  |  |  |  |
+| `launch.new_team` | New Team |  |  |  |  |
+| `launch.new_team_summary` | Define a Team, then launch its Agents. |  |  |  |  |
 
 ## launcher
 

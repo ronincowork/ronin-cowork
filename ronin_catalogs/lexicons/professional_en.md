@@ -254,19 +254,26 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.machine:** Machine
 - **campaign_view.machine_summary:** This Ronin: health, account, updates, hotwords, Koshi, gbrain, archived sessions.
 
-## campaign_home — campaign-home.js (the root arrival: Campaign, Coworks, Agents)
+## campaign_home — campaign-home.js (the root arrival: Machine Settings, Coworks, Launch)
 
-- **campaign_home.title:** Ronin
-- **campaign_home.campaign_is:** A named body of work
+- **campaign_home.machine_settings:** Machine Settings
+- **campaign_home.campaign_is:** Admin Desk configuration
 - **campaign_home.coworks_is:** Coworking space for Agents
-- **campaign_home.agents_is:** One Agent, one job
-- **campaign_home.change:** Change
-- **campaign_home.manage:** Manage
-- **campaign_home.selected_n:** {n} selected
-- **campaign_home.no_campaign:** No Campaign
-- **campaign_home.no_cowork:** No Cowork
-- **campaign_home.no_agent:** No Agent
-- **campaign_home.tray_empty:** Nothing here yet.
+- **campaign_home.launch:** Launch
+- **campaign_home.launch_is:** Start a new Team or Agent
+- **campaign_home.version:** v1.3
+- **campaign_home.check_updates:** Check for updates
+- **campaign_home.checking:** Checking…
+- **campaign_home.check_unavailable:** Available after the next restart
+- **campaign_home.up_to_date:** Up to date
+- **campaign_home.update_available:** {version} available
+
+## launch — launch-view.js (the Workbench where Teams and Agents begin)
+
+- **launch.new_team:** New Team
+- **launch.new_team_summary:** Define a Team, then launch its Agents.
+- **launch.new_agent:** New Agent
+- **launch.new_agent_summary:** Start an Agent in a Team or on its own.
 
 ## home — home.js (the status words and the launch receipt)
 - **home.status_ready:** ready
@@ -1155,7 +1162,6 @@ The catalog entry goes. {dir} is not touched.
 - **bar.keys:** Keys
 - **bar.ni_title:** Ronin — keys, home, new session, board, pad
 - **bar.new:** New
-- **bar.desk:** Admin Desk
 - **bar.shape_title:** Two workspaces — click for four
 - **bar.shape_two:** Two workspaces — click for four
 - **bar.shape_four:** Four workspaces — click for two
@@ -1327,7 +1333,6 @@ The catalog entry goes. {dir} is not touched.
 - **bar.league_title:** Open League in a new browser tab
 - **bar.newtab_title:** Open a second Ronin in a new browser tab
 - **bar.new_title:** ⌃⇧N — start a new session: pick what it is for, where it works and who it is
-- **bar.desk_title:** Admin Desk — this machine and this app: configuration, project roots, hotwords, Koshi, gbrain, stats, appearance, updates, log out
 - **keys.esc:** Esc
 - **keys.interrupt_title:** Ctrl-C (interrupt)
 - **keys.latest_title:** Jump to latest output

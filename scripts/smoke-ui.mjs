@@ -202,6 +202,13 @@ async function attachProbe(page, label) {
 
 /** The DOM assertions that apply to both surfaces. */
 async function checkDom(page, label) {
+  const DESK = '[data-workspace-view="campaign"] [data-workbench-surface="ronin.desk"]';
+  const openDesk = async () => {
+    await page.goto(URL_.replace(/#.*$/, '') + '#/campaign', { waitUntil: 'load', timeout: 30_000 });
+    await page.waitForTimeout(1200);
+    await page.locator('[data-workspace-view="campaign"] .wk-card', { hasText: 'Ronin Desk' }).click();
+    await page.waitForSelector(`${DESK} .cc`, { timeout: 3000 });
+  };
   const dom = await page.evaluate(() => ({
     live: document.querySelectorAll('.tile:not(.tile-dead)').length,
     dead: document.querySelectorAll('.tile.tile-dead').length,
@@ -274,7 +281,7 @@ async function checkJourneys(page, label, jsErrors) {
   const roninHome = await page.evaluate(() => ({
     hash: location.hash,
     visible: !document.querySelector('.ch-view')?.hidden,
-    doors: document.querySelectorAll('.ch-view .ch-go').length,
+    doors: document.querySelectorAll('.ch-view .ch-door').length,
     chrome: [...document.querySelectorAll('#bar > :not(#brandbtn)')]
       .filter((node) => getComputedStyle(node).display !== 'none').length,
   }));
@@ -305,45 +312,44 @@ async function checkJourneys(page, label, jsErrors) {
   // cowork commons' Account tab ("the rest, as the desk was"). ⚙ on the grid page is the
   // `cowork` destination at full width. "Visible but inert" has to be true wherever the
   // room is drawn; only the surface asserting it moved (menu → strip → desk → commons).
-  await page.locator('#sysbtn').click();
-  await page.waitForSelector('#cowork-view:not([hidden]) .cc', { timeout: 3000 });
-  const ccTabs = await page.evaluate(() => [...document.querySelectorAll('#cowork-view .wk-channel-service-tab')].map((b) => b.textContent.trim()));
+  await openDesk();
+  const ccTabs = await page.locator(`${DESK} .wk-channel-service-tab`).allTextContents();
   if (ccTabs.length === 8) ok(`${label}: the cowork commons carries its eight tabs (${ccTabs.join(' · ')})`);
   else bad(`${label}: the cowork commons has ${ccTabs.length} tabs, wanted 8`);
-  await page.locator('#cowork-view .wk-channel-service-tab').nth(1).click(); // Account
+  await page.locator(`${DESK} .wk-channel-service-tab`).nth(1).click(); // Account
   await page.waitForTimeout(200);
   // The Account tab is the desk's rail (owner: "the selectors on the left"): gbrain is a
   // row on it, built when picked — so pick it.
-  await page.locator('#cowork-view .desk-row[data-room="gbrain"]').click();
+  await page.locator(`${DESK} .desk-row[data-room="gbrain"]`).click();
   await page.waitForTimeout(300);
-  const gbrainRow = page.locator('#cowork-view .desk-gbrain.show').first();
+  const gbrainRow = page.locator(`${DESK} .desk-gbrain.show`).first();
   if (!hasGbrain) {
     if ((await gbrainRow.count()) > 0) ok(`${label}: gbrain is drawn on the Account tab without its service`);
     else bad(`${label}: gbrain is missing from the Account tab`);
-    await page.locator('#sysbtn').click(); // ⚙ again is the way back
+    await page.locator('#brandbtn').click();
   } else if (!(await page.evaluate(async () => (await (await fetch('/api/gbrain')).json()).installed))) {
     // NOT INSTALLED is a legal, first-class state (install-contract.md § The tab rule):
     // the room must be exactly one Load button, not the status panel.
     try {
-      await page.waitForSelector('#cowork-view .desk-gbrain .gb-privacy button', { timeout: 8000 });
-      const btn = await page.locator('#cowork-view .desk-gbrain .gb-privacy button').first().textContent();
+      await page.waitForSelector(`${DESK} .desk-gbrain .gb-privacy button`, { timeout: 8000 });
+      const btn = await page.locator(`${DESK} .desk-gbrain .gb-privacy button`).first().textContent();
       if (/load|retry/i.test(btn || '')) ok(`${label}: gbrain room offers the one-press Load while not installed`);
       else bad(`${label}: gbrain not installed but the room's button says "${btn}", wanted Load`);
     } catch {
       bad(`${label}: gbrain not installed and the room offered no Load button`);
     }
-    await page.locator('#sysbtn').click();
+    await page.locator('#brandbtn').click();
   } else {
       try {
-        await page.waitForSelector('#cowork-view .desk-gbrain .gb-privacy .gb-row', { timeout: 8000 });
-        const rows = await page.locator('#cowork-view .desk-gbrain .gb-privacy .gb-row').count();
+        await page.waitForSelector(`${DESK} .desk-gbrain .gb-privacy .gb-row`, { timeout: 8000 });
+        const rows = await page.locator(`${DESK} .desk-gbrain .gb-privacy .gb-row`).count();
         if (rows === 5) ok(`${label}: gbrain service room loads its five privacy facts`);
         else bad(`${label}: gbrain service room loaded ${rows} privacy facts, wanted 5`);
-        const answerRow = await page.locator('#cowork-view .desk-gbrain .gb-card .gb-row').filter({ hasText: 'Answers' }).first().textContent();
+        const answerRow = await page.locator(`${DESK} .desk-gbrain .gb-card .gb-row`).filter({ hasText: 'Answers' }).first().textContent();
         if (/composed by the agent \(by design\)|gbrain composition available|unknown/.test(answerRow || '')) {
           ok(`${label}: gbrain names who composes answers beside search`);
         } else bad(`${label}: gbrain did not name who composes answers`);
-        const ask = page.locator('#cowork-view .desk-gbrain .gb-integration button').first();
+        const ask = page.locator(`${DESK} .desk-gbrain .gb-integration button`).first();
         if (await ask.count()) {
           await ask.click();
           // IT CROSSES SURFACES NOW, and that is the half worth asserting. gbrain is a
@@ -397,16 +403,16 @@ async function checkJourneys(page, label, jsErrors) {
   // asserts is unchanged from the desk it replaced: one gear, one surface, the appearance
   // flip works from it, a skin re-skins the running app, and ⚙ again is the way back.
   // No overlay, so nothing can intercept pointer events for the probes that follow.
-  const CC_TAB = (id) => `#cowork-view .cc-pane[data-tab="${id}"]`;
-  const ccTab = async (n) => { await page.locator('#cowork-view .wk-channel-service-tab').nth(n).click(); await page.waitForTimeout(700); };
-  await page.locator('#sysbtn').click();
+  const CC_TAB = (id) => `${DESK} .cc-pane[data-tab="${id}"]`;
+  const ccTab = async (n) => { await page.locator(`${DESK} .wk-channel-service-tab`).nth(n).click(); await page.waitForTimeout(700); };
+  await openDesk();
   try {
-    await page.waitForSelector('#cowork-view:not([hidden]) .cc', { timeout: 3000 });
-    ok(`${label}: the bar's ⚙ shows the cowork commons`);
+    await page.waitForSelector(`${DESK} .cc`, { timeout: 3000 });
+    ok(`${label}: the Campaign Workbench opens the Ronin Desk`);
   } catch {
-    bad(`${label}: the bar's ⚙ did not show the cowork commons`);
+    bad(`${label}: the Campaign Workbench did not open the Ronin Desk`);
   }
-  const ccNames = await page.evaluate(() => [...document.querySelectorAll('#cowork-view .wk-channel-service-tab')].map((b) => b.textContent.trim()));
+  const ccNames = await page.locator(`${DESK} .wk-channel-service-tab`).allTextContents();
   if (ccNames.length === 8) ok(`${label}: the cowork commons carries eight tabs — ${ccNames.join(' · ')}`);
   else bad(`${label}: the cowork commons has ${ccNames.length} tabs, wanted 8`);
   // The Desk profile tab must DRAW the picker (its pane was missing from the desk's per-room
@@ -420,12 +426,12 @@ async function checkJourneys(page, label, jsErrors) {
   else bad(`${label}: the Desk profile tab shows ${profileRows} visible row(s) — the pane is not drawing`);
   // The Keypad tab holds the pad's card INLINE — not a sheet (owner, 2026-08-27).
   await ccTab(7);
-  const padInline = await page.evaluate(() => !!document.querySelector('#cowork-view .cc-pane[data-tab="keypad"] .pad-card .pad-board'));
+  const padInline = await page.locator(`${DESK} .cc-pane[data-tab="keypad"] .pad-card .pad-board`).count() > 0;
   if (padInline) ok(`${label}: the Keypad tab holds the pad's board inline`);
   else bad(`${label}: the Keypad tab does not hold the pad's board`);
 
   await ccTab(1); // Account: appearance, skins, the flip — the Appearance row on the rail
-  await page.locator('#cowork-view .desk-row[data-room="appearance"]').click();
+  await page.locator(`${DESK} .desk-row[data-room="appearance"]`).click();
   await page.waitForTimeout(300);
   const darkBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
   await page.locator(`${CC_TAB('account')} .sys-flip`).click();
@@ -449,13 +455,13 @@ async function checkJourneys(page, label, jsErrors) {
   else bad(`${label}: the skin picker listed ${skins} skins, wanted at least 2`);
   const before = await page.evaluate(() => ({
     tok: getComputedStyle(document.documentElement).getPropertyValue('--radius-md').trim(),
-    drawn: getComputedStyle(document.querySelector('#sysbtn')).borderRadius,
+    drawn: getComputedStyle(document.querySelector('#brandbtn')).borderRadius,
   }));
   await page.locator(skinPick, { hasText: 'Square' }).first().click();
   await page.waitForTimeout(250);
   const after = await page.evaluate(() => ({
     tok: getComputedStyle(document.documentElement).getPropertyValue('--radius-md').trim(),
-    drawn: getComputedStyle(document.querySelector('#sysbtn')).borderRadius,
+    drawn: getComputedStyle(document.querySelector('#brandbtn')).borderRadius,
   }));
   if (after.tok !== before.tok && after.drawn !== before.drawn) {
     ok(`${label}: a skin re-skins the running app (--radius-md ${before.tok}→${after.tok}, drawn ${before.drawn}→${after.drawn})`);
@@ -488,9 +494,9 @@ async function checkJourneys(page, label, jsErrors) {
 
   // ⚙ TOGGLES, and the grid comes back — verify this before the skin composition proof,
   // whose direct hash loads deliberately replace the document.
-  await page.locator('#sysbtn').click();
-  await page.waitForSelector('#cowork-view', { state: 'hidden', timeout: 3000 });
-  ok(`${label}: ⚙ again puts the cowork commons away and gives the grid back`);
+  await page.locator('#brandbtn').click();
+  await page.waitForSelector('[data-workspace-view="home"]:not([hidden])', { timeout: 3000 });
+  ok(`${label}: Ronin returns from the Desk to the root landing`);
 
   if (args.includes('--staging')) {
   // WORKSPACE SKIN ACCEPTANCE — the three shipped Team-oriented consumers have no skin
@@ -596,7 +602,7 @@ async function checkJourneys(page, label, jsErrors) {
   // .show')`, and both name a tile the probe never chose. `.active` is set by focusin
   // (tile.js `activate`) and the gbrain journey above RELOADS the page, so from the day
   // gbrain registered on this box NO tile carried `.active` by the time this ran. Every
-  // `?.` then no-oped in silence: the Commons never opened, focus was still on #sysbtn
+  // `?.` then no-oped in silence: the Commons never opened, focus was still on the bar
   // where the System sheet's Escape had just put it back, ArrowRight moved nothing, and
   // `arrowed` read `undefined`. `landed` still said "sessions" — the unscoped read found
   // tile 2's own home panel, because a SESSIONLESS tile shows one — so the sentence "focus
@@ -604,7 +610,7 @@ async function checkJourneys(page, label, jsErrors) {
   // intermittent for a day because it tracked whether anything had happened to focus a
   // tile, not whether the tablist worked.
   //
-  // Then the Enter landed on #sysbtn and REOPENED the System sheet, and the note journey
+  // Then the Enter landed on the bar and reopened the System sheet, and the note journey
   // below died thirty seconds later on `#syssheet intercepts pointer events`, taking the
   // whole run with it. One stranded focus, two unrelated-looking failures, the second fatal
   // and the second the one everybody read. So the keys are pressed ONLY once focus is

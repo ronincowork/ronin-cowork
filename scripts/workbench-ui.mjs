@@ -9,6 +9,7 @@ const routes = [
   { hash: 'campaign', profile: 'campaign' },
   { hash: 'cowork', profile: 'cowork' },
   { hash: 'team/campaign_config', profile: 'team' },
+  { hash: 'launch', profile: 'launch' },
 ];
 const fail = (message) => { throw new Error(message); };
 
@@ -53,7 +54,7 @@ try {
     if (errors.length) fail(`${expected.hash}: ${errors.join('; ')}`);
     await page.close();
   }
-  console.log('check-workbench-ui: one granite, three profiles, four seats, independent surface instances');
+  console.log('check-workbench-ui: one granite, four profiles, four seats, independent surface instances');
 } finally {
   await browser.close();
 }
