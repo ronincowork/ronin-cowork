@@ -1,10 +1,9 @@
 # Install Ronin — the same steps, walked by an agent
 
-> The install is four commands and a URL, and a person can run them straight from the
-> README — no agent required. This file is for when the owner hands the job to the agent
-> already on the box: it is the same steps, plus the care an agent owes someone else's
-> machine. When it is done, the owner opens one URL and the product takes over: the setup
-> page asks what it needs, and the first session is launched by the page, not by you.
+> A person can run the install command without an Agent. This file is for when the owner
+> hands the journey to an Agent already on the box: preserve the machine, establish the
+> private URL, help through `cowork_setup`, establish one provider, and prove one harmless
+> Agent exchange. The owner keeps every consequential and credential-bearing choice.
 
 The machine is one the owner already has and controls: a laptop, a home server, a VM they
 rent. If they do not have a machine yet, start at [`docs/rent-a-machine.md`](rent-a-machine.md)
@@ -27,10 +26,10 @@ solve them, work around them, or warn the owner about them.
 | **Can this be removed?** | `bin/ronin-uninstall` reverses it and leaves the owner's own files behind. |
 | **Node, tmux, dependencies** | A bundled release carries its own. Nothing to install, nothing to ask the owner for. |
 
-**Owner asked you to check that Ronin is safe before installing it?** Good instinct — go to
-[`docs/is-this-safe.md`](is-this-safe.md) first. It is written for exactly that job: a
-report card of what to check, the command that settles each one, and a summary you can hand
-back. Run it, report what you actually observed, then come back here.
+**Owner asked you to assess Ronin before installing it?** Start with
+[How Ronin protects your machine and work](how-ronin-protects-you.md). It provides a
+read-only evidence report and an optional assessment scaffold. Report what you observe,
+including `unknown`, then return here if the owner chooses to proceed.
 
 ## What you are installing
 
@@ -42,9 +41,11 @@ steps below are not optional decoration.
 
 ## What you are, and where you stop
 
-You are the owner's own agent, outside Ronin. Your whole job is four commands and a URL.
-You do not configure Ronin, you do not create sessions, and you do not answer questions
-the setup page will ask the owner itself.
+You are the owner's own Agent, outside Ronin. Installation is complete when the operator
+and its separate tmux server survive, the owner can reach the private URL with a known
+login posture, `cowork_setup` is saved, one provider is usable, and one new Agent answers
+a harmless prompt. You explain and verify; the owner answers setup choices and performs
+login, billing, privilege, and credential-bearing actions.
 
 Preserve the box. Never end an existing tmux session or restart an existing tmux server.
 Ask the owner before any privileged, destructive or credential-bearing act.
@@ -134,7 +135,7 @@ the private route the owner already reaches it by (an SSH tunnel is enough:
 `ssh -L 3006:127.0.0.1:3006 <account>@<box>`), or Tailscale if the owner wants HTTPS and
 reach from their other devices.
 
-## 5. Hand over the URL
+## 5. Verify the running install
 
 **Mention the login posture before the URL is opened, then do what the owner says.**
 
@@ -156,9 +157,27 @@ bin/ronin-passwd
 
 Either answer is a good answer. Note which one they chose in your handover and move on.
 
-Help the owner open the printed URL on their own device. A fresh install lands on the
-setup page. That is your finish line: from here the product asks its own questions, and
-the owner's first session is born from the page.
+Before opening the URL, preserve evidence that the installed copy is the one answering:
 
-Stay available as a plain terminal in case something needs fixing. Do not continue setup
-in parallel, and do not answer the setup page for the owner.
+```bash
+bin/ronin-doctor
+systemctl --user --no-pager status tmux-server ronin
+ss -ltnp | grep -i node
+```
+
+Record warnings and skips as such. Confirm existing ordinary tmux sessions still exist,
+the reported URL answers from the owner's device, and the actual listening address matches
+the agreed loopback or tailnet route. Do not turn configuration intent into evidence about
+the running process.
+
+## 6. Continue through first use
+
+Help the owner open the printed URL on their own device. A fresh install enters
+`cowork_setup`. Continue with [Get started](get-started.md): prepare the owner for the
+visible choices, let them Save, establish one provider using
+[Provider sign-in](provider-sign-in.md), and prove one harmless Agent exchange.
+
+Stay available as a plain terminal for diagnosis. Do not fill the form in parallel, answer
+provider dialogs, or infer success from an installed CLI or a launched process. Hand off
+only after the Agent visibly responds, or report the exact blocking state and safe next
+action.
