@@ -31,9 +31,6 @@ export function renderTeamConfiguration(host, roster, options = {}) {
   field(form, 'Purpose', 'objective', roster.objective, 'textarea');
   field(form, 'Role', 'team_role', roster.team_role);
   field(form, 'Project root', 'project_root', roster.project_root);
-  field(form, 'Repositories', 'repos', (roster.repos || []).join(', '));
-  field(form, 'Branch', 'branch', roster.branch);
-  field(form, 'Wipeboard', 'wipeboard', roster.wipeboard);
   const actions = el('div', 'tw-config-actions');
   const status = el('span', 'tw-config-status');
   const saveAction = options.createAction?.({ label: 'Save', size: 'compact' });
@@ -49,7 +46,6 @@ export function renderTeamConfiguration(host, roster, options = {}) {
       if (!renamed.ok) { status.textContent = renamed.message; if (saveAction) saveAction.setDisabled(false); else save.disabled = false; return; }
     }
     delete data.name;
-    data.repos = String(data.repos || '').split(',').map((repo) => repo.trim()).filter(Boolean);
     const saved = await request(`/api/team-rosters/${encodeURIComponent(nextName)}`, { method: 'PUT', json: data });
     status.textContent = saved.ok ? 'Saved' : saved.message;
     if (saveAction) saveAction.setDisabled(false); else save.disabled = false;

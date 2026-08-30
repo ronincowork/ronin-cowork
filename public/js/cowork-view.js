@@ -408,7 +408,7 @@ export function createCoworkView(options = {}) {
         for (const key of [...leagueTeamSurfaces.keys()]) if (key.endsWith(`\0${name}`)) leagueTeamSurfaces.delete(key);
         for (const seat of locations) bench.place(WB_TYPES.team, seat, { key: saved.name, label: saved.title || readableTeam(saved.name) });
       } });
-      surface.content.replaceChildren(config, roster);
+      surface.content.replaceChildren(roster, config);
     };
     render();
     const out = { el: surface.el, render }; leagueTeamSurfaces.set(cacheKey, out); return out;
