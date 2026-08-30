@@ -45,8 +45,6 @@
   /* A Team dropped into the Cowork bench becomes a quiet roster, not an admin form. */
   .league-team-edit-content { display: flex; flex-direction: column; gap: var(--space-7); }
   .league-team-metadata:empty { display: none; }
-  .league-team-delete { color: var(--muted); }
-  .league-team-delete:hover { color: var(--bad-soft); }
   .league-team-roster { display: flex; flex-direction: column; min-height: 0; }
   .league-team-roster-title { margin: 0 0 var(--space-3); color: var(--muted); font-size: var(--text-2); font-weight: inherit; letter-spacing: .08em; text-transform: uppercase; }
   .league-team-member-list { border-top: var(--edge) solid var(--line); }
