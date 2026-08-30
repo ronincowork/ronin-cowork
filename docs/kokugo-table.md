@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1254 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1255 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -380,6 +380,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `desks.promotion_last` | last {summary} · {id} · by {who} |  |  |  |  |
 | `desks.promotion_none` | none yet |  |  |  |  |
 | `desks.unknown` | not found on this box |  |  |  |  |
+| `desks.worktree` | worktree {path} |  |  |  |  |
 
 ## dial
 
@@ -561,7 +562,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
-| `head.branch_help` | Desks this session is working at — repo, branch, and what is ahead, pending or parked |  |  |  |  |
+| `head.branch_help` | Desks this session is working at — worktree, repo, branch, and what is ahead, pending or parked |  |  |  |  |
 | `head.branch_quiet` | Desks — no session in this tile yet |  |  |  |  |
 | `head.chip_help` | Where this session is on its ladder, and how long it has been there. Opens the ladder. |  |  |  |  |
 | `head.dial_help` | Who may touch this session: 👤 owner only · 👁 outside agents watch · 🤖 outside agents type. Yours to turn; agents never flip it. |  |  |  |  |

@@ -400,6 +400,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 
 ## desks — desks.js (the ⑂ desk readings: tile head, roster column, Team page)
 - **desks.detached:** (detached)
+- **desks.worktree:** worktree {path}
 - **desks.count_one:** 1 desk
 - **desks.count_many:** {n} desks
 - **desks.pending_n:** {n} pending
@@ -1146,7 +1147,7 @@ The catalog entry goes. {dir} is not touched.
 - **head.job_quiet:** What a session is doing — no session in this tile yet
 - **head.job_read:** {job} — click to change what this session is doing
 - **head.job_unmarked:** Not marked — click to say what this session is doing
-- **head.branch_help:** Desks this session is working at — repo, branch, and what is ahead, pending or parked
+- **head.branch_help:** Desks this session is working at — worktree, repo, branch, and what is ahead, pending or parked
 - **head.branch_quiet:** Desks — no session in this tile yet
 - **head.output_help:** Output — live terminal or one of RIREKI’s unlocked views
 - **head.mention_help:** Mention another session — choose a name to add it to the message box

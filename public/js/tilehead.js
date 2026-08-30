@@ -113,13 +113,12 @@ const HEADER = () => {
                  : t('head.job_unmarked', 'Not marked — click to say what this session is doing');
     } },
 
-  // THE DESKS — one button, because branch and repository are one paired fact rather
-  // than two controls. One desk says its branch; several say how many. The reading is
+  // THE DESKS — one button. One desk says its worktree name; several say how many. The reading is
   // DERIVED on the server from git and the desk registry (`/api/desks`, src/desk-state.ts):
   // the line it hands in to, ahead/behind, unsaved files, pending, parked, blocked — never
   // a fact the agent keeps in prose. It works with no michi: the desks are cowork's.
   { key: 'branchBtn', cls: 'checkout branch', needs: 'session',
-    help: t('head.branch_help', 'Desks this session is working at — repo, branch, and what is ahead, pending or parked'),
+    help: t('head.branch_help', 'Desks this session is working at — worktree, repo, branch, and what is ahead, pending or parked'),
     quiet: { session: t('head.branch_quiet', 'Desks — no session in this tile yet') },
     on: (tile) => tile.toggleLadder(),
     read: (tile, el) => {
@@ -128,9 +127,8 @@ const HEADER = () => {
       el.textContent = deskLabel(entry);
       el.classList.toggle('unset', !desks.length);
       el.classList.toggle('attn', !!(entry?.rollup?.pending || entry?.rollup?.blocked));
-      // The repo by its short name and its branch, then the roll-up (owner, 2026-08-26:
-      // "just the repo name and the branch name — that's all you need"; the control
-      // surface adds what is ahead, pending or parked, and keeps paths and SHAs out).
+      // The worktree/desk is on the header. Expansion carries its full path, repository,
+      // branch and line, followed by the live roll-up.
       const readout = deskReadout(entry);
       return readout ? readout + '\n' + deskTip(entry) : deskTip(entry);
     } },
