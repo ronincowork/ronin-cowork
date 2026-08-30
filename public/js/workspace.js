@@ -156,14 +156,6 @@ export const tabTitle = (what) => {
   return what ? `${what} · ${HOUSE}` : HOUSE;
 };
 
-const setTabGlyph = (glyph = '') => {
-  const icon = document.getElementById('tabicon');
-  if (!icon) return;
-  if (!glyph) { icon.href = '/brand/nin-mark.svg'; return; }
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><text x="32" y="49" text-anchor="middle" font-size="48" font-family="sans-serif">${glyph}</text></svg>`;
-  icon.href = `data:image/svg+xml,${encodeURIComponent(svg)}`;
-};
-
 export function createWorkspace(host, options = {}) {
   const views = new Map();
   const state = readState();
@@ -264,7 +256,6 @@ export function createWorkspace(host, options = {}) {
     writeState(state);
     try { onNavigate({ id, param, state }); } catch (error) { report('header navigation', error); }
     document.title = tabTitle(invoke(id, 'title', () => next.title?.(context)));
-    setTabGlyph(next.glyph);
     const target = hashFor(id, param);
     if (!nav.fromHistory && location.hash !== target) history[nav.replace ? 'replaceState' : 'pushState'](null, '', target);
     return requested === id;
