@@ -73,7 +73,7 @@
   }
   .ch-glyph { display: block; font-size: var(--ch-glyph); line-height: 1; color: var(--ch-tone); }
   .ch-door h2 {
-    margin: var(--space-9) 0 0;
+    margin: var(--space-7) 0 0;
     font-size: var(--text-9);
     font-weight: 600;
     line-height: 1.15;
@@ -83,7 +83,7 @@
      never reflows and nothing is ever drawn over anything — a reveal, not a bubble. */
   .ch-is {
     margin: var(--space-3) 0 0;
-    font-size: var(--text-4);
+    font-size: var(--text-6);
     line-height: 1.4;
     color: var(--muted-2);
     opacity: 0;
