@@ -27,39 +27,46 @@ const el = (tag, cls, text) => {
   return out;
 };
 
-/** The Campaign's own words: what this body of work is called and what it is for. */
+/**
+ * The Campaign's own words: what this body of work is called and what it is for.
+ *
+ * EVERY SETTING IS THREE THINGS — its name, its control, and what it actually does. The
+ * third is the sentence that lets someone who has never met the word decide, so it is
+ * the Kit field's `description`, not a tooltip. The id rides along read-only: it is the
+ * address and the storage key, fixed at creation, and a person should see that it is.
+ */
 export function createCampaignIdentitySurface(campaign) {
-  const { createSurface, createSurfaceHeader } = WorkspaceKit.primitives;
+  const { createSurface, createField } = WorkspaceKit.primitives;
   const surface = createSurface({ label: t('campaign', 'Campaign'), className: 'cv-surface' });
-  const head = createSurfaceHeader({ label: t('campaign', 'Campaign') });
-  surface.el.prepend(head.el);
+  const head = surface.header;
   const body = el('div', 'cv-body');
   surface.content.append(body);
 
-  const make = (label, control, max, placeholder) => {
-    control.className = 'cv-input';
-    control.maxLength = max;
-    control.placeholder = placeholder;
-    const f = field(control, { label, sr: false });
-    f.el.classList.add('cv-field');
+  const make = (label, control, description, max, placeholder) => {
+    control.classList.add('cv-input');
+    if (max) control.maxLength = max;
+    if (placeholder) control.placeholder = placeholder;
+    const f = createField({ label, control, description });
     body.append(f.el);
     return { control, f };
   };
-  const title = make(t('campaign.name', 'Campaign name'), el('input'), 120, t('campaign.name_placeholder', 'My campaign'));
-  const description = make(t('campaign.description', 'Description'), el('textarea'), 500, t('campaign.description_placeholder', 'What this campaign is for'));
+  const title = make(t('campaign.name', 'Campaign name'), el('input'), t('campaign_view.name_help', 'On the door, the browser tab and the address.'), 120, t('campaign.name_placeholder', 'My campaign'));
+  const description = make(t('campaign.description', 'Description'), el('textarea'), t('campaign_view.description_help', 'What this body of work is for. Shown on its card.'), 500, t('campaign.description_placeholder', 'What this campaign is for'));
   description.control.rows = 3;
+  const id = make(t('campaign_view.id', 'Id'), el('input'), t('campaign_view.id_help', 'Fixed at creation — the address and the storage key. Rename freely; the id stays.'));
+  id.control.readOnly = true;
 
-  const save = async (fields) => {
+  const save = async (fields, f) => {
     const row = campaign();
     if (!row) return;
-    title.f.say(t('campaign.saving', 'saving…'));
+    f.setValidation('pending', t('campaign.saving', 'saving…'));
     const r = await saveCampaign(row.id, fields);
-    title.f.say(r.ok ? t('settei.saved', 'saved') : r.message, !r.ok);
+    f.setValidation(r.ok ? 'valid' : 'invalid', r.ok ? t('settei.saved', 'saved') : r.message);
     // Every surface reads the one Campaign name; tell them rather than making them poll.
     if (r.ok) window.dispatchEvent(new CustomEvent('ronin:campaign-change', { detail: { name: title.control.value.trim() } }));
   };
-  title.control.addEventListener('change', () => void save({ title: title.control.value }));
-  description.control.addEventListener('change', () => void save({ description: description.control.value }));
+  title.control.addEventListener('change', () => void save({ title: title.control.value }, title.f));
+  description.control.addEventListener('change', () => void save({ description: description.control.value }, description.f));
 
   return {
     el: surface.el,
@@ -68,11 +75,24 @@ export function createCampaignIdentitySurface(campaign) {
       head.title.textContent = row?.title || t('campaign', 'Campaign');
       title.control.value = row?.title || '';
       description.control.value = row?.description || '';
-      title.f.say('');
+      id.control.value = row?.id || '';
+      title.f.setValidation('', '');
+      description.f.setValidation('', '');
       surface.setState(row ? null : 'empty', row ? '' : t('campaign_view.none_selected', 'No Campaign selected.'));
     },
   };
 }
+
+/** A skin token, said as a word: `stock` → Stock. The catalog's labels are these. */
+export const skinWord = (skin) => (skin ? skin[0].toUpperCase() + skin.slice(1) : '');
+/** A rireki_view token, in the words the Output picker already uses — one literal key each, so the gate can see them. */
+const tileWord = (view) => ({
+  locked: t('output.locked', 'Locked'),
+  terminal_mirror: t('output.terminal_mirror', 'Terminal Mirror'),
+  detailed: t('output.detailed', 'Detailed'),
+  condensed: t('output.condensed', 'Condensed'),
+  cherry_pick: t('output.cherry_pick', 'Cherry Pick'),
+}[view] || view);
 
 /**
  * THE LOBBY, as a surface: which desk profile this Campaign opens on.
@@ -82,10 +102,9 @@ export function createCampaignIdentitySurface(campaign) {
  * which is why the Campaign record carries no kind of its own.
  */
 export function createDeskProfileSurface(campaign) {
-  const { createSurface, createSurfaceHeader, createCard, setSurfaceState } = WorkspaceKit.primitives;
+  const { createSurface, createCard, setSurfaceState } = WorkspaceKit.primitives;
   const label = t('cowork.tab_profile', 'Desk profile');
   const surface = createSurface({ label, className: 'cv-surface' });
-  surface.el.prepend(createSurfaceHeader({ label }).el);
   const cards = el('div', 'cv-cards');
   surface.content.append(cards);
 
@@ -108,10 +127,15 @@ export function createDeskProfileSurface(campaign) {
     }
     setSurfaceState(surface.el, row ? null : 'empty', row ? '' : t('campaign_view.none_selected', 'No Campaign selected.'));
     for (const profile of profiles) {
+      // What a profile is, in words a person can compare: the look, and what a tile
+      // shows — not the catalog's tokens.
       const card = createCard({
         heading: profile.label || profile.name,
         summary: profile.blurb || '',
-        metadata: [profile.skin, profile.campaign_kind].filter(Boolean),
+        metadata: [
+          profile.skin ? t('campaign_view.looks', 'Looks: {skin}', { skin: skinWord(profile.skin) }) : '',
+          profile.rireki_view ? t('campaign_view.tile_shows', 'Tile: {view}', { view: tileWord(profile.rireki_view) }) : '',
+        ].filter(Boolean),
         selected: profile.name === row?.desk_profile,
         action: () => void choose(profile.name),
       });
@@ -124,10 +148,9 @@ export function createDeskProfileSurface(campaign) {
 
 /** New Campaign: the stage is set here and nothing else is born with it. */
 export function createNewCampaignSurface(onCreated) {
-  const { createSurface, createSurfaceHeader } = WorkspaceKit.primitives;
+  const { createSurface } = WorkspaceKit.primitives;
   const label = t('campaign.new', 'New Campaign');
   const surface = createSurface({ label, className: 'cv-surface' });
-  surface.el.prepend(createSurfaceHeader({ label }).el);
   const form = el('form', 'cv-body');
   surface.content.append(form);
 

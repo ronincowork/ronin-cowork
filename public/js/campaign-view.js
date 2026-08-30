@@ -1,252 +1,100 @@
 /* part of the ronin-cowork client — see js/README.md */
-/**
- * CAMPAIGN MANAGE — a Cowork Space, whose surfaces are Campaign-level (owner, 2026-08-29).
- *
- * NOT A SECOND PAGE SYSTEM. This is the same bedrock the Cowork space runs on: the Kit's
- * managed workbench, a selector column beside two workspaces, one surface registry, the
- * same arrangement/seat persistence, the same recall on re-entry, the same drag-a-card-
- * into-a-workspace. What differs is only WHAT the selector offers — a Campaign's own
- * configuration instead of its Coworks and Agents. A workspace holds one surface at a
- * time here exactly as it does there.
- *
- * WHY THE SELECTOR AND NOT A TAB STRIP. These four used to be a channel strip inside
- * /cowork (the Campaign commons), which meant Campaign configuration was reachable only
- * one pane at a time and lived at the wrong level. As surfaces they can sit side by side —
- * Project Roots open beside Templates — and they leave /cowork to be Cowork-level.
- *
- * WHAT STAYS BEHIND, deliberately: the Team roster, Cowork View and New Team remain in the
- * Cowork space. A Cowork is not Campaign configuration, and @new_team's creation flow is
- * theirs — it will RECEIVE the selected `campaign_id` when their leg lands, and is never
- * reimplemented here.
- */
+/** Campaign is a Workbench tenant: it supplies context, never frame or placement code. */
 import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
-import { S } from './state.js';
-import { campaignById, campaigns, campaignsFailed, campaignsMessage, createCampaign, loadCampaigns, normalizeSelection } from './campaigns.js';
-import { createCampaignIdentitySurface, createDeskProfileSurface, createNewCampaignSurface } from './campaign-surfaces.js';
+import { campaignById, campaignOf, createCampaign, loadCampaigns, normalizeSelection } from './campaigns.js';
+import { createCampaignIdentitySurface, createDeskProfileSurface, createNewCampaignSurface, skinWord } from './campaign-surfaces.js';
 import { buildProjectRoots } from './projectroots.js';
+import { deskProfiles } from './desk-profile.js';
+import { request } from './request.js';
 import { createTeamTemplatesSurface } from './team-templates-surface.js';
-import { DRAG_TYPE, acceptDrops } from './team-drag.js';
+import { coworkCommons } from './cowork-commons.js';
 
-const el = (tag, cls, text) => {
-  const out = document.createElement(tag);
-  if (cls) out.className = cls;
-  if (text != null) out.textContent = String(text);
-  return out;
+const PROFILE = 'campaign';
+const TYPES = Object.freeze({ identity: 'campaign.identity', profile: 'campaign.desk-profile', roots: 'campaign.project-roots', templates: 'campaign.team-templates', desk: 'ronin.desk', create: 'campaign.new' });
+const LEGACY = Object.freeze({ '@campaign': TYPES.identity, '@profile': TYPES.profile, '@roots': TYPES.roots, '@templates': TYPES.templates, '@desk': TYPES.desk, '@new-campaign': TYPES.create });
+const elem = (tag, cls, text) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
+
+/**
+ * A CARD SAYS WHAT IS SET NOW. The selector's summaries are the Campaign's current values
+ * — the description, the face, how many roots — not fixed sentences, so an empty or stock
+ * value is what draws the eye and a person can tell from the column what to change.
+ * Tenant content only: the workbench draws the cards.
+ */
+const currently = {
+  identity: (e) => e.selected()?.description || t('campaign_view.no_description', 'No description yet.'),
+  profile: (e) => {
+    const p = deskProfiles().find((x) => x.name === e.selected()?.desk_profile);
+    return p ? [p.label || p.name, skinWord(p.skin)].filter(Boolean).join(' · ') : t('campaign_view.no_profile', 'As stock — none chosen.');
+  },
+  roots: (e) => {
+    const n = e.roots();
+    if (n === null) return t('campaign_view.roots_summary', 'The folders this Campaign is allowed to work in.');
+    return n ? t('campaign_view.roots_n', '{n} roots', { n }) : t('campaign_view.roots_none', 'None — an Agent here has nowhere to work.');
+  },
 };
 
-const CAMPAIGN = '@campaign';
-const PROFILE = '@profile';
-const ROOTS = '@roots';
-const TEMPLATES = '@templates';
-const NEW = '@new-campaign';
+function registerCampaignSurfaces() {
+  const { library, profiles } = WorkspaceKit.workbench;
+  const add = (definition) => { if (!library.has(definition.type)) library.register(definition); };
+  add({ type: TYPES.identity, header: 'surface', label: () => t('campaign', 'Campaign'), summary: (_tenant, e) => currently.identity(e), create: ({ environment: e }) => { const surface = createCampaignIdentitySurface(e.selected); return { el: surface.el, show: () => surface.enter() }; } });
+  add({ type: TYPES.profile, header: 'surface', label: () => t('cowork.tab_profile', 'Desk profile'), summary: (_tenant, e) => currently.profile(e), create: ({ environment: e }) => { const surface = createDeskProfileSurface(e.selected); return { el: surface.el, show: () => surface.enter() }; } });
+  add({ type: TYPES.roots, header: 'surface', label: () => t('cowork.tab_roots', 'Project roots'), summary: (_tenant, e) => currently.roots(e), create: ({ environment: e }) => { const surface = WorkspaceKit.primitives.createSurface({ label: t('cowork.tab_roots', 'Project roots'), className: 'cv-surface' }); const host = elem('div', 'desk-pane desk-proj show'); surface.content.append(host); const room = buildProjectRoots(host, () => e.entered() && host.isConnected, null); return { el: surface.el, show: () => room.enter() }; } });
+  add({ type: TYPES.templates, header: 'surface', label: () => t('league.templates', 'Templates'), summary: () => t('campaign_view.templates_summary', 'The Cowork templates this Campaign offers.'), create: ({ environment: e }) => { const content = createTeamTemplatesSurface({ draft: () => e.ctx()?.viewState('new-team')?.draft || null, use: (draft) => { e.ctx()?.patchViewState('new-team', { draft }); e.ctx()?.patchViewState('cowork', { seats: { workspace1: '@new-team' } }); e.ctx()?.navigate('cowork'); } }); const surface = WorkspaceKit.primitives.createSurface({ label: t('league.templates', 'Templates'), className: 'cv-surface' }); surface.content.append(content.el); return { el: surface.el, show: () => content.enter?.() }; } });
+  add({ type: TYPES.desk, header: 'channels', label: () => t('cowork.commons', 'Ronin Desk'), summary: () => t('campaign_view.desk_summary', 'This Ronin install, its owner and its workspace configuration.'), create: ({ workspace, environment: e }) => e.desk(workspace) });
+  add({ type: TYPES.create, header: 'surface', label: () => t('campaign.new', 'New Campaign'), summary: () => t('campaign_view.new_summary', 'Set the stage. It creates no Cowork and launches no Agent.'), variant: 'dotted', create: ({ workspace, environment: e }) => { const surface = createNewCampaignSurface(async (fields) => { const result = await createCampaign(fields); if (result.ok) { e.ctx()?.patchState({ campaignSelection: { mode: 'selected', campaign_ids: [result.data.id], primary_campaign_id: result.data.id } }); e.ctx()?.patchViewState('home', { cowork: '', agent: '' }); e.workbench()?.place(TYPES.identity, workspace); } return result; }); return { el: surface.el, show: () => surface.enter() }; } });
+  profiles.define(PROFILE, Object.values(TYPES));
+}
 
 export function createCampaignView() {
-  const { createSurface, createSurfaceHeader, createCard, setSurfaceState } = WorkspaceKit.primitives;
-  const { createWorkbenchLayout } = WorkspaceKit.layouts;
+  registerCampaignSurfaces();
+  const { createSurface } = WorkspaceKit.primitives;
   const { teamWorkspaceState } = WorkspaceKit.contract;
-
-  const root = el('main', 'cv-view');
-  let ctx = null;
-  let entered = false;
-  let lastSeat = 'workspace1';
-
-  /* ---------- which Campaign this tab is managing ---------- */
-  const selected = () => {
-    const healed = normalizeSelection(ctx?.state?.campaignSelection);
-    return campaignById(healed.primary_campaign_id);
+  let ctx = null, entered = false, bench = null;
+  let rootsHere = null; // null until /api/project-roots/detail has answered once this entry
+  const selected = () => campaignById(normalizeSelection(ctx?.state?.campaignSelection).primary_campaign_id);
+  const readRoots = async () => {
+    const r = await request('/api/project-roots/detail', { cache: 'no-store' });
+    rootsHere = r.ok && Array.isArray(r.data?.roots) ? r.data.roots : [];
   };
-
-  /* ---------- the surfaces ---------- */
-  const identity = createCampaignIdentitySurface(selected);
-  const profile = createDeskProfileSurface(selected);
-  const rootsHost = el('div', 'desk-pane desk-proj show');
-  const rootsSurface = createSurface({ label: t('cowork.tab_roots', 'Project roots'), className: 'cv-surface' });
-  rootsSurface.el.prepend(createSurfaceHeader({ label: t('cowork.tab_roots', 'Project roots') }).el);
-  rootsSurface.content.append(rootsHost);
-  const rootsRoom = buildProjectRoots(rootsHost, () => entered && rootsHost.isConnected, null);
+  const environment = {
+    selected,
+    entered: () => entered,
+    ctx: () => ctx,
+    workbench: () => bench,
+    /** How many live roots belong to the selected Campaign; null before the first read. */
+    roots: () => (rootsHere === null ? null : rootsHere.filter((root) => !root.archived && campaignOf(root) === selected()?.id).length),
+    desk: () => { const surface = coworkCommons(); return { el: surface.el, show: () => surface.select('health') }; },
+  };
   /**
-   * TEMPLATES SIT HERE, BUT A COWORK IS STILL BORN THERE (owner, 2026-08-29).
-   *
-   * "Use template" hands its draft to @new_team's New Team surface and goes to the Cowork
-   * space — the flow is theirs, is untouched, and is never reimplemented on this page.
-   * The handoff is the one it already uses (`views['new-team'].draft`); the extra half is
-   * seating New Team on arrival, which the Cowork space's own recall does when its stored
-   * seats name that surface. When campaign_id reaches templates, this is the call site
-   * that will carry the selected Campaign into the draft.
-   *
-   * Saving a template still reads the New Team draft that page holds, so a Campaign with
-   * no draft in flight saves nothing rather than saving an empty one.
+   * FIRST OPEN (owner, 2026-08-30): the page opens as the whole record — the four settings
+   * up, one per workspace, in the column's order. Only when nothing is remembered; after
+   * that the arrangement is the person's, and an emptied workspace stays empty.
    */
-  const templates = createTeamTemplatesSurface({
-    draft: () => ctx?.viewState('new-team')?.draft || null,
-    use: (draft) => {
-      ctx?.patchViewState('new-team', { draft });
-      ctx?.patchViewState('cowork', { seats: { workspace1: '@new-team' } });
-      ctx?.navigate('cowork');
-    },
-  });
-  const newCampaign = createNewCampaignSurface(async (fields) => {
-    const r = await createCampaign(fields);
-    if (r.ok) {
-      // Created, selected, and STOPPED. No Cowork, no Agent, no project root.
-      ctx?.patchState({ campaignSelection: { mode: 'selected', campaign_ids: [r.data.id], primary_campaign_id: r.data.id } });
-      ctx?.patchViewState('home', { cowork: '', agent: '' });
-      putSurface(CAMPAIGN, lastSeat);
-      paintCards();
-    }
-    return r;
-  });
-
-  const SURFACES = {
-    [CAMPAIGN]: { name: 'campaign', el: identity.el, show: () => identity.enter() },
-    [PROFILE]: { name: 'profile', el: profile.el, show: () => profile.enter() },
-    [ROOTS]: { name: 'roots', el: rootsSurface.el, show: () => rootsRoom.enter() },
-    [TEMPLATES]: { name: 'templates', el: templates.el, show: () => templates.enter?.() },
-    [NEW]: { name: 'new-campaign', el: newCampaign.el, show: () => newCampaign.enter() },
-  };
-
-  /* ---------- two workspaces, exactly as the Cowork space seats them ---------- */
-  const makeSeat = (id, label) => {
-    const blank = createSurface({ label, className: 'cv-blank' });
-    blank.el.prepend(createSurfaceHeader({ label }).el);
-    blank.content.append(el('p', 'cv-blank-word', label));
-    return { id, blank: blank.el };
-  };
-  const seats = {
-    workspace1: makeSeat('workspace1', t('team.workspace_1', 'Workspace 1')),
-    workspace2: makeSeat('workspace2', t('team.workspace_2', 'Workspace 2')),
-  };
-  const cells = {};
-  for (const id of Object.keys(seats)) {
-    const cell = el('div', 'cv-cell');
-    cell.dataset.workspace = id;
-    cell.append(seats[id].blank);
-    cells[id] = cell;
-    cell.addEventListener('pointerdown', () => touch(id), true);
-    acceptDrops(cell, () => id, (token, at) => { if (SURFACES[token]) putSurface(token, at); });
-  }
-  const holding = (id) => cells[id]?.firstElementChild ?? null;
-  const tokenOf = (node) => Object.keys(SURFACES).find((key) => SURFACES[key].el === node) || '';
-  const heldSurface = (id) => tokenOf(holding(id));
-  const whereIs = (token) => Object.keys(seats).find((id) => holding(id) === SURFACES[token]?.el) || '';
-  const touch = (id) => {
-    lastSeat = id;
-    for (const seat of Object.keys(seats)) cells[seat].classList.toggle('cv-selected', seat === id);
-  };
-  /** One trade, for every surface: wherever it was, that seat goes blank again. */
-  const putSurface = (token, id) => {
-    const surface = SURFACES[token];
-    if (!surface || !cells[id]) return false;
-    const from = whereIs(token);
-    if (from && from !== id) cells[from].replaceChildren(seats[from].blank);
-    if (cells[id].firstElementChild !== surface.el) cells[id].replaceChildren(surface.el);
-    surface.show?.();
-    touch(id);
-    remember();
-    paintCards();
-    return true;
-  };
-  const emptySeat = (id) => {
-    cells[id].replaceChildren(seats[id].blank);
-    remember();
-    paintCards();
-  };
-  const remember = () => ctx?.patchViewState('campaign', {
-    seats: Object.fromEntries(Object.keys(seats).map((id) => [id, heldSurface(id)])),
-  });
-
-  /* ---------- the selector column ---------- */
-  const column = createSurface({ label: t('campaign', 'Campaign'), className: 'cv-selector' });
-  const columnHead = el('div', 'cv-selector-head');
-  const columnTitle = el('span', 'cv-selector-title', t('campaign', 'Campaign'));
-  columnHead.append(columnTitle);
-  column.el.prepend(columnHead);
-  const cards = el('div', 'cv-selector-cards');
-  column.content.append(cards);
-
-  /** The Campaign-level surfaces, read at paint so the lexicon is up (KOKUGO § 5). */
-  function OFFERED() {
-    return [
-      { token: CAMPAIGN, heading: t('campaign', 'Campaign'), summary: t('campaign_view.campaign_summary', 'What this body of work is called, and what it is for.') },
-      { token: PROFILE, heading: t('cowork.tab_profile', 'Desk profile'), summary: t('campaign_view.profile_summary', 'The words, the skin and the templates this Campaign opens on.') },
-      { token: ROOTS, heading: t('cowork.tab_roots', 'Project roots'), summary: t('campaign_view.roots_summary', 'The folders this Campaign is allowed to work in.') },
-      { token: TEMPLATES, heading: t('league.templates', 'Templates'), summary: t('campaign_view.templates_summary', 'The Cowork templates this Campaign offers.') },
-    ];
-  }
-
-  function paintCards() {
-    const row = selected();
-    columnTitle.textContent = row?.title || t('campaign', 'Campaign');
-    cards.replaceChildren();
-    if (campaignsFailed()) {
-      setSurfaceState(column.el, 'failed', t('campaign.read_failed', 'Could not read Campaigns — {message}', { message: campaignsMessage() }));
-      return;
-    }
-    setSurfaceState(column.el, null, '');
-    const add = (token, heading, summary, variant = null) => {
-      const card = createCard({
-        heading, summary, variant,
-        selected: !!whereIs(token),
-        action: () => { if (whereIs(token)) emptySeat(whereIs(token)); else putSurface(token, lastSeat); },
-      });
-      card.el.draggable = true;
-      card.el.addEventListener('dragstart', (event) => {
-        event.dataTransfer.setData(DRAG_TYPE, token);
-        event.dataTransfer.setData('text/plain', heading);
-        event.dataTransfer.effectAllowed = 'move';
-      });
-      cards.append(card.el);
-      return card;
-    };
-    for (const offer of OFFERED()) add(offer.token, offer.heading, offer.summary);
-    add(NEW, t('campaign.new', 'New Campaign'), t('campaign_view.new_summary', 'Set the stage. It creates no Cowork and launches no Agent.'), 'dotted');
-    if (!campaigns().length) column.content.append(el('p', 'cv-empty', t('campaign.none', 'No Campaigns yet.')));
-  }
-
-  const DECLARATION = {
-    slots: [
-      { name: 'workspace1', label: t('team.workspace_1', 'Workspace 1'), width: 40 },
-      { name: 'selector', label: t('campaign', 'Campaign'), width: 20, min: 6, compact: 176 },
-      { name: 'workspace2', label: t('team.workspace_2', 'Workspace 2'), width: 40 },
-    ],
-  };
-  const workbench = createWorkbenchLayout({
-    declaration: DECLARATION,
-    surfaces: { workspace1: cells.workspace1, selector: column.el, workspace2: cells.workspace2 },
-    onStateChange: (arrangement) => ctx?.patchViewState('campaign', { arrangement }),
-  });
-  root.append(workbench.host);
-
-  /** What each workspace remembered holding; with nothing remembered, Campaign on the left. */
-  const seatTheCampaign = (remembered) => {
-    let any = false;
-    for (const id of Object.keys(seats)) {
-      const wanted = remembered[id];
-      if (SURFACES[wanted]) { putSurface(wanted, id); any = true; }
-    }
-    if (!any) putSurface(CAMPAIGN, 'workspace1');
-  };
-
+  const FIRST_OPEN = Object.freeze({ workspace1: TYPES.identity, workspace2: TYPES.profile, workspace3: TYPES.roots, workspace4: TYPES.templates });
+  const blank = (id) => { const surface = createSurface({ label: id.replace('workspace', 'Workspace '), className: 'cv-blank' }); surface.content.append(elem('p', 'cv-blank-word', t('team.workspace_blank', 'Workspace'))); return surface.el; };
+  const save = () => ctx?.patchViewState('campaign', bench.snapshot());
+  bench = WorkspaceKit.workbench.create({ profile: PROFILE, tenant: { kind: 'campaign', selected }, environment, defaultNode: blank, label: t('campaign', 'Campaign'), title: () => selected()?.title || t('campaign', 'Campaign'), shapeControl: document.getElementById('shapecycle'), onStateChange: save, onPlacement: save });
   return {
-    el: root,
-    glyph: '⛩',
-    arrangement: workbench.arrangement,
+    el: bench.host, glyph: '⛩', arrangement: bench.arrangement,
     title: () => selected()?.title || t('campaign', 'Campaign'),
     mount: (_host, context) => { ctx = context; },
     enter: async (context) => {
-      ctx = context;
-      entered = true;
-      const typed = teamWorkspaceState(context.state, context.viewState('campaign'), DECLARATION);
-      workbench.restore(typed.arrangement);
-      paintCards();
-      await loadCampaigns();
+      ctx = context; entered = true;
+      const typed = teamWorkspaceState(context.state, context.viewState('campaign'), bench.declaration);
+      bench.enter({ ...typed, ...context.viewState('campaign') });
+      await Promise.all([loadCampaigns(), readRoots()]);
       if (!entered) return;
-      seatTheCampaign({ ...typed.seats });
-      touch(lastSeat);
-      paintCards();
+      let any = false;
+      for (const id of bench.ids) { const type = LEGACY[typed.seats[id]] || typed.seats[id]; if (WorkspaceKit.workbench.library.has(type)) { bench.place(type, id); any = true; } }
+      if (!any) {
+        bench.setCount(4);
+        for (const [id, type] of Object.entries(FIRST_OPEN)) bench.place(type, id);
+        bench.select('workspace1');
+      }
+      bench.refreshSelector(); save();
     },
-    leave: () => { entered = false; },
-    destroy: () => { entered = false; ctx = null; },
+    leave: () => { entered = false; bench.leave(); },
+    destroy: () => { entered = false; bench.leave(); ctx = null; },
   };
 }

@@ -54,10 +54,14 @@ function editOf(body: unknown): CampaignEdit {
   const config = b.config && typeof b.config === 'object' && !Array.isArray(b.config)
     ? (b.config as CampaignEdit['config'])
     : undefined;
+  const desk = b.desk && typeof b.desk === 'object' && !Array.isArray(b.desk)
+    ? (b.desk as CampaignEdit['desk'])
+    : undefined;
   return {
     ...(str(b.title) !== undefined ? { title: str(b.title) } : {}),
     ...(str(b.description) !== undefined ? { description: str(b.description) } : {}),
     ...(str(b.desk_profile) !== undefined ? { desk_profile: str(b.desk_profile) } : {}),
+    ...(desk !== undefined ? { desk } : {}),
     ...(state(b.state) !== undefined ? { state: state(b.state) } : {}),
     ...(config !== undefined ? { config } : {}),
   };

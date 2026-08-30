@@ -1,13 +1,19 @@
 # COWORK SPACE — the surface map
 
-**The page is the `cowork_space`.** It was called "the team workspace" while the team was
+**The page format is the `workbench`.** It was called "the team workspace" while the team was
 the only thing it showed; the name moved up a level on 2026-08-27 (owner: *"I've been
-calling it the team workspace. But to be honest, this is the cowork_space"*) because the
+calling it the team workspace. But to be honest, this is the cowork space"*) because the
 page is about to hold surfaces that are not about a team. `#/team/:name` is one address
 into it; the League will be another. This page is the one document to point at when two
 people need the same word for a part of it. **Every noun here is a KOTOBA row** (§
 COWORKSPACE) and a `glossary.*` word the owner's desk profile renders; add a term here and
 you add it there in the same commit.
+
+Campaign, Cowork and Team are discovery boundaries, not different formats. Each has one
+discovery column whose cards are limited to that scope; every one uses the same surrounding
+workspaces, surface placement, drag/drop, arrangement and recall. Say *Campaign discovery
+workbench*, *Cowork workbench* or *Team workbench* when the distinction
+matters—never “two-workspace Campaign surface.”
 
 ## The map
 
@@ -47,7 +53,7 @@ Three kinds of thing, and only three, sit inside the bar:
 |---|---|---|---|
 | **terminal_tile** | one session | **tile head** (`js/tilehead.js`) | ⛩ rename · session picker · job · branch · output selector · @ · ⚡ · メ · gauge · ladder chip. The Torii is first, immediately before the session name. |
 | **team_commons** | one team | **commons strip** — the channel surface's tab strip | Docs (three pills: **Tracked** — what agents listed; **Plans** and **Docs** — the files under the places each project root names on its record, grouped by root, the team's repos first) · Wipeboard · Team Configuration (Chat hidden until it is a thing — owner, 2026-08-28). Reached from the **Team commons card**, first on the roster |
-| **cowork_commons** | this install and this owner | **Ronin Desk strip** — the same tab strip | Desk (Ronin usage stats) · Account (the desk's rail: Configuration · Appearance · Release & update · Hotwords · Koshi · gbrain · Log out) · Desk profile · Project roots · Roster · Archived (the tile commons' two) · Help desk (Mika's door over a reserved chat) · Keypad (the pad's card, inline). `js/cowork-commons.js`; landed 2026-08-27, the `admin_desk` overlay retired with it |
+| **cowork_commons** | this install and this owner | **Ronin Desk strip** — the same tab strip | Desk (Ronin usage stats) · Account (the desk's rail: Configuration · Appearance · Release & update · Hotwords · Koshi · gbrain · Log out) · Desk profile · Project roots · Archived · Help desk (Mika's door over a reserved chat) · Keypad (the pad's card, inline). The Team roster now lives on the Cowork workbench. |
 | **new_session** | one launch | **surface head** — T, then the name | the ＋ New session launcher, placed by ＋ Add team member (roster) or か New (bar), or `workspace1=new`; the newborn lands in that workspace |
 | *(blank)* | — | — | an EMPTY workspace says *Workspace* and holds nothing — never a commons by default (owner, 2026-08-27) |
 | `campaign_commons` | this campaign | Campaign Commons strip | Campaign · Project roots · Team roster · Templates |
@@ -75,9 +81,9 @@ Rules that make them peers:
 
 ## The names, once
 
-- **cowork_space** — the page. Say *the cowork space*. Not "the team workspace" (that was
-  its first tenant), not "the coworkspace" (that is the whole UI — this page is one view
-  of it; see KOTOBA `coworkspace`).
+- **workbench** — the format: one discovery column offers surfaces to the
+  surrounding workspaces. Campaign, Cowork and Team name only what that column can discover.
+  This replaces `cowork_space`, which collided with both Cowork and `coworkspace`.
 - **workspace** — a slot. Say *workspace 1*, *workspace 2*. A workspace is not a surface.
 - **workspace_surface** — the genus: what a workspace holds. Say *a surface*.
 - **terminal_tile** — a tile when it is the surface in a workspace. Say *the terminal
@@ -128,7 +134,7 @@ live owner is `public/js/campaign-home.js`, never a simplified second interactio
 
 ## Where ⚙ puts it
 
-- **On the cowork_space:** into the workspace you are in (the selected one); ⚙ there
+- **On a workbench:** into the workspace you are in (the selected one); ⚙ there
   again brings the terminal back. Any workspace can be selected whatever it holds — a
   terminal tile wears `.tile.active`, a commons wears the same ring on its surface.
 - **On the parked grid page:** there is no workspace to place it in, so ⚙ is the

@@ -14,7 +14,7 @@ campaign_config 1 ←── many project_roots
 campaign_config 1 ←── many sessions (Agents)
 campaign_config 1 ←── many saved templates
 
-a Cowork Space VIEW ── selects campaign_id[] (one, several, or all)
+a workbench ── selects campaign_id[] (one, several, or all)
 ```
 
 **A durable object has exactly one campaign. A view selects several and owns none.** The
