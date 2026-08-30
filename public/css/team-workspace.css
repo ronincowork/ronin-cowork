@@ -48,21 +48,16 @@
   .league-team-roster { display: flex; flex-direction: column; min-height: 0; }
   .league-team-roster-title { margin: 0 0 var(--space-3); color: var(--muted); font-size: var(--text-2); font-weight: inherit; letter-spacing: .08em; text-transform: uppercase; }
   .league-team-member-list { border-top: var(--edge) solid var(--line); }
-  .league-team-member { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: var(--space-4); min-height: var(--row); border-bottom: var(--edge) solid var(--line); padding: var(--space-3) 0; }
+  .league-team-member { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-5); min-height: var(--row); border-bottom: var(--edge) solid var(--line); padding: var(--space-3) 0; }
   .league-team-member-identity { display: flex; align-items: center; min-width: 0; gap: var(--space-3); }
   .league-team-member-mark { width: var(--space-6); color: var(--kaki); font-size: var(--text-5); line-height: 1; text-align: center; }
   .league-team-member-words { display: flex; flex-direction: column; min-width: 0; gap: var(--space-1); }
   .league-team-member-words strong { overflow: hidden; color: var(--fg-strong); font-weight: inherit; text-overflow: ellipsis; white-space: nowrap; }
   .league-team-member-words span, .league-team-empty { color: var(--muted); font-size: var(--text-2); }
-  .league-team-lead, .league-team-member-remove, .league-team-add button { border: 0; background: transparent; color: var(--muted); font: inherit; cursor: pointer; }
-  .league-team-lead { border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); padding: var(--space-2) var(--space-4); }
-  .league-team-lead[aria-pressed='true'] { border-color: var(--kaki); background: var(--raise); color: var(--kaki); }
-  .league-team-member-remove:hover { color: var(--bad-soft); }
+  .league-team-member-actions { flex-wrap: nowrap; gap: var(--space-2); }
   .league-team-empty { margin: 0; border-bottom: var(--edge) solid var(--line); padding: var(--space-5) 0; }
   .league-team-add { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-3); margin-top: var(--space-5); }
   .league-team-add select { min-width: 0; border: var(--edge) solid var(--line-2); border-radius: var(--radius-sm); background: var(--bg-2); color: var(--fg); padding: var(--space-3) var(--space-4); font: inherit; }
-  .league-team-add button { color: var(--fg); padding: 0 var(--space-3); }
-  .league-team-add button:disabled { color: var(--muted); cursor: default; opacity: .5; }
 
   /* -- the docs slice: mdedit's own pane (.home-docs, style.css), given the surface's height -- */
   .tw-docs { display: flex; height: 100%; }

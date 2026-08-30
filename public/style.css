@@ -243,7 +243,9 @@
   --bar-nav-fg: var(--fg-strong);
   --bar-nav-hover: var(--accent);
   --bar-nav-focus: var(--accent);
-  --bar-value-fg: var(--muted-2);
+  --bar-nav-size: var(--text-7);
+  --bar-value-fg: var(--bar-nav-fg);
+  --bar-value-size: var(--bar-nav-size);
   --bar-brand-mark-h: 27px;
   --bar-brand-track: -0.005em;
 
@@ -472,7 +474,9 @@ body {
   background: var(--bar-nav-bg);
   color: var(--bar-nav-fg);
   font: inherit;
+  font-size: var(--bar-nav-size);
   line-height: 1;
+  text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -484,6 +488,7 @@ body {
 }
 .ui-bar-value {
   color: var(--bar-value-fg);
+  font-size: var(--bar-value-size);
   white-space: nowrap;
 }
 .ui-bar-separator { color: var(--muted); }

@@ -7,6 +7,7 @@ export function installWorkspaceHeader(workspace) {
   const ronin = document.getElementById('brandbtn');
   const separator = document.getElementById('coworkssep');
   const coworkers = document.getElementById('coworksbtn');
+  const teamSeparator = document.getElementById('teamsep');
   const team = document.getElementById('teamvalue');
 
   const root = () => {
@@ -27,10 +28,12 @@ export function installWorkspaceHeader(workspace) {
     const landing = !active || active.id === 'home';
     if (separator) separator.hidden = landing;
     if (coworkers) coworkers.hidden = landing;
+    const teamPage = active?.id === 'team';
+    if (teamSeparator) teamSeparator.hidden = !teamPage;
     if (team) {
-      const name = active?.id === 'team' ? active.param : '';
+      const name = teamPage ? active.param : '';
       team.textContent = readable(name);
-      team.hidden = landing;
+      team.hidden = !teamPage;
     }
   };
   refresh();

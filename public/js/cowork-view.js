@@ -50,7 +50,7 @@ export function createCoworkView(options = {}) {
   registerWorkbenchCatalog();
   const campaign = options.kind === 'cowork';
   const viewKey = campaign ? 'cowork' : 'team';
-  const { createSurface, createChannelSurface, createMetadata, createAction } = WorkspaceKit.primitives;
+  const { createSurface, createChannelSurface, createMetadata, createAction, createActionBar } = WorkspaceKit.primitives;
   const { createTerminalTileHost } = WorkspaceKit.adapters;
   const { teamWorkspaceState } = WorkspaceKit.contract;
   const root = el('main', 'tw-view');
@@ -365,8 +365,8 @@ export function createCoworkView(options = {}) {
       const cached = leagueTeamSurfaces.get(cacheKey); cached.render?.(); return cached;
     }
     const label = name === UNASSIGNED ? t('league.ronin', 'Ronin: no team') : readableTeam(name), team = teamByName(name);
-    const launch = createAction({ label: t('league.launch_team', 'Launch'), action: () => openTeam(name) });
-    const remove = createAction({ label: t('league.delete_team', 'Delete team'), kind: 'danger', action: async () => { const count = membersOfTeam(name).length; if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team: name, count }))) return; const result = await deleteTeamRoster(name); if (!result.ok) { surface.setState('failed', result.message); return; } for (const seat of bench.locations(WB_TYPES.team, name)) emptySeat(seat); for (const key of [...leagueTeamSurfaces.keys()]) if (key.endsWith(`\0${name}`)) leagueTeamSurfaces.delete(key); } });
+    const launch = createAction({ label: t('league.launch_team', 'Launch'), size: 'compact', action: () => openTeam(name) });
+    const remove = createAction({ label: t('league.delete_team', 'Delete team'), kind: 'danger', size: 'compact', action: async () => { const count = membersOfTeam(name).length; if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team: name, count }))) return; const result = await deleteTeamRoster(name); if (!result.ok) { surface.setState('failed', result.message); return; } for (const seat of bench.locations(WB_TYPES.team, name)) emptySeat(seat); for (const key of [...leagueTeamSurfaces.keys()]) if (key.endsWith(`\0${name}`)) leagueTeamSurfaces.delete(key); } });
     const surface = createSurface({ label, className: 'league-team-edit', actions: name === UNASSIGNED ? [launch] : [launch, remove] });
     surface.content.classList.add('league-team-edit-content');
     const render = () => {
@@ -388,13 +388,10 @@ export function createCoworkView(options = {}) {
         words.append(el('strong', null, member.name), el('span', null, member.session_role || t('league.role_unset', 'Role not set')));
         identity.append(mark, words);
         if (holding) { row.append(identity); list.append(row); continue; }
-        const lead = el('button', 'league-team-lead', member.team_lead ? t('league.team_lead', 'Team lead') : t('league.make_team_lead', 'Make team lead'));
-        lead.type = 'button'; lead.setAttribute('aria-pressed', String(member.team_lead));
-        lead.addEventListener('click', async () => { const result = await setTeamLead(member.name, name, !member.team_lead); if (!result.ok) return surface.setState('failed', result.message); surface.setState(); render(); });
-        const eject = el('button', 'league-team-member-remove', t('league.remove_member', 'Remove')); eject.type = 'button';
-        eject.setAttribute('aria-label', t('league.remove_named_member', 'Remove {name} from this team', { name: member.name }));
-        eject.addEventListener('click', async () => { const result = await setTeamMembership(member.name, name, false); if (!result.ok) return surface.setState('failed', result.message); surface.setState(); render(); });
-        row.append(identity, lead, eject); list.append(row);
+        const lead = createAction({ label: member.team_lead ? t('league.team_lead', 'Team lead') : t('league.make_team_lead', 'Make team lead'), size: 'compact', selected: member.team_lead, action: async () => { const result = await setTeamLead(member.name, name, !member.team_lead); if (!result.ok) return surface.setState('failed', result.message); surface.setState(); render(); } });
+        const eject = createAction({ label: t('league.remove_member', 'Remove'), title: t('league.remove_named_member', 'Remove {name} from this team', { name: member.name }), size: 'compact', action: async () => { const result = await setTeamMembership(member.name, name, false); if (!result.ok) return surface.setState('failed', result.message); surface.setState(); render(); } });
+        const actions = createActionBar({ className: 'league-team-member-actions', actions: [lead, eject] });
+        row.append(identity, actions.el); list.append(row);
       }
       roster.append(list);
       if (holding) { surface.content.replaceChildren(roster); return; }
@@ -402,10 +399,9 @@ export function createCoworkView(options = {}) {
       const select = el('select', null); select.setAttribute('aria-label', t('league.choose_member', 'Choose an Agent to add'));
       select.append(new Option(available.length ? t('league.choose_member', 'Choose an Agent to add') : t('league.no_available_members', 'No other Agents available'), ''));
       for (const session of available) select.append(new Option(session.name + (session.session_role ? ` — ${session.session_role}` : ''), session.name));
-      const assign = el('button', null, t('league.assign_member', 'Assign')); assign.type = 'button'; assign.disabled = true;
-      select.addEventListener('change', () => { assign.disabled = !select.value; });
-      assign.addEventListener('click', async () => { if (!select.value) return; const result = await setTeamMembership(select.value, name, true); if (!result.ok) return surface.setState('failed', result.message); surface.setState(); render(); });
-      add.append(select, assign); roster.append(add);
+      const assign = createAction({ label: t('league.assign_member', 'Assign'), size: 'compact', disabled: true, action: async () => { if (!select.value) return; const result = await setTeamMembership(select.value, name, true); if (!result.ok) return surface.setState('failed', result.message); surface.setState(); render(); } });
+      select.addEventListener('change', () => assign.setDisabled(!select.value));
+      add.append(select, assign.el); roster.append(add);
       surface.content.replaceChildren(metadata, roster);
     };
     render();
