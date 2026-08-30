@@ -75,7 +75,7 @@ async function fingerprint(page, entries) {
 // hidden box precisely so its reappearance would show.
 const DESKTOP = [
   '#bar', '#brandbtn', '#shapecycle',
-  '.ch-frame', '.ch-doors', '.ch-door', '.ch-tray',
+  '.ch-frame', '.ch-doors', '.ch-door', '.ch-release',
 ];
 // NOT the session picker: its flex width follows the live session names — content,
 // not chrome, and a baseline on content is a baseline that cries wolf.

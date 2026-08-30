@@ -219,17 +219,23 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 
 ## campaign_home — campaign-home.js (the root arrival: Campaign, Coworks, Agents)
 
-- **campaign_home.title:** Ronin
-- **campaign_home.campaign_is:** A named body of work
+- **campaign_home.campaign_is:** Admin Desk configuration
 - **campaign_home.coworks_is:** Coworking space for Agents
-- **campaign_home.agents_is:** One Agent, one job
-- **campaign_home.change:** Change
-- **campaign_home.manage:** Manage
-- **campaign_home.selected_n:** {n} selected
-- **campaign_home.no_campaign:** No Campaign
-- **campaign_home.no_cowork:** No Cowork
-- **campaign_home.no_agent:** No Agent
-- **campaign_home.tray_empty:** Nothing here yet.
+- **campaign_home.launch:** Launch
+- **campaign_home.launch_is:** Start a new Team or Agent
+- **campaign_home.version:** v1.3
+- **campaign_home.check_updates:** Check for updates
+- **campaign_home.checking:** Checking…
+- **campaign_home.check_unavailable:** Available after the next restart
+- **campaign_home.up_to_date:** Up to date
+- **campaign_home.update_available:** {version} available
+
+## launch — launch-view.js (the Workbench where Teams and Agents begin)
+
+- **launch.new_team:** New Team
+- **launch.new_team_summary:** Define a Team, then launch its Agents.
+- **launch.new_agent:** New Agent
+- **launch.new_agent_summary:** Start an Agent in a Team or on its own.
 
 ## home — home.js (the status words and the launch receipt)
 - **home.status_ready:** ready

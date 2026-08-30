@@ -35,7 +35,7 @@ export const defaultWorkspaceState = () => ({
   campaignSelection: null,
   // Each destination owns one namespace inside this tab. Empty objects and null drafts
   // are valid; the shell stores state but never interprets a feature's workflow.
-  views: { home: {}, cowork: {}, campaign: {}, 'new-team': { draft: null } },
+  views: { home: {}, cowork: {}, campaign: {}, launch: {}, 'new-team': { draft: null } },
   returnTo: null,
 });
 

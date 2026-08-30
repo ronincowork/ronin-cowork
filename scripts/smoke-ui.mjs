@@ -281,7 +281,7 @@ async function checkJourneys(page, label, jsErrors) {
   const roninHome = await page.evaluate(() => ({
     hash: location.hash,
     visible: !document.querySelector('.ch-view')?.hidden,
-    doors: document.querySelectorAll('.ch-view .ch-go').length,
+    doors: document.querySelectorAll('.ch-view .ch-door').length,
     chrome: [...document.querySelectorAll('#bar > :not(#brandbtn)')]
       .filter((node) => getComputedStyle(node).display !== 'none').length,
   }));
