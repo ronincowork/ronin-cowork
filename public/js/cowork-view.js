@@ -361,7 +361,9 @@ export function createCoworkView(options = {}) {
   const leagueTeamSurfaces = new Map(), openTeam = (name) => { const url = new URL(location.href); url.hash = `#/team/${encodeURIComponent(name)}`; window.open(url.href, '_blank', 'noopener'); };
   const createLeagueTeamSurface = (name, id) => {
     const cacheKey = `${id}\0${name}`;
-    if (leagueTeamSurfaces.has(cacheKey)) return leagueTeamSurfaces.get(cacheKey);
+    if (leagueTeamSurfaces.has(cacheKey)) {
+      const cached = leagueTeamSurfaces.get(cacheKey); cached.render?.(); return cached;
+    }
     const label = name === UNASSIGNED ? t('league.ronin', 'Ronin: no team') : readableTeam(name), team = teamByName(name);
     const launch = el('button', null, t('league.launch_team', 'Launch')); launch.type = 'button'; launch.addEventListener('click', () => openTeam(name));
     const remove = el('button', 'league-team-delete', t('league.delete_team', 'Delete team')); remove.type = 'button'; remove.addEventListener('click', async () => { const count = membersOfTeam(name).length; if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team: name, count }))) return; const result = await deleteTeamRoster(name); if (!result.ok) { surface.setState('failed', result.message); return; } for (const seat of bench.locations(WB_TYPES.team, name)) emptySeat(seat); for (const key of [...leagueTeamSurfaces.keys()]) if (key.endsWith(`\0${name}`)) leagueTeamSurfaces.delete(key); });
@@ -407,7 +409,10 @@ export function createCoworkView(options = {}) {
       surface.content.replaceChildren(metadata, roster);
     };
     render();
-    const out = { el: surface.el }; leagueTeamSurfaces.set(cacheKey, out); return out;
+    const out = { el: surface.el, render }; leagueTeamSurfaces.set(cacheKey, out); return out;
+  };
+  const refreshLeagueTeamSurfaces = () => {
+    for (const view of leagueTeamSurfaces.values()) view.render?.();
   };
   let homeTimer = 0;
   const readRows = async () => {
@@ -520,7 +525,11 @@ export function createCoworkView(options = {}) {
     mount: (_host, context) => {
       ctx = context;
       for (const commons of Object.values(teamCommons)) commons.channels.mount(context);
-      unsubscribe = subscribe(() => { if (entered && team) paint(); });
+      unsubscribe = subscribe(() => {
+        if (!entered) return;
+        refreshLeagueTeamSurfaces();
+        if (team) paint();
+      });
       teamPageHandlers.add(onDraft);
       sessionsHandlers.add(onSessions);
     },

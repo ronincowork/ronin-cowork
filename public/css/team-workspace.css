@@ -57,8 +57,8 @@
   .league-team-member-words strong { overflow: hidden; color: var(--fg-strong); font-weight: inherit; text-overflow: ellipsis; white-space: nowrap; }
   .league-team-member-words span, .league-team-empty { color: var(--muted); font-size: var(--text-2); }
   .league-team-lead, .league-team-member-remove, .league-team-add button { border: 0; background: transparent; color: var(--muted); font: inherit; cursor: pointer; }
-  .league-team-lead { border: var(--edge) solid var(--line-2); border-radius: var(--radius-round); padding: var(--space-2) var(--space-4); }
-  .league-team-lead[aria-pressed='true'] { border-color: var(--kaki); color: var(--kaki); }
+  .league-team-lead { border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); padding: var(--space-2) var(--space-4); }
+  .league-team-lead[aria-pressed='true'] { border-color: var(--kaki); background: var(--raise); color: var(--kaki); }
   .league-team-member-remove:hover { color: var(--bad-soft); }
   .league-team-empty { margin: 0; border-bottom: var(--edge) solid var(--line); padding: var(--space-5) 0; }
   .league-team-add { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-3); margin-top: var(--space-5); }
