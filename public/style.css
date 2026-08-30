@@ -486,6 +486,7 @@ body {
   color: var(--bar-value-fg);
   white-space: nowrap;
 }
+.ui-bar-separator { color: var(--muted); }
 /* ---- ui-sheet / ui-card — the modal primitive (js/ui.js `sheet`) ----
    Dialog semantics, focus entry/trap/return and dismissal live in JS; this is the
    look: a scrim, a centered card. Consumers size their card and may accent its
@@ -735,11 +736,7 @@ body {
 #bar .grow {
   flex: 1;
 }
-/* Top-bar verbs — BOTH surfaces (owner override of the touch/desktop split) */
-/* The LOOK: one rule, one family. One verb since 2026-08-27 (owner): Commons, Mika
-   Assist, Keypad and New left the bar — see index.html. The shape button rides this rule
-   too; it is the same box. SIZING splits below, because the shape is not a verb. */
-#sysbtn,
+/* The Workbench shape control uses the compact bar-button treatment. */
 #bar .shape-cycle {
   display: inline-flex;
   align-items: center;
@@ -752,42 +749,6 @@ body {
   font-size: var(--text-3);
   cursor: pointer;
   white-space: nowrap;
-}
-/* ONE WIDTH FOR THE VERBS (five when measured, two now), and the label sits inside it.
-   Owner, 2026-08-17: "each of the boxes on the right, except for the number … should be
-   the same width so there's not a small New and a large Commons … and then just fit
-   inside that button so that it looks a little bit more symmetrical." Boxes sized to
-   their own text made a ragged row of five different rectangles reading as five
-   different KINDS of control, which they are not — they are five doors.
-
-   `min-width`, not `width`: it degrades honestly if a label is ever renamed longer —
-   the box widens rather than clipping the word. `justify-content: center` is what puts
-   the label INSIDE the box instead of hard against the left padding.
-
-   100px IS MEASURED, NOT CHOSEN. The longest verb, "ミ Mika Assist", renders at 94px in
-   the shipped font; 100px is the widest the five can be before #bar stops fitting its
-   own row at 681px, the narrow edge of the range where the labels are still shown (104
-   overflows by 5px there, 120 by 85 — measured 2026-08-17). A bar that scrolls sideways
-   to reach ⚙ Account is a worse defect than 6px of slack, so the row takes the number
-   that always fits. Rename a verb longer than this and RE-MEASURE at 681px; do not just
-   nudge it up. */
-#sysbtn {
-  min-width: 100px;
-  justify-content: center;
-}
-/* THE PHONE BAR IS A GENUINE SHELL CHANGE, so it stays a viewport query (docs/ui.md):
-   at ≤680px the words go and the verbs are icon-only, because bar space is tight.
-   THE EQUAL WIDTH GOES WITH THEM — five 100px boxes holding one glyph each would eat
-   500px of a 402px row and shove the grid count off the end, which is the opposite of
-   what the width was for. `min-width: auto` hands each glyph back its own small box.
-   One rule, every verb on the bar, no exceptions. */
-@media (max-width: 680px) {
-  #sysbtn .txt {
-    display: none; /* icon-only on phones — bar space is tight */
-  }
-  #sysbtn {
-    min-width: auto;
-  }
 }
 /* Copy panel — real selectable text, native copy on any device */
 /* Per-session note (post-it) — centered modal on desktop, full-bleed on phones */

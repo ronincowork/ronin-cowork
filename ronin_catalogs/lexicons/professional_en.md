@@ -1117,7 +1117,6 @@ The catalog entry goes. {dir} is not touched.
 - **bar.keys:** Keys
 - **bar.ni_title:** Ronin — keys, home, new session, board, pad
 - **bar.new:** New
-- **bar.desk:** Admin Desk
 - **bar.shape_title:** Two workspaces — click for four
 - **bar.shape_two:** Two workspaces — click for four
 - **bar.shape_four:** Four workspaces — click for two
@@ -1289,7 +1288,6 @@ The catalog entry goes. {dir} is not touched.
 - **bar.league_title:** Open League in a new browser tab
 - **bar.newtab_title:** Open a second Ronin in a new browser tab
 - **bar.new_title:** ⌃⇧N — start a new session: pick what it is for, where it works and who it is
-- **bar.desk_title:** Admin Desk — this machine and this app: configuration, project roots, hotwords, Koshi, gbrain, stats, appearance, updates, log out
 - **keys.esc:** Esc
 - **keys.interrupt_title:** Ctrl-C (interrupt)
 - **keys.latest_title:** Jump to latest output

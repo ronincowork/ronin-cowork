@@ -36,7 +36,7 @@
         <img class="brand-mark" src="brand/nin-mark.svg" alt="" />
         <span class="brand-word">RoninCowork</span>
       </button>
-      <span id="campaignvalue" class="ui-bar-value" hidden></span>
+      <span id="coworkssep" class="ui-bar-separator" aria-hidden="true" hidden>•</span>
       <button id="coworksbtn" class="ui-bar-nav" type="button" hidden>Coworks</button>
       <span id="teamvalue" class="ui-bar-value" hidden></span>
       <button id="servicesstate" class="services-state" type="button" hidden aria-expanded="false"></button>
@@ -58,17 +58,10 @@
            2026-08-29); it stays outside the verbs' measured width because it is a readout
            and does nothing when clicked. js/ramrpm.js writes the face and the title. -->
       <span id="ramrpm" class="ramrpm" hidden></span>
-      <!-- THE BAR IS ONE VERB (owner, 2026-08-27): ⚙ Admin Desk — the cowork commons. か New
-           went the way of ⛩ Commons, ミ Mika Assist and く Keypad: a new session is a
-           workspace surface (＋ Add team member on the roster, ⌃⇧N), the Commons is the
-           tile's own ⛩ on the parked grid page, Mika is the `mika` tool, Keypad a tab. The
-           1·2·4 count is gone too — the cowork_space's shape is the roster's 2 | 4; the
-           parked grid page still cycles from the pad's ▚ key and ⌃⇧1/2/4. -->
       <!-- THE SHAPE — 2 ⇄ 4 (owner, 2026-08-28): one button wearing the count the cowork_space
            is on, clicked to alternate, in the seat the 1·2·4 count had. js/team-view.js
            writes its face and owns the click; hidden when no cowork_space is showing. -->
       <button id="shapecycle" class="shape-cycle" hidden data-t-title="bar.shape_title" title="Two workspaces — click for four">2</button>
-      <button id="sysbtn" data-t-title="bar.desk_title" title="Admin Desk — this machine and this app: configuration, project roots, hotwords, Koshi, gbrain, stats, appearance, updates, log out">⚙<span class="txt" data-t="bar.desk"> Admin Desk</span></button>
       <div class="ctrls" role="group" data-t-aria="bar.keys" aria-label="Keys">
         <button id="k-esc" data-t-title="keys.esc" title="Esc" data-t="keys.esc">Esc</button>
         <button id="k-int" data-t-title="keys.interrupt_title" title="Ctrl-C (interrupt)">^C</button>
