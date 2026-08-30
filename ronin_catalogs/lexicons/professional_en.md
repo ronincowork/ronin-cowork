@@ -1014,8 +1014,6 @@ The catalog entry goes. {dir} is not touched.
 
 ## dial / gauge / mark — widgets.js (the control dial, the context gauge, the role menu)
 - **gauge.used:** ⛽ {label} {pct}% used
-- **mark.none:** not marked
-- **mark.none_title:** Clear the mark — this session has not said what it is doing
 - **dial.user:** Owner only
 - **dial.user_help:** Owner only — outside agents may not read or type here
 - **dial.read:** Outside agents: watch
@@ -1140,13 +1138,9 @@ The catalog entry goes. {dir} is not touched.
 - **head.rename_quiet:** Rename session — no session in this tile yet
 - **head.rename_prompt:** Rename session
 - **head.rename_failed:** Could not rename session: {reason}
-- **head.chip_help:** This session's work record — what it has done, what it is doing, what comes next, and the documents it has listed. Opens the work record.
-- **head.job_help:** What this session is doing
-- **head.job_quiet:** What a session is doing — no session in this tile yet
-- **head.job_read:** {job} — click to change what this session is doing
-- **head.job_unmarked:** Not marked — click to say what this session is doing
-- **head.branch_help:** Desks this session is working at — worktree, repo, branch, and what is ahead, pending or parked
-- **head.branch_quiet:** Desks — no session in this tile yet
+- **head.view_work_record:** View Work Record
+- **head.work_record_help:** View repositories, current action, and the work record
+- **head.work_record_quiet:** View Work Record — no Agent in this workspace
 - **head.output_help:** Output — live terminal or one of RIREKI’s unlocked views
 - **head.mention_help:** Mention another session — choose a name to add it to the message box
 - **head.mention_quiet:** Mentions — no session in this tile yet
@@ -1183,7 +1177,6 @@ The catalog entry goes. {dir} is not touched.
 ## me — tiledrop.js (the メ sheet)
 - **me.status:** Status
 - **me.ladder:** Work record
-- **me.branches:** Branches
 - **me.macros:** Macros
 - **me.mention:** Mention session
 - **me.groups:** Groups
@@ -1232,12 +1225,6 @@ The catalog entry goes. {dir} is not touched.
 - **league.new_team_summary:** Define the Team, then build its session roster.
 - **league.rosters_unavailable:** Durable rosters unavailable — showing live Teams only.
 
-## mark — tilejob.js (the 人 row)
-- **mark.lead_step_down:** 人 team lead — step down
-- **mark.lead_make:** 人 make team lead
-- **mark.lead_clear_title:** Leads {teams} — clear the designation
-- **mark.lead_make_title:** Designate the 人 of {teams}
-
 ## docs — tiledocs.js
 - **docs.empty_session:** This session has listed no docs yet. An agent lists one with: write_tegami --doc <path>
 
@@ -1285,9 +1272,6 @@ The catalog entry goes. {dir} is not touched.
 - **hotwords.stock_list:** Ronin's stock list — your first edit makes a copy that is yours
 
 ## ladder — the chip tooltip and side line
-- **ladder.held:** Held at a gate
-- **ladder.tap:** Open work record
-- **ladder.unchanged_for:** work record unchanged for {age}
 - **ladder.side:** {state} — the work record below is held, not stale
 
 ## errors — main.js (the session-list failure)

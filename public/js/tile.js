@@ -29,7 +29,6 @@ import { guard } from './errors.js';
 import { buildLadder } from './shingo.js';
 import { buildTileHead, syncTileHead } from './tilehead.js';
 import { installTextDrops } from './tiledroptext.js';
-import { pickJobFor } from './tilejob.js';
 import { dvrStep } from './dvr.js';
 import { TapeView } from './tapeview.js';
 import { TermView } from './termview.js';
@@ -38,6 +37,12 @@ import { buildComposer } from './composer.js';
 import { refreshKaki, setKakiPolicy } from './output.js';
 import { refreshDesks } from './desks.js';
 import { t } from './lexicon.js';
+
+const readableSession = (name) => {
+  const live = S.sessions.find((row) => row.name === name);
+  return live?.title || String(name || '').split(/[_-]+/).filter(Boolean)
+    .map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' ');
+};
 
 export class Tile {
   constructor(index) {
@@ -158,7 +163,8 @@ export class Tile {
   }
 
   refreshSessionName() {
-    this.sessionName.textContent = this.session || '';
+    this.sessionName.textContent = readableSession(this.session);
+    this.sessionName.title = this.session || '';
     this.syncHeader();
     this.refreshCtx();
     this.refreshTegami();
@@ -190,7 +196,6 @@ export class Tile {
     // The letter is MICHI's. No michi = no /tegami routes at all, so don't fetch into
     // a 404 — the chip simply never shows, same as a session with no letter.
     if (!session || serviceMissing('michi')) {
-      this.chip.set(null);
       this.closeLadder();
       syncTileHead(this);
       return;
@@ -200,7 +205,6 @@ export class Tile {
     // A failed read keeps the last chip rather than blanking it — the poll heals it.
     if (r.kind === 'network') return;
     this.tegami = r.ok ? r.data : null;
-    this.chip.set(this.tegami);
     // 📄 reads its count off the letter (2026-08-18) and this is the only place the letter
     // changes. Measured without it: switch a tile from a session with docs to one with none
     // and 📄 stayed lit, claiming the previous session's docs until the roster poll redrew.
@@ -232,7 +236,8 @@ export class Tile {
   closeLadder() {
     this.ladderOpen = false;
     this.el.querySelector('.shingo-ladder')?.remove();
-    this.chip.el.classList.remove('open');
+    this.workRecordBtn.classList.remove('open');
+    this.workRecordBtn.setAttribute('aria-expanded', 'false');
   }
 
   /**
@@ -260,7 +265,8 @@ export class Tile {
     this.el.querySelector('.shingo-ladder')?.remove();
     const box = buildLadder(this.tegami);
     this.el.querySelector('.tile-head').after(box);
-    this.chip.el.classList.add('open');
+    this.workRecordBtn.classList.add('open');
+    this.workRecordBtn.setAttribute('aria-expanded', 'true');
     // Open ON the rung you are standing on. A long ladder scrolls, and opening it at
     // rung 1 hides the one thing you opened it for — the band, and any gate near it.
     const now = box.querySelector('.sl-row.now');
@@ -302,8 +308,6 @@ export class Tile {
    * The list is updated locally before the ws poll gets there, so the mark moves under
    * your finger; the poll then confirms it, and would correct it if the write lost a race.
    */
-  pickJob(anchor) { pickJobFor(this, anchor); }
-
   openNote() {
     if (S.notePanel) S.notePanel.open(this.session);
   }
@@ -501,7 +505,6 @@ export class Tile {
     this.syncHeader();
     this.gauge.set(null);
     this.tegami = null;
-    this.chip.set(null);
     this.closeLadder();
     this.setDot('off');
     this.term.reset();
@@ -520,7 +523,8 @@ export class Tile {
 
   connect(session) {
     this.session = session;
-    this.sessionName.textContent = session;
+    this.sessionName.textContent = readableSession(session);
+    this.sessionName.title = session;
     this.syncHeader();
     this.refreshCtx();
     this.refreshTegami();

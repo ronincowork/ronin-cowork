@@ -35,10 +35,11 @@
   .home-grp-actions.tile-head { min-height: 0; padding: 0; border: 0; background: transparent; flex-wrap: nowrap; }
   .tw-config { padding: var(--space-6) var(--space-7); overflow-y: auto; }
   .tw-config-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); }
-  .tw-config-field { display: flex; flex-direction: column; gap: var(--space-2); color: var(--muted); font-size: var(--text-3); }
+  .tw-config-field, .tw-config-reading { display: flex; flex-direction: column; gap: var(--space-2); color: var(--muted); font-size: var(--text-3); }
   .tw-config-field:nth-child(3) { grid-column: 1 / -1; }
   .tw-config-field input, .tw-config-field textarea { width: 100%; box-sizing: border-box; border: var(--edge) solid var(--line-2); border-radius: var(--radius-sm); background: var(--bg-2); color: var(--fg); padding: var(--space-3); font: inherit; }
   .tw-config-field textarea { min-height: calc(var(--space-12) * 2); resize: vertical; }
+  .tw-config-reading output { color: var(--fg-strong); padding: var(--space-3) 0; }
   .tw-config-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; align-items: center; gap: var(--space-4); }
   .tw-config-status, .tw-config-empty { color: var(--muted); }
 

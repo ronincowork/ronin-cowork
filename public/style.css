@@ -3881,48 +3881,6 @@ button.wb-door:hover b {
 
 /* The re-mark menu: pick one of the catalog's jobs. A popover, not a sheet — the 🏷
    editor is a sheet because it edits a list; this picks one of eight and dies. */
-.job-menu {
-  position: fixed;
-  z-index: 60;
-  display: flex;
-  flex-direction: column;
-  min-width: 190px;
-  padding: var(--space-2);
-  border: var(--edge) solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--panel);
-  box-shadow: var(--shadow-menu);
-}
-.job-opt {
-  display: flex;
-  gap: var(--space-4);
-  align-items: center;
-  padding: var(--space-3) var(--space-4);
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: none;
-  color: var(--fg);
-  font: inherit;
-  font-size: var(--text-4);
-  text-align: left;
-  cursor: pointer;
-}
-/* In the menu the icons are calmed the same way but NOT shrunk as far: this is the one
-   place you are reading them to choose between them, so they carry the label rather than
-   sit beside a name that already says it. */
-.job-opt i {
-  width: 1.35em;
-  font-style: normal;
-  text-align: center;
-  filter: saturate(0.72);
-}
-.job-opt.on {
-  color: var(--accent);
-}
-.job-opt.extra {
-  margin-top: var(--space-1);
-  border-top: var(--edge) solid var(--line);
-}
 .job-opt.none {
   margin-top: var(--space-1);
   border-top: var(--edge) solid var(--line);
@@ -5332,55 +5290,17 @@ button.wb-door:hover b {
   font-size: var(--text-2);
 }
 
-/* ================= SHINGO (信号) — the ladder, made visible =================
-   Three surfaces, one payload: the chip in the tile header, the ladder it unrolls,
-   and the same fields as a column on the commons board. Read-only throughout — nothing
-   in here can touch a session. Sized to sit in a header row that already carries ten
-   controls, which is why the chip is fixed-width and the ladder is a drop, not a pane. */
-
-/* NOTE THE SELECTOR. `.tile-head button` sets width:26px for the control buttons, and
-   it outranks a bare `.shingo-chip` — a chip styled without the `button` in its selector
-   silently renders as a 26px square with its label clipped to nothing. The header has
-   room (~185px of slack at a 2x2 tile); it was never a space problem. Still allowed to
-   yield first if a long phase name ever does run the row out. */
-.tile-head button.shingo-chip {
-  flex: 0 1 auto;
+/* ================= Work record — the SHINGO reading expanded ================= */
+.tile-head button.work-record {
+  flex: 0 0 auto;
   width: auto;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-family: var(--font-term);
-  font-size: var(--text-micro);
-  letter-spacing: 0.04em;
-  border: var(--edge) solid var(--line);
-  border-radius: var(--radius-sm);
   padding: var(--space-2) var(--space-4);
-  height: 24px;
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 7%, transparent);
   white-space: nowrap;
-  cursor: pointer;
 }
-/* The age rides inside the chip, quieter than the position it follows — a second read,
-   not a competing one. */
-.shingo-chip .age {
-  color: var(--muted);
-}
-.shingo-chip .age:not(:empty)::before {
-  content: " · ";
-}
-.shingo-chip.gate .age {
-  color: color-mix(in srgb, var(--warn) 75%, transparent);
-}
-.shingo-chip.open {
+.tile-head button.work-record.open {
   border-color: var(--accent);
-}
-/* A gate is the one state the owner has to act on, so it takes the same slot and
-   simply goes amber. No second widget, no badge, no bell. */
-.shingo-chip.gate {
-  color: var(--warn);
-  border-color: color-mix(in srgb, var(--warn) 55%, transparent);
-  background: color-mix(in srgb, var(--warn) 12%, transparent);
+  color: var(--accent);
 }
 
 .shingo-ladder {
@@ -5447,11 +5367,6 @@ button.wb-door:hover b {
   padding-bottom: var(--space-3);
   margin-bottom: var(--space-3);
   border-bottom: var(--edge) solid var(--line);
-}
-.shingo-chip.side {
-  color: var(--accent-2);
-  border-color: var(--line);
-  background: color-mix(in srgb, var(--accent-2) 10%, transparent);
 }
 .shingo-ladder .sl-obj {
   color: var(--fg);

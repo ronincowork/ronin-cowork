@@ -46,55 +46,6 @@ export function clampTip(s, room = 120) {
   return s.length > room ? s.slice(0, room - 1) + '…' : s;
 }
 
-export function makeChip(onTap) {
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'shingo-chip';
-  btn.hidden = true;
-  // Position, then how long it has sat there. The age is the cheapest true thing on the
-  // tile — nobody maintains it, it is just the file's mtime — and beside a gate it reads
-  // as how long the session has been waiting on YOU.
-  const pos = document.createElement('span');
-  const age = document.createElement('span');
-  age.className = 'age';
-  btn.append(pos, age);
-  btn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    onTap();
-  });
-
-  const set = (letter) => {
-    // No ladder up = nothing to show. The torii button is always there to read the
-    // letter, so an absent chip costs the owner nothing and stops a dash-plus-age
-    // pretending to be a position.
-    if (!letter || !letter.chip || !letter.ladder?.length) {
-      btn.hidden = true;
-      return null;
-    }
-    btn.hidden = false;
-    pos.textContent = letter.chip.text;
-    const quiet = letter.quietMs >= 60000 ? humanAge(letter.quietMs) : '';
-    age.textContent = quiet;
-    btn.classList.toggle('gate', !!letter.chip.gate);
-    btn.classList.toggle('side', !!letter.ladder_state);
-    const held = letter.chip.gate ? t('ladder.held', 'Held at a gate') : t('ladder.tap', 'Open work record');
-    // The objective is AGENT-AUTHORED and unbounded; the help box is three lines.
-    // Clamp here at the source, or any session that writes a long objective overflows
-    // the box and fails check-tips for everyone (it measures the live DOM).
-    //
-    // THE TAIL IS BUILT FIRST because it is the part that must survive. It says whether
-    // the session is stuck; the objective is context for that answer. Handing its length
-    // to `clampTip` is what stops the two of them adding up past the box — they used to,
-    // and check-tips caught it at 165 chars on a live session (2026-08-17). Clamping the
-    // JOINED string instead would have trimmed the wrong end.
-    const tail = held + (quiet ? ' · ' + t('ladder.unchanged_for', 'work record unchanged for {age}', { age: quiet }) : '');
-    const ob = letter.objective ? clampTip(letter.objective, 120 - tail.length - 1) + '\n' : '';
-    btn.title = ob + tail;
-    return letter;
-  };
-  return { el: btn, set };
-}
-
 /**
  * The ladder — the same data the chip reads, at full zoom.
  *

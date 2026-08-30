@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1269 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1255 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -570,17 +570,10 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
-| `head.branch_help` | Desks this session is working at — worktree, repo, branch, and what is ahead, pending or parked |  |  |  |  |
-| `head.branch_quiet` | Desks — no session in this tile yet |  |  |  |  |
-| `head.chip_help` | This session's work record — what it has done, what it is doing, what comes next, and the documents it has listed. Opens the work record. |  |  |  |  |
 | `head.dial_help` | Who may touch this session: 👤 owner only · 👁 outside agents watch · 🤖 outside agents type. Yours to turn; agents never flip it. |  |  |  |  |
 | `head.dial_quiet` | Control dial — no session in this tile yet |  |  |  |  |
 | `head.dot_help` | Connection: green = attached, grey = disconnected |  |  |  |  |
 | `head.gauge_help` | Context gauge — how full this session's context window is, read off the pane's own status line. Hidden until there is a reading. |  |  |  |  |
-| `head.job_help` | What this session is doing |  |  |  |  |
-| `head.job_quiet` | What a session is doing — no session in this tile yet |  |  |  |  |
-| `head.job_read` | {job} — click to change what this session is doing |  |  |  |  |
-| `head.job_unmarked` | Not marked — click to say what this session is doing |  |  |  |  |
 | `head.kill_help` | Kill session (ends it + its viewers) |  |  |  |  |
 | `head.kill_quiet` | Kill session — no session in this tile yet |  |  |  |  |
 | `head.macros_quiet` | Macros — no session in this tile yet |  |  |  |  |
@@ -597,6 +590,9 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `head.rename_help` | Rename this session |  |  |  |  |
 | `head.rename_prompt` | Rename session |  |  |  |  |
 | `head.rename_quiet` | Rename session — no session in this tile yet |  |  |  |  |
+| `head.view_work_record` | View Work Record |  |  |  |  |
+| `head.work_record_help` | View repositories, current action, and the work record |  |  |  |  |
+| `head.work_record_quiet` | View Work Record — no Agent in this workspace |  |  |  |  |
 
 ## home
 
@@ -676,13 +672,10 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
 | `ladder.gate` | GATE |  |  |  |  |
-| `ladder.held` | Held at a gate |  |  |  |  |
 | `ladder.legs_undetermined` | — legs undetermined |  |  |  |  |
 | `ladder.none` | no work record yet |  |  |  |  |
 | `ladder.quiet` | quiet {age} |  |  |  |  |
 | `ladder.side` | {state} — the work record below is held, not stale |  |  |  |  |
-| `ladder.tap` | Open work record |  |  |  |  |
-| `ladder.unchanged_for` | work record unchanged for {age} |  |  |  |  |
 
 ## launch
 
@@ -830,22 +823,10 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `macros.no_blurb` | no blurb yet — add a blurb: line to its MACROS.md entry |  |  |  |  |
 | `macros.none_previewed` | no macros previewed — see MACROS.md |  |  |  |  |
 
-## mark
-
-| key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
-|---|---|---|---|---|---|
-| `mark.lead_clear_title` | Leads {teams} — clear the designation |  |  |  |  |
-| `mark.lead_make` | 人 make team lead |  |  |  |  |
-| `mark.lead_make_title` | Designate the 人 of {teams} |  |  |  |  |
-| `mark.lead_step_down` | 人 team lead — step down |  |  |  |  |
-| `mark.none` | not marked |  |  |  |  |
-| `mark.none_title` | Clear the mark — this session has not said what it is doing |  |  |  |  |
-
 ## me
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
-| `me.branches` | Branches |  |  |  |  |
 | `me.control` | Control |  |  |  |  |
 | `me.docs` | Docs |  |  |  |  |
 | `me.groups` | Groups |  |  |  |  |

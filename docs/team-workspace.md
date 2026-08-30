@@ -121,8 +121,8 @@ read-only.
 
 Shared seams touched for Team, by authorization: `public/js/terminal-tile-host.js`
 (`actions` ride the Tile head), `workspace-primitives.js` (`createChannelSurface({
-actions })`, `current()`), `tilejob.js` (the job pick, split from `tile.js` at its
-ceiling; carries the 人 toggle), `events.js` (`teamPageHandlers`).
+actions })`, `current()`), and `events.js` (`teamPageHandlers`). Team leadership is
+managed from the roster; the terminal head does not edit the session's role.
 
 ## Workspace Kit contract
 

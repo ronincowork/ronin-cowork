@@ -19,6 +19,12 @@ const field = (form, label, name, value, kind = 'input') => {
   return input;
 };
 
+const reading = (form, label, value) => {
+  const row = el('div', 'tw-config-reading');
+  row.append(el('span', null, label), el('output', null, value || '—'));
+  form.append(row);
+};
+
 export function renderTeamConfiguration(host, roster, options = {}) {
   host.replaceChildren();
   if (!roster?.durable) {
@@ -29,8 +35,7 @@ export function renderTeamConfiguration(host, roster, options = {}) {
   const name = field(form, 'Cowork name', 'name', roster.name);
   field(form, 'Readable title', 'title', roster.title);
   field(form, 'Purpose', 'objective', roster.objective, 'textarea');
-  field(form, 'Role', 'team_role', roster.team_role);
-  field(form, 'Project root', 'project_root', roster.project_root);
+  reading(form, 'Project root', roster.project_root);
   const actions = el('div', 'tw-config-actions');
   const status = el('span', 'tw-config-status');
   const saveAction = options.createAction?.({ label: 'Save', size: 'compact' });
