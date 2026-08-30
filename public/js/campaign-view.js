@@ -52,7 +52,7 @@ const NEW = '@new-campaign';
 const CAMPAIGNS_MAY_MULTIPLY = false;
 
 export function createCampaignView() {
-  const { createSurface, createSurfaceHeader, createCard, createMetadata, createAction, createActionBar, setSurfaceState } = WorkspaceKit.primitives;
+  const { createSurface, createSurfaceHeader, createCard, createMetadata, setSurfaceState } = WorkspaceKit.primitives;
   const { createWorkbenchLayout } = WorkspaceKit.layouts;
   const { teamWorkspaceState } = WorkspaceKit.contract;
 
@@ -161,18 +161,11 @@ export function createCampaignView() {
   const columnFace = el('span', 'cv-selector-face');
   columnHead.append(columnTitle, columnFace);
   column.el.prepend(columnHead);
-  // THE RECORD: the counts, and the doors out to the work. Coworks and Agents open the
-  // Cowork workbench, which already reads the Campaign selection this tab carries — so
-  // the settings page is a way out to the work and not a dead end.
+  // THE RECORD: what this Campaign has, counted live. Reading only — the doors to the
+  // work are the app bar's, not this column's.
   const record = el('div', 'cv-record');
   const counts = createMetadata();
-  const doors = createActionBar({
-    actions: [
-      createAction({ label: t('campaign_view.open_coworks', 'Open Coworks →'), action: () => ctx?.navigate('cowork') }),
-      createAction({ label: t('campaign_view.open_agents', 'Open Agents →'), action: () => ctx?.navigate('cowork') }),
-    ],
-  });
-  record.append(counts.el, doors.el);
+  record.append(counts.el);
   column.content.append(record);
   const cards = el('div', 'cv-selector-cards');
   column.content.append(cards);

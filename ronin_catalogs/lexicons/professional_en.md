@@ -209,8 +209,12 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.roots_none:** None — an Agent here has nowhere to work.
 - **campaign_view.templates_none:** Nothing to set yet.
 - **campaign_view.agents:** Agents
-- **campaign_view.open_coworks:** Open Coworks →
-- **campaign_view.open_agents:** Open Agents →
+- **campaign_view.name_help:** On the door, the browser tab and the address.
+- **campaign_view.description_help:** What this body of work is for. Shown on its card.
+- **campaign_view.id:** Id
+- **campaign_view.id_help:** Fixed at creation — the address and the storage key. Rename freely; the id stays.
+- **campaign_view.looks:** Looks: {skin}
+- **campaign_view.tile_shows:** Tile: {view}
 - **campaign_view.template_prefs:** Template preferences
 - **campaign_view.template_prefs_soon:** Which Cowork templates {campaign} offers. The selections land here once templates carry a Campaign.
 - **campaign_view.new_summary:** Set the stage. It creates no Cowork and launches no Agent.

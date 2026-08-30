@@ -12,7 +12,17 @@
   .wk-metadata-key { color: var(--muted); }
   .wk-metadata-value { min-width: 0; margin: 0; color: var(--fg); overflow-wrap: anywhere; }
   .wk-surface:not([data-flush='true']) > .wk-surface-content { padding: var(--space-6); }
+  /* THE FIELD — name, control, and what it actually does, in that order; the validation
+     line is the control's own voice (saving…, saved, or why not). */
+  .wk-field { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+  .wk-field-label { color: var(--fg-strong); font-weight: 600; }
   .wk-field-control { font: inherit; }
+  .wk-field-description { margin: 0; color: var(--muted); font-size: var(--text-3); line-height: 1.5; }
+  .wk-field-description:empty { display: none; }
+  .wk-field-validation { margin: 0; color: var(--muted); font-size: var(--text-3); }
+  .wk-field[data-validation='valid'] .wk-field-validation { color: var(--ok); }
+  .wk-field[data-validation='invalid'] .wk-field-validation { color: var(--bad); }
+  .wk-field[data-validation='warning'] .wk-field-validation { color: var(--warn); }
   .wk-terminal-host { width: 100%; height: 100%; min-width: 0; min-height: 0; }
   .wk-terminal-host > .tile { width: 100%; height: 100%; }
   .wk-terminal-host[data-mode='reduced'] .tile-head { display: none; }

@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1205 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1209 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -111,23 +111,27 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
 | `campaign_view.agents` | Agents |  |  |  |  |
+| `campaign_view.description_help` | What this body of work is for. Shown on its card. |  |  |  |  |
 | `campaign_view.group_new` | Another |  |  |  |  |
 | `campaign_view.group_offers` | What launch offers |  |  |  |  |
 | `campaign_view.group_reads` | How it reads |  |  |  |  |
 | `campaign_view.group_what` | What it is |  |  |  |  |
 | `campaign_view.group_where` | Where it works |  |  |  |  |
+| `campaign_view.id` | Id |  |  |  |  |
+| `campaign_view.id_help` | Fixed at creation — the address and the storage key. Rename freely; the id stays. |  |  |  |  |
+| `campaign_view.looks` | Looks: {skin} |  |  |  |  |
+| `campaign_view.name_help` | On the door, the browser tab and the address. |  |  |  |  |
 | `campaign_view.new_summary` | Set the stage. It creates no Cowork and launches no Agent. |  |  |  |  |
 | `campaign_view.no_description` | No description yet. |  |  |  |  |
 | `campaign_view.no_profile` | As stock — none chosen. |  |  |  |  |
 | `campaign_view.no_profiles` | No desk profiles on this install. |  |  |  |  |
 | `campaign_view.none_selected` | No Campaign selected. |  |  |  |  |
-| `campaign_view.open_agents` | Open Agents → |  |  |  |  |
-| `campaign_view.open_coworks` | Open Coworks → |  |  |  |  |
 | `campaign_view.roots_n` | {n} roots |  |  |  |  |
 | `campaign_view.roots_none` | None — an Agent here has nowhere to work. |  |  |  |  |
 | `campaign_view.template_prefs` | Template preferences |  |  |  |  |
 | `campaign_view.template_prefs_soon` | Which Cowork templates {campaign} offers. The selections land here once templates carry a Campaign. |  |  |  |  |
 | `campaign_view.templates_none` | Nothing to set yet. |  |  |  |  |
+| `campaign_view.tile_shows` | Tile: {view} |  |  |  |  |
 
 ## commons
 
