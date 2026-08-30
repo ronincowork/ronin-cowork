@@ -38,7 +38,6 @@ test('every assisted session is handed the session macro routing guide', async (
     const form: SpawnForm = {
       session_role: profile.session_role,
       prompt: 'Review the installer.',
-      mode: 'assisted',
     };
 
     const brief = buildBrief(profile, undefined, form, undefined, boot);
@@ -96,7 +95,6 @@ test('a referenced session is caught up on through the tape, pane peek as fallba
   const form: SpawnForm = {
     session_role: profile.session_role,
     prompt: 'Review the login work.',
-    mode: 'assisted',
     reference: 'login_fix',
   };
 
@@ -139,15 +137,15 @@ test('a service-signed *_connected level rides the MCP toggle', async () => {
   }
 });
 
-test('manual sessions remain exactly manual', () => {
+test('startup reading is never stripped when instructions are present', () => {
   const profile = { session_role: 'OpenShell', posture: [] } as unknown as LaunchProfile;
   const form: SpawnForm = {
     session_role: profile.session_role,
     prompt: '  owner text only  ',
-    mode: 'manual',
   };
 
-  assert.equal(buildBrief(profile, undefined, form, undefined, ['/stock/SESSION_MACROS.md']), 'owner text only');
+  const brief = buildBrief(profile, undefined, form, undefined, ['/stock/SESSION_MACROS.md']);
+  assert.match(brief, /Read first: \/stock\/SESSION_MACROS\.md\./);
 });
 
 test('a blank axis omits only its own level, and role reading comes before team_role reading', async () => {

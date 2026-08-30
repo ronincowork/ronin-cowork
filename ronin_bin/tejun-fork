@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# tejun-fork — launch one visible Ronin Agent. Every input is optional.
+# Usage: tejun-fork [instructions] [--name n] [--team t] [--role r]
+#                   [--provider p] [--model m] [--dial user|read|write]
+set -u
+die() { printf 'REFUSED: %s\n' "$1" >&2; exit "${2:-4}"; }
+me() {
+  local win session sid
+  if [ -n "${TMUX_PANE:-}" ]; then
+    win=$(tmux display-message -p -t "$TMUX_PANE" '#{window_id}' 2>/dev/null) || win=""
+    session=$(tmux list-windows -a -F '#{session_name}	#{window_id}' 2>/dev/null |
+      awk -F '\t' -v w="$win" '$2==w && $1 !~ /^grid_/ {print $1; exit}')
+    [ -n "$session" ] && { printf '%s\n' "$session"; return; }
+  fi
+  if [ -n "${TMUX:-}" ]; then
+    sid=${TMUX##*,}
+    tmux list-sessions -F '#{session_id}	#{session_name}' 2>/dev/null |
+      awk -F '\t' -v i="\$$sid" '$1==i && $2 !~ /^grid_/ {print $2; exit}'
+  fi
+}
+
+PROMPT="" NAME="" TEAM="" ROLE="" PROVIDER="" MODEL="" DIAL=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --name) NAME="${2:-}"; shift 2 ;;
+    --team) TEAM="${2:-}"; shift 2 ;;
+    --role|--session-role) ROLE="${2:-}"; shift 2 ;;
+    --provider) PROVIDER="${2:-}"; shift 2 ;;
+    --model) MODEL="${2:-}"; shift 2 ;;
+    --dial|--control) DIAL="${2:-}"; shift 2 ;;
+    --) shift; PROMPT="$*"; break ;;
+    -*) die "unknown option $1" 2 ;;
+    *) [ -z "$PROMPT" ] || die 'instructions must be one quoted argument' 2; PROMPT="$1"; shift ;;
+  esac
+done
+case "$DIAL" in ''|user|read|write) ;; *) die '--dial is user, read, or write' 2 ;; esac
+
+CALLER=$(me 2>/dev/null || true)
+BODY=$(PROMPT="$PROMPT" NAME="$NAME" TEAM="$TEAM" ROLE="$ROLE" PROVIDER="$PROVIDER" MODEL="$MODEL" DIAL="$DIAL" CALLER="$CALLER" python3 - <<'PY'
+import json, os
+e = os.environ
+b = {"caller": e["CALLER"]} if e["CALLER"] else {}
+for field, env in (("prompt", "PROMPT"), ("name", "NAME"), ("team", "TEAM"),
+                   ("session_role", "ROLE"), ("provider", "PROVIDER"),
+                   ("model", "MODEL"), ("dial", "DIAL")):
+    if e[env]: b[field] = e[env]
+print(json.dumps(b))
+PY
+) || die 'could not compose launch request' 2
+URL="${RONIN_URL:-$(tmux show-option -s -qv @ronin-url 2>/dev/null || true)}"
+[ -n "$URL" ] || URL=http://127.0.0.1:3006
+AUTH=()
+[ -n "${RONIN_AUTH:-}" ] && AUTH=(-u "$RONIN_AUTH")
+OUT=$(mktemp /tmp/tejun-fork.XXXXXX) || exit 2
+CODE=$(curl -sS -m 120 "${AUTH[@]+"${AUTH[@]}"}" -o "$OUT" -w '%{http_code}' \
+  -H 'content-type: application/json' -X POST --data "$BODY" "$URL/api/session") || {
+  rm -f "$OUT"; die "Ronin did not answer at $URL" 5;
+}
+python3 - "$CODE" "$OUT" <<'PY'
+import json, sys
+code, path = int(sys.argv[1]), sys.argv[2]
+try: d = json.load(open(path))
+except Exception: d = {}
+if code == 200 and d.get("ok"):
+    r = d.get("receipt") or {}
+    team = r.get("team") or "rōnin"
+    print(f"BORN {d['name']} · team {team} · Control {r.get('dial', 'write')}")
+    raise SystemExit(0)
+print(f"REFUSED: {d.get('error') or f'HTTP {code}'}", file=sys.stderr)
+raise SystemExit(4)
+PY
+RC=$?
+rm -f "$OUT"
+exit "$RC"
