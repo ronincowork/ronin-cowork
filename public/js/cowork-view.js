@@ -4,7 +4,6 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { deleteTeamRoster, membersOfTeam, refreshTeams, subscribe, teamByName, teamsFromState, UNASSIGNED } from './team-controller.js';
 import { createNewTeamView } from './new-team.js';
 import { createTeamRosterSurface } from './team-roster-surface.js';
-import { activeProfile } from './desk-profile.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { createTeamWipeboard } from './team-wipeboard.js';
 import { buildDocs } from './docs.js';
@@ -503,14 +502,9 @@ export function createCoworkView(options = {}) {
       team = campaign ? '' : context.param || context.state?.team || '';
       setBarLabel();
       const typed = teamWorkspaceState(context.state, context.viewState(viewKey), bench.declaration);
-      // THE DESK PROFILE'S ORDER (R38) when this tab has no arrangement of its own — the
-      // owner's standing default, never an override of what a tab already arranged.
-      const stored = context.viewState(viewKey)?.arrangement;
-      const profileOrder = activeProfile()?.team_arrangement || [];
-      const arrangement = !stored && profileOrder.length ? { ...typed.arrangement, order: profileOrder.map((name) => name === 'roster' ? 'selector' : name) } : typed.arrangement;
       // What each workspace remembers holding; the old one-seat focusedSession lands in
       // the first workspace, once. With nothing remembered: the lead left, the commons right.
-      bench.enter({ arrangement, count: context.viewState(viewKey)?.count, selected: context.viewState(viewKey)?.selected });
+      bench.enter({ arrangement: typed.arrangement, count: context.viewState(viewKey)?.count, selected: context.viewState(viewKey)?.selected });
       remembered = { ...typed.seats };
       if (!Object.keys(remembered).length) remembered = typed.focusedSession ? { workspace1: typed.focusedSession } : {};
       const members = membersOfTeam(team);
