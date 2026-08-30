@@ -26,20 +26,27 @@
 import { request } from './request.js';
 import { activeProfile } from './desk-profile.js';
 
-/** The last-resort id, used only when no Campaign API answered AND SETTEI names nothing. */
-const UNNAMED_CAMPAIGN_ID = 'ronin';
+/** The last-resort id, used only when no Campaign API answered AND SETTEI names nothing —
+ *  the same home Campaign the server seeds (src/campaign-config.ts HOME_ID). */
+const UNNAMED_CAMPAIGN_ID = 'home';
 
 /** `{ campaigns, ok, synthesized }` — the last read. `null` until one has happened. */
 let read = null;
 
 const text = (value) => (typeof value === 'string' ? value.trim() : '');
 
-/** One record as the client uses it; anything the server did not say is ''. */
+const bucket = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
+
+/** One record as the client uses it; anything the server did not say is '' or {}. The
+ *  Campaign's own desk settings and its typed config ride along — the Desk profile and
+ *  Agent defaults surfaces read them; a synthesized record has neither. */
 const shape = (row) => ({
   id: text(row?.id),
   title: text(row?.title) || text(row?.id),
   description: text(row?.description),
   desk_profile: text(row?.desk_profile),
+  desk: bucket(row?.desk),
+  config: bucket(row?.config),
   state: row?.state === 'archived' ? 'archived' : 'active',
 });
 
@@ -67,7 +74,7 @@ async function synthesize() {
   const name = text(campaign?.name);
   return [shape({
     id: deriveId(name),
-    title: name || 'Ronin',
+    title: name || 'Ronin Home',
     description: text(campaign?.description),
     desk_profile: activeProfile()?.name || '',
     state: 'active',

@@ -118,9 +118,11 @@ writable campaign record" a fact about the import graph instead of a convention.
 the same reason: a store we cannot write is a different failure, and throwing there would
 cost the whole boot.
 
-1. Derive one id from the install's current campaign name, falling back to `ronin`. **The
-   id is derived, never hard-coded** — on a box whose owner named their campaign, the id is
-   theirs, and anything assuming the literal `ronin` is wrong there.
+1. Derive one id from the install's current campaign name. An install that never named
+   one — every fresh install — is born with the one home Campaign, `home`, titled
+   "Ronin Home" (owner, 2026-08-30); the name is free to change afterwards. **On a box
+   whose owner named their campaign, the id is derived from that name, never hard-coded**,
+   and anything assuming a literal id is wrong there.
 2. Create the record from that name, description and `desk_profile`.
 
 **Idempotent by existence, not by a flag.** If the install has any campaign — archived ones

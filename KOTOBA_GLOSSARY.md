@@ -93,18 +93,18 @@ learn in order to use Ronin should cost them a second language first.
 | team (`@ronin-tags`) | **Cowork**<!--g:glossary.team--> | The user-facing word for a set of sessions working together. Internally this remains a Team backed by a `team_roster`; Cowork adds no second object. |
 | note (`@ronin_note`) | **Note**<!--g:glossary.note--> | The owner's one line about a session. |
 | `session_role` (in the letter) | **what it's doing**<!--g:glossary.doing--> | The role's icon, drawn beside every session in the roster and the tile picker. Set at launch; the session changes it itself as its work changes, and so can you. A session with no session_role shows no icon. |
-| — | **Status · Ladder · Macros · Detach · Kill session**<!--g:glossary.session_menu--> | The rest of the per-session menu. Already plain. |
+| — | **Status · Work record · Macros · Detach · Kill session**<!--g:glossary.session_menu--> | The rest of the per-session menu. Already plain. |
 
 ## § PROGRESS AND HISTORY
 
 | House term | Plain English | One line |
 |---|---|---|
-| MICHI (道) | **ladder**<!--g:glossary.ladder--> | Ruled in KOTOBA: never say MICHI to a user. The UI says Ladder. |
-| ladder | **ladder**<!--g:glossary.ladder--> | What a session has done, is doing, and knows is next. |
-| rung · leg · phase · gate | **rung · leg · phase · gate**<!--g:glossary.rung--> | One line on the ladder; a unit of work; a group of them; a stop waiting on someone. **Leg stays** — no rename to *step*, which is `tejun-step` (position in a macro run). |
-| undetermined | — | Not rendered at all. The ladder never guesses ahead. |
-| SHINGO (信号) | *(no user word)* | The ladder shown on a tile header. A user sees the ladder, not a name. |
-| TEGAMI (手紙) | ⚠ **none — see § OPEN 1** | The one file a session keeps about its own work. Still reaching a user's face. |
+| MICHI (道) | **work record**<!--g:glossary.work_record--> | The machinery that reads and displays a session's work record. MICHI never reaches a user's face. |
+| TEGAMI (手紙) | **work record**<!--g:glossary.work_record--> | The one living record a session keeps: what it is doing, its progress, teams, repos and listed documents. Say “update your work record.” |
+| `ladder` / `ladder_state` | **work record**<!--g:glossary.work_record--> | Compatibility keys inside TEGAMI. Never teach “ladder” as a separate product concept. |
+| rung · leg · phase · gate | **rung · leg · phase · gate**<!--g:glossary.rung--> | Internal structure inside the work record. A gate is a stop waiting on someone; these words do not name the record itself. |
+| undetermined | — | Not rendered at all. The work record never guesses ahead. |
+| SHINGO (信号) | **work record**<!--g:glossary.work_record--> | The compact work-record reading in the tile header; it opens the full work record. |
 | RIREKI (履歴) | ⚠ **two words on screen — see § OPEN 6** | Everything a pane printed, written to disk as it happens. The tape view says *the recording*; the Services card says *Readable transcripts*. One must win. |
 | OBOERU (覚える) | **memory**<!--g:glossary.memory--> | Notes that outlive the session that wrote them. |
 | TOMODACHI (友達) | **Stats**<!--g:glossary.stats--> | What your sessions have been doing — counts, not content. **Ruled 2026-08-22:** every surface says *Stats*; the internal spelling is `cowork_stats`; the card's "Usage statistics" is renamed. TOMODACHI never reaches a user's face. |
@@ -119,6 +119,7 @@ learn in order to use Ronin should cost them a second language first.
 | `session_role` | **role**<!--g:glossary.role--> | What a session is doing now. The values read plainly on their own (RiffOnIt, CutCode, CheckWork, …). The set lives in `ronin_catalogs/session_roles/` — one file per role, and the directory is the count. |
 | `desk_profile` | **desk profile**<!--g:glossary.desk_profile--> | Your standing defaults for the surfaces you work at — the skin, the words, the kind of campaign the board opens on, how the Team page is arranged. Not a skin; it has one. |
 | `behaviour` | **behaviour**<!--g:glossary.behaviour--> | Anything you can hand a session to change what it does — an SOP, a doc, a tool, a macro, a memory. Inert on the shelf; handed over, it makes the session right for the situation. |
+| `routine` | **routine**<!--g:glossary.routine--> | A bundle of behaviours Ronin runs for you — reading, SOPs, macros, tools — with one switch. Ronin control, gbrain, Koshi, Hotwords. Switched on the Settings page's Routines card; a switch reaches sessions born after it. |
 | `session_build` | **build**<!--g:glossary.build--> | A preconfigured way to start a session — its way of working, the reading it arrives with, the model that suits it. Pick one, then finish its loadout with the behaviours this run needs. |
 | `session_mandate` | **mandate**<!--g:glossary.mandate--> | How far a session may go before it checks in (discuss · plan · execute · run), whom it may recruit (none · propose · staff), and what it hands back (plan · ideas · code · artifact · team). Set by the owner on the first session of a project; a solo run is just `recruit: none`. |
 | forkit | **fork**<!--g:glossary.fork--> | Split the current topic into a visible Ronin session. “Fork it” and “new session” mean this; “spawn an agent” means an internal sub-agent. |
@@ -152,7 +153,7 @@ and each maps to a house name:
 
 | On the card | House machinery |
 |---|---|
-| **Live status ladders** | MICHI + SHINGO + koshi |
+| **Live work records** | MICHI + SHINGO + koshi |
 | **Readable transcripts** | RIREKI — see § OPEN 6 for the word |
 | **Stats** | TOMODACHI + SOROBAN (`cowork_stats` — ruled 2026-08-22, was "Usage statistics") |
 | **Voice** | KOE |
@@ -239,9 +240,9 @@ test · shadowing · the session directory · build-out doc · handoff · `lande
 
 ## § OPEN — @kotoba rules, nothing coined here
 
-1. **TEGAMI has no English word.** `public/js/tiledrop.js` labels a menu row `TEGAMI`, and
-   `public/js/tile.js`'s tooltip reads *"Read this session's TEGAMI."* The obvious word —
-   *Note* — is taken by `@ronin_note`. Two different things, one candidate.
+1. **CLOSED — TEGAMI and its former “ladder” view are the work record.** Owner,
+   2026-08-30. Say “update your work record.” The `ladder` and `ladder_state` spellings
+   remain compatibility keys only; they are not a second user-facing concept.
 
 1a. **KOSHI's English word may already exist, on screen, unnoticed: "your AI admin"**
    (`commons.js`). This file's own rule is *the UI's word wins*, and that is a UI word,

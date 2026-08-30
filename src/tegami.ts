@@ -102,7 +102,7 @@ export async function checkoutAt(dir: string): Promise<TegamiCheckout> {
     const remote = await git('config', '--get', 'remote.origin.url').catch(() => '');
     const branch = await git('branch', '--show-current').catch(() => '') ||
       await git('rev-parse', '--short', 'HEAD').catch(() => '');
-    return { repo: remote || top, branch };
+    return { repo: remote || top, branch, worktree: top };
   } catch {
     return { repo: '', branch: '' };
   }
@@ -172,7 +172,7 @@ export async function deriveTeams(tags: string[]): Promise<TeamEntry[]> {
 function seedShell(
   name: string,
   role: string,
-  checkout: TegamiCheckout,
+  repos: TegamiCheckout[],
   teams: TeamEntry[],
   tasks: string,
 ): string {
@@ -200,8 +200,9 @@ function seedShell(
 >
 > YOUR **repos** list is started from the checkout the new-session box put you in. It is
 > not limited to that project_root: add, remove, or change entries as you work across other
-> repositories. Keep every branch current. The branch is the important live coordinate:
-> it tells the owner where this session's work is landing.
+> repositories. Keep every worktree and branch current. The worktree is the important
+> live coordinate: it tells the owner which private desk this session is actually using;
+> the branch remains supporting Git detail.
 >
 ${tasks}
 > YOUR **ladder** — the rungs, and which one you are on. Phases hold legs. Name a phase
@@ -226,7 +227,7 @@ ${tasks}
 { "objective": "",
   "session_role": ${JSON.stringify(role)},
   "teams": ${JSON.stringify(teams)},
-  "repos": ${JSON.stringify(checkout.repo || checkout.branch ? [checkout] : [])},
+  "repos": ${JSON.stringify(repos.filter((checkout) => checkout.repo || checkout.branch))},
   "ladder": [] }
 \`\`\`
 `;
@@ -245,13 +246,13 @@ ${tasks}
 export async function seedTegami(
   name: string,
   role: string,
-  checkout: TegamiCheckout = { repo: '', branch: '' },
+  checkout: TegamiCheckout | TegamiCheckout[] = { repo: '', branch: '' },
   teams: TeamEntry[] = [],
 ): Promise<string | null> {
   try {
     const file = tegamiPath(await sessionKey(name));
     await fs.mkdir(path.dirname(file), { recursive: true });
-    await fs.writeFile(file, seedShell(name, role, checkout, teams, await taskLines()), { flag: 'wx' });
+    await fs.writeFile(file, seedShell(name, role, Array.isArray(checkout) ? checkout : [checkout], teams, await taskLines()), { flag: 'wx' });
     return file;
   } catch (e) {
     if ((e as NodeJS.ErrnoException)?.code === 'EEXIST') return tegamiPath(await sessionKey(name));

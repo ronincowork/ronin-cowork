@@ -128,3 +128,13 @@ test('the old workbench state migrates once, by position', () => {
   const already = migrateWorkbenchState({ order: ['c', 'b', 'a'], hidden: [], widths: {} }, DECL);
   assert.deepEqual([...already.order], ['c', 'b', 'a'], 'an arrangement passes through normalize untouched');
 });
+
+test('a persisted former default follows the new default, but owner changes do not', () => {
+  const declaration = { ...DECL, priorDefaultOrders: [['a', 'c', 'b']] };
+  const oldDefault = { order: ['a', 'c', 'b'], hidden: [], widths: { a: 40, b: 20, c: 40 } };
+  assert.deepEqual(migrateWorkbenchState(oldDefault, declaration), defaultArrangement(declaration));
+  const resized = { ...oldDefault, widths: { a: 35, b: 25, c: 40 } };
+  assert.deepEqual([...migrateWorkbenchState(resized, declaration).order], ['a', 'c', 'b'], 'a resized former order belongs to the owner');
+  const hidden = { ...oldDefault, hidden: ['b'] };
+  assert.deepEqual([...migrateWorkbenchState(hidden, declaration).order], ['a', 'c', 'b'], 'a hidden former order belongs to the owner');
+});

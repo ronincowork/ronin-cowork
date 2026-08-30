@@ -150,6 +150,7 @@
     font-size: var(--text-4);
   }
   .cv-input:focus { border-color: var(--accent); outline: none; }
+  .cv-input[readonly] { color: var(--muted); background: var(--bg-2); cursor: default; }
   .cv-cards { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-5); }
   .cv-actions { display: flex; justify-content: flex-end; gap: var(--space-4); }
   .cv-button {
@@ -164,4 +165,35 @@
   .cv-button[data-primary='true'] { border-color: var(--accent); color: var(--accent); }
   .cv-button:hover { border-color: var(--accent); color: var(--fg-strong); }
   .cv-empty { margin: 0; padding: var(--space-5); font-size: var(--text-3); color: var(--muted); }
+  .cv-note { margin: 0; font-size: var(--text-3); line-height: 1.5; color: var(--muted); }
+  .cv-eyebrow { font-size: var(--text-2); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .cv-body > .cv-cards { padding: 0; }
+  /* Agent defaults: one row per provider — the name, its models, the default radio. */
+  .cv-table { width: 100%; border-collapse: collapse; font-size: var(--text-3); }
+  .cv-table th { text-align: left; padding: var(--space-2) var(--space-3); color: var(--muted); font-weight: 600; border-bottom: var(--edge) solid var(--line); }
+  .cv-table td { padding: var(--space-3); vertical-align: middle; border-bottom: var(--edge) solid var(--line); }
+  .cv-table td b { color: var(--fg-strong); font-weight: 600; }
+  .cv-table .cv-input { width: 100%; }
+  .cv-from { display: block; margin-top: var(--space-1); font-size: var(--text-2); color: var(--muted); }
+  /* Desk profile: presets as pills with one Apply; each component a choice with its explanation beside it. */
+  .cv-presets { display: flex; flex-direction: column; gap: var(--space-3); padding-bottom: var(--space-5); border-bottom: var(--edge) solid var(--line); }
+  .cv-pills { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+  .cv-pill {
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    border: var(--edge) solid var(--line-2); border-radius: var(--radius-md);
+    background: transparent; color: var(--muted-2); font: inherit; font-size: var(--text-3); cursor: pointer;
+  }
+  .cv-pill:hover { border-color: var(--line-3); color: var(--fg-strong); }
+  .cv-pill[aria-pressed='true'] { border-color: var(--accent); background: var(--raise); color: var(--fg-strong); }
+  .cv-pill:disabled { cursor: default; opacity: .6; }
+  .cv-pill-tag { font-size: var(--text-1); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .cv-choice { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--space-6); align-items: start; padding: var(--space-3) 0; border-bottom: var(--edge) solid var(--line); }
+  .cv-choice-pick { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+  .cv-choice-name { font-weight: 600; color: var(--fg-strong); }
+  .cv-choice-why { margin: 0; font-size: var(--text-3); line-height: 1.5; color: var(--muted); }
+  /* Routines: a switch, or the state where there is no switch yet. */
+  .cv-switch { display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--text-3); color: var(--fg-strong); cursor: pointer; }
+  .cv-switch input { accent-color: var(--accent); }
+  .cv-state { font-size: var(--text-3); color: var(--muted); }
 }

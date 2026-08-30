@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1216 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1266 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -80,7 +80,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `campaign.description_placeholder` | What this campaign is for |  |  |  |  |
 | `campaign.name` | Campaign name |  |  |  |  |
 | `campaign.name_needed` | A Campaign needs a name. |  |  |  |  |
-| `campaign.name_placeholder` | My campaign |  |  |  |  |
+| `campaign.name_placeholder` | Ronin Home |  |  |  |  |
 | `campaign.new` | New Campaign |  |  |  |  |
 | `campaign.none` | No Campaigns yet. |  |  |  |  |
 | `campaign.profile_hint` | Sets the words, the skin and the templates this Campaign opens with. |  |  |  |  |
@@ -108,24 +108,76 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
+| `campaign_view.agent_defaults` | Agent defaults |  |  |  |  |
+| `campaign_view.applied` | applied — every component below is now this Campaign’s own |  |  |  |  |
+| `campaign_view.applied_tag` | applied |  |  |  |  |
+| `campaign_view.apply` | Apply |  |  |  |  |
 | `campaign_view.campaign_summary` | What this body of work is called, and what it is for. |  |  |  |  |
+| `campaign_view.col_default` | Default |  |  |  |  |
+| `campaign_view.col_model` | Preferred model |  |  |  |  |
+| `campaign_view.col_provider` | Provider |  |  |  |  |
+| `campaign_view.default_help` | The row a launch that names nothing starts from. |  |  |  |  |
+| `campaign_view.defaults_from_settei` | {line} (from SETTEI) |  |  |  |  |
+| `campaign_view.defaults_help` | What a new Agent here starts on when the launch does not say. A row this Campaign has not answered uses the machine’s SETTEI answer, marked as such. |  |  |  |  |
+| `campaign_view.defaults_none` | None set — a launch must name a model. |  |  |  |  |
+| `campaign_view.defaults_scope` | Role, reach and who may read an Agent are set when it is launched, not here. |  |  |  |  |
 | `campaign_view.description_help` | What this body of work is for. Shown on its card. |  |  |  |  |
 | `campaign_view.desk_summary` | This Ronin install, its owner and its workspace configuration. |  |  |  |  |
+| `campaign_view.from_settei` | from SETTEI |  |  |  |  |
+| `campaign_view.head` | Campaign: {name} |  |  |  |  |
 | `campaign_view.id` | Id |  |  |  |  |
-| `campaign_view.id_help` | Fixed at creation — the address and the storage key. Rename freely; the id stays. |  |  |  |  |
-| `campaign_view.looks` | Looks: {skin} |  |  |  |  |
+| `campaign_view.id_help` | Fixed once created — printed on every record that points here, so it cannot change. |  |  |  |  |
+| `campaign_view.kind` | Kind |  |  |  |  |
+| `campaign_view.kind_help` | The default kind of work for a new Cowork or project here. Nothing reads it yet. |  |  |  |  |
+| `campaign_view.lexicon` | Lexicon |  |  |  |  |
+| `campaign_view.lexicon_help` | The words. Held to one lexicon for now, so nothing on this page is offered. |  |  |  |  |
+| `campaign_view.machine_summary` | The rest of the desk: Desk · Account · Archived · Help desk · Keypad. |  |  |  |  |
 | `campaign_view.name_help` | On the door, the browser tab and the address. |  |  |  |  |
 | `campaign_view.new_summary` | Set the stage. It creates no Cowork and launches no Agent. |  |  |  |  |
 | `campaign_view.no_description` | No description yet. |  |  |  |  |
+| `campaign_view.no_launch_table` | No launch table on this install. |  |  |  |  |
 | `campaign_view.no_profile` | As stock — none chosen. |  |  |  |  |
 | `campaign_view.no_profiles` | No desk profiles on this install. |  |  |  |  |
 | `campaign_view.none_selected` | No Campaign selected. |  |  |  |  |
+| `campaign_view.off` | Off |  |  |  |  |
+| `campaign_view.on` | On |  |  |  |  |
+| `campaign_view.output` | Output |  |  |  |  |
+| `campaign_view.output_help` | What an Agent’s tile shows. Terminal Mirror is the one that ships; Detailed, Condensed and Cherry Pick arrive with Ronin Services. |  |  |  |  |
+| `campaign_view.presets` | Presets |  |  |  |  |
+| `campaign_view.presets_help` | A preset copies all of its components into this Campaign. Change any one of them afterwards; the preset is not consulted again. |  |  |  |  |
 | `campaign_view.profile_summary` | The words, the skin and the templates this Campaign opens on. |  |  |  |  |
+| `campaign_view.roles` | Session roles |  |  |  |  |
+| `campaign_view.roles_help` | What a launch here offers an Agent to be. Templates for a whole Team do not exist yet. |  |  |  |  |
+| `campaign_view.roles_loose` | No family |  |  |  |  |
+| `campaign_view.roles_none` | No session roles on this install. |  |  |  |  |
+| `campaign_view.roles_summary` | What a launch here offers an Agent to be. |  |  |  |  |
 | `campaign_view.roots_n` | {n} roots |  |  |  |  |
 | `campaign_view.roots_none` | None — an Agent here has nowhere to work. |  |  |  |  |
 | `campaign_view.roots_summary` | The folders this Campaign is allowed to work in. |  |  |  |  |
+| `campaign_view.routines` | Routines |  |  |  |  |
+| `campaign_view.routines_help` | What Ronin runs for you. Each is a bundle — a reading list, SOPs, macros and tools — and a switch applies to sessions born after it; nothing running is touched. |  |  |  |  |
+| `campaign_view.routines_n` | {on} of {n} switches on |  |  |  |  |
+| `campaign_view.rt_absent` | not installed |  |  |  |  |
+| `campaign_view.rt_by_repo` | per repository — see Project roots |  |  |  |  |
+| `campaign_view.rt_control` | Ronin control |  |  |  |  |
+| `campaign_view.rt_control_what` | Desks, hand-in and team promotion: the desk reading, the tejun-desk tools, the git shims. On wherever a repository declares desks. |  |  |  |  |
+| `campaign_view.rt_detail_koshi` | The smart fill behind launches and Mika. |  |  |  |  |
+| `campaign_view.rt_gbrain` | gbrain |  |  |  |  |
+| `campaign_view.rt_gbrain_what` | The shared memory service: its reading and its MCP tools for sessions born with it connected. |  |  |  |  |
+| `campaign_view.rt_hotwords` | Hotwords |  |  |  |  |
+| `campaign_view.rt_hotwords_what` | The words dictation keeps mishearing, sent with your voice. |  |  |  |  |
+| `campaign_view.rt_koshi` | Koshi |  |  |  |  |
+| `campaign_view.rt_present` | installed — no switch yet |  |  |  |  |
+| `campaign_view.services_title` | Arrives with Ronin Services. |  |  |  |  |
+| `campaign_view.skin` | Skin |  |  |  |  |
+| `campaign_view.skin_help` | The look — colours, corners, faces. The page wears it now. |  |  |  |  |
 | `campaign_view.templates_summary` | The Cowork templates this Campaign offers. |  |  |  |  |
-| `campaign_view.tile_shows` | Tile: {view} |  |  |  |  |
+| `campaign_view.theme` | Theme |  |  |  |  |
+| `campaign_view.theme_auto` | Automatic |  |  |  |  |
+| `campaign_view.theme_dark` | Dark |  |  |  |  |
+| `campaign_view.theme_help` | Light or dark, or whatever the device prefers. |  |  |  |  |
+| `campaign_view.theme_light` | Light |  |  |  |  |
+| `campaign_view.with_services` | Ronin Services |  |  |  |  |
 
 ## commons
 
@@ -328,6 +380,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `desks.promotion_last` | last {summary} · {id} · by {who} |  |  |  |  |
 | `desks.promotion_none` | none yet |  |  |  |  |
 | `desks.unknown` | not found on this box |  |  |  |  |
+| `desks.worktree` | worktree {path} |  |  |  |  |
 
 ## dial
 
@@ -361,6 +414,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `docs.saved` | saved |  |  |  |  |
 | `docs.saving` | saving… |  |  |  |  |
 | `docs.shelf_empty` | Nothing on this shelf — a project root names its places on its record (Project roots → docs / plans). |  |  |  |  |
+| `docs.work_record_note` | Note: If you don't see a document your agent is working on, ask it to update its work record. |  |  |  |  |
 
 ## errors
 
@@ -469,7 +523,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.harakiri` | harakiri |  |  |  |  |
 | `glossary.hotwords` | Hotwords |  |  |  |  |
 | `glossary.invocation` | typing a macro |  |  |  |  |
-| `glossary.ladder` | ladder |  |  |  |  |
 | `glossary.launch` | launch |  |  |  |  |
 | `glossary.locked` | Locked / Unlocked |  |  |  |  |
 | `glossary.macro` | macro |  |  |  |  |
@@ -486,11 +539,12 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.role` | role |  |  |  |  |
 | `glossary.ronin` | Ronin |  |  |  |  |
 | `glossary.roster` | the roster |  |  |  |  |
+| `glossary.routine` | routine |  |  |  |  |
 | `glossary.rung` | rung · leg · phase · gate |  |  |  |  |
 | `glossary.selector_column` | selector column |  |  |  |  |
 | `glossary.services` | Services |  |  |  |  |
 | `glossary.session` | session |  |  |  |  |
-| `glossary.session_menu` | Status · Ladder · Macros · Detach · Kill session |  |  |  |  |
+| `glossary.session_menu` | Status · Work record · Macros · Detach · Kill session |  |  |  |  |
 | `glossary.stats` | Stats |  |  |  |  |
 | `glossary.surface` | surface |  |  |  |  |
 | `glossary.tab` | tab |  |  |  |  |
@@ -502,6 +556,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.terminal_tile` | terminal tile |  |  |  |  |
 | `glossary.tile` | tile |  |  |  |  |
 | `glossary.wipeboard` | wipeboard |  |  |  |  |
+| `glossary.work_record` | work record |  |  |  |  |
 | `glossary.workbench` | the workbench |  |  |  |  |
 | `glossary.workspace` | workspace |  |  |  |  |
 
@@ -509,9 +564,9 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
-| `head.branch_help` | Desks this session is working at — repo, branch, and what is ahead, pending or parked |  |  |  |  |
+| `head.branch_help` | Desks this session is working at — worktree, repo, branch, and what is ahead, pending or parked |  |  |  |  |
 | `head.branch_quiet` | Desks — no session in this tile yet |  |  |  |  |
-| `head.chip_help` | Where this session is on its ladder, and how long it has been there. Opens the ladder. |  |  |  |  |
+| `head.chip_help` | This session's work record — what it has done, what it is doing, what comes next, and the documents it has listed. Opens the work record. |  |  |  |  |
 | `head.dial_help` | Who may touch this session: 👤 owner only · 👁 outside agents watch · 🤖 outside agents type. Yours to turn; agents never flip it. |  |  |  |  |
 | `head.dial_quiet` | Control dial — no session in this tile yet |  |  |  |  |
 | `head.dot_help` | Connection: green = attached, grey = disconnected |  |  |  |  |
@@ -600,7 +655,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
 | `koshi.blurb_running` | Which model each Koshi job asks. Changes apply within a minute — no restart needed. |  |  |  |  |
-| `koshi.blurb_stopped` | Koshi is NOT running. Nothing is watching any ladder. |  |  |  |  |
+| `koshi.blurb_stopped` | Koshi is NOT running. Nothing is watching any work record. |  |  |  |  |
 | `koshi.not_built` | Not built yet |  |  |  |  |
 | `koshi.not_built_note` | Not built yet — nothing asks anything. |  |  |  |  |
 | `koshi.outlet_not_built` | {outlet} — not built |  |  |  |  |
@@ -618,11 +673,11 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `ladder.gate` | GATE |  |  |  |  |
 | `ladder.held` | Held at a gate |  |  |  |  |
 | `ladder.legs_undetermined` | — legs undetermined |  |  |  |  |
-| `ladder.none` | no ladder up yet |  |  |  |  |
+| `ladder.none` | no work record yet |  |  |  |  |
 | `ladder.quiet` | quiet {age} |  |  |  |  |
-| `ladder.side` | {state} — the ladder below is held, not stale |  |  |  |  |
-| `ladder.tap` | Tap for the ladder |  |  |  |  |
-| `ladder.unchanged_for` | ladder unchanged for {age} |  |  |  |  |
+| `ladder.side` | {state} — the work record below is held, not stale |  |  |  |  |
+| `ladder.tap` | Open work record |  |  |  |  |
+| `ladder.unchanged_for` | work record unchanged for {age} |  |  |  |  |
 
 ## launch
 
@@ -724,13 +779,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `league.team_roster` | Team roster |  |  |  |  |
 | `league.team_roster_removing` | Removing {session} from {team}… |  |  |  |  |
 | `league.team_roster_saving` | Adding {session} to {team}… |  |  |  |  |
-| `league.template_delete` | Delete |  |  |  |  |
-| `league.template_delete_confirm` | Delete template {name}? |  |  |  |  |
-| `league.template_name` | template-name |  |  |  |  |
-| `league.template_save` | Save current New Team draft |  |  |  |  |
-| `league.template_use` | Use template |  |  |  |  |
 | `league.templates` | Templates |  |  |  |  |
-| `league.templates_empty` | No Team templates yet. |  |  |  |  |
 | `league.title` | League |  |  |  |  |
 | `league.unassigned` | Unassigned |  |  |  |  |
 | `league.unassigned_summary` | Live sessions that carry no Team membership. |  |  |  |  |
@@ -796,12 +845,12 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `me.docs` | Docs |  |  |  |  |
 | `me.groups` | Groups |  |  |  |  |
 | `me.kill` | Kill session |  |  |  |  |
-| `me.ladder` | Ladder |  |  |  |  |
+| `me.ladder` | Work record |  |  |  |  |
 | `me.macros` | Macros |  |  |  |  |
 | `me.mention` | Mention session |  |  |  |  |
 | `me.note` | Note |  |  |  |  |
 | `me.status` | Status |  |  |  |  |
-| `me.title` | This session — status, ladder, TEGAMI, macros, groups, docs, note, control |  |  |  |  |
+| `me.title` | This session — status, work record, macros, groups, docs, note, control |  |  |  |  |
 
 ## new_team
 
@@ -1000,6 +1049,9 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
+| `roots.add` | ＋ Add a project root |  |  |  |  |
+| `roots.add_hint` | A directory on this machine that Agents here may work in. |  |  |  |  |
+| `roots.add_save` | Add |  |  |  |  |
 | `roots.archive` | archive |  |  |  |  |
 | `roots.archive_failed` | could not archive it — {message} |  |  |  |  |
 | `roots.archive_title` | Take it off the new-session picker. It stays on this pane, and sessions already using it are untouched. |  |  |  |  |
@@ -1023,7 +1075,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `roots.count_many` | {n} project_roots |  |  |  |  |
 | `roots.count_one` | {n} project_root |  |  |  |  |
 | `roots.edit` | edit |  |  |  |  |
-| `roots.empty` | nothing included yet — ＋ include asks Mika to point Ronin at a directory |  |  |  |  |
+| `roots.empty` | No project roots yet — add one below. |  |  |  |  |
 | `roots.exclude` | exclude |  |  |  |  |
 | `roots.exclude_confirm` | Exclude "{name}" from your Ronin? |  |  |  |  |
 | `roots.exclude_failed` | could not exclude it — {message} |  |  |  |  |
@@ -1044,8 +1096,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `roots.f_remit` | remit |  |  |  |  |
 | `roots.f_remit_hint` | The one line you pick it from in a list |  |  |  |  |
 | `roots.f_remit_placeholder` | what this is |  |  |  |  |
-| `roots.include` | ＋ include |  |  |  |  |
-| `roots.include_title` | Ask Mika to include a directory — she reads it and proposes the entry |  |  |  |  |
 | `roots.loading` | loading… |  |  |  |  |
 | `roots.read_failed` | could not read the catalog — {message} |  |  |  |  |
 | `roots.save` | save |  |  |  |  |
@@ -1334,8 +1384,8 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `stats.faults_many` | ⚠ {n} stats probes are broken — counting has stopped for these. Paste this into a session to fix. |  |  |  |  |
 | `stats.faults_one` | ⚠ {n} stats probe is broken — counting has stopped for this. Paste this into a session to fix. |  |  |  |  |
 | `stats.foot` | Counted on this machine — no code, no prompts, no names. See README/STATS.md. |  |  |  |  |
-| `stats.ladder_height` | How far up the ladder |  |  |  |  |
-| `stats.ladders_plans` | Ladders & plans |  |  |  |  |
+| `stats.ladder_height` | Work record progress |  |  |  |  |
+| `stats.ladders_plans` | Work records & plans |  |  |  |  |
 | `stats.lifetime` | Lifetime |  |  |  |  |
 | `stats.live_now` | Live now |  |  |  |  |
 | `stats.macro_runs` | {n} macro runs |  |  |  |  |

@@ -3051,6 +3051,11 @@ body {
   padding: var(--space-4) var(--space-5);
   background: var(--panel);
 }
+/* The add card: the last block in the list, the shape of a root, drawn as a place to fill. */
+.pr-block.pr-add {
+  border-style: dashed;
+  background: transparent;
+}
 .pr-block.gone {
   border-color: var(--bad-line);
 }
@@ -3353,6 +3358,13 @@ body {
   color: var(--muted);
   font-size: var(--text-3);
   padding: var(--space-5) var(--space-1);
+}
+
+.dc-work-record-note {
+  margin: var(--space-4) var(--space-3) var(--space-3);
+  color: var(--muted);
+  font-size: var(--text-3);
+  line-height: 1.45;
 }
 
 /* ---- WIPEBOARD: one surface a set of agents all read and write. A file and a tmux

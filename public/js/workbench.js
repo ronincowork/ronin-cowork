@@ -100,7 +100,7 @@ export function createWorkbench(options = {}) {
     { name: 'workspace1', label: t('team.workspace_1', 'Workspace 1'), width: 40, composite: true },
     { name: 'selector', label: options.label || profile.name, width: 20, min: 6, compact: 176 },
     { name: 'workspace2', label: t('team.workspace_2', 'Workspace 2'), width: 40, composite: true },
-  ] };
+  ], priorDefaultOrders: [['workspace1', 'workspace2', 'selector']] };
   const layout = createWorkbenchLayout({
     declaration,
     surfaces: { workspace1: columns.workspace1, selector, workspace2: columns.workspace2 },

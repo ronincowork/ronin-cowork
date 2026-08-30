@@ -113,13 +113,12 @@ const HEADER = () => {
                  : t('head.job_unmarked', 'Not marked — click to say what this session is doing');
     } },
 
-  // THE DESKS — one button, because branch and repository are one paired fact rather
-  // than two controls. One desk says its branch; several say how many. The reading is
+  // THE DESKS — one button. One desk says its worktree name; several say how many. The reading is
   // DERIVED on the server from git and the desk registry (`/api/desks`, src/desk-state.ts):
   // the line it hands in to, ahead/behind, unsaved files, pending, parked, blocked — never
   // a fact the agent keeps in prose. It works with no michi: the desks are cowork's.
   { key: 'branchBtn', cls: 'checkout branch', needs: 'session',
-    help: t('head.branch_help', 'Desks this session is working at — repo, branch, and what is ahead, pending or parked'),
+    help: t('head.branch_help', 'Desks this session is working at — worktree, repo, branch, and what is ahead, pending or parked'),
     quiet: { session: t('head.branch_quiet', 'Desks — no session in this tile yet') },
     on: (tile) => tile.toggleLadder(),
     read: (tile, el) => {
@@ -128,12 +127,17 @@ const HEADER = () => {
       el.textContent = deskLabel(entry);
       el.classList.toggle('unset', !desks.length);
       el.classList.toggle('attn', !!(entry?.rollup?.pending || entry?.rollup?.blocked));
-      // The repo by its short name and its branch, then the roll-up (owner, 2026-08-26:
-      // "just the repo name and the branch name — that's all you need"; the control
-      // surface adds what is ahead, pending or parked, and keeps paths and SHAs out).
+      // The worktree/desk is on the header. Expansion carries its full path, repository,
+      // branch and line, followed by the live roll-up.
       const readout = deskReadout(entry);
       return readout ? readout + '\n' + deskTip(entry) : deskTip(entry);
     } },
+
+  // SHINGO's public word is WORK RECORD. It belongs beside the desk reading: where the
+  // session is working, then what it says it is doing there.
+  { key: 'chip',
+    widget: (tile) => makeChip(() => tile.toggleLadder()),
+    help: t('head.chip_help', "This session's work record — what it has done, what it is doing, what comes next, and the documents it has listed. Opens the work record.") },
 
   { grow: true },
 
@@ -212,12 +216,6 @@ const HEADER = () => {
     help: t('head.kill_help', 'Kill session (ends it + its viewers)'),
     quiet: t('head.kill_quiet', 'Kill session — no session in this tile yet'),
     on: (tile) => tile.kill() },
-
-  // SHINGO 信号 — the light signal, at the RIGHT END of the head since 2026-08-27 (owner:
-  // "remove it [from the left] … and place that light signal" where C and T were).
-  { key: 'chip',
-    widget: (tile) => makeChip(() => tile.toggleLadder()),
-    help: t('head.chip_help', 'Where this session is on its ladder, and how long it has been there. Opens the ladder.') },
 
   ];
   return rows;

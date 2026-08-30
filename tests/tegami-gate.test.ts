@@ -70,6 +70,7 @@ test('a birth letter records the actual launch checkout as an editable repos lis
   assert.deepEqual(checkout, {
     repo: 'git@github.com:ronin/example.git',
     branch: 'feature/tegami',
+    worktree: repo,
   });
 
   const file = await seedTegami('checkout_seed', 'CutCode', checkout);
@@ -90,4 +91,14 @@ test('a seeded letter carries a blank axis as an empty string, never as a missin
   const body = await bodyOf(file!);
   assert.equal(body.session_role, '');
   assert.deepEqual(body.teams, [], 'a ronin: on no team, and the block says so');
+});
+
+test('a managed launch seeds every assigned worktree and line', async () => {
+  const repos = [
+    { repo: 'cowork', branch: 'team/campaign/docs', worktree: '/worktrees/cowork/docs', line: 'team/campaign/dev' },
+    { repo: 'services', branch: 'team/campaign/docs', worktree: '/worktrees/services/docs', line: 'team/campaign/dev' },
+  ];
+  const file = await seedTegami('multi_desk_seed', 'WriteDocs', repos);
+  assert.ok(file);
+  assert.deepEqual((await bodyOf(file!)).repos, repos);
 });

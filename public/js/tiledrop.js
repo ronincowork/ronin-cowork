@@ -51,7 +51,7 @@ function items() {
   // text entry is gone, because the bottom of a phone is the keyboard and the box
   // you type in, and there is no room down there.
   ['.gauge', t('me.status', 'Status')],
-  ['.shingo-chip', t('me.ladder', 'Ladder')],
+  ['.shingo-chip', t('me.ladder', 'Work record')],
   ['.checkout.branch', t('me.branches', 'Branches')],
   // ['.torii', 'TEGAMI'] stood here until 2026-08-17, removed with the button itself.
   // The ⛩ on the tile head is the Commons now, and it is already reachable on touch as

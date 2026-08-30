@@ -48,10 +48,12 @@ export async function refreshDesks(force = false) {
 /** One session's desks and roll-up, or null when nothing has been read for it. */
 export const desksOf = (name) => (name && data.get(name)) || null;
 
-/** The ⑂ label: one desk says its branch; several say how many; none says `?`. */
+const worktreeName = (worktree) => String(worktree || '').replace(/[\\/]+$/, '').split(/[\\/]/).filter(Boolean).pop() || '';
+
+/** The ⑂ label: one desk says its worktree name; several say how many; none says `?`. */
 export function deskLabel(entry) {
   const desks = entry?.desks || [];
-  if (desks.length === 1) return '⑂ ' + (desks[0].branch || t('desks.detached', '(detached)'));
+  if (desks.length === 1) return '⑂ ' + (worktreeName(desks[0].worktree) || desks[0].branch || t('desks.detached', '(detached)'));
   return desks.length ? '⑂ ' + desks.length : '⑂ ?';
 }
 
@@ -72,12 +74,13 @@ export function deskReadout(entry) {
   return parts.join(' · ');
 }
 
-/** One line per desk, for a tooltip. Paths and SHAs stay out; this is the inspection short of them. */
+/** One line per desk, for the expanded inspection. The worktree is the live coordinate. */
 export function deskTip(entry) {
   const desks = entry?.desks || [];
   if (!desks.length) return t('desks.none', 'No desk listed yet. A coding launch opens one; the session lists its repos in TEGAMI.');
   return clampTip(desks.map((d) => {
     const bits = [`${d.short || d.repo} — ${d.branch || t('desks.detached', '(detached)')}`];
+    if (d.worktree) bits.push(t('desks.worktree', 'worktree {path}', { path: d.worktree }));
     if (d.line) bits.push(t('desks.line', '→ {line}', { line: d.line }));
     if (d.ahead) bits.push(t('desks.ahead', 'ahead {n}', { n: d.ahead }));
     if (d.behind) bits.push(t('desks.behind', 'behind {n}', { n: d.behind }));

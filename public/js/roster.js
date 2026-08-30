@@ -18,6 +18,7 @@ import { S, tiles } from './state.js';
 import { clampTip, humanAge } from './shingo.js';
 import { t } from './lexicon.js';
 import { deskLabel, deskReadout, deskTip, desksOf, refreshDesks } from './desks.js';
+import { rosterGroups } from './roster-groups.js';
 
 /**
  * @param {object} tile  rows connect into this tile
@@ -299,7 +300,7 @@ export function buildRoster(tile, host, options = {}) {
     // exactly as it did before.
     const liveGroups = new Set(data.flatMap((s) => s.tags || []));
     for (const group of liveGroups) pendingGroups.delete(group);
-    const groups = [...new Set([...liveGroups, ...pendingGroups])].sort();
+    const groups = rosterGroups(data, [...pendingGroups, ...(options.groups?.() || [])]);
     if (!groups.length) {
       for (const s of data) list.appendChild(rowFor(s));
     } else {
