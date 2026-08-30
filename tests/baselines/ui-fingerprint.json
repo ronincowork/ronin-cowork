@@ -36,7 +36,17 @@
         "color": "rgb(107, 116, 136)",
         "border": "rgb(31, 39, 56)"
       },
-      "#sysbtn": "MISSING",
+      "#sysbtn": {
+        "box": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(107, 116, 136)",
+        "border": "rgb(31, 39, 56)"
+      },
       ".ch-frame": {
         "box": [
           270,
@@ -70,7 +80,17 @@
         "color": "rgb(197, 200, 198)",
         "border": "rgb(42, 50, 71)"
       },
-      ".ch-tray": "MISSING"
+      ".ch-tray": {
+        "box": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "bg": "rgb(15, 19, 28)",
+        "color": "rgb(197, 200, 198)",
+        "border": "rgb(42, 50, 71)"
+      }
     },
     "desktop-light": {
       "#bar": {
