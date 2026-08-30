@@ -16,7 +16,6 @@ import { sessionsHandlers, teamPageHandlers } from './events.js';
 import { createArranger, parseDraft, reportView as sendView } from './team-arrange.js';
 import { t } from './lexicon.js';
 import { deskReadout, desksOf, refreshDesks } from './desks.js';
-import { coworkCommons } from './cowork-commons.js';
 import { acceptDrops as acceptSessionDrops } from './team-drag.js';
 import { S } from './state.js';
 import { createCampaignIdentity } from './campaign.js';
@@ -136,11 +135,6 @@ export function createCoworkView(options = {}) {
     return { el: channels.el, channels, wipeboard, docs, config };
   };
   const teamCommons = Object.fromEntries(Object.keys(seats).map((id) => [id, createTeamCommons()]));
-  const coworkBySeat = Object.fromEntries(Object.keys(seats).map((id) => {
-    const surface = coworkCommons();
-    surface.el.dataset.workbenchSurface = COWORK;
-    return [id, surface];
-  }));
   // ＋ NEW SESSION IS A SURFACE (owner, 2026-08-27): the commons' launcher, in a workspace.
   // Roster add and bar New both put the new session in the selected workspace (`connect`).
   const newLabel = campaign ? t('league.new_agent', 'New Agent') : t('team.new_session', 'New session');
@@ -180,7 +174,6 @@ export function createCoworkView(options = {}) {
   const teamRosterBySeat = campaign ? Object.fromEntries(Object.keys(seats).map((id) => [id, createTeamRosterSurface()])) : {};
   const environment = {
     teamCommons: (id) => ({ el: teamCommons[id].el, show: (detail = {}) => { const item = teamCommons[id]; item.channels.enter(ctx); if (detail.doc) { item.channels.select('docs'); void item.docs.open(detail.doc); } else if (detail.tab) item.channels.select(detail.tab); } }),
-    desk: (id) => ({ el: coworkBySeat[id].el, show: (detail = {}) => { coworkBySeat[id].select(detail.tab || coworkBySeat[id].current()); } }),
     newSession: (id) => ({ el: newBySeat[id].el, show: () => { const launcher = newBySeat[id].launcher; launcher.render(); if (!roleData) void loadPresets().then(() => launcher.render()); void loadSavedLaunches().then(() => launcher.render()); } }),
     terminal: (id, detail) => ({ el: seats[id].surface.el, show: () => putSession(detail.key, id) }),
     roster: (id) => ({ el: teamRosterBySeat[id].el, show: () => teamRosterBySeat[id].render() }),
@@ -476,17 +469,17 @@ export function createCoworkView(options = {}) {
     el: root, glyph: campaign ? '⛩' : '人',
     // The ViewHost draws the Kit's layout map in the bar for this while the view is active.
     arrangement: bench.arrangement,
-    // The owner's per-tab name distinguishes several Team tabs; otherwise the Team name
-    // is the default and createWorkspace adds Ronin.
+    // The owner's per-tab name distinguishes several Workbench tabs. Coworks defaults to
+    // its page name; a Team defaults to the Team name. createWorkspace adds Ronin.
     title: ({ param, viewState }) => {
-      if (campaign) return campaignIdentity.name() || t('campaign', 'Campaign');
-      const name = viewState?.('team')?.tabName;
-      return name ? { bare: `${name} · ${param || t('team.team', 'Team')}` } : (param || t('team.team', 'Team'));
+      const fallback = campaign ? t('campaign.coworks', 'Coworks') : (param || t('team.team', 'Team'));
+      const name = viewState?.(viewKey)?.tabName;
+      return name ? { bare: `${name} · ${fallback}` } : fallback;
     },
     tabName: {
-      get: () => campaign ? '' : ctx?.viewState('team')?.tabName || '',
-      placeholder: () => team || t('team.team', 'Team'),
-      set: (value) => { if (!campaign) ctx?.patchViewState('team', { tabName: String(value || '').trim() }); },
+      get: () => ctx?.viewState(viewKey)?.tabName || '',
+      placeholder: () => campaign ? t('campaign.coworks', 'Coworks') : team || t('team.team', 'Team'),
+      set: (value) => { ctx?.patchViewState(viewKey, { tabName: String(value || '').trim() }); },
     },
     mount: (_host, context) => {
       ctx = context;
@@ -519,8 +512,6 @@ export function createCoworkView(options = {}) {
       seatTheTeam();
       paintSeats();
       touch(liveSeats().find((id) => !heldSurface(id)) || 'workspace1');
-      // ⚙ ON THIS PAGE: the cowork commons into the workspace you are in; pressed again
-      // there, the terminal back — the toggle ⛩ taught (layout.js reads this hook).
       S.showNewSession = (prompt = '') => {
         const id = lastSeat || 'workspace1';
         putNew(id);
@@ -534,11 +525,6 @@ export function createCoworkView(options = {}) {
         syncPools(membersOfTeam(team));
         showing.forEach((id) => putSession(next, id));
         renderCards(membersOfTeam(team));
-      };
-      S.showCoworkCommons = (tab = '') => {
-        const id = lastSeat || 'workspace1';
-        if (heldSurface(id) === WB_TYPES.desk && !tab) putTerminal(id);
-        else putCowork(id, tab);
       };
       if (campaign) void refreshTeams().then(() => renderCards([]));
       else if (team !== loaded) void load(team);
@@ -559,7 +545,6 @@ export function createCoworkView(options = {}) {
       // No transport survives outside the entered Team destination.
       for (const seat of Object.values(seats)) { seat.pool.destroyAll(); seat.empty?.destroy(); seat.empty = null; }
       for (const commons of Object.values(teamCommons)) commons.channels.leave();
-      if (S.showCoworkCommons) S.showCoworkCommons = null;
       S.showNewSession = null;
       S.onSessionRenamed = null;
       S.connectSession = null;
