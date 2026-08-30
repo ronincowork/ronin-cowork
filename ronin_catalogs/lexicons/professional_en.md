@@ -251,6 +251,22 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.roles_help:** What a launch here offers an Agent to be. Templates for a whole Team do not exist yet.
 - **campaign_view.roles_none:** No session roles on this install.
 - **campaign_view.roles_loose:** No family
+- **campaign_view.routines:** Routines
+- **campaign_view.routines_help:** What Ronin runs for you. Each is a bundle — a reading list, SOPs, macros and tools — and a switch applies to sessions born after it; nothing running is touched.
+- **campaign_view.routines_n:** {on} of {n} switches on
+- **campaign_view.on:** On
+- **campaign_view.off:** Off
+- **campaign_view.rt_control:** Ronin control
+- **campaign_view.rt_control_what:** Desks, hand-in and team promotion: the desk reading, the tejun-desk tools, the git shims. On wherever a repository declares desks.
+- **campaign_view.rt_by_repo:** per repository — see Project roots
+- **campaign_view.rt_gbrain:** gbrain
+- **campaign_view.rt_gbrain_what:** The shared memory service: its reading and its MCP tools for sessions born with it connected.
+- **campaign_view.rt_koshi:** Koshi
+- **campaign_view.rt_koshi_what:** The smart fill behind launches and Mika.
+- **campaign_view.rt_hotwords:** Hotwords
+- **campaign_view.rt_hotwords_what:** The words dictation keeps mishearing, sent with your voice.
+- **campaign_view.rt_present:** installed — no switch yet
+- **campaign_view.rt_absent:** not installed
 - **campaign_view.machine_summary:** The rest of the desk: Desk · Account · Archived · Help desk · Keypad.
 
 ## campaign_home — campaign-home.js (the root arrival: Machine Settings, Coworks, Launch)

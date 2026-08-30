@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1238 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1254 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -139,6 +139,8 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `campaign_view.no_profile` | As stock — none chosen. |  |  |  |  |
 | `campaign_view.no_profiles` | No desk profiles on this install. |  |  |  |  |
 | `campaign_view.none_selected` | No Campaign selected. |  |  |  |  |
+| `campaign_view.off` | Off |  |  |  |  |
+| `campaign_view.on` | On |  |  |  |  |
 | `campaign_view.output` | Output |  |  |  |  |
 | `campaign_view.output_help` | What an Agent’s tile shows. Terminal Mirror is the one that ships; Detailed, Condensed and Cherry Pick arrive with Ronin Services. |  |  |  |  |
 | `campaign_view.presets` | Presets |  |  |  |  |
@@ -152,6 +154,20 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `campaign_view.roots_n` | {n} roots |  |  |  |  |
 | `campaign_view.roots_none` | None — an Agent here has nowhere to work. |  |  |  |  |
 | `campaign_view.roots_summary` | The folders this Campaign is allowed to work in. |  |  |  |  |
+| `campaign_view.routines` | Routines |  |  |  |  |
+| `campaign_view.routines_help` | What Ronin runs for you. Each is a bundle — a reading list, SOPs, macros and tools — and a switch applies to sessions born after it; nothing running is touched. |  |  |  |  |
+| `campaign_view.routines_n` | {on} of {n} switches on |  |  |  |  |
+| `campaign_view.rt_absent` | not installed |  |  |  |  |
+| `campaign_view.rt_by_repo` | per repository — see Project roots |  |  |  |  |
+| `campaign_view.rt_control` | Ronin control |  |  |  |  |
+| `campaign_view.rt_control_what` | Desks, hand-in and team promotion: the desk reading, the tejun-desk tools, the git shims. On wherever a repository declares desks. |  |  |  |  |
+| `campaign_view.rt_gbrain` | gbrain |  |  |  |  |
+| `campaign_view.rt_gbrain_what` | The shared memory service: its reading and its MCP tools for sessions born with it connected. |  |  |  |  |
+| `campaign_view.rt_hotwords` | Hotwords |  |  |  |  |
+| `campaign_view.rt_hotwords_what` | The words dictation keeps mishearing, sent with your voice. |  |  |  |  |
+| `campaign_view.rt_koshi` | Koshi |  |  |  |  |
+| `campaign_view.rt_koshi_what` | The smart fill behind launches and Mika. |  |  |  |  |
+| `campaign_view.rt_present` | installed — no switch yet |  |  |  |  |
 | `campaign_view.services_title` | Arrives with Ronin Services. |  |  |  |  |
 | `campaign_view.skin` | Skin |  |  |  |  |
 | `campaign_view.skin_help` | The look — colours, corners, faces. The page wears it now. |  |  |  |  |

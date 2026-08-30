@@ -191,4 +191,8 @@
   .cv-choice-pick { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
   .cv-choice-name { font-weight: 600; color: var(--fg-strong); }
   .cv-choice-why { margin: 0; font-size: var(--text-3); line-height: 1.5; color: var(--muted); }
+  /* Routines: a switch, or the state where there is no switch yet. */
+  .cv-switch { display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--text-3); color: var(--fg-strong); cursor: pointer; }
+  .cv-switch input { accent-color: var(--accent); }
+  .cv-state { font-size: var(--text-3); color: var(--muted); }
 }

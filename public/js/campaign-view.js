@@ -6,6 +6,7 @@ import { campaignById, campaignOf, createCampaign, loadCampaigns, normalizeSelec
 import { createCampaignIdentitySurface, createNewCampaignSurface, createSessionRolesSurface } from './campaign-surfaces.js';
 import { createDeskProfileSurface, skinWord } from './campaign-desk.js';
 import { createAgentDefaultsSurface, defaultsSummary } from './campaign-defaults.js';
+import { createRoutinesSurface, routinesSummary } from './campaign-routines.js';
 import { buildProjectRoots } from './projectroots.js';
 import { deskProfiles } from './desk-profile.js';
 import { request } from './request.js';
@@ -14,7 +15,7 @@ import { coworkCommons } from './cowork-commons.js';
 const PROFILE = 'campaign';
 // No Ronin Desk here (owner, 2026-08-30): its tabs repeat what these surfaces are, and
 // the machine's own half — account, health — is the Admin Desk's.
-const TYPES = Object.freeze({ identity: 'campaign.identity', profile: 'campaign.desk-profile', roots: 'campaign.project-roots', defaults: 'campaign.agent-defaults', roles: 'campaign.session-roles', machine: 'campaign.machine', create: 'campaign.new' });
+const TYPES = Object.freeze({ identity: 'campaign.identity', profile: 'campaign.desk-profile', roots: 'campaign.project-roots', defaults: 'campaign.agent-defaults', routines: 'campaign.routines', roles: 'campaign.session-roles', machine: 'campaign.machine', create: 'campaign.new' });
 /** The machine's tabs of the cowork commons — everything about this install that is not already a surface here. */
 const MACHINE_TABS = Object.freeze(['health', 'account', 'archives', 'help', 'keypad']);
 const LEGACY = Object.freeze({ '@campaign': TYPES.identity, '@profile': TYPES.profile, '@roots': TYPES.roots, '@templates': TYPES.roles, 'campaign.team-templates': TYPES.roles, '@new-campaign': TYPES.create });
@@ -50,6 +51,9 @@ function registerCampaignSurfaces() {
   add({ type: TYPES.profile, header: 'surface', label: () => t('cowork.tab_profile', 'Desk profile'), summary: (_tenant, e) => currently.profile(e), create: ({ environment: e }) => { const surface = createDeskProfileSurface(e.selected); return { el: surface.el, show: () => surface.enter() }; } });
   add({ type: TYPES.roots, header: 'surface', label: () => t('cowork.tab_roots', 'Project roots'), summary: (_tenant, e) => currently.roots(e), create: ({ environment: e }) => { const surface = WorkspaceKit.primitives.createSurface({ label: t('cowork.tab_roots', 'Project roots'), className: 'cv-surface' }); const host = elem('div', 'desk-pane desk-proj show'); surface.content.append(host); const room = buildProjectRoots(host, () => e.entered() && host.isConnected, null); return { el: surface.el, show: () => room.enter() }; } });
   add({ type: TYPES.defaults, header: 'surface', label: () => t('campaign_view.agent_defaults', 'Agent defaults'), summary: (_tenant, e) => currently.defaults(e), create: ({ environment: e }) => { const surface = createAgentDefaultsSurface(e.selected); return { el: surface.el, show: () => surface.enter() }; } });
+  // ROUTINES (owner, 2026-08-30): the switchboard for control systems — see the lab's
+  // CONTROL_BUNDLES build-out for the bundle model behind it.
+  add({ type: TYPES.routines, header: 'surface', label: () => t('campaign_view.routines', 'Routines'), summary: (_tenant, e) => routinesSummary(e.settei()), create: () => { const surface = createRoutinesSurface(); return { el: surface.el, show: () => surface.enter() }; } });
   // THE MACHINE (owner, 2026-08-30): the Admin Desk is gone as a page; this Ronin's own
   // settings — health, account (configuration, updates, hotwords, Koshi, gbrain, log out),
   // archived sessions, help desk, keypad — are a surface here, the cowork commons with the
