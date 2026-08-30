@@ -37,11 +37,16 @@ export function createCampaignHome() {
   function paintDoors() {
     doors.replaceChildren();
     for (const door of DOORS()) {
-      const card = el('button', 'ch-door');
-      card.type = 'button';
+      const card = el('a', 'ch-door');
+      card.href = `#/${door.route}`;
       card.dataset.door = door.key;
       card.append(el('span', 'ch-glyph', door.glyph), el('h2', null, door.name), el('p', 'ch-is', door.is));
-      card.addEventListener('click', () => ctx?.navigate(door.route));
+      card.addEventListener('click', (event) => {
+        // Modified clicks belong to the browser: new tab/window, link menu, middle click.
+        if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        ctx?.navigate(door.route);
+      });
       doors.append(card);
     }
   }

@@ -1,7 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 /** Workbench; its Campaign, Cowork or Team scope limits what cards are offered. */
 import { WorkspaceKit } from './workspace-kit.js';
-import { deleteTeamRoster, membersOfTeam, refreshTeams, subscribe, teamByName, teamsFromState, UNASSIGNED } from './team-controller.js';
+import { deleteTeamRoster, membersOfTeam, refreshTeams, sessionsAvailableToTeam, setTeamLead, setTeamMembership, subscribe, teamByName, teamsFromState, UNASSIGNED } from './team-controller.js';
 import { createNewTeamView } from './new-team.js';
 import { createTeamRosterSurface } from './team-roster-surface.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
@@ -364,12 +364,49 @@ export function createCoworkView(options = {}) {
     if (leagueTeamSurfaces.has(cacheKey)) return leagueTeamSurfaces.get(cacheKey);
     const label = name === UNASSIGNED ? t('league.ronin', 'Ronin: no team') : readableTeam(name), team = teamByName(name);
     const launch = el('button', null, t('league.launch_team', 'Launch')); launch.type = 'button'; launch.addEventListener('click', () => openTeam(name));
-    const remove = el('button', null, t('league.delete_team', 'Delete')); remove.type = 'button'; remove.addEventListener('click', async () => { const count = membersOfTeam(name).length; if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team: name, count }))) return; const result = await deleteTeamRoster(name); if (!result.ok) { surface.setState('failed', result.message); return; } for (const seat of bench.locations(WB_TYPES.team, name)) emptySeat(seat); for (const key of [...leagueTeamSurfaces.keys()]) if (key.endsWith(`\0${name}`)) leagueTeamSurfaces.delete(key); });
+    const remove = el('button', 'league-team-delete', t('league.delete_team', 'Delete team')); remove.type = 'button'; remove.addEventListener('click', async () => { const count = membersOfTeam(name).length; if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team: name, count }))) return; const result = await deleteTeamRoster(name); if (!result.ok) { surface.setState('failed', result.message); return; } for (const seat of bench.locations(WB_TYPES.team, name)) emptySeat(seat); for (const key of [...leagueTeamSurfaces.keys()]) if (key.endsWith(`\0${name}`)) leagueTeamSurfaces.delete(key); });
     const surface = createSurface({ label, className: 'league-team-edit', actions: name === UNASSIGNED ? [launch] : [launch, remove] });
-    surface.content.append(createMetadata({ rows: [
-      [t('team.team_role', 'Team role'), team.team_role], [t('team.objective', 'Objective'), team.objective],
-      [t('team.project_root', 'Project root'), team.project_root],
-    ] }).el);
+    surface.content.classList.add('league-team-edit-content');
+    if (name === UNASSIGNED) {
+      const out = { el: surface.el }; leagueTeamSurfaces.set(cacheKey, out); return out;
+    }
+    const render = () => {
+      const current = teamByName(name), members = membersOfTeam(name);
+      const metadata = createMetadata({ className: 'league-team-metadata', rows: [
+        [t('team.team_role', 'Team role'), current.team_role], [t('team.objective', 'Objective'), current.objective],
+        [t('team.project_root', 'Project root'), current.project_root],
+      ] }).el;
+      const roster = el('section', 'league-team-roster');
+      roster.append(el('h3', 'league-team-roster-title', t('league.members', 'Team members')));
+      const list = el('div', 'league-team-member-list');
+      if (!members.length) list.append(el('p', 'league-team-empty', t('league.no_members', 'No Agents assigned yet.')));
+      for (const member of members) {
+        const row = el('article', 'league-team-member');
+        const identity = el('div', 'league-team-member-identity');
+        const mark = el('span', 'league-team-member-mark', member.team_lead ? '人' : ''); mark.setAttribute('aria-hidden', 'true');
+        const words = el('div', 'league-team-member-words');
+        words.append(el('strong', null, member.name), el('span', null, member.session_role || t('league.role_unset', 'Role not set')));
+        identity.append(mark, words);
+        const lead = el('button', 'league-team-lead', member.team_lead ? t('league.team_lead', 'Team lead') : t('league.make_team_lead', 'Make team lead'));
+        lead.type = 'button'; lead.setAttribute('aria-pressed', String(member.team_lead));
+        lead.addEventListener('click', async () => { const result = await setTeamLead(member.name, name, !member.team_lead); if (!result.ok) return surface.setState('failed', result.message); surface.setState(); render(); });
+        const eject = el('button', 'league-team-member-remove', t('league.remove_member', 'Remove')); eject.type = 'button';
+        eject.setAttribute('aria-label', t('league.remove_named_member', 'Remove {name} from this team', { name: member.name }));
+        eject.addEventListener('click', async () => { const result = await setTeamMembership(member.name, name, false); if (!result.ok) return surface.setState('failed', result.message); surface.setState(); render(); });
+        row.append(identity, lead, eject); list.append(row);
+      }
+      roster.append(list);
+      const available = sessionsAvailableToTeam(name), add = el('div', 'league-team-add');
+      const select = el('select', null); select.setAttribute('aria-label', t('league.choose_member', 'Choose an Agent to add'));
+      select.append(new Option(available.length ? t('league.choose_member', 'Choose an Agent to add') : t('league.no_available_members', 'No other Agents available'), ''));
+      for (const session of available) select.append(new Option(session.name + (session.session_role ? ` — ${session.session_role}` : ''), session.name));
+      const assign = el('button', null, t('league.assign_member', 'Assign')); assign.type = 'button'; assign.disabled = true;
+      select.addEventListener('change', () => { assign.disabled = !select.value; });
+      assign.addEventListener('click', async () => { if (!select.value) return; const result = await setTeamMembership(select.value, name, true); if (!result.ok) return surface.setState('failed', result.message); surface.setState(); render(); });
+      add.append(select, assign); roster.append(add);
+      surface.content.replaceChildren(metadata, roster);
+    };
+    render();
     const out = { el: surface.el }; leagueTeamSurfaces.set(cacheKey, out); return out;
   };
   let homeTimer = 0;

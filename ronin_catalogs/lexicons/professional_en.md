@@ -1384,8 +1384,18 @@ The catalog entry goes. {dir} is not touched.
 - **league.no_agents:** No live Agents
 - **league.new_agent:** New Agent
 - **league.new_agent_summary:** A new Agent, born into the workspace you are in.
-- **league.delete_team:** Delete
+- **league.delete_team:** Delete team
 - **league.delete_team_confirm:** Delete {team}? {count} Agents will lose this Team membership.
+- **league.members:** Team members
+- **league.no_members:** No Agents assigned yet.
+- **league.role_unset:** Role not set
+- **league.team_lead:** Team lead
+- **league.make_team_lead:** Make team lead
+- **league.remove_member:** Remove
+- **league.remove_named_member:** Remove {name} from this team
+- **league.choose_member:** Choose an Agent to add
+- **league.no_available_members:** No other Agents available
+- **league.assign_member:** Assign
 - **league.launch_team:** Launch
 - **league.ronin:** Ronin: no team
 - **league.no_ronin:** No Rōnin Agents

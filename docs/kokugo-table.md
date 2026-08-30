@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1207 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1216 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -688,30 +688,39 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 |---|---|---|---|---|---|
 | `league.active` | Active Team |  |  |  |  |
 | `league.agents` | Agents |  |  |  |  |
+| `league.assign_member` | Assign |  |  |  |  |
+| `league.choose_member` | Choose an Agent to add |  |  |  |  |
 | `league.commons` | League commons |  |  |  |  |
 | `league.controls` | League controls |  |  |  |  |
-| `league.delete_team` | Delete |  |  |  |  |
+| `league.delete_team` | Delete team |  |  |  |  |
 | `league.delete_team_confirm` | Delete {team}? {count} Agents will lose this Team membership. |  |  |  |  |
 | `league.hide_rosters` | Hide rosters |  |  |  |  |
 | `league.holding` | Holding area |  |  |  |  |
 | `league.holding_empty` | Every live session is on a Team |  |  |  |  |
 | `league.launch_team` | Launch |  |  |  |  |
 | `league.lead` | lead |  |  |  |  |
+| `league.make_team_lead` | Make team lead |  |  |  |  |
+| `league.members` | Team members |  |  |  |  |
 | `league.new_agent` | New Agent |  |  |  |  |
 | `league.new_agent_summary` | A new Agent, born into the workspace you are in. |  |  |  |  |
 | `league.new_team_summary` | Define the Team, then build its session roster. |  |  |  |  |
 | `league.no_agents` | No live Agents |  |  |  |  |
-| `league.no_members` | No live members |  |  |  |  |
+| `league.no_available_members` | No other Agents available |  |  |  |  |
+| `league.no_members` | No Agents assigned yet. |  |  |  |  |
 | `league.no_ronin` | No Rōnin Agents |  |  |  |  |
 | `league.not_recorded` | Not recorded |  |  |  |  |
 | `league.open_workspace` | League workspace |  |  |  |  |
+| `league.remove_member` | Remove |  |  |  |  |
+| `league.remove_named_member` | Remove {name} from this team |  |  |  |  |
 | `league.resting` | Resting Team |  |  |  |  |
+| `league.role_unset` | Role not set |  |  |  |  |
 | `league.ronin` | Ronin: no team |  |  |  |  |
 | `league.rosters_unavailable` | Durable rosters unavailable — showing live Teams only. |  |  |  |  |
 | `league.selector_new` | New |  |  |  |  |
 | `league.selector_teams` | Teams |  |  |  |  |
 | `league.selector_views` | Views |  |  |  |  |
 | `league.show_rosters` | Show rosters |  |  |  |  |
+| `league.team_lead` | Team lead |  |  |  |  |
 | `league.team_roster` | Team roster |  |  |  |  |
 | `league.team_roster_removing` | Removing {session} from {team}… |  |  |  |  |
 | `league.team_roster_saving` | Adding {session} to {team}… |  |  |  |  |
