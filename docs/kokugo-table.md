@@ -161,12 +161,12 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `campaign_view.rt_by_repo` | per repository — see Project roots |  |  |  |  |
 | `campaign_view.rt_control` | Ronin control |  |  |  |  |
 | `campaign_view.rt_control_what` | Desks, hand-in and team promotion: the desk reading, the tejun-desk tools, the git shims. On wherever a repository declares desks. |  |  |  |  |
+| `campaign_view.rt_detail_koshi` | The smart fill behind launches and Mika. |  |  |  |  |
 | `campaign_view.rt_gbrain` | gbrain |  |  |  |  |
 | `campaign_view.rt_gbrain_what` | The shared memory service: its reading and its MCP tools for sessions born with it connected. |  |  |  |  |
 | `campaign_view.rt_hotwords` | Hotwords |  |  |  |  |
 | `campaign_view.rt_hotwords_what` | The words dictation keeps mishearing, sent with your voice. |  |  |  |  |
 | `campaign_view.rt_koshi` | Koshi |  |  |  |  |
-| `campaign_view.rt_koshi_what` | The smart fill behind launches and Mika. |  |  |  |  |
 | `campaign_view.rt_present` | installed — no switch yet |  |  |  |  |
 | `campaign_view.services_title` | Arrives with Ronin Services. |  |  |  |  |
 | `campaign_view.skin` | Skin |  |  |  |  |

@@ -70,7 +70,7 @@ export function createRoutinesSurface() {
     },
     {
       name: t('campaign_view.rt_koshi', 'Koshi'),
-      what: t('campaign_view.rt_koshi_what', 'The smart fill behind launches and Mika.'),
+      what: t('campaign_view.rt_detail_koshi', 'The smart fill behind launches and Mika.'),
       control: state(present('koshi') ? t('campaign_view.rt_present', 'installed — no switch yet') : t('campaign_view.rt_absent', 'not installed')),
     },
     {

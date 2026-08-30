@@ -262,7 +262,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.rt_gbrain:** gbrain
 - **campaign_view.rt_gbrain_what:** The shared memory service: its reading and its MCP tools for sessions born with it connected.
 - **campaign_view.rt_koshi:** Koshi
-- **campaign_view.rt_koshi_what:** The smart fill behind launches and Mika.
+- **campaign_view.rt_detail_koshi:** The smart fill behind launches and Mika.
 - **campaign_view.rt_hotwords:** Hotwords
 - **campaign_view.rt_hotwords_what:** The words dictation keeps mishearing, sent with your voice.
 - **campaign_view.rt_present:** installed — no switch yet
