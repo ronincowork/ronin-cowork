@@ -44,7 +44,7 @@ import { t } from './lexicon.js';
  * (`S.active.askPersonalAssistant`), which is where that tile sent it anyway. Mika is
  * asked through `askMika(S.active)`, the way the bar's ミ did before it left (2026-08-27).
  */
-export function coworkCommons() {
+export function coworkCommons(options = {}) {
   const { createChannelSurface } = WorkspaceKit.primitives;
 
   const node = (tag, cls, text) => {
@@ -241,18 +241,22 @@ export function coworkCommons() {
     help: service(help, enterAll(helpRooms)),
     keypad: service(keypad, () => { if (mountPad()) S.padPanel.render?.(); }),
   };
+  // A caller may name WHICH tabs (owner, 2026-08-30): the Settings workbench seats the
+  // machine's tabs and leaves out the two it already has as surfaces of its own.
+  const wanted = Array.isArray(options.tabs) && options.tabs.length ? new Set(options.tabs) : null;
+  const channels = [
+    { id: 'health', label: t('cowork.tab_health', 'Desk') },
+    { id: 'account', label: t('cowork.tab_account', 'Account') },
+    { id: 'profile', label: t('cowork.tab_profile', 'Desk profile') },
+    { id: 'roots', label: t('cowork.tab_roots', 'Project roots') },
+    { id: 'archives', label: t('cowork.tab_archives', 'Archived') },
+    { id: 'help', label: t('cowork.tab_help', 'Help desk') },
+    { id: 'keypad', label: t('cowork.tab_keypad', 'Keypad') },
+  ].filter((c) => !wanted || wanted.has(c.id));
   surface = createChannelSurface({
-    label: t('cowork.commons', 'Ronin Desk'),
-    channels: [
-      { id: 'health', label: t('cowork.tab_health', 'Desk') },
-      { id: 'account', label: t('cowork.tab_account', 'Account') },
-      { id: 'profile', label: t('cowork.tab_profile', 'Desk profile') },
-      { id: 'roots', label: t('cowork.tab_roots', 'Project roots') },
-      { id: 'archives', label: t('cowork.tab_archives', 'Archived') },
-      { id: 'help', label: t('cowork.tab_help', 'Help desk') },
-      { id: 'keypad', label: t('cowork.tab_keypad', 'Keypad') },
-    ],
-    selected: 'health',
+    label: options.label || t('cowork.commons', 'Ronin Desk'),
+    channels,
+    selected: channels[0]?.id || 'health',
     services,
   });
   surface.el.classList.add('cc');

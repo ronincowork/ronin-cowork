@@ -28,7 +28,7 @@
  */
 import { t } from './lexicon.js';
 import { S } from './state.js';
-import { campaignOf, campaigns, campaignsFailed, campaignsMessage, loadCampaigns, normalizeSelection, primaryCampaign, selectedIds } from './campaigns.js';
+import { campaignOf, campaignsFailed, campaignsMessage, loadCampaigns, normalizeSelection, primaryCampaign, selectedIds } from './campaigns.js';
 import { refreshTeams, teamsFromState } from './team-controller.js';
 
 const el = (tag, cls, text) => {
@@ -39,15 +39,17 @@ const el = (tag, cls, text) => {
 };
 
 /**
- * The three doors, read at paint and never built at import: a module-level table holding
- * words is evaluated before the lexicon is up, which would freeze the stock English into
- * every profile (KOKUGO § 5).
+ * The three doors (owner, 2026-08-30): the machine's settings on the left — this Ronin,
+ * one Campaign today, the page where everything about it is set; the Coworks in the
+ * middle; and on the right a launch, a solo Agent or a whole Team. Read at paint and
+ * never built at import: a module-level table holding words is evaluated before the
+ * lexicon is up, which would freeze the stock English into every profile (KOKUGO § 5).
  */
 function DOORS() {
   return [
-    { key: 'campaign', glyph: '⛩', name: t('campaign', 'Campaign'), is: t('campaign_home.campaign_is', 'A named body of work') },
+    { key: 'machine', glyph: '⚙', name: t('campaign_home.machine', 'Machine settings'), is: t('campaign_home.machine_is', 'This Ronin — its look, roots and defaults') },
     { key: 'coworks', glyph: '人々', name: t('campaign.coworks', 'Coworks'), is: t('campaign_home.coworks_is', 'Coworking space for Agents') },
-    { key: 'agents', glyph: '人', name: t('league.agents', 'Agents'), is: t('campaign_home.agents_is', 'One Agent, one job') },
+    { key: 'new', glyph: '人', name: t('league.new_agent', 'New Agent'), is: t('campaign_home.new_is', 'Launch a solo Agent, or a whole Team') },
   ];
 }
 
@@ -62,116 +64,80 @@ export function createCampaignHome() {
 
   let ctx = null;
   let entered = false;
-  let open = ''; // '' | 'campaign' | 'coworks' | 'agents'
+  let open = ''; // '' | 'coworks' | 'new'
 
   /* ---------- what this tab is loaded with ---------- */
   const selection = () => normalizeSelection(ctx?.state?.campaignSelection);
   const mine = () => ctx?.viewState('home') || {};
   /** Durable Cowork records inside the current Campaign selection. */
   const coworksHere = () => teamsFromState().filter((row) => row.durable && inSel(row));
-  /** Live Agents inside it — a session with no Cowork is still an Agent and still listed. */
-  const agentsHere = () => (Array.isArray(S.sessions) ? S.sessions : []).filter(inSel);
   const inSel = (record) => {
     const ids = selectedIds(selection());
     return !ids.length || ids.includes(campaignOf(record));
   };
 
-  /** The loaded Cowork/Agent, healed: one that left the Campaign is not a default here. */
+  /** The loaded Cowork, healed: one that left the Campaign is not a default here. */
   const cowork = () => {
     const rows = coworksHere();
     const want = mine().cowork;
     return rows.find((row) => row.name === want) || rows[0] || null;
   };
-  const agent = () => {
-    const rows = agentsHere();
-    const want = mine().agent;
-    return rows.find((row) => row.name === want) || rows[0] || null;
-  };
   const coworkLabel = (row) => row?.title || row?.name || '';
+  /** What the launch door launches: a solo Agent (the usual) or a whole Team. */
+  const LAUNCHES = () => [
+    { id: 'agent', label: t('campaign_home.solo_agent', 'Solo Agent'), seat: '@new' },
+    { id: 'team', label: t('new_team.title', 'New Team'), seat: '@new-team' },
+  ];
+  const launch = () => LAUNCHES().find((row) => row.id === mine().launch) || LAUNCHES()[0];
 
   const valueOf = (key) => {
-    if (key === 'campaign') {
-      const ids = selectedIds(selection());
-      if (ids.length > 1) return t('campaign_home.selected_n', '{n} selected', { n: ids.length });
-      return primaryCampaign(selection())?.title || t('campaign_home.no_campaign', 'No Campaign');
-    }
     if (key === 'coworks') return coworkLabel(cowork()) || t('campaign_home.no_cowork', 'No Cowork');
-    return agent()?.name || t('campaign_home.no_agent', 'No Agent');
+    if (key === 'new') return launch().label;
+    return primaryCampaign(selection())?.title || t('campaign_home.no_campaign', 'No Campaign');
   };
 
   /* ---------- going through a door ---------- */
   const go = (key) => {
     if (!ctx) return;
-    if (key === 'campaign') return void ctx.navigate('cowork');
+    // The machine's settings are this Campaign's page — one Ronin, one Campaign today.
+    if (key === 'machine') return void ctx.navigate('campaign');
     if (key === 'coworks') {
       const row = cowork();
       return void (row ? ctx.navigate('team', { param: row.name }) : ctx.navigate('cowork'));
     }
-    // AN AGENT IS NOT A PAGE — it is a tile in a workspace. So its door opens the Cowork
-    // it works in with that Agent already up, which is the Agent's page in the only sense
-    // Ronin has one. A rōnin (no Cowork) opens the Cowork space rather than nowhere.
-    const row = agent();
-    if (!row) return;
-    const team = (row.tags || []).find((name) => coworksHere().some((c) => c.name === name)) || '';
-    if (!team) return void ctx.navigate('cowork');
-    ctx.patchViewState('team', { seats: { workspace1: row.name } });
-    ctx.navigate('team', { param: team });
-  };
-
-  /** Loading a Campaign re-homes the other two — see the header note. */
-  const loadCampaign = (id) => {
-    ctx?.patchState({ campaignSelection: { mode: 'selected', campaign_ids: [id], primary_campaign_id: id } });
-    ctx?.patchViewState('home', { cowork: '', agent: '' });
+    // A LAUNCH IS A SURFACE IN THE COWORK WORKBENCH — the New Agent or New Team surface,
+    // seated in workspace 1 there, with the Campaign already known.
+    ctx.patchViewState('cowork', { seats: { workspace1: launch().seat } });
+    ctx.navigate('cowork');
   };
 
   /* ---------- the tray ---------- */
   const rowsFor = (key) => {
-    if (key === 'campaign') {
-      const on = selectedIds(selection());
-      return campaigns().filter((row) => row.state !== 'archived')
-        .map((row) => ({ id: row.id, label: row.title, on: on.includes(row.id) }));
-    }
     if (key === 'coworks') {
       const now = cowork()?.name;
       return coworksHere().map((row) => ({ id: row.name, label: coworkLabel(row), on: row.name === now }));
     }
-    const now = agent()?.name;
-    return agentsHere().map((row) => ({ id: row.name, label: row.name, on: row.name === now }));
+    const now = launch().id;
+    return LAUNCHES().map((row) => ({ id: row.id, label: row.label, on: row.id === now }));
   };
 
   const choose = (key, id, close = true) => {
-    if (key === 'campaign') loadCampaign(id);
-    else ctx?.patchViewState('home', key === 'coworks' ? { cowork: id } : { agent: id });
+    ctx?.patchViewState('home', key === 'coworks' ? { cowork: id } : { launch: id });
     if (close) open = '';
     paint();
   };
 
-  const launchAgent = (id) => {
-    const row = agentsHere().find((candidate) => candidate.name === id);
-    if (!row) return;
-    const team = (row.tags || []).find((name) => coworksHere().some((c) => c.name === name)) || '';
-    if (!team) return void ctx?.navigate('cowork');
-    ctx?.patchViewState('team', { seats: { workspace1: row.name } });
-    ctx?.navigate('team', { param: team });
-  };
-
   const act = (key, id) => {
     choose(key, id);
-    if (key === 'campaign') ctx?.navigate('campaign');
-    else if (key === 'coworks') ctx?.navigate('team', { param: id });
-    else launchAgent(id);
+    if (key === 'coworks') ctx?.navigate('team', { param: id });
+    else go('new');
   };
 
-  const create = (key) => {
+  const create = () => {
     open = '';
     paint();
-    if (key === 'campaign') {
-      ctx?.patchViewState('campaign', { seats: { workspace1: '@new-campaign' } });
-      ctx?.navigate('campaign');
-    } else {
-      ctx?.patchViewState('cowork', { seats: { workspace1: key === 'coworks' ? '@new-team' : '@new' } });
-      ctx?.navigate('cowork');
-    }
+    ctx?.patchViewState('cowork', { seats: { workspace1: '@new-team' } });
+    ctx?.navigate('cowork');
   };
 
   function paintTray() {
@@ -196,19 +162,19 @@ export function createCampaignHome() {
       const name = el('button', 'ch-menu-name', row.label);
       name.type = 'button';
       name.addEventListener('click', () => choose(key, row.id));
-      const action = el('button', 'ch-menu-action', key === 'campaign' ? `✎ ${t('roots.edit', 'Edit')}` : `▶ ${t('league.launch_team', 'Launch')}`);
+      const action = el('button', 'ch-menu-action', `▶ ${t('league.launch_team', 'Launch')}`);
       action.type = 'button';
       action.addEventListener('click', () => act(key, row.id));
       line.append(star, name, action);
       tray.append(line);
     }
     if (!rows.length) tray.append(el('p', 'ch-empty', t('campaign_home.tray_empty', 'Nothing here yet.')));
-    const foot = el('button', 'ch-menu-foot', key === 'campaign'
-      ? `＋ ${t('campaign.new', 'New Campaign')}`
-      : key === 'coworks' ? `＋ New ${t('campaign.cowork', 'Cowork')}` : `＋ ${t('league.new_agent', 'New Agent')}`);
-    foot.type = 'button';
-    foot.addEventListener('click', () => create(key));
-    tray.append(foot);
+    if (key === 'coworks') {
+      const foot = el('button', 'ch-menu-foot', `＋ New ${t('campaign.cowork', 'Cowork')}`);
+      foot.type = 'button';
+      foot.addEventListener('click', () => create());
+      tray.append(foot);
+    }
   }
 
   function paintDoors() {
@@ -224,12 +190,15 @@ export function createCampaignHome() {
       enter.append(el('span', 'ch-glyph', door.glyph), el('h2', null, door.name), el('p', 'ch-is', door.is));
       enter.addEventListener('click', () => go(door.key));
 
-      const chip = el('button', 'ch-chip');
-      chip.type = 'button';
-      chip.setAttribute('aria-label', t('campaign_home.change', 'Change'));
-      chip.setAttribute('aria-expanded', String(open === door.key));
-      chip.append(el('b', null, valueOf(door.key)), el('i', null, '▼'));
-      chip.addEventListener('click', () => { open = open === door.key ? '' : door.key; paint(); });
+      // The machine door has no dial: one Campaign, so its chip just names it.
+      const chip = el(door.key === 'machine' ? 'span' : 'button', 'ch-chip');
+      if (door.key !== 'machine') {
+        chip.type = 'button';
+        chip.setAttribute('aria-label', t('campaign_home.change', 'Change'));
+        chip.setAttribute('aria-expanded', String(open === door.key));
+        chip.append(el('b', null, valueOf(door.key)), el('i', null, '▼'));
+        chip.addEventListener('click', () => { open = open === door.key ? '' : door.key; paint(); });
+      } else chip.append(el('b', null, valueOf(door.key)));
 
       card.append(enter, chip);
       doors.append(card);

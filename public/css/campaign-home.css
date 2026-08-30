@@ -60,9 +60,9 @@
     border-radius: var(--ch-box) 0 0 var(--ch-box);
     background: var(--ch-tone);
   }
-  .ch-door[data-door='campaign'] { --ch-tone: var(--accent); }
+  .ch-door[data-door='machine'] { --ch-tone: var(--accent); }
   .ch-door[data-door='coworks'] { --ch-tone: var(--accent-2); }
-  .ch-door[data-door='agents'] { --ch-tone: var(--ok-2); }
+  .ch-door[data-door='new'] { --ch-tone: var(--ok-2); }
 
   .ch-door:not([data-inert]):hover {
     border-color: var(--ch-edge-hover);
@@ -149,9 +149,9 @@
     background: var(--bg-2);
   }
   .ch-tray[hidden] { display: none; }
-  .ch-tray[data-for='campaign'] { --ch-tone: var(--accent); }
+  .ch-tray[data-for='machine'] { --ch-tone: var(--accent); }
   .ch-tray[data-for='coworks'] { --ch-tone: var(--accent-2); }
-  .ch-tray[data-for='agents'] { --ch-tone: var(--ok-2); }
+  .ch-tray[data-for='new'] { --ch-tone: var(--ok-2); }
 
   .ch-menu-row {
     display: grid;
