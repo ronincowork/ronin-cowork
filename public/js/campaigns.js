@@ -26,8 +26,9 @@
 import { request } from './request.js';
 import { activeProfile } from './desk-profile.js';
 
-/** The last-resort id, used only when no Campaign API answered AND SETTEI names nothing. */
-const UNNAMED_CAMPAIGN_ID = 'ronin';
+/** The last-resort id, used only when no Campaign API answered AND SETTEI names nothing —
+ *  the same home Campaign the server seeds (src/campaign-config.ts HOME_ID). */
+const UNNAMED_CAMPAIGN_ID = 'home';
 
 /** `{ campaigns, ok, synthesized }` — the last read. `null` until one has happened. */
 let read = null;
@@ -73,7 +74,7 @@ async function synthesize() {
   const name = text(campaign?.name);
   return [shape({
     id: deriveId(name),
-    title: name || 'Ronin',
+    title: name || 'Ronin Home',
     description: text(campaign?.description),
     desk_profile: activeProfile()?.name || '',
     state: 'active',

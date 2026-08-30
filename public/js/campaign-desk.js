@@ -149,11 +149,11 @@ export function createDeskProfileSurface(campaign) {
       choice(t('campaign_view.output', 'Output'), OUTPUTS(), desk.rireki_view || '',
         t('campaign_view.output_help', 'What an Agent’s tile shows. Terminal Mirror is the one that ships; Detailed, Condensed and Cherry Pick arrive with Ronin Services.'), (v) => void setDesk({ rireki_view: v })),
       choice(t('campaign_view.kind', 'Kind'), KINDS(), desk.campaign_kind || '',
-        t('campaign_view.kind_help', 'What sort of body of work this is. The board opens on it.'), (v) => void setDesk({ campaign_kind: v })),
+        t('campaign_view.kind_help', 'The default kind of work for a new Cowork or project here. Nothing reads it yet.'), (v) => void setDesk({ campaign_kind: v })),
       choice(t('campaign_view.lexicon', 'Lexicon'), [{ value: desk.lexicon || '', label: desk.lexicon || t('settei.none_set', '— none set —') }], desk.lexicon || '',
         t('campaign_view.lexicon_help', 'The words. Held to one lexicon for now, so nothing on this page is offered.'), null),
-      choice(t('campaign_view.arrangement', 'Arrangement'), [{ value: 'x', label: (desk.team_arrangement || []).join(' · ') || t('settei.none_set', '— none set —') }], 'x',
-        t('campaign_view.arrangement_help', 'The Team page’s default column order, when a tab has none of its own.'), null),
+      // team_arrangement is in the record but not offered: the Workbench remembers its own
+      // arrangement per route now, so a profile-level default is vestigial (owner, 2026-08-30).
       notice.el,
     );
   }

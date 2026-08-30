@@ -108,6 +108,10 @@ export const campaignFile = (id: string): string => path.join(dir(), `${id}.json
  * an existing record. Anything that cannot yield a token falls back to `ronin`, which is
  * the plan's own fallback and the ordinary answer for an install that never named itself.
  */
+/** The one Campaign a fresh install is born with. */
+export const HOME_ID = 'home';
+export const HOME_TITLE = 'Ronin Home';
+
 export function campaignIdFrom(title: string): string {
   const slug = String(title ?? '')
     .trim()
@@ -393,9 +397,13 @@ export async function ensureInitialCampaign(): Promise<CampaignConfig> {
 
   const legacy = await readSection<{ name?: unknown; description?: unknown }>('campaign', {});
   const desk = await readSection<{ profile?: unknown }>('desk', {});
-  const title = str(legacy.name, TITLE_MAX);
+  // A FRESH INSTALL GETS ONE HOME CAMPAIGN (owner, 2026-08-30): every new Ronin instance
+  // starts with `home` titled "Ronin Home", the default for everyone; the name is free to
+  // change afterwards. An install that had already named itself keeps that name.
+  const named = str(legacy.name, TITLE_MAX);
+  const title = named || HOME_TITLE;
   return createCampaign({
-    id: campaignIdFrom(title),
+    id: named ? campaignIdFrom(named) : HOME_ID,
     title,
     description: str(legacy.description, DESCRIPTION_MAX),
     desk_profile: str(desk.profile, DESK_PROFILE_MAX),

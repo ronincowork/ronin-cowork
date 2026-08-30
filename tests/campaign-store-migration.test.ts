@@ -109,7 +109,7 @@ test('GLOBAL CONFIGURATION IS UNCHANGED — only the two Campaign keys moved', a
   assert.equal(await fs.readFile(roninJson, 'utf8'), JSON.stringify(LEGACY, null, 2) + '\n');
 });
 
-test('an install that never named its campaign migrates to `ronin`', async () => {
+test('an install that never named its campaign is born with the one home Campaign (owner, 2026-08-30)', async () => {
   const fresh = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-camp-fresh-'));
   const freshCfg = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-camp-fresh-cfg-'));
   process.env.RONIN_CAMPAIGNS_DIR = fresh;
@@ -117,10 +117,10 @@ test('an install that never named its campaign migrates to `ronin`', async () =>
   try {
     // No ronin.json at all: the ordinary state of a box being born.
     const c = await ensureInitialCampaign();
-    assert.equal(c.id, 'ronin', 'the plan’s fallback');
-    assert.equal(c.title, 'ronin', 'a blank title falls back to the id rather than being empty');
+    assert.equal(c.id, 'home', 'every fresh install gets the same home Campaign');
+    assert.equal(c.title, 'Ronin Home', 'named for everyone; the name is free to change afterwards');
     assert.equal(c.desk_profile, '', '“as stock” is still the answer for a box that chose none');
-    assert.equal((await initialCampaign())!.id, 'ronin');
+    assert.equal((await initialCampaign())!.id, 'home');
   } finally {
     process.env.RONIN_CAMPAIGNS_DIR = campaigns;
     process.env.RONIN_CONFIG_DIR = config;

@@ -97,7 +97,7 @@ export const SETTEI_SCHEMA = {
   fields: [
     {
       id: 'campaignName', sec: 'campaign', kind: 'text', ask: false,
-      label: 'Campaign name', short: 'campaign name', placeholder: 'My campaign',
+      label: 'Campaign name', short: 'campaign name', placeholder: 'Ronin Home',
       from: 'set.campaign.name', lands: { family: 'campaign', key: 'name' }, omit: 'blank',
     },
     {

@@ -9,7 +9,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaigns:** Campaigns
 - **campaign_kind:** Kind
 - **campaign.name:** Campaign name
-- **campaign.name_placeholder:** My campaign
+- **campaign.name_placeholder:** Ronin Home
 - **campaign.description:** Description
 - **campaign.description_placeholder:** What this campaign is for
 - **campaign.commons:** Campaign commons
@@ -230,11 +230,11 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.with_services:** Ronin Services
 - **campaign_view.services_title:** Arrives with Ronin Services.
 - **campaign_view.kind:** Kind
-- **campaign_view.kind_help:** What sort of body of work this is. The board opens on it.
+- **campaign_view.kind_help:** The default kind of work for a new Cowork or project here. Nothing reads it yet.
 - **campaign_view.lexicon:** Lexicon
 - **campaign_view.lexicon_help:** The words. Held to one lexicon for now, so nothing on this page is offered.
-- **campaign_view.arrangement:** Arrangement
-- **campaign_view.arrangement_help:** The Team page’s default column order, when a tab has none of its own.
+- **campaign_view.id:** Id
+- **campaign_view.id_help:** Fixed once created — printed on every record that points here, so it cannot change.
 - **campaign_view.agent_defaults:** Agent defaults
 - **campaign_view.defaults_help:** What a new Agent here starts on when the launch does not say. A row this Campaign has not answered uses the machine’s SETTEI answer, marked as such.
 - **campaign_view.defaults_scope:** Role, reach and who may read an Agent are set when it is launched, not here.
@@ -658,7 +658,7 @@ The pad's current config downloads as a backup first.
 ## wipeboard — the kind note
 
 ## roots — projectroots.js (the ▣ Project roots tab)
-- **roots.include:** ＋ include
+- **roots.include:** ＋ include… ask Mika
 - **roots.include_title:** Ask Mika to include a directory — she reads it and proposes the entry
 - **roots.read_failed:** could not read the catalog — {message}
 - **roots.save:** save

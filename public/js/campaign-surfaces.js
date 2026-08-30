@@ -54,7 +54,11 @@ export function createCampaignIdentitySurface(campaign) {
   const title = make(t('campaign.name', 'Campaign name'), el('input'), t('campaign_view.name_help', 'On the door, the browser tab and the address.'), 120, t('campaign.name_placeholder', 'My campaign'));
   const description = make(t('campaign.description', 'Description'), el('textarea'), t('campaign_view.description_help', 'What this body of work is for. Shown on its card.'), 500, t('campaign.description_placeholder', 'What this campaign is for'));
   description.control.rows = 3;
-  // The id is not shown: it is the address every campaign_id points at, not a choice.
+  // The id is shown fixed, in grey: it is the address every campaign_id points at — a
+  // fact to read, not a choice (owner, 2026-08-30).
+  const id = make(t('campaign_view.id', 'Id'), el('input'), t('campaign_view.id_help', 'Fixed once created — printed on every record that points here, so it cannot change.'));
+  id.control.readOnly = true;
+  id.control.tabIndex = -1;
 
   const save = async (fields, f) => {
     const row = campaign();
@@ -75,6 +79,7 @@ export function createCampaignIdentitySurface(campaign) {
       head.title.textContent = row?.title ? t('campaign_view.head', 'Campaign: {name}', { name: row.title }) : t('campaign', 'Campaign');
       title.control.value = row?.title || '';
       description.control.value = row?.description || '';
+      id.control.value = row?.id || '';
       title.f.setValidation('', '');
       description.f.setValidation('', '');
       surface.setState(row ? null : 'empty', row ? '' : t('campaign_view.none_selected', 'No Campaign selected.'));

@@ -82,7 +82,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `campaign.description_placeholder` | What this campaign is for |  |  |  |  |
 | `campaign.name` | Campaign name |  |  |  |  |
 | `campaign.name_needed` | A Campaign needs a name. |  |  |  |  |
-| `campaign.name_placeholder` | My campaign |  |  |  |  |
+| `campaign.name_placeholder` | Ronin Home |  |  |  |  |
 | `campaign.new` | New Campaign |  |  |  |  |
 | `campaign.none` | No Campaigns yet. |  |  |  |  |
 | `campaign.profile_hint` | Sets the words, the skin and the templates this Campaign opens with. |  |  |  |  |
@@ -114,8 +114,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `campaign_view.applied` | applied — every component below is now this Campaign’s own |  |  |  |  |
 | `campaign_view.applied_tag` | applied |  |  |  |  |
 | `campaign_view.apply` | Apply |  |  |  |  |
-| `campaign_view.arrangement` | Arrangement |  |  |  |  |
-| `campaign_view.arrangement_help` | The Team page’s default column order, when a tab has none of its own. |  |  |  |  |
 | `campaign_view.campaign_summary` | What this body of work is called, and what it is for. |  |  |  |  |
 | `campaign_view.col_default` | Default |  |  |  |  |
 | `campaign_view.col_model` | Preferred model |  |  |  |  |
@@ -129,8 +127,10 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `campaign_view.desk_summary` | This Ronin install, its owner and its workspace configuration. |  |  |  |  |
 | `campaign_view.from_settei` | from SETTEI |  |  |  |  |
 | `campaign_view.head` | Campaign: {name} |  |  |  |  |
+| `campaign_view.id` | Id |  |  |  |  |
+| `campaign_view.id_help` | Fixed once created — printed on every record that points here, so it cannot change. |  |  |  |  |
 | `campaign_view.kind` | Kind |  |  |  |  |
-| `campaign_view.kind_help` | What sort of body of work this is. The board opens on it. |  |  |  |  |
+| `campaign_view.kind_help` | The default kind of work for a new Cowork or project here. Nothing reads it yet. |  |  |  |  |
 | `campaign_view.lexicon` | Lexicon |  |  |  |  |
 | `campaign_view.lexicon_help` | The words. Held to one lexicon for now, so nothing on this page is offered. |  |  |  |  |
 | `campaign_view.name_help` | On the door, the browser tab and the address. |  |  |  |  |
@@ -1057,7 +1057,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `roots.f_remit` | remit |  |  |  |  |
 | `roots.f_remit_hint` | The one line you pick it from in a list |  |  |  |  |
 | `roots.f_remit_placeholder` | what this is |  |  |  |  |
-| `roots.include` | ＋ include |  |  |  |  |
+| `roots.include` | ＋ include… ask Mika |  |  |  |  |
 | `roots.include_title` | Ask Mika to include a directory — she reads it and proposes the entry |  |  |  |  |
 | `roots.loading` | loading… |  |  |  |  |
 | `roots.read_failed` | could not read the catalog — {message} |  |  |  |  |

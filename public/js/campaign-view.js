@@ -51,7 +51,9 @@ function registerCampaignSurfaces() {
   // the templates that exist.
   add({ type: TYPES.roles, header: 'surface', label: () => t('league.templates', 'Templates'), summary: () => t('campaign_view.roles_summary', 'What a launch here offers an Agent to be.'), create: () => { const surface = createSessionRolesSurface(); return { el: surface.el, show: () => surface.enter() }; } });
   add({ type: TYPES.create, header: 'surface', label: () => t('campaign.new', 'New Campaign'), summary: () => t('campaign_view.new_summary', 'Set the stage. It creates no Cowork and launches no Agent.'), variant: 'dotted', create: ({ workspace, environment: e }) => { const surface = createNewCampaignSurface(async (fields) => { const result = await createCampaign(fields); if (result.ok) { e.ctx()?.patchState({ campaignSelection: { mode: 'selected', campaign_ids: [result.data.id], primary_campaign_id: result.data.id } }); e.ctx()?.patchViewState('home', { cowork: '', agent: '' }); e.workbench()?.place(TYPES.identity, workspace); } return result; }); return { el: surface.el, show: () => surface.enter() }; } });
-  profiles.define(PROFILE, Object.values(TYPES));
+  // ONE CAMPAIGN SHIPS (owner, 2026-08-30): there is no way yet to look at several, so
+  // New Campaign is not offered — the surface stays in the library, off the profile.
+  profiles.define(PROFILE, Object.values(TYPES).filter((type) => type !== TYPES.create));
 }
 
 export function createCampaignView() {

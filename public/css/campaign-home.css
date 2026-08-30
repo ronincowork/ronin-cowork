@@ -207,6 +207,7 @@
     font-size: var(--text-4);
   }
   .cv-input:focus { border-color: var(--accent); outline: none; }
+  .cv-input[readonly] { color: var(--muted); background: var(--bg-2); cursor: default; }
   .cv-cards { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-5); }
   .cv-actions { display: flex; justify-content: flex-end; gap: var(--space-4); }
   .cv-button {
