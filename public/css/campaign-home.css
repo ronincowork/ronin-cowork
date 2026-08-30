@@ -13,6 +13,7 @@
     --ch-glyph: 30px;
     --ch-frame-w: 860px;
     --ch-door-h: 208px;
+    --ch-caption-top: 144px;
     display: grid;
     place-items: center;
     min-height: 0;
@@ -84,8 +85,8 @@
      empty middle stays empty, and a quiet path line leads into the words on approach. */
   .ch-is {
     position: absolute;
+    top: var(--ch-caption-top);
     right: var(--space-9);
-    bottom: var(--space-7);
     left: var(--space-9);
     margin: 0;
     padding-top: var(--space-4);
