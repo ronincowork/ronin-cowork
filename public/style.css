@@ -5314,43 +5314,57 @@ button.wb-door:hover b {
   max-height: 45%;
   overflow-y: auto;
 }
-.shingo-ladder .sl-job {
-  display: inline-block;
-  margin-right: var(--space-4);
-  padding: 0 var(--space-3);
-  border: var(--edge) solid var(--line);
-  border-radius: var(--radius-xs);
-  font-size: var(--text-micro);
-  letter-spacing: 0.06em;
-  color: var(--accent-2);
+.shingo-ladder .sl-summary {
+  color: var(--accent);
+  font-size: var(--text-5);
+  font-weight: 700;
+  padding-bottom: var(--space-4);
+  border-bottom: var(--edge) solid var(--line-2);
 }
-/* WHO the session is — birth-fixed, so it is drawn before the task it is doing and never
-   moves under the reader. Quieter than the task chip beside it: the task is what changed
-   and is what the eye should land on. */
-.shingo-ladder .sl-role {
-  display: inline-block;
-  margin-right: var(--space-4);
-  padding: 0 var(--space-3);
-  border: var(--edge) dashed var(--line);
-  border-radius: var(--radius-xs);
-  font-size: var(--text-micro);
-  letter-spacing: 0.06em;
-  color: var(--muted);
-}
-.shingo-ladder .sl-checkout {
-  padding-bottom: var(--space-3);
-  margin-bottom: var(--space-3);
+.shingo-ladder .sl-summary.gate { color: var(--warn); }
+.shingo-ladder .sl-section {
+  padding: var(--space-4) 0;
   border-bottom: var(--edge) solid var(--line);
-  min-width: 0;
+}
+.shingo-ladder .sl-section:last-child { border-bottom: 0; }
+.shingo-ladder .sl-section h4 {
+  margin: 0 0 var(--space-2);
+  color: var(--fg-strong);
+  font-size: var(--text-2);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.shingo-ladder .sl-section p { margin: 0; }
+.shingo-ladder .sl-task p:first-of-type {
+  color: var(--fg-strong);
+  font-size: var(--text-4);
+  line-height: 1.5;
+}
+.shingo-ladder .sl-action {
+  color: var(--accent-2);
+  margin-top: var(--space-2);
+}
+.shingo-ladder .sl-context p,
+.shingo-ladder .sl-docs p { color: var(--fg); }
+.shingo-ladder .sl-context p + p,
+.shingo-ladder .sl-docs p + p { margin-top: var(--space-2); }
+.shingo-ladder .sl-context span {
+  color: var(--muted);
+  margin-left: var(--space-4);
 }
 .shingo-ladder .sl-checkout-line {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-4);
+  display: grid;
+  gap: var(--space-1);
   min-width: 0;
 }
-.shingo-ladder .sl-branch {
+.shingo-ladder .sl-checkout-line + .sl-checkout-line { margin-top: var(--space-3); }
+.shingo-ladder .sl-worktree {
   color: var(--fg-strong);
+  overflow-wrap: anywhere;
+}
+.shingo-ladder .sl-branch {
+  color: var(--accent-2);
   font-size: var(--text-2);
   overflow-wrap: anywhere;
 }
@@ -5364,12 +5378,6 @@ button.wb-door:hover b {
    the owner. Blue rather than the gate's amber, which is reserved for "you are needed". */
 .shingo-ladder .sl-side {
   color: var(--accent-2);
-  padding-bottom: var(--space-3);
-  margin-bottom: var(--space-3);
-  border-bottom: var(--edge) solid var(--line);
-}
-.shingo-ladder .sl-obj {
-  color: var(--fg);
   padding-bottom: var(--space-3);
   margin-bottom: var(--space-3);
   border-bottom: var(--edge) solid var(--line);

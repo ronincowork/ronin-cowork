@@ -35,7 +35,7 @@ import { TermView } from './termview.js';
 import { TileWire } from './tilewire.js';
 import { buildComposer } from './composer.js';
 import { refreshKaki, setKakiPolicy } from './output.js';
-import { refreshDesks } from './desks.js';
+import { desksOf, refreshDesks } from './desks.js';
 import { t } from './lexicon.js';
 
 const readableSession = (name) => {
@@ -263,7 +263,7 @@ export class Tile {
   /** Unroll the ladder under the header — same data as the chip, at full zoom. */
   drawLadder() {
     this.el.querySelector('.shingo-ladder')?.remove();
-    const box = buildLadder(this.tegami);
+    const box = buildLadder(this.tegami, desksOf(this.session));
     this.el.querySelector('.tile-head').after(box);
     this.workRecordBtn.classList.add('open');
     this.workRecordBtn.setAttribute('aria-expanded', 'true');

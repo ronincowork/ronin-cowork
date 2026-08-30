@@ -1031,10 +1031,18 @@ The catalog entry goes. {dir} is not touched.
 - **tape.fold_code:** ⌨ code
 
 ## ladder — shingo.js (the ladder chip and panel)
+- **ladder.task_at_hand:** Task at hand
+- **ladder.task_unstated:** No task stated in this work record.
+- **ladder.current_action:** Current action
+- **ladder.worktrees:** Worktrees
+- **ladder.branch:** Branch
+- **ladder.coworks:** Coworks
+- **ladder.tracked_documents:** Tracked documents
+- **ladder.docs_none:** No tracked documents.
+- **ladder.progress:** Progress
 - **ladder.none:** no work record yet
 - **ladder.gate:** GATE
 - **ladder.legs_undetermined:** — legs undetermined
-- **ladder.quiet:** quiet {age}
 
 ## tile — tile.js (the Agent terminal tile)
 
