@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1194 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1195 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -111,6 +111,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
 | `campaign_view.campaign_summary` | What this body of work is called, and what it is for. |  |  |  |  |
+| `campaign_view.desk_summary` | This Ronin install, its owner and its workspace configuration. |  |  |  |  |
 | `campaign_view.new_summary` | Set the stage. It creates no Cowork and launches no Agent. |  |  |  |  |
 | `campaign_view.no_profiles` | No desk profiles on this install. |  |  |  |  |
 | `campaign_view.none_selected` | No Campaign selected. |  |  |  |  |
@@ -448,7 +449,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.control` | Control |  |  |  |  |
 | `glossary.cowork_commons` | cowork commons |  |  |  |  |
 | `glossary.cowork_setup` | cowork setup |  |  |  |  |
-| `glossary.cowork_space` | the cowork space |  |  |  |  |
 | `glossary.coworkspace` | the coworkspace |  |  |  |  |
 | `glossary.customization` | your own macros and jobs |  |  |  |  |
 | `glossary.desk` | the desk |  |  |  |  |
@@ -494,6 +494,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.terminal_tile` | terminal tile |  |  |  |  |
 | `glossary.tile` | tile |  |  |  |  |
 | `glossary.wipeboard` | wipeboard |  |  |  |  |
+| `glossary.workbench` | the workbench |  |  |  |  |
 | `glossary.workspace` | workspace |  |  |  |  |
 
 ## head

@@ -8,6 +8,9 @@ const team = read('public/js/cowork-view.js');
 const controller = read('public/js/team-controller.js');
 const kit = read('public/js/workspace-kit.js') + read('public/js/workspace-adapters.js');
 const layouts = read('public/js/workspace-layouts.js');
+const arrangement = read('public/js/workspace-arrangement.js');
+const campaign = read('public/js/campaign-view.js');
+const workbench = read('public/js/workbench.js');
 const terminal = read('public/js/terminal-tile-host.js');
 const primitives = read('public/js/workspace-primitives.js');
 const newTeam = read('public/js/new-team.js');
@@ -31,12 +34,18 @@ for (const retired of ['wk-workbench-rails', 'wk-workbench-expand', 'wk-workbenc
 }
 if (!primitives.includes('createLayoutMap')) problems.push('The Kit primitives must own the layout map.');
 if (!read('public/js/workspace.js').includes('createLayoutMap')) problems.push('The ViewHost must draw the layout map for a view that exposes an arrangement.');
-if (/createWorkbenchLayout\([^{)]/.test(team)) problems.push('Team must hand the Workbench a declaration, not positional surfaces.');
-if (!team.includes('declaration:') || !team.includes('arrangement: workbench.arrangement')) problems.push('Team must declare its slots and expose its arrangement.');
+if (!layouts.includes('createSurfaceHeader') || !layouts.includes('dataset.workbenchHeader')) problems.push('The Workbench layout must own the permanent header of every ordinary declared slot.');
+if (!arrangement.includes('composite: slot.composite === true')) problems.push('The Workbench declaration must preserve composite workspace stacks so the frame cannot double-head them.');
+for (const contract of ['WorkbenchLibrary', 'WorkbenchProfiles', 'WORKBENCH_IDS', "['workspace1', 'workspace2', 'workspace3', 'workspace4']", 'tenant', 'profile.types', 'definition.create']) if (!workbench.includes(contract)) problems.push(`The sealed Workbench is missing ${contract}.`);
+for (const [name, source] of [['Campaign', campaign], ['Cowork/Team', team]]) {
+  if (!source.includes('WorkspaceKit.workbench.create({')) problems.push(`${name} must instantiate the one high-level Workbench.`);
+  if (/createWorkbenchLayout|\b(?:cv-selector-head|tw-roster-head|tw-column|tw-cell)\b/.test(source)) problems.push(`${name} owns Workbench frame/header geometry instead of supplying a profile and tenant.`);
+}
+if (read('public/js/workspace-kit.js').includes('createWorkbenchLayout')) problems.push('The low-level Workbench layout must not be exposed to consumers; only WorkspaceKit.workbench.create is public.');
 for (const file of fs.readdirSync('public/js')) {
-  if (file.startsWith('workspace-')) continue;
+  if (['workspace-layouts.js', 'workbench.js'].includes(file)) continue;
   const source = read(`public/js/${file}`);
-  if (/gridTemplateColumns|wk-workbench-splitter/.test(source)) problems.push(`${file} reaches into Workbench geometry; only the Kit lays out slots.`);
+  if (/createWorkbenchLayout|gridTemplateColumns|wk-workbench-(?:splitter|column|cell|selector)/.test(source)) problems.push(`${file} reaches into Workbench construction; only workbench.js owns it.`);
 }
 if (!/@media \(max-width: 680px\) \{.*\.wk-workbench-host \{[^}]*flex-direction: column;/.test(styles)) problems.push('The Kit must own managed Workbench phone composition.');
 if (!league.includes("'./team-controller.js'")) problems.push('League must consume the shared Team controller.');

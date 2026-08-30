@@ -1,11 +1,12 @@
 # desk_profiles — the owner's standing defaults, one file per profile
 
-> **DATA.** Nothing here executes. A **`desk_profile`** is the owner's standing defaults
+> **DATA.** Nothing here executes. A **`desk_profile`** is a template of standing defaults
 > for the surfaces they work at (KOTOBA R38, 2026-08-27): which **skin** (look —
-> `SKINS.md`, tokens only, unchanged), which **lexicon** (the words — `lexicons/`), which
+> `SKINS.md`, tokens only, unchanged), which **theme**, which **lexicon** (the words — `lexicons/`), which
 > **campaign kind** the board opens on, the **Team page's default arrangement**, and the
 > RIREKI **detail level** a new tile shows. **A desk_profile is NOT a skin; each one HAS a
-> skin.** Chosen once and kept (⚙ · `PUT /api/settei/desk`); never a step in any run.
+> skin and theme.** Applying one copies its fields into a Campaign. Campaign edits then
+> stand alone; applying a template again explicitly overwrites them.
 
 **One file per profile, named by its token.** `- **key:** value` lines; everything else is
 prose. Fields, all optional — a blank field means "as stock":
@@ -14,6 +15,7 @@ prose. Fields, all optional — a blank field means "as stock":
 |---|---|---|
 | `label` · `blurb` · `order` · `hidden` | what a person picks | the ⚙ picker |
 | `skin` | a `SKINS.md` entry | `public/js/skins.js` at boot and on pick |
+| `theme` | `light` · `dark` · `automatic` | root presentation, before reveal |
 | `lexicon` | a `lexicons/` entry | `public/js/lexicon.js` — every `t()` |
 | `campaign_kind` | `coding` · `household` · `personal` · `work` · `social` · `school` | the campaign board, when it lands |
 | `rireki_view` | `terminal_mirror` · `detailed` · `condensed` · `cherry_pick` · `locked` | a NEW tile's Output, when the tile has no choice of its own |

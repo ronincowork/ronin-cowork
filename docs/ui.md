@@ -343,7 +343,7 @@ not a tile's* — and the six were on the wrong side of it.
 They were the **`admin_desk`**'s from 2026-08-18, and since 2026-08-27 they are the
 **`cowork_commons`**'s (`js/cowork-commons.js`, `docs/cowork-space.md`) — a workspace
 surface with six tabs, never an overlay: ⚙ places it in the workspace you are in on the
-cowork_space, and shows it at full width as the `cowork` destination on the parked grid
+workbench, and shows it at full width as the `cowork` destination on the parked grid
 page. The rest of this section is the desk's history. The desk was a
 TILE, not a page-level sheet (owner: *"page level surface? cant it just be a tile?"*): the
 copies were never about a surface being able to live in a tile, they were about six rooms

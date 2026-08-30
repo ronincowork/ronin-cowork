@@ -92,6 +92,13 @@ tunnel is enough (`ssh -L 3006:127.0.0.1:3006 you@yourbox`, then open
 Already have an agent on that machine (Claude Code, Codex)? Hand it `docs/install.md`
 and it runs these steps for you. Optional — not a requirement.
 
+## Finding work in the coworkspace
+
+Campaign, Cowork, and Team use one Workbench format. [`docs/workbench.md`](docs/workbench.md)
+is the third-party agent's guide to its discovery column, workspaces, surfaces, placement,
+and recall. It explains how to find and arrange work without requiring frontend or design
+system knowledge.
+
 ## Running it (contributors, from a checkout)
 
 ```bash

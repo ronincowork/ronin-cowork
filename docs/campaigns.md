@@ -2,7 +2,7 @@
 
 A **campaign** is a named body of work, and the outer object every other record sits
 under. One install may run several side by side: each `project_root`, `team_roster` and
-session belongs to exactly one, and a Cowork Space *view* may show one, any selected set,
+session belongs to exactly one, and a workbench may show one, any selected set,
 or all of them. A view is a projection and never ownership — selecting or hiding a
 campaign changes what a browser draws and stops nothing on the box.
 
@@ -24,7 +24,8 @@ leaves it (`src/stores.ts`, and `bin/ronin-store campaigns` gives bash the direc
 | `id` | Stable lowercase token — the storage and URL identity. **Immutable.** |
 | `title` | Readable and editable. The id does not follow it. |
 | `description` | Readable and editable. |
-| `desk_profile` | This campaign's vocabulary, skin and offered templates. |
+| `desk_profile` | Last desk-profile template applied; provenance, not a live reference. |
+| `desk` | Campaign-owned effective skin, theme, lexicon, campaign kind, RIREKI view, Team arrangement and future defaults. |
 | `state` | `active` or `archived`. **Archive hides and kills nothing.** |
 | `created_at` | Stamped once at create. Provenance and list order only. |
 | `config` | A typed bucket — `agent_defaults`, `cowork_defaults`, `template_defaults`. |

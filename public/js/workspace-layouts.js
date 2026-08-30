@@ -2,6 +2,7 @@
 
 import { declareArrangement, normalizeArrangement, visibleColumns, toggleSlot, moveSlot, resizeSlot, widthClass } from './workspace-arrangement.js';
 import { t } from './lexicon.js';
+import { createSurfaceHeader } from './workspace-primitives.js';
 
 const layout = (name, surfaces) => {
   const el = document.createElement('div');
@@ -17,7 +18,6 @@ const layout = (name, surfaces) => {
   return el;
 };
 
-const createLeagueBoard = (cards = null) => layout('league-board', { cards });
 const createSessionGrid = (tiles = null) => layout('session-grid', { tiles });
 const createExplorerLayout = (rail = null, content = null) => layout('explorer-layout', { rail, content });
 // One Surface: the Team definition. New Team creates a durable record and hands the
@@ -43,11 +43,35 @@ const createNewTeamLayout = (definition = null) => layout('new-team-layout', { d
  * overflowing the row. Splitters are positioned from the columns' measured edges after
  * every render and on every resize — never from arithmetic on percentages.
  */
-function createWorkbenchLayout(options = {}) {
+export function createWorkbenchLayout(options = {}) {
   if (options instanceof Node || arguments.length > 1) throw new Error('createWorkbenchLayout takes { declaration, surfaces, state, onStateChange }');
   const declaration = declareArrangement(options.declaration);
   const surfaces = options.surfaces && typeof options.surfaces === 'object' ? options.surfaces : {};
-  const el = layout('workbench-layout', Object.fromEntries(declaration.slots.map((slot) => [slot.name, surfaces[slot.name] ?? null])));
+  const el = layout('workbench-layout', {});
+  const headers = new Map();
+  for (const slot of declaration.slots) {
+    const wrapper = document.createElement('section');
+    wrapper.className = `wk-layout-surface wk-layout-surface-${slot.name}`;
+    wrapper.dataset.surface = slot.name;
+    // A composite slot contains more than one independently headed workspace (the
+    // 2×2 workbench stacks). Every ordinary slot gets its permanent band here; a
+    // composite's children get the same Kit band from createSurface instead.
+    if (!slot.composite) {
+      const supplied = options.headers?.[slot.name];
+      const header = createSurfaceHeader({
+        label: supplied?.label ?? slot.label ?? slot.name,
+        actions: supplied?.actions,
+      });
+      header.el.dataset.workbenchHeader = slot.name;
+      headers.set(slot.name, header);
+      wrapper.append(header.el);
+    }
+    const body = document.createElement('div');
+    body.className = 'wk-workbench-slot-content';
+    if (surfaces[slot.name] instanceof Node) body.append(surfaces[slot.name]);
+    wrapper.append(body);
+    el.append(wrapper);
+  }
   el.dataset.responsive = 'workbench';
   const host = document.createElement('div');
   host.className = 'wk-workbench-host';
@@ -61,8 +85,9 @@ function createWorkbenchLayout(options = {}) {
   // A SLOT HOLDS EXACTLY ONE THING (owner, 2026-08-25: "it's there or it's not there;
   // there is no hidden"). place() trades what a slot holds for what you hand it and
   // returns what came out. The frame keeps nothing else in the box.
+  const slotContent = (name) => wrappers.get(name)?.querySelector(':scope > .wk-workbench-slot-content') ?? null;
   const place = (name, node) => {
-    const wrapper = wrappers.get(name);
+    const wrapper = slotContent(name);
     if (!wrapper || !(node instanceof Node)) return null;
     const previous = wrapper.firstElementChild;
     if (previous === node) return node;
@@ -70,7 +95,7 @@ function createWorkbenchLayout(options = {}) {
     measure();
     return previous;
   };
-  const holding = (name) => wrappers.get(name)?.firstElementChild ?? null;
+  const holding = (name) => slotContent(name)?.firstElementChild ?? null;
 
   const phone = () => window.matchMedia('(max-width: 680px)').matches;
   const placeSplitters = () => {
@@ -192,13 +217,11 @@ function createWorkbenchLayout(options = {}) {
 
   if (typeof ResizeObserver === 'function') new ResizeObserver(measure).observe(el);
   render();
-  return { el, host, arrangement, place, holding, restore, snapshot };
+  return { el, host, headers, arrangement, place, holding, restore, snapshot };
 }
 
 export const WorkspaceLayouts = Object.freeze({
-  createLeagueBoard,
   createSessionGrid,
   createExplorerLayout,
   createNewTeamLayout,
-  createWorkbenchLayout,
 });

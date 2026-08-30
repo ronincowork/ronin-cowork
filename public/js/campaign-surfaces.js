@@ -29,10 +29,9 @@ const el = (tag, cls, text) => {
 
 /** The Campaign's own words: what this body of work is called and what it is for. */
 export function createCampaignIdentitySurface(campaign) {
-  const { createSurface, createSurfaceHeader } = WorkspaceKit.primitives;
+  const { createSurface } = WorkspaceKit.primitives;
   const surface = createSurface({ label: t('campaign', 'Campaign'), className: 'cv-surface' });
-  const head = createSurfaceHeader({ label: t('campaign', 'Campaign') });
-  surface.el.prepend(head.el);
+  const head = surface.header;
   const body = el('div', 'cv-body');
   surface.content.append(body);
 
@@ -82,10 +81,9 @@ export function createCampaignIdentitySurface(campaign) {
  * which is why the Campaign record carries no kind of its own.
  */
 export function createDeskProfileSurface(campaign) {
-  const { createSurface, createSurfaceHeader, createCard, setSurfaceState } = WorkspaceKit.primitives;
+  const { createSurface, createCard, setSurfaceState } = WorkspaceKit.primitives;
   const label = t('cowork.tab_profile', 'Desk profile');
   const surface = createSurface({ label, className: 'cv-surface' });
-  surface.el.prepend(createSurfaceHeader({ label }).el);
   const cards = el('div', 'cv-cards');
   surface.content.append(cards);
 
@@ -124,10 +122,9 @@ export function createDeskProfileSurface(campaign) {
 
 /** New Campaign: the stage is set here and nothing else is born with it. */
 export function createNewCampaignSurface(onCreated) {
-  const { createSurface, createSurfaceHeader } = WorkspaceKit.primitives;
+  const { createSurface } = WorkspaceKit.primitives;
   const label = t('campaign.new', 'New Campaign');
   const surface = createSurface({ label, className: 'cv-surface' });
-  surface.el.prepend(createSurfaceHeader({ label }).el);
   const form = el('form', 'cv-body');
   surface.content.append(form);
 

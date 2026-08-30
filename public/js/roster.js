@@ -24,7 +24,7 @@ import { deskLabel, deskReadout, deskTip, desksOf, refreshDesks } from './desks.
  * @param {HTMLElement} host  the roster section inside the commons' main pane
  * @returns {{render: () => void}}
  */
-export function buildRoster(tile, host) {
+export function buildRoster(tile, host, options = {}) {
   // THE SESSION MAX — the top line, and the only place it is set.
   //
   // One number the owner types. It is not derived from RAM or anything else: a machine
@@ -158,7 +158,10 @@ export function buildRoster(tile, host) {
       e.dataTransfer.setData('text/plain', s.name);
       r.classList.add('dragging');
     });
-    r.addEventListener('dragend', () => r.classList.remove('dragging'));
+    r.addEventListener('dragend', () => {
+      r.classList.remove('dragging');
+      for (const heading of host.querySelectorAll('.home-grp.drop-ready')) heading.classList.remove('drop-ready');
+    });
     // The session's MARK: the icon of the session_role in its LETTER, on every row.
     // The coordinator is a separate fact now — the 人 is BACK (R35): a team's lead is
     // the hand-set designation on the session, never derived from this mark, and the
@@ -304,7 +307,16 @@ export function buildRoster(tile, host) {
         const h = document.createElement('div');
         h.className = 'home-grp';
         h.append(Object.assign(document.createElement('b'), { textContent: text }));
-        h.append(Object.assign(document.createElement('span'), { textContent: String(n) }));
+        const actions = acceptsDrop ? options.groupActions?.(text, n) || [] : [];
+        if (actions.length) {
+          const controls = document.createElement('span');
+          // Tile-head controls are the house icon buttons; the roster reuses them whole.
+          controls.className = 'home-grp-actions tile-head';
+          controls.append(...actions);
+          h.append(controls);
+        } else if (!options.hideGroupCounts) {
+          h.append(Object.assign(document.createElement('span'), { textContent: String(n) }));
+        }
         container.appendChild(h);
         if (!acceptsDrop) return;
         h.title = t('roster.drop_here', 'Drop a session here to add it to {team}', { team: text });

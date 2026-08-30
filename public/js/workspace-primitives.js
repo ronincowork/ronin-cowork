@@ -29,20 +29,23 @@ function createSurface(options = {}) {
   if (options.flush) el.dataset.flush = 'true';
   const controls = node('div', 'wk-surface-controls');
   controls.hidden = true;
+  const header = options.header === false ? null : createSurfaceHeader({ label: options.label, actions: options.actions });
   const content = node('div', 'wk-surface-content');
   const state = node('p', 'wk-state');
   state.hidden = true;
-  el.append(controls, content, state);
+  el.append(controls);
+  if (header) el.append(header.el);
+  el.append(content, state);
   if (options.content instanceof Node) content.append(options.content);
   const collapse = (on = true) => {
     el.dataset.collapsed = on ? 'true' : 'false';
     el.hidden = !!on;
   };
   setSurfaceState(el, options.state, options.message);
-  return { el, content, controls, collapse, setState: (kind, message) => setSurfaceState(el, kind, message) };
+  return { el, header, content, controls, collapse, setState: (kind, message) => setSurfaceState(el, kind, message) };
 }
 
-function createSurfaceHeader(options = {}) {
+export function createSurfaceHeader(options = {}) {
   const el = node('header', 'wk-surface-header');
   const title = node('span', 'wk-surface-header-title', options.label ?? '');
   const actions = node('div', 'wk-surface-header-actions');
@@ -50,6 +53,7 @@ function createSurfaceHeader(options = {}) {
   el.append(title, actions);
   return { el, title, actions };
 }
+
 
 function createCard(options = {}) {
   const tag = options.action ? 'button' : 'article';
@@ -127,7 +131,7 @@ const CHANNEL_SERVICES = ['chat', 'wipeboard', 'docs', 'team-configuration'];
  * rules, and no second frame. The default tab is the first in the list.
  */
 function createChannelSurface(options = {}) {
-  const surface = createSurface({ label: options.label || t('workspace.channels', 'Team channels') });
+  const surface = createSurface({ label: options.label || t('workspace.channels', 'Team channels'), header: false });
   surface.el.classList.add('wk-channel-surface');
   const tabs = node('div', 'wk-channel-service-tabs');
   tabs.setAttribute('role', 'tablist');

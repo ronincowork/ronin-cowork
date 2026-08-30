@@ -35,15 +35,18 @@ Consume the facade where possible:
 
 ```js
 const { createSurface, createCard, createAction } = WorkspaceKit.primitives;
-const { createWorkbenchLayout } = WorkspaceKit.layouts;
+const { library, profiles, create } = WorkspaceKit.workbench;
 const { createTerminalTileHost } = WorkspaceKit.adapters;
 const { workspaceTarget, navigateWorkspace, teamWorkspaceState } = WorkspaceKit.contract;
 ```
 
 Current load-bearing contracts:
 
-- `createWorkbenchLayout({ declaration, surfaces, state, onStateChange })` is the managed
-  Workbench: a slot ARRANGEMENT. The consumer declares its slots by name
+- `WorkspaceKit.workbench.create({ profile, tenant, environment, defaultNode })` is the
+  only public Workbench constructor. Consumers register reusable surface types in the
+  shared `library`, define a named profile as a list of type ids, and provide tenant
+  context. They cannot declare slots, selector DOM, headers, cells or geometry. Internally
+  the Workbench owns a slot ARRANGEMENT
   (`{ slots: [{ name, label, width, min, compact }] }`, `public/js/workspace-arrangement.js`)
   and hands one element per name; the Kit draws them in the arrangement's order and
   widths, hides what it hides, places one splitter between each visible pair, stacks on
@@ -58,11 +61,10 @@ Current load-bearing contracts:
   that exposes `tabName` (`{ get, placeholder, set }`) gets one text field, and what is
   typed becomes the browser tab's title through the view's own `title()`; the Team page
   offers it, defaulting to the team and persisted per tab.
-  **A slot holds exactly one element.** `place(slot, element)` trades what the slot holds
-  for what you hand it and returns what came out; `holding(slot)` reads it. The Kit
-  keeps nothing else in the box — no faces, no hidden second element, no overlay
-  (owner, 2026-08-25). What may go in a slot, and the control that puts it there, are the
-  consumer's (the Team page lists the commons as a roster card beside the sessions).
+  **A workspace holds exactly one surface instance.** `place(type, workspace, detail)`
+  resolves the type through the active profile and shared library. The library factory is
+  called per workspace/resource; returning one node for two workspaces is refused. The
+  selector and drag/drop both call this same placement path.
 - `createTerminalTileHost({ mode, actions })` and `createChannelSurface({ actions })`
   take consumer actions for their own header row (a tile head, a tab strip) — the Team
   page's C/T flip rides there, so no feature reaches into a Tile.
@@ -125,16 +127,20 @@ consumers should not treat that payload as a second state source.
 Every consumer must:
 
 1. Compose the existing Kit; never mint a feature-local foundation substitute.
-2. Use Kit actions, bars, metadata, forms, fields, notices, Surfaces and cards rather than
+2. Treat the Surface header as permanent structure. `createSurface({ label, actions })`
+   supplies the standard fixed-height, fixed-color header automatically. `header: false`
+   is reserved for a specialized permanent head already supplied by the same composition:
+   a terminal Tile head, channel tab strip, or discovery-column head.
+3. Use Kit actions, bars, metadata, forms, fields, notices, Surfaces and cards rather than
    hand-building generic equivalents.
-3. Use named layouts and their responsive contracts. Feature CSS may express meaning, not
+4. Use named layouts and their responsive contracts. Feature CSS may express meaning, not
    rails, splitters, columns, breakpoints, collapse controls or `.wk-*` geometry.
-4. Use typed shell navigation/state and shared Team/draft controllers.
-5. Use the one terminal Tile host and preserve full Tile mode wholesale where required.
-6. Preserve null, empty, zero-member and unclassified states. Do not invent workflow locks
+5. Use typed shell navigation/state and shared Team/draft controllers.
+6. Use the one terminal Tile host and preserve full Tile mode wholesale where required.
+7. Preserve null, empty, zero-member and unclassified states. Do not invent workflow locks
    or validation the backend does not require.
-7. Preserve unrelated dirty work and stage paths/hunks selectively.
-8. Read every string a person sees through `t('room.key', 'literal')` (`public/js/lexicon.js`)
+8. Preserve unrelated dirty work and stage paths/hunks selectively.
+9. Read every string a person sees through `t('room.key', 'literal')` (`public/js/lexicon.js`)
    and land the key in `ronin_catalogs/lexicons/professional_en.md` in the same commit —
    `docs/kokugo.md` is the whole instruction; `scripts/check-lexicon.mjs` fails the gate
    otherwise. Kit primitives take the already-translated word; they never translate.

@@ -199,6 +199,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 ## campaign_view — campaign-view.js (Campaign Manage: the selector's Campaign-level surfaces)
 
 - **campaign_view.campaign_summary:** What this body of work is called, and what it is for.
+- **campaign_view.desk_summary:** This Ronin install, its owner and its workspace configuration.
 - **campaign_view.profile_summary:** The words, the skin and the templates this Campaign opens on.
 - **campaign_view.roots_summary:** The folders this Campaign is allowed to work in.
 - **campaign_view.templates_summary:** The Cowork templates this Campaign offers.
@@ -1300,7 +1301,7 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.agent:** agent
 - **glossary.commons:** session commons
 - **glossary.desk:** the desk
-- **glossary.cowork_space:** the cowork space
+- **glossary.workbench:** the workbench
 - **glossary.workspace:** workspace
 - **glossary.surface:** surface
 - **glossary.terminal_tile:** terminal tile

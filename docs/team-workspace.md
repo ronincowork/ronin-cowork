@@ -1,6 +1,6 @@
 # TEAM WORKSPACE — current implementation and resume contract
 
-> **The page is the `cowork_space` since 2026-08-27** — the team was its first tenant, not its
+> **The page format is the `workbench`** — the team was its first tenant, not its
 > definition. The surface map and the names (workspace · selector column · terminal_tile ·
 > team_commons · cowork_commons · surface head) are `docs/cowork-space.md`; this file stays
 > the implementation record of the team's use of it.
@@ -129,29 +129,27 @@ ceiling; carries the 人 toggle), `events.js` (`teamPageHandlers`).
 Team consumes the single `WorkspaceKit` namespace and does not import Kit implementation
 modules directly.
 
-### Managed WorkbenchLayout
+### The one managed Workbench
 
 ```js
-createWorkbenchLayout({
-  declaration: { slots: [
-    { name: 'workspace1', label: 'Workspace 1', width: 40 },
-    { name: 'roster', label: 'Team Roster', width: 20, min: 6, compact: 176 },
-    { name: 'workspace2', label: 'Workspace 2', width: 40 },
-  ] },
-  surfaces: { workspace1: seat1.el, roster: kanban.el, workspace2: seat2.el },
-  onStateChange: (arrangement) => ctx?.patchViewState('team', { arrangement }),
+WorkspaceKit.workbench.create({
+  profile: 'team',
+  tenant: { kind: 'team', team: () => team },
+  environment,
+  defaultNode: (workspace) => terminalSeats[workspace].el,
 })
 ```
 
 Append `workbench.host`. Expose `workbench.arrangement` on the registered view so the
-ViewHost draws the layout map in the bar. `workbench.place(slot, element)` trades what a
-slot holds (the seat's surface, or the commons); `workbench.holding(slot)` reads it.
+ViewHost draws the layout map in the bar. `workbench.place(type, workspace, detail)` asks
+the active profile and shared library for an independent surface instance.
 
 The managed Kit owns: slot geometry and DOM order; the layout map (show/hide/reorder);
 one splitter between each visible pair, symmetric; `data-width="compact"` on a slot
 under its declared threshold (the roster's cards drop to names); responsive phone
-stacking; the arrangement's snapshot and `restore`. Team declares slots and supplies
-surfaces; it never adds rails, splitters, pointer handlers, width state, or geometry CSS.
+stacking; the arrangement's snapshot and `restore`. Team supplies tenant context and the
+terminal default node only; it never declares slots, selector DOM, rails, splitters,
+pointer handlers, width state, or geometry CSS.
 
 ### CSS boundary
 
