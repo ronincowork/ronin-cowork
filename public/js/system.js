@@ -2,14 +2,13 @@
 import { request } from './request.js';
 import { button, field, status } from './ui.js';
 import { buildMachinePanel } from './machine-panel.js';
-import { currentSkin, followProfileSkin, listSkins, setSkin } from './skins.js';
+import { followProfileSkin } from './skins.js';
 import { activeProfile, deskProfiles, loadDeskProfile, setDeskProfile } from './desk-profile.js';
 import { t } from './lexicon.js';
-import { resolvedTheme, setTheme } from './theme.js';
 import { S } from './state.js';
 
 /**
- * ⚙ SYSTEM — what this install is: appearance, the updater, and the way out.
+ * ⚙ SYSTEM — what this install is: the desk profile, the updater, and the way out.
  *
  * IT HAS BEEN IN THREE PLACES, and the third is the one that was right. It began as a
  * Commons room, which meant four copies — one per tile — for facts that are the INSTALL's,
@@ -210,79 +209,13 @@ export function buildSystemPanel() {
   const idBlock = document.createElement('div');
   idBlock.className = 'sys-id';
 
-  // APPEARANCE — one flip button, and following the device is the default. The
-  // button shows the shell's CURRENT mode; pressing it flips. Flipping away from
-  // what the Mac prefers pins the shell; flipping back to match re-arms following
-  // (js/theme.js setTheme) — so "make it match" and "follow it" stay one act and
-  // no third control exists. The pane flips with the shell from 2026-08-19 — light
-  // means light all the way in, terminal included (docs/ui.md, Theme).
-  const appRow = document.createElement('div');
-  appRow.className = 'sys-theme';
-  const appLab = document.createElement('span');
-  appLab.className = 'sys-theme-lbl';
-  appLab.textContent = t('desk.appearance', 'appearance');
-  const flip = button('', {
-    cls: 'sys-flip',
-    title: t('desk.theme_flip_title', "The shell's mode — tap to flip. Ronin follows this device until you flip away; flip back to match and it follows again."),
-  });
-  const paintFlip = () => {
-    flip.textContent = resolvedTheme() === 'dark' ? t('desk.theme_dark', '● dark') : t('desk.theme_light', '○ light');
-  };
-  flip.addEventListener('click', () => {
-    setTheme(resolvedTheme() === 'dark' ? 'light' : 'dark');
-    paintFlip();
-  });
-  paintFlip();
-  appRow.append(appLab, flip);
-
+  // APPEARANCE LEFT THIS ROOM (CAMPAIGN_WORKBENCH, SETTEI audit, 2026-08-30): the skin and
+  // the light/dark choice are the Campaign's desk — components on the #/campaign Desk
+  // profile surface — and a choice has one home, not two. The desk profile picker
+  // stays: it is the same leaf ⚙ always wrote.
   // ⚙ THE MACHINE — the detail behind the header gauge, drawn only when the machine
   // service is installed. Null when it is not: no empty box explaining its own absence.
   const machineBlock = buildMachinePanel();
-
-  /* THE SKIN PICKER, beside the light/dark flip because they are the same question asked
-   * twice — what does this look like — and a person hunting "appearance" should find both
-   * in one place rather than learning that one of them is a room of its own.
-   *
-   * A ROW PER SKIN, NOT A <select>. Each carries its blurb, and a skin of the owner's own
-   * says so: `origin` distinguishes something you added from something of ours you
-   * replaced, and only the second can silently stop tracking an upgrade (docs/shadowing.md)
-   * — which is exactly the thing worth seeing before you wonder why a shipped skin stopped
-   * changing. The list is empty on a build whose service cannot answer, and an empty list
-   * draws nothing rather than an error: no skins is a legal state, not a fault. */
-  const skinBlock = document.createElement('div');
-  skinBlock.className = 'sys-skins';
-  const skinLab = document.createElement('span');
-  skinLab.className = 'sys-theme-lbl';
-  skinLab.textContent = t('desk.skin', 'skin');
-  const skinList = document.createElement('div');
-  skinList.className = 'sys-skinlist';
-  skinBlock.append(skinLab, skinList);
-
-  const paintSkins = (skins) => {
-    skinList.innerHTML = '';
-    const chosen = currentSkin();
-    for (const sk of skins) {
-      const row = document.createElement('button');
-      row.type = 'button';
-      row.className = 'sys-skin' + (sk.name === chosen ? ' on' : '');
-      const nm = document.createElement('b');
-      nm.textContent = sk.label;
-      if (sk.origin === 'user') {
-        const mark = document.createElement('i');
-        mark.className = 'sys-skin-mine';
-        mark.textContent = sk.shadowed ? t('desk.yours_shadowing', 'yours (replaces ours)') : t('desk.yours', 'yours');
-        nm.appendChild(mark);
-      }
-      const why = document.createElement('small');
-      why.textContent = sk.blurb;
-      row.append(nm, why);
-      row.addEventListener('click', () => {
-        setSkin(sk);
-        skinList.querySelectorAll('.sys-skin').forEach((r) => r.classList.toggle('on', r === row));
-      });
-      skinList.appendChild(row);
-    }
-  };
 
   /* THE DESK PROFILE PICKER (R38) — its own desk row since 2026-08-27 (see `profile`
    * below); it was drawn above the skins because it is the wider question: a
@@ -323,7 +256,6 @@ export function buildSystemPanel() {
         if (!r.ok) { say(t('desk.profile_not_saved', 'desk profile not saved — {message}', { message: r.message })); return; }
         await followProfileSkin(activeProfile()?.skin || '');
         paintProfiles();
-        void listSkins().then(paintSkins);
       });
       profList.appendChild(row);
     }
@@ -375,10 +307,8 @@ export function buildSystemPanel() {
     g.append(...kids.filter(Boolean));
     return g;
   };
-  // THE DESK PROFILE IS ITS OWN ROW (owner, 2026-08-27): it was the top block of
-  // Appearance since R38, but a profile is the wider question — it HAS a skin — and a person
-  // hunting it should find it in the desk's nav, not learn it lives under the look.
-  const appearance = group(appRow, skinBlock);
+  // THE DESK PROFILE IS ITS OWN ROW (owner, 2026-08-27): a profile is the wider question
+  // — it HAS a skin — and a person hunting it should find it in the desk's nav.
   const profile = group(profBlock);
   // The machine sits with the release block — both answer "what is this install running
   // on", and a person hunting either finds them together. group() drops a null child, so
@@ -524,11 +454,8 @@ export function buildSystemPanel() {
   svcBtn.addEventListener('click', runSvc);
 
   const enter = () => {
-    paintFlip(); // the Mac may have flipped while the desk was away
-    // Re-read every time: SKINS.md is parsed per request, so a hand-edit to the file — or
-    // an upgrade that ships a new one — is visible on the next visit to this room without
-    // a reload. That is the same promise the macro list makes about MACROS.md.
-    void listSkins().then(paintSkins);
+    // Re-read every time: a hand-edit to a profile file — or an upgrade that ships a new
+    // one — is visible on the next visit to this room without a reload.
     void loadDeskProfile().then(paintProfiles, paintProfiles);
     say('');
     void (async () => {
@@ -546,5 +473,5 @@ export function buildSystemPanel() {
     })();
   };
 
-  return { appearance, profile, release, account, enter };
+  return { profile, release, account, enter };
 }

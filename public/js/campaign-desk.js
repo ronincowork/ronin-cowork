@@ -24,6 +24,26 @@ const el = (tag, cls, text) => {
   return out;
 };
 
+/** One choice: its name and pills on the left, what it does on the right. Shared by the desk and roots surfaces. */
+export const choice = (name, options, current, why, onPick) => {
+  const row = el('div', 'cv-choice');
+  const left = el('div', 'cv-choice-pick');
+  left.append(el('span', 'cv-choice-name', name));
+  const pills = el('div', 'cv-pills');
+  for (const o of options) {
+    const b = el('button', 'cv-pill', o.label);
+    b.type = 'button';
+    b.setAttribute('aria-pressed', String(o.value === current));
+    if (o.services) { b.disabled = true; b.append(el('small', 'cv-pill-tag', t('campaign_view.with_services', 'Ronin Services'))); b.title = t('campaign_view.services_title', 'Arrives with Ronin Services.'); }
+    if (onPick && !o.services) b.addEventListener('click', () => onPick(o.value));
+    if (!onPick) b.disabled = true;
+    pills.append(b);
+  }
+  left.append(pills);
+  row.append(left, el('p', 'cv-choice-why', why));
+  return row;
+};
+
 /** A skin token, said as a word: `stock` → Stock. The catalog's labels are these. */
 export const skinWord = (skin) => (skin ? skin[0].toUpperCase() + skin.slice(1) : '');
 /** A rireki_view token, in the words the Output picker already uses — one literal key each, so the gate can see them. */
@@ -94,25 +114,6 @@ export function createDeskProfileSurface(campaign) {
     if (desk?.theme) applyTheme(desk.theme === 'automatic' ? 'auto' : desk.theme);
   };
 
-  /** One choice: its name and pills on the left, what it does on the right. */
-  const choice = (name, options, current, why, onPick) => {
-    const row = el('div', 'cv-choice');
-    const left = el('div', 'cv-choice-pick');
-    left.append(el('span', 'cv-choice-name', name));
-    const pills = el('div', 'cv-pills');
-    for (const o of options) {
-      const b = el('button', 'cv-pill', o.label);
-      b.type = 'button';
-      b.setAttribute('aria-pressed', String(o.value === current));
-      if (o.services) { b.disabled = true; b.append(el('small', 'cv-pill-tag', t('campaign_view.with_services', 'Ronin Services'))); b.title = t('campaign_view.services_title', 'Arrives with Ronin Services.'); }
-      if (onPick && !o.services) b.addEventListener('click', () => onPick(o.value));
-      if (!onPick) b.disabled = true;
-      pills.append(b);
-    }
-    left.append(pills);
-    row.append(left, el('p', 'cv-choice-why', why));
-    return row;
-  };
 
   function paint() {
     const row = campaign();

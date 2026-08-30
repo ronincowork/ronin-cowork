@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1257 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1255 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -133,6 +133,10 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `campaign_view.lexicon_help` | The words. Held to one lexicon for now, so nothing on this page is offered. |  |  |  |  |
 | `campaign_view.machine_summary` | The rest of the desk: Desk · Account · Archived · Help desk · Keypad. |  |  |  |  |
 | `campaign_view.name_help` | On the door, the browser tab and the address. |  |  |  |  |
+| `campaign_view.new_project_desks` | New projects use desks? |  |  |  |  |
+| `campaign_view.new_project_desks_help` | Desks: each coding session works at its own branch and worktree and hands in to the team. None: sessions work in the checkout. Written into a project’s RONIN_REPO when its root is added; the desks box on a root changes that one project. |  |  |  |  |
+| `campaign_view.new_project_desks_no` | None |  |  |  |  |
+| `campaign_view.new_project_desks_yes` | Desks |  |  |  |  |
 | `campaign_view.new_summary` | Set the stage. It creates no Cowork and launches no Agent. |  |  |  |  |
 | `campaign_view.no_description` | No description yet. |  |  |  |  |
 | `campaign_view.no_launch_table` | No launch table on this install. |  |  |  |  |
@@ -290,7 +294,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 |---|---|---|---|---|---|
 | `desk.add_passkey` | Add a passkey |  |  |  |  |
 | `desk.add_passkey_title` | Register this device — Touch ID, Face ID or a security key |  |  |  |  |
-| `desk.appearance` | appearance |  |  |  |  |
 | `desk.asking_feed` | asking the release feed… |  |  |  |  |
 | `desk.cancelled` | cancelled |  |  |  |  |
 | `desk.check_updates` | Check for updates |  |  |  |  |
@@ -329,7 +332,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `desk.remove` | Remove |  |  |  |  |
 | `desk.remove_named` | Remove {name} |  |  |  |  |
 | `desk.removed` | removed |  |  |  |  |
-| `desk.row_appearance` | Appearance |  |  |  |  |
 | `desk.row_release` | Release & update |  |  |  |  |
 | `desk.services_available` | services {latest} available |  |  |  |  |
 | `desk.services_available_installed` | services {latest} available (installed: {installed}) |  |  |  |  |
@@ -338,10 +340,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `desk.services_none` | services: none — the free build |  |  |  |  |
 | `desk.services_timeout` | services did not answer after 5 minutes — journalctl --user -u "ronin-update-*" has the transcript |  |  |  |  |
 | `desk.services_up_to_date` | ✓ services up to date — {installed} |  |  |  |  |
-| `desk.skin` | skin |  |  |  |  |
-| `desk.theme_dark` | ● dark |  |  |  |  |
-| `desk.theme_flip_title` | The shell's mode — tap to flip. Ronin follows this device until you flip away; flip back to match and it follows again. |  |  |  |  |
-| `desk.theme_light` | ○ light |  |  |  |  |
 | `desk.unreachable` | unreachable |  |  |  |  |
 | `desk.update` | Update |  |  |  |  |
 | `desk.update_services_to` | Update services to {latest} |  |  |  |  |

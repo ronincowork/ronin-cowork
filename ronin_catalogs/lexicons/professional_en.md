@@ -51,7 +51,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **kind.school:** Learning
 
 ## desk — system.js (the ⚙ desk's own rooms: appearance, the updater, the account)
-- **desk.row_appearance:** Appearance
 - **desk.row_release:** Release & update
 - **desk.rail_collapse:** Collapse the rail
 - **desk.rail_expand:** Expand the rail
@@ -74,11 +73,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **desk.waiting_authenticator:** waiting for the authenticator…
 - **desk.passkey_added:** ✓ passkey added
 - **desk.cancelled:** cancelled
-- **desk.appearance:** appearance
-- **desk.theme_flip_title:** The shell's mode — tap to flip. Ronin follows this device until you flip away; flip back to match and it follows again.
-- **desk.theme_dark:** ● dark
-- **desk.theme_light:** ○ light
-- **desk.skin:** skin
 - **desk.yours_shadowing:** yours (replaces ours)
 - **desk.yours:** yours
 - **desk.profile_stock:** Stock
@@ -210,6 +204,10 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.no_profile:** As stock — none chosen.
 - **campaign_view.roots_n:** {n} roots
 - **campaign_view.roots_none:** None — an Agent here has nowhere to work.
+- **campaign_view.new_project_desks:** New projects use desks?
+- **campaign_view.new_project_desks_yes:** Desks
+- **campaign_view.new_project_desks_no:** None
+- **campaign_view.new_project_desks_help:** Desks: each coding session works at its own branch and worktree and hands in to the team. None: sessions work in the checkout. Written into a project’s RONIN_REPO when its root is added; the desks box on a root changes that one project.
 - **campaign_view.name_help:** On the door, the browser tab and the address.
 - **campaign_view.description_help:** What this body of work is for. Shown on its card.
 - **campaign_view.head:** Campaign: {name}

@@ -64,11 +64,6 @@ export function optionsOf(f, ctx) {
       .map((o) => ({ label: o.model_label ?? o.model, value: o.model }));
   }
   if (f.options === 'desk_profiles') return (ctx.deskProfiles ?? []).map((p) => ({ label: p.label, value: p.name }));
-  // New projects and desks (owner, 2026-08-29): two answers, written into RONIN_REPO at add time.
-  if (f.options === 'new_project_desks') return [
-    { label: 'Desks — each coding session at its own branch and worktree, hand-in, team promotion', value: 'managed' },
-    { label: 'None — sessions work in the checkout', value: 'none' },
-  ];
   return [];
 }
 
