@@ -1,0 +1,11 @@
+# Ronin Koe
+- **label:** Ronin Koe
+- **blurb:** Voice and its Hotwords together; Hotwords are not useful without Voice.
+- **class:** specialized
+- **reading:** —
+- **sops:** —
+- **macros:** —
+- **actions:** —
+- **tools:** —
+- **mcp:** —
+- **order:** 60

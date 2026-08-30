@@ -1413,6 +1413,9 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.desk_profile:** desk profile
 - **glossary.behaviour:** behaviour
 - **glossary.routine:** routine
+- **glossary.ronin_base:** Ronin Base
+- **glossary.ronin_control:** Ronin Control
+- **glossary.specialized_routine:** specialized routine
 - **glossary.build:** build
 - **glossary.mandate:** mandate
 - **glossary.fork:** fork

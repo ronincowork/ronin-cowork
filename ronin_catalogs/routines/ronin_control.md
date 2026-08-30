@@ -1,0 +1,11 @@
+# Ronin Control
+- **label:** Ronin Control
+- **blurb:** Managed desks, hand-in, team promotion, repository receipts and Git guards.
+- **class:** control
+- **reading:** assignment/DESK_CONTRACT.md
+- **sops:** github
+- **macros:** cutcode, land
+- **actions:** cut-code, open-pr, land-work, land-manifest, desk-open, desk-status, desk-sync, hand-in, desk-park, check-clean
+- **tools:** tejun-desk
+- **mcp:** —
+- **order:** 20

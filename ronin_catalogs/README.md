@@ -51,3 +51,11 @@ keys to strings with a `base:` to fall through to. Both shadow whole-file by nam
 (`docs/shadowing.md`); each directory's README carries the format. The rule for words:
 `professional_en` is the floor and complete, a lexicon says only what it changes, and
 `scripts/check-lexicon.mjs` keeps the floor honest. `docs/desk-profiles.md`, `docs/lexicons.md`.
+
+## Adding a ROUTINE (existing behaviours, one switch)
+
+`routines/<name>.md` is the single membership list for behaviours delivered together at
+Agent birth. Add or identify the actions and tools first, then name existing boot reading,
+SOPs, macros, actions, tools and MCP connections in the Routine manifest. Do not add a
+second `routine:` owner field to each member. The directory's `README.md` carries the exact
+format; `docs/routines.md` owns Campaign → Team inheritance and birth behavior.

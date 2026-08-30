@@ -1,0 +1,11 @@
+# Machine
+- **label:** Machine
+- **blurb:** Installation, account and machine-health guidance backed by measured tools.
+- **class:** specialized
+- **reading:** —
+- **sops:** accounts, install, remote_machine_admin, remote_machine_health, tmux_server, vpn
+- **macros:** —
+- **actions:** survey-machine, survey-secrets, survey-account
+- **tools:** tejun-survey, tejun-account, tejun-secrets
+- **mcp:** —
+- **order:** 30
