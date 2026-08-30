@@ -22,10 +22,13 @@
 import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
 import { S } from './state.js';
-import { campaignById, campaigns, campaignsFailed, campaignsMessage, createCampaign, loadCampaigns, normalizeSelection } from './campaigns.js';
+import { campaignById, campaignOf, campaigns, campaignsFailed, campaignsMessage, createCampaign, loadCampaigns, normalizeSelection } from './campaigns.js';
 import { createCampaignIdentitySurface, createDeskProfileSurface, createNewCampaignSurface, createTemplatePreferencesSurface } from './campaign-surfaces.js';
 import { buildProjectRoots } from './projectroots.js';
 import { DRAG_TYPE, acceptDrops } from './team-drag.js';
+import { deskProfiles } from './desk-profile.js';
+import { refreshTeams, teamsFromState } from './team-controller.js';
+import { request } from './request.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -40,8 +43,16 @@ const ROOTS = '@roots';
 const TEMPLATES = '@templates';
 const NEW = '@new-campaign';
 
+/**
+ * ONE CAMPAIGN SHIPS (owner, 2026-08-30). Until a second can exist, New Campaign is not
+ * offered: the column reads as "my settings" and nobody has to learn the word. The
+ * surface stays registered so a seat that remembered it does not break; only the card
+ * is withheld. Flip this when adding a Campaign becomes real — nothing else changes shape.
+ */
+const CAMPAIGNS_MAY_MULTIPLY = false;
+
 export function createCampaignView() {
-  const { createSurface, createSurfaceHeader, createCard, setSurfaceState } = WorkspaceKit.primitives;
+  const { createSurface, createSurfaceHeader, createCard, createMetadata, createAction, createActionBar, setSurfaceState } = WorkspaceKit.primitives;
   const { createWorkbenchLayout } = WorkspaceKit.layouts;
   const { teamWorkspaceState } = WorkspaceKit.contract;
 
@@ -135,35 +146,88 @@ export function createCampaignView() {
     seats: Object.fromEntries(Object.keys(seats).map((id) => [id, heldSurface(id)])),
   });
 
-  /* ---------- the selector column ---------- */
+  /* ---------- the selector column: the record, then the map ----------
+   *
+   * THE COLUMN IS THE MAP. A settings page orients with a sequence; a workbench has
+   * seats. What carries the orientation here is the column itself: the record at its
+   * head (what this Campaign has), the cards in the order a person touches them, and
+   * each card's summary being its CURRENT VALUE, not a fixed sentence — an empty or stock
+   * value is what draws the eye. Same Kit cards, same selector groups the Cowork
+   * workbench uses; nothing here is a second column implementation.
+   */
   const column = createSurface({ label: t('campaign', 'Campaign'), className: 'cv-selector' });
   const columnHead = el('div', 'cv-selector-head');
   const columnTitle = el('span', 'cv-selector-title', t('campaign', 'Campaign'));
-  columnHead.append(columnTitle);
+  const columnFace = el('span', 'cv-selector-face');
+  columnHead.append(columnTitle, columnFace);
   column.el.prepend(columnHead);
+  // THE RECORD: the counts, and the doors out to the work. Coworks and Agents open the
+  // Cowork workbench, which already reads the Campaign selection this tab carries — so
+  // the settings page is a way out to the work and not a dead end.
+  const record = el('div', 'cv-record');
+  const counts = createMetadata();
+  const doors = createActionBar({
+    actions: [
+      createAction({ label: t('campaign_view.open_coworks', 'Open Coworks →'), action: () => ctx?.navigate('cowork') }),
+      createAction({ label: t('campaign_view.open_agents', 'Open Agents →'), action: () => ctx?.navigate('cowork') }),
+    ],
+  });
+  record.append(counts.el, doors.el);
+  column.content.append(record);
   const cards = el('div', 'cv-selector-cards');
   column.content.append(cards);
 
-  /** The Campaign-level surfaces, read at paint so the lexicon is up (KOKUGO § 5). */
-  function OFFERED() {
+  /* ---------- what the record says: counted per paint, never stored ---------- */
+  let rootsHere = null; // null until /api/project-roots/detail has answered once
+  const idOf = () => selected()?.id || '';
+  const coworksHere = () => teamsFromState().filter((row) => row.durable && campaignOf(row) === idOf());
+  const agentsHere = () => (Array.isArray(S.sessions) ? S.sessions : []).filter((row) => campaignOf(row) === idOf());
+  const rootsOf = () => (rootsHere || []).filter((root) => !root.archived && campaignOf(root) === idOf());
+  const profileOf = (row) => deskProfiles().find((p) => p.name === row?.desk_profile) || null;
+  const readRoots = async () => {
+    const r = await request('/api/project-roots/detail', { cache: 'no-store' });
+    rootsHere = r.ok && Array.isArray(r.data?.roots) ? r.data.roots : [];
+  };
+
+  /**
+   * THE MAP, in the order a person touches it, each card saying what is set now. Read at
+   * paint so the lexicon is up (KOKUGO § 5). Agent defaults and Templates are the two
+   * levels still to land (CAMPAIGN_WORKBENCH legs 4 and 5); Templates is offered as it
+   * stands, saying so.
+   */
+  function OFFERED(row) {
+    const profile = profileOf(row);
+    const roots = rootsOf().length;
     return [
-      { token: CAMPAIGN, heading: t('campaign', 'Campaign'), summary: t('campaign_view.campaign_summary', 'What this body of work is called, and what it is for.') },
-      { token: PROFILE, heading: t('cowork.tab_profile', 'Desk profile'), summary: t('campaign_view.profile_summary', 'The words, the skin and the templates this Campaign opens on.') },
-      { token: ROOTS, heading: t('cowork.tab_roots', 'Project roots'), summary: t('campaign_view.roots_summary', 'The folders this Campaign is allowed to work in.') },
-      { token: TEMPLATES, heading: t('campaign_view.template_prefs', 'Template preferences'), summary: t('campaign_view.templates_summary', 'Which Cowork templates this Campaign offers.') },
+      { group: t('campaign_view.group_what', 'What it is'), token: CAMPAIGN, heading: t('campaign', 'Campaign'),
+        summary: row?.description || t('campaign_view.no_description', 'No description yet.') },
+      { group: t('campaign_view.group_reads', 'How it reads'), token: PROFILE, heading: t('cowork.tab_profile', 'Desk profile'),
+        summary: profile ? [profile.label || profile.name, profile.skin].filter(Boolean).join(' · ') : t('campaign_view.no_profile', 'As stock — none chosen.') },
+      { group: t('campaign_view.group_where', 'Where it works'), token: ROOTS, heading: t('cowork.tab_roots', 'Project roots'),
+        summary: rootsHere === null ? '' : roots ? t('campaign_view.roots_n', '{n} roots', { n: roots }) : t('campaign_view.roots_none', 'None — an Agent here has nowhere to work.') },
+      { group: t('campaign_view.group_offers', 'What launch offers'), token: TEMPLATES, heading: t('campaign_view.template_prefs', 'Template preferences'),
+        summary: t('campaign_view.templates_none', 'Nothing to set yet.') },
     ];
   }
 
   function paintCards() {
     const row = selected();
     columnTitle.textContent = row?.title || t('campaign', 'Campaign');
+    columnFace.textContent = profileOf(row)?.label || '';
     cards.replaceChildren();
     if (campaignsFailed()) {
+      record.hidden = true;
       setSurfaceState(column.el, 'failed', t('campaign.read_failed', 'Could not read Campaigns — {message}', { message: campaignsMessage() }));
       return;
     }
     setSurfaceState(column.el, null, '');
-    const add = (token, heading, summary, variant = null) => {
+    record.hidden = !row;
+    counts.set([
+      [t('campaign.coworks', 'Coworks'), String(coworksHere().length)],
+      [t('campaign_view.agents', 'Agents'), String(agentsHere().length)],
+      [t('cowork.tab_roots', 'Project roots'), rootsHere === null ? '…' : String(rootsOf().length)],
+    ]);
+    const add = (where, token, heading, summary, variant = null) => {
       const card = createCard({
         heading, summary, variant,
         selected: !!whereIs(token),
@@ -175,12 +239,22 @@ export function createCampaignView() {
         event.dataTransfer.setData('text/plain', heading);
         event.dataTransfer.effectAllowed = 'move';
       });
-      cards.append(card.el);
+      where.append(card.el);
       return card;
     };
-    for (const offer of OFFERED()) add(offer.token, offer.heading, offer.summary);
-    add(NEW, t('campaign.new', 'New Campaign'), t('campaign_view.new_summary', 'Set the stage. It creates no Cowork and launches no Agent.'), 'dotted');
-    if (!campaigns().length) column.content.append(el('p', 'cv-empty', t('campaign.none', 'No Campaigns yet.')));
+    // The same group element the Cowork workbench's selector draws (league-view-surface.js).
+    const group = (label) => {
+      const section = el('details', 'tw-selector-group');
+      section.open = true;
+      section.append(el('summary', null, label), el('div', 'tw-selector-group-cards'));
+      cards.append(section);
+      return section.lastElementChild;
+    };
+    for (const offer of OFFERED(row)) add(group(offer.group), offer.token, offer.heading, offer.summary);
+    if (CAMPAIGNS_MAY_MULTIPLY) add(group(t('campaign_view.group_new', 'Another')), NEW, t('campaign.new', 'New Campaign'), t('campaign_view.new_summary', 'Set the stage. It creates no Cowork and launches no Agent.'), 'dotted');
+    // Inside `cards`, so a repaint replaces it — appended to the column it stacked one
+    // copy per paint, and said "none" beside a selected Campaign.
+    if (!row && !campaigns().length) cards.append(el('p', 'cv-empty', t('campaign.none', 'No Campaigns yet.')));
   }
 
   const DECLARATION = {
@@ -219,7 +293,7 @@ export function createCampaignView() {
       const typed = teamWorkspaceState(context.state, context.viewState('campaign'), DECLARATION);
       workbench.restore(typed.arrangement);
       paintCards();
-      await loadCampaigns();
+      await Promise.all([loadCampaigns(), refreshTeams(), readRoots()]);
       if (!entered) return;
       seatTheCampaign({ ...typed.seats });
       touch(lastSeat);

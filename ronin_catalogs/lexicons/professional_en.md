@@ -198,10 +198,19 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 
 ## campaign_view — campaign-view.js (Campaign Manage: the selector's Campaign-level surfaces)
 
-- **campaign_view.campaign_summary:** What this body of work is called, and what it is for.
-- **campaign_view.profile_summary:** The words, the skin and the templates this Campaign opens on.
-- **campaign_view.roots_summary:** The folders this Campaign is allowed to work in.
-- **campaign_view.templates_summary:** Which Cowork templates this Campaign offers.
+- **campaign_view.group_what:** What it is
+- **campaign_view.group_reads:** How it reads
+- **campaign_view.group_where:** Where it works
+- **campaign_view.group_offers:** What launch offers
+- **campaign_view.group_new:** Another
+- **campaign_view.no_description:** No description yet.
+- **campaign_view.no_profile:** As stock — none chosen.
+- **campaign_view.roots_n:** {n} roots
+- **campaign_view.roots_none:** None — an Agent here has nowhere to work.
+- **campaign_view.templates_none:** Nothing to set yet.
+- **campaign_view.agents:** Agents
+- **campaign_view.open_coworks:** Open Coworks →
+- **campaign_view.open_agents:** Open Agents →
 - **campaign_view.template_prefs:** Template preferences
 - **campaign_view.template_prefs_soon:** Which Cowork templates {campaign} offers. The selections land here once templates carry a Campaign.
 - **campaign_view.new_summary:** Set the stage. It creates no Cowork and launches no Agent.
