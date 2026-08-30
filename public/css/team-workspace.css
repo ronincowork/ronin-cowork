@@ -43,15 +43,15 @@
   .tw-config-status, .tw-config-empty { color: var(--muted); }
 
   /* A Team dropped into the Cowork bench becomes a quiet roster, not an admin form. */
-  .league-team-edit-content { display: flex; flex-direction: column; gap: var(--space-7); font-size: var(--text-3); }
+  .league-team-edit-content { display: flex; flex-direction: column; gap: var(--space-10); font-size: var(--text-3); }
   .league-team-roster, .league-team-config { flex: 0 0 auto; }
   .league-team-roster { display: flex; flex-direction: column; min-height: 0; }
   .league-team-roster-title { margin: 0 0 var(--space-3); color: var(--muted); font-size: var(--text-2); font-weight: inherit; letter-spacing: .08em; text-transform: uppercase; }
   .league-team-member-list { border-top: var(--edge) solid var(--line); }
-  .league-team-member { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-5); min-height: var(--row); border-bottom: var(--edge) solid var(--line); padding: var(--space-3) 0; }
+  .league-team-member { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-5); border-bottom: var(--edge) solid var(--line); padding: var(--space-2) 0; }
   .league-team-member-identity { display: flex; align-items: center; min-width: 0; gap: var(--space-3); }
   .league-team-member-mark { width: var(--space-6); color: var(--kaki); font-size: var(--text-5); line-height: 1; text-align: center; }
-  .league-team-member-words { display: flex; flex-direction: column; min-width: 0; gap: var(--space-1); }
+  .league-team-member-words { display: flex; flex-direction: column; min-width: 0; gap: var(--space-1); line-height: 1.1; }
   .league-team-member-words strong { overflow: hidden; color: var(--fg-strong); font-size: var(--text-5); font-weight: inherit; text-overflow: ellipsis; white-space: nowrap; }
   .league-team-member-words span, .league-team-empty { color: var(--muted); font-size: var(--text-2); }
   .league-team-member-actions { flex-wrap: nowrap; gap: var(--space-2); }
