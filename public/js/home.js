@@ -79,13 +79,6 @@ export async function loadPresets() {
   tiles.forEach((tile) => tile.renderHome?.());
 }
 
-/** The resolved profile for one pick — the server's cascade, never a copy of it. */
-export async function launchProfile(sessionRole) {
-  const q = new URLSearchParams({ session_role: sessionRole || '' });
-  const r = await request(`/api/launch-profile?${q}`);
-  return r.ok ? r.data : null;
-}
-
 /**
  * The mark a session wears wherever sessions are listed — the ⌂ Roster, the tile header's
  * picker, the ⚡ macro targets. This is what replaced the hand-set 人: it says what the
@@ -135,55 +128,4 @@ export async function loadSavedLaunches() {
  *  after this module is evaluated and a table would freeze the stock words. */
 export function statusLabel(status) {
   return { ready: t('home.status_ready', 'ready'), thinking: t('home.status_thinking', 'thinking…'), 'awaiting-input': t('home.status_awaiting_input', 'awaiting input') }[status];
-}
-
-/**
- * KOSHI_DASHI — the receipt for a spawn. It says what the session was actually born
- * with (role, root, spec, Control, teams) and carries a kill next to it: wrong
- * fill, one tap, gone. The price of launching with no confirm screen.
- */
-export function showReceipt(name, receipt) {
-  if (!receipt) return;
-  document.querySelector('#kdashi')?.remove();
-  const el = document.createElement('div');
-  el.id = 'kdashi';
-  const dialIcon = { user: '👤', read: '👁', write: '🤖' }[receipt.dial] || '';
-  const bits = [
-    // BOTH AXES ON THE RECEIPT, and a blank one is simply absent from it: the receipt
-    // exists so a wrong fill is visible immediately, and "no task" is a fill that can be
-    // wrong just as "CutCode" can.
-    receipt.session_role,
-    receipt.team ? `⛺ ${receipt.team}` : '',
-    receipt.project_root,
-    // No cmd = an `agent: none` kind: say so, rather than leaving a gap the reader
-    // has to interpret as "the session_launch_spec field failed to fill".
-    receipt.cmd ? receipt.cmd.replace(/^claude --model /, '') : t('home.receipt_no_agent', 'no agent'),
-    `${dialIcon} ${receipt.dial}`,
-    receipt.lifecycle ? `⟳ ${receipt.lifecycle}` : '',
-    ...(receipt.tags || []).map((g) => `🏷 ${g}`),
-    // The desks it was born with, or why a coding launch got none — never silence.
-    ...(receipt.desks?.length ? receipt.desks.map((d) => `🪑 ${d.repo}:${d.branch}`) : receipt.desk_note ? [`🪑 ${receipt.desk_note}`] : []),
-  ].filter(Boolean);
-  const head = document.createElement('b');
-  head.textContent = name;
-  const body = document.createElement('small');
-  body.textContent = bits.join(' · ');
-  const kill = document.createElement('button');
-  kill.textContent = t('home.receipt_kill', 'kill');
-  kill.title = t('home.receipt_kill_title', 'Wrong? Remove the session now.');
-  kill.addEventListener('click', async () => {
-    kill.disabled = true;
-    await request('/api/sessions/' + encodeURIComponent(name), { method: 'DELETE' });
-    el.remove();
-    fetchSessions();
-    refreshHome();
-  });
-  const dismiss = document.createElement('button');
-  dismiss.className = 'kd-x';
-  dismiss.textContent = '✕';
-  dismiss.addEventListener('click', () => el.remove());
-  el.append(head, body, kill, dismiss);
-  document.body.appendChild(el);
-  setTimeout(() => el.classList.add('fade'), 12000);
-  setTimeout(() => el.remove(), 15000);
 }

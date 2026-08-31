@@ -1,7 +1,0 @@
-/* New Team feature composition only; Workspace Kit owns layout and primitives. */
-@layer app {
-  .nt-definition h2 {
-    margin: 0 0 var(--space-6);
-    font-size: var(--text-7);
-  }
-}

@@ -79,7 +79,7 @@ export function createLaunchView() {
     agent: (workspace) => {
       if (!agentBySeat[workspace]) agentBySeat[workspace] = createNewAgentView(WorkspaceKit, {});
       const view = agentBySeat[workspace];
-      return { el: view.el, show: () => void view.enter() };
+      return { el: view.el, show: (detail) => void view.enter(detail) };
     },
   };
 

@@ -1687,7 +1687,7 @@ body {
  * of the contents too, and this box's height is the flex row's to give. The layout
  * containment that rides along costs nothing here — the box is already
  * `position: relative` and already `overflow: hidden`, and every fixed-position
- * surface in the client (helpbox, toast, sheets, .job-menu, #chip, #kdashi) is
+ * surface in the client (helpbox, toast, sheets, .job-menu, #chip) is
  * appended to document.body rather than into a tile, so nothing loses its viewport
  * anchor. xterm is unaffected: FitAddon measures the terminal element inside this
  * box, and this box's own width still comes from the grid column, not its contents. */
@@ -4410,42 +4410,6 @@ button.wb-door:hover b {
   color: var(--muted);
   font-size: var(--text-2);
 }
-
-/* ---------- KOSHI_DASHI receipt + launcher extras ---------- */
-/* The receipt is the price of launching without a confirm screen: it says what the
-   session was born with and lets you undo it in one tap. */
-#kdashi {
-  position: fixed;
-  left: 50%;
-  bottom: 18px;
-  transform: translateX(-50%);
-  z-index: 60;
-  display: flex;
-  align-items: center;
-  gap: var(--space-5);
-  max-width: min(92vw, 640px);
-  padding: var(--space-4) var(--space-5);
-  border: var(--edge) solid var(--line-2);
-  border-radius: var(--radius-lg);
-  background: var(--panel);
-  box-shadow: var(--shadow-menu);
-  font-size: var(--text-3);
-  transition: opacity var(--motion-slow);
-}
-#kdashi.fade { opacity: 0; }
-#kdashi b { color: var(--fg-strong); }
-#kdashi small { color: var(--muted-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#kdashi button {
-  border: var(--edge) solid var(--line-3);
-  border-radius: var(--radius-md);
-  background: var(--raise);
-  color: var(--fg-strong);
-  padding: var(--space-2) var(--space-5);
-  font-size: var(--text-3);
-  cursor: pointer;
-}
-#kdashi button:hover { background: var(--raise-2); }
-#kdashi .kd-x { border-color: transparent; background: transparent; color: var(--muted-3); padding: 4px 6px; }
 
 /* Mode toggle: manual (your words, verbatim) vs assisted (composed brief). */
 .ks-mode { display: flex; align-items: center; gap: 6px; margin: 2px 0 6px; }
