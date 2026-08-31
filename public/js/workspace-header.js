@@ -1,42 +1,41 @@
 /* part of the ronin-cowork client — see js/README.md */
 /** The one navigation header shared by every Ronin workspace. */
-import { loadCampaigns, normalizeSelection, primaryCampaign } from './campaigns.js';
-
 const readable = (name = '') => String(name).split(/[_-]+/).filter(Boolean)
   .map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' ');
 
 export function installWorkspaceHeader(workspace) {
   const ronin = document.getElementById('brandbtn');
-  const campaign = document.getElementById('campaignvalue');
+  const separator = document.getElementById('coworkssep');
   const coworkers = document.getElementById('coworksbtn');
+  const teamSeparator = document.getElementById('teamsep');
   const team = document.getElementById('teamvalue');
 
   const root = () => {
     history.pushState(null, '', location.pathname + location.search);
     workspace.navigate('home', { fromHistory: true });
   };
-  ronin?.addEventListener('click', root);
-  coworkers?.addEventListener('click', () => workspace.navigate('cowork'));
+  const plainRoute = (action) => (event) => {
+    // Preserve native link behavior for new-tab/window gestures and context-menu opens.
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    action();
+  };
+  ronin?.addEventListener('click', plainRoute(root));
+  coworkers?.addEventListener('click', plainRoute(() => workspace.navigate('cowork')));
 
   const refresh = () => {
     const active = workspace.active;
     const landing = !active || active.id === 'home';
-    const selection = normalizeSelection(workspace.state.campaignSelection);
-    const selected = primaryCampaign(selection);
-    if (campaign) {
-      campaign.textContent = selected?.title || '';
-      campaign.hidden = landing;
-    }
+    if (separator) separator.hidden = landing;
     if (coworkers) coworkers.hidden = landing;
+    const teamPage = active?.id === 'team';
+    if (teamSeparator) teamSeparator.hidden = !teamPage;
     if (team) {
-      const name = active?.id === 'team' ? active.param : '';
+      const name = teamPage ? active.param : '';
       team.textContent = readable(name);
-      team.hidden = landing;
+      team.hidden = !teamPage;
     }
   };
   refresh();
-  // A direct #/cowork or #/team arrival has not passed through the root selector, so
-  // resolve the selected Campaign here too. The bar must never depend on visit order.
-  void loadCampaigns().then(refresh);
   return refresh;
 }

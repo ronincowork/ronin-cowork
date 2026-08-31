@@ -44,9 +44,6 @@ import { applyTheme } from './theme.js';
 export const LS_SKIN = 'tmuxgrid.skin';
 const STYLE_ID = 'skin';
 
-/** The owner's choice. 'stock' is the no-op skin, and the honest default. */
-export const currentSkin = () => localStorage.getItem(LS_SKIN) || 'stock';
-
 /**
  * Paint one skin's tokens, replacing whatever was up. `tokens` empty (the `stock` entry
  * names none) leaves an empty block, which is the correct no-op: the shipped values win

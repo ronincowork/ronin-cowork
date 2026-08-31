@@ -9,7 +9,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaigns:** Campaigns
 - **campaign_kind:** Kind
 - **campaign.name:** Campaign name
-- **campaign.name_placeholder:** My campaign
+- **campaign.name_placeholder:** Ronin Home
 - **campaign.description:** Description
 - **campaign.description_placeholder:** What this campaign is for
 - **campaign.commons:** Campaign commons
@@ -51,7 +51,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **kind.school:** Learning
 
 ## desk — system.js (the ⚙ desk's own rooms: appearance, the updater, the account)
-- **desk.row_appearance:** Appearance
 - **desk.row_release:** Release & update
 - **desk.rail_collapse:** Collapse the rail
 - **desk.rail_expand:** Expand the rail
@@ -74,11 +73,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **desk.waiting_authenticator:** waiting for the authenticator…
 - **desk.passkey_added:** ✓ passkey added
 - **desk.cancelled:** cancelled
-- **desk.appearance:** appearance
-- **desk.theme_flip_title:** The shell's mode — tap to flip. Ronin follows this device until you flip away; flip back to match and it follows again.
-- **desk.theme_dark:** ● dark
-- **desk.theme_light:** ○ light
-- **desk.skin:** skin
 - **desk.yours_shadowing:** yours (replaces ours)
 - **desk.yours:** yours
 - **desk.profile_stock:** Stock
@@ -210,26 +204,89 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.no_profile:** As stock — none chosen.
 - **campaign_view.roots_n:** {n} roots
 - **campaign_view.roots_none:** None — an Agent here has nowhere to work.
+- **campaign_view.new_project_desks:** New projects use desks?
+- **campaign_view.new_project_desks_yes:** Desks
+- **campaign_view.new_project_desks_no:** None
+- **campaign_view.new_project_desks_help:** Desks: each coding session works at its own branch and worktree and hands in to the team. None: sessions work in the checkout. Written into a project’s RONIN_REPO when its root is added; the desks box on a root changes that one project.
 - **campaign_view.name_help:** On the door, the browser tab and the address.
 - **campaign_view.description_help:** What this body of work is for. Shown on its card.
+- **campaign_view.head:** Campaign: {name}
+- **campaign_view.presets:** Presets
+- **campaign_view.presets_help:** A preset copies all of its components into this Campaign. Change any one of them afterwards; the preset is not consulted again.
+- **campaign_view.apply:** Apply
+- **campaign_view.applied:** applied — every component below is now this Campaign’s own
+- **campaign_view.applied_tag:** applied
+- **campaign_view.skin:** Skin
+- **campaign_view.skin_help:** The look — colours, corners, faces. The page wears it now.
+- **campaign_view.theme:** Theme
+- **campaign_view.theme_help:** Light or dark, or whatever the device prefers.
+- **campaign_view.theme_light:** Light
+- **campaign_view.theme_dark:** Dark
+- **campaign_view.theme_auto:** Automatic
+- **campaign_view.output:** Output
+- **campaign_view.output_help:** What an Agent’s tile shows. Terminal Mirror is the one that ships; Detailed, Condensed and Cherry Pick arrive with Ronin Services.
+- **campaign_view.with_services:** Ronin Services
+- **campaign_view.services_title:** Arrives with Ronin Services.
+- **campaign_view.kind:** Kind
+- **campaign_view.kind_help:** The default kind of work for a new Cowork or project here. Nothing reads it yet.
+- **campaign_view.lexicon:** Lexicon
+- **campaign_view.lexicon_help:** The words. Held to one lexicon for now, so nothing on this page is offered.
 - **campaign_view.id:** Id
-- **campaign_view.id_help:** Fixed at creation — the address and the storage key. Rename freely; the id stays.
-- **campaign_view.looks:** Looks: {skin}
-- **campaign_view.tile_shows:** Tile: {view}
+- **campaign_view.id_help:** Fixed once created — printed on every record that points here, so it cannot change.
+- **campaign_view.agent_defaults:** Agent defaults
+- **campaign_view.defaults_help:** What a new Agent here starts on when the launch does not say. A row this Campaign has not answered uses the machine’s SETTEI answer, marked as such.
+- **campaign_view.defaults_scope:** Role, reach and who may read an Agent are set when it is launched, not here.
+- **campaign_view.defaults_none:** None set — a launch must name a model.
+- **campaign_view.defaults_from_settei:** {line} (from SETTEI)
+- **campaign_view.default_help:** The row a launch that names nothing starts from.
+- **campaign_view.from_settei:** from SETTEI
+- **campaign_view.col_provider:** Provider
+- **campaign_view.col_model:** Preferred model
+- **campaign_view.col_default:** Default
+- **campaign_view.no_launch_table:** No launch table on this install.
+- **campaign_view.roles:** Session roles
+- **campaign_view.roles_summary:** What a launch here offers an Agent to be.
+- **campaign_view.roles_help:** What a launch here offers an Agent to be. Templates for a whole Team do not exist yet.
+- **campaign_view.roles_none:** No session roles on this install.
+- **campaign_view.roles_loose:** No family
+- **campaign_view.routines:** Routines
+- **campaign_view.routines_help:** What Ronin runs for you. Each is a bundle — a reading list, SOPs, macros and tools — and a switch applies to sessions born after it; nothing running is touched.
+- **campaign_view.routines_n:** {on} of {n} switches on
+- **campaign_view.on:** On
+- **campaign_view.off:** Off
+- **campaign_view.rt_control:** Ronin control
+- **campaign_view.rt_control_what:** Desks, hand-in and team promotion: the desk reading, the tejun-desk tools, the git shims. On wherever a repository declares desks.
+- **campaign_view.rt_by_repo:** per repository — see Project roots
+- **campaign_view.rt_gbrain:** gbrain
+- **campaign_view.rt_gbrain_what:** The shared memory service: its reading and its MCP tools for sessions born with it connected.
+- **campaign_view.rt_koshi:** Koshi
+- **campaign_view.rt_detail_koshi:** The smart fill behind launches and Mika.
+- **campaign_view.rt_hotwords:** Hotwords
+- **campaign_view.rt_hotwords_what:** The words dictation keeps mishearing, sent with your voice.
+- **campaign_view.rt_present:** installed — no switch yet
+- **campaign_view.rt_absent:** not installed
+- **campaign_view.machine_summary:** The rest of the desk: Desk · Account · Archived · Help desk · Keypad.
 
-## campaign_home — campaign-home.js (the root arrival: Campaign, Coworks, Agents)
+## campaign_home — campaign-home.js (the root arrival: Machine Settings, Coworks, Launch)
 
-- **campaign_home.title:** Ronin
-- **campaign_home.campaign_is:** A named body of work
+- **campaign_home.machine_settings:** Machine Settings
+- **campaign_home.campaign_is:** Admin Desk configuration
 - **campaign_home.coworks_is:** Coworking space for Agents
-- **campaign_home.agents_is:** One Agent, one job
-- **campaign_home.change:** Change
-- **campaign_home.manage:** Manage
-- **campaign_home.selected_n:** {n} selected
-- **campaign_home.no_campaign:** No Campaign
-- **campaign_home.no_cowork:** No Cowork
-- **campaign_home.no_agent:** No Agent
-- **campaign_home.tray_empty:** Nothing here yet.
+- **campaign_home.launch:** Launch
+- **campaign_home.launch_is:** Start a new Team or Agent
+- **campaign_home.version:** v1.3
+- **campaign_home.check_updates:** Check for updates
+- **campaign_home.checking:** Checking…
+- **campaign_home.check_unavailable:** Available after the next restart
+- **campaign_home.up_to_date:** Up to date
+- **campaign_home.update_available:** {version} available
+
+## launch — launch-view.js (the Workbench where Teams and Agents begin)
+
+- **launch.new_team:** New Team
+- **launch.new_team_summary:** Define a Team, then launch its Agents.
+- **launch.new_agent:** New Agent
+- **launch.new_agent_summary:** Start an Agent in a Team or on its own.
 
 ## home — home.js (the status words and the launch receipt)
 - **home.status_ready:** ready
@@ -341,6 +398,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 
 ## desks — desks.js (the ⑂ desk readings: tile head, roster column, Team page)
 - **desks.detached:** (detached)
+- **desks.worktree:** worktree {path}
 - **desks.count_one:** 1 desk
 - **desks.count_many:** {n} desks
 - **desks.pending_n:** {n} pending
@@ -369,6 +427,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team.workspace_1:** Workspace 1
 - **team.workspace_2:** Workspace 2
 - **team.commons_card:** Team commons
+- **team.commons_summary:** See Docs / Wipeboard / Configuration
 - **team.roster_of:** Roster: {team}
 - **team.workspace_blank:** Workspace
 - **team.new_session:** New session
@@ -535,7 +594,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **koshi.restarting:** restarting…
 - **koshi.restart_failed:** it did not come back up
 - **koshi.blurb_running:** Which model each Koshi job asks. Changes apply within a minute — no restart needed.
-- **koshi.blurb_stopped:** Koshi is NOT running. Nothing is watching any ladder.
+- **koshi.blurb_stopped:** Koshi is NOT running. Nothing is watching any work record.
 - **koshi.outlet_not_built:** {outlet} — not built
 - **koshi.pick_title:** Which outlet this job asks
 - **koshi.not_built:** Not built yet
@@ -623,8 +682,9 @@ The pad's current config downloads as a backup first.
 ## wipeboard — the kind note
 
 ## roots — projectroots.js (the ▣ Project roots tab)
-- **roots.include:** ＋ include
-- **roots.include_title:** Ask Mika to include a directory — she reads it and proposes the entry
+- **roots.add:** ＋ Add a project root
+- **roots.add_hint:** A directory on this machine that Agents here may work in.
+- **roots.add_save:** Add
 - **roots.read_failed:** could not read the catalog — {message}
 - **roots.save:** save
 - **roots.cancel:** cancel
@@ -636,7 +696,7 @@ The pad's current config downloads as a backup first.
 
 The catalog entry goes. {dir} is not touched.
 - **roots.exclude_failed:** could not exclude it — {message}
-- **roots.empty:** nothing included yet — ＋ include asks Mika to point Ronin at a directory
+- **roots.empty:** No project roots yet — add one below.
 - **roots.loading:** loading…
 - **roots.chip_reviewed_desks:** reviewed · desks
 - **roots.chip_reviewed:** reviewed
@@ -665,6 +725,7 @@ The catalog entry goes. {dir} is not touched.
 - **docs.loading:** loading…
 - **docs.saving:** saving…
 - **docs.saved:** saved
+- **docs.work_record_note:** Ask an agent to list a document with write_tegami --doc <path>. If a document is missing, ask the agent to update its work record.
 
 ## roots — the count line and chips
 - **roots.chip_archived:** archived
@@ -716,7 +777,7 @@ The catalog entry goes. {dir} is not touched.
 - **stats.lifetime:** Lifetime
 - **stats.ctx_unused:** Context unused at close
 - **stats.model:** Model
-- **stats.ladder_height:** How far up the ladder
+- **stats.ladder_height:** Work record progress
 - **stats.at_gate:** {n} at a gate — waiting on you
 - **stats.plan_docs:** Plan docs
 - **stats.plans_in_flight:** in flight
@@ -724,7 +785,7 @@ The catalog entry goes. {dir} is not touched.
 - **stats.plans_legs_done:** legs completed
 - **stats.plans_stale:** stale 14d+
 - **stats.plans_legs_median:** legs per plan (median)
-- **stats.ladders_plans:** Ladders & plans
+- **stats.ladders_plans:** Work records & plans
 - **stats.n_live:** {n} live
 - **stats.surfaces:** Ronin surfaces
 - **stats.macro_runs:** {n} macro runs
@@ -951,8 +1012,6 @@ The catalog entry goes. {dir} is not touched.
 
 ## dial / gauge / mark — widgets.js (the control dial, the context gauge, the role menu)
 - **gauge.used:** ⛽ {label} {pct}% used
-- **mark.none:** not marked
-- **mark.none_title:** Clear the mark — this session has not said what it is doing
 - **dial.user:** Owner only
 - **dial.user_help:** Owner only — outside agents may not read or type here
 - **dial.read:** Outside agents: watch
@@ -970,15 +1029,20 @@ The catalog entry goes. {dir} is not touched.
 - **tape.fold_code:** ⌨ code
 
 ## ladder — shingo.js (the ladder chip and panel)
-- **ladder.none:** no ladder up yet
+- **ladder.task_at_hand:** Task at hand
+- **ladder.task_unstated:** No task stated in this work record.
+- **ladder.current_action:** Current action
+- **ladder.worktrees:** Worktrees
+- **ladder.branch:** Branch
+- **ladder.coworks:** Coworks
+- **ladder.tracked_documents:** Tracked documents
+- **ladder.docs_none:** No tracked documents.
+- **ladder.progress:** Progress
+- **ladder.none:** no work record yet
 - **ladder.gate:** GATE
 - **ladder.legs_undetermined:** — legs undetermined
-- **ladder.quiet:** quiet {age}
 
-## tile — tile.js (the session picker)
-- **tile.pick_session:** — pick session —
-- **tile.gone:** {name}  (gone?)
-- **tile.new_session:** ➕ new session…
+## tile — tile.js (the Agent terminal tile)
 
 ## macros — tilemacros.js (the ⚡ menu)
 - **macros.button_title:** Macros — drop one into this session's input
@@ -1005,7 +1069,10 @@ The catalog entry goes. {dir} is not touched.
 - **archives.read_failed:** archive could not be read
 - **archives.empty:** no archived sessions
 - **archives.ago:** {age} ago
-- **archives.rehydrate:** Rehydrate {name}
+- **archives.rehydrate_btn:** Rehydrate
+- **archives.rehydrating:** rehydrating…
+- **archives.group_none:** Ronin — no team
+- **archives.card:** Rehydrate Archived
 - **archives.delete_aria:** Permanently delete archived session {name}
 - **archives.delete_title:** Hard delete this archive
 - **archives.delete_confirm:** Hard delete archived session "{name}"? Its saved Ronin record cannot be rehydrated after this.
@@ -1076,18 +1143,13 @@ The catalog entry goes. {dir} is not touched.
 ## head — tilehead.js (the tile head's help and quiet words)
 - **head.dial_help:** Who may touch this session: 👤 owner only · 👁 outside agents watch · 🤖 outside agents type. Yours to turn; agents never flip it.
 - **head.dot_help:** Connection: green = attached, grey = disconnected
-- **head.select_help:** Pick / switch the session shown in this tile
-- **head.rename_help:** Rename this session
+- **head.rename_help:** Edit this Agent title
 - **head.rename_quiet:** Rename session — no session in this tile yet
-- **head.rename_prompt:** Rename session
+- **head.rename_prompt:** Edit Agent title
 - **head.rename_failed:** Could not rename session: {reason}
-- **head.chip_help:** Where this session is on its ladder, and how long it has been there. Opens the ladder.
-- **head.job_help:** What this session is doing
-- **head.job_quiet:** What a session is doing — no session in this tile yet
-- **head.job_read:** {job} — click to change what this session is doing
-- **head.job_unmarked:** Not marked — click to say what this session is doing
-- **head.branch_help:** Desks this session is working at — repo, branch, and what is ahead, pending or parked
-- **head.branch_quiet:** Desks — no session in this tile yet
+- **head.view_work_record:** View Work Record
+- **head.work_record_help:** View repositories, current action, and the work record
+- **head.work_record_quiet:** View Work Record — no Agent in this workspace
 - **head.output_help:** Output — live terminal or one of RIREKI’s unlocked views
 - **head.mention_help:** Mention another session — choose a name to add it to the message box
 - **head.mention_quiet:** Mentions — no session in this tile yet
@@ -1117,15 +1179,13 @@ The catalog entry goes. {dir} is not touched.
 - **bar.keys:** Keys
 - **bar.ni_title:** Ronin — keys, home, new session, board, pad
 - **bar.new:** New
-- **bar.desk:** Admin Desk
 - **bar.shape_title:** Two workspaces — click for four
 - **bar.shape_two:** Two workspaces — click for four
 - **bar.shape_four:** Four workspaces — click for two
 
 ## me — tiledrop.js (the メ sheet)
 - **me.status:** Status
-- **me.ladder:** Ladder
-- **me.branches:** Branches
+- **me.ladder:** Work record
 - **me.macros:** Macros
 - **me.mention:** Mention session
 - **me.groups:** Groups
@@ -1133,7 +1193,7 @@ The catalog entry goes. {dir} is not touched.
 - **me.note:** Note
 - **me.control:** Control
 - **me.kill:** Kill session
-- **me.title:** This session — status, ladder, TEGAMI, macros, groups, docs, note, control
+- **me.title:** This session — status, work record, macros, groups, docs, note, control
 
 ## new_team — new-team-launch.js (the transaction's own sentences)
 
@@ -1145,7 +1205,7 @@ The catalog entry goes. {dir} is not touched.
 - **pad.no_reply:** {method}: pad did not reply
 
 ## docs — the empty line and count
-- **docs.empty_team:** No session on this Team has listed a doc yet. An agent lists one with: write_tegami --doc <path>
+- **docs.empty_team:** No tracked documents.
 - **docs.empty:** No session has listed a doc yet. An agent lists one with: write_tegami --doc <path>
 - **docs.count_one:** 1 doc
 - **docs.count_many:** {n} docs
@@ -1173,12 +1233,6 @@ The catalog entry goes. {dir} is not touched.
 - **league.show_rosters:** Show rosters
 - **league.new_team_summary:** Define the Team, then build its session roster.
 - **league.rosters_unavailable:** Durable rosters unavailable — showing live Teams only.
-
-## mark — tilejob.js (the 人 row)
-- **mark.lead_step_down:** 人 team lead — step down
-- **mark.lead_make:** 人 make team lead
-- **mark.lead_clear_title:** Leads {teams} — clear the designation
-- **mark.lead_make_title:** Designate the 人 of {teams}
 
 ## docs — tiledocs.js
 - **docs.empty_session:** This session has listed no docs yet. An agent lists one with: write_tegami --doc <path>
@@ -1227,10 +1281,7 @@ The catalog entry goes. {dir} is not touched.
 - **hotwords.stock_list:** Ronin's stock list — your first edit makes a copy that is yours
 
 ## ladder — the chip tooltip and side line
-- **ladder.held:** Held at a gate
-- **ladder.tap:** Tap for the ladder
-- **ladder.unchanged_for:** ladder unchanged for {age}
-- **ladder.side:** {state} — the ladder below is held, not stale
+- **ladder.side:** {state} — the work record below is held, not stale
 
 ## errors — main.js (the session-list failure)
 - **errors.no_session_list:** could not load the session list
@@ -1289,7 +1340,6 @@ The catalog entry goes. {dir} is not touched.
 - **bar.league_title:** Open League in a new browser tab
 - **bar.newtab_title:** Open a second Ronin in a new browser tab
 - **bar.new_title:** ⌃⇧N — start a new session: pick what it is for, where it works and who it is
-- **bar.desk_title:** Admin Desk — this machine and this app: configuration, project roots, hotwords, Koshi, gbrain, stats, appearance, updates, log out
 - **keys.esc:** Esc
 - **keys.interrupt_title:** Ctrl-C (interrupt)
 - **keys.latest_title:** Jump to latest output
@@ -1342,7 +1392,7 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.team:** Cowork
 - **glossary.note:** Note
 - **glossary.doing:** what it's doing
-- **glossary.ladder:** ladder
+- **glossary.work_record:** work record
 - **glossary.rung:** rung · leg · phase · gate
 - **glossary.memory:** memory
 - **glossary.stats:** Stats
@@ -1352,6 +1402,13 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.role:** role
 - **glossary.desk_profile:** desk profile
 - **glossary.behaviour:** behaviour
+- **glossary.routine:** routine
+- **glossary.ronin_base:** Ronin Base
+- **glossary.ronin_control:** Ronin Control
+- **glossary.specialized_routine:** specialized routine
+- **glossary.terminal:** terminal
+- **glossary.bare_metal_agent:** bare-metal Agent
+- **glossary.cowork_agent:** Cowork Agent
 - **glossary.build:** build
 - **glossary.mandate:** mandate
 - **glossary.fork:** fork
@@ -1360,7 +1417,7 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.packet:** what gets sent
 - **glossary.egress_log:** where Ronin has connected
 - **glossary.services:** Services
-- **glossary.session_menu:** Status · Ladder · Macros · Detach · Kill session
+- **glossary.session_menu:** Status · Work record · Macros · Detach · Kill session
 - **league.commons:** League commons
 - **league.view:** League view
 - **league.team_roster:** Team roster
@@ -1369,18 +1426,24 @@ The catalog entry goes. {dir} is not touched.
 - **league.selector_teams:** Teams
 - **league.selector_new:** New
 - **league.templates:** Templates
-- **league.template_name:** template-name
-- **league.template_save:** Save current New Team draft
-- **league.template_use:** Use template
-- **league.template_delete:** Delete
-- **league.template_delete_confirm:** Delete template {name}?
-- **league.templates_empty:** No Team templates yet.
 - **league.agents:** Agents
 - **league.no_agents:** No live Agents
 - **league.new_agent:** New Agent
 - **league.new_agent_summary:** A new Agent, born into the workspace you are in.
-- **league.delete_team:** Delete
+- **league.delete_team:** Delete team
 - **league.delete_team_confirm:** Delete {team}? {count} Agents will lose this Team membership.
+- **league.members:** Team members
+- **league.no_members:** No Agents assigned yet.
+- **league.role_unset:** Role not set
+- **league.team_lead:** Team Lead
+- **league.make_team_lead:** Make Lead
+- **league.rename_agent:** Rename
+- **league.rename_agent_prompt:** Edit Agent title
+- **league.remove_member:** Remove
+- **league.remove_named_member:** Remove {name} from this team
+- **league.choose_member:** Choose an Agent to add
+- **league.no_available_members:** No other Agents available
+- **league.assign_member:** Assign
 - **league.launch_team:** Launch
 - **league.ronin:** Ronin: no team
 - **league.no_ronin:** No Rōnin Agents

@@ -127,27 +127,6 @@ export function build() {
 
   // Per-session note editor (📝 on each tile head) — works the same on desktop and touch.
   guard('note panel', buildNotePanel);
-  // ⚙ Account — ONE sheet at page level (js/system.js); the bar's gear opens it.
-  //
-  // THE LABEL MOVED, NOT THE DESTINATION (2026-08-17). The owner wants this to read
-  // ⚙ ADMIN DESK — and it is the staging post above, arrived (2026-08-18).
-  //
-  // This was `S.sysPanel.open()` on a page-level ui.sheet, under the 2026-08-16 ruling
-  // that install-level facts must not be copied into every tile. That ruling holds; what
-  // changed is that there is now a surface on the right side of it. The desk is a TILE —
-  // drawn in the one you press ⚙ in, not in all four — so it keeps the singleness the
-  // sheet was bought for and gets back the full pane a sheet could never give.
-  //
-  // It takes the ACTIVE tile, exactly as ⛩ and か do above: the bar's verbs all act on
-  // the tile you are in, and a fifth that picked its own would be the odd one out. And it
-  // TOGGLES, because ⛩ already learned that lesson — a control that opens a thing and
-  // then goes dead is a control you press twice and distrust.
-  // ⚙ — THE COWORK COMMONS, a workspace surface, never a page-level destination.
-  // The active cowork view owns the gesture and places the shared surface in its workspace.
-  key('sysbtn', () => {
-    if (S.showCoworkCommons) S.showCoworkCommons();
-  });
-
   // Session macros (⚡ on each tile head) are the tile's own — built in
   // tilemacros.js by Tile itself; nothing to wire here.
 
@@ -305,16 +284,6 @@ export function buildDrawers() {
   // restore and off the /events socket, so the button was a manual copy of something
   // that never stops happening — and its round arrow read as the tile's ⟳ Reconnect,
   // a different action. Two dead round arrows, both gone.
-  const APP = [
-    // The one verb left on the bar (2026-08-27) — the cowork commons.
-    ['sysbtn', t('bar.desk', 'Admin Desk')],
-  ];
-  for (const [id, label] of APP) {
-    const el = document.getElementById(id);
-    if (!el) continue;
-    el.querySelector('.txt')?.remove(); // the word is the row's now
-    drop.addRow(el, label);
-  }
   // The shape button comes up between メ and ニ — RELOCATED, not rebuilt, so the face
   // team-view.js writes and the click it owns come along.
   const shape = document.getElementById('shapecycle');

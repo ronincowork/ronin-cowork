@@ -15,7 +15,7 @@ import { S, tiles } from './state.js';
  */
 export function reconcileSessions(list) {
   S.sessions = list;
-  tiles.forEach((t) => t.refreshOptions());
+  tiles.forEach((t) => t.refreshSessionName());
 }
 
 /**
@@ -27,16 +27,16 @@ export function reconcileSessions(list) {
 export async function fetchSessions() {
   const r = await request('/api/sessions', { cache: 'no-store' });
   if (r.ok && Array.isArray(r.data)) reconcileSessions(r.data);
-  else tiles.forEach((t) => t.refreshOptions());
+  else tiles.forEach((t) => t.refreshSessionName());
   return r;
 }
 
-export async function renameSession(name, next) {
-  const r = await request('/api/sessions/' + encodeURIComponent(name) + '/rename', {
-    method: 'POST', json: { name: next },
+export async function setSessionTitle(name, title) {
+  const r = await request('/api/sessions/' + encodeURIComponent(name) + '/title', {
+    method: 'PUT', json: { title },
   });
   if (!r.ok) throw new Error(r.message);
-  return r.data.name;
+  return r.data.title;
 }
 
 /** Kill a tmux session on the host (and its grid_* viewers). */

@@ -37,6 +37,8 @@ if (!read('public/js/workspace.js').includes('createLayoutMap')) problems.push('
 if (!layouts.includes('createSurfaceHeader') || !layouts.includes('dataset.workbenchHeader')) problems.push('The Workbench layout must own the permanent header of every ordinary declared slot.');
 if (!arrangement.includes('composite: slot.composite === true')) problems.push('The Workbench declaration must preserve composite workspace stacks so the frame cannot double-head them.');
 for (const contract of ['WorkbenchLibrary', 'WorkbenchProfiles', 'WORKBENCH_IDS', "['workspace1', 'workspace2', 'workspace3', 'workspace4']", 'tenant', 'profile.types', 'definition.create']) if (!workbench.includes(contract)) problems.push(`The sealed Workbench is missing ${contract}.`);
+if (!/name: 'workspace1'[\s\S]*name: 'selector'[\s\S]*name: 'workspace2'/.test(workbench)) problems.push('The fixed Workbench opening order must be workspace1, selector, workspace2.');
+if (/team_arrangement|profileOrder/.test(team)) problems.push('A desk profile must not move the fixed Workbench columns; saved instance state is the only arrangement override.');
 for (const [name, source] of [['Campaign', campaign], ['Cowork/Team', team]]) {
   if (!source.includes('WorkspaceKit.workbench.create({')) problems.push(`${name} must instantiate the one high-level Workbench.`);
   if (/createWorkbenchLayout|\b(?:cv-selector-head|tw-roster-head|tw-column|tw-cell)\b/.test(source)) problems.push(`${name} owns Workbench frame/header geometry instead of supplying a profile and tenant.`);

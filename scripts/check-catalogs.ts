@@ -26,7 +26,7 @@ import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { STOCK_DIR, splitSections, readEntries } from '../src/catalog.js';
-import { listRoleFamilies, listSessionRoles, listTeamRoles, type DefinitionKind } from '../src/definitions.js';
+import { listRoleFamilies, listRoutines, listSessionRoles, listTeamRoles, type DefinitionKind } from '../src/definitions.js';
 import { listDeskProfiles } from '../src/desk-profiles.js';
 import { listLexicons } from '../src/lexicons.js';
 import { resolveLaunchProfile, type LaunchProfile } from '../src/launch-profile.js';
@@ -187,6 +187,46 @@ async function definitionsResolve(): Promise<void> {
   }
 }
 
+/** A Routine manifest is the one membership list, so every named catalog item must exist
+ * and no behavior may silently belong to two stock Routines. */
+async function routinesResolve(): Promise<void> {
+  const routines = await listRoutines();
+  const [macros, actionsRaw, toolsRaw] = await Promise.all([
+    listMacros(),
+    readFile(path.join(STOCK_DIR, 'ACTIONS.md'), 'utf8'),
+    readFile(path.join(STOCK_DIR, 'TOOLS.md'), 'utf8'),
+  ]);
+  const known = {
+    macros: new Set(macros.map((x) => x.name)),
+    // Action headings may carry an explanatory suffix; splitSections' name is the first
+    // token, which is the action identity macros compile against.
+    actions: new Set(splitSections(actionsRaw, 'stock').map((x) => x.name)),
+    // TOOLS.md is deliberately a table rather than a ## catalog.
+    tools: new Set([...toolsRaw.matchAll(/^\|\s*`([^`]+)`\s*\|/gm)].map((m) => m[1])),
+  };
+  const owners = new Map<string, string>();
+  for (const routine of routines.filter((x) => x.origin === 'stock')) {
+    if (!routine.blurb.trim()) fail(`routines/${routine.name}.md: missing blurb`);
+    for (const field of ['macros', 'actions', 'tools'] as const) {
+      for (const name of routine[field]) {
+        if (!known[field].has(name)) fail(`routines/${routine.name}.md: ${field} names missing "${name}"`);
+        const key = `${field}:${name}`;
+        const prior = owners.get(key);
+        if (prior) fail(`routines/${routine.name}.md: ${key} already belongs to ${prior}`);
+        else owners.set(key, routine.name);
+      }
+    }
+    for (const sop of routine.sops) {
+      try { await stat(path.join(REPO, 'ronin_sops', `${sop}.md`)); }
+      catch { fail(`routines/${routine.name}.md: sops names missing "${sop}"`); }
+      const key = `sops:${sop}`;
+      const prior = owners.get(key);
+      if (prior) fail(`routines/${routine.name}.md: ${key} already belongs to ${prior}`);
+      else owners.set(key, routine.name);
+    }
+  }
+}
+
 const FILES = ['MACROS.md', 'ACTIONS.md', 'TOOLS.md', 'PROJECT_ROOTS.md'];
 
 await surfacingDefinitions('role_families', listRoleFamilies);
@@ -194,7 +234,9 @@ await surfacingDefinitions('session_roles', listSessionRoles);
 await surfacingDefinitions('team_roles', listTeamRoles);
 await surfacingDefinitions('desk_profiles', listDeskProfiles);
 await surfacingDefinitions('lexicons', listLexicons);
+await surfacingDefinitions('routines', listRoutines);
 await definitionsResolve();
+await routinesResolve();
 await surfacing('MACROS.md', listMacros);
 await surfacing('ACTIONS.md', () => readEntries('ACTIONS.md'));
 await surfacing('TOOLS.md', () => readEntries('TOOLS.md'));

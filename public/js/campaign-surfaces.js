@@ -19,6 +19,7 @@ import { field } from './ui.js';
 import { deskProfiles } from './desk-profile.js';
 import { saveCampaign } from './campaigns.js';
 import { WorkspaceKit } from './workspace-kit.js';
+import { request } from './request.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -53,8 +54,11 @@ export function createCampaignIdentitySurface(campaign) {
   const title = make(t('campaign.name', 'Campaign name'), el('input'), t('campaign_view.name_help', 'On the door, the browser tab and the address.'), 120, t('campaign.name_placeholder', 'My campaign'));
   const description = make(t('campaign.description', 'Description'), el('textarea'), t('campaign_view.description_help', 'What this body of work is for. Shown on its card.'), 500, t('campaign.description_placeholder', 'What this campaign is for'));
   description.control.rows = 3;
-  const id = make(t('campaign_view.id', 'Id'), el('input'), t('campaign_view.id_help', 'Fixed at creation — the address and the storage key. Rename freely; the id stays.'));
+  // The id is shown fixed, in grey: it is the address every campaign_id points at — a
+  // fact to read, not a choice (owner, 2026-08-30).
+  const id = make(t('campaign_view.id', 'Id'), el('input'), t('campaign_view.id_help', 'Fixed once created — printed on every record that points here, so it cannot change.'));
   id.control.readOnly = true;
+  id.control.tabIndex = -1;
 
   const save = async (fields, f) => {
     const row = campaign();
@@ -72,7 +76,7 @@ export function createCampaignIdentitySurface(campaign) {
     el: surface.el,
     enter: () => {
       const row = campaign();
-      head.title.textContent = row?.title || t('campaign', 'Campaign');
+      head.title.textContent = row?.title ? t('campaign_view.head', 'Campaign: {name}', { name: row.title }) : t('campaign', 'Campaign');
       title.control.value = row?.title || '';
       description.control.value = row?.description || '';
       id.control.value = row?.id || '';
@@ -83,67 +87,52 @@ export function createCampaignIdentitySurface(campaign) {
   };
 }
 
-/** A skin token, said as a word: `stock` → Stock. The catalog's labels are these. */
-export const skinWord = (skin) => (skin ? skin[0].toUpperCase() + skin.slice(1) : '');
-/** A rireki_view token, in the words the Output picker already uses — one literal key each, so the gate can see them. */
-const tileWord = (view) => ({
-  locked: t('output.locked', 'Locked'),
-  terminal_mirror: t('output.terminal_mirror', 'Terminal Mirror'),
-  detailed: t('output.detailed', 'Detailed'),
-  condensed: t('output.condensed', 'Condensed'),
-  cherry_pick: t('output.cherry_pick', 'Cherry Pick'),
-}[view] || view);
 
 /**
- * THE LOBBY, as a surface: which desk profile this Campaign opens on.
- *
- * A desk_profile is not a skin — it HAS one, plus the lexicon, the campaign kind and the
- * Team page's default arrangement (KOTOBA R38). Picking one here settles the kind too,
- * which is why the Campaign record carries no kind of its own.
+ * SESSION ROLES — what a launch in this Campaign offers, read-only (owner, 2026-08-30).
+ * Templates exist for Agents (the session_roles catalog) and not yet for Teams; this says
+ * both plainly instead of offering a form for the one that does not exist. Grouped by
+ * role family as the launcher groups them; a role in no family sits in the tail.
  */
-export function createDeskProfileSurface(campaign) {
-  const { createSurface, createCard, setSurfaceState } = WorkspaceKit.primitives;
-  const label = t('cowork.tab_profile', 'Desk profile');
+export function createSessionRolesSurface() {
+  const { createSurface, createCard } = WorkspaceKit.primitives;
+  const label = t('campaign_view.roles', 'Session roles');
   const surface = createSurface({ label, className: 'cv-surface' });
-  const cards = el('div', 'cv-cards');
-  surface.content.append(cards);
-
-  const choose = async (name) => {
-    const row = campaign();
-    if (!row) return;
-    const r = await saveCampaign(row.id, { desk_profile: name });
-    if (!r.ok) return setSurfaceState(surface.el, 'failed', r.message);
-    setSurfaceState(surface.el, null, '');
-    paint();
+  const body = el('div', 'cv-body');
+  surface.content.append(body);
+  let families = [];
+  let roles = [];
+  const paint = () => {
+    body.replaceChildren();
+    body.append(el('p', 'cv-note', t('campaign_view.roles_help', 'What a launch here offers an Agent to be. Templates for a whole Team do not exist yet.')));
+    if (!roles.length) return surface.setState('empty', t('campaign_view.roles_none', 'No session roles on this install.'));
+    surface.setState(null, '');
+    const placed = new Set();
+    const group = (heading, names) => {
+      const rows = names.map((n) => roles.find((r) => r.name === n)).filter(Boolean);
+      if (!rows.length) return;
+      body.append(el('span', 'cv-eyebrow', heading));
+      const grid = el('div', 'cv-cards');
+      for (const r of rows) {
+        placed.add(r.name);
+        grid.append(createCard({ heading: r.label || r.name, summary: r.blurb || '', mark: r.icon || null }).el);
+      }
+      body.append(grid);
+    };
+    for (const f of families) group(f.label || f.name, Array.isArray(f.session_roles) ? f.session_roles : []);
+    group(t('campaign_view.roles_loose', 'No family'), roles.map((r) => r.name).filter((n) => !placed.has(n)));
   };
-
-  function paint() {
-    const row = campaign();
-    cards.replaceChildren();
-    const profiles = deskProfiles();
-    if (!profiles.length) {
-      setSurfaceState(surface.el, 'empty', t('campaign_view.no_profiles', 'No desk profiles on this install.'));
-      return;
-    }
-    setSurfaceState(surface.el, row ? null : 'empty', row ? '' : t('campaign_view.none_selected', 'No Campaign selected.'));
-    for (const profile of profiles) {
-      // What a profile is, in words a person can compare: the look, and what a tile
-      // shows — not the catalog's tokens.
-      const card = createCard({
-        heading: profile.label || profile.name,
-        summary: profile.blurb || '',
-        metadata: [
-          profile.skin ? t('campaign_view.looks', 'Looks: {skin}', { skin: skinWord(profile.skin) }) : '',
-          profile.rireki_view ? t('campaign_view.tile_shows', 'Tile: {view}', { view: tileWord(profile.rireki_view) }) : '',
-        ].filter(Boolean),
-        selected: profile.name === row?.desk_profile,
-        action: () => void choose(profile.name),
+  return {
+    el: surface.el,
+    enter: () => {
+      paint();
+      void Promise.all([request('/api/role-families'), request('/api/session-roles')]).then(([f, r]) => {
+        families = f.ok && Array.isArray(f.data) ? f.data : [];
+        roles = r.ok && Array.isArray(r.data) ? r.data : [];
+        paint();
       });
-      cards.append(card.el);
-    }
-  }
-
-  return { el: surface.el, enter: paint };
+    },
+  };
 }
 
 /** New Campaign: the stage is set here and nothing else is born with it. */

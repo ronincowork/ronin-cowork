@@ -173,7 +173,18 @@ export const widthClass = (pixels, compact) => (compact > 0 && finite(pixels, 0)
 export function migrateWorkbenchState(old, declaration) {
   const fresh = defaultArrangement(declaration);
   if (!old || typeof old !== 'object') return fresh;
-  if (Array.isArray(old.order)) return normalizeArrangement(old, declaration);
+  if (Array.isArray(old.order)) {
+    // A former product default was persisted exactly like an owner arrangement. Move
+    // only that untouched default forward; a reordered, resized or hidden bench remains
+    // the owner's and passes through unchanged.
+    const priorDefaults = Array.isArray(declaration?.priorDefaultOrders) ? declaration.priorDefaultOrders : [];
+    const untouched = priorDefaults.some((order) => Array.isArray(order)
+      && order.length === old.order.length
+      && order.every((name, i) => old.order[i] === name)
+      && (!Array.isArray(old.hidden) || old.hidden.length === 0)
+      && fresh.order.every((name) => Math.abs(finite(old.widths?.[name], fresh.widths[name]) - fresh.widths[name]) < 0.01));
+    return untouched ? fresh : normalizeArrangement(old, declaration);
+  }
   const names = [...fresh.order];
   const widths = { ...fresh.widths };
   const oldWidths = old.widths && typeof old.widths === 'object' ? old.widths : null;

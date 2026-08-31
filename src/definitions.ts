@@ -48,8 +48,8 @@ import path from 'node:path';
 import { STOCK_DIR, entryValue, isKeyLine, type Origin } from './catalog.js';
 import { storeDir } from './stores.js';
 
-/** The definition directories — one file per token. `desk_profiles/` and `lexicons/` joined 2026-08-27 (R38). */
-export type DefinitionKind = 'role_families' | 'session_roles' | 'team_roles' | 'desk_profiles' | 'lexicons';
+/** The definition directories — one file per token. */
+export type DefinitionKind = 'role_families' | 'session_roles' | 'team_roles' | 'desk_profiles' | 'lexicons' | 'routines';
 
 export interface Definition {
   /** The token — the filename without `.md`. Never the `#` heading. */
@@ -225,6 +225,16 @@ export interface SessionRoleRow extends Row {
   match: string[];
 }
 
+export interface RoutineRow extends Pick<Row, 'name' | 'origin' | 'shadowed' | 'label' | 'blurb'> {
+  class: 'base' | 'control' | 'specialized';
+  reading: string[];
+  sops: string[];
+  macros: string[];
+  actions: string[];
+  tools: string[];
+  mcp: string[];
+}
+
 /** `[text](https://url)` → {text, url}. http(s) only — a definition is DATA, and data
  *  must not be able to mint a `javascript:` link into the launcher. */
 function credit(v: string): { text: string; url: string } | undefined {
@@ -265,6 +275,26 @@ export async function listSessionRoles(): Promise<SessionRoleRow[]> {
   return (await readDefinitions('session_roles')).map((d) => ({
     ...row(d),
     match: splitDefinitionList(d.get('match')),
+  }));
+}
+
+/** Routine manifests are the one membership list for every behaviour they deliver. */
+export async function listRoutines(): Promise<RoutineRow[]> {
+  return (await readDefinitions('routines')).map((d) => ({
+    name: d.name,
+    origin: d.origin,
+    shadowed: d.shadowed,
+    label: d.get('label') || d.name,
+    blurb: d.get('blurb'),
+    class: /^(base|control|specialized)$/.test(d.get('class'))
+      ? d.get('class') as RoutineRow['class']
+      : 'specialized',
+    reading: splitDefinitionList(d.get('reading')),
+    sops: splitDefinitionList(d.get('sops')),
+    macros: splitDefinitionList(d.get('macros')),
+    actions: splitDefinitionList(d.get('actions')),
+    tools: splitDefinitionList(d.get('tools')),
+    mcp: splitDefinitionList(d.get('mcp')),
   }));
 }
 

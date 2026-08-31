@@ -3,8 +3,6 @@
 
 import { tabTitle } from './workspace.js';
 
-export const NEW = '__new__';
-
 // Touch device (iPhone/iPad): a tap must NOT auto-focus the terminal (which pops
 // the keyboard); scrolling is driven by drag + buttons that inject wheel events.
 export const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;

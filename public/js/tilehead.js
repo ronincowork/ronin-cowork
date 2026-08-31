@@ -18,7 +18,7 @@
  *   cls      its class — also its handle for `tiledrop.js`, which RELOCATES these exact
  *            nodes into the phone's app bar rather than cloning them
  *   text     the glyph, for a plain button
- *   tag      for the two that are not buttons (the dot, the picker)
+ *   tag      for an element that is not a button (the session name)
  *   widget   for the four that are built by someone else and come back as {el, set}
  *   help     the hover text. A function when it has to be computed at build time.
  *   on       the click. Given (tile, el) — the tile owns what any of it means.
@@ -54,14 +54,12 @@
  * reading the header left to right — and then, past メ, left to right inside its drop.
  */
 import { CONTROL_POSITIONS, makeDial, makeGauge, setInert } from './widgets.js';
-import { clampTip, makeChip } from './shingo.js';
+import { clampTip } from './shingo.js';
 import { buildTileMacros } from './tilemacros.js';
 import { buildTileMore } from './tilemore.js';
 import { buildTileMentions } from './tilementions.js';
-import { deskLabel, deskReadout, deskTip, desksOf } from './desks.js';
 import { isCoarse } from './tiledrop.js';
 import { S, serviceMissing } from './state.js';
-import { taskIcon } from './home.js';
 import { makeOutput } from './output.js';
 import { t } from './lexicon.js';
 
@@ -84,56 +82,19 @@ const HEADER = () => {
   // The Torii stays as a house mark, but the dead embedded Commons does not. It is the
   // first control, immediately before the session name, and renames that session.
   { key: 'renameBtn', cls: 'torii rename', text: '⛩', needs: 'session',
-    help: t('head.rename_help', 'Rename this session'),
+    help: t('head.rename_help', 'Edit this Agent title'),
     quiet: t('head.rename_quiet', 'Rename session — no session in this tile yet'),
     on: (tile) => void tile.rename() },
 
-  // The connection dot left the head on 2026-08-28 (owner: "this colored light ball next to
-  // the session name … should be gone"); the picker's own state and the pane say it.
-  { key: 'select', tag: 'select', cls: 'sess',
-    help: t('head.select_help', 'Pick / switch the session shown in this tile') },
+  // A workspace owns which Agent it holds. The tile only names that session; switching
+  // happens by placing or dragging a roster card into the workspace, never in its head.
+  { key: 'sessionName', tag: 'span', cls: 'sess' },
 
-  // THE MARK — what the session is doing, off its letter. `?` when it has not said.
-  { key: 'jobBtn', cls: 'job', needs: 'session',
-    help: t('head.job_help', 'What this session is doing'),
-    quiet: t('head.job_quiet', 'What a session is doing — no session in this tile yet'),
-    on: (tile, el) => tile.pickJob(el),
-    // `?` when nothing has been said, not blank: an empty button among eight others is
-    // invisible, and the owner could not find the control at all. `?` is not a guessed
-    // mark — it is the honest reading, drawn so it can be seen and pressed.
-    read: (tile, el) => {
-      const s = S.sessions.find((x) => x.name === tile.session);
-      const job = (s && s.session_role) || '';
-      // The job NAME on the element, so style can reach ONE mark: glyphs differ in how
-      // heavily their font draws them (style.css, `[data-job=…]`).
-      el.dataset.job = job;
-      el.textContent = taskIcon(s) || '?';
-      el.classList.toggle('unset', !job);
-      return job ? t('head.job_read', '{job} — click to change what this session is doing', { job })
-                 : t('head.job_unmarked', 'Not marked — click to say what this session is doing');
-    } },
-
-  // THE DESKS — one button, because branch and repository are one paired fact rather
-  // than two controls. One desk says its branch; several say how many. The reading is
-  // DERIVED on the server from git and the desk registry (`/api/desks`, src/desk-state.ts):
-  // the line it hands in to, ahead/behind, unsaved files, pending, parked, blocked — never
-  // a fact the agent keeps in prose. It works with no michi: the desks are cowork's.
-  { key: 'branchBtn', cls: 'checkout branch', needs: 'session',
-    help: t('head.branch_help', 'Desks this session is working at — repo, branch, and what is ahead, pending or parked'),
-    quiet: { session: t('head.branch_quiet', 'Desks — no session in this tile yet') },
-    on: (tile) => tile.toggleLadder(),
-    read: (tile, el) => {
-      const entry = desksOf(tile.session);
-      const desks = entry?.desks || [];
-      el.textContent = deskLabel(entry);
-      el.classList.toggle('unset', !desks.length);
-      el.classList.toggle('attn', !!(entry?.rollup?.pending || entry?.rollup?.blocked));
-      // The repo by its short name and its branch, then the roll-up (owner, 2026-08-26:
-      // "just the repo name and the branch name — that's all you need"; the control
-      // surface adds what is ahead, pending or parked, and keeps paths and SHAs out).
-      const readout = deskReadout(entry);
-      return readout ? readout + '\n' + deskTip(entry) : deskTip(entry);
-    } },
+  { key: 'workRecordBtn', cls: 'work-record',
+    text: t('head.view_work_record', 'View Work Record'), needs: 'session',
+    help: t('head.work_record_help', 'View repositories, current action, and the work record'),
+    quiet: t('head.work_record_quiet', 'View Work Record — no Agent in this workspace'),
+    on: (tile) => tile.toggleLadder() },
 
   { grow: true },
 
@@ -169,7 +130,7 @@ const HEADER = () => {
     quiet: t('head.macros_quiet', 'Macros — no session in this tile yet') },
 
   // メ — AND EVERY ROW BELOW IT IS INSIDE ITS DROP (owner's ruling 2026-08-17). Eight
-  // controls ended this row and a session picker has to fit a name; at four tiles up
+  // controls ended this row and the session name has to remain readable; at four tiles up
   // there was not room for both. Three stay on top — ⛩ ⚡ メ — and the six that were
   // left drop out of メ in one horizontal strip, unchanged. See tilemore.js for the
   // glyph's history (it was the Commons button here until ⛩ took that everywhere) and
@@ -212,12 +173,6 @@ const HEADER = () => {
     help: t('head.kill_help', 'Kill session (ends it + its viewers)'),
     quiet: t('head.kill_quiet', 'Kill session — no session in this tile yet'),
     on: (tile) => tile.kill() },
-
-  // SHINGO 信号 — the light signal, at the RIGHT END of the head since 2026-08-27 (owner:
-  // "remove it [from the left] … and place that light signal" where C and T were).
-  { key: 'chip',
-    widget: (tile) => makeChip(() => tile.toggleLadder()),
-    help: t('head.chip_help', 'Where this session is on its ladder, and how long it has been there. Opens the ladder.') },
 
   ];
   return rows;
@@ -294,9 +249,6 @@ export function buildTileHead(tile) {
     if (!made) {
       node.className = row.cls;
       if (node.tagName === 'BUTTON') node.type = 'button';
-      // A non-interactive indicator (the dot) carries an accessible name via its
-      // help text, and a bare <span> may not hold one — role=img is the lamp's role.
-      if (node.tagName === 'SPAN') node.setAttribute('role', 'img');
       if (row.text) node.textContent = row.text;
     }
     if (row.holds) node.dataset.holdsHelp = '1';

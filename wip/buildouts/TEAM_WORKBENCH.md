@@ -181,14 +181,10 @@ is the owner's, not a leg.
 
 **The next session's remit (owner, 2026-08-26)** — not more legs on this plan, but the
 finish on what the page shows:
-1. **The tile's head row** — clean up and reshape the header and its buttons as they
-   sit in a workspace (the C among ⛩ @ ⚡ ⤢, the picker, the readings). The seam is
-   `createTerminalTileHost({ actions })` and `tilehead.js`'s table; the Sessions grid
-   uses the same head, so what changes here changes there — measure both.
-2. **The commons' tabs** — Docs and Team Configuration are read-only slices; Chat is
+1. **The commons' tabs** — Docs and Team Configuration are read-only slices; Chat is
    reserved and empty by ruling. Finish them as the owner wants them to work on the
    team page (`createChannelSurface`, `cowork-view.js`'s `docsService` and `renderConfig`).
-3. Keep the shape: one controller (`arrange()`), one tab one team, no hidden, no overlay.
+2. Keep the shape: one controller (`arrange()`), one tab one team, no hidden, no overlay.
 
 **Traps a successor should know (beyond the ones under LANDED):**
 - The server runs `tsx src/index.ts` with no watch: a change under `src/` needs

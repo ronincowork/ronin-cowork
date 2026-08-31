@@ -6,7 +6,7 @@
  * `{ id, title, description, desk_profile, state }`. It owns no Agents, Coworks or roots
  * as embedded lists — those records point back with their own `campaign_id`. This module
  * is the ONE place the browser reads that list, so nothing downstream grows a second
- * registry: the three-card home, `#/cowork` and the Agents door all read it here.
+ * registry: Campaign and Cowork Workbenches read it here.
  *
  * TWO ANSWERS THAT LOOK ALIKE AND ARE NOT (@league_lead, 2026-08-29). A successful
  * `GET /api/campaigns` that returns `[]` is an EMPTY LIST — the store is present and
@@ -26,20 +26,27 @@
 import { request } from './request.js';
 import { activeProfile } from './desk-profile.js';
 
-/** The last-resort id, used only when no Campaign API answered AND SETTEI names nothing. */
-const UNNAMED_CAMPAIGN_ID = 'ronin';
+/** The last-resort id, used only when no Campaign API answered AND SETTEI names nothing —
+ *  the same home Campaign the server seeds (src/campaign-config.ts HOME_ID). */
+const UNNAMED_CAMPAIGN_ID = 'home';
 
 /** `{ campaigns, ok, synthesized }` — the last read. `null` until one has happened. */
 let read = null;
 
 const text = (value) => (typeof value === 'string' ? value.trim() : '');
 
-/** One record as the client uses it; anything the server did not say is ''. */
+const bucket = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
+
+/** One record as the client uses it; anything the server did not say is '' or {}. The
+ *  Campaign's own desk settings and its typed config ride along — the Desk profile and
+ *  Agent defaults surfaces read them; a synthesized record has neither. */
 const shape = (row) => ({
   id: text(row?.id),
   title: text(row?.title) || text(row?.id),
   description: text(row?.description),
   desk_profile: text(row?.desk_profile),
+  desk: bucket(row?.desk),
+  config: bucket(row?.config),
   state: row?.state === 'archived' ? 'archived' : 'active',
 });
 
@@ -67,7 +74,7 @@ async function synthesize() {
   const name = text(campaign?.name);
   return [shape({
     id: deriveId(name),
-    title: name || 'Ronin',
+    title: name || 'Ronin Home',
     description: text(campaign?.description),
     desk_profile: activeProfile()?.name || '',
     state: 'active',
@@ -115,8 +122,6 @@ export const campaignById = (id) => campaigns().find((row) => row.id === id) || 
  * to it. This reads `campaigns()` rather than `visibleCampaigns()` for exactly that reason.
  */
 export const initialCampaignId = () => campaigns()[0]?.id || '';
-export const campaignsFailed = () => !!read && !read.ok;
-export const campaignsMessage = () => read?.message || '';
 /** Did the last read invent its list because no Campaign API answered? */
 export const isSynthesized = () => !!read?.synthesized;
 
@@ -182,15 +187,6 @@ export function normalizeSelection(stored) {
   const primary = ids.includes(wanted) ? wanted : ids[0] || '';
   return { mode, campaign_ids: mode === 'all' ? [] : ids, primary_campaign_id: primary };
 }
-
-/** The ordered ids a normalized selection actually resolves to. */
-export function selectedIds(selection) {
-  const healed = normalizeSelection(selection);
-  return healed.mode === 'all' ? visibleCampaigns().map((row) => row.id) : healed.campaign_ids;
-}
-
-/** The Campaign whose desk_profile paints the combined face, or null. */
-export const primaryCampaign = (selection) => campaignById(normalizeSelection(selection).primary_campaign_id);
 
 /**
  * Which Campaign a record belongs to. An unstamped record — `campaign_id: ''` — reads as

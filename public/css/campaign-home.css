@@ -10,16 +10,17 @@
      The tone mixes are named here too: a color-mix belongs on a token line, never inline. */
   .ch-view {
     --ch-box: 2px;
-    --ch-cup: 0;
     --ch-glyph: 30px;
     --ch-frame-w: 860px;
     --ch-door-h: 208px;
+    --ch-caption-top: 144px;
     display: grid;
     place-items: center;
     min-height: 0;
     height: 100%;
     padding: var(--space-11) var(--space-10);
     overflow: auto;
+    position: relative;
   }
   .ch-frame {
     width: 100%;
@@ -33,9 +34,7 @@
 
   .ch-door {
     --ch-edge-hover: color-mix(in srgb, var(--ch-tone) 45%, var(--line-3));
-    --ch-edge-open: color-mix(in srgb, var(--ch-tone) 60%, transparent);
-    --ch-fill-open: color-mix(in srgb, var(--ch-tone) 8%, var(--panel));
-    --ch-edge-chip: color-mix(in srgb, var(--ch-tone) 55%, transparent);
+    --ch-caption-line: color-mix(in srgb, var(--ch-tone) 28%, var(--line));
     position: relative;
     display: flex;
     flex-direction: column;
@@ -50,6 +49,12 @@
       transform var(--motion-quick) var(--ease),
       box-shadow var(--motion-quick) var(--ease),
       opacity var(--motion-settle) var(--ease);
+    width: 100%;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
   }
   /* the one colour moment, and the door's own tone */
   .ch-door::before {
@@ -62,122 +67,60 @@
   }
   .ch-door[data-door='campaign'] { --ch-tone: var(--accent); }
   .ch-door[data-door='coworks'] { --ch-tone: var(--accent-2); }
-  .ch-door[data-door='agents'] { --ch-tone: var(--ok-2); }
+  .ch-door[data-door='launch'] { --ch-tone: var(--ok-2); }
 
-  .ch-door:not([data-inert]):hover {
+  .ch-door:hover {
     border-color: var(--ch-edge-hover);
     transform: translateY(calc(var(--edge-2) * -1));
     box-shadow: var(--shadow-menu);
   }
-  /* a tray is open on another door: this one is out of reach until it closes */
-  .ch-door[data-inert] { opacity: .3; pointer-events: none; }
-  .ch-door[data-open] {
-    border-color: var(--ch-edge-open);
-    background: var(--ch-fill-open);
-  }
-
-  /* the whole card is the way in; the chip below sits on top of it */
-  .ch-go { text-align: left; padding: 0; border: 0; background: none; cursor: pointer; color: inherit; }
-  .ch-go::after { content: ''; position: absolute; inset: 0; border-radius: var(--ch-box); }
   .ch-glyph { display: block; font-size: var(--ch-glyph); line-height: 1; color: var(--ch-tone); }
-  .ch-go h2 {
-    margin: var(--space-9) 0 0;
+  .ch-door h2 {
+    margin: var(--space-10) 0 0;
     font-size: var(--text-9);
     font-weight: 600;
     line-height: 1.15;
     color: var(--fg-strong);
   }
-  /* WHAT THE DOOR IS, on approach only. The line keeps its space at rest, so the row
-     never reflows and nothing is ever drawn over anything — a reveal, not a bubble. */
+  /* The caption waits at the garden's far edge instead of clinging to the title: the
+     empty middle stays empty, and a quiet path line leads into the words on approach. */
   .ch-is {
-    margin: var(--space-3) 0 0;
-    font-size: var(--text-4);
+    position: absolute;
+    top: var(--ch-caption-top);
+    right: var(--space-9);
+    left: var(--space-9);
+    margin: 0;
+    padding-top: var(--space-4);
+    border-top: var(--edge) solid var(--ch-caption-line);
+    font-size: var(--text-6);
     line-height: 1.4;
     color: var(--muted-2);
     opacity: 0;
-    transform: translateY(calc(var(--space-2) * -1));
+    transform: translateY(var(--space-2));
     transition: opacity var(--motion-settle) var(--ease), transform var(--motion-settle) var(--ease);
   }
-  .ch-door:not([data-inert]):hover .ch-is,
-  .ch-door:not([data-inert]):focus-within .ch-is {
+  .ch-door:hover .ch-is,
+  .ch-door:focus-visible .ch-is {
     opacity: 1;
     transform: none;
     transition-delay: var(--motion-quick);
   }
 
-  /* the loaded default, and the one control that changes it */
-  .ch-chip {
-    position: relative;
-    z-index: 1;
-    margin-top: auto;
-    display: inline-flex;
+  .ch-release {
+    position: absolute;
+    right: var(--space-8);
+    bottom: var(--space-7);
+    display: flex;
     align-items: center;
     gap: var(--space-4);
-    max-width: 100%;
-    padding: var(--space-3) var(--space-5);
-    border: var(--edge) solid var(--line);
-    border-radius: var(--ch-cup);
-    background: transparent;
-    cursor: pointer;
-    transition: border-color var(--motion-quick) var(--ease), background var(--motion-quick) var(--ease);
+    color: var(--dim);
+    font-size: var(--text-2);
   }
-  .ch-chip:hover,
-  .ch-door[data-open] .ch-chip {
-    border-color: var(--ch-edge-chip);
-    background: var(--well);
-  }
-  .ch-chip b {
-    font-size: var(--text-4);
-    font-weight: 600;
-    line-height: 1.2;
-    color: var(--ch-tone);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .ch-chip i { font-style: normal; font-size: var(--text-1); line-height: 1; color: var(--muted); }
-  .ch-chip:hover i { color: var(--fg-strong); }
-
-  /* ── the tray: whichever door is open fills it ── */
-  .ch-tray {
-    --ch-fill-on: color-mix(in srgb, var(--ch-tone) 16%, var(--panel));
-    --ch-fill-manage: color-mix(in srgb, var(--ch-tone) 8%, transparent);
-    display: block;
-    padding: 0;
-    border: var(--edge) solid var(--line-2);
-    border-radius: var(--ch-box);
-    background: var(--bg-2);
-  }
-  .ch-tray[hidden] { display: none; }
-  .ch-tray[data-for='campaign'] { --ch-tone: var(--accent); }
-  .ch-tray[data-for='coworks'] { --ch-tone: var(--accent-2); }
-  .ch-tray[data-for='agents'] { --ch-tone: var(--ok-2); }
-
-  .ch-menu-row {
-    display: grid;
-    grid-template-columns: var(--space-11) minmax(0, 1fr) auto;
-    align-items: center;
-    border-bottom: var(--edge) solid var(--line);
-  }
-  .ch-menu-row:hover { background: var(--raise); }
-  .ch-menu-star, .ch-menu-name, .ch-menu-action, .ch-menu-foot {
-    appearance: none;
-    border: 0;
-    background: transparent;
-    color: var(--muted-2);
-    font: inherit;
-    cursor: pointer;
-  }
-  .ch-menu-star { padding: var(--space-6) 0 var(--space-6) var(--space-5); color: var(--dim); font-size: var(--text-5); text-align: left; }
-  .ch-menu-star[data-on='true'], .ch-menu-star:hover { color: var(--accent); }
-  .ch-menu-name { min-width: 0; padding: var(--space-6) var(--space-3); text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .ch-menu-row:hover .ch-menu-name, .ch-menu-row[data-loaded='true'] .ch-menu-name { color: var(--fg-strong); }
-  .ch-menu-row[data-loaded='true'] .ch-menu-name { font-weight: 600; }
-  .ch-menu-action { padding: var(--space-6) var(--space-7); color: var(--dim); font-size: var(--text-3); white-space: nowrap; }
-  .ch-menu-action:hover { color: var(--ch-tone); }
-  .ch-menu-foot { display: block; width: 100%; padding: var(--space-6) var(--space-7); background: var(--well); text-align: left; font-weight: 600; }
-  .ch-menu-foot:hover { color: var(--fg-strong); background: var(--raise); }
-  .ch-empty { margin: 0; padding: var(--space-6) var(--space-7); font-size: var(--text-3); color: var(--muted); }
+  .ch-update { padding: 0; border: 0; background: transparent; color: var(--muted); font: inherit; cursor: pointer; }
+  .ch-update:hover, .ch-update:focus-visible { color: var(--fg-strong); }
+  .ch-update:disabled { cursor: wait; color: var(--dim); }
+  .ch-update-answer[data-state='failed'] { color: var(--bad); }
+  .ch-update-answer[data-state='available'] { color: var(--accent); }
 
   /* ── CAMPAIGN MANAGE — the same bedrock as the Cowork space, Campaign-level surfaces.
      Geometry only: the workbench, the selector column and the two workspaces. Everything
@@ -207,6 +150,7 @@
     font-size: var(--text-4);
   }
   .cv-input:focus { border-color: var(--accent); outline: none; }
+  .cv-input[readonly] { color: var(--muted); background: var(--bg-2); cursor: default; }
   .cv-cards { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-5); }
   .cv-actions { display: flex; justify-content: flex-end; gap: var(--space-4); }
   .cv-button {
@@ -221,4 +165,35 @@
   .cv-button[data-primary='true'] { border-color: var(--accent); color: var(--accent); }
   .cv-button:hover { border-color: var(--accent); color: var(--fg-strong); }
   .cv-empty { margin: 0; padding: var(--space-5); font-size: var(--text-3); color: var(--muted); }
+  .cv-note { margin: 0; font-size: var(--text-3); line-height: 1.5; color: var(--muted); }
+  .cv-eyebrow { font-size: var(--text-2); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .cv-body > .cv-cards { padding: 0; }
+  /* Agent defaults: one row per provider — the name, its models, the default radio. */
+  .cv-table { width: 100%; border-collapse: collapse; font-size: var(--text-3); }
+  .cv-table th { text-align: left; padding: var(--space-2) var(--space-3); color: var(--muted); font-weight: 600; border-bottom: var(--edge) solid var(--line); }
+  .cv-table td { padding: var(--space-3); vertical-align: middle; border-bottom: var(--edge) solid var(--line); }
+  .cv-table td b { color: var(--fg-strong); font-weight: 600; }
+  .cv-table .cv-input { width: 100%; }
+  .cv-from { display: block; margin-top: var(--space-1); font-size: var(--text-2); color: var(--muted); }
+  /* Desk profile: presets as pills with one Apply; each component a choice with its explanation beside it. */
+  .cv-presets { display: flex; flex-direction: column; gap: var(--space-3); padding-bottom: var(--space-5); border-bottom: var(--edge) solid var(--line); }
+  .cv-pills { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+  .cv-pill {
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    border: var(--edge) solid var(--line-2); border-radius: var(--radius-md);
+    background: transparent; color: var(--muted-2); font: inherit; font-size: var(--text-3); cursor: pointer;
+  }
+  .cv-pill:hover { border-color: var(--line-3); color: var(--fg-strong); }
+  .cv-pill[aria-pressed='true'] { border-color: var(--accent); background: var(--raise); color: var(--fg-strong); }
+  .cv-pill:disabled { cursor: default; opacity: .6; }
+  .cv-pill-tag { font-size: var(--text-1); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .cv-choice { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--space-6); align-items: start; padding: var(--space-3) 0; border-bottom: var(--edge) solid var(--line); }
+  .cv-choice-pick { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+  .cv-choice-name { font-weight: 600; color: var(--fg-strong); }
+  .cv-choice-why { margin: 0; font-size: var(--text-3); line-height: 1.5; color: var(--muted); }
+  /* Routines: a switch, or the state where there is no switch yet. */
+  .cv-switch { display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--text-3); color: var(--fg-strong); cursor: pointer; }
+  .cv-switch input { accent-color: var(--accent); }
+  .cv-state { font-size: var(--text-3); color: var(--muted); }
 }

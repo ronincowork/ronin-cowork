@@ -39,8 +39,13 @@ const {
   campaignFilter,
   campaignResolver,
   initialCampaignId,
+  machineCampaignId,
   migrateCampaignScope,
 } = await import('../src/campaign-scope.js');
+
+// Every test sees the same fresh-install invariant: the compatibility target exists and
+// is `home`. Individual tests must not depend on an earlier test having seeded it.
+await ensureInitialCampaign();
 
 test('a legacy roster written before Campaigns is re-homed, not lost or renamed', async () => {
   // Exactly the shape on disk today: flat in the store root, no campaign_id line.
@@ -78,6 +83,10 @@ test("an unmarked record reads as the initial Campaign, and that is the only pla
   assert.equal(resolve('health'), 'health', 'an explicit id is never rewritten');
 });
 
+test('the running machine exposes its one initial Campaign', async () => {
+  assert.equal(await machineCampaignId(), await initialCampaignId());
+});
+
 test('a filter naming no Campaign means every Campaign', async () => {
   const all = await campaignFilter([]);
   assert.equal(all(''), true);
@@ -93,16 +102,16 @@ test('an unmarked record still answers the filter for the initial Campaign', asy
 
 test('two Campaigns hold a Cowork of the same name, on two different boards', async () => {
   await createCampaign({ id: 'health', title: 'Health' });
-  await createCampaign({ id: 'home', title: 'Home' });
+  await createCampaign({ id: 'personal', title: 'Personal' });
 
   const a = await createTeamRoster('dev', { objective: 'health dev' }, 'health');
-  const b = await createTeamRoster('dev', { objective: 'home dev' }, 'home');
+  const b = await createTeamRoster('dev', { objective: 'personal dev' }, 'personal');
 
   assert.equal(a.campaign_id, 'health');
-  assert.equal(b.campaign_id, 'home');
+  assert.equal(b.campaign_id, 'personal');
   assert.notEqual(a.wipeboard, b.wipeboard, 'the second Cowork was allocated a free board token');
   assert.equal(a.wipeboard, 'dev', 'the first keeps the plain token');
-  assert.equal(b.wipeboard, 'home-dev', 'the second is qualified by its Campaign');
+  assert.equal(b.wipeboard, 'personal-dev', 'the second is qualified by its Campaign');
 });
 
 test('a Project root may only be referenced from its own Campaign', async () => {

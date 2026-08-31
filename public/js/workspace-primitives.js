@@ -86,6 +86,8 @@ function createAction(options = {}) {
   el.type = 'button';
   if (options.title) el.title = options.title;
   if (options.kind) el.dataset.kind = options.kind;
+  if (options.size) el.dataset.size = options.size;
+  if (options.selected != null) el.setAttribute('aria-pressed', String(!!options.selected));
   el.disabled = !!options.disabled;
   if (options.action) el.addEventListener('click', options.action);
   return { el, setDisabled: (on = true) => { el.disabled = !!on; } };

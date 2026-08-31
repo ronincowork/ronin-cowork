@@ -60,6 +60,47 @@ export interface CommandRequest {
 
 const offer = (names: string[]): string => names.join(', ') || 'nothing yet (see ⚙ Configuration)';
 
+/** Where a merged session default came from — the Campaign's own answer, or ⚙'s. */
+export interface MergedSessionsDefaults {
+  sessions: SessionsDefaults;
+  /** True when `sessions.default` is the Campaign's own pair, not ⚙'s. */
+  defaultOwn: boolean;
+  /** True when this provider's preferred model is the Campaign's own, not ⚙'s. */
+  providerOwn: (provider: string) => boolean;
+}
+
+const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '');
+const bucket = (v: unknown): Record<string, unknown> =>
+  v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+
+/**
+ * THE SUBSET RULE (CAMPAIGN_WORKBENCH, leg 4): a Campaign's `config.agent_defaults` is the
+ * same shape as ⚙'s `agents.sessions` — `{ default: { provider, model }, by_provider }` —
+ * and answers only where it has an answer. Its `default` counts when it names BOTH halves
+ * (a half-pair is no launch); a `by_provider` row counts when it names a model. Everything
+ * else falls through to ⚙, so ⚙ stays the machine answer and the Campaign is a door in
+ * front of it. The client draws exactly this merge (`campaign-defaults.js`,
+ * `effectiveDefaults`); the two must never disagree.
+ */
+export function mergeSessionDefaults(house: SessionsDefaults | undefined, campaign: unknown): MergedSessionsDefaults {
+  const mine = bucket(campaign);
+  const myDefault = bucket(mine.default);
+  const provider = str(myDefault.provider);
+  const model = str(myDefault.model);
+  const defaultOwn = !!(provider && model);
+  const myRows = bucket(mine.by_provider);
+  const by_provider: Record<string, string | null> = { ...(house?.by_provider ?? {}) };
+  const own = new Set<string>();
+  for (const [p, m] of Object.entries(myRows)) {
+    if (str(m)) { by_provider[p] = str(m); own.add(p); }
+  }
+  return {
+    sessions: { default: defaultOwn ? { provider, model } : house?.default, by_provider },
+    defaultOwn,
+    providerOwn: (p) => own.has(p),
+  };
+}
+
 /** Resolve one launch's command, or refuse naming what this box offers. */
 export function resolveLaunchCommand(req: CommandRequest): { cmd: string; source: CommandSource } {
   const { agent, cmd, model, provider, specs } = req;

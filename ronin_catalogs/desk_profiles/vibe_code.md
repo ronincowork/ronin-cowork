@@ -6,7 +6,7 @@ condensed to what the agent did, not every line it printed.
 - **label:** Vibe code
 - **blurb:** The lobby — campaigns, squads, loadouts; the tile shows what happened, not every line.
 - **order:** 30
-- **skin:** soft
+- **skin:** stock
 - **theme:** dark
 - **lexicon:** vibe_code_en
 - **campaign_kind:** coding

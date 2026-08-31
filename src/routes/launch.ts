@@ -227,7 +227,9 @@ export function registerLaunch(app: express.Express): void {
       await seedTegami(
         resolved.name,
         resolved.session_role,
-        await checkoutAt(resolved.dir),
+        resolved.assignment?.desks.length
+          ? resolved.assignment.desks.map((d) => ({ repo: d.repo, branch: d.branch, worktree: d.worktree, line: d.line }))
+          : await checkoutAt(resolved.dir),
         await deriveTeams(resolved.tags),
       );
       // THE BIRTH BASELINE for the task observer: this task's reading is already in the

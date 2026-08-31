@@ -55,83 +55,85 @@
 - **label:** Stock
 - **blurb:** Ronin as shipped — the dense operational look the palette was tuned for.
 
+## paper
+- **label:** Paper
+- **blurb:** The household. A serif, warm paper under the light, coffee under the dark — the words read like a book, not a console.
+- **--font-ui:** "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif
+- **--radius-md:** 2px
+- **--radius-lg:** 4px
+- **light--bg:** #f6f1e7
+- **light--bg-2:** #efe8db
+- **light--panel:** #fffcf6
+- **light--raise:** #f3ece0
+- **light--well:** #fbf7ef
+- **light--line:** #e5dccb
+- **light--line-2:** #ddd2bd
+- **light--line-3:** #c3b499
+- **light--fg-strong:** #2d2721
+- **light--fg:** #4a4038
+- **light--muted:** #7d7264
+- **light--muted-2:** #635a4e
+- **light--dim:** #b3a793
+- **light--kaki:** #b5622f
+- **light--aiiro:** #5c7d6a
+- **dark--bg:** #0d0b09
+- **dark--bg-2:** #14110d
+- **dark--panel:** #1a1611
+- **dark--raise:** #221d16
+- **dark--well:** #100d0a
+- **dark--line:** #2a241c
+- **dark--line-2:** #372f24
+- **dark--line-3:** #4d4334
+- **dark--fg-strong:** #efe6d6
+- **dark--fg:** #d6cbb8
+- **dark--muted:** #8c7f6c
+- **dark--muted-2:** #b0a28c
+- **dark--dim:** #5a5044
+- **dark--kaki:** #d3804f
+- **dark--aiiro:** #8fb39d
+
 ## square
 - **label:** Square
-- **blurb:** Every corner squared. The pro-tool look, no rounding anywhere.
-- **--radius-hair:** 0
+- **blurb:** The lobby. Near-black, bright cyan and magenta, every corner cut square — the gamer one, goofy on purpose.
 - **--radius-xs:** 0
 - **--radius-sm:** 0
 - **--radius-md:** 0
 - **--radius-lg:** 0
 - **--radius-xl:** 0
-
-## soft
-- **label:** Soft
-- **blurb:** Rounder than stock, everywhere. Reads friendlier; costs nothing else.
-- **--radius-xs:** 6px
-- **--radius-sm:** 10px
-- **--radius-md:** 14px
-- **--radius-lg:** 18px
-- **--radius-xl:** 22px
-
-## tight
-- **label:** Tight
-- **blurb:** The space ladder pulled in a step. More on screen, less air around it.
-- **--space-1:** 1px
-- **--space-2:** 3px
-- **--space-3:** 4px
-- **--space-4:** 6px
-- **--space-5:** 8px
-- **--space-6:** 10px
-- **--space-7:** 12px
-- **--space-8:** 14px
-
-## roomy
-- **label:** Roomy
-- **blurb:** The space ladder let out a step, and type up one. Easier on a big screen.
-- **--space-3:** 8px
-- **--space-4:** 10px
-- **--space-5:** 12px
-- **--space-6:** 16px
-- **--space-7:** 18px
-- **--space-8:** 20px
-- **--text-2:** 12px
-- **--text-3:** 13px
-- **--text-4:** 14px
-
-## paper
-- **label:** Paper
-- **blurb:** A warmer ground in both shells — cream under the light, coffee under the dark.
-- **dark--bg:** #0d0b09
-- **dark--bg-2:** #14110d
-- **dark--panel:** #1a1611
-- **dark--well:** #100d0a
-- **light--bg:** #f6f1e6
-- **light--bg-2:** #ece5d6
-- **light--panel:** #fffdf8
-- **light--well:** #faf6ec
+- **dark--bg:** #07090f
+- **dark--bg-2:** #0c111c
+- **dark--panel:** #111827
+- **dark--raise:** #16203a
+- **dark--well:** #050810
+- **dark--line:** #1a2438
+- **dark--line-2:** #23324d
+- **dark--line-3:** #35476b
+- **dark--fg-strong:** #eaf4ff
+- **dark--fg:** #c4d4e8
+- **dark--muted:** #6b7f9e
+- **dark--muted-2:** #8fa5c4
+- **dark--dim:** #3d4d68
+- **dark--kaki:** #3ee6ff
+- **dark--aiiro:** #ff3ea5
+- **light--bg:** #eef3ff
+- **light--bg-2:** #e2eafb
+- **light--panel:** #ffffff
+- **light--raise:** #f3f7ff
+- **light--well:** #f7f9ff
+- **light--line:** #cfdaf2
+- **light--line-2:** #b7c6ea
+- **light--line-3:** #8fa4d6
+- **light--fg-strong:** #0b1430
+- **light--fg:** #2a3757
+- **light--muted:** #5e6f96
+- **light--muted-2:** #43537a
+- **light--dim:** #a9b6d6
+- **light--kaki:** #0891b2
+- **light--aiiro:** #db2777
 
 ## mono
 - **label:** All mono
-- **blurb:** The shell speaks in the terminal's own face. Everything reads as one machine.
+- **blurb:** The shell speaks in the terminal's own face, corners squared. Everything reads as one machine.
 - **--font-ui:** Menlo, 'DejaVu Sans Mono', Consolas, monospace
-
----
-
-Notes, not entries.
-
-**Why there is no `hidden: yes` on `stock`.** It is the no-op skin — the one that names no
-tokens — and removing it would leave no way back to the shipped look from the picker.
-Shadow it if you want a different default; do not delete it.
-
-**Why `paper` names surfaces and not text.** A skin can say anything, and the contrast
-floor in `scripts/check-css.mjs` only measures the SHIPPED tokens — it cannot follow a skin
-that has not been written yet. So the shipped colour skin moves grounds and leaves the ink
-alone, which is the change that cannot make anything unreadable. A skin of your own can do
-as it likes; just know that nothing is checking it for you.
-
-**Adding one.** Copy a block, rename the heading, and name any token from `@layer
-foundations`: `--radius-*`, `--space-*`, `--text-*`, `--font-ui/mono/term`, `--edge*`,
-`--motion-*`, and the colour roles. `docs/ui.md` lists them all with what each
-governs. A token you spell wrong is simply ignored — a skin cannot break the app, only fail
-to change it.
+- **--radius-md:** 0
+- **--radius-lg:** 0

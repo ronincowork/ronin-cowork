@@ -8,6 +8,8 @@
   .wk-action { min-height: 2.25rem; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); color: var(--fg); padding: var(--space-3) var(--space-5); font: inherit; cursor: pointer; }
   .wk-action[data-kind='primary'] { border-color: var(--kaki); background: var(--kaki); color: var(--on-strong); }
   .wk-action[data-kind='danger'] { border-color: var(--bad); color: var(--bad-soft); }
+  .wk-action[data-size='compact'] { min-height: var(--space-11); padding: var(--space-2) var(--space-4); font-size: var(--text-3); }
+  .wk-action[aria-pressed='true'] { border-color: var(--kaki); background: var(--raise); color: var(--kaki); }
   .wk-action:disabled { opacity: .5; cursor: default; }
   .wk-metadata { display: grid; grid-template-columns: minmax(7rem, auto) minmax(0, 1fr); gap: var(--space-3) var(--space-5); margin: 0; }
   .wk-metadata-key { color: var(--muted); }
@@ -42,6 +44,12 @@
   .wk-workbench-selector { display: flex; min-width: 0; min-height: 0; }
   .wk-workbench-selector > * { flex: 1 1 auto; min-width: 0; min-height: 0; }
   .wk-workbench-selector-cards { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); overflow-y: auto; }
+  /* Team agent cards are a short work reading, not a bag of badges. Each fact owns a
+     line: current coordinate, the agent's words, model, then live status and context. */
+  .team-agent-card .wk-card-summary { color: var(--fg-strong); font-weight: 600; }
+  .team-agent-card .wk-card-meta { display: grid; gap: var(--space-2); margin-top: 0; padding-top: var(--space-3); }
+  .team-agent-card .wk-card-meta > span { display: block; min-width: 0; overflow-wrap: anywhere; }
+  .team-agent-card .wk-card-meta > span:first-child { color: var(--fg); font-size: var(--text-3); line-height: 1.45; }
   /* Splitters sit on the measured right edge of each visible column (inline `left`,
      written by the frame) and are centred on it by the negative margin. */
   .wk-workbench-splitter { position: absolute; top: 0; bottom: 0; width: .625rem; margin-left: -.3125rem; cursor: col-resize; touch-action: none; z-index: 2; }

@@ -121,8 +121,8 @@ read-only.
 
 Shared seams touched for Team, by authorization: `public/js/terminal-tile-host.js`
 (`actions` ride the Tile head), `workspace-primitives.js` (`createChannelSurface({
-actions })`, `current()`), `tilejob.js` (the job pick, split from `tile.js` at its
-ceiling; carries the 人 toggle), `events.js` (`teamPageHandlers`).
+actions })`, `current()`), and `events.js` (`teamPageHandlers`). Team leadership is
+managed from the roster; the terminal head does not edit the session's role.
 
 ## Workspace Kit contract
 
@@ -182,7 +182,7 @@ from what the tab remembered.
 - **Docs** — the Commons' own mdedit pane (`buildDocs`), narrowed to the roster's members;
   a draft `commons:docs:<path>` opens a file here.
 - **Team Configuration** — a compact editor for the durable `team_roster`: its stable
-  Cowork name, readable title, purpose, role and launch defaults. Membership remains on
+  Cowork ID as a reading, plus editable readable title, purpose and launch defaults. Membership remains on
   Agents and is deliberately absent from this form.
 
 The tab strip carries **T** at its right end through `createChannelSurface({ actions })`.
@@ -213,9 +213,9 @@ The designated integrator runs one BYOIN mode on the release candidate; a SKIP i
 ## Known limits
 
 - `＋ Add team member` is intentionally inert.
-- Team Configuration edits roster metadata and can rename the Cowork; a rename carries
-  live Agent membership and lead pointers to the new stable name. Membership itself is
-  still edited from roster drag/drop, never stored on the roster.
+- Team Configuration edits roster metadata but never the Cowork ID; that stable address
+  is pinned by live Agent membership and lead pointers. Membership itself is still edited
+  from roster drag/drop, never stored on the roster.
 - Chat is intentionally empty.
 - No cherry-pick/summary reading on the cards: no service puts such a field on the
   `/api/home` row.

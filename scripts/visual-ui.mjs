@@ -71,11 +71,11 @@ async function fingerprint(page, entries) {
 // THE ROOT ARRIVAL IS THE CAMPAIGN HOME (2026-08-29): three doors in a frame over a
 // tray. The sessions home it replaced (.home-tabs, .home-maxrow, a tile head) is gone
 // from this route by design, so its selectors are gone from here. On the home every bar
-// control but the brand is hidden (campaign-home.css) — #shapecycle and #sysbtn are
-// pinned at their hidden box precisely so their reappearance would show.
+// control but the brand is hidden (campaign-home.css) — #shapecycle is pinned at its
+// hidden box precisely so its reappearance would show.
 const DESKTOP = [
-  '#bar', '#brandbtn', '#shapecycle', '#sysbtn',
-  '.ch-frame', '.ch-doors', '.ch-door', '.ch-tray',
+  '#bar', '#brandbtn', '#shapecycle',
+  '.ch-frame', '.ch-doors', '.ch-door', '.ch-release',
 ];
 // NOT the session picker: its flex width follows the live session names — content,
 // not chrome, and a baseline on content is a baseline that cries wolf.

@@ -2,7 +2,7 @@
 /**
  * THE TILE — one cell of the coworkspace, and nothing more.
  *
- * A tile is a header (session picker, dials, chip, buttons), a mount point, and the
+ * A tile is a header (session name, dials, chip, buttons), a mount point, and the
  * commons panel that overlays it when no session is showing. It COMPOSES one of two
  * views and never owns the machinery of either:
  *
@@ -20,24 +20,29 @@
  * nineteen lines early — threw in this constructor and took the whole UI down on
  * 2026-08-08. Views mount in DOM order: tape, then the commons panel, then xterm.
  */
-import { fetchSessions, renameSession } from './api.js';
+import { fetchSessions, setSessionTitle } from './api.js';
 import { request } from './request.js';
 import { toast } from './ui.js';
 import { retireSession } from './session-retire.js';
-import { IS_TOUCH, NEW, S, saveState, serviceMissing, tiles } from './state.js';
+import { IS_TOUCH, S, saveState, serviceMissing, tiles } from './state.js';
 import { guard } from './errors.js';
 import { buildLadder } from './shingo.js';
 import { buildTileHead, syncTileHead } from './tilehead.js';
 import { installTextDrops } from './tiledroptext.js';
-import { pickJobFor } from './tilejob.js';
 import { dvrStep } from './dvr.js';
 import { TapeView } from './tapeview.js';
 import { TermView } from './termview.js';
 import { TileWire } from './tilewire.js';
 import { buildComposer } from './composer.js';
 import { refreshKaki, setKakiPolicy } from './output.js';
-import { refreshDesks } from './desks.js';
+import { desksOf, refreshDesks } from './desks.js';
 import { t } from './lexicon.js';
+
+const readableSession = (name) => {
+  const live = S.sessions.find((row) => row.name === name);
+  return live?.title || String(name || '').split(/[_-]+/).filter(Boolean)
+    .map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' ');
+};
 
 export class Tile {
   constructor(index) {
@@ -52,7 +57,7 @@ export class Tile {
     this.output = S.streamOff ? 'locked' : (S.output || (S.locked ? 'locked' : 'terminal_mirror'));
     this.locked = this.output === 'locked';
 
-    // The header — the picker, the dials, the chip, the buttons. Construction only;
+    // The header — the session name, the dials, the chip, the buttons. Construction only;
     // every callback in it lands back here.
     // Every control the table declared, under the name the table gave it. Held as
     // references rather than re-queried: on touch these nodes are RELOCATED into the app
@@ -127,58 +132,39 @@ export class Tile {
     // tmux — exactly as the mirror always had it, untouched.
     // Tape-fed: the transcript is a plain scrollable div and the browser scrolls it.
     // Marking a tile active on header focus, without stealing keyboard focus —
-    // otherwise iOS closes the <select> picker the instant it opens.
+    // without stealing keyboard focus from controls in the head.
     this.el.addEventListener('focusin', (e) => {
       this.activate();
       // `this.home` (the tile commons) retired on 2026-08-28 with the grid page; a click in
       // the body threw on it for a few hours and took the terminal's focus with it.
       if (!IS_TOUCH && this.body.contains(e.target)) this.term.focus();
     });
-    this.select.addEventListener('pointerdown', () => this.activate());
-    this.select.addEventListener('change', () => this.onSelect());
     this.syncOutput();
 
     this.ro = new ResizeObserver(() => this.doFit());
     this.ro.observe(this.body);
 
-    this.refreshOptions();
+    this.refreshSessionName();
   }
 
   async rename() {
     if (!this.session) return;
-    const before = this.session;
-    const wanted = window.prompt(t('head.rename_prompt', 'Rename session'), before);
-    if (wanted == null || wanted.trim() === before) return;
+    const session = this.session;
+    const current = S.sessions.find((row) => row.name === session)?.title || readableSession(session);
+    const wanted = window.prompt(t('head.rename_prompt', 'Edit Agent title'), current);
+    if (wanted == null || wanted.trim() === current) return;
     try {
-      const next = await renameSession(before, wanted.trim());
+      await setSessionTitle(session, wanted.trim());
       await fetchSessions();
-      if (S.onSessionRenamed) S.onSessionRenamed(before, next);
-      else this.connect(next);
+      this.refreshSessionName();
     } catch (e) {
       toast(t('head.rename_failed', 'Could not rename session: {reason}', { reason: e.message }), false);
     }
   }
 
-  refreshOptions() {
-    const cur = this.session;
-    this.select.innerHTML = '';
-    this.select.add(new Option(t('tile.pick_session', '— pick session —'), ''));
-    for (const s of S.sessions) {
-      // NO MARK IN THE PICKER. It was prefixed here too, and the collapsed <select> then
-      // showed the current session's icon immediately beside the job button showing the
-      // same icon — the same fact twice, an inch apart. The button is the one that keeps
-      // it: it is pressable, it carries the name in its tooltip, and it says `?` when
-      // nobody has said. Surveying every session's job is the ⌂ Roster's work, and the
-      // roster draws them all.
-      const label = `${s.name}${s.attached ? ' •' : ''}`;
-      this.select.add(new Option(label, s.name));
-    }
-    // keep a stale-but-connected session visible even if it left the list
-    if (cur && !S.sessions.some((s) => s.name === cur)) {
-      this.select.add(new Option(t('tile.gone', '{name}  (gone?)', { name: cur }), cur));
-    }
-    this.select.add(new Option(t('tile.new_session', '➕ new session…'), NEW));
-    this.select.value = cur || '';
+  refreshSessionName() {
+    this.sessionName.textContent = readableSession(this.session);
+    this.sessionName.title = this.session || '';
     this.syncHeader();
     this.refreshCtx();
     this.refreshTegami();
@@ -210,7 +196,6 @@ export class Tile {
     // The letter is MICHI's. No michi = no /tegami routes at all, so don't fetch into
     // a 404 — the chip simply never shows, same as a session with no letter.
     if (!session || serviceMissing('michi')) {
-      this.chip.set(null);
       this.closeLadder();
       syncTileHead(this);
       return;
@@ -220,7 +205,6 @@ export class Tile {
     // A failed read keeps the last chip rather than blanking it — the poll heals it.
     if (r.kind === 'network') return;
     this.tegami = r.ok ? r.data : null;
-    this.chip.set(this.tegami);
     // 📄 reads its count off the letter (2026-08-18) and this is the only place the letter
     // changes. Measured without it: switch a tile from a session with docs to one with none
     // and 📄 stayed lit, claiming the previous session's docs until the roster poll redrew.
@@ -252,7 +236,8 @@ export class Tile {
   closeLadder() {
     this.ladderOpen = false;
     this.el.querySelector('.shingo-ladder')?.remove();
-    this.chip.el.classList.remove('open');
+    this.workRecordBtn.classList.remove('open');
+    this.workRecordBtn.setAttribute('aria-expanded', 'false');
   }
 
   /**
@@ -278,9 +263,10 @@ export class Tile {
   /** Unroll the ladder under the header — same data as the chip, at full zoom. */
   drawLadder() {
     this.el.querySelector('.shingo-ladder')?.remove();
-    const box = buildLadder(this.tegami);
+    const box = buildLadder(this.tegami, desksOf(this.session));
     this.el.querySelector('.tile-head').after(box);
-    this.chip.el.classList.add('open');
+    this.workRecordBtn.classList.add('open');
+    this.workRecordBtn.setAttribute('aria-expanded', 'true');
     // Open ON the rung you are standing on. A long ladder scrolls, and opening it at
     // rung 1 hides the one thing you opened it for — the band, and any gate near it.
     const now = box.querySelector('.sl-row.now');
@@ -322,8 +308,6 @@ export class Tile {
    * The list is updated locally before the ws poll gets there, so the mark moves under
    * your finger; the poll then confirms it, and would correct it if the write lost a race.
    */
-  pickJob(anchor) { pickJobFor(this, anchor); }
-
   openNote() {
     if (S.notePanel) S.notePanel.open(this.session);
   }
@@ -345,20 +329,6 @@ export class Tile {
   syncHeader() {
     this.refreshControl(); // async: the dial's position is the server's truth
     syncTileHead(this);
-  }
-
-  async onSelect() {
-    const v = this.select.value;
-    if (v === NEW) {
-      this.select.value = this.session || '';
-      S.showNewSession?.();
-      return;
-    }
-    if (!v) {
-      this.detach();
-      return;
-    }
-    this.connect(v);
   }
 
   /** Mark this tile active (visual highlight + keystroke target) without grabbing keyboard focus. */
@@ -531,11 +501,10 @@ export class Tile {
     this.tape.setAltNote(false);
     this.wire.close();
     this.session = null;
-    this.select.value = '';
+    this.sessionName.textContent = '';
     this.syncHeader();
     this.gauge.set(null);
     this.tegami = null;
-    this.chip.set(null);
     this.closeLadder();
     this.setDot('off');
     this.term.reset();
@@ -554,11 +523,8 @@ export class Tile {
 
   connect(session) {
     this.session = session;
-    // make sure the option exists & is selected
-    if (![...this.select.options].some((o) => o.value === session)) {
-      this.select.add(new Option(session, session), this.select.options.length - 1);
-    }
-    this.select.value = session;
+    this.sessionName.textContent = readableSession(session);
+    this.sessionName.title = session;
     this.syncHeader();
     this.refreshCtx();
     this.refreshTegami();

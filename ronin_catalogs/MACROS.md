@@ -89,13 +89,13 @@ from Ronin's target picker in that case, or pass it as a macro arg.
 ## updateplan
 - **class:** session_macro.workflow
 - **label:** Ask it to update its plan
-- **blurb:** Ronin types one line into the session asking the agent to bring its ladder up to date, so the steps shown under the tile header match what it has actually done. Nothing else happens — it fixes the list and carries on with what it was doing, without reporting back to you.
+- **blurb:** Ronin types one line into the session asking the agent to update its work record, so the progress shown under the tile header matches what it has actually done. Nothing else happens — it fixes the record and carries on with what it was doing, without reporting back to you.
 Ask this session to bring its TEGAMI up to date. **Ronin sends this one for you** —
 the button does not prefill it, it types the line below and presses Enter, so the
-session updates its ladder without you writing anything. Nothing else happens: the
+session updates its work record without you writing anything. Nothing else happens: the
 agent rewrites its own letter and carries on with what it was doing.
 
-Send: Update your TEGAMI now — read it, bring the ladder in line with what you have actually done since you last wrote it, and write it back with write_tegami. Do not report to me about it; just update it and carry on with what you were doing.
+Send: Update your work record now — read it, bring it in line with what you have actually done since you last wrote it, and write it back with write_tegami. Do not report to me about it; just update it and carry on with what you were doing.
 
 | # | Action | With |
 |---|---|---|

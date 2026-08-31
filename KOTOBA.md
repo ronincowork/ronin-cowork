@@ -234,6 +234,14 @@ is a gap in the machinery, not a reason to reach for the word. See § NUANCE.
 | **script** | system_scope | **the genus: any executable in the repo, wherever it lives** — `bin/`, `scripts/`, `hostside/`, `setup.sh` at the root. Most scripts are not tools, and that is normal, not a defect | § SCRIPTS |
 | **compile** | system_scope | `ronin_bin/tejun <macro>` → recipe + actions + tools + the SOPs those actions cite, as one blob; undefined action = exit 3 | `reading-list/TEJUN.md` |
 | **SOP** | system_scope | one standard operating procedure — how a house goes about a DOMAIN (source control, data, deploying, secrets). Stock in `ronin_sops/`, yours in the `sops` store (whole-file shadow). **Fetched by the situation, never by the machinery**: found by name via `docs/SHELVES.md`, which every session is handed at birth. An SOP may cite an action (its `> Tool:` header); **an action may never cite an SOP** — owner, 2026-08-15 | `ronin_sops/README.md` |
+| **routine** | system_scope definition · user_scope selection | **a named, switchable bundle of behaviours delivered together at Agent birth** (owner, 2026-08-30): reading, discoverable SOPs, macros, actions, command tools and MCP connections. A Campaign states defaults; a Team may inherit or explicitly turn one on/off. One resolved answer feeds the unified birth transaction and touches nothing already running. Enabled, installed, connected and applicable are separate facts. An unavailable Routine never blocks birth; its unavailable behaviour simply is not delivered and the receipt says so. **Not a macro**, **not a `ronin_service`**, **not a session_role** | `docs/routines.md` · `ronin_catalogs/routines/` |
+| **routine_floor** | system_scope | **the mandatory machinery that resolves, delivers and records Routines for every `cowork_agent`; not itself a Routine and never a switch** — unified launch, Campaign/Team resolution, universal vocabulary and shelf map, minimum command delivery, Control initialization and the birth receipt. It reaches neither a terminal nor a `bare_metal_agent`. Kept deliberately small: ordinary fork, tell, wipeboard and document behaviours belong to `ronin_base`, not the floor | `docs/routines.md` |
+| **ronin_base** | system_scope definition · user_scope selection | **the default general-purpose Routine** — Ronin's ordinary session macros, documents, work records, Team/session coordination and working method. Normally on in Campaign defaults, but switchable like every Routine. Never a bucket for every pre-Routine SOP | `ronin_catalogs/routines/ronin_base.md` |
+| **ronin_control** | system_scope definition · user_scope selection | **the bundled repository-control Routine** — managed desks, desk reading, hand-in, team promotion, receipts, Git guards and their tools. Independent of `ronin_base`. A repository arrangement says where its worktree behaviour applies; it is not a second Routine switch | `ronin_catalogs/routines/ronin_control.md` · `docs/control-surface.md` |
+| **specialized_routine** | system_scope class | **a Routine serving one optional capability or methodology**, using exactly the same catalog and Campaign → Team cascade as Ronin's own two. Initial stock: Machine, gbrain, Koshi and **Ronin Koe**. Ronin Koe contains Voice and Hotwords together because Hotwords have no independent use without Voice | `docs/routines.md` · `ronin_catalogs/routines/` |
+| **terminal** | session_scope selection | **a named tmux session running a shell and no Agent CLI.** It receives no Cowork Agent birth, floor or Routines | `src/spawn.ts` · `src/routes/launch.ts` |
+| **bare_metal_agent** [planned] | session_scope selection | **a selected Agent CLI started directly in a named tmux session, with no Ronin birth material** — no Campaign/Team resolution, project root or role, brief, shelf reading, Routine resolution, Ronin-added MCP, work record, managed desk or Cowork-birth receipt. Host tmux safety and the session maximum still apply because they govern the machine. Never “all Routines off”: that is a `cowork_agent` and still has the floor | `docs/routines.md` · `src/routes/launch.ts` |
+| **cowork_agent** | session_scope selection | **an Agent born through Ronin Cowork's unified birth transaction** — `routine_floor` always, then the effective Campaign → Team Routine set. The ordinary Agent launch and the default when a surface says Agent. Routines equip it; they do not imply supervision | `docs/routines.md` · `src/routes/launch.ts` |
 | **`library:`** | system_scope | the action key naming a library page — `- **library:** <name>` — which `ronin_bin/tejun` inlines at compile, the user's `library` store winning whole-file, so a redefined page takes effect on the next run. Read `sop:` and resolved against `ronin_sops/` until 2026-08-15, which had the arrow backwards | `ronin_library/README.md` |
 | **step tracker** | system_scope | `ronin_bin/tejun-step` — position in a macro run, held in `@tejun-step` | `docs/tejun-macro-system.md` |
 | **session_macro.lookup** | system_scope | a read-only question Ronin already holds the answer to: `+tag:`/`+group:`, `+wipeboard:`. One command, no compile, no step tracking; sent through Ronin it arrives already resolved. Alias: **lookup macro**, prose only | `ronin_catalogs/MACROS.md` |
@@ -450,14 +458,16 @@ never names the coordinator — that is the 人's job, and the two are separate 
 
 ---
 
-## § LADDER — the window onto what a session is doing
+## § WORK RECORD — the one living account of a session's work
 
-**A ladder is a view**, not a file. It shows the_owner what an agent has done, what it is doing
-now, and what it will do next. It is the readout; the session's TEGAMI holds the record.
+**Work record is the public and agent-facing name for the whole living record.** It shows
+the_owner what an agent has done, what it is doing now, what it knows comes next, the
+Teams and repositories it works through, and the documents it has listed. TEGAMI is the
+internal file; SHINGO is its compact indicator. Neither name reaches a person's face.
 
-**Work goes better with a ladder up first.** Research, cut and verify are much easier to
-follow — for the_owner and for the agent — when there is something to hang them on, even a
-one-rung ladder. A session still talking has none, and that is fine: its readout is its role.
+**Say “update your work record.”** Research, cut and verify are easier to follow when the
+record is current. This one instruction also covers its listed documents: a missing doc
+is fixed by updating the work record, not by teaching a second TEGAMI/ladder vocabulary.
 
 ```
   GATE      approval to proceed
@@ -470,17 +480,18 @@ one-rung ladder. A session still talking has none, and that is fine: its readout
   phase 2 · (legs undetermined — nothing rendered)
 ```
 
-**A gate always has rungs after it.** That is what makes it a gate — it is holding
-something back. A ladder often *begins* with one: the plan is drawn up, the whole thing
+**A gate always has work after it.** That is what makes it a gate — it is holding
+something back. A work record often *begins* with one: the plan is drawn up, the whole thing
 waits on approval, and the go-ahead releases it.
 
-**The honesty rule: an undetermined rung is not rendered.** The ladder does not pad itself
-with guesses. A short ladder means the future genuinely is not known yet, which is more
+**The honesty rule: undetermined work is not rendered.** The work record does not pad itself
+with guesses. A short record means the future genuinely is not known yet, which is more
 useful to the_owner than an invented one.
 
 | Term | Scope | Means | Record |
 |---|---|---|---|
-| **ladder** | system_scope | the window onto a session: rungs behind it, the rung it is on, the rungs it knows are coming | `reading-list/TEGAMI.md` |
+| **work_record** | system_scope | the canonical public and agent-facing name for the whole living session record: current work, progress, Teams, repos and listed documents. Say **update your work record** | `reading-list/TEGAMI.md` |
+| **ladder** | system_scope | compatibility key for the progress array inside the work record. Never taught as a second concept | `reading-list/TEGAMI.md` |
 | **rung** | system_scope | one line on the ladder | `reading-list/TEGAMI.md` |
 | **rung_kind** | system_scope | what a rung *is*: `leg` \| `phase` \| `gate` | `reading-list/TEGAMI.md` |
 | **ladder_state** | system_scope | whether the session is walking its ladder at all: `on track` \| `on tangent`. Absent means on track. **Not** `on hold` — waiting on a person is a `gate` rung | `src/services/michi/tegami.ts` |
@@ -492,7 +503,7 @@ useful to the_owner than an invented one.
 | **plan** | system_scope | the phases and legs of a ladder, however far ahead they are determined | `docs/plan-format.md` |
 | **side_ladder** | system_scope | work in nobody's plan — a ladder off the main one. **MICHI vocabulary, not TEGAMI: it is not a key in the letter and nothing reads one** **[planned]** | `co-working/user_repo/wip/buildouts/MICHI.md` |
 | **SHINGO** (信号) | system_scope | the ladder made visible: the chip in the tile header, the ladder unrolled over the pane, and the same fields per session on the ⌂ Roster. An indicator, never a channel | `public/js/shingo.js` |
-| **MICHI** (道) | system_scope | the **umbrella** over `ladder` + `TEGAMI` + `SHINGO`. Not a service of its own and **not unbuilt** — `src/services/michi/tegami.ts`, `public/js/shingo.js` and `ronin_bin/read_tegami`/`write_tegami` are live. Not user-facing — say **ladder** | `src/services/michi/tegami.ts` |
+| **MICHI** (道) | system_scope | the internal machinery over the work record: TEGAMI storage and SHINGO display. Not a service of its own and not user-facing — say **work record** | `src/services/michi/tegami.ts` |
 
 ---
 
@@ -500,7 +511,7 @@ useful to the_owner than an invented one.
 
 | Term | Scope | Means | Record |
 |---|---|---|---|
-| **TEGAMI** | system_scope | the ONE agent-maintained file per session: a markdown shell around ONE json block — the block is the entire machine-read payload **[planned]** | `co-working/user_repo/wip/buildouts/TEGAMI.md` |
+| **TEGAMI** | system_scope | the internal file implementing the ONE agent-maintained **work record** per session: a markdown shell around one JSON block. Commands retain `read_tegami` / `write_tegami`; instructions call the thing being updated the work record | `src/tegami.ts` |
 | **shell** | system_scope | the markdown around the block; `>` lines teach at the moment of opening, parsed by nothing | `co-working/user_repo/wip/buildouts/TEGAMI.md` |
 | **block** | system_scope | the fenced json: `v`, `objective`, `role`, `kind`, `plan`, `stack`, `next`, `asks`, `blocked`, `decided`, `handoff` | `michi/schema.json` **[planned]** |
 | **leg vs title** | system_scope | a leg is counted by number and status, never by name; `title` is the agent's words, displayed never counted | `docs/plan-format.md` |
@@ -531,6 +542,7 @@ useful to the_owner than an invented one.
 | **drop** | system_scope | the daily post of one day's counts to a directory. Not "telemetry", not "upload", not "sync". **The sending goes through the AGERU transport today** (`src/activation/tomodachi.ts` — `sendDuePackets`, receipts kept); the reviewable outbox surface stays **[planned]** | `co-working/user_repo/wip/buildouts/AGERU.md` |
 | **install id** | user_scope | a uuid identifying an *install*, minted once; deliberately never a user id and never joined to one | `co-working/user_repo/wip/buildouts/TOMODACHI.md` |
 | **born / ended** | system_scope | how a session started, and how it stopped | `co-working/user_repo/wip/buildouts/TOMODACHI.md` |
+| **`born`** | system_scope | how a session started: `assisted · manual · fork · macro · hand`. `assisted` and `manual` are the launcher's two modes; `fork` and `macro` are Ronin-mediated origins; `hand` is the diff answer for a session Ronin sees but did not spawn | `co-working/user_repo/wip/buildouts/TOMODACHI.md` |
 | **stop** | system_scope | the plan funnel's milestone noun: `planned` · `launched` · `p{n}_started` · `p{n}_leg` · `p{n}_closed` · `landed`; monotonic. ⚠R7 **[proposed]** | `co-working/user_repo/wip/buildouts/TOMODACHI.md` |
 | **`end`** | system_scope | how a session ended: `harakiri · deleted · cold · archived · alive`. ⚠R8 **[proposed]** | `co-working/user_repo/wip/buildouts/TOMODACHI.md` |
 | **cold / warm / archive** | system_scope | the three delete modes: nothing kept · write a record then kill · don't kill, hide from the active list. ⚠R8 **[proposed]** | `co-working/user_repo/wip/buildouts/DELETE_MODES.md` **[planned]** |

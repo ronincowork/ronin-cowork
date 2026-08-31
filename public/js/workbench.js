@@ -100,7 +100,7 @@ export function createWorkbench(options = {}) {
     { name: 'workspace1', label: t('team.workspace_1', 'Workspace 1'), width: 40, composite: true },
     { name: 'selector', label: options.label || profile.name, width: 20, min: 6, compact: 176 },
     { name: 'workspace2', label: t('team.workspace_2', 'Workspace 2'), width: 40, composite: true },
-  ] };
+  ], priorDefaultOrders: [['workspace1', 'workspace2', 'selector']] };
   const layout = createWorkbenchLayout({
     declaration,
     surfaces: { workspace1: columns.workspace1, selector, workspace2: columns.workspace2 },
@@ -196,6 +196,9 @@ export function createWorkbench(options = {}) {
       const summary = offer.summary ?? (typeof definition.summary === 'function' ? definition.summary(tenant, options.environment) : definition.summary || '');
       const detail = { ...offer, key: offer.key || '' };
       const card = WorkspacePrimitives.createCard({ heading: label, summary, metadata: offer.metadata, mark: offer.mark, variant: offer.variant || definition.variant || null, selected: locations(definition.type, detail.key).length > 0, action: () => place(definition.type, selected, detail) });
+      // A readable title is display text, not identity. Consumers such as the render gate
+      // address an offered resource by its fixed key even after its title is edited.
+      if (detail.key) card.el.dataset.workbenchOfferResource = detail.key;
       if (offer.className) card.el.classList.add(offer.className);
       if (offer.onPointerEnter) card.el.addEventListener('pointerenter', offer.onPointerEnter);
       if (offer.onPointerLeave) card.el.addEventListener('pointerleave', offer.onPointerLeave);
