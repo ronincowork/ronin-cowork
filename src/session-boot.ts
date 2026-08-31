@@ -83,7 +83,7 @@ const STOCK = path.join(__dirname, '..', 'ronin_session_boot');
 const SESSION_MACROS_TEMPLATE = path.join(STOCK, 'SESSION_MACROS.md');
 
 /** The levels, in reading order. `root`, `role` and `team_role` take the launch's own value. */
-export type Level = 'all' | 'root' | 'role' | 'team_role' | 'assignment';
+export type Level = 'all' | 'root' | 'role' | 'team_role' | 'routine' | 'assignment';
 
 const userShelf = () => storeDir('session_boot');
 
@@ -205,6 +205,7 @@ export async function ensureShelf(roots: string[] = []): Promise<void> {
     path.join(base, 'root'),
     path.join(base, 'role'),
     path.join(base, 'team_role'),
+    path.join(base, 'routine'),
     path.join(base, 'assignment'),
     ...roots.map((r) => path.join(base, 'root', r)),
   ];
@@ -283,6 +284,7 @@ export async function bootFiles(
   teamRole: string,
   mcpOn = true,
   assigned = false,
+  routines: string[] = [],
 ): Promise<string[]> {
   const user = userShelf();
   const dirs: string[] = [path.join(STOCK, 'all'), path.join(user, 'all')];
@@ -294,6 +296,10 @@ export async function bootFiles(
   // A blank axis contributes NOTHING rather than contributing an empty level.
   if (sessionRole) dirs.push(path.join(STOCK, 'role', sessionRole), path.join(user, 'role', sessionRole));
   if (teamRole) dirs.push(path.join(STOCK, 'team_role', teamRole), path.join(user, 'team_role', teamRole));
+  // Routine reading is additive and comes only from the effective birth answer.
+  for (const routine of routines) {
+    dirs.push(path.join(STOCK, 'routine', routine), path.join(user, 'routine', routine));
+  }
   // The desk contract rides only a launch that actually resolved desks — a launch fact,
   // so it cannot be an axis folder; it is on or off, and off contributes nothing.
   if (assigned) dirs.push(path.join(STOCK, 'assignment'), path.join(user, 'assignment'));

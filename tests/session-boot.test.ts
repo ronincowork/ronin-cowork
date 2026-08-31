@@ -137,6 +137,33 @@ test('a service-signed *_connected level rides the MCP toggle', async () => {
   }
 });
 
+test('only enabled Routine levels contribute startup reading', async () => {
+  const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-session-boot-test-'));
+  const oldShelf = process.env.RONIN_SESSION_BOOT_DIR;
+  const oldCache = process.env.RONIN_SESSION_BOOT_CACHE_DIR;
+  process.env.RONIN_SESSION_BOOT_DIR = path.join(temp, 'shelf');
+  process.env.RONIN_SESSION_BOOT_CACHE_DIR = path.join(temp, 'generated');
+  try {
+    await mkdir(path.join(temp, 'shelf', 'routine', 'ronin_base'), { recursive: true });
+    await writeFile(path.join(temp, 'shelf', 'routine', 'ronin_base', 'BASE.md'), '# base');
+    await mkdir(path.join(temp, 'shelf', 'routine', 'machine'), { recursive: true });
+    await writeFile(path.join(temp, 'shelf', 'routine', 'machine', 'MACHINE.md'), '# machine');
+
+    const base = (await bootFiles('', '', '', false, false, ['ronin_base'])).map((f) => path.basename(f));
+    assert.ok(base.includes('BASE.md'));
+    assert.ok(!base.includes('MACHINE.md'), 'an unselected Routine contributes no reading');
+
+    const none = (await bootFiles('', '', '', false, false, [])).map((f) => path.basename(f));
+    assert.ok(!none.includes('BASE.md') && !none.includes('MACHINE.md'));
+  } finally {
+    if (oldShelf === undefined) delete process.env.RONIN_SESSION_BOOT_DIR;
+    else process.env.RONIN_SESSION_BOOT_DIR = oldShelf;
+    if (oldCache === undefined) delete process.env.RONIN_SESSION_BOOT_CACHE_DIR;
+    else process.env.RONIN_SESSION_BOOT_CACHE_DIR = oldCache;
+    await rm(temp, { recursive: true, force: true });
+  }
+});
+
 test('startup reading is never stripped when instructions are present', () => {
   const profile = { session_role: 'OpenShell', posture: [] } as unknown as LaunchProfile;
   const form: SpawnForm = {
