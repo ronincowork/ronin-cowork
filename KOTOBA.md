@@ -149,7 +149,7 @@ copy and a source tree at once. It now names one thing.
 | **BYOIN** (病院) | system_scope | **the whole health check, and the umbrella term for every kind of test in the house** (owner, 2026-08-22: distinctions are spelled `byoin_*`) — every `byoin_check` over the repo plus every readout over the machine, behind one command (`bin/ronin-byoin`). BYOKI is the condition; BYOIN is where you go to have it looked for, and it looks for more than that one illness | `docs/test-protocols.md` |
 | **byoin_check** | system_scope | **one repo-side test inside BYOIN — the system developer's test, ours, building Ronin**: reads the tree, fails the build, same answer on every machine, lives in `package.json`'s `verify` chain (parse, check-modules, check-docs, check-kotoba, check-kyokai, check-dead, check-stores, check-place, check-tomodachi, check-src, check-tests, stores-map, tsc, smoke-ui). **Never "gate"** — a gate is a ladder rung (§ LADDER) and nothing else; ruled R30. `libexec/ronin-gate` and the `--gates` flag keep their pre-ruling filenames | `docs/test-protocols.md` |
 | **`ronin_control_surface`** | system_scope | **the whole health network around work done by sessions**: how Ronin teaches the working contract (briefs, readings, roles, SOPs), places and observes the work (assignments, repo desks, TEGAMI, rosters), integrates it (hand-in and team promotion), proves it at the right boundary (BYOIN and deployment health), attributes and recovers failures (receipts, notices, parked desks), and publishes accepted state (GitHub, CI, release). **Not a UI surface, not Git alone, and not a synonym for desk/worktree management.** The desk topology and BYOIN schedule are parts of this one control surface because instruction, actual state, accepted state and responsibility must agree | `docs/control-surface.md` · `ronin-cowork/docs/worktrees.md` |
-| **byoin_user_check** | system_scope | **one install-side test inside BYOIN — the third-party user's test**: reads THIS machine's user stores (catalog shadows, sops/library/session_boot shadows, the job-classes manifest) through the same readers the server uses, and turns what today silently vanishes — a half-written session_job, a dead link in a user catalog — into a named finding with its remedy. Only meaningful on a live install, so it lives in BYOIN's machine half and never in CI. The counterpart of `byoin_check`, which tests our tree; this tests their customization | `scripts/byoin-user-check.ts` · `docs/test-protocols.md` |
+| **byoin_user_check** | system_scope | **one install-side test inside BYOIN — the third-party user's test**: reads THIS machine's user stores (catalog shadows, sops/library/session_boot shadows) through the same readers the server uses, and turns what today silently vanishes — a half-written user definition, a dead link in a user catalog — into a named finding with its remedy. Only meaningful on a live install, so it lives in BYOIN's machine half and never in CI. The counterpart of `byoin_check`, which tests our tree; this tests their customization | `scripts/byoin-user-check.ts` · `docs/test-protocols.md` |
 | **test_protocols** | system_scope | the house’s testing arrangement, behind one provider-neutral pointer: who runs what, when. **Two audiences, two cadences** — ordinary Ronin development uses scoped diagnosis, while team promotion runs full repository BYOIN once on the exact `team/<team>/dev → dev` candidate, close to the responsible lead; `dev → master` CI consumes that receipt and may rerun isolated assurance checks. A third-party install’s own agents run full BYOIN — `byoin_check`s plus `byoin_user_check` — after maintenance, an update, or any user-store customization (session role, skin, macro, SOP shadow). Every agent-facing shelf README points here | `docs/test-protocols.md` |
 
 Two of those hops are skipped today. **The steps, and what to do to make a change real, are in
@@ -1049,128 +1049,7 @@ rules that bind them: the catalogs, SOPs and library are written for the first; 
 the byoin_checks and every `dev_scope` row are the second's. The hat that is on decides which
 applies, and a tenant only ever has the first.
 
-**R17 · REOPENED AND REVERSED — the role came back, and this time it carries reading.**
-Owner, 2026-08-22. The 2026-08-10 ruling deleted a role catalog and declared the
-`session_job` to be both act and role. The new evidence was the launch board itself: the
-Job Groups were independently organizing the acts, a job could sit on several of them, and
-a strong role reading plainly applied across several acts. So `session_job` is renamed to
-**`session_task`** — the row already said "what a session is doing right now", so it is
-renamed rather than reinterpreted — and the Job Group machinery is promoted whole into
-**`family_role`**, gaining a reading level and launch defaults it never had as `job_class`.
-
-```text
-session_job                       →  session_task
-job_class / surface "Job Group"   →  family_role
-```
-
-**One row of this ruling was reversed the same day, and the reversal is the better proof.**
-`QuarterBack` was promoted to a role alongside `PersonalAssistant` and `MikaAssist`, and
-the owner ruled it back to a task (R33): a Developer *moves into* quarterbacking. The axis
-survived its first hard case — the test is "what do you stay while your task changes", and
-applying it honestly cost this ruling one of its own examples.
-
-There are three axes: `project_root` (required, where) · `family_role` (optional, fixed, who)
-· `session_task` (optional, mutable, what it is doing now). **This was cut without a
-migration layer** (owner, same day): there were no users to carry, so the old schema and
-every caller went in one change rather than behind aliases. See § LAUNCHER.
-
-**R18 · DISSOLVED.** No michi names survive, so there is no shape rule to agree.
-
-**R34 · `job_role` and `task_family` were two names for one thing. The word is
-`family_role`.** Owner, 2026-08-22, superseding both R32's `task_family` and the cut's
-`job_role`. A **`family_role` is the session's immutable TYPE and the family of
-`session_task`s it may perform** — those were never two facts, and naming them separately
-made a reader ask which one a definition file was.
-
-**A session is a `family_role` + a `session_task`**, born in a required `project_root`.
-The role is fixed at birth; the task is mutable and moves through the family. A Developer
-goes QuarterBack → RiffOnIt → DraftPlan → CutCode → ChaseBug without changing role.
-
-**The stock roles are the launcher's own old shelves**, each carrying the family it always
-had: `developer`, `assistant`, `extra`. **Every former `session_job` is a `session_task`,
-all eleven without exception** — the mapping is total and mechanical, and
-`tests/former-jobs-exact.test.ts` asserts it as exact sets in both directions. The cut got
-that wrong twice, promoting `QuarterBack`, `PersonalAssistant` and `MikaAssist` to roles
-because their names read as identities: true of the WORDS, false of the model. The role is
-the shelf, and those three were on shelves like everything else.
-
-**`session_team` is the independent axis and stays independent**: it groups SESSIONS on the
-roster, is mutable, and may mix any family_roles and session_tasks. A family_role is what a
-session IS; a team is who it is working with.
-
-**Hard MVP cut**: `job_role` and `task_family` are gone, not aliased. Neither survives as a
-parallel product concept.
-
-**R33 · `QuarterBack` is a `session_task`, and its token keeps the verb+object
-exception.** Owner, 2026-08-22, reversing one row of the same day's own cut. It had been
-promoted to a `family_role` on the theory that coordinating is who a session IS. It is not:
-**`developer` is the role, and quarterbacking is a task a Developer moves into and back
-out of.** The test the axis was given holds — a role is what you stay while your task
-changes — and coordinating fails it, because a session stops coordinating and carries on.
-
-**What that costs, and it is worth saying rather than discovering.** The coordinator of a
-team is a MIGRATING value again. When it was a role, "who runs this team" was settled at
-birth and could not drift; as a task it can be true at 10am and false at noon, so every
-reader of it — `tejun-team`, the wipeboard roster, TOMODACHI's `led` — reads it fresh
-rather than remembering it. That is a real loss the ruling accepts on purpose: the truth
-is that coordination moves, and a field that could not move was flattering the reader.
-
-**The token stays `QuarterBack`**, ruled an exception to verb+object beside `OddJob` and
-`RiffOnIt`. The gerund `Quarterbacking` is unavailable — gerunds are michi's, and a
-session_task that read like a michi name is the exact collision § OVERLAP exists to
-prevent. The verb+object candidate was **`CallPlays`**, which is honest (KOTOBA's own
-prose already defines the posture as *"reads the field, calls the play and does not run
-it"*) and was still refused: the owner has a word for this seat and says it out loud, the
-public site already describes *running as quarterback* in prose, and a token nobody
-pronounces is a token that gets re-invented in conversation. The exception is cheaper than
-the translation. **`CallPlays` is the standing alternative if the owner would rather the
-grammar held without exception.**
-
-**R32 · `group` is retired as a house term; the words are `session_team` and
-`session_tasks`.** Owner, 2026-08-22. *"group stops being a house term and returns to
-ordinary/general language. Codify team for a roster-scoped set of collaborating sessions.
-Codify family for the set of session_tasks presented under a family_role."* The axes are
-strict and do not overlap: **a team groups SESSIONS; a family associates TASKS with a
-role.** Both are many-to-many — a session may join several teams, a task may appear in
-several families — so neither is exclusive ownership.
-
-**Spelled compound, and the ruling's own logic requires it.** `group` is being retired
-precisely because it read as English; a bare `team` and a bare `family` would inherit that
-defect on day one, and `family` inherits it *already* — `settei-registry.ts` has a write
-`family`, `PUT /api/settei/:family` is a live route parameter, and Node's `os` reports an
-address `family`. So the terms are **`session_team`** and **`session_tasks`**, and the
-surfaces say **Team** and **Family** — the plain-English half KOTOBA has always required
-of anything a person reads.
-
-**Both halves are DONE.** `session_tasks` first: the role definition's key, the API field,
-the board's ✎ editor and the check. `session_team` landed the same day with the owner's
-explicit go, as its own cut (the WIPEBOARD_TEAMS build-out): `tejun-group` is renamed
-`tejun-team` with the old name forwarding, the lookups speak `+team:` and still read the
-retired spellings (input only, never taught — an agent's old habit answers, hearing the
-new word back), the saved-launch field writes `team:` and still reads `group:`, and each
-team owns its wipeboard with membership derived from the team (`docs/wipeboards.md`).
-**What deliberately did NOT move**, because a rename there breaks addressing under
-running sessions or a pinned packet shape, held as mapped internal seams — the
-`cowork_stats` pattern: the `@ronin-tags` option spelling, the `tags` identifiers and
-API fields in code, and TOMODACHI's `tag_groups` count. The vocabulary and the code now
-agree, with the seams named instead of silent.
-
-**R19 · ANSWERED BY R17's REVERSAL, and the answer is that they were two facts.** The
-question was what to do about a `session_job` that migrates when two surfaces were
-promised a fixed value. Splitting the axis settles it: **`family_role` is the fixed one** —
-seeded at birth, immutable through every ordinary write — and **`session_task` is the
-moving one**. **OBOERU** now matches on a required root plus whichever contextual axes a
-memory names, so a memory scoped to a role reaches every task worn under it and stops
-going stale the moment the session moves on. **TOMODACHI** still needs task-at-birth and
-task-now as separate fields, because the task genuinely does change; the role does not,
-so it needs only one. The plan is unaffected — a michi survives a task change, it is the
-same plan either way. The gain stands: migration is a countable event, which is a truer
-funnel than `stop` (⚠R7).
-
-
----
-
-**R20 · SETTLED — there is no bare "project".** The word meant a repo, a directory, a body
+ **R20 · SETTLED — there is no bare "project".** The word meant a repo, a directory, a body
 of work and a machine at once. Three nouns replace it: **project_root** (the directory, and
 the key everything is partitioned by), **project_repo** (the git repo it sits in), and
 **ronin_machine** (the outer limit of what an install can reach). Anything that used to say "project" now
@@ -1305,8 +1184,7 @@ machinery and cowork must run alone.
 3. **She defaults to `system_help`.** Not "refuse and point" and not "offer to spawn" — help
    is the floor she falls back to, and the long reading list that makes it good is a later
    pass, not a blocker.
-4. **She is a helpful assistant, and that goes in her `family_role`** — the posture, where
-   an agent's manner is already specified, rather than a new field or a doc nobody reads.
+4. **She is a helpful assistant.** Her posture is reading, not a launch identity.
 
 **R32 · CLOSED — the map is `docs/SHELVES.md`, and the boot shelf delivers it.** Owner,
 2026-08-15. The four shelves had no "you are here" page, so an agent never handed a
