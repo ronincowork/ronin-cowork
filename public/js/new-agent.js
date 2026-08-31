@@ -41,8 +41,8 @@ export function createNewAgentView(kit, { connect = null } = {}) {
 
   const draft = {
     door: 'template', type: 'cowork_agent', template: '', templateName: '',
-    name: '', kind: 'open', kindTouched: false, provider: '', model: '', instructions: '',
-    teamMode: 'none', team: '', newTeam: '',
+    name: '', kind: 'coding', kindTouched: false, provider: '', model: '', instructions: '',
+    teamMode: 'new', team: '', newTeam: '',
     reach: 'open', recruit: 'open', output: 'open',
     books: [], root: '',
     expanded: {},
@@ -212,10 +212,13 @@ export function createNewAgentView(kit, { connect = null } = {}) {
       });
       return box;
     };
+    // NEW TEAM LEADS, AND IT IS THE DEFAULT (owner, 2026-08-31). The order is the order
+    // of intent: most launches are the start of something, joining one is next, and a
+    // rōnin is the ordinary remainder rather than the opening offer.
     ways3.append(
+      way('new', t('new_agent.team_new', 'A new team'), t('new_agent.team_new_sub', 'Created first, then this Agent is born into it.')),
       way('existing', t('new_agent.team_existing', 'An existing team'), t('new_agent.team_existing_sub', 'Join it. Its answers land at birth.')),
       way('none', t('new_agent.team_none', 'No team — a rōnin'), t('new_agent.team_none_sub', 'Ordinary, not a gap.')),
-      way('new', t('new_agent.team_new', 'A new team'), t('new_agent.team_new_sub', 'Created first, then this Agent is born into it.')),
     );
     teamHost.append(ways3);
     if (draft.teamMode === 'existing') {
@@ -238,8 +241,15 @@ export function createNewAgentView(kit, { connect = null } = {}) {
         if (clean !== input.value) { input.value = clean; input.setSelectionRange(caret, caret); }
         draft.newTeam = input.value;
         paintFoot();
+        paintActions(); // the button's promise follows the name as it is typed
       });
-      teamHost.append(createField({ label: t('new_team.name', 'Team name'), control: input }).el);
+      // GO NEVER FAILS, and this tile is now the one you land on: leaving the name blank
+      // is an answer — no team is made and the Agent is a rōnin — not an error to clear.
+      teamHost.append(createField({
+        label: t('new_team.name', 'Team name'),
+        control: input,
+        description: t('new_agent.team_new_blank', 'Blank makes no team — the Agent is a rōnin.'),
+      }).el);
     }
   }
   stepTeam.body.append(teamHost);
@@ -362,7 +372,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     const rows = [
       [t('new_agent.session', 'session'), typeRow?.label || draft.type],
       [t('add_agent.name', 'name'), draft.name],
-      [t('squad', 'Team'), draft.teamMode === 'none' ? '' : chosenTeam() + (draft.teamMode === 'new' ? `  ${t('new_agent.created_first', '(created first)')}` : '')],
+      [t('squad', 'Team'), draft.teamMode === 'none' || !chosenTeam() ? '' : chosenTeam() + (draft.teamMode === 'new' ? `  ${t('new_agent.created_first', '(created first)')}` : '')],
     ];
     if (isCowork()) {
       if (draft.door === 'template') rows.push([t('kind', 'Kind'), draft.kind]);
@@ -395,7 +405,9 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   const actions = createActionBar({ label: t('add_agent.actions', 'Launch actions'), actions: [start] });
   actions.el.append(saveName, save.el);
   function paintActions() {
-    start.el.textContent = draft.teamMode === 'new' && isCowork()
+    // The button says what the press will DO: with the name blank there is no team to
+    // create, so it must not promise one.
+    start.el.textContent = draft.teamMode === 'new' && isCowork() && chosenTeam()
       ? t('new_agent.create_and_start', 'Create the team and start')
       : draft.type === 'terminal' ? t('new_agent.open_terminal', 'Open the terminal') : t('add_agent.start', 'Start');
     const offer = isCowork() && (!templateRow() || templateDirty());
@@ -412,7 +424,9 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     notice.set('info', t('add_agent.starting', 'Starting…'));
     // A NEW TEAM IS TWO IDEMPOTENT DOORS (§ 7.5): write the record, then launch into it.
     let team = chosenTeam();
-    if (draft.teamMode === 'new' && isCowork()) {
+    // An unnamed new team is no team, not a refusal — see the field's own sentence.
+    if (draft.teamMode === 'new' && !team) team = '';
+    if (draft.teamMode === 'new' && isCowork() && team) {
       if (!isValidTeamName(team)) {
         busy = false;
         start.setDisabled(false);

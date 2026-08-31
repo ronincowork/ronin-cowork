@@ -46,7 +46,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
 
   const draft = {
     door: 'template', template: '', templateName: '',
-    name: '', kind: 'open', objective: '',
+    name: '', kind: 'coding', objective: '',
     root: '', branch: '', wipeboard: '',
     provider: '', model: '', reach: 'open', recruit: 'open', output: 'open',
     dial: 'write', permissions: 'default',

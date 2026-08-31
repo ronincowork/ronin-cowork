@@ -91,6 +91,8 @@
      ＋ New Agent board. One rectangle for every clickable thing, as the drawing has it:
      ronin-lab `concepts/add-agent-to-team.html`. ── */
   /* No rule reaches into the Kit's own content box — the form carries its own layout. */
+  /* Same as the launch forms: with no size above them the controls inherit 16px. */
+  .aa-surface { font-size: var(--text-3); }
   .aa-form { display: flex; flex-direction: column; gap: var(--space-6); margin-bottom: var(--space-7); }
   .aa-form textarea { min-height: calc(var(--space-12) * 2); resize: vertical; }
   /* Name left, provider + model right (owner, 2026-08-31) — the columns drop to one when

@@ -472,6 +472,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_agent.team_none_sub:** Ordinary, not a gap.
 - **new_agent.team_new:** A new team
 - **new_agent.team_new_sub:** Created first, then this Agent is born into it.
+- **new_agent.team_new_blank:** Blank makes no team — the Agent is a rōnin.
 - **new_agent.a_ronin:** a rōnin
 - **new_agent.loadout_meta:** {routines} routines · {books} books
 - **new_agent.shelf_house:** behaviours · the house
