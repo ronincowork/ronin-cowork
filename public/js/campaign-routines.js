@@ -51,7 +51,7 @@ export function createRoutinesSurface(campaign) {
       const controls = el('div', 'cv-routine-control');
       controls.append(el('span', available(routine) ? 'cv-state cv-state-ok' : 'cv-state', available(routine) ? t('campaign_view.available', 'Available') : t('campaign_view.unavailable', 'Unavailable')));
       const toggle = el('label', 'cv-switch');
-      const box = el('input'); box.type = 'checkbox'; box.checked = values[routine.name]; box.disabled = !available(routine);
+      const box = el('input'); box.type = 'checkbox'; box.checked = values[routine.name];
       const state = el('span', null, box.checked ? t('campaign_view.on', 'On') : t('campaign_view.off', 'Off'));
       box.addEventListener('change', () => { state.textContent = box.checked ? t('campaign_view.on', 'On') : t('campaign_view.off', 'Off'); void save(routine.name, box.checked, notice); });
       toggle.append(box, state); controls.append(toggle); line.append(words, controls); body.append(line);

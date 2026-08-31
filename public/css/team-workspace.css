@@ -42,6 +42,17 @@
   .tw-config-reading output { color: var(--fg-strong); padding: var(--space-3) 0; }
   .tw-config-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; align-items: center; gap: var(--space-4); }
   .tw-config-status, .tw-config-empty { color: var(--muted); }
+  .tw-config-wide { grid-column: 1 / -1; }
+  .tw-config-note { margin: 0; color: var(--muted); font-size: var(--text-3); line-height: 1.5; }
+  .tw-routines { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); border: var(--edge) solid var(--line); border-radius: var(--radius-sm); padding: var(--space-4); }
+  .tw-routines legend { color: var(--fg-strong); font-weight: 600; padding: 0 var(--space-2); }
+  .tw-routines > .tw-config-note { grid-column: 1 / -1; }
+  .tw-routine { display: flex; align-items: flex-start; gap: var(--space-3); }
+  .tw-routine input { accent-color: var(--accent); margin-top: var(--space-1); }
+  .tw-routine span { display: flex; flex-direction: column; gap: var(--space-1); }
+  .tw-routine small, .tw-config-field small { color: var(--muted); line-height: 1.4; }
+  .tw-config-check { display: flex; align-items: center; gap: var(--space-3); color: var(--fg-strong); }
+  .tw-config-check input { accent-color: var(--accent); }
 
   /* A Team dropped into the Cowork bench becomes a quiet roster, not an admin form. */
   .league-team-edit-content { display: flex; flex-direction: column; gap: var(--space-10); font-size: var(--text-3); }

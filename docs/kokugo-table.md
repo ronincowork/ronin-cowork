@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `behaviour.*` may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1360 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1394 keys · 57 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## add_agent
 
@@ -1590,6 +1590,45 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `team.workspace_3` | Workspace 3 |  |  |  |  |
 | `team.workspace_4` | Workspace 4 |  |  |  |  |
 | `team.workspace_blank` | Workspace |  |  |  |  |
+
+## team_config
+
+| key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
+|---|---|---|---|---|---|
+| `team_config.behaviours` | Behaviours |  |  |  |  |
+| `team_config.behaviours_help` | One shelf:name book per line. |  |  |  |  |
+| `team_config.branch` | Branch |  |  |  |  |
+| `team_config.cowork_id` | Cowork ID |  |  |  |  |
+| `team_config.default` | Default |  |  |  |  |
+| `team_config.dial` | Control |  |  |  |  |
+| `team_config.kind` | Kind |  |  |  |  |
+| `team_config.kind_coding` | Coding |  |  |  |  |
+| `team_config.kind_household` | Household |  |  |  |  |
+| `team_config.kind_personal` | Personal |  |  |  |  |
+| `team_config.kind_school` | School |  |  |  |  |
+| `team_config.kind_social` | Social |  |  |  |  |
+| `team_config.kind_work` | Work |  |  |  |  |
+| `team_config.loading` | Loading Team Configuration… |  |  |  |  |
+| `team_config.model` | Model |  |  |  |  |
+| `team_config.next_form` | These defaults land in the next Agent form that opens. Nothing live changes. |  |  |  |  |
+| `team_config.no_description` | No description supplied. |  |  |  |  |
+| `team_config.no_roster` | This Cowork has no saved roster. |  |  |  |  |
+| `team_config.objective` | Purpose |  |  |  |  |
+| `team_config.output` | Output |  |  |  |  |
+| `team_config.permissions` | Permissions |  |  |  |  |
+| `team_config.project_root` | Project root |  |  |  |  |
+| `team_config.provider` | Provider |  |  |  |  |
+| `team_config.reach` | Reach |  |  |  |  |
+| `team_config.recruit` | Recruit |  |  |  |  |
+| `team_config.references` | References |  |  |  |  |
+| `team_config.references_help` | One URL or note per line. |  |  |  |  |
+| `team_config.required` | Require these behaviours for each new Agent |  |  |  |  |
+| `team_config.routines` | Routines |  |  |  |  |
+| `team_config.routines_help` | This complete on/off map is the Team’s own. Campaign changes affect only the next Team form. |  |  |  |  |
+| `team_config.saved` | Saved |  |  |  |  |
+| `team_config.saving` | Saving… |  |  |  |  |
+| `team_config.title` | Readable title |  |  |  |  |
+| `team_config.wipeboard` | Wipeboard |  |  |  |  |
 
 ## team_wipeboard
 
