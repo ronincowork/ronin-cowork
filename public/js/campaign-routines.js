@@ -1,6 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 /** Campaign Routine defaults: catalog supplies the rows; campaign_config owns the answer. */
 import { t } from './lexicon.js';
+import { S } from './state.js';
 import { request } from './request.js';
 import { saveCampaign } from './campaigns.js';
 import { WorkspaceKit } from './workspace-kit.js';
