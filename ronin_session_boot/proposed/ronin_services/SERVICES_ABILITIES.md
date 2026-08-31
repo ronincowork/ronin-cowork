@@ -1,10 +1,14 @@
-# RONIN SERVICES ABILITIES — service-backed session capabilities
+# RONIN SERVICES ABILITIES — proposed service-backed session reading
 
-This reading belongs to the **Ronin Services** Routine. Ronin Services is an optional
-installed layer, not part of the Routine floor or Ronin Base. It supplies the common
-service-backed capabilities that specialized service Routines can build on. During the
-transition to effective-Routine startup reading, compatible teaching remains in
-`all/REQUIRED_ABILITIES.md`.
+> **Unassigned reading inventory.** The owner has ruled that Ronin Services is an
+> additional Routine, independently selected from the floor and Ronin Base. This draft is
+> not startup reading until the catalog/dependency cut adds the checked
+> `ronin_services` manifest and moves it to `routine/ronin_services/`. Installation or
+> service-roster presence must never select it implicitly.
+
+Ronin Services supplies the common service-backed capabilities that specialized service
+Routines can build on. During the transition to effective-Routine startup reading,
+compatible teaching remains in `all/REQUIRED_ABILITIES.md`.
 
 ## The durable session record
 
