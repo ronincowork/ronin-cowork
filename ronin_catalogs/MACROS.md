@@ -86,19 +86,16 @@ to type into the claude CLI — it submits normally. Caveat: if the name matches
 or directory in the cwd the CLI's file-completion popup may appear; pick the session
 from Ronin's target picker in that case, or pass it as a macro arg.
 
-## update_work_record
+## updateplan
 - **class:** session_macro.workflow
-- **label:** Update its work record
-- **blurb:** Ask this agent to refresh the task, tracked documents, progress, worktrees and Cowork shown in its Work Record view. It makes the changes and carries on without reporting back.
+- **label:** Ask it to update its plan
+- **blurb:** Ronin types one line into the session asking the agent to update its work record, so the progress shown under the tile header matches what it has actually done. Nothing else happens — it fixes the record and carries on with what it was doing, without reporting back to you.
 Ask this session to bring its TEGAMI up to date. **Ronin sends this one for you** —
 the button does not prefill it, it types the line below and presses Enter, so the
 session updates its work record without you writing anything. Nothing else happens: the
-agent updates its own record and carries on with what it was doing. Prefer its small
-doors: `tejun-session-set <your-session> --role <task>`, `write_tegami --doc <path>`,
-`--undoc <path>`, and `write_tegami --done <position>`. Rewrite the whole block only when
-the task description or progress shape changed.
+agent rewrites its own letter and carries on with what it was doing.
 
-Send: Update the Work Record view now — make its task, tracked documents, progress, worktrees and Cowork match what is actually true. Read it first; use the small work-record tools where they fit, and rewrite the block only if its words or shape changed. Do not report to me about it; just update it and carry on with what you were doing.
+Send: Update your work record now — read it, bring it in line with what you have actually done since you last wrote it, and write it back with write_tegami. Do not report to me about it; just update it and carry on with what you were doing.
 
 | # | Action | With |
 |---|---|---|
