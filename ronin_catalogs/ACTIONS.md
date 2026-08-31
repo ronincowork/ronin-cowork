@@ -737,6 +737,30 @@ Classify a session's state from pane text (for pickers, dashboards, notification
 ready (`❯` + empty input) / thinking (spinner line) / awaiting-input (question or
 pending dialog) / gone (`tmux has-session` fails).
 
+## restart-ronin — pick up a change, without touching anyone's work
+`action_kind: mechanical` — run it, don't deliberate.
+> **Tool: `tejun-machine-restart`** (TOOLS.md)
+Restart Ronin so it picks up a change you made to it — new code, a new catalog entry, a
+setting that is read at boot. It takes no argument and can restart nothing else.
+
+```bash
+tejun-machine-restart
+```
+
+**This does not touch sessions.** Agents, shells and their scrollback live in the tmux
+server, which is a different service; Ronin is the grid, the API and the launcher in
+front of it. Browser tiles blink and reconnect. Nobody loses work.
+
+**The service that DOES own the sessions is never yours to restart.** Stopping it ends
+every session on the machine simultaneously — every agent mid-task, including you, with
+no undo and nothing in the log that looks like a kill. There is no action for it here and
+no tool that can reach it, deliberately. If you believe the session engine is unhealthy,
+you cannot repair it from inside it: name what you saw on the board and stop.
+
+Exit 4 = you passed an argument. Exit 2 = Ronin is not run as a service on this box, so
+restarting it is the owner's. Exit 5 = it did not come back; report it rather than
+retrying in a loop.
+
 ## survey-machine — what this box has, measured now
 `action_kind: mechanical` — run it, don't deliberate.
 > **Tool: `tejun-survey [path]`** (TOOLS.md)

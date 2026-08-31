@@ -12,8 +12,11 @@ export interface RoutineToolProjection {
   missing: string[];
 }
 
-const sourceFor = (name: string): { command: string; source: string } => name === 'shim/tmux'
-  ? { command: 'tmux', source: path.join(REPO_ROOT, 'bin', 'shim', 'tmux') }
+const sourceFor = (name: string): { command: string; source: string } => name.startsWith('shim/')
+  ? {
+    command: name.slice('shim/'.length),
+    source: path.join(REPO_ROOT, 'bin', 'shim', name.slice('shim/'.length)),
+  }
   : { command: name, source: path.join(REPO_ROOT, 'ronin_bin', name) };
 
 /**
@@ -29,7 +32,17 @@ export async function projectRoutineTools(
   const dir = path.join(storeDir('session_commands'), session);
   await rm(dir, { recursive: true, force: true });
   await mkdir(dir, { recursive: true });
-  const names = new Set<string>(['shim/tmux']);
+  /**
+   * BOTH GUARD SHIMS ARE FLOOR, and `systemctl` is here for a reason that cost this box
+   * every live session twice in one day. An Agent does not source an rc file, so the
+   * `bin/shim` directory on the owner's login PATH never reaches it: `systemctl` resolved
+   * to `/usr/bin/systemctl` and the refusal that stands between an ordinary-looking
+   * command and stopping the unit that owns every session simply never ran. Projecting it
+   * here puts the guard in front of exactly the population that cannot get it any other
+   * way. It passes `restart ronin` straight through; it is only ever in the way of the
+   * one command nobody means to type.
+   */
+  const names = new Set<string>(['shim/tmux', 'shim/systemctl']);
   for (const routine of routines) if (routine.enabled) for (const tool of routine.tools) names.add(tool);
   const delivered: string[] = [];
   const missing: string[] = [];

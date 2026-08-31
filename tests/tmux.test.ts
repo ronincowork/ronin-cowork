@@ -10,6 +10,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { exactSession, exactPane, isValidName, parseTags } from '../src/tmux.js';
+import { newSessionArgs } from '../src/session-args.js';
 
 test('exactSession pins the name as an identity, never a pattern', () => {
   assert.equal(exactSession('beta'), '=beta');
@@ -46,4 +47,46 @@ test('parseTags cleans, dedupes and sorts — tags are addresses, so they stay b
 test('parseTags drops what an agent could not type as an address', () => {
   assert.deepEqual(parseTags('ok, has space, -lead, , x'.trim()), ['ok', 'x']);
   assert.deepEqual(parseTags('a'.repeat(33)), []); // over the 32-char cap
+});
+
+/**
+ * BIRTH ENVIRONMENT DELIVERY. `-e` sets the session environment, which tmux never applies
+ * to the process it starts in the pane — measured on an isolated socket: an injected PATH
+ * reached neither the initial pane nor a later one. While `-e` was the only delivery, the
+ * projected guard shims and Routine tools never reached an Agent at all, and the
+ * `systemctl` refusal that protects the unit owning every session was inert. These
+ * assertions are the reason that cannot regress silently.
+ */
+test('the birth environment is exec-delivered through `env`, not left to `-e`', () => {
+  const a = newSessionArgs('beta', { env: { PATH: '/projected:/usr/bin' }, argv: ['claude', '--model', 'opus'] });
+  const sep = a.indexOf('--');
+  assert.notEqual(sep, -1, 'the argv must be separated from tmux flags');
+  // The process is exec'd through env, carrying the assignment, ahead of the real command.
+  assert.deepEqual(a.slice(sep + 1, sep + 5), ['env', 'PATH=/projected:/usr/bin', 'claude', '--model']);
+});
+
+test('`-e` is still set, so a pane opened later by hand sees the same environment', () => {
+  const a = newSessionArgs('beta', { env: { PATH: '/projected' }, argv: ['claude'] });
+  const i = a.indexOf('-e');
+  assert.notEqual(i, -1);
+  assert.equal(a[i + 1], 'PATH=/projected');
+});
+
+test('no env means no `env` wrapper — a bare shell tile is exec\'d unchanged', () => {
+  const a = newSessionArgs('beta', { argv: ['claude'] });
+  assert.equal(a.includes('-e'), false);
+  assert.deepEqual(a.slice(a.indexOf('--') + 1, a.indexOf('--') + 2), ['claude']);
+});
+
+test('a shell tile (no argv) carries neither the exec wrapper nor remain-on-exit', () => {
+  const a = newSessionArgs('beta', { env: { PATH: '/projected' } });
+  assert.equal(a.includes('--'), false);
+  assert.equal(a.includes('env'), false);
+  assert.equal(a.includes('remain-on-exit'), false);
+});
+
+test('env assignments are sorted, so a birth argv is reproducible', () => {
+  const a = newSessionArgs('beta', { env: { ZED: '1', ALPHA: '2' }, argv: ['claude'] });
+  const sep = a.indexOf('--');
+  assert.deepEqual(a.slice(sep + 1, sep + 4), ['env', 'ALPHA=2', 'ZED=1']);
 });

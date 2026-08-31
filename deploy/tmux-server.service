@@ -21,7 +21,6 @@
 
 [Unit]
 Description=tmux server (owns every session; kept out of the app's cgroup)
-Documentation=file://__REPO_DIR__/docs/tmux-server-cgroup.md
 
 [Service]
 # oneshot + RemainAfterExit: the client exits immediately, the forked server keeps
