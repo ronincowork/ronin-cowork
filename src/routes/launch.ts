@@ -27,10 +27,10 @@ import {
   setTags,
 } from '../tmux.js';
 import { launchArgv, newProviderSession } from '../agents.js';
-import { AtSessionMax, liveCount, readMax, readOwner, writeMax, writeOwner } from '../user-config.js';
+import { AtSessionMax, liveCount, readAgentsSection, readDesksSection, readMax, readOwner, writeMax, writeOwner } from '../user-config.js';
 import { resolveForm, appendLedger, type SpawnForm } from '../spawn.js';
 import { mandate } from '../agent-defaults.js';
-import { projectRoutineTools } from '../routine-tools.js';
+import { projectRoutineTools, type RoutineToolProjection } from '../routine-tools.js';
 import { classifyStatus, type SessionStatus } from '../status.js';
 import { scanContext, scanModel } from '../ctx.js';
 
@@ -45,6 +45,10 @@ import { readArrangement } from '../desks/arrangement.js';
 import { listProjectRoots } from '../project-roots.js';
 import { initialCampaignId } from '../campaign-scope.js';
 import { readTeamRoster } from '../team-rosters.js';
+import { readCampaign } from '../campaign-config.js';
+import { listRoutines } from '../definitions.js';
+import { resolveLaunchSeed } from '../launch-seed.js';
+import type { SessionsDefaults } from '../launch-command.js';
 
 /**
  * The Campaign a newborn Agent joins: its Cowork's when it is born onto one, else the
@@ -82,6 +86,37 @@ async function deskNote(r: { assignment?: unknown; lifecycle?: string; project_r
  * with its words ignored.
  */
 export function registerLaunch(app: express.Express): void {
+  app.get('/api/launch-seed', async (req, res) => {
+    try {
+      const campaign_id = String(req.query.campaign_id ?? '').trim() || await initialCampaignId();
+      const team = String(req.query.team ?? '').trim();
+      const campaign = campaign_id ? await readCampaign(campaign_id) : null;
+      if (!campaign) return res.status(404).json({ error: `Unknown Campaign: ${campaign_id || '(none)'}.` });
+      if (team && !/^[a-z0-9][a-z0-9_-]{0,63}$/.test(team)) {
+        return res.status(400).json({ error: `A team name is lowercase letters, digits, _ and -: "${team}".` });
+      }
+      const [roster, roots, agents, routines, desks] = await Promise.all([
+        team ? readTeamRoster(team, campaign_id).then((found) => found ?? readTeamRoster(team, '')) : Promise.resolve(null),
+        listProjectRoots(),
+        readAgentsSection(),
+        listRoutines(),
+        readDesksSection(),
+      ]);
+      if (team && !roster) return res.status(404).json({ error: `Unknown Team "${team}" in Campaign "${campaign_id}".` });
+      const { resolved_routines: _resolved, ...seed } = resolveLaunchSeed({
+        campaign,
+        roster,
+        roots,
+        sessions: agents.sessions as SessionsDefaults | undefined,
+        routines,
+        desk: desks.new_project === 'none' ? 'none' : 'own',
+      });
+      res.json(seed);
+    } catch (e) {
+      res.status(500).json({ error: String((e as Error)?.message ?? e) });
+    }
+  });
+
   // launch_job — the catalog variant. NAMED, not inlined, since 2026-08-26: `/api/session`
   // below is a second DOOR onto this same body, never a second launch path (the parity
   // invariant, tests/launch-parity.test.ts).
@@ -174,6 +209,7 @@ export function registerLaunch(app: express.Express): void {
 
     let resolved;
     let launch: { argv: string[]; parked: boolean } = { argv: [], parked: false };
+    let routineTools: RoutineToolProjection | null = null;
     try {
       const live = await listSessions();
       const taken = new Set(live.map((s) => s.name));
@@ -226,7 +262,7 @@ export function registerLaunch(app: express.Express): void {
       launch.argv = providerSession.argv;
       // The Agent does not run through a login or interactive shell. Project its commands
       // into PATH here, at process birth, instead of hoping an rc file was sourced.
-      const routineTools = resolved.agent
+      routineTools = resolved.agent
         ? await projectRoutineTools(resolved.name, resolved.routines)
         : null;
       await createSession(resolved.name, resolved.dir, {
@@ -350,6 +386,18 @@ export function registerLaunch(app: express.Express): void {
         // And WHY a coding launch got none, when it did — "off by absence" is never silent
         // (owner, 2026-08-29): the receipt names the file that decides.
         desk_note: await deskNote(resolved),
+        routines: resolved.routines.map((routine) => {
+          const missing = routine.enabled
+            ? routine.tools.filter((tool) => routineTools?.missing.includes(tool))
+            : [];
+          return {
+            name: routine.name,
+            on: routine.enabled,
+            stated_by: routine.stated_by,
+            delivered: routine.enabled && missing.length === 0,
+            missing,
+          };
+        }),
       },
     });
     void appendLedger(form, resolved, true);

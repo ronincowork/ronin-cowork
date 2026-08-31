@@ -35,7 +35,6 @@ import {
   readSetupSection,
   readAgentsSection,
   writeAgentsSection,
-  writeGbrainSection,
   writeMachineSection,
   writeOwner,
   writeDesksSection,
@@ -163,12 +162,6 @@ const FAMILY_WRITERS: Record<string, (body: Record<string, unknown>) => Promise<
       .map((w) => ({ kind: w.kind, name: w.name }));
     await writeWantedSection(list);
     return { ok: true, wanted: list };
-  },
-
-  /** The gbrain toggle. A setting, not an installer — pressing it installs nothing. */
-  gbrain: async (body) => {
-    await writeGbrainSection(body.enabled === true);
-    return { ok: true };
   },
 
 };

@@ -50,7 +50,9 @@ import type { Definition } from './definitions.js';
 /** The dial a session is BORN on — a constant of the launch, never a live control. */
 export type Dial = 'user' | 'read' | 'write';
 
-export type StatedLayer = 'system' | 'team_roster' | 'session_role' | 'explicit_launch';
+export type StatedLayer =
+  | 'install' | 'campaign' | 'team' | 'launch'
+  | 'system' | 'team_roster' | 'session_role' | 'explicit_launch';
 export interface StatedBy {
   layer: StatedLayer;
   /** Exact file when a file stated the value; a named runtime source otherwise. */
