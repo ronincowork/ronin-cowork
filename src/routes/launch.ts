@@ -71,27 +71,19 @@ async function deskNote(r: { assignment?: unknown; lifecycle?: string; project_r
 }
 
 /* ---------- ONE door to a new session: POST /api/launch ----------
- * Two variants, chosen by what the body carries — never two endpoints:
- *   launch_job    a session_role (and/or a team) + prompt   the ＋ New tab
- *   launch_bare   a name and nothing else                   the tile picker
+ * Three births, selected only by `session_type`:
+ *   cowork_agent · bare_metal_agent · terminal
  *
- * A body naming a `session_role` or a `team` is the catalog variant; one naming neither
- * is not a catalog launch at all and falls through rather than being guessed at. The
+ * Blank `session_role` is an ordinary value and never changes the birth path. The
  * RETIRED axis keys are refused by name below — a caller still sending `role_family` or
- * `session_task` deserves to be told the model moved, not a bare session with its words
- * ignored. Express walks the handlers in order; the first hands on what is not its shape.
- *
- * There was a third, launch_quick (a name plus a cmd/prompt/tags/dir), fed by the
- * Roster's own Start row. The owner removed that launcher on 2026-08-12 — one
- * launcher, and it is ＋ New session — which left the route with no caller, so it
- * went too. A body carrying cmd/prompt/tags/dir but neither launch axis now lands on
- * launch_bare: the session is created under that name and the extras are ignored.
+ * `session_task` deserves to be told the model moved, not a different kind of session
+ * with its words ignored.
  */
 export function registerLaunch(app: express.Express): void {
   // launch_job — the catalog variant. NAMED, not inlined, since 2026-08-26: `/api/session`
   // below is a second DOOR onto this same body, never a second launch path (the parity
   // invariant, tests/launch-parity.test.ts).
-  const launchJob: express.RequestHandler = async (req, res, next) => {
+  const launchJob: express.RequestHandler = async (req, res) => {
     // The retired keys, refused by name (410-shaped, but a launch is a POST that never
     // existed per-key, so 400 with the teaching text is the honest shape here).
     if (req.body?.role_family !== undefined || req.body?.family_role !== undefined || req.body?.session_task !== undefined) {
@@ -102,15 +94,55 @@ export function registerLaunch(app: express.Express): void {
           'role_family, and `session_task` is now `session_role`.',
       });
     }
+    const sessionType = String(req.body?.session_type ?? '').trim();
+    if (!['cowork_agent', 'bare_metal_agent', 'terminal'].includes(sessionType)) {
+      return res.status(400).json({
+        error: 'Send `session_type`: `cowork_agent`, `bare_metal_agent`, or `terminal`. Ronin does not infer a session type from `session_role`, `team`, or `agent`.',
+      });
+    }
+    const name = String(req.body?.name ?? '').trim();
+    if (!name) return res.status(400).json({ error: '`name` is required for every session type.' });
+    if (!isValidName(name)) return res.status(400).json({ error: 'Use letters, digits, _ or - (no spaces, . or :).' });
+
+    const forbidden = (keys: string[], teaching: string): express.Response | undefined => {
+      const sent = keys.filter((key) => req.body?.[key] !== undefined);
+      if (!sent.length) return undefined;
+      return res.status(400).json({ error: `${teaching} Remove: ${sent.map((key) => `\`${key}\``).join(', ')}.` });
+    };
+    if (sessionType === 'terminal') {
+      const refusal = forbidden(
+        ['provider', 'model', 'instructions', 'prompt', 'kind', 'mandate', 'behaviours', 'routines', 'sops', 'cmd', 'mcp', 'seed', 'inject', 'reference', 'session_role'],
+        'A `terminal` starts no Agent, so Agent fields do not apply.',
+      );
+      if (refusal) return refusal;
+    }
+    if (sessionType === 'bare_metal_agent') {
+      const refusal = forbidden(
+        ['kind', 'mandate', 'behaviours', 'routines', 'sops', 'seed', 'inject', 'reference', 'session_role', 'team_lead'],
+        'A `bare_metal_agent` starts the provider CLI directly: it has no Ronin reading, Routines, brief, or managed desk.',
+      );
+      if (refusal) return refusal;
+      if (req.body?.desk === 'own') {
+        return res.status(400).json({ error: 'A `bare_metal_agent` has no managed repository desk; use `desk: none` or omit `desk`.' });
+      }
+      if (!String(req.body?.project_root ?? '').trim()) {
+        return res.status(400).json({ error: 'A `bare_metal_agent` requires `project_root` for its working directory; it is placement, not Ronin birth material.' });
+      }
+    }
+    const returnedOnly = forbidden(
+      ['assignment', 'posture', 'opening', 'ack', 'capExempt', 'launchAgent', 'stated_by', 'birth_reading'],
+      'These fields are resolved and returned by the server, never accepted from a launch caller.',
+    );
+    if (returnedOnly) return returnedOnly;
     const sessionRole = String(req.body?.session_role ?? '').trim();
     const team = String(req.body?.team ?? '').trim();
-    if (!sessionRole && !team && req.body?.agent !== true) return next();
     const form: SpawnForm = {
+      session_type: sessionType as SpawnForm['session_type'],
       session_role: sessionRole,
       team: team || undefined,
       team_lead: req.body?.team_lead === true,
-      prompt: String(req.body?.prompt ?? '').trim(),
-      name: String(req.body?.name ?? '').trim() || undefined,
+      prompt: String(req.body?.instructions ?? req.body?.prompt ?? '').trim(),
+      name,
       dial: req.body?.dial === 'user' || req.body?.dial === 'read' || req.body?.dial === 'write' ? req.body.dial : undefined,
       project_root: String(req.body?.project_root ?? '').trim() || undefined,
       cmd: String(req.body?.cmd ?? '').trim() || undefined,
@@ -177,7 +209,8 @@ export function registerLaunch(app: express.Express): void {
       // shell in an agent tile, so there is nothing for a machine to type at — which is the
       // whole ruling (wip/buildouts/LAUNCH_READY.md). An `agent: none` kind passes no argv
       // and gets the login shell, exactly as before: OpenShell is untouched.
-      launch = resolved.agent ? await launchArgv(resolved.cmd, resolved.brief) : { argv: [], parked: false };
+      const launchWords = resolved.session_type === 'bare_metal_agent' ? (form.prompt ?? '') : resolved.brief;
+      launch = resolved.agent ? await launchArgv(resolved.cmd, launchWords) : { argv: [], parked: false };
       if (resolved.agent && !launch.argv.length) {
         return res.status(400).json({
           error: `Could not find ${resolved.cmd.trim().split(/\s+/)[0]} on this machine. Install it from ⚙ Configuration, then launch again.`,
@@ -205,12 +238,15 @@ export function registerLaunch(app: express.Express): void {
       // The project_root the session serves, written at birth — the one moment tagging
       // reliably happens. Two shipped tools (tejun-recall, tejun-remember) read this to
       // scope a memory and nothing used to set it.
-      if (resolved.project_root) await setProjectRoot(resolved.name, resolved.project_root);
+      if (resolved.project_root && resolved.session_type !== 'bare_metal_agent') await setProjectRoot(resolved.name, resolved.project_root);
       // THE CAMPAIGN, beside the project_root and for the same reason: one value, known at
       // birth, and the axis every view filters on. It is taken from the Cowork the Agent is
       // born onto when there is one, and otherwise from the initial Campaign — a rōnin has
       // a Campaign too, which is exactly why this is not derived from membership.
-      await setCampaign(resolved.name, await birthCampaign(resolved.team, form.campaign_id));
+      const campaignId = resolved.session_type === 'bare_metal_agent'
+        ? (form.campaign_id || await initialCampaignId())
+        : await birthCampaign(resolved.team, form.campaign_id);
+      await setCampaign(resolved.name, campaignId);
       // WHICH CLI, written at birth for the same reason the project_root is: this is the
       // one moment it is known. The cmd names the CLI, and a minute from now tmux can only
       // say the pane is running `node`. NOT for the roster — that column is the scraped
@@ -224,18 +260,20 @@ export function registerLaunch(app: express.Express): void {
       // than left for the agent to guess at facts that were never in doubt. The role is
       // the session's from here (`write_tegami`); the teams block is the machinery's.
       // We never overwrite a letter that exists. See src/tegami.ts.
-      await seedTegami(
-        resolved.name,
-        resolved.session_role,
-        resolved.assignment?.desks.length
-          ? resolved.assignment.desks.map((d) => ({ repo: d.repo, branch: d.branch, worktree: d.worktree, line: d.line }))
-          : await checkoutAt(resolved.dir),
-        await deriveTeams(resolved.tags),
-      );
+      if (resolved.session_type === 'cowork_agent') {
+        await seedTegami(
+          resolved.name,
+          resolved.session_role,
+          resolved.assignment?.desks.length
+            ? resolved.assignment.desks.map((d) => ({ repo: d.repo, branch: d.branch, worktree: d.worktree, line: d.line }))
+            : await checkoutAt(resolved.dir),
+          await deriveTeams(resolved.tags),
+        );
+      }
       // THE BIRTH BASELINE for the task observer: this task's reading is already in the
       // brief, so it is recorded as delivered and the first tick does not send it again
       // (src/role-watch.ts).
-      await markRoleDelivered(resolved.name, resolved.session_role);
+      if (resolved.session_type === 'cowork_agent') await markRoleDelivered(resolved.name, resolved.session_role);
       await setControl(resolved.name, resolved.dial);
     } catch (e) {
       void appendLedger(form, resolved, false);
@@ -264,10 +302,22 @@ export function registerLaunch(app: express.Express): void {
       cmd: resolved.cmd,
     });
 
-    res.json({
+    if (resolved.session_type === 'bare_metal_agent') {
+      res.json({
+        ok: true,
+        name: resolved.name,
+        session_type: resolved.session_type,
+        dir: resolved.dir,
+        cmd: resolved.cmd,
+        tags: resolved.tags,
+        campaign_id: form.campaign_id || await initialCampaignId(),
+        birth: 'none',
+      });
+    } else res.json({
       ok: true,
       name: resolved.name,
       receipt: {
+        session_type: resolved.session_type,
         session_role: resolved.session_role,
         team: resolved.team,
         team_role: resolved.team_role,
@@ -279,7 +329,9 @@ export function registerLaunch(app: express.Express): void {
         tags: resolved.tags,
         mcp: resolved.mcp,
         team_lead: !!form.team_lead && !!resolved.team,
-        boot: { state: 'open', brief: launch.parked ? 'parked' : 'argv' },
+        ...(resolved.session_type === 'cowork_agent'
+          ? { boot: { state: 'open', brief: launch.parked ? 'parked' : 'argv' } }
+          : {}),
         // The receipt says which desks this session was born with — repo, branch, path,
         // line — or an empty list, which is the honest receipt for most launches.
         desks: resolved.assignment?.desks.map((d) => ({ repo: d.repo, branch: d.branch, worktree: d.worktree, line: d.line })) ?? [],
@@ -302,8 +354,8 @@ export function registerLaunch(app: express.Express): void {
       // creation time, so it cannot be known before there is a session. Those go on the
       // shelf, and the ladder says where. On a build with no services and a vendor that
       // takes a prompt — which is every vendor today — this does nothing at all.
-      const birthLines = await collectBirthLines(resolved.name, !!resolved.agent);
-      if (!resolved.agent) return;
+      if (resolved.session_type !== 'cowork_agent' || !resolved.agent) return;
+      const birthLines = await collectBirthLines(resolved.name, true);
       const shelved = [launch.parked ? resolved.brief : '', birthLines].filter(Boolean).join('\n');
       if (!shelved) return;
       const at = await parkBrief(resolved.name, shelved);
@@ -422,29 +474,6 @@ export function registerLaunch(app: express.Express): void {
     }
   });
 
-  // launch_bare — a name and nothing else.
-  const launchBare: express.RequestHandler = async (req, res) => {
-    const name = String(req.body?.name ?? '').trim();
-    if (!isValidName(name)) {
-      return res.status(400).json({ error: 'Invalid name. Use letters, digits, _ or - (no spaces, . or :).' });
-    }
-    if (await sessionExists(name)) {
-      return res.status(409).json({ error: `Session "${name}" already exists.` });
-    }
-    try {
-      await emitSessionWillBorn(name);
-      // A bare shell: never refused at the max (see CreateOpts), still counted.
-      await createSession(name, undefined, { agent: false });
-      // The other creation path, and it is a birth like launch_job's — seed as newborn, not
-      // as backfill, so the session starts held at its go/no-go rather than blank.
-      void collectBirthLines(name, true);
-      res.json({ ok: true, name });
-    } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
-    }
-  };
-  app.post('/api/launch', launchBare);
-
   /**
    * THE SESSION DOOR — `POST /api/session { name, caller?, team?, team_lead?, …launch keys }`
    * (owner, 2026-08-26). Every key is optional and falls
@@ -483,7 +512,7 @@ export function registerLaunch(app: express.Express): void {
       }
       if (!campaignId) campaignId = origin?.campaign_id ?? '';
     }
-    req.body = { ...req.body, agent: true, name: name || undefined, team: team || undefined, campaign_id: campaignId || undefined };
+    req.body = { ...req.body, session_type: req.body?.session_type ?? 'cowork_agent', name: name || undefined, team: team || undefined, campaign_id: campaignId || undefined };
     // The receipt is launchJob's; `team_from` rides on top of it so the two doors never
     // disagree about what a launch is — only about how the team was chosen.
     const send = res.json.bind(res);

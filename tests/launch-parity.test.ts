@@ -135,6 +135,42 @@ test('equivalent specs from Commons and forkit resolve to the same launch', asyn
   assert.deepEqual(mechanism(fromForkit), mechanism(fromCommons));
 });
 
+test('session_type is the only birth-path key, and blank session_role is an ordinary cowork Agent', async () => {
+  const cowork = await resolveForm(commonsForm({ session_type: 'cowork_agent', session_role: '' }), new Set());
+  assert.equal(cowork.session_type, 'cowork_agent');
+  assert.equal(cowork.session_role, '');
+  assert.equal(cowork.agent, true);
+  assert.ok(cowork.brief, 'a cowork Agent receives the Ronin birth brief');
+  assert.ok(cowork.birth_reading.length, 'a cowork Agent receives the boot shelf');
+
+  const terminal = await resolveForm(commonsForm({ session_type: 'terminal', session_role: '' }), new Set());
+  assert.equal(terminal.session_type, 'terminal');
+  assert.equal(terminal.agent, false);
+  assert.equal(terminal.brief, '');
+  assert.deepEqual(terminal.birth_reading, []);
+  assert.equal(terminal.assignment, null);
+});
+
+test('bare_metal_agent resolves a real CLI without Ronin birth machinery', async () => {
+  const bare = await resolveForm(commonsForm({
+    session_type: 'bare_metal_agent',
+    session_role: '',
+    name: 'bare-proof',
+    provider: 'anthropic',
+    team: 'scratchteam',
+  }), new Set());
+  assert.equal(bare.session_type, 'bare_metal_agent');
+  assert.equal(bare.agent, true);
+  assert.ok(bare.cmd, 'the provider CLI is resolved');
+  assert.ok(bare.launchAgent, 'the launched provider is stamped');
+  assert.equal(bare.brief, '', 'Ronin composes no brief');
+  assert.deepEqual(bare.birth_reading, [], 'Ronin reads no boot shelf');
+  assert.equal(bare.assignment, null, 'Ronin opens no managed repository desk');
+  assert.deepEqual(bare.tags, ['scratchteam'], 'Team is only an addressing tag');
+  assert.equal(bare.team_objective, '', 'the Team roster does not resolve into the launch');
+  assert.equal(bare.team_role, '', 'the Team kit does not resolve into the launch');
+});
+
 test('and to the same reading list — all + root + role, compiled once', async () => {
   const fromCommons = await resolveForm(commonsForm(), new Set());
   const fromForkit = await resolveForm(forkitForm({ prompt: commonsForm().prompt }), new Set());
