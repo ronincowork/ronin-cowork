@@ -147,6 +147,14 @@ export const STORES: readonly Store[] = [
     when: 'first SOP written',
   },
   {
+    id: 'ways',
+    root: 'user',
+    rel: 'ways',
+    what: "the user's own ways of working — files here shadow ways/ file-for-file",
+    createdBy: 'the owner defining a way of working',
+    when: 'first way of working written',
+  },
+  {
     id: 'library',
     root: 'user',
     rel: 'library',
