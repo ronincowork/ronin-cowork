@@ -31,11 +31,13 @@ kill mode SIGTERMs everything in a unit's cgroup when it stops. So a server Roni
 is a server that dies every time Ronin restarts — taking every session on the box with it,
 with nothing in any log that looks like a kill.
 
-This is fixed structurally: `deploy/tmux-server.service` owns the server,
+This is fixed structurally: `deploy/tmux-server.service` owns the server, and
 `src/host-guard.ts` warns when the running server shares Ronin's cgroup and asks systemd
-rather than forking one itself. **The why, the failure, and the cutover for a box already
-in the broken state are in `docs/tmux-server-cgroup.md`** — go there before changing
-anything about the units. Do not re-derive it here.
+rather than forking one itself. **Changing the units is not a session's work.** The cgroup
+theory and the one-time cutover for a box already in the broken state are maintenance the
+owner performs when the machine is quiet. They are deliberately not carried here: nothing
+you can read from inside a session should tell you how to end every session in it. If the
+walk below says this box is in the broken state, report it and stop.
 
 ## What you may not do
 
@@ -44,8 +46,13 @@ anything about the units. Do not re-derive it here.
 - **Never `tmux kill-server`.** On any socket that has live sessions, and most especially
   not from inside a pane — `$TMUX` outranks `TMUX_TMPDIR`, so a scratch-rig teardown that
   forgets `env -u TMUX` lands on the live server. That has happened here.
-- **Never `systemctl --user restart tmux-server` while sessions exist.** That unit owns
-  them; stopping it is not a way to refresh anything.
+- **Never stop or restart the service that owns the tmux server.** It holds every session
+  on the box; stopping it is not a way to refresh anything, and it is not a repair you can
+  perform from inside a session it is holding. There is no tool here that can reach it and
+  no page here that spells the command, on purpose. **If what you actually need is Ronin
+  restarted** — to pick up a code change, or to sweep leftover viewers — that is ordinary
+  and cheap and it has its own tool: `tejun-machine-restart`, which takes no argument and
+  can restart nothing else.
 - **Never `pkill -f`.** The pattern matches your own shell, because your command line
   contains the word, and it matches any process whose path contains it. It has produced a
   wrong census three times in one session and once made a cleanup guard protect the very
@@ -56,10 +63,12 @@ anything about the units. Do not re-derive it here.
   all of which run `killSessionTree()` and sweep the group.
 - **Do not tidy `grid_*` sessions by hand.** Each one may be somebody's open tile.
 
-Two of these are enforced where `bin/shim` precedes `/usr/bin` on `PATH`, and only there:
-the shimmed `systemctl` refuses to stop the server unit while sessions live, and the
-shimmed `tmux` refuses an ambiguous scratch-socket kill. `which systemctl` says whether the
-guard is in force on this box. Where it is not, the rule is written down and nothing else.
+Two of these are enforced by shims: a `systemctl` that refuses to stop the server unit
+while sessions live, and a `tmux` that refuses an ambiguous scratch-socket kill. Both are
+projected onto every Agent's `PATH` at birth, ahead of `/usr/bin`, so they hold without a
+login shell and without an rc file having been sourced. `which systemctl tmux` says whether
+they are in force where you are standing — a `/usr/bin/...` answer means you are outside
+the projection, and there the rule is written down and nothing else.
 
 ## Reading the session list
 
@@ -87,9 +96,9 @@ Ask tmux for its own server pid rather than hunting a process name: **the server
 is the trap below.
 
 Anything naming Ronin's own unit is the failure above: the next Ronin restart ends every
-session. **Do not fix it silently** — the repair replaces the server and therefore ends the
-sessions it holds. Report it, name `docs/tmux-server-cgroup.md`, and let the owner pick the
-moment.
+session. **Do not fix it silently, and do not fix it at all.** The repair replaces the
+server and therefore ends every session it holds — yours among them, mid-command. Report
+what the command printed and let the owner pick the moment.
 
 **2 — Are the guards in force?**
 
@@ -135,9 +144,9 @@ churn and **a steady pile is now worth reporting**: it means something orphaned 
 or a session ended outside Ronin. They are inert either way: they run nothing and cost a
 session structure each.
 
-**The remedy is to restart Ronin, not to kill them.** Ronin sweeps every viewer at boot and
-at shutdown, and restarting Ronin does not touch the tmux server or any real session once
-step 1 is satisfied. Killing them by hand risks closing a live tile and gains nothing.
+**The remedy is to restart Ronin, not to kill them** — `tejun-machine-restart`. Ronin
+sweeps every viewer at boot and at shutdown, and restarting Ronin does not touch the tmux
+server or any real session once step 1 is satisfied. Killing them by hand risks closing a live tile and gains nothing.
 
 **6 — Any session whose agent has already exited?**
 

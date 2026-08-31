@@ -56,7 +56,8 @@ export PATH="<repo>/bin/shim:<repo>/bin:$PATH"   # <repo> is wherever you cloned
 ```
 
 (`bin/shim/` holds one sibling with nothing to do with dials: `systemctl`, which refuses
-to stop the unit that owns every session — see `tmux-server-cgroup.md`.)
+to stop the unit that owns every tmux session on the box. Restarting Ronin itself is
+ordinary and passes straight through — `tejun-machine-restart` is the tool for it.)
 
 It is deliberately **vendor-neutral**. It knows nothing about which CLI is calling —
 claude, codex, pi, a shell script, a person at a prompt all get the same treatment,

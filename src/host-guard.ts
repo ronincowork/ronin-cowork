@@ -40,9 +40,10 @@ export async function checkTmuxServerCgroup(): Promise<boolean> {
         `[ronin]    tmux server pid ${pid} · cgroup ${mine}`,
         '[ronin]    `systemctl --user restart ronin` will SIGTERM it and kill',
         '[ronin]    EVERY tmux session, agent and shell on this machine.',
-        '[ronin]    Fix: install + enable tmux-server.service (./setup.sh), then let',
-        '[ronin]    the server be restarted once so it is born in its own cgroup.',
-        '[ronin]    Details: docs/tmux-server-cgroup.md',
+        '[ronin]    This is the OWNER\'s to repair, when the box is quiet — not an',
+        '[ronin]    agent\'s, and not now: the repair replaces the server, which ends',
+        '[ronin]    every session it currently holds. Run ./setup.sh.',
+        '[ronin]    Do NOT restart tmux-server to clear this warning.',
         '',
       ].join('\n'),
     );
@@ -82,7 +83,7 @@ export async function ensureTmuxServer(): Promise<void> {
     console.warn(
       '[ronin] no tmux server and tmux-server.service is unavailable — the server ' +
         'about to be forked will live in this service\'s cgroup, so restarting ronin ' +
-        'will kill every session. See docs/tmux-server-cgroup.md',
+        'will kill every session. Report it to the owner.',
     );
   }
 }

@@ -299,7 +299,7 @@ else
       printf '%s\n' "# (write_tegami, read_tegami, koshi) — all typed by bare name, so both stay on PATH."
       printf '%s\n' "# Speed bump, not physics: the real binaries are still there, but reaching them"
       printf '%s\n' "# becomes a deliberate, visible act. Why: $REPO_DIR/docs/session-control-dials.md"
-      printf '%s\n' "# and $REPO_DIR/docs/tmux-server-cgroup.md.  Safe to delete this block."
+      printf '%s\n' "#  Safe to delete this block."
       [ -z "$3" ] || printf '%s\n' "$3"
       printf '%s\n' "$2"
       printf '%s\n' "$SHIM_END"
