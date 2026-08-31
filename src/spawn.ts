@@ -18,6 +18,7 @@ import { initialCampaignId } from './campaign-scope.js';
 import { resolveLaunchSeed } from './launch-seed.js';
 import { resolveBehaviourBooks, type DeliveredBehaviour } from './behaviours.js';
 import { templateProvenance } from './template-provenance.js';
+import { profileDir, resolveHouseSeatProfile, type HouseSeat } from './house-seats.js';
 /**
  * The mechanical executor: a filled form in, a briefed session out.
  *
@@ -38,7 +39,7 @@ export interface SpawnForm {
   /** The birth path. This is the route key; session_role is never used to infer it. */
   session_type?: 'cowork_agent' | 'bare_metal_agent' | 'terminal';
   /** Server-owned house birth. Never accepted from the public launch body. */
-  house_seat?: 'mika';
+  house_seat?: HouseSeat;
   /**
    * WHAT the session is doing right now. Optional and mutable — the session rewrites it
    * with `write_tegami` and the owner rewrites it from the tile, and either write
@@ -297,18 +298,6 @@ export function slugName(intentKind: string, prompt: string, taken: Set<string>)
 }
 
 /**
- * The profile's own working directory, if the cascade fixed one. `{install}` — the only
- * value a definition may carry, enforced in `src/launch-profile.ts` — is this Ronin's own
- * directory, resolved here at launch.
- *
- * A sentinel rather than a path, because a shipped definition naming a directory would be
- * a shipped file naming a machine (JUSHO).
- */
-function profileDir(profile: LaunchProfile): string {
-  return profile.dir === '{install}' ? REPO_ROOT : '';
-}
-
-/**
  * The birth reading list, plus THE TEAM-BUILDING SOP for a lead launch.
  *
  * A session_role that is some family's `default_lead_role` is the coordinating kind of
@@ -382,30 +371,7 @@ export async function resolveForm(
         : await readTeamRoster(form.team, campaignId) ?? await readTeamRoster(form.team, ''))
     : null;
   // THE CASCADE, and every refusal it makes happens here — before a session exists.
-  let profile = resolveLaunchProfile(taskDef);
-  if (form.house_seat === 'mika') {
-    const house = [{ layer: 'house' as const, source: 'src/spawn.ts' }];
-    profile = {
-      ...profile,
-      label: 'Mika Assist',
-      posture: [
-        'You assist rather than build. Answer from what you can actually check, name what you used, and say you do not know rather than guessing. A helpful assistant for Ronin itself, never the owner\'s own code. Be short. Answer from the house\'s documents and name the one you used; say you don\'t know rather than guessing. Propose, never write: show a change as what it will become and wait for a yes.',
-      ],
-      ack: false,
-      opening: 'Your job list is ronin_catalogs/MIKA_MACROS.md — read it once, it is short. Then: {prompt}',
-      capExempt: true,
-      dir: '{install}',
-      stated_by: {
-        ...profile.stated_by,
-        label: house,
-        posture: house,
-        ack: house,
-        opening: house,
-        capExempt: house,
-        dir: house,
-      },
-    };
-  }
+  const profile = resolveHouseSeatProfile(form.house_seat, resolveLaunchProfile(taskDef));
   const parentSeed = coworkAgent && campaign
     ? resolveLaunchSeed({
         campaign,
