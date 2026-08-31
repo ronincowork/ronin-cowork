@@ -47,8 +47,7 @@ for field, env in (("prompt", "PROMPT"), ("name", "NAME"), ("team", "TEAM"),
 print(json.dumps(b))
 PY
 ) || die 'could not compose launch request' 2
-URL="${RONIN_URL:-$(tmux show-option -s -qv @ronin-url 2>/dev/null || true)}"
-[ -n "$URL" ] || URL=http://127.0.0.1:3006
+URL=$(ronin-url) || exit $?
 AUTH=()
 [ -n "${RONIN_AUTH:-}" ] && AUTH=(-u "$RONIN_AUTH")
 OUT=$(mktemp /tmp/tejun-fork.XXXXXX) || exit 2

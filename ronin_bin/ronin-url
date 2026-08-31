@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# ronin-url — resolve the live Ronin operator address for zero-dependency shell tools.
+#
+# The address is a fact about this running operator, never a Campaign default and never a
+# guess a caller may carry. RONIN_URL is the explicit override; otherwise the operator's
+# tmux server option is the one bus shared by every session.
+set -u
+
+if [ -n "${RONIN_URL:-}" ]; then
+  printf '%s\n' "$RONIN_URL"
+  exit 0
+fi
+
+url=""
+if command -v tmux >/dev/null 2>&1; then
+  url=$(tmux show-option -s -qv @ronin-url 2>/dev/null || true)
+fi
+if [ -n "$url" ]; then
+  printf '%s\n' "$url"
+  exit 0
+fi
+
+cat >&2 <<'EOF'
+REFUSED: Ronin's address could not be resolved. Ronin may not be running.
+Start Ronin, or set RONIN_URL to its address and try again.
+EOF
+exit 4
