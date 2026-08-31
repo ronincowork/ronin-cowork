@@ -5,8 +5,8 @@
 - **reading:** —
 - **sops:** accounts, install, remote_machine_admin, remote_machine_health, tmux_server, vpn
 - **macros:** —
-- **actions:** survey-machine, survey-secrets, survey-account
-- **tools:** tejun-survey, tejun-account, tejun-secrets
+- **actions:** survey-machine, survey-secrets, survey-account, restart-ronin
+- **tools:** tejun-survey, tejun-account, tejun-secrets, tejun-machine-restart
 - **mcp:** —
 - **requires:** ronin_base
 - **order:** 40
