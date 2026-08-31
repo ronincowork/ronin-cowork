@@ -123,12 +123,77 @@ export const campaignFile = (id: string): string => path.join(dir(), `${id}.json
  */
 export const FRESH_CAMPAIGNS: ReadonlyArray<CampaignEdit & { id: string }> = Object.freeze([
   Object.freeze({
-    id: 'ronin_home',
+    id: 'home_machine',
     title: 'Ronin Home',
     description: '',
     desk_profile: '',
   }),
 ]);
+
+export type SetupKind = 'open' | 'coding' | 'work' | 'personal' | 'household' | 'social' | 'school';
+export type SetupRoutineBundle = 'nothing' | 'floor' | 'base' | 'control' | 'services';
+
+const KIND_BEHAVIOURS: Record<SetupKind, string[]> = {
+  open: [],
+  coding: ['sops:github', 'sops:ronin_methodology', 'sops:teams'],
+  work: ['sops:teams'],
+  personal: [],
+  household: [],
+  social: ['sops:teams'],
+  school: [],
+};
+
+/**
+ * ATARASHI'S ONE WRITE. The setup surface sends only answers; this writer turns them
+ * into the complete first Campaign record. `kind` is consumed as a preset and is never
+ * stored on the Campaign. Routine definitions are read here so a newly installed
+ * specialized Routine receives an explicit false instead of becoming an absent key.
+ */
+export async function populateHomeMachine(input: {
+  title?: unknown;
+  description?: unknown;
+  desk_profile?: unknown;
+  provider?: unknown;
+  model?: unknown;
+  kind?: unknown;
+  routine_bundle?: unknown;
+}): Promise<CampaignConfig> {
+  const existing = await readCampaign('home_machine');
+  const campaign = existing ?? await createCampaign({
+    id: 'home_machine',
+    title: str(input.title, TITLE_MAX) || 'Ronin Home',
+    description: str(input.description, DESCRIPTION_MAX),
+    desk_profile: str(input.desk_profile, DESK_PROFILE_MAX),
+  });
+  const kind = (['open', 'coding', 'work', 'personal', 'household', 'social', 'school'] as const)
+    .includes(input.kind as SetupKind) ? input.kind as SetupKind : 'open';
+  const bundle = (['nothing', 'floor', 'base', 'control', 'services'] as const)
+    .includes(input.routine_bundle as SetupRoutineBundle)
+    ? input.routine_bundle as SetupRoutineBundle : 'control';
+  const { readDefinitions } = await import('./definitions.js');
+  const routineNames = (await readDefinitions('routines')).map((row) => row.name);
+  const routines = Object.fromEntries(routineNames.map((name) => [name,
+    bundle === 'services'
+      ? true
+      : name === 'ronin_base'
+        ? bundle === 'base' || bundle === 'control'
+        : name === 'ronin_control' && bundle === 'control',
+  ]));
+  return writeCampaign(campaign.id, {
+    title: str(input.title, TITLE_MAX) || campaign.title,
+    description: input.description === undefined ? campaign.description : str(input.description, DESCRIPTION_MAX),
+    desk_profile: input.desk_profile === undefined ? campaign.desk_profile : str(input.desk_profile, DESK_PROFILE_MAX),
+    config: { agent_defaults: {
+      provider: str(input.provider, 120),
+      model: str(input.model, 120),
+      reach: 'plan', recruit: 'propose agents', output: 'open',
+      routines,
+      behaviours: KIND_BEHAVIOURS[kind],
+      dial: 'write',
+      permissions: 'default',
+    } },
+  });
+}
 
 export function campaignIdFrom(title: string): string {
   const slug = String(title ?? '')
