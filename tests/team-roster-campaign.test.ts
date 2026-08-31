@@ -25,7 +25,6 @@ const {
   deleteTeamRoster,
   listTeamRosters,
   readTeamRoster,
-  renameTeamRoster,
   teamRosterFile,
   writeTeamRoster,
 } = await import('../src/team-rosters.js');
@@ -92,16 +91,9 @@ test('an unscoped read of a name held by two Campaigns refuses instead of pickin
   );
 });
 
-test('rename stays inside its Campaign', async () => {
-  const renamed = await renameTeamRoster('dev', 'delivery', 'home');
-  assert.equal(renamed.campaign_id, 'home');
-  assert.equal(await readTeamRoster('delivery', 'health'), null, 'the other Campaign did not move');
-  assert.equal((await readTeamRoster('dev', 'health'))?.objective, 'ship the health app');
-});
-
 test('dissolve deletes only the addressed Campaign’s record', async () => {
-  await deleteTeamRoster('delivery', 'home');
-  assert.equal(await readTeamRoster('delivery', 'home'), null);
+  await deleteTeamRoster('dev', 'home');
+  assert.equal(await readTeamRoster('dev', 'home'), null);
   assert.equal((await readTeamRoster('dev', 'health'))?.objective, 'ship the health app', 'its twin survives');
 });
 

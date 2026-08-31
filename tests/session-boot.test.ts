@@ -83,6 +83,46 @@ test('every assisted session is handed the required abilities', async () => {
   }
 });
 
+test('accepted Routine reading drafts keep universal compatibility teaching', async () => {
+  const repo = path.join(path.dirname(new URL(import.meta.url).pathname), '..');
+  const [required, protocols, base, services, control, machine, machineProtocols] = await Promise.all([
+    readFile(path.join(repo, 'ronin_session_boot', 'all', 'REQUIRED_ABILITIES.md'), 'utf8'),
+    readFile(path.join(repo, 'ronin_session_boot', 'all', 'TEST_PROTOCOLS.md'), 'utf8'),
+    readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_base', 'BASE_ABILITIES.md'), 'utf8'),
+    readFile(path.join(repo, 'ronin_session_boot', 'proposed', 'ronin_services', 'SERVICES_ABILITIES.md'), 'utf8'),
+    readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_control', 'CONTROL_TEST_PROTOCOLS.md'), 'utf8'),
+    readFile(path.join(repo, 'ronin_session_boot', 'routine', 'machine', 'MACHINE_ABILITIES.md'), 'utf8'),
+    readFile(path.join(repo, 'ronin_session_boot', 'routine', 'machine', 'MACHINE_TEST_PROTOCOLS.md'), 'utf8'),
+  ]);
+
+  assert.match(base, /tejun forkit/);
+  assert.match(base, /read_tegami/);
+  assert.match(base, /tejun-wipeboard/);
+  assert.doesNotMatch(base, /tejun-rireki/);
+  assert.match(services, /Unassigned reading inventory/);
+  assert.match(services, /not startup reading until/);
+  assert.match(services, /tejun-rireki <session> since/);
+  assert.match(services, /Koshi is Ronin's assisted administrative behavior/);
+  assert.match(services, /Voice turns the owner's speech into text/);
+  assert.match(services, /Hotwords are the owner's dictation glossary/);
+  assert.match(services, /Selection is not installation/);
+  assert.doesNotMatch(services, /separate (?:Koshi|Voice|Hotwords) (?:Routine|switch)/i);
+  assert.match(control, /team promotion/i);
+  assert.match(control, /one full repository BYOIN/i);
+  assert.match(machine, /tejun-survey/);
+  assert.match(machine, /bin\/ronin-store --all/);
+  assert.match(machineProtocols, /installed third-party-box maintenance/);
+
+  // Compatibility stays universal until effective-Routine startup reading is delivered.
+  assert.match(required, /tejun forkit/);
+  assert.match(required, /tejun-wipeboard/);
+  assert.match(required, /tejun-survey/);
+  assert.match(protocols, /team promotion/i);
+  assert.match(protocols, /one full[\s\S]*repository BYOIN/i);
+  assert.match(protocols, /Installed-box maintenance/);
+  assert.match(protocols, /user-store customization/);
+});
+
 test('a referenced session is caught up on through the tape, pane peek as fallback', () => {
   const profile = {
     session_role: 'CheckWork',

@@ -91,7 +91,6 @@ function archiveRow(item, tile, enter) {
   revive.type = 'button';
   revive.className = 'home-archive-rehydrate';
   revive.textContent = t('archives.rehydrate_btn', 'Rehydrate');
-  revive.title = t('archives.rehydrate', 'Rehydrate {name}', { name: item.name });
   revive.addEventListener('click', async () => {
     revive.disabled = true;
     revive.textContent = t('archives.rehydrating', 'rehydrating…');

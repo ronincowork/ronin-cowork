@@ -1069,7 +1069,6 @@ The catalog entry goes. {dir} is not touched.
 - **archives.read_failed:** archive could not be read
 - **archives.empty:** no archived sessions
 - **archives.ago:** {age} ago
-- **archives.rehydrate:** Rehydrate {name}
 - **archives.rehydrate_btn:** Rehydrate
 - **archives.rehydrating:** rehydrating…
 - **archives.group_none:** Ronin — no team
@@ -1144,9 +1143,9 @@ The catalog entry goes. {dir} is not touched.
 ## head — tilehead.js (the tile head's help and quiet words)
 - **head.dial_help:** Who may touch this session: 👤 owner only · 👁 outside agents watch · 🤖 outside agents type. Yours to turn; agents never flip it.
 - **head.dot_help:** Connection: green = attached, grey = disconnected
-- **head.rename_help:** Rename this session
+- **head.rename_help:** Edit this Agent title
 - **head.rename_quiet:** Rename session — no session in this tile yet
-- **head.rename_prompt:** Rename session
+- **head.rename_prompt:** Edit Agent title
 - **head.rename_failed:** Could not rename session: {reason}
 - **head.view_work_record:** View Work Record
 - **head.work_record_help:** View repositories, current action, and the work record
@@ -1405,7 +1404,9 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.behaviour:** behaviour
 - **glossary.routine:** routine
 - **glossary.ronin_base:** Ronin Base
-- **glossary.ronin_control:** Ronin Control
+- **glossary.routine_floor:** Cowork floor
+- **glossary.ronin_control:** managed file coordination
+- **glossary.ronin_services:** Ronin Services
 - **glossary.specialized_routine:** specialized routine
 - **glossary.terminal:** terminal
 - **glossary.bare_metal_agent:** bare-metal Agent
@@ -1439,7 +1440,7 @@ The catalog entry goes. {dir} is not touched.
 - **league.team_lead:** Team Lead
 - **league.make_team_lead:** Make Lead
 - **league.rename_agent:** Rename
-- **league.rename_agent_prompt:** Rename Agent
+- **league.rename_agent_prompt:** Edit Agent title
 - **league.remove_member:** Remove
 - **league.remove_named_member:** Remove {name} from this team
 - **league.choose_member:** Choose an Agent to add

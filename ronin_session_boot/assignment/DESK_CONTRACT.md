@@ -41,6 +41,13 @@ leaves the desk until you hand in. No commit triggers a gate, a propagation, or 
   has one desk per repository, each at its own path. Every path is in your brief. A funnel
   point (`dev`, `team/<team>/dev`) is merged into and never written into — a commit made
   there is a wrong turn, and the guard will say so.
+- **Stop and ask the team lead when the desk is missing or contradictory.** Before the
+  first repository write, compare `tejun-desk status --assignment`, the desk block in your
+  brief, and the work record's `repos[]`. `NO-DESK` after a desk was promised, mismatched
+  paths or branches, and a checkout on `dev` or `team/<team>/dev` are blockers. Change
+  nothing there. Post the exact mismatch with `tejun-wipeboard post "…"`; the default
+  interrupts the team lead. The lead provisions or repairs the desk. Resume only in the
+  worktree the corrected status reports—never by making a branch or worktree yourself.
 - **Commit coherent checkpoints, privately.** Ordinary `git commit` in the desk's worktree.
   Scoped tests as part of the work are yours to run; they are not a boundary protocol.
 - **Hand in when the work is coherent for the team** — at a DONE leg on your ladder, and

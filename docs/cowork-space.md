@@ -51,7 +51,7 @@ Three kinds of thing, and only three, sit inside the bar:
 
 | `workspace_surface` | about | its head | what the head holds |
 |---|---|---|---|
-| **terminal_tile** | one session | **tile head** (`js/tilehead.js`) | ⛩ rename · session picker · job · branch · output selector · @ · ⚡ · メ · gauge · ladder chip. The Torii is first, immediately before the session name. |
+| **terminal_tile** | one session | **tile head** (`js/tilehead.js`) | ⛩ edit Agent title · View Work Record · output selector · @ · ⚡ · メ. The Torii is first, immediately before the readable title; the permanent session ID does not change. |
 | **team_commons** | one team | **commons strip** — the channel surface's tab strip | Docs (three pills: **Tracked** — what agents listed; **Plans** and **Docs** — the files under the places each project root names on its record, grouped by root, the team's repos first) · Wipeboard · Team Configuration (Chat hidden until it is a thing — owner, 2026-08-28). Reached from the **Team commons card**, first on the roster |
 | **cowork_commons** | this install and this owner | **Ronin Desk strip** — the same tab strip | Desk (Ronin usage stats) · Account (the desk's rail: Configuration · Appearance · Release & update · Hotwords · Koshi · gbrain · Log out) · Desk profile · Project roots · Archived · Help desk (Mika's door over a reserved chat) · Keypad (the pad's card, inline). The Team roster now lives on the Cowork workbench. |
 | **new_session** | one launch | **surface head** — T, then the name | the ＋ New session launcher, placed by ＋ Add team member (roster) or か New (bar), or `workspace1=new`; the newborn lands in that workspace |

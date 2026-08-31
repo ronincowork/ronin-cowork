@@ -82,7 +82,7 @@ const HEADER = () => {
   // The Torii stays as a house mark, but the dead embedded Commons does not. It is the
   // first control, immediately before the session name, and renames that session.
   { key: 'renameBtn', cls: 'torii rename', text: '⛩', needs: 'session',
-    help: t('head.rename_help', 'Rename this session'),
+    help: t('head.rename_help', 'Edit this Agent title'),
     quiet: t('head.rename_quiet', 'Rename session — no session in this tile yet'),
     on: (tile) => void tile.rename() },
 

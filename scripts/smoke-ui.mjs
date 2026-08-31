@@ -974,7 +974,9 @@ async function runPass({ label, browser, contextOpts }) {
     bad(`${label}: page did not load: ${e.message}`);
   }
   await page.waitForTimeout(3000);
-  const probeCard = page.locator('.wk-card', { hasText: PROBE }).first();
+  // Agent cards show their readable title; the fixed session ID remains the resource key.
+  // Never make seating depend on those two strings happening to be identical.
+  const probeCard = page.locator(`.wk-card[data-workbench-offer-resource="${PROBE}"]`).first();
   if (probeAvailable && await probeCard.count()) { await probeCard.click(); await page.waitForTimeout(1200); }
   // API health can answer before the phone workbench finishes constructing its Tiles.
   // Readiness is the probe seated through the selector, not an arbitrary sleep;

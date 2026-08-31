@@ -9,6 +9,8 @@ const pexec = promisify(execFile);
 
 export interface SessionInfo {
   name: string;
+  /** Owner-editable display title. The session name remains its permanent address. */
+  title: string;
   windows: number;
   attached: boolean;
   created: number;
@@ -36,6 +38,7 @@ export interface SessionInfo {
 
 /** tmux user option holding a session's post-it note. Lives and dies with the session. */
 const NOTE_OPT = '@ronin_note';
+const TITLE_OPT = '@ronin-title';
 
 /** tmux SERVER option holding Ronin's own base URL, for tools running inside a pane. */
 const URL_OPT = '@ronin-url';
@@ -138,15 +141,16 @@ export async function listSessions(): Promise<SessionInfo[]> {
     const { stdout } = await pexec('tmux', [
       'list-sessions',
       '-F',
-      `#{session_name}\t#{session_windows}\t#{?session_attached,1,0}\t#{session_created}\t#{?${NOTE_OPT},1,0}\t#{${TAGS_OPT}}\t#{${LEAD_OPT}}\t#{@ronin-control}\t#{@ronin-key}\t#{${AGENT_OPT}}\t#{${CAMPAIGN_OPT}}`,
+      `#{session_name}\t#{${TITLE_OPT}}\t#{session_windows}\t#{?session_attached,1,0}\t#{session_created}\t#{?${NOTE_OPT},1,0}\t#{${TAGS_OPT}}\t#{${LEAD_OPT}}\t#{@ronin-control}\t#{@ronin-key}\t#{${AGENT_OPT}}\t#{${CAMPAIGN_OPT}}`,
     ]);
     return stdout
       .split('\n')
       .filter(Boolean)
       .map((line) => {
-        const [name, windows, attached, created, hasNote, tags, leads, control, key, agent, campaign] = line.split('\t');
+        const [name, title, windows, attached, created, hasNote, tags, leads, control, key, agent, campaign] = line.split('\t');
         return {
           name,
+          title: title?.trim() || '',
           windows: Number(windows) || 0,
           attached: attached === '1',
           created: Number(created) || 0,
@@ -178,9 +182,11 @@ export async function sessionExists(name: string): Promise<boolean> {
   }
 }
 
-/** Rename one real tmux session exactly. Ronin identity and team options move with it. */
-export async function renameSession(name: string, next: string): Promise<void> {
-  await pexec('tmux', ['rename-session', '-t', exactSession(name), next]);
+export async function setSessionTitle(name: string, title: string): Promise<void> {
+  const clean = title.trim();
+  if (clean.length > 80 || /[\r\n\t]/.test(clean)) throw new Error('Agent title must be one line of 80 characters or fewer.');
+  if (clean) await pexec('tmux', ['set-option', '-t', exactPane(name), TITLE_OPT, clean]);
+  else await pexec('tmux', ['set-option', '-t', exactPane(name), '-u', TITLE_OPT]).catch(() => {});
 }
 
 /**

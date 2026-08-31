@@ -20,7 +20,6 @@ const {
   deleteTeamRoster,
   listTeamRosters,
   readTeamRoster,
-  renameTeamRoster,
   writeTeamRoster,
 } = await import('../src/team-rosters.js');
 const { deriveTeams } = await import('../src/tegami.js');
@@ -80,11 +79,8 @@ test('the letter derives its teams block from tags + rosters, tag-only teams inc
   ]);
 });
 
-test('rename moves the record; dissolve deletes the roster and only the roster', async () => {
-  const r = await renameTeamRoster('alpha', 'omega');
-  assert.equal(r.name, 'omega');
+test('dissolve deletes the roster and only the roster', async () => {
+  await deleteTeamRoster('alpha');
   assert.equal(await readTeamRoster('alpha'), null);
-  await deleteTeamRoster('omega');
-  assert.equal(await readTeamRoster('omega'), null);
-  await assert.rejects(() => deleteTeamRoster('omega'), /has no roster/);
+  await assert.rejects(() => deleteTeamRoster('alpha'), /has no roster/);
 });

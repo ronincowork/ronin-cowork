@@ -5,16 +5,16 @@ reading, discoverable SOPs, macros, actions, command-line tools and MCP connecti
 Routine changes what a newly launched Agent is offered. Changing a switch never mutates
 an Agent already running.
 
-## The four levels
+## Four ways to work
 
-| Level | Meaning | Switchable |
+| Choice | Meaning | How it is chosen |
 |---|---|---|
-| Routine floor | The launch machinery that resolves, delivers and records every Routine. | No |
-| Ronin Base | Ronin's ordinary macros, documents, work records and session coordination. | Yes |
-| Ronin Control | Managed repository desks, hand-in, team promotion, receipts and Git guards. | Yes |
-| Specialized Routine | One optional capability or methodology: Machine, gbrain, Koshi, Ronin Koe, or a future third-party method. | Yes |
+| Bare-metal Agent | A provider CLI in an always-on tmux terminal, with no Ronin reading, Library material, work record or Routines. | Choose the bare-metal launch. |
+| Cowork floor | The minimum Cowork launch, identity and Routine-delivery machinery. | Included with every Cowork Agent. |
+| Ronin Base | Ronin's ordinary macros, documents, work records, messaging and session coordination. | Selectable Routine. |
+| Managed file coordination | Managed worktrees, hand-in, lead integration, receipts and Git safeguards. | Selectable Routine. |
 
-The **Routine floor** is not a Routine. It is the minimum needed to make any Routine
+The **Cowork floor** is not a Routine. It is the minimum needed to make any Routine
 choice real: unified Agent launch, Campaign and Team resolution, the universal vocabulary
 and shelf map, Routine resolution, minimum command delivery, Control initialization and
 the birth receipt. Ordinary working behaviours such as fork, tell and wipeboard belong to
@@ -38,12 +38,17 @@ govern the machine rather than equip the Agent.
 Bare metal is not “all Routines off.” A Cowork Agent with every switch off still receives
 the Routine floor. Bare metal explicitly bypasses the Cowork birth transaction.
 
-**Ronin Base** and **Ronin Control** are separate. A Team can use Ronin's normal macros
-without acquiring repository worktrees. Repository arrangement states whether Ronin
-Control's desk behaviour applies to a repository; it is not another Routine switch.
+**Ronin Base** and **Managed file coordination** are separate. A Team can use Ronin's
+normal macros without acquiring repository worktrees. Repository arrangement states where
+managed worktree behaviour applies; it is not another Routine switch.
 
-**Ronin Koe** is one specialized Routine containing Voice and Hotwords. Hotwords have no
-independent use when Voice is unavailable, so there is no separate Hotwords Routine.
+**Specialized Routines** remain independent optional packages for one capability or
+methodology: Machine, gbrain, Ronin Services, or a future third-party method.
+
+**Ronin Services** is one specialized Routine containing the durable session record,
+Koshi, Voice and Hotwords. None is a standalone Routine or switch in this rollout.
+Hotwords have no independent use when Voice is unavailable. Installing Services or seeing
+one of its registered services proves availability only; it never selects the Routine.
 
 ## Campaign defaults and Team overrides
 
