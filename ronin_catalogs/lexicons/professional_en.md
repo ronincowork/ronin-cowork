@@ -19,13 +19,10 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **add_agent.default:** default
 - **add_agent.task:** task  (optional)
 - **add_agent.task_open:** open
+- **add_agent.desk_line_control:** Managed file coordination is on for this Team: the desk contract applies, and a worktree is cut when the work needs it.
+- **add_agent.desk_line_plain:** Managed file coordination is off for this Team: this Agent works in the shared checkout and reports to you.
 - **add_agent.shell:** Open a shell, not an Agent
 - **add_agent.shell_why:** A raw terminal in this Team — no Agent is launched and nothing is sent to it.
-- **add_agent.worktree:** Request a worktree
-- **add_agent.worktree_on:** Its own worktree, under managed file coordination: the desk contract, hand-in and the Git safeguards.
-- **add_agent.worktree_on_plain:** Its own worktree, for isolation only — no hand-in and no one to hand to, so it reports to you.
-- **add_agent.worktree_off:** No worktree at birth. Under managed file coordination it can cut one when the work needs it.
-- **add_agent.worktree_off_plain:** No worktree. This Agent works in the shared checkout.
 - **add_agent.actions:** Launch actions
 - **add_agent.start:** Start
 - **add_agent.cancel:** Cancel

@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `behaviour.*` may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1455 keys · 58 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1452 keys · 58 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## add_agent
 
@@ -20,6 +20,8 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `add_agent.card` | Add Agent to Team |  |  |  |  |
 | `add_agent.card_summary` | The Team answers the rest. |  |  |  |  |
 | `add_agent.default` | default |  |  |  |  |
+| `add_agent.desk_line_control` | Managed file coordination is on for this Team: the desk contract applies, and a worktree is cut when the work needs it. |  |  |  |  |
+| `add_agent.desk_line_plain` | Managed file coordination is off for this Team: this Agent works in the shared checkout and reports to you. |  |  |  |  |
 | `add_agent.instruction` | instruction |  |  |  |  |
 | `add_agent.instruction_placeholder` | what this Agent should do |  |  |  |  |
 | `add_agent.model` | model |  |  |  |  |
@@ -39,11 +41,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `add_agent.task_open` | open |  |  |  |  |
 | `add_agent.team` | team |  |  |  |  |
 | `add_agent.title` | Add Agent to Team |  |  |  |  |
-| `add_agent.worktree` | Request a worktree |  |  |  |  |
-| `add_agent.worktree_off` | No worktree at birth. Under managed file coordination it can cut one when the work needs it. |  |  |  |  |
-| `add_agent.worktree_off_plain` | No worktree. This Agent works in the shared checkout. |  |  |  |  |
-| `add_agent.worktree_on` | Its own worktree, under managed file coordination: the desk contract, hand-in and the Git safeguards. |  |  |  |  |
-| `add_agent.worktree_on_plain` | Its own worktree, for isolation only — no hand-in and no one to hand to, so it reports to you. |  |  |  |  |
 
 ## archives
 

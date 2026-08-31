@@ -43,11 +43,6 @@ const TASKS_BY_KIND = Object.freeze({
 });
 const DEFAULT_TASKS = TASKS_BY_KIND.coding;
 
-/** Marking one of these pre-marks the worktree request. The owner named the first two;
- *  the retired DESK_LIFECYCLES was {coding, debug}, so ChaseBug is deliberately NOT here
- *  until that is ruled (NEW_AGENT.md § 4.5). */
-const WORKTREE_TASKS = Object.freeze(['CutCode', 'DraftPlan']);
-
 const readable = (role) => role.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
 
 /**
@@ -60,7 +55,7 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
   const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;
   const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
 
-  const draft = { name: '', instruction: '', provider: '', model: '', task: '', desk: false, deskByHand: false, shell: false };
+  const draft = { name: '', instruction: '', provider: '', model: '', task: '', shell: false };
   let busy = false;
   /** The seed door's answer, or null while it does not exist yet. */
   let seed = null;
@@ -173,29 +168,22 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
       chip.setAttribute('aria-pressed', String(draft.task === item.name));
       chip.addEventListener('click', () => {
         draft.task = item.name;
-        if (!draft.deskByHand) draft.desk = WORKTREE_TASKS.includes(item.name);
         paintTasks();
-        paintDesk();
       });
       taskRow.append(chip);
     }
   }
 
-  /* ---- REQUEST A WORKTREE — and it asks for a TREE, not for the contract.
-     Carrying `ronin_control` is a reading list and a toolset: the Agent knows how
-     worktrees are handled here, and may hold none until the work needs one. A worktree
-     is isolation, which needs nothing declared. The two are separate facts and this
-     surface states both — the Routine as resolved (never editable here), the tree as
-     this launch's own request. `docs/routines.md` § Four different facts. ---- */
-  const deskRow = el('button', 'aa-desk');
-  deskRow.type = 'button';
-  const deskBox = el('span', 'aa-box');
-  const deskText = el('span', 'aa-desk-text');
-  const deskTitle = el('b');
+  /* ---- THE DESK IS NOT AN ASKED QUESTION (owner, 2026-08-31, folding the earlier
+     control): the routine selection IS the decision, so this row is a CONSEQUENCE LINE —
+     it says which of the two states the resolved routines give, and offers no switch.
+     Allocation stays lazy either way: managed file coordination is the contract, and a
+     worktree is cut when the work needs it (`docs/routines.md` § Four different facts).
+     `desk: own | none` survives on the launch body as an unadvertised escape hatch; no
+     form surfaces it, and this one no longer sends it. ---- */
+  const deskLine = el('div', 'aa-deskline');
   const deskWhy = el('small');
-  deskText.append(deskTitle, deskWhy);
-  deskRow.append(deskBox, deskText);
-  deskRow.addEventListener('click', () => { draft.desk = !draft.desk; draft.deskByHand = true; paintDesk(); });
+  deskLine.append(deskWhy);
   /** Is `ronin_control` on for this birth? The resolved map's answer, never this
    *  form's — and null while the seed door is not there to ask. */
   const controlled = () => {
@@ -204,20 +192,13 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
     return rows.some((r) => r.on && /control/i.test(r.name || ''));
   };
   function paintDesk() {
-    deskRow.setAttribute('aria-pressed', String(draft.desk));
-    deskTitle.textContent = t('add_agent.worktree', 'Request a worktree');
     const control = controlled();
-    // THE SENTENCE SAYS WHICH OF THE TWO THINGS THE AGENT IS GETTING. Under Control the
-    // request is a convenience — the Agent could cut one itself when the work needed it.
-    // Without Control a worktree is isolation and nothing else: no hand-in, no one to
-    // hand to, so it reports to the owner.
-    deskWhy.textContent = !draft.desk
-      ? (control === false
-        ? t('add_agent.worktree_off_plain', 'No worktree. This Agent works in the shared checkout.')
-        : t('add_agent.worktree_off', 'No worktree at birth. Under managed file coordination it can cut one when the work needs it.'))
-      : (control === false
-        ? t('add_agent.worktree_on_plain', 'Its own worktree, for isolation only — no hand-in and no one to hand to, so it reports to you.')
-        : t('add_agent.worktree_on', 'Its own worktree, under managed file coordination: the desk contract, hand-in and the Git safeguards.'));
+    // Nothing is claimed before the resolved map has answered.
+    deskLine.hidden = control === null;
+    if (control === null) return;
+    deskWhy.textContent = control
+      ? t('add_agent.desk_line_control', 'Managed file coordination is on for this Team: the desk contract applies, and a worktree is cut when the work needs it.')
+      : t('add_agent.desk_line_plain', 'Managed file coordination is off for this Team: this Agent works in the shared checkout and reports to you.');
   }
 
   /* ---- what the Team fixed: at the FOOT, because none of it is changeable here ---- */
@@ -249,8 +230,6 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
     draft.name = '';
     draft.instruction = '';
     draft.task = '';
-    draft.desk = false;
-    draft.deskByHand = false;
     draft.shell = false;
     nameInput.value = '';
     instruction.value = '';
@@ -289,7 +268,6 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
           project_root: rootOf(),
           provider: draft.provider,
           model: draft.model,
-          desk: draft.desk ? 'own' : 'none',
         },
     });
     busy = false;
@@ -329,8 +307,8 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
   instructionField.el.classList.add('aa-agent-only');
   taskHead.classList.add('aa-agent-only');
   taskRow.classList.add('aa-agent-only');
-  deskRow.classList.add('aa-agent-only');
-  form.append(top, instructionField.el, taskHead, taskRow, deskRow);
+  deskLine.classList.add('aa-agent-only');
+  form.append(top, instructionField.el, taskHead, taskRow, deskLine);
   paintShape();
   surface.content.append(form, actions.el, notice.el, fixed);
 
@@ -349,7 +327,6 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
       seed = answer.data || null;
       if (!draft.provider) draft.provider = seeded('provider');
       if (!draft.model) draft.model = seeded('model');
-      if (!draft.deskByHand && seeded('desk')) draft.desk = seeded('desk') === 'own';
       paintProviders();
       paintDesk();
       paintFixed();
