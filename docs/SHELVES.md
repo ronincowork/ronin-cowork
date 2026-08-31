@@ -9,7 +9,7 @@ is right.
 
 Read the book you need. Do not read them all.
 
-## The five shelves
+## The six shelves
 
 | Shelf | Answers | Where |
 |---|---|---|
@@ -17,6 +17,7 @@ Read the book you need. Do not read them all.
 | `ronin_catalogs/` | **what you can do** — macros, actions, tools, session jobs, project roots | `ronin_catalogs/README.md` |
 | `ronin_library/` | **how a step is done** — reference an action names; a compile inlines it, so it arrives without you fetching it | `ronin_library/README.md` |
 | `ronin_sops/` | **how this house goes about a domain** — you go and look when a situation calls for it | `ronin_sops/README.md` |
+| `ways/` | **a way an Agent can approach its work** — optional reading the owner may replace whole | `ways/README.md` |
 | `ronin_bin/` | **what you run** — the tools you type by bare name | `ronin_bin/README.md` |
 
 Stock lives in this repo; the_owner's own copies live in a store and shadow stock
@@ -47,6 +48,24 @@ file-for-file. `bin/ronin-store --all` prints every store on this machine, resol
 
 An SOP is fetched by a situation, relayed to a person, and never pushed at a session
 that did not ask. The_owner's copy of any name wins whole. `ronin_sops/README.md`.
+
+## The ways shelf — optional approaches to work
+
+`ls ways/` — the shipped stock. These books help a person choose how an Agent should
+approach a piece of work. They are optional behaviours, not launch identities or required
+house procedure, and the_owner may replace any book whole. Stock today:
+
+| Book | The way of working it describes |
+|---|---|
+| `riff_on_it.md` | define the thing before planning it |
+| `draft_plan.md` | turn a known goal into a reviewed plan |
+| `cut_code.md` | implement an approved plan leg by leg |
+| `chase_bug.md` | reproduce a fault, find its cause, and fix that cause |
+| `check_work.md` | review and report without changing the target |
+| `quarter_back.md` | coordinate a Team's work rather than doing it |
+| `odd_job.md` | carry out one task that fits no more specific approach |
+| `setup.md` | finish setup details a form could not settle |
+| `personal_assistant.md` | assist the_owner with questions, facts, and daily work |
 
 ## The catalogs — what you can do
 
