@@ -45,11 +45,12 @@ moment of asking (`deskStatus`). Nothing here is prose an agent maintains.
 **`RONIN_REPO` in the repository is the one switch** (owner, 2026-08-29). `desks=managed`
 gives a coding launch its desk, the contract in its brief, the desk actions and the tools;
 `desks=none`, or no file, gives none of them and the session starts in the checkout. There
-is no install-wide switch. ⚙ *New projects use desks?* is the default a new project root's
-file is written from (`declareArrangement`, `src/desks/arrangement.ts`); to change one
-project, tick or untick **desks** on its project-root editor (`PUT
-/api/project-roots/:name/desks`, `setDesks` — writes the repository's file, which is yours
-to commit) or edit the file. A coding launch that gets no desk says why on its receipt (*no desk —
+is no install-wide switch. The Campaign's Ronin Control choice defaults the file written for
+a new project root (`declareArrangement`, `src/desks/arrangement.ts`). For an existing root,
+the editor reads the current publishing mode, owner-named branches, and coordination choice.
+After one exact before/after confirmation it rewrites `RONIN_REPO` directly and atomically
+(`PUT /api/project-roots/:name/repo-profile`, `setArrangementProfile`). It performs no
+migration or running-Agent reconciliation. A coding launch that gets no desk says why on its receipt (*no desk —
 `<root>` has no RONIN_REPO*), and `bin/ronin-doctor` lists every project root's answer.
 
 ## Open

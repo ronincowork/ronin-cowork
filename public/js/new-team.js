@@ -12,7 +12,7 @@
  * seat-building path here was a worse copy of that one, so it is gone: create the Team,
  * land in it, and raise Agents from inside it like any other Cowork space.
  *
- * NOTHING IS REQUIRED EXCEPT A NAME. A blank `team_role` is an unclassified Team; an
+ * NOTHING IS REQUIRED EXCEPT A NAME. An
  * empty objective, no root, no repos and no branch are all valid. No control here gates
  * anything the server does not.
  *
@@ -65,23 +65,6 @@ export function createNewTeamView(kit, { created = null } = {}) {
     description: t('new_team.name_desc', 'Lowercase letters, digits, _ and - . This is also the tag its sessions carry.'),
   });
 
-  // A combobox, not a select: `GET /api/team-roles` legitimately answers EMPTY — the house
-  // ships no team_role definitions, by design, because a team_role is the owner's own
-  // vocabulary and a stock guess would be furniture. So the control must be complete and
-  // useful with zero options, and must accept a label that will never have a file.
-  const roleInput = node('input');
-  roleInput.type = 'text';
-  roleInput.setAttribute('list', 'nt-team-roles');
-  roleInput.placeholder = t('new_team.role_placeholder', 'development — or leave blank');
-  const roleList = node('datalist');
-  roleList.id = 'nt-team-roles';
-  const roleField = createField({
-    label: t('team.team_role', 'Team role'),
-    control: roleInput,
-    description: t('new_team.role_desc', 'Optional. Blank is an unclassified Team, which is a valid state.'),
-  });
-  roleField.el.append(roleList);
-
   const objectiveInput = node('textarea');
   objectiveInput.rows = 3;
   const objectiveField = createField({
@@ -120,7 +103,7 @@ export function createNewTeamView(kit, { created = null } = {}) {
   });
 
   form.fields.append(
-    nameField.el, roleField.el, objectiveField.el, rootField.el,
+    nameField.el, objectiveField.el, rootField.el,
     reposField.el, branchField.el, boardField.el,
   );
 
@@ -136,7 +119,6 @@ export function createNewTeamView(kit, { created = null } = {}) {
 
   const readTeam = () => {
     draft.team.name = finalizeTeamName(nameInput.value);
-    draft.team.team_role = roleInput.value.trim();
     draft.team.objective = objectiveInput.value.trim();
     draft.team.project_root = rootSelect.value;
     draft.team.repos = reposInput.value.split(',').map((s) => s.trim()).filter(Boolean);
@@ -160,7 +142,6 @@ export function createNewTeamView(kit, { created = null } = {}) {
 
   const fill = () => {
     nameInput.value = draft.team.name ?? '';
-    roleInput.value = draft.team.team_role ?? '';
     objectiveInput.value = draft.team.objective ?? '';
     reposInput.value = (draft.team.repos ?? []).join(', ');
     branchInput.value = draft.team.branch ?? '';
@@ -190,7 +171,7 @@ export function createNewTeamView(kit, { created = null } = {}) {
     readTeam();
     paintName();
   });
-  for (const control of [roleInput, objectiveInput, reposInput, branchInput, boardInput]) {
+  for (const control of [objectiveInput, reposInput, branchInput, boardInput]) {
     control.addEventListener('input', () => { readTeam(); });
   }
   rootSelect.addEventListener('change', () => { readTeam(); });
@@ -225,17 +206,10 @@ export function createNewTeamView(kit, { created = null } = {}) {
   createTeam.el.addEventListener('click', () => void create());
 
   const loadOptions = async () => {
-    const [roots, roles] = await Promise.all([
-      request('/api/project-roots'),
-      request('/api/team-roles'),
-    ]);
+    const roots = await request('/api/project-roots');
     rootSelect.replaceChildren();
     rootSelect.append(new Option(t('new_team.root_default', '— the box’s default —'), ''));
     if (roots.ok) for (const r of roots.data) rootSelect.append(new Option(r.name, r.name));
-    roleList.replaceChildren();
-    // Zero options is the ordinary answer here and the field still works: free text is
-    // accepted, and a roster may name a team_role that has no definition at all.
-    if (roles.ok) for (const r of roles.data) roleList.append(new Option(r.label || r.name, r.name));
   };
 
   return {

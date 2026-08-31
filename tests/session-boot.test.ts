@@ -15,7 +15,7 @@ test('every assisted session is handed the session macro routing guide', async (
   process.env.RONIN_SESSION_BOOT_CACHE_DIR = path.join(temp, 'generated');
   process.env.RONIN_CATALOGS_DIR = path.join(temp, 'catalogs');
   try {
-    const boot = await bootFiles('', '', '', false);
+    const boot = await bootFiles('', '', false);
     const macroGuide = boot.find((file) => path.basename(file) === 'SESSION_MACROS.md');
     assert.ok(macroGuide, 'the universal boot shelf should contain SESSION_MACROS.md');
     assert.equal(macroGuide, path.join(temp, 'generated', 'SESSION_MACROS.md'));
@@ -58,7 +58,7 @@ test('every assisted session is handed the required abilities', async () => {
   try {
     // No root, no role, no task, MCP off — the barest assisted launch still reads the
     // universal set. A blank axis omits only its own level.
-    const boot = await bootFiles('', '', '', false);
+    const boot = await bootFiles('', '', false);
     const names = boot.map((file) => path.basename(file));
     for (const required of ['SHELVES.md', 'KOTOBA_GLOSSARY.md', 'REQUIRED_ABILITIES.md']) {
       assert.ok(names.includes(required), `the universal boot shelf should contain ${required}`);
@@ -89,7 +89,7 @@ test('accepted Routine reading drafts keep universal compatibility teaching', as
     readFile(path.join(repo, 'ronin_session_boot', 'all', 'REQUIRED_ABILITIES.md'), 'utf8'),
     readFile(path.join(repo, 'ronin_session_boot', 'all', 'TEST_PROTOCOLS.md'), 'utf8'),
     readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_base', 'BASE_ABILITIES.md'), 'utf8'),
-    readFile(path.join(repo, 'ronin_session_boot', 'proposed', 'ronin_services', 'SERVICES_ABILITIES.md'), 'utf8'),
+    readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_services', 'SERVICES_ABILITIES.md'), 'utf8'),
     readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_control', 'CONTROL_TEST_PROTOCOLS.md'), 'utf8'),
     readFile(path.join(repo, 'ronin_session_boot', 'routine', 'machine', 'MACHINE_ABILITIES.md'), 'utf8'),
     readFile(path.join(repo, 'ronin_session_boot', 'routine', 'machine', 'MACHINE_TEST_PROTOCOLS.md'), 'utf8'),
@@ -99,10 +99,13 @@ test('accepted Routine reading drafts keep universal compatibility teaching', as
   assert.match(base, /read_tegami/);
   assert.match(base, /tejun-wipeboard/);
   assert.doesNotMatch(base, /tejun-rireki/);
-  assert.match(services, /Unassigned reading inventory/);
-  assert.match(services, /not startup reading until/);
+  assert.match(services, /Ronin Services is one additional Routine/);
   assert.match(services, /tejun-rireki <session> since/);
-  assert.match(services, /Ronin Koe/);
+  assert.match(services, /Koshi is Ronin's assisted administrative behavior/);
+  assert.match(services, /Voice turns the owner's speech into text/);
+  assert.match(services, /Hotwords are the owner's dictation glossary/);
+  assert.match(services, /Selection is not installation/);
+  assert.match(services, /none is a separate Routine or switch/i);
   assert.match(control, /team promotion/i);
   assert.match(control, /one full repository BYOIN/i);
   assert.match(machine, /tejun-survey/);
@@ -155,11 +158,11 @@ test('a service-signed *_connected level rides the MCP toggle', async () => {
     await mkdir(path.join(temp, 'shelf', 'notes'), { recursive: true });
     await writeFile(path.join(temp, 'shelf', 'notes', 'LOOSE.md'), '# not a level');
 
-    const connected = (await bootFiles('', '', '', true)).map((f) => path.basename(f));
+    const connected = (await bootFiles('', '', true)).map((f) => path.basename(f));
     assert.ok(connected.includes('GBRAIN_TOOLS.md'), 'MCP on should read the service-signed level');
     assert.ok(!connected.includes('LOOSE.md'), 'a directory that is not a level is not read');
 
-    const disconnected = (await bootFiles('', '', '', false)).map((f) => path.basename(f));
+    const disconnected = (await bootFiles('', '', false)).map((f) => path.basename(f));
     assert.ok(
       !disconnected.includes('GBRAIN_TOOLS.md'),
       'MCP off must read no connected level — tools and know-how ride the one choice',
@@ -167,6 +170,49 @@ test('a service-signed *_connected level rides the MCP toggle', async () => {
   } finally {
     if (oldShelf === undefined) delete process.env.RONIN_SESSION_BOOT_DIR;
     else process.env.RONIN_SESSION_BOOT_DIR = oldShelf;
+    if (oldCache === undefined) delete process.env.RONIN_SESSION_BOOT_CACHE_DIR;
+    else process.env.RONIN_SESSION_BOOT_CACHE_DIR = oldCache;
+    await rm(temp, { recursive: true, force: true });
+  }
+});
+
+test('only enabled Routine levels contribute startup reading', async () => {
+  const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-session-boot-test-'));
+  const oldShelf = process.env.RONIN_SESSION_BOOT_DIR;
+  const oldCache = process.env.RONIN_SESSION_BOOT_CACHE_DIR;
+  process.env.RONIN_SESSION_BOOT_DIR = path.join(temp, 'shelf');
+  process.env.RONIN_SESSION_BOOT_CACHE_DIR = path.join(temp, 'generated');
+  try {
+    await mkdir(path.join(temp, 'shelf', 'routine', 'ronin_base'), { recursive: true });
+    await writeFile(path.join(temp, 'shelf', 'routine', 'ronin_base', 'BASE.md'), '# base');
+    await mkdir(path.join(temp, 'shelf', 'routine', 'machine'), { recursive: true });
+    await writeFile(path.join(temp, 'shelf', 'routine', 'machine', 'MACHINE.md'), '# machine');
+
+    const base = (await bootFiles('', '', false, false, ['ronin_base'])).map((f) => path.basename(f));
+    assert.ok(base.includes('BASE.md'));
+    assert.ok(!base.includes('MACHINE.md'), 'an unselected Routine contributes no reading');
+
+    const none = (await bootFiles('', '', false, false, [])).map((f) => path.basename(f));
+    assert.ok(!none.includes('BASE.md') && !none.includes('MACHINE.md'));
+  } finally {
+    if (oldShelf === undefined) delete process.env.RONIN_SESSION_BOOT_DIR;
+    else process.env.RONIN_SESSION_BOOT_DIR = oldShelf;
+    if (oldCache === undefined) delete process.env.RONIN_SESSION_BOOT_CACHE_DIR;
+    else process.env.RONIN_SESSION_BOOT_CACHE_DIR = oldCache;
+    await rm(temp, { recursive: true, force: true });
+  }
+});
+
+test('generated macro reading contains only the effective Routine macros', async () => {
+  const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-session-boot-test-'));
+  const oldCache = process.env.RONIN_SESSION_BOOT_CACHE_DIR;
+  process.env.RONIN_SESSION_BOOT_CACHE_DIR = path.join(temp, 'generated');
+  try {
+    const boot = await bootFiles('', '', false, false, [], new Set(['forkit']));
+    const guide = await readFile(boot.find((file) => path.basename(file) === 'SESSION_MACROS.md')!, 'utf8');
+    assert.match(guide, /\+forkit:/);
+    assert.doesNotMatch(guide, /\+cutcode:/, 'a Control macro is not taught by Base alone');
+  } finally {
     if (oldCache === undefined) delete process.env.RONIN_SESSION_BOOT_CACHE_DIR;
     else process.env.RONIN_SESSION_BOOT_CACHE_DIR = oldCache;
     await rm(temp, { recursive: true, force: true });
@@ -184,7 +230,7 @@ test('startup reading is never stripped when instructions are present', () => {
   assert.match(brief, /Read first: \/stock\/SESSION_MACROS\.md\./);
 });
 
-test('a blank axis omits only its own level, and role reading comes before team_role reading', async () => {
+test('a blank role axis omits only its own level', async () => {
   const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-session-boot-test-'));
   const oldShelf = process.env.RONIN_SESSION_BOOT_DIR;
   const oldCache = process.env.RONIN_SESSION_BOOT_CACHE_DIR;
@@ -193,25 +239,11 @@ test('a blank axis omits only its own level, and role reading comes before team_
   try {
     await mkdir(path.join(temp, 'shelf', 'role', 'CutCode'), { recursive: true });
     await writeFile(path.join(temp, 'shelf', 'role', 'CutCode', 'ROLE_BOOK.md'), '# what');
-    await mkdir(path.join(temp, 'shelf', 'team_role', 'development'), { recursive: true });
-    await writeFile(path.join(temp, 'shelf', 'team_role', 'development', 'TEAM_BOOK.md'), '# whose team');
-
-    const both = (await bootFiles('', 'CutCode', 'development', false)).map((f) => path.basename(f));
-    assert.ok(both.includes('ROLE_BOOK.md'), 'a named session_role reads its own level');
-    assert.ok(both.includes('TEAM_BOOK.md'), 'a team_role launch reads the team_role level');
-    // WHAT before WHOSE TEAM — the brief states the work, then the team context.
-    assert.ok(both.indexOf('ROLE_BOOK.md') < both.indexOf('TEAM_BOOK.md'));
-
-    const roleOnly = (await bootFiles('', 'CutCode', '', false)).map((f) => path.basename(f));
+    const roleOnly = (await bootFiles('', 'CutCode', false)).map((f) => path.basename(f));
     assert.ok(roleOnly.includes('ROLE_BOOK.md'));
-    assert.ok(!roleOnly.includes('TEAM_BOOK.md'), 'a ronin launch reads no team_role level');
 
-    const teamOnly = (await bootFiles('', '', 'development', false)).map((f) => path.basename(f));
-    assert.ok(teamOnly.includes('TEAM_BOOK.md'));
-    assert.ok(!teamOnly.includes('ROLE_BOOK.md'), 'a blank session_role reads no role level');
-
-    const neither = (await bootFiles('', '', '', false)).map((f) => path.basename(f));
-    assert.ok(!neither.includes('ROLE_BOOK.md') && !neither.includes('TEAM_BOOK.md'));
+    const neither = (await bootFiles('', '', false)).map((f) => path.basename(f));
+    assert.ok(!neither.includes('ROLE_BOOK.md'));
     // The universal level is untouched by either axis being blank.
     assert.ok(neither.includes('SESSION_MACROS.md'));
   } finally {

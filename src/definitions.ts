@@ -1,13 +1,10 @@
 /**
- * THE THREE DEFINITION DIRECTORIES — `role_families/`, `session_roles/` and
- * `team_roles/`.
+ * THE DEFINITION DIRECTORIES — `role_families/` and `session_roles/`.
  *
  * A launch picks a required `project_root`, an optional `session_role` (what the session
  * is doing now, mutable), and optionally a TEAM to be born onto. A `role_family` is not
  * a launch axis any more (R35, 2026-08-23): it is the New Session board's grouping of
- * session_roles — presentation, and a Build-Team template. A `team_role` is the TEAM's
- * defining role, named by a team's roster; its definition here carries the shelf reading
- * every session spawned into such a team gets at birth. All three share one storage law.
+ * session_roles — presentation, and a Build-Team template.
  *
  * ONE FILE PER THING, rather than one growing markdown document. That is what makes a
  * role or a task the unit of ownership:
@@ -49,7 +46,7 @@ import { STOCK_DIR, entryValue, isKeyLine, type Origin } from './catalog.js';
 import { storeDir } from './stores.js';
 
 /** The definition directories — one file per token. */
-export type DefinitionKind = 'role_families' | 'session_roles' | 'team_roles' | 'desk_profiles' | 'lexicons' | 'routines';
+export type DefinitionKind = 'role_families' | 'session_roles' | 'desk_profiles' | 'lexicons' | 'routines';
 
 export interface Definition {
   /** The token — the filename without `.md`. Never the `#` heading. */
@@ -233,6 +230,8 @@ export interface RoutineRow extends Pick<Row, 'name' | 'origin' | 'shadowed' | '
   actions: string[];
   tools: string[];
   mcp: string[];
+  /** Other Routines this selection adds. Dependencies are additive, never component splits. */
+  requires: string[];
 }
 
 /** `[text](https://url)` → {text, url}. http(s) only — a definition is DATA, and data
@@ -266,10 +265,6 @@ export async function listRoleFamilies(): Promise<RoleFamilyRow[]> {
   });
 }
 
-/** The team_role definitions — each one's reading shelf is `team_role/<name>/`. */
-export async function listTeamRoles(): Promise<Row[]> {
-  return (await readDefinitions('team_roles')).map(row);
-}
 
 export async function listSessionRoles(): Promise<SessionRoleRow[]> {
   return (await readDefinitions('session_roles')).map((d) => ({
@@ -295,6 +290,7 @@ export async function listRoutines(): Promise<RoutineRow[]> {
     actions: splitDefinitionList(d.get('actions')),
     tools: splitDefinitionList(d.get('tools')),
     mcp: splitDefinitionList(d.get('mcp')),
+    requires: splitDefinitionList(d.get('requires')),
   }));
 }
 

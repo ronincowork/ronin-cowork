@@ -12,7 +12,7 @@
  *
  * Identity is Ronin League's step 2 (name the body of work) and Desk Profile its step 1,
  * the Lobby — trimmed to what the record actually holds, per the owner's cut: a profile, a
- * title, a description. No kind field; a desk_profile already carries its `campaign_kind`.
+ * title and a description.
  */
 import { t } from './lexicon.js';
 import { field } from './ui.js';

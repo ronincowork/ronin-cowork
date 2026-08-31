@@ -149,8 +149,6 @@ export function createDeskProfileSurface(campaign) {
         t('campaign_view.theme_help', 'Light or dark, or whatever the device prefers.'), (v) => void setDesk({ theme: v })),
       choice(t('campaign_view.output', 'Output'), OUTPUTS(), desk.rireki_view || '',
         t('campaign_view.output_help', 'What an Agent’s tile shows. Terminal Mirror is the one that ships; Detailed, Condensed and Cherry Pick arrive with Ronin Services.'), (v) => void setDesk({ rireki_view: v })),
-      choice(t('campaign_view.kind', 'Kind'), KINDS(), desk.campaign_kind || '',
-        t('campaign_view.kind_help', 'The default kind of work for a new Cowork or project here. Nothing reads it yet.'), (v) => void setDesk({ campaign_kind: v })),
       choice(t('campaign_view.lexicon', 'Lexicon'), [{ value: desk.lexicon || '', label: desk.lexicon || t('settei.none_set', '— none set —') }], desk.lexicon || '',
         t('campaign_view.lexicon_help', 'The words. Held to one lexicon for now, so nothing on this page is offered.'), null),
       // team_arrangement is in the record but not offered: the Workbench remembers its own

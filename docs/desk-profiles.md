@@ -44,7 +44,6 @@ renders exactly as before.
 | `lexicon` | `public/js/lexicon.js` | at boot and on a pick; every `t()` |
 | `rireki_view` | `public/js/desk-profile.js` → `S.output` | a NEW tile's Output, when nothing was saved for it; a tile's own choice is never overwritten |
 | `team_arrangement` | `public/js/cowork-view.js` | the Team cowork view, when a tab has no arrangement of its own |
-| `campaign_kind` | the campaign board | when it lands (LEAGUE_KIT leg 6) |
 
 Two places pick: the ⚙ Configuration tab's *Desk profile* row (the registry leaf, a
 select) and the ⚙ desk's picker beside the skins (rows with blurbs and `origin`). Both

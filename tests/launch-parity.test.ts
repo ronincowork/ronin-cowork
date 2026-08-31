@@ -67,7 +67,6 @@ for (const [level, name, book] of [
   ['all', '', 'ALL_BOOK.md'],
   ['root', 'alpha', 'ROOT_BOOK.md'],
   ['role', 'DraftPlan', 'ROLE_BOOK.md'],
-  ['team_role', 'development', 'TEAM_BOOK.md'],
 ] as const) {
   const dir = path.join(temp, 'shelf', level, name);
   await fs.mkdir(dir, { recursive: true });
@@ -79,7 +78,7 @@ process.env.RONIN_TEAM_ROSTERS_DIR = path.join(temp, 'team_rosters');
 await fs.mkdir(path.join(temp, 'team_rosters'), { recursive: true });
 await fs.writeFile(
   path.join(temp, 'team_rosters', 'scratchteam.md'),
-  ['# scratchteam', '', '- **team_role:** development', '- **objective:** prove the parity', '- **project_root:** beta', '- **state:** active', ''].join('\n'),
+  ['# scratchteam', '', '- **objective:** prove the parity', '- **project_root:** beta', '- **state:** active', ''].join('\n'),
 );
 
 const { resolveForm } = await import('../src/spawn.js');
@@ -135,6 +134,41 @@ test('equivalent specs from Commons and forkit resolve to the same launch', asyn
   assert.deepEqual(mechanism(fromForkit), mechanism(fromCommons));
 });
 
+test('session_type is the only birth-path key, and blank session_role is an ordinary cowork Agent', async () => {
+  const cowork = await resolveForm(commonsForm({ session_type: 'cowork_agent', session_role: '' }), new Set());
+  assert.equal(cowork.session_type, 'cowork_agent');
+  assert.equal(cowork.session_role, '');
+  assert.equal(cowork.agent, true);
+  assert.ok(cowork.brief, 'a cowork Agent receives the Ronin birth brief');
+  assert.ok(cowork.birth_reading.length, 'a cowork Agent receives the boot shelf');
+
+  const terminal = await resolveForm(commonsForm({ session_type: 'terminal', session_role: '' }), new Set());
+  assert.equal(terminal.session_type, 'terminal');
+  assert.equal(terminal.agent, false);
+  assert.equal(terminal.brief, '');
+  assert.deepEqual(terminal.birth_reading, []);
+  assert.equal(terminal.assignment, null);
+});
+
+test('bare_metal_agent resolves a real CLI without Ronin birth machinery', async () => {
+  const bare = await resolveForm(commonsForm({
+    session_type: 'bare_metal_agent',
+    session_role: '',
+    name: 'bare-proof',
+    provider: 'anthropic',
+    team: 'scratchteam',
+  }), new Set());
+  assert.equal(bare.session_type, 'bare_metal_agent');
+  assert.equal(bare.agent, true);
+  assert.ok(bare.cmd, 'the provider CLI is resolved');
+  assert.ok(bare.launchAgent, 'the launched provider is stamped');
+  assert.equal(bare.brief, '', 'Ronin composes no brief');
+  assert.deepEqual(bare.birth_reading, [], 'Ronin reads no boot shelf');
+  assert.equal(bare.assignment, null, 'Ronin opens no managed repository desk');
+  assert.deepEqual(bare.tags, ['scratchteam'], 'Team is only an addressing tag');
+  assert.equal(bare.team_objective, '', 'the Team roster does not resolve into the launch');
+});
+
 test('and to the same reading list — all + root + role, compiled once', async () => {
   const fromCommons = await resolveForm(commonsForm(), new Set());
   const fromForkit = await resolveForm(forkitForm({ prompt: commonsForm().prompt }), new Set());
@@ -144,10 +178,8 @@ test('and to the same reading list — all + root + role, compiled once', async 
   for (const book of ['ALL_BOOK.md', 'ROOT_BOOK.md', 'ROLE_BOOK.md']) {
     assert.ok(books.includes(book), `the Build Brief must carry ${book}`);
   }
-  // The team layer is forkit's own INPUT (team inheritance), so its team_role reading
-  // arrives on top of the shared list — additive, and the only difference.
   const forkBooks = reading(fromForkit.brief);
-  for (const book of [...books, 'TEAM_BOOK.md']) {
+  for (const book of books) {
     assert.ok(forkBooks.includes(book), `the forked Build Brief must carry ${book}`);
   }
   assert.deepEqual(fromCommons.birth_reading.map((file) => path.basename(file)).sort(), books);
@@ -210,16 +242,14 @@ test('the model cascade is the mechanism\'s: blank inherits, explicit wins, iden
 });
 
 test('a ronin launch is legal, and so is a launch onto a tag-only team', async () => {
-  // No team at all — a ronin — reads no team_role level and is an ordinary launch.
+  // No team at all — a ronin — is an ordinary launch.
   const ronin = await resolveForm(commonsForm(), new Set());
   assert.equal(ronin.team, '');
-  assert.ok(!reading(ronin.brief).includes('TEAM_BOOK.md'), 'no team, no team_role reading');
   // A team the durable half has never heard of is an ordinary team (owner, 2026-08-26):
   // the session is born tagged onto it, told it is tag-only, and inherits no roster.
   const tagOnly = await resolveForm(commonsForm({ team: 'ghosts' }), new Set());
   assert.equal(tagOnly.team, 'ghosts');
   assert.ok(tagOnly.tags.includes('ghosts'), 'born tagged onto it');
-  assert.equal(tagOnly.team_role, '', 'no roster, no team_role');
   assert.match(tagOnly.brief, /tag-only team/);
   // The name is still the tag, so it obeys the tag's spelling.
   await assert.rejects(() => resolveForm(commonsForm({ team: 'Ghosts!' }), new Set()), /team name/);
@@ -241,7 +271,6 @@ test('stated_by is resolved on the server across explicit, Team, role, and syste
   const inherited = await resolveForm(forkitForm({ project_root: undefined }), new Set());
   assert.equal(inherited.stated_by.project_root[0]?.layer, 'team_roster');
   assert.match(inherited.stated_by.project_root[0]?.source ?? '', /team_rosters\/scratchteam\.md$/);
-  assert.equal(inherited.stated_by.team_role[0]?.layer, 'team_roster');
 
   const system = await resolveForm(commonsForm({ session_role: '' }), new Set());
   assert.deepEqual(system.stated_by.dial, [{ layer: 'system', source: 'src/launch-profile.ts' }]);
@@ -251,7 +280,6 @@ test('server resolution returns profile and durable Team context without browser
   const resolved = await resolveForm(forkitForm(), new Set());
   assert.equal(resolved.permissions, 'default');
   assert.equal(resolved.team_objective, 'prove the parity');
-  assert.deepEqual(resolved.team_repos, []);
   assert.equal(resolved.team_branch, '');
   assert.equal(resolved.team_wipeboard, 'scratchteam');
   assert.equal(resolved.team_state, 'active');

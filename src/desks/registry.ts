@@ -183,9 +183,9 @@ export const writeAssignment = async (a: Assignment): Promise<Assignment> => {
 };
 
 /**
- * DERIVE what desks an assignment WOULD have — pure, opens nothing. The repos come from the
- * team's roster (`repos`, defaulting to its project_root) or, for a rōnin, the launch's
- * project_root. A repo whose arrangement does not take managed desks contributes no desk:
+ * DERIVE what desks an assignment WOULD have — pure, opens nothing. The repository comes
+ * from the team's project_root default or, for a rōnin, the launch's project_root. A repo
+ * whose arrangement does not take managed desks contributes no desk:
  * a direct repo (Koe's `main`) or an absent RONIN_REPO is a legal answer of "no desk here".
  * `primary` is the project_root when it has a desk, else the first desk's repo, else ''.
  */
@@ -194,8 +194,7 @@ export async function deriveAssignment(input: { session: string; team: string; p
   let repos = [project_root];
   if (team) {
     const roster = await readTeamRoster(team);
-    const fromRoster = roster?.repos?.length ? roster.repos : [roster?.project_root || project_root];
-    repos = [...new Set(fromRoster.filter(Boolean))];
+    repos = [roster?.project_root || project_root].filter(Boolean);
   }
   const desks: RepoDesk[] = [];
   const now = new Date().toISOString();

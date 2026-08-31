@@ -22,7 +22,7 @@ at a time, with no code).
 
 Three kinds of key in one table (the third joined 2026-08-27, owner's ruling): a bare word is a surface string (`campaign`, `go`); a
 prefixed key names a catalog entry's label by its token (`kind.household`,
-`role.DraftPlan`, `team_role.<t>`, `behaviour.<t>`); a `glossary.*` key is a word an agent
+`role.DraftPlan`, `behaviour.<t>`); a `glossary.*` key is a word an agent
 says to a person for a house term — no surface reads it; the boot shelf renders
 `KOTOBA_GLOSSARY.md` from it at session birth (`docs/kokugo.md` § 8). A key may carry dots — the catalog
 grammar widened for it (`src/catalog.ts`, `isKeyLine`).

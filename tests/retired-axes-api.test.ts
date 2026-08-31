@@ -1,7 +1,7 @@
 /**
  * THE RETIRED AXES REFUSE OUT LOUD — they do not merely fail to exist.
  *
- * Three generations of one door died at this path, and each answers 410 naming what
+ * Retired launch and identity axes died at this path, and each answers 410 naming what
  * replaced it (R35, 2026-08-23): `session_job` (split 2026-08-22), `family_role` /
  * `role_family` (the immutable session axis that split created — dismantled: identity
  * moved onto the TEAM's roster, contextual per team, never a session attribute), and
@@ -33,7 +33,7 @@ const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 const NAME = 'zz_no_such_session';
 
 test('every retired axis key answers 410 and points at what replaced it', async () => {
-  for (const retired of ['session_job', 'family_role', 'session_task', 'role_family']) {
+  for (const retired of ['session_job', 'family_role', 'session_task', 'role_family', 'team_role', 'campaign_kind', 'lifecycle']) {
     const r = await fetch(`${base}/api/sessions/${NAME}/${retired}`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },

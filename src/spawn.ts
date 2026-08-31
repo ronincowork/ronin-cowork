@@ -7,12 +7,13 @@ import { bootFiles, ensureShelf } from './session-boot.js';
 import { listProjectRoots, listSessionLaunchSpecs, USER_PROJECT_ROOTS_MD, type ProjectRootInfo } from './project-roots.js';
 import { readAgentsSection } from './user-config.js';
 import { storeDir } from './stores.js';
-import { findDefinition, listRoleFamilies } from './definitions.js';
+import { findDefinition, listRoleFamilies, listRoutines } from './definitions.js';
 import { isCreatableTeamName as isTeamName, readTeamRoster, teamRosterFile, type TeamRoster } from './team-rosters.js';
 import { resolveLaunchProfile, type Dial, type LaunchProfile, type StatedBy } from './launch-profile.js';
 import { readCampaign } from './campaign-config.js';
 import { primaryDesk, renderDeskBlock, resolveLaunchDesks, type DeskChoice } from './launch-desks.js';
 import type { Assignment } from './desks/schema.js';
+import { resolveRoutines, routineChoices, type ResolvedRoutine } from './routines.js';
 
 /**
  * The mechanical executor: a filled form in, a briefed session out.
@@ -31,6 +32,8 @@ import type { Assignment } from './desks/schema.js';
  * address a macro, so one vocabulary spans the whole system.
  */
 export interface SpawnForm {
+  /** The birth path. This is the route key; session_role is never used to infer it. */
+  session_type?: 'cowork_agent' | 'bare_metal_agent' | 'terminal';
   /**
    * WHAT the session is doing right now. Optional and mutable — the session rewrites it
    * with `write_tegami` and the owner rewrites it from the tile, and either write
@@ -44,7 +47,7 @@ export interface SpawnForm {
    * THE TEAM this session is born onto — an existing team's name, or absent for a
    * rōnin (a session on no team, which is first-class). Joining rides the ordinary tag
    * machinery; what the team adds at birth is CONTEXT: its roster's root as the
-   * project_root default, its team_role's reading shelf, and its objective in the brief.
+   * project_root default and its objective in the brief.
    */
   team?: string;
   /**
@@ -120,6 +123,7 @@ export interface SpawnForm {
 
 /** What the form resolves to once sentinels are filled from the catalogs. */
 export interface Resolved {
+  session_type: 'cowork_agent' | 'bare_metal_agent' | 'terminal';
   name: string;
   dir: string;
   cmd: string;
@@ -128,10 +132,8 @@ export interface Resolved {
   lifecycle: string;
   /** The axis as resolved, possibly ''. This is what TEGAMI is seeded with. */
   session_role: string;
-  /** The team joined at birth, '' for a rōnin — and its roster's team_role, for the
-   *  reading level. */
+  /** The team joined at birth, '' for a rōnin. */
   team: string;
-  team_role: string;
   /** Never '' — a session must be born somewhere, and the resolver refuses otherwise. */
   project_root: string;
   /**
@@ -172,12 +174,13 @@ export interface Resolved {
   mcpDefault: boolean;
   /** Durable Team context. Empty for a rōnin launch. */
   team_objective: string;
-  team_repos: string[];
   team_branch: string;
   team_wipeboard: string;
   team_state: '' | 'active' | 'archived';
   /** Literal files the server put in the assisted brief's `Read first:` sentence. */
   birth_reading: string[];
+  /** Campaign defaults after Team exceptions; the sole input to Routine projections. */
+  routines: ResolvedRoutine[];
   /** Server-owned attribution for every resolved reading. The browser only renders it. */
   stated_by: Record<string, StatedBy[]>;
 }
@@ -210,7 +213,6 @@ export function buildBrief(
   // team's own conversation surface. A rōnin launch has no line here at all.
   if (roster) {
     const bits = [`You are born onto team "${roster.name}"`];
-    if (roster.team_role) bits[0] += ` (team_role: ${roster.team_role})`;
     if (roster.objective) bits.push(`its objective: ${roster.objective}`);
     bits.push(`its wipeboard is "${roster.wipeboard}" (tejun-wipeboard ${roster.wipeboard})`);
     parts.push(bits.join('. ') + '.');
@@ -302,12 +304,14 @@ function profileDir(profile: LaunchProfile): string {
 async function bootReading(
   projectRoot: string,
   sessionRole: string,
-  teamRole: string,
   mcpOn: boolean,
   bornLead = false,
   assigned = false,
+  routines: string[] = [],
+  routineMacros?: ReadonlySet<string>,
+  session = '',
 ): Promise<string[]> {
-  const files = await bootFiles(projectRoot, sessionRole, teamRole, mcpOn, assigned);
+  const files = await bootFiles(projectRoot, sessionRole, mcpOn, assigned, routines, routineMacros, session);
   // Route 1 (the coordinating kind of role) — and a session BORN as the 人 (`team_lead`
   // on the form), which leads whatever its role says: the reading follows the 人.
   const leadRole = !!sessionRole && (await listRoleFamilies()).some((f) => f.default_lead_role === sessionRole);
@@ -327,12 +331,16 @@ export async function resolveForm(
   referenceDir?: string,
   proposedRoster?: TeamRoster,
 ): Promise<Resolved> {
-  const [taskDef, roots, launchSpecs, agentsSet, campaign] = await Promise.all([
+  const sessionType = form.session_type ?? 'cowork_agent';
+  const coworkAgent = sessionType === 'cowork_agent';
+  const bareMetalAgent = sessionType === 'bare_metal_agent';
+  const [taskDef, roots, launchSpecs, agentsSet, campaign, routineCatalog] = await Promise.all([
     findDefinition('session_roles', form.session_role ?? ''),
     listProjectRoots(),
     listSessionLaunchSpecs(),
     readAgentsSection(),
-    form.campaign_id ? readCampaign(form.campaign_id) : null,
+    coworkAgent && form.campaign_id ? readCampaign(form.campaign_id) : null,
+    listRoutines(),
   ]);
   // A NAMED axis that does not resolve is a refusal, never a silent blank. Blank and
   // wrong are different launches, and only one of them is what the caller asked for.
@@ -348,7 +356,9 @@ export async function resolveForm(
   if (form.team && !isTeamName(form.team)) {
     throw new Error(`A team name is lowercase letters, digits, _ and - (it is also the tag): "${form.team}".`);
   }
-  const roster = form.team ? (proposedRoster?.name === form.team ? proposedRoster : await readTeamRoster(form.team)) : null;
+  const roster = coworkAgent && form.team
+    ? (proposedRoster?.name === form.team ? proposedRoster : await readTeamRoster(form.team))
+    : null;
   // THE CASCADE, and every refusal it makes happens here — before a session exists.
   const profile = resolveLaunchProfile(taskDef);
 
@@ -361,13 +371,17 @@ export async function resolveForm(
   const rosterRoot = roster?.project_root ? roots.find((r) => r.name === roster.project_root) : undefined;
   const root = form.project_root
     ? roots.find((r) => r.name === form.project_root)
-    : (rosterRoot && !rosterRoot.archived ? rosterRoot : active[0]);
+    : bareMetalAgent
+      ? undefined
+      : (rosterRoot && !rosterRoot.archived ? rosterRoot : active[0]);
   if (form.project_root && !root) {
     throw new Error(`Unknown project_root "${form.project_root}" (see your PROJECT_ROOTS.md).`);
   }
   if (!root) {
     throw new Error(
-      'This box has no active project_root, so there is nowhere to be born. ' +
+      bareMetalAgent
+        ? 'A `bare_metal_agent` requires `project_root` for its working directory; Ronin does not derive one from a Team or Campaign.'
+        : 'This box has no active project_root, so there is nowhere to be born. ' +
         'Add or unarchive one in ⚙ Configuration, then launch again.',
     );
   }
@@ -386,7 +400,7 @@ export async function resolveForm(
   // `agent: none` — a plain terminal. There is no CLI to launch and no brief to
   // compose, so both resolve EMPTY here rather than falling through to the default
   // `claude`: the tile is meant to be left at a shell prompt, untouched.
-  const agent = profile.agent;
+  const agent = sessionType === 'terminal' ? false : bareMetalAgent ? true : profile.agent;
   // WHICH COMMAND — every rule, every refusal and both owner defaults live in
   // `src/launch-command.ts`. It is the one concern on this path that is decided by data
   // the owner controls rather than by anything the launch form knows, and it had grown
@@ -504,7 +518,7 @@ export async function resolveForm(
   const name = wanted || slugName(profile.session_role || form.team || 'session', form.prompt ?? '', taken);
   // THE DESKS, derived (never opened here — the route opens them, before the CLI starts).
   // Null is an honest answer for most launches; see src/launch-desks.ts for the three.
-  const assignment = await resolveLaunchDesks({
+  const assignment = bareMetalAgent || sessionType === 'terminal' ? null : await resolveLaunchDesks({
     session: name,
     team: form.team ?? '',
     project_root: root.name,
@@ -512,14 +526,21 @@ export async function resolveForm(
     lifecycle: profile.lifecycle,
     desk: form.desk,
   });
+  const campaignRoutines = routineChoices(campaign?.config.agent_defaults.routines);
+  const routines = agent
+    ? resolveRoutines(routineCatalog, campaignRoutines, roster?.routines ?? {})
+    : [];
+  const enabledRoutines = routines.filter((routine) => routine.enabled).map((routine) => routine.name);
+  const enabledMacros = new Set(routines.filter((routine) => routine.enabled).flatMap((routine) => routine.macros));
   // Compile this once and return the exact same list the brief receives. The browser must
   // never recreate shelf precedence or guess which explicit seeds joined it.
-  const shelfReading = agent
-    ? await bootReading(root.name, profile.session_role, roster?.team_role ?? '', !mcpOffWanted, !!form.team_lead && !!form.team, !!assignment)
+  const shelfReading = coworkAgent && agent
+    ? await bootReading(root.name, profile.session_role, !mcpOffWanted, !!form.team_lead && !!form.team, !!assignment, enabledRoutines, enabledMacros, name)
     : [];
-  const birthReading = agent ? [...shelfReading, ...(form.seed ?? [])].filter(Boolean) : [];
+  const birthReading = coworkAgent && agent ? [...shelfReading, ...(form.seed ?? [])].filter(Boolean) : [];
 
   return {
+    session_type: sessionType,
     name,
     // The profile's own `dir:` WINS over the project_root's, because it is a constant of
     // the launch — the same category as its dial, and a launch must not be able to leave
@@ -540,12 +561,11 @@ export async function resolveForm(
     lifecycle: profile.lifecycle,
     session_role: profile.session_role,
     team: form.team ?? '',
-    team_role: roster?.team_role ?? '',
     project_root: root.name,
     // The shelf follows the toggle (owner's ruling, 2026-08-17): a session launched with
     // MCP off reads no *_connected shelf — the tools and the reading list about them ride
     // the same choice. The root, role and task shelves are untouched by it.
-    brief: agent
+    brief: coworkAgent && agent
       ? buildBrief(
           profile,
           root,
@@ -572,11 +592,11 @@ export async function resolveForm(
     mcpAlways: profile.mcpAlways,
     mcpDefault: profile.mcpDefault,
     team_objective: roster?.objective ?? '',
-    team_repos: roster?.repos ?? [],
     team_branch: roster?.branch ?? '',
     team_wipeboard: roster?.wipeboard ?? '',
     team_state: roster?.state ?? '',
     birth_reading: birthReading,
+    routines,
     stated_by: {
       name: form.name ? explicit : system,
       dir: profile.dir ? profile.stated_by.dir : assignment ? system : rootSource,
@@ -584,9 +604,9 @@ export async function resolveForm(
       cmd: cmdSource,
       tags: unique(roster ? rosterSource : [], form.tags?.length ? explicit : []),
       lifecycle: profile.stated_by.lifecycle,
+      session_type: explicit,
       session_role: form.session_role !== undefined ? explicit : profile.stated_by.session_role,
       team: form.team ? explicit : system,
-      team_role: roster ? rosterSource : system,
       project_root: rootSource,
       dial: form.dial !== undefined ? explicit : profile.stated_by.dial,
       brief: unique(explicit, profile.stated_by.opening, roster ? rosterSource : [], rootSource),
@@ -602,11 +622,14 @@ export async function resolveForm(
       mcpAlways: profile.stated_by.mcpAlways,
       mcpDefault: profile.stated_by.mcpDefault,
       team_objective: rosterSource,
-      team_repos: rosterSource,
       team_branch: rosterSource,
       team_wipeboard: rosterSource,
       team_state: rosterSource,
       birth_reading: unique(system, form.seed?.length ? explicit : []),
+      routines: unique(
+        campaign ? [{ layer: 'system', source: `#/campaign (${campaign.id}: agent_defaults.routines)` }] : system,
+        roster && Object.keys(roster.routines).length ? rosterSource : [],
+      ),
     },
   };
 }

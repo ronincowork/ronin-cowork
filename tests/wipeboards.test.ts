@@ -370,7 +370,7 @@ process.env.RONIN_TEAM_ROSTERS_DIR = rosterStore;
 const writeRoster = (team: string, wipeboard: string) =>
   fs.writeFile(
     path.join(rosterStore, `${team}.md`),
-    `# ${team}\n\n- **team_role:** development\n- **objective:** x\n- **wipeboard:** ${wipeboard}\n- **state:** active\n`,
+    `# ${team}\n\n- **objective:** x\n- **wipeboard:** ${wipeboard}\n- **state:** active\n`,
   );
 
 test('a roster names its wipeboard by id, and the id need not be the team name', async () => {

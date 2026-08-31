@@ -143,12 +143,12 @@ test('a conflict is contained in the candidate: refused at prepare, dev and its 
   assert.equal(sh(cdir, 'status', '--porcelain'), '', 'the candidate was aborted clean too');
 });
 
-test('a dirty funnel worktree is refused — a funnel point is never written into', async () => {
+test('a dirty reviewed integration worktree is refused with a recovery-oriented explanation', async () => {
   const cw = await fixture('cowork', 1);
   await fs.writeFile(path.join(cw.dir, 'README.md'), 'someone typed here\n');
   const out = await P.promoteTeam({ team: 'dirty', repos: [spec('cowork', cw.dir)], by: 'lead', effects: fakes(), restart: false, ...quiet });
   assert.equal(out.ok, false);
-  assert.match(out.receipt?.repos[0].refused ?? '', /never written into/);
+  assert.match(out.receipt?.repos[0].refused ?? '', /diagnose and preserve/);
   assert.equal(sh(cw.dir, 'rev-parse', 'dev'), cw.base);
   assert.equal(await fs.readFile(path.join(cw.dir, 'README.md'), 'utf8'), 'someone typed here\n', 'the dirt is still theirs');
 });

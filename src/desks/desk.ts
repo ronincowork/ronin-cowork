@@ -102,7 +102,7 @@ export async function openDesk(input: OpenInput): Promise<DeskStatus> {
     .desks.find((d) => d.repo === input.repo);
   const branch = input.branch || derived?.branch;
   if (!branch) throw new DeskRefused(`${a.repo}: could not derive a desk branch for ${input.session}`);
-  if (isFunnel(a, line, branch)) throw new DeskRefused(`${branch} is a funnel point — merged into, never written into. Open a desk.`);
+  if (isFunnel(a, line, branch)) throw new DeskRefused(`${branch} is the reviewed integration line. Open a managed desk so your work has a safe hand-in path.`);
 
   const existing = await readDesk(a.repo, branch);
   const wtPath = existing?.worktree || deskWorktree(a.repo, branch);

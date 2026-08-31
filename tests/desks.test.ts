@@ -75,7 +75,7 @@ const { casRef, revParse } = await import('../src/desks/git.js');
 const { lockDir, withLineLock, queueHolder } = await import('../src/desks/queue.js');
 const { createTeamRoster } = await import('../src/team-rosters.js');
 
-await createTeamRoster('comp', { team_role: 'development', objective: 'desks', project_root: 'cowork', repos: ['cowork', 'services'], branch: '' });
+await createTeamRoster('comp', { objective: 'desks', project_root: 'cowork', branch: '' });
 
 const commitFile = async (wt: string, file: string, text: string, msg = `edit ${file}`) => {
   await fs.mkdir(path.dirname(path.join(wt, file)), { recursive: true });
@@ -99,11 +99,11 @@ test('arrangement: absent RONIN_REPO is today, reviewed has defaults, bad values
   await assert.rejects(arrangementOf('nope'), /no project_root named/);
 });
 
-test('deriveAssignment: the team roster names the repos; direct and undeclared repos contribute no desk', async () => {
+test('deriveAssignment: the team project_root supplies its one repository default', async () => {
   const a = await deriveAssignment({ session: 'fable', team: 'comp', project_root: 'cowork' });
   assert.equal(a.id, 'fable@comp');
   assert.equal(a.primary, 'cowork');
-  assert.deepEqual(a.desks.map((d) => `${d.repo}:${d.branch}→${d.line}`), ['cowork:team/comp/fable→team/comp/dev', 'services:team/comp/fable→team/comp/dev']);
+  assert.deepEqual(a.desks.map((d) => `${d.repo}:${d.branch}→${d.line}`), ['cowork:team/comp/fable→team/comp/dev']);
   const solo = await deriveAssignment({ session: 'lone', team: '', project_root: 'cowork' });
   assert.deepEqual(solo.desks.map((d) => `${d.branch}→${d.line}`), ['solo/lone→dev']);
   const none = await deriveAssignment({ session: 'k', team: '', project_root: 'koe' });
@@ -132,9 +132,9 @@ test('openDesk: cut from the team line, mounted, upstream set, recorded; the lin
 });
 
 test('openDesk refuses: a funnel point by name, a direct repo, an undeclared repo', async () => {
-  await assert.rejects(openDesk({ repo: 'cowork', session: 'x', team: 'comp', branch: 'dev' }), /funnel point/);
-  await assert.rejects(openDesk({ repo: 'cowork', session: 'x', team: 'comp', branch: 'team/comp/dev' }), /funnel point/);
-  await assert.rejects(openDesk({ repo: 'cowork', session: 'x', team: 'comp', branch: 'master' }), /funnel point/);
+  await assert.rejects(openDesk({ repo: 'cowork', session: 'x', team: 'comp', branch: 'dev' }), /reviewed integration line/);
+  await assert.rejects(openDesk({ repo: 'cowork', session: 'x', team: 'comp', branch: 'team/comp/dev' }), /reviewed integration line/);
+  await assert.rejects(openDesk({ repo: 'cowork', session: 'x', team: 'comp', branch: 'master' }), /reviewed integration line/);
   await assert.rejects(openDesk({ repo: 'koe', session: 'x', team: '' }), DeskRefused);
   await assert.rejects(openDesk({ repo: 'plain', session: 'x', team: '' }), /no RONIN_REPO/);
 });
@@ -279,22 +279,20 @@ test('closeDesk: unsaved files become WIP, an unintegrated tip parks (branch kep
   assert.throws(() => sh(cowork, ['rev-parse', '--verify', '-q', 'refs/heads/team/comp/doomed']));
 });
 
-test('resolveAssignmentDesks: the launch seam opens one desk per managed repo and writes the assignment; a rōnin on a direct repo gets nothing', async () => {
+test('resolveAssignmentDesks: the team default wins and a rōnin on a direct repo gets nothing', async () => {
   const a = await resolveAssignmentDesks({ session: 'both', team: 'comp', project_root: 'services' });
-  assert.equal(a.primary, 'services');
-  assert.deepEqual(a.desks.map((d) => `${d.repo}:${d.branch}`).sort(), ['cowork:team/comp/both', 'services:team/comp/both']);
+  assert.equal(a.primary, 'cowork');
+  assert.deepEqual(a.desks.map((d) => `${d.repo}:${d.branch}`), ['cowork:team/comp/both']);
   for (const d of a.desks) assert.ok(existsSync(path.join(d.worktree, 'README.md')), `${d.repo} desk is mounted`);
-  assert.ok(existsSync(deskWorktree('services', 'team/comp/dev')), 'the services team line exists and is mounted');
   const all = await listDesks({ session: 'both' });
-  assert.equal(all.length, 2);
+  assert.equal(all.length, 1);
   const none = await resolveAssignmentDesks({ session: 'k', team: '', project_root: 'koe' });
   assert.deepEqual(none.desks, []);
   assert.equal((await listDesks({ session: 'k' })).length, 0);
-  // Two repos hand in independently: each on its own line, dev untouched in both.
-  await commitFile(a.desks.find((d) => d.repo === 'services')!.worktree, 's.txt', 'services change\n');
-  const r = await handIn('services', 'team/comp/both');
+  await commitFile(a.desks[0].worktree, 'both.txt', 'team-root change\n');
+  const r = await handIn('cowork', 'team/comp/both');
   assert.equal(r.receipt.result, 'accepted', r.receipt.reason);
-  assert.equal(sh(services, ['rev-parse', 'dev']), sh(services, ['rev-parse', 'master']));
+  assert.equal(sh(cowork, ['rev-parse', 'dev']), sh(cowork, ['rev-parse', 'master']));
 });
 
 test('race: two hand-ins at once serialize on the line and both land; the ledger has both accepted, in order', async () => {

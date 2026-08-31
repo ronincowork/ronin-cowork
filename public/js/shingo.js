@@ -141,11 +141,6 @@ export function buildLadder(letter, deskEntry = null) {
     for (const entry of letter.teams ?? []) {
       const team = document.createElement('p');
       team.textContent = entry.team;
-      if (entry.team_role) {
-        const role = document.createElement('span');
-        role.textContent = entry.team_role;
-        team.appendChild(role);
-      }
       context.appendChild(team);
     }
   }

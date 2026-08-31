@@ -45,7 +45,7 @@ extending the two catalogs that live here.
 
 `desk_profiles/<name>.md` is the owner's standing defaults for the surfaces they work at
 (R38): templates copied into Campaign-owned settings: `skin` (a `SKINS.md` entry),
-`theme`, `lexicon` (a `lexicons/` entry), `campaign_kind`,
+`theme`, `lexicon` (a `lexicons/` entry),
 `rireki_view`, `team_arrangement`. `lexicons/<name>.md` is the words a surface uses —
 keys to strings with a `base:` to fall through to. Both shadow whole-file by name
 (`docs/shadowing.md`); each directory's README carries the format. The rule for words:

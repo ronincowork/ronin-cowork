@@ -8,4 +8,5 @@
 - **actions:** cut-code, open-pr, land-work, land-manifest, desk-open, desk-status, desk-sync, hand-in, desk-park, check-clean
 - **tools:** tejun-desk
 - **mcp:** —
+- **requires:** ronin_base
 - **order:** 20

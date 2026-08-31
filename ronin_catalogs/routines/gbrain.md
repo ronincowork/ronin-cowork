@@ -8,4 +8,5 @@
 - **actions:** recall-memories, remember-lesson
 - **tools:** tejun-recall, tejun-remember
 - **mcp:** gbrain
-- **order:** 40
+- **requires:** ronin_base
+- **order:** 50
