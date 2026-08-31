@@ -11,11 +11,10 @@ import { buildArchives } from './archives.js';
 import { buildLauncher } from './launcher.js';
 import { homeData, loadPresets, loadSavedLaunches, refreshHome, roleData, statusLabel } from './home.js';
 import { request } from './request.js';
-import { humanAge } from './shingo.js';
 import { sessionsHandlers, teamPageHandlers } from './events.js';
 import { createArranger, parseDraft, reportView as sendView } from './team-arrange.js';
 import { t } from './lexicon.js';
-import { deskReadout, desksOf, refreshDesks } from './desks.js';
+import { refreshDesks } from './desks.js';
 import { acceptDrops as acceptSessionDrops } from './team-drag.js';
 import { S } from './state.js';
 import { createCampaignIdentity } from './campaign.js';
@@ -30,6 +29,32 @@ const el = (tag, cls, text) => {
 };
 const agentTitle = (session) => session.title || String(session.name || '').split(/[_-]+/).filter(Boolean)
   .map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' ');
+
+// The roster reads the same frontier as the expanded work record: an explicit pointer
+// wins, otherwise the first unfinished rung is current. Keep the agent's actual words
+// beside that coordinate instead of substituting its launcher role (CutCode, OddJob…).
+const currentWorkStep = (letter) => {
+  const ladder = letter?.ladder || [];
+  if (!ladder.length) return { label: '', text: '' };
+  const finished = (rung) => rung.gate !== undefined
+    ? rung.status === 'DONE'
+    : (rung.legs || []).length > 0 && rung.legs.every((leg) => leg.status === 'DONE');
+  let rungIndex = ladder.findIndex((rung) => !finished(rung));
+  let legIndex = -1;
+  if (letter.at && Number.isInteger(letter.at.rung) && letter.at.rung >= 1 && letter.at.rung <= ladder.length) {
+    rungIndex = letter.at.rung - 1;
+    if (Number.isInteger(letter.at.leg)) legIndex = letter.at.leg - 1;
+  }
+  if (rungIndex < 0) rungIndex = ladder.length - 1;
+  const rung = ladder[rungIndex];
+  if (rung.gate !== undefined) return { label: letter.chip?.text || t('ladder.gate', 'GATE'), text: rung.gate || '' };
+  const legs = rung.legs || [];
+  if (legIndex < 0) {
+    legIndex = legs.findIndex((leg) => leg.status === 'ACTIVE');
+    if (legIndex < 0) legIndex = legs.findIndex((leg) => leg.status !== 'DONE');
+  }
+  return { label: letter.chip?.text || rung.phase || '', text: legs[legIndex]?.title || rung.phase || '' };
+};
 
 const COMMONS = '@commons';
 const COWORK = '@cowork';
@@ -194,7 +219,10 @@ export function createCoworkView(options = {}) {
     newTeam: (id) => ({ el: newTeamBySeat[id].el, show: () => newTeamBySeat[id].enter(ctx) }),
     archives: (id) => ({ el: archivesBySeat[id].el, show: () => void archivesBySeat[id].room.enter() }),
     team: (id, detail) => createLeagueTeamSurface(detail.key, id),
-    sessions: () => campaign ? [] : membersOfTeam(team).map((member) => ({ key: member.name, label: agentTitle(member), summary: member.summary || '', metadata: readingsOf(member), mark: member.team_lead ? '人' : null, onPointerEnter: () => armPrewarm(member.name), onPointerLeave: disarmPrewarm })),
+    sessions: () => campaign ? [] : membersOfTeam(team).map((member) => {
+      const reading = readingsOf(member);
+      return { key: member.name, label: agentTitle(member), className: 'team-agent-card', summary: reading.step, metadata: reading.lines, mark: member.team_lead ? '人' : null, onPointerEnter: () => armPrewarm(member.name), onPointerLeave: disarmPrewarm };
+    }),
     teams: () => campaign ? [...teamsFromState().filter((candidate) => !candidate.holding), { name: UNASSIGNED, title: t('league.ronin', 'Ronin: no team'), objective: '' }].map((item) => ({ key: item.name, label: item.title || readableTeam(item.name), summary: item.objective || '' })) : [],
   };
   bench = WorkspaceKit.workbench.create({
@@ -469,16 +497,12 @@ export function createCoworkView(options = {}) {
   };
   const readingsOf = (m) => {
     const row = rows.get(m.name) || {};
-    const chip = row.tegami?.chip?.text && row.tegami?.ladder?.length ? row.tegami.chip.text + (row.tegami.quietMs >= 60000 ? ' · ' + humanAge(row.tegami.quietMs) : '') : null;
-    return [
-      m.session_role || null,
-      chip,
-      statusLabel(row.status) || null,
-      (row.model || '').toLowerCase() || null,
-      row.ctx != null ? `⛽ ${row.ctx}%` : null,
-      deskReadout(desksOf(m.name)), // derived desk state, the control surface's visible half
-      row.attached ? t('team.attached', 'attached') : null,
-    ].filter(Boolean);
+    const current = currentWorkStep(row.tegami);
+    const state = [statusLabel(row.status), row.ctx != null ? `⛽ ${row.ctx}%` : ''].filter(Boolean).join(' · ');
+    return {
+      step: current.label,
+      lines: [current.text, (row.model || '').toLowerCase(), state].filter(Boolean),
+    };
   };
   function renderCards(members) {
     if (rosterTitle) rosterTitle.textContent = campaign ? campaignIdentity.name() || t('campaign', 'Campaign') : team ? t('team.roster_of', 'Roster: {team}', { team: readableTeam(team) }) : t('team.roster_title', 'Team Roster');
