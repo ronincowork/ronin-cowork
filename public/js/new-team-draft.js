@@ -1,57 +1,13 @@
 /* part of the ronin-cowork client — see js/README.md */
 
 /**
- * THE TEAM DRAFT — one object, one consumer, seven fields.
+ * THE TEAM NAME RULES — a name IS the tag its sessions carry, so the same three helpers
+ * answer for every surface that asks a person to type one.
  *
- * New Team owns this and nothing else reads it. A draft is what the owner has TYPED and
- * not yet created; the moment `POST /api/team-rosters` accepts it the draft is spent and
- * a fresh one takes its place, because the Team itself is now the record and the surface
- * has nothing left to hold.
- *
- * NOTHING IS REQUIRED EXCEPT A NAME, AND ONLY AT THE MOMENT OF CREATION. A blank
- * An empty objective, no root, no repos and no
- * branch are all valid. A Team defined with a name and nothing else is a complete
- * outcome of this surface. Sessions are not this file's business: a session joins a
- * Team by carrying its tag, which is what the New Agent launcher writes at birth.
+ * This file used to hold the seven-field New Team draft as well. That card and its
+ * `js/new-team.js` are retired (owner, 2026-08-31); the drawn forms — `new-team-form.js`
+ * and `new-agent.js` — build their own drafts and keep only the naming rules from here.
  */
-
-export const DRAFT_VERSION = 2;
-
-/** The roster's seven durable fields, in the order the form asks for them. Only `name`
- *  gates anything, and only at the instant of creation. */
-const TEAM_DEFAULTS = Object.freeze({
-  name: '',
-  objective: '',
-  project_root: '',
-  repos: [],
-  branch: '',
-  wipeboard: '',
-});
-
-export function createDraft(overrides = {}) {
-  return {
-    draft_version: DRAFT_VERSION,
-    team: { ...TEAM_DEFAULTS, ...(overrides.team ?? {}) },
-  };
-}
-
-/**
- * THE ROSTER WRITE, and the derived facts are absent BY NAME rather than by omission.
- * `POST /api/team-rosters` refuses `members`, `sessions`, `team_lead`, `leads` and
- * `leaders` out loud, because membership and leadership are derived from live sessions
- * and a roster carrying them would be the drift that store exists to prevent.
- */
-export function rosterBody(team) {
-  return {
-    name: finalizeTeamName(team.name),
-    objective: team.objective ?? '',
-    project_root: team.project_root ?? '',
-    repos: [...(team.repos ?? [])],
-    branch: team.branch ?? '',
-    // '' means "the Team's own token" — the store fills it in rather than storing a blank.
-    wipeboard: (team.wipeboard ?? '').trim(),
-  };
-}
 
 /** A team name obeys the tag rules — it IS the tag. Mirrors `isValidTeamName` in
  *  src/team-rosters.ts; the server refuses regardless, this only tells you sooner. */
@@ -76,13 +32,3 @@ export const sanitizeTeamName = (raw) =>
  * different questions: "what may this field contain right now" and "what will be made".
  */
 export const finalizeTeamName = (raw) => sanitizeTeamName(raw).replace(/[_-]+$/, '');
-
-/**
- * Is this draft ready to become a Team? Exactly ONE condition, because exactly one thing
- * is enforced by the server at creation: a valid name. Not an objective,
- * not a root. A Team defined with a name and nothing else is a complete and valid outcome
- * of this surface.
- */
-export function canCreateTeam(draft) {
-  return isValidTeamName(finalizeTeamName(draft.team.name ?? ''));
-}

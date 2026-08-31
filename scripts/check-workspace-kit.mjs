@@ -13,7 +13,7 @@ const campaign = read('public/js/campaign-view.js');
 const workbench = read('public/js/workbench.js');
 const terminal = read('public/js/terminal-tile-host.js');
 const primitives = read('public/js/workspace-primitives.js');
-const newTeam = read('public/js/new-team.js');
+const newTeam = read('public/js/new-team-form.js');
 const styles = read('public/workspace-kit.css').replace(/\s+/g, ' ');
 const rosters = read('src/team-rosters.ts');
 const leagueCards = /\.wk-league-board \[data-surface='cards'\] \{[^}]*display: grid;[^}]*grid-template-columns: repeat\(auto-fill, minmax\(17rem, 1fr\)\);[^}]*gap: var\(--space-6\);[^}]*align-content: start;[^}]*\}/;
@@ -65,17 +65,16 @@ if (!team.includes('teamWorkspaceState(context.state,')) problems.push('Team mus
 // NEW TEAM CREATES A TEAM AND HANDS THE WORKSPACE TO IT (owner, 2026-08-29): one write
 // through the canonical roster door, and no seat-building, launch or retry path of its
 // own — staffing is the New Agent launcher's, which already names the Team at birth.
-if (!newTeam.includes("patchViewState('new-team'")) problems.push('New Team must persist its draft through the typed view state.');
 if (!newTeam.includes("request('/api/team-rosters'")) problems.push('New Team must create through the canonical roster door.');
 for (const retired of ['new-team-launch.js', 'new-team-preflight.js', 'team-draft-controller.js', 'agent-config']) {
   if (newTeam.includes(`'./${retired}'`) || newTeam.includes(`'${retired}'`)) problems.push(`New Team retired ${retired}; a Team is created and then staffed with New Agent.`);
 }
-for (const gone of ['public/js/new-team-launch.js', 'public/js/new-team-preflight.js', 'public/js/team-draft-controller.js', 'public/js/agent-config.js', 'src/routes/launch-preflight.ts']) {
+for (const gone of ['public/js/new-team-launch.js', 'public/js/new-team-preflight.js', 'public/js/team-draft-controller.js', 'public/js/agent-config.js', 'src/routes/launch-preflight.ts', 'public/js/new-team.js', 'public/js/launcher.js', 'public/js/rolefamilies.js']) {
   if (fs.existsSync(gone)) problems.push(`${gone} is a retired New Team seat path; the surface creates a Team and stops.`);
 }
-if (!read('public/js/cowork-view.js').includes('createNewTeamView(WorkspaceKit, {')) problems.push('The Cowork space must own where New Team lands after a create.');
+if (!read('public/js/cowork-view.js').includes('createNewTeamFormView(WorkspaceKit, {')) problems.push('The Cowork space must own where New Team lands after a create.');
 if (!rosters.includes("isReservedTeamName = (s: string): boolean => s === 'unassigned'")) problems.push('The canonical Team store must reserve the Unassigned holding token.');
-for (const file of ['cowork-view.js', 'new-team.js']) {
+for (const file of ['cowork-view.js', 'new-team-form.js', 'new-agent.js', 'launch-view.js']) {
   const source = read(`public/js/${file}`);
   if (/className\s*=\s*['"](?:action-bar|metadata)['"]/.test(source)) problems.push(`${file} copies a shared foundation primitive.`);
 }

@@ -78,13 +78,21 @@ that reading happens at birth only.
 
 New Team owns:
 
-- `public/js/new-team.js` — the Surface: fields, the one write, the spent draft;
-- `public/js/new-team-draft.js` — the team draft and the roster request body;
-- `public/css/new-team.css` — governed feature styling, never Kit geometry;
+- `public/js/new-team-form.js` — the Surface: the drawn steps, the one write;
+- `public/js/new-team-draft.js` — the team-name rules the surface shares with New Agent;
+- `public/css/launch-forms.css` — governed feature styling, never Kit geometry;
 - this README.
 
+**The seven-field card is gone** (owner, 2026-08-31, "the old new team and the old new
+agent workspaces have been made obsolete by yours"): its surface and its stylesheet are
+deleted — Git holds them — and the drawn form is the only New Team. One behaviour did not
+come across: the retired card persisted a half-typed draft through the typed view state,
+and the drawn form's draft lives in the surface for as long as the workspace holds it.
+
 `public/js/cowork-view.js` composes the Surface into the Cowork space and owns where the
-owner lands after a create; it is a registration seam, not feature ownership.
+owner lands after a create; `public/js/launch-view.js` does the same in the Launch
+workbench, where a Team | Agent toggle chooses between this form and New Agent. Both are
+registration seams, not feature ownership.
 
 ## Workspace Kit and CSS contracts
 
@@ -94,8 +102,8 @@ New Team consumes only the hardened Kit: `createSurface`, `createAction`,
 
 If a required contract is absent, stop; do not build a local substitute. Workspace Kit
 owns geometry, responsive behavior, shared controls, Surface padding, tokens, and skins.
-`public/css/new-team.css` styles feature meaning only: it does not redefine Kit geometry
-or reconstruct `wk-*` classes.
+`public/css/launch-forms.css` styles feature meaning only: it does not redefine Kit
+geometry or reconstruct `wk-*` classes.
 
 ## Lifecycle and persistence
 

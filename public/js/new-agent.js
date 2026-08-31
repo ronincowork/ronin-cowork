@@ -1,8 +1,9 @@
 /* part of the ronin-cowork client — see js/README.md */
 /**
- * NEW AGENT — the drawn launch form, staged BESIDE the ＋ New board on the Coworks bench
- * (the owner's staging rule): a new surface type, nothing removed, and `js/launcher.js`
- * retires only when its last caller does. The drawn contract is ronin-lab
+ * NEW AGENT — the drawn launch form, and since 2026-08-31 the ONLY one: it was staged
+ * beside the ＋ New board, the owner ruled that board obsolete, and `js/launcher.js` is
+ * deleted. It seats on the Coworks bench and in the Launch workbench, whose Team | Agent
+ * toggle chooses between this and New Team. The drawn contract is ronin-lab
  * `concepts/new-agent-condensed.html` — the density the owner preferred — and the object
  * it produces is `NEW_AGENT.md` § 7.4, nothing more: everything else on the resolved
  * profile is the server's, and a caller that states one is guessing at its job.
@@ -538,9 +539,28 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   form.append(seg, stepType.el, stepTop.el, stepTemplate.el, stepInstructions.el, stepTeam.el, stepWhere.el, stepMandate.el, stepLoadout.el);
   surface.content.append(form, actions.el, notice.el, foot);
 
+  /**
+   * THE ＋ NEW DOOR ARRIVES HERE NOW. `S.showNewSession(prompt)` — the bar's ＋, ⌃⇧N and
+   * the gbrain tab's "ask the assistant" — used to open `js/launcher.js` pre-filled as a
+   * `PersonalAssistant` launch. That board is retired and `session_role` with it, so the
+   * prompt lands as INSTRUCTIONS and the settled replacement for the role is ticked on
+   * the ways shelf: `ways:personal_assistant` (SETTLING § 1, the former session_roles
+   * become the `ways/` books). The hand still moves everything, as on any other seed.
+   */
+  const PA_BOOK = 'ways:personal_assistant';
+  const seedPrompt = (prompt) => {
+    if (!prompt) return;
+    draft.instructions = prompt;
+    instructionsInput.value = prompt;
+    if (ways.some((row) => row.name === 'personal_assistant') && !draft.books.includes(PA_BOOK)) {
+      draft.books = [...draft.books, PA_BOOK];
+      touched.books = true;
+    }
+  };
+
   return {
     el: surface.el,
-    enter: async () => {
+    enter: async (detail = {}) => {
       paint();
       const [tray, sopRows, wayRows, teamRows, rootRows] = await Promise.all([
         request('/api/templates'),
@@ -555,6 +575,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
       teams = teamRows.ok && Array.isArray(teamRows.data) ? teamRows.data.filter((row) => row.state !== 'archived') : [];
       roots = rootRows.ok && Array.isArray(rootRows.data) ? rootRows.data : [];
       if (!loaded) { await loadSeed(); loaded = true; }
+      seedPrompt(typeof detail?.prompt === 'string' ? detail.prompt.trim() : '');
       paint();
     },
   };

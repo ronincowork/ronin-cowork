@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `behaviour.*` may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1486 keys · 59 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1432 keys · 58 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## add_agent
 
@@ -683,11 +683,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
-| `home.receipt_assisted` | assisted |  |  |  |  |
-| `home.receipt_kill` | kill |  |  |  |  |
-| `home.receipt_kill_title` | Wrong? Remove the session now. |  |  |  |  |
-| `home.receipt_manual` | manual |  |  |  |  |
-| `home.receipt_no_agent` | no agent |  |  |  |  |
 | `home.status_awaiting_input` | awaiting input |  |  |  |  |
 | `home.status_ready` | ready |  |  |  |  |
 | `home.status_thinking` | thinking… |  |  |  |  |
@@ -774,59 +769,12 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
+| `launch.mode_agent` | Agent |  |  |  |  |
+| `launch.mode_team` | Team |  |  |  |  |
 | `launch.new_agent` | New Agent |  |  |  |  |
 | `launch.new_agent_summary` | Start an Agent in a Team or on its own. |  |  |  |  |
 | `launch.new_team` | New Team |  |  |  |  |
 | `launch.new_team_summary` | Define a Team, then launch its Agents. |  |  |  |  |
-
-## launcher
-
-| key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
-|---|---|---|---|---|---|
-| `launcher.cancel` | Cancel |  |  |  |  |
-| `launcher.cannot_launch` | this combination cannot be launched — see the definition files it names |  |  |  |  |
-| `launcher.gbrain_off` | gbrain off |  |  |  |  |
-| `launcher.gbrain_off_title` | This session launches with NO MCP servers — gbrain and every other connector off. Click to launch connected. |  |  |  |  |
-| `launcher.gbrain_on` | gbrain on |  |  |  |  |
-| `launcher.gbrain_on_title` | This session can reach gbrain — and any other MCP servers the CLI is wired with. Click to launch it with none. |  |  |  |  |
-| `launcher.head` | put a session out to work |  |  |  |  |
-| `launcher.inject` | extra instruction |  |  |  |  |
-| `launcher.inject_placeholder` | extra instruction (optional) |  |  |  |  |
-| `launcher.launch_failed` | could not put a session out — {message} |  |  |  |  |
-| `launcher.mode_assisted` | assisted |  |  |  |  |
-| `launcher.mode_assisted_note` | Koshi fills the rest |  |  |  |  |
-| `launcher.mode_assisted_say` | Everything is optional. Ronin supplies the startup reading and uses your choices when present. |  |  |  |  |
-| `launcher.mode_assisted_title` | Say it long-form; Ronin composes the brief around it |  |  |  |  |
-| `launcher.mode_manual` | manual |  |  |  |  |
-| `launcher.mode_manual_note` | your words, untouched |  |  |  |  |
-| `launcher.mode_manual_say` | Sent word for word — nothing added. |  |  |  |  |
-| `launcher.mode_manual_title` | Your text is the whole prompt — nothing added, nothing templated |  |  |  |  |
-| `launcher.model_title` | Which session_launch_spec to launch |  |  |  |  |
-| `launcher.name` | session name |  |  |  |  |
-| `launcher.name_placeholder` | session name (optional) |  |  |  |  |
-| `launcher.name_placeholder_assisted` | session name (optional — named from your text) |  |  |  |  |
-| `launcher.name_title` | session name — how you address this session afterwards |  |  |  |  |
-| `launcher.no_roles` | no session_roles in ronin_catalogs/session_roles/ |  |  |  |  |
-| `launcher.optional` | optional |  |  |  |  |
-| `launcher.own_kind` | session task |  |  |  |  |
-| `launcher.powered_by` | powered by {name} ↗ |  |  |  |  |
-| `launcher.reference_none` | — no session — |  |  |  |  |
-| `launcher.reference_title` | Point this session at ONE existing session (review it, fork from it, watch it) |  |  |  |  |
-| `launcher.saved` | saved launches |  |  |  |  |
-| `launcher.saved_role_missing` | "{label}" names session_role "{role}", which is not in the catalog. |  |  |  |  |
-| `launcher.seed` | read first — paths, comma-separated |  |  |  |  |
-| `launcher.seed_placeholder` | read first (optional): paths, comma-separated |  |  |  |  |
-| `launcher.setup_offer` | 新 start your setup session |  |  |  |  |
-| `launcher.start` | Start |  |  |  |  |
-| `launcher.team_new` | ＋ new team… |  |  |  |  |
-| `launcher.team_new_prompt` | New team name (letters, digits, - _): |  |  |  |  |
-| `launcher.team_none` | — team — |  |  |  |  |
-| `launcher.team_title` | Team the new session joins (tag) |  |  |  |  |
-| `launcher.what` | what this session is told |  |  |  |  |
-| `launcher.what_placeholder` | what this session should do (optional) |  |  |  |  |
-| `launcher.what_placeholder_assisted` | Describe in plain terms what this session should do and cover… |  |  |  |  |
-| `launcher.where_none` | — no project_roots — |  |  |  |  |
-| `launcher.where_title` | project_root — where the work happens (sets the directory + reading list) |  |  |  |  |
 
 ## league
 
@@ -978,10 +926,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 |---|---|---|---|---|---|
 | `new_team.agent_defaults` | agent defaults — seeded into every Agent raised here; none of it is a constraint |  |  |  |  |
 | `new_team.card_summary` | Template · kit · lead — the drawn form. |  |  |  |  |
-| `new_team.create` | Create Team |  |  |  |  |
-| `new_team.creating` | Creating the Team… |  |  |  |  |
-| `new_team.define` | Define the Team |  |  |  |  |
-| `new_team.definition` | Team definition |  |  |  |  |
 | `new_team.floor` | Cowork floor |  |  |  |  |
 | `new_team.floor_tag` | floor |  |  |  |  |
 | `new_team.floor_why` | The launch, campaign and team resolution, the shelf map, the birth receipt. |  |  |  |  |
@@ -1016,16 +960,13 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `new_team.raise_lead` | Raise the team and its lead |  |  |  |  |
 | `new_team.raised_no_lead` | Raised {team} — the lead was not born: {reason} |  |  |  |  |
 | `new_team.raising` | Raising the team… |  |  |  |  |
-| `new_team.repos_desc` | Optional, comma-separated. |  |  |  |  |
 | `new_team.required` | Required behaviours |  |  |  |  |
 | `new_team.required_off` | offered |  |  |  |  |
 | `new_team.required_on` | enforced |  |  |  |  |
 | `new_team.required_why` | Every Agent that joins gets the documents below, at birth or on joining. |  |  |  |  |
 | `new_team.role_desc` | Optional. Blank is an unclassified Team, which is a valid state. |  |  |  |  |
 | `new_team.role_placeholder` | development — or leave blank |  |  |  |  |
-| `new_team.root` | Default project root |  |  |  |  |
 | `new_team.root_default` | — the box’s default — |  |  |  |  |
-| `new_team.root_desc` | Optional. Seeds where sessions are born; a launch may override it. |  |  |  |  |
 | `new_team.root_note` | A default that seeds a launch — never a constraint. A rōnin that joins later keeps its own. |  |  |  |  |
 | `new_team.save_as_new` | Save as new template |  |  |  |  |
 | `new_team.save_name_placeholder` | template name |  |  |  |  |

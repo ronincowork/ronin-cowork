@@ -42,12 +42,6 @@ test('an invalid stated session_type resolves to cowork_agent and is noted for t
   assert.deepEqual(result.ignored, ['session_type']);
 });
 
-test('the live legacy launcher states cowork_agent until FORMS_UI retires it', async () => {
-  const source = await fs.readFile(new URL('../public/js/launcher.js', import.meta.url), 'utf8');
-  const post = source.match(/request\('\/api\/launch',[\s\S]*?\n\s*}\);/)?.[0] ?? '';
-  assert.match(post, /session_type:\s*'cowork_agent'/);
-});
-
 test('name is required for every session_type', async () => {
   for (const session_type of ['cowork_agent', 'bare_metal_agent', 'terminal']) {
     const result = await launch({ session_type });
