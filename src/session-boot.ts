@@ -97,10 +97,10 @@ const userShelf = () => storeDir('session_boot');
  */
 /** The live macro reading as text. Exported for the read-only shelf inventory so the UI
  * shows the same resolved document without creating or exposing the disposable cache. */
-export async function renderSessionMacrosReading(): Promise<string> {
+export async function renderSessionMacrosReading(allowed?: ReadonlySet<string>): Promise<string> {
   const [template, active] = await Promise.all([
     readFile(SESSION_MACROS_TEMPLATE, 'utf8'),
-    listMacros().then((macros) => macros.filter((macro) => macro.preview)),
+    listMacros().then((macros) => macros.filter((macro) => macro.preview && (!allowed || allowed.has(macro.name)))),
   ]);
   const rendered = active.length
     ? active
@@ -170,9 +170,9 @@ async function glossaryReading(templatePath: string): Promise<string> {
   return target;
 }
 
-async function sessionMacrosReading(): Promise<string> {
-  const text = await renderSessionMacrosReading();
-  const dir = storeDir('session_boot_cache');
+async function sessionMacrosReading(allowed?: ReadonlySet<string>, session = ''): Promise<string> {
+  const text = await renderSessionMacrosReading(allowed);
+  const dir = session ? path.join(storeDir('session_boot_cache'), 'sessions', session) : storeDir('session_boot_cache');
   const target = path.join(dir, 'SESSION_MACROS.md');
   // Several sessions may be born together. A shared `.tmp` name lets one rename the
   // other's file out from under it; unique writers may safely race, with the last complete
@@ -285,6 +285,8 @@ export async function bootFiles(
   mcpOn = true,
   assigned = false,
   routines: string[] = [],
+  routineMacros?: ReadonlySet<string>,
+  session = '',
 ): Promise<string[]> {
   const user = userShelf();
   const dirs: string[] = [path.join(STOCK, 'all'), path.join(user, 'all')];
@@ -307,7 +309,7 @@ export async function bootFiles(
   const byName = new Map<string, string>();
   for (const dir of dirs) for (const f of await filesIn(dir)) byName.set(path.basename(f), f);
   // Generated last, so the live catalog's macro reading is always the file handed over.
-  byName.set('SESSION_MACROS.md', await sessionMacrosReading());
+  byName.set('SESSION_MACROS.md', await sessionMacrosReading(routineMacros, session));
   // The glossary is rendered from whichever copy won (stock, or the owner's shadow of it)
   // with the active desk profile's words — KOKUGO, 2026-08-27.
   const glossary = byName.get('KOTOBA_GLOSSARY.md');

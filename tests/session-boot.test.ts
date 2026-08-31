@@ -164,6 +164,22 @@ test('only enabled Routine levels contribute startup reading', async () => {
   }
 });
 
+test('generated macro reading contains only the effective Routine macros', async () => {
+  const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-session-boot-test-'));
+  const oldCache = process.env.RONIN_SESSION_BOOT_CACHE_DIR;
+  process.env.RONIN_SESSION_BOOT_CACHE_DIR = path.join(temp, 'generated');
+  try {
+    const boot = await bootFiles('', '', '', false, false, [], new Set(['forkit']));
+    const guide = await readFile(boot.find((file) => path.basename(file) === 'SESSION_MACROS.md')!, 'utf8');
+    assert.match(guide, /\+forkit:/);
+    assert.doesNotMatch(guide, /\+cutcode:/, 'a Control macro is not taught by Base alone');
+  } finally {
+    if (oldCache === undefined) delete process.env.RONIN_SESSION_BOOT_CACHE_DIR;
+    else process.env.RONIN_SESSION_BOOT_CACHE_DIR = oldCache;
+    await rm(temp, { recursive: true, force: true });
+  }
+});
+
 test('startup reading is never stripped when instructions are present', () => {
   const profile = { session_role: 'OpenShell', posture: [] } as unknown as LaunchProfile;
   const form: SpawnForm = {

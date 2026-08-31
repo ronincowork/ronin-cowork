@@ -310,8 +310,10 @@ async function bootReading(
   bornLead = false,
   assigned = false,
   routines: string[] = [],
+  routineMacros?: ReadonlySet<string>,
+  session = '',
 ): Promise<string[]> {
-  const files = await bootFiles(projectRoot, sessionRole, teamRole, mcpOn, assigned, routines);
+  const files = await bootFiles(projectRoot, sessionRole, teamRole, mcpOn, assigned, routines, routineMacros, session);
   // Route 1 (the coordinating kind of role) — and a session BORN as the 人 (`team_lead`
   // on the form), which leads whatever its role says: the reading follows the 人.
   const leadRole = !!sessionRole && (await listRoleFamilies()).some((f) => f.default_lead_role === sessionRole);
@@ -522,10 +524,11 @@ export async function resolveForm(
     ? resolveRoutines(routineCatalog, campaignRoutines, roster?.routines ?? {})
     : [];
   const enabledRoutines = routines.filter((routine) => routine.enabled).map((routine) => routine.name);
+  const enabledMacros = new Set(routines.filter((routine) => routine.enabled).flatMap((routine) => routine.macros));
   // Compile this once and return the exact same list the brief receives. The browser must
   // never recreate shelf precedence or guess which explicit seeds joined it.
   const shelfReading = agent
-    ? await bootReading(root.name, profile.session_role, roster?.team_role ?? '', !mcpOffWanted, !!form.team_lead && !!form.team, !!assignment, enabledRoutines)
+    ? await bootReading(root.name, profile.session_role, roster?.team_role ?? '', !mcpOffWanted, !!form.team_lead && !!form.team, !!assignment, enabledRoutines, enabledMacros, name)
     : [];
   const birthReading = agent ? [...shelfReading, ...(form.seed ?? [])].filter(Boolean) : [];
 
