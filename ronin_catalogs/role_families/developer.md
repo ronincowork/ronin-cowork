@@ -6,7 +6,7 @@ family is just where the coding kind of work is grouped.
 
 **A family is PRESENTATION, not structure** (R35, 2026-08-23). Nothing here rides a
 launch or a letter: each session_role carries its own launch constants, and a session's
-identity — where it has one — is its TEAM's `team_role`, on the team's roster. This
+identity — where it has one — is contextual to its Team. This
 shelf groups the buttons, and doubles as a Build-Team template: building a developer
 team starts from this family, its roles as the menu.
 
