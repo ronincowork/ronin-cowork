@@ -25,6 +25,9 @@ const reading = (form, label, value) => {
   form.append(row);
 };
 
+const readableName = (name) => String(name || '').split(/[_-]+/).filter(Boolean)
+  .map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' ');
+
 export function renderTeamConfiguration(host, roster, options = {}) {
   host.replaceChildren();
   if (!roster?.durable) {
@@ -45,12 +48,15 @@ export function renderTeamConfiguration(host, roster, options = {}) {
     event.preventDefault();
     if (saveAction) saveAction.setDisabled(true); else save.disabled = true; status.textContent = 'Saving…';
     const data = Object.fromEntries(new FormData(form));
-    const nextName = String(data.name || '').trim();
+    const nextName = String(data.name || '').trim().toLowerCase().replace(/\s+/g, '_');
     if (nextName !== roster.name) {
       const renamed = await request(`/api/team-rosters/${encodeURIComponent(roster.name)}/rename`, { method: 'POST', json: { to: nextName } });
       if (!renamed.ok) { status.textContent = renamed.message; if (saveAction) saveAction.setDisabled(false); else save.disabled = false; return; }
     }
     delete data.name;
+    // A generated readable title follows a renamed key. An explicitly customized title
+    // stays exactly as the owner wrote it.
+    if (nextName !== roster.name && data.title === readableName(roster.name)) data.title = readableName(nextName);
     const saved = await request(`/api/team-rosters/${encodeURIComponent(nextName)}`, { method: 'PUT', json: data });
     status.textContent = saved.ok ? 'Saved' : saved.message;
     if (saveAction) saveAction.setDisabled(false); else save.disabled = false;

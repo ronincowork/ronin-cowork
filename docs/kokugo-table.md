@@ -762,7 +762,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `league.holding_empty` | Every live session is on a Team |  |  |  |  |
 | `league.launch_team` | Launch |  |  |  |  |
 | `league.lead` | lead |  |  |  |  |
-| `league.make_team_lead` | Make team lead |  |  |  |  |
+| `league.make_team_lead` | Make Lead |  |  |  |  |
 | `league.members` | Team members |  |  |  |  |
 | `league.new_agent` | New Agent |  |  |  |  |
 | `league.new_agent_summary` | A new Agent, born into the workspace you are in. |  |  |  |  |
@@ -775,6 +775,8 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `league.open_workspace` | League workspace |  |  |  |  |
 | `league.remove_member` | Remove |  |  |  |  |
 | `league.remove_named_member` | Remove {name} from this team |  |  |  |  |
+| `league.rename_agent` | Rename |  |  |  |  |
+| `league.rename_agent_prompt` | Rename Agent |  |  |  |  |
 | `league.resting` | Resting Team |  |  |  |  |
 | `league.role_unset` | Role not set |  |  |  |  |
 | `league.ronin` | Ronin: no team |  |  |  |  |
@@ -783,7 +785,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `league.selector_teams` | Teams |  |  |  |  |
 | `league.selector_views` | Views |  |  |  |  |
 | `league.show_rosters` | Show rosters |  |  |  |  |
-| `league.team_lead` | Team lead |  |  |  |  |
+| `league.team_lead` | Team Lead |  |  |  |  |
 | `league.team_roster` | Team roster |  |  |  |  |
 | `league.team_roster_removing` | Removing {session} from {team}… |  |  |  |  |
 | `league.team_roster_saving` | Adding {session} to {team}… |  |  |  |  |
