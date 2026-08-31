@@ -85,10 +85,11 @@ test('every assisted session is handed the required abilities', async () => {
 
 test('accepted Routine reading drafts keep universal compatibility teaching', async () => {
   const repo = path.join(path.dirname(new URL(import.meta.url).pathname), '..');
-  const [required, protocols, base, control, machine, machineProtocols] = await Promise.all([
+  const [required, protocols, base, services, control, machine, machineProtocols] = await Promise.all([
     readFile(path.join(repo, 'ronin_session_boot', 'all', 'REQUIRED_ABILITIES.md'), 'utf8'),
     readFile(path.join(repo, 'ronin_session_boot', 'all', 'TEST_PROTOCOLS.md'), 'utf8'),
     readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_base', 'BASE_ABILITIES.md'), 'utf8'),
+    readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_services', 'SERVICES_ABILITIES.md'), 'utf8'),
     readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_control', 'CONTROL_TEST_PROTOCOLS.md'), 'utf8'),
     readFile(path.join(repo, 'ronin_session_boot', 'routine', 'machine', 'MACHINE_ABILITIES.md'), 'utf8'),
     readFile(path.join(repo, 'ronin_session_boot', 'routine', 'machine', 'MACHINE_TEST_PROTOCOLS.md'), 'utf8'),
@@ -97,6 +98,9 @@ test('accepted Routine reading drafts keep universal compatibility teaching', as
   assert.match(base, /tejun forkit/);
   assert.match(base, /read_tegami/);
   assert.match(base, /tejun-wipeboard/);
+  assert.doesNotMatch(base, /tejun-rireki/);
+  assert.match(services, /tejun-rireki <session> since/);
+  assert.match(services, /Ronin Koe/);
   assert.match(control, /team promotion/i);
   assert.match(control, /one full repository BYOIN/i);
   assert.match(machine, /tejun-survey/);

@@ -32,9 +32,9 @@ block shape.
 Check the `@ronin-control` dial before reading or writing another session. The owner alone
 changes that dial. A refusal is an answer: report it and do not retry around it.
 
-- Catch up with `tejun-rireki <session> since`; use `tejun-rireki <session> text` for its
-  recent durable tape. Use `tejun-peek <session>` only when the tape cannot answer, and say
-  that you used the live-pane fallback.
+- Inspect a session's recent live pane with `tejun-peek <session>`. This is a live view,
+  not a durable record. When the Ronin Services Routine is enabled, its reading supplies
+  the record-backed catch-up route and makes that route authoritative.
 - Send one targeted message with `tejun-send <session> <message...>`. Open with
   `from @<your session>:` because the tool adds no watermark. Report its single verdict —
   `DELIVERED`, `DENIED`, `BLOCKED`, `STUCK`, or `NO-SESSION` — and do not become a relay.
