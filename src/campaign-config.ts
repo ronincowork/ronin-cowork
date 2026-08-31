@@ -336,6 +336,21 @@ export async function readCampaign(id: string): Promise<CampaignConfig | null> {
       parsed.config.agent_defaults.routines = { ronin_base: true, ronin_control: true };
       await writeRecord(parsed);
     }
+    const routines = bucket(defaults.routines);
+    if (Object.prototype.hasOwnProperty.call(routines, 'machine')
+      && !Object.prototype.hasOwnProperty.call(routines, 'ronin_host')) {
+      // One-time, lossless rename: the host Routine was called `machine` until
+      // 2026-08-31, a word KOTOBA had already spent on `ronin_machine`. Carry the
+      // owner's own answer across rather than letting the old key fall to unknown —
+      // ignored input never blocks anything, but silently forgetting a stated choice
+      // is not the same as ignoring an unusable one.
+      parsed.config.agent_defaults.routines = {
+        ...routines as Record<string, boolean>,
+        ronin_host: routines.machine === true,
+      };
+      delete (parsed.config.agent_defaults.routines as Record<string, unknown>).machine;
+      await writeRecord(parsed);
+    }
     if (!Object.prototype.hasOwnProperty.call(doc, 'desk')) {
       // One-time, lossless migration: the old reference is resolved against the catalog
       // once and copied. Later catalog edits cannot silently repaint this Campaign.

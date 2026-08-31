@@ -91,8 +91,8 @@ test('accepted Routine reading drafts keep universal compatibility teaching', as
     readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_base', 'BASE_ABILITIES.md'), 'utf8'),
     readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_services', 'SERVICES_ABILITIES.md'), 'utf8'),
     readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_control', 'CONTROL_TEST_PROTOCOLS.md'), 'utf8'),
-    readFile(path.join(repo, 'ronin_session_boot', 'routine', 'machine', 'MACHINE_ABILITIES.md'), 'utf8'),
-    readFile(path.join(repo, 'ronin_session_boot', 'routine', 'machine', 'MACHINE_TEST_PROTOCOLS.md'), 'utf8'),
+    readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_host', 'HOST_ABILITIES.md'), 'utf8'),
+    readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_host', 'HOST_TEST_PROTOCOLS.md'), 'utf8'),
   ]);
 
   assert.match(base, /tejun forkit/);
@@ -185,15 +185,15 @@ test('only enabled Routine levels contribute startup reading', async () => {
   try {
     await mkdir(path.join(temp, 'shelf', 'routine', 'ronin_base'), { recursive: true });
     await writeFile(path.join(temp, 'shelf', 'routine', 'ronin_base', 'BASE.md'), '# base');
-    await mkdir(path.join(temp, 'shelf', 'routine', 'machine'), { recursive: true });
-    await writeFile(path.join(temp, 'shelf', 'routine', 'machine', 'MACHINE.md'), '# machine');
+    await mkdir(path.join(temp, 'shelf', 'routine', 'ronin_host'), { recursive: true });
+    await writeFile(path.join(temp, 'shelf', 'routine', 'ronin_host', 'HOST.md'), '# host');
 
     const base = (await bootFiles('', '', false, false, ['ronin_base'])).map((f) => path.basename(f));
     assert.ok(base.includes('BASE.md'));
-    assert.ok(!base.includes('MACHINE.md'), 'an unselected Routine contributes no reading');
+    assert.ok(!base.includes('HOST.md'), 'an unselected Routine contributes no reading');
 
     const none = (await bootFiles('', '', false, false, [])).map((f) => path.basename(f));
-    assert.ok(!none.includes('BASE.md') && !none.includes('MACHINE.md'));
+    assert.ok(!none.includes('BASE.md') && !none.includes('HOST.md'));
   } finally {
     if (oldShelf === undefined) delete process.env.RONIN_SESSION_BOOT_DIR;
     else process.env.RONIN_SESSION_BOOT_DIR = oldShelf;

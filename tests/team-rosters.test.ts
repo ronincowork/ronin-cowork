@@ -15,7 +15,7 @@ import path from 'node:path';
 const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-rosters-test-'));
 process.env.RONIN_TEAM_ROSTERS_DIR = temp;
 const ROUTINES_OFF = {
-  ronin_base: false, ronin_control: false, ronin_services: false, machine: false, gbrain: false,
+  ronin_base: false, ronin_control: false, ronin_services: false, ronin_host: false, gbrain: false,
 };
 
 const {
