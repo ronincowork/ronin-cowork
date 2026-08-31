@@ -123,7 +123,8 @@ learn in order to use Ronin should cost them a second language first.
 | `routine_floor` | *(no user word)* | The mandatory birth machinery beneath every Cowork Agent. It reaches neither a terminal nor a bare-metal Agent. |
 | `ronin_base` | **Ronin Base**<!--g:glossary.ronin_base--> | Ronin's ordinary macros, documents, work records and session coordination. Normally on, independently switchable. |
 | `ronin_control` | **Ronin Control**<!--g:glossary.ronin_control--> | Managed desks, hand-in, team promotion, receipts and Git guards. A separate Routine from Ronin Base. |
-| `specialized_routine` | **specialized routine**<!--g:glossary.specialized_routine--> | An optional package such as Machine, gbrain, Koshi or Ronin Koe. Ronin Koe includes both Voice and Hotwords. |
+| `ronin_services` | **Ronin Services**<!--g:glossary.ronin_services--> | One optional Routine containing the durable session record, Koshi, Voice and Hotwords. Installing Services does not switch the Routine on. |
+| `specialized_routine` | **specialized routine**<!--g:glossary.specialized_routine--> | An optional package such as Machine, gbrain or Ronin Services. |
 | `terminal` | **terminal**<!--g:glossary.terminal--> | A shell in a Ronin tile, with no Agent running in it. |
 | `bare_metal_agent` | **bare-metal Agent**<!--g:glossary.bare_metal_agent--> | A CLI started directly in a terminal: no Ronin reading, Campaign or Team defaults, Routines, work record or managed repository desk. |
 | `cowork_agent` | **Cowork Agent**<!--g:glossary.cowork_agent--> | An Agent born with Ronin's startup floor and its Campaign and Team Routines. The normal Agent launch. |

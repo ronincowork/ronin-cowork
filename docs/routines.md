@@ -12,7 +12,7 @@ an Agent already running.
 | Routine floor | The launch machinery that resolves, delivers and records every Routine. | No |
 | Ronin Base | Ronin's ordinary macros, documents, work records and session coordination. | Yes |
 | Ronin Control | Managed repository desks, hand-in, team promotion, receipts and Git guards. | Yes |
-| Specialized Routine | One optional capability or methodology: Machine, gbrain, Koshi, Ronin Koe, or a future third-party method. | Yes |
+| Specialized Routine | One optional capability or methodology: Machine, gbrain, Ronin Services, or a future third-party method. | Yes |
 
 The **Routine floor** is not a Routine. It is the minimum needed to make any Routine
 choice real: unified Agent launch, Campaign and Team resolution, the universal vocabulary
@@ -42,8 +42,10 @@ the Routine floor. Bare metal explicitly bypasses the Cowork birth transaction.
 without acquiring repository worktrees. Repository arrangement states whether Ronin
 Control's desk behaviour applies to a repository; it is not another Routine switch.
 
-**Ronin Koe** is one specialized Routine containing Voice and Hotwords. Hotwords have no
-independent use when Voice is unavailable, so there is no separate Hotwords Routine.
+**Ronin Services** is one specialized Routine containing the durable session record,
+Koshi, Voice and Hotwords. None is a standalone Routine or switch in this rollout.
+Hotwords have no independent use when Voice is unavailable. Installing Services or seeing
+one of its registered services proves availability only; it never selects the Routine.
 
 ## Campaign defaults and Team overrides
 
