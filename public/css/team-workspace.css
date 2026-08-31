@@ -106,9 +106,12 @@
   .aa-chip[aria-pressed='true'] { border-color: var(--kaki); background: var(--raise); color: var(--kaki-lift); }
   /* `open` is the not-applicable box, not a peer among the tasks — dotted, as everywhere. */
   .aa-chip[data-open='true'] { border-style: dashed; }
-  /* THE WORKTREE REQUEST — `wantsDesk` made visible. It used to be answered invisibly from
-     a role's michi name; here a person asks, and a code-touching task only PRE-marks it. */
+  /* The shell tick rides this rectangle; the desk stopped being an asked question
+     (owner, 2026-08-31) and its row below is a consequence line, not a control. */
   .aa-desk { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-5); align-items: center; width: 100%; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--muted-2); padding: var(--space-4) var(--space-5); cursor: pointer; text-align: left; font: inherit; }
+  .aa-deskline { border-top: var(--edge) solid var(--line); padding-top: var(--space-4); color: var(--muted); }
+  .aa-deskline small { font-size: var(--text-2); }
+  .aa-deskline[hidden] { display: none; }
   .aa-desk:hover { border-color: var(--kaki); }
   .aa-desk[aria-pressed='true'] { border-color: var(--kaki); background: var(--raise); }
   .aa-box { width: var(--space-7); height: var(--space-7); border: var(--edge) solid var(--line-3); background: var(--panel); }

@@ -19,13 +19,10 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **add_agent.default:** default
 - **add_agent.task:** task  (optional)
 - **add_agent.task_open:** open
+- **add_agent.desk_line_control:** Managed file coordination is on for this Team: the desk contract applies, and a worktree is cut when the work needs it.
+- **add_agent.desk_line_plain:** Managed file coordination is off for this Team: this Agent works in the shared checkout and reports to you.
 - **add_agent.shell:** Open a shell, not an Agent
 - **add_agent.shell_why:** A raw terminal in this Team — no Agent is launched and nothing is sent to it.
-- **add_agent.worktree:** Request a worktree
-- **add_agent.worktree_on:** Its own worktree, under managed file coordination: the desk contract, hand-in and the Git safeguards.
-- **add_agent.worktree_on_plain:** Its own worktree, for isolation only — no hand-in and no one to hand to, so it reports to you.
-- **add_agent.worktree_off:** No worktree at birth. Under managed file coordination it can cut one when the work needs it.
-- **add_agent.worktree_off_plain:** No worktree. This Agent works in the shared checkout.
 - **add_agent.actions:** Launch actions
 - **add_agent.start:** Start
 - **add_agent.cancel:** Cancel
@@ -504,6 +501,42 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **forms.campaign_off:** campaign off
 - **forms.team_on:** team turns on
 - **forms.team_off:** team turns off
+
+## new_agent — new-agent.js (the drawn launch form, staged beside the ＋ New board)
+- **new_agent.title:** New Agent
+- **new_agent.card_summary:** Session type first — the drawn launch form.
+- **new_agent.new_session:** New session
+- **new_agent.type_cowork:** Cowork Agent
+- **new_agent.type_cowork_sub:** Born into Ronin: the floor, its routines, its reading and its team.
+- **new_agent.type_bare:** Bare-metal Agent
+- **new_agent.type_bare_sub:** The provider’s agent and nothing else — no floor, no routines, no reading.
+- **new_agent.type_terminal:** Terminal
+- **new_agent.type_terminal_sub:** A raw tmux pane. No agent is launched and nothing is sent to it.
+- **new_agent.name_model_kind:** Name, model & kind
+- **new_agent.name_model:** Name & model
+- **new_agent.name_where_model:** Name, where & model
+- **new_agent.name_where:** Name & where
+- **new_agent.name_placeholder:** name
+- **new_agent.terminal_note:** A terminal takes no kind, no instructions, no mandate and no loadout.
+- **new_agent.bare_note:** A bare-metal Agent takes no kind, no mandate and no loadout.
+- **new_agent.instructions:** Instructions
+- **new_agent.team_existing:** An existing team
+- **new_agent.team_existing_sub:** Join it. Its answers land at birth.
+- **new_agent.team_none:** No team — a rōnin
+- **new_agent.team_none_sub:** Ordinary, not a gap.
+- **new_agent.team_new:** A new team
+- **new_agent.team_new_sub:** Created first, then this Agent is born into it.
+- **new_agent.a_ronin:** a rōnin
+- **new_agent.loadout_meta:** {routines} routines · {books} books
+- **new_agent.shelf_house:** behaviours · the house
+- **new_agent.shelf_ways:** behaviours · ways of working
+- **new_agent.session:** session
+- **new_agent.created_first:** (created first)
+- **new_agent.routines_terminal:** agent: none — a pane
+- **new_agent.routines_bare:** no floor, no routines
+- **new_agent.blank_note:** A blank field is an answer, not a gap.
+- **new_agent.create_and_start:** Create the team and start
+- **new_agent.open_terminal:** Open the terminal
 
 ## team_wipeboard — team-wipeboard.js (the team wipeboard channel on the Team page)
 - **team_wipeboard.placeholder:** say something to the team — every member is interrupted
