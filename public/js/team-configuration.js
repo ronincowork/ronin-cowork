@@ -51,6 +51,13 @@ export function renderTeamConfiguration(host, roster, optionsArg = {}) {
     const references = field(form, t('team_config.references', 'References'), 'references', list(roster.references).join('\n'), 'textarea', t('team_config.references_help', 'One URL or note per line.'));
 
     const routineMap = completeTeamRoutineMap(routines, roster.routines);
+    // THE KIT AS SELECTED (dev 3d920e2), kept beside the editable map below: what an
+    // Agent born here is equipped with, in one line, in the catalog's own owner-facing
+    // labels (`ronin_control` reads "Managed file coordination"). The floor is not a
+    // switch and is not listed; with nothing on above it, the honest answer is the
+    // floor alone.
+    const kitOn = routines.filter((routine) => routineMap[routine.name]).map((routine) => routine.label || routine.name);
+    reading(form, t('team_kit', 'Shared toolkit'), kitOn.join(' · '), t('team_config.kit_floor_alone', 'the floor alone — no Routine is on'));
     const routineSet = el('fieldset', 'tw-config-wide tw-routines'); routineSet.append(el('legend', null, t('team_config.routines', 'Routines')), el('p', 'tw-config-note', t('team_config.routines_help', 'This complete on/off map is the Team’s own. Campaign changes affect only the next Team form.')));
     const routineInputs = new Map();
     for (const routine of routines) { const row = el('label', 'tw-routine'); const input = el('input'); input.type = 'checkbox'; input.checked = routineMap[routine.name]; routineInputs.set(routine.name, input); const words = el('span'); words.append(el('b', null, routine.label || routine.name), el('small', null, routine.blurb || t('team_config.no_description', 'No description supplied.'))); row.append(input, words); routineSet.append(row); }

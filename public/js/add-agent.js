@@ -164,9 +164,12 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
     }
   }
 
-  /* ---- request a worktree: `desk: own | none` on the launch, which the route already
-         accepts. This is `wantsDesk` made visible — it used to be answered invisibly
-         from a role's michi name (NEW_AGENT.md § 6.3). ---- */
+  /* ---- REQUEST A WORKTREE — and it asks for a TREE, not for the contract.
+     Carrying `ronin_control` is a reading list and a toolset: the Agent knows how
+     worktrees are handled here, and may hold none until the work needs one. A worktree
+     is isolation, which needs nothing declared. The two are separate facts and this
+     surface states both — the Routine as resolved (never editable here), the tree as
+     this launch's own request. `docs/routines.md` § Four different facts. ---- */
   const deskRow = el('button', 'aa-desk');
   deskRow.type = 'button';
   const deskBox = el('span', 'aa-box');
@@ -176,12 +179,28 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
   deskText.append(deskTitle, deskWhy);
   deskRow.append(deskBox, deskText);
   deskRow.addEventListener('click', () => { draft.desk = !draft.desk; draft.deskByHand = true; paintDesk(); });
+  /** Is `ronin_control` on for this birth? The resolved map's answer, never this
+   *  form's — and null while the seed door is not there to ask. */
+  const controlled = () => {
+    const rows = seed?.routines;
+    if (!Array.isArray(rows)) return null;
+    return rows.some((r) => r.on && /control/i.test(r.name || ''));
+  };
   function paintDesk() {
     deskRow.setAttribute('aria-pressed', String(draft.desk));
     deskTitle.textContent = t('add_agent.worktree', 'Request a worktree');
-    deskWhy.textContent = draft.desk
-      ? t('add_agent.worktree_on', 'A desk of its own: the desk contract, hand-in and the git guards.')
-      : t('add_agent.worktree_off', 'No desk. This Agent works in the shared checkout.');
+    const control = controlled();
+    // THE SENTENCE SAYS WHICH OF THE TWO THINGS THE AGENT IS GETTING. Under Control the
+    // request is a convenience — the Agent could cut one itself when the work needed it.
+    // Without Control a worktree is isolation and nothing else: no hand-in, no one to
+    // hand to, so it reports to the owner.
+    deskWhy.textContent = !draft.desk
+      ? (control === false
+        ? t('add_agent.worktree_off_plain', 'No worktree. This Agent works in the shared checkout.')
+        : t('add_agent.worktree_off', 'No worktree at birth. Under managed file coordination it can cut one when the work needs it.'))
+      : (control === false
+        ? t('add_agent.worktree_on_plain', 'Its own worktree, for isolation only — no hand-in and no one to hand to, so it reports to you.')
+        : t('add_agent.worktree_on', 'Its own worktree, under managed file coordination: the desk contract, hand-in and the Git safeguards.'));
   }
 
   /* ---- what the Team fixed: at the FOOT, because none of it is changeable here ---- */
@@ -227,16 +246,18 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
     busy = true;
     start.setDisabled(true);
     notice.set('info', t('add_agent.starting', 'Starting…'));
-    // ONLY WHAT THE ROUTE ACCEPTS TODAY. `session_role` still keys the catalog variant
-    // of POST /api/launch (NEW_AGENT.md D1), so a blank task rides with the team, which
-    // is the launch's second key. Nothing about routines or behaviours is sent: the Team
-    // does not carry them yet, and a caller that states one is guessing at the server's job.
+    // ONLY WHAT THE ROUTE ACCEPTS TODAY. `session_type` is required since the route was
+    // re-keyed on it — the birth type is never inferred from session_role, team, or
+    // agent-shaped fields — and this surface only ever births a Cowork Agent. Nothing
+    // about routines is sent: they are resolved server-side, and a caller that states
+    // one is guessing at the server's job (NEW_AGENT.md § 7.4).
     const result = await request('/api/launch', {
       method: 'POST',
       json: {
+        session_type: 'cowork_agent',
         session_role: draft.task,
         team: teamName(),
-        prompt: draft.instruction.trim(),
+        instructions: draft.instruction.trim(),
         name: draft.name.trim(),
         project_root: rootOf(),
         provider: draft.provider,
@@ -251,10 +272,18 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
       return;
     }
     const born = result.data?.name || draft.name.trim();
-    notice.set('success', t('add_agent.started', 'Started {name}', { name: born }));
+    // WHY A DESK REQUEST PRODUCED NOTHING, in the receipt's own line — rendered so the
+    // worktree control cannot quietly do nothing ("off by absence" is never silent,
+    // owner 2026-08-29). Empty means a desk was opened, or none was asked for.
+    const deskNote = result.data?.receipt?.desk_note || '';
+    if (deskNote) notice.set('warning', t('add_agent.started_note', 'Started {name} — {note}', { name: born, note: deskNote }));
+    else notice.set('success', t('add_agent.started', 'Started {name}', { name: born }));
     reset();
-    // THE LOOP: the Agent appears in the workspace that made it.
-    if (born) connect?.(born);
+    // THE LOOP: the Agent appears in the workspace that made it — EXCEPT when the
+    // receipt carries a desk note. Connecting swaps this surface for the tile in the
+    // same breath, which would take the one line explaining the missing desk with it;
+    // so the note holds the surface, and the newborn is on the roster one click away.
+    if (born && !deskNote) connect?.(born);
   };
 
   const start = createAction({ label: t('add_agent.start', 'Start'), kind: 'primary', action: () => void launch() });

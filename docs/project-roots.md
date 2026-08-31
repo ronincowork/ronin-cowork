@@ -202,7 +202,14 @@ remains.
 The Project Root editor reads these four profile fields live from `RONIN_REPO`. `mode=reviewed`
 means work collects on `working` before the owner's final PR to `stable`; `mode=direct` means
 accepted work publishes on `stable` itself. `desks=managed|none` separately says whether
-Ronin supplies managed file coordination. Branch names are owner choices. A changed profile
+Ronin supplies managed file coordination. **It does not say whether an Agent may have a
+worktree.** A worktree is isolation — a folder off a branch — and a session can be started
+in one on any Git root, including a `direct` root or one with `desks=none`. What
+`desks=managed` adds is the *contract around it*: the branch cut from the declared line,
+the upstream, the desk record, the `assignment/` reading handed over at birth, and a
+hand-in path with receipts. A root that supplies none of that is not refusing Agents a
+place to work; it is declining to coordinate what they do there, and an Agent working in
+such a root reports to the owner rather than handing in. Branch names are owner choices. A changed profile
 is shown once as exact before/after text and, on confirmation, rewritten directly and
 atomically. This is not a migration: refs, desks, Teams, and running Agent instructions are
 untouched.
