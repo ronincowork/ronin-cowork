@@ -30,6 +30,40 @@ export function routineChoices(value: unknown): RoutineChoices {
   );
 }
 
+/**
+ * RENAMED ROUTINES, carried once when a stored map is read.
+ *
+ * A stored map is the owner's own answer. If a renamed key is not carried it becomes an
+ * unknown key — ignored, correctly, under the ignored-never-refused law — while the new
+ * name is absent and so resolves implicit off. For `ronin_control` that would silently
+ * switch managed worktrees OFF for every existing Team. Ignoring an UNUSABLE input and
+ * forgetting a STATED choice are not the same act, and only the first one is house law.
+ *
+ * `machine` was the box Routine's name before 2026-08-31; it is `ronin_host` now.
+ */
+export const ROUTINE_RENAMES: Readonly<Record<string, string>> = {
+  machine: 'ronin_host',
+  ronin_control: 'ronin_worktrees',
+};
+
+/** Returns the carried map, and whether anything moved — the caller decides about writing. */
+export function carryRoutineNames(stored: Record<string, boolean>): {
+  map: Record<string, boolean>;
+  changed: boolean;
+} {
+  const map: Record<string, boolean> = {};
+  let changed = false;
+  for (const [key, enabled] of Object.entries(stored)) {
+    const renamed = ROUTINE_RENAMES[key];
+    if (renamed === undefined) { map[key] = enabled; continue; }
+    // A map already carrying the new name keeps it: the owner's later answer outranks
+    // whatever the old key still said.
+    if (!Object.prototype.hasOwnProperty.call(stored, renamed)) map[renamed] = enabled;
+    changed = true;
+  }
+  return { map, changed };
+}
+
 /** Save-time normalization: every catalog Routine receives an explicit on/off answer. */
 export function completeRoutineChoices(catalog: RoutineRow[], value: unknown): RoutineChoices {
   const choices = routineChoices(value);

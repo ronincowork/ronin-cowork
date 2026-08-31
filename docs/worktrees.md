@@ -46,7 +46,7 @@ funnel worktree is refused). Three layers, same sentence.
 **A worktree is not the contract, and the contract is not a worktree.** Two separate
 facts, and every combination of them is legitimate:
 
-- **`ronin_control` — the Routine.** A reading list and a toolset: this page's model, the
+- **`ronin_worktrees` — the Routine.** A reading list and a toolset: this page's model, the
   desk contract, hand-in, team promotion, receipts, `tejun-desk`. It says the Agent *knows
   how worktrees are handled here*. It does **not** mean one was mounted for it — an Agent
   carrying the Routine may hold no desk and cut one when the work needs it.

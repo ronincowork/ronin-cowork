@@ -25,7 +25,7 @@ import path from 'node:path';
 import { entryValue, isKeyLine } from './catalog.js';
 import { storeDir } from './stores.js';
 import { teamAgentDefaults, type TeamAgentDefaults } from './agent-defaults.js';
-import { completeRoutineChoices } from './routines.js';
+import { carryRoutineNames, completeRoutineChoices } from './routines.js';
 
 async function completeRoutines(value: unknown): Promise<Record<string, boolean>> {
   const { listRoutines } = await import('./definitions.js');
@@ -132,7 +132,10 @@ function parse(name: string, raw: string, campaign_id = ''): TeamRoster {
     : [];
   const routineMap = json('routines');
   const routines = routineMap && typeof routineMap === 'object' && !Array.isArray(routineMap)
-    ? Object.fromEntries(Object.entries(routineMap).filter(([, enabled]) => typeof enabled === 'boolean')) as Record<string, boolean>
+    // Carried, not just filtered: a Team that stated `ronin_control` stated managed
+    // worktrees, and a rename must not read as though it had turned them off.
+    ? carryRoutineNames(Object.fromEntries(Object.entries(routineMap)
+      .filter(([, enabled]) => typeof enabled === 'boolean')) as Record<string, boolean>).map
     : {};
   const behaviourValue = json('behaviours');
   const behaviourMap = behaviourValue && typeof behaviourValue === 'object' && !Array.isArray(behaviourValue)

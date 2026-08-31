@@ -67,7 +67,7 @@ async function birthCampaign(team: string, explicit = ''): Promise<string> {
  * The file in the repository is the gate; when it is absent or says none, say so.
  */
 async function deskNote(r: { assignment?: unknown; routines?: Array<{ name: string; enabled: boolean }>; project_root?: string; agent?: unknown; cmd?: string }): Promise<string> {
-  if (r.assignment || !r.cmd || !r.routines?.some((routine) => routine.name === 'ronin_control' && routine.enabled) || !r.project_root) return '';
+  if (r.assignment || !r.cmd || !r.routines?.some((routine) => routine.name === 'ronin_worktrees' && routine.enabled) || !r.project_root) return '';
   const root = (await listProjectRoots()).find((x) => x.name === r.project_root);
   if (!root) return '';
   const a = await readArrangement(root.name, root.dir).catch(() => null);

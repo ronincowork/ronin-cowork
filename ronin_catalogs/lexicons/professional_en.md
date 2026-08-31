@@ -1574,7 +1574,7 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.routine:** routine
 - **glossary.ronin_base:** Ronin Base
 - **glossary.routine_floor:** Cowork floor
-- **glossary.ronin_control:** managed file coordination
+- **glossary.ronin_worktrees:** worktrees
 - **glossary.ronin_services:** Ronin Services
 - **glossary.specialized_routine:** specialized routine
 - **glossary.terminal:** terminal

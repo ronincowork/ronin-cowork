@@ -7,6 +7,6 @@
 - **brief:** Beds, borders and cutting rows — a season of work, done in order.
 - **objective:** Beds, borders and cutting rows — a season of work, done in order.
 - **mandate:** plan · propose agents · a plan
-- **routines_off:** ronin_control
+- **routines_off:** ronin_worktrees
 - **lead_brief:** What goes where, and in what order through the season.
 - **lead_mandate:** plan · nobody · a plan

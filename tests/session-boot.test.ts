@@ -90,9 +90,9 @@ test('accepted Routine reading drafts keep universal compatibility teaching', as
     readFile(path.join(repo, 'ronin_session_boot', 'all', 'TEST_PROTOCOLS.md'), 'utf8'),
     readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_base', 'BASE_ABILITIES.md'), 'utf8'),
     readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_services', 'SERVICES_ABILITIES.md'), 'utf8'),
-    readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_control', 'CONTROL_TEST_PROTOCOLS.md'), 'utf8'),
-    readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_base', 'HOST_ABILITIES.md'), 'utf8'),
-    readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_base', 'HOST_TEST_PROTOCOLS.md'), 'utf8'),
+    readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_worktrees', 'WORKTREES_TEST_PROTOCOLS.md'), 'utf8'),
+    readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_host', 'HOST_ABILITIES.md'), 'utf8'),
+    readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_host', 'HOST_TEST_PROTOCOLS.md'), 'utf8'),
   ]);
 
   assert.match(base, /tejun forkit/);

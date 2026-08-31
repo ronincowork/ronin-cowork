@@ -9,16 +9,16 @@ const row = (name: string): RoutineRow => ({
   reading: [], sops: [], macros: [], actions: [], tools: [], mcp: [],
   requires: [],
 });
-const catalog = [row('ronin_base'), row('ronin_control'), row('gbrain')];
+const catalog = [row('ronin_base'), row('ronin_worktrees'), row('gbrain')];
 
 test('a Team complete map replaces the Campaign map at birth', () => {
-  const got = resolveRoutines(catalog, { ronin_base: true, ronin_control: true }, {
-    ronin_control: false,
+  const got = resolveRoutines(catalog, { ronin_base: true, ronin_worktrees: true }, {
+    ronin_worktrees: false,
     gbrain: true,
   });
   assert.deepEqual(got.map(({ name, enabled, stated_by }) => ({ name, enabled, stated_by })), [
     { name: 'ronin_base', enabled: false, stated_by: 'implicit_off' },
-    { name: 'ronin_control', enabled: false, stated_by: 'team' },
+    { name: 'ronin_worktrees', enabled: false, stated_by: 'team' },
     { name: 'gbrain', enabled: true, stated_by: 'team' },
   ]);
 });
@@ -35,32 +35,32 @@ test('configuration accepts only named literal booleans', () => {
 
 test('Save completes a map against the current catalog', () => {
   assert.deepEqual(completeRoutineChoices(catalog, { ronin_base: true }), {
-    ronin_base: true, ronin_control: false, gbrain: false,
+    ronin_base: true, ronin_worktrees: false, gbrain: false,
   });
 });
 
 test('a catalog routine added after Save resolves off without changing the stored map', () => {
-  const stored = { ronin_base: true, ronin_control: false };
+  const stored = { ronin_base: true, ronin_worktrees: false };
   const expanded = [...catalog, row('future_routine')];
   assert.equal(resolveRoutines(expanded, stored).find((item) => item.name === 'future_routine')?.enabled, false);
-  assert.deepEqual(stored, { ronin_base: true, ronin_control: false });
+  assert.deepEqual(stored, { ronin_base: true, ronin_worktrees: false });
 });
 
 test('dependencies grow additively: Services and Control require Base, not each other', () => {
   const additive = [
     row('ronin_base'),
     { ...row('ronin_services'), requires: ['ronin_base'] },
-    { ...row('ronin_control'), requires: ['ronin_base'] },
+    { ...row('ronin_worktrees'), requires: ['ronin_base'] },
   ];
-  const control = resolveRoutines(additive, { ronin_base: false, ronin_control: true });
+  const control = resolveRoutines(additive, { ronin_base: false, ronin_worktrees: true });
   assert.deepEqual(control.map(({ name, enabled, stated_by, required_by }) => ({ name, enabled, stated_by, required_by })), [
-    { name: 'ronin_base', enabled: true, stated_by: 'dependency', required_by: ['ronin_control'] },
+    { name: 'ronin_base', enabled: true, stated_by: 'dependency', required_by: ['ronin_worktrees'] },
     { name: 'ronin_services', enabled: false, stated_by: 'implicit_off', required_by: [] },
-    { name: 'ronin_control', enabled: true, stated_by: 'campaign', required_by: [] },
+    { name: 'ronin_worktrees', enabled: true, stated_by: 'campaign', required_by: [] },
   ]);
   const services = resolveRoutines(additive, {}, { ronin_services: true });
   assert.equal(services.find((item) => item.name === 'ronin_base')?.enabled, true);
-  assert.equal(services.find((item) => item.name === 'ronin_control')?.enabled, false);
+  assert.equal(services.find((item) => item.name === 'ronin_worktrees')?.enabled, false);
 });
 
 /**
@@ -86,16 +86,14 @@ test('the dependency graph points one way: nothing is required BY Ronin Base', a
   }
 });
 
-test('the restart tool is ordinary Base equipment, reachable without any optional pick', async () => {
+test('the restart tool lives with the host tools, and in exactly one Routine', async () => {
   const catalog = await listRoutines();
-  const base = catalog.find((r) => r.name === 'ronin_base');
-  assert.ok(base.tools.includes('tejun-machine-restart'),
-    'every Agent needs a sanctioned way to restart Ronin; its absence is what sent one to systemctl');
-  for (const routine of catalog) {
-    if (routine.name === 'ronin_base') continue;
-    assert.ok(!routine.tools.includes('tejun-machine-restart'),
-      `${routine.name} must not also carry the restart tool — one home, not two`);
-  }
+  const host = catalog.find((r) => r.name === 'ronin_host');
+  assert.ok(host, 'ronin_host must exist');
+  assert.ok(host.tools.includes('tejun-machine-restart'),
+    'an Agent without the host tools has no business restarting anything');
+  const carriers = catalog.filter((r) => r.tools.includes('tejun-machine-restart')).map((r) => r.name);
+  assert.deepEqual(carriers, ['ronin_host'], 'one home, not two');
 });
 
 test('selecting a specialized Routine pulls Base in, the additive direction', () => {

@@ -12,7 +12,7 @@ an Agent already running.
 | Bare-metal Agent | A provider CLI in an always-on tmux terminal, with no Ronin reading, Library material, work record or Routines. | Choose the bare-metal launch. |
 | Cowork floor | The minimum Cowork launch, identity and Routine-delivery machinery. | Choose a Cowork Agent rather than bare metal. |
 | Ronin Base | Ronin's ordinary macros, documents, work records, messaging and session coordination. | Selectable Routine. |
-| Managed file coordination | Managed worktrees, hand-in, lead integration, receipts and Git safeguards. | Selectable Routine. |
+| Ronin Worktrees | Separate worktrees, hand-in, lead integration, receipts and Git safeguards. | Selectable Routine. |
 
 The **Cowork floor** is not a Routine. It is the minimum needed to make any Routine
 choice real: unified Agent launch, Campaign and Team resolution, the universal vocabulary
@@ -38,8 +38,8 @@ govern the machine rather than equip the Agent.
 Bare metal is not “all Routines off.” A Cowork Agent with every switch off still receives
 the Routine floor. Bare metal explicitly bypasses the Cowork birth transaction.
 
-**Ronin Base** and **Managed file coordination** are separate switches, but delivery is
-additive: selecting Managed file coordination also selects Ronin Base. A Team can use
+**Ronin Base** and **Ronin Worktrees** are separate switches, but delivery is
+additive: selecting Ronin Worktrees also selects Ronin Base. A Team can use
 Ronin Base without acquiring repository worktrees. Control does not require optional
 Ronin Services. Repository arrangement states where managed worktree behaviour applies;
 it is not another Routine switch.
@@ -49,11 +49,12 @@ or methodology: gbrain, Ronin Services, or a future third-party method. They add
 Base rather than creating partial replacements for it, and every one of them requires Base —
 the dependency always points that way, and nothing is ever required BY Base.
 
-**The box underneath is part of Ronin Base**, not a Routine of its own. Where an Agent is
-running, whether the install is what it claims, whether the ground is sound, and how to
-reach the machine from elsewhere are questions any working session can land on, and none of
-them is something an owner would sensibly switch off. Carrying them as a separate Routine
-only added a layer to toggle, so Base holds them directly:
+**Ronin Host** is the Routine about the box Ronin is installed on, as opposed to what Ronin
+itself provides. That is the line against Ronin Services: Services is Ronin's own optional
+machinery — the durable session record, Koshi, Voice, Hotwords — while Host is the machine
+underneath, which would exist whether or not Ronin were on it. It is an ordinary selectable
+Routine: it requires Ronin Base like its siblings, and it is popped on and off in the
+picker.
 
 | SOP | The question it answers |
 |---|---|
@@ -67,14 +68,17 @@ only added a layer to toggle, so Base holds them directly:
 with `tejun-survey`, `tejun-account` and `tejun-secrets` to measure rather than assert, and
 `HOST_ABILITIES.md` / `HOST_TEST_PROTOCOLS.md` as birth reading.
 
-Those SOPs report and diagnose; none repairs the box unasked. The session engine in
+Its SOPs report and diagnose; none of them repairs the box unasked. The session engine in
 particular is never a session's to restart: it owns every session on the machine, so the
-repair would end the Agent performing it. **The one restart an Agent may perform is Ronin's
-own** — `tejun-machine-restart`, no argument and no unit to name. It is ordinary Base
-equipment because the outage it prevents was caused by its ABSENCE: an Agent with no
-sanctioned way to restart Ronin reaches for `systemctl`, where the unit owning every
-session sits one word from the one it meant, and this house lost every live session twice
-in one day.
+repair would end the Agent performing it.
+
+**The one restart an Agent may perform is Ronin's own, and it belongs here** —
+`tejun-machine-restart`, no argument and no unit to name. An Agent without the host tools
+has no business restarting anything, so the capability sits with the rest of the box
+material rather than in Base. Nothing is lost by that: the guard shims are `routine_floor`
+and reach every Agent regardless of Routine, so a session without Host that reaches for
+`systemctl` is refused rather than left to improvise. That refusal is what was missing when
+this house lost every live session twice in one day.
 
 **Ronin Services** is one specialized Routine containing the durable session record,
 Koshi, Voice and Hotwords. None is a standalone Routine or switch in this rollout.
@@ -132,7 +136,7 @@ connection reading, while the `gbrain` Routine selects its macros, tools and MCP
 | applicable | Does the present repository/situation use this behaviour? |
 
 **And a fifth, which is not a Routine fact at all: whether the Agent holds a worktree.**
-*Carrying `ronin_control` does not mean a worktree was mounted for you.* The Routine is a
+*Carrying `ronin_worktrees` does not mean a worktree was mounted for you.* The Routine is a
 reading list and a toolset — the desk contract, hand-in, team promotion, receipts and
 `tejun-desk` — so that every Agent carrying it knows how worktrees are handled here. An
 Agent under Ronin Control may hold none, and check one out when it needs one. An Agent

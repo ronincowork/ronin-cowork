@@ -8,6 +8,6 @@
 - **objective:** Improve the codebase that already exists — faster, cleaner, and the faults gone.
 - **mandate:** execute · propose agents · code
 - **behaviours:** sops:github, sops:ronin_methodology
-- **routines_on:** ronin_control
+- **routines_on:** ronin_worktrees
 - **lead_brief:** Decide what is worth doing and in what order.
 - **lead_mandate:** plan · propose agents · a plan

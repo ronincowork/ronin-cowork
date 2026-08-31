@@ -623,8 +623,8 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.recruit` | Recruit |  |  |  |  |
 | `glossary.ronin` | Ronin |  |  |  |  |
 | `glossary.ronin_base` | Ronin Base |  |  |  |  |
-| `glossary.ronin_control` | managed file coordination |  |  |  |  |
 | `glossary.ronin_services` | Ronin Services |  |  |  |  |
+| `glossary.ronin_worktrees` | worktrees |  |  |  |  |
 | `glossary.roster` | the roster |  |  |  |  |
 | `glossary.routine` | routine |  |  |  |  |
 | `glossary.routine_floor` | Cowork floor |  |  |  |  |

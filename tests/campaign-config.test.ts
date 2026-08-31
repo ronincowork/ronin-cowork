@@ -16,7 +16,7 @@ import path from 'node:path';
 const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-campaigns-test-'));
 process.env.RONIN_CAMPAIGNS_DIR = temp;
 const ROUTINES_OFF = {
-  ronin_base: false, ronin_control: false, ronin_services: false, gbrain: false,
+  ronin_base: false, ronin_worktrees: false, ronin_services: false, ronin_host: false, gbrain: false,
 };
 
 const {
@@ -44,8 +44,8 @@ test('Atarashi writes a complete home_machine Campaign and consumes kind as a pr
     provider: 'openai', model: 'gpt-5.6-terra',
     reach: 'plan', recruit: 'propose agents', output: 'open',
     routines: {
-      ronin_base: true, ronin_control: true, ronin_services: false,
-      gbrain: false,
+      ronin_base: true, ronin_worktrees: true, ronin_services: false,
+      ronin_host: false, gbrain: false,
     },
     behaviours: ['sops:github', 'sops:ronin_methodology', 'sops:teams'],
     dial: 'write', permissions: 'default',
@@ -167,13 +167,13 @@ test('a pre-Atarashi Campaign receives the stock Routine map once', async () => 
     config: { agent_defaults: { provider: 'openai' } },
   }));
   const first = await readCampaign('pre_atarashi');
-  assert.deepEqual(first?.config.agent_defaults.routines, { ronin_base: true, ronin_control: true });
+  assert.deepEqual(first?.config.agent_defaults.routines, { ronin_base: true, ronin_worktrees: true });
   const stored = JSON.parse(await fs.readFile(file, 'utf8'));
   stored.config.agent_defaults.routines.future_routine = false;
   await fs.writeFile(file, JSON.stringify(stored));
   const second = await readCampaign('pre_atarashi');
   assert.deepEqual(second?.config.agent_defaults.routines, {
-    ronin_base: true, ronin_control: true, future_routine: false,
+    ronin_base: true, ronin_worktrees: true, future_routine: false,
   }, 'an existing map is not recomputed or reached down into');
   await fs.unlink(file);
 });
@@ -254,7 +254,7 @@ test('a half-written record degrades to a readable Campaign instead of taking a 
   assert.deepEqual(thin.config, {
     agent_defaults: {
       provider: '', model: '', reach: 'plan', recruit: 'propose agents', output: 'open',
-      routines: { ronin_base: true, ronin_control: true }, behaviours: [], dial: 'write', permissions: 'default',
+      routines: { ronin_base: true, ronin_worktrees: true }, behaviours: [], dial: 'write', permissions: 'default',
     },
     cowork_defaults: {}, template_defaults: {},
   }, 'an array is not a bucket and receives the typed stock defaults');

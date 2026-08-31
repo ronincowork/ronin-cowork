@@ -1,12 +1,12 @@
 # Ronin Base
 - **label:** Ronin Base
-- **blurb:** Ronin's ordinary macros, documents, work records, session coordination, and the box underneath.
+- **blurb:** Ronin's ordinary macros, documents, work records and session coordination.
 - **class:** base
 - **reading:** —
-- **sops:** ronin_methodology, teams, accounts, install, remote_machine_admin, remote_machine_health, tmux_server, vpn
+- **sops:** ronin_methodology, teams
 - **macros:** updateplan, show_file, forkit, buildout, team, wipeboard, tell, read, readwrite, evaluate, delete
-- **actions:** control-check, control-set, session-launch, read-letter, write-letter, list-doc, session-catchup, team-roster, session-upsert, team-upsert, team-page-read, team-page-draft, wipeboard-check, wipeboard-post, send-to-session, write-buildout-doc, step-through, compile-macro, read-work-record, propose-and-confirm, report-outcome, harakiri, status-probe, restart-ronin, survey-machine, survey-secrets, survey-account
-- **tools:** tejun, tejun-step, tejun-send, tejun-harakiri, tejun-team, tejun-fork, tejun-session-set, tejun-team-set, tejun-wipeboard, tejun-teampage, tejun-peek, tejun-machine-restart, tejun-survey, tejun-account, tejun-secrets, read_tegami, write_tegami
+- **actions:** control-check, control-set, session-launch, read-letter, write-letter, list-doc, session-catchup, team-roster, session-upsert, team-upsert, team-page-read, team-page-draft, wipeboard-check, wipeboard-post, send-to-session, write-buildout-doc, step-through, compile-macro, read-work-record, propose-and-confirm, report-outcome, harakiri, status-probe
+- **tools:** tejun, tejun-step, tejun-send, tejun-harakiri, tejun-team, tejun-fork, tejun-session-set, tejun-team-set, tejun-wipeboard, tejun-teampage, tejun-peek, read_tegami, write_tegami
 - **mcp:** —
 - **requires:** —
 - **order:** 10
