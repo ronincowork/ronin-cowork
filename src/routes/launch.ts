@@ -139,6 +139,19 @@ export function acceptedLaunchBody(input: unknown): { body: Record<string, unkno
   return { body, ignored: [...ignored].sort() };
 }
 
+/** Mika's public door accepts words only; every house mechanic is fixed server-side. */
+export function mikaLaunchBody(input: unknown): Record<string, unknown> {
+  const source = input && typeof input === 'object' && !Array.isArray(input)
+    ? input as Record<string, unknown>
+    : {};
+  return {
+    session_type: 'cowork_agent',
+    name: 'mika',
+    tags: ['mika'],
+    prompt: typeof source.prompt === 'string' ? source.prompt : '',
+  };
+}
+
 /* ---------- ONE door to a new session: POST /api/launch ----------
  * Three births, selected only by `session_type`:
  *   cowork_agent · bare_metal_agent · terminal
@@ -181,8 +194,8 @@ export function registerLaunch(app: express.Express): void {
   // launch_job — the catalog variant. NAMED, not inlined, since 2026-08-26: `/api/session`
   // below is a second DOOR onto this same body, never a second launch path (the parity
   // invariant, tests/launch-parity.test.ts).
-  const launchJob: express.RequestHandler = async (req, res) => {
-    const accepted = acceptedLaunchBody(req.body);
+  const launch = async (req: express.Request, res: express.Response, houseSeat?: 'mika'): Promise<unknown> => {
+    const accepted = acceptedLaunchBody(houseSeat === 'mika' ? mikaLaunchBody(req.body) : req.body);
     req.body = accepted.body;
     const sessionType = String(req.body.session_type);
     const name = String(req.body?.name ?? '').trim();
@@ -198,6 +211,7 @@ export function registerLaunch(app: express.Express): void {
     const team = String(req.body?.team ?? '').trim();
     const form: SpawnForm = {
       session_type: sessionType as SpawnForm['session_type'],
+      house_seat: houseSeat,
       session_role: sessionRole,
       team: team || undefined,
       team_lead: req.body?.team_lead === true,
@@ -466,7 +480,9 @@ export function registerLaunch(app: express.Express): void {
       }
     })().catch((e) => console.error(`[ronin] spawn ${resolved.name}:`, e));
   };
+  const launchJob: express.RequestHandler = (req, res) => launch(req, res);
   app.post('/api/launch', launchJob);
+  app.post('/api/mika', (req, res) => launch(req, res, 'mika'));
 
   app.get('/api/sessions', async (_req, res) => {
     try {

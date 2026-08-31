@@ -18,6 +18,7 @@ import { initialCampaignId } from './campaign-scope.js';
 import { resolveLaunchSeed } from './launch-seed.js';
 import { resolveBehaviourBooks, type DeliveredBehaviour } from './behaviours.js';
 import { templateProvenance } from './template-provenance.js';
+import { profileDir, resolveHouseSeatProfile, type HouseSeat } from './house-seats.js';
 /**
  * The mechanical executor: a filled form in, a briefed session out.
  *
@@ -37,6 +38,8 @@ import { templateProvenance } from './template-provenance.js';
 export interface SpawnForm {
   /** The birth path. This is the route key; session_role is never used to infer it. */
   session_type?: 'cowork_agent' | 'bare_metal_agent' | 'terminal';
+  /** Server-owned house birth. Never accepted from the public launch body. */
+  house_seat?: HouseSeat;
   /**
    * WHAT the session is doing right now. Optional and mutable — the session rewrites it
    * with `write_tegami` and the owner rewrites it from the tile, and either write
@@ -295,18 +298,6 @@ export function slugName(intentKind: string, prompt: string, taken: Set<string>)
 }
 
 /**
- * The profile's own working directory, if the cascade fixed one. `{install}` — the only
- * value a definition may carry, enforced in `src/launch-profile.ts` — is this Ronin's own
- * directory, resolved here at launch.
- *
- * A sentinel rather than a path, because a shipped definition naming a directory would be
- * a shipped file naming a machine (JUSHO).
- */
-function profileDir(profile: LaunchProfile): string {
-  return profile.dir === '{install}' ? REPO_ROOT : '';
-}
-
-/**
  * The birth reading list, plus THE TEAM-BUILDING SOP for a lead launch.
  *
  * A session_role that is some family's `default_lead_role` is the coordinating kind of
@@ -380,7 +371,7 @@ export async function resolveForm(
         : await readTeamRoster(form.team, campaignId) ?? await readTeamRoster(form.team, ''))
     : null;
   // THE CASCADE, and every refusal it makes happens here — before a session exists.
-  const profile = resolveLaunchProfile(taskDef);
+  const profile = resolveHouseSeatProfile(form.house_seat, resolveLaunchProfile(taskDef));
   const parentSeed = coworkAgent && campaign
     ? resolveLaunchSeed({
         campaign,

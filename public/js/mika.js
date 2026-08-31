@@ -18,12 +18,10 @@ import { showFailure } from './errors.js';
  * both editing PROJECT_ROOTS.md is a real bug, and unlike a ladder marker a catalog
  * write is not recomputed next turn. `ronin_bin/mika` makes the same check for the
  * agent-side path — same decision, two callers, and neither can make a second one
- * because /api/launch refuses a name that already exists.
+ * because the Mika door refuses a name that already exists.
  *
- * NO NEW ENDPOINT. She is born through /api/launch like every session, and
- * `ronin_catalogs/session_roles/MikaAssist.md` carries her dial, posture and opening. The
- * only thing about her the server knows is `cap: exempt` in that definition — she is started
- * even at the session max, because blocking somebody who is asking for help is rude.
+ * Her dedicated server door owns the house-only mechanics: singleton name, install
+ * directory, cap exemption, posture and opening. None of those are public launch fields.
  */
 
 const MIKA = 'mika';
@@ -51,13 +49,9 @@ export async function askMika(tile, ask) {
     const live = await request('/api/sessions', { cache: 'no-store' });
     const up = live.ok && Array.isArray(live.data) && live.data.some((s) => s && s.name === MIKA);
     if (!up) {
-      const r = await request('/api/launch', {
+      const r = await request('/api/mika', {
         method: 'POST',
         json: {
-          session_role: 'MikaAssist',
-          name: MIKA,
-          mode: 'assisted',
-          tags: [MIKA],
           prompt: ask || OPENED_FROM_BAR,
         },
       });

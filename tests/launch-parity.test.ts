@@ -372,6 +372,23 @@ test('QuarterBack is a session_role, pinned as the developer family\'s default l
   assert.match(qb.brief, /teams\.md/, 'the lead reading rides the brief');
 });
 
+test('Mika house mechanics resolve without a session_role', async () => {
+  const mika = await resolveForm({
+    house_seat: 'mika',
+    name: 'mika',
+    prompt: '+system_help:',
+  }, new Set());
+  assert.equal(mika.session_role, '');
+  assert.equal(mika.name, 'mika');
+  assert.equal(mika.dir, process.cwd());
+  assert.equal(mika.capExempt, true);
+  assert.equal(mika.ack, false);
+  assert.match(mika.opening, /MIKA_MACROS\.md/);
+  assert.match(mika.brief, /You are the Mika Assist/);
+  assert.ok(!mika.birth_reading.some((file) => file.includes('MikaAssist')));
+  assert.equal(mika.stated_by.capExempt[0]?.layer, 'house');
+});
+
 test('a name alone resolves the ordinary Cowork Agent birth', async () => {
   // Last because resolving the initial Campaign legitimately exercises its one-time
   // compatibility write; earlier parity cases intentionally measure the pre-write fixture.
