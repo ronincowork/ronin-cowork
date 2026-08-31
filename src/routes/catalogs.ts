@@ -36,7 +36,7 @@ import {
   seedUserCatalog,
   isShadowable,
   isValidLaunchName,
-  type LaunchField,
+  savedLaunchFields,
 } from '../catalog.js';
 import {
   findDefinition,
@@ -476,11 +476,7 @@ export function registerCatalogs(app: express.Express): void {
   app.post('/api/saved-launches', async (req, res) => {
     const name = String(req.body?.name ?? '').trim().toLowerCase();
     if (!isValidLaunchName(name)) return res.status(400).json({ error: 'Handle: lowercase letters, digits, - and _.' });
-    const fields: Partial<Record<LaunchField, string>> = {};
-    for (const k of ['label', 'role_family', 'session_role', 'project_root', 'team', 'mode', 'prompt'] as LaunchField[]) {
-      const v = (req.body as Record<string, unknown>)?.[k];
-      if (typeof v === 'string') fields[k] = v.trim().slice(0, 500);
-    }
+    const fields = savedLaunchFields(req.body);
     // `group` is the retired spelling of the team field — read from an old caller,
     // never written back: the saved block says `team:` either way.
     const legacy = (req.body as Record<string, unknown>)?.group;

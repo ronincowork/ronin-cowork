@@ -267,7 +267,7 @@ async function writeCatalogFile(file: string, text: string): Promise<void> {
 
 /**
  * SAVED_LAUNCHES — a named binding of the launcher that already exists:
- * `role_family` × `session_role` × `project_root` × group, as a pressable tile.
+ * `session_role` × `project_root` × team, as a pressable tile.
  *
  * The owner's words are what this is: *"organize these tiles under new sessions to be
  * like, okay, I have ronin and watch crew."* (Quoted as said; `watch crew` has since been
@@ -319,10 +319,20 @@ export async function listSavedLaunches(): Promise<SavedLaunchInfo[]> {
 /** A saved-launch handle: one lowercase word, the `##` heading, the whole shortcut. */
 export const isValidLaunchName = (n: string) => /^[a-z0-9][a-z0-9_-]*$/.test(n) && n.length <= 32;
 
-// `team` is the documented field (KOTOBA R32); `group:` in an existing file is still
-// read — see listSavedLaunches — but a save always writes the word that exists.
-const LAUNCH_FIELDS = ['label', 'role_family', 'session_role', 'project_root', 'team', 'prompt'] as const;
+// `team` is the documented field; `group:` and `role_family:` in existing files are
+// still read above for compatibility, but a save never writes either retired spelling.
+const LAUNCH_FIELDS = ['label', 'session_role', 'project_root', 'team', 'prompt'] as const;
 export type LaunchField = (typeof LAUNCH_FIELDS)[number];
+
+/** Normalize the saved-launch write body at the persistence boundary. */
+export function savedLaunchFields(body: unknown): Partial<Record<LaunchField, string>> {
+  const fields: Partial<Record<LaunchField, string>> = {};
+  for (const key of LAUNCH_FIELDS) {
+    const value = (body as Record<string, unknown>)?.[key];
+    if (typeof value === 'string') fields[key] = value.trim().slice(0, 500);
+  }
+  return fields;
+}
 
 /**
  * Save the launcher form as a named tile, or replace one of that name.
@@ -334,7 +344,7 @@ export type LaunchField = (typeof LAUNCH_FIELDS)[number];
  */
 export async function saveLaunch(name: string, fields: Partial<Record<LaunchField, string>>): Promise<void> {
   if (!isValidLaunchName(name)) throw new Error(`"${name}" is not a valid handle (lowercase letters, digits, - and _).`);
-  if (!fields.role_family && !fields.session_role) throw new Error('A saved launch needs a role_family or a session_role.');
+  if (!fields.session_role) throw new Error('A saved launch needs a session_role.');
   const file = 'SAVED_LAUNCHES.md';
   await seedUserCatalog(file);
   const raw = await readUserCatalog(file);
