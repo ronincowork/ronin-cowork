@@ -39,7 +39,13 @@ test('create → read: the record round-trips, and every field lands as typed', 
   assert.equal(c.desk_profile, 'professional');
   assert.equal(c.state, 'active', 'a new Campaign is in play');
   assert.ok(c.created_at, 'created_at is stamped at create');
-  assert.deepEqual(c.config, { agent_defaults: {}, cowork_defaults: {}, template_defaults: {} });
+  assert.deepEqual(c.config, {
+    agent_defaults: {
+      provider: '', model: '', reach: 'plan', recruit: 'propose agents', output: 'open',
+      routines: {}, behaviours: [], dial: 'write', permissions: 'default',
+    },
+    cowork_defaults: {}, template_defaults: {},
+  });
 
   assert.deepEqual(await readCampaign('ronin'), c, 'read gives back exactly what create wrote');
 });
@@ -89,7 +95,10 @@ test('config merges per sub-bucket, so a caller cannot drop a bucket it never he
   await writeCampaign('ronin', { config: { agent_defaults: { model: 'x' } } });
   await writeCampaign('ronin', { config: { cowork_defaults: { branch: 'dev' } } });
   const c = (await readCampaign('ronin'))!;
-  assert.deepEqual(c.config.agent_defaults, { model: 'x' }, 'the first bucket survived the second write');
+  assert.deepEqual(c.config.agent_defaults, {
+    provider: '', model: 'x', reach: 'plan', recruit: 'propose agents', output: 'open',
+    routines: {}, behaviours: [], dial: 'write', permissions: 'default',
+  }, 'the first bucket survived the second write as a complete typed record');
   assert.deepEqual(c.config.cowork_defaults, { branch: 'dev' });
   assert.deepEqual(c.config.template_defaults, {});
 });
@@ -197,7 +206,13 @@ test('a half-written record degrades to a readable Campaign instead of taking a 
   const thin = (await readCampaign('thin'))!;
   assert.equal(thin.title, 'thin', 'a missing title falls back to the id');
   assert.equal(thin.state, 'active', 'an unknown state is not archived');
-  assert.deepEqual(thin.config, { agent_defaults: {}, cowork_defaults: {}, template_defaults: {} }, 'an array is not a bucket');
+  assert.deepEqual(thin.config, {
+    agent_defaults: {
+      provider: '', model: '', reach: 'plan', recruit: 'propose agents', output: 'open',
+      routines: {}, behaviours: [], dial: 'write', permissions: 'default',
+    },
+    cowork_defaults: {}, template_defaults: {},
+  }, 'an array is not a bucket and receives the typed stock defaults');
   await fs.unlink(path.join(temp, 'thin.json'));
   await fs.unlink(path.join(temp, 'broken.json'));
 });
