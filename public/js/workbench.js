@@ -196,6 +196,9 @@ export function createWorkbench(options = {}) {
       const summary = offer.summary ?? (typeof definition.summary === 'function' ? definition.summary(tenant, options.environment) : definition.summary || '');
       const detail = { ...offer, key: offer.key || '' };
       const card = WorkspacePrimitives.createCard({ heading: label, summary, metadata: offer.metadata, mark: offer.mark, variant: offer.variant || definition.variant || null, selected: locations(definition.type, detail.key).length > 0, action: () => place(definition.type, selected, detail) });
+      // A readable title is display text, not identity. Consumers such as the render gate
+      // address an offered resource by its fixed key even after its title is edited.
+      if (detail.key) card.el.dataset.workbenchOfferResource = detail.key;
       if (offer.className) card.el.classList.add(offer.className);
       if (offer.onPointerEnter) card.el.addEventListener('pointerenter', offer.onPointerEnter);
       if (offer.onPointerLeave) card.el.addEventListener('pointerleave', offer.onPointerLeave);

@@ -488,10 +488,11 @@ export async function withAxes(list: SessionInfo[]): Promise<SessionWithAxes[]> 
   // migration seeded rather than as belonging to nothing. This is the compatibility read
   // (src/campaign-scope.ts), and it is the ONLY place a session list applies it — which is
   // what makes the fallback removable in one edit when the window closes.
-  const { campaignResolver } = await import('./campaign-scope.js');
+  const { campaignResolver, machineCampaignId } = await import('./campaign-scope.js');
   const resolve = await campaignResolver();
+  const machine = await machineCampaignId();
   return Promise.all(
-    list.map(async (s) => ({
+    list.filter((s) => !machine || resolve(s.campaign_id) === machine).map(async (s) => ({
       ...s,
       session_role: await readSessionRole(s.name),
       campaign_id: resolve(s.campaign_id),

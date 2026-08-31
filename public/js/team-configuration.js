@@ -32,7 +32,7 @@ export function renderTeamConfiguration(host, roster, options = {}) {
     return;
   }
   const form = el('form', 'tw-config-form');
-  const name = field(form, 'Cowork name', 'name', roster.name);
+  reading(form, 'Cowork ID', roster.name);
   field(form, 'Readable title', 'title', roster.title);
   field(form, 'Purpose', 'objective', roster.objective, 'textarea');
   reading(form, 'Project root', roster.project_root);
@@ -45,15 +45,9 @@ export function renderTeamConfiguration(host, roster, options = {}) {
     event.preventDefault();
     if (saveAction) saveAction.setDisabled(true); else save.disabled = true; status.textContent = 'Saving…';
     const data = Object.fromEntries(new FormData(form));
-    const nextName = String(data.name || '').trim();
-    if (nextName !== roster.name) {
-      const renamed = await request(`/api/team-rosters/${encodeURIComponent(roster.name)}/rename`, { method: 'POST', json: { to: nextName } });
-      if (!renamed.ok) { status.textContent = renamed.message; if (saveAction) saveAction.setDisabled(false); else save.disabled = false; return; }
-    }
-    delete data.name;
-    const saved = await request(`/api/team-rosters/${encodeURIComponent(nextName)}`, { method: 'PUT', json: data });
+    const saved = await request(`/api/team-rosters/${encodeURIComponent(roster.name)}`, { method: 'PUT', json: data });
     status.textContent = saved.ok ? 'Saved' : saved.message;
     if (saveAction) saveAction.setDisabled(false); else save.disabled = false;
-    if (saved.ok) options.onSaved?.(saved.data.roster, nextName !== roster.name);
+    if (saved.ok) options.onSaved?.(saved.data.roster);
   });
 }

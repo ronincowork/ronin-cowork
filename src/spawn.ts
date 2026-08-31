@@ -1,7 +1,7 @@
 import { appendFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { resolveLaunchCommand, type SessionsDefaults } from './launch-command.js';
+import { mergeSessionDefaults, resolveLaunchCommand, type SessionsDefaults } from './launch-command.js';
 import { REPO_ROOT } from './config.js';
 import { bootFiles, ensureShelf } from './session-boot.js';
 import { listProjectRoots, listSessionLaunchSpecs, USER_PROJECT_ROOTS_MD, type ProjectRootInfo } from './project-roots.js';
@@ -396,20 +396,23 @@ export async function resolveForm(
   // data from the same table the cmd came from, matched by the cmd string itself, so a
   // hand-typed cmd (no table row) is honestly unsupported. No flags declared = REFUSE,
   // because a session the owner asked to launch disconnected must never launch connected.
-  const sessionsSet = agentsSet.sessions as SessionsDefaults | undefined;
-  const campaignAgent = campaign?.config.agent_defaults ?? {};
-  const campaignProvider = typeof campaignAgent.provider === 'string' ? campaignAgent.provider.trim() : '';
-  const campaignModel = typeof campaignAgent.model === 'string' ? campaignAgent.model.trim() : '';
-  const explicitSelection = !!form.provider || !!form.model;
+  // THE CAMPAIGN ANSWERS FIRST, ⚙ UNDERNEATH (CAMPAIGN_WORKBENCH leg 4b, 2026-08-30): a
+  // launch born into a Campaign reads that Campaign's `config.agent_defaults` — the same
+  // `{ default, by_provider }` shape the #/campaign surface writes — merged over ⚙'s
+  // `agents.sessions` by the subset rule in `mergeSessionDefaults`. The resolver never
+  // learns there were two layers; it sees one configuration, and who supplied each half
+  // is kept beside it for the reading below.
+  const merged = mergeSessionDefaults(agentsSet.sessions as SessionsDefaults | undefined, campaign?.config.agent_defaults);
+  const sessionsSet = merged.sessions;
   const chosen = resolveLaunchCommand({
     agent,
     cmd: form.cmd,
-    model: form.model ?? (!form.cmd && !explicitSelection ? campaignModel || undefined : undefined),
-    provider: form.provider ?? (!form.cmd && !explicitSelection ? campaignProvider || undefined : undefined),
+    model: form.model,
+    provider: form.provider,
     specs: launchSpecs,
     sessions: sessionsSet,
   });
-  const dflt = sessionsSet?.default;
+  const dflt = sessionsSet.default;
   let cmd = chosen.cmd;
   // The row this cmd came out of, matched BEFORE the MCP-off flags are appended below —
   // appending changes the very string the match is on, and looking it up afterwards would
@@ -473,10 +476,12 @@ export async function resolveForm(
   // The resolver already said who decided; this only spells its answer as a reading.
   // `settei_provider` is the half-explicit case — this launch named the vendor, ⚙ named
   // the model — and it must not read as though the code chose either.
+  // A half-explicit answer names the door that held the model: the Campaign's Agent
+  // defaults when that row was the Campaign's own, ⚙ otherwise — never src/spawn.ts.
   const cmdSource: StatedBy[] = chosen.source === 'explicit_launch'
     ? explicit
     : chosen.source === 'settei_provider'
-      ? [{ layer: 'system', source: '⚙ Configuration (agents.sessions)' }]
+      ? [{ layer: 'system', source: form.provider && merged.providerOwn(form.provider) ? `#/campaign (${campaign?.id ?? form.campaign_id}: agent_defaults)` : '⚙ Configuration (agents.sessions)' }]
       : system;
   const defaultMcpWasUndeliverable = agent && !mcpWanted && !mcpOffWanted;
   const mcpSource: StatedBy[] = !agent

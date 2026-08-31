@@ -62,10 +62,40 @@ export function clampTip(s, room = 120) {
  *   │   └────────── done or not
  *   └────────────── you are here
  */
-export function buildLadder(letter) {
+export function buildLadder(letter, deskEntry = null) {
   const box = document.createElement('div');
   box.className = 'shingo-ladder';
   if (!letter) return box;
+
+  const section = (label, cls = '') => {
+    const el = document.createElement('section');
+    el.className = 'sl-section' + (cls ? ' ' + cls : '');
+    const head = document.createElement('h4');
+    head.textContent = label;
+    el.appendChild(head);
+    box.appendChild(el);
+    return el;
+  };
+
+  const firstOpen = letter.ladder?.find((rung) => rung.status !== 'DONE' || rung.legs?.some((leg) => leg.status !== 'DONE'));
+  const summaryText = letter.chip?.text || (firstOpen?.gate !== undefined ? '⛩ ' + t('ladder.gate', 'GATE') : firstOpen?.phase || '');
+  if (summaryText) {
+    const summary = document.createElement('div');
+    summary.className = 'sl-summary' + (letter.chip?.gate || firstOpen?.gate !== undefined ? ' gate' : '');
+    summary.textContent = summaryText;
+    box.appendChild(summary);
+  }
+
+  const task = section(t('ladder.task_at_hand', 'Task at hand'), 'sl-task');
+  const objective = document.createElement('p');
+  objective.textContent = letter.objective || t('ladder.task_unstated', 'No task stated in this work record.');
+  task.appendChild(objective);
+  if (letter.session_role) {
+    const action = document.createElement('p');
+    action.className = 'sl-action';
+    action.append(t('ladder.current_action', 'Current action'), ' · ', letter.session_role);
+    task.appendChild(action);
+  }
 
   // Parked, in the agent's own words. Sits above the objective because it changes what
   // the whole ladder below it means: those statuses are true, they are just not moving.
@@ -76,18 +106,23 @@ export function buildLadder(letter) {
     box.appendChild(sr);
   }
 
-  // WHERE THIS WORK LANDS. Branch is first and visually strongest because it is the
-  // coordinate that changes during ordinary work; repo is the stable context beneath it.
-  if (letter.repos?.length) {
-    const checkout = document.createElement('div');
-    checkout.className = 'sl-checkout';
-    for (const item of letter.repos) {
+  const desks = deskEntry?.desks || [];
+  if (desks.length || letter.repos?.length) {
+    const checkout = section(t('ladder.worktrees', 'Worktrees'), 'sl-checkout');
+    const rows = desks.length ? desks : letter.repos;
+    for (const item of rows) {
       const line = document.createElement('div');
       line.className = 'sl-checkout-line';
+      if (item.worktree) {
+        const worktree = document.createElement('strong');
+        worktree.className = 'sl-worktree';
+        worktree.textContent = item.worktree;
+        line.appendChild(worktree);
+      }
       if (item.branch) {
-        const branch = document.createElement('strong');
+        const branch = document.createElement('span');
         branch.className = 'sl-branch';
-        branch.textContent = '⑂ ' + item.branch;
+        branch.textContent = t('ladder.branch', 'Branch') + ' · ' + item.branch;
         line.appendChild(branch);
       }
       if (item.repo) {
@@ -99,30 +134,35 @@ export function buildLadder(letter) {
       }
       checkout.appendChild(line);
     }
-    box.appendChild(checkout);
   }
 
-  if (letter.objective || letter.session_role || (letter.teams ?? []).length) {
-    const ob = document.createElement('div');
-    ob.className = 'sl-obj';
+  if ((letter.teams ?? []).length) {
+    const context = section(t('ladder.coworks', 'Coworks'), 'sl-context');
     for (const entry of letter.teams ?? []) {
-      // The TEAMS this session is on — contextual identity, derived from the rosters
-      // (R35): the team's name, and its team_role when the roster states one.
-      const team = document.createElement('span');
-      team.className = 'sl-role';
-      team.textContent = entry.team_role ? `${entry.team} · ${entry.team_role}` : entry.team;
-      ob.appendChild(team);
+      const team = document.createElement('p');
+      team.textContent = entry.team;
+      if (entry.team_role) {
+        const role = document.createElement('span');
+        role.textContent = entry.team_role;
+        team.appendChild(role);
+      }
+      context.appendChild(team);
     }
-    if (letter.session_role) {
-      // What this SESSION is DOING. It migrates — riffing becomes planning becomes
-      // cutting code — so it is kept current rather than stamped at birth.
-      const job = document.createElement('span');
-      job.className = 'sl-job';
-      job.textContent = letter.session_role;
-      ob.appendChild(job);
+  }
+
+  const docs = section(t('ladder.tracked_documents', 'Tracked documents'), 'sl-docs');
+  if (letter.docs?.length) {
+    for (const item of letter.docs) {
+      const row = document.createElement('p');
+      row.textContent = typeof item === 'string' ? item : (item.path || item.file || item.title || '');
+      row.title = row.textContent;
+      docs.appendChild(row);
     }
-    ob.append(letter.objective || '');
-    box.appendChild(ob);
+  } else {
+    const empty = document.createElement('p');
+    empty.className = 'sl-empty';
+    empty.textContent = t('ladder.docs_none', 'No tracked documents.');
+    docs.appendChild(empty);
   }
 
   // Checkout facts remain useful before the session has drawn a ladder. The branch and
@@ -135,6 +175,8 @@ export function buildLadder(letter) {
     box.appendChild(empty);
     return box;
   }
+
+  const progress = section(t('ladder.progress', 'Progress'), 'sl-progress');
 
   /**
    * One row. Only the torii column runs the whole ladder — the mark and the number
@@ -198,7 +240,7 @@ export function buildLadder(letter) {
       tag.className = 'sl-tag';
       tag.textContent = t('ladder.gate', 'GATE');
       g.querySelector('.sl-letter').before(tag);
-      box.appendChild(g);
+      progress.appendChild(g);
       continue;
     }
 
@@ -222,7 +264,7 @@ export function buildLadder(letter) {
         tail.textContent = ' ' + t('ladder.legs_undetermined', '— legs undetermined');
         head.querySelector('.sl-letter').appendChild(tail);
       }
-      box.appendChild(head);
+      progress.appendChild(head);
     }
 
     // Inside the live phase the torii sits on the ACTIVE leg — or, if the agent marked
@@ -236,7 +278,7 @@ export function buildLadder(letter) {
       }
     }
     legs.forEach((leg, j) => {
-      box.appendChild(
+      progress.appendChild(
         row({
           here: j === hereLeg,
           n: String(j + 1),
@@ -248,15 +290,6 @@ export function buildLadder(letter) {
     });
   }
 
-  // How long the file has been sitting still. Not a check on the agent and not a
-  // judgement — just the mtime, which is the one reading nobody has to maintain. It is
-  // how "stopped somewhere it shouldn'letter be" becomes visible instead of guessed.
-  if (letter.quietMs != null && letter.quietMs > 10 * 60 * 1000) {
-    const q = document.createElement('div');
-    q.className = 'sl-quiet';
-    q.textContent = t('ladder.quiet', 'quiet {age}', { age: humanAge(letter.quietMs) });
-    box.appendChild(q);
-  }
   return box;
 }
 

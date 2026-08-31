@@ -51,7 +51,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **kind.school:** Learning
 
 ## desk — system.js (the ⚙ desk's own rooms: appearance, the updater, the account)
-- **desk.row_appearance:** Appearance
 - **desk.row_release:** Release & update
 - **desk.rail_collapse:** Collapse the rail
 - **desk.rail_expand:** Expand the rail
@@ -74,11 +73,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **desk.waiting_authenticator:** waiting for the authenticator…
 - **desk.passkey_added:** ✓ passkey added
 - **desk.cancelled:** cancelled
-- **desk.appearance:** appearance
-- **desk.theme_flip_title:** The shell's mode — tap to flip. Ronin follows this device until you flip away; flip back to match and it follows again.
-- **desk.theme_dark:** ● dark
-- **desk.theme_light:** ○ light
-- **desk.skin:** skin
 - **desk.yours_shadowing:** yours (replaces ours)
 - **desk.yours:** yours
 - **desk.profile_stock:** Stock
@@ -210,6 +204,10 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.no_profile:** As stock — none chosen.
 - **campaign_view.roots_n:** {n} roots
 - **campaign_view.roots_none:** None — an Agent here has nowhere to work.
+- **campaign_view.new_project_desks:** New projects use desks?
+- **campaign_view.new_project_desks_yes:** Desks
+- **campaign_view.new_project_desks_no:** None
+- **campaign_view.new_project_desks_help:** Desks: each coding session works at its own branch and worktree and hands in to the team. None: sessions work in the checkout. Written into a project’s RONIN_REPO when its root is added; the desks box on a root changes that one project.
 - **campaign_view.name_help:** On the door, the browser tab and the address.
 - **campaign_view.description_help:** What this body of work is for. Shown on its card.
 - **campaign_view.head:** Campaign: {name}
@@ -727,7 +725,7 @@ The catalog entry goes. {dir} is not touched.
 - **docs.loading:** loading…
 - **docs.saving:** saving…
 - **docs.saved:** saved
-- **docs.work_record_note:** Note: If you don't see a document your agent is working on, ask it to update its work record.
+- **docs.work_record_note:** Ask an agent to list a document with write_tegami --doc <path>. If a document is missing, ask the agent to update its work record.
 
 ## roots — the count line and chips
 - **roots.chip_archived:** archived
@@ -1031,10 +1029,18 @@ The catalog entry goes. {dir} is not touched.
 - **tape.fold_code:** ⌨ code
 
 ## ladder — shingo.js (the ladder chip and panel)
+- **ladder.task_at_hand:** Task at hand
+- **ladder.task_unstated:** No task stated in this work record.
+- **ladder.current_action:** Current action
+- **ladder.worktrees:** Worktrees
+- **ladder.branch:** Branch
+- **ladder.coworks:** Coworks
+- **ladder.tracked_documents:** Tracked documents
+- **ladder.docs_none:** No tracked documents.
+- **ladder.progress:** Progress
 - **ladder.none:** no work record yet
 - **ladder.gate:** GATE
 - **ladder.legs_undetermined:** — legs undetermined
-- **ladder.quiet:** quiet {age}
 
 ## tile — tile.js (the Agent terminal tile)
 
@@ -1063,7 +1069,10 @@ The catalog entry goes. {dir} is not touched.
 - **archives.read_failed:** archive could not be read
 - **archives.empty:** no archived sessions
 - **archives.ago:** {age} ago
-- **archives.rehydrate:** Rehydrate {name}
+- **archives.rehydrate_btn:** Rehydrate
+- **archives.rehydrating:** rehydrating…
+- **archives.group_none:** Ronin — no team
+- **archives.card:** Rehydrate Archived
 - **archives.delete_aria:** Permanently delete archived session {name}
 - **archives.delete_title:** Hard delete this archive
 - **archives.delete_confirm:** Hard delete archived session "{name}"? Its saved Ronin record cannot be rehydrated after this.
@@ -1134,9 +1143,9 @@ The catalog entry goes. {dir} is not touched.
 ## head — tilehead.js (the tile head's help and quiet words)
 - **head.dial_help:** Who may touch this session: 👤 owner only · 👁 outside agents watch · 🤖 outside agents type. Yours to turn; agents never flip it.
 - **head.dot_help:** Connection: green = attached, grey = disconnected
-- **head.rename_help:** Rename this session
+- **head.rename_help:** Edit this Agent title
 - **head.rename_quiet:** Rename session — no session in this tile yet
-- **head.rename_prompt:** Rename session
+- **head.rename_prompt:** Edit Agent title
 - **head.rename_failed:** Could not rename session: {reason}
 - **head.view_work_record:** View Work Record
 - **head.work_record_help:** View repositories, current action, and the work record
@@ -1196,7 +1205,7 @@ The catalog entry goes. {dir} is not touched.
 - **pad.no_reply:** {method}: pad did not reply
 
 ## docs — the empty line and count
-- **docs.empty_team:** No session on this Team has listed a doc yet. An agent lists one with: write_tegami --doc <path>
+- **docs.empty_team:** No tracked documents.
 - **docs.empty:** No session has listed a doc yet. An agent lists one with: write_tegami --doc <path>
 - **docs.count_one:** 1 doc
 - **docs.count_many:** {n} docs
@@ -1427,8 +1436,10 @@ The catalog entry goes. {dir} is not touched.
 - **league.members:** Team members
 - **league.no_members:** No Agents assigned yet.
 - **league.role_unset:** Role not set
-- **league.team_lead:** Team lead
-- **league.make_team_lead:** Make team lead
+- **league.team_lead:** Team Lead
+- **league.make_team_lead:** Make Lead
+- **league.rename_agent:** Rename
+- **league.rename_agent_prompt:** Edit Agent title
 - **league.remove_member:** Remove
 - **league.remove_named_member:** Remove {name} from this team
 - **league.choose_member:** Choose an Agent to add

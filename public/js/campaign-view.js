@@ -4,7 +4,7 @@ import { WorkspaceKit } from './workspace-kit.js';
 import { t } from './lexicon.js';
 import { campaignById, campaignOf, createCampaign, loadCampaigns, normalizeSelection } from './campaigns.js';
 import { createCampaignIdentitySurface, createNewCampaignSurface, createSessionRolesSurface } from './campaign-surfaces.js';
-import { createDeskProfileSurface, skinWord } from './campaign-desk.js';
+import { choice, createDeskProfileSurface, skinWord } from './campaign-desk.js';
 import { createAgentDefaultsSurface, defaultsSummary } from './campaign-defaults.js';
 import { createRoutinesSurface, routinesSummary } from './campaign-routines.js';
 import { buildProjectRoots } from './projectroots.js';
@@ -49,7 +49,24 @@ function registerCampaignSurfaces() {
   const add = (definition) => { if (!library.has(definition.type)) library.register(definition); };
   add({ type: TYPES.identity, header: 'surface', label: () => t('campaign', 'Campaign'), summary: (_tenant, e) => currently.identity(e), create: ({ environment: e }) => { const surface = createCampaignIdentitySurface(e.selected); return { el: surface.el, show: () => surface.enter() }; } });
   add({ type: TYPES.profile, header: 'surface', label: () => t('cowork.tab_profile', 'Desk profile'), summary: (_tenant, e) => currently.profile(e), create: ({ environment: e }) => { const surface = createDeskProfileSurface(e.selected); return { el: surface.el, show: () => surface.enter() }; } });
-  add({ type: TYPES.roots, header: 'surface', label: () => t('cowork.tab_roots', 'Project roots'), summary: (_tenant, e) => currently.roots(e), create: ({ environment: e }) => { const surface = WorkspaceKit.primitives.createSurface({ label: t('cowork.tab_roots', 'Project roots'), className: 'cv-surface' }); const host = elem('div', 'desk-pane desk-proj show'); surface.content.append(host); const room = buildProjectRoots(host, () => e.entered() && host.isConnected, null); return { el: surface.el, show: () => room.enter() }; } });
+  add({ type: TYPES.roots, header: 'surface', label: () => t('cowork.tab_roots', 'Project roots'), summary: (_tenant, e) => currently.roots(e), create: ({ environment: e }) => {
+    const surface = WorkspaceKit.primitives.createSurface({ label: t('cowork.tab_roots', 'Project roots'), className: 'cv-surface' });
+    // NEW PROJECTS USE DESKS? — the default a new root's RONIN_REPO is written with. It
+    // sits beside the roots (SETTEI audit, 2026-08-30) because that is where a root is
+    // added; each root's own row shows and changes what its file actually says.
+    const newDesks = elem('div', 'cv-body');
+    const paintNewDesks = (current) => newDesks.replaceChildren(choice(
+      t('campaign_view.new_project_desks', 'New projects use desks?'),
+      [{ value: 'managed', label: t('campaign_view.new_project_desks_yes', 'Desks') }, { value: 'none', label: t('campaign_view.new_project_desks_no', 'None') }],
+      current,
+      t('campaign_view.new_project_desks_help', 'Desks: each coding session works at its own branch and worktree and hands in to the team. None: sessions work in the checkout. Written into a project’s RONIN_REPO when its root is added; the desks box on a root changes that one project.'),
+      async (v) => { const r = await request('/api/settei/desks', { method: 'PUT', json: { new_project: v } }); paintNewDesks(r.ok ? v : current); },
+    ));
+    const host = elem('div', 'desk-pane desk-proj show');
+    surface.content.append(newDesks, host);
+    const room = buildProjectRoots(host, () => e.entered() && host.isConnected, null);
+    return { el: surface.el, show: () => { room.enter(); void request('/api/settei').then((r) => paintNewDesks(r.ok && r.data?.set?.desks?.new_project === 'none' ? 'none' : 'managed')); } };
+  } });
   add({ type: TYPES.defaults, header: 'surface', label: () => t('campaign_view.agent_defaults', 'Agent defaults'), summary: (_tenant, e) => currently.defaults(e), create: ({ environment: e }) => { const surface = createAgentDefaultsSurface(e.selected); return { el: surface.el, show: () => surface.enter() }; } });
   // ROUTINES (owner, 2026-08-30): the switchboard for control systems — see the lab's
   // CONTROL_BUNDLES build-out for the bundle model behind it.

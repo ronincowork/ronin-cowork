@@ -10,7 +10,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import os from 'node:os';
 import path from 'node:path';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { DESK_LIFECYCLES, renderDeskBlock, resolveLaunchDesks, wantsDesk } from '../src/launch-desks.js';
 import { buildBrief, type SpawnForm } from '../src/spawn.js';
 import { bootFiles } from '../src/session-boot.js';
@@ -80,9 +80,19 @@ test('the desk contract rides the assignment level, and only that', async () => 
     assert.ok(!without.includes('DESK_CONTRACT.md'), 'no assignment, no desk reading');
     assert.ok(withDesks.includes('DESK_CONTRACT.md'), 'an assignment reads the desk contract');
     assert.deepEqual(withDesks.filter((f) => f !== 'DESK_CONTRACT.md').sort(), without.sort(), 'the level adds exactly one book');
+    const contract = await readFile((await bootFiles('', 'CutCode', '', false, true)).find((f) => path.basename(f) === 'DESK_CONTRACT.md')!, 'utf8');
+    assert.match(contract, /Stop and ask the team lead when the desk is missing or contradictory/);
+    assert.match(contract, /tejun-desk status --assignment/);
+    assert.match(contract, /never by making a branch or worktree yourself/);
   } finally {
     if (oldCache === undefined) delete process.env.RONIN_SESSION_BOOT_CACHE_DIR; else process.env.RONIN_SESSION_BOOT_CACHE_DIR = oldCache;
     if (oldCatalogs === undefined) delete process.env.RONIN_CATALOGS_DIR; else process.env.RONIN_CATALOGS_DIR = oldCatalogs;
     await rm(temp, { recursive: true, force: true });
   }
+});
+
+test('Ronin Control declares the desk contract as its reading', async () => {
+  const repo = path.join(path.dirname(new URL(import.meta.url).pathname), '..');
+  const control = await readFile(path.join(repo, 'ronin_catalogs', 'routines', 'ronin_control.md'), 'utf8');
+  assert.match(control, /\*\*reading:\*\* assignment\/DESK_CONTRACT\.md/);
 });

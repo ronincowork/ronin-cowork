@@ -20,7 +20,7 @@
  * nineteen lines early — threw in this constructor and took the whole UI down on
  * 2026-08-08. Views mount in DOM order: tape, then the commons panel, then xterm.
  */
-import { fetchSessions, renameSession } from './api.js';
+import { fetchSessions, setSessionTitle } from './api.js';
 import { request } from './request.js';
 import { toast } from './ui.js';
 import { retireSession } from './session-retire.js';
@@ -35,7 +35,7 @@ import { TermView } from './termview.js';
 import { TileWire } from './tilewire.js';
 import { buildComposer } from './composer.js';
 import { refreshKaki, setKakiPolicy } from './output.js';
-import { refreshDesks } from './desks.js';
+import { desksOf, refreshDesks } from './desks.js';
 import { t } from './lexicon.js';
 
 const readableSession = (name) => {
@@ -149,14 +149,14 @@ export class Tile {
 
   async rename() {
     if (!this.session) return;
-    const before = this.session;
-    const wanted = window.prompt(t('head.rename_prompt', 'Rename session'), before);
-    if (wanted == null || wanted.trim() === before) return;
+    const session = this.session;
+    const current = S.sessions.find((row) => row.name === session)?.title || readableSession(session);
+    const wanted = window.prompt(t('head.rename_prompt', 'Edit Agent title'), current);
+    if (wanted == null || wanted.trim() === current) return;
     try {
-      const next = await renameSession(before, wanted.trim());
+      await setSessionTitle(session, wanted.trim());
       await fetchSessions();
-      if (S.onSessionRenamed) S.onSessionRenamed(before, next);
-      else this.connect(next);
+      this.refreshSessionName();
     } catch (e) {
       toast(t('head.rename_failed', 'Could not rename session: {reason}', { reason: e.message }), false);
     }
@@ -263,7 +263,7 @@ export class Tile {
   /** Unroll the ladder under the header — same data as the chip, at full zoom. */
   drawLadder() {
     this.el.querySelector('.shingo-ladder')?.remove();
-    const box = buildLadder(this.tegami);
+    const box = buildLadder(this.tegami, desksOf(this.session));
     this.el.querySelector('.tile-head').after(box);
     this.workRecordBtn.classList.add('open');
     this.workRecordBtn.setAttribute('aria-expanded', 'true');

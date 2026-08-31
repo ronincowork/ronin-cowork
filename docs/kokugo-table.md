@@ -9,19 +9,22 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1256 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1267 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
 | `archives.ago` | {age} ago |  |  |  |  |
+| `archives.card` | Rehydrate Archived |  |  |  |  |
 | `archives.delete_aria` | Permanently delete archived session {name} |  |  |  |  |
 | `archives.delete_confirm` | Hard delete archived session "{name}"? Its saved Ronin record cannot be rehydrated after this. |  |  |  |  |
 | `archives.delete_title` | Hard delete this archive |  |  |  |  |
 | `archives.empty` | no archived sessions |  |  |  |  |
+| `archives.group_none` | Ronin — no team |  |  |  |  |
 | `archives.read_failed` | archive could not be read |  |  |  |  |
-| `archives.rehydrate` | Rehydrate {name} |  |  |  |  |
+| `archives.rehydrate_btn` | Rehydrate |  |  |  |  |
+| `archives.rehydrating` | rehydrating… |  |  |  |  |
 | `archives.title` | Archived sessions |  |  |  |  |
 | `archives.unavailable` | unavailable |  |  |  |  |
 
@@ -133,6 +136,10 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `campaign_view.lexicon_help` | The words. Held to one lexicon for now, so nothing on this page is offered. |  |  |  |  |
 | `campaign_view.machine_summary` | The rest of the desk: Desk · Account · Archived · Help desk · Keypad. |  |  |  |  |
 | `campaign_view.name_help` | On the door, the browser tab and the address. |  |  |  |  |
+| `campaign_view.new_project_desks` | New projects use desks? |  |  |  |  |
+| `campaign_view.new_project_desks_help` | Desks: each coding session works at its own branch and worktree and hands in to the team. None: sessions work in the checkout. Written into a project’s RONIN_REPO when its root is added; the desks box on a root changes that one project. |  |  |  |  |
+| `campaign_view.new_project_desks_no` | None |  |  |  |  |
+| `campaign_view.new_project_desks_yes` | Desks |  |  |  |  |
 | `campaign_view.new_summary` | Set the stage. It creates no Cowork and launches no Agent. |  |  |  |  |
 | `campaign_view.no_description` | No description yet. |  |  |  |  |
 | `campaign_view.no_launch_table` | No launch table on this install. |  |  |  |  |
@@ -290,7 +297,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 |---|---|---|---|---|---|
 | `desk.add_passkey` | Add a passkey |  |  |  |  |
 | `desk.add_passkey_title` | Register this device — Touch ID, Face ID or a security key |  |  |  |  |
-| `desk.appearance` | appearance |  |  |  |  |
 | `desk.asking_feed` | asking the release feed… |  |  |  |  |
 | `desk.cancelled` | cancelled |  |  |  |  |
 | `desk.check_updates` | Check for updates |  |  |  |  |
@@ -329,7 +335,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `desk.remove` | Remove |  |  |  |  |
 | `desk.remove_named` | Remove {name} |  |  |  |  |
 | `desk.removed` | removed |  |  |  |  |
-| `desk.row_appearance` | Appearance |  |  |  |  |
 | `desk.row_release` | Release & update |  |  |  |  |
 | `desk.services_available` | services {latest} available |  |  |  |  |
 | `desk.services_available_installed` | services {latest} available (installed: {installed}) |  |  |  |  |
@@ -338,10 +343,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `desk.services_none` | services: none — the free build |  |  |  |  |
 | `desk.services_timeout` | services did not answer after 5 minutes — journalctl --user -u "ronin-update-*" has the transcript |  |  |  |  |
 | `desk.services_up_to_date` | ✓ services up to date — {installed} |  |  |  |  |
-| `desk.skin` | skin |  |  |  |  |
-| `desk.theme_dark` | ● dark |  |  |  |  |
-| `desk.theme_flip_title` | The shell's mode — tap to flip. Ronin follows this device until you flip away; flip back to match and it follows again. |  |  |  |  |
-| `desk.theme_light` | ○ light |  |  |  |  |
 | `desk.unreachable` | unreachable |  |  |  |  |
 | `desk.update` | Update |  |  |  |  |
 | `desk.update_services_to` | Update services to {latest} |  |  |  |  |
@@ -403,7 +404,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `docs.discard_confirm` | Discard unsaved changes? |  |  |  |  |
 | `docs.empty` | No session has listed a doc yet. An agent lists one with: write_tegami --doc <path> |  |  |  |  |
 | `docs.empty_session` | This session has listed no docs yet. An agent lists one with: write_tegami --doc <path> |  |  |  |  |
-| `docs.empty_team` | No session on this Team has listed a doc yet. An agent lists one with: write_tegami --doc <path> |  |  |  |  |
+| `docs.empty_team` | No tracked documents. |  |  |  |  |
 | `docs.frame_title` | document |  |  |  |  |
 | `docs.loading` | loading… |  |  |  |  |
 | `docs.open_browser` | Open in browser ↗ |  |  |  |  |
@@ -414,7 +415,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `docs.saved` | saved |  |  |  |  |
 | `docs.saving` | saving… |  |  |  |  |
 | `docs.shelf_empty` | Nothing on this shelf — a project root names its places on its record (Project roots → docs / plans). |  |  |  |  |
-| `docs.work_record_note` | Note: If you don't see a document your agent is working on, ask it to update its work record. |  |  |  |  |
+| `docs.work_record_note` | Ask an agent to list a document with write_tegami --doc <path>. If a document is missing, ask the agent to update its work record. |  |  |  |  |
 
 ## errors
 
@@ -588,8 +589,8 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `head.note_quiet` | Session note — no session in this tile yet |  |  |  |  |
 | `head.output_help` | Output — live terminal or one of RIREKI’s unlocked views |  |  |  |  |
 | `head.rename_failed` | Could not rename session: {reason} |  |  |  |  |
-| `head.rename_help` | Rename this session |  |  |  |  |
-| `head.rename_prompt` | Rename session |  |  |  |  |
+| `head.rename_help` | Edit this Agent title |  |  |  |  |
+| `head.rename_prompt` | Edit Agent title |  |  |  |  |
 | `head.rename_quiet` | Rename session — no session in this tile yet |  |  |  |  |
 | `head.view_work_record` | View Work Record |  |  |  |  |
 | `head.work_record_help` | View repositories, current action, and the work record |  |  |  |  |
@@ -672,11 +673,19 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
+| `ladder.branch` | Branch |  |  |  |  |
+| `ladder.coworks` | Coworks |  |  |  |  |
+| `ladder.current_action` | Current action |  |  |  |  |
+| `ladder.docs_none` | No tracked documents. |  |  |  |  |
 | `ladder.gate` | GATE |  |  |  |  |
 | `ladder.legs_undetermined` | — legs undetermined |  |  |  |  |
 | `ladder.none` | no work record yet |  |  |  |  |
-| `ladder.quiet` | quiet {age} |  |  |  |  |
+| `ladder.progress` | Progress |  |  |  |  |
 | `ladder.side` | {state} — the work record below is held, not stale |  |  |  |  |
+| `ladder.task_at_hand` | Task at hand |  |  |  |  |
+| `ladder.task_unstated` | No task stated in this work record. |  |  |  |  |
+| `ladder.tracked_documents` | Tracked documents |  |  |  |  |
+| `ladder.worktrees` | Worktrees |  |  |  |  |
 
 ## launch
 
@@ -753,7 +762,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `league.holding_empty` | Every live session is on a Team |  |  |  |  |
 | `league.launch_team` | Launch |  |  |  |  |
 | `league.lead` | lead |  |  |  |  |
-| `league.make_team_lead` | Make team lead |  |  |  |  |
+| `league.make_team_lead` | Make Lead |  |  |  |  |
 | `league.members` | Team members |  |  |  |  |
 | `league.new_agent` | New Agent |  |  |  |  |
 | `league.new_agent_summary` | A new Agent, born into the workspace you are in. |  |  |  |  |
@@ -766,6 +775,8 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `league.open_workspace` | League workspace |  |  |  |  |
 | `league.remove_member` | Remove |  |  |  |  |
 | `league.remove_named_member` | Remove {name} from this team |  |  |  |  |
+| `league.rename_agent` | Rename |  |  |  |  |
+| `league.rename_agent_prompt` | Edit Agent title |  |  |  |  |
 | `league.resting` | Resting Team |  |  |  |  |
 | `league.role_unset` | Role not set |  |  |  |  |
 | `league.ronin` | Ronin: no team |  |  |  |  |
@@ -774,7 +785,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `league.selector_teams` | Teams |  |  |  |  |
 | `league.selector_views` | Views |  |  |  |  |
 | `league.show_rosters` | Show rosters |  |  |  |  |
-| `league.team_lead` | Team lead |  |  |  |  |
+| `league.team_lead` | Team Lead |  |  |  |  |
 | `league.team_roster` | Team roster |  |  |  |  |
 | `league.team_roster_removing` | Removing {session} from {team}… |  |  |  |  |
 | `league.team_roster_saving` | Adding {session} to {team}… |  |  |  |  |

@@ -14,11 +14,13 @@ campaign_config 1 ←── many project_roots
 campaign_config 1 ←── many sessions (Agents)
 campaign_config 1 ←── many saved templates
 
-a workbench ── selects campaign_id[] (one, several, or all)
+a running Cowork machine ── exposes one campaign_id
 ```
 
-**A durable object has exactly one campaign. A view selects several and owns none.** The
-record never holds a list of what belongs to it; the things that belong to it point back.
+**A durable object has exactly one campaign. The running machine currently exposes one
+campaign and owns none.** The record never holds a list of what belongs to it; the things
+that belong to it point back. Multiple Campaign records remain a future capability; they
+are not mixed together on today's Agent and Cowork screens.
 
 ## Where the pointer lives, per record
 
@@ -125,14 +127,14 @@ which is the strongest form of "without losing files or history".
 
 | Route | Carries | Filters |
 |---|---|---|
-| `GET /api/sessions`, `GET /api/home` | per Agent, through `withAxes` | — |
-| `GET /api/team-rosters` | per Cowork | `?campaign_id=` (repeatable) |
+| `GET /api/sessions`, `GET /api/home` | per Agent, through `withAxes` | machine Campaign |
+| `GET /api/team-rosters` | per Cowork | machine Campaign by default; explicit `?campaign_id=` for management |
 | `GET /api/project-roots` | per root | `?campaign_id=` (repeatable) |
 | `GET /api/team-templates` | per template | — |
 
-**Naming no campaign means every campaign**, which is what a single-campaign install and a
-plural "All" view both ask for. `withAxes` is the one funnel every session list goes through,
-so the Agent's campaign cannot be present on one surface and missing on another.
+**Naming no campaign means the machine Campaign**, not every Campaign. `withAxes` is the
+one funnel every browser-facing session list and event goes through, so an Agent from a
+different Campaign cannot leak back onto a screen after the initial fetch.
 
 ## Implementation authority
 

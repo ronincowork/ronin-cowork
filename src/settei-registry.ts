@@ -192,21 +192,10 @@ export const SETTEI_SCHEMA = {
       lands: { family: 'agents', key: 'sessions.default' },
       omit: 'blank',
     },
-    {
-      // NEW PROJECTS AND DESKS (owner, 2026-08-29): what a project's RONIN_REPO says when
-      // its root is added — desks (reviewed dev → master, hand-in, team promotion) or
-      // none (work in the checkout). A default for the file, not a switch: the file in
-      // the repository is the one gate, and it can be changed there afterwards.
-      id: 'newProjectDesks',
-      sec: 'defaults',
-      kind: 'select',
-      label: 'New projects use desks?',
-      short: 'new projects',
-      hint: 'Desks: each coding session works at its own branch and worktree and hands in to the team. None: sessions work in the checkout. Written into the project\'s RONIN_REPO when you add it; edit that file to change one project.',
-      options: 'new_project_desks',
-      from: 'set.desks.new_project',
-      lands: { family: 'desks', key: 'new_project' },
-    },
+    // NEW PROJECTS AND DESKS (owner, 2026-08-29) — what a project's RONIN_REPO says when
+    // its root is added — is asked beside the Project roots on #/campaign since the SETTEI
+    // audit (2026-08-30): a choice has one home. It still lands at `desks.new_project`
+    // through `PUT /api/settei/desks`; only the ⚙ row went.
     {
       // THE DESK PROFILE (R38): the owner's standing defaults for the surfaces they work
       // at — skin, lexicon, campaign kind, a new tile's RIREKI view, the Team page's
