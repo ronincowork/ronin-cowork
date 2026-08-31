@@ -17,7 +17,7 @@ import { resolveRoutines, type ResolvedRoutine } from './routines.js';
 import { initialCampaignId } from './campaign-scope.js';
 import { resolveLaunchSeed } from './launch-seed.js';
 import { resolveBehaviourBooks, type DeliveredBehaviour } from './behaviours.js';
-
+import { templateProvenance } from './template-provenance.js';
 /**
  * The mechanical executor: a filled form in, a briefed session out.
  *
@@ -87,7 +87,7 @@ export interface SpawnForm {
   /** Team-seeded launch classification; this launch may state a different answer. */
   kind?: string;
   /** Chosen birth books. Absent inherits the parent seed; an explicit [] chooses none. */
-  behaviours?: string[];
+  behaviours?: string[]; template?: string; // preset is validated provenance only, never reapplied
   /** Optional first instruction. Blank still launches a fully booted Agent. */
   prompt?: string;
   /** What the session is called. Blank is derived and de-duplicated. */
@@ -359,6 +359,7 @@ export async function resolveForm(
     listRoutines(),
     readDesksSection(),
   ]);
+  const preset = await templateProvenance(coworkAgent ? form : {});
   // A NAMED axis that does not resolve is a refusal, never a silent blank. Blank and
   // wrong are different launches, and only one of them is what the caller asked for.
   if (form.session_role && !taskDef) {
@@ -651,7 +652,10 @@ export async function resolveForm(
     birth_reading: birthReading,
     behaviours: resolvedBehaviours.delivered,
     kind,
-    ignored: resolvedBehaviours.ignored,
+    ignored: [
+      ...resolvedBehaviours.ignored,
+      ...preset.ignored,
+    ],
     routines,
     stated_by: {
       name: form.name ? explicit : system,
@@ -661,13 +665,15 @@ export async function resolveForm(
       tags: unique(roster ? rosterSource : [], form.tags?.length ? explicit : []),
       session_type: explicit,
       session_role: form.session_role !== undefined ? explicit : profile.stated_by.session_role,
-      mandate: form.mandate ? explicit : parentSeed?.seeds.reach.stated_by ?? (campaign
+      template: preset.source ?? system,
+      mandate: form.mandate ? (preset.mandate ? preset.source! : explicit) : parentSeed?.seeds.reach.stated_by ?? (campaign
         ? [{ layer: 'campaign', source: `#/campaign (${campaign.id}: agent_defaults)` }]
         : system),
       team: form.team ? explicit : system,
       project_root: rootSource,
       dial: form.dial !== undefined ? explicit : parentSeed?.seeds.dial.stated_by ?? profile.stated_by.dial,
-      brief: unique(explicit, profile.stated_by.opening, roster ? rosterSource : [], rootSource),
+      brief: unique(preset.brief ? preset.source! : explicit,
+        profile.stated_by.opening, roster ? rosterSource : [], rootSource),
       agent: profile.stated_by.agent,
       capExempt: profile.stated_by.capExempt,
       mcp: mcpSource,
@@ -684,7 +690,9 @@ export async function resolveForm(
       team_wipeboard: rosterSource,
       team_state: rosterSource,
       birth_reading: unique(system, form.seed?.length ? explicit : []),
-      behaviours: form.behaviours !== undefined ? explicit : parentSeed?.seeds.behaviours.stated_by ?? system,
+      behaviours: form.behaviours !== undefined
+        ? (preset.behaviours ? preset.source! : explicit)
+        : parentSeed?.seeds.behaviours.stated_by ?? system,
       kind: form.kind !== undefined ? explicit : parentSeed?.seeds.kind.stated_by ?? system,
       routines: parentSeed?.routines.flatMap((routine) => routine.stated_by) ?? system,
     },

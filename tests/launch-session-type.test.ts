@@ -92,4 +92,18 @@ test('cowork kind and behaviours survive body acceptance while unusable shapes a
   assert.deepEqual(ignored.ignored, ['behaviours', 'kind']);
 });
 
+test('a template token is provenance input only on a cowork birth', () => {
+  const accepted = acceptedLaunchBody({ name: 'proof', template: 'document_it' });
+  assert.equal(accepted.body.template, 'document_it');
+  assert.deepEqual(accepted.ignored, []);
+
+  const malformed = acceptedLaunchBody({ name: 'proof', template: '../document_it' });
+  assert.equal(malformed.body.template, undefined);
+  assert.deepEqual(malformed.ignored, ['template']);
+
+  const terminal = acceptedLaunchBody({ session_type: 'terminal', name: 'proof', template: 'document_it' });
+  assert.equal(terminal.body.template, undefined);
+  assert.deepEqual(terminal.ignored, ['template']);
+});
+
 test.after(() => server.close());
