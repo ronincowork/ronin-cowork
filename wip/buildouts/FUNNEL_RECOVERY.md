@@ -30,7 +30,25 @@ identity, so a wrong-user invocation is misreported as missing campaign data.
 ## Whole-bundle audit
 
 The failure is wider than the promotion command. Ronin currently has two legitimate Git
-arrangements, but its instruction and Routine boundaries do not yet route them cleanly:
+arrangements, but its instruction and optional file-coordination boundaries do not yet
+route them cleanly.
+
+The owner's public coordination model has four choices:
+
+```text
+bare Agent
+Cowork floor
+Ronin Base
+managed file coordination (optional)
+```
+
+The last choice coordinates files and integration when several Agents work in parallel:
+managed worktrees, hand-in, lead integration/promotion, receipts and Git safeguards. It
+does not control Agents and must not be presented publicly as “Ronin Control.” The
+internal `ronin_control` Routine token may remain as a compatibility seam until KOTOBA is
+deliberately renamed; this build-out does not perform that vocabulary migration.
+
+The repository arrangements are:
 
 | Fact | Reviewed product repository | Direct-publishing repository |
 |---|---|---|
@@ -43,13 +61,13 @@ arrangements, but its instruction and Routine boundaries do not yet route them c
 That distinction is sound. The problem is where it is taught and delivered:
 
 - `ronin_methodology.md` is assigned to Ronin Base, but its source-control sections teach
-  the complete Ronin Control lifecycle (desks, `tejun-desk`, hand-in, promotion and
-  receipts). A Base-only Agent can therefore be taught behavior its Routine does not
-  deliver.
-- `github.md` is assigned to Ronin Control, but it teaches both the reviewed and direct
-  arrangements. A Control Routine is carrying instructions for the model in which its
-  desk/promotion machinery is inapplicable, while a Base-only direct Agent does not get
-  that SOP through its manifest.
+  the complete managed file-coordination lifecycle (desks, `tejun-desk`, hand-in,
+  promotion and receipts). A Base-only Agent can therefore be taught optional behavior
+  its birth did not deliver.
+- `github.md` is assigned to the internal `ronin_control` manifest, but it teaches both
+  the reviewed and direct arrangements. The optional managed-coordination package is
+  carrying instructions for the direct model in which its machinery is inapplicable,
+  while a Base-only direct Agent does not get that SOP through its manifest.
 - Both SOPs still teach retired park/recover semantics, contradicting the current owner
   ruling that a desk is handed in, handed off/co-owned, or explicitly closed.
 - `github.md` says a direct repository can have `desks=managed`; `openDesk()` refuses every
@@ -57,9 +75,9 @@ That distinction is sound. The problem is where it is taught and delivered:
 - Routine definitions, catalog checks and the hard-coded Routines surface exist, but the
   Campaign → Team Routine resolver and its birth projections are not implemented yet.
   Current desk opening is driven by lifecycle plus `RONIN_REPO`, independently of an
-  effective Ronin Control selection. The surface calls Control “per repository,” while
-  the standing Routine contract defines selection by Campaign and Team and applicability
-  by repository.
+  effective managed-coordination selection. The surface publicly calls this “Ronin
+  control” and “per repository,” while the standing Routine contract defines selection by
+  Campaign and Team and applicability by repository. Both the name and the model drift.
 - The launch brief is strong when an assignment exists, but a coding launch with no
   assignment says nothing about desks. Its receipt may explain why; the Agent prompt does
   not. In a reviewed root, that silence makes the shared/live funnel look like an ordinary
@@ -73,13 +91,14 @@ effective behavior = Routine enabled and delivered
                      + launch lifecycle applicable
 ```
 
-These are separate facts. `RONIN_REPO` never turns a Routine on; a Routine never changes a
-repository from direct to reviewed. For a reviewed coding launch, Ronin Control on means a
-managed desk is opened and taught. Ronin Control off means no Control behavior is
-delivered, but the birth must still state the neutral fact that the selected root is a
-reviewed funnel and no managed working place was supplied. That is an honest warning, not
-an enforcement claim. For a direct repository, Ronin Control may be enabled at Campaign
-level but is inapplicable to that root; the receipt says so and no desk is invented.
+These are separate facts. `RONIN_REPO` never turns an optional package on; an enabled
+package never changes a repository from direct to reviewed. For a reviewed coding launch,
+managed file coordination on means a managed desk is opened and taught. With it off, none
+of its behavior is delivered, but the Cowork birth must still state the neutral fact that
+the selected root is a reviewed funnel and no managed working place was supplied. That is
+an honest warning, not an enforcement claim. For a direct repository, managed file
+coordination may be enabled at Campaign level but is inapplicable to that root; the receipt
+says so and no desk is invented.
 
 ### Instruction cut
 
@@ -93,20 +112,21 @@ Do not keep two overlapping all-purpose Git SOPs. Cut responsibility this way:
 2. **Direct Git guidance is general/Base situation reading.** `github.md` can own repository
    creation, secrets, small commits, shared-checkout coordination, fetch/integrate/push,
    and direct-to-stable history. It is discoverable to Agents who may need ordinary Git
-   without Ronin Control.
-3. **Reviewed Git guidance belongs wholly to Ronin Control.** Add a distinct SOP (working
-   name `github_reviewed.md`, final catalog name to be reviewed) containing desk → hand-in
-   → team promotion → release PR, receipts, conflict ownership and funnel recovery. The
-   desk contract remains the short birth reading; the SOP is fetched when the situation
-   calls for source-control work.
+   without managed file coordination.
+3. **Reviewed Git guidance belongs wholly to managed file coordination.** Add a distinct
+   SOP (working name `github_reviewed.md`, final catalog name to be reviewed) containing
+   desk → hand-in → team promotion → release PR, receipts, conflict ownership and funnel
+   recovery. The desk contract remains the short birth reading; the SOP is fetched when
+   the situation calls for source-control work. The manifest may still be spelled
+   `ronin_control` internally, but no public text teaches that name.
 4. **Repository-local instructions remain the final concrete pointer.** `AGENTS.md`/
    README state only the declared arrangement, test boundary and relevant standing doc;
    they do not duplicate the whole SOP. Direct Lab/Koe instructions say direct `main`;
-   Cowork/Site/Services/Shiwake say reviewed and point to the delivered Control path.
+   Cowork/Site/Services/Shiwake say reviewed and point to the delivered managed path.
 5. **One mechanical consistency check.** For every stock repository fixture and launch
    matrix, assert that declaration, effective Routine receipt, cwd/desk, boot reading,
    macro roster, command names and prompt all tell one story. Search checks also reject
-   Control-only terms from Base methodology and retired park/recover wording.
+   managed-coordination-only terms from Base methodology and retired park/recover wording.
 
 ## Boundaries that must remain
 
@@ -125,7 +145,8 @@ Do not keep two overlapping all-purpose Git SOPs. Cut responsibility this way:
   Concurrent change makes the transaction stop and re-inspect.
 - Recovery is resumable and reversible. A crash may leave a visible in-progress receipt,
   never an unexplained half-clean tree.
-- The owner can complete the workflow from Control; an Agent can invoke the same tool.
+- The owner can complete the workflow from the managed file-coordination surface; an
+  Agent can invoke the same tool.
   Neither route requires the owner to SSH or assemble Git commands.
 
 ## Prevention
@@ -141,13 +162,14 @@ Do not keep two overlapping all-purpose Git SOPs. Cut responsibility this way:
    first actionable sentence: name the current desk path, say that hand-in is the easy
    route to the team, and say “If this path and `tejun-desk status --assignment` disagree,
    stop and ask the lead.” Avoid “cannot,” “forbidden,” and supervision claims.
-3. **Make the alternative explicit without endorsing drift.** When Control is applicable,
+3. **Make the alternative explicit without endorsing drift.** When managed coordination
+   is applicable,
    the launch control should read “managed desk (recommended)” versus “plain checkout,”
    with the latter explaining that Ronin will not provide desk/hand-in recovery there and
    that a reviewed root is the live funnel. A Routine being off remains non-delivery, not
    enforcement. The neutral floor/receipt may report arrangement and missing equipment;
-   it must not smuggle Control commands into an off-Routine prompt.
-4. **Surface funnel health before promotion.** Team/Control status should show each target
+   it must not smuggle managed-coordination commands into an off-Routine prompt.
+4. **Surface funnel health before promotion.** Team/file-coordination status should show each target
    as `ready`, `dirty—preserved elsewhere`, `dirty—unique`, or `recovery in progress`, with
    path count, overlap with the current team line, last diagnosis receipt, and a single
    Diagnose/Recover action. The lead sees this before paying candidate/BYOIN cost.
@@ -158,7 +180,8 @@ Do not keep two overlapping all-purpose Git SOPs. Cut responsibility this way:
 
 ## Recovery transaction
 
-Add one shared recovery engine used by an Agent tool and owner-facing Control route.
+Add one shared recovery engine used by an Agent tool and the owner-facing managed
+file-coordination route.
 Do not bury it inside `prepareCandidate`; promotion should call its read-only diagnosis and
 return the recovery receipt/action when attention is needed.
 
@@ -230,18 +253,20 @@ from the repository/service owner, report:
 
 > Running as `root`; Ronin stores resolve under `/root`. This repository/install is owned
 > by `glen3`, whose Team records are outside the store searched. Run this through the
-> owner-facing Control action, or as the owning Ronin account. No repository state changed.
+> owner-facing managed file-coordination action, or as the owning Ronin account. No
+> repository state changed.
 
 The implementation must derive identities and paths at runtime (account/store tools or the
 same underlying modules), never hard-code `glen3`. A genuinely absent roster under the
-correct owner keeps the existing “no team roster” diagnosis. The Control API runs under
-the Ronin operator account, so the ordinary owner workflow naturally selects the right
-store.
+correct owner keeps the existing “no team roster” diagnosis. The owner-facing API runs
+under the Ronin operator account, so the ordinary owner workflow naturally selects the
+right store.
 
 ## Recommended implementation cut
 
-1. Resolve the instruction/Routine seam with the `CONTROL_BUNDLES` owner: split Base,
-   direct Git and reviewed Control teaching; remove retired park text; define the
+1. Resolve the instruction/Routine seam with the `CONTROL_BUNDLES` owner: adopt the four
+   public choices, split Base, direct Git and reviewed managed-coordination teaching,
+   remove retired park text, and define the
    enabled + applicable + lifecycle matrix and its birth receipt assertions.
 2. Pure classifier and fixtures: dirty inventory, blob/ref preservation, whole-set branch,
    candidate overlap/merge result, identity/store preflight.
@@ -249,7 +274,7 @@ store.
    before guarded clearing. Unit tests use scratch repositories and redirected stores.
 4. `tejun-funnel diagnose|recover|show|resume` (final name subject to catalog/KOTOBA
    review) and `ronin-promote` integration that links receipts and rebuilds candidates.
-5. Owner-facing Team/Control status and actions using the same API, including confirmation
+5. Owner-facing Team/file-coordination status and actions using the same API, including confirmation
    for clearing/removal and downloadable/viewable receipts.
 6. Reviewed-mode readiness in project-root declaration/Doctor, then launch/brief/status
    wording. Add promotion tests for duplicate, unique, mixed, overlap-clean, overlap-
