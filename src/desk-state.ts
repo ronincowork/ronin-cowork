@@ -90,6 +90,14 @@ export interface RepoLocation {
 /** The locator seam: repo identity → where to ask, or null when this box has no such repo. */
 export type LocateRepo = (repo: string) => Promise<RepoLocation | null>;
 
+/** Does a TEGAMI checkout name a desk the registry already supplied? Root identity is
+ * strongest; exact repo+branch is the safe fallback when the locator is silent. */
+export function sameDesk(recorded: DeskState, entry: TegamiCheckout, at: RepoLocation | null): boolean {
+  if (recorded.branch !== entry.branch) return false;
+  if (at?.root && recorded.root === at.root) return true;
+  return recorded.repo === entry.repo;
+}
+
 export const shortRepo = (repo: string): string =>
   String(repo || '').replace(/\.git$/, '').split('/').filter(Boolean).pop() || repo;
 

@@ -12,7 +12,7 @@ import { promisify } from 'node:util';
 const exec = promisify(execFile);
 const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-desk-state-'));
 process.env.RONIN_SESSION_DIR = path.join(root, 'sessions');
-const { deriveDesk, fromStatus, rollup, locatorFrom, shortRepo } = await import('../src/desk-state.js');
+const { deriveDesk, fromStatus, rollup, locatorFrom, sameDesk, shortRepo } = await import('../src/desk-state.js');
 const { readRepos, tegamiPath } = await import('../src/tegami.js');
 const { sessionKey } = await import('../src/session-dir.js');
 
@@ -116,6 +116,17 @@ test('a registry DeskStatus maps into the same shape, and its facts reach the ro
   assert.equal(d.last_hand_in, 'hi_1');
   const r = rollup([d]);
   assert.deepEqual(r, { desks: 1, private: 3, dirty: 0, pending: 1, parked: 1, blocked: 1, lined: 1 });
+});
+
+test('an unresolved TEGAMI repo does not duplicate its registered desk', () => {
+  const recorded = fromStatus({
+    repo: 'ronin_cowork', root: 'ronin_cowork', branch: 'team/sea_settle/forms_ui', worktree: '/w/forms_ui',
+    line: 'team/sea_settle/dev', mode: 'reviewed', session: 'forms_ui', team: 'sea_settle', assignment: 'forms_ui@sea_settle',
+    state: 'open', opened_at: 'x', mounted: true, tip: 'abc', line_tip: 'def', dirty: false, dirty_files: [],
+    ahead: 0, behind: 0, pending: null, last_hand_in: '', blocked: '',
+  });
+  assert.equal(sameDesk(recorded, { repo: 'ronin_cowork', branch: 'team/sea_settle/forms_ui' }, null), true);
+  assert.equal(sameDesk(recorded, { repo: 'ronin_cowork', branch: 'team/sea_settle/other' }, null), false);
 });
 
 test('an unlocatable repo is an unknown desk, not an error', async () => {
