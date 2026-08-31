@@ -7,7 +7,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **desk_profile:** desk profile
 - **campaign:** Campaign
 - **campaigns:** Campaigns
-- **campaign_kind:** Kind
 - **add_agent.card:** Add Agent to Team
 - **add_agent.card_summary:** The Team answers the rest.
 - **add_agent.title:** Add Agent to Team
@@ -386,7 +385,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.name:** Team name
 - **new_team.name_desc:** Lowercase letters, digits, _ and - . This is also the tag its sessions carry.
 - **new_team.role_placeholder:** development — or leave blank
-- **team.team_role:** Team role
 - **new_team.role_desc:** Optional. Blank is an unclassified Team, which is a valid state.
 - **team.objective:** Objective
 - **new_team.objective_desc:** Optional. Rides the brief of every session born onto this Team.
@@ -1004,8 +1002,6 @@ The catalog entry goes. {dir} is not touched.
 - **customize.role_families_blurb:** The shelves of the ＋ New board. Presentation only — a family never rides a launch.
 - **customize.session_roles:** Session roles
 - **customize.session_roles_blurb:** What a session is doing now. Its fields cascade into every launch.
-- **customize.team_roles:** Team roles
-- **customize.team_roles_blurb:** What a TEAM is. The house ships none — every one is yours.
 - **customize.saved_launches:** Saved launches
 - **customize.saved_launches_blurb:** The launcher form, filled in ahead of time and named.
 - **customize.skins:** Skins

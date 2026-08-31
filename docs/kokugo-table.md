@@ -6,10 +6,10 @@
 `professional_en` is the floor: every key a surface reads, in plain English. Each other column is one
 lexicon (`ronin_catalogs/lexicons/`, shadowed whole-file by your catalogs store): its word where it
 says one, blank where it falls through to the floor. A catalog token (`kind.*`, `role.*`,
-`team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
+`behaviour.*` may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1338 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1334 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## add_agent
 
@@ -80,7 +80,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 |---|---|---|---|---|---|
 | `behaviours` | Behaviours |  | Perks |  |  |
 | `campaign` | Campaign | Occasion | Campaign |  |  |
-| `campaign_kind` | Kind |  | Arena |  |  |
 | `campaigns` | Campaigns | Occasions | Campaigns |  |  |
 | `desk_profile` | desk profile | the house style | your rig |  |  |
 | `go` | Go | Service | GLHF |  |  |
@@ -319,8 +318,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `customize.sops` | SOPs |  |  |  |  |
 | `customize.sops_blurb` | How this house goes about a domain — fetched by a situation, never pushed. |  |  |  |  |
 | `customize.sops_read` | Read procedure |  |  |  |  |
-| `customize.team_roles` | Team roles |  |  |  |  |
-| `customize.team_roles_blurb` | What a TEAM is. The house ships none — every one is yours. |  |  |  |  |
 | `customize.title` | Customize |  |  |  |  |
 | `customize.tools` | Tools |  |  |  |  |
 | `customize.tools_blurb` | The executables that implement actions. A markdown row cannot author one. |  |  |  |  |
@@ -1561,7 +1558,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `team.state` | State |  |  |  |  |
 | `team.status` | Status |  |  |  |  |
 | `team.team` | Team |  |  |  |  |
-| `team.team_role` | Team role |  |  |  |  |
 | `team.wipeboard` | Wipeboard |  |  |  |  |
 | `team.workspace_1` | Workspace 1 |  |  |  |  |
 | `team.workspace_2` | Workspace 2 |  |  |  |  |
