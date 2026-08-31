@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `behaviour.*` may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1334 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1336 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## add_agent
 
@@ -37,8 +37,10 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `add_agent.team` | team |  |  |  |  |
 | `add_agent.title` | Add Agent to Team |  |  |  |  |
 | `add_agent.worktree` | Request a worktree |  |  |  |  |
-| `add_agent.worktree_off` | No worktree. This Agent works in the shared checkout. |  |  |  |  |
-| `add_agent.worktree_on` | A worktree of its own — managed file coordination, hand-in and the Git safeguards. |  |  |  |  |
+| `add_agent.worktree_off` | No worktree at birth. Under managed file coordination it can cut one when the work needs it. |  |  |  |  |
+| `add_agent.worktree_off_plain` | No worktree. This Agent works in the shared checkout. |  |  |  |  |
+| `add_agent.worktree_on` | Its own worktree, under managed file coordination: the desk contract, hand-in and the Git safeguards. |  |  |  |  |
+| `add_agent.worktree_on_plain` | Its own worktree, for isolation only — no hand-in and no one to hand to, so it reports to you. |  |  |  |  |
 
 ## archives
 
