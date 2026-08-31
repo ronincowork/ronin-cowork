@@ -8,6 +8,5 @@ The plain one. Stock look, plain words, the terminal as it is.
 - **skin:** stock
 - **theme:** light
 - **lexicon:** professional_en
-- **campaign_kind:** work
 - **rireki_view:** terminal_mirror
 - **team_arrangement:** workspace1,roster,workspace2

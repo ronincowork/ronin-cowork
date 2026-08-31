@@ -1,5 +1,5 @@
 /**
- * SESSION READINGS — a typed, read-only inventory of the five boot-shelf levels.
+ * SESSION READINGS — a typed, read-only inventory of the boot-shelf levels.
  *
  * A leaf symlink is an explicit shelf entry and may be read; symlinked directories are
  * refused so one link cannot turn this typed surface into an arbitrary directory browser.
@@ -53,7 +53,7 @@ async function levelDirs(base: string, origin: Origin): Promise<LevelDir[]> {
   };
   await add('all', path.join(base, 'all'));
   await add('assignment', path.join(base, 'assignment'));
-  for (const prefix of ['root', 'role', 'team_role']) {
+  for (const prefix of ['root', 'role']) {
     for (const item of await realDirectories(path.join(base, prefix), prefix)) out.push({ ...item, origin });
   }
   let top;

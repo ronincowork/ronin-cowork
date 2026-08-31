@@ -349,15 +349,14 @@ export function registerSessions(app: express.Express): void {
    *                  roster, contextual per team, never a session attribute;
    *   session_task   renamed `session_role` in the same ruling.
    */
-  for (const retired of ['session_job', 'family_role', 'session_task', 'role_family']) {
+  for (const retired of ['session_job', 'family_role', 'session_task', 'role_family', 'team_role', 'campaign_kind', 'lifecycle']) {
     app.all(`/api/sessions/:name/${retired}`, (req, res) => {
       res.status(410).json({
         error:
-          `${retired} is retired (R35, 2026-08-23). A session has ONE axis of its own — ` +
+          `${retired} is retired. A session has ONE axis of its own — ` +
           '`session_role`, what it is doing now, at ' +
           `/api/sessions/${encodeURIComponent(req.params.name)}/session_role — and its teams. ` +
-          "Identity is the TEAM'S: a `team_role` lives on a team's roster (/api/team-rosters), " +
-          'never on a session.',
+          "Identity is contextual to a session's team, never a separate axis.",
       });
     });
   }
@@ -386,7 +385,7 @@ export function registerSessions(app: express.Express): void {
       return res.status(400).json({
         error:
           'role_family is retired (R35, 2026-08-23) — a session has no identity axis of its own. ' +
-          "Identity is the TEAM'S team_role, on its roster.",
+          "Identity is contextual to a session's team.",
       });
     }
     if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });

@@ -1,7 +1,7 @@
 /**
  * DESK PROFILES — the owner's standing defaults for the surfaces they work at, as a
  * shadowable catalog (`ronin_catalogs/desk_profiles/`). KOTOBA R38, 2026-08-27: a
- * desk_profile is NOT a skin; each one HAS a skin — and a lexicon, a campaign kind, a
+ * desk_profile is NOT a skin; each one HAS a skin — and a lexicon, a
  * RIREKI view for a new tile, and the Team page's default order.
  *
  * WHICH ONE IS ACTIVE IS SETTEI'S (`set.desk.profile`): one object, every surface a
@@ -27,7 +27,6 @@ export interface DeskProfileInfo {
   lexicon: string;
   /** Light/dark/automatic is part of the template, not inferred from its skin. */
   theme: string;
-  campaign_kind: string;
   rireki_view: string;
   /** Slot names in order, as written — the Team page validates against its declaration. */
   team_arrangement: string[];
@@ -44,7 +43,6 @@ const row = (d: Definition): DeskProfileInfo => ({
   skin: d.get('skin').trim(),
   lexicon: d.get('lexicon').trim(),
   theme: d.get('theme').trim(),
-  campaign_kind: d.get('campaign_kind').trim(),
   rireki_view: d.get('rireki_view').trim(),
   team_arrangement: d.get('team_arrangement').split(',').map((s) => s.trim()).filter(Boolean),
   defaults: {},

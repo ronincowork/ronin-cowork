@@ -11,17 +11,16 @@ Put a file on the shelf and new sessions read it. That is the whole feature.
 | `<service>_connected/` (e.g. `gbrain_connected/`) | only sessions launched with MCP on — how a connected session learns what it is connected to, signed by the service that seeded it |
 | `root/<project_root>/` | only sessions working in that directory |
 | `role/<session_role>/` | only sessions doing that kind of work — **re-delivered when the session_role changes** |
-| `team_role/<team_role>/` | only sessions born onto a team whose roster names that team_role — the team's own build brief, read once |
 | `assignment/` | only sessions whose launch resolved repo desks — the desk contract (`DESK_CONTRACT.md`: commit → hand-in → team promotion → Git push). A launch given no desk reads nothing here; the level is a fact about the launch, not an axis a static shelf could guess |
 
 The levels are **additive, not a hierarchy**. A session cutting `CutCode` on a
 `development` team in `ronin_cowork` reads all of its levels and nothing overrides
 anything — *where* the work happens, *what* it is doing now and *whose team* it is on
 are independent questions, so the same bug-chasing habits apply in every repo, the same
-repo notes apply to every session_role, and a team_role's standing brief applies across
+repo notes apply to every session_role, and standing team context applies across
 every role its team raises.
 
-**Team reading is birth-only; session_role reading is not.** A birth team's `team_role`
+**Session_role reading is not birth-only.** Its
 reading arrives once ("if you join later, let's not go back and redo it" — R35). A
 `session_role` moves, and when it does, Ronin hands that role's level to the running
 session — once, whether the agent re-marked itself or the owner did

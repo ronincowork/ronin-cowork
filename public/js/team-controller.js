@@ -82,10 +82,10 @@ export function membersOfTeam(team) {
 }
 export function teamByName(name) {
   const roster = rosters.find((row) => row.name === name && row.state !== 'archived');
-  return roster ? { ...roster, durable: true } : { name, team_role: '', objective: '', durable: false };
+  return roster ? { ...roster, durable: true } : { name, objective: '', durable: false };
 }
 export function teamsFromState() {
   const durable = rosters.filter((r) => r.state !== 'archived').map((r) => ({ ...r, durable: true }));
-  return [...durable.sort(blankLast('team_role')),
-    { name: UNASSIGNED, team_role: '', objective: '', durable: false, holding: true }];
+  return [...durable.sort(blankLast('name')),
+    { name: UNASSIGNED, objective: '', durable: false, holding: true }];
 }

@@ -90,7 +90,7 @@ Every session is fixed by two things, plus the team it may be born onto:
 **`project_root`** — where the work happens, and the one that is REQUIRED
 (`ronin_catalogs/PROJECT_ROOTS.md`) × **`session_role`** — what it is doing right now,
 and yours to change as the work moves (`ronin_catalogs/session_roles/`). A TEAM adds
-context on top — its roster's defaults and its `team_role` reading — and none is a
+context on top — its roster's defaults — and none is a
 rōnin, which is ordinary (R35).
 
 The session_role may be blank, and blank is a real answer rather than a gap.

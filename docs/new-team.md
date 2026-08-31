@@ -7,7 +7,7 @@ the Cowork space (the `New Team` card in the campaign selector), not a destinati
 own: the owner fills in seven roster fields, presses **Create Team**, and lands in the
 Team that was just made, with the form left empty behind them.
 
-An empty Team is valid. `team_role`, objective, root, repositories, branch and wipeboard
+An empty Team is valid. Objective, root, repositories, branch and wipeboard
 may all be blank. Only a valid Team name is required.
 
 ## Non-goals
@@ -38,7 +38,7 @@ nothing about the model changed — only the number of ways to write one.
 
 ## The flow
 
-The Surface edits the seven durable roster fields: `name`, `team_role`, `objective`,
+The Surface edits the durable roster fields: `name`, `objective`,
 `project_root`, `repos`, `branch` and `wipeboard`. The name is sanitized while typing
 (the caret never jumps) and settled on blur, because a trailing separator is legal to type
 and wrong to create. Team roles come from `GET /api/team-roles`, with free text valid when
@@ -71,7 +71,7 @@ kills the session. A session with no Team tags is an ordinary rōnin under Unass
 
 A Team created here arrives already staffed when live sessions already carry its name as a
 tag — membership is derived, so giving a tag-only team a roster adopts it. Those adopted
-members were tagged, not born onto the Team, so none of them reads the `team_role` shelf:
+members were tagged, not born onto the Team, so their birth reading is unchanged:
 that reading happens at birth only.
 
 ## Owned files

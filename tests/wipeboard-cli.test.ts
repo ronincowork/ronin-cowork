@@ -160,7 +160,7 @@ test('boards lists what exists and says whose each one is', async () => {
 test("a roster's wipeboard id decides, and the roster brings its wipeboard up empty", async () => {
   await fs.writeFile(
     path.join(rosters, 'squad.md'),
-    '# squad\n\n- **team_role:** development\n- **objective:** x\n- **wipeboard:** squad-talk\n- **state:** active\n',
+    '# squad\n\n- **objective:** x\n- **wipeboard:** squad-talk\n- **state:** active\n',
   );
   assert.equal(await exists(path.join(store, 'squad-talk')), false, 'nothing there yet');
 
@@ -184,7 +184,7 @@ test("a roster's wipeboard id decides, and the roster brings its wipeboard up em
 test('bare post goes to the team board — no name, no telling', async () => {
   await fs.writeFile(
     path.join(rosters, 'crew.md'),
-    '# crew\n\n- **team_role:** development\n- **objective:** x\n- **wipeboard:** crew-board\n- **state:** active\n',
+    '# crew\n\n- **objective:** x\n- **wipeboard:** crew-board\n- **state:** active\n',
   );
   const posted = await run('alpha', ['post', 'no board named, and it lands']);
   assert.equal(posted.code, 0);
