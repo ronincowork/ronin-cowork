@@ -727,7 +727,7 @@ The catalog entry goes. {dir} is not touched.
 - **docs.loading:** loading…
 - **docs.saving:** saving…
 - **docs.saved:** saved
-- **docs.work_record_note:** Note: If you don't see a document your agent is working on, ask it to update its work record.
+- **docs.work_record_note:** Ask an agent to list a document with write_tegami --doc <path>. If a document is missing, ask the agent to update its work record.
 
 ## roots — the count line and chips
 - **roots.chip_archived:** archived
@@ -1204,7 +1204,7 @@ The catalog entry goes. {dir} is not touched.
 - **pad.no_reply:** {method}: pad did not reply
 
 ## docs — the empty line and count
-- **docs.empty_team:** No session on this Team has listed a doc yet. An agent lists one with: write_tegami --doc <path>
+- **docs.empty_team:** No tracked documents.
 - **docs.empty:** No session has listed a doc yet. An agent lists one with: write_tegami --doc <path>
 - **docs.count_one:** 1 doc
 - **docs.count_many:** {n} docs
