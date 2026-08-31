@@ -243,7 +243,9 @@
   --bar-nav-fg: var(--fg-strong);
   --bar-nav-hover: var(--accent);
   --bar-nav-focus: var(--accent);
-  --bar-value-fg: var(--muted-2);
+  --bar-nav-size: var(--text-7);
+  --bar-value-fg: var(--bar-nav-fg);
+  --bar-value-size: var(--bar-nav-size);
   --bar-brand-mark-h: 27px;
   --bar-brand-track: -0.005em;
 
@@ -472,7 +474,9 @@ body {
   background: var(--bar-nav-bg);
   color: var(--bar-nav-fg);
   font: inherit;
+  font-size: var(--bar-nav-size);
   line-height: 1;
+  text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -484,6 +488,7 @@ body {
 }
 .ui-bar-value {
   color: var(--bar-value-fg);
+  font-size: var(--bar-value-size);
   white-space: nowrap;
 }
 .ui-bar-separator { color: var(--muted); }
@@ -808,7 +813,7 @@ body {
   border-color: var(--accent);
 }
 /* The MARK — what this session is doing, beside the name rather than out among the
-   controls on the right. Sits with the picker and the ladder chip: "who is this, and
+   controls on the right. Sits with the name and the ladder chip: "who is this, and
    where are they". */
 /* THE MARK'S WEIGHT. Half the catalog's icons are TEXT glyphs (✂ ❯ • ミ) and half are
    colour emoji (🏈 💭 🗺 🐞 🔎). The two do not sit at the same visual weight: a text
@@ -977,7 +982,7 @@ body {
   border-color: var(--line);
 }
 
-/* The @ picker is deliberately the same native control as the session picker. */
+/* The @ picker is a compact native control in the tile head. */
 .tile-head select.tmention-btn {
   flex: 0 0 auto;
   width: 26px;
@@ -1441,7 +1446,7 @@ body {
   align-items: center;
   /* WRAPS rather than clips. A tile in a squeezed team workspace (236px at its floor)
      used to push ⚡ メ and the way to the commons off its right edge and squash the
-     picker to a 14px stub — a row you could neither read nor use. Now the controls take
+     session name to a 14px stub — a row you could neither read nor use. Now the controls take
      a second line when the first is full: a squeezed tile costs one row of terminal and
      keeps every control (measured 2026-08-26). A Sessions tile never reaches that
      width at 4-up, so the grid never sees the second line. */
@@ -1456,22 +1461,19 @@ body {
 .tile-head .grow {
   flex: 1;
 }
-/* The select yields; the controls don't. Without this every button in the row is
+/* The session name yields; the controls don't. Without this every button in the row is
    shrinkable (they carry a fixed width but the default flex-shrink: 1), so one more
-   control squashes them all to slivers on a narrow tile instead of narrowing the
-   session name. Whatever gets added to this header later, the buttons stay 26px. */
-.tile-head select {
+   control squashes them all to slivers on a narrow tile. */
+.tile-head .sess {
   flex: 0 1 auto;
-  /* The picker yields, but not to nothing: a session name is what the row is FOR, so
-     below a readable width the row wraps instead (see .tile-head). */
   min-width: 6rem;
-  background: var(--panel);
-  color: var(--fg);
-  border: var(--edge) solid var(--line);
-  border-radius: var(--radius-sm);
   padding: var(--space-2) var(--space-3);
-  font-size: var(--text-3);
+  color: var(--fg-strong);
+  font-size: var(--text-5);
   max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .tile-head button {
   flex: 0 0 auto;
@@ -1892,7 +1894,7 @@ body {
     height: 32px;
     font-size: var(--text-5);
   }
-  .tile-head select {
+  .tile-head .sess {
     max-width: 50%;
   }
   /* top-bar control keys */
@@ -3902,48 +3904,6 @@ button.wb-door:hover b {
 
 /* The re-mark menu: pick one of the catalog's jobs. A popover, not a sheet — the 🏷
    editor is a sheet because it edits a list; this picks one of eight and dies. */
-.job-menu {
-  position: fixed;
-  z-index: 60;
-  display: flex;
-  flex-direction: column;
-  min-width: 190px;
-  padding: var(--space-2);
-  border: var(--edge) solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--panel);
-  box-shadow: var(--shadow-menu);
-}
-.job-opt {
-  display: flex;
-  gap: var(--space-4);
-  align-items: center;
-  padding: var(--space-3) var(--space-4);
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: none;
-  color: var(--fg);
-  font: inherit;
-  font-size: var(--text-4);
-  text-align: left;
-  cursor: pointer;
-}
-/* In the menu the icons are calmed the same way but NOT shrunk as far: this is the one
-   place you are reading them to choose between them, so they carry the label rather than
-   sit beside a name that already says it. */
-.job-opt i {
-  width: 1.35em;
-  font-style: normal;
-  text-align: center;
-  filter: saturate(0.72);
-}
-.job-opt.on {
-  color: var(--accent);
-}
-.job-opt.extra {
-  margin-top: var(--space-1);
-  border-top: var(--edge) solid var(--line);
-}
 .job-opt.none {
   margin-top: var(--space-1);
   border-top: var(--edge) solid var(--line);
@@ -4907,13 +4867,13 @@ button.wb-door:hover b {
   /* THE SHAPE (2 ⇄ 4), sitting between メ and ニ — the grid count's old seat and look. Deliberately NOT a house colour: the
      two kana are doors that open a sheet, this one changes the screen under them, and
      three coloured boxes in a row would read as three of a kind. Furniture instead —
-     panel and line, like the picker beside it — at the same 40px so the row stays even.
+     panel and line at the same 40px so the row stays even.
      The face is a digit, so it takes the bar's own font rather than the kana size. */
   #bar .shape-cycle {
     flex: 0 0 auto;
-    /* Holds the count and ニ against the right edge when there is no picker up here to
+    /* Holds the count and ニ against the right edge when there is no session name up here to
        fill the row — i.e. at 2 or 4, where each tile wears its own header again. A
-       no-op at 1: the picker is flex:1 and leaves no free space for a margin to take. */
+       no-op at 1: the name is flex:1 and leaves no free space for a margin to take. */
     margin-left: auto;
     height: 40px;
     min-width: 44px;
@@ -4932,19 +4892,16 @@ button.wb-door:hover b {
     border-color: var(--accent);
     color: var(--on-accent);
   }
-  /* The row is the session: the picker takes every pixel the two openers do not.
-     The 50% cap was there to stop it crowding out nine buttons; the buttons are
-     gone and the picker is the reason the row exists. */
-  #bar select.sess {
+  /* The row is the session: its name takes every pixel the two openers do not. */
+  #bar .sess {
     flex: 1 1 auto;
     min-width: 0;
     max-width: none;
     height: 40px;
-    background: var(--panel);
-    color: var(--fg);
-    border: var(--edge) solid var(--line);
-    border-radius: var(--radius-md);
-    padding: 0 var(--space-4);
+    display: flex;
+    align-items: center;
+    color: var(--fg-strong);
+    padding: 0 var(--space-3);
     font-size: var(--text-5);
   }
   /* The brand yields first — the session name matters more than the word "ronin". */
@@ -5356,55 +5313,17 @@ button.wb-door:hover b {
   font-size: var(--text-2);
 }
 
-/* ================= SHINGO (信号) — the ladder, made visible =================
-   Three surfaces, one payload: the chip in the tile header, the ladder it unrolls,
-   and the same fields as a column on the commons board. Read-only throughout — nothing
-   in here can touch a session. Sized to sit in a header row that already carries ten
-   controls, which is why the chip is fixed-width and the ladder is a drop, not a pane. */
-
-/* NOTE THE SELECTOR. `.tile-head button` sets width:26px for the control buttons, and
-   it outranks a bare `.shingo-chip` — a chip styled without the `button` in its selector
-   silently renders as a 26px square with its label clipped to nothing. The header has
-   room (~185px of slack at a 2x2 tile); it was never a space problem. Still allowed to
-   yield first if a long phase name ever does run the row out. */
-.tile-head button.shingo-chip {
-  flex: 0 1 auto;
+/* ================= Work record — the SHINGO reading expanded ================= */
+.tile-head button.work-record {
+  flex: 0 0 auto;
   width: auto;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-family: var(--font-term);
-  font-size: var(--text-micro);
-  letter-spacing: 0.04em;
-  border: var(--edge) solid var(--line);
-  border-radius: var(--radius-sm);
   padding: var(--space-2) var(--space-4);
-  height: 24px;
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 7%, transparent);
   white-space: nowrap;
-  cursor: pointer;
 }
-/* The age rides inside the chip, quieter than the position it follows — a second read,
-   not a competing one. */
-.shingo-chip .age {
-  color: var(--muted);
-}
-.shingo-chip .age:not(:empty)::before {
-  content: " · ";
-}
-.shingo-chip.gate .age {
-  color: color-mix(in srgb, var(--warn) 75%, transparent);
-}
-.shingo-chip.open {
+.tile-head button.work-record.open {
   border-color: var(--accent);
-}
-/* A gate is the one state the owner has to act on, so it takes the same slot and
-   simply goes amber. No second widget, no badge, no bell. */
-.shingo-chip.gate {
-  color: var(--warn);
-  border-color: color-mix(in srgb, var(--warn) 55%, transparent);
-  background: color-mix(in srgb, var(--warn) 12%, transparent);
+  color: var(--accent);
 }
 
 .shingo-ladder {
@@ -5418,43 +5337,57 @@ button.wb-door:hover b {
   max-height: 45%;
   overflow-y: auto;
 }
-.shingo-ladder .sl-job {
-  display: inline-block;
-  margin-right: var(--space-4);
-  padding: 0 var(--space-3);
-  border: var(--edge) solid var(--line);
-  border-radius: var(--radius-xs);
-  font-size: var(--text-micro);
-  letter-spacing: 0.06em;
-  color: var(--accent-2);
+.shingo-ladder .sl-summary {
+  color: var(--accent);
+  font-size: var(--text-5);
+  font-weight: 700;
+  padding-bottom: var(--space-4);
+  border-bottom: var(--edge) solid var(--line-2);
 }
-/* WHO the session is — birth-fixed, so it is drawn before the task it is doing and never
-   moves under the reader. Quieter than the task chip beside it: the task is what changed
-   and is what the eye should land on. */
-.shingo-ladder .sl-role {
-  display: inline-block;
-  margin-right: var(--space-4);
-  padding: 0 var(--space-3);
-  border: var(--edge) dashed var(--line);
-  border-radius: var(--radius-xs);
-  font-size: var(--text-micro);
-  letter-spacing: 0.06em;
-  color: var(--muted);
-}
-.shingo-ladder .sl-checkout {
-  padding-bottom: var(--space-3);
-  margin-bottom: var(--space-3);
+.shingo-ladder .sl-summary.gate { color: var(--warn); }
+.shingo-ladder .sl-section {
+  padding: var(--space-4) 0;
   border-bottom: var(--edge) solid var(--line);
-  min-width: 0;
+}
+.shingo-ladder .sl-section:last-child { border-bottom: 0; }
+.shingo-ladder .sl-section h4 {
+  margin: 0 0 var(--space-2);
+  color: var(--fg-strong);
+  font-size: var(--text-2);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.shingo-ladder .sl-section p { margin: 0; }
+.shingo-ladder .sl-task p:first-of-type {
+  color: var(--fg-strong);
+  font-size: var(--text-4);
+  line-height: 1.5;
+}
+.shingo-ladder .sl-action {
+  color: var(--accent-2);
+  margin-top: var(--space-2);
+}
+.shingo-ladder .sl-context p,
+.shingo-ladder .sl-docs p { color: var(--fg); }
+.shingo-ladder .sl-context p + p,
+.shingo-ladder .sl-docs p + p { margin-top: var(--space-2); }
+.shingo-ladder .sl-context span {
+  color: var(--muted);
+  margin-left: var(--space-4);
 }
 .shingo-ladder .sl-checkout-line {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-4);
+  display: grid;
+  gap: var(--space-1);
   min-width: 0;
 }
-.shingo-ladder .sl-branch {
+.shingo-ladder .sl-checkout-line + .sl-checkout-line { margin-top: var(--space-3); }
+.shingo-ladder .sl-worktree {
   color: var(--fg-strong);
+  overflow-wrap: anywhere;
+}
+.shingo-ladder .sl-branch {
+  color: var(--accent-2);
   font-size: var(--text-2);
   overflow-wrap: anywhere;
 }
@@ -5468,17 +5401,6 @@ button.wb-door:hover b {
    the owner. Blue rather than the gate's amber, which is reserved for "you are needed". */
 .shingo-ladder .sl-side {
   color: var(--accent-2);
-  padding-bottom: var(--space-3);
-  margin-bottom: var(--space-3);
-  border-bottom: var(--edge) solid var(--line);
-}
-.shingo-chip.side {
-  color: var(--accent-2);
-  border-color: var(--line);
-  background: color-mix(in srgb, var(--accent-2) 10%, transparent);
-}
-.shingo-ladder .sl-obj {
-  color: var(--fg);
   padding-bottom: var(--space-3);
   margin-bottom: var(--space-3);
   border-bottom: var(--edge) solid var(--line);

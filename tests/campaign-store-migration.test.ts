@@ -117,10 +117,10 @@ test('an install that never named its campaign is born with the one home Campaig
   try {
     // No ronin.json at all: the ordinary state of a box being born.
     const c = await ensureInitialCampaign();
-    assert.equal(c.id, 'home', 'every fresh install gets the same home Campaign');
+    assert.equal(c.id, 'ronin_home', 'every fresh install gets the same stable home Campaign id');
     assert.equal(c.title, 'Ronin Home', 'named for everyone; the name is free to change afterwards');
     assert.equal(c.desk_profile, '', '“as stock” is still the answer for a box that chose none');
-    assert.equal((await initialCampaign())!.id, 'home');
+    assert.equal((await initialCampaign())!.id, 'ronin_home');
   } finally {
     process.env.RONIN_CAMPAIGNS_DIR = campaigns;
     process.env.RONIN_CONFIG_DIR = config;

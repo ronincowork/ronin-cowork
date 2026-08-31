@@ -1,0 +1,11 @@
+# gbrain
+- **label:** gbrain
+- **blurb:** Shared memory and coordination through the connected gbrain service.
+- **class:** specialized
+- **reading:** gbrain_connected/
+- **sops:** gbrain
+- **macros:** —
+- **actions:** recall-memories, remember-lesson
+- **tools:** tejun-recall, tejun-remember
+- **mcp:** gbrain
+- **order:** 40

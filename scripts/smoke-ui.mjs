@@ -180,14 +180,15 @@ function startProbe() {
 function stopProbe() { tmux(['kill-session', '-t', `=${PROBE}`]); }
 
 async function attachProbe(page, label) {
-  const sel = page.locator('select.sess').first();
-  const opts = (await sel.locator('option').allTextContents()).map((o) => o.trim());
-  const mine = opts.find((o) => o.includes(PROBE));
-  if (!mine) {
-    bad(`${label}: the gate's own session ${PROBE} is not in the picker (is the tmux server up?)`);
+  // Session switching belongs to the Workbench selector now. runPass seats the
+  // probe through its roster card; the Tile header is the resulting source of truth.
+  const seated = page.locator(`[data-workbench-surface="session.terminal"][data-workbench-resource="${PROBE}"] .tile-head .sess`).first();
+  if (!(await seated.count())) {
+    const offered = await page.locator('.wk-card-heading').allTextContents();
+    const seats = await page.locator('.tile-head .sess').evaluateAll((nodes) => nodes.map((node) => ({ text: node.textContent, title: node.title })));
+    bad(`${label}: the gate's own session ${PROBE} was not seated from the Workbench selector (seats: ${JSON.stringify(seats)}; offered: ${offered.join(', ')})`);
     return;
   }
-  await sel.selectOption({ label: mine });
   for (let i = 0; i < 14; i++) {
     await page.waitForTimeout(1000);
     const p = await painted(page);
@@ -212,14 +213,14 @@ async function checkDom(page, label) {
   const dom = await page.evaluate(() => ({
     live: document.querySelectorAll('.tile:not(.tile-dead)').length,
     dead: document.querySelectorAll('.tile.tile-dead').length,
-    pickers: document.querySelectorAll('select.sess').length,
+    sessionNames: document.querySelectorAll('.tile-head .sess').length,
     failBar: document.getElementById('failbar')?.innerText.trim().slice(0, 400) || null,
   }));
   if (dom.live > 0) ok(`${label}: ${dom.live} live tile(s) rendered`);
   else bad(`${label}: no live Team tiles rendered`);
   if (dom.dead) bad(`${label}: ${dom.dead} tile(s) failed to build (contained, but broken)`);
-  if (dom.pickers > 0) ok(`${label}: ${dom.pickers} session picker(s) present`);
-  else bad(`${label}: no session pickers in the Team workspace`);
+  if (dom.sessionNames > 0) ok(`${label}: ${dom.sessionNames} Team tile session label(s) present`);
+  else bad(`${label}: no session labels in the Team workspace`);
   if (dom.failBar) bad(`${label}: the failure banner is showing:\n         ` + dom.failBar.replace(/\n/g, '\n         '));
   else ok(`${label}: no failure banner`);
 }
@@ -971,9 +972,10 @@ async function runPass({ label, browser, contextOpts }) {
   const probeCard = page.locator('.wk-card', { hasText: PROBE }).first();
   if (await probeCard.count()) { await probeCard.click(); await page.waitForTimeout(1200); }
   // API health can answer before the phone workbench finishes constructing its Tiles.
-  // Readiness is the first session picker, not an arbitrary sleep; checkDom still reports
-  // the same failure below when it never arrives.
-  await page.locator('select.sess').first().waitFor({ state: 'attached', timeout: 10_000 }).catch(() => {});
+  // Readiness is the probe seated through the selector, not an arbitrary sleep;
+  // checkDom still reports the same failure below when it never arrives.
+  await page.locator(`[data-workbench-surface="session.terminal"][data-workbench-resource="${PROBE}"] .tile-head .sess`).first()
+    .waitFor({ state: 'attached', timeout: 10_000 }).catch(() => {});
 
   // THIS is the check that catches a constructor throw — the 2026-08-08 outage.
   if (jsErrors.length) bad(`${label}: uncaught JS errors:\n         ` + jsErrors.join('\n         '));

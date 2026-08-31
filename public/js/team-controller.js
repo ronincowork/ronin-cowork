@@ -45,6 +45,27 @@ export async function deleteTeamRoster(team) {
   if (result.ok) await refreshTeams();
   return result;
 }
+export async function setTeamMembership(session, team, member) {
+  const live = sessions().find((row) => row.name === session);
+  if (!live) return { ok: false, message: 'No such session.' };
+  const teams = new Set(live.tags || []);
+  if (member) teams.add(team); else teams.delete(team);
+  const result = await request(`/api/sessions/${encodeURIComponent(session)}/teams`, { method: 'PUT', json: { teams: [...teams] } });
+  if (result.ok) await refreshTeams();
+  return result;
+}
+export async function setTeamLead(session, team, lead) {
+  const live = sessions().find((row) => row.name === session);
+  if (!live) return { ok: false, message: 'No such session.' };
+  const leads = new Set(live.leads || []);
+  if (lead) leads.add(team); else leads.delete(team);
+  const result = await request(`/api/sessions/${encodeURIComponent(session)}/team_lead`, { method: 'POST', json: { teams: [...leads] } });
+  if (result.ok) await refreshTeams();
+  return result;
+}
+export function sessionsAvailableToTeam(team) {
+  return sessions().filter((session) => !sessionBelongsToTeam(session, team)).sort(blankLast('session_role'));
+}
 export const sessionBelongsToTeam = (session, team) => (session.tags || []).includes(team);
 export const leadsTeam = (session, team) => (session.leads || []).includes(team);
 export function unassignedSessions() {

@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1259 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1265 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -503,6 +503,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
 | `glossary.agent` | agent |  |  |  |  |
+| `glossary.bare_metal_agent` | bare-metal Agent |  |  |  |  |
 | `glossary.behaviour` | behaviour |  |  |  |  |
 | `glossary.brief` | Brief |  |  |  |  |
 | `glossary.build` | build |  |  |  |  |
@@ -511,6 +512,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.commons` | session commons |  |  |  |  |
 | `glossary.configuration` | Configuration |  |  |  |  |
 | `glossary.control` | Control |  |  |  |  |
+| `glossary.cowork_agent` | Cowork Agent |  |  |  |  |
 | `glossary.cowork_commons` | cowork commons |  |  |  |  |
 | `glossary.cowork_setup` | cowork setup |  |  |  |  |
 | `glossary.coworkspace` | the coworkspace |  |  |  |  |
@@ -540,6 +542,8 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.project_root_list` | the project root list |  |  |  |  |
 | `glossary.role` | role |  |  |  |  |
 | `glossary.ronin` | Ronin |  |  |  |  |
+| `glossary.ronin_base` | Ronin Base |  |  |  |  |
+| `glossary.ronin_control` | Ronin Control |  |  |  |  |
 | `glossary.roster` | the roster |  |  |  |  |
 | `glossary.routine` | routine |  |  |  |  |
 | `glossary.rung` | rung · leg · phase · gate |  |  |  |  |
@@ -547,6 +551,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.services` | Services |  |  |  |  |
 | `glossary.session` | session |  |  |  |  |
 | `glossary.session_menu` | Status · Work record · Macros · Detach · Kill session |  |  |  |  |
+| `glossary.specialized_routine` | specialized routine |  |  |  |  |
 | `glossary.stats` | Stats |  |  |  |  |
 | `glossary.surface` | surface |  |  |  |  |
 | `glossary.tab` | tab |  |  |  |  |
@@ -555,6 +560,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.team_lead` | team lead · 人 |  |  |  |  |
 | `glossary.team_role` | team role |  |  |  |  |
 | `glossary.team_roster` | Cowork record |  |  |  |  |
+| `glossary.terminal` | terminal |  |  |  |  |
 | `glossary.terminal_tile` | terminal tile |  |  |  |  |
 | `glossary.tile` | tile |  |  |  |  |
 | `glossary.wipeboard` | wipeboard |  |  |  |  |
@@ -566,17 +572,10 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
-| `head.branch_help` | Desks this session is working at — worktree, repo, branch, and what is ahead, pending or parked |  |  |  |  |
-| `head.branch_quiet` | Desks — no session in this tile yet |  |  |  |  |
-| `head.chip_help` | This session's work record — what it has done, what it is doing, what comes next, and the documents it has listed. Opens the work record. |  |  |  |  |
 | `head.dial_help` | Who may touch this session: 👤 owner only · 👁 outside agents watch · 🤖 outside agents type. Yours to turn; agents never flip it. |  |  |  |  |
 | `head.dial_quiet` | Control dial — no session in this tile yet |  |  |  |  |
 | `head.dot_help` | Connection: green = attached, grey = disconnected |  |  |  |  |
 | `head.gauge_help` | Context gauge — how full this session's context window is, read off the pane's own status line. Hidden until there is a reading. |  |  |  |  |
-| `head.job_help` | What this session is doing |  |  |  |  |
-| `head.job_quiet` | What a session is doing — no session in this tile yet |  |  |  |  |
-| `head.job_read` | {job} — click to change what this session is doing |  |  |  |  |
-| `head.job_unmarked` | Not marked — click to say what this session is doing |  |  |  |  |
 | `head.kill_help` | Kill session (ends it + its viewers) |  |  |  |  |
 | `head.kill_quiet` | Kill session — no session in this tile yet |  |  |  |  |
 | `head.macros_quiet` | Macros — no session in this tile yet |  |  |  |  |
@@ -593,7 +592,9 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `head.rename_help` | Rename this session |  |  |  |  |
 | `head.rename_prompt` | Rename session |  |  |  |  |
 | `head.rename_quiet` | Rename session — no session in this tile yet |  |  |  |  |
-| `head.select_help` | Pick / switch the session shown in this tile |  |  |  |  |
+| `head.view_work_record` | View Work Record |  |  |  |  |
+| `head.work_record_help` | View repositories, current action, and the work record |  |  |  |  |
+| `head.work_record_quiet` | View Work Record — no Agent in this workspace |  |  |  |  |
 
 ## home
 
@@ -672,14 +673,19 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
+| `ladder.branch` | Branch |  |  |  |  |
+| `ladder.coworks` | Coworks |  |  |  |  |
+| `ladder.current_action` | Current action |  |  |  |  |
+| `ladder.docs_none` | No tracked documents. |  |  |  |  |
 | `ladder.gate` | GATE |  |  |  |  |
-| `ladder.held` | Held at a gate |  |  |  |  |
 | `ladder.legs_undetermined` | — legs undetermined |  |  |  |  |
 | `ladder.none` | no work record yet |  |  |  |  |
-| `ladder.quiet` | quiet {age} |  |  |  |  |
+| `ladder.progress` | Progress |  |  |  |  |
 | `ladder.side` | {state} — the work record below is held, not stale |  |  |  |  |
-| `ladder.tap` | Open work record |  |  |  |  |
-| `ladder.unchanged_for` | work record unchanged for {age} |  |  |  |  |
+| `ladder.task_at_hand` | Task at hand |  |  |  |  |
+| `ladder.task_unstated` | No task stated in this work record. |  |  |  |  |
+| `ladder.tracked_documents` | Tracked documents |  |  |  |  |
+| `ladder.worktrees` | Worktrees |  |  |  |  |
 
 ## launch
 
@@ -745,30 +751,39 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 |---|---|---|---|---|---|
 | `league.active` | Active Team |  |  |  |  |
 | `league.agents` | Agents |  |  |  |  |
+| `league.assign_member` | Assign |  |  |  |  |
+| `league.choose_member` | Choose an Agent to add |  |  |  |  |
 | `league.commons` | League commons |  |  |  |  |
 | `league.controls` | League controls |  |  |  |  |
-| `league.delete_team` | Delete |  |  |  |  |
+| `league.delete_team` | Delete team |  |  |  |  |
 | `league.delete_team_confirm` | Delete {team}? {count} Agents will lose this Team membership. |  |  |  |  |
 | `league.hide_rosters` | Hide rosters |  |  |  |  |
 | `league.holding` | Holding area |  |  |  |  |
 | `league.holding_empty` | Every live session is on a Team |  |  |  |  |
 | `league.launch_team` | Launch |  |  |  |  |
 | `league.lead` | lead |  |  |  |  |
+| `league.make_team_lead` | Make team lead |  |  |  |  |
+| `league.members` | Team members |  |  |  |  |
 | `league.new_agent` | New Agent |  |  |  |  |
 | `league.new_agent_summary` | A new Agent, born into the workspace you are in. |  |  |  |  |
 | `league.new_team_summary` | Define the Team, then build its session roster. |  |  |  |  |
 | `league.no_agents` | No live Agents |  |  |  |  |
-| `league.no_members` | No live members |  |  |  |  |
+| `league.no_available_members` | No other Agents available |  |  |  |  |
+| `league.no_members` | No Agents assigned yet. |  |  |  |  |
 | `league.no_ronin` | No Rōnin Agents |  |  |  |  |
 | `league.not_recorded` | Not recorded |  |  |  |  |
 | `league.open_workspace` | League workspace |  |  |  |  |
+| `league.remove_member` | Remove |  |  |  |  |
+| `league.remove_named_member` | Remove {name} from this team |  |  |  |  |
 | `league.resting` | Resting Team |  |  |  |  |
+| `league.role_unset` | Role not set |  |  |  |  |
 | `league.ronin` | Ronin: no team |  |  |  |  |
 | `league.rosters_unavailable` | Durable rosters unavailable — showing live Teams only. |  |  |  |  |
 | `league.selector_new` | New |  |  |  |  |
 | `league.selector_teams` | Teams |  |  |  |  |
 | `league.selector_views` | Views |  |  |  |  |
 | `league.show_rosters` | Show rosters |  |  |  |  |
+| `league.team_lead` | Team lead |  |  |  |  |
 | `league.team_roster` | Team roster |  |  |  |  |
 | `league.team_roster_removing` | Removing {session} from {team}… |  |  |  |  |
 | `league.team_roster_saving` | Adding {session} to {team}… |  |  |  |  |
@@ -818,22 +833,10 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `macros.no_blurb` | no blurb yet — add a blurb: line to its MACROS.md entry |  |  |  |  |
 | `macros.none_previewed` | no macros previewed — see MACROS.md |  |  |  |  |
 
-## mark
-
-| key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
-|---|---|---|---|---|---|
-| `mark.lead_clear_title` | Leads {teams} — clear the designation |  |  |  |  |
-| `mark.lead_make` | 人 make team lead |  |  |  |  |
-| `mark.lead_make_title` | Designate the 人 of {teams} |  |  |  |  |
-| `mark.lead_step_down` | 人 team lead — step down |  |  |  |  |
-| `mark.none` | not marked |  |  |  |  |
-| `mark.none_title` | Clear the mark — this session has not said what it is doing |  |  |  |  |
-
 ## me
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
-| `me.branches` | Branches |  |  |  |  |
 | `me.control` | Control |  |  |  |  |
 | `me.docs` | Docs |  |  |  |  |
 | `me.groups` | Groups |  |  |  |  |
@@ -1448,6 +1451,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `team.command` | Command |  |  |  |  |
 | `team.commons` | Team commons |  |  |  |  |
 | `team.commons_card` | Team commons |  |  |  |  |
+| `team.commons_summary` | See Docs / Wipeboard / Configuration |  |  |  |  |
 | `team.control` | Control |  |  |  |  |
 | `team.count_2_title` | Two workspaces around the roster |  |  |  |  |
 | `team.count_4_title` | Four workspaces, two by two |  |  |  |  |
@@ -1518,9 +1522,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
-| `tile.gone` | {name}  (gone?) |  |  |  |  |
-| `tile.new_session` | ➕ new session… |  |  |  |  |
-| `tile.pick_session` | — pick session — |  |  |  |  |
 | `tile.session_ended` | session ended. |  |  |  |  |
 
 ## voice

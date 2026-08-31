@@ -108,9 +108,23 @@ export const campaignFile = (id: string): string => path.join(dir(), `${id}.json
  * an existing record. Anything that cannot yield a token falls back to `ronin`, which is
  * the plan's own fallback and the ordinary answer for an install that never named itself.
  */
-/** The one Campaign a fresh install is born with. */
-export const HOME_ID = 'home';
-export const HOME_TITLE = 'Ronin Home';
+/**
+ * THE FRESH-INSTALL CAMPAIGNS. This is the declarative birth payload, not a SETTEI
+ * setting and not a mutable "default Campaign" pointer. Atarashi reads the resulting
+ * durable Campaign through SETTEI; it does not invent one itself.
+ *
+ * It is a collection because installation data should be data, even while the product
+ * deliberately ships one Campaign. Adding another row later would be an explicit product
+ * decision rather than another bootstrap code path.
+ */
+export const FRESH_CAMPAIGNS: ReadonlyArray<CampaignEdit & { id: string }> = Object.freeze([
+  Object.freeze({
+    id: 'ronin_home',
+    title: 'Ronin Home',
+    description: '',
+    desk_profile: '',
+  }),
+]);
 
 export function campaignIdFrom(title: string): string {
   const slug = String(title ?? '')
@@ -374,9 +388,9 @@ export async function initialCampaign(): Promise<CampaignConfig | null> {
 /**
  * THE MIGRATION — additive, idempotent, and it never guesses among several Campaigns.
  *
- * Steps 1 and 2 of the plan's migration: derive one initial id from the install's current
- * `settei.campaign.name` (falling back to `ronin`), and create its record from the name,
- * description and desk_profile the install already had. Stamping the id onto team_rosters,
+ * Steps 1 and 2 of the plan's migration: preserve an install's current
+ * `settei.campaign.name`, or populate a fresh install from `FRESH_CAMPAIGNS`, and create
+ * its record. Stamping the id onto team_rosters,
  * project_roots, live Agents, templates and wipeboards is steps 3-6 and belongs to
  * `@campaign_scope`, which exports its own per-object stampers for the purpose.
  *
@@ -397,17 +411,21 @@ export async function ensureInitialCampaign(): Promise<CampaignConfig> {
 
   const legacy = await readSection<{ name?: unknown; description?: unknown }>('campaign', {});
   const desk = await readSection<{ profile?: unknown }>('desk', {});
-  // A FRESH INSTALL GETS ONE HOME CAMPAIGN (owner, 2026-08-30): every new Ronin instance
-  // starts with `home` titled "Ronin Home", the default for everyone; the name is free to
-  // change afterwards. An install that had already named itself keeps that name.
+  // A legacy install keeps the Campaign it already named. A genuinely fresh install is
+  // populated from the declared collection above; there is one row today by design.
   const named = str(legacy.name, TITLE_MAX);
-  const title = named || HOME_TITLE;
-  return createCampaign({
-    id: named ? campaignIdFrom(named) : HOME_ID,
-    title,
-    description: str(legacy.description, DESCRIPTION_MAX),
-    desk_profile: str(desk.profile, DESK_PROFILE_MAX),
-  });
+  if (named) {
+    return createCampaign({
+      id: campaignIdFrom(named),
+      title: named,
+      description: str(legacy.description, DESCRIPTION_MAX),
+      desk_profile: str(desk.profile, DESK_PROFILE_MAX),
+    });
+  }
+
+  const [first] = FRESH_CAMPAIGNS;
+  if (!first) throw new Error('Fresh Campaign catalog is empty.');
+  return createCampaign(first);
 }
 
 /* ------------------------------------- the re-pointed SETTEI leaves: ONE writable record */
@@ -422,8 +440,8 @@ export async function ensureInitialCampaign(): Promise<CampaignConfig> {
  * renaming a served key to match internal vocabulary would break a client for no gain.
  */
 export async function readCampaignSection(): Promise<{ name?: string; description?: string }> {
-  const c = await initialCampaign();
-  return c ? { name: c.title, description: c.description } : {};
+  const c = await ensureInitialCampaign();
+  return { name: c.title, description: c.description };
 }
 
 /**
@@ -446,8 +464,8 @@ export async function writeCampaignSection(v: { name?: string; description?: str
  * change an import and nothing else. `''` still means "as stock" everywhere.
  */
 export async function readDeskSection(): Promise<{ profile?: string }> {
-  const c = await initialCampaign();
-  return c ? { profile: c.desk_profile } : {};
+  const c = await ensureInitialCampaign();
+  return { profile: c.desk_profile };
 }
 
 export async function writeDeskSection(v: { profile?: string }): Promise<void> {

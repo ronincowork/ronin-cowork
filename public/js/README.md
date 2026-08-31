@@ -54,9 +54,9 @@ written contract those modules enforce.
 | `koshi.js` | 185 | `buildKoshi` — the 目 Koshi pane, model per Koshi job |
 | `gbrain.js` | commons_tab | local gbrain process, privacy, search and integration status |
 | `system.js` | 187 | `buildSystem` — ⚙ System: release identity, updates, appearance, log out |
-| `shingo.js` | 289 | SHINGO 信号 — the session ladder: header chip, unrolled ladder, the letter |
+| `shingo.js` | 289 | SHINGO 信号 — the expanded work-record reading and its age helpers |
 | `tile.js` | 695 | `class Tile` — one cell of the coworkspace: a header, a mount point, and the view it composes |
-| `tilehead.js` | 343 | `buildTileHead` — the cell's chrome, one table and a loop: dot, picker, chip, mark, ⛩ ⚡ メ, and the seven メ drops |
+| `tilehead.js` | 343 | `buildTileHead` — the cell's chrome, one table and a loop: name, work-record door, output, ⛩ ⚡ メ, and the メ drops |
 | `output.js` | — | the six Output names and the per-tile selector |
 | `tapeview.js` | 305 | **RIREKI's client render** — the 🔓 view: transcript, folds, live frame, scroll anchoring, paging |
 | `tapefold.js` | 98 | `groupRecs` — the fold rule, pure (tested: `tests/tape-fold.test.js`) |
@@ -69,7 +69,6 @@ written contract those modules enforce.
 | `tilemacros.js` | 231 | `buildTileMacros` — the ⚡ button on a tile head; the `preview:` macros as teaching cards, prefills `+name: `, never runs |
 | `tilementions.js` | — | `buildTileMentions` — the @ button on a tile head; click or drag a live session name into the composer |
 | `tilemore.js` | 158 | DESKTOP ONLY — `buildTileMore`: メ on a tile head and the controls it drops in one strip; `fitDropToTile`, shared by every drop off that header |
-| `tilejob.js` | 55 | `pickJobFor` — the job pick off a tile head: the session_role, and the 人 team-lead toggle beneath it; split out of tile.js at the ceiling |
 | `team-arrange.js` | 95 | `parseDraft`, `createArranger` — the team page's one controller: a draft (what changes; the rest stays) from a button or from an agent's `tejun-teampage`, run through the page's own verbs |
 | `voice.js` | 181 | dictation: `makeClipRecorder` + `wireDictation` (the 🎤 on the tile's compose box) |
 | `panels.js` | 248 | `buildNotePanel` 📝 (on `ui.sheet`), `toClipboard` |
