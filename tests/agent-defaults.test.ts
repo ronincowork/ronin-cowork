@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { agentDefaults } from '../src/agent-defaults.js';
+import { agentDefaults, mandate } from '../src/agent-defaults.js';
 
 test('agent_defaults validates every field in the complete record shape', () => {
   const cases = [
@@ -27,4 +27,13 @@ test('agent_defaults validates every field in the complete record shape', () => 
   ] as const;
 
   for (const [name, input, expected] of cases) assert.deepEqual(agentDefaults(input), expected, name);
+});
+
+test('mandate blank and explicit table uses the amended R36 words', () => {
+  const cases = [
+    [undefined, { reach: 'plan', recruit: 'propose agents', output: 'open' }],
+    [{ reach: 'open', recruit: 'staff agents', output: 'the team' }, { reach: 'open', recruit: 'staff agents', output: 'the team' }],
+    [{ reach: 'run', recruit: 'propose', output: 'report' }, { reach: 'plan', recruit: 'propose agents', output: 'open' }],
+  ] as const;
+  for (const [input, expected] of cases) assert.deepEqual(mandate(input), expected);
 });

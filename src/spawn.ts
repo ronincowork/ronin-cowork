@@ -13,6 +13,7 @@ import { resolveLaunchProfile, type Dial, type LaunchProfile, type StatedBy } fr
 import { readCampaign } from './campaign-config.js';
 import { primaryDesk, renderDeskBlock, resolveLaunchDesks, type DeskChoice } from './launch-desks.js';
 import type { Assignment } from './desks/schema.js';
+import { mandate, type Mandate } from './agent-defaults.js';
 import { resolveRoutines, routineChoices, type ResolvedRoutine } from './routines.js';
 
 /**
@@ -77,6 +78,8 @@ export interface SpawnForm {
    * refused, as `model` is.
    */
   provider?: string;
+  /** How far this Cowork Agent may go, recruit, and what it hands back. */
+  mandate?: Partial<Mandate>;
   /** Campaign whose Agent defaults apply. The route inherits this from the caller. */
   campaign_id?: string;
   /** Optional first instruction. Blank still launches a fully booted Agent. */
@@ -132,6 +135,7 @@ export interface Resolved {
   lifecycle: string;
   /** The axis as resolved, possibly ''. This is what TEGAMI is seeded with. */
   session_role: string;
+  mandate: Mandate;
   /** The team joined at birth, '' for a rōnin. */
   team: string;
   /** Never '' — a session must be born somewhere, and the resolver refuses otherwise. */
@@ -538,6 +542,9 @@ export async function resolveForm(
     ? await bootReading(root.name, profile.session_role, !mcpOffWanted, !!form.team_lead && !!form.team, !!assignment, enabledRoutines, enabledMacros, name)
     : [];
   const birthReading = coworkAgent && agent ? [...shelfReading, ...(form.seed ?? [])].filter(Boolean) : [];
+  const resolvedMandate = coworkAgent
+    ? mandate(form.mandate ?? roster?.agent_defaults ?? campaign?.config.agent_defaults)
+    : mandate(undefined);
 
   return {
     session_type: sessionType,
@@ -560,6 +567,7 @@ export async function resolveForm(
     dial: form.dial ?? profile.dial,
     lifecycle: profile.lifecycle,
     session_role: profile.session_role,
+    mandate: resolvedMandate,
     team: form.team ?? '',
     project_root: root.name,
     // The shelf follows the toggle (owner's ruling, 2026-08-17): a session launched with
@@ -606,6 +614,9 @@ export async function resolveForm(
       lifecycle: profile.stated_by.lifecycle,
       session_type: explicit,
       session_role: form.session_role !== undefined ? explicit : profile.stated_by.session_role,
+      mandate: form.mandate ? explicit : roster ? rosterSource : campaign
+        ? [{ layer: 'system', source: `#/campaign (${campaign.id}: agent_defaults)` }]
+        : system,
       team: form.team ? explicit : system,
       project_root: rootSource,
       dial: form.dial !== undefined ? explicit : profile.stated_by.dial,

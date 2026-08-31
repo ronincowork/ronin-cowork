@@ -78,7 +78,11 @@ process.env.RONIN_TEAM_ROSTERS_DIR = path.join(temp, 'team_rosters');
 await fs.mkdir(path.join(temp, 'team_rosters'), { recursive: true });
 await fs.writeFile(
   path.join(temp, 'team_rosters', 'scratchteam.md'),
-  ['# scratchteam', '', '- **objective:** prove the parity', '- **project_root:** beta', '- **state:** active', ''].join('\n'),
+  [
+    '# scratchteam', '', '- **objective:** prove the parity', '- **project_root:** beta',
+    '- **agent_defaults:** {"provider":"","model":"","reach":"discuss","recruit":"nobody","output":"ideas","dial":"write","permissions":"default"}',
+    '- **state:** active', '',
+  ].join('\n'),
 );
 
 const { resolveForm } = await import('../src/spawn.js');
@@ -239,6 +243,20 @@ test('the model cascade is the mechanism\'s: blank inherits, explicit wins, iden
   const f2 = await resolveForm(forkitForm({ cmd: pick }), new Set());
   assert.ok(c2.cmd.startsWith(pick), `explicit pick must lead the cmd, got "${c2.cmd}"`);
   assert.equal(f2.cmd, c2.cmd, 'and both callers get the identical resolved command');
+});
+
+test('mandate defaults are complete, Team seeds them, and the explicit launch wins', async () => {
+  const stock = await resolveForm(commonsForm(), new Set());
+  assert.deepEqual(stock.mandate, { reach: 'plan', recruit: 'propose agents', output: 'open' });
+
+  const seeded = await resolveForm(forkitForm(), new Set());
+  assert.deepEqual(seeded.mandate, { reach: 'discuss', recruit: 'nobody', output: 'ideas' });
+
+  const explicit = await resolveForm(forkitForm({
+    mandate: { reach: 'execute', recruit: 'staff agents', output: 'the team' },
+  }), new Set());
+  assert.deepEqual(explicit.mandate, { reach: 'execute', recruit: 'staff agents', output: 'the team' });
+  assert.deepEqual(explicit.stated_by.mandate, [{ layer: 'explicit_launch', source: 'launch request' }]);
 });
 
 test('a ronin launch is legal, and so is a launch onto a tag-only team', async () => {

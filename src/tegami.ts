@@ -53,6 +53,7 @@ import { RIREKI_DIR, sessionKey } from './session-dir.js';
 import { listSessionRoles } from './definitions.js';
 import { readTeamRoster } from './team-rosters.js';
 import type { SessionInfo } from './tmux.js';
+import { mandate, type Mandate } from './agent-defaults.js';
 
 const exec = promisify(execFile);
 
@@ -173,6 +174,7 @@ function seedShell(
   repos: TegamiCheckout[],
   teams: TeamEntry[],
   tasks: string,
+  sessionMandate: Mandate,
 ): string {
   return `# TEGAMI — ${name}
 > **This file is your ladder, and it is a good way to communicate that you understand your
@@ -224,6 +226,7 @@ ${tasks}
 \`\`\`json
 { "objective": "",
   "session_role": ${JSON.stringify(role)},
+  "mandate": ${JSON.stringify(sessionMandate)},
   "teams": ${JSON.stringify(teams)},
   "repos": ${JSON.stringify(repos.filter((checkout) => checkout.repo || checkout.branch))},
   "ladder": [] }
@@ -246,11 +249,12 @@ export async function seedTegami(
   role: string,
   checkout: TegamiCheckout | TegamiCheckout[] = { repo: '', branch: '' },
   teams: TeamEntry[] = [],
+  sessionMandate: Mandate = mandate(undefined),
 ): Promise<string | null> {
   try {
     const file = tegamiPath(await sessionKey(name));
     await fs.mkdir(path.dirname(file), { recursive: true });
-    await fs.writeFile(file, seedShell(name, role, Array.isArray(checkout) ? checkout : [checkout], teams, await taskLines()), { flag: 'wx' });
+    await fs.writeFile(file, seedShell(name, role, Array.isArray(checkout) ? checkout : [checkout], teams, await taskLines(), mandate(sessionMandate)), { flag: 'wx' });
     return file;
   } catch (e) {
     if ((e as NodeJS.ErrnoException)?.code === 'EEXIST') return tegamiPath(await sessionKey(name));

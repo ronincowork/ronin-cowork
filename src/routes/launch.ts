@@ -29,6 +29,7 @@ import {
 import { launchArgv, newProviderSession } from '../agents.js';
 import { AtSessionMax, liveCount, readMax, readOwner, writeMax, writeOwner } from '../user-config.js';
 import { resolveForm, appendLedger, type SpawnForm } from '../spawn.js';
+import { mandate } from '../agent-defaults.js';
 import { projectRoutineTools } from '../routine-tools.js';
 import { classifyStatus, type SessionStatus } from '../status.js';
 import { scanContext, scanModel } from '../ctx.js';
@@ -152,6 +153,9 @@ export function registerLaunch(app: express.Express): void {
       // Whose CLI, without naming a model — resolved through that provider's preferred
       // model in ⚙ Configuration (owner, 2026-08-29).
       provider: String(req.body?.provider ?? '').trim() || undefined,
+      mandate: sessionType === 'cowork_agent' && req.body?.mandate !== undefined
+        ? mandate(req.body.mandate)
+        : undefined,
       campaign_id: String(req.body?.campaign_id ?? '').trim() || undefined,
       // Only an explicit boolean is an opinion. Absent hands the choice to the resolved
       // profile's `mcp:` default (off for every ordinary launch, owner 2026-08-22)
@@ -275,8 +279,9 @@ export function registerLaunch(app: express.Express): void {
           resolved.assignment?.desks.length
             ? resolved.assignment.desks.map((d) => ({ repo: d.repo, branch: d.branch, worktree: d.worktree, line: d.line }))
             : await checkoutAt(resolved.dir),
-          await deriveTeams(resolved.tags),
-        );
+        await deriveTeams(resolved.tags),
+        resolved.mandate,
+      );
       }
       // THE BIRTH BASELINE for the task observer: this task's reading is already in the
       // brief, so it is recorded as delivered and the first tick does not send it again
