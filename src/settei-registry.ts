@@ -289,18 +289,10 @@ export const SETTEI_SCHEMA = {
     met_by: 'mechanical' | 'owner' | 'agent';
   }>,
 
-  /** The seat the reading list is handed to. Every surface launches exactly this —
-   * the brief itself lives on the seat's shelf (ronin_session_boot/task/Atarashi/) and
-   * is READ AT SEAT START, never composed at Save: a session born now and one born
-   * three weeks from now read the same fresh truth.
-   *
-   * The setup seat exists only while an install is being finished. Its work reading is
+  /** The setup seat exists only while an install is being finished. Its work reading is
    * the setup behaviour book; there is no launch-role axis to stamp. */
   seat: {
     behaviours: ['ways:setup'],
-    // Compatibility for the fenced legacy launcher. Forms UI deletes its only reader;
-    // the session-role retirement sweep removes this key after that line lands.
-    session_role: 'Atarashi',
     name: 'setup',
     prompt: 'Finish what setup still needs. Your task shelf says how: read GET /api/settei at start — needed[] is your reading list, and set is what the owner already answered; never re-ask it.',
   },
