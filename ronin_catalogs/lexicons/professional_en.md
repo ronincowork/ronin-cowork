@@ -8,6 +8,31 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign:** Campaign
 - **campaigns:** Campaigns
 - **campaign_kind:** Kind
+- **add_agent.card:** Add Agent to Team
+- **add_agent.card_summary:** The Team answers the rest.
+- **add_agent.title:** Add Agent to Team
+- **add_agent.name:** name
+- **add_agent.name_placeholder:** name
+- **add_agent.instruction:** instruction
+- **add_agent.instruction_placeholder:** what this Agent should do
+- **add_agent.provider:** model provider
+- **add_agent.model:** model
+- **add_agent.default:** default
+- **add_agent.task:** task  (optional)
+- **add_agent.task_open:** open
+- **add_agent.worktree:** Request a worktree
+- **add_agent.worktree_on:** A worktree of its own — managed file coordination, hand-in and the Git safeguards.
+- **add_agent.worktree_off:** No worktree. This Agent works in the shared checkout.
+- **add_agent.actions:** Launch actions
+- **add_agent.start:** Start
+- **add_agent.cancel:** Cancel
+- **add_agent.starting:** Starting…
+- **add_agent.started:** Started {name}
+- **add_agent.team:** team
+- **add_agent.place:** place
+- **add_agent.still_asked:** still asked
+- **add_agent.none:** —
+- **routines:** Routines
 - **campaign.name:** Campaign name
 - **campaign.name_placeholder:** Ronin Home
 - **campaign.description:** Description

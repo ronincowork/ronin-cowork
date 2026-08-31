@@ -9,7 +9,36 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1287 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1312 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+
+## add_agent
+
+| key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
+|---|---|---|---|---|---|
+| `add_agent.actions` | Launch actions |  |  |  |  |
+| `add_agent.cancel` | Cancel |  |  |  |  |
+| `add_agent.card` | Add Agent to Team |  |  |  |  |
+| `add_agent.card_summary` | The Team answers the rest. |  |  |  |  |
+| `add_agent.default` | default |  |  |  |  |
+| `add_agent.instruction` | instruction |  |  |  |  |
+| `add_agent.instruction_placeholder` | what this Agent should do |  |  |  |  |
+| `add_agent.model` | model |  |  |  |  |
+| `add_agent.name` | name |  |  |  |  |
+| `add_agent.name_placeholder` | name |  |  |  |  |
+| `add_agent.none` | — |  |  |  |  |
+| `add_agent.place` | place |  |  |  |  |
+| `add_agent.provider` | model provider |  |  |  |  |
+| `add_agent.start` | Start |  |  |  |  |
+| `add_agent.started` | Started {name} |  |  |  |  |
+| `add_agent.starting` | Starting… |  |  |  |  |
+| `add_agent.still_asked` | still asked |  |  |  |  |
+| `add_agent.task` | task  (optional) |  |  |  |  |
+| `add_agent.task_open` | open |  |  |  |  |
+| `add_agent.team` | team |  |  |  |  |
+| `add_agent.title` | Add Agent to Team |  |  |  |  |
+| `add_agent.worktree` | Request a worktree |  |  |  |  |
+| `add_agent.worktree_off` | No worktree. This Agent works in the shared checkout. |  |  |  |  |
+| `add_agent.worktree_on` | A worktree of its own — managed file coordination, hand-in and the Git safeguards. |  |  |  |  |
 
 ## archives
 
@@ -66,6 +95,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `recruit` | Team |  | Squad |  |  |
 | `required_reading` | Required reading |  |  |  |  |
 | `routine_bundles` | Routine Bundles |  |  |  |  |
+| `routines` | Routines |  |  |  |  |
 | `save_template` | Save as template |  | Save build |  |  |
 | `session_type` | Session type |  |  |  |  |
 | `squad` | Team | Staff | Squad |  | Squad |

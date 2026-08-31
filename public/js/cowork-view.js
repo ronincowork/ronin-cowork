@@ -3,6 +3,7 @@
 import { WorkspaceKit } from './workspace-kit.js';
 import { deleteTeamRoster, membersOfTeam, refreshTeams, sessionsAvailableToTeam, setTeamLead, setTeamMembership, subscribe, teamByName, teamsFromState, UNASSIGNED } from './team-controller.js';
 import { createNewTeamView } from './new-team.js';
+import { createAddAgentView } from './add-agent.js';
 import { createTeamRosterSurface } from './team-roster-surface.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { createTeamWipeboard } from './team-wipeboard.js';
@@ -59,7 +60,7 @@ const currentWorkStep = (letter) => {
 const COMMONS = '@commons';
 const COWORK = '@cowork';
 const NEW = '@new';
-const WB_TYPES = Object.freeze({ commons: 'team.commons', desk: 'ronin.desk', newSession: 'session.new', terminal: 'session.terminal', roster: 'cowork.team-roster', newTeam: 'cowork.new-team', team: 'team.profile', archives: 'cowork.archives' });
+const WB_TYPES = Object.freeze({ addAgent: 'team.add-agent', commons: 'team.commons', desk: 'ronin.desk', newSession: 'session.new', terminal: 'session.terminal', roster: 'cowork.team-roster', newTeam: 'cowork.new-team', team: 'team.profile', archives: 'cowork.archives' });
 const WB_PROFILES = Object.freeze({ cowork: 'cowork', team: 'team' });
 
 function registerWorkbenchCatalog() {
@@ -68,13 +69,17 @@ function registerWorkbenchCatalog() {
   add({ type: WB_TYPES.commons, header: 'channels', label: () => t('team.commons_card', 'Team commons'), summary: () => t('team.commons_summary', 'See Docs / Wipeboard / Configuration'), create: ({ workspace, environment }) => environment.teamCommons(workspace) });
   add({ type: WB_TYPES.desk, header: 'channels', label: () => t('cowork.commons', 'Ronin Desk'), create: ({ workspace, environment }) => environment.desk(workspace) });
   add({ type: WB_TYPES.newSession, header: 'surface', label: () => t('league.new_agent', 'New Agent'), variant: 'dotted', create: ({ workspace, environment }) => environment.newSession(workspace) });
+  // STAGED BESIDE New Agent, not in place of it (owner, 2026-08-31): both cards are
+  // offered, `js/launcher.js` is untouched, and the owner decides when one replaces the
+  // other. Drawn contract: ronin-lab `concepts/add-agent-to-team.html`.
+  add({ type: WB_TYPES.addAgent, header: 'surface', label: () => t('add_agent.card', 'Add Agent to Team'), summary: () => t('add_agent.card_summary', 'The Team answers the rest.'), variant: 'dotted', create: ({ workspace, environment }) => environment.addAgent(workspace) });
   add({ type: WB_TYPES.terminal, header: 'terminal', discover: (_tenant, environment) => environment.sessions(), create: ({ workspace, detail, environment }) => environment.terminal(workspace, detail) });
   add({ type: WB_TYPES.roster, header: 'surface', label: () => t('league.team_roster', 'Team roster'), create: ({ workspace, environment }) => environment.roster(workspace) });
   add({ type: WB_TYPES.newTeam, header: 'surface', label: () => t('new_team.title', 'New Team'), variant: 'dotted', create: ({ workspace, environment }) => environment.newTeam(workspace) });
   add({ type: WB_TYPES.archives, header: 'surface', label: () => t('archives.card', 'Rehydrate Archived'), variant: 'dotted', create: ({ workspace, environment }) => environment.archives(workspace) });
   add({ type: WB_TYPES.team, header: 'surface', discover: (_tenant, environment) => environment.teams(), create: ({ workspace, detail, environment }) => environment.team(workspace, detail) });
   profiles.define(WB_PROFILES.cowork, [WB_TYPES.roster, WB_TYPES.team, WB_TYPES.newTeam, WB_TYPES.newSession, WB_TYPES.archives]);
-  profiles.define(WB_PROFILES.team, [WB_TYPES.commons, WB_TYPES.terminal, WB_TYPES.newSession]);
+  profiles.define(WB_PROFILES.team, [WB_TYPES.commons, WB_TYPES.terminal, WB_TYPES.newSession, WB_TYPES.addAgent]);
 }
 export function createCoworkView(options = {}) {
   registerWorkbenchCatalog();
@@ -182,6 +187,16 @@ export function createCoworkView(options = {}) {
     }, host);
     return [id, { el: surface.el, launcher }];
   }));
+  // One instance per seat, like every other surface: a birth returns to the workspace
+  // whose form made it, which is the property this door exists for.
+  const addAgentBySeat = Object.fromEntries(Object.keys(seats).map((id) => {
+    const view = createAddAgentView(WorkspaceKit, {
+      team: () => (campaign || team === UNASSIGNED ? '' : team),
+      roster: () => teamByName(team) || null,
+      connect: (name) => connectSession(name, id),
+    });
+    return [id, { el: view.el, enter: () => view.enter() }];
+  }));
   const campaignIdentity = createCampaignIdentity((name) => {
     if (entered && campaign) renderCards([]);
   });
@@ -217,6 +232,7 @@ export function createCoworkView(options = {}) {
     terminal: (id, detail) => ({ el: seats[id].surface.el, show: () => putSession(detail.key, id) }),
     roster: (id) => ({ el: teamRosterBySeat[id].el, show: () => teamRosterBySeat[id].render() }),
     newTeam: (id) => ({ el: newTeamBySeat[id].el, show: () => newTeamBySeat[id].enter(ctx) }),
+    addAgent: (id) => ({ el: addAgentBySeat[id].el, show: () => addAgentBySeat[id].enter() }),
     archives: (id) => ({ el: archivesBySeat[id].el, show: () => void archivesBySeat[id].room.enter() }),
     team: (id, detail) => createLeagueTeamSurface(detail.key, id),
     sessions: () => campaign ? [] : membersOfTeam(team).map((member) => {
