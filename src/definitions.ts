@@ -46,7 +46,7 @@ import { STOCK_DIR, entryValue, isKeyLine, type Origin } from './catalog.js';
 import { storeDir } from './stores.js';
 
 /** The definition directories — one file per token. */
-export type DefinitionKind = 'role_families' | 'session_roles' | 'desk_profiles' | 'lexicons' | 'routines';
+export type DefinitionKind = 'role_families' | 'session_roles' | 'desk_profiles' | 'lexicons' | 'routines' | 'templates';
 
 export interface Definition {
   /** The token — the filename without `.md`. Never the `#` heading. */
@@ -292,6 +292,71 @@ export async function listRoutines(): Promise<RoutineRow[]> {
     mcp: splitDefinitionList(d.get('mcp')),
     requires: splitDefinitionList(d.get('requires')),
   }));
+}
+
+/** The three mandate dials, each led by `open` (R36 as amended). One import would be a
+ *  cycle: agent-defaults imports nothing of ours, but keeping the template catalog free
+ *  of the launch modules keeps `readDefinitions` the only machinery this file needs. */
+const REACH = ['open', 'discuss', 'plan', 'execute'];
+const RECRUIT = ['open', 'nobody', 'propose agents', 'staff agents'];
+const OUTPUT = ['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team'];
+const TEMPLATE_KINDS = ['coding', 'work', 'personal', 'household', 'social', 'school'];
+
+export interface TemplateMandate { reach: string; recruit: string; output: string }
+export interface TemplateRow extends Pick<Row, 'name' | 'origin' | 'shadowed' | 'label' | 'blurb'> {
+  /** The tray face — an emoji or a glyph, the drawing's `art`. */
+  art: string;
+  /** Which kinds bring this box forward. `open` on the form shows every template. */
+  kinds: string[];
+  /** The born Agent's instructions seed. */
+  brief: string;
+  /** The Team's objective seed. */
+  objective: string;
+  /** `reach · recruit · output`, each a ruled value — or null when the template is silent. */
+  mandate: TemplateMandate | null;
+  /** `<shelf>:<name>` book addresses laid into the tray. */
+  behaviours: string[];
+  /** Routines this template turns on / off over the seeded map. Exactly the fields it
+   *  carries — everything unnamed stays as the level above landed it (CASCADE § 1). */
+  routines_on: string[];
+  routines_off: string[];
+  /** The Team-lead offer this template suggests — a brief and a mandate, never a seat. */
+  lead: { brief: string; mandate: TemplateMandate | null } | null;
+}
+
+/** `execute · staff agents · code` → the three dials, or null unless all three are ruled
+ *  values. Stock files are held to this by check-catalogs; a user file that half-states a
+ *  mandate seeds nothing rather than seeding a guess. */
+export function templateMandate(value: string): TemplateMandate | null {
+  const [reach, recruit, output] = value.split('·').map((part) => part.trim());
+  if (!REACH.includes(reach) || !RECRUIT.includes(recruit) || !OUTPUT.includes(output)) return null;
+  return { reach, recruit, output };
+}
+
+/** The template catalog — the tray both forms draw, derived and never stored as a menu. */
+export async function listTemplates(): Promise<TemplateRow[]> {
+  return (await readDefinitions('templates')).map((d) => {
+    const leadBrief = d.get('lead_brief');
+    const leadMandate = d.get('lead_mandate');
+    return {
+      name: d.name,
+      origin: d.origin,
+      shadowed: d.shadowed,
+      label: d.get('label') || d.name,
+      blurb: d.get('blurb'),
+      art: d.get('art'),
+      kinds: splitDefinitionList(d.get('kinds')).filter((kind) => TEMPLATE_KINDS.includes(kind)),
+      brief: d.get('brief'),
+      objective: d.get('objective'),
+      mandate: d.has('mandate') ? templateMandate(d.get('mandate')) : null,
+      behaviours: splitDefinitionList(d.get('behaviours')),
+      routines_on: splitDefinitionList(d.get('routines_on')),
+      routines_off: splitDefinitionList(d.get('routines_off')),
+      lead: leadBrief || leadMandate
+        ? { brief: leadBrief, mandate: leadMandate ? templateMandate(leadMandate) : null }
+        : null,
+    };
+  });
 }
 
 /* ---------- the one write: a role's task family ---------- */

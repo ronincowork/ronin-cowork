@@ -1,0 +1,12 @@
+# Put the Garden Right
+- **label:** Put the Garden Right
+- **art:** 🌿
+- **blurb:** A season of work, done in order.
+- **order:** 100
+- **kinds:** household
+- **brief:** Beds, borders and cutting rows — a season of work, done in order.
+- **objective:** Beds, borders and cutting rows — a season of work, done in order.
+- **mandate:** plan · propose agents · a plan
+- **routines_off:** ronin_control
+- **lead_brief:** What goes where, and in what order through the season.
+- **lead_mandate:** plan · nobody · a plan
