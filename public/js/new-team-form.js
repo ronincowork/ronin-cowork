@@ -116,14 +116,14 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   }
   const templateDirty = () => !!templateRow() && authored() !== snapshot;
 
-  /* ---- step 1 · Template ---- */
-  const stepTemplate = createStep({ n: 1, key: 'template', title: t('template', 'Template') });
+  /* ---- step 2 · Template (the kind above it has already narrowed the tray) ---- */
+  const stepTemplate = createStep({ n: 2, key: 'template', title: t('template', 'Template') });
   function paintTray() {
     stepTemplate.body.replaceChildren(templateTray(offered(), draft.template, (name) => applyTemplate(name)));
   }
 
-  /* ---- step 2 · Name & kind ---- */
-  const stepTop = createStep({ n: 2, key: 'top', title: t('new_team.name_kind', 'Name & kind') });
+  /* ---- step 1 · Name & kind ---- */
+  const stepTop = createStep({ n: 1, key: 'top', title: t('new_team.name_kind', 'Name & kind') });
   const nameInput = el('input');
   nameInput.type = 'text';
   nameInput.autocapitalize = 'off';
@@ -547,7 +547,10 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   function paint() {
     for (const button of [templateDoor, manualDoor]) button.setAttribute('aria-pressed', String(button === (draft.door === 'template' ? templateDoor : manualDoor)));
     stepTemplate.el.hidden = draft.door === 'manual';
-    const order = draft.door === 'manual' ? ['top', 'objective', 'where', 'kit', 'lead'] : ['template', 'top', 'objective', 'where', 'kit', 'lead'];
+    // KIND BEFORE TEMPLATE (owner, 2026-08-31): the kind narrows the tray, so asking for
+    // a template first offered all thirteen and then quietly dropped the pick when a later
+    // kind excluded it. New Agent already asked in this order; now the two forms agree.
+    const order = draft.door === 'manual' ? ['top', 'objective', 'where', 'kit', 'lead'] : ['top', 'template', 'objective', 'where', 'kit', 'lead'];
     order.forEach((key, index) => steps[key].setNumber(index + 1));
     paintTray();
     paintKinds();
@@ -563,7 +566,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   }
 
   const form = el('div', 'ntf-form');
-  form.append(seg, stepTemplate.el, stepTop.el, stepObjective.el, stepWhere.el, stepKit.el, stepLead.el);
+  form.append(seg, stepTop.el, stepTemplate.el, stepObjective.el, stepWhere.el, stepKit.el, stepLead.el);
   surface.content.append(form, actions.el, notice.el, foot);
 
   return {
