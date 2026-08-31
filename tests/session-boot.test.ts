@@ -74,6 +74,12 @@ test('every assisted session is handed the required abilities', async () => {
     assert.match(text, /spawn it[\s\S]*spawn an agent[\s\S]*internal sub-agent/i);
     assert.match(text, /neither vocabulary[\s\S]*no extra owner confirmation/i);
     assert.match(text, /@ronin-control/);
+    // A failed assignment may omit DESK_CONTRACT entirely, so universal reading must
+    // still route a member to the team lead instead of the owner or a funnel checkout.
+    assert.match(text, /missing or contradictory desk is a blocker for your team lead/i);
+    assert.match(text, /tejun-desk status --assignment/);
+    assert.match(text, /tejun-wipeboard post[\s\S]*interrupts your team lead/i);
+    assert.match(text, /continue only from the worktree/i);
     // And rule the fallback the right way round: peek is the fallback, never the normal route.
     assert.match(text, /tejun-peek/);
   } finally {
