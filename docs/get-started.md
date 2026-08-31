@@ -17,7 +17,9 @@ Prepare the owner for one page with two parts:
   sessions, and optional Services or gbrain choices.
 - **Optionally start the first project:** if the owner chooses to add one now, it needs an
   existing working folder; its name and purpose may be left blank. The owner may also skip
-  the project section completely.
+  the project section completely and enter Ronin without one. A project root is still
+  required to launch the proof Agent, so an owner who skips here must add one before that
+  step.
 
 The page shows measured machine and Agent facts beside choices. Installed Agents are facts,
 not proof that their provider account is authenticated. An absent Agent with an offered
@@ -55,17 +57,21 @@ the first launch is the universal proof when no safe status command exists.
 
 ## Prove one working Agent
 
-1. In **＋ New**, choose the configured project root, one available provider/model, and a
-   harmless session role or ordinary new session.
-2. Launch it. Never answer a provider trust, login, billing, or authorization dialog for
+1. Confirm that a project root is configured. If the owner skipped the first project in
+   `cowork_setup`, open **Configuration → Project roots** and follow
+   [Project roots](project-roots.md) to add one before launching. A session cannot bypass
+   this requirement.
+2. In **＋ New**, choose that project root, one available provider/model, and a harmless
+   session role.
+3. Launch it. Never answer a provider trust, login, billing, or authorization dialog for
    the owner.
-3. Wait for the Agent's ready prompt. If authentication is requested, follow the provider
+4. Wait for the Agent's ready prompt. If authentication is requested, follow the provider
    route and retry after the owner completes it.
-4. Send a harmless prompt that needs no private data or file change, such as:
+5. Send a harmless prompt that needs no private data or file change, such as:
 
    > Reply with exactly: Ronin Agent ready
 
-5. Success means the new tile remains running and visibly returns the requested response.
+6. Success means the new tile remains running and visibly returns the requested response.
    A process existing, model label, or cleared input line alone is not success.
 
 Record the Agent CLI, provider/model selected, and observed response—never a credential.
