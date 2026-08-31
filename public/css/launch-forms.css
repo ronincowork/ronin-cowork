@@ -1,0 +1,85 @@
+/* The drawn launch forms (js/form-steps.js, js/new-team-form.js) — feature composition
+   only; Workspace Kit owns the foundation. Drawn contracts: ronin-lab concepts/
+   new-team.html and new-agent-condensed.html, the condensed density the owner preferred:
+   label-left steps, one rectangle for every clickable thing, collapse-on-pick. */
+@layer app {
+  .ntf-form { display: flex; flex-direction: column; margin-bottom: var(--space-7); }
+  .ntf-form textarea { resize: vertical; }
+  .ntf-foot { margin-top: var(--space-6); }
+  .ntf-tmplname { width: calc(var(--space-12) * 5); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--fg); padding: var(--space-3) var(--space-4); font: inherit; }
+
+  /* ── the two doors ── */
+  .fs-seg { display: flex; align-self: flex-start; margin-bottom: var(--space-5); border: var(--edge) solid var(--line-2); }
+  .fs-seg button { border: 0; background: transparent; color: var(--muted-2); padding: var(--space-2) var(--space-6); cursor: pointer; font: inherit; font-size: var(--text-2); }
+  .fs-seg button[aria-pressed='true'] { background: var(--kaki); color: var(--on-strong); }
+
+  /* ── label-left steps; a folded step keeps its number, name and answer on one line ── */
+  .fs-step { display: grid; grid-template-columns: calc(var(--space-12) * 4) minmax(0, 1fr); gap: var(--space-6); align-items: start; padding: var(--space-5) 0; border-bottom: var(--edge) solid var(--line); }
+  .fs-step:last-of-type { border-bottom: 0; }
+  .fs-step[hidden] { display: none; }
+  .fs-step[data-collapsed='true'] { align-items: center; padding: var(--space-2) 0; }
+  .fs-step-head { display: flex; align-items: baseline; gap: var(--space-3); min-width: 0; }
+  .fs-step-head h3 { margin: 0; color: var(--fg-strong); font-size: var(--text-3); font-weight: 600; }
+  .fs-step-n { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; width: var(--space-7); height: var(--space-7); background: var(--kaki); color: var(--on-strong); font-size: var(--text-1); font-weight: 700; }
+  .fs-chev { margin-left: auto; color: var(--muted); font-size: var(--text-2); }
+  .fs-togglable { cursor: pointer; }
+  .fs-togglable:hover h3 { color: var(--kaki-lift); }
+  .fs-step-body { min-width: 0; display: flex; flex-direction: column; gap: var(--space-4); }
+  .fs-step-body[hidden] { display: none; }
+  .fs-sum { color: var(--accent); font-size: var(--text-2); font-family: var(--font-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fs-sum[hidden] { display: none; }
+  .fs-head { margin: var(--space-3) 0 0; color: var(--muted); font-size: var(--text-1); text-transform: uppercase; letter-spacing: .07em; }
+  .fs-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(var(--space-12) * 4), 1fr)); gap: var(--space-3); }
+
+  /* ── the kind tiles: `open` dotted and set apart, never a seventh peer ── */
+  .fs-gridlabel { display: block; color: var(--muted); font-size: var(--text-1); text-transform: uppercase; letter-spacing: .06em; }
+  .fs-kinds { display: flex; flex-direction: column; gap: var(--space-2); }
+  .fs-kindgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
+  .fs-kindtile { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); align-items: center; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--muted-2); padding: var(--space-3) var(--space-4); cursor: pointer; text-align: left; font: inherit; }
+  .fs-kindtile:hover { border-color: var(--kaki); }
+  .fs-kindtile[aria-pressed='true'] { border-color: var(--kaki); background: var(--raise); }
+  .fs-kindtile[aria-pressed='true'] span { color: var(--kaki-lift); }
+  .fs-kindtile i { font-style: normal; font-size: var(--text-4); line-height: 1; }
+  .fs-kindtile span { overflow: hidden; font-size: var(--text-2); text-overflow: ellipsis; white-space: nowrap; }
+  .fs-kindtile[data-open='true'] { align-self: start; border-style: dashed; }
+
+  /* ── the template tray ── */
+  .fs-tmplgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--space-12) * 5), 1fr)); gap: var(--space-2); }
+  .fs-tmpl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); align-items: center; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--muted-2); padding: var(--space-3) var(--space-4); cursor: pointer; text-align: left; font: inherit; }
+  .fs-tmpl:hover { border-color: var(--kaki); }
+  .fs-tmpl[aria-pressed='true'] { border-color: var(--kaki); background: var(--raise); }
+  .fs-tmpl i { font-style: normal; font-size: var(--text-4); line-height: 1; }
+  .fs-tmpl b { display: block; overflow: hidden; color: var(--fg-strong); font-size: var(--text-3); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+  .fs-tmpl[aria-pressed='true'] b { color: var(--kaki-lift); }
+  .fs-tmpl:disabled { opacity: .45; border-style: dashed; cursor: default; }
+  .fs-tmpl:disabled:hover { border-color: var(--line-2); }
+
+  /* ── routine rows and the lead's two ways ── */
+  .fs-routine { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-4); align-items: center; width: 100%; border: var(--edge) solid var(--line); border-radius: var(--radius-xs); background: var(--well); color: var(--muted-2); padding: var(--space-3) var(--space-4); text-align: left; font: inherit; }
+  .fs-routine[data-on='false'] { opacity: .6; }
+  button.fs-routine { cursor: pointer; }
+  button.fs-routine:hover { border-color: var(--kaki); }
+  .fs-routine b { display: block; color: var(--fg-strong); font-size: var(--text-3); font-weight: 400; }
+  .fs-routine small { display: block; color: var(--muted); font-size: var(--text-2); }
+  .fs-mark { display: flex; flex: 0 0 auto; align-items: center; justify-content: center; width: var(--space-6); height: var(--space-6); border: var(--edge) solid var(--line-3); background: var(--panel); color: var(--on-strong); font-size: var(--text-1); }
+  .fs-routine[data-on='true'] .fs-mark { border-color: var(--kaki); background: var(--kaki); }
+  .fs-prov { color: var(--muted); font-family: var(--font-mono); font-size: var(--text-1); white-space: nowrap; }
+  .fs-way { display: grid; gap: var(--space-1); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--muted-2); padding: var(--space-3) var(--space-4); cursor: pointer; text-align: left; font: inherit; }
+  .fs-way:hover { border-color: var(--kaki); }
+  .fs-way[aria-pressed='true'] { border-color: var(--kaki); background: var(--raise); }
+  .fs-way b { color: var(--fg-strong); font-size: var(--text-3); font-weight: 600; }
+  .fs-way[aria-pressed='true'] b { color: var(--kaki-lift); }
+  .fs-way small { color: var(--muted); font-size: var(--text-2); }
+  .fs-door { align-self: flex-start; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); color: var(--fg); padding: var(--space-3) var(--space-6); font: inherit; font-size: var(--text-3); }
+  .fs-door:disabled { opacity: .45; cursor: default; }
+
+  /* ── tags and the born reading ── */
+  .fs-tags { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+  .fs-tag { border: var(--edge) solid var(--line-2); background: var(--panel); color: var(--muted); padding: 0 var(--space-3); font-family: var(--font-mono); font-size: var(--text-1); white-space: nowrap; }
+  .fs-tag[data-on='true'] { border-color: var(--kaki); color: var(--kaki); }
+  .fs-tags-empty { color: var(--dim); font-style: normal; font-size: var(--text-2); }
+  .fs-reading { display: grid; grid-template-columns: calc(var(--space-12) * 2.5) minmax(0, 1fr); gap: var(--space-2) var(--space-5); align-items: baseline; margin: 0; border-top: var(--edge) solid var(--line); padding-top: var(--space-6); }
+  .fs-reading dt { color: var(--muted); font-size: var(--text-1); letter-spacing: .06em; text-transform: uppercase; }
+  .fs-reading dd { margin: 0; min-width: 0; color: var(--fg-strong); font-size: var(--text-2); }
+  .fs-reading em { color: var(--dim); font-style: normal; }
+}

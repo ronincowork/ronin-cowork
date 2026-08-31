@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `behaviour.*` may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1400 keys · 57 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1455 keys · 58 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## add_agent
 
@@ -498,6 +498,25 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 |---|---|---|---|---|---|
 | `events.open` | Open |  |  |  |  |
 
+## forms
+
+| key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
+|---|---|---|---|---|---|
+| `forms.always` | always |  |  |  |  |
+| `forms.campaign_off` | campaign off |  |  |  |  |
+| `forms.campaign_on` | campaign on |  |  |  |  |
+| `forms.default` | default |  |  |  |  |
+| `forms.library` | From the Ronin library |  |  |  |  |
+| `forms.library_blurb` | Published bundles, pulled in and run. Not yet built. |  |  |  |  |
+| `forms.manual` | Manual |  |  |  |  |
+| `forms.model` | model |  |  |  |  |
+| `forms.none` | — |  |  |  |  |
+| `forms.own` | Make your own |  |  |  |  |
+| `forms.own_blurb` | Fresh and empty. Fill it in yourself. |  |  |  |  |
+| `forms.provider` | model provider |  |  |  |  |
+| `forms.team_off` | team turns off |  |  |  |  |
+| `forms.team_on` | team turns on |  |  |  |  |
+
 ## gauge
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
@@ -921,24 +940,65 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
+| `new_team.agent_defaults` | agent defaults — seeded into every Agent raised here; none of it is a constraint |  |  |  |  |
+| `new_team.card_summary` | Template · kit · lead — the drawn form. |  |  |  |  |
 | `new_team.create` | Create Team |  |  |  |  |
 | `new_team.creating` | Creating the Team… |  |  |  |  |
 | `new_team.define` | Define the Team |  |  |  |  |
 | `new_team.definition` | Team definition |  |  |  |  |
+| `new_team.floor` | Cowork floor |  |  |  |  |
+| `new_team.floor_tag` | floor |  |  |  |  |
+| `new_team.floor_why` | The launch, campaign and team resolution, the shelf map, the birth receipt. |  |  |  |  |
+| `new_team.inherits` | an agent born here inherits |  |  |  |  |
+| `new_team.kit_door` | Open the Team Kit  ▸ |  |  |  |  |
+| `new_team.kit_door_why` | A workbench of its own: browse every routine and behaviour, read them, and make them yours. Not yet built. |  |  |  |  |
+| `new_team.kit_meta` | {routines} routines · {books} books{required} |  |  |  |  |
+| `new_team.kit_meta_required` | (required) |  |  |  |  |
+| `new_team.kit_none` | nothing yet — a template lays it, or open the kit |  |  |  |  |
+| `new_team.lead` | Team lead |  |  |  |  |
+| `new_team.lead_brief` | brief |  |  |  |  |
+| `new_team.lead_brief_default` | Hold the objective, dispatch, unblock, keep the gaps closed. |  |  |  |  |
+| `new_team.lead_brief_placeholder` | what the lead is for |  |  |  |  |
+| `new_team.lead_empty` | Open it empty |  |  |  |  |
+| `new_team.lead_empty_sub` | Ordinary. Add one whenever you like. |  |  |  |  |
+| `new_team.lead_include` | Include a team lead |  |  |  |  |
+| `new_team.lead_include_sub` | Raised with the team and briefed. |  |  |  |  |
+| `new_team.lead_included` | included |  |  |  |  |
+| `new_team.lead_none` | none |  |  |  |  |
+| `new_team.lead_raised` | included, briefed at raise |  |  |  |  |
+| `new_team.members` | members |  |  |  |  |
+| `new_team.members_note` | derived from live tags — never stored here |  |  |  |  |
 | `new_team.name` | Team name |  |  |  |  |
 | `new_team.name_desc` | Lowercase letters, digits, _ and - . This is also the tag its sessions carry. |  |  |  |  |
 | `new_team.name_invalid` | Lowercase letters, digits, _ and - only. |  |  |  |  |
+| `new_team.name_kind` | Name & kind |  |  |  |  |
+| `new_team.name_placeholder` | lowercase, digits, - _ |  |  |  |  |
 | `new_team.objective_desc` | Optional. Rides the brief of every session born onto this Team. |  |  |  |  |
+| `new_team.objective_placeholder` | what this team is for |  |  |  |  |
 | `new_team.optional` | Optional. |  |  |  |  |
+| `new_team.raise` | Raise the team |  |  |  |  |
+| `new_team.raise_lead` | Raise the team and its lead |  |  |  |  |
+| `new_team.raised_no_lead` | Raised {team} — the lead was not born: {reason} |  |  |  |  |
+| `new_team.raising` | Raising the team… |  |  |  |  |
 | `new_team.repos_desc` | Optional, comma-separated. |  |  |  |  |
+| `new_team.required` | Required behaviours |  |  |  |  |
+| `new_team.required_off` | offered |  |  |  |  |
+| `new_team.required_on` | enforced |  |  |  |  |
+| `new_team.required_why` | Every Agent that joins gets the documents below, at birth or on joining. |  |  |  |  |
 | `new_team.role_desc` | Optional. Blank is an unclassified Team, which is a valid state. |  |  |  |  |
 | `new_team.role_placeholder` | development — or leave blank |  |  |  |  |
 | `new_team.root` | Default project root |  |  |  |  |
 | `new_team.root_default` | — the box’s default — |  |  |  |  |
 | `new_team.root_desc` | Optional. Seeds where sessions are born; a launch may override it. |  |  |  |  |
+| `new_team.root_note` | A default that seeds a launch — never a constraint. A rōnin that joins later keeps its own. |  |  |  |  |
+| `new_team.save_as_new` | Save as new template |  |  |  |  |
+| `new_team.save_name_placeholder` | template name |  |  |  |  |
+| `new_team.saved_template` | Saved template {name} |  |  |  |  |
 | `new_team.team_actions` | Team actions |  |  |  |  |
 | `new_team.title` | New Team |  |  |  |  |
+| `new_team.where` | Where |  |  |  |  |
 | `new_team.wipeboard_desc` | Optional. Blank uses the Team’s own name. |  |  |  |  |
+| `new_team.wipeboard_own` | {team}  (its own) |  |  |  |  |
 
 ## output
 
