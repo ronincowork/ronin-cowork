@@ -4,6 +4,9 @@ import { config } from './config.js';
 import { ensureTmuxServer } from './host-guard.js';
 import { removeHandoff } from './handoff.js';
 import { assertUnderMax } from './user-config.js';
+import { CONTROL_OPT, newSessionArgs } from './session-args.js';
+export type { Control } from './session-args.js';
+import type { Control } from './session-args.js';
 
 const pexec = promisify(execFile);
 
@@ -221,7 +224,12 @@ export interface CreateOpts {
    * makes it safe to hand an agent its whole brief on the command line.
    */
   argv?: readonly string[];
-  /** Environment fixed at birth; unlike shell rc files this reaches direct-exec Agents. */
+  /**
+   * Environment fixed at birth. Delivered by exec'ing the process through `env` rather
+   * than by tmux's `-e`, which sets the session environment and never reaches the pane's
+   * process — see `newSessionArgs`. This is what makes it true, and not merely intended,
+   * that it reaches a direct-exec Agent that sources no rc file.
+   */
   env?: Readonly<Record<string, string>>;
 }
 
@@ -236,7 +244,7 @@ export async function createSession(name: string, dir?: string, opts: CreateOpts
   // so grouped `grid_*` viewers are never counted and never refused.
   if (opts.agent !== false && !opts.exempt) await assertUnderMax();
   // Never be the process that forks the tmux server — it would land in our systemd
-  // cgroup and our next restart would kill every session. See docs/tmux-server-cgroup.md.
+  // cgroup and our next restart would kill every session.
   await ensureTmuxServer();
   // An explicit dir (a role's, from ROLES.md) wins over the configured default.
   const cwd = dir || config.newSessionDir;
@@ -251,16 +259,23 @@ export async function createSession(name: string, dir?: string, opts: CreateOpts
    * Only for a session that runs a CLI. A shell tile that exits is finished, and freezing
    * a dead prompt would leave litter nobody asked for.
    */
-  const build = (withDir: boolean) => {
-    const a = ['new-session', '-d', '-s', name];
-    for (const [key, value] of Object.entries(opts.env ?? {}).sort(([a], [b]) => a.localeCompare(b))) {
-      a.push('-e', `${key}=${value}`);
-    }
-    if (withDir && cwd) a.push('-c', cwd);
-    if (opts.argv?.length) a.push('--', ...opts.argv, ';', 'set-option', '-w', '-t', name, 'remain-on-exit', 'on');
-    if (opts.control) a.push(';', 'set-option', '-t', name, CONTROL_OPT, opts.control);
-    return a;
-  };
+  /**
+   * DELIVERED BY `env`, NOT BY `-e`. `-e` sets the SESSION environment, and tmux does not
+   * apply that to the process it starts in the pane — measured on an isolated socket, not
+   * assumed: an injected PATH reached neither the initial pane nor one opened later, while
+   * both kept the tmux server's own inherited PATH. For the year that went unnoticed, every
+   * projected Routine tool (`routine-tools.ts`) was silently undelivered and agents were
+   * getting `tejun-*` from a login shell's rc file instead — the exact fallback the caller
+   * in `routes/launch.ts` says it refuses to rely on, and one that does not exist on a box
+   * whose profile setup.sh never touched. Exec'ing through `env` is the only form that
+   * binds. The `-e` below stays for panes a hand opens later in the same session.
+   */
+  const build = (withDir: boolean) => newSessionArgs(name, {
+    cwd: withDir ? cwd : undefined,
+    env: opts.env,
+    argv: opts.argv,
+    control: opts.control,
+  });
   try {
     await pexec('tmux', build(true));
   } catch (err) {
@@ -646,11 +661,6 @@ export async function getProviderSessionId(name: string): Promise<string> {
     return '';
   }
 }
-
-/** tmux user option holding a session's control dial (see ronin_catalogs/ACTIONS.md control-check). */
-const CONTROL_OPT = '@ronin-control';
-
-export type Control = 'user' | 'read' | 'write';
 
 /**
  * Read a session's control dial: who may drive it. `user` = agents get nothing,

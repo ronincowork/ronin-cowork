@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+# tejun-machine-restart — restart RONIN on this machine. Nothing else, ever.
+#
+# Usage: tejun-machine-restart      — no arguments. You do not name a unit.
+#
+# WHY IT TAKES NO ARGUMENT, which is the whole of its safety. Two services run here and
+# they are one keystroke apart. `ronin` is the app: the browser grid, the API, the
+# launcher. Restarting it is ordinary and cheap — pick up a code change, clear a wedged
+# process — because sessions do not live inside it. The other is the tmux server, and
+# that one OWNS every session, agent and shell on the box. Stopping it ends all of them
+# simultaneously, including whoever typed the command, and there is no undo.
+#
+# An agent with no sanctioned way to restart Ronin will reach for `systemctl` on its
+# own, and from there the unit that wipes the box is one word away. That is not a
+# hypothesis — it is how this machine lost every live session twice in a single day. So
+# the capability ships as a tool with a vocabulary of exactly one thing: there is no
+# unit to name, no flag to get wrong, and nothing here to point somewhere else.
+#
+# If you believe the session engine itself is unhealthy, that is not yours to fix from
+# inside it: by definition the repair would kill you mid-command. Say what you saw,
+# name it on the board, and stop.
+#
+# Sessions are NOT restarted, ended, or disturbed by this. Browser tiles reconnect.
+set -u
+
+case "${1:-}" in
+  '') ;;
+  *) cat >&2 <<'EOF'
+REFUSED: tejun-machine-restart takes no arguments — it restarts Ronin, and only Ronin.
+There is deliberately no way to aim it at another service. If you believe something else
+on this box needs restarting, that is the owner's call, not yours: say what you saw and
+stop. Never hand-roll it with systemctl.
+EOF
+     exit 4 ;;
+esac
+
+command -v systemctl >/dev/null 2>&1 || {
+  {
+    echo "NOT-SYSTEMD: there is no systemctl on this box, so Ronin does not run as a"
+    echo "NOT-SYSTEMD: service here — it was started by hand or by another supervisor."
+    echo "NOT-SYSTEMD: Restarting it is the owner's to do. Report and stop."
+  } >&2
+  exit 2
+}
+
+systemctl --user cat ronin.service >/dev/null 2>&1 || {
+  {
+    echo "NO-UNIT: this box has no ronin.service user unit installed."
+    echo "NO-UNIT: Ronin is running some other way, and restarting it is not this"
+    echo "NO-UNIT: tool's to guess at. Report what you found and stop."
+  } >&2
+  exit 2
+}
+
+echo "restarting ronin.service — every session stays up; browser tiles reconnect."
+systemctl --user restart ronin.service || {
+  echo "STUCK: systemd refused the restart. Ronin may still be running. Report it." >&2
+  exit 5
+}
+
+# Wait for it to come back rather than announcing an outcome we have not seen. Reporting
+# "restarted" while the unit is still flapping is the same failure tejun-harakiri warns
+# about: never claim the ending you did not watch happen.
+state=""
+i=0
+while [ "$i" -lt 20 ]; do
+  state=$(systemctl --user is-active ronin.service 2>/dev/null || true)
+  if [ "$state" = "active" ]; then
+    echo "OK: ronin.service is active."
+    exit 0
+  fi
+  i=$((i + 1))
+  sleep 1
+done
+
+{
+  echo "STUCK: ronin.service is '${state:-unknown}' 20s after the restart."
+  echo "STUCK: it did not come back. Do NOT retry in a loop — report to the owner."
+  echo "STUCK: the journal has the reason: journalctl --user -u ronin.service -n 50"
+} >&2
+exit 5
