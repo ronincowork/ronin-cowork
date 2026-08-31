@@ -2,7 +2,7 @@
  * Spawn a new session from a filled form — the mechanical executor.
  *
  * The resolved launch profile fixes the constants: the dial the session is born on, its
- * lifecycle, whether it acknowledges before acting. They come from the cascade —
+ * whether it acknowledges before acting. They come from the cascade —
  * system < team_roster < session_role < this launch (`src/launch-profile.ts`). The user picks
  * project_root / session_launch_spec / tags. Nothing here calls a model — the smart fill populates this form,
  * it does not perform it. Order matters: create -> tag -> DIAL -> reply, so the
@@ -29,7 +29,7 @@ import {
 import { launchArgv, newProviderSession } from '../agents.js';
 import { AtSessionMax, liveCount, readAgentsSection, readDesksSection, readMax, readOwner, writeMax, writeOwner } from '../user-config.js';
 import { resolveForm, type SpawnForm } from '../spawn.js';
-import { appendLaunchLedger } from '../launch-ledger.js';
+import { appendLaunchLedger, persistBirthReceipt } from '../launch-ledger.js';
 import { mandate } from '../agent-defaults.js';
 import { projectRoutineTools, type RoutineToolProjection } from '../routine-tools.js';
 import { classifyStatus, type SessionStatus } from '../status.js';
@@ -41,7 +41,7 @@ import { announceTeamChanges } from './wipeboards-api.js';
 import { markRoleDelivered } from '../role-watch.js';
 import { checkoutAt, deriveTeams, parkBrief, seedTegami, withAxes, writeGate } from '../tegami.js';
 import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFields, listServices } from '../sockets.js';
-import { DESK_LIFECYCLES, prepareLaunchDesks } from '../launch-desks.js';
+import { prepareLaunchDesks } from '../launch-desks.js';
 import { readArrangement } from '../desks/arrangement.js';
 import { listProjectRoots } from '../project-roots.js';
 import { initialCampaignId } from '../campaign-scope.js';
@@ -66,8 +66,8 @@ async function birthCampaign(team: string, explicit = ''): Promise<string> {
  * Why a coding launch got no desk, in one line — or '' when it got one, or wanted none.
  * The file in the repository is the gate; when it is absent or says none, say so.
  */
-async function deskNote(r: { assignment?: unknown; lifecycle?: string; project_root?: string; agent?: unknown; cmd?: string }): Promise<string> {
-  if (r.assignment || !r.cmd || !DESK_LIFECYCLES.has(r.lifecycle ?? '') || !r.project_root) return '';
+async function deskNote(r: { assignment?: unknown; routines?: Array<{ name: string; enabled: boolean }>; project_root?: string; agent?: unknown; cmd?: string }): Promise<string> {
+  if (r.assignment || !r.cmd || !r.routines?.some((routine) => routine.name === 'ronin_control' && routine.enabled) || !r.project_root) return '';
   const root = (await listProjectRoots()).find((x) => x.name === r.project_root);
   if (!root) return '';
   const a = await readArrangement(root.name, root.dir).catch(() => null);
@@ -133,10 +133,10 @@ export function registerLaunch(app: express.Express): void {
           'role_family, `team_role`, `campaign_kind`, or `lifecycle`; `session_task` is now `session_role`.',
       });
     }
-    const sessionType = String(req.body?.session_type ?? '').trim();
+    const sessionType = String(req.body?.session_type ?? 'cowork_agent').trim();
     if (!['cowork_agent', 'bare_metal_agent', 'terminal'].includes(sessionType)) {
       return res.status(400).json({
-        error: 'Send `session_type`: `cowork_agent`, `bare_metal_agent`, or `terminal`. Ronin does not infer a session type from `session_role`, `team`, or `agent`.',
+        error: 'When stated, `session_type` must be `cowork_agent`, `bare_metal_agent`, or `terminal`.',
       });
     }
     const name = String(req.body?.name ?? '').trim();
@@ -363,10 +363,8 @@ export function registerLaunch(app: express.Express): void {
         campaign_id: form.campaign_id || await initialCampaignId(),
         birth: 'none',
       });
-    } else res.json({
-      ok: true,
-      name: resolved.name,
-      receipt: {
+    } else {
+      const receipt = {
         session_type: resolved.session_type,
         session_role: resolved.session_role,
         team: resolved.team,
@@ -374,7 +372,6 @@ export function registerLaunch(app: express.Express): void {
         dir: resolved.dir,
         cmd: resolved.cmd,
         dial: resolved.dial,
-        lifecycle: resolved.lifecycle,
         tags: resolved.tags,
         mcp: resolved.mcp,
         team_lead: !!form.team_lead && !!resolved.team,
@@ -404,8 +401,14 @@ export function registerLaunch(app: express.Express): void {
             mcp: routine.enabled ? routine.mcp.filter((name) => services.has(name)) : [],
           };
         }),
-      },
-    });
+      };
+      try {
+        await persistBirthReceipt(resolved.name, receipt);
+      } catch (e) {
+        return res.status(500).json({ error: `Session was born, but its birth receipt could not be persisted: ${String((e as Error)?.message ?? e)}` });
+      }
+      res.json({ ok: true, name: resolved.name, receipt });
+    }
     void appendLaunchLedger(form, resolved, true);
     void (async () => {
       // NOTHING IS TYPED HERE, and there is no longer anywhere to type. The session was

@@ -28,13 +28,17 @@ async function launch(body: Record<string, unknown>): Promise<{ status: number; 
   return { status: response.status, error: String((await response.json()).error ?? '') };
 }
 
-test('the route refuses to infer session_type from the retired keying inputs', async () => {
-  for (const body of [{ name: 'proof' }, { name: 'proof', session_role: 'CutCode' }, { name: 'proof', team: 'alpha' }, { name: 'proof', agent: true }]) {
-    const result = await launch(body);
-    assert.equal(result.status, 400);
-    assert.match(result.error, /session_type/);
-    assert.match(result.error, /does not infer/);
-  }
+test('missing session_type defaults to the ordinary cowork_agent path', async () => {
+  const result = await launch({});
+  assert.equal(result.status, 400);
+  assert.match(result.error, /name.*required/);
+  assert.doesNotMatch(result.error, /session_type/);
+});
+
+test('an invalid stated session_type is refused', async () => {
+  const result = await launch({ session_type: 'mystery', name: 'proof' });
+  assert.equal(result.status, 400);
+  assert.match(result.error, /session_type.*must be/);
 });
 
 test('the live legacy launcher states cowork_agent until FORMS_UI retires it', async () => {
