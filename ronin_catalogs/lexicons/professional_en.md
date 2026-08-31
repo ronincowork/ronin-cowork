@@ -1029,15 +1029,16 @@ The catalog entry goes. {dir} is not touched.
 - **tape.fold_code:** ⌨ code
 
 ## ladder — shingo.js (the ladder chip and panel)
-- **ladder.task:** Task
-- **ladder.task_unmarked:** Not marked
+- **ladder.task_at_hand:** Task at hand
+- **ladder.task_unstated:** No task stated in this work record.
+- **ladder.current_action:** Current action
 - **ladder.worktrees:** Worktrees
 - **ladder.branch:** Branch
-- **ladder.cowork:** Cowork
+- **ladder.coworks:** Coworks
 - **ladder.tracked_documents:** Tracked documents
 - **ladder.docs_none:** No tracked documents.
 - **ladder.progress:** Progress
-- **ladder.progress_none:** No progress stated.
+- **ladder.none:** no work record yet
 - **ladder.gate:** GATE
 - **ladder.legs_undetermined:** — legs undetermined
 
@@ -1403,7 +1404,8 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.behaviour:** behaviour
 - **glossary.routine:** routine
 - **glossary.ronin_base:** Ronin Base
-- **glossary.ronin_control:** Ronin Control
+- **glossary.routine_floor:** Cowork floor
+- **glossary.ronin_control:** managed file coordination
 - **glossary.ronin_services:** Ronin Services
 - **glossary.specialized_routine:** specialized routine
 - **glossary.terminal:** terminal

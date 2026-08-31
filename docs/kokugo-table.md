@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1266 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1268 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -542,10 +542,11 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.role` | role |  |  |  |  |
 | `glossary.ronin` | Ronin |  |  |  |  |
 | `glossary.ronin_base` | Ronin Base |  |  |  |  |
-| `glossary.ronin_control` | Ronin Control |  |  |  |  |
+| `glossary.ronin_control` | managed file coordination |  |  |  |  |
 | `glossary.ronin_services` | Ronin Services |  |  |  |  |
 | `glossary.roster` | the roster |  |  |  |  |
 | `glossary.routine` | routine |  |  |  |  |
+| `glossary.routine_floor` | Cowork floor |  |  |  |  |
 | `glossary.rung` | rung · leg · phase · gate |  |  |  |  |
 | `glossary.selector_column` | selector column |  |  |  |  |
 | `glossary.services` | Services |  |  |  |  |
@@ -674,15 +675,16 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
 | `ladder.branch` | Branch |  |  |  |  |
-| `ladder.cowork` | Cowork |  |  |  |  |
+| `ladder.coworks` | Coworks |  |  |  |  |
+| `ladder.current_action` | Current action |  |  |  |  |
 | `ladder.docs_none` | No tracked documents. |  |  |  |  |
 | `ladder.gate` | GATE |  |  |  |  |
 | `ladder.legs_undetermined` | — legs undetermined |  |  |  |  |
+| `ladder.none` | no work record yet |  |  |  |  |
 | `ladder.progress` | Progress |  |  |  |  |
-| `ladder.progress_none` | No progress stated. |  |  |  |  |
 | `ladder.side` | {state} — the work record below is held, not stale |  |  |  |  |
-| `ladder.task` | Task |  |  |  |  |
-| `ladder.task_unmarked` | Not marked |  |  |  |  |
+| `ladder.task_at_hand` | Task at hand |  |  |  |  |
+| `ladder.task_unstated` | No task stated in this work record. |  |  |  |  |
 | `ladder.tracked_documents` | Tracked documents |  |  |  |  |
 | `ladder.worktrees` | Worktrees |  |  |  |  |
 

@@ -86,15 +86,15 @@ export function buildLadder(letter, deskEntry = null) {
     box.appendChild(summary);
   }
 
-  const task = section(t('ladder.task', 'Task'), 'sl-task');
-  const role = document.createElement('p');
-  role.className = 'sl-action';
-  role.textContent = letter.session_role || t('ladder.task_unmarked', 'Not marked');
-  task.appendChild(role);
-  if (letter.objective) {
-    const objective = document.createElement('p');
-    objective.textContent = letter.objective;
-    task.appendChild(objective);
+  const task = section(t('ladder.task_at_hand', 'Task at hand'), 'sl-task');
+  const objective = document.createElement('p');
+  objective.textContent = letter.objective || t('ladder.task_unstated', 'No task stated in this work record.');
+  task.appendChild(objective);
+  if (letter.session_role) {
+    const action = document.createElement('p');
+    action.className = 'sl-action';
+    action.append(t('ladder.current_action', 'Current action'), ' · ', letter.session_role);
+    task.appendChild(action);
   }
 
   // Parked, in the agent's own words. Sits above the objective because it changes what
@@ -104,6 +104,50 @@ export function buildLadder(letter, deskEntry = null) {
     sr.className = 'sl-side';
     sr.textContent = '↳ ' + t('ladder.side', '{state} — the work record below is held, not stale', { state: letter.ladder_state.replace(/_/g, ' ') });
     box.appendChild(sr);
+  }
+
+  const desks = deskEntry?.desks || [];
+  if (desks.length || letter.repos?.length) {
+    const checkout = section(t('ladder.worktrees', 'Worktrees'), 'sl-checkout');
+    const rows = desks.length ? desks : letter.repos;
+    for (const item of rows) {
+      const line = document.createElement('div');
+      line.className = 'sl-checkout-line';
+      if (item.worktree) {
+        const worktree = document.createElement('strong');
+        worktree.className = 'sl-worktree';
+        worktree.textContent = item.worktree;
+        line.appendChild(worktree);
+      }
+      if (item.branch) {
+        const branch = document.createElement('span');
+        branch.className = 'sl-branch';
+        branch.textContent = t('ladder.branch', 'Branch') + ' · ' + item.branch;
+        line.appendChild(branch);
+      }
+      if (item.repo) {
+        const repo = document.createElement('span');
+        repo.className = 'sl-repo';
+        repo.textContent = item.repo.replace(/^.*[/:]([^/]+\/[^/]+?)(\.git)?$/, '$1');
+        repo.title = item.repo;
+        line.appendChild(repo);
+      }
+      checkout.appendChild(line);
+    }
+  }
+
+  if ((letter.teams ?? []).length) {
+    const context = section(t('ladder.coworks', 'Coworks'), 'sl-context');
+    for (const entry of letter.teams ?? []) {
+      const team = document.createElement('p');
+      team.textContent = entry.team;
+      if (entry.team_role) {
+        const role = document.createElement('span');
+        role.textContent = entry.team_role;
+        team.appendChild(role);
+      }
+      context.appendChild(team);
+    }
   }
 
   const docs = section(t('ladder.tracked_documents', 'Tracked documents'), 'sl-docs');
@@ -124,13 +168,15 @@ export function buildLadder(letter, deskEntry = null) {
   // Checkout facts remain useful before the session has drawn a ladder. The branch and
   // repo header buttons open this panel, so returning early above would make both buttons
   // open a panel that hid the very values they name.
-  const progress = section(t('ladder.progress', 'Progress'), 'sl-progress');
   if (!letter.ladder?.length) {
     const empty = document.createElement('div');
     empty.className = 'sl-empty';
-    empty.textContent = t('ladder.progress_none', 'No progress stated.');
-    progress.appendChild(empty);
+    empty.textContent = t('ladder.none', 'no work record yet');
+    box.appendChild(empty);
+    return box;
   }
+
+  const progress = section(t('ladder.progress', 'Progress'), 'sl-progress');
 
   /**
    * One row. Only the torii column runs the whole ladder — the mark and the number
@@ -242,50 +288,6 @@ export function buildLadder(letter, deskEntry = null) {
         }),
       );
     });
-  }
-
-  const desks = deskEntry?.desks || [];
-  if (desks.length || letter.repos?.length) {
-    const checkout = section(t('ladder.worktrees', 'Worktrees'), 'sl-checkout');
-    const rows = desks.length ? desks : letter.repos;
-    for (const item of rows) {
-      const line = document.createElement('div');
-      line.className = 'sl-checkout-line';
-      if (item.worktree) {
-        const worktree = document.createElement('strong');
-        worktree.className = 'sl-worktree';
-        worktree.textContent = item.worktree;
-        line.appendChild(worktree);
-      }
-      if (item.branch) {
-        const branch = document.createElement('span');
-        branch.className = 'sl-branch';
-        branch.textContent = t('ladder.branch', 'Branch') + ' · ' + item.branch;
-        line.appendChild(branch);
-      }
-      if (item.repo) {
-        const repo = document.createElement('span');
-        repo.className = 'sl-repo';
-        repo.textContent = item.repo.replace(/^.*[/:]([^/]+\/[^/]+?)(\.git)?$/, '$1');
-        repo.title = item.repo;
-        line.appendChild(repo);
-      }
-      checkout.appendChild(line);
-    }
-  }
-
-  if ((letter.teams ?? []).length) {
-    const context = section(t('ladder.cowork', 'Cowork'), 'sl-context');
-    for (const entry of letter.teams ?? []) {
-      const team = document.createElement('p');
-      team.textContent = entry.team;
-      if (entry.team_role) {
-        const teamRole = document.createElement('span');
-        teamRole.textContent = entry.team_role;
-        team.appendChild(teamRole);
-      }
-      context.appendChild(team);
-    }
   }
 
   return box;

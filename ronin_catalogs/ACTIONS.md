@@ -186,7 +186,7 @@ execute from.
   of done. Write for an agent with ZERO shared context.
 - **Then `list-doc` it.** A handoff nobody can find is a handoff nobody reads.
 
-## read-letter — read the work record a session is keeping
+## read-letter — read the ladder a session is keeping
 `action_kind: mechanical` — run it, don't deliberate.
 > **Tool: `read_tegami`** (TOOLS.md)
 Your own letter — objective, role_family, session_role, the ladder, and where on it you are.
@@ -195,12 +195,11 @@ read_tegami                     # your letter, as written
 read_tegami --json              # just the block, for a machine
 read_tegami --rungs             # the positions a marker can point at, current one flagged
 read_tegami --session <name>    # another session's — DENIED at dial 👤
-read_tegami --help              # every form, from the tool itself
 ```
 **No paths, ever** — it resolves the pane's own session and is viewer-safe. Exit 3 =
 no letter yet, which is the ordinary state of a session that has not written one.
 
-## write-letter — update your work record, or point at the rung being worked
+## write-letter — set your ladder, or point at the rung being worked
 `action_kind: judgement` — this one needs your reasoning; no tool can do it for you.
 > **Tool: `write_tegami`** (TOOLS.md)
 Your letter is the one file that outlives your pane, so it is written for whoever
@@ -210,7 +209,6 @@ write_tegami <<'JSON'           # replaces YOUR ladder; the block and nothing el
 { "objective": "...", "role_family": "...", "session_role": "...", "ladder": [ … ] }
 JSON
 write_tegami --session <name> --at 2.3    # another session's position, ONLY the position
-write_tegami --done 2.3                    # mark one of YOUR legs DONE
 ```
 - **Bring it in line with what you have actually done** — a ladder that flatters is
   worse than none, because the owner steers by it.

@@ -1,6 +1,6 @@
-# Ronin Control
-- **label:** Ronin Control
-- **blurb:** Managed desks, hand-in, team promotion, repository receipts and Git guards.
+# Managed file coordination
+- **label:** Managed file coordination
+- **blurb:** Separate worktrees, hand-in, lead integration, receipts and Git safeguards help parallel Agents avoid file collisions.
 - **class:** control
 - **reading:** assignment/DESK_CONTRACT.md
 - **sops:** github

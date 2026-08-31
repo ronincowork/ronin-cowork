@@ -58,21 +58,6 @@ async function validateBlock(block: unknown, previous: unknown): Promise<{ out: 
   });
 }
 
-async function runDone(file: string, position: string): Promise<{ out: string; err: string; code: number }> {
-  const tool = await fs.readFile(path.join(REPO, 'ronin_bin', 'write_tegami'), 'utf8');
-  const m = tool.match(/<<'DONEMARK' \|\| exit 3\n([\s\S]*?)\nDONEMARK/);
-  assert.ok(m, "write_tegami's --done implementation could not be found");
-  return await new Promise((resolve) => {
-    const child = spawn('python3', ['-', file, position, 'axes_done']);
-    let out = '';
-    let err = '';
-    child.stdout.on('data', (d) => (out += d));
-    child.stderr.on('data', (d) => (err += d));
-    child.on('close', (code) => resolve({ out, err, code: code ?? 0 }));
-    child.stdin.end(m![1]);
-  });
-}
-
 test('the session_role changes twice, and blank stays a reachable value', async () => {
   await seedTegami('axes_move', 'RiffOnIt');
   assert.equal(await readSessionRole('axes_move'), 'RiffOnIt');
@@ -126,50 +111,6 @@ test('write_tegami refuses the retired role_family key with the R35 teaching tex
   assert.notEqual(r.code, 0);
   assert.match(r.err + r.out, /"role_family" is retired \(R35/);
   assert.equal(r.out.trim(), '');
-});
-
-test('a whole progress rewrite carries omitted repository coordinates through', async () => {
-  const repos = [{ repo: 'cowork', branch: 'team/team_clean/work_record', worktree: '/desk/work_record', line: 'team/team_clean/dev' }];
-  const r = await validateBlock(
-    { objective: 'cut it', session_role: 'CutCode', ladder: [] },
-    { objective: 'old', session_role: 'CutCode', repos, ladder: [] },
-  );
-  assert.equal(r.code, 0, r.err);
-  assert.deepEqual(JSON.parse(r.out).repos, repos);
-});
-
-test('write_tegami --done marks exactly one visible position and preserves the rest of the work record', async () => {
-  const file = path.join(await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-done-')), 'tegami.md');
-  const before = {
-    objective: 'keep me', session_role: 'CutCode', docs: ['plan.md'],
-    repos: [{ repo: 'cowork', branch: 'private', worktree: '/desk' }], teams: [{ team: 'team_clean' }],
-    ladder: [
-      { gate: 'approved', status: 'DONE' },
-      { phase: 'cut', legs: [{ title: 'first', status: 'ACTIVE' }, { title: 'second', status: 'PLANNED' }] },
-    ],
-  };
-  await fs.writeFile(file, `# TEGAMI\n\n\`\`\`json\n${JSON.stringify(before, null, 2)}\n\`\`\`\n`);
-  const r = await runDone(file, '2.1');
-  assert.equal(r.code, 0, r.err);
-  const after = JSON.parse((await fs.readFile(file, 'utf8')).match(/```json\n([\s\S]*?)\n```/)![1]);
-  assert.equal(after.ladder[1].legs[0].status, 'DONE');
-  assert.equal(after.ladder[1].legs[1].status, 'PLANNED');
-  assert.deepEqual(after.docs, before.docs);
-  assert.deepEqual(after.repos, before.repos);
-  assert.deepEqual(after.teams, before.teams);
-});
-
-test('both work-record tools answer help without a session or store', async () => {
-  for (const name of ['read_tegami', 'write_tegami']) {
-    const result = await new Promise<{ out: string; code: number }>((resolve) => {
-      const child = spawn(path.join(REPO, 'ronin_bin', name), ['--help'], { env: { PATH: process.env.PATH ?? '' } });
-      let out = '';
-      child.stdout.on('data', (d) => (out += d));
-      child.on('close', (code) => resolve({ out, code: code ?? 0 }));
-    });
-    assert.equal(result.code, 0);
-    assert.match(result.out, new RegExp(`Usage: ${name}`));
-  }
 });
 
 test('a committed task change delivers its reading once, and a repeat scrape delivers nothing', async () => {

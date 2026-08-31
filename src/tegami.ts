@@ -190,8 +190,7 @@ function seedShell(
 > work changes**: a session that finishes planning and starts building has changed its
 > session_role, not become a new session. It is the SESSION's role, not the agent's: same
 > binary, different work. When you change it, Ronin hands you that role's own reading — so
-> re-marking yourself is how you get told what the new work needs. Use
-> \`tejun-session-set <your-session> --role <task>\` for that small update.
+> re-marking yourself is how you get told what the new work needs.
 >
 > YOUR **teams** block is DERIVED and not yours to write: one entry per team you are on —
 > the team's name, its team_role, and its objective, read live from the team rosters.
@@ -211,10 +210,6 @@ ${tasks}
 > cannot see: a short ladder is a true ladder, and a guessed one is a lie. Statuses are
 > \`PLANNED\` · \`ACTIVE\` · \`DONE\`, **one ACTIVE at a time**. Add a gate wherever the work
 > genuinely stops and needs someone — that is how the owner knows you want them.
-> The shape is \`[{"phase":"…","legs":[{"title":"…","status":"PLANNED|ACTIVE|DONE"}]}]\`;
-> a gate rung is \`{"gate":"…","status":"PLANNED|ACTIVE|DONE"}\`. For the common update,
-> \`read_tegami --rungs\` then \`write_tegami --done 2.3\`; rewrite the block only when its
-> words or shape changed.
 >
 > YOUR **ladder_state** — \`write_tegami --on_tangent\` when you step off the ladder,
 > \`--on_track\` when you are back. Riffing, a side job, ten minutes in nobody's plan — all
@@ -493,10 +488,11 @@ export async function withAxes(list: SessionInfo[]): Promise<SessionWithAxes[]> 
   // migration seeded rather than as belonging to nothing. This is the compatibility read
   // (src/campaign-scope.ts), and it is the ONLY place a session list applies it — which is
   // what makes the fallback removable in one edit when the window closes.
-  const { campaignResolver } = await import('./campaign-scope.js');
+  const { campaignResolver, machineCampaignId } = await import('./campaign-scope.js');
   const resolve = await campaignResolver();
+  const machine = await machineCampaignId();
   return Promise.all(
-    list.map(async (s) => ({
+    list.filter((s) => !machine || resolve(s.campaign_id) === machine).map(async (s) => ({
       ...s,
       session_role: await readSessionRole(s.name),
       campaign_id: resolve(s.campaign_id),
