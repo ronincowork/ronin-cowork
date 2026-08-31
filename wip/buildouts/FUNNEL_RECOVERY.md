@@ -22,8 +22,8 @@ owner-facing diagnosis and recovery workflow.
 All five tracked working-tree blobs are already committed on named branches. One branch,
 `fix/label-vm-provider-comparison-20260823`, contains byte-identical versions of all five.
 The untracked VM explainer is also committed. The untracked `.stignore` is unique, but it
-does not trigger the current tracked-dirt refusal. Two dirty paths (`docs/site.md` and
-`explainers/index.html`) overlap the pending `user_enroll` candidate, and a three-way merge
+does not trigger the current tracked-dirt refusal. Two dirty Site paths (docs/site.md and
+explainers/index.html) overlap the pending `user_enroll` candidate, and a three-way merge
 between the preserved branch and that team line conflicts in both. Preservation is thus
 already satisfied for the blocking bytes, but reconciliation is not.
 
@@ -119,7 +119,7 @@ Do not keep two overlapping all-purpose Git SOPs. Cut responsibility this way:
    and direct-to-stable history. It is discoverable to Agents who may need ordinary Git
    without managed file coordination.
 3. **Reviewed Git guidance belongs wholly to managed file coordination.** Add a distinct
-   SOP (working name `github_reviewed.md`, final catalog name to be reviewed) containing
+   SOP (working name github_reviewed.md, final catalog name to be reviewed) containing
    desk → hand-in → team promotion → release PR, receipts, conflict ownership and funnel
    recovery. The desk contract remains the short birth reading; the SOP is fetched when
    the situation calls for source-control work. The manifest may still be spelled

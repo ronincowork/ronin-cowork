@@ -103,7 +103,7 @@ export async function declareArrangement(dir: string, desks: 'managed' | 'none')
  * written fresh by declareArrangement. Comment lines and unknown keys are kept as they
  * are; only the keys named change. Not a git repo → refused.
  */
-export async function setDesks(dir: string, desks: 'managed' | 'none'): Promise<RepoArrangement> {
+async function setDesks(dir: string, desks: 'managed' | 'none'): Promise<RepoArrangement> {
   try { await access(path.join(dir, '.git')); } catch { throw new Error(`${dir} is not a git repository — desks need a repository to declare`); }
   const file = path.join(dir, RONIN_REPO_FILE);
   let text: string | null = null;

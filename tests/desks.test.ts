@@ -132,9 +132,9 @@ test('openDesk: cut from the team line, mounted, upstream set, recorded; the lin
 });
 
 test('openDesk refuses: a funnel point by name, a direct repo, an undeclared repo', async () => {
-  await assert.rejects(openDesk({ repo: 'cowork', session: 'x', team: 'comp', branch: 'dev' }), /funnel point/);
-  await assert.rejects(openDesk({ repo: 'cowork', session: 'x', team: 'comp', branch: 'team/comp/dev' }), /funnel point/);
-  await assert.rejects(openDesk({ repo: 'cowork', session: 'x', team: 'comp', branch: 'master' }), /funnel point/);
+  await assert.rejects(openDesk({ repo: 'cowork', session: 'x', team: 'comp', branch: 'dev' }), /reviewed integration line/);
+  await assert.rejects(openDesk({ repo: 'cowork', session: 'x', team: 'comp', branch: 'team/comp/dev' }), /reviewed integration line/);
+  await assert.rejects(openDesk({ repo: 'cowork', session: 'x', team: 'comp', branch: 'master' }), /reviewed integration line/);
   await assert.rejects(openDesk({ repo: 'koe', session: 'x', team: '' }), DeskRefused);
   await assert.rejects(openDesk({ repo: 'plain', session: 'x', team: '' }), /no RONIN_REPO/);
 });
