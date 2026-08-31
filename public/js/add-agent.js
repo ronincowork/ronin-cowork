@@ -279,8 +279,11 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
     if (deskNote) notice.set('warning', t('add_agent.started_note', 'Started {name} — {note}', { name: born, note: deskNote }));
     else notice.set('success', t('add_agent.started', 'Started {name}', { name: born }));
     reset();
-    // THE LOOP: the Agent appears in the workspace that made it.
-    if (born) connect?.(born);
+    // THE LOOP: the Agent appears in the workspace that made it — EXCEPT when the
+    // receipt carries a desk note. Connecting swaps this surface for the tile in the
+    // same breath, which would take the one line explaining the missing desk with it;
+    // so the note holds the surface, and the newborn is on the roster one click away.
+    if (born && !deskNote) connect?.(born);
   };
 
   const start = createAction({ label: t('add_agent.start', 'Start'), kind: 'primary', action: () => void launch() });
