@@ -402,6 +402,42 @@ export function createCoworkView(options = {}) {
   // reading is absent. RIREKI's cherry-pick or summary joins the row when the service
   // contributes it; there is no field for it today.
   let rows = new Map(); // name -> the /api/home row
+  const buildTeamMembers = (name, options = {}) => {
+    const holding = !!options.holding;
+    const roster = el('section', 'league-team-roster');
+    roster.append(el('h3', 'league-team-roster-title', holding ? t('league.agents', 'Agents') : t('league.members', 'Team members')));
+    const list = el('div', 'league-team-member-list'), members = membersOfTeam(name);
+    if (!members.length) list.append(el('p', 'league-team-empty', holding ? t('league.no_ronin', 'No Rōnin Agents') : t('league.no_members', 'No Agents assigned yet.')));
+    for (const member of members) {
+      const row = el('article', 'league-team-member');
+      const identity = el('div', 'league-team-member-identity');
+      const mark = el('span', 'league-team-member-mark', member.team_lead ? '人' : ''); mark.setAttribute('aria-hidden', 'true');
+      const words = el('div', 'league-team-member-words');
+      words.append(el('strong', null, agentTitle(member)), el('span', null, member.session_role || t('league.role_unset', 'Role not set')));
+      identity.append(mark, words);
+      if (holding) { row.append(identity); list.append(row); continue; }
+      const rename = createAction({ label: t('league.rename_agent', 'Rename'), size: 'compact', action: async () => {
+        const currentTitle = agentTitle(member);
+        const wanted = window.prompt(t('league.rename_agent_prompt', 'Edit Agent title'), currentTitle);
+        if (wanted == null || wanted.trim() === currentTitle) return;
+        try { await setSessionTitle(member.name, wanted.trim()); await refreshTeams(); options.onChanged?.(); }
+        catch (error) { options.onFailed?.(t('head.rename_failed', 'Could not rename session: {reason}', { reason: error.message })); }
+      } });
+      const lead = createAction({ label: member.team_lead ? t('league.team_lead', 'Team Lead') : t('league.make_team_lead', 'Make Lead'), size: 'compact', selected: member.team_lead, action: async () => { const result = await setTeamLead(member.name, name, !member.team_lead); if (!result.ok) return options.onFailed?.(result.message); options.onChanged?.(); } });
+      const eject = createAction({ label: t('league.remove_member', 'Remove'), title: t('league.remove_named_member', 'Remove {name} from this team', { name: member.name }), size: 'compact', action: async () => { const result = await setTeamMembership(member.name, name, false); if (!result.ok) return options.onFailed?.(result.message); options.onChanged?.(); } });
+      row.append(identity, createActionBar({ className: 'league-team-member-actions', actions: [rename, lead, eject] }).el); list.append(row);
+    }
+    roster.append(list);
+    if (holding) return roster;
+    const available = sessionsAvailableToTeam(name), add = el('div', 'league-team-add');
+    const select = el('select', null); select.setAttribute('aria-label', t('league.choose_member', 'Choose an Agent to add'));
+    select.append(new Option(available.length ? t('league.choose_member', 'Choose an Agent to add') : t('league.no_available_members', 'No other Agents available'), ''));
+    for (const session of available) select.append(new Option(agentTitle(session) + (session.session_role ? ` — ${session.session_role}` : ''), session.name));
+    const assign = createAction({ label: t('league.assign_member', 'Assign'), size: 'compact', disabled: true, action: async () => { if (!select.value) return; const result = await setTeamMembership(select.value, name, true); if (!result.ok) return options.onFailed?.(result.message); options.onChanged?.(); } });
+    select.addEventListener('change', () => assign.setDisabled(!select.value));
+    add.append(select, assign.el); roster.append(add);
+    return roster;
+  };
   const leagueTeamSurfaces = new Map(), openTeam = (name) => { const url = new URL(location.href); url.hash = `#/team/${encodeURIComponent(name)}`; window.open(url.href, '_blank', 'noopener'); };
   const createLeagueTeamSurface = (name, id) => {
     const cacheKey = `${id}\0${name}`;
@@ -415,46 +451,9 @@ export function createCoworkView(options = {}) {
     surface.content.classList.add('league-team-edit-content');
     const render = () => {
       const holding = name === UNASSIGNED;
-      const current = teamByName(name), members = membersOfTeam(name);
-      const roster = el('section', 'league-team-roster');
-      roster.append(el('h3', 'league-team-roster-title', holding ? t('league.agents', 'Agents') : t('league.members', 'Team members')));
-      const list = el('div', 'league-team-member-list');
-      if (!members.length) list.append(el('p', 'league-team-empty', holding ? t('league.no_ronin', 'No Rōnin Agents') : t('league.no_members', 'No Agents assigned yet.')));
-      for (const member of members) {
-        const row = el('article', 'league-team-member');
-        const identity = el('div', 'league-team-member-identity');
-        const mark = el('span', 'league-team-member-mark', member.team_lead ? '人' : ''); mark.setAttribute('aria-hidden', 'true');
-        const words = el('div', 'league-team-member-words');
-        words.append(el('strong', null, agentTitle(member)), el('span', null, member.session_role || t('league.role_unset', 'Role not set')));
-        identity.append(mark, words);
-        if (holding) { row.append(identity); list.append(row); continue; }
-        const rename = createAction({ label: t('league.rename_agent', 'Rename'), size: 'compact', action: async () => {
-          const currentTitle = agentTitle(member);
-          const wanted = window.prompt(t('league.rename_agent_prompt', 'Edit Agent title'), currentTitle);
-          if (wanted == null || wanted.trim() === currentTitle) return;
-          try {
-            await setSessionTitle(member.name, wanted.trim());
-            await refreshTeams();
-            surface.setState();
-            render();
-          } catch (error) {
-            surface.setState('failed', t('head.rename_failed', 'Could not rename session: {reason}', { reason: error.message }));
-          }
-        } });
-        const lead = createAction({ label: member.team_lead ? t('league.team_lead', 'Team Lead') : t('league.make_team_lead', 'Make Lead'), size: 'compact', selected: member.team_lead, action: async () => { const result = await setTeamLead(member.name, name, !member.team_lead); if (!result.ok) return surface.setState('failed', result.message); surface.setState(); render(); } });
-        const eject = createAction({ label: t('league.remove_member', 'Remove'), title: t('league.remove_named_member', 'Remove {name} from this team', { name: member.name }), size: 'compact', action: async () => { const result = await setTeamMembership(member.name, name, false); if (!result.ok) return surface.setState('failed', result.message); surface.setState(); render(); } });
-        const actions = createActionBar({ className: 'league-team-member-actions', actions: [rename, lead, eject] });
-        row.append(identity, actions.el); list.append(row);
-      }
-      roster.append(list);
+      const current = teamByName(name);
+      const roster = buildTeamMembers(name, { holding, onChanged: () => { surface.setState(); render(); }, onFailed: (message) => surface.setState('failed', message) });
       if (holding) { surface.content.replaceChildren(roster); return; }
-      const available = sessionsAvailableToTeam(name), add = el('div', 'league-team-add');
-      const select = el('select', null); select.setAttribute('aria-label', t('league.choose_member', 'Choose an Agent to add'));
-      select.append(new Option(available.length ? t('league.choose_member', 'Choose an Agent to add') : t('league.no_available_members', 'No other Agents available'), ''));
-      for (const session of available) select.append(new Option(session.name + (session.session_role ? ` — ${session.session_role}` : ''), session.name));
-      const assign = createAction({ label: t('league.assign_member', 'Assign'), size: 'compact', disabled: true, action: async () => { if (!select.value) return; const result = await setTeamMembership(select.value, name, true); if (!result.ok) return surface.setState('failed', result.message); surface.setState(); render(); } });
-      select.addEventListener('change', () => assign.setDisabled(!select.value));
-      add.append(select, assign.el); roster.append(add);
       const config = el('section', 'league-team-config');
       config.append(el('h3', 'league-team-roster-title', t('workspace.channel_team_configuration', 'Team Configuration')));
       const fields = el('div', null); config.append(fields);
@@ -511,7 +510,13 @@ export function createCoworkView(options = {}) {
 
   function renderConfig(roster, live) {
     for (const commons of Object.values(teamCommons)) {
-      renderTeamConfiguration(commons.config, roster && { ...roster, durable: true }, { createAction, onSaved: async (saved) => {
+      if (!roster) { renderTeamConfiguration(commons.config, null, { createAction }); continue; }
+      const fields = el('div');
+      const config = el('section', 'league-team-config');
+      config.append(el('h3', 'league-team-roster-title', t('workspace.channel_team_configuration', 'Team Configuration')), fields);
+      const members = buildTeamMembers(team, { onChanged: () => { commons.channels.setState(); paint(); }, onFailed: (message) => commons.channels.setState('failed', message) });
+      commons.config.replaceChildren(members, config);
+      renderTeamConfiguration(fields, { ...roster, durable: true }, { createAction, onSaved: async (saved) => {
         await refreshTeams();
         setBarLabel(); renderConfig(saved, live); paint();
       } });
