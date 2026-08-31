@@ -12,7 +12,9 @@ export type RoutineChoices = Record<string, boolean>;
 
 export interface ResolvedRoutine extends RoutineRow {
   enabled: boolean;
-  stated_by: 'campaign' | 'team' | 'implicit_off';
+  stated_by: 'campaign' | 'team' | 'dependency' | 'implicit_off';
+  /** Selected Routines which made this one additive, empty for a direct choice. */
+  required_by: string[];
 }
 
 const own = (map: RoutineChoices, name: string): boolean =>
@@ -32,13 +34,33 @@ export function resolveRoutines(
   campaign: RoutineChoices,
   team: RoutineChoices = {},
 ): ResolvedRoutine[] {
-  return catalog.map((routine) => {
+  const resolved: ResolvedRoutine[] = catalog.map((routine) => {
     if (own(team, routine.name)) {
-      return { ...routine, enabled: team[routine.name], stated_by: 'team' as const };
+      return { ...routine, enabled: team[routine.name], stated_by: 'team' as const, required_by: [] as string[] };
     }
     if (own(campaign, routine.name)) {
-      return { ...routine, enabled: campaign[routine.name], stated_by: 'campaign' as const };
+      return { ...routine, enabled: campaign[routine.name], stated_by: 'campaign' as const, required_by: [] as string[] };
     }
-    return { ...routine, enabled: false, stated_by: 'implicit_off' as const };
+    return { ...routine, enabled: false, stated_by: 'implicit_off' as const, required_by: [] as string[] };
   });
+  const byName = new Map(resolved.map((routine) => [routine.name, routine]));
+  // Close the graph to a fixed point. A direct off is overridden by an enabled dependent:
+  // the additive progression is a product invariant, not a contradictory partial state.
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const routine of resolved.filter((item) => item.enabled)) {
+      for (const dependencyName of routine.requires) {
+        const dependency = byName.get(dependencyName);
+        if (!dependency) continue; // catalog validation names the broken reference
+        if (!dependency.required_by.includes(routine.name)) dependency.required_by.push(routine.name);
+        if (!dependency.enabled) {
+          dependency.enabled = true;
+          dependency.stated_by = 'dependency';
+          changed = true;
+        }
+      }
+    }
+  }
+  return resolved;
 }
