@@ -78,8 +78,7 @@ while [ $# -gt 0 ]; do
 done
 ME=$(me 2>/dev/null || true)
 
-url="${RONIN_URL:-$(tmux show-option -s -qv @ronin-url 2>/dev/null || true)}"
-[ -n "$url" ] || url="http://127.0.0.1:3006"
+url=$(ronin-url) || exit $?
 AUTH=()
 [ -n "${RONIN_AUTH:-}" ] && AUTH=(-u "$RONIN_AUTH")
 api() { curl -sS -m 60 "${AUTH[@]+"${AUTH[@]}"}" -H 'content-type: application/json' "$@" 2>/dev/null; }

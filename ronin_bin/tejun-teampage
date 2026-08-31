@@ -66,8 +66,7 @@ if [ -z "$TEAM" ]; then
   [ "$n" -eq 1 ] || die "WHICH-TEAM: $ME is on several teams ($tags) — say --team <team>." 2
 fi
 
-url="${RONIN_URL:-$(tmux show-option -s -qv @ronin-url 2>/dev/null || true)}"
-[ -n "$url" ] || url="http://127.0.0.1:3006"
+url=$(ronin-url) || exit $?
 AUTH=()
 [ -n "${RONIN_AUTH:-}" ] && AUTH=(-u "$RONIN_AUTH")
 api() { curl -sS -m 20 "${AUTH[@]+"${AUTH[@]}"}" "$@" 2>/dev/null; }

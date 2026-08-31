@@ -40,9 +40,6 @@ export interface SessionInfo {
 const NOTE_OPT = '@ronin_note';
 const TITLE_OPT = '@ronin-title';
 
-/** tmux SERVER option holding Ronin's own base URL, for tools running inside a pane. */
-const URL_OPT = '@ronin-url';
-
 /**
  * tmux user option holding a session's GROUP TAGS — comma-separated, e.g. `kojinsa,review`.
  * A "group" is just the set of sessions carrying the same tag; there is no group object
@@ -368,19 +365,6 @@ export async function sessionOfPane(paneId: string): Promise<string | null> {
     return owners.find((s) => !s.startsWith(config.viewerPrefix)) ?? owners[0];
   } catch {
     return null; // no server, no panes — nothing to end
-  }
-}
-
-/**
- * Publish where Ronin is listening, as a tmux SERVER option, so tools running inside a
- * pane can find the API without duplicating config.ts's bind logic (tailnet IP, PORT).
- * Server-scoped, so it is visible from every session and costs nothing to keep current.
- */
-export async function publishRoninUrl(url: string): Promise<void> {
-  try {
-    await pexec('tmux', ['set-option', '-s', URL_OPT, url]);
-  } catch {
-    // no tmux server yet — tools fall back to RONIN_URL / the default
   }
 }
 
