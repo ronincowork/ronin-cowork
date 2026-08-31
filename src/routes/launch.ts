@@ -81,6 +81,7 @@ const LAUNCH_KEYS = new Set([
   'session_type', 'session_role', 'team', 'team_lead', 'instructions', 'prompt', 'name',
   'dial', 'project_root', 'cmd', 'model', 'provider', 'mandate', 'campaign_id', 'mcp',
   'tags', 'seed', 'inject', 'reference', 'desk',
+  'kind', 'behaviours',
 ]);
 const RETIRED_LAUNCH_KEYS = new Set([
   'role_family', 'family_role', 'session_task', 'team_role', 'campaign_kind', 'lifecycle',
@@ -89,6 +90,7 @@ const RETURNED_LAUNCH_KEYS = new Set([
   'assignment', 'posture', 'opening', 'ack', 'capExempt', 'launchAgent', 'stated_by', 'birth_reading',
 ]);
 const SESSION_TYPES = new Set(['cowork_agent', 'bare_metal_agent', 'terminal']);
+const KINDS = new Set(['open', 'coding', 'work', 'personal', 'household', 'social', 'school']);
 
 /** A launch body is a suggestion, never a refusal surface. Keep what this birth can use
  * and leave an exact list of everything else for its durable receipt. */
@@ -119,6 +121,9 @@ export function acceptedLaunchBody(input: unknown): { body: Record<string, unkno
   if (body.mcp !== undefined && typeof body.mcp !== 'boolean') drop('mcp');
   if (body.tags !== undefined && !Array.isArray(body.tags)) drop('tags');
   if (body.seed !== undefined && !Array.isArray(body.seed)) drop('seed');
+  if (body.kind !== undefined && (typeof body.kind !== 'string' || !KINDS.has(body.kind.trim()))) drop('kind');
+  if (body.kind !== undefined) body.kind = String(body.kind).trim();
+  if (body.behaviours !== undefined && !Array.isArray(body.behaviours)) drop('behaviours');
 
   const inapplicable = sessionType === 'terminal'
     ? ['provider', 'model', 'instructions', 'prompt', 'kind', 'mandate', 'behaviours', 'routines', 'sops', 'cmd', 'mcp', 'seed', 'inject', 'reference', 'session_role']
@@ -206,6 +211,8 @@ export function registerLaunch(app: express.Express): void {
         ? mandate(req.body.mandate)
         : undefined,
       campaign_id: String(req.body?.campaign_id ?? '').trim() || undefined,
+      kind: typeof req.body?.kind === 'string' ? req.body.kind : undefined,
+      behaviours: Array.isArray(req.body?.behaviours) ? req.body.behaviours.map(String) : undefined,
       // Only an explicit boolean is an opinion. Absent hands the choice to the resolved
       // profile's `mcp:` default (off for every ordinary launch, owner 2026-08-22)
       // rather than meaning "on", so a caller with nothing to say cannot connect a
@@ -378,7 +385,6 @@ export function registerLaunch(app: express.Express): void {
       });
     } else {
       const receipt = {
-        ignored: accepted.ignored,
         session_type: resolved.session_type,
         session_role: resolved.session_role,
         team: resolved.team,
@@ -389,6 +395,9 @@ export function registerLaunch(app: express.Express): void {
         tags: resolved.tags,
         mcp: resolved.mcp,
         team_lead: !!form.team_lead && !!resolved.team,
+        kind: resolved.kind,
+        behaviours: resolved.behaviours,
+        ignored: [...new Set([...accepted.ignored, ...resolved.ignored])].sort(),
         ...(resolved.session_type === 'cowork_agent'
           ? { boot: { state: 'open', brief: launch.parked ? 'parked' : 'argv' } }
           : {}),

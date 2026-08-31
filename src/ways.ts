@@ -1,15 +1,12 @@
 /**
  * WAYS SHELF — the optional ways of working, listed for the loadout trays.
  *
- * A typed read surface over shipped `ways/` only. The shelf's own README promises the
- * owner may replace a book whole, but no `ways` store exists in the registry yet — that
- * is a stores decision, raised rather than taken here — so every row is honestly
- * `stock` until one is ruled. The forms read this list; birth delivery of a selected
- * book is the loadout wiring, which is not this reader's business.
+ * A typed read surface over shipped `ways/` and the owner's whole-file shadows.
  */
 import { readFile, readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { storeDir } from './stores.js';
 import type { Origin } from './catalog.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -20,25 +17,25 @@ export interface WayRow {
   label: string;
   blurb: string;
   origin: Origin;
+  shadowed: boolean;
 }
 
 const isWay = (name: string): boolean =>
   name.endsWith('.md') && !name.startsWith('.') && name !== 'README.md';
 
-/** The shipped shelf, alphabetical by token — the catalog is the count. */
-export async function listWays(): Promise<WayRow[]> {
+async function readShelf(dir: string, origin: Origin): Promise<Map<string, WayRow>> {
   let names: string[];
   try {
-    names = (await readdir(STOCK_WAYS)).filter(isWay).sort();
+    names = (await readdir(dir)).filter(isWay).sort();
   } catch (e) {
-    if ((e as NodeJS.ErrnoException).code === 'ENOENT') return [];
+    if ((e as NodeJS.ErrnoException).code === 'ENOENT') return new Map();
     throw e;
   }
-  const rows: WayRow[] = [];
+  const rows = new Map<string, WayRow>();
   for (const file of names) {
     let content = '';
     try {
-      content = await readFile(path.join(STOCK_WAYS, file), 'utf8');
+      content = await readFile(path.join(dir, file), 'utf8');
     } catch {
       continue; // vanished mid-read
     }
@@ -48,7 +45,18 @@ export async function listWays(): Promise<WayRow[]> {
       .split(/\n\s*\n/)
       .map((part) => part.replace(/^>\s?/gm, '').replace(/\s+/g, ' ').trim())
       .find((part) => part && !part.startsWith('#')) || '';
-    rows.push({ name, label, blurb: blurb.slice(0, 200), origin: 'stock' });
+    rows.set(name, { name, label, blurb: blurb.slice(0, 200), origin, shadowed: false });
   }
   return rows;
+}
+
+/** Resolved alphabetical shelf; an owner's same-name file wins whole. */
+export async function listWays(): Promise<WayRow[]> {
+  const [stock, user] = await Promise.all([
+    readShelf(STOCK_WAYS, 'stock'),
+    readShelf(storeDir('ways'), 'user'),
+  ]);
+  const merged = new Map(stock);
+  for (const [name, row] of user) merged.set(name, { ...row, shadowed: stock.has(name) });
+  return [...merged.values()].sort((a, b) => a.label.localeCompare(b.label) || a.name.localeCompare(b.name));
 }

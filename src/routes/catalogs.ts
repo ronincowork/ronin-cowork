@@ -104,9 +104,8 @@ export function registerCatalogs(app: express.Express): void {
     }
   });
 
-  /** The ways shelf, for the loadout trays — labels and blurbs, never launch constants
-   *  (a way is reading, not a session identity). Stock-only until a `ways` store is
-   *  ruled into the registry. */
+  /** The resolved ways shelf, for the loadout trays — labels and blurbs, never launch
+   * constants. The owner's same-name book shadows stock whole-file. */
   app.get('/api/ways', async (_req, res) => {
     try {
       res.json(await listWays());

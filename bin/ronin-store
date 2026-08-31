@@ -30,6 +30,7 @@ bench|data|bench
 telemetry|data|telemetry
 ledger|data|ledger
 sops|user|sops
+ways|user|ways
 library|user|library
 session_boot|user|session_boot
 wipeboards|user|wipeboards

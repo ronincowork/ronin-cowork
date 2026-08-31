@@ -382,3 +382,19 @@ test('a name alone resolves the ordinary Cowork Agent birth', async () => {
   assert.deepEqual(born.mandate, { reach: 'plan', recruit: 'propose agents', output: 'open' });
   assert.equal(born.dial, 'write');
 });
+
+test('kind and behaviours resolve at birth, with unusable books ignored rather than refused', async () => {
+  const born = await resolveForm(commonsForm({
+    kind: 'coding',
+    behaviours: ['sops:github', 'ways:cut_code', 'ways:not_there'],
+  }), new Set());
+  assert.equal(born.kind, 'coding');
+  assert.deepEqual(born.behaviours.map((row) => row.book), ['sops:github', 'ways:cut_code']);
+  assert.ok(born.birth_reading.some((file) => file.endsWith('/ronin_sops/github.md')));
+  assert.ok(born.birth_reading.some((file) => file.endsWith('/ways/cut_code.md')));
+  assert.match(born.brief, /ronin_sops\/github\.md/);
+  assert.match(born.brief, /ways\/cut_code\.md/);
+  assert.deepEqual(born.ignored, ['behaviours[ways:not_there]']);
+  assert.equal(born.stated_by.kind[0]?.layer, 'launch');
+  assert.equal(born.stated_by.behaviours[0]?.layer, 'launch');
+});
