@@ -218,6 +218,8 @@ export interface CreateOpts {
    * makes it safe to hand an agent its whole brief on the command line.
    */
   argv?: readonly string[];
+  /** Environment fixed at birth; unlike shell rc files this reaches direct-exec Agents. */
+  env?: Readonly<Record<string, string>>;
 }
 
 export async function createSession(name: string, dir?: string, opts: CreateOpts = {}): Promise<void> {
@@ -248,6 +250,9 @@ export async function createSession(name: string, dir?: string, opts: CreateOpts
    */
   const build = (withDir: boolean) => {
     const a = ['new-session', '-d', '-s', name];
+    for (const [key, value] of Object.entries(opts.env ?? {}).sort(([a], [b]) => a.localeCompare(b))) {
+      a.push('-e', `${key}=${value}`);
+    }
     if (withDir && cwd) a.push('-c', cwd);
     if (opts.argv?.length) a.push('--', ...opts.argv, ';', 'set-option', '-w', '-t', name, 'remain-on-exit', 'on');
     if (opts.control) a.push(';', 'set-option', '-t', name, CONTROL_OPT, opts.control);
