@@ -79,8 +79,7 @@ test('the three ways an agent may ask, against one configuration', async () => {
 
 test('Campaign Agent defaults answer before install defaults, and an explicit ask still wins', async () => {
   // CAMPAIGN_WORKBENCH leg 4b (2026-08-30): the Campaign's `config.agent_defaults` is the
-  // SAME SHAPE the #/campaign surface writes — `{ default: { provider, model }, by_provider }`
-  // — and a subset of ⚙'s: it answers where it has an answer and ⚙ answers the rest.
+  // The settled Campaign pair answers where it has an answer and ⚙ answers the rest.
   await agents({
     default: { provider: 'openai', model: 'gpt-5.6-sol' },
     by_provider: { anthropic: 'fable', openai: 'gpt-5.6-terra' },
@@ -88,14 +87,14 @@ test('Campaign Agent defaults answer before install defaults, and an explicit as
   await fs.mkdir(path.join(temp, 'campaigns'), { recursive: true });
   await fs.writeFile(path.join(temp, 'campaigns', 'work.json'), JSON.stringify({
     title: 'Work',
-    config: { agent_defaults: { default: { provider: 'anthropic', model: 'opus' }, by_provider: { anthropic: 'haiku' } } },
+    config: { agent_defaults: { provider: 'anthropic', model: 'opus' } },
   }));
   // Nothing named: the Campaign's default pair, not ⚙'s.
   const inherited = await resolveForm(launch({ campaign_id: 'work' }), new Set());
   assert.ok(inherited.cmd.startsWith('claude --model opus'), inherited.cmd);
   // A provider named: the Campaign's own row for it, and the reading says so.
   const vendor = await resolveForm(launch({ campaign_id: 'work', provider: 'anthropic' }), new Set());
-  assert.ok(vendor.cmd.startsWith('claude --model haiku'), vendor.cmd);
+  assert.ok(vendor.cmd.startsWith('claude --model opus'), vendor.cmd);
   assert.deepEqual(vendor.stated_by.cmd, [{ layer: 'system', source: '#/campaign (work: agent_defaults)' }]);
   // A provider the Campaign has no row for: ⚙'s row, and the reading says ⚙.
   const theirs = await resolveForm(launch({ campaign_id: 'work', provider: 'openai' }), new Set());
@@ -107,7 +106,7 @@ test('Campaign Agent defaults answer before install defaults, and an explicit as
   // A half-pair is no default: ⚙'s pair answers, and the Campaign is not guessed for.
   await fs.writeFile(path.join(temp, 'campaigns', 'half.json'), JSON.stringify({
     title: 'Half',
-    config: { agent_defaults: { default: { provider: 'anthropic' } } },
+    config: { agent_defaults: { provider: 'anthropic' } },
   }));
   const half = await resolveForm(launch({ campaign_id: 'half' }), new Set());
   assert.ok(half.cmd.startsWith('codex --model gpt-5.6-sol'), half.cmd);
