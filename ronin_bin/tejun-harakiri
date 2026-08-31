@@ -30,8 +30,7 @@ esac
 pane="${TMUX_PANE:-$(tmux display-message -p '#{pane_id}' 2>/dev/null || true)}"
 [ -n "$pane" ] || { echo "NOT-IN-TMUX: no session to end (are you inside a tmux pane?)" >&2; exit 2; }
 
-url="${RONIN_URL:-$(tmux show-option -s -qv @ronin-url 2>/dev/null || true)}"
-[ -n "$url" ] || url="http://127.0.0.1:3006"
+url=$(ronin-url) || exit $?
 
 AUTH=()
 [ -n "${RONIN_AUTH:-}" ] && AUTH=(-u "$RONIN_AUTH")

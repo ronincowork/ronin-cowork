@@ -13,8 +13,8 @@
 # THE NUMBER IS NOT PARSED HERE. It arrives on the tmux SERVER option @ronin-session-max,
 # published by Ronin at boot and on every save. That is deliberate: this script stays
 # zero-dependency (no node, no jq), and a second JSON parser written in sed is exactly the
-# two-sources-of-truth defect that src/stores.ts exists to end. `@ronin-url` already works
-# this way — see ronin_bin/tejun-harakiri.
+# two-sources-of-truth defect that src/stores.ts exists to end. Operator-address consumers
+# use the same bus through the one ronin_bin/ronin-url resolver.
 #
 # A MISSING OPTION MEANS NO LIMIT, never zero. Ronin may not have started yet, or the tmux
 # server may have been restarted without it. Failing open is right here: the cost of a
