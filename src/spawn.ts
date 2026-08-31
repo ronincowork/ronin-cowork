@@ -16,6 +16,7 @@ import { mandate, type Mandate } from './agent-defaults.js';
 import { resolveRoutines, type ResolvedRoutine } from './routines.js';
 import { initialCampaignId } from './campaign-scope.js';
 import { resolveLaunchSeed } from './launch-seed.js';
+import { resolveBehaviourBooks, type DeliveredBehaviour } from './behaviours.js';
 
 /**
  * The mechanical executor: a filled form in, a briefed session out.
@@ -83,6 +84,10 @@ export interface SpawnForm {
   mandate?: Partial<Mandate>;
   /** Campaign whose Agent defaults apply. The route inherits this from the caller. */
   campaign_id?: string;
+  /** Team-seeded launch classification; this launch may state a different answer. */
+  kind?: string;
+  /** Chosen birth books. Absent inherits the parent seed; an explicit [] chooses none. */
+  behaviours?: string[];
   /** Optional first instruction. Blank still launches a fully booted Agent. */
   prompt?: string;
   /** What the session is called. Blank is derived and de-duplicated. */
@@ -183,6 +188,12 @@ export interface Resolved {
   team_state: '' | 'active' | 'archived';
   /** Literal files the server put in the assisted brief's `Read first:` sentence. */
   birth_reading: string[];
+  /** The valid selected books handed over beside the Routine reading. */
+  behaviours: DeliveredBehaviour[];
+  /** Team-seeded kind, or the launch's own valid answer. */
+  kind: string;
+  /** Unusable selected books omitted while the birth continued. */
+  ignored: string[];
   /** Campaign defaults after Team exceptions; the sole input to Routine projections. */
   routines: ResolvedRoutine[];
   /** Server-owned attribution for every resolved reading. The browser only renders it. */
@@ -559,12 +570,20 @@ export async function resolveForm(
     : [];
   const enabledRoutines = routines.filter((routine) => routine.enabled).map((routine) => routine.name);
   const enabledMacros = new Set(routines.filter((routine) => routine.enabled).flatMap((routine) => routine.macros));
+  const kind = form.kind ?? String(parentSeed?.seeds.kind.value ?? 'open');
+  const selectedBehaviours = form.behaviours ?? (parentSeed?.seeds.behaviours.value as string[] | undefined) ?? [];
+  const resolvedBehaviours = coworkAgent && agent
+    ? await resolveBehaviourBooks(selectedBehaviours)
+    : { delivered: [], ignored: [] };
   // Compile this once and return the exact same list the brief receives. The browser must
   // never recreate shelf precedence or guess which explicit seeds joined it.
   const shelfReading = coworkAgent && agent
     ? await bootReading(root.name, profile.session_role, !mcpOffWanted, !!form.team_lead && !!form.team, !!assignment, enabledRoutines, enabledMacros, name)
     : [];
-  const birthReading = coworkAgent && agent ? [...shelfReading, ...(form.seed ?? [])].filter(Boolean) : [];
+  const completeReading = [...shelfReading, ...resolvedBehaviours.delivered.map((book) => book.file)];
+  const birthReading = coworkAgent && agent
+    ? [...completeReading, ...(form.seed ?? [])].filter(Boolean)
+    : [];
   const resolvedMandate = coworkAgent
     ? mandate(form.mandate ?? {
         reach: parentSeed?.seeds.reach.value,
@@ -605,7 +624,7 @@ export async function resolveForm(
           root,
           form,
           referenceDir,
-          shelfReading,
+          completeReading,
           roster,
           assignment,
         )
@@ -630,6 +649,9 @@ export async function resolveForm(
     team_wipeboard: roster?.wipeboard ?? '',
     team_state: roster?.state ?? '',
     birth_reading: birthReading,
+    behaviours: resolvedBehaviours.delivered,
+    kind,
+    ignored: resolvedBehaviours.ignored,
     routines,
     stated_by: {
       name: form.name ? explicit : system,
@@ -662,6 +684,8 @@ export async function resolveForm(
       team_wipeboard: rosterSource,
       team_state: rosterSource,
       birth_reading: unique(system, form.seed?.length ? explicit : []),
+      behaviours: form.behaviours !== undefined ? explicit : parentSeed?.seeds.behaviours.stated_by ?? system,
+      kind: form.kind !== undefined ? explicit : parentSeed?.seeds.kind.stated_by ?? system,
       routines: parentSeed?.routines.flatMap((routine) => routine.stated_by) ?? system,
     },
   };

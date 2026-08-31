@@ -80,4 +80,16 @@ test('unknown, retired, invalid, and server-owned fields are ignored and noted t
   assert.deepEqual(result.ignored, ['dial', 'lifecycle', 'mystery', 'stated_by']);
 });
 
+test('cowork kind and behaviours survive body acceptance while unusable shapes are ignored', () => {
+  const accepted = acceptedLaunchBody({ name: 'proof', kind: 'coding', behaviours: ['sops:github'] });
+  assert.equal(accepted.body.kind, 'coding');
+  assert.deepEqual(accepted.body.behaviours, ['sops:github']);
+  assert.deepEqual(accepted.ignored, []);
+
+  const ignored = acceptedLaunchBody({ name: 'proof', kind: 'mystery', behaviours: 'sops:github' });
+  assert.equal(ignored.body.kind, undefined);
+  assert.equal(ignored.body.behaviours, undefined);
+  assert.deepEqual(ignored.ignored, ['behaviours', 'kind']);
+});
+
 test.after(() => server.close());
