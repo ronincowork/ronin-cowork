@@ -1,12 +1,46 @@
-# Ronin — the two-repo setup
+# Ronin
 
-> **2026-08-13.** The first master README for the split. The full documentation set
-> (user guide, architecture docs, vocabulary) migrates here from the original tree in
-> a coming pass; until then, this page is the map of how the pieces fit.
+Ronin is not another IDE for your Agents. It is a lightweight, locally run coworkspace
+around the Agents, accounts, tools, and documents you already use.
 
-Ronin is a browser grid for live tmux sessions: view and operate every agent session
-on a machine from one tab — desktop or phone — instead of SSHing and attaching by
-hand. xterm.js in the browser, a websocket bridge, node-pty and tmux on the host.
+Claude and Codex can run side by side, each in its own worktree. Ronin gives their live
+terminal sessions one browser surface on a machine you control; you choose how independently
+or closely they work through the Routines you opt into.
+
+## Work side by side
+
+<a href="https://ronincowork.com/explainers/workbench/">
+  <picture>
+    <source media="(max-width: 600px)" srcset="docs/assets/readme/workbench/workbench-narrow.webp">
+    <img src="docs/assets/readme/workbench/workbench-desktop.webp" alt="Ronin Workbench with Claude and Codex side by side in separate workspaces, each showing a task in its own disposable paper-garden worktree.">
+  </picture>
+</a>
+
+[See how two independent Agent providers work side by side in the Workbench.](https://ronincowork.com/explainers/workbench/)
+
+## Coordinate when useful
+
+Agents can remain independent or use optional Team coordination. Direct messages, the team
+wipeboard, shared documents, and selected Routines support closer work without turning a
+working convention into an access-control boundary.
+
+```text
+independent Agent ── choose what helps ── Team coordination
+                         │
+                 messages · wipeboard · shared work
+```
+
+[See how optional Agent coordination works.](https://ronincowork.com/explainers/agent-coordination/)
+
+## Add only the capabilities you want
+
+| Layer | What it adds |
+|---|---|
+| **Ronin Base** | The ordinary coworkspace, coordination, documents, and Macros. |
+| **Ronin Control** *(optional Routine)* | Managed worktrees, hand-in, team promotion, Git guards, and repository control. |
+| **Services** *(additional)* | Capabilities installed beside the open package; availability is separate from which Routines are enabled. |
+
+[See how Ronin Base, optional Ronin Control, and Services fit together.](https://ronincowork.com/explainers/cowork-and-services/)
 
 ## Start with your question
 
@@ -23,16 +57,16 @@ hand. xterm.js in the browser, a websocket bridge, node-pty and tmux on the host
 
 | Repo | What it is | Ships as |
 |---|---|---|
-| **ronin-cowork** (this one) | the free build — sessions, tiles, Workbench, rosters, notes, wipeboards, Macros, the commons, launch, and **all frontend** | open repo; versioned releases |
+| **ronin-cowork** (this one) | the open package — sessions, tiles, Workbench, rosters, notes, wipeboards, Macros, the commons, launch, and **all frontend** | open repo; versioned releases |
 | **ronin-services** | the optional paid layer — incremental capabilities installed beside the open `ronin-cowork` package | hosted, versioned archive |
 
-**Cowork runs completely alone.** It compiles, boots, and serves a machine's tmux
-sessions with no services present — that is not a degraded mode, it is the free
-product. A service adds its capability when installed; its absence is never an error.
+**The open package runs completely alone.** It compiles, boots, and serves a machine's tmux
+sessions with no Services present—that is not a degraded mode. A Service adds its
+capability when installed; its absence is never an error.
 
 ## How they work together: the connector
 
-Cowork never imports service code. Instead it exposes **sockets** — fixed connection
+Core code never imports Service code. Instead it exposes **sockets**—fixed connection
 points that no-op when empty — and each service ships one `register(sockets)` entry
 that plugs in at boot:
 
@@ -124,8 +158,8 @@ verdict; `bin/ronin-uninstall` reverses the install and leaves your own files be
 
 ## License
 
-Ronin Cowork is **Apache-2.0** (see `LICENSE` and `NOTICE`) — use it, fork it, ship
-it, commercially or not, with Apache's patent grant behind it. **Ronin services are
+The open `ronin-cowork` package is **Apache-2.0** (see `LICENSE` and `NOTICE`)—use it,
+fork it, ship it, commercially or not, with Apache's patent grant behind it. **Services are
 licensed differently**: source-available, free to download and use, but not to
-redistribute or commercialise — each services archive carries its own LICENSE, and
+redistribute or commercialize—each Services archive carries its own LICENSE, and
 those terms are the archive's, not this repo's.
