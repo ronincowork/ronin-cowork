@@ -1069,7 +1069,6 @@ The catalog entry goes. {dir} is not touched.
 - **archives.read_failed:** archive could not be read
 - **archives.empty:** no archived sessions
 - **archives.ago:** {age} ago
-- **archives.rehydrate:** Rehydrate {name}
 - **archives.rehydrate_btn:** Rehydrate
 - **archives.rehydrating:** rehydrating…
 - **archives.group_none:** Ronin — no team

@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1267 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1266 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -23,7 +23,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `archives.empty` | no archived sessions |  |  |  |  |
 | `archives.group_none` | Ronin — no team |  |  |  |  |
 | `archives.read_failed` | archive could not be read |  |  |  |  |
-| `archives.rehydrate` | Rehydrate {name} |  |  |  |  |
 | `archives.rehydrate_btn` | Rehydrate |  |  |  |  |
 | `archives.rehydrating` | rehydrating… |  |  |  |  |
 | `archives.title` | Archived sessions |  |  |  |  |
