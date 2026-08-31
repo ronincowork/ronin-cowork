@@ -12,6 +12,9 @@
   .fs-seg { display: flex; align-self: flex-start; margin-bottom: var(--space-5); border: var(--edge) solid var(--line-2); }
   .fs-seg button { border: 0; background: transparent; color: var(--muted-2); padding: var(--space-2) var(--space-6); cursor: pointer; font: inherit; font-size: var(--text-2); }
   .fs-seg button[aria-pressed='true'] { background: var(--kaki); color: var(--on-strong); }
+  /* A type with no template door hides the segment — and a display rule beats the UA's
+     [hidden], so the guard is not optional. Found by driving: `seg.hidden` was a no-op. */
+  .fs-seg[hidden] { display: none; }
 
   /* ── label-left steps; a folded step keeps its number, name and answer on one line ── */
   .fs-step { display: grid; grid-template-columns: calc(var(--space-12) * 4) minmax(0, 1fr); gap: var(--space-6); align-items: start; padding: var(--space-5) 0; border-bottom: var(--edge) solid var(--line); }

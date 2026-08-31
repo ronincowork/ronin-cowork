@@ -97,6 +97,9 @@
      the surface is narrow; the minimum is tokens, never a raw measurement. */
   .aa-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(var(--space-12) * 6), 1fr)); gap: var(--space-6); align-items: start; }
   .aa-col { display: flex; flex-direction: column; gap: var(--space-6); min-width: 0; }
+  /* Same guard, same reason: a terminal launches no agent, so New Agent hides the
+     provider/model column — which display:flex silently ignored until it was driven. */
+  .aa-col[hidden] { display: none; }
   /* The shell tick folds every Agent-only control away: a pane takes none of them. */
   .aa-form[data-shell='true'] .aa-agent-only { display: none; }
   .aa-head { margin: var(--space-3) 0 0; color: var(--muted); font-size: var(--text-1); text-transform: uppercase; letter-spacing: .07em; }
