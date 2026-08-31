@@ -28,7 +28,7 @@ import { getLeads, getTags, listSessions, setLeads, setTags } from '../tmux.js';
 import { writeTeams } from '../tegami.js';
 import { announceTeamChanges } from './wipeboards-api.js';
 import { listTeamTemplates, removeTeamTemplate, saveTeamTemplate } from '../team-templates.js';
-import { assertSameCampaignRoot, campaignFilter, campaignResolver, initialCampaignId } from '../campaign-scope.js';
+import { assertSameCampaignRoot, campaignFilter, campaignResolver, initialCampaignId, machineCampaignId } from '../campaign-scope.js';
 
 const errMsg = (e: unknown): string => String((e as Error)?.message ?? e);
 
@@ -104,9 +104,10 @@ export function registerTeams(app: express.Express): void {
   app.get('/api/team-rosters', async (req, res) => {
     try {
       const resolve = await campaignResolver();
-      // `?campaign_id=a&campaign_id=b` filters; naming none is "every Campaign", which is
-      // what a single-Campaign install and the plural view both ask for.
-      const wanted = ([] as string[]).concat((req.query?.campaign_id as string | string[]) ?? []).filter(Boolean);
+      // A machine shows one Campaign. An explicit query is retained for the Campaign
+      // management seam; ordinary Cowork screens name none and receive only the machine's.
+      const named = ([] as string[]).concat((req.query?.campaign_id as string | string[]) ?? []).filter(Boolean);
+      const wanted = named.length ? named : [await machineCampaignId()].filter(Boolean);
       const keep = await campaignFilter(wanted);
       const rosters = (await listTeamRosters()).filter((r) => keep(r.campaign_id));
       res.json(
