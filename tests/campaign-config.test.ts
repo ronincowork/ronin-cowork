@@ -23,9 +23,33 @@ const {
   initialCampaign,
   isValidCampaignId,
   listCampaigns,
+  populateHomeMachine,
   readCampaign,
   writeCampaign,
 } = await import('../src/campaign-config.js');
+
+test('Atarashi writes a complete home_machine Campaign and consumes kind as a preset', async () => {
+  const c = await populateHomeMachine({
+    title: 'Home machine', description: 'The work on this box.', desk_profile: 'terminal',
+    provider: 'openai', model: 'gpt-5.6-terra', kind: 'coding', routine_bundle: 'control',
+  });
+  assert.equal(c.id, 'home_machine');
+  assert.equal(c.title, 'Home machine');
+  assert.equal(c.description, 'The work on this box.');
+  assert.equal(c.desk_profile, 'terminal');
+  assert.deepEqual(c.config.agent_defaults, {
+    provider: 'openai', model: 'gpt-5.6-terra',
+    reach: 'plan', recruit: 'propose agents', output: 'open',
+    routines: {
+      ronin_base: true, ronin_control: true, ronin_services: false,
+      machine: false, gbrain: false,
+    },
+    behaviours: ['sops:github', 'sops:ronin_methodology', 'sops:teams'],
+    dial: 'write', permissions: 'default',
+  });
+  assert.equal('kind' in c, false, 'the setup intent is consumed and the Campaign stays kindless');
+  await fs.unlink(path.join(temp, 'home_machine.json'));
+});
 
 test('create → read: the record round-trips, and every field lands as typed', async () => {
   const c = await createCampaign({

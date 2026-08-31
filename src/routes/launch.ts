@@ -27,9 +27,11 @@ import {
   setTags,
 } from '../tmux.js';
 import { launchArgv, newProviderSession } from '../agents.js';
-import { AtSessionMax, liveCount, readMax, readOwner, writeMax, writeOwner } from '../user-config.js';
-import { resolveForm, appendLedger, type SpawnForm } from '../spawn.js';
-import { projectRoutineTools } from '../routine-tools.js';
+import { AtSessionMax, liveCount, readAgentsSection, readDesksSection, readMax, readOwner, writeMax, writeOwner } from '../user-config.js';
+import { resolveForm, type SpawnForm } from '../spawn.js';
+import { appendLaunchLedger } from '../launch-ledger.js';
+import { mandate } from '../agent-defaults.js';
+import { projectRoutineTools, type RoutineToolProjection } from '../routine-tools.js';
 import { classifyStatus, type SessionStatus } from '../status.js';
 import { scanContext, scanModel } from '../ctx.js';
 
@@ -38,12 +40,16 @@ import { listTeamRosters } from '../team-rosters.js';
 import { announceTeamChanges } from './wipeboards-api.js';
 import { markRoleDelivered } from '../role-watch.js';
 import { checkoutAt, deriveTeams, parkBrief, seedTegami, withAxes, writeGate } from '../tegami.js';
-import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFields } from '../sockets.js';
+import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFields, listServices } from '../sockets.js';
 import { DESK_LIFECYCLES, prepareLaunchDesks } from '../launch-desks.js';
 import { readArrangement } from '../desks/arrangement.js';
 import { listProjectRoots } from '../project-roots.js';
 import { initialCampaignId } from '../campaign-scope.js';
 import { readTeamRoster } from '../team-rosters.js';
+import { readCampaign } from '../campaign-config.js';
+import { listRoutines } from '../definitions.js';
+import { resolveLaunchSeed } from '../launch-seed.js';
+import type { SessionsDefaults } from '../launch-command.js';
 
 /**
  * The Campaign a newborn Agent joins: its Cowork's when it is born onto one, else the
@@ -81,6 +87,37 @@ async function deskNote(r: { assignment?: unknown; lifecycle?: string; project_r
  * with its words ignored.
  */
 export function registerLaunch(app: express.Express): void {
+  app.get('/api/launch-seed', async (req, res) => {
+    try {
+      const campaign_id = String(req.query.campaign_id ?? '').trim() || await initialCampaignId();
+      const team = String(req.query.team ?? '').trim();
+      const campaign = campaign_id ? await readCampaign(campaign_id) : null;
+      if (!campaign) return res.status(404).json({ error: `Unknown Campaign: ${campaign_id || '(none)'}.` });
+      if (team && !/^[a-z0-9][a-z0-9_-]{0,63}$/.test(team)) {
+        return res.status(400).json({ error: `A team name is lowercase letters, digits, _ and -: "${team}".` });
+      }
+      const [roster, roots, agents, routines, desks] = await Promise.all([
+        team ? readTeamRoster(team, campaign_id).then((found) => found ?? readTeamRoster(team, '')) : Promise.resolve(null),
+        listProjectRoots(),
+        readAgentsSection(),
+        listRoutines(),
+        readDesksSection(),
+      ]);
+      if (team && !roster) return res.status(404).json({ error: `Unknown Team "${team}" in Campaign "${campaign_id}".` });
+      const { resolved_routines: _resolved, ...seed } = resolveLaunchSeed({
+        campaign,
+        roster,
+        roots,
+        sessions: agents.sessions as SessionsDefaults | undefined,
+        routines,
+        desk: desks.new_project === 'none' ? 'none' : 'own',
+      });
+      res.json(seed);
+    } catch (e) {
+      res.status(500).json({ error: String((e as Error)?.message ?? e) });
+    }
+  });
+
   // launch_job — the catalog variant. NAMED, not inlined, since 2026-08-26: `/api/session`
   // below is a second DOOR onto this same body, never a second launch path (the parity
   // invariant, tests/launch-parity.test.ts).
@@ -152,6 +189,9 @@ export function registerLaunch(app: express.Express): void {
       // Whose CLI, without naming a model — resolved through that provider's preferred
       // model in ⚙ Configuration (owner, 2026-08-29).
       provider: String(req.body?.provider ?? '').trim() || undefined,
+      mandate: sessionType === 'cowork_agent' && req.body?.mandate !== undefined
+        ? mandate(req.body.mandate)
+        : undefined,
       campaign_id: String(req.body?.campaign_id ?? '').trim() || undefined,
       // Only an explicit boolean is an opinion. Absent hands the choice to the resolved
       // profile's `mcp:` default (off for every ordinary launch, owner 2026-08-22)
@@ -170,6 +210,7 @@ export function registerLaunch(app: express.Express): void {
 
     let resolved;
     let launch: { argv: string[]; parked: boolean } = { argv: [], parked: false };
+    let routineTools: RoutineToolProjection | null = null;
     try {
       const live = await listSessions();
       const taken = new Set(live.map((s) => s.name));
@@ -200,7 +241,7 @@ export function registerLaunch(app: express.Express): void {
       try {
         resolved.assignment = await prepareLaunchDesks(resolved.assignment);
       } catch (e) {
-        void appendLedger(form, resolved, false);
+        void appendLaunchLedger(form, resolved, false);
         return res.status(409).json({ error: String((e as Error)?.message ?? e) });
       }
     }
@@ -222,7 +263,7 @@ export function registerLaunch(app: express.Express): void {
       launch.argv = providerSession.argv;
       // The Agent does not run through a login or interactive shell. Project its commands
       // into PATH here, at process birth, instead of hoping an rc file was sourced.
-      const routineTools = resolved.agent
+      routineTools = resolved.agent
         ? await projectRoutineTools(resolved.name, resolved.routines)
         : null;
       await createSession(resolved.name, resolved.dir, {
@@ -275,8 +316,9 @@ export function registerLaunch(app: express.Express): void {
           resolved.assignment?.desks.length
             ? resolved.assignment.desks.map((d) => ({ repo: d.repo, branch: d.branch, worktree: d.worktree, line: d.line }))
             : await checkoutAt(resolved.dir),
-          await deriveTeams(resolved.tags),
-        );
+        await deriveTeams(resolved.tags),
+        resolved.mandate,
+      );
       }
       // THE BIRTH BASELINE for the task observer: this task's reading is already in the
       // brief, so it is recorded as delivered and the first tick does not send it again
@@ -284,7 +326,7 @@ export function registerLaunch(app: express.Express): void {
       if (resolved.session_type === 'cowork_agent') await markRoleDelivered(resolved.name, resolved.session_role);
       await setControl(resolved.name, resolved.dial);
     } catch (e) {
-      void appendLedger(form, resolved, false);
+      void appendLaunchLedger(form, resolved, false);
       // A full box is not a server fault: 429 so the launcher shows the reason as a refusal
       // rather than a crash, and so a caller can tell "try later" from "this is broken".
       if (e instanceof AtSessionMax) {
@@ -345,9 +387,26 @@ export function registerLaunch(app: express.Express): void {
         // And WHY a coding launch got none, when it did — "off by absence" is never silent
         // (owner, 2026-08-29): the receipt names the file that decides.
         desk_note: await deskNote(resolved),
+        routines: resolved.routines.map((routine) => {
+          const services = new Set(listServices());
+          const missing = routine.enabled
+            ? [
+                ...routine.tools.filter((tool) => routineTools?.missing.includes(tool)).map((tool) => `tool:${tool}`),
+                ...routine.mcp.filter((name) => !services.has(name)).map((name) => `mcp:${name}`),
+              ]
+            : [];
+          return {
+            name: routine.name,
+            on: routine.enabled,
+            stated_by: routine.stated_by,
+            delivered: routine.enabled && missing.length === 0,
+            missing,
+            mcp: routine.enabled ? routine.mcp.filter((name) => services.has(name)) : [],
+          };
+        }),
       },
     });
-    void appendLedger(form, resolved, true);
+    void appendLaunchLedger(form, resolved, true);
     void (async () => {
       // NOTHING IS TYPED HERE, and there is no longer anywhere to type. The session was
       // born running the CLI with its brief already on the command line; from this moment

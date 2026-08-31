@@ -24,7 +24,7 @@ src/settei.ts                     the assembled record the ⚙ Configuration tab
 | `owner.name` | what to call the owner | `PUT /api/settei/owner` | `@ronin-owner` |
 | `machine.name` · `machine.where` | what this box is called, and where it is | `PUT /api/settei/machine` | none |
 | `agents.sessions.default` · `agents.sessions.by_provider` · `agents.jobs` | how work gets a model — the install's one default, each provider's preferred model, and what a house job asks | `PUT /api/settei/agents` — merges per key, so saving one never drops another | none |
-| `gbrain.enabled` | whether the owner turned gbrain on | `PUT /api/settei/gbrain` | none |
+| `gbrain.enabled` | legacy answer, retained for compatibility reads only | no writer; new enablement is the Campaign/Team `gbrain` Routine | none |
 | `koshi` | which outlet each koshi job asks | the 目 Koshi tab | none |
 | `auth` | the login record — scrypt params **and the session signing secret** | `bin/ronin-passwd` | none |
 | `passkeys` | registered authenticators, and the one-shot recovery code | `/api/passkey/*` | none |

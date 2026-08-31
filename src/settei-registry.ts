@@ -75,11 +75,8 @@ export const SETTEI_SCHEMA = {
       title: 'You',
       lede: 'One name, used by everything on the box that has to address you — the assistant, the roster, an agent writing you a note.',
     },
-    {
-      id: 'project',
-      title: 'Your first project',
-      lede: 'A project is a directory Ronin is allowed to work in, plus a line saying what it is for. Every session carries two things — where it works and what it is doing — and this is the first half. Add as many as you like later from ▣ Roots.',
-    },
+    { id: 'kind', title: 'Kind', lede: 'What do you want to use this app for?' },
+    { id: 'routines', title: 'Routine Bundles', lede: 'Choose how much Ronin hands to each new Agent. You can change this later.' },
     {
       id: 'agents',
       title: 'Agents',
@@ -96,14 +93,32 @@ export const SETTEI_SCHEMA = {
 
   fields: [
     {
+      id: 'mainIntent', sec: 'kind', kind: 'choice', label: 'What do you want to use this app for?',
+      from: '', seed: 'open', lands: { family: 'bootstrap', key: 'kind' },
+      choices: ['coding', 'work', 'personal', 'household', 'social', 'school', 'open'],
+    },
+    {
+      id: 'routineBundle', sec: 'routines', kind: 'choice', label: 'Routine Bundles',
+      from: '', seed: 'control', lands: { family: 'bootstrap', key: 'routine_bundle' },
+      choices: [
+        { value: 'nothing', labelKey: 'setup.bundle_nothing', copyKey: 'setup.bundle_nothing_copy', label: 'Nothing', copy: 'Your agents start clean — no reading, no shared macros, no records. Just the CLI.' },
+        { value: 'floor', labelKey: 'setup.bundle_floor', copyKey: 'setup.bundle_floor_copy', label: 'The floor', copy: 'Ronin still sets each agent up and keeps its birth receipt, but hands it nothing extra.' },
+        { value: 'base', labelKey: 'setup.bundle_base', copyKey: 'setup.bundle_base_copy', label: 'Ronin Base', copy: 'Your agents arrive knowing the house: basic reading you can open and edit, simple macros for talking to each other, shared work records.' },
+        { value: 'control', labelKey: 'setup.bundle_control', copyKey: 'setup.bundle_control_copy', label: 'Ronin Control', recommended: true, copy: 'Adds managed repositories: every agent codes at its own private desk — a git worktree — so there are no code collisions, and work is handed in deliberately.' },
+        { value: 'services', labelKey: 'setup.bundle_services', copyKey: 'setup.bundle_services_copy', label: 'Services', services: true, copy: 'Adds your Services to every agent — voice, transcripts, machine care.' },
+      ],
+    },
+    {
       id: 'campaignName', sec: 'campaign', kind: 'text', ask: false,
       label: 'Campaign name', short: 'campaign name', placeholder: 'Ronin Home',
       from: 'set.campaign.name', lands: { family: 'campaign', key: 'name' }, omit: 'blank',
+      setup_lands: { family: 'bootstrap', key: 'title' },
     },
     {
       id: 'campaignDescription', sec: 'campaign', kind: 'text', ask: false,
       label: 'Description', short: 'campaign description', placeholder: 'What this campaign is for',
       from: 'set.campaign.description', lands: { family: 'campaign', key: 'description' }, omit: 'blank',
+      setup_lands: { family: 'bootstrap', key: 'description' },
     },
     {
       id: 'machineName',
@@ -147,38 +162,6 @@ export const SETTEI_SCHEMA = {
       omit: 'blank',
     },
     {
-      id: 'projName',
-      sec: 'project',
-      kind: 'text',
-      label: 'Name',
-      hint: 'Short, lowercase. You will type it when you point an agent somewhere.',
-      placeholder: 'ronin',
-      norm: 'lower',
-      lands: { family: 'project', key: 'name' },
-      omit: 'blank',
-    },
-    {
-      id: 'projRemit',
-      sec: 'project',
-      kind: 'text',
-      label: 'What is it for?',
-      hint: 'One line. Agents read it to know what they have been put in front of.',
-      placeholder: 'The browser grid of live tmux sessions',
-      lands: { family: 'project', key: 'remit' },
-      // Blank never lands: a remit-only body must not summon the project family.
-      omit: 'blank',
-    },
-    {
-      id: 'projDir',
-      sec: 'project',
-      kind: 'text',
-      cls: 'fr-path',
-      label: 'Where does it live?',
-      placeholder: '~/code/my-app',
-      lands: { family: 'project', key: 'dir' },
-      omit: 'blank',
-    },
-    {
       id: 'model',
       sec: 'defaults',
       kind: 'select',
@@ -190,6 +173,7 @@ export const SETTEI_SCHEMA = {
       seed: 'models:first',
       shape: 'provider-model',
       lands: { family: 'agents', key: 'sessions.default' },
+      setup_lands: { family: 'bootstrap', key: 'provider_model' },
       omit: 'blank',
     },
     // NEW PROJECTS AND DESKS (owner, 2026-08-29) — what a project's RONIN_REPO says when
@@ -198,19 +182,19 @@ export const SETTEI_SCHEMA = {
     // through `PUT /api/settei/desks`; only the ⚙ row went.
     {
       // THE DESK PROFILE (R38): the owner's standing defaults for the surfaces they work
-      // at — skin, lexicon, campaign kind, a new tile's RIREKI view, the Team page's
-      // order. Not asked on first run (stock is a complete answer); editable forever
-      // here and from the ⚙ desk's picker, which write the same leaf.
+      // at — skin, lexicon, a new tile's RIREKI view, and the Team page's order. Asked
+      // on first run and editable forever here and from the ⚙ picker; both write one leaf.
       id: 'deskProfile',
       sec: 'defaults',
       kind: 'select',
-      ask: false,
+      ask: true,
       label: 'Desk profile',
       short: 'desk profile',
       hint: 'The look, the words, and how much of the terminal a new tile shows. Unset is stock.',
       options: 'desk_profiles',
       from: 'set.desk.profile',
       lands: { family: 'desk', key: 'profile' },
+      setup_lands: { family: 'bootstrap', key: 'desk_profile' },
       omit: 'blank',
     },
     {
@@ -259,8 +243,8 @@ export const SETTEI_SCHEMA = {
     wanted: { method: 'PUT', route: '/api/settei/wanted' },
     machine: { method: 'PUT', route: '/api/settei/machine' },
     agents: { method: 'PUT', route: '/api/settei/agents' },
+    bootstrap: { method: 'PUT', route: '/api/settei/bootstrap' },
     'session-max': { method: 'PUT', route: '/api/session-max' },
-    project: { method: 'POST', route: '/api/project-roots' },
   },
 
   /** The machine strip on the setup view — deliberately short: only the facts a later
@@ -294,19 +278,16 @@ export const SETTEI_SCHEMA = {
     tools: ['gh', 'tailscale', 'chromium'],
   },
 
-  /** What a choice still needs, judged against the record per read. Services activation
-   * is not a SETTEI requirement: its own durable state machine owns request, confirmation,
-   * entitlement and install. This list contains only settings SETTEI actually owns. */
-  requires: [
-    {
-      leaf: 'gbrain',
-      applies: { kind: 'set', path: 'gbrain.enabled' },
-      met: { kind: 'service', name: 'gbrain' },
-      needs: 'the gbrain service installed',
-      how: 'the toggle is already on — install Ronin Services and gbrain registers itself',
-      met_by: 'owner',
-    },
-  ],
+  /** Routine selection owns gbrain enablement. Service presence is availability, not a
+   * second SETTEI switch, so this registry has no gbrain requirement row. */
+  requires: [] as Array<{
+    leaf: string;
+    applies: { kind: string; path?: string; name?: string };
+    met: { kind: string; path?: string; name?: string };
+    needs: string;
+    how: string;
+    met_by: 'mechanical' | 'owner' | 'agent';
+  }>,
 
   /** The seat the reading list is handed to. Every surface launches exactly this —
    * the brief itself lives on the seat's shelf (ronin_session_boot/task/Atarashi/) and

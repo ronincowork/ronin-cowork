@@ -9,7 +9,6 @@ through to `professional_en`.
 - **desk_profile:** your rig
 - **campaign:** Campaign
 - **campaigns:** Campaigns
-- **campaign_kind:** Arena
 - **squad:** Squad
 - **player_one:** Player One
 - **team_kit:** Team kit

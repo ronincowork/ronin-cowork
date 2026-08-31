@@ -6,10 +6,10 @@
 `professional_en` is the floor: every key a surface reads, in plain English. Each other column is one
 lexicon (`ronin_catalogs/lexicons/`, shadowed whole-file by your catalogs store): its word where it
 says one, blank where it falls through to the floor. A catalog token (`kind.*`, `role.*`,
-`team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
+`behaviour.*` may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1312 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1334 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## add_agent
 
@@ -80,7 +80,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 |---|---|---|---|---|---|
 | `behaviours` | Behaviours |  | Perks |  |  |
 | `campaign` | Campaign | Occasion | Campaign |  |  |
-| `campaign_kind` | Kind |  | Arena |  |  |
 | `campaigns` | Campaigns | Occasions | Campaigns |  |  |
 | `desk_profile` | desk profile | the house style | your rig |  |  |
 | `go` | Go | Service | GLHF |  |  |
@@ -319,8 +318,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `customize.sops` | SOPs |  |  |  |  |
 | `customize.sops_blurb` | How this house goes about a domain — fetched by a situation, never pushed. |  |  |  |  |
 | `customize.sops_read` | Read procedure |  |  |  |  |
-| `customize.team_roles` | Team roles |  |  |  |  |
-| `customize.team_roles_blurb` | What a TEAM is. The house ships none — every one is yours. |  |  |  |  |
 | `customize.title` | Customize |  |  |  |  |
 | `customize.tools` | Tools |  |  |  |  |
 | `customize.tools_blurb` | The executables that implement actions. A markdown row cannot author one. |  |  |  |  |
@@ -1302,6 +1299,21 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `setup.agent_will_run` | {from}. RoninCoWork will run {command} on this machine. |  |  |  |  |
 | `setup.agents` | Your agents |  |  |  |  |
 | `setup.agents_lede` | Agents already found here are ready. Select any others you want RoninCoWork to add. |  |  |  |  |
+| `setup.bundle_base` | Ronin Base |  |  |  |  |
+| `setup.bundle_base_copy` | Your agents arrive knowing the house: basic reading you can open and edit, simple macros for talking to each other, shared work records. |  |  |  |  |
+| `setup.bundle_control` | Ronin Control |  |  |  |  |
+| `setup.bundle_control_copy` | Adds managed repositories: every agent codes at its own private desk — a git worktree — so there are no code collisions, and work is handed in deliberately. |  |  |  |  |
+| `setup.bundle_floor` | The floor |  |  |  |  |
+| `setup.bundle_floor_copy` | Ronin still sets each agent up and keeps its birth receipt, but hands it nothing extra. |  |  |  |  |
+| `setup.bundle_nothing` | Nothing |  |  |  |  |
+| `setup.bundle_nothing_copy` | Your agents start clean — no reading, no shared macros, no records. Just the CLI. |  |  |  |  |
+| `setup.bundle_services` | Services |  |  |  |  |
+| `setup.bundle_services_copy` | Adds your Services to every agent — voice, transcripts, machine care. |  |  |  |  |
+| `setup.campaign` | Campaign |  |  |  |  |
+| `setup.campaign_description` | Description |  |  |  |  |
+| `setup.campaign_description_placeholder` | What this campaign is for |  |  |  |  |
+| `setup.campaign_lede` | The body of work this Ronin configuration serves. |  |  |  |  |
+| `setup.campaign_name` | Campaign name |  |  |  |  |
 | `setup.cap` | Maximum agent sessions |  |  |  |  |
 | `setup.cap_estimate` | {n} — Ronin estimate for this {ram} GB machine |  |  |  |  |
 | `setup.cap_hint` | ≈700 MB per agent. Ronin reserves 25% (minimum 2 GB). Shells don’t count. |  |  |  |  |
@@ -1315,6 +1327,9 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `setup.cores` | {n} cores |  |  |  |  |
 | `setup.defaults` | How new sessions should start |  |  |  |  |
 | `setup.defaults_lede` | This is only the default. You can choose something different each time. |  |  |  |  |
+| `setup.desk_profile` | Desk profile |  |  |  |  |
+| `setup.desk_profile_hint` | The look, the words, and how much terminal detail your workspace shows. |  |  |  |  |
+| `setup.desk_profile_stock` | Stock |  |  |  |  |
 | `setup.email` | Email for the confirmation |  |  |  |  |
 | `setup.email_recorded` | Email already recorded securely |  |  |  |  |
 | `setup.err_email` | Enter the email address for Services confirmation. |  |  |  |  |
@@ -1341,6 +1356,9 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `setup.identity` | Name your coworkspace |  |  |  |  |
 | `setup.identity_lede` | This is how you’ll recognize this machine in your roster. |  |  |  |  |
 | `setup.install_in_tiles` | {agents} — install in visible tiles |  |  |  |  |
+| `setup.kind` | Kind |  |  |  |  |
+| `setup.kind_lede` | What do you want to use this app for? |  |  |  |  |
+| `setup.machine` | This machine |  |  |  |  |
 | `setup.machine_details` | Machine details |  |  |  |  |
 | `setup.machine_name` | Coworkspace name |  |  |  |  |
 | `setup.machine_name_hint` | The machine’s real hostname will not change. |  |  |  |  |
@@ -1369,6 +1387,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `setup.purpose_hint` | One sentence gives agents useful context. |  |  |  |  |
 | `setup.purpose_placeholder` | A customer support dashboard |  |  |  |  |
 | `setup.recommended` | {model} (recommended) |  |  |  |  |
+| `setup.recommended_short` | recommended |  |  |  |  |
 | `setup.review_add` | RoninCoWork will install · consequence |  |  |  |  |
 | `setup.review_gbrain` | gbrain memory |  |  |  |  |
 | `setup.review_lede` | Review what RoninCoWork will do. |  |  |  |  |
@@ -1379,6 +1398,8 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `setup.review_ready` | Ready agents · detected |  |  |  |  |
 | `setup.review_repo` | Git repository · detected |  |  |  |  |
 | `setup.review_stage` | When you save |  |  |  |  |
+| `setup.routine_bundles` | Routine Bundles |  |  |  |  |
+| `setup.routine_bundles_lede` | Choose how much Ronin hands to each new Agent. |  |  |  |  |
 | `setup.running_on` | Running privately on {host} |  |  |  |  |
 | `setup.save` | Save and open RoninCoWork |  |  |  |  |
 | `setup.save_note` | You can change these choices later. |  |  |  |  |
@@ -1408,6 +1429,8 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `setup.the_machine_user` | the machine user |  |  |  |  |
 | `setup.this_machine` | this machine |  |  |  |  |
 | `setup.use_value` | Use {value} |  |  |  |  |
+| `setup.you` | You |  |  |  |  |
+| `setup.you_lede` | The name Ronin and your Agents use when they address you. |  |  |  |  |
 
 ## stats
 
@@ -1535,7 +1558,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `team.state` | State |  |  |  |  |
 | `team.status` | Status |  |  |  |  |
 | `team.team` | Team |  |  |  |  |
-| `team.team_role` | Team role |  |  |  |  |
 | `team.wipeboard` | Wipeboard |  |  |  |  |
 | `team.workspace_1` | Workspace 1 |  |  |  |  |
 | `team.workspace_2` | Workspace 2 |  |  |  |  |

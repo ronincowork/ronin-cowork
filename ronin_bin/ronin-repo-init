@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -ne 1 || ! -d "$1" ]]; then
+  echo "usage: ronin-repo-init <existing-project-root>" >&2
+  exit 2
+fi
+
+root=$(cd "$1" && pwd -P)
+if git -C "$root" rev-parse --git-dir >/dev/null 2>&1; then
+  echo "READY $root — repository already exists"
+  exit 0
+fi
+
+git -c advice.defaultBranchName=false -C "$root" init -q
+echo "INITIALIZED $root — local repository only; no remote was assumed"

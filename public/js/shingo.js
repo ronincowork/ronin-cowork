@@ -96,6 +96,16 @@ export function buildLadder(letter, deskEntry = null) {
     action.append(t('ladder.current_action', 'Current action'), ' · ', letter.session_role);
     task.appendChild(action);
   }
+  if (letter.mandate) {
+    const mandate = document.createElement('p');
+    mandate.className = 'sl-action';
+    mandate.append(
+      t('glossary.mandate', 'mandate'),
+      ' · ',
+      [letter.mandate.reach, letter.mandate.recruit, letter.mandate.output].filter(Boolean).join(' · '),
+    );
+    task.appendChild(mandate);
+  }
 
   // Parked, in the agent's own words. Sits above the objective because it changes what
   // the whole ladder below it means: those statuses are true, they are just not moving.

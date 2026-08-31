@@ -2,11 +2,11 @@
 - **label:** Managed file coordination
 - **blurb:** Separate worktrees, hand-in, lead integration, receipts and Git safeguards help parallel Agents avoid file collisions.
 - **class:** control
-- **reading:** assignment/DESK_CONTRACT.md
+- **reading:** assignment/DESK_CONTRACT.md, routine/ronin_control/REPOSITORY_BOOTSTRAP.md
 - **sops:** github
 - **macros:** cutcode, land
-- **actions:** cut-code, open-pr, land-work, land-manifest, desk-open, desk-status, desk-sync, hand-in, desk-park, check-clean
-- **tools:** tejun-desk
+- **actions:** cut-code, open-pr, land-work, land-manifest, desk-open, desk-status, desk-sync, hand-in, desk-park, check-clean, repository-initialize
+- **tools:** tejun-desk, ronin-repo-init
 - **mcp:** —
 - **requires:** ronin_base
 - **order:** 20

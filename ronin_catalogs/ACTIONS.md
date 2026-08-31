@@ -37,6 +37,15 @@ When a needed dial is locked, the correct behavior is:
 The flip happening in the owner's UI IS the authorization — no chat message can
 substitute for it.
 
+## repository-initialize
+`action_kind: mechanical` — run it, don't deliberate.
+
+When managed file coordination is on and a project root has no Git repository, run
+`ronin-repo-init <project-root>`. It initializes a local repository in that existing
+directory. It never creates a directory, adds a remote, signs into a forge, or guesses
+where the work should be published. An existing repository is an ordinary successful
+answer.
+
 ## session-create
 `action_kind: mechanical` — run it, don't deliberate.
 Create a detached named tmux session in a working directory.
