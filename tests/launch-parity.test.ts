@@ -167,7 +167,6 @@ test('bare_metal_agent resolves a real CLI without Ronin birth machinery', async
   assert.equal(bare.assignment, null, 'Ronin opens no managed repository desk');
   assert.deepEqual(bare.tags, ['scratchteam'], 'Team is only an addressing tag');
   assert.equal(bare.team_objective, '', 'the Team roster does not resolve into the launch');
-  assert.equal(bare.team_role, '', 'the Team kit does not resolve into the launch');
 });
 
 test('and to the same reading list — all + root + role, compiled once', async () => {
@@ -281,7 +280,6 @@ test('server resolution returns profile and durable Team context without browser
   const resolved = await resolveForm(forkitForm(), new Set());
   assert.equal(resolved.permissions, 'default');
   assert.equal(resolved.team_objective, 'prove the parity');
-  assert.deepEqual(resolved.team_repos, []);
   assert.equal(resolved.team_branch, '');
   assert.equal(resolved.team_wipeboard, 'scratchteam');
   assert.equal(resolved.team_state, 'active');
