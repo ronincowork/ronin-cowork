@@ -438,6 +438,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
           kind: draft.kind,
           mandate: { reach: draft.reach, recruit: draft.recruit, output: draft.output },
           behaviours: [...draft.books],
+          ...(draft.template ? { template: draft.template } : {}),
         };
     const result = await request('/api/launch', { method: 'POST', json: body });
     busy = false;

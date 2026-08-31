@@ -51,7 +51,7 @@ import type { Definition } from './definitions.js';
 export type Dial = 'user' | 'read' | 'write';
 
 export type StatedLayer =
-  | 'install' | 'campaign' | 'team' | 'launch'
+  | 'install' | 'campaign' | 'team' | 'template' | 'launch'
   | 'system' | 'team_roster' | 'session_role' | 'explicit_launch';
 export interface StatedBy {
   layer: StatedLayer;
