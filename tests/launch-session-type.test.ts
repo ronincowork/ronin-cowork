@@ -5,6 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import express from 'express';
+import fs from 'node:fs/promises';
 import type { AddressInfo } from 'node:net';
 import { createServer, type Server } from 'node:http';
 
@@ -34,6 +35,12 @@ test('the route refuses to infer session_type from the retired keying inputs', a
     assert.match(result.error, /session_type/);
     assert.match(result.error, /does not infer/);
   }
+});
+
+test('the live legacy launcher states cowork_agent until FORMS_UI retires it', async () => {
+  const source = await fs.readFile(new URL('../public/js/launcher.js', import.meta.url), 'utf8');
+  const post = source.match(/request\('\/api\/launch',[\s\S]*?\n\s*}\);/)?.[0] ?? '';
+  assert.match(post, /session_type:\s*'cowork_agent'/);
 });
 
 test('name is required for every session_type', async () => {
