@@ -303,6 +303,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **launch.new_agent_summary:** Start an Agent in a Team or on its own.
 - **launch.mode_team:** Team
 - **launch.mode_agent:** Agent
+- **launch.born:** Will be born
+- **launch.born_summary:** What the answers above add up to.
 
 ## home — home.js (the status words and the launch receipt)
 - **home.status_ready:** ready

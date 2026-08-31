@@ -36,7 +36,7 @@ const REACH = ['open', 'discuss', 'plan', 'execute'];
 const RECRUIT = ['open', 'nobody', 'propose agents', 'staff agents'];
 const OUTPUT = ['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team'];
 
-export function createNewAgentView(kit, { connect = null } = {}) {
+export function createNewAgentView(kit, { connect = null, born = true } = {}) {
   const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;
 
   const draft = {
@@ -349,6 +349,9 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     paintFolds();
   }
   const meta = {
+    type: () => TYPES().find((row) => row.key === draft.type)?.label || draft.type,
+    top: () => draft.name || '',
+    template: () => (draft.template ? templateRow()?.label || draft.template : ''),
     instructions: () => draft.instructions.slice(0, 40),
     team: () => (draft.teamMode === 'none' ? t('new_agent.a_ronin', 'a rōnin') : chosenTeam()),
     where: () => draft.root,
@@ -364,10 +367,16 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     }
   }
 
-  /* ---- Will be born ---- */
+  /* ---- Will be born: the reading, wherever it is asked for ----
+   * The Launch workbench seats this in its own workspace (owner, 2026-08-31: "Workspace 2
+   * should be the output"), so the rows are built per host rather than owned by the form.
+   * On a bench with nowhere else to put it, `born: true` keeps it under the form. */
   const foot = el('div', 'ntf-foot');
-  function paintFoot() {
-    foot.replaceChildren();
+  const bornHosts = new Set(born ? [foot] : []);
+  const watchers = new Set();
+  /** Built fresh on every call: several row values ARE nodes (tag rows, an <em>), and a
+   *  node cannot sit in two hosts at once — the second would silently steal it. */
+  function bornRows() {
     const typeRow = TYPES().find((type) => type.key === draft.type);
     const rows = [
       [t('new_agent.session', 'session'), typeRow?.label || draft.type],
@@ -379,15 +388,21 @@ export function createNewAgentView(kit, { connect = null } = {}) {
       rows.push([t('mandate', 'Mandate'), `${draft.reach} · ${draft.recruit} · ${draft.output}`]);
     }
     rows.push([t('routines', 'Routines'), draft.type === 'terminal'
-      ? (() => el('em', null, t('new_agent.routines_terminal', 'agent: none — a pane')))()
+      ? el('em', null, t('new_agent.routines_terminal', 'agent: none — a pane'))
       : draft.type === 'bare_metal_agent'
-        ? (() => el('em', null, t('new_agent.routines_bare', 'no floor, no routines')))()
+        ? el('em', null, t('new_agent.routines_bare', 'no floor, no routines'))
         : tagRow([{ text: t('new_team.floor_tag', 'floor'), on: true }, ...(seed?.routines || []).filter((row) => row.on).map((row) => ({ text: row.name, on: true }))])]);
     if (isCowork() && draft.books.length) rows.push([t('behaviours', 'Behaviours'), tagRow(draft.books.map((text) => ({ text, on: true })))]);
     rows.push([t('add_agent.place', 'place'), draft.root]);
     if (hasAgent()) rows.push([t('forms.model', 'model'), draft.provider ? `${draft.provider}${draft.model ? ` / ${draft.model}` : ''}` : t('forms.default', 'default')]);
-    foot.append(readingRows(rows));
-    foot.append(el('p', 'na-note', t('new_agent.blank_note', 'A blank field is an answer, not a gap.')));
+    return rows;
+  }
+  function paintFoot() {
+    for (const host of bornHosts) {
+      host.replaceChildren(readingRows(bornRows()));
+      host.append(el('p', 'na-note', t('new_agent.blank_note', 'A blank field is an answer, not a gap.')));
+    }
+    for (const watcher of watchers) watcher();
   }
 
   /* ---- start, and the conditional save ---- */
@@ -574,6 +589,21 @@ export function createNewAgentView(kit, { connect = null } = {}) {
 
   return {
     el: surface.el,
+    /** THE SELECTOR IS THE FORM'S TABLE OF CONTENTS (owner, 2026-08-31). One row per step
+     *  that EXISTS for this session type, numbered as the form numbers it, carrying that
+     *  step's current answer — so the column that was one dead card becomes the walk. */
+    outline: () => plan().map((key, index) => ({
+      key, n: index + 1, label: steps[key].title(), meta: meta[key]?.() || '',
+    })),
+    focus: (key) => {
+      if (!steps[key]) return;
+      if (FOLDS.includes(key) && !draft.expanded[key]) { draft.expanded[key] = true; paintFolds(); }
+      steps[key].focus();
+    },
+    /** Paint the reading into a host of the caller's choosing, and keep it painted. */
+    attachBorn: (host) => { bornHosts.add(host); paintFoot(); return () => bornHosts.delete(host); },
+    /** Told after every repaint, so an outline elsewhere never shows a stale answer. */
+    watch: (fn) => { watchers.add(fn); return () => watchers.delete(fn); },
     enter: async (detail = {}) => {
       paint();
       const [tray, sopRows, wayRows, teamRows, rootRows] = await Promise.all([
