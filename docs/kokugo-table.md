@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `behaviour.*` may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1360 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1361 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## add_agent
 
@@ -30,6 +30,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `add_agent.provider` | model provider |  |  |  |  |
 | `add_agent.start` | Start |  |  |  |  |
 | `add_agent.started` | Started {name} |  |  |  |  |
+| `add_agent.started_note` | Started {name} — {note} |  |  |  |  |
 | `add_agent.starting` | Starting… |  |  |  |  |
 | `add_agent.still_asked` | still asked |  |  |  |  |
 | `add_agent.task` | task  (optional) |  |  |  |  |
@@ -86,12 +87,12 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `kind` | Kind |  |  |  |  |
 | `loadout` | Tools and skills | Station | Loadout |  | Loadout |
 | `mandate` | Mandate |  | Mandate |  |  |
-| `output` | Deliverable |  | Loot |  |  |
+| `output` | Output |  | Loot |  |  |
 | `permissions` | Permissions |  |  |  |  |
 | `player_one` | Lead session | Head of house | Player One |  | Player One |
 | `publish` | Publish |  | Publish build |  |  |
-| `reach` | Scope |  | Reach |  |  |
-| `recruit` | Team |  | Squad |  |  |
+| `reach` | Reach |  | Reach |  |  |
+| `recruit` | Recruit |  | Squad |  |  |
 | `required_reading` | Required reading |  |  |  |  |
 | `routine_bundles` | Routine Bundles |  |  |  |  |
 | `routines` | Routines |  |  |  |  |

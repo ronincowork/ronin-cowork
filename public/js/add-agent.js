@@ -180,8 +180,8 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
     deskRow.setAttribute('aria-pressed', String(draft.desk));
     deskTitle.textContent = t('add_agent.worktree', 'Request a worktree');
     deskWhy.textContent = draft.desk
-      ? t('add_agent.worktree_on', 'A desk of its own: the desk contract, hand-in and the git guards.')
-      : t('add_agent.worktree_off', 'No desk. This Agent works in the shared checkout.');
+      ? t('add_agent.worktree_on', 'A worktree of its own — managed file coordination, hand-in and the Git safeguards.')
+      : t('add_agent.worktree_off', 'No worktree. This Agent works in the shared checkout.');
   }
 
   /* ---- what the Team fixed: at the FOOT, because none of it is changeable here ---- */
@@ -227,16 +227,18 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
     busy = true;
     start.setDisabled(true);
     notice.set('info', t('add_agent.starting', 'Starting…'));
-    // ONLY WHAT THE ROUTE ACCEPTS TODAY. `session_role` still keys the catalog variant
-    // of POST /api/launch (NEW_AGENT.md D1), so a blank task rides with the team, which
-    // is the launch's second key. Nothing about routines or behaviours is sent: the Team
-    // does not carry them yet, and a caller that states one is guessing at the server's job.
+    // ONLY WHAT THE ROUTE ACCEPTS TODAY. `session_type` is required since the route was
+    // re-keyed on it — the birth type is never inferred from session_role, team, or
+    // agent-shaped fields — and this surface only ever births a Cowork Agent. Nothing
+    // about routines is sent: they are resolved server-side, and a caller that states
+    // one is guessing at the server's job (NEW_AGENT.md § 7.4).
     const result = await request('/api/launch', {
       method: 'POST',
       json: {
+        session_type: 'cowork_agent',
         session_role: draft.task,
         team: teamName(),
-        prompt: draft.instruction.trim(),
+        instructions: draft.instruction.trim(),
         name: draft.name.trim(),
         project_root: rootOf(),
         provider: draft.provider,
@@ -251,7 +253,12 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
       return;
     }
     const born = result.data?.name || draft.name.trim();
-    notice.set('success', t('add_agent.started', 'Started {name}', { name: born }));
+    // WHY A DESK REQUEST PRODUCED NOTHING, in the receipt's own line — rendered so the
+    // worktree control cannot quietly do nothing ("off by absence" is never silent,
+    // owner 2026-08-29). Empty means a desk was opened, or none was asked for.
+    const deskNote = result.data?.receipt?.desk_note || '';
+    if (deskNote) notice.set('warning', t('add_agent.started_note', 'Started {name} — {note}', { name: born, note: deskNote }));
+    else notice.set('success', t('add_agent.started', 'Started {name}', { name: born }));
     reset();
     // THE LOOP: the Agent appears in the workspace that made it.
     if (born) connect?.(born);

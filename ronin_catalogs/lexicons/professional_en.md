@@ -27,6 +27,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **add_agent.cancel:** Cancel
 - **add_agent.starting:** Starting…
 - **add_agent.started:** Started {name}
+- **add_agent.started_note:** Started {name} — {note}
 - **add_agent.team:** team
 - **add_agent.place:** place
 - **add_agent.still_asked:** still asked
@@ -63,9 +64,9 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **template:** Template
 - **required_reading:** Required reading
 - **permissions:** Permissions
-- **reach:** Scope
-- **recruit:** Team
-- **output:** Deliverable
+- **reach:** Reach
+- **recruit:** Recruit
+- **output:** Output
 - **routine_bundles:** Routine Bundles
 - **go:** Go
 - **save_template:** Save as template
