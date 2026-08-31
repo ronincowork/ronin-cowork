@@ -14,7 +14,7 @@ const campaign = {
   id: 'home_machine',
   config: { agent_defaults: agentDefaults({
     provider: 'openai', model: 'gpt', reach: 'plan', recruit: 'propose agents', output: 'open',
-    routines: { ronin_base: true, ronin_host: true }, behaviours: ['ways:plan'], dial: 'write', permissions: 'default',
+    routines: { ronin_base: true, gbrain: true }, behaviours: ['ways:plan'], dial: 'write', permissions: 'default',
   }) },
 } as CampaignConfig;
 const team = {
@@ -28,7 +28,7 @@ const sources = (roster: TeamRoster | null) => ({
   campaign, roster,
   roots: [{ name: 'home', dir: '/home', archived: false }],
   sessions: { default: { provider: 'anthropic', model: 'sonnet' } },
-  routines: [routine('ronin_base'), routine('ronin_host')],
+  routines: [routine('ronin_base'), routine('gbrain')],
   desk: 'own' as const,
 });
 
@@ -37,7 +37,7 @@ test('rōnin seed reads Campaign and reports the frozen residue', () => {
   assert.equal(seed.seeds.model.value, 'gpt');
   assert.equal(seed.seeds.model.stated_by[0]?.layer, 'campaign');
   assert.deepEqual(seed.still_asked, ['session_type', 'name', 'instructions']);
-  assert.equal(seed.routines.find((r) => r.name === 'ronin_host')?.on, true);
+  assert.equal(seed.routines.find((r) => r.name === 'gbrain')?.on, true);
 });
 
 test('Team seed reads its complete map with no live Campaign inherit', () => {
@@ -45,5 +45,5 @@ test('Team seed reads its complete map with no live Campaign inherit', () => {
   assert.equal(seed.seeds.dial.value, 'read');
   assert.equal(seed.seeds.dial.stated_by[0]?.layer, 'team');
   assert.equal(seed.routines.find((r) => r.name === 'ronin_base')?.on, false);
-  assert.equal(seed.routines.find((r) => r.name === 'ronin_host')?.on, false);
+  assert.equal(seed.routines.find((r) => r.name === 'gbrain')?.on, false);
 });

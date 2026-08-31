@@ -2,23 +2,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { RoutineRow } from '../src/definitions.js';
 import { completeRoutineChoices, resolveRoutines, routineChoices } from '../src/routines.js';
+import { listRoutines } from '../src/definitions.js';
 
 const row = (name: string): RoutineRow => ({
   name, label: name, blurb: '', origin: 'stock', shadowed: false, class: 'specialized',
   reading: [], sops: [], macros: [], actions: [], tools: [], mcp: [],
   requires: [],
 });
-const catalog = [row('ronin_base'), row('ronin_control'), row('ronin_host')];
+const catalog = [row('ronin_base'), row('ronin_control'), row('gbrain')];
 
 test('a Team complete map replaces the Campaign map at birth', () => {
   const got = resolveRoutines(catalog, { ronin_base: true, ronin_control: true }, {
     ronin_control: false,
-    ronin_host: true,
+    gbrain: true,
   });
   assert.deepEqual(got.map(({ name, enabled, stated_by }) => ({ name, enabled, stated_by })), [
     { name: 'ronin_base', enabled: false, stated_by: 'implicit_off' },
     { name: 'ronin_control', enabled: false, stated_by: 'team' },
-    { name: 'ronin_host', enabled: true, stated_by: 'team' },
+    { name: 'gbrain', enabled: true, stated_by: 'team' },
   ]);
 });
 
@@ -28,13 +29,13 @@ test('absence in the selected complete map is implicit off — never live inheri
 });
 
 test('configuration accepts only named literal booleans', () => {
-  assert.deepEqual(routineChoices({ ronin_base: true, ronin_host: 'off', '../bad': false }), { ronin_base: true });
+  assert.deepEqual(routineChoices({ ronin_base: true, gbrain: 'off', '../bad': false }), { ronin_base: true });
   assert.deepEqual(routineChoices(['ronin_base']), {});
 });
 
 test('Save completes a map against the current catalog', () => {
   assert.deepEqual(completeRoutineChoices(catalog, { ronin_base: true }), {
-    ronin_base: true, ronin_control: false, ronin_host: false,
+    ronin_base: true, ronin_control: false, gbrain: false,
   });
 });
 
@@ -63,51 +64,48 @@ test('dependencies grow additively: Services and Control require Base, not each 
 });
 
 /**
- * RONIN HOST IS REQUIRED BY BASE, not chosen beside it. An Agent equipped with Base can
- * always restart Ronin (`tejun-machine-restart`, which Host carries) — the outage this
- * arrangement exists to prevent was caused by that tool's ABSENCE: with no sanctioned way
- * to restart Ronin, a session reaches for systemctl, where the unit owning every session
- * on the box sits one word from the one it meant.
+ * THE LAYER SHAPE, asserted against the REAL catalog rather than a fixture.
+ *
+ * Routines stack in one direction: `ronin_base` is the floor of the selectable layers and
+ * depends on nothing; every specialized Routine sits ON it. An arrow pointing the other way
+ * — Base requiring a specialized Routine — silently promotes that Routine to the root of
+ * the whole graph, since everything eventually requires Base. It then ships to every Agent
+ * while still being labelled an optional pick, and its birth reading is charged to Agents
+ * that never asked for it. That inversion shipped once, briefly, for `ronin_host`; this is
+ * the test that stops it returning.
  */
-test('Ronin Base requires Ronin Host, so every Agent with Base can restart Ronin', () => {
-  const real = [
-    { ...row('ronin_host'), requires: [] },
-    { ...row('ronin_base'), requires: ['ronin_host'] },
-    { ...row('ronin_control'), requires: ['ronin_base'] },
-  ];
-  const base = resolveRoutines(real, { ronin_base: true });
-  const host = base.find((item) => item.name === 'ronin_host');
-  assert.equal(host?.enabled, true);
-  assert.equal(host?.stated_by, 'dependency');
-  assert.deepEqual(host?.required_by, ['ronin_base']);
+test('the dependency graph points one way: nothing is required BY Ronin Base', async () => {
+  const catalog = await listRoutines();
+  const base = catalog.find((r) => r.name === 'ronin_base');
+  assert.ok(base, 'ronin_base must exist');
+  assert.deepEqual(base.requires, [], 'ronin_base is the floor of the selectable layers');
+  for (const routine of catalog) {
+    if (routine.name === 'ronin_base') continue;
+    assert.deepEqual(routine.requires, ['ronin_base'],
+      `${routine.name} must sit on Ronin Base, not beside or beneath it`);
+  }
 });
 
-test('Host arrives through Control and Services too, since both include Base', () => {
-  const real = [
-    { ...row('ronin_host'), requires: [] },
-    { ...row('ronin_base'), requires: ['ronin_host'] },
-    { ...row('ronin_control'), requires: ['ronin_base'] },
-  ];
-  const control = resolveRoutines(real, { ronin_control: true });
-  assert.equal(control.find((item) => item.name === 'ronin_host')?.enabled, true);
-  assert.equal(control.find((item) => item.name === 'ronin_base')?.enabled, true);
+test('the restart tool is ordinary Base equipment, reachable without any optional pick', async () => {
+  const catalog = await listRoutines();
+  const base = catalog.find((r) => r.name === 'ronin_base');
+  assert.ok(base.tools.includes('tejun-machine-restart'),
+    'every Agent needs a sanctioned way to restart Ronin; its absence is what sent one to systemctl');
+  for (const routine of catalog) {
+    if (routine.name === 'ronin_base') continue;
+    assert.ok(!routine.tools.includes('tejun-machine-restart'),
+      `${routine.name} must not also carry the restart tool — one home, not two`);
+  }
 });
 
-test('an explicit off for Host is overridden when Base is on — additive, never partial', () => {
+test('selecting a specialized Routine pulls Base in, the additive direction', () => {
   const real = [
-    { ...row('ronin_host'), requires: [] },
-    { ...row('ronin_base'), requires: ['ronin_host'] },
+    row('ronin_base'),
+    { ...row('gbrain'), requires: ['ronin_base'] },
   ];
-  const got = resolveRoutines(real, { ronin_base: true, ronin_host: false });
-  assert.equal(got.find((item) => item.name === 'ronin_host')?.enabled, true);
-});
-
-test('Host alone is legal: the box material without Ronin ordinary behaviours', () => {
-  const real = [
-    { ...row('ronin_host'), requires: [] },
-    { ...row('ronin_base'), requires: ['ronin_host'] },
-  ];
-  const got = resolveRoutines(real, { ronin_host: true });
-  assert.equal(got.find((item) => item.name === 'ronin_host')?.enabled, true);
-  assert.equal(got.find((item) => item.name === 'ronin_base')?.enabled, false);
+  const got = resolveRoutines(real, { gbrain: true });
+  const base = got.find((item) => item.name === 'ronin_base');
+  assert.equal(base?.enabled, true);
+  assert.equal(base?.stated_by, 'dependency');
+  assert.deepEqual(base?.required_by, ['gbrain']);
 });

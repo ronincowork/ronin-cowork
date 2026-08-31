@@ -16,7 +16,7 @@ import path from 'node:path';
 const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-campaigns-test-'));
 process.env.RONIN_CAMPAIGNS_DIR = temp;
 const ROUTINES_OFF = {
-  ronin_base: false, ronin_control: false, ronin_services: false, ronin_host: false, gbrain: false,
+  ronin_base: false, ronin_control: false, ronin_services: false, gbrain: false,
 };
 
 const {
@@ -45,7 +45,7 @@ test('Atarashi writes a complete home_machine Campaign and consumes kind as a pr
     reach: 'plan', recruit: 'propose agents', output: 'open',
     routines: {
       ronin_base: true, ronin_control: true, ronin_services: false,
-      ronin_host: false, gbrain: false,
+      gbrain: false,
     },
     behaviours: ['sops:github', 'sops:ronin_methodology', 'sops:teams'],
     dial: 'write', permissions: 'default',

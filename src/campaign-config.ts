@@ -337,18 +337,18 @@ export async function readCampaign(id: string): Promise<CampaignConfig | null> {
       await writeRecord(parsed);
     }
     const routines = bucket(defaults.routines);
-    if (Object.prototype.hasOwnProperty.call(routines, 'machine')
-      && !Object.prototype.hasOwnProperty.call(routines, 'ronin_host')) {
-      // One-time, lossless rename: the host Routine was called `machine` until
-      // 2026-08-31, a word KOTOBA had already spent on `ronin_machine`. Carry the
-      // owner's own answer across rather than letting the old key fall to unknown —
-      // ignored input never blocks anything, but silently forgetting a stated choice
-      // is not the same as ignoring an unusable one.
-      parsed.config.agent_defaults.routines = {
-        ...routines as Record<string, boolean>,
-        ronin_host: routines.machine === true,
-      };
-      delete (parsed.config.agent_defaults.routines as Record<string, unknown>).machine;
+    const retired = ['machine', 'ronin_host'].filter((key) =>
+      Object.prototype.hasOwnProperty.call(routines, key));
+    if (retired.length) {
+      // One-time cleanup of a Routine that no longer exists. The box material — install,
+      // accounts, network reach, health, the session engine — was never something an owner
+      // would sensibly switch OFF, so carrying it as its own selectable Routine only added
+      // a layer to toggle. It is ordinary `ronin_base` equipment now, which every one of
+      // these records already has, so nothing an owner chose is lost by dropping the key.
+      // (`machine` was the same Routine under its pre-2026-08-31 name.)
+      const cleaned = { ...routines as Record<string, boolean> };
+      for (const key of retired) delete cleaned[key];
+      parsed.config.agent_defaults.routines = cleaned;
       await writeRecord(parsed);
     }
     if (!Object.prototype.hasOwnProperty.call(doc, 'desk')) {
