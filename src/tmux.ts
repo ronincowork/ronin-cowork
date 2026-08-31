@@ -375,12 +375,17 @@ export async function sessionOfPane(paneId: string): Promise<string | null> {
  * Publish where Ronin is listening, as a tmux SERVER option, so tools running inside a
  * pane can find the API without duplicating config.ts's bind logic (tailnet IP, PORT).
  * Server-scoped, so it is visible from every session and costs nothing to keep current.
+ *
+ * This is deliberately strict. The caller invokes it only after the HTTP listener has
+ * bound successfully; a write that cannot be read back would leave every agent-facing
+ * tool unable to find an otherwise-live Ronin and must be visible in the operator log.
  */
 export async function publishRoninUrl(url: string): Promise<void> {
-  try {
-    await pexec('tmux', ['set-option', '-s', URL_OPT, url]);
-  } catch {
-    // no tmux server yet — tools fall back to RONIN_URL / the default
+  await pexec('tmux', ['set-option', '-s', URL_OPT, url]);
+  const { stdout } = await pexec('tmux', ['show-option', '-s', '-qv', URL_OPT]);
+  const published = stdout.replace(/\n$/, '');
+  if (published !== url) {
+    throw new Error(`tmux ${URL_OPT} read-back mismatch: wrote ${url}, read ${published || '(empty)'}`);
   }
 }
 

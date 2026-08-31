@@ -485,15 +485,20 @@ startRoleWatch();
 // The house board — the one board every install has, seeded once and then the user's.
 void seedHouseBoard().catch((e) => console.error('[tmux-ronin] house board seed failed:', e));
 
-// Tools inside a pane (tejun-harakiri) find the API here instead of re-deriving the bind.
-void publishRoninUrl(`http://${config.bind}:${config.port}`);
 // The session max onto the same bus. The tmux server outlives Ronin, but a tmux server
 // restarted without us would lose the option — so it is republished on every boot, and
 // `libexec/ronin-may-spawn` reads a missing option as "no limit" rather than as zero.
 void publishMax();
 void publishOwner();
 
-server.listen(config.port, config.bind, () => {
+server.listen(config.port, config.bind, async () => {
+  // Publish only after the listener has actually bound. Publishing before listen allowed
+  // a failed or test operator to advertise an address that never became live.
+  try {
+    await publishRoninUrl(`http://${config.bind}:${config.port}`);
+  } catch (e) {
+    console.error(`[tmux-ronin] could not publish @ronin-url: ${String((e as Error).message ?? e)}. Agent tools require RONIN_URL until this is fixed.`);
+  }
   console.log(
     `[tmux-ronin] listening on http://${config.bind}:${config.port}  (basic auth: ${authEnabled ? 'ON' : 'off'}, login: ${passwordAuthEnabled() ? 'ON' : 'off'}, window-size: ${config.windowSize})`,
   );
