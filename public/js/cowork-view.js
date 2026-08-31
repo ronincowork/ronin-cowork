@@ -20,6 +20,7 @@ import { acceptDrops as acceptSessionDrops } from './team-drag.js';
 import { S } from './state.js';
 import { createCampaignIdentity } from './campaign.js';
 import { renderTeamConfiguration } from './team-configuration.js';
+import { renameSession, sessionNameFromInput } from './api.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -397,9 +398,23 @@ export function createCoworkView(options = {}) {
         words.append(el('strong', null, member.name), el('span', null, member.session_role || t('league.role_unset', 'Role not set')));
         identity.append(mark, words);
         if (holding) { row.append(identity); list.append(row); continue; }
-        const lead = createAction({ label: member.team_lead ? t('league.team_lead', 'Team lead') : t('league.make_team_lead', 'Make team lead'), size: 'compact', selected: member.team_lead, action: async () => { const result = await setTeamLead(member.name, name, !member.team_lead); if (!result.ok) return surface.setState('failed', result.message); surface.setState(); render(); } });
+        const rename = createAction({ label: t('league.rename_agent', 'Rename'), size: 'compact', action: async () => {
+          const wanted = window.prompt(t('league.rename_agent_prompt', 'Rename Agent'), member.name);
+          const next = sessionNameFromInput(wanted);
+          if (wanted == null || next === member.name) return;
+          try {
+            await renameSession(member.name, next);
+            await refreshTeams();
+            S.onSessionRenamed?.(member.name, next);
+            surface.setState();
+            render();
+          } catch (error) {
+            surface.setState('failed', t('head.rename_failed', 'Could not rename session: {reason}', { reason: error.message }));
+          }
+        } });
+        const lead = createAction({ label: member.team_lead ? t('league.team_lead', 'Team Lead') : t('league.make_team_lead', 'Make Lead'), size: 'compact', selected: member.team_lead, action: async () => { const result = await setTeamLead(member.name, name, !member.team_lead); if (!result.ok) return surface.setState('failed', result.message); surface.setState(); render(); } });
         const eject = createAction({ label: t('league.remove_member', 'Remove'), title: t('league.remove_named_member', 'Remove {name} from this team', { name: member.name }), size: 'compact', action: async () => { const result = await setTeamMembership(member.name, name, false); if (!result.ok) return surface.setState('failed', result.message); surface.setState(); render(); } });
-        const actions = createActionBar({ className: 'league-team-member-actions', actions: [lead, eject] });
+        const actions = createActionBar({ className: 'league-team-member-actions', actions: [rename, lead, eject] });
         row.append(identity, actions.el); list.append(row);
       }
       roster.append(list);

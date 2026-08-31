@@ -405,7 +405,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `docs.discard_confirm` | Discard unsaved changes? |  |  |  |  |
 | `docs.empty` | No session has listed a doc yet. An agent lists one with: write_tegami --doc <path> |  |  |  |  |
 | `docs.empty_session` | This session has listed no docs yet. An agent lists one with: write_tegami --doc <path> |  |  |  |  |
-| `docs.empty_team` | No session on this Team has listed a doc yet. An agent lists one with: write_tegami --doc <path> |  |  |  |  |
+| `docs.empty_team` | No tracked documents. |  |  |  |  |
 | `docs.frame_title` | document |  |  |  |  |
 | `docs.loading` | loading… |  |  |  |  |
 | `docs.open_browser` | Open in browser ↗ |  |  |  |  |
@@ -416,7 +416,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `docs.saved` | saved |  |  |  |  |
 | `docs.saving` | saving… |  |  |  |  |
 | `docs.shelf_empty` | Nothing on this shelf — a project root names its places on its record (Project roots → docs / plans). |  |  |  |  |
-| `docs.work_record_note` | Note: If you don't see a document your agent is working on, ask it to update its work record. |  |  |  |  |
+| `docs.work_record_note` | Ask an agent to list a document with write_tegami --doc <path>. If a document is missing, ask the agent to update its work record. |  |  |  |  |
 
 ## errors
 
@@ -762,7 +762,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `league.holding_empty` | Every live session is on a Team |  |  |  |  |
 | `league.launch_team` | Launch |  |  |  |  |
 | `league.lead` | lead |  |  |  |  |
-| `league.make_team_lead` | Make team lead |  |  |  |  |
+| `league.make_team_lead` | Make Lead |  |  |  |  |
 | `league.members` | Team members |  |  |  |  |
 | `league.new_agent` | New Agent |  |  |  |  |
 | `league.new_agent_summary` | A new Agent, born into the workspace you are in. |  |  |  |  |
@@ -775,6 +775,8 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `league.open_workspace` | League workspace |  |  |  |  |
 | `league.remove_member` | Remove |  |  |  |  |
 | `league.remove_named_member` | Remove {name} from this team |  |  |  |  |
+| `league.rename_agent` | Rename |  |  |  |  |
+| `league.rename_agent_prompt` | Rename Agent |  |  |  |  |
 | `league.resting` | Resting Team |  |  |  |  |
 | `league.role_unset` | Role not set |  |  |  |  |
 | `league.ronin` | Ronin: no team |  |  |  |  |
@@ -783,7 +785,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `league.selector_teams` | Teams |  |  |  |  |
 | `league.selector_views` | Views |  |  |  |  |
 | `league.show_rosters` | Show rosters |  |  |  |  |
-| `league.team_lead` | Team lead |  |  |  |  |
+| `league.team_lead` | Team Lead |  |  |  |  |
 | `league.team_roster` | Team roster |  |  |  |  |
 | `league.team_roster_removing` | Removing {session} from {team}… |  |  |  |  |
 | `league.team_roster_saving` | Adding {session} to {team}… |  |  |  |  |

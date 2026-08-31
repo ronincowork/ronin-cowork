@@ -39,6 +39,9 @@ export async function renameSession(name, next) {
   return r.data.name;
 }
 
+/** Turn a readable name from a prompt into tmux's safe session identifier. */
+export const sessionNameFromInput = (value) => String(value || '').trim().replace(/\s+/g, '_');
+
 /** Kill a tmux session on the host (and its grid_* viewers). */
 export async function deleteSession(name) {
   const r = await request('/api/sessions/' + encodeURIComponent(name), { method: 'DELETE' });

@@ -220,7 +220,7 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
   const appendWorkRecordNote = () => {
     const foot = document.createElement('p');
     foot.className = 'dc-work-record-note';
-    foot.textContent = t('docs.work_record_note', "Note: If you don't see a document your agent is working on, ask it to update its work record.");
+    foot.textContent = t('docs.work_record_note', 'Ask an agent to list a document with write_tegami --doc <path>. If a document is missing, ask the agent to update its work record.');
     list.appendChild(foot);
   };
 
@@ -228,7 +228,7 @@ export function buildDocs(tile, root, isShowing, only = null, reposFirst = () =>
     list.innerHTML = '';
     if (!rows.length) {
       if (shelf !== 'tracked') empty(t('docs.shelf_empty', 'Nothing on this shelf — a project root names its places on its record (Project roots → docs / plans).'));
-      else empty(only ? t('docs.empty_team', 'No session on this Team has listed a doc yet. An agent lists one with: write_tegami --doc <path>') : t('docs.empty', 'No session has listed a doc yet. An agent lists one with: write_tegami --doc <path>'));
+      else empty(only ? t('docs.empty_team', 'No tracked documents.') : t('docs.empty', 'No session has listed a doc yet. An agent lists one with: write_tegami --doc <path>'));
       return;
     }
     for (const s of rows) {
