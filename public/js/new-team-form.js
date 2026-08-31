@@ -41,7 +41,7 @@ const LEAD_DEFAULT = () => ({
   reach: 'execute', recruit: 'staff agents', output: 'open',
 });
 
-export function createNewTeamFormView(kit, { created = null } = {}) {
+export function createNewTeamFormView(kit, { created = null, born = true } = {}) {
   const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;
 
   const draft = {
@@ -347,7 +347,16 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     else draft.expanded[key] = true;
     paintFolds();
   }
+  // KIND BEFORE TEMPLATE (owner, 2026-08-31): the kind narrows the tray, so asking for a
+  // template first offered all fifteen tiles and then quietly dropped the pick when a
+  // later kind excluded it. New Agent already asked in this order; the two forms agree.
+  // One list, read by the form's numbering AND by the Launch selector's outline.
+  const plan = () => (draft.door === 'manual'
+    ? ['top', 'objective', 'where', 'kit', 'lead']
+    : ['top', 'template', 'objective', 'where', 'kit', 'lead']);
   const meta = {
+    top: () => finalizeTeamName(draft.name) || '',
+    template: () => (draft.template ? templateRow()?.label || draft.template : ''),
     objective: () => draft.objective.slice(0, 40),
     where: () => `${draft.root || t('new_team.root_default', '— the box’s default —')} @ ${draft.branch || '—'}`,
     kit: () => t('new_team.kit_meta', '{routines} routines · {books} books{required}', {
@@ -365,10 +374,13 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
 
   /* ---- Will be raised — the reading, and what an Agent born here inherits ---- */
   const foot = el('div', 'ntf-foot');
-  function paintFoot() {
+  const bornHosts = new Set(born ? [foot] : []);
+  const watchers = new Set();
+  /** Fresh per host: several values ARE nodes, and a node cannot sit in two hosts. */
+  function paintOneBorn(host) {
     const name = finalizeTeamName(draft.name);
-    foot.replaceChildren();
-    foot.append(readingRows([
+    host.replaceChildren();
+    host.append(readingRows([
       [t('add_agent.team', 'team'), name],
       [t('team.objective', 'Objective'), draft.objective],
       [t('add_agent.place', 'place'), draft.root ? `${draft.root}${draft.branch ? ` @ ${draft.branch}` : ''}` : ''],
@@ -376,8 +388,8 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
       [t('new_team.lead', 'Team lead'), draft.lead ? t('new_team.lead_raised', 'included, briefed at raise') : ''],
       [t('new_team.members', 'members'), (() => { const em = el('em', null, t('new_team.members_note', 'derived from live tags — never stored here')); return em; })()],
     ]));
-    foot.append(el('p', 'fs-head', t('new_team.inherits', 'an agent born here inherits')));
-    foot.append(readingRows([
+    host.append(el('p', 'fs-head', t('new_team.inherits', 'an agent born here inherits')));
+    host.append(readingRows([
       [t('kind', 'Kind'), draft.kind],
       [t('routines', 'Routines'), tagRow([{ text: t('new_team.floor_tag', 'floor'), on: true }, ...onNames().map((text) => ({ text, on: true }))])],
       [t('behaviours', 'Behaviours'), draft.books.length ? tagRow(draft.books.map((text) => ({ text, on: draft.required }))) : ''],
@@ -388,6 +400,10 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
         ...(draft.provider ? [] : [t('forms.model', 'model')]),
       ])],
     ]));
+  }
+  function paintFoot() {
+    for (const host of bornHosts) paintOneBorn(host);
+    for (const watcher of watchers) watcher();
   }
 
   /* ---- raise, and the conditional save ---- */
@@ -547,11 +563,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   function paint() {
     for (const button of [templateDoor, manualDoor]) button.setAttribute('aria-pressed', String(button === (draft.door === 'template' ? templateDoor : manualDoor)));
     stepTemplate.el.hidden = draft.door === 'manual';
-    // KIND BEFORE TEMPLATE (owner, 2026-08-31): the kind narrows the tray, so asking for
-    // a template first offered all thirteen and then quietly dropped the pick when a later
-    // kind excluded it. New Agent already asked in this order; now the two forms agree.
-    const order = draft.door === 'manual' ? ['top', 'objective', 'where', 'kit', 'lead'] : ['top', 'template', 'objective', 'where', 'kit', 'lead'];
-    order.forEach((key, index) => steps[key].setNumber(index + 1));
+    plan().forEach((key, index) => steps[key].setNumber(index + 1));
     paintTray();
     paintKinds();
     paintName();
@@ -571,6 +583,17 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
 
   return {
     el: surface.el,
+    // The Launch selector's table of contents — see js/new-agent.js for the whole idea.
+    outline: () => plan().map((key, index) => ({
+      key, n: index + 1, label: steps[key].title(), meta: meta[key]?.() || '',
+    })),
+    focus: (key) => {
+      if (!steps[key]) return;
+      if (FOLDS.includes(key) && !draft.expanded[key]) { draft.expanded[key] = true; paintFolds(); }
+      steps[key].focus();
+    },
+    attachBorn: (host) => { bornHosts.add(host); paintFoot(); return () => bornHosts.delete(host); },
+    watch: (fn) => { watchers.add(fn); return () => watchers.delete(fn); },
     enter: async () => {
       paint();
       const [seeded, tray, catalog, rootRows] = await Promise.all([

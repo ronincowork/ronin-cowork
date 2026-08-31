@@ -51,7 +51,13 @@ export function createStep({ n, key, title, onToggle = null }) {
   return {
     el: box,
     body,
+    key,
     setNumber: (value) => { num.textContent = String(value); },
+    // The outline in a Launch selector reads and writes this title, so the two can never
+    // drift: one step, one name, wherever it is drawn.
+    title: () => head.querySelector('h3').textContent,
+    setTitle: (value) => { head.querySelector('h3').textContent = value; },
+    focus: () => box.scrollIntoView({ block: 'start', behavior: 'smooth' }),
     setCollapsed,
   };
 }
