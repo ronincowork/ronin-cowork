@@ -36,7 +36,7 @@ independent Agent ── choose what helps ── Team coordination
 
 | Layer | What it adds |
 |---|---|
-| **Ronin Base** | The ordinary coworkspace, coordination, documents, and Macros. |
+| **Ronin Base** *(selectable Routine)* | Ordinary Macros, documents, work records, and session coordination. |
 | **Ronin Control** *(optional Routine)* | Managed worktrees, hand-in, team promotion, Git guards, and repository control. |
 | **Services** *(additional)* | Capabilities installed beside the open package; availability is separate from which Routines are enabled. |
 
