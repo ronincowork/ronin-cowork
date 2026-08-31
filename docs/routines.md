@@ -54,22 +54,24 @@ Hotwords have no independent use when Voice is unavailable. Installing Services 
 one of its registered services proves availability only; it never selects the Routine.
 Selecting Ronin Services additively includes Ronin Base.
 
-## Campaign defaults and Team overrides
+## Campaign defaults and Team answers
 
 The effective set for a birth is resolved in one direction:
 
 ```text
 Campaign Routine defaults
             ↓
-Team's explicit on/off overrides
+New Team form receives those values
+            ↓ Save
+Team's complete on/off map
             ↓
 effective Routines for this Agent birth
 ```
 
-An absent Team value inherits. An explicit `on` adds or preserves a Routine; an explicit
-`off` removes it unless another enabled Routine requires it as part of the additive
-progression. A Team stores only its differences, never a copied Campaign list.
-A Teamless Agent receives the Campaign answer.
+A Team stores a complete map at Save. Its births read that map and never follow later
+Campaign edits. An absent key in the selected complete map is off; an enabled Routine's
+declared dependency may still add it as part of the additive progression. A Teamless
+Agent receives the Campaign answer at birth.
 
 The resolver keeps provenance, so a surface and birth receipt can say whether the answer
 came from the Campaign or Team. It resolves once before the Agent process exists; the
@@ -88,7 +90,9 @@ places where its behaviours actually work:
 
 The session boot shelf remains the reading mechanism, not the owner of Routine selection.
 `<service>_connected/` remains the compatibility level for service-authored reading tied
-to a connection; it is only one case and is not the general Routine switch.
+to a connection; it is only one case and is not the general Routine switch. The first
+cut explicitly retains the `gbrain_connected` level: gbrain's service authors and seeds that
+connection reading, while the `gbrain` Routine selects its macros, tools and MCP request.
 
 ## Four different facts
 

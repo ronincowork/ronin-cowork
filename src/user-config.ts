@@ -347,12 +347,6 @@ export const writeAgentsSection = (value: Record<string, unknown>): Promise<void
     doc.agents = value;
   });
 
-/** Whether the owner turned gbrain on. Services-only; the toggle is not the installer. */
-export const writeGbrainSection = (enabled: boolean): Promise<void> =>
-  updateConfig((doc) => {
-    doc.gbrain = { enabled: Boolean(enabled) };
-  });
-
 /**
  * THE WANT LIST — the owner's typed intents, each judged against the found half per
  * read to produce a needed[] entry until the box satisfies it. The want persists (it
