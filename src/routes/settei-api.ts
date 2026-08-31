@@ -43,6 +43,7 @@ import {
 // The Campaign and its desk_profile are one durable record now; these two writers land in
 // the initial campaign_config, which is the only writable Campaign record on the box.
 import { writeCampaignSection, writeDeskSection } from '../campaign-config.js';
+import { populateHomeMachine } from '../campaign-config.js';
 
 const errMsg = (e: unknown): string => String((e as Error)?.message ?? e);
 
@@ -55,6 +56,11 @@ const str = (v: unknown): string | undefined => (typeof v === 'string' ? v : und
  * never changes. Each writer returns the body of its 200.
  */
 const FAMILY_WRITERS: Record<string, (body: Record<string, unknown>) => Promise<unknown>> = {
+  bootstrap: async (body) => {
+    const campaign = await populateHomeMachine(body);
+    await writeDesksSection({ new_project: body.routine_bundle === 'control' || body.routine_bundle === 'services' ? 'managed' : 'none' });
+    return { ok: true, campaign_id: campaign.id };
+  },
   campaign: async (body) => {
     await writeCampaignSection({ name: str(body.name), description: str(body.description) });
     return { ok: true };

@@ -838,6 +838,32 @@ The catalog entry goes. {dir} is not touched.
 - **stats.unavailable:** Stats are not available on this install yet.
 
 ## setup — cowork-setup.js (the one-time cowork_setup page)
+- **setup.campaign:** Campaign
+- **setup.campaign_lede:** The body of work this Ronin configuration serves.
+- **setup.campaign_name:** Campaign name
+- **setup.campaign_description:** Description
+- **setup.campaign_description_placeholder:** What this campaign is for
+- **setup.machine:** This machine
+- **setup.you:** You
+- **setup.you_lede:** The name Ronin and your Agents use when they address you.
+- **setup.kind:** Kind
+- **setup.kind_lede:** What do you want to use this app for?
+- **setup.routine_bundles:** Routine Bundles
+- **setup.routine_bundles_lede:** Choose how much Ronin hands to each new Agent.
+- **setup.recommended_short:** recommended
+- **setup.bundle_nothing:** Nothing
+- **setup.bundle_nothing_copy:** Your agents start clean — no reading, no shared macros, no records. Just the CLI.
+- **setup.bundle_floor:** The floor
+- **setup.bundle_floor_copy:** Ronin still sets each agent up and keeps its birth receipt, but hands it nothing extra.
+- **setup.bundle_base:** Ronin Base
+- **setup.bundle_base_copy:** Your agents arrive knowing the house: basic reading you can open and edit, simple macros for talking to each other, shared work records.
+- **setup.bundle_control:** Ronin Control
+- **setup.bundle_control_copy:** Adds managed repositories: every agent codes at its own private desk — a git worktree — so there are no code collisions, and work is handed in deliberately.
+- **setup.bundle_services:** Services
+- **setup.bundle_services_copy:** Adds your Services to every agent — voice, transcripts, machine care.
+- **setup.desk_profile:** Desk profile
+- **setup.desk_profile_hint:** The look, the words, and how much terminal detail your workspace shows.
+- **setup.desk_profile_stock:** Stock
 - **setup.step:** cowork setup · nothing is saved yet
 - **setup.connected:** YOU’RE CONNECTED
 - **setup.connected_tail:** — Ronin is live on your machine.

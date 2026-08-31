@@ -1,18 +1,44 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { toRequests } from '../public/js/settei-schema.js';
 
 test('cowork_setup is the live two-stage companion page, not the legacy renderer', async () => {
   const source = await readFile(new URL('../public/js/cowork-setup.js', import.meta.url), 'utf8');
   for (const phrase of [
     'YOU’RE CONNECTED', 'Make this coworkspace yours.', 'Set up your coworkspace',
-    'Start your first project', 'When you save', 'Save and open RoninCoWork',
+    'Campaign', 'This machine', 'You', 'Kind', 'Routine Bundles', 'Your agents',
+    'How new sessions should start', 'Optional', 'When you save', 'Save and open RoninCoWork',
   ]) assert.match(source, new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(source, /\/api\/settei/);
   assert.match(source, /\/api\/agents/);
   assert.match(source, /\/api\/session-launch-specs/);
-  assert.match(source, /\/api\/project-roots\/inspect/);
   assert.match(source, /toRequests\(schema, values\)/);
+  assert.doesNotMatch(source, /Start your first project|\/api\/project-roots\/inspect/);
+});
+
+test('the two setup asks are registry rows and the renderer carries no client field list', async () => {
+  const registry = await readFile(new URL('../src/settei-registry.ts', import.meta.url), 'utf8');
+  const source = await readFile(new URL('../public/js/cowork-setup.js', import.meta.url), 'utf8');
+  assert.match(registry, /id: 'mainIntent'/);
+  assert.match(registry, /id: 'routineBundle'/);
+  assert.match(registry, /seed: 'open'/);
+  assert.match(registry, /seed: 'control'/);
+  assert.doesNotMatch(source, /\['coding', 'work', 'personal'/);
+});
+
+test('registry metadata writes the campaign bootstrap without a client field list', () => {
+  const schema = {
+    fields: [
+      { id: 'intent', lands: { family: 'bootstrap', key: 'kind' } },
+      { id: 'model', shape: 'provider-model', lands: { family: 'agents', key: 'sessions.default' }, setup_lands: { family: 'bootstrap', key: 'provider_model' } },
+    ],
+    families: { bootstrap: { route: '/api/settei/bootstrap', method: 'PUT' }, agents: { route: '/api/settei/agents', method: 'PUT' } },
+  };
+  const rows = toRequests(schema, { intent: 'coding', model: 'openai\tgpt-5' });
+  assert.deepEqual(rows.find((row) => row.family === 'bootstrap')?.json, {
+    kind: 'coding', provider_model: { provider: 'openai', model: 'gpt-5' },
+  });
 });
 
 test('cowork_setup owns one path with no legacy mapping', async () => {

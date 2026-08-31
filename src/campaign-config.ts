@@ -155,6 +155,7 @@ export async function populateHomeMachine(input: {
   desk_profile?: unknown;
   provider?: unknown;
   model?: unknown;
+  provider_model?: unknown;
   kind?: unknown;
   routine_bundle?: unknown;
 }): Promise<CampaignConfig> {
@@ -171,6 +172,7 @@ export async function populateHomeMachine(input: {
     .includes(input.routine_bundle as SetupRoutineBundle)
     ? input.routine_bundle as SetupRoutineBundle : 'control';
   const { readDefinitions } = await import('./definitions.js');
+  const providerModel = bucket(input.provider_model);
   const routineNames = (await readDefinitions('routines')).map((row) => row.name);
   const routines = Object.fromEntries(routineNames.map((name) => [name,
     bundle === 'services'
@@ -184,8 +186,8 @@ export async function populateHomeMachine(input: {
     description: input.description === undefined ? campaign.description : str(input.description, DESCRIPTION_MAX),
     desk_profile: input.desk_profile === undefined ? campaign.desk_profile : str(input.desk_profile, DESK_PROFILE_MAX),
     config: { agent_defaults: {
-      provider: str(input.provider, 120),
-      model: str(input.model, 120),
+      provider: str(input.provider ?? providerModel.provider, 120),
+      model: str(input.model ?? providerModel.model, 120),
       reach: 'plan', recruit: 'propose agents', output: 'open',
       routines,
       behaviours: KIND_BEHAVIOURS[kind],

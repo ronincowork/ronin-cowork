@@ -108,6 +108,21 @@ export interface SetteiRecord {
  * operation's subset and the only one anything dispatches. */
 export type MetBy = 'mechanical' | 'owner' | 'agent';
 
+export function repositoryNeeds(
+  set: Record<string, unknown>,
+  status: Record<string, unknown>,
+): SetteiRecord['needed'] {
+  if ((set.desks as { new_project?: string } | undefined)?.new_project !== 'managed') return [];
+  return ((status.projects as Array<{ name: string; dir: string; repo: string }> | undefined) ?? [])
+    .filter((project) => project.repo === 'no repo')
+    .map((project) => ({
+      leaf: 'desks.new_project',
+      needs: `${project.name} needs a local Git repository for managed file coordination`,
+      how: `run ronin-repo-init ${project.dir} — it initializes locally and never assumes a remote`,
+      met_by: 'agent' as const,
+    }));
+}
+
 /* The registry lives in src/settei-registry.ts — pure data, split out by the
  * line ceiling; it is still the ONE declaration and this file still serves it. */
 
@@ -687,11 +702,14 @@ export async function readSettei(): Promise<SetteiRecord> {
     .map((j) => j?.key_env)
     .filter((k): k is string => typeof k === 'string' && k.length > 0);
   const observed = await readObserved(jobKeyNames);
+  const status = await computeStatus(set, observed);
+  const needed = computeNeeded(set, observed);
+  needed.push(...repositoryNeeds(set, status));
   return {
     set,
     observed,
-    status: await computeStatus(set, observed),
-    needed: computeNeeded(set, observed),
+    status,
+    needed,
     // The registry plus one row per provider the launch table knows — generated because
     // providers are data on disk, not a list this house may hard-code.
     schema: { ...SETTEI_SCHEMA, fields: [...SETTEI_SCHEMA.fields,
