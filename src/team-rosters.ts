@@ -2,9 +2,8 @@
  * TEAM ROSTERS — the durable record of each team, one file per team.
  *
  * THE TEAM IS THE ORGANIZING CONCEPT (owner, 2026-08-23), and this file is its durable
- * half. A roster holds what outlives every member: the team's `team_role`, its
- * objective, and the defaults that seed a launch into it — root, repos, branch — plus
- * the wipeboard it sits above and its lifecycle state.
+ * half. A roster holds what outlives every member: the team's kind, objective, kit and
+ * defaults that seed a launch into it, plus its wipeboard and lifecycle state.
  *
  * WHAT IT NEVER HOLDS: a member list or a lead pointer. Membership lives on the
  * sessions (`@ronin-tags`) and leadership beside it (`@ronin-lead`), both dying with
@@ -24,8 +23,11 @@
 import { mkdir, readFile, readdir, rename, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { entryValue, isKeyLine } from './catalog.js';
-import { splitDefinitionList } from './definitions.js';
 import { storeDir } from './stores.js';
+import { teamAgentDefaults, type TeamAgentDefaults } from './agent-defaults.js';
+
+export type TeamKind = 'open' | 'coding' | 'work' | 'personal' | 'household' | 'social' | 'school';
+export interface TeamBehaviours { books: string[]; required: boolean }
 
 export interface TeamRoster {
   /** The team's name — the tag sessions carry, and the filename. */
@@ -46,17 +48,20 @@ export interface TeamRoster {
   campaign_id: string;
   /** Readable owner-facing name; the stable name remains the filename and membership key. */
   title: string;
-  /** The team's own defining role. Mutable; blank is valid (owner, 2026-08-23). */
-  team_role: string;
+  /** What this Team is for. It is the Team's own value; a Campaign is kindless. */
+  kind: TeamKind;
   objective: string;
   /** Launch DEFAULTS, never constraints: they seed the form when a session is raised
    *  into this team. */
   project_root: string;
-  repos: string[];
   branch: string;
   /** The board underneath this team. Defaults to the team's own token. */
   wipeboard: string;
   state: 'active' | 'archived';
+  references: string[];
+  routines: Record<string, boolean>;
+  behaviours: TeamBehaviours;
+  agent_defaults: TeamAgentDefaults;
 }
 
 const dir = () => storeDir('team_rosters');
@@ -113,17 +118,35 @@ function parse(name: string, raw: string, campaign_id = ''): TeamRoster {
     const v = entryValue(lines, k).trim();
     return v === BLANK || v === '-' ? '' : v;
   };
+  const json = (k: string): unknown => {
+    try { return JSON.parse(get(k)); } catch { return undefined; }
+  };
+  const strings = (value: unknown, max: number): string[] => Array.isArray(value)
+    ? value.map((entry) => typeof entry === 'string' ? entry.trim().slice(0, max) : '').filter(Boolean)
+    : [];
+  const routineMap = json('routines');
+  const routines = routineMap && typeof routineMap === 'object' && !Array.isArray(routineMap)
+    ? Object.fromEntries(Object.entries(routineMap).filter(([, enabled]) => typeof enabled === 'boolean')) as Record<string, boolean>
+    : {};
+  const behaviourValue = json('behaviours');
+  const behaviourMap = behaviourValue && typeof behaviourValue === 'object' && !Array.isArray(behaviourValue)
+    ? behaviourValue as Record<string, unknown> : {};
+  const kind = get('kind');
   return {
     name,
     campaign_id: campaign_id || get('campaign_id'),
     title: get('title') || name.split(/[_-]+/).filter(Boolean).map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' '),
-    team_role: get('team_role'),
+    kind: ['open', 'coding', 'work', 'personal', 'household', 'social', 'school'].includes(kind)
+      ? kind as TeamKind : 'open',
     objective: get('objective'),
     project_root: get('project_root'),
-    repos: splitDefinitionList(get('repos')),
     branch: get('branch'),
     wipeboard: get('wipeboard') || name,
     state: /^archived$/i.test(get('state')) ? 'archived' : 'active',
+    references: strings(json('references'), 500),
+    routines,
+    behaviours: { books: strings(behaviourMap.books, 160), required: behaviourMap.required === true },
+    agent_defaults: teamAgentDefaults(json('agent_defaults')),
   };
 }
 
@@ -216,13 +239,16 @@ export async function listTeamRosters(): Promise<TeamRoster[]> {
  *  exists to prevent. */
 export interface RosterEdit {
   title?: string;
-  team_role?: string;
+  kind?: TeamKind;
   objective?: string;
   project_root?: string;
-  repos?: string[];
   branch?: string;
   wipeboard?: string;
   state?: 'active' | 'archived';
+  references?: string[];
+  routines?: Record<string, boolean>;
+  behaviours?: TeamBehaviours;
+  agent_defaults?: Partial<TeamAgentDefaults>;
 }
 
 /**
@@ -231,7 +257,10 @@ export interface RosterEdit {
  * calls that a deliberate migration operation and a non-goal for this cut, so it is set
  * once at create and never reachable through an edit.
  */
-const KEYS: (keyof RosterEdit)[] = ['title', 'team_role', 'objective', 'project_root', 'repos', 'branch', 'wipeboard', 'state'];
+const KEYS: (keyof RosterEdit)[] = [
+  'title', 'kind', 'objective', 'project_root', 'branch', 'wipeboard', 'state',
+  'references', 'routines', 'behaviours', 'agent_defaults',
+];
 
 function render(name: string, r: TeamRoster): string {
   const line = (k: string, v: string) => `- **${k}:** ${v || BLANK}`;
@@ -243,13 +272,16 @@ function render(name: string, r: TeamRoster): string {
     // that names its own Campaign reads correctly to a human holding just the file.
     ...(r.campaign_id ? [line('campaign_id', r.campaign_id)] : []),
     line('title', r.title),
-    line('team_role', r.team_role),
+    line('kind', r.kind),
     line('objective', r.objective),
     line('project_root', r.project_root),
-    line('repos', r.repos.join(', ')),
     line('branch', r.branch),
     line('wipeboard', r.wipeboard || name),
     line('state', r.state),
+    line('references', JSON.stringify(r.references)),
+    line('routines', JSON.stringify(r.routines)),
+    line('behaviours', JSON.stringify(r.behaviours)),
+    line('agent_defaults', JSON.stringify(r.agent_defaults)),
     '',
   ].join('\n');
 }
@@ -303,16 +335,19 @@ export async function createTeamRoster(name: string, edit: RosterEdit, campaign_
     name,
     campaign_id,
     title: edit.title?.trim() || name.split(/[_-]+/).filter(Boolean).map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' '),
-    team_role: edit.team_role ?? '',
+    kind: edit.kind ?? 'open',
     objective: edit.objective ?? '',
     project_root: edit.project_root ?? '',
-    repos: edit.repos ?? [],
     branch: edit.branch ?? '',
     // An explicit token is the owner's and is taken as given; only the DEFAULT is allocated,
     // because the default is the only thing that could collide with another Campaign's
     // same-named Cowork.
     wipeboard: edit.wipeboard || (await freeBoardToken(name, campaign_id)),
     state: edit.state ?? 'active',
+    references: edit.references ?? [],
+    routines: edit.routines ?? {},
+    behaviours: edit.behaviours ?? { books: [], required: false },
+    agent_defaults: teamAgentDefaults(edit.agent_defaults),
   };
   await mkdir(campaignDir(campaign_id), { recursive: true });
   const target = teamRosterFile(name, campaign_id);
@@ -325,8 +360,8 @@ export async function createTeamRoster(name: string, edit: RosterEdit, campaign_
 /**
  * EDIT — the metadata as a unit. Only stated keys change; the file is re-read and only
  * the `- **key:**` lines are replaced, so prose the owner wrote around them survives.
- * `team_role` is MUTABLE by ruling — changing it does not ripple into running sessions;
- * it surfaces lazily in each member's letter block on their next reread.
+ * Nested record fields are encoded as JSON on their key line so the Markdown remains
+ * hand-editable while arrays, booleans and maps round-trip without a second format.
  */
 export async function writeTeamRoster(name: string, edit: RosterEdit, campaign_id?: string): Promise<TeamRoster> {
   const existing = await readTeamRoster(name, campaign_id);
@@ -342,7 +377,8 @@ export async function writeTeamRoster(name: string, edit: RosterEdit, campaign_i
   } as TeamRoster;
   for (const k of KEYS) {
     if (edit[k] === undefined) continue;
-    const v = k === 'repos' ? (edit.repos ?? []).join(', ') : String(edit[k] ?? '');
+    const nested = ['references', 'routines', 'behaviours', 'agent_defaults'].includes(k);
+    const v = nested ? JSON.stringify(edit[k]) : String(edit[k] ?? '');
     const lineText = `- **${k}:** ${v || BLANK}`;
     const at = lines.findIndex((l) => new RegExp(`^-\\s*\\*\\*${k}:\\*\\*`).test(l.trim()));
     if (at === -1) {
