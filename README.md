@@ -18,6 +18,21 @@ or closely they work through the Routines you opt into.
 
 [See how two independent Agent providers work side by side in the Workbench.](https://ronincowork.com/explainers/workbench/)
 
+## Coordination without control. A coworkspace without lock-in.
+
+**Your Agents. Your tools. Your working method.**
+
+Ronin is a lightweight coworkspace, not an Agent harness or prompt engine. It does not
+sit between you and your model providers, store your work in a proprietary format, or
+prescribe how an Agent should behave. It adds optional coordination around the tools and
+files you already use.
+
+| Promise | What it means |
+|---|---|
+| **[No platform lock-in](https://ronincowork.com/explainers/no-platform-lock-in/)** | Use your existing Agent CLIs, accounts, terminals, repositories, and ordinary files. Stop using Ronin without exporting or converting your work. |
+| **[No behavioral takeover](https://ronincowork.com/explainers/no-behavioral-takeover/)** | Ronin gives Agents convenient tools at the edges of cooperation. It does not become their prompt engine or prescribe how they reason, code, or complete their work. |
+| **[Editable coordination](https://ronincowork.com/explainers/editable-coordination/)** | Select and customize the reading, SOPs, Macros, Actions, tools, and connections offered to new Agents. Owner versions live outside the repositories Ronin updates. |
+
 ## Coordinate when useful
 
 Agents can remain independent or use optional Team coordination. Direct messages, the team
