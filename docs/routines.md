@@ -10,7 +10,7 @@ an Agent already running.
 | Choice | Meaning | How it is chosen |
 |---|---|---|
 | Bare-metal Agent | A provider CLI in an always-on tmux terminal, with no Ronin reading, Library material, work record or Routines. | Choose the bare-metal launch. |
-| Cowork floor | The minimum Cowork launch, identity and Routine-delivery machinery. | Included with every Cowork Agent. |
+| Cowork floor | The minimum Cowork launch, identity and Routine-delivery machinery. | Choose a Cowork Agent rather than bare metal. |
 | Ronin Base | Ronin's ordinary macros, documents, work records, messaging and session coordination. | Selectable Routine. |
 | Managed file coordination | Managed worktrees, hand-in, lead integration, receipts and Git safeguards. | Selectable Routine. |
 

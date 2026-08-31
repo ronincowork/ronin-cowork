@@ -58,9 +58,9 @@ independent Agent ── choose what helps ── Team coordination
 | Choice | What it adds |
 |---|---|
 | **Bare Agent** | Claude, Codex, or another provider CLI in an always-on tmux terminal. No Ronin reading list, Library material, work record, or Routines. |
-| **Cowork floor** *(included)* | The minimal Cowork launch, session identity, and machinery needed to resolve any Routines you choose. |
-| **Ronin Base** *(selectable Routine)* | Ordinary Macros, documents, work records, messaging, and session coordination. |
-| **Managed file coordination** *(selectable Routine)* | Separate worktrees, hand-in, lead integration, receipts, and Git safeguards that help parallel Agents avoid file collisions. |
+| **Cowork floor** *(optional first layer)* | Add the minimal Cowork launch, session identity, and machinery needed to use any Routines you choose. |
+| **Ronin Base** *(optional Routine)* | Add ordinary Macros, documents, work records, messaging, and session coordination. |
+| **Managed file coordination** *(optional Routine)* | Add separate worktrees, hand-in, lead integration, receipts, and Git safeguards that help parallel Agents avoid file collisions. |
 | **Services** *(separate axis)* | Additional installed capabilities; availability remains separate from which coordination choices are enabled. |
 
 [See how the four coordination choices and additional Services fit together.](https://ronincowork.com/explainers/cowork-and-services/)
