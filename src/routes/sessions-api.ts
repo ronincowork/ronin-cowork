@@ -61,7 +61,9 @@ import {
 } from '../session-archive.js';
 
 export function registerSessions(app: express.Express): void {
-  const publicArchive = ({ id, name, archived_at, agent }: ArchivedSession) => ({ id, name, archived_at, agent });
+  // `tags` are the Teams the session was on when archived — the Rehydrate Archived
+  // surface groups by them. Names only; nothing else of the record is public.
+  const publicArchive = ({ id, name, archived_at, agent, tags }: ArchivedSession) => ({ id, name, archived_at, agent, tags });
   app.get('/api/archived-sessions', async (_req, res) => {
     try {
       res.json((await listArchives()).map(publicArchive));

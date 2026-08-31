@@ -1066,6 +1066,10 @@ The catalog entry goes. {dir} is not touched.
 - **archives.empty:** no archived sessions
 - **archives.ago:** {age} ago
 - **archives.rehydrate:** Rehydrate {name}
+- **archives.rehydrate_btn:** Rehydrate
+- **archives.rehydrating:** rehydrating…
+- **archives.group_none:** Ronin — no team
+- **archives.card:** Rehydrate Archived
 - **archives.delete_aria:** Permanently delete archived session {name}
 - **archives.delete_title:** Hard delete this archive
 - **archives.delete_confirm:** Hard delete archived session "{name}"? Its saved Ronin record cannot be rehydrated after this.
