@@ -191,7 +191,7 @@ RIREKI's tape off disk. A file is the connection.
 | Term | Scope | Means | Record |
 |---|---|---|---|
 | **the_owner** | system_scope | **the person whose install it is** — the only one who flips a dial, tags a session, edits a Brief, or writes a universal memory. **Agents propose; the_owner decides.** The one word for a person in this house: `user` is a scope and never a human (R16) | `docs/session-control-dials.md` |
-| **owner_agent** | system_scope | an agent the_owner launched to do **their own work** — in a tile, on one of their project_roots. The ordinary case, and what every catalog, SOP and library page is written for | `ronin_catalogs/session_roles/` |
+| **owner_agent** | system_scope | an agent the_owner launched to do **their own work** — in a tile, on one of their project_roots. The ordinary case, and what every catalog, SOP and library page is written for | `docs/session-boot.md` |
 | **ronin_developer** | system_scope | **the person building Ronin itself** — the cowork and services repos, not the work Ronin is used for. A ROLE, not a person: the same human is usually both, often within the hour, and the hat that is on decides which rules apply (`dev_scope` docs and the byoin_checks are theirs; the catalogs are the_owner's) | `CLAUDE.md` |
 | **developer_agent** | system_scope | an agent working on **Ronin's own code**, wearing the ronin_developer's hat. Reads `CLAUDE.md` and this file; obeys the byoin_checks; its output is a PR, never a change to a tenant's install | `CLAUDE.md` |
 | **user** | system_scope | **A SCOPE, NEVER A PERSON** (R16, closed 2026-08-14) — `user_scope`, `ronin_user_root`, "the user's own catalogs" meaning *that scope's*. For a human, say **the_owner** | `DAIKUSAN.md` |
@@ -233,8 +233,8 @@ is a gap in the machinery, not a reason to reach for the word. See § NUANCE.
 | **tool** | system_scope | a script that implements a cataloged action (`tejun-send`, `tejun-peek`, `tejun-group`, `tejun-wipeboard`, `tejun-harakiri`, …). **Every tool is a script; the action is what makes it a tool** | `ronin_catalogs/TOOLS.md` |
 | **script** | system_scope | **the genus: any executable in the repo, wherever it lives** — `bin/`, `scripts/`, `hostside/`, `setup.sh` at the root. Most scripts are not tools, and that is normal, not a defect | § SCRIPTS |
 | **compile** | system_scope | `ronin_bin/tejun <macro>` → recipe + actions + tools + the SOPs those actions cite, as one blob; undefined action = exit 3 | `reading-list/TEJUN.md` |
-| **SOP** | system_scope | one standard operating procedure — how a house goes about a DOMAIN (source control, data, deploying, secrets). Stock in `ronin_sops/`, yours in the `sops` store (whole-file shadow). **Fetched by the situation, never by the machinery**: found by name via `docs/SHELVES.md`, which every session is handed at birth. An SOP may cite an action (its `> Tool:` header); **an action may never cite an SOP** — owner, 2026-08-15 | `ronin_sops/README.md` |
-| **routine** | system_scope definition · user_scope selection | **a named, switchable bundle of behaviours delivered together at Agent birth** (owner, 2026-08-30): reading, discoverable SOPs, macros, actions, command tools and MCP connections. A Campaign states defaults; a Team may inherit or explicitly turn one on/off. One resolved answer feeds the unified birth transaction and touches nothing already running. Enabled, installed, connected and applicable are separate facts. An unavailable Routine never blocks birth; its unavailable behaviour simply is not delivered and the receipt says so. **Not a macro**, **not a `ronin_service`**, **not a session_role** | `docs/routines.md` · `ronin_catalogs/routines/` |
+| **SOP** | system_scope | one standard operating procedure — how a house goes about a DOMAIN (source control, data, deploying, secrets). Stock in `ronin_sops/`, yours in the `sops` store (whole-file shadow). **Fetched when a situation calls for it mid-run; deliberately selected SOP behaviours may be handed over at birth.** An SOP may cite an action (its `> Tool:` header); **an action may never cite an SOP** | `ronin_sops/README.md` |
+| **routine** | system_scope definition · user_scope selection | **a named, switchable bundle of behaviours delivered together at Agent birth:** reading, discoverable SOPs, macros, actions, command tools and MCP connections. The Campaign holds a complete on/off defaults map. Those values land in New Team; Save stores that Team's complete map. A birth reads the Team's map, or the Campaign's for a rōnin; later parent edits reach no existing record. One resolved answer feeds the unified birth transaction and touches nothing already running. Enabled, installed, connected and applicable are separate facts. An unavailable Routine never blocks birth; its unavailable behaviour simply is not delivered and the receipt says so. **Routine Bundles** is the first-logon surface heading; the object remains Routine. **Not a macro**, **not a `ronin_service`**, **not a role** | `docs/routines.md` · `CASCADE.md` (ronin-lab) § 1 |
 | **routine_floor** | system_scope | **the mandatory machinery that resolves, delivers and records Routines for every `cowork_agent`; not itself a Routine and never a switch** — unified launch, Campaign/Team resolution, universal vocabulary and shelf map, minimum command delivery, Control initialization and the birth receipt. It reaches neither a terminal nor a `bare_metal_agent`. Kept deliberately small: ordinary fork, tell, wipeboard and document behaviours belong to `ronin_base`, not the floor | `docs/routines.md` |
 | **ronin_base** | system_scope definition · user_scope selection | **the default general-purpose Routine** — Ronin's ordinary session macros, documents, work records, Team/session coordination and working method. Normally on in Campaign defaults, but switchable like every Routine. Never a bucket for every pre-Routine SOP | `ronin_catalogs/routines/ronin_base.md` |
 | **ronin_control** | system_scope definition · user_scope selection | **the managed file-coordination Routine** — managed worktrees, desk reading, hand-in, lead integration, receipts, Git safeguards and their tools. Independent of `ronin_base`. It coordinates parallel file work; it does not claim authority over Agents. A repository arrangement says where its worktree behaviour applies; it is not a second Routine switch. The token remains internal; the user word is **managed file coordination** | `ronin_catalogs/routines/ronin_control.md` · `docs/control-surface.md` |
@@ -249,7 +249,7 @@ is a gap in the machinery, not a reason to reach for the word. See § NUANCE.
 | **read-letter · write-letter** | system_scope | the two actions over a session's own TEGAMI: read the ladder as written (`read_tegami`), or set it / point at the rung being worked (`write_tegami`). Cataloged 2026-08-14 — the tools had implemented no action since MICHI shipped, which is why they sat outside TEJUN | `ronin_catalogs/ACTIONS.md` |
 | **`run:`** | system_scope | the macro key choosing delivery (owner, 2026-08-14): absent or `whole` = the full blob at once, the default; `stepped` = compile arms the step tracker and hands one step at a time. Any macro can be stepped on demand via `tejun-step start` | `ronin_catalogs/MACROS.md` |
 | **`preview:`** | system_scope | the macro key choosing DISPLAY (owner, 2026-08-17): absent = not on the tile's ⚡ drop, the default; `yes` = drawn there as one of the four teaching cards, drawn from the same entry's `label:`/`blurb:`. **Display only — an unpreviewed macro still runs**, and opt-in because the drop teaches nothing when it holds a dozen | `ronin_catalogs/MACROS.md` |
-| **`instruction` vs `label:`/`blurb:`** | system_scope | the two halves every macro entry is written in, for two readers who need opposite things (owner, 2026-08-17: *"we need to split out the description and the agent instruction into two different things because they don't overlap, and the macro should carry both"*). **`instruction`** = the prose under the `## name` heading, addressed to the AGENT about to run the recipe and opening with the rule it must not break; served under that name on `/api/macros` since the rename from `description`, whose name is what invited a human surface to render it. **`label:`** (plain-words headline, never the `+name:` spelling) + **`blurb:`** (one or two sentences, always visible, true about what the macro does) = what a PERSON reads to decide whether they want it. Required on EVERY macro, not only previewed ones — `scripts/check-catalogs.ts` fails a stock entry missing either — and **no human surface may fall back to `instruction`**. Same two keys, same job, as a `session_roles/` definition's launcher buttons | `ronin_catalogs/MACROS.md` · `src/macros.ts` |
+| **`instruction` vs `label:`/`blurb:`** | system_scope | the two halves every macro entry is written in, for two readers who need opposite things. **`instruction`** is prose addressed to the Agent running the recipe. **`label:`** (plain-words headline) + **`blurb:`** (one or two always-visible sentences) are what a person reads to choose it. Required on every macro; no human surface may fall back to `instruction` | `ronin_catalogs/MACROS.md` · `src/macros.ts` |
 | **invocation** | system_scope | `+<name>: <args>` — the `+` marks a macro line; bare `<name>:` also works; never *required* to recognize one | `reading-list/TEJUN.md` |
 | **harakiri** | system_scope | a session ends itself; refuses to end another | `ronin_catalogs/ACTIONS.md` |
 | **forkit** | system_scope | spin the current topic into its own **visible Ronin tmux session**; the work leaves with it. The owner's `forkit`, plain **fork it**, and **new session** all select this workflow absolutely and may never be satisfied by an internal sub-agent. **Spawn it** and **spawn an agent** select the agent CLI's internal sub-agent machinery instead. Delegation using neither vocabulary remains the agent's judgment and adds no confirmation step | `ronin_catalogs/MACROS.md` · `ronin_session_boot/SESSION_MACROS.md` |
@@ -305,10 +305,10 @@ it mean anything is the document behind it, plus a tool where the work needs one
 
 ## § LAUNCHER — how sessions are born
 
-**A session is born on one required axis, one optional axis, and an optional team.**
+**A session is born on one required type, one required place, and an optional Team.**
 
 ```text
-project_root (required)  ×  session_role (optional, mutable)  ×  team (optional — none = a rōnin)
+session_type (required)  ×  project_root (required)  ×  team (optional — none = a rōnin)
 ```
 
 | Term | Scope | Means | Record |
@@ -316,24 +316,48 @@ project_root (required)  ×  session_role (optional, mutable)  ×  team (optiona
 | **campaign** | user_scope | **a named body of work, and the outer object every other record sits under.** One install may run SEVERAL side by side (owner, 2026-08-29): its project_roots, team_rosters and sessions each belong to exactly one, and a workbench may show one, any selected set, or all — a projection, never ownership. **User-visible only once more than one can exist**: an install with a single campaign says nothing about it, which is why the word cost nobody anything for the first year. The durable record behind the word is the `campaign_config` | `CAMPAIGN_SCOPING.md` (ronin-lab) · `src/campaign-config.ts` |
 | **campaign_config** | user_scope | **the durable record of one campaign** — `id` (a stable lowercase token, the storage and URL identity, IMMUTABLE), `title`, `description`, `desk_profile` (its vocabulary, skin and offered templates), `state` (`active \| archived`, where archive hides and **kills nothing**), `created_at` (stamped once — provenance and list order, never a setting and never a "default campaign" pointer) and a typed `config` bucket that is not a dump of SETTEI. **It owns no lists**: rosters, roots, templates and sessions point back at it, and are never embedded. One file per record under the `campaigns` store, and `src/campaign-config.ts` is the ONE writer — the `settei.campaign` and `settei.desk` keys it replaced are read once more to seed the initial record and are inert thereafter, because two writable campaign records is the defect this object exists to prevent | `src/campaign-config.ts` · `src/routes/campaigns-api.ts` |
 | **campaign_id** | user_scope | **the pointer every scoped record carries back at its campaign — one, never an array.** It sits on a `team_roster` (whose storage nests by it, so a Cowork name resolves INSIDE its campaign and two campaigns may each hold a `dev`), on a `project_root`, on a saved template, and on every live Agent as the tmux option **`@ronin-campaign`** — an option and not a derivation from membership, because a rōnin has a campaign too and deriving one from `@ronin-tags` would leave every teamless Agent belonging to nothing. **`''` MEANS UNMARKED and is a real answer**: a record written before campaigns existed keeps it, every store reports it honestly rather than guessing, and resolving it onto the campaign the migration seeded happens in ONE place (`src/campaign-scope.ts`) so the compatibility window can be closed in one edit. Set at create and at birth; **an edit never moves a record between campaigns** — that changes its namespace, its wipeboard address and which project_roots it may reference, and is a deliberate migration rather than a field | `src/campaign-scope.ts` · `docs/campaign-scope.md` |
-| **the axes** | system_scope | `project_root` (where) · `session_role` (what it is doing now) — **one token, every surface**: the launcher sets them, TEGAMI carries them, the boot shelf reads by them, OBOERU matches on them, TOMODACHI counts by them. Defined here once; § OBOERU and § TOMODACHI use it and do not redefine it. **There is no per-session identity axis** (R35): identity is the TEAM's `team_role`, worn contextually — see § TEAMS | `co-working/user_repo/README/OBOERU.md` |
-| **session_role** | system_scope definition · session_scope selection | what a session is doing **right now** — all eleven of the former `session_job`s, without exception: `RiffOnIt`, `DraftPlan`, `CutCode`, `ChaseBug`, `CheckWork`, `QuarterBack`, `OddJob`, `Atarashi`, `PersonalAssistant`, `OpenShell`, `MikaAssist`. **Optional and MUTABLE**: the session changes it with `write_tegami`, the owner changes it from the tile, and a committed change injects that role's reading into the running session. Blank is valid and means no role reading and no mark. Successor to `session_task` (R35), which succeeded `session_job` | `ronin_catalogs/session_roles/` |
-| **desk_profile** | user_scope template | **a named template for Campaign desk settings** (R38, ownership clarified 2026-08-30): **skin**, **theme**, **lexicon**, **campaign_kind**, Team arrangement, RIREKI view, and future defaults. Applying one copies every controlled value into `campaign_config.desk`; afterward the Campaign owns and may edit those values. Reapplying explicitly overwrites them. The template is never a live reference. **A desk_profile is NOT a skin; each desk_profile HAS a skin and theme.** The house ships five — **terminal · vibe_code · professional · home · league**; yours shadow stock | `docs/desk-profiles.md` · `ronin_catalogs/desk_profiles/` |
+| **session_type** | session_scope selection | **[planned] the launch's primary type:** `cowork_agent` · `bare_metal_agent` · `terminal`. It is the axis ABOVE Routines: a `cowork_agent` enters the unified birth transaction and always receives `routine_floor`; the other two never enter it. Required on `POST /api/launch`, with no default | `NEW_AGENT.md` (ronin-lab) § 7.3–§ 7.4 |
+| **desk_profile** | user_scope template | **a named template for Campaign desk settings** (R38, ownership clarified 2026-08-30): **skin**, **theme**, **lexicon**, Team arrangement, RIREKI view, and future defaults. Applying one copies every controlled value into `campaign_config.desk`; afterward the Campaign owns and may edit those values. Reapplying explicitly overwrites them. The template is never a live reference. **A desk_profile is NOT a skin; each desk_profile HAS a skin and theme.** The house ships five — **terminal · vibe_code · professional · home · league**; yours shadow stock | `docs/desk-profiles.md` · `ronin_catalogs/desk_profiles/` |
 | **lexicon** | user_scope definition · session_scope selection | **the words a surface uses, as a catalog — a language, mechanically** (2026-08-27, with R38): keys to strings and a fallback chain, applied at render. A `desk_profile` HAS a lexicon the way it has a skin. Two kinds of key in one table: surface strings (`campaign`, `go`) and catalog tokens by prefix (`kind.household`, `role.DraftPlan`, `behaviour.sop_github`). The chain, one rule: active lexicon → its `base:` → the definition's own `label:` / the stock literal in the view — a missing key can never blank a surface, and a missing lexicon paints exactly as stock. `professional_en` is the floor and complete by definition (`check-lexicon` fails on a key it lacks). Wording (Home) and translation (French) are ONE axis — `home_fr` is one file with `base: professional_fr`, never a second setting. **Never translated:** anything an agent reads — the letter, the brief, the boot shelf — and the internal names above. A lexicon changes words, never structure: a surface that must be SHAPED differently is a Kit question. **The `glossary.*` room** (owner, 2026-08-27): the words an agent SAYS to a person for the house terms — `KOTOBA_GLOSSARY.md` is a template whose keyed cells the boot shelf renders from the active profile's lexicon at session birth, one-time, never re-read; no surface reads those keys, and `check-lexicon` holds the glossary, the floor and KOTOBA in step | `ronin_catalogs/lexicons/` · `docs/lexicons.md` |
-| **behaviour** | system_scope | **one word for everything that can be given to a session to change what it does** — a macro, an SOP, a doc, a tool, a memory, a reading list (R37). On the shelf a behaviour is inert; handed to a session it makes that session right for a situation. The first term that spans all five shelves (`docs/SHELVES.md`): the shelves are where behaviours live, a loadout is which ones a session carries. Fetched by a situation, never pushed — the SOP shelf's rule, now the rule for the class. Spelled **behaviour**, house English | `docs/SHELVES.md` · `MANIFESTO.md` (ronin-lab) § 1 |
-| **session_build** | user_scope definition · session_scope selection | **a preconfigured composition to start a session from** (R37): a way of working, the reading it arrives with, the model and posture that suit it — chosen off a shelf, then finished with a **loadout** (the extra behaviours this one session carries). A build is what a session *is*; a loadout is what it *carries*; the `session_role` is what it is doing now. The house ships some builds; you make your own by saving a session that worked — the same harvest rule as a preset. A lead is not a kind of thing: it is a session on a build designed for leading, chosen from the project's `team_role` (MANIFESTO § 4) | `MANIFESTO.md` (ronin-lab) § 2 |
-| **session_mandate** | session_scope selection | **how far a session may go before it checks in, whom it may recruit, and what it hands back** — three dials, set on the FIRST session of a project and re-settable on any (R36, third dial added 2026-08-27). **Reach:** `discuss` (talk it through with the owner and stop) · `plan` (write the plan and gate) · `execute` (plan and cut, gate at the end) · `run` (to completion, gates only on trouble). **Recruit:** `none` (do it yourself — the solo case) · `propose` (name the seats, the owner approves each) · `staff` (spawn the team yourself). **Output:** `plan` · `ideas` · `code` · `artifact` (a site, a deck, a pamphlet) · `team` (stood up and briefed, nothing more) — what comes back, named separately from how far to go to get it. Every 'solo vs squad' question is a mandate, not a mode: solo is `recruit: none`; 'let the lead build the squad' is `recruit: staff`; 'let us discuss, then decide the team' is `reach: discuss · recruit: propose`. The value is the owner's and never derived from the `session_role` — a `QuarterBack` with `recruit: none` runs the play itself. Rides the letter beside `session_role`; blank means `reach: plan · recruit: propose · output: plan`, the cautious default. **Vocabulary today, not yet a field:** the letter does not carry it and `write_tegami` does not accept it | `ronin_catalogs/session_roles/README.md` · `concepts/league-lobby.html` (ronin-lab) |
-| **role_family** | user_scope definition | **PRESENTATION, not structure** (R35): a New Session shelf grouping session_roles for viewing, and a Build-Team template — *a family of roles, not a family's role*. It never rides a launch, a letter, or a session; its launch constants moved into each session_role definition when the old `family_role` axis was dismantled. `developer`, `assistant`, `extra` ship so a fresh board is useful | `ronin_catalogs/role_families/` |
-| **`session_roles:`** | system_scope | the KEY inside a `role_family` definition naming the roles on its shelf — `- **session_roles:** A, B, C`. The family owns it and a session_role never names a family. A role may appear in several families, so adding it to one never removes it from another | `ronin_catalogs/role_families/` |
-| **default_lead_role** | user_scope | the one `session_role` a `role_family` PINS FIRST on its shelf — the suggested first launch when a team is built from that family, and the role whose launch carries the team-building SOP (`ronin_sops/teams.md`). A default and a pin, **never the `team_lead` designation** on a live session; nothing may derive one from the other (R35). `developer` pins `QuarterBack` | `ronin_catalogs/role_families/developer.md` |
-| **definition file** | system_scope | one definition per FILE, named by its token — `session_roles/CutCode.md`, `role_families/developer.md`, `team_roles/<name>.md`. The merged stock ⊕ user directory IS the manifest; there is no second generated file to drift from | `docs/shadowing.md` |
+| **behaviour** | system_scope definition · session_scope selection | **one selectable reading item handed to a session to change what it does**, addressed as `<shelf>:<name>` from `ronin_sops/` or **[planned]** `ways/`. On the shelf it is inert; selected in an Agent loadout or Team kit it is deliberately handed over at birth. Mid-run, situation-selected reading is fetched. A Routine is a bundle of behaviours; a behaviour is one book. Spelled **behaviour**, house English | `NEW_AGENT.md` (ronin-lab) § 6.4 · `docs/SHELVES.md` |
+| **template** | user_scope definition · session_scope selection | **[planned] a shadowable preset that overlays only the fields it carries onto a Team or Agent form, then stops.** Seeding order is level above → template → the owner's hand. Pressing one makes its values the record's own; only provenance remains, never a live reference. Definition fields: stable key, reading-face name, art, blurb, `kinds`, brief/instructions seed, `mandate` seed and `behaviours` seed | `NEW_AGENT.md` (ronin-lab) § 1.6 · § 7 |
+| **kind** | user_scope selection · session_scope selection | **[planned] what a Team is for, and an Agent value seeded from its Team:** `open` · `coding` · `work` · `personal` · `household` · `social` · `school`. `open` leads the list, is preselected at first logon and means no requirement: it filters and seeds nothing. The first-logon Kind answer selects defaults and is consumed at Save; a Campaign is kindless | `NEW_AGENT.md` (ronin-lab) § 5.4 · `CASCADE.md` § 3 |
+| **session_mandate** | session_scope selection | **[planned] how far an Agent may go before it checks in, how it may build out a Team, and what it hands back** — three dials, each led by `open`. **Reach:** `open` · `discuss` · `plan` · `execute`. **Recruit:** `open` · `nobody` · `propose agents` · `staff agents`. **Output:** `open` · `a plan` · `ideas` · `code` · `an artifact` · `the team`. The Campaign and Team may seed it; the Agent launch owns its answer. It is never derived from a behaviour | `NEW_AGENT.md` (ronin-lab) § 7 |
+| **definition file** | system_scope | one definition per FILE, named by its token — `templates/<name>.md`, `routines/<name>.md`, `ways/<name>.md`. The merged stock ⊕ user directory IS the manifest; there is no second generated file to drift from | `docs/shadowing.md` |
 | **whole-definition shadowing** | system_scope | a user file of the same token replaces that one house definition **whole** — never field by field, or neither file would tell the truth. A new token adds; `- **hidden:** yes` withdraws a house definition without deleting shipped files. Provenance (`stock` · `user` · `shadowed`) rides every row so a surface can say **ours**, **yours**, or **yours replacing ours** | `docs/shadowing.md` |
-| **launch cascade** | system_scope | `system < team_roster < session_role < explicit launch`. The roster layer contributes CONTEXT — the team's root, repos, branch, its `team_role` reading, its objective in the brief — as **defaults that seed the form, never constraints**. The definition layer states launch fields; absence inherits, and an explicit `off` is a value rather than an absence. Resolution produces one complete validated profile before any tmux session exists | `src/launch-profile.ts` · `src/spawn.ts` |
-| **cascading / locked / inapplicable** | system_scope | what a launch field may do. **Cascading**: `session_launch_spec` · `dial` · `permissions` · `lifecycle` · `mcp` · `cap` · `agent` · `dir` · `posture` · `opening` · `ack` · `model`. **Locked**: `mcp: always` — the launch may not contradict it. **Inapplicable**: `agent: none` voids model, permissions, posture, opening and ack, and a definition that states one alongside it is refused rather than half-honored | `src/launch-profile.ts` |
-| **`order:`** | system_scope | a definition's board position. A directory has no file order, so display order is stated or it is not stable; definitions without one follow the ordered ones, by label. The family's `default_lead_role` pin outranks it — the pin is the reader's | `ronin_catalogs/role_families/` |
+| **launch cascade** | system_scope | **[planned] SETTEI → Campaign → Team → Agent.** A parent value LANDS in the next form as an ordinary editable answer; a template then overlays exactly what it carries; the owner's hand is last. Save makes those values the child's own and later parent edits never reach down. Routine maps are complete booleans, not a live inherit state. One resolver returns provenance as `stated_by`; surfaces never reconstruct it | `CASCADE.md` (ronin-lab) § 1 · § 5 |
 | **opening prompt / ack rule** | system_scope | the birth instruction; "report back in your own words what you understand this job to be" | `src/spawn.ts` |
 | **`mcp_off`** | system_scope | **[proposed]** the launch-table key holding a provider's own "launch with no MCP servers" flags, appended to the cell's cmd when a launch resolves MCP off — the ＋ New form's toggle, carried per session like the dial. DATA, never a code path: cowork names no CLI flag and no MCP server; a provider declaring none refuses a launch that ASKED for off, and merely degrades a launch that only defaulted to it. *MCP* is the protocol's own name, not a coinage | `ronin_catalogs/PROJECT_ROOTS.md` · `src/spawn.ts` |
-| **`lifecycle:`** | system_scope | the definition key mapping a session_role to its michi name. ⚠R2 | `ronin_catalogs/session_roles/` |
+
+### The settled shape field names
+
+These fields are **[planned]** as records and routes; the names are ruled now so P1–P7 do
+not invent them. The Team record is `NEW_AGENT.md` § 7.2 and the Agent launch body is
+§ 7.4; the option spaces in § 7.1/§ 7.3 are derived and never stored as menus.
+
+| Term | Scope | Means | Record |
+|---|---|---|---|
+| **name** | user_scope · session_scope | the stable token for a Team or the required tmux session name for an Agent launch; each record's validator decides its grammar | `NEW_AGENT.md` (ronin-lab) § 7 |
+| **title** | user_scope | a Team's optional reading-face title, derived from `name` when absent | `NEW_AGENT.md` (ronin-lab) § 7.2 |
+| **objective** | user_scope | free text stating what a Team is for; context, never instructions for one Agent | `NEW_AGENT.md` (ronin-lab) § 7.2 |
+| **branch** | user_scope | the Team's default repository branch; it seeds and never constrains an Agent launch | `NEW_AGENT.md` (ronin-lab) § 7.2 |
+| **state** | user_scope | a durable Team or Campaign lifecycle value, `active` · `archived`; archive hides and kills nothing | `NEW_AGENT.md` (ronin-lab) § 7.2 |
+| **references** | user_scope | a Team's list of supporting `url` or `note` references; never a member list | `NEW_AGENT.md` (ronin-lab) § 7.2 |
+| **routines** | user_scope | a complete `{ <name>: true | false }` map on Campaign and Team; absence is not a live inherit state | `CASCADE.md` (ronin-lab) § 1 · § 4 |
+| **behaviours** | user_scope · session_scope | on a Team, `{ books: [<shelf>:<name>], required }`; on an Agent launch, the selected `[<shelf>:<name>]` loadout | `NEW_AGENT.md` (ronin-lab) § 7.2 · § 7.4 |
+| **books** | user_scope | the ordered behaviour addresses in a Team kit, each `<shelf>:<name>` | `NEW_AGENT.md` (ronin-lab) § 7.2 |
+| **required** | user_scope | whether the Team kit's selected behaviours are required reading; `on` · `off` | `NEW_AGENT.md` (ronin-lab) § 7.1–§ 7.2 |
+| **agent_defaults** | user_scope | the Campaign or Team bucket holding values that seed an Agent form: `provider`, `model`, `reach`, `recruit`, `output`, `dial`, `permissions` | `CASCADE.md` (ronin-lab) § 4 · `NEW_AGENT.md` § 7.2 |
+| **provider** | user_scope · session_scope | the model provider; blank on a launch means the install default | `NEW_AGENT.md` (ronin-lab) § 7.3–§ 7.4 |
+| **model** | user_scope · session_scope | a model valid for the selected provider; blank on a launch means that provider's preferred model | `NEW_AGENT.md` (ronin-lab) § 7.3–§ 7.4 |
+| **reach** | user_scope · session_scope | the mandate dial for how far an Agent may go before checking in | `NEW_AGENT.md` (ronin-lab) R-a · § 7 |
+| **recruit** | user_scope · session_scope | the mandate dial for how the Agent may build out a Team | `NEW_AGENT.md` (ronin-lab) R-a · § 7 |
+| **output** | user_scope · session_scope | the mandate dial for what the Agent hands back | `NEW_AGENT.md` (ronin-lab) R-a · § 7 |
+| **permissions** | user_scope · session_scope | the provider/Agent permission posture. It first enters at Campaign beside `dial`, seeds Team then Agent, and is inapplicable to `terminal` | `CASCADE.md` (ronin-lab) § 2–§ 4 |
+| **instructions** | session_scope | optional free text for this Agent; valid for cowork and bare-metal Agents, never a terminal | `NEW_AGENT.md` (ronin-lab) § 7.4 |
+| **desk** | session_scope | the launch's repository-desk answer: `own` · `none` · absent. Its default comes from the resolved Routine set | `NEW_AGENT.md` (ronin-lab) § 7.3–§ 7.4 |
+| **stated_by** | system_scope | returned provenance naming the layer or selected template that answered each resolved field; caller-sent provenance is refused | `CASCADE.md` (ronin-lab) § 5 |
+| **home_machine** | user_scope | the first default Campaign, written complete by Atarashi at setup Save. It is a name, not a kind; multiple-Campaign management is beyond present capacity | `CASCADE.md` (ronin-lab) § 1 · § 4 |
 
 **`project_root` is required, and omission is not a third answer.** A session must be born
 somewhere: that directory is where the provider's project files are found and where the
@@ -344,67 +368,29 @@ configured session — the surface says so and points at ⚙. `dir: {install}` m
 the working directory for a house seat, and the launch still resolves a root so the
 contract has one answer rather than a missing axis.
 
-**The act/state split.** A `session_role` is an **act** (`DraftPlan`); a michi is the
-**state** it starts the session in (`designing`). The roles are verb+object and the michi
-are gerunds, so no string appears in both catalogs — see § OVERLAP item 1.
-
-**A session IS a `session_role` + its teams** (R35). What it is doing is its own mutable
-axis; who it is, where it has an identity at all, is the `team_role` of whichever team you
-are looking at it through — contextual, per team, never stored on the session. A session
-on no team is a **rōnin**, which is first-class and the product's own word for it.
+A way of working arrives as optional `ways/` reading and is not a session identity or
+lifecycle. A session on no Team is a **rōnin**, which is first-class and the product's
+own word for it.
 
 ---
 
-## § SESSION ROLES — the catalog's set
+## § WAYS — optional ways of working
 
-*(No count in this heading, on evidence: "the eight" missed OpenShell's row, "the ten"
-missed Atarashi's. `ronin_catalogs/session_roles/` is the count — one file per session_role, and
-the owner's store may add to it or shadow any of it.)*
+The `ways/` shelf holds behaviours that help an Agent work in a particular posture. They
+are reading, never a session type, identity, lifecycle or source of launch constants.
+Each may be selected independently in an Agent loadout or Team kit.
 
 | Term | Scope | Means | Record |
 |---|---|---|---|
-| **RiffOnIt** | system_scope | works out what a thing *is* and what we mean by it — produces a definition, never a plan and never code | `ronin_catalogs/session_roles/RiffOnIt.md` |
-| **DraftPlan** | system_scope | plan a known piece of work as a doc — no code yet | `ronin_catalogs/session_roles/DraftPlan.md` |
-| **CutCode** | system_scope | build from an approved plan doc | `ronin_catalogs/session_roles/CutCode.md` |
-| **ChaseBug** | system_scope | chase a fault to its cause and fix the cause | `ronin_catalogs/session_roles/ChaseBug.md` |
-| **CheckWork** | system_scope | read-only findings work — a session's output or a sweep of the code; the target is the prompt's job, not the `session_role`'s | `ronin_catalogs/session_roles/CheckWork.md` |
-| **QuarterBack** | system_scope | coordinates other sessions — dispatch, unblock, report upward. A quarterback reads the field, calls the play and does not run it. **Still bound by every dial**: a 👤 session is invisible to it. An ordinary session_role (R33): a Developer moves into quarterbacking and back out again. **Not the team's lead by virtue of the mark** (R35): leadership is the hand-set 人 designation (`team_lead`), and the owner can put it on the secretary instead. Its token is a ruled exception to verb+object — see R33 | `ronin_catalogs/session_roles/QuarterBack.md` |
-| **OddJob** | system_scope | does the one task asked and nothing around it — the escape hatch, for work that fits no other kind. No plan, no sweep, no tidying on the way past | `ronin_catalogs/session_roles/OddJob.md` |
-| **Atarashi** (新) | system_scope | icon **新**, label **setup** — the label is what a person reads. The setup seat: the first session on a new install, finishing what the cowork_setup form could not (is the project directory what they meant, does a repository need cloning). Reads `GET /api/settei` at start — `needed[]` is its reading list, `set` is what the owner already answered and is never re-asked. Launched by the form's Save and by ⚙'s "start your setup session"; not a standing assistant — that is the `MikaAssist` session_role | `ronin_catalogs/session_roles/Atarashi.md` |
-| **OpenShell** | system_scope | **`agent: none`** — opens a session and launches nothing, leaving the tile at a shell prompt. Every field describing an agent is *absent* rather than blanked: no model, no posture, no opening, no ack, no permissions | `ronin_catalogs/session_roles/OpenShell.md` |
-
-**All eleven are session_roles, the assistants included** (R34, standing under R35).
-`PersonalAssistant` (the owner's own assistant, powered by gbrain, carrying the
-`mcp: always` lock) and `MikaAssist` (Ronin's own — `dir: {install}`, `cap: exempt`; see
-§ MIKA) each spent a day promoted to a role; they are ordinary session_roles on the
-`assistant` shelf, with their own buttons.
-
-**The grammar: verb + object.** A bare `plan` or `review` is ambiguous because it is a noun
-as often as a verb; a compound reads as a command. **Display** in CamelCase, **token** is
-the lowercase run-on — `+riffonit:`, `+draftplan:`, `+cutcode:`, `+chasebug:`, `+checkwork:`,
-`+oddjob:`. No separator to mistype, and it survives being typed into a tile.
-
-**Some sit outside the grammar, for stated reasons (no count here either):**
-
-- **`Atarashi`** — outside the grammar AND outside English, the only kind that is: 新,
-  "new", the seat that exists only while an install is. A person never reads the name —
-  the definition's `label: setup` is the button, and the seat is launched for them rather
-  than picked from a list.
-- **`RiffOnIt`** — riff takes a preposition, so verb+object fights the word. It keeps the
-  exception because it still reads as a command. The unnamed `It` is exact: this is the one
-  task where the object has no name yet, and finding out what "it" is *is* the session.
-- **`OddJob`** — a noun compound, because the escape hatch is the one slot that must **not**
-  read as a command. It is the absence of a specific instruction, not one of them.
-- **`QuarterBack`** — a noun, and the owner's own word: *"I want to call this my quarter
-  back."* It was `WatchCrew`, which obeyed the grammar and was still wrong — "watch" reads
-  as *observe* on a board where `CheckWork` is the one that observes, and this job is the
-  opposite of watching. Ruled an exception rather than renamed (R33), because the
-  alternative was a token nobody would say out loud for a thing the owner already has a
-  word for.
-
-**`CheckWork` covers both targets.** A session's work and a sweep of the code are the same
-posture, differing only in what the prompt points at. Two `session_role`s would be one
-distinction wearing two names.
+| **RiffOnIt** | system_scope | helps work out what a thing is and what is meant by it; produces a definition, never a plan or code | `ways/riff_on_it.md` |
+| **DraftPlan** | system_scope | helps plan a known piece of work as a build-out document; no code | `ways/draft_plan.md` |
+| **CutCode** | system_scope | helps build from an approved plan document | `ways/cut_code.md` |
+| **ChaseBug** | system_scope | helps chase a fault to its cause and fix the cause | `ways/chase_bug.md` |
+| **CheckWork** | system_scope | helps perform read-only findings work on a session's output or the code | `ways/check_work.md` |
+| **QuarterBack** | system_scope | helps coordinate other sessions: dispatch, unblock and report upward. It grants no Control exception and does not designate a Team lead | `ways/quarter_back.md` |
+| **OddJob** | system_scope | helps do the one task asked and nothing around it | `ways/odd_job.md` |
+| **Setup** | system_scope | helps finish the machine and project details that `cowork_setup` could not determine | `ways/setup.md` |
+| **PersonalAssistant** | system_scope | helps an Agent serve as the owner's personal assistant; provider capabilities arrive through Routines, not this book | `ways/personal_assistant.md` |
 
 ---
 
@@ -421,10 +407,9 @@ The explicit surface name **Team Commons** remains unchanged so “commons” st
 
 | Term | Scope | Means | Record |
 |---|---|---|---|
-| **team** (`@ronin-tags`) | system_scope | **a set of collaborating sessions, addressable as one** — the sessions carrying the same tag, derived fresh on every ask. Anyone may change a session's teams — the owner, a lead, the session itself: **membership has little to absolutely no rules, by ruling**. A session may be on several teams. `session_team` and `group` are the retired spellings (R32, R35) | `ronin_bin/tejun-team` |
-| **team_roster** | user_scope | **the team's durable workspace record** — one file per team: its stable `name`, readable `title`, `team_role`, objective, launch defaults (root · repos · branch), wipeboard linkage and lifecycle state. **It NEVER holds a member list or a lead pointer**: "the roster doesn't actually know who is on its team unless you do it virtually, because each session is defining whose team it's on" (the owner). A roster with zero live members is a normal, openable state — the plan without the execution. Note the irony and live with it: the one record CALLED a roster is the one that stores no roster; the derived answer is the real one | `src/team-rosters.ts` |
-| **team_role** | user_scope definition · roster selection | **the TEAM's defining role** — `development`, `health_fitness`, `admin` — named by a roster's `team_role:` line, **never stored on a session, not even derived onto it**: a session on two teams wears each team's role contextually, and "sessions operate independent of the team role" (the owner). MUTABLE — a changed team_role does not ripple; it surfaces lazily in each member's letter block on the next reread. A defined team_role carries its own reading shelf (`team_role/<name>/`) and build brief, handed to sessions SPAWNED INTO such a team at birth; a roster may also name one with no definition, and blank is valid. Freed for use by the `team_roster` rename — it was declined on 2026-08-22 only for colliding with `session_team` | `ronin_catalogs/team_roles/` |
-| **team_lead** (`@ronin-lead`) | session_scope, per team | **the 人, UN-RETIRED** (R35): the hand-set designation *this session leads that team* — a DESIGNATION, never a derivation from what the session is doing, because the owner can make the secretary the team lead. Optional and unbounded: zero, one or several leads per team, and a leaderless team is a normal state. Leading implies membership (designating tags the session in), and a newly-led session is handed the team-building SOP — the same reading a `default_lead_role` launch gets at birth. Dies with the session, like the tags beside it | `src/tmux.ts` |
+| **team** (`@ronin-tags`) | system_scope | **a set of collaborating sessions, addressable as one** — the sessions carrying the same tag, derived fresh on every ask. Anyone may change a session's Teams: the owner, a lead or the session itself. A session may be on several Teams | `ronin_bin/tejun-team` |
+| **team_roster** | user_scope | **the Team's durable record** — one file per Team. Fields: `name`, `campaign_id`, `title`, `kind`, `objective`, `project_root`, `branch`, `wipeboard`, `state`, `references`, complete `routines`, `behaviours`, and `agent_defaults`. It NEVER holds members, leads or seats: those are derived from live sessions | `NEW_AGENT.md` (ronin-lab) § 7.2 |
+| **team_lead** (`@ronin-lead`) | session_scope, per team | the hand-set designation *this session leads that Team*. It is never derived from a behaviour. Optional and unbounded: zero, one or several leads per Team, and a leaderless Team is normal. Leading implies membership. Dies with the session, like the tags beside it | `src/tmux.ts` |
 | **rōnin** | system_scope | a session on no team — first-class, the product's own word, and the launch form's third answer (existing team · new team · none) | `src/spawn.ts` |
 
 **Membership and leadership are read off live sessions, never stored in the record.**
@@ -433,28 +418,23 @@ roster holds intent, the sessions hold membership (`@ronin-tags`) and leadership
 (`@ronin-lead`), and every list of either is computed per call. Nothing can dangle and
 nothing needs a reaper.
 
-**The letter shows the teams — derived, additive, never authored.** TEGAMI carries a
-machinery-owned `teams` block: one entry per team — name, `team_role`, objective — read
-from the tags and the rosters, regenerated on every `write_tegami` save, refreshed by a
+**The letter shows the Teams — derived, additive, never authored.** Each machinery-owned
+entry carries Team context without inventing a session identity, read from the tags and
+rosters, regenerated on every `write_tegami` save, refreshed by a
 tag change, read-repaired by `read_tegami`. A changed team objective reaches every member
 on their next reread, lazily, with no push. Additive is what makes multi-membership safe:
 one team renders one entry, the secretary observing on four teams renders four.
 
-**Team reading is birth-only.** A session spawned into a team reads its `team_role/`
-shelf and finds the roster's objective in its brief; one that joins LATER is not
+**Team reading is birth-only.** A session spawned into a Team receives its selected
+behaviours and finds the roster's objective in its brief; one that joins LATER is not
 re-briefed — "if you join later, let's not go back and redo it" (the owner). The one
 exception is the `team_lead` designation, whose SOP delivery is the designation's own.
 
 **A fork is an origin, not a role and not a team.** It says where a session came from; a
 fork may inherit its parent's team, and that is all.
 
-**The mark is the `session_role`, and it lives in the LETTER.** Seeded at birth with the
-button the owner pressed (`src/tegami.ts` — mechanical, because the launcher already
-knows), changed by the session itself with `write_tegami` as the work changes. Its
-definition's `icon:` is then drawn on every surface that lists sessions — the ⌂ Roster,
-the tile header, the ⚡ targets. **This is the half of the letter that is COWORK's**, not
-michi's: a session has a session_role whether or not it ever puts a ladder up. The mark
-never names the coordinator — that is the 人's job, and the two are separate facts.
+Optional behaviours describe ways of working without becoming session identity; the 人
+is the independent, hand-set Team-lead designation.
 
 ---
 
@@ -594,7 +574,7 @@ that install ever sent. This binds the collector, not just the client.
 | **OBOERU** | system_scope | the memory system: durable cross-session lessons, so a lesson outlives the session that learned it **[planned]** | `co-working/user_repo/wip/buildouts/MEMORY.md` |
 | **memory** | user_scope | one short markdown file whose frontmatter says who it is for | `co-working/user_repo/wip/buildouts/MEMORY.md` D2 |
 | **the store** | user_scope | where memories live — one store, outside every repo; the axes do the partitioning | `co-working/user_repo/wip/buildouts/MEMORY.md` D1 |
-| **the match** | system_scope | a memory reaches a session when its axes agree with **the axes** (§ LAUNCHER): `project_root` is required and must match; `session_role` matches when the memory names one. Two axes since R35 — the old `family_role` axis died with the session identity it scoped | `co-working/user_repo/README/OBOERU.md` |
+| **the match** | system_scope | a memory reaches a session when its valid context agrees; a way of working is reading, not memory identity | `co-working/user_repo/README/OBOERU.md` |
 | **universal memory** | system_scope | both axes `"*"` — matches every session. `tejun-remember` refuses to write one by design; only the owner can, from the commons | `co-working/user_repo/wip/buildouts/MEMORY.md` D4 |
 | **remember / recall** | system_scope | `tejun-remember` writes one, `tejun-recall` returns the ~20 lines a session gets at birth. Cataloged as `remember-lesson` / `recall-memories` (2026-08-14) **[planned]** | `co-working/user_repo/wip/buildouts/MEMORY.md` D4–D5 |
 
@@ -650,11 +630,10 @@ not — a new one is `koshi_<job>` or it is not a koshi.
 interactive tile session. `koshi_kaki` is one stateless call over a mechanically bounded RIREKI
 range and authors only the derived r_kaki chunk; it never changes the source session.
 
-**KOSHI is `system_scope`, and R10 is closed by it.** The two old uses — an in-process
-form-fill helper, and "a tile running `orchestrating`" — are gone. The second was never a
-koshi at all: a tile running work is a session with a `session_role`, which is
-`QuarterBack`. ⚠ **The kanji is unruled** — every other name on the list carries one and this
-one never has. Not invented here; see § OPEN R23.
+**KOSHI is `system_scope`.** A koshi is never an interactive tile session; coordination
+inside a tile may be guided by the `QuarterBack` behaviour. ⚠ **The kanji is unruled** —
+every other name on the list carries one and this one never has. Not invented here; see
+§ OPEN R23.
 
 ---
 
@@ -668,7 +647,7 @@ machinery, which is why she is not filed under KOSHI. **[planned]**
 | Term | Scope | Means | Record |
 |---|---|---|---|
 | **MIKA** | system_scope | the house's **helpful assistant** — help first, and Ronin's own admin. Four requests and no more: `system_help` (the default), `new_session`, `project_root`, `system_config`. | `docs/mika.md` |
-| **`MikaAssist`** | system_scope | her `session_role`, icon **ミ**. An ordinary session_role on the `assistant` shelf (R34/R35): she is the one session not doing the owner's work at all, and her definition carries her constants — `dir: {install}`, `cap: exempt` | § SESSION ROLES |
+| **`MikaAssist`** | system_scope | MIKA's house-seat mechanics, icon **ミ**: `dir: {install}`, `cap: exempt`. Her way of working is not a launch identity | § MIKA |
 | **mika_macro** | system_scope | one of her four, re-addressed to her tile from wherever it was typed. Defined in § TEJUN. | `ronin_catalogs/MIKA_MACROS.md` |
 | **spawn-or-inject** | system_scope | her workspace_macro: a live `mika` session takes the request, else one is born and takes it. **She is a singleton** — two Mikas would both write the catalog. | `docs/mika.md` |
 
@@ -755,7 +734,7 @@ see the `commons_tab` row.
 | **session_commons** | system_scope | **OFF THE COWORK_SPACE since 2026-08-27** (owner: *"that team common view actually needs to be wiped"*) — an empty workspace is BLANK and says *Workspace*; ⌂ Roster and Archived moved to the `cowork_commons`, ＋ New session became the `new_session` surface, ▤ Wipeboard and ▧ Docs were already the `team_commons`'. It still draws in a tile on the parked grid page. Was: the shared surface inside a tile, when no session is showing — **one per tile, and about sessions**. **Four** commons_tabs behind one strip — ⌂ Roster · ＋ New session · ▤ Wipeboard · ▧ Docs. It held ten until 2026-08-18, when the six about the install left for the `admin_desk`. Its former bare alias **the commons** is retired; bare *commons* now means `campaign_commons` | `docs/gbrain.md` |
 | **commons_tab** | system_scope | one section of the session_commons, reached from its tab strip: **⌂ Roster · ＋ New session · ▤ Wipeboard · ▧ Docs**, and only those four. The other six left for the `admin_desk` on 2026-08-18; **a desk row is not a commons_tab** — it is a nav row with a `glyph` and a bare `label`, where a tab is one string carrying both. Alias: **tab**, prose only — bare *tab* is a common word and is not the term. **Never a "pane" or "panel"** — pane already means the tmux terminal a tile shows, and panel adds a second word for a tab. See § THE GROUND | `docs/gbrain.md` |
 | **admin_desk** | system_scope | **RETIRED into `cowork_commons`** (owner, 2026-08-27 — a workspace_surface, not a tile overlay; `js/desk.js` and `js/tiledesk.js` are gone). The record of what it was: what a tile showed when the owner asks it for **the machine** rather than a session: everything about **this install** (⚙ Configuration · ▣ Roots · ▥ Hotwords · 目 Koshi · gbrain · ▦ Stats) and **this app** (appearance · release & update · log out). A sibling of the session_commons in the same tile machinery — same overlay, same ✕ back to the terminal — reached from the bar's ⚙ the way ⛩ reaches the commons. **Drawn where it is asked for**, which is the whole point: the six rooms it takes over are install-level and were being drawn in every sessionless tile whether or not anyone wanted them. Alias: **the desk**. **ADMIN, not INSTALL** (owner, 2026-08-18: *"we call it Install Desk but really it is an Admin Desk. (logout etc.)"*) — *install* describes the box, and half of what the desk holds is not about the box: logging out is an account, appearance is a preference. *Admin* is what you are doing at it. The word was also already loose in the tree: `commons.js`, `events.js` and `tile.js` each called the **commons** "the admin pane", which it is not — the commons is about sessions. Those comments say commons now, and admin means this. Never a "commons" (that word is tile-scoped) and never a "panel" | `public/js/desk.js` · `public/js/tiledesk.js` |
-| **session_launch** | system_scope | the commons' **＋ New** tab — where a session is born on a required `project_root`, an optional `session_role`, and optionally a TEAM — and an opening prompt. Alias: **launch**. One door: `launch_job` (the catalog fill; claims any body naming a session_role or a team) · `launch_bare` (a name alone) | `docs/commons.md` |
+| **session_launch** | system_scope | the **New Agent** surface — where a session is born with required `session_type`, `name` and `project_root`, optionally onto a Team. Alias: **launch** | `NEW_AGENT.md` (ronin-lab) § 7 |
 | **session_roster** | system_scope | the Cowork workbench's **Team roster** surface — every live Agent grouped by Team, with aligned role, SHINGO, status, context, desk and model readings. Team headings carry Launch and confirmed Delete, not a redundant Agent count. Moved from the Ronin Desk in 2026-08-30. Alias: **the roster**. Never "the board" | `public/js/roster.js` · `public/js/team-roster-surface.js` |
 | **locked 🔒 / unlocked 🔓** | system_scope | locked = *this view is attached to the live tmux session*; unlocked = *the session is still running, this view is not attached to it* | `docs/LOCKED-VS-UNLOCKED.md` |
 | **compose overlay / copy sheet / ⛽ context gauge** | system_scope | the mobile input box, the touch copy panel, the context readout | `docs/context-gauge.md` |
@@ -769,7 +748,7 @@ see the `commons_tab` row.
 | **addressee** | system_scope | a session a post was aimed at (`--to`). It decides **who is interrupted, not who may read** — everyone on the wipeboard still receives the post on their next check. Naming none aims at everyone; `--to none` interrupts nobody | `src/wipeboard-cli.ts` |
 | **reap** | system_scope | the machine retiring a post that aged past the TTL — 48 hours, whoever has read it (owner, 2026-08-25: read-reaping DROPPED — a board everyone else had read looked empty to the one who had not, and scroll-back died with it; cursors serve delivery only). Runs inline on every check and post: no daemon, no timer. **The reaper is the only deleter**; no button and no agent deletes a post, and a wipeboard is removed whole only when nothing points at it any more | `src/wipeboards.ts` |
 | **membership** (`@ronin-wipeboards`) | system_scope | **who is on a board: THE TEAM, and nothing else** — derived from `@ronin-tags` through the roster's wipeboard id at every read, never stored. The `@ronin-wipeboards` custom-enrolment option is **no longer consulted anywhere** (owner, 2026-08-24 — custom wipeboards cut, MVP is the team board); the option spelling survives only in the session archiver, which round-trips session state it does not interpret | `docs/wipeboards.md` |
-| **dial** (`@ronin-control`) | system_scope | 👤 user / 👁 read / 🤖 write; owner-only to flip; enforced by the shim. Defaults to write, so it rarely bites — but **no role is exempt**, `QuarterBack` included. A dial with an exception is not a dial | `docs/session-control-dials.md` |
+| **dial** (`@ronin-control`) | system_scope · user_scope default · session_scope selection | 👤 user / 👁 read / 🤖 write; owner-only to flip and enforced by the shim. The default first enters at Campaign as read/write, is written by Atarashi without a SETTEI question, and seeds Team then Agent beside `permissions`. A stored default LANDS IN A FORM THE OWNER PRESSES: it never authorizes a running session to change its own or another's dial. A dial with an exception is not a dial | `docs/session-control-dials.md` · `CASCADE.md` (ronin-lab) § 2–§ 4 |
 | **shim** | system_scope | `bin/shim/tmux`, `bin/shim/systemctl` on PATH — vendor-neutral enforcement of dials and host guards | `docs/session-control-dials.md` |
 | **control-check** | system_scope | read the dial before touching a session — every session, every role, reading as well as writing | `ronin_catalogs/ACTIONS.md` |
 | **campaign_commons** | system_scope | **the campaign's shared surface** — Campaign · Project roots · Team roster · Templates behind one tab strip. Today the campaign is the whole Ronin configuration, so there is exactly one. **Alias: the commons**; bare *commons* means this surface. Team-shared ground is always said in full as **team commons** | `public/js/league-commons.js` |
@@ -785,9 +764,8 @@ see the `commons_tab` row.
 | **selector_column** | system_scope | the fixed discovery column of the one `workbench`: it renders the active `workbench_profile` from `workbench_library`, filtered/parameterized by the current tenant, and places a chosen surface in a workspace. Consumers never build it | `public/js/workbench.js` |
 | **new_session** | system_scope | **the launcher as a workspace_surface** (owner, 2026-08-27): ＋ New session left the tile-level commons and is placed in a workspace — by ＋ Add team member on the roster, by か New on the bar, by `workspace1=new` from tejun-teampage. A session born from it lands in that same workspace. T on its head brings the terminal back | `public/js/team-view.js` · `public/js/launcher.js` |
 | **surface_head** | system_scope | the genus for a surface's top row, one depth for all (`--row-head`, 41px): the **tile head** on a terminal_tile, the **commons strip** (the tab strip) on either commons, the **column head** on a selector column. Each carries its own flip — C on the tile head, T on the strip | `docs/cowork-space.md` · `docs/team-workspace.md` § The three headers |
-| **team**, in the commons | system_scope | see § TEAMS — the organizing concept, its durable `team_roster`, its `team_role`, and the un-retired 人. **`session_team` is the RETIRED spelling** (R35): the word did double duty for the live set and blocked `team_role`; the live set is simply the TEAM, derived from `@ronin-tags`. `group` retired earlier (R32). What stays is deliberate, R32/R35 map it: the `@ronin-tags` and `@ronin-lead` spellings (live sessions carry them), the `tags` code and API fields, TOMODACHI's `tag_groups` key — internal seams, the `cowork_stats` pattern | `docs/wipeboards.md` |
+| **team**, in the commons | system_scope | see § TEAMS — the organizing concept, its durable `team_roster`, live membership (`@ronin-tags`) and hand-set lead designation (`@ronin-lead`) | `docs/wipeboards.md` |
 | **note** (`@ronin_note`) | system_scope | the owner's one line about a session | `src/status.ts` |
-| **session_role**, the mark | system_scope | what a session is DOING, held in its **letter** (`Tegami.session_role`) — seeded at birth with the role it was launched as, changed by the session with `write_tegami` or by the owner from the tile. The definition's `icon:` is drawn wherever sessions are listed; a blank role draws no mark. **The letter's axis half is cowork's; the ladder half is michi's.** **The leader 人 (`@ronin-lead`) is BACK** (R35, reversing its 2026-08-22 retirement): the retirement assumed the work implied the coordinator, and the owner has since separated the two facts — leadership is a hand-set per-team designation, and the mark never names it | `src/tegami.ts` · `ronin_catalogs/session_roles/` |
 | **▥ Hotwords** | system_scope | the commons tab. The dictation glossary itself belongs to KOE — see § KOE | `ronin_catalogs/HOTWORDS.md` |
 | **ghost text** | system_scope | text typed into a tile's prompt but not submitted; never type over it | `ronin_catalogs/ACTIONS.md` |
 
@@ -809,7 +787,7 @@ kind of thing it is.**
 | Term | Scope | Means | **The test** | Record |
 |---|---|---|---|---|
 | **SETTEI** | system_scope | the owner's configuration of Ronin | **You SET it** — a value, a list, a mapping, a credential — through one of Ronin's own configuring surfaces | `docs/user-config.md` |
-| **user_customization** | system_scope | the owner's extensions to TEJUN — their own role_families, session_roles, team_roles, macros, actions, tools | **You AUTHOR it** — a recipe | `reading-list/TEJUN.md` |
+| **user_customization** | system_scope | the owner's extensions to TEJUN and its shelves — their own templates, behaviours, macros, actions and tools | **You AUTHOR it** — a recipe | `reading-list/TEJUN.md` |
 
 A hotword list is a list you **set**; a macro is a recipe you **write**. The old test could
 not tell them apart and put both in the wrong drawer.
@@ -903,7 +881,7 @@ somewhere else. Ronin has no address of its own; it asks. Record: `docs/stores.m
 | **ronin_store** | system_scope | one declared location under one of the two roots — a row in the store table, resolved at runtime. **Never a path spelled by hand.** `bin/ronin-store <id>` prints one, `--all` prints the table | `docs/stores.md` |
 | **ronin_library** | system_scope | the shipped reference shelf — the longer reading an action or macro sends an agent to, fetched by the MACHINERY (`- **library:** <name>`, inlined at compile). Ships in cowork, starts near-empty and grows one screened piece at a time; the owner's own library (the `library` store, user scope) shadows it file-for-file, so the shipped way of working is a default, never a prescription | `ronin_library/README.md` |
 | **ronin_sops** | system_scope | the shipped standard operating procedures — how a house goes about a domain, one SOP per file, fetched by the SITUATION and never by the machinery. **The pair test: if you can name the action that would cite it, it is library.** Starts near-empty like the library; the owner's own `sops` store shadows it file-for-file — a `user_customization` you author, like a macro | `ronin_sops/README.md` |
-| **ronin_session_boot** | system_scope | the shipped **session boot shelf** — what a NEW SESSION reads before anything else. Named for booting a *session*, never the application. Levels that ADD UP rather than override: `all/` (every session) · `<service>_connected/` · `root/<project_root>/` · `role/<session_role>/` · `team_role/<team_role>/`; the owner's `session_boot` store shadows it file-for-file. Stock may ship `role/` and `team_role/` but never `root/` — the definitions ship, the owner's directories do not. Replaced the project_root's `read:` field, which stored literal paths and went stale in silence | `docs/session-boot.md` |
+| **ronin_session_boot** | system_scope | the shipped **session boot shelf** — what a new `cowork_agent` reads before anything else. Named for booting a session, never the application. The unified birth resolves universal floor reading, Campaign/Team context, Routine contributions and selected behaviours (`ronin_sops/` or `ways/`) once, then records the receipt. The owner's `session_boot` store shadows shipped reading file-for-file | `docs/session-boot.md` · `CONTROL_BUNDLES.md` (ronin-lab) |
 | **ronin_bin** | system_scope | **everything an agent types, and nothing else** — every `tejun*` plus `write_tegami`/`read_tegami` (moved out of `bin/` 2026-08-14). On PATH via setup.sh, behind `bin/shim` and ahead of `bin/`. A **tool** is the subset that also implements a cataloged action. The fifth shelf: ronin_session_boot · ronin_catalogs · ronin_library · ronin_sops · ronin_bin | `ronin_bin/README.md` |
 | **SHELVES** | system_scope | the one page that says the four shelves exist and what each answers, so an agent can *find* a catalog, a library page or an SOP without any of them being pasted at it. Names **no individual entry**, so adding one never dates it. Owner, 2026-08-15: the name is `SHELVES`, it lives in `docs/`, and it is a file rather than lines in a brief. It reaches a session through the **boot shelf** — `ronin_session_boot/all/` symlinks it, and `buildBrief` lists that level at spawn — so every session is handed it, and no pointer is written down anywhere to go stale | `docs/SHELVES.md` |
 | **libexec** | system_scope | executables **the machine invokes and nobody types** — `ronin-gate` (ExecStartPost), `rireki/` (the tmux applet), `koshi` (the job process), `ronin-may-spawn`, `ronin-claim` (the git hooks). The Unix split `bin` (a person types it) vs `libexec` (a program invokes it), adopted 2026-08-14. NOT on PATH | § SCRIPTS |
@@ -966,9 +944,8 @@ archive` (the delete modes), `end` (TOMODACHI's ledger). ⚠R8
 
 **3 · "gauge" names two things.** ⚠R6
 
-**4 · The overlap that is deliberate.** `project_root` and `session_role` are used verbatim by
-the launcher, OBOERU's match and TOMODACHI's dimensions. One token, every surface — which
-is what R17's merge protected.
+**4 · The overlap that is deliberate.** `project_root`, `session_type`, Campaign and Team
+context use the same tokens on every surface that carries them.
 
 ---
 
@@ -1071,49 +1048,6 @@ itself. Their agents differ too (**owner_agent** vs **developer_agent**), and so
 rules that bind them: the catalogs, SOPs and library are written for the first; `CLAUDE.md`,
 the byoin_checks and every `dev_scope` row are the second's. The hat that is on decides which
 applies, and a tenant only ever has the first.
-
-**R35 · THE TEAMS CUT — the team is the organizing concept, and identity moves off the
-session onto it.** Owner, 2026-08-23, superseding R34's taxonomy and reversing this
-file's own retirement of the 人. Four passes of the owner's own sharpening, recorded in
-`ronin-lab/wip/buildouts/SESSION_TEAMS.md`; the model in one breath:
-
-```text
-session      =  session_role (mutable)  +  teams (tags; none = a rōnin)
-team_roster  =  team_role (the team's defining role, mutable)  +  objective
-                +  root/repos/branch defaults  +  its wipeboard underneath
-role_family  =  a New Session grouping of session_roles. Presentation, and a
-                Build-Team template. Never a session fact.
-```
-
-**The renames, all in this one ruling:** `session_task` → **`session_role`** (the same
-mutable axis; note `session_role` was once recommended for the *immutable* axis and
-declined — that use never shipped); `family_role` → **DISMANTLED** (the immutable session
-axis is gone from the letter, its enforcement and its birth-only reading level with it —
-the grouping half survives as **`role_family`**, presentation only); `session_team` →
-retired spelling (the live set is simply the TEAM); **`team_roster`**, **`team_role`**,
-**`team_lead`** and **`default_lead_role`** are new — see § TEAMS and § LAUNCHER.
-`team_role` was declined on 2026-08-22 solely for colliding with `session_team`; the
-`team_roster` rename freed it.
-
-**The 人 is un-retired**, and the retirement's own premise is why: it said leadership was
-"a second thing to maintain that the work already implied", and the owner has separated
-the two facts — *"you could have the secretary be team lead."* Leadership is a hand-set,
-per-team designation (`@ronin-lead`), never derived from the mark, optional and
-unbounded. **Membership has little to absolutely no rules** (the owner, verbatim in
-spirit): anyone may change a session's teams — owner, lead, the session itself.
-
-**What identity means now:** a session on two teams wears each team's `team_role`
-contextually; nothing on the session stores or derives one, so there is no tiebreak, no
-home team, and no repair door to build — joining a team is an ordinary act. The letter
-carries a machinery-owned, ADDITIVE `teams` block (name · team_role · objective per
-team), regenerated on every save and read-repaired on reread, so a changed objective
-reaches members lazily. OBOERU drops to two axes (`project_root` × `session_role`);
-TOMODACHI drops the role dimension and counts `led` off the designation; the boot shelf's
-levels are `role/<session_role>/` and `team_role/<team_role>/` (team reading birth-only:
-"if you join later, let's not go back and redo it").
-
-**Hard MVP cut, again**: no aliases, no dual-read; the retired axis routes answer 410
-naming the replacement, and live letters from earlier schemas read as blank.
 
 **R17 · REOPENED AND REVERSED — the role came back, and this time it carries reading.**
 Owner, 2026-08-22. The 2026-08-10 ruling deleted a role catalog and declared the
@@ -1388,58 +1322,9 @@ stale in silence the moment a file moves, while a level listed at the instant of
 cannot, because a file that is gone simply is not named. The SOP shelf's second reach
 route (*found by name*) now has something behind it.
 
-**R36 · `session_mandate` — the fork was never solo-vs-squad.** Owner, 2026-08-26, riffing
-the League lobby: *"the team lead is going to inherit the responsibilities of the objective
-… I want to also set the parameters for the breadth of execution … I don't think that the
-fork is like solo versus squad."* Every run starts the same way — the objective, then ONE
-first session, loaded out — and what differs is not a mode chosen up front but what that
-session is **authorised to do**: how far it goes before it checks in (**reach**), and whom
-it may bring in (**recruit**). Solo, lead, and "go build me a squad" are three settings of
-the same two dials on the same seat, and every in-between the owner named (*"let's discuss
-and then build," "let me add these later"*) falls out of them without a third mode. Ruled
-with it: the dials are the **owner's**, set at launch and re-settable from the tile, never
-derived from the `session_role`; the cautious blank is `plan · propose`; a mandate widening
-is an ordinary act, a mandate narrowing on a running session is a gate. **Hand-building the
-team stays a door of equal standing** (MANIFESTO § 4, ronin-lab) — the mandate governs what
-the lead may do, and says nothing about what the owner may. Adds the § LAUNCHER row.
-*Named by the session that drew the lobby, adopted by the owner: "yes, Mandate!"*
-**Amended 2026-08-27 — a third dial, `output`.** The owner's riff of the 26th set the
-mandate at three levels, not two: *"what is the output? Is it a plan, is it ideas, is it
-code, is it an artifact like a website or pamphlet, or is it just standing up the team?"*
-The ruling had recorded reach and recruit only; asked to add the third the owner said
-*"yes, obviously."* Output names the deliverable separately from how far to go to get it,
-so a person can ask for a plan without also saying when to stop. Known gap (MANIFESTO
-§ 7): tutoring campaigns deliver a change in the student, which none of the five values
-names.
-
-**R38 · `desk_profile` — not a skin; each one has a skin.** Owner, 2026-08-27. The League
-concept found that a game lobby and a household run sheet were one structure with
-different words on it, and called the difference a "skin profile". The owner renamed and
-widened it: **`desk_profile`** is the owner's standing defaults for the surfaces they work
-at — *"each desk_profile has a skin; desk_profile will have defaults for several surfaces:
-skin, campaign_kind, team page default config, etc."* So `SKINS.md` stays exactly what it
-is (tokens, one path, `check-css.mjs` guarding it), and the lexicon, the default kind, the
-Team page arrangement and the RIREKI detail level are the profile's, not the skin's. It is
-configuration chosen once, never a step in a run — the lobby page of the concept is a
-desk_profile picker, and the run starts on the page after it. Adds the § LAUNCHER row.
-
-**R37 · `behaviour` and `session_build` — the bottom of the stack gets its words.** Owner,
-2026-08-26, on the manifesto: *"pile of behaviours — yes! I think we're going to have to add
-behaviours to the KOTOBA. It's the macros, it's SOPs, it's the docs, it's everything that we
-could be giving to a session. That's easy for users to grok."* And on how a session is put
-together: *"if I'm building a session I want to choose from preconfigured session-builds and
-if needed finish their loadout with additional behaviours."* Ruled as two rows in § LAUNCHER.
-**`behaviour`** is the class: one word for anything handed to a session to change what it
-does, across all five shelves. **`session_build`** is the preconfigured composition a session
-starts from; **loadout** is the ordinary word for what a session carries beyond its build
-and needs no row of its own; **kit** — what a build ships with by default — stays a plain
-word until it earns one. **NOT ruled, deliberately:** renaming `session_role`. The owner's
-read is that *role* misleads — the thing a session is doing moves from riffing to drafting
-to cutting — and the leaning is **`task_at_hand`**, not the R35-era `session_task`. Parked
-(owner: *"let's not do that yet"*), because the token rides the letter, the launcher, the
-boot shelf, OBOERU and TOMODACHI, and a rename is a code leg. Until it is ruled, a change of
-`session_role` is a change of task and **never a re-brief**: the reading was handed over at
-birth, and that is enough.
+**R38 · `desk_profile` — not a skin; each one has a skin.** A `desk_profile` holds the
+owner's standing surface defaults: skin, lexicon, Team-page arrangement and RIREKI detail.
+It is configuration chosen once, never a step in a run.
 
 ---
 

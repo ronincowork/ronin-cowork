@@ -70,9 +70,7 @@ learn in order to use Ronin should cost them a second language first.
 |---|---|---|
 | `session_roster` | **the roster**<!--g:glossary.roster--> | The **⌂ Roster** tab: every session on the machine. The session list, full stop. **Never "the board."** |
 | `session_launch` | **launch**<!--g:glossary.launch--> | The **＋ New** tab. Where a session is born. |
-| `role_family` | **Family**<!--g:glossary.family--> | A shelf on the ＋ New board grouping session roles for viewing — Developer, Assistant, Extra — and a template when you build a team. Presentation only (R35): a family never rides a launch and is not a fact about any session. Its `default_lead_role` is pinned first as the suggested first launch for a new team. |
-| `team_roster` | **Cowork record**<!--g:glossary.team_roster--> | The canonical team roster behind one user-facing Cowork: its role, objective and launch defaults. It never lists members — membership is read off live sessions. |
-| `team_role` | **team role**<!--g:glossary.team_role--> | What a TEAM is — development, health & fitness, admin. It belongs to the team, never to a session: a session on two teams wears each contextually. Changeable, and a change reaches members lazily on their next letter reread. |
+| `team_roster` | **Cowork record**<!--g:glossary.team_roster--> | The canonical Team record behind one user-facing Cowork: its kind, objective, kit and launch defaults. It never lists members — membership is read off live sessions. |
 | `team_lead` (`@ronin-lead`) | **team lead · 人**<!--g:glossary.team_lead--> | The one designation: this session leads that team. Set by hand — the secretary can be team lead — never inferred from what a session is doing. A team may have none, one, or several. |
 | `wipeboard` | **wipeboard**<!--g:glossary.wipeboard--> | The **▤ Wipeboard** tab and the file behind it. Our own coinage and it stays — *wipe* is right for a surface many hands write on and erase. Every **Team** has its own wipeboard automatically — say **team wipeboard**; membership is the team's and is never managed separately. A **custom wipeboard** is the owner-made secondary kind. Alias **whiteboard** only, because voice-to-text hears it that way. **Never "the board."** |
 | Brief | **Brief**<!--g:glossary.brief--> | Your statement of what a wipeboard is for. Agents never edit it. |
@@ -90,9 +88,9 @@ learn in order to use Ronin should cost them a second language first.
 | House term | Plain English | One line |
 |---|---|---|
 | dial (`@ronin-control`) | **Control**<!--g:glossary.control--> | Per session: you-only 👤, read 👁, read-and-write 🤖. Only the owner flips it. |
+| `permissions` | **Permissions**<!--g:glossary.permissions--> | The Agent/provider permission posture. Its default enters at Campaign and lands in the owner's launch form. |
 | team (`@ronin-tags`) | **Cowork**<!--g:glossary.team--> | The user-facing word for a set of sessions working together. Internally this remains a Team backed by a `team_roster`; Cowork adds no second object. |
 | note (`@ronin_note`) | **Note**<!--g:glossary.note--> | The owner's one line about a session. |
-| `session_role` (in the letter) | **what it's doing**<!--g:glossary.doing--> | The role's icon, drawn beside every session in the roster and the tile picker. Set at launch; the session changes it itself as its work changes, and so can you. A session with no session_role shows no icon. |
 | — | **Status · Work record · Macros · Detach · Kill session**<!--g:glossary.session_menu--> | The rest of the per-session menu. Already plain. |
 
 ## § PROGRESS AND HISTORY
@@ -116,10 +114,12 @@ learn in order to use Ronin should cost them a second language first.
 | TEJUN (手順) | **macros**<!--g:glossary.macros--> | The UI says Macros. A user never needs the word TEJUN. |
 | macro | **macro**<!--g:glossary.macro--> | A saved instruction you would otherwise have typed to your agent. |
 | invocation | **typing a macro**<!--g:glossary.invocation--> | `+name: what you want`. That is the whole syntax. |
-| `session_role` | **role**<!--g:glossary.role--> | What a session is doing now. The values read plainly on their own (RiffOnIt, CutCode, CheckWork, …). The set lives in `ronin_catalogs/session_roles/` — one file per role, and the directory is the count. |
-| `desk_profile` | **desk profile**<!--g:glossary.desk_profile--> | Your standing defaults for the surfaces you work at — the skin, the words, the kind of campaign the board opens on, how the Team page is arranged. Not a skin; it has one. |
-| `behaviour` | **behaviour**<!--g:glossary.behaviour--> | Anything you can hand a session to change what it does — an SOP, a doc, a tool, a macro, a memory. Inert on the shelf; handed over, it makes the session right for the situation. |
-| `routine` | **routine**<!--g:glossary.routine--> | Reading, SOPs, macros and tools that work together, with one switch. Campaign defaults reach every new Agent; a Team may inherit or override them. Nothing already running changes. |
+| `desk_profile` | **desk profile**<!--g:glossary.desk_profile--> | Your standing defaults for the surfaces you work at — the skin, the words and how the Team page is arranged. Not a skin; it has one. |
+| `session_type` | **session type**<!--g:glossary.session_type--> | Cowork Agent, bare-metal Agent or terminal — the launch choice that decides whether Ronin's birth machinery applies. |
+| `kind` | **kind**<!--g:glossary.kind--> | What a Team is for. A Team's kind seeds its new Agents; the Campaign has none. Open means no requirement. |
+| `template` | **template**<!--g:glossary.template--> | A preset that fills part of a Team or Agent form and stops. Its answers become yours; it is never a live link. |
+| `behaviour` | **behaviour**<!--g:glossary.behaviour--> | One book you can hand an Agent to change what it does — from the house SOPs or ways of working. Inert on the shelf; selected in a loadout or Team kit, handed over at birth. |
+| `routine` | **routine**<!--g:glossary.routine--> | Behaviours that work together, with one switch. Campaign values fill a new Team; saving makes that Team's complete on/off answer its own. Nothing already running changes. |
 | `routine_floor` | **Cowork floor**<!--g:glossary.routine_floor--> | The minimal launch, identity and Routine-delivery machinery included beneath every Cowork Agent. It reaches neither a terminal nor a bare-metal Agent. |
 | `ronin_base` | **Ronin Base**<!--g:glossary.ronin_base--> | Ronin's ordinary macros, documents, work records and session coordination. Normally on, independently switchable. |
 | `ronin_control` | **managed file coordination**<!--g:glossary.ronin_control--> | Managed worktrees, hand-in, lead integration, receipts and Git safeguards that help parallel Agents avoid file collisions. A separate Routine from Ronin Base; it coordinates files, not Agent authority. |
@@ -127,8 +127,10 @@ learn in order to use Ronin should cost them a second language first.
 | `terminal` | **terminal**<!--g:glossary.terminal--> | A shell in a Ronin tile, with no Agent running in it. |
 | `bare_metal_agent` | **bare-metal Agent**<!--g:glossary.bare_metal_agent--> | A CLI started directly in a terminal: no Ronin reading, Campaign or Team defaults, Routines, work record or managed repository desk. |
 | `cowork_agent` | **Cowork Agent**<!--g:glossary.cowork_agent--> | An Agent born with Ronin's startup floor and its Campaign and Team Routines. The normal Agent launch. |
-| `session_build` | **build**<!--g:glossary.build--> | A preconfigured way to start a session — its way of working, the reading it arrives with, the model that suits it. Pick one, then finish its loadout with the behaviours this run needs. |
-| `session_mandate` | **mandate**<!--g:glossary.mandate--> | How far a session may go before it checks in (discuss · plan · execute · run), whom it may recruit (none · propose · staff), and what it hands back (plan · ideas · code · artifact · team). Set by the owner on the first session of a project; a solo run is just `recruit: none`. |
+| `session_mandate` | **mandate**<!--g:glossary.mandate--> | Three dials, each led by Open: how far the Agent may go (discuss · plan · execute), how it may build out a Team (nobody · propose agents · staff agents), and what it hands back (a plan · ideas · code · an artifact · the team). |
+| `reach` | **Reach**<!--g:glossary.reach--> | How far an Agent may go before it checks in. |
+| `recruit` | **Recruit**<!--g:glossary.recruit--> | How an Agent may build out a Team. |
+| `output` | **Output**<!--g:glossary.output--> | What an Agent hands back. |
 | forkit | **fork**<!--g:glossary.fork--> | Split the current topic into a visible Ronin session. “Fork it” and “new session” mean this; “spawn an agent” means an internal sub-agent. |
 | harakiri | **harakiri**<!--g:glossary.harakiri--> | A session ends itself. Kept — it is a word people know. |
 
@@ -203,40 +205,10 @@ test · shadowing · the session directory · build-out doc · handoff · `lande
 - **`UCHI` is retired; the word is `commons`** (2026-08-13).
 - **legs stay** (2026-08-10) — no rename to *step*; *step* is `tejun-step`.
 - **harakiri stays** (2026-08-10) — a word people already know.
-- **The teams cut** (2026-08-23, R35) — the team is the organizing concept. `session_task`
-  becomes `session_role`; the immutable `family_role` axis is DISMANTLED (identity lives
-  on the team's roster as its `team_role`, worn contextually, never on a session);
-  `role_family` survives as the New Session shelf, presentation only; `session_team` is a
-  retired spelling; the 人 (`@ronin-lead`) is UN-RETIRED as the hand-set `team_lead`
-  designation — the secretary can be team lead. Membership has little to absolutely no
-  rules: anyone may move a session between teams.
-- **`job_role` and `task_family` become one word, `family_role`** (2026-08-22) — they
-  were two names for one thing: a session's type IS the family of tasks it may perform.
-  A session is a `family_role` + a `session_task`. KOTOBA R34.
-- **`session_job` is split into `family_role` and `session_task`** (2026-08-22) — the
-  2026-08-10 ruling that made one term do both jobs is reversed. A single common word is
-  still not a term, which is why neither new one is bare *role* or *task*.
 - **`ronin_service`, alias Services, is the paid unit** (2026-08-10) — never module,
   plug-in, extension or applet.
 - **There is no bare "board"** (2026-08-10) — the roster and the wipeboard, and neither
   may be aliased to *board*.
-- **`job_class` is promoted to `family_role`, inside and out** (2026-08-22) — the shelf
-  that addressed nothing now carries reading and launch defaults, so it earns a real
-  name on both faces.
-- **`QuarterBack` is a task, not a role** (2026-08-22) — `developer` is the role;
-  quarterbacking is something a Developer does for a while and stops doing. So who
-  coordinates a team can change during the day, and every surface reads it fresh. The
-  token keeps its verb+object exception, beside `OddJob`.
-- **`group` is retired as a house term; the words are Team and Family** (2026-08-22) —
-  *group* goes back to ordinary English and means nothing in particular. A **Team**
-  (`session_team`) is a set of collaborating sessions; a **Family** (`session_tasks`) is the
-  set of tasks under a job role. Both many-to-many, and the axes do not overlap. Spelled
-  compound internally because a bare `family` already collides with settei's write family
-  and Node's address family. **The `session_team` sweep landed 2026-08-22** (the
-  WIPEBOARD_TEAMS build-out): `tejun-team`, `+team:`, a saved-launch `team:` field, and
-  one wipeboard per team. The `@ronin-tags` spelling, the `tags` code/API fields and
-  TOMODACHI's `tag_groups` key stay as internal seams, mapped in KOTOBA R32; the retired
-  spellings are read on input, never taught.
 - **pane is retired from house vocabulary entirely** (2026-08-22) — tmux's word for
   tmux's own object, nothing more; our representations, browser and backend, are the
   tile. Code sweep: OPEN_THREADS 4.33.
@@ -255,19 +227,6 @@ test · shadowing · the session directory · build-out doc · handoff · `lande
    (`commons.js`). This file's own rule is *the UI's word wins*, and that is a UI word,
    written by us, in front of a user today. Recommend ruling **AI admin** in rather than
    inventing anything. Nothing coined, only noticed.
-
-2. **CLOSED — the category has a user word now: *task*.** (2026-08-22.) The open item
-   was that `session_job`'s values read fine but the category had no word, so the launcher
-   had to describe it. Splitting the axis supplied both: a session has a **role** and a
-   **task**, and the board says so.
-
-3a. **CLOSED — the `session_team` sweep landed with the owner's go.** (2026-08-22, the
-   WIPEBOARD_TEAMS build-out.) The tool is `tejun-team` (the old name forwards), the
-   invocation is `+team:` (old spellings read, never taught), the saved-launch field is
-   `team:` (`group:` still read), and every user-facing surface says Team. What stays is
-   deliberate and mapped: `@ronin-tags` itself (live sessions carry it), the `tags`
-   code/API fields, and TOMODACHI's `tag_groups` wire key — internal seams, same pattern
-   as `cowork_stats` under Stats. KOTOBA R32 records both halves.
 
 3. **Run this list against real co-working vocabulary** (owner). Where a real co-working
    word exists for a thing we have, take it — **but only where the mechanism matches.**
