@@ -378,16 +378,6 @@ export function registerSessions(app: express.Express): void {
   app.post('/api/sessions/:name/session_role', async (req, res) => {
     const { name } = req.params;
     if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
-    // A RETIRED KEY IN THE BODY IS REFUSED BEFORE THE SESSION LOOKUP, deliberately:
-    // it is wrong about the REQUEST, not about the session, so it answers the same way
-    // whether or not the session exists.
-    if (req.body?.role_family !== undefined || req.body?.family_role !== undefined) {
-      return res.status(400).json({
-        error:
-          'role_family is retired (R35, 2026-08-23) — a session has no identity axis of its own. ' +
-          "Identity is contextual to a session's team.",
-      });
-    }
     if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
     const task = String(req.body?.session_role ?? '').trim().slice(0, 64);
     try {

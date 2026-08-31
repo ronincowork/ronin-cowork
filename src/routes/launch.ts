@@ -77,14 +77,66 @@ async function deskNote(r: { assignment?: unknown; routines?: Array<{ name: stri
   return '';
 }
 
+const LAUNCH_KEYS = new Set([
+  'session_type', 'session_role', 'team', 'team_lead', 'instructions', 'prompt', 'name',
+  'dial', 'project_root', 'cmd', 'model', 'provider', 'mandate', 'campaign_id', 'mcp',
+  'tags', 'seed', 'inject', 'reference', 'desk',
+]);
+const RETIRED_LAUNCH_KEYS = new Set([
+  'role_family', 'family_role', 'session_task', 'team_role', 'campaign_kind', 'lifecycle',
+]);
+const RETURNED_LAUNCH_KEYS = new Set([
+  'assignment', 'posture', 'opening', 'ack', 'capExempt', 'launchAgent', 'stated_by', 'birth_reading',
+]);
+const SESSION_TYPES = new Set(['cowork_agent', 'bare_metal_agent', 'terminal']);
+
+/** A launch body is a suggestion, never a refusal surface. Keep what this birth can use
+ * and leave an exact list of everything else for its durable receipt. */
+export function acceptedLaunchBody(input: unknown): { body: Record<string, unknown>; ignored: string[] } {
+  const source = input && typeof input === 'object' && !Array.isArray(input)
+    ? input as Record<string, unknown>
+    : {};
+  const body = { ...source };
+  const ignored = new Set<string>();
+  const drop = (key: string): void => {
+    if (body[key] !== undefined) ignored.add(key);
+    delete body[key];
+  };
+
+  for (const key of Object.keys(body)) {
+    if (!LAUNCH_KEYS.has(key) || RETIRED_LAUNCH_KEYS.has(key) || RETURNED_LAUNCH_KEYS.has(key)) drop(key);
+  }
+
+  const statedType = typeof body.session_type === 'string' ? body.session_type.trim() : body.session_type;
+  const sessionType = typeof statedType === 'string' && SESSION_TYPES.has(statedType)
+    ? statedType
+    : 'cowork_agent';
+  if (body.session_type !== undefined && sessionType !== statedType) ignored.add('session_type');
+  body.session_type = sessionType;
+
+  if (body.dial !== undefined && body.dial !== 'user' && body.dial !== 'read' && body.dial !== 'write') drop('dial');
+  if (body.desk !== undefined && body.desk !== 'own' && body.desk !== 'none') drop('desk');
+  if (body.mcp !== undefined && typeof body.mcp !== 'boolean') drop('mcp');
+  if (body.tags !== undefined && !Array.isArray(body.tags)) drop('tags');
+  if (body.seed !== undefined && !Array.isArray(body.seed)) drop('seed');
+
+  const inapplicable = sessionType === 'terminal'
+    ? ['provider', 'model', 'instructions', 'prompt', 'kind', 'mandate', 'behaviours', 'routines', 'sops', 'cmd', 'mcp', 'seed', 'inject', 'reference', 'session_role']
+    : sessionType === 'bare_metal_agent'
+      ? ['kind', 'mandate', 'behaviours', 'routines', 'sops', 'seed', 'inject', 'reference', 'session_role', 'team_lead']
+      : [];
+  for (const key of inapplicable) drop(key);
+  if (sessionType === 'bare_metal_agent' && body.desk === 'own') drop('desk');
+
+  return { body, ignored: [...ignored].sort() };
+}
+
 /* ---------- ONE door to a new session: POST /api/launch ----------
  * Three births, selected only by `session_type`:
  *   cowork_agent · bare_metal_agent · terminal
  *
- * Blank `session_role` is an ordinary value and never changes the birth path. The
- * RETIRED axis keys are refused by name below — a caller still sending `role_family` or
- * `session_task` deserves to be told the model moved, not a different kind of session
- * with its words ignored.
+ * Blank `session_role` is an ordinary value and never changes the birth path. Inputs
+ * that do not belong to the resolved birth are ignored and named in its receipt.
  */
 export function registerLaunch(app: express.Express): void {
   app.get('/api/launch-seed', async (req, res) => {
@@ -122,57 +174,18 @@ export function registerLaunch(app: express.Express): void {
   // below is a second DOOR onto this same body, never a second launch path (the parity
   // invariant, tests/launch-parity.test.ts).
   const launchJob: express.RequestHandler = async (req, res) => {
-    // The retired keys, refused by name (410-shaped, but a launch is a POST that never
-    // existed per-key, so 400 with the teaching text is the honest shape here).
-    if (['role_family', 'family_role', 'session_task', 'team_role', 'campaign_kind', 'lifecycle']
-      .some((key) => req.body?.[key] !== undefined)) {
-      return res.status(400).json({
-        error:
-          'This launch names a retired axis. The model moved on 2026-08-23 (R35): a session is ' +
-          'a mutable `session_role` born onto an optional `team` — there is no per-session ' +
-          'role_family, `team_role`, `campaign_kind`, or `lifecycle`; `session_task` is now `session_role`.',
-      });
-    }
-    const sessionType = String(req.body?.session_type ?? 'cowork_agent').trim();
-    if (!['cowork_agent', 'bare_metal_agent', 'terminal'].includes(sessionType)) {
-      return res.status(400).json({
-        error: 'When stated, `session_type` must be `cowork_agent`, `bare_metal_agent`, or `terminal`.',
-      });
-    }
+    const accepted = acceptedLaunchBody(req.body);
+    req.body = accepted.body;
+    const sessionType = String(req.body.session_type);
     const name = String(req.body?.name ?? '').trim();
     if (!name) return res.status(400).json({ error: '`name` is required for every session type.' });
     if (!isValidName(name)) return res.status(400).json({ error: 'Use letters, digits, _ or - (no spaces, . or :).' });
 
-    const forbidden = (keys: string[], teaching: string): express.Response | undefined => {
-      const sent = keys.filter((key) => req.body?.[key] !== undefined);
-      if (!sent.length) return undefined;
-      return res.status(400).json({ error: `${teaching} Remove: ${sent.map((key) => `\`${key}\``).join(', ')}.` });
-    };
-    if (sessionType === 'terminal') {
-      const refusal = forbidden(
-        ['provider', 'model', 'instructions', 'prompt', 'kind', 'mandate', 'behaviours', 'routines', 'sops', 'cmd', 'mcp', 'seed', 'inject', 'reference', 'session_role'],
-        'A `terminal` starts no Agent, so Agent fields do not apply.',
-      );
-      if (refusal) return refusal;
-    }
     if (sessionType === 'bare_metal_agent') {
-      const refusal = forbidden(
-        ['kind', 'mandate', 'behaviours', 'routines', 'sops', 'seed', 'inject', 'reference', 'session_role', 'team_lead'],
-        'A `bare_metal_agent` starts the provider CLI directly: it has no Ronin reading, Routines, brief, or managed desk.',
-      );
-      if (refusal) return refusal;
-      if (req.body?.desk === 'own') {
-        return res.status(400).json({ error: 'A `bare_metal_agent` has no managed repository desk; use `desk: none` or omit `desk`.' });
-      }
       if (!String(req.body?.project_root ?? '').trim()) {
         return res.status(400).json({ error: 'A `bare_metal_agent` requires `project_root` for its working directory; it is placement, not Ronin birth material.' });
       }
     }
-    const returnedOnly = forbidden(
-      ['assignment', 'posture', 'opening', 'ack', 'capExempt', 'launchAgent', 'stated_by', 'birth_reading'],
-      'These fields are resolved and returned by the server, never accepted from a launch caller.',
-    );
-    if (returnedOnly) return returnedOnly;
     const sessionRole = String(req.body?.session_role ?? '').trim();
     const team = String(req.body?.team ?? '').trim();
     const form: SpawnForm = {
@@ -365,6 +378,7 @@ export function registerLaunch(app: express.Express): void {
       });
     } else {
       const receipt = {
+        ignored: accepted.ignored,
         session_type: resolved.session_type,
         session_role: resolved.session_role,
         team: resolved.team,
