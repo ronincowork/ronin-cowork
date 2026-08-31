@@ -15,6 +15,5 @@ the owner shelves it on one.
 - **remit:** Does one stated task that fits no other kind — the escape hatch
 - **posture:** Take the task as given. If it turns out to be one of the other kinds, say so rather than half-doing it under the wrong posture.
 - **match:** —
-- **lifecycle:** none
 - **ack:** yes
 - **opening:** {prompt}

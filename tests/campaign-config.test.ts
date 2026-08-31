@@ -15,6 +15,9 @@ import path from 'node:path';
 
 const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-campaigns-test-'));
 process.env.RONIN_CAMPAIGNS_DIR = temp;
+const ROUTINES_OFF = {
+  ronin_base: false, ronin_control: false, ronin_services: false, machine: false, gbrain: false,
+};
 
 const {
   archiveCampaign,
@@ -66,7 +69,7 @@ test('create → read: the record round-trips, and every field lands as typed', 
   assert.deepEqual(c.config, {
     agent_defaults: {
       provider: '', model: '', reach: 'plan', recruit: 'propose agents', output: 'open',
-      routines: {}, behaviours: [], dial: 'write', permissions: 'default',
+      routines: ROUTINES_OFF, behaviours: [], dial: 'write', permissions: 'default',
     },
     cowork_defaults: {}, template_defaults: {},
   });
@@ -121,7 +124,7 @@ test('config merges per sub-bucket, so a caller cannot drop a bucket it never he
   const c = (await readCampaign('ronin'))!;
   assert.deepEqual(c.config.agent_defaults, {
     provider: '', model: 'x', reach: 'plan', recruit: 'propose agents', output: 'open',
-    routines: {}, behaviours: [], dial: 'write', permissions: 'default',
+    routines: ROUTINES_OFF, behaviours: [], dial: 'write', permissions: 'default',
   }, 'the first bucket survived the second write as a complete typed record');
   assert.deepEqual(c.config.cowork_defaults, { branch: 'dev' });
   assert.deepEqual(c.config.template_defaults, {});
@@ -155,6 +158,24 @@ test('a legacy profile reference is copied once into the Campaign record', async
   const raw = JSON.parse(await fs.readFile(path.join(temp, 'legacy.json'), 'utf8'));
   assert.deepEqual(raw.desk, migrated.desk, 'resolved values persist instead of being recomputed by each view');
   await fs.unlink(path.join(temp, 'legacy.json'));
+});
+
+test('a pre-Atarashi Campaign receives the stock Routine map once', async () => {
+  const file = path.join(temp, 'pre_atarashi.json');
+  await fs.writeFile(file, JSON.stringify({
+    title: 'Old', created_at: '2020-01-02T00:00:00.000Z',
+    config: { agent_defaults: { provider: 'openai' } },
+  }));
+  const first = await readCampaign('pre_atarashi');
+  assert.deepEqual(first?.config.agent_defaults.routines, { ronin_base: true, ronin_control: true });
+  const stored = JSON.parse(await fs.readFile(file, 'utf8'));
+  stored.config.agent_defaults.routines.future_routine = false;
+  await fs.writeFile(file, JSON.stringify(stored));
+  const second = await readCampaign('pre_atarashi');
+  assert.deepEqual(second?.config.agent_defaults.routines, {
+    ronin_base: true, ronin_control: true, future_routine: false,
+  }, 'an existing map is not recomputed or reached down into');
+  await fs.unlink(file);
 });
 
 test('creating over an existing Campaign is refused — editing is a different intent', async () => {
@@ -233,7 +254,7 @@ test('a half-written record degrades to a readable Campaign instead of taking a 
   assert.deepEqual(thin.config, {
     agent_defaults: {
       provider: '', model: '', reach: 'plan', recruit: 'propose agents', output: 'open',
-      routines: {}, behaviours: [], dial: 'write', permissions: 'default',
+      routines: { ronin_base: true, ronin_control: true }, behaviours: [], dial: 'write', permissions: 'default',
     },
     cowork_defaults: {}, template_defaults: {},
   }, 'an array is not a bucket and receives the typed stock defaults');

@@ -20,8 +20,7 @@ opens it next, including the `#` heading — the filename is the token, not the 
 **Fields:** `icon` · `label` · `blurb` (what the button does) · `ask` (the form's prompt) ·
 `remit` (one line: what this session is, for humans and Koshi) · `posture` (how it
 behaves — inlined into the boot brief) · `match` (intent words) · `dial` ·
-`permissions` · `lifecycle` (the
-michi it starts in) · `ack` · `opening` (first-message template; `{prompt}` is what the
+`permissions` · `ack` · `opening` (first-message template; `{prompt}` is what the
 owner typed) · `agent` · `cap` · `dir` · `mcp` · `hidden`.
 
 **Everything but the presentation fields CASCADES.** A task states a launch field only

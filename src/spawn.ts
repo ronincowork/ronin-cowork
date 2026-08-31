@@ -119,7 +119,7 @@ export interface SpawnForm {
   reference?: string;
   /**
    * THE DESK CONTROL of the launch box — *own desk · plain root* — pre-answered: absent
-   * means by lifecycle (a coding launch on a reviewed repo gets desks, nothing else does);
+   * means by the resolved Ronin Control Routine;
    * `own` asks for one regardless, `none` refuses one. Ignored for a plain terminal.
    */
   desk?: DeskChoice;
@@ -133,7 +133,6 @@ export interface Resolved {
   cmd: string;
   tags: string[];
   dial: Dial;
-  lifecycle: string;
   /** The axis as resolved, possibly ''. This is what TEGAMI is seeded with. */
   session_role: string;
   mandate: Mandate;
@@ -551,7 +550,8 @@ export async function resolveForm(
     team: form.team ?? '',
     project_root: root.name,
     agent,
-    lifecycle: profile.lifecycle,
+    control: (parentSeed?.resolved_routines ?? resolveRoutines(routineCatalog, {}, undefined))
+      .some((routine) => routine.name === 'ronin_control' && routine.enabled),
     desk: form.desk,
   });
   const routines = agent
@@ -592,7 +592,6 @@ export async function resolveForm(
       .filter((t, i, a) => a.indexOf(t) === i)
       .slice(0, 16),
     dial: form.dial ?? (parentSeed?.seeds.dial.value as Dial | undefined) ?? profile.dial,
-    lifecycle: profile.lifecycle,
     session_role: profile.session_role,
     mandate: resolvedMandate,
     team: form.team ?? '',
@@ -638,7 +637,6 @@ export async function resolveForm(
       assignment: form.desk ? explicit : system,
       cmd: cmdSource,
       tags: unique(roster ? rosterSource : [], form.tags?.length ? explicit : []),
-      lifecycle: profile.stated_by.lifecycle,
       session_type: explicit,
       session_role: form.session_role !== undefined ? explicit : profile.stated_by.session_role,
       mandate: form.mandate ? explicit : parentSeed?.seeds.reach.stated_by ?? (campaign

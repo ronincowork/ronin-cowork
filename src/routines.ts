@@ -30,6 +30,12 @@ export function routineChoices(value: unknown): RoutineChoices {
   );
 }
 
+/** Save-time normalization: every catalog Routine receives an explicit on/off answer. */
+export function completeRoutineChoices(catalog: RoutineRow[], value: unknown): RoutineChoices {
+  const choices = routineChoices(value);
+  return Object.fromEntries(catalog.map((routine) => [routine.name, choices[routine.name] ?? false]));
+}
+
 export function resolveRoutines(
   catalog: RoutineRow[],
   campaign: RoutineChoices,

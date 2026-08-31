@@ -39,6 +39,7 @@ import path from 'node:path';
 import { storeDir } from './stores.js';
 import { readSection } from './user-config.js';
 import { agentDefaults, type AgentDefaults } from './agent-defaults.js';
+import { completeRoutineChoices } from './routines.js';
 
 /** The typed bucket — a Campaign's own defaults, never a dump of all SETTEI. The three
  *  sub-buckets are the plan's, and they are the whole vocabulary: a fourth is a plan
@@ -311,6 +312,13 @@ async function writeRecord(c: CampaignConfig): Promise<CampaignConfig> {
   return c;
 }
 
+async function completeAgentDefaults(value: unknown): Promise<AgentDefaults> {
+  const defaults = agentDefaults(value);
+  const { listRoutines } = await import('./definitions.js');
+  defaults.routines = completeRoutineChoices(await listRoutines(), defaults.routines);
+  return defaults;
+}
+
 /** One Campaign, or null when no such record exists. An invalid id is null and never a
  *  path read: the check happens before the filename is built. */
 export async function readCampaign(id: string): Promise<CampaignConfig | null> {
@@ -320,6 +328,14 @@ export async function readCampaign(id: string): Promise<CampaignConfig | null> {
     const parsed = parse(id, raw);
     if (!parsed) return null;
     const doc = JSON.parse(raw) as Record<string, unknown>;
+    const config = bucket(doc.config);
+    const defaults = bucket(config.agent_defaults);
+    if (!Object.prototype.hasOwnProperty.call(defaults, 'routines')) {
+      // Existing Campaigns predate Atarashi's Routine map. Preserve their de-facto
+      // launch once; later catalog additions remain absent and therefore resolve off.
+      parsed.config.agent_defaults.routines = { ronin_base: true, ronin_control: true };
+      await writeRecord(parsed);
+    }
     if (!Object.prototype.hasOwnProperty.call(doc, 'desk')) {
       // One-time, lossless migration: the old reference is resolved against the catalog
       // once and copied. Later catalog edits cannot silently repaint this Campaign.
@@ -384,7 +400,10 @@ export async function createCampaign(edit: CampaignEdit & { id?: string }): Prom
       : mergeDeskSettings(await settingsFromTemplate(profile), edit.desk),
     state: edit.state === 'archived' ? 'archived' : 'active',
     created_at: new Date().toISOString(),
-    config: settings(edit.config),
+    config: {
+      ...settings(edit.config),
+      agent_defaults: await completeAgentDefaults(settings(edit.config).agent_defaults),
+    },
   });
 }
 
@@ -414,7 +433,7 @@ export async function writeCampaign(id: string, edit: CampaignEdit): Promise<Cam
       ? {
           config: {
             agent_defaults: edit.config.agent_defaults === undefined
-              ? existing.config.agent_defaults : agentDefaults(edit.config.agent_defaults),
+              ? existing.config.agent_defaults : await completeAgentDefaults(edit.config.agent_defaults),
             cowork_defaults: edit.config.cowork_defaults === undefined
               ? existing.config.cowork_defaults : bucket(edit.config.cowork_defaults),
             template_defaults: edit.config.template_defaults === undefined

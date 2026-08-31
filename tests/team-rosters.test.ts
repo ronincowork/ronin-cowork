@@ -14,6 +14,9 @@ import path from 'node:path';
 
 const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-rosters-test-'));
 process.env.RONIN_TEAM_ROSTERS_DIR = temp;
+const ROUTINES_OFF = {
+  ronin_base: false, ronin_control: false, ronin_services: false, machine: false, gbrain: false,
+};
 
 const {
   createTeamRoster,
@@ -40,7 +43,7 @@ test('create → read → list: a zero-member team is a real, openable record', 
   assert.equal(r.title, 'Alpha');
   assert.equal(r.wipeboard, 'alpha', 'the board defaults to the team’s own token');
   assert.equal(r.state, 'active');
-  assert.deepEqual(r.routines, { ronin_base: true, ronin_control: false });
+  assert.deepEqual(r.routines, { ...ROUTINES_OFF, ronin_base: true });
 
   const back = await readTeamRoster('alpha');
   assert.deepEqual(back, r);
@@ -52,7 +55,7 @@ test('the settled nested shapes round-trip, and an edit touches only what it sta
   assert.equal(r.title, 'Alpha Platform');
   assert.equal(r.objective, 'ship the teams cut', 'unstated fields survive');
   assert.deepEqual(r.references, ['https://example.test/spec', 'Owner note']);
-  assert.deepEqual(r.routines, { base: false, control: true });
+  assert.deepEqual(r.routines, ROUTINES_OFF);
   assert.deepEqual(r.behaviours, { books: ['ways:CutCode'], required: true });
   assert.deepEqual(r.agent_defaults, {
     provider: 'anthropic', model: 'opus', reach: 'execute', recruit: 'nobody',
@@ -69,7 +72,7 @@ test('a blank field is written as "—" and reads back as the blank it stands fo
   assert.equal(r.project_root, '', 'an untouched blank stays blank after an edit');
   assert.equal(r.kind, 'open');
   assert.deepEqual(r.references, []);
-  assert.deepEqual(r.routines, {});
+  assert.deepEqual(r.routines, ROUTINES_OFF);
   assert.deepEqual(r.behaviours, { books: [], required: false });
   assert.equal(r.branch, 'dev');
   const cleared = await writeTeamRoster('bare', { objective: '' });

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { RoutineRow } from '../src/definitions.js';
-import { resolveRoutines, routineChoices } from '../src/routines.js';
+import { completeRoutineChoices, resolveRoutines, routineChoices } from '../src/routines.js';
 
 const row = (name: string): RoutineRow => ({
   name, label: name, blurb: '', origin: 'stock', shadowed: false, class: 'specialized',
@@ -30,6 +30,19 @@ test('absence in the selected complete map is implicit off — never live inheri
 test('configuration accepts only named literal booleans', () => {
   assert.deepEqual(routineChoices({ ronin_base: true, machine: 'off', '../bad': false }), { ronin_base: true });
   assert.deepEqual(routineChoices(['ronin_base']), {});
+});
+
+test('Save completes a map against the current catalog', () => {
+  assert.deepEqual(completeRoutineChoices(catalog, { ronin_base: true }), {
+    ronin_base: true, ronin_control: false, machine: false,
+  });
+});
+
+test('a catalog routine added after Save resolves off without changing the stored map', () => {
+  const stored = { ronin_base: true, ronin_control: false };
+  const expanded = [...catalog, row('future_routine')];
+  assert.equal(resolveRoutines(expanded, stored).find((item) => item.name === 'future_routine')?.enabled, false);
+  assert.deepEqual(stored, { ronin_base: true, ronin_control: false });
 });
 
 test('dependencies grow additively: Services and Control require Base, not each other', () => {
