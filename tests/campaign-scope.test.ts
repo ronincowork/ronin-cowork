@@ -39,6 +39,7 @@ const {
   campaignFilter,
   campaignResolver,
   initialCampaignId,
+  machineCampaignId,
   migrateCampaignScope,
 } = await import('../src/campaign-scope.js');
 
@@ -80,6 +81,10 @@ test("an unmarked record reads as the initial Campaign, and that is the only pla
   const resolve = await campaignResolver();
   assert.equal(resolve(''), initial, 'the compatibility read');
   assert.equal(resolve('health'), 'health', 'an explicit id is never rewritten');
+});
+
+test('the running machine exposes its one initial Campaign', async () => {
+  assert.equal(await machineCampaignId(), await initialCampaignId());
 });
 
 test('a filter naming no Campaign means every Campaign', async () => {

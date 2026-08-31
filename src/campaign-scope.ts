@@ -44,6 +44,17 @@ export async function initialCampaignId(): Promise<string> {
 }
 
 /**
+ * The Campaign this running Cowork machine exposes.
+ *
+ * The current product has one machine Campaign. Keeping this name separate from
+ * `initialCampaignId` makes the present rule explicit and leaves one seam for a future
+ * owner-chosen switch; no screen may independently decide to show every Campaign.
+ */
+export async function machineCampaignId(): Promise<string> {
+  return initialCampaignId();
+}
+
+/**
  * Resolve stored `campaign_id`s for READING: `''` becomes the initial Campaign, anything
  * already stamped is returned untouched. **The whole compatibility window is this function.**
  *
