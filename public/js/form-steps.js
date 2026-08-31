@@ -88,6 +88,24 @@ export function mandateSelect(values, current, onPick) {
   return select;
 }
 
+/** One mandate dial as a row of rectangles — the New Agent drawing's shape: the dial's
+ *  name left, one box per ruled value, `open` first on every dial. */
+export function dialRow(title, values, current, onPick) {
+  const dial = el('div', 'fs-dial');
+  dial.append(el('h4', null, title));
+  const row = el('div', 'fs-dial-row');
+  for (const value of values) {
+    const box = el('button', 'fs-dial-opt');
+    box.type = 'button';
+    box.setAttribute('aria-pressed', String(value === current));
+    box.append(el('b', null, mandateWord(value)));
+    box.addEventListener('click', () => onPick(value));
+    row.append(box);
+  }
+  dial.append(row);
+  return dial;
+}
+
 /** The six kinds and the not-applicable box below them — `open` is dotted and set apart,
  *  never a seventh peer (owner, 2026-08-31). Labels ride the reserved `kind.*` keys. */
 export function kindTiles(current, onPick) {

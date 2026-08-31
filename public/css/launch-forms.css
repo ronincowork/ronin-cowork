@@ -73,6 +73,28 @@
   .fs-door { align-self: flex-start; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); color: var(--fg); padding: var(--space-3) var(--space-6); font: inherit; font-size: var(--text-3); }
   .fs-door:disabled { opacity: .45; cursor: default; }
 
+  /* ── the mandate dials — the New Agent drawing's button rows, `open` leading ── */
+  .fs-dial { display: grid; grid-template-columns: calc(var(--space-12) * 2) minmax(0, 1fr); gap: var(--space-4); align-items: center; }
+  .fs-dial > h4 { margin: 0; color: var(--muted); font-size: var(--text-1); letter-spacing: .06em; text-transform: uppercase; }
+  .fs-dial-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(var(--space-12) * 3), 1fr)); gap: var(--space-2); }
+  .fs-dial-opt { display: grid; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--muted-2); padding: var(--space-2) var(--space-4); cursor: pointer; text-align: left; font: inherit; }
+  .fs-dial-opt:hover { border-color: var(--kaki); }
+  .fs-dial-opt[aria-pressed='true'] { border-color: var(--kaki); background: var(--raise); }
+  .fs-dial-opt b { overflow: hidden; color: var(--fg-strong); font-size: var(--text-2); font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
+  .fs-dial-opt[aria-pressed='true'] b { color: var(--kaki-lift); }
+
+  /* ── New Agent's own few shapes ── */
+  .na-omitted { margin: 0; color: var(--dim); font-size: var(--text-1); }
+  .na-omitted[hidden] { display: none; }
+  .na-note { margin: var(--space-4) 0 0; color: var(--dim); font-size: var(--text-2); }
+  .na-sopgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--space-12) * 4), 1fr)); gap: var(--space-1); }
+  .na-sop { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); align-items: center; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--muted-2); padding: var(--space-2) var(--space-4); cursor: pointer; text-align: left; font: inherit; }
+  .na-sop:hover { border-color: var(--kaki); }
+  .na-sop[aria-pressed='true'] { border-color: var(--kaki); background: var(--raise); }
+  .na-sop[aria-pressed='true'] .aa-box { border-color: var(--kaki); background: var(--kaki); }
+  .na-sop b { overflow: hidden; color: var(--fg-strong); font-family: var(--font-mono); font-size: var(--text-2); font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
+  .na-sop[aria-pressed='true'] b { color: var(--kaki-lift); }
+
   /* ── tags and the born reading ── */
   .fs-tags { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
   .fs-tag { border: var(--edge) solid var(--line-2); background: var(--panel); color: var(--muted); padding: 0 var(--space-3); font-family: var(--font-mono); font-size: var(--text-1); white-space: nowrap; }

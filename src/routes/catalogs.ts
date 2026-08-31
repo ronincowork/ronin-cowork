@@ -13,6 +13,7 @@ import { listSkins } from '../skins.js';
 import { listLexicons, resolveLexicon } from '../lexicons.js';
 import { activeDeskProfileName, listDeskProfiles } from '../desk-profiles.js';
 import { listSops } from '../sops.js';
+import { listWays } from '../ways.js';
 import { listActions } from '../actions.js';
 import { listSessionReadings } from '../session-readings.js';
 import { listAgentAvailability } from '../agents.js';
@@ -98,6 +99,17 @@ export function registerCatalogs(app: express.Express): void {
   app.get('/api/sops', async (_req, res) => {
     try {
       res.json(await listSops());
+    } catch (e) {
+      res.status(500).json({ error: errMsg(e) });
+    }
+  });
+
+  /** The ways shelf, for the loadout trays — labels and blurbs, never launch constants
+   *  (a way is reading, not a session identity). Stock-only until a `ways` store is
+   *  ruled into the registry. */
+  app.get('/api/ways', async (_req, res) => {
+    try {
+      res.json(await listWays());
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }
