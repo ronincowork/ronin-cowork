@@ -7,6 +7,7 @@ import { createTeamRosterSurface } from './team-roster-surface.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { createTeamWipeboard } from './team-wipeboard.js';
 import { buildDocs } from './docs.js';
+import { buildArchives } from './archives.js';
 import { buildLauncher } from './launcher.js';
 import { homeData, loadPresets, loadSavedLaunches, refreshHome, roleData, statusLabel } from './home.js';
 import { request } from './request.js';
@@ -30,7 +31,7 @@ const el = (tag, cls, text) => {
 const COMMONS = '@commons';
 const COWORK = '@cowork';
 const NEW = '@new';
-const WB_TYPES = Object.freeze({ commons: 'team.commons', desk: 'ronin.desk', newSession: 'session.new', terminal: 'session.terminal', roster: 'cowork.team-roster', newTeam: 'cowork.new-team', team: 'team.profile' });
+const WB_TYPES = Object.freeze({ commons: 'team.commons', desk: 'ronin.desk', newSession: 'session.new', terminal: 'session.terminal', roster: 'cowork.team-roster', newTeam: 'cowork.new-team', team: 'team.profile', archives: 'cowork.archives' });
 const WB_PROFILES = Object.freeze({ cowork: 'cowork', team: 'team' });
 
 function registerWorkbenchCatalog() {
@@ -42,8 +43,9 @@ function registerWorkbenchCatalog() {
   add({ type: WB_TYPES.terminal, header: 'terminal', discover: (_tenant, environment) => environment.sessions(), create: ({ workspace, detail, environment }) => environment.terminal(workspace, detail) });
   add({ type: WB_TYPES.roster, header: 'surface', label: () => t('league.team_roster', 'Team roster'), create: ({ workspace, environment }) => environment.roster(workspace) });
   add({ type: WB_TYPES.newTeam, header: 'surface', label: () => t('new_team.title', 'New Team'), variant: 'dotted', create: ({ workspace, environment }) => environment.newTeam(workspace) });
+  add({ type: WB_TYPES.archives, header: 'surface', label: () => t('archives.card', 'Rehydrate Archived'), variant: 'dotted', create: ({ workspace, environment }) => environment.archives(workspace) });
   add({ type: WB_TYPES.team, header: 'surface', discover: (_tenant, environment) => environment.teams(), create: ({ workspace, detail, environment }) => environment.team(workspace, detail) });
-  profiles.define(WB_PROFILES.cowork, [WB_TYPES.roster, WB_TYPES.team, WB_TYPES.newTeam, WB_TYPES.newSession]);
+  profiles.define(WB_PROFILES.cowork, [WB_TYPES.roster, WB_TYPES.team, WB_TYPES.newTeam, WB_TYPES.newSession, WB_TYPES.archives]);
   profiles.define(WB_PROFILES.team, [WB_TYPES.commons, WB_TYPES.terminal, WB_TYPES.newSession]);
 }
 export function createCoworkView(options = {}) {
@@ -171,12 +173,23 @@ export function createCoworkView(options = {}) {
   // The Team roster stayed — a Cowork is not Campaign configuration — and is its own
   // surface rather than the one tab left in a strip.
   const teamRosterBySeat = campaign ? Object.fromEntries(Object.keys(seats).map((id) => [id, createTeamRosterSurface()])) : {};
+  // REHYDRATE ARCHIVED IS A SURFACE (owner, 2026-08-31): the Commons' Archived room,
+  // seated in a workspace, grouped by Team of record, each row's act a labelled button.
+  // A rehydrated session lands in the workspace whose surface woke it, like a birth.
+  const archivesBySeat = campaign ? Object.fromEntries(Object.keys(seats).map((id) => {
+    const surface = createSurface({ label: t('archives.card', 'Rehydrate Archived'), className: 'tw-archives' });
+    const host = el('div');
+    surface.content.append(host);
+    const room = buildArchives({ connect: (name) => connectSession(name, id) }, host);
+    return [id, { el: surface.el, room }];
+  })) : {};
   const environment = {
     teamCommons: (id) => ({ el: teamCommons[id].el, show: (detail = {}) => { const item = teamCommons[id]; item.channels.enter(ctx); if (detail.doc) { item.channels.select('docs'); void item.docs.open(detail.doc); } else if (detail.tab) item.channels.select(detail.tab); } }),
     newSession: (id) => ({ el: newBySeat[id].el, show: () => { const launcher = newBySeat[id].launcher; launcher.render(); if (!roleData) void loadPresets().then(() => launcher.render()); void loadSavedLaunches().then(() => launcher.render()); } }),
     terminal: (id, detail) => ({ el: seats[id].surface.el, show: () => putSession(detail.key, id) }),
     roster: (id) => ({ el: teamRosterBySeat[id].el, show: () => teamRosterBySeat[id].render() }),
     newTeam: (id) => ({ el: newTeamBySeat[id].el, show: () => newTeamBySeat[id].enter(ctx) }),
+    archives: (id) => ({ el: archivesBySeat[id].el, show: () => void archivesBySeat[id].room.enter() }),
     team: (id, detail) => createLeagueTeamSurface(detail.key, id),
     sessions: () => campaign ? [] : membersOfTeam(team).map((member) => ({ key: member.name, label: member.name, summary: member.summary || '', metadata: readingsOf(member), mark: member.team_lead ? '人' : null, onPointerEnter: () => armPrewarm(member.name), onPointerLeave: disarmPrewarm })),
     teams: () => campaign ? [...teamsFromState().filter((candidate) => !candidate.holding), { name: UNASSIGNED, title: t('league.ronin', 'Ronin: no team'), objective: '' }].map((item) => ({ key: item.name, label: item.title || readableTeam(item.name), summary: item.objective || '' })) : [],

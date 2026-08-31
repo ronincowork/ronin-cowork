@@ -2014,28 +2014,43 @@ body {
 }
 .home-archive-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: stretch;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  border-radius: var(--radius-md);
 }
-.home-archive-resume,
+.home-archive-group {
+  margin-top: var(--space-3);
+  color: var(--muted);
+  font-size: var(--text-2);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.home-archive-group:first-child {
+  margin-top: 0;
+}
+.home-archive-rehydrate,
 .home-archive-delete {
   border: var(--edge) solid transparent;
   background: transparent;
   color: var(--fg);
 }
-.home-archive-resume {
+.home-archive-info {
   min-width: 0;
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-4);
   padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md) 0 0 var(--radius-md);
-  text-align: left;
 }
-.home-archive-resume span {
+.home-archive-info span {
   flex: 0 0 auto;
   color: var(--muted);
+  font-size: var(--text-2);
+}
+.home-archive-rehydrate {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--accent);
   font-size: var(--text-2);
 }
 .home-archive-delete {
@@ -2043,9 +2058,12 @@ body {
   border-radius: 0 var(--radius-md) var(--radius-md) 0;
   color: var(--muted);
 }
-.home-archive-row:hover > button,
-.home-archive-row:focus-within > button {
+.home-archive-row:hover,
+.home-archive-row:focus-within {
   background: var(--bg-2);
+}
+.home-archive-rehydrate:hover,
+.home-archive-rehydrate:focus-visible {
   border-color: var(--line);
 }
 .home-archive-delete:hover,
@@ -2193,6 +2211,11 @@ body {
   display: grid;
 }
 .home[data-pane='archives'] .home-archives {
+  display: block;
+}
+/* The same room seated as a Cowork workbench surface (Rehydrate Archived): no pane
+   strip around it there, so the surface context is what shows it. */
+.tw-archives .home-archives {
   display: block;
 }
 .home[data-pane='wipe'] .home-wipe {

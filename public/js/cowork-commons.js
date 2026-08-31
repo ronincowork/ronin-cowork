@@ -110,7 +110,6 @@ export function coworkCommons(options = {}) {
   };
   const ACCOUNT_ROWS = [
     { id: 'settei', label: t('pane.settei', 'Configuration'), glyph: '⚙', build: (host) => buildSettei(host, showing('account')) },
-    { id: 'appearance', label: t('desk.row_appearance', 'Appearance'), glyph: '◐', build: (host) => { host.append(appBox(app.appearance)); return app; } },
     { id: 'release', label: t('desk.row_release', 'Release & update'), glyph: '↑', build: (host) => { host.append(appBox(app.release)); return app; } },
     { id: 'hotwords', label: t('pane.hotwords', 'Hotwords'), glyph: '▥', build: (host) => buildHotwords(host, showing('account')) },
     { id: 'koshi', label: t('pane.koshi', 'Koshi'), glyph: '目', build: (host) => buildKoshi(host, showing('account')) },
