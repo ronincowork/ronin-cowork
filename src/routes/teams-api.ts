@@ -2,13 +2,13 @@
  * TEAM ROSTER ROUTES — the durable half of every team.
  *
  * The team is the organizing concept (owner, 2026-08-23): a `team_roster` carries the
- * team's objective and launch defaults, and exists independent of
+ * team's kind, objective, kit and launch defaults, and exists independent of
  * any live session — a League list must show a team with zero members, and a Team View
  * must open on one. The LIVE half (members, leads) is derived per call from the
  * sessions and served by /api/teams* in sessions-api.ts; nothing here ever stores it.
  *
  * Lifecycle, each refusing out loud: create (POST), edit (PUT — metadata as a unit,
- * metadata changes included), dissolve
+ * only the fields in the settled record), dissolve
  * (DELETE — the roster only; the wipeboard is never deleted by a route, owner
  * 2026-08-07, it reverts to a custom board).
  */
@@ -56,14 +56,29 @@ function editOf(body: unknown): RosterEdit {
   }
   const edit: RosterEdit = {};
   if (b.title !== undefined) edit.title = String(b.title).trim().slice(0, 100);
+  if (b.kind !== undefined) {
+    const kind = String(b.kind).trim();
+    if (!['open', 'coding', 'work', 'personal', 'household', 'social', 'school'].includes(kind)) {
+      throw new Error('kind is open, coding, work, personal, household, social, or school.');
+    }
+    edit.kind = kind as RosterEdit['kind'];
+  }
   if (b.objective !== undefined) edit.objective = String(b.objective).trim().slice(0, 2000);
   if (b.project_root !== undefined) edit.project_root = String(b.project_root).trim().slice(0, 128);
-  if (b.repos !== undefined) {
-    edit.repos = (Array.isArray(b.repos) ? b.repos.map(String) : String(b.repos).split(','))
-      .map((r) => r.trim())
-      .filter(Boolean)
-      .slice(0, 16);
+  if (b.references !== undefined) edit.references = Array.isArray(b.references)
+    ? b.references.map(String).map((v) => v.trim().slice(0, 500)).filter(Boolean) : [];
+  if (b.routines !== undefined) edit.routines = b.routines && typeof b.routines === 'object' && !Array.isArray(b.routines)
+    ? Object.fromEntries(Object.entries(b.routines).filter(([, value]) => typeof value === 'boolean')) : {};
+  if (b.behaviours !== undefined) {
+    const value = b.behaviours && typeof b.behaviours === 'object' && !Array.isArray(b.behaviours)
+      ? b.behaviours as Record<string, unknown> : {};
+    edit.behaviours = {
+      books: Array.isArray(value.books) ? value.books.map(String).map((v) => v.trim().slice(0, 160)).filter(Boolean) : [],
+      required: value.required === true,
+    };
   }
+  if (b.agent_defaults !== undefined) edit.agent_defaults = b.agent_defaults && typeof b.agent_defaults === 'object' && !Array.isArray(b.agent_defaults)
+    ? b.agent_defaults as RosterEdit['agent_defaults'] : {};
   if (b.branch !== undefined) edit.branch = String(b.branch).trim().slice(0, 128);
   if (b.wipeboard !== undefined) edit.wipeboard = String(b.wipeboard).trim().slice(0, 64);
   if (b.state !== undefined) {

@@ -280,7 +280,6 @@ test('server resolution returns profile and durable Team context without browser
   const resolved = await resolveForm(forkitForm(), new Set());
   assert.equal(resolved.permissions, 'default');
   assert.equal(resolved.team_objective, 'prove the parity');
-  assert.deepEqual(resolved.team_repos, []);
   assert.equal(resolved.team_branch, '');
   assert.equal(resolved.team_wipeboard, 'scratchteam');
   assert.equal(resolved.team_state, 'active');

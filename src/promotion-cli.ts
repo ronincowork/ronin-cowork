@@ -40,8 +40,8 @@ async function reposForTeam(team: string): Promise<RepoSpec[]> {
   const roster = await readTeamRoster(team);
   if (!roster) throw new Error(`no team roster '${team}'`);
   const roots = await listProjectRoots();
-  const names = roster.repos.length ? roster.repos : roster.project_root ? [roster.project_root] : [];
-  if (!names.length) throw new Error(`team '${team}' names no repos and no project_root`);
+  const names = roster.project_root ? [roster.project_root] : [];
+  if (!names.length) throw new Error(`team '${team}' names no project_root`);
   const overrides = new Map(args.filter((a, i) => args[i - 1] === '--repo' && a.includes('=')).map((a) => a.split('=') as [string, string]));
   const specs: RepoSpec[] = [];
   for (const name of names) {

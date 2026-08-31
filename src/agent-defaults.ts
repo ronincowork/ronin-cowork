@@ -16,6 +16,8 @@ export interface AgentDefaults {
   permissions: string;
 }
 
+export type TeamAgentDefaults = Omit<AgentDefaults, 'routines' | 'behaviours'>;
+
 const text = (value: unknown, max = 120): string =>
   typeof value === 'string' ? value.trim().slice(0, max) : '';
 
@@ -52,4 +54,9 @@ export function agentDefaults(value: unknown): AgentDefaults {
     dial: oneOf(input.dial, ['user', 'read', 'write'], 'write'),
     permissions: text(input.permissions) || 'default',
   };
+}
+
+export function teamAgentDefaults(value: unknown): TeamAgentDefaults {
+  const { routines: _routines, behaviours: _behaviours, ...defaults } = agentDefaults(value);
+  return defaults;
 }

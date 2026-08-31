@@ -173,7 +173,6 @@ export interface Resolved {
   mcpDefault: boolean;
   /** Durable Team context. Empty for a rōnin launch. */
   team_objective: string;
-  team_repos: string[];
   team_branch: string;
   team_wipeboard: string;
   team_state: '' | 'active' | 'archived';
@@ -580,7 +579,6 @@ export async function resolveForm(
     mcpAlways: profile.mcpAlways,
     mcpDefault: profile.mcpDefault,
     team_objective: roster?.objective ?? '',
-    team_repos: roster?.repos ?? [],
     team_branch: roster?.branch ?? '',
     team_wipeboard: roster?.wipeboard ?? '',
     team_state: roster?.state ?? '',
@@ -610,7 +608,6 @@ export async function resolveForm(
       mcpAlways: profile.stated_by.mcpAlways,
       mcpDefault: profile.stated_by.mcpDefault,
       team_objective: rosterSource,
-      team_repos: rosterSource,
       team_branch: rosterSource,
       team_wipeboard: rosterSource,
       team_state: rosterSource,
