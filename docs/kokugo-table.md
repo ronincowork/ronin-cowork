@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `behaviour.*` may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1398 keys · 57 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1400 keys · 57 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## add_agent
 
@@ -28,6 +28,8 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `add_agent.none` | — |  |  |  |  |
 | `add_agent.place` | place |  |  |  |  |
 | `add_agent.provider` | model provider |  |  |  |  |
+| `add_agent.shell` | Open a shell, not an Agent |  |  |  |  |
+| `add_agent.shell_why` | A raw terminal in this Team — no Agent is launched and nothing is sent to it. |  |  |  |  |
 | `add_agent.start` | Start |  |  |  |  |
 | `add_agent.started` | Started {name} |  |  |  |  |
 | `add_agent.started_note` | Started {name} — {note} |  |  |  |  |

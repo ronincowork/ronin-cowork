@@ -60,7 +60,7 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
   const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;
   const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
 
-  const draft = { name: '', instruction: '', provider: '', model: '', task: '', desk: false, deskByHand: false };
+  const draft = { name: '', instruction: '', provider: '', model: '', task: '', desk: false, deskByHand: false, shell: false };
   let busy = false;
   /** The seed door's answer, or null while it does not exist yet. */
   let seed = null;
@@ -99,6 +99,23 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
     draft.name = nameInput.value;
   });
   const nameField = createField({ label: t('add_agent.name', 'name'), control: nameInput });
+
+  /* ---- shell or Agent (owner, 2026-08-31): the one thing the retired New Agent card
+     offered here that this surface did not. Ticked, the form drops to the name and the
+     place — a raw pane, nothing is sent to it — and Start opens the terminal. ---- */
+  const shellRow = el('button', 'aa-desk aa-shell');
+  shellRow.type = 'button';
+  const shellBox = el('span', 'aa-box');
+  const shellText = el('span', 'aa-desk-text');
+  const shellTitle = el('b', null, t('add_agent.shell', 'Open a shell, not an Agent'));
+  const shellWhy = el('small', null, t('add_agent.shell_why', 'A raw terminal in this Team — no Agent is launched and nothing is sent to it.'));
+  shellText.append(shellTitle, shellWhy);
+  shellRow.append(shellBox, shellText);
+  shellRow.addEventListener('click', () => { draft.shell = !draft.shell; paintShape(); });
+  function paintShape() {
+    shellRow.setAttribute('aria-pressed', String(draft.shell));
+    form.dataset.shell = String(draft.shell);
+  }
 
   const instruction = el('textarea');
   instruction.rows = 3;
@@ -234,10 +251,12 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
     draft.task = '';
     draft.desk = false;
     draft.deskByHand = false;
+    draft.shell = false;
     nameInput.value = '';
     instruction.value = '';
     paintTasks();
     paintDesk();
+    paintShape();
   };
   // createAction takes its handler at construction — there is no setAction — so the
   // actions are built after `reset` and `launch` exist.
@@ -246,24 +265,32 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
     busy = true;
     start.setDisabled(true);
     notice.set('info', t('add_agent.starting', 'Starting…'));
-    // ONLY WHAT THE ROUTE ACCEPTS TODAY. `session_type` is required since the route was
-    // re-keyed on it — the birth type is never inferred from session_role, team, or
-    // agent-shaped fields — and this surface only ever births a Cowork Agent. Nothing
-    // about routines is sent: they are resolved server-side, and a caller that states
-    // one is guessing at the server's job (NEW_AGENT.md § 7.4).
+    // ONLY WHAT THE ROUTE ACCEPTS TODAY. `session_type` is stated explicitly — the birth
+    // type is never inferred from session_role, team, or agent-shaped fields. A shell is
+    // a `terminal`: a pane, its name, its team and its place, and nothing an Agent would
+    // take (the route refuses the rest by name). Nothing about routines is sent either
+    // way: they are resolved server-side, and a caller that states one is guessing at
+    // the server's job (NEW_AGENT.md § 7.4).
     const result = await request('/api/launch', {
       method: 'POST',
-      json: {
-        session_type: 'cowork_agent',
-        session_role: draft.task,
-        team: teamName(),
-        instructions: draft.instruction.trim(),
-        name: draft.name.trim(),
-        project_root: rootOf(),
-        provider: draft.provider,
-        model: draft.model,
-        desk: draft.desk ? 'own' : 'none',
-      },
+      json: draft.shell
+        ? {
+          session_type: 'terminal',
+          team: teamName(),
+          name: draft.name.trim(),
+          project_root: rootOf(),
+        }
+        : {
+          session_type: 'cowork_agent',
+          session_role: draft.task,
+          team: teamName(),
+          instructions: draft.instruction.trim(),
+          name: draft.name.trim(),
+          project_root: rootOf(),
+          provider: draft.provider,
+          model: draft.model,
+          desk: draft.desk ? 'own' : 'none',
+        },
     });
     busy = false;
     start.setDisabled(false);
@@ -290,7 +317,21 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
   const cancel = createAction({ label: t('add_agent.cancel', 'Cancel'), action: () => { reset(); notice.set('', ''); } });
   const actions = createActionBar({ label: t('add_agent.actions', 'Launch actions'), actions: [cancel, start] });
 
-  form.append(nameField.el, instructionField.el, providerField.el, modelField.el, taskHead, taskRow, deskRow);
+  // NAME LEFT, MODELS RIGHT (owner, 2026-08-31: full-width rows "looked pretty
+  // horrible"). The shell tick sits under the name; everything only an Agent takes is
+  // marked `aa-agent-only` and folds away when the tick is on.
+  const top = el('div', 'aa-top');
+  const left = el('div', 'aa-col');
+  left.append(nameField.el, shellRow);
+  const right = el('div', 'aa-col aa-agent-only');
+  right.append(providerField.el, modelField.el);
+  top.append(left, right);
+  instructionField.el.classList.add('aa-agent-only');
+  taskHead.classList.add('aa-agent-only');
+  taskRow.classList.add('aa-agent-only');
+  deskRow.classList.add('aa-agent-only');
+  form.append(top, instructionField.el, taskHead, taskRow, deskRow);
+  paintShape();
   surface.content.append(form, actions.el, notice.el, fixed);
 
   return {

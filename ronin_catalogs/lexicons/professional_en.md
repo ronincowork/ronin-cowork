@@ -19,6 +19,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **add_agent.default:** default
 - **add_agent.task:** task  (optional)
 - **add_agent.task_open:** open
+- **add_agent.shell:** Open a shell, not an Agent
+- **add_agent.shell_why:** A raw terminal in this Team — no Agent is launched and nothing is sent to it.
 - **add_agent.worktree:** Request a worktree
 - **add_agent.worktree_on:** Its own worktree, under managed file coordination: the desk contract, hand-in and the Git safeguards.
 - **add_agent.worktree_on_plain:** Its own worktree, for isolation only — no hand-in and no one to hand to, so it reports to you.
