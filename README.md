@@ -24,7 +24,7 @@ hand. xterm.js in the browser, a websocket bridge, node-pty and tmux on the host
 | Repo | What it is | Ships as |
 |---|---|---|
 | **ronin-cowork** (this one) | the free build — sessions, tiles, Workbench, rosters, notes, wipeboards, Macros, the commons, launch, and **all frontend** | open repo; versioned releases |
-| **ronin-services** | the optional paid layer — incremental capabilities installed beside Cowork | hosted, versioned archive |
+| **ronin-services** | the optional paid layer — incremental capabilities installed beside the open `ronin-cowork` package | hosted, versioned archive |
 
 **Cowork runs completely alone.** It compiles, boots, and serves a machine's tmux
 sessions with no services present — that is not a degraded mode, it is the free

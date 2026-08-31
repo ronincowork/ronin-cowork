@@ -144,10 +144,11 @@ no login on the laptop, no login every time they come back to it. That is a deli
 convenience and a lot of people run it exactly this way: the tailnet is the wall, and they
 are content that everything inside the wall is reachable.
 
-The owner should know that is the arrangement, because it means **whoever is on that
-tailnet can use Ronin.** Usually that is their own devices and the answer is "fine". It is
-worth one question if their tailnet came from a work or Google Workspace sign-in, where it
-may hold colleagues rather than only their own machines.
+The owner should know that is the arrangement, because it means **whoever the tailnet and
+its access rules permit to reach Ronin can use it.** Usually that is their own devices and
+the answer is "fine". It is worth checking the tailnet identity and access rules when it
+came from a work or Google Workspace sign-in, where permitted reach may include colleagues
+rather than only the owner's machines.
 
 If they want a login, it is one command, and you never see what they choose:
 
@@ -162,13 +163,16 @@ Before opening the URL, preserve evidence that the installed copy is the one ans
 ```bash
 bin/ronin-doctor
 systemctl --user --no-pager status tmux-server ronin
-ss -ltnp | grep -i node
+ronin_pid=$(systemctl --user show ronin.service --property MainPID --value)
+ss -ltnp | grep "pid=$ronin_pid,"
 ```
 
-Record warnings and skips as such. Confirm existing ordinary tmux sessions still exist,
-the reported URL answers from the owner's device, and the actual listening address matches
-the agreed loopback or tailnet route. Do not turn configuration intent into evidence about
-the running process.
+The unit PID must be nonzero, and the socket row must identify that PID. If process details
+are hidden, no row matches, or more than one interpretation remains, report the listener as
+**unknown** rather than assigning another Node process to Ronin. Record warnings and skips
+as such. Confirm existing ordinary tmux sessions still exist, the reported URL answers from
+the owner's device, and the correlated listening address matches the agreed loopback or
+tailnet route. Do not turn configuration intent into evidence about the running process.
 
 ## 6. Continue through first use
 

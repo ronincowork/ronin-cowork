@@ -15,12 +15,14 @@ Prepare the owner for one page with two parts:
 
 - **Shape the coworkspace:** owner and machine names, Agents, default models, maximum Agent
   sessions, and optional Services or gbrain choices.
-- **Start the first project:** a name, an existing working folder, and an optional purpose.
+- **Optionally start the first project:** if the owner chooses to add one now, it needs an
+  existing working folder; its name and purpose may be left blank. The owner may also skip
+  the project section completely.
 
 The page shows measured machine and Agent facts beside choices. Installed Agents are facts,
 not proof that their provider account is authenticated. An absent Agent with an offered
 installer is a choice; an Agent Ronin cannot install has no working selection control and
-says why. Base Cowork remains usable without optional Services.
+says why. Ronin remains usable without optional Services.
 
 ## Walk `cowork_setup`
 
@@ -31,17 +33,19 @@ says why. Base Cowork remains usable without optional Services.
    activation email for them.
 3. Use the **When you save** panel as the review. It is the current account of answers,
    measured facts, and consequences; do not invent a hidden consequence.
-4. Before Save, confirm the project folder is the existing directory the owner intends.
-   Folder inspection is local and read-only; it does not create or clone a repository.
+4. If the owner chooses a first project, confirm its folder is the existing directory they
+   intend. Folder inspection is local and read-only; it does not create or clone a
+   repository. If they skip the project, do not inspect or require a folder.
 5. If Services is selected, make sure the disclosed activation request and email are
-   understood. Declining it sends no activation request and does not diminish Cowork.
+   understood. Declining it sends no activation request and does not diminish Ronin.
 6. The owner saves. Confirm that the coworkspace opens and report every visible install,
    sign-in, warning, or failure state exactly as shown.
 
-All answers remain editable through Configuration. Save dispatches supported selected
-Agent installs and may launch the setup Agent when runnable. The intended automatic set of
-post-Save installation tiles is not yet a reliable contract: use only the tiles and states
-actually rendered on this machine.
+Owner settings remain editable where Configuration exposes them. Measured facts are not
+answers, and Services activation is not an ordinary reversible setting. Save dispatches
+supported selected Agent installs and may launch the setup Agent when runnable. The
+intended automatic set of post-Save installation tiles is not yet a reliable contract: use
+only the tiles and states actually rendered on this machine.
 
 ## Establish one provider
 

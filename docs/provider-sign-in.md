@@ -26,11 +26,12 @@ launch support or authentication evidence is incomplete.
 Ask the owner whether this Agent should use an existing subscription login or separately
 billed API access. Do not infer the answer from a model name.
 
-Environment variables can override a subscription session. Inspect names and precedence
-without printing values. `tejun-secrets` is the preferred installed-box report; it names
-which provider credential would win and never prints its value. A stale or even empty
-provider key can select API billing ahead of an OAuth profile. Resolve a conflict with the
-owner rather than dismissing the CLI warning.
+Environment variables can override a subscription session, but precedence is
+provider-specific. Inspect names without printing values and do not claim a universal
+credential winner. For Claude/Anthropic, `tejun-secrets` reports the Anthropic credential
+that would win in the shell it checks and never prints its value; the spawned tile may
+inherit a different service environment. Resolve a conflict with the owner rather than
+dismissing the CLI warning.
 
 ## Codex / OpenAI
 
@@ -40,8 +41,12 @@ Codex has a safe status command:
 codex login status
 ```
 
-If it already reports the arrangement the owner chose, change nothing. For a ChatGPT
-subscription on a remote machine, the supported device flow is:
+If it already reports the arrangement the owner chose, change nothing. This command proves
+only the login arrangement it reports. This repository does not establish whether an
+OpenAI environment variable could take precedence in the launched Codex process; inspect
+relevant variable names without values and report that precedence as **unknown** unless
+separate current evidence settles it. For a ChatGPT subscription on a remote machine, the
+supported device flow is:
 
 ```bash
 codex login --device-auth
