@@ -44,7 +44,7 @@ export async function restartService(): Promise<RestartResult> {
 }
 
 export interface HealthOptions {
-  /** The app's URL; defaults to the gate's own resolution (BIND/PORT, else loopback:3006). */
+  /** The app's URL; defaults to the restarted operator's BIND/PORT/tailnet resolution. */
   url?: string;
   /** How long to wait for `/api/health` to answer at all. */
   waitMs?: number;

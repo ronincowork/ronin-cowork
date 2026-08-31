@@ -27,8 +27,8 @@
  * first on PATH. So there are two doors — but ONE number, and it lives here.
  *
  * The bus is a tmux server option because it is the one place a Node server and a
- * zero-dependency bash shim can both read without two JSON parsers. `@ronin-url` already
- * works exactly this way (`publishRoninUrl`, and `ronin_bin/tejun-harakiri` reading it back).
+ * zero-dependency bash shim can both read without two JSON parsers. `@ronin-url` uses
+ * the same bus behind the single `ronin_bin/ronin-url` shell resolver.
  */
 import path from 'node:path';
 import os from 'node:os';

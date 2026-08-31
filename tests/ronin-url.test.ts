@@ -81,3 +81,21 @@ test('every agent-facing API caller uses the one resolver and carries no address
     assert.doesNotMatch(body, /@ronin-url/, name);
   }
 });
+
+test('the retired loopback operator URL is absent from production code', () => {
+  for (const dir of ['ronin_bin', 'bin', 'libexec', 'src']) {
+    const files: string[] = [];
+    const visit = (at: string): void => {
+      for (const entry of readdirSync(at, { withFileTypes: true })) {
+        const target = path.join(at, entry.name);
+        if (entry.isDirectory()) visit(target);
+        else if (entry.isFile()) files.push(target);
+      }
+    };
+    visit(path.join(root, dir));
+    for (const file of files) {
+      const body = readFileSync(file, 'utf8');
+      assert.doesNotMatch(body, /http:\/\/(?:127\.0\.0\.1|localhost):3006\b/, path.relative(root, file));
+    }
+  }
+});
