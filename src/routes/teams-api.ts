@@ -2,13 +2,13 @@
  * TEAM ROSTER ROUTES — the durable half of every team.
  *
  * The team is the organizing concept (owner, 2026-08-23): a `team_roster` carries the
- * team's `team_role`, its objective and its launch defaults, and exists independent of
+ * team's objective and launch defaults, and exists independent of
  * any live session — a League list must show a team with zero members, and a Team View
  * must open on one. The LIVE half (members, leads) is derived per call from the
  * sessions and served by /api/teams* in sessions-api.ts; nothing here ever stores it.
  *
  * Lifecycle, each refusing out loud: create (POST), edit (PUT — metadata as a unit,
- * `team_role` changes included, since it is mutable by ruling), dissolve
+ * metadata changes included), dissolve
  * (DELETE — the roster only; the wipeboard is never deleted by a route, owner
  * 2026-08-07, it reverts to a custom board).
  */
@@ -56,7 +56,6 @@ function editOf(body: unknown): RosterEdit {
   }
   const edit: RosterEdit = {};
   if (b.title !== undefined) edit.title = String(b.title).trim().slice(0, 100);
-  if (b.team_role !== undefined) edit.team_role = String(b.team_role).trim().slice(0, 64);
   if (b.objective !== undefined) edit.objective = String(b.objective).trim().slice(0, 2000);
   if (b.project_root !== undefined) edit.project_root = String(b.project_root).trim().slice(0, 128);
   if (b.repos !== undefined) {

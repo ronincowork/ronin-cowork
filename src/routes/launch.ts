@@ -94,12 +94,13 @@ export function registerLaunch(app: express.Express): void {
   const launchJob: express.RequestHandler = async (req, res, next) => {
     // The retired keys, refused by name (410-shaped, but a launch is a POST that never
     // existed per-key, so 400 with the teaching text is the honest shape here).
-    if (req.body?.role_family !== undefined || req.body?.family_role !== undefined || req.body?.session_task !== undefined) {
+    if (['role_family', 'family_role', 'session_task', 'team_role', 'campaign_kind', 'lifecycle']
+      .some((key) => req.body?.[key] !== undefined)) {
       return res.status(400).json({
         error:
           'This launch names a retired axis. The model moved on 2026-08-23 (R35): a session is ' +
           'a mutable `session_role` born onto an optional `team` — there is no per-session ' +
-          'role_family, and `session_task` is now `session_role`.',
+          'role_family, `team_role`, `campaign_kind`, or `lifecycle`; `session_task` is now `session_role`.',
       });
     }
     const sessionRole = String(req.body?.session_role ?? '').trim();
@@ -270,7 +271,6 @@ export function registerLaunch(app: express.Express): void {
       receipt: {
         session_role: resolved.session_role,
         team: resolved.team,
-        team_role: resolved.team_role,
         project_root: resolved.project_root,
         dir: resolved.dir,
         cmd: resolved.cmd,

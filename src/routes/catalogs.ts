@@ -43,7 +43,6 @@ import {
   listRoleFamilies,
   listRoutines,
   listSessionRoles,
-  listTeamRoles,
   writeRoleTasks,
 } from '../definitions.js';
 import { resolveLaunchProfile } from '../launch-profile.js';
@@ -332,7 +331,7 @@ export function registerCatalogs(app: express.Express): void {
   /**
    * THE DEFINITION CATALOGS — `role_family` (a New Session grouping of session_roles —
    * presentation, never a session fact), `session_role` (what a session is doing now),
-   * and `team_role` (a TEAM's defining role, with its own reading shelf). Same contract
+   * Same contract
    * as /api/project-roots: the markdown IS the catalog, merged stock ⊕ user at request
    * time, provenance on every row.
    *
@@ -352,16 +351,6 @@ export function registerCatalogs(app: express.Express): void {
   app.get('/api/session-roles', async (_req, res) => {
     try {
       res.json(await listSessionRoles());
-    } catch (e) {
-      res.status(500).json({ error: errMsg(e) });
-    }
-  });
-
-  // The team_role definitions — Build Team's picker. A roster may also name a
-  // team_role with no definition here: the reading shelf is then simply empty.
-  app.get('/api/team-roles', async (_req, res) => {
-    try {
-      res.json(await listTeamRoles());
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }

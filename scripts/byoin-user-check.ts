@@ -166,9 +166,9 @@ async function checkRetired(catalogsDir: string): Promise<void> {
   }
 
   // The boot shelf's old levels. `ensureShelf` now makes role/ (keyed by session_role)
-  // and team_role/; a leftover job/ or task/ sits beside them looking live.
+  // A leftover job/ or task/ sits beside the live levels looking live.
   for (const [old, remedy] of [
-    ['job', 'a shelf named for work moves to role/<session_role>/; team context belongs on team_role/<team_role>/'],
+    ['job', 'a shelf named for work moves to role/<session_role>/'],
     ['task', 'the level was renamed: move each shelf to role/<session_role>/ — same keys, same law (R35)'],
   ] as const) {
     const shelfDir = path.join(storeDir('session_boot'), old);

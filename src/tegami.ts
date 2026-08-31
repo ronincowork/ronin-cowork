@@ -8,7 +8,7 @@
  *                 tile. A committed change injects that role's reading into the running
  *                 session (`src/role-watch.ts`).
  *   teams         DERIVED, machinery-owned, ADDITIVE — one entry per team the session is
- *                 on: the team's name, its `team_role`, and its objective, read from the
+ *                 on: the team's name and its objective, read from the
  *                 tags and the team_rosters store. Never authored by the agent
  *                 (`write_tegami` refuses it and regenerates it), refreshed at birth, on
  *                 a tag change, and on every whole-letter save — so a changed team
@@ -16,8 +16,7 @@
  *
  * There is NO identity axis on the session any more (R35, 2026-08-23): the old
  * `family_role` was dismantled with the teams cut. A session's identity, where it has
- * one, is contextual — the `team_role` of whichever team you are looking at it through —
- * and it lives on the roster only. A blank is stored as an empty string.
+ * one, is contextual to the team you are looking at it through.
  *
  * Neither is a MICHI concern: michi is the ladder, and a session has a role and a task
  * whether or not it ever puts a ladder up.
@@ -135,7 +134,6 @@ async function taskLines(): Promise<string> {
 /** One derived teams entry — the letter's window onto a roster. */
 export interface TeamEntry {
   team: string;
-  team_role: string;
   objective: string;
 }
 
@@ -143,7 +141,7 @@ export interface TeamEntry {
  * THE TEAMS BLOCK, DERIVED — tags in, roster facts out.
  *
  * The authority never moves: membership lives on the session (its tags), the
- * `team_role` and objective live on the team's roster, and this join is computed fresh
+ * objective lives on the team's roster, and this join is computed fresh
  * every time it is asked for. A team with no roster file is still a team — it renders
  * with blank role and objective, because membership is real whether or not the durable
  * record has been written yet.
@@ -152,7 +150,7 @@ export async function deriveTeams(tags: string[]): Promise<TeamEntry[]> {
   return Promise.all(
     tags.map(async (team) => {
       const r = await readTeamRoster(team).catch(() => null);
-      return { team, team_role: r?.team_role ?? '', objective: r?.objective ?? '' };
+      return { team, objective: r?.objective ?? '' };
     }),
   );
 }
@@ -193,7 +191,7 @@ function seedShell(
 > re-marking yourself is how you get told what the new work needs.
 >
 > YOUR **teams** block is DERIVED and not yours to write: one entry per team you are on —
-> the team's name, its team_role, and its objective, read live from the team rosters.
+> the team's name and its objective, read live from the team rosters.
 > \`write_tegami\` regenerates it on every save and a tag change refreshes it, so reread
 > your letter to see a team objective that moved. A session on no team is a rōnin, which
 > is an ordinary state and not a gap.

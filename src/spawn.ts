@@ -44,7 +44,7 @@ export interface SpawnForm {
    * THE TEAM this session is born onto — an existing team's name, or absent for a
    * rōnin (a session on no team, which is first-class). Joining rides the ordinary tag
    * machinery; what the team adds at birth is CONTEXT: its roster's root as the
-   * project_root default, its team_role's reading shelf, and its objective in the brief.
+   * project_root default and its objective in the brief.
    */
   team?: string;
   /**
@@ -128,10 +128,8 @@ export interface Resolved {
   lifecycle: string;
   /** The axis as resolved, possibly ''. This is what TEGAMI is seeded with. */
   session_role: string;
-  /** The team joined at birth, '' for a rōnin — and its roster's team_role, for the
-   *  reading level. */
+  /** The team joined at birth, '' for a rōnin. */
   team: string;
-  team_role: string;
   /** Never '' — a session must be born somewhere, and the resolver refuses otherwise. */
   project_root: string;
   /**
@@ -210,7 +208,6 @@ export function buildBrief(
   // team's own conversation surface. A rōnin launch has no line here at all.
   if (roster) {
     const bits = [`You are born onto team "${roster.name}"`];
-    if (roster.team_role) bits[0] += ` (team_role: ${roster.team_role})`;
     if (roster.objective) bits.push(`its objective: ${roster.objective}`);
     bits.push(`its wipeboard is "${roster.wipeboard}" (tejun-wipeboard ${roster.wipeboard})`);
     parts.push(bits.join('. ') + '.');
@@ -302,12 +299,11 @@ function profileDir(profile: LaunchProfile): string {
 async function bootReading(
   projectRoot: string,
   sessionRole: string,
-  teamRole: string,
   mcpOn: boolean,
   bornLead = false,
   assigned = false,
 ): Promise<string[]> {
-  const files = await bootFiles(projectRoot, sessionRole, teamRole, mcpOn, assigned);
+  const files = await bootFiles(projectRoot, sessionRole, mcpOn, assigned);
   // Route 1 (the coordinating kind of role) — and a session BORN as the 人 (`team_lead`
   // on the form), which leads whatever its role says: the reading follows the 人.
   const leadRole = !!sessionRole && (await listRoleFamilies()).some((f) => f.default_lead_role === sessionRole);
@@ -515,7 +511,7 @@ export async function resolveForm(
   // Compile this once and return the exact same list the brief receives. The browser must
   // never recreate shelf precedence or guess which explicit seeds joined it.
   const shelfReading = agent
-    ? await bootReading(root.name, profile.session_role, roster?.team_role ?? '', !mcpOffWanted, !!form.team_lead && !!form.team, !!assignment)
+    ? await bootReading(root.name, profile.session_role, !mcpOffWanted, !!form.team_lead && !!form.team, !!assignment)
     : [];
   const birthReading = agent ? [...shelfReading, ...(form.seed ?? [])].filter(Boolean) : [];
 
@@ -540,7 +536,6 @@ export async function resolveForm(
     lifecycle: profile.lifecycle,
     session_role: profile.session_role,
     team: form.team ?? '',
-    team_role: roster?.team_role ?? '',
     project_root: root.name,
     // The shelf follows the toggle (owner's ruling, 2026-08-17): a session launched with
     // MCP off reads no *_connected shelf — the tools and the reading list about them ride
@@ -586,7 +581,6 @@ export async function resolveForm(
       lifecycle: profile.stated_by.lifecycle,
       session_role: form.session_role !== undefined ? explicit : profile.stated_by.session_role,
       team: form.team ? explicit : system,
-      team_role: roster ? rosterSource : system,
       project_root: rootSource,
       dial: form.dial !== undefined ? explicit : profile.stated_by.dial,
       brief: unique(explicit, profile.stated_by.opening, roster ? rosterSource : [], rootSource),

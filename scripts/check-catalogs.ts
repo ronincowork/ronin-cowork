@@ -26,7 +26,7 @@ import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { STOCK_DIR, splitSections, readEntries } from '../src/catalog.js';
-import { listRoleFamilies, listRoutines, listSessionRoles, listTeamRoles, type DefinitionKind } from '../src/definitions.js';
+import { listRoleFamilies, listRoutines, listSessionRoles, type DefinitionKind } from '../src/definitions.js';
 import { listDeskProfiles } from '../src/desk-profiles.js';
 import { listLexicons } from '../src/lexicons.js';
 import { resolveLaunchProfile, type LaunchProfile } from '../src/launch-profile.js';
@@ -231,7 +231,6 @@ const FILES = ['MACROS.md', 'ACTIONS.md', 'TOOLS.md', 'PROJECT_ROOTS.md'];
 
 await surfacingDefinitions('role_families', listRoleFamilies);
 await surfacingDefinitions('session_roles', listSessionRoles);
-await surfacingDefinitions('team_roles', listTeamRoles);
 await surfacingDefinitions('desk_profiles', listDeskProfiles);
 await surfacingDefinitions('lexicons', listLexicons);
 await surfacingDefinitions('routines', listRoutines);

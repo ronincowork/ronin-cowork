@@ -17,7 +17,6 @@ same name replaces ours whole; a new name sits beside it.
 | `<service>_connected/` | only sessions launched with MCP on — a connected service makes and seeds its own signed level (gbrain's setup makes `gbrain_connected/`) |
 | `root/<project_root>/` | only sessions working in that directory |
 | `role/<session_role>/` | only sessions doing that kind of work — **re-delivered when the session_role changes** |
-| `team_role/<team_role>/` | only sessions born onto a team whose roster names that team_role — the team's build brief, read once (R35: a later join is not re-briefed) |
 | `assignment/` | only sessions whose launch resolved repo desks — the desk contract, `DESK_CONTRACT.md`. A launch given no desk reads nothing here |
 
 A session cutting `CutCode` on a `development` team in `ronin_cowork` reads all of its
@@ -25,7 +24,7 @@ levels. Nothing overrides anything — *where* the work happens, *what* it is do
 *whose team* it is on are independent questions.
 
 **A blank axis omits only its own level.** A launch with no session_role reads no role
-level, a rōnin launch reads no team_role level, and everything else exactly as before.
+level, and everything else exactly as before.
 Root never omits its level, because root is required.
 
 **Stock has no `root/` and no connected folder, and cannot.** The session_roles ship, so
@@ -41,7 +40,7 @@ A link whose target has gone simply stops appearing; nothing goes stale, because
 is written down.
 
 **This README is not read by anyone.** Only `all/`, `assignment/`, `root/*`, `role/*` and
-`team_role/*` are scanned, one level deep, so an explainer at the shelf root is never
+`role/*` and `root/*` are scanned one level deep, so an explainer at the shelf root is never
 handed to a session.
 
 ## What ships

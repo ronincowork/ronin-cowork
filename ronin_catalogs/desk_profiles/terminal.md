@@ -9,6 +9,5 @@ stay plain.
 - **skin:** mono
 - **theme:** dark
 - **lexicon:** terminal_en
-- **campaign_kind:** coding
 - **rireki_view:** terminal_mirror
 - **team_arrangement:** workspace1,workspace2,roster

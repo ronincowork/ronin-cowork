@@ -22,8 +22,7 @@
  *   CASCADING    dial · permissions · lifecycle · mcp · cap · agent · dir ·
  *                ack · opening. The last layer to state it wins.
  *
- *   ADDITIVE     the boot shelf's reading levels: `role/<session_role>/` and
- *                `team_role/<team_role>/` add up rather than override
+ *   ADDITIVE     the boot shelf's `role/<session_role>/` reading level
  *                (src/session-boot.ts). Posture is a single statement now — the one
  *                definition's — but stays an array so the brief's shape is stable.
  *
