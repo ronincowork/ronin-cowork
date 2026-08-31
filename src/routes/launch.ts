@@ -29,6 +29,7 @@ import {
 import { launchArgv, newProviderSession } from '../agents.js';
 import { AtSessionMax, liveCount, readMax, readOwner, writeMax, writeOwner } from '../user-config.js';
 import { resolveForm, appendLedger, type SpawnForm } from '../spawn.js';
+import { projectRoutineTools } from '../routine-tools.js';
 import { classifyStatus, type SessionStatus } from '../status.js';
 import { scanContext, scanModel } from '../ctx.js';
 
@@ -219,10 +220,16 @@ export function registerLaunch(app: express.Express): void {
       }
       const providerSession = newProviderSession(resolved.launchAgent, launch.argv);
       launch.argv = providerSession.argv;
+      // The Agent does not run through a login or interactive shell. Project its commands
+      // into PATH here, at process birth, instead of hoping an rc file was sourced.
+      const routineTools = resolved.agent
+        ? await projectRoutineTools(resolved.name, resolved.routines)
+        : null;
       await createSession(resolved.name, resolved.dir, {
         agent: resolved.agent,
         exempt: resolved.capExempt,
         argv: launch.argv,
+        env: routineTools ? { PATH: routineTools.path } : undefined,
         // Closed atomically with birth. The resolved Control opens only after the brief,
         // identity, Team, Campaign, letter and role-delivery baseline are all installed.
         control: resolved.agent ? 'user' : undefined,

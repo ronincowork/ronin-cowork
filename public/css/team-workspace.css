@@ -75,4 +75,34 @@
   .twb-cleared { color: var(--muted); font-size: var(--text-2); }
   .twb-compose { display: flex; gap: var(--space-3); padding: var(--space-4) var(--space-6); border-top: var(--edge) solid var(--line-2); }
   .twb-compose textarea { flex: 1 1 auto; resize: vertical; }
+
+  /* ── ADD AGENT TO TEAM — the in-Team quick launch (js/add-agent.js), staged beside the
+     ＋ New Agent board. One rectangle for every clickable thing, as the drawing has it:
+     ronin-lab `concepts/add-agent-to-team.html`. ── */
+  /* No rule reaches into the Kit's own content box — the form carries its own layout. */
+  .aa-form { display: flex; flex-direction: column; gap: var(--space-6); margin-bottom: var(--space-7); }
+  .aa-form textarea { min-height: calc(var(--space-12) * 2); resize: vertical; }
+  .aa-head { margin: var(--space-3) 0 0; color: var(--muted); font-size: var(--text-1); text-transform: uppercase; letter-spacing: .07em; }
+  .aa-tasks { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .aa-chip { border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--muted-2); padding: var(--space-2) var(--space-6); cursor: pointer; font-size: var(--text-3); }
+  .aa-chip:hover { border-color: var(--kaki); color: var(--fg-strong); }
+  .aa-chip[aria-pressed='true'] { border-color: var(--kaki); background: var(--raise); color: var(--kaki-lift); }
+  /* `open` is the not-applicable box, not a peer among the tasks — dotted, as everywhere. */
+  .aa-chip[data-open='true'] { border-style: dashed; }
+  /* THE WORKTREE REQUEST — `wantsDesk` made visible. It used to be answered invisibly from
+     a role's michi name; here a person asks, and a code-touching task only PRE-marks it. */
+  .aa-desk { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-5); align-items: center; width: 100%; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--muted-2); padding: var(--space-4) var(--space-5); cursor: pointer; text-align: left; font: inherit; }
+  .aa-desk:hover { border-color: var(--kaki); }
+  .aa-desk[aria-pressed='true'] { border-color: var(--kaki); background: var(--raise); }
+  .aa-box { width: var(--space-7); height: var(--space-7); border: var(--edge) solid var(--line-3); background: var(--panel); }
+  .aa-desk[aria-pressed='true'] .aa-box { border-color: var(--kaki); background: var(--kaki); }
+  .aa-desk b { display: block; color: var(--fg-strong); font-size: var(--text-3); font-weight: 400; }
+  .aa-desk[aria-pressed='true'] b { color: var(--kaki-lift); }
+  .aa-desk small { display: block; color: var(--muted); font-size: var(--text-2); }
+  /* What the Team fixed, at the FOOT: none of it is changeable here, so it does not sit
+     above the fields that are. */
+  .aa-fixed { display: grid; grid-template-columns: calc(var(--space-12) * 2.5) minmax(0, 1fr); gap: var(--space-2) var(--space-5); align-items: baseline; margin: 0; border-top: var(--edge) solid var(--line); padding-top: var(--space-6); }
+  .aa-fixed dt { color: var(--muted); font-size: var(--text-1); text-transform: uppercase; letter-spacing: .06em; }
+  .aa-fixed dd { margin: 0; color: var(--fg-strong); font-size: var(--text-2); min-width: 0; }
+  .aa-from { color: var(--muted); font-size: var(--text-1); margin-left: var(--space-3); }
 }

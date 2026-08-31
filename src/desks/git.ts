@@ -19,7 +19,7 @@ const execFileP = promisify(execFile);
 export const AUTOMATION_IDENTITY = ['-c', 'user.name=Ronin', '-c', 'user.email=ronin@localhost'] as const;
 
 export class GitError extends Error {
-  constructor(readonly args: string[], readonly stderr: string, readonly code: number | string | null) {
+  constructor(readonly args: string[], readonly stderr: string, readonly code: number | string | null, readonly stdout = '') {
     super(`git ${args.join(' ')} failed (${code}): ${stderr.trim()}`);
   }
 }
@@ -37,7 +37,7 @@ export async function git(dir: string, args: string[], opts: { timeout?: number 
     return { stdout: r.stdout, stderr: r.stderr };
   } catch (e) {
     const err = e as NodeJS.ErrnoException & { stderr?: string; code?: number | string; stdout?: string };
-    throw new GitError(args, String(err.stderr ?? err.message ?? ''), err.code ?? null);
+    throw new GitError(args, String(err.stderr ?? err.message ?? ''), err.code ?? null, String(err.stdout ?? ''));
   }
 }
 

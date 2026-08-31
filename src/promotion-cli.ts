@@ -1,4 +1,7 @@
 import 'dotenv/config';
+import { readFile, stat } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 import { listProjectRoots } from './project-roots.js';
 import { readTeamRoster } from './team-rosters.js';
 import { readArrangement } from './desks/arrangement.js';
@@ -8,6 +11,8 @@ import { lastGoodPromotion, listReceipts, publicPromotionReceipt, readReceipt, s
 import { openPullRequest } from './promotion/pr.js';
 import type { RepoSpec } from './promotion/candidate.js';
 import type { ByoinMode } from './promotion/byoin.js';
+import { clearFunnel, diagnoseFunnel, listFunnelReceipts, preserveFunnel, readFunnelReceipt } from './promotion/funnel-recovery.js';
+import { storeDir } from './stores.js';
 
 /**
  * ronin-promote — the lead's door from a team line into `dev`. `bin/ronin-promote` is the
@@ -38,7 +43,7 @@ if (!['full', 'gates', 'ui'].includes(mode)) { say(`ronin-promote: --mode is ful
 
 async function reposForTeam(team: string): Promise<RepoSpec[]> {
   const roster = await readTeamRoster(team);
-  if (!roster) throw new Error(`no team roster '${team}'`);
+  if (!roster) throw new Error(await missingRosterMessage(team));
   const roots = await listProjectRoots();
   const names = roster.project_root ? [roster.project_root] : [];
   if (!names.length) throw new Error(`team '${team}' names no project_root`);
@@ -54,6 +59,26 @@ async function reposForTeam(team: string): Promise<RepoSpec[]> {
   return specs;
 }
 
+async function missingRosterMessage(team: string): Promise<string> {
+  const install = path.dirname(fileURLToPath(import.meta.url));
+  const ownerUid = (await stat(install)).uid;
+  const currentUid = process.getuid?.();
+  if (currentUid !== undefined && currentUid !== ownerUid) {
+    const passwd = await readFile('/etc/passwd', 'utf8').catch(() => '');
+    const owner = passwd.split('\n').find((row) => Number(row.split(':')[2]) === ownerUid)?.split(':')[0] ?? `uid ${ownerUid}`;
+    return `wrong-user store: running as ${process.env.USER ?? `uid ${currentUid}`} (uid ${currentUid}), but this Ronin install belongs to ${owner}; looked for '${team}' in ${storeDir('team_rosters')}. Run the Agent/tool as the owning user so it resolves that user's Ronin stores`;
+  }
+  return `no team roster '${team}' in ${storeDir('team_rosters')}`;
+}
+
+function printFunnel(r: Awaited<ReturnType<typeof diagnoseFunnel>>): void {
+  say(`${r.id}  ${r.state}  ${r.repo} ${r.line} → ${r.target}`);
+  for (const p of r.paths) say(`  ${p.status} ${p.path}: ${p.classification}${p.identical_refs.length ? ` (${p.identical_refs.join(', ')})` : ''}${p.overlaps_candidate ? ' — overlaps candidate' : ''}`);
+  if (r.whole_set_refs.length) say(`  complete copy already on: ${r.whole_set_refs.join(', ')}`);
+  if (r.conflict_files.length) say(`  conflicts with candidate: ${r.conflict_files.join(', ')}`);
+  if (r.recovery_ref) say(`  recovery branch: ${r.recovery_ref}@${r.recovery_commit?.slice(0, 12)}`);
+}
+
 function report(out: { ok: boolean; message: string; receipt: { id: string; state: string } | null }): never {
   say('');
   say(`${out.ok ? '✓' : '✗'} ${out.message}${out.receipt ? ` — receipt ${out.receipt.id} (${out.receipt.state})` : ''}`);
@@ -65,10 +90,35 @@ async function main(): Promise<void> {
   if (!cmd || flag('--help')) {
     say('usage: ronin-promote <team> [--mode full|gates|ui] [--no-restart] [--dry-run] [--repo name=dir]');
     say('       ronin-promote pr <team>          open or update the dev → master PR from the last complete receipt');
+    say('       ronin-promote funnel diagnose <team> [--repo name] | show|preserve|clear <receipt-id>');
     say('       ronin-promote resume|abandon|revert|bisect|receipts|show …   (bin/ronin-promote --help for the whole list)');
     process.exit(cmd ? 0 : 2);
   }
   switch (cmd) {
+    case 'funnel': {
+      const action = rest[0];
+      if (action === 'diagnose') {
+        const team = rest[1]; if (!team) throw new Error('funnel diagnose needs a team');
+        const specs = await reposForTeam(team);
+        const want = opt('--repo')?.split('=', 1)[0];
+        const selected = want ? specs.filter((s) => s.repo === want) : specs;
+        if (!selected.length) throw new Error(`no repo '${want}' on team ${team}`);
+        for (const spec of selected) printFunnel(await diagnoseFunnel(spec, by));
+        process.exit(0);
+      }
+      if (action === 'list') {
+        for (const r of await listFunnelReceipts()) printFunnel(r);
+        process.exit(0);
+      }
+      const receiptId = rest[1]; if (!receiptId) throw new Error(`funnel ${action ?? ''} needs a receipt id`);
+      if (action === 'show') {
+        const r = await readFunnelReceipt(receiptId); if (!r) throw new Error(`no funnel recovery receipt ${receiptId}`);
+        printFunnel(r); process.exit(0);
+      }
+      if (action === 'preserve') { const r = await preserveFunnel(receiptId); printFunnel(r); process.exit(r.state === 'preserved' ? 0 : 1); }
+      if (action === 'clear') { const r = await clearFunnel(receiptId); printFunnel(r); process.exit(r.state === 'clean' ? 0 : 1); }
+      throw new Error('funnel action is diagnose, list, show, preserve, or clear');
+    }
     case 'resume': {
       const id = rest[0]; if (!id) throw new Error('resume needs a receipt id');
       return report(await resumePromotion({ id, by, log: say, restart: !flag('--no-restart') }));

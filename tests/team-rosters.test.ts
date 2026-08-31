@@ -29,7 +29,7 @@ test('create → read → list: a zero-member team is a real, openable record', 
     project_root: 'ronin-cowork',
     branch: 'dev',
     references: ['https://example.test/spec', 'Owner note'],
-    routines: { base: true, control: false },
+    routines: { ronin_base: true, ronin_control: false },
     behaviours: { books: ['ways:CutCode'], required: true },
     agent_defaults: {
       provider: 'anthropic', model: 'opus', reach: 'execute', recruit: 'nobody',
@@ -40,6 +40,7 @@ test('create → read → list: a zero-member team is a real, openable record', 
   assert.equal(r.title, 'Alpha');
   assert.equal(r.wipeboard, 'alpha', 'the board defaults to the team’s own token');
   assert.equal(r.state, 'active');
+  assert.deepEqual(r.routines, { ronin_base: true, ronin_control: false });
 
   const back = await readTeamRoster('alpha');
   assert.deepEqual(back, r);

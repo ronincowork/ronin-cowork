@@ -85,29 +85,49 @@ export function buildProjectRoots(root, isShowing) {
     // The handle is shown, never edited: renaming is a catalog edit by hand, not a form
     // field. It is here because a block with no name on it is unreadable.
     mk(t('roots.f_handle', 'handle'), 'name', existing.name, t('roots.f_handle_hint', 'The short name — this IS the shortcut'), 'ronin').disabled = !creating;
-    mk(t('roots.f_directory', 'directory'), 'dir', existing.dir, t('roots.f_directory_hint', 'Any absolute path, at any depth'), '~/work/api');
+    const dirInput = mk(t('roots.f_directory', 'directory'), 'dir', existing.dir, t('roots.f_directory_hint', 'Any absolute path, at any depth'), '~/work/api');
     mk(t('roots.f_remit', 'remit'), 'remit', existing.remit, t('roots.f_remit_hint', 'The one line you pick it from in a list'), t('roots.f_remit_placeholder', 'what this is'));
     mk(t('roots.f_match', 'match'), 'match', (existing.match || []).join(', '), t('roots.f_match_hint', 'Words that suggest this project_root from free-form intent'), t('roots.f_match_placeholder', 'comma separated'));
     // THE DOC SHELVES (owner, 2026-08-28) — where the ▧ Docs tab's Docs and Plans pills look.
     mk(t('roots.f_docs', 'docs'), 'docs', (existing.docs || []).join(', '), t('roots.f_docs_hint', 'Where this root keeps its documentation — directories or files, relative to the directory'), 'docs, README.md');
     mk(t('roots.f_plans', 'plans'), 'plans', (existing.plans || []).join(', '), t('roots.f_plans_hint', 'Where this root keeps its build-out plans'), 'wip/buildouts, wip/handoffs');
 
-    // THE DESKS SWITCH (owner, 2026-08-29): one box, for a repository only. It writes the
-    // repo's RONIN_REPO — the one gate for desks — not the catalog. Checked = coding
-    // sessions get their own desk and hand in; unchecked = they work in the checkout.
-    let desksBox = null;
-    const desksNow = !!(existing.arrangement && existing.arrangement.source !== 'absent' && existing.arrangement.desks === 'managed');
-    if (existing.facts?.repo) {
-      const wrap = document.createElement('label');
-      wrap.className = 'pr-f pr-check';
-      desksBox = document.createElement('input');
-      desksBox.type = 'checkbox';
-      desksBox.checked = desksNow;
-      const l = document.createElement('span');
-      l.textContent = t('roots.f_desks', 'desks');
-      l.title = t('roots.f_desks_hint', 'Checked: coding sessions work at their own branch and worktree and hand in to the team (RONIN_REPO desks=managed). Unchecked: they work in the checkout (desks=none). Written into the repository; commit it there.');
-      wrap.append(desksBox, l);
-      f.appendChild(wrap);
+    // Existing repositories expose the complete checked-in profile. Mode describes how
+    // accepted work publishes; managed coordination is a separate, additive choice.
+    let profileFields = null;
+    if (creating || existing.facts?.repo) {
+      const seedDesks = creating ? (data?.new_project_desks || 'managed') : (existing.arrangement?.desks || 'none');
+      const before = {
+        mode: existing.arrangement?.mode || 'direct',
+        working: existing.arrangement?.source === 'absent' ? '' : (existing.arrangement?.working || ''),
+        stable: existing.arrangement?.source === 'absent' ? '' : (existing.arrangement?.stable || ''),
+        desks: existing.arrangement?.desks || 'none',
+      };
+      const pick = (label, value, options, hint) => {
+        const wrap = document.createElement('label'); wrap.className = 'pr-f';
+        const l = document.createElement('span'); l.textContent = label; l.title = hint;
+        const select = document.createElement('select');
+        for (const [v, text] of options) { const o = document.createElement('option'); o.value = v; o.textContent = text; select.append(o); }
+        select.value = value; wrap.append(l, select); f.append(wrap); return select;
+      };
+      const initialMode = creating ? (seedDesks === 'managed' ? 'reviewed' : 'direct') : before.mode;
+      const mode = pick(t('roots.f_mode', 'publishing'), initialMode, [['reviewed', t('roots.mode_reviewed', 'reviewed release')], ['direct', t('roots.mode_direct', 'direct publishing')]], t('roots.f_mode_hint', 'Reviewed uses a working branch and a final PR to stable. Direct publishes on stable itself.'));
+      const working = mk(t('roots.f_working', 'working'), 'repo-working', before.working || 'dev', t('roots.f_working_hint', 'The integration branch for reviewed work. You choose its name.'), 'dev');
+      const stable = mk(t('roots.f_stable', 'stable'), 'repo-stable', before.stable || existing.facts?.repo?.branch || 'main', t('roots.f_stable_hint', 'The published branch. You choose its name.'), 'main');
+      working.removeAttribute('data-key'); stable.removeAttribute('data-key');
+      const desks = pick(t('roots.f_coordination', 'coordination'), creating ? seedDesks : before.desks, [['managed', t('roots.desks_managed', 'managed')], ['none', t('roots.desks_none', 'none')]], t('roots.f_coordination_hint', 'Managed supplies private desks and hand-in. None uses the repository checkout.'));
+      const syncMode = () => { working.closest('label').hidden = mode.value !== 'reviewed'; };
+      mode.addEventListener('change', syncMode); syncMode();
+      profileFields = { before, mode, working, stable, desks };
+      if (creating) dirInput.addEventListener('change', async () => {
+        const inspected = await request(`/api/project-roots/inspect?dir=${encodeURIComponent(dirInput.value.trim())}`, { cache: 'no-store' });
+        if (!inspected.ok || !inspected.data.repo) return;
+        const a = inspected.data.arrangement;
+        if (a?.source !== 'absent') {
+          Object.assign(profileFields.before, { mode: a.mode, working: a.mode === 'reviewed' ? a.working : '', stable: a.stable, desks: a.desks });
+          mode.value = a.mode; working.value = a.working || ''; stable.value = a.stable || ''; desks.value = a.desks; syncMode();
+        } else if (inspected.data.repo.branch && stable.value === 'main') stable.value = inspected.data.repo.branch;
+      });
     }
 
     const row = document.createElement('div');
@@ -129,25 +149,57 @@ export function buildProjectRoots(root, isShowing) {
       });
       const name = creating ? body.name : existing.name;
       delete body.name; // on an edit the heading IS the handle; on an add it rides the body
+      let proposedProfile = null;
+      if (profileFields) {
+        let creationIsRepo = true;
+        if (creating) {
+          const inspected = await request(`/api/project-roots/inspect?dir=${encodeURIComponent(dirInput.value.trim())}`, { cache: 'no-store' });
+          if (!inspected.ok) { err.say(inspected.message, 'bad'); return; }
+          creationIsRepo = !!inspected.data.repo;
+          if (creationIsRepo && inspected.data.arrangement) Object.assign(profileFields.before, {
+            mode: inspected.data.arrangement.mode,
+            working: inspected.data.arrangement.source === 'absent' ? '' : (inspected.data.arrangement.working || ''),
+            stable: inspected.data.arrangement.source === 'absent' ? '' : (inspected.data.arrangement.stable || ''),
+            desks: inspected.data.arrangement.desks,
+          });
+        }
+        if (creationIsRepo) {
+          proposedProfile = {
+            mode: profileFields.mode.value,
+            working: profileFields.mode.value === 'reviewed' ? profileFields.working.value.trim() : '',
+            stable: profileFields.stable.value.trim(),
+            desks: profileFields.desks.value,
+          };
+          const line = (p) => [
+            `mode=${p.mode}`,
+            ...(p.mode === 'reviewed' ? [`working=${p.working}`] : []),
+            `stable=${p.stable}`,
+            `desks=${p.desks}`,
+          ].join('\n');
+          if ((creating || JSON.stringify(proposedProfile) !== JSON.stringify(profileFields.before)) && !confirm(t('roots.profile_confirm', 'Rewrite RONIN_REPO with this repository profile?\n\nBefore:\n{before}\n\nAfter:\n{after}\n\nRunning Agents may still have the earlier instructions.', { before: line(profileFields.before), after: line(proposedProfile) }))) return;
+        }
+      }
       save.disabled = true;
       err.say('');
       const r = creating
-        ? await request('/api/project-roots', { method: 'POST', json: { ...body, name } })
+        ? await request('/api/project-roots', { method: 'POST', json: { ...body, name, ...(proposedProfile ? { before: profileFields.before, profile: proposedProfile, confirmed: true } : {}) } })
         : await request('/api/project-roots/' + encodeURIComponent(name), { method: 'PUT', json: body });
       if (!r.ok) {
         err.say(r.message, 'bad');
         save.disabled = false;
         return;
       }
-      if (desksBox && desksBox.checked !== desksNow) {
-        const d = await request('/api/project-roots/' + encodeURIComponent(name) + '/desks', {
-          method: 'PUT',
-          json: { desks: desksBox.checked ? 'managed' : 'none' },
-        });
-        if (!d.ok) {
-          err.say(d.message, 'bad');
-          save.disabled = false;
-          return;
+      if (profileFields && !creating) {
+        if (JSON.stringify(proposedProfile) !== JSON.stringify(profileFields.before)) {
+          const d = await request('/api/project-roots/' + encodeURIComponent(name) + '/repo-profile', {
+            method: 'PUT',
+            json: { before: profileFields.before, profile: proposedProfile, confirmed: true },
+          });
+          if (!d.ok) {
+            err.say(d.message, 'bad');
+            save.disabled = false;
+            return;
+          }
         }
       }
       editing = null;

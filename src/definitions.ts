@@ -230,6 +230,8 @@ export interface RoutineRow extends Pick<Row, 'name' | 'origin' | 'shadowed' | '
   actions: string[];
   tools: string[];
   mcp: string[];
+  /** Other Routines this selection adds. Dependencies are additive, never component splits. */
+  requires: string[];
 }
 
 /** `[text](https://url)` → {text, url}. http(s) only — a definition is DATA, and data
@@ -288,6 +290,7 @@ export async function listRoutines(): Promise<RoutineRow[]> {
     actions: splitDefinitionList(d.get('actions')),
     tools: splitDefinitionList(d.get('tools')),
     mcp: splitDefinitionList(d.get('mcp')),
+    requires: splitDefinitionList(d.get('requires')),
   }));
 }
 

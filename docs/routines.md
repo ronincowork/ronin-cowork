@@ -38,17 +38,21 @@ govern the machine rather than equip the Agent.
 Bare metal is not “all Routines off.” A Cowork Agent with every switch off still receives
 the Routine floor. Bare metal explicitly bypasses the Cowork birth transaction.
 
-**Ronin Base** and **Managed file coordination** are separate. A Team can use Ronin's
-normal macros without acquiring repository worktrees. Repository arrangement states where
-managed worktree behaviour applies; it is not another Routine switch.
+**Ronin Base** and **Managed file coordination** are separate switches, but delivery is
+additive: selecting Managed file coordination also selects Ronin Base. A Team can use
+Ronin Base without acquiring repository worktrees. Control does not require optional
+Ronin Services. Repository arrangement states where managed worktree behaviour applies;
+it is not another Routine switch.
 
-**Specialized Routines** remain independent optional packages for one capability or
-methodology: Machine, gbrain, Ronin Services, or a future third-party method.
+**Specialized Routines** remain separately selected optional packages for one capability
+or methodology: Machine, gbrain, Ronin Services, or a future third-party method. They add
+to Ronin Base rather than creating partial replacements for it.
 
 **Ronin Services** is one specialized Routine containing the durable session record,
 Koshi, Voice and Hotwords. None is a standalone Routine or switch in this rollout.
 Hotwords have no independent use when Voice is unavailable. Installing Services or seeing
 one of its registered services proves availability only; it never selects the Routine.
+Selecting Ronin Services additively includes Ronin Base.
 
 ## Campaign defaults and Team overrides
 
@@ -63,7 +67,8 @@ effective Routines for this Agent birth
 ```
 
 An absent Team value inherits. An explicit `on` adds or preserves a Routine; an explicit
-`off` removes it. A Team stores only its differences, never a copied Campaign list.
+`off` removes it unless another enabled Routine requires it as part of the additive
+progression. A Team stores only its differences, never a copied Campaign list.
 A Teamless Agent receives the Campaign answer.
 
 The resolver keeps provenance, so a surface and birth receipt can say whether the answer

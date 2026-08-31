@@ -8,7 +8,7 @@ import type { RepoCandidate } from './receipts.js';
 /**
  * THE CANDIDATE — where a team promotion is built and proved before `dev` moves.
  *
- * A funnel point is merged into and never written into (docs/worktrees.md). So the merge of
+ * A funnel point is kept clear for reviewed integration (docs/worktrees.md). So the merge of
  * the team line into `dev` happens in a throwaway worktree detached at `dev`'s tip: a
  * conflict is contained there and `dev` is untouched; BYOIN runs there against the exact
  * commit that would become `dev`; and only then does the ref move — by compare-and-swap,
@@ -113,7 +113,7 @@ export async function prepareCandidate(
   const dirty = await funnelDirty(spec.dir);
   if (dirty.length) {
     return {
-      candidate: { ...base, refused: `${spec.target}'s worktree has unsaved tracked changes — a funnel point is never written into`, conflict_files: dirty },
+      candidate: { ...base, refused: `${spec.target}'s worktree has unsaved tracked changes — this reviewed integration line must be clean; diagnose and preserve the work before promotion`, conflict_files: dirty },
       nothing: false,
     };
   }

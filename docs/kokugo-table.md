@@ -9,7 +9,36 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1276 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1312 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+
+## add_agent
+
+| key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
+|---|---|---|---|---|---|
+| `add_agent.actions` | Launch actions |  |  |  |  |
+| `add_agent.cancel` | Cancel |  |  |  |  |
+| `add_agent.card` | Add Agent to Team |  |  |  |  |
+| `add_agent.card_summary` | The Team answers the rest. |  |  |  |  |
+| `add_agent.default` | default |  |  |  |  |
+| `add_agent.instruction` | instruction |  |  |  |  |
+| `add_agent.instruction_placeholder` | what this Agent should do |  |  |  |  |
+| `add_agent.model` | model |  |  |  |  |
+| `add_agent.name` | name |  |  |  |  |
+| `add_agent.name_placeholder` | name |  |  |  |  |
+| `add_agent.none` | — |  |  |  |  |
+| `add_agent.place` | place |  |  |  |  |
+| `add_agent.provider` | model provider |  |  |  |  |
+| `add_agent.start` | Start |  |  |  |  |
+| `add_agent.started` | Started {name} |  |  |  |  |
+| `add_agent.starting` | Starting… |  |  |  |  |
+| `add_agent.still_asked` | still asked |  |  |  |  |
+| `add_agent.task` | task  (optional) |  |  |  |  |
+| `add_agent.task_open` | open |  |  |  |  |
+| `add_agent.team` | team |  |  |  |  |
+| `add_agent.title` | Add Agent to Team |  |  |  |  |
+| `add_agent.worktree` | Request a worktree |  |  |  |  |
+| `add_agent.worktree_off` | No worktree. This Agent works in the shared checkout. |  |  |  |  |
+| `add_agent.worktree_on` | A worktree of its own — managed file coordination, hand-in and the Git safeguards. |  |  |  |  |
 
 ## archives
 
@@ -66,6 +95,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `recruit` | Team |  | Squad |  |  |
 | `required_reading` | Required reading |  |  |  |  |
 | `routine_bundles` | Routine Bundles |  |  |  |  |
+| `routines` | Routines |  |  |  |  |
 | `save_template` | Save as template |  | Save build |  |  |
 | `session_type` | Session type |  |  |  |  |
 | `squad` | Team | Staff | Squad |  | Squad |
@@ -1081,14 +1111,16 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `roots.count_archived` | {n} archived |  |  |  |  |
 | `roots.count_many` | {n} project_roots |  |  |  |  |
 | `roots.count_one` | {n} project_root |  |  |  |  |
+| `roots.desks_managed` | managed |  |  |  |  |
+| `roots.desks_none` | none |  |  |  |  |
 | `roots.edit` | edit |  |  |  |  |
 | `roots.empty` | No project roots yet — add one below. |  |  |  |  |
 | `roots.exclude` | exclude |  |  |  |  |
 | `roots.exclude_confirm` | Exclude "{name}" from your Ronin? |  |  |  |  |
 | `roots.exclude_failed` | could not exclude it — {message} |  |  |  |  |
 | `roots.exclude_title` | Remove it from the catalog. Nothing on disk is touched. |  |  |  |  |
-| `roots.f_desks` | desks |  |  |  |  |
-| `roots.f_desks_hint` | Checked: coding sessions work at their own branch and worktree and hand in to the team (RONIN_REPO desks=managed). Unchecked: they work in the checkout (desks=none). Written into the repository; commit it there. |  |  |  |  |
+| `roots.f_coordination` | coordination |  |  |  |  |
+| `roots.f_coordination_hint` | Managed supplies private desks and hand-in. None uses the repository checkout. |  |  |  |  |
 | `roots.f_directory` | directory |  |  |  |  |
 | `roots.f_directory_hint` | Any absolute path, at any depth |  |  |  |  |
 | `roots.f_docs` | docs |  |  |  |  |
@@ -1098,12 +1130,21 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `roots.f_match` | match |  |  |  |  |
 | `roots.f_match_hint` | Words that suggest this project_root from free-form intent |  |  |  |  |
 | `roots.f_match_placeholder` | comma separated |  |  |  |  |
+| `roots.f_mode` | publishing |  |  |  |  |
+| `roots.f_mode_hint` | Reviewed uses a working branch and a final PR to stable. Direct publishes on stable itself. |  |  |  |  |
 | `roots.f_plans` | plans |  |  |  |  |
 | `roots.f_plans_hint` | Where this root keeps its build-out plans |  |  |  |  |
 | `roots.f_remit` | remit |  |  |  |  |
 | `roots.f_remit_hint` | The one line you pick it from in a list |  |  |  |  |
 | `roots.f_remit_placeholder` | what this is |  |  |  |  |
+| `roots.f_stable` | stable |  |  |  |  |
+| `roots.f_stable_hint` | The published branch. You choose its name. |  |  |  |  |
+| `roots.f_working` | working |  |  |  |  |
+| `roots.f_working_hint` | The integration branch for reviewed work. You choose its name. |  |  |  |  |
 | `roots.loading` | loading… |  |  |  |  |
+| `roots.mode_direct` | direct publishing |  |  |  |  |
+| `roots.mode_reviewed` | reviewed release |  |  |  |  |
+| `roots.profile_confirm` | Rewrite RONIN_REPO with this repository profile?\n\nBefore:\n{before}\n\nAfter:\n{after}\n\nRunning Agents may still have the earlier instructions. |  |  |  |  |
 | `roots.read_failed` | could not read the catalog — {message} |  |  |  |  |
 | `roots.save` | save |  |  |  |  |
 | `roots.sessions_many` | {n} sessions |  |  |  |  |

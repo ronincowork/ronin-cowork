@@ -59,7 +59,7 @@ export async function handIn(repo: string, branch: string, opts: { maxRetries?: 
   }
   const funnelDirt = await lineDirty(line);
   if (funnelDirt.length) {
-    return { receipt: await appendReceipt(receipt({ result: 'refused', source_tip: st.tip, reason: `the line's worktree ${line.worktree} has unsaved files (${funnelDirt.length}) — a funnel point is never written into; clean it first`, conflict_files: funnelDirt })), notices: [] };
+    return { receipt: await appendReceipt(receipt({ result: 'refused', source_tip: st.tip, reason: `the reviewed integration line ${line.worktree} has unsaved files (${funnelDirt.length}); diagnose and preserve them before hand-in`, conflict_files: funnelDirt })), notices: [] };
   }
 
   const out = await withLineLock(repo, line.branch, async (): Promise<HandInReceipt> => {
@@ -68,7 +68,7 @@ export async function handIn(repo: string, branch: string, opts: { maxRetries?: 
       // Checked again under the lock: the funnel worktree must be clean at the moment it is reset.
       const dirt = await lineDirty(line);
       if (dirt.length) {
-        return appendReceipt(receipt({ result: 'refused', source_tip: st.tip, reason: `the line's worktree ${line.worktree} has unsaved files (${dirt.length}) — a funnel point is never written into; clean it first`, conflict_files: dirt }));
+        return appendReceipt(receipt({ result: 'refused', source_tip: st.tip, reason: `the reviewed integration line ${line.worktree} has unsaved files (${dirt.length}); diagnose and preserve them before hand-in`, conflict_files: dirt }));
       }
       const old = await revParse(a.dir, `refs/heads/${line.branch}`);
       const tip = await revParse(a.dir, `refs/heads/${branch}`);
