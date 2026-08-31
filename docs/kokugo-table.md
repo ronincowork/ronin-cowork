@@ -403,7 +403,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `docs.discard_confirm` | Discard unsaved changes? |  |  |  |  |
 | `docs.empty` | No session has listed a doc yet. An agent lists one with: write_tegami --doc <path> |  |  |  |  |
 | `docs.empty_session` | This session has listed no docs yet. An agent lists one with: write_tegami --doc <path> |  |  |  |  |
-| `docs.empty_team` | No session on this Team has listed a doc yet. An agent lists one with: write_tegami --doc <path> |  |  |  |  |
+| `docs.empty_team` | No tracked documents. |  |  |  |  |
 | `docs.frame_title` | document |  |  |  |  |
 | `docs.loading` | loading… |  |  |  |  |
 | `docs.open_browser` | Open in browser ↗ |  |  |  |  |
@@ -414,7 +414,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `docs.saved` | saved |  |  |  |  |
 | `docs.saving` | saving… |  |  |  |  |
 | `docs.shelf_empty` | Nothing on this shelf — a project root names its places on its record (Project roots → docs / plans). |  |  |  |  |
-| `docs.work_record_note` | Note: If you don't see a document your agent is working on, ask it to update its work record. |  |  |  |  |
+| `docs.work_record_note` | Ask an agent to list a document with write_tegami --doc <path>. If a document is missing, ask the agent to update its work record. |  |  |  |  |
 
 ## errors
 

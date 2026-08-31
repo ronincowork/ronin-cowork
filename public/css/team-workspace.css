@@ -61,6 +61,8 @@
 
   /* -- the docs slice: mdedit's own pane (.home-docs, style.css), given the surface's height -- */
   .tw-docs { display: flex; height: 100%; }
+  .tw-docs .dc-empty { color: var(--fg-strong); font-size: var(--text-4); }
+  .tw-docs .dc-work-record-note { margin-top: var(--space-2); border-top: var(--edge) solid var(--line); padding-top: var(--space-4); color: var(--fg); }
 
   /* -- the wipeboard slice: the thread, and the owner's line under it -- */
   .twb { display: flex; flex-direction: column; min-height: 0; height: 100%; }
