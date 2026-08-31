@@ -1,16 +1,12 @@
-# RONIN SERVICES ABILITIES — proposed service-backed session reading
+# RONIN SERVICES ABILITIES — service-backed session reading
 
-> **Unassigned reading inventory.** The owner has ruled that Ronin Services is an
-> one additional Routine, independently selected from the floor and Ronin Base. It contains
-> the durable session record, Koshi, Voice and Hotwords; none is a separate Routine or
-> switch in this rollout. This draft is
-> not startup reading until the catalog/dependency cut adds the checked
-> `ronin_services` manifest and moves it to `routine/ronin_services/`. Installation or
-> service-roster presence must never select it implicitly.
+Ronin Services is one additional Routine. It contains the durable session record, Koshi,
+Voice and Hotwords; none is a separate Routine or switch in this rollout. Installation
+or service-roster presence never selects it implicitly.
 
-Ronin Services supplies these four service-backed capabilities together. During the
-transition to effective-Routine startup reading, compatible teaching remains in
-`all/REQUIRED_ABILITIES.md`.
+Ronin Services supplies these four service-backed capabilities together. Compatible
+teaching remains in `all/REQUIRED_ABILITIES.md` during the transition to fully
+Routine-addressed startup reading.
 
 ## The durable session record
 

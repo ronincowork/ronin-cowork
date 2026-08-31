@@ -89,7 +89,7 @@ test('accepted Routine reading drafts keep universal compatibility teaching', as
     readFile(path.join(repo, 'ronin_session_boot', 'all', 'REQUIRED_ABILITIES.md'), 'utf8'),
     readFile(path.join(repo, 'ronin_session_boot', 'all', 'TEST_PROTOCOLS.md'), 'utf8'),
     readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_base', 'BASE_ABILITIES.md'), 'utf8'),
-    readFile(path.join(repo, 'ronin_session_boot', 'proposed', 'ronin_services', 'SERVICES_ABILITIES.md'), 'utf8'),
+    readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_services', 'SERVICES_ABILITIES.md'), 'utf8'),
     readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_control', 'CONTROL_TEST_PROTOCOLS.md'), 'utf8'),
     readFile(path.join(repo, 'ronin_session_boot', 'routine', 'machine', 'MACHINE_ABILITIES.md'), 'utf8'),
     readFile(path.join(repo, 'ronin_session_boot', 'routine', 'machine', 'MACHINE_TEST_PROTOCOLS.md'), 'utf8'),
@@ -99,14 +99,13 @@ test('accepted Routine reading drafts keep universal compatibility teaching', as
   assert.match(base, /read_tegami/);
   assert.match(base, /tejun-wipeboard/);
   assert.doesNotMatch(base, /tejun-rireki/);
-  assert.match(services, /Unassigned reading inventory/);
-  assert.match(services, /not startup reading until/);
+  assert.match(services, /Ronin Services is one additional Routine/);
   assert.match(services, /tejun-rireki <session> since/);
   assert.match(services, /Koshi is Ronin's assisted administrative behavior/);
   assert.match(services, /Voice turns the owner's speech into text/);
   assert.match(services, /Hotwords are the owner's dictation glossary/);
   assert.match(services, /Selection is not installation/);
-  assert.doesNotMatch(services, /separate (?:Koshi|Voice|Hotwords) (?:Routine|switch)/i);
+  assert.match(services, /none is a separate Routine or switch/i);
   assert.match(control, /team promotion/i);
   assert.match(control, /one full repository BYOIN/i);
   assert.match(machine, /tejun-survey/);

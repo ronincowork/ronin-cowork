@@ -212,6 +212,10 @@ async function routinesResolve(): Promise<void> {
       if (!routineNames.has(dependency)) fail(`routines/${routine.name}.md: requires missing "${dependency}"`);
       if (dependency === routine.name) fail(`routines/${routine.name}.md: requires itself`);
     }
+    for (const reading of routine.reading.filter((name) => name.startsWith('routine/'))) {
+      try { await stat(path.join(REPO, 'ronin_session_boot', reading)); }
+      catch { fail(`routines/${routine.name}.md: reading names missing "${reading}"`); }
+    }
     for (const field of ['macros', 'actions', 'tools'] as const) {
       for (const name of routine[field]) {
         if (!known[field].has(name)) fail(`routines/${routine.name}.md: ${field} names missing "${name}"`);
