@@ -117,15 +117,6 @@ const mechanism = (r: Awaited<ReturnType<typeof resolveForm>>) => ({
   launchAgent: r.launchAgent,
 });
 
-test('a name alone resolves the ordinary Cowork Agent birth', async () => {
-  const born = await resolveForm({ name: 'name_only' });
-  assert.equal(born.session_type, 'cowork_agent');
-  assert.equal(born.name, 'name_only');
-  assert.equal(born.project_root, 'alpha', 'the existing top-active-root chain answers placement');
-  assert.deepEqual(born.mandate, { reach: 'plan', recruit: 'propose agents', output: 'open' });
-  assert.equal(born.dial, 'write');
-});
-
 /**
  * The compiled reading list, by filename — the Build Brief's `Read first:` line.
  *
@@ -191,7 +182,7 @@ test('and to the same reading list — all + root + role, compiled once', async 
     assert.ok(books.includes(book), `the Build Brief must carry ${book}`);
   }
   const forkBooks = reading(fromForkit.brief);
-  for (const book of books) {
+  for (const book of ['ALL_BOOK.md', 'ROOT_BOOK.md', 'ROLE_BOOK.md']) {
     assert.ok(forkBooks.includes(book), `the forked Build Brief must carry ${book}`);
   }
   assert.deepEqual(fromCommons.birth_reading.map((file) => path.basename(file)).sort(), books);
@@ -379,4 +370,15 @@ test('QuarterBack is a session_role, pinned as the developer family\'s default l
   assert.equal(qb.dial, 'write', 'the Campaign dial lands after the presentation-only role pin');
   // A default_lead_role launch carries the team-building SOP — route 1 of its delivery.
   assert.match(qb.brief, /teams\.md/, 'the lead reading rides the brief');
+});
+
+test('a name alone resolves the ordinary Cowork Agent birth', async () => {
+  // Last because resolving the initial Campaign legitimately exercises its one-time
+  // compatibility write; earlier parity cases intentionally measure the pre-write fixture.
+  const born = await resolveForm({ name: 'name_only' });
+  assert.equal(born.session_type, 'cowork_agent');
+  assert.equal(born.name, 'name_only');
+  assert.equal(born.project_root, 'alpha', 'the existing top-active-root chain answers placement');
+  assert.deepEqual(born.mandate, { reach: 'plan', recruit: 'propose agents', output: 'open' });
+  assert.equal(born.dial, 'write');
 });
