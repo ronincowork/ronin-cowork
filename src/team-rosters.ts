@@ -54,6 +54,8 @@ export interface TeamRoster {
   project_root: string;
   repos: string[];
   branch: string;
+  /** Routine exceptions only. Absence inherits the Campaign's answer. */
+  routines: Record<string, boolean>;
   /** The board underneath this team. Defaults to the team's own token. */
   wipeboard: string;
   state: 'active' | 'archived';
@@ -113,6 +115,10 @@ function parse(name: string, raw: string, campaign_id = ''): TeamRoster {
     const v = entryValue(lines, k).trim();
     return v === BLANK || v === '-' ? '' : v;
   };
+  const routines = Object.fromEntries(splitDefinitionList(get('routines')).flatMap((item) => {
+    const match = /^([a-z0-9][a-z0-9_-]{0,63})=(on|off)$/.exec(item);
+    return match ? [[match[1], match[2] === 'on']] : [];
+  }));
   return {
     name,
     campaign_id: campaign_id || get('campaign_id'),
@@ -122,6 +128,7 @@ function parse(name: string, raw: string, campaign_id = ''): TeamRoster {
     project_root: get('project_root'),
     repos: splitDefinitionList(get('repos')),
     branch: get('branch'),
+    routines,
     wipeboard: get('wipeboard') || name,
     state: /^archived$/i.test(get('state')) ? 'archived' : 'active',
   };
@@ -221,6 +228,7 @@ export interface RosterEdit {
   project_root?: string;
   repos?: string[];
   branch?: string;
+  routines?: Record<string, boolean>;
   wipeboard?: string;
   state?: 'active' | 'archived';
 }
@@ -231,7 +239,12 @@ export interface RosterEdit {
  * calls that a deliberate migration operation and a non-goal for this cut, so it is set
  * once at create and never reachable through an edit.
  */
-const KEYS: (keyof RosterEdit)[] = ['title', 'team_role', 'objective', 'project_root', 'repos', 'branch', 'wipeboard', 'state'];
+const KEYS: (keyof RosterEdit)[] = ['title', 'team_role', 'objective', 'project_root', 'repos', 'branch', 'routines', 'wipeboard', 'state'];
+
+const renderRoutines = (routines: Record<string, boolean>): string => Object.entries(routines)
+  .sort(([a], [b]) => a.localeCompare(b))
+  .map(([name, on]) => `${name}=${on ? 'on' : 'off'}`)
+  .join(', ');
 
 function render(name: string, r: TeamRoster): string {
   const line = (k: string, v: string) => `- **${k}:** ${v || BLANK}`;
@@ -248,6 +261,7 @@ function render(name: string, r: TeamRoster): string {
     line('project_root', r.project_root),
     line('repos', r.repos.join(', ')),
     line('branch', r.branch),
+    line('routines', renderRoutines(r.routines)),
     line('wipeboard', r.wipeboard || name),
     line('state', r.state),
     '',
@@ -308,6 +322,7 @@ export async function createTeamRoster(name: string, edit: RosterEdit, campaign_
     project_root: edit.project_root ?? '',
     repos: edit.repos ?? [],
     branch: edit.branch ?? '',
+    routines: edit.routines ?? {},
     // An explicit token is the owner's and is taken as given; only the DEFAULT is allocated,
     // because the default is the only thing that could collide with another Campaign's
     // same-named Cowork.
@@ -342,7 +357,11 @@ export async function writeTeamRoster(name: string, edit: RosterEdit, campaign_i
   } as TeamRoster;
   for (const k of KEYS) {
     if (edit[k] === undefined) continue;
-    const v = k === 'repos' ? (edit.repos ?? []).join(', ') : String(edit[k] ?? '');
+    const v = k === 'repos'
+      ? (edit.repos ?? []).join(', ')
+      : k === 'routines'
+        ? renderRoutines(edit.routines ?? {})
+        : String(edit[k] ?? '');
     const lineText = `- **${k}:** ${v || BLANK}`;
     const at = lines.findIndex((l) => new RegExp(`^-\\s*\\*\\*${k}:\\*\\*`).test(l.trim()));
     if (at === -1) {

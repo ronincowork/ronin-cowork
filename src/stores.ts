@@ -107,6 +107,14 @@ export const STORES: readonly Store[] = [
     when: 'an assisted session is launched',
   },
   {
+    id: 'session_commands',
+    root: 'data',
+    rel: 'session-commands',
+    what: 'per-session command projections for Cowork Agent births',
+    createdBy: "cowork's `src/routine-tools.ts`",
+    when: 'a Cowork Agent is launched',
+  },
+  {
     id: 'bench',
     root: 'data',
     rel: 'bench',

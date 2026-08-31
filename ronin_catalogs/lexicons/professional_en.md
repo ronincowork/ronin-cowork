@@ -34,9 +34,15 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **loadout:** Tools and skills
 - **behaviours:** Behaviours
 - **mandate:** Mandate
+- **session_type:** Session type
+- **kind:** Kind
+- **template:** Template
+- **required_reading:** Required reading
+- **permissions:** Permissions
 - **reach:** Scope
 - **recruit:** Team
 - **output:** Deliverable
+- **routine_bundles:** Routine Bundles
 - **go:** Go
 - **save_template:** Save as template
 - **publish:** Publish
@@ -1375,9 +1381,7 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.locked:** Locked / Unlocked
 - **glossary.roster:** the roster
 - **glossary.launch:** launch
-- **glossary.family:** Family
 - **glossary.team_roster:** Cowork record
-- **glossary.team_role:** team role
 - **glossary.team_lead:** team lead · 人
 - **glossary.wipeboard:** wipeboard
 - **glossary.brief:** Brief
@@ -1389,9 +1393,9 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.customization:** your own macros and jobs
 - **glossary.pad:** Pad
 - **glossary.control:** Control
+- **glossary.permissions:** Permissions
 - **glossary.team:** Cowork
 - **glossary.note:** Note
-- **glossary.doing:** what it's doing
 - **glossary.work_record:** work record
 - **glossary.rung:** rung · leg · phase · gate
 - **glossary.memory:** memory
@@ -1399,19 +1403,24 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.macros:** macros
 - **glossary.macro:** macro
 - **glossary.invocation:** typing a macro
-- **glossary.role:** role
 - **glossary.desk_profile:** desk profile
+- **glossary.session_type:** session type
+- **glossary.kind:** kind
+- **glossary.template:** template
 - **glossary.behaviour:** behaviour
 - **glossary.routine:** routine
 - **glossary.ronin_base:** Ronin Base
 - **glossary.routine_floor:** Cowork floor
 - **glossary.ronin_control:** managed file coordination
+- **glossary.ronin_services:** Ronin Services
 - **glossary.specialized_routine:** specialized routine
 - **glossary.terminal:** terminal
 - **glossary.bare_metal_agent:** bare-metal Agent
 - **glossary.cowork_agent:** Cowork Agent
-- **glossary.build:** build
 - **glossary.mandate:** mandate
+- **glossary.reach:** Reach
+- **glossary.recruit:** Recruit
+- **glossary.output:** Output
 - **glossary.fork:** fork
 - **glossary.harakiri:** harakiri
 - **glossary.packet_kinds:** Usage counts · Feedback · Macro submission
