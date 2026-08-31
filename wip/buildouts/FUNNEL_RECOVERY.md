@@ -11,8 +11,9 @@ the Cowork candidate, then refused the coordinated promotion because the site's 
 The evidence does not show an Agent writing into a reviewed funnel after review was
 declared. The five tracked files have mtimes on 2026-08-23; the site's `RONIN_REPO`
 declaration made it reviewed on 2026-08-28. The transition admitted a dirty checkout and
-left discovery until the next promotion. The immediate root cause is therefore a missing
-reviewed-mode readiness/migration check, compounded by a missing recovery workflow.
+left discovery until the next promotion. That is an accepted consequence of changing a
+live repository profile directly; the product gap is that the later refusal had no
+owner-facing diagnosis and recovery workflow.
 
 All five tracked working-tree blobs are already committed on named branches. One branch,
 `fix/label-vm-provider-comparison-20260823`, contains byte-identical versions of all five.
@@ -151,12 +152,15 @@ Do not keep two overlapping all-purpose Git SOPs. Cut responsibility this way:
 
 ## Prevention
 
-1. **Declare reviewed mode through a readiness transaction.** Before writing or accepting
-   `RONIN_REPO desks=managed`, inspect the working and stable funnel worktrees. Report
-   tracked and untracked dirt, in-progress Git operations, branch/worktree layout, and
-   existing desks. A dirty result offers the recovery workflow; it does not silently mark
-   the repository ready. Existing hand-edited declarations are diagnosed by Doctor and
-   the project-root surface as “reviewed · funnel needs recovery,” not merely “managed.”
+1. **Make the repository profile directly editable.** The Project Root editor reads the
+   current `RONIN_REPO` and presents `mode`, `working`, `stable` and managed file
+   coordination as a small form. On change it shows the exact old/new file, explains that
+   running Agents and Teams keep the instructions with which they were born while new
+   operations will read the changed repository profile, asks once, then rewrites
+   `RONIN_REPO` atomically in that checkout. Record the actor, time, old hash/content and
+   new hash/content. Do not create a desk, branch, candidate or migration plan; do not
+   reconcile refs or live Agents; do not claim the change is safe merely because it was
+   accepted. Changing this during active work is a coordination choice the owner may make.
 2. **Keep launch assistance concrete.** A coding/debug Cowork Agent on a reviewed repo
    already opens desks before spawn and starts in the primary desk. Strengthen the brief's
    first actionable sentence: name the current desk path, say that hand-in is the easy
@@ -173,8 +177,8 @@ Do not keep two overlapping all-purpose Git SOPs. Cut responsibility this way:
    as `ready`, `dirty—preserved elsewhere`, `dirty—unique`, or `recovery in progress`, with
    path count, overlap with the current team line, last diagnosis receipt, and a single
    Diagnose/Recover action. The lead sees this before paying candidate/BYOIN cost.
-5. **Prompt at useful boundaries.** DONE legs, hand-in, session close, reviewed-mode
-   declaration, and promotion readiness should point to the existing desk/status tools.
+5. **Prompt at useful boundaries.** DONE legs, hand-in, session close, repository-profile
+   change, and promotion readiness should point to the existing desk/status tools.
    Prompts remain suggestions; only integration transactions retain hard data-safety
    refusals.
 
@@ -276,9 +280,10 @@ right store.
    review) and `ronin-promote` integration that links receipts and rebuilds candidates.
 5. Owner-facing Team/file-coordination status and actions using the same API, including confirmation
    for clearing/removal and downloadable/viewable receipts.
-6. Reviewed-mode readiness in project-root declaration/Doctor, then launch/brief/status
-   wording. Add promotion tests for duplicate, unique, mixed, overlap-clean, overlap-
-   conflict, concurrent mutation, crash/resume, and wrong-user stores.
+6. Project Root repository-profile read/edit/confirmation and its direct-write receipt,
+   then launch/brief/status wording. Add promotion tests for duplicate, unique, mixed,
+   overlap-clean, overlap-conflict, concurrent mutation, crash/resume, and wrong-user
+   stores.
 
 No full BYOIN belongs in these development legs. The one full repository BYOIN remains at
 the eventual team promotion.
