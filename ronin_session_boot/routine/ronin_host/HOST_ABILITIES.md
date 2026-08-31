@@ -1,6 +1,6 @@
-# MACHINE ABILITIES — measure the box
+# HOST ABILITIES — measure the box
 
-This reading belongs to the **Machine** Routine. It teaches machine, account and store
+This reading belongs to the **Ronin Host** Routine. It teaches machine, account and store
 inspection backed by measured tools. During the transition to effective-Routine startup
 reading, the same teaching remains in `all/REQUIRED_ABILITIES.md` for compatibility.
 

@@ -5,8 +5,8 @@
 - **reading:** —
 - **sops:** ronin_methodology, teams
 - **macros:** updateplan, show_file, forkit, buildout, team, wipeboard, tell, read, readwrite, evaluate, delete
-- **actions:** control-check, control-set, session-launch, read-letter, write-letter, list-doc, session-catchup, team-roster, session-upsert, team-upsert, team-page-read, team-page-draft, wipeboard-check, wipeboard-post, send-to-session, write-buildout-doc, step-through, compile-macro, read-work-record, propose-and-confirm, report-outcome, harakiri, status-probe, restart-ronin
-- **tools:** tejun, tejun-step, tejun-send, tejun-harakiri, tejun-team, tejun-fork, tejun-session-set, tejun-team-set, tejun-wipeboard, tejun-teampage, tejun-peek, tejun-machine-restart, read_tegami, write_tegami
+- **actions:** control-check, control-set, session-launch, read-letter, write-letter, list-doc, session-catchup, team-roster, session-upsert, team-upsert, team-page-read, team-page-draft, wipeboard-check, wipeboard-post, send-to-session, write-buildout-doc, step-through, compile-macro, read-work-record, propose-and-confirm, report-outcome, harakiri, status-probe
+- **tools:** tejun, tejun-step, tejun-send, tejun-harakiri, tejun-team, tejun-fork, tejun-session-set, tejun-team-set, tejun-wipeboard, tejun-teampage, tejun-peek, read_tegami, write_tegami
 - **mcp:** —
-- **requires:** —
+- **requires:** ronin_host
 - **order:** 10
