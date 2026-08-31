@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync, chmodSync } from 'node:fs';
+import { chmodSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -59,19 +59,25 @@ test('ronin-url refuses and teaches when no address can be resolved', () => {
   }
 });
 
-test('all agent-facing URL callers use the one resolver and carry no port guess', () => {
-  const callers = [
+test('every agent-facing API caller uses the one resolver and carries no address guess', () => {
+  const bin = path.join(root, 'ronin_bin');
+  const callers = readdirSync(bin).filter((name) => {
+    if (name === 'ronin-url') return false;
+    const body = readFileSync(path.join(bin, name), 'utf8');
+    return /\bcurl\b/.test(body);
+  });
+  assert.deepEqual(callers.sort(), [
     'mika',
-    'tejun-team-set',
-    'tejun-teampage',
+    'tejun-fork',
     'tejun-harakiri',
     'tejun-session-set',
-    'tejun-fork',
-  ];
+    'tejun-team-set',
+    'tejun-teampage',
+  ]);
   for (const name of callers) {
-    const body = readFileSync(path.join(root, 'ronin_bin', name), 'utf8');
+    const body = readFileSync(path.join(bin, name), 'utf8');
     assert.match(body, /\burl=\$\(ronin-url\)|\bURL=\$\(ronin-url\)/, name);
-    assert.doesNotMatch(body, /3006/, name);
+    assert.doesNotMatch(body, /https?:\/\//, name);
     assert.doesNotMatch(body, /@ronin-url/, name);
   }
 });
