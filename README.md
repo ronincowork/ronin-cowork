@@ -29,7 +29,7 @@ files you already use.
 
 | Promise | What it means |
 |---|---|
-| **[No platform lock-in](https://ronincowork.com/explainers/no-platform-lock-in/)** | Use your existing Agent CLIs, accounts, terminals, repositories, and ordinary files. Your work stays on your machine; stop using Ronin without exporting or converting it. |
+| **[Your work stays yours](https://ronincowork.com/explainers/no-platform-lock-in/)** | Your code and documents stay on your machine, in ordinary repositories and files. Ronin does not become a data intermediary or proprietary home for them—so there is no platform lock-in. |
 | **[No behavioral takeover](https://ronincowork.com/explainers/no-behavioral-takeover/)** | Ronin gives Agents convenient tools at the edges of cooperation. It does not become their prompt engine or prescribe how they reason, code, or complete their work. |
 | **[Editable coordination](https://ronincowork.com/explainers/editable-coordination/)** | Select and customize the reading, SOPs, Macros, Actions, tools, and connections offered to new Agents. Owner versions live outside the repositories Ronin updates. |
 
