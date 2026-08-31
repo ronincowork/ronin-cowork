@@ -457,7 +457,16 @@ export async function resolveForm(
   // The launch's own say, and failing that the kind's default from the catalog. A kind
   // marked `mcp: always` is connected whatever anyone asked; the contradicting ask is
   // caught below rather than quietly overridden.
-  const mcpWanted = profile.mcpAlways ? true : (form.mcp ?? profile.mcpDefault);
+  // MCP requests are a projection of the same resolved Routine answer. An enabled
+  // Routine which declares connections turns the provider's MCP door on; no separate
+  // gbrain/session switch is consulted. An explicit launch may still request MCP for
+  // connections outside the Routine catalog.
+  const routineMcp = parentSeed?.resolved_routines
+    .filter((routine) => routine.enabled)
+    .flatMap((routine) => routine.mcp) ?? [];
+  const mcpWanted = profile.mcpAlways || routineMcp.length > 0
+    ? true
+    : (form.mcp ?? profile.mcpDefault);
   // Somebody ASKED for off, as against off being merely what this kind defaults to. The
   // two are refused differently below, and only this one is a promise Ronin made.
   const askedOff = agent && form.mcp === false;

@@ -39,7 +39,7 @@ import { listTeamRosters } from '../team-rosters.js';
 import { announceTeamChanges } from './wipeboards-api.js';
 import { markRoleDelivered } from '../role-watch.js';
 import { checkoutAt, deriveTeams, parkBrief, seedTegami, withAxes, writeGate } from '../tegami.js';
-import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFields } from '../sockets.js';
+import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFields, listServices } from '../sockets.js';
 import { DESK_LIFECYCLES, prepareLaunchDesks } from '../launch-desks.js';
 import { readArrangement } from '../desks/arrangement.js';
 import { listProjectRoots } from '../project-roots.js';
@@ -387,8 +387,12 @@ export function registerLaunch(app: express.Express): void {
         // (owner, 2026-08-29): the receipt names the file that decides.
         desk_note: await deskNote(resolved),
         routines: resolved.routines.map((routine) => {
+          const services = new Set(listServices());
           const missing = routine.enabled
-            ? routine.tools.filter((tool) => routineTools?.missing.includes(tool))
+            ? [
+                ...routine.tools.filter((tool) => routineTools?.missing.includes(tool)).map((tool) => `tool:${tool}`),
+                ...routine.mcp.filter((name) => !services.has(name)).map((name) => `mcp:${name}`),
+              ]
             : [];
           return {
             name: routine.name,
@@ -396,6 +400,7 @@ export function registerLaunch(app: express.Express): void {
             stated_by: routine.stated_by,
             delivered: routine.enabled && missing.length === 0,
             missing,
+            mcp: routine.enabled ? routine.mcp.filter((name) => services.has(name)) : [],
           };
         }),
       },
