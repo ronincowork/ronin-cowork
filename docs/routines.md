@@ -43,10 +43,12 @@ normal macros without acquiring repository worktrees. Repository arrangement sta
 managed worktree behaviour applies; it is not another Routine switch.
 
 **Specialized Routines** remain independent optional packages for one capability or
-methodology: Machine, gbrain, Koshi, Ronin Koe, or a future third-party method.
+methodology: Machine, gbrain, Ronin Services, or a future third-party method.
 
-**Ronin Koe** is one specialized Routine containing Voice and Hotwords. Hotwords have no
-independent use when Voice is unavailable, so there is no separate Hotwords Routine.
+**Ronin Services** is one specialized Routine containing the durable session record,
+Koshi, Voice and Hotwords. None is a standalone Routine or switch in this rollout.
+Hotwords have no independent use when Voice is unavailable. Installing Services or seeing
+one of its registered services proves availability only; it never selects the Routine.
 
 ## Campaign defaults and Team overrides
 
