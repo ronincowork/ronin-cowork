@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { toRequests } from '../public/js/settei-schema.js';
+import { SETTEI_SCHEMA } from '../src/settei-registry.js';
 
 test('cowork_setup is the live two-stage companion page, not the legacy renderer', async () => {
   const source = await readFile(new URL('../public/js/cowork-setup.js', import.meta.url), 'utf8');
@@ -25,6 +26,11 @@ test('the two setup asks are registry rows and the renderer carries no client fi
   assert.match(registry, /seed: 'open'/);
   assert.match(registry, /seed: 'control'/);
   assert.doesNotMatch(source, /\['coding', 'work', 'personal'/);
+});
+
+test('the setup seat names its behaviour and carries no retired launch role', () => {
+  assert.deepEqual(SETTEI_SCHEMA.seat.behaviours, ['ways:setup']);
+  assert.ok(!('session_role' in SETTEI_SCHEMA.seat));
 });
 
 test('registry metadata writes the campaign bootstrap without a client field list', () => {

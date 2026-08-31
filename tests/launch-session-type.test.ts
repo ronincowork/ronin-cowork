@@ -128,4 +128,11 @@ test('both Mika callers use the dedicated door and state no session_role', async
   }
 });
 
+test('the in-Team Agent form sends a ways behaviour, never a launch role', async () => {
+  const source = await fs.readFile(new URL('../public/js/add-agent.js', import.meta.url), 'utf8');
+  assert.match(source, /behaviours:\s*draft\.task \? \[draft\.task\] : \[\]/);
+  assert.match(source, /ways:cut_code/);
+  assert.doesNotMatch(source, /session_role:\s*draft\.task/);
+});
+
 test.after(() => server.close());
