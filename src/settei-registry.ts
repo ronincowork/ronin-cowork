@@ -294,10 +294,12 @@ export const SETTEI_SCHEMA = {
    * is READ AT SEAT START, never composed at Save: a session born now and one born
    * three weeks from now read the same fresh truth.
    *
-   * A TASK WITH NO ROLE, deliberately. The setup seat exists only while an install is
-   * being finished; it wears no durable hat, and giving it one would be inventing a role
-   * nobody asked for. */
+   * The setup seat exists only while an install is being finished. Its work reading is
+   * the setup behaviour book; there is no launch-role axis to stamp. */
   seat: {
+    behaviours: ['ways:setup'],
+    // Compatibility for the fenced legacy launcher. Forms UI deletes its only reader;
+    // the session-role retirement sweep removes this key after that line lands.
     session_role: 'Atarashi',
     name: 'setup',
     prompt: 'Finish what setup still needs. Your task shelf says how: read GET /api/settei at start — needed[] is your reading list, and set is what the owner already answered; never re-ask it.',
