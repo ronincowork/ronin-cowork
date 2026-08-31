@@ -126,7 +126,7 @@ learn in order to use Ronin should cost them a second language first.
 | `ronin_services` | **Ronin Services**<!--g:glossary.ronin_services--> | One optional Routine containing the durable session record, Koshi, Voice and Hotwords. Installing Services does not switch the Routine on. |
 | `specialized_routine` | **specialized routine**<!--g:glossary.specialized_routine--> | An optional package such as Machine, gbrain or Ronin Services. |
 | `terminal` | **terminal**<!--g:glossary.terminal--> | A shell in a Ronin tile, with no Agent running in it. |
-| `bare_metal_agent` | **bare-metal Agent**<!--g:glossary.bare_metal_agent--> | A CLI started directly in a terminal: no Ronin reading, Campaign or Team defaults, Routines, work record or managed repository desk. |
+| `bare_metal_agent` | **bare-metal Agent**<!--g:glossary.bare_metal_agent--> | A CLI started directly in a terminal. It may open in a project root and carry Campaign/Team tags for placement and addressing, but receives no defaults, reading, Routines, work record, managed repository desk or Cowork birth. |
 | `cowork_agent` | **Cowork Agent**<!--g:glossary.cowork_agent--> | An Agent born with Ronin's startup floor and its Campaign and Team Routines. The normal Agent launch. |
 | `session_mandate` | **mandate**<!--g:glossary.mandate--> | Three dials, each led by Open: how far the Agent may go (discuss · plan · execute), how it may build out a Team (nobody · propose agents · staff agents), and what it hands back (a plan · ideas · code · an artifact · the team). |
 | `reach` | **Reach**<!--g:glossary.reach--> | How far an Agent may go before it checks in. |
