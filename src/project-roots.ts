@@ -390,7 +390,7 @@ async function writeCatalog(text: string, verify: (roots: ProjectRootInfo[]) => 
  * in `fields` are touched; anything else in the block — including keys this code
  * does not know about — is left exactly where the owner put it.
  */
-export async function upsertProjectRoot(name: string, fields: Partial<Record<RootField, string>>): Promise<void> {
+export async function upsertProjectRoot(name: string, fields: Partial<Record<RootField, string>>, options: { declareArrangement?: boolean } = {}): Promise<void> {
   if (!isValidRootName(name)) throw new Error(`"${name}" is not a valid handle (lowercase letters, digits, - and _).`);
   const existing = await readUserRoots();
   // The very first root on a box writes the file into existence, with a header saying
@@ -439,7 +439,7 @@ export async function upsertProjectRoot(name: string, fields: Partial<Record<Roo
   // A NEW ROOT DECLARES ITS REPOSITORY (owner, 2026-08-29): RONIN_REPO is the one gate for
   // desks, so it is written now, from the ⚙ default, instead of leaving the project
   // silently undeclared. Only on creation, only for a git repo, never over an existing file.
-  if (!found && fields.dir) {
+  if (!found && fields.dir && options.declareArrangement !== false) {
     const { declareArrangement } = await import('./desks/arrangement.js');
     const { readDesksSection } = await import('./user-config.js');
     await declareArrangement(expand(fields.dir), (await readDesksSection()).new_project).catch(() => null);

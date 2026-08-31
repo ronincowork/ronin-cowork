@@ -207,6 +207,12 @@ is shown once as exact before/after text and, on confirmation, rewritten directl
 atomically. This is not a migration: refs, desks, Teams, and running Agent instructions are
 untouched.
 
+The same form appears while adding a root. Its coordination choice is seeded from the current
+new-project default (the seam Campaign Routine resolution will replace), while its mode and
+branch suggestions remain editable before **Add**. For a Git directory the confirmed proposal
+is the file that is written; the backend does not substitute `dev`, `master`, or `main`.
+Non-Git directories remain legal project roots and receive no `RONIN_REPO`.
+
 A session that changes code works at a **repo desk** — its own branch and worktree, cut from
 its team's line (`ronin_session_boot/assignment/DESK_CONTRACT.md`; the model is the lab's
 WORKTREES buildout). Commit preserves work privately at the desk;

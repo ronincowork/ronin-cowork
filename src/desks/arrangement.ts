@@ -134,7 +134,7 @@ export async function setDesks(dir: string, desks: 'managed' | 'none'): Promise<
   return readArrangement(path.basename(dir), dir);
 }
 
-function checkedProfile(value: unknown): RepoProfile {
+export function validateArrangementProfile(value: unknown): RepoProfile {
   const p = (value && typeof value === 'object' ? value : {}) as Partial<RepoProfile>;
   if (p.mode !== 'reviewed' && p.mode !== 'direct') throw new Error('mode must be reviewed or direct.');
   if (p.desks !== 'managed' && p.desks !== 'none') throw new Error('desks must be managed or none.');
@@ -146,6 +146,16 @@ function checkedProfile(value: unknown): RepoProfile {
   return { mode: p.mode, working: p.mode === 'reviewed' ? working : '', stable, desks: p.desks };
 }
 
+/** Read-only compare used before a multi-file caller starts its surrounding catalog edit. */
+export async function assertArrangementProfileCurrent(dir: string, expected: unknown): Promise<void> {
+  const beforeExpected = expected as RepoProfile;
+  if (!beforeExpected || typeof beforeExpected !== 'object') throw new Error('The current repository profile is required.');
+  const current = await readArrangement(path.basename(dir), dir);
+  if (JSON.stringify(arrangementProfile(current)) !== JSON.stringify(beforeExpected)) {
+    throw new Error('RONIN_REPO changed after this form was opened. Reopen the editor and review the current profile.');
+  }
+}
+
 /**
  * Rewrite the owner's repository profile directly. This deliberately performs no branch,
  * desk, Agent or migration work. `expected` makes the confirmation honest if the file was
@@ -154,16 +164,11 @@ function checkedProfile(value: unknown): RepoProfile {
  */
 export async function setArrangementProfile(dir: string, proposed: unknown, expected: unknown): Promise<RepoArrangement> {
   try { await access(path.join(dir, '.git')); } catch { throw new Error(`${dir} is not a git repository — it has no repository profile`); }
-  const profile = checkedProfile(proposed);
-  const beforeExpected = expected as RepoProfile;
-  if (!beforeExpected || typeof beforeExpected !== 'object') throw new Error('The current repository profile is required.');
+  const profile = validateArrangementProfile(proposed);
   const file = path.join(dir, RONIN_REPO_FILE);
   let text: string | null = null;
   try { text = await readFile(file, 'utf8'); } catch { text = null; }
-  const current = parseArrangement(path.basename(dir), dir, text);
-  if (JSON.stringify(arrangementProfile(current)) !== JSON.stringify(beforeExpected)) {
-    throw new Error('RONIN_REPO changed after this form was opened. Reopen the editor and review the current profile.');
-  }
+  await assertArrangementProfileCurrent(dir, expected);
 
   const lines = text === null ? [] : text.split('\n');
   const set = (key: string, value: string) => {

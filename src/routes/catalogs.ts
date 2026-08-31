@@ -28,7 +28,8 @@ import {
   type RootField,
 } from '../project-roots.js';
 import { campaignFilter, campaignResolver } from '../campaign-scope.js';
-import { readArrangement, setArrangementProfile, setDesks } from '../desks/arrangement.js';
+import { assertArrangementProfileCurrent, readArrangement, setArrangementProfile, validateArrangementProfile } from '../desks/arrangement.js';
+import { readDesksSection } from '../user-config.js';
 import {
   listSavedLaunches,
   saveLaunch,
@@ -181,6 +182,7 @@ export function registerCatalogs(app: express.Express): void {
       res.json({
         roots: roots.map((r, i) => ({ ...r, facts: facts[i], arrangement: arrangements[i], sessions: counts[r.name] ?? 0 })),
         untagged,
+        new_project_desks: (await readDesksSection()).new_project,
       });
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
@@ -195,7 +197,9 @@ export function registerCatalogs(app: express.Express): void {
     try {
       // A CANDIDATE, not a root: nothing has been included yet, so it belongs to no
       // Campaign. `repoFacts` reads the directory and never the Campaign.
-      res.json(await repoFacts({ name: 'candidate', dir, remit: '', match: [], docs: [], plans: [], archived: false, campaign_id: '' }));
+      const facts = await repoFacts({ name: 'candidate', dir, remit: '', match: [], docs: [], plans: [], archived: false, campaign_id: '' });
+      const arrangement = facts.repo ? await readArrangement('candidate', facts.dir).catch(() => null) : null;
+      res.json({ ...facts, arrangement, new_project_desks: (await readDesksSection()).new_project });
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }
@@ -218,17 +222,21 @@ export function registerCatalogs(app: express.Express): void {
     if (!isValidRootName(name)) return res.status(400).json({ error: 'Handle: lowercase letters, digits, - and _.' });
     const fields = bodyFields(req.body);
     if (!fields.dir) return res.status(400).json({ error: 'A directory is required.' });
-    // THE DESKS SWITCH AT BIRTH (owner, 2026-08-29): every way a root is added passes
-    // through here, so the choice is made here — `desks: managed|none` in the body wins;
-    // absent, the ⚙ default writes the repository's RONIN_REPO (upsertProjectRoot).
-    const desks = req.body?.desks === 'managed' ? 'managed' : req.body?.desks === 'none' ? 'none' : null;
     try {
       if ((await listProjectRoots()).some((r) => r.name === name)) {
         return res.status(409).json({ error: `"${name}" is already in the catalog.` });
       }
-      await upsertProjectRoot(name, fields);
+      const facts = await repoFacts({ name, dir: fields.dir, remit: '', match: [], docs: [], plans: [], archived: false, campaign_id: '' });
+      if (facts.repo && req.body?.confirmed !== true) return res.status(400).json({ error: 'Confirm the exact repository profile before adding this repository.' });
+      if (facts.repo) {
+        validateArrangementProfile(req.body?.profile);
+        await assertArrangementProfileCurrent(facts.dir, req.body?.before);
+      }
+      await upsertProjectRoot(name, fields, { declareArrangement: false });
       const root = (await listProjectRoots()).find((r) => r.name === name);
-      const arrangement = root && desks ? await setDesks(root.dir, desks).catch(() => null) : root ? await readArrangement(root.name, root.dir).catch(() => null) : null;
+      const arrangement = root && facts.repo
+        ? await setArrangementProfile(root.dir, req.body?.profile, req.body?.before)
+        : null;
       res.json({ ok: true, arrangement });
     } catch (e) {
       res.status(400).json({ error: errMsg(e) });
