@@ -349,11 +349,11 @@ export function registerSessions(app: express.Express): void {
    *                  roster, contextual per team, never a session attribute;
    *   session_task   renamed `session_role` in the same ruling.
    */
-  for (const retired of ['session_job', 'family_role', 'session_task', 'role_family']) {
+  for (const retired of ['session_job', 'family_role', 'session_task', 'role_family', 'team_role', 'campaign_kind', 'lifecycle']) {
     app.all(`/api/sessions/:name/${retired}`, (req, res) => {
       res.status(410).json({
         error:
-          `${retired} is retired (R35, 2026-08-23). A session has ONE axis of its own — ` +
+          `${retired} is retired. A session has ONE axis of its own — ` +
           '`session_role`, what it is doing now, at ' +
           `/api/sessions/${encodeURIComponent(req.params.name)}/session_role — and its teams. ` +
           "Identity is contextual to a session's team, never a separate axis.",

@@ -7,13 +7,13 @@ import type express from 'express';
 import { listSessionReadings } from '../src/session-readings.js';
 import { registerCatalogs } from '../src/routes/catalogs.js';
 
-test('Session Readings resolves five level shapes, leaf links and per-level shadows', async () => {
+test('Session Readings resolves level shapes, leaf links and per-level shadows', async () => {
   const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-readings-test-'));
   const shelf = path.join(temp, 'shelf');
   const previous = process.env.RONIN_SESSION_BOOT_DIR;
   process.env.RONIN_SESSION_BOOT_DIR = shelf;
   try {
-    for (const dir of ['all', 'root/project', 'role/CutCode', 'team_role/development', 'gbrain_connected']) {
+    for (const dir of ['all', 'root/project', 'role/CutCode', 'gbrain_connected']) {
       await mkdir(path.join(shelf, dir), { recursive: true });
       await writeFile(path.join(shelf, dir, `${dir.replaceAll('/', '-')}.md`), `# ${dir}\n`);
     }
@@ -26,7 +26,7 @@ test('Session Readings resolves five level shapes, leaf links and per-level shad
     await symlink(path.join(temp, 'hidden-dir'), path.join(shelf, 'role', 'linked-role'));
 
     const rows = await listSessionReadings();
-    for (const level of ['all', 'root/project', 'role/CutCode', 'team_role/development', 'gbrain_connected']) {
+    for (const level of ['all', 'root/project', 'role/CutCode', 'gbrain_connected']) {
       assert.ok(rows.some((row) => row.level === level), `${level} should be represented`);
     }
     const shadow = rows.find((row) => row.name === 'all/REQUIRED_ABILITIES.md');

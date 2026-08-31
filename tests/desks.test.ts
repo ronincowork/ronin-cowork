@@ -75,7 +75,7 @@ const { casRef, revParse } = await import('../src/desks/git.js');
 const { lockDir, withLineLock, queueHolder } = await import('../src/desks/queue.js');
 const { createTeamRoster } = await import('../src/team-rosters.js');
 
-await createTeamRoster('comp', { team_role: 'development', objective: 'desks', project_root: 'cowork', repos: ['cowork', 'services'], branch: '' });
+await createTeamRoster('comp', { objective: 'desks', project_root: 'cowork', repos: ['cowork', 'services'], branch: '' });
 
 const commitFile = async (wt: string, file: string, text: string, msg = `edit ${file}`) => {
   await fs.mkdir(path.dirname(path.join(wt, file)), { recursive: true });

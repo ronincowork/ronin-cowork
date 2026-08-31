@@ -76,11 +76,11 @@ test('the session_role changes twice, and blank stays a reachable value', async 
 
 test('the letter carries a derived teams block, and a membership change refreshes it', async () => {
   await seedTegami('axes_teams', 'CutCode', { repo: '', branch: '' }, [
-    { team: 'alpha', team_role: 'development', objective: 'ship the cut' },
+    { team: 'alpha', objective: 'ship the cut' },
   ]);
   const file = tegamiPath(await sessionKey('axes_teams'));
   let block = JSON.parse((await fs.readFile(file, 'utf8')).match(/```(?:json)?\s*\n([\s\S]*?)\n```/)![1]);
-  assert.deepEqual(block.teams, [{ team: 'alpha', team_role: 'development', objective: 'ship the cut' }]);
+  assert.deepEqual(block.teams, [{ team: 'alpha', objective: 'ship the cut' }]);
 
   // Membership moved: the machinery's own write re-derives (rosters absent here, so a
   // tag-only team renders with blank role and objective — membership is real anyway).
