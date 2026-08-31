@@ -122,7 +122,7 @@ known. `⚙` = edit it in the ⚙ Configuration view unless another editor is na
 | Looking for | It lives | Known / edited |
 |---|---|---|
 | Services activation, entitlement id, masked email, terms | activation state in the config store | written by the Shiwake request and poll flow · read by ⚙; SETTEI cannot edit it |
-| gbrain on or off | `ronin.json` `gbrain.enabled` | typed · ⚙ |
+| legacy gbrain answer | `ronin.json` `gbrain.enabled` | compatibility read only; new enablement is the Campaign/Team `gbrain` Routine |
 | which services are registered | nowhere — the install's roster per read | found · `observed.ronin.services` |
 | what a selection still needs | nowhere — `needed[]` in the answer | derived · the registry's `requires` **and the want list**, judged per read; met items do not exist |
 | the owner's want list | `ronin.json` `wanted` | typed · `PUT /api/settei/wanted` · the ⚙ "add to needed" ticks — intent persists, the needed entry it produces never does |

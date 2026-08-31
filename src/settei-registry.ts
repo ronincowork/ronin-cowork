@@ -294,19 +294,16 @@ export const SETTEI_SCHEMA = {
     tools: ['gh', 'tailscale', 'chromium'],
   },
 
-  /** What a choice still needs, judged against the record per read. Services activation
-   * is not a SETTEI requirement: its own durable state machine owns request, confirmation,
-   * entitlement and install. This list contains only settings SETTEI actually owns. */
-  requires: [
-    {
-      leaf: 'gbrain',
-      applies: { kind: 'set', path: 'gbrain.enabled' },
-      met: { kind: 'service', name: 'gbrain' },
-      needs: 'the gbrain service installed',
-      how: 'the toggle is already on — install Ronin Services and gbrain registers itself',
-      met_by: 'owner',
-    },
-  ],
+  /** Routine selection owns gbrain enablement. Service presence is availability, not a
+   * second SETTEI switch, so this registry has no gbrain requirement row. */
+  requires: [] as Array<{
+    leaf: string;
+    applies: { kind: string; path?: string; name?: string };
+    met: { kind: string; path?: string; name?: string };
+    needs: string;
+    how: string;
+    met_by: 'mechanical' | 'owner' | 'agent';
+  }>,
 
   /** The seat the reading list is handed to. Every surface launches exactly this —
    * the brief itself lives on the seat's shelf (ronin_session_boot/task/Atarashi/) and

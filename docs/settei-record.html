@@ -131,7 +131,7 @@
     }                                                                 <span class="c">  key_env is a NAME. Never a key.</span>
   },
 
-  "gbrain":   { "enabled": false },                <span class="c">← PUT /api/settei/gbrain · a setting; pressing installs nothing</span>
+  "gbrain":   { "enabled": false },                <span class="c">← compatibility read only; Routine selection is the writable answer</span>
 
   "wanted":   [],                                  <span class="c">← PUT /api/settei/wanted · typed intents ("add to needed" in ⚙);</span>
                                                    <span class="c">  each is judged per read — unmet joins needed[], met produces nothing</span>
@@ -251,7 +251,7 @@
       <tr><td>projects</td><td>typed, referenced</td><td>catalogs store · POST /api/project-roots</td><td class="v"><b>S ⚙</b> (shown; edited in ▣)</td></tr>
       <tr><td>agents.sessions.default</td><td>typed</td><td>PUT /api/settei/agents</td><td class="v"><b>S ⚙</b></td></tr>
       <tr><td>agents.jobs</td><td>typed</td><td>PUT /api/settei/agents</td><td class="v"><b>S ⚙</b></td></tr>
-      <tr><td>gbrain.enabled</td><td>typed</td><td>PUT /api/settei/gbrain</td><td class="v"><b>S ⚙</b></td></tr>
+      <tr><td>gbrain.enabled</td><td>compatibility read</td><td>no writer; Campaign/Team Routine</td><td class="v"><b>S ⚙</b></td></tr>
       <tr><td>services.activation</td><td>referenced, system-owned</td><td>Shiwake request + authenticated poll</td><td class="v"><b>S ⚙</b></td></tr>
       <tr><td>setup.*</td><td>typed (by the system)</td><td>stampFreshInstall() · PUT /api/settei/setup</td><td class="v">admission rule for <b>S</b></td></tr>
       <tr><td>machine &amp; os &amp; runtime</td><td>found</td><td>DMI · os-release · process</td><td class="v"><b>S ⚙</b> as facts</td></tr>

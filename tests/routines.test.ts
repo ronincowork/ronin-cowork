@@ -10,19 +10,19 @@ const row = (name: string): RoutineRow => ({
 });
 const catalog = [row('ronin_base'), row('ronin_control'), row('machine')];
 
-test('Campaign is the base and Team states exceptions without copying the list', () => {
+test('a Team complete map replaces the Campaign map at birth', () => {
   const got = resolveRoutines(catalog, { ronin_base: true, ronin_control: true }, {
     ronin_control: false,
     machine: true,
   });
   assert.deepEqual(got.map(({ name, enabled, stated_by }) => ({ name, enabled, stated_by })), [
-    { name: 'ronin_base', enabled: true, stated_by: 'campaign' },
+    { name: 'ronin_base', enabled: false, stated_by: 'implicit_off' },
     { name: 'ronin_control', enabled: false, stated_by: 'team' },
     { name: 'machine', enabled: true, stated_by: 'team' },
   ]);
 });
 
-test('absence is inherit, then implicit off — never an invented default', () => {
+test('absence in the selected complete map is implicit off — never live inherit', () => {
   const got = resolveRoutines(catalog, {}, {});
   assert.ok(got.every((routine) => !routine.enabled && routine.stated_by === 'implicit_off'));
 });

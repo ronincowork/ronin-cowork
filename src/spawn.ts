@@ -5,7 +5,7 @@ import { mergeSessionDefaults, resolveLaunchCommand, type SessionsDefaults } fro
 import { REPO_ROOT } from './config.js';
 import { bootFiles, ensureShelf } from './session-boot.js';
 import { listProjectRoots, listSessionLaunchSpecs, USER_PROJECT_ROOTS_MD, type ProjectRootInfo } from './project-roots.js';
-import { readAgentsSection } from './user-config.js';
+import { readAgentsSection, readDesksSection } from './user-config.js';
 import { storeDir } from './stores.js';
 import { findDefinition, listRoleFamilies, listRoutines } from './definitions.js';
 import { isCreatableTeamName as isTeamName, readTeamRoster, teamRosterFile, type TeamRoster } from './team-rosters.js';
@@ -14,7 +14,9 @@ import { readCampaign } from './campaign-config.js';
 import { primaryDesk, renderDeskBlock, resolveLaunchDesks, type DeskChoice } from './launch-desks.js';
 import type { Assignment } from './desks/schema.js';
 import { mandate, type Mandate } from './agent-defaults.js';
-import { resolveRoutines, routineChoices, type ResolvedRoutine } from './routines.js';
+import { resolveRoutines, type ResolvedRoutine } from './routines.js';
+import { initialCampaignId } from './campaign-scope.js';
+import { resolveLaunchSeed } from './launch-seed.js';
 
 /**
  * The mechanical executor: a filled form in, a briefed session out.
@@ -338,13 +340,15 @@ export async function resolveForm(
   const sessionType = form.session_type ?? 'cowork_agent';
   const coworkAgent = sessionType === 'cowork_agent';
   const bareMetalAgent = sessionType === 'bare_metal_agent';
-  const [taskDef, roots, launchSpecs, agentsSet, campaign, routineCatalog] = await Promise.all([
+  const campaignId = coworkAgent ? (form.campaign_id || await initialCampaignId()) : '';
+  const [taskDef, roots, launchSpecs, agentsSet, campaign, routineCatalog, desksSet] = await Promise.all([
     findDefinition('session_roles', form.session_role ?? ''),
     listProjectRoots(),
     listSessionLaunchSpecs(),
     readAgentsSection(),
-    coworkAgent && form.campaign_id ? readCampaign(form.campaign_id) : null,
+    coworkAgent ? readCampaign(campaignId) : null,
     listRoutines(),
+    readDesksSection(),
   ]);
   // A NAMED axis that does not resolve is a refusal, never a silent blank. Blank and
   // wrong are different launches, and only one of them is what the caller asked for.
@@ -361,10 +365,22 @@ export async function resolveForm(
     throw new Error(`A team name is lowercase letters, digits, _ and - (it is also the tag): "${form.team}".`);
   }
   const roster = coworkAgent && form.team
-    ? (proposedRoster?.name === form.team ? proposedRoster : await readTeamRoster(form.team))
+    ? (proposedRoster?.name === form.team
+        ? proposedRoster
+        : await readTeamRoster(form.team, campaignId) ?? await readTeamRoster(form.team, ''))
     : null;
   // THE CASCADE, and every refusal it makes happens here — before a session exists.
   const profile = resolveLaunchProfile(taskDef);
+  const parentSeed = coworkAgent && campaign
+    ? resolveLaunchSeed({
+        campaign,
+        roster,
+        roots,
+        sessions: agentsSet.sessions as SessionsDefaults | undefined,
+        routines: routineCatalog,
+        desk: desksSet.new_project === 'none' ? 'none' : 'own',
+      })
+    : null;
 
   // PROJECT_ROOT IS REQUIRED, and omission is not a third answer: first the launch's
   // own say, then the TEAM's default (the roster is the context a team launch inherits),
@@ -530,9 +546,8 @@ export async function resolveForm(
     lifecycle: profile.lifecycle,
     desk: form.desk,
   });
-  const campaignRoutines = routineChoices(campaign?.config.agent_defaults.routines);
   const routines = agent
-    ? resolveRoutines(routineCatalog, campaignRoutines, roster?.routines ?? {})
+    ? (parentSeed?.resolved_routines ?? resolveRoutines(routineCatalog, {}, undefined))
     : [];
   const enabledRoutines = routines.filter((routine) => routine.enabled).map((routine) => routine.name);
   const enabledMacros = new Set(routines.filter((routine) => routine.enabled).flatMap((routine) => routine.macros));
@@ -543,7 +558,11 @@ export async function resolveForm(
     : [];
   const birthReading = coworkAgent && agent ? [...shelfReading, ...(form.seed ?? [])].filter(Boolean) : [];
   const resolvedMandate = coworkAgent
-    ? mandate(form.mandate ?? roster?.agent_defaults ?? campaign?.config.agent_defaults)
+    ? mandate(form.mandate ?? {
+        reach: parentSeed?.seeds.reach.value,
+        recruit: parentSeed?.seeds.recruit.value,
+        output: parentSeed?.seeds.output.value,
+      })
     : mandate(undefined);
 
   return {
@@ -564,7 +583,7 @@ export async function resolveForm(
       .filter(Boolean)
       .filter((t, i, a) => a.indexOf(t) === i)
       .slice(0, 16),
-    dial: form.dial ?? profile.dial,
+    dial: form.dial ?? (parentSeed?.seeds.dial.value as Dial | undefined) ?? profile.dial,
     lifecycle: profile.lifecycle,
     session_role: profile.session_role,
     mandate: resolvedMandate,
@@ -592,7 +611,7 @@ export async function resolveForm(
     // is free to name a path. RIREKI's decoder keys are bare binary names, and this value
     // is written into the option RIREKI reads, so it has to arrive in RIREKI's spelling.
     launchAgent: agent ? path.basename(cmd.trim().split(/\s+/)[0] ?? '') : '',
-    permissions: profile.permissions,
+    permissions: String(parentSeed?.seeds.permissions.value ?? profile.permissions),
     ack: profile.ack,
     opening: profile.opening,
     posture: profile.posture,
@@ -614,18 +633,18 @@ export async function resolveForm(
       lifecycle: profile.stated_by.lifecycle,
       session_type: explicit,
       session_role: form.session_role !== undefined ? explicit : profile.stated_by.session_role,
-      mandate: form.mandate ? explicit : roster ? rosterSource : campaign
-        ? [{ layer: 'system', source: `#/campaign (${campaign.id}: agent_defaults)` }]
-        : system,
+      mandate: form.mandate ? explicit : parentSeed?.seeds.reach.stated_by ?? (campaign
+        ? [{ layer: 'campaign', source: `#/campaign (${campaign.id}: agent_defaults)` }]
+        : system),
       team: form.team ? explicit : system,
       project_root: rootSource,
-      dial: form.dial !== undefined ? explicit : profile.stated_by.dial,
+      dial: form.dial !== undefined ? explicit : parentSeed?.seeds.dial.stated_by ?? profile.stated_by.dial,
       brief: unique(explicit, profile.stated_by.opening, roster ? rosterSource : [], rootSource),
       agent: profile.stated_by.agent,
       capExempt: profile.stated_by.capExempt,
       mcp: mcpSource,
       launchAgent: cmdSource,
-      permissions: profile.stated_by.permissions,
+      permissions: parentSeed?.seeds.permissions.stated_by ?? profile.stated_by.permissions,
       ack: profile.stated_by.ack,
       opening: profile.stated_by.opening,
       posture: profile.stated_by.posture,
@@ -637,10 +656,7 @@ export async function resolveForm(
       team_wipeboard: rosterSource,
       team_state: rosterSource,
       birth_reading: unique(system, form.seed?.length ? explicit : []),
-      routines: unique(
-        campaign ? [{ layer: 'system', source: `#/campaign (${campaign.id}: agent_defaults.routines)` }] : system,
-        roster && Object.keys(roster.routines).length ? rosterSource : [],
-      ),
+      routines: parentSeed?.routines.flatMap((routine) => routine.stated_by) ?? system,
     },
   };
 }
