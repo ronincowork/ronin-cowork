@@ -38,12 +38,13 @@ import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { storeDir } from './stores.js';
 import { readSection } from './user-config.js';
+import { agentDefaults, type AgentDefaults } from './agent-defaults.js';
 
 /** The typed bucket — a Campaign's own defaults, never a dump of all SETTEI. The three
  *  sub-buckets are the plan's, and they are the whole vocabulary: a fourth is a plan
  *  change, not a field somebody adds in passing. Nothing reads them yet, by design. */
 export interface CampaignSettings {
-  agent_defaults: Record<string, unknown>;
+  agent_defaults: AgentDefaults;
   cowork_defaults: Record<string, unknown>;
   template_defaults: Record<string, unknown>;
 }
@@ -88,7 +89,11 @@ export interface CampaignEdit {
   desk_profile?: string;
   desk?: Partial<CampaignDeskSettings>;
   state?: CampaignState;
-  config?: Partial<CampaignSettings>;
+  config?: {
+    agent_defaults?: Partial<AgentDefaults>;
+    cowork_defaults?: Record<string, unknown>;
+    template_defaults?: Record<string, unknown>;
+  };
 }
 
 const dir = (): string => storeDir('campaigns');
@@ -155,7 +160,7 @@ const bucket = (v: unknown): Record<string, unknown> =>
 const settings = (v: unknown): CampaignSettings => {
   const c = bucket(v);
   return {
-    agent_defaults: bucket(c.agent_defaults),
+    agent_defaults: agentDefaults(c.agent_defaults),
     cowork_defaults: bucket(c.cowork_defaults),
     template_defaults: bucket(c.template_defaults),
   };
@@ -345,7 +350,7 @@ export async function writeCampaign(id: string, edit: CampaignEdit): Promise<Cam
       ? {
           config: {
             agent_defaults: edit.config.agent_defaults === undefined
-              ? existing.config.agent_defaults : bucket(edit.config.agent_defaults),
+              ? existing.config.agent_defaults : agentDefaults(edit.config.agent_defaults),
             cowork_defaults: edit.config.cowork_defaults === undefined
               ? existing.config.cowork_defaults : bucket(edit.config.cowork_defaults),
             template_defaults: edit.config.template_defaults === undefined
