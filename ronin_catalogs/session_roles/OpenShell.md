@@ -23,4 +23,3 @@ Loose by design: it launches with a blank `role_family`.
 - **agent:** none
 - **match:** —
 - **dial:** user
-- **lifecycle:** none

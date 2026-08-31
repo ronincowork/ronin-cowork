@@ -37,7 +37,6 @@ test('absence inherits from the system, and a stated field wins', async () => {
   const p = resolveLaunchProfile(task);
   assert.equal(p.dial, 'read', 'the definition states dial, so it wins');
   assert.equal(p.permissions, 'default', 'silence falls through to the system');
-  assert.equal(p.lifecycle, '', 'nothing states it, and the system says none');
 });
 
 test('a definition has no model to state, and the resolver has none to report', () => {
@@ -111,9 +110,6 @@ test('`dir:` takes the install sentinel and nothing else', () => {
 test('cap and the remaining constants resolve like everything else', () => {
   assert.equal(resolveLaunchProfile(def('MikaAssist', { cap: 'exempt' })).capExempt, true);
   assert.equal(resolveLaunchProfile(undefined).capExempt, false);
-  // `lifecycle: none` is how a definition says "no michi", and it resolves to blank
-  // rather than to the literal word.
-  assert.equal(resolveLaunchProfile(def('t', { lifecycle: 'none' })).lifecycle, '');
   assert.equal(resolveLaunchProfile(def('t', { ack: 'yes' })).ack, true);
   assert.equal(resolveLaunchProfile(def('t', { ack: 'no' })).ack, false);
 });

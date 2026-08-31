@@ -25,20 +25,17 @@
 import type { Assignment, RepoDesk } from './desks/schema.js';
 import { deriveAssignment } from './desks/registry.js';
 
-/** The lifecycles that change code, and so get a desk: a plan, a review, a chat do not. */
-export const DESK_LIFECYCLES: ReadonlySet<string> = new Set(['coding', 'debug']);
-
-/** The launch box's one control, pre-answered: `own` forces a desk, `none` refuses one, absent = by lifecycle. */
+/** The launch box's one control, pre-answered: `own` forces a desk, `none` refuses one, absent = by Control. */
 export type DeskChoice = 'own' | 'none';
 
 /**
  * Whether THIS launch wants desks at all. A plain terminal has no agent to brief.
  */
-export function wantsDesk(input: { agent: boolean; lifecycle: string; desk?: DeskChoice }): boolean {
+export function wantsDesk(input: { agent: boolean; control: boolean; desk?: DeskChoice }): boolean {
   if (!input.agent) return false;
   if (input.desk === 'none') return false;
   if (input.desk === 'own') return true;
-  return DESK_LIFECYCLES.has(input.lifecycle);
+  return input.control;
 }
 
 /**
@@ -50,7 +47,7 @@ export async function resolveLaunchDesks(input: {
   team: string;
   project_root: string;
   agent: boolean;
-  lifecycle: string;
+  control: boolean;
   desk?: DeskChoice;
 }): Promise<Assignment | null> {
   if (!wantsDesk(input)) return null;

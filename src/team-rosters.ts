@@ -25,6 +25,12 @@ import path from 'node:path';
 import { entryValue, isKeyLine } from './catalog.js';
 import { storeDir } from './stores.js';
 import { teamAgentDefaults, type TeamAgentDefaults } from './agent-defaults.js';
+import { completeRoutineChoices } from './routines.js';
+
+async function completeRoutines(value: unknown): Promise<Record<string, boolean>> {
+  const { listRoutines } = await import('./definitions.js');
+  return completeRoutineChoices(await listRoutines(), value);
+}
 
 export type TeamKind = 'open' | 'coding' | 'work' | 'personal' | 'household' | 'social' | 'school';
 export interface TeamBehaviours { books: string[]; required: boolean }
@@ -345,7 +351,7 @@ export async function createTeamRoster(name: string, edit: RosterEdit, campaign_
     wipeboard: edit.wipeboard || (await freeBoardToken(name, campaign_id)),
     state: edit.state ?? 'active',
     references: edit.references ?? [],
-    routines: edit.routines ?? {},
+    routines: await completeRoutines(edit.routines),
     behaviours: edit.behaviours ?? { books: [], required: false },
     agent_defaults: teamAgentDefaults(edit.agent_defaults),
   };
@@ -371,14 +377,17 @@ export async function writeTeamRoster(name: string, edit: RosterEdit, campaign_i
   const where = existing.campaign_id;
   let raw = await readFile(teamRosterFile(name, where), 'utf8');
   const lines = raw.split('\n');
+  const normalizedEdit: RosterEdit = edit.routines === undefined
+    ? edit
+    : { ...edit, routines: await completeRoutines(edit.routines) };
   const merged: TeamRoster = {
     ...existing,
-    ...Object.fromEntries(KEYS.filter((k) => edit[k] !== undefined).map((k) => [k, edit[k]])),
+    ...Object.fromEntries(KEYS.filter((k) => normalizedEdit[k] !== undefined).map((k) => [k, normalizedEdit[k]])),
   } as TeamRoster;
   for (const k of KEYS) {
-    if (edit[k] === undefined) continue;
+    if (normalizedEdit[k] === undefined) continue;
     const nested = ['references', 'routines', 'behaviours', 'agent_defaults'].includes(k);
-    const v = nested ? JSON.stringify(edit[k]) : String(edit[k] ?? '');
+    const v = nested ? JSON.stringify(normalizedEdit[k]) : String(normalizedEdit[k] ?? '');
     const lineText = `- **${k}:** ${v || BLANK}`;
     const at = lines.findIndex((l) => new RegExp(`^-\\s*\\*\\*${k}:\\*\\*`).test(l.trim()));
     if (at === -1) {

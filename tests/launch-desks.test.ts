@@ -11,7 +11,7 @@ import assert from 'node:assert/strict';
 import os from 'node:os';
 import path from 'node:path';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
-import { DESK_LIFECYCLES, renderDeskBlock, resolveLaunchDesks, wantsDesk } from '../src/launch-desks.js';
+import { renderDeskBlock, resolveLaunchDesks, wantsDesk } from '../src/launch-desks.js';
 import { buildBrief, type SpawnForm } from '../src/spawn.js';
 import { bootFiles } from '../src/session-boot.js';
 import type { LaunchProfile } from '../src/launch-profile.js';
@@ -31,26 +31,24 @@ const assignment: Assignment = {
 
 const profile = { session_role: 'CutCode', label: 'cut code', posture: [], opening: '{prompt}', ack: false, agent: true } as LaunchProfile;
 
-test('an agent launch that changes code wants a desk — there is no install switch', () => {
-  for (const lifecycle of DESK_LIFECYCLES) assert.equal(wantsDesk({ agent: true, lifecycle }), true, lifecycle);
-  for (const lifecycle of ['designing', 'review', 'orchestrating', 'none', '']) {
-    assert.equal(wantsDesk({ agent: true, lifecycle }), false, `${lifecycle || 'blank'} changes no code`);
-  }
+test('a Cowork Agent wants a desk when resolved Ronin Control is on', () => {
+  assert.equal(wantsDesk({ agent: true, control: true }), true);
+  assert.equal(wantsDesk({ agent: true, control: false }), false);
   // A plain terminal has no agent to brief.
-  assert.equal(wantsDesk({ agent: false, lifecycle: 'coding', desk: 'own' }), false);
+  assert.equal(wantsDesk({ agent: false, control: true, desk: 'own' }), false);
   // The launch box's one control, either way.
-  assert.equal(wantsDesk({ agent: true, lifecycle: 'review', desk: 'own' }), true);
-  assert.equal(wantsDesk({ agent: true, lifecycle: 'coding', desk: 'none' }), false);
+  assert.equal(wantsDesk({ agent: true, control: false, desk: 'own' }), true);
+  assert.equal(wantsDesk({ agent: true, control: true, desk: 'none' }), false);
 });
 
 test('a launch that wants no desk resolves null without touching any registry', async () => {
-  const a = await resolveLaunchDesks({ session: 'x', team: '', project_root: 'nowhere', agent: true, lifecycle: 'review' });
+  const a = await resolveLaunchDesks({ session: 'x', team: '', project_root: 'nowhere', agent: true, control: false });
   assert.equal(a, null);
 });
 
 test('a coding launch on a repository with no RONIN_REPO resolves null — the file is the gate', async () => {
   // `nowhere` is no project_root on this box, so its arrangement is absent → no desk.
-  const a = await resolveLaunchDesks({ session: 'x', team: '', project_root: 'nowhere', agent: true, lifecycle: 'coding' });
+  const a = await resolveLaunchDesks({ session: 'x', team: '', project_root: 'nowhere', agent: true, control: true });
   assert.equal(a, null);
 });
 

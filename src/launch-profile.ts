@@ -19,7 +19,7 @@
  *
  * FOUR CLASSES OF FIELD, and every field is exactly one of them:
  *
- *   CASCADING    dial · permissions · lifecycle · mcp · cap · agent · dir ·
+ *   CASCADING    dial · permissions · mcp · cap · agent · dir ·
  *                ack · opening. The last layer to state it wins.
  *
  *   ADDITIVE     the boot shelf's `role/<session_role>/` reading level
@@ -71,7 +71,6 @@ export interface StatedBy {
 const SYSTEM: Record<string, string> = {
   dial: 'write',
   permissions: 'default',
-  lifecycle: '',
   ack: '',
   opening: '{prompt}',
   agent: '',
@@ -93,7 +92,6 @@ export interface LaunchProfile {
   agent: boolean;
   dial: Dial;
   permissions: string;
-  lifecycle: string;
   /** Report understanding and wait, rather than starting work. */
   ack: boolean;
   /** First-message template; `{prompt}` is what the owner typed. */
@@ -202,10 +200,6 @@ export function resolveLaunchProfile(task: Definition | undefined): LaunchProfil
     agent,
     dial: (dial === 'user' || dial === 'read' ? dial : 'write') as Dial,
     permissions: agent ? pick(layers, 'permissions') || 'default' : '',
-    lifecycle: (() => {
-      const v = pick(layers, 'lifecycle');
-      return v && v !== 'none' ? v : '';
-    })(),
     ack: agent ? /^y/i.test(pick(layers, 'ack')) : false,
     opening: agent ? pick(layers, 'opening') : '',
     posture: agent ? posture : [],
@@ -223,7 +217,6 @@ export function resolveLaunchProfile(task: Definition | undefined): LaunchProfil
       agent: sourceOf(layers, 'agent'),
       dial: sourceOf(layers, 'dial'),
       permissions: sourceOf(layers, 'permissions'),
-      lifecycle: sourceOf(layers, 'lifecycle'),
       ack: sourceOf(layers, 'ack'),
       opening: sourceOf(layers, 'opening'),
       posture: task?.has('posture')
