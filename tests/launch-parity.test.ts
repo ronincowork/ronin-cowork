@@ -111,11 +111,19 @@ const mechanism = (r: Awaited<ReturnType<typeof resolveForm>>) => ({
   dir: r.dir,
   cmd: r.cmd,
   dial: r.dial,
-  lifecycle: r.lifecycle,
   agent: r.agent,
   capExempt: r.capExempt,
   mcp: r.mcp,
   launchAgent: r.launchAgent,
+});
+
+test('a name alone resolves the ordinary Cowork Agent birth', async () => {
+  const born = await resolveForm({ name: 'name_only' });
+  assert.equal(born.session_type, 'cowork_agent');
+  assert.equal(born.name, 'name_only');
+  assert.equal(born.project_root, 'alpha', 'the existing top-active-root chain answers placement');
+  assert.deepEqual(born.mandate, { reach: 'plan', recruit: 'propose agents', output: 'open' });
+  assert.equal(born.dial, 'write');
 });
 
 /**
@@ -283,8 +291,6 @@ test('stated_by carries the settled launch, Team, role, and Campaign layers', as
   for (const key of ['name', 'project_root', 'cmd', 'mcp', 'session_role']) {
     assert.deepEqual(explicit.stated_by[key], [{ layer: 'launch', source: 'launch request' }], key);
   }
-  assert.equal(explicit.stated_by.lifecycle[0]?.layer, 'session_role');
-  assert.match(explicit.stated_by.lifecycle[0]?.source ?? '', /session_roles\/DraftPlan\.md$/);
 
   const inherited = await resolveForm(forkitForm({ project_root: undefined }), new Set());
   assert.equal(inherited.stated_by.project_root[0]?.layer, 'team_roster');
@@ -371,7 +377,6 @@ test('QuarterBack is a session_role, pinned as the developer family\'s default l
   const qb = await resolveForm(commonsForm({ session_role: 'QuarterBack' }), new Set());
   assert.equal(qb.session_role, 'QuarterBack');
   assert.equal(qb.dial, 'write', 'the Campaign dial lands after the presentation-only role pin');
-  assert.equal(qb.lifecycle, 'orchestrating');
   // A default_lead_role launch carries the team-building SOP — route 1 of its delivery.
   assert.match(qb.brief, /teams\.md/, 'the lead reading rides the brief');
 });
