@@ -492,6 +492,9 @@ export function buildLauncher(tile, host) {
     const r = await request('/api/launch', {
       method: 'POST',
       json: {
+        // Compatibility until FORMS_UI retires this launcher: the route never infers
+        // birth type from session_role, team, or agent-shaped fields.
+        session_type: 'cowork_agent',
         // THE AXIS. The family the button sat under is presentation and is not sent —
         // a launch is a session_role (and optionally a team), nothing else (R35).
         session_role: pick.task?.name ?? '',
