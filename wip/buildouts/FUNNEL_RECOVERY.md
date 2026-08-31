@@ -1,6 +1,10 @@
 # Dirty funnel recovery — root cause and build-out recommendation
 
-Status: design for owner review; no implementation has begun.
+Status: safety design accepted and focused implementation in progress. Project Root profile
+editing is implemented and handed in. Dirty-funnel diagnosis, preservation, guarded cleanup,
+promotion linkage, recovery CLI, and wrong-user diagnostics are implemented on the team desk
+and under focused test; owner-facing UI status/actions and automatic retry receipt linkage
+remain follow-on work.
 
 ## Incident finding
 

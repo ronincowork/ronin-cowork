@@ -21,6 +21,10 @@ import { listProjectRoots, repoFacts } from '../project-roots.js';
 import { deriveDesk, fromStatus, locatorFrom, rollup, type DeskRollup, type DeskState, type LocateRepo } from '../desk-state.js';
 import { listDesks } from '../desks/registry.js';
 import { blockingReceipt, lastGoodPromotion, summarize } from '../promotion/receipts.js';
+import { clearFunnel, diagnoseFunnel, listFunnelReceipts, preserveFunnel, readFunnelReceipt } from '../promotion/funnel-recovery.js';
+import { readTeamRoster } from '../team-rosters.js';
+import { readArrangement } from '../desks/arrangement.js';
+import { teamLineBranch } from '../desks/schema.js';
 import { readRepos } from '../tegami.js';
 import { isValidName, listSessions, sessionExists } from '../tmux.js';
 
@@ -75,6 +79,45 @@ async function allDesks(): Promise<Record<string, SessionDesks>> {
 }
 
 export function registerDesks(app: express.Express): void {
+  // The owner-facing half of dirty-funnel recovery. These routes use the same receipt
+  // transaction as the Agent CLI; callers never send paths, refs, or Git commands.
+  app.get('/api/funnel-recovery', async (_req, res) => {
+    try { res.json(await listFunnelReceipts()); }
+    catch (e) { res.status(500).json({ error: String((e as Error)?.message ?? e) }); }
+  });
+
+  app.get('/api/funnel-recovery/:id', async (req, res) => {
+    try {
+      const r = await readFunnelReceipt(req.params.id);
+      if (!r) return res.status(404).json({ error: 'No such funnel recovery receipt.' });
+      res.json(r);
+    } catch (e) { res.status(500).json({ error: String((e as Error)?.message ?? e) }); }
+  });
+
+  app.post('/api/teams/:name/funnel/:repo/diagnose', async (req, res) => {
+    try {
+      const roster = await readTeamRoster(req.params.name);
+      if (!roster) return res.status(404).json({ error: 'No such team.' });
+      const root = (await listProjectRoots()).find((x) => x.name === req.params.repo);
+      if (!root) return res.status(404).json({ error: 'No such project root.' });
+      const names = roster.repos.length ? roster.repos : roster.project_root ? [roster.project_root] : [];
+      if (!names.includes(root.name)) return res.status(400).json({ error: 'That repository is not assigned to this team.' });
+      const arr = await readArrangement(root.name, root.dir);
+      if (arr.mode !== 'reviewed') return res.status(400).json({ error: 'Direct repositories have no reviewed funnel.' });
+      res.json(await diagnoseFunnel({ repo: root.name, dir: root.dir, line: roster.branch || teamLineBranch(req.params.name), target: arr.working }, String(req.body?.by ?? 'owner')));
+    } catch (e) { res.status(500).json({ error: String((e as Error)?.message ?? e) }); }
+  });
+
+  app.post('/api/funnel-recovery/:id/preserve', async (req, res) => {
+    try { const r = await preserveFunnel(req.params.id); res.status(r.state === 'preserved' ? 200 : 409).json(r); }
+    catch (e) { res.status(409).json({ error: String((e as Error)?.message ?? e) }); }
+  });
+
+  app.post('/api/funnel-recovery/:id/clear', async (req, res) => {
+    try { const r = await clearFunnel(req.params.id); res.status(r.state === 'clean' ? 200 : 409).json(r); }
+    catch (e) { res.status(409).json({ error: String((e as Error)?.message ?? e) }); }
+  });
+
   app.get('/api/desks', async (_req, res) => {
     try {
       if (!memo || Date.now() - memo.at > MEMO_MS) memo = { at: Date.now(), value: allDesks() };
