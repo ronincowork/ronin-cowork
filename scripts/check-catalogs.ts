@@ -191,6 +191,7 @@ async function definitionsResolve(): Promise<void> {
  * and no behavior may silently belong to two stock Routines. */
 async function routinesResolve(): Promise<void> {
   const routines = await listRoutines();
+  const routineNames = new Set(routines.map((routine) => routine.name));
   const [macros, actionsRaw, toolsRaw] = await Promise.all([
     listMacros(),
     readFile(path.join(STOCK_DIR, 'ACTIONS.md'), 'utf8'),
@@ -207,6 +208,14 @@ async function routinesResolve(): Promise<void> {
   const owners = new Map<string, string>();
   for (const routine of routines.filter((x) => x.origin === 'stock')) {
     if (!routine.blurb.trim()) fail(`routines/${routine.name}.md: missing blurb`);
+    for (const dependency of routine.requires) {
+      if (!routineNames.has(dependency)) fail(`routines/${routine.name}.md: requires missing "${dependency}"`);
+      if (dependency === routine.name) fail(`routines/${routine.name}.md: requires itself`);
+    }
+    for (const reading of routine.reading.filter((name) => name.startsWith('routine/'))) {
+      try { await stat(path.join(REPO, 'ronin_session_boot', reading)); }
+      catch { fail(`routines/${routine.name}.md: reading names missing "${reading}"`); }
+    }
     for (const field of ['macros', 'actions', 'tools'] as const) {
       for (const name of routine[field]) {
         if (!known[field].has(name)) fail(`routines/${routine.name}.md: ${field} names missing "${name}"`);
@@ -225,6 +234,18 @@ async function routinesResolve(): Promise<void> {
       else owners.set(key, routine.name);
     }
   }
+  // A cycle has no additive direction and makes provenance depend on traversal order.
+  const visit = (name: string, path: string[]) => {
+    const at = path.indexOf(name);
+    if (at !== -1) {
+      fail(`routines: requires cycle ${[...path.slice(at), name].join(' -> ')}`);
+      return;
+    }
+    const routine = routines.find((item) => item.name === name);
+    if (!routine) return;
+    for (const dependency of routine.requires) visit(dependency, [...path, name]);
+  };
+  for (const routine of routines) visit(routine.name, []);
 }
 
 const FILES = ['MACROS.md', 'ACTIONS.md', 'TOOLS.md', 'PROJECT_ROOTS.md'];

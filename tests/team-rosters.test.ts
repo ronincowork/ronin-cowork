@@ -31,11 +31,13 @@ test('create → read → list: a zero-member team is a real, openable record', 
     project_root: 'ronin-cowork',
     repos: ['ronin-cowork', 'ronin-services'],
     branch: 'dev',
+    routines: { ronin_base: true, ronin_control: false },
   });
   assert.equal(r.team_role, 'development');
   assert.equal(r.title, 'Alpha');
   assert.equal(r.wipeboard, 'alpha', 'the board defaults to the team’s own token');
   assert.equal(r.state, 'active');
+  assert.deepEqual(r.routines, { ronin_base: true, ronin_control: false });
 
   const back = await readTeamRoster('alpha');
   assert.deepEqual(back, r);
@@ -58,6 +60,7 @@ test('a blank field is written as "—" and reads back as the blank it stands fo
   assert.equal(r.project_root, '', 'an untouched blank stays blank after an edit');
   assert.equal(r.team_role, '');
   assert.deepEqual(r.repos, []);
+  assert.deepEqual(r.routines, {});
   assert.equal(r.branch, 'dev');
   const cleared = await writeTeamRoster('bare', { objective: '' });
   assert.equal(cleared.objective, '', 'clearing a field is blank on read-back, not "—"');

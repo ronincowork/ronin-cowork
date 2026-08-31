@@ -120,10 +120,11 @@ learn in order to use Ronin should cost them a second language first.
 | `desk_profile` | **desk profile**<!--g:glossary.desk_profile--> | Your standing defaults for the surfaces you work at — the skin, the words, the kind of campaign the board opens on, how the Team page is arranged. Not a skin; it has one. |
 | `behaviour` | **behaviour**<!--g:glossary.behaviour--> | Anything you can hand a session to change what it does — an SOP, a doc, a tool, a macro, a memory. Inert on the shelf; handed over, it makes the session right for the situation. |
 | `routine` | **routine**<!--g:glossary.routine--> | Reading, SOPs, macros and tools that work together, with one switch. Campaign defaults reach every new Agent; a Team may inherit or override them. Nothing already running changes. |
-| `routine_floor` | *(no user word)* | The mandatory birth machinery beneath every Cowork Agent. It reaches neither a terminal nor a bare-metal Agent. |
-| `ronin_base` | **Ronin Base**<!--g:glossary.ronin_base--> | Ronin's ordinary macros, documents, work records and session coordination. Normally on, independently switchable. |
-| `ronin_control` | **Ronin Control**<!--g:glossary.ronin_control--> | Managed desks, hand-in, team promotion, receipts and Git guards. A separate Routine from Ronin Base. |
-| `specialized_routine` | **specialized routine**<!--g:glossary.specialized_routine--> | An optional package such as Machine, gbrain, Koshi or Ronin Koe. Ronin Koe includes both Voice and Hotwords. |
+| `routine_floor` | **Cowork floor**<!--g:glossary.routine_floor--> | The minimal launch, identity and Routine-delivery machinery included beneath every Cowork Agent. It reaches neither a terminal nor a bare-metal Agent. |
+| `ronin_base` | **Ronin Base**<!--g:glossary.ronin_base--> | Ronin's ordinary macros, documents, work records and session coordination. Normally on; Services and managed file coordination add it when selected. |
+| `ronin_control` | **managed file coordination**<!--g:glossary.ronin_control--> | Managed worktrees, hand-in, lead integration, receipts and Git safeguards that help parallel Agents avoid file collisions. Selecting it includes Ronin Base but not optional Ronin Services; it coordinates files, not Agent authority. |
+| `ronin_services` | **Ronin Services**<!--g:glossary.ronin_services--> | One optional Routine containing the durable session record, Koshi, Voice and Hotwords. Selecting it includes Ronin Base. Installing Services does not switch the Routine on. |
+| `specialized_routine` | **specialized routine**<!--g:glossary.specialized_routine--> | An optional package such as Machine, gbrain or Ronin Services. |
 | `terminal` | **terminal**<!--g:glossary.terminal--> | A shell in a Ronin tile, with no Agent running in it. |
 | `bare_metal_agent` | **bare-metal Agent**<!--g:glossary.bare_metal_agent--> | A CLI started directly in a terminal: no Ronin reading, Campaign or Team defaults, Routines, work record or managed repository desk. |
 | `cowork_agent` | **Cowork Agent**<!--g:glossary.cowork_agent--> | An Agent born with Ronin's startup floor and its Campaign and Team Routines. The normal Agent launch. |

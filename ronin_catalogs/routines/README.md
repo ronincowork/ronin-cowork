@@ -18,6 +18,7 @@ Routine definition.
 - **actions:** name, ...
 - **tools:** bare-command, ...
 - **mcp:** connection-name, ...
+- **requires:** routine-name, ...
 - **order:** 10
 ```
 
@@ -29,6 +30,10 @@ flags embedded in Markdown.
 Every referenced stock item must exist. The manifest owns membership: do not also add a
 `routine:` field to each macro or tool. Campaign and Team configuration store only their
 on/off choices.
+
+`requires` expresses the additive Routine progression, never a list of component-level
+dependencies. Selecting a Routine also selects every Routine it requires. Ronin Control
+requires Ronin Base; it does not require optional Ronin Services.
 
 An unavailable enabled Routine never refuses birth. Its available result is empty or
 partial as the adapter reports, and the birth receipt names what was not delivered.

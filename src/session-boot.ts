@@ -83,7 +83,7 @@ const STOCK = path.join(__dirname, '..', 'ronin_session_boot');
 const SESSION_MACROS_TEMPLATE = path.join(STOCK, 'SESSION_MACROS.md');
 
 /** The levels, in reading order. `root`, `role` and `team_role` take the launch's own value. */
-export type Level = 'all' | 'root' | 'role' | 'team_role' | 'assignment';
+export type Level = 'all' | 'root' | 'role' | 'team_role' | 'routine' | 'assignment';
 
 const userShelf = () => storeDir('session_boot');
 
@@ -97,10 +97,10 @@ const userShelf = () => storeDir('session_boot');
  */
 /** The live macro reading as text. Exported for the read-only shelf inventory so the UI
  * shows the same resolved document without creating or exposing the disposable cache. */
-export async function renderSessionMacrosReading(): Promise<string> {
+export async function renderSessionMacrosReading(allowed?: ReadonlySet<string>): Promise<string> {
   const [template, active] = await Promise.all([
     readFile(SESSION_MACROS_TEMPLATE, 'utf8'),
-    listMacros().then((macros) => macros.filter((macro) => macro.preview)),
+    listMacros().then((macros) => macros.filter((macro) => macro.preview && (!allowed || allowed.has(macro.name)))),
   ]);
   const rendered = active.length
     ? active
@@ -170,9 +170,9 @@ async function glossaryReading(templatePath: string): Promise<string> {
   return target;
 }
 
-async function sessionMacrosReading(): Promise<string> {
-  const text = await renderSessionMacrosReading();
-  const dir = storeDir('session_boot_cache');
+async function sessionMacrosReading(allowed?: ReadonlySet<string>, session = ''): Promise<string> {
+  const text = await renderSessionMacrosReading(allowed);
+  const dir = session ? path.join(storeDir('session_boot_cache'), 'sessions', session) : storeDir('session_boot_cache');
   const target = path.join(dir, 'SESSION_MACROS.md');
   // Several sessions may be born together. A shared `.tmp` name lets one rename the
   // other's file out from under it; unique writers may safely race, with the last complete
@@ -205,6 +205,7 @@ export async function ensureShelf(roots: string[] = []): Promise<void> {
     path.join(base, 'root'),
     path.join(base, 'role'),
     path.join(base, 'team_role'),
+    path.join(base, 'routine'),
     path.join(base, 'assignment'),
     ...roots.map((r) => path.join(base, 'root', r)),
   ];
@@ -283,6 +284,9 @@ export async function bootFiles(
   teamRole: string,
   mcpOn = true,
   assigned = false,
+  routines: string[] = [],
+  routineMacros?: ReadonlySet<string>,
+  session = '',
 ): Promise<string[]> {
   const user = userShelf();
   const dirs: string[] = [path.join(STOCK, 'all'), path.join(user, 'all')];
@@ -294,6 +298,10 @@ export async function bootFiles(
   // A blank axis contributes NOTHING rather than contributing an empty level.
   if (sessionRole) dirs.push(path.join(STOCK, 'role', sessionRole), path.join(user, 'role', sessionRole));
   if (teamRole) dirs.push(path.join(STOCK, 'team_role', teamRole), path.join(user, 'team_role', teamRole));
+  // Routine reading is additive and comes only from the effective birth answer.
+  for (const routine of routines) {
+    dirs.push(path.join(STOCK, 'routine', routine), path.join(user, 'routine', routine));
+  }
   // The desk contract rides only a launch that actually resolved desks — a launch fact,
   // so it cannot be an axis folder; it is on or off, and off contributes nothing.
   if (assigned) dirs.push(path.join(STOCK, 'assignment'), path.join(user, 'assignment'));
@@ -301,7 +309,7 @@ export async function bootFiles(
   const byName = new Map<string, string>();
   for (const dir of dirs) for (const f of await filesIn(dir)) byName.set(path.basename(f), f);
   // Generated last, so the live catalog's macro reading is always the file handed over.
-  byName.set('SESSION_MACROS.md', await sessionMacrosReading());
+  byName.set('SESSION_MACROS.md', await sessionMacrosReading(routineMacros, session));
   // The glossary is rendered from whichever copy won (stock, or the owner's shadow of it)
   // with the active desk profile's words — KOKUGO, 2026-08-27.
   const glossary = byName.get('KOTOBA_GLOSSARY.md');

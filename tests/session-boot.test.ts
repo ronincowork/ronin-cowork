@@ -83,6 +83,45 @@ test('every assisted session is handed the required abilities', async () => {
   }
 });
 
+test('accepted Routine reading drafts keep universal compatibility teaching', async () => {
+  const repo = path.join(path.dirname(new URL(import.meta.url).pathname), '..');
+  const [required, protocols, base, services, control, machine, machineProtocols] = await Promise.all([
+    readFile(path.join(repo, 'ronin_session_boot', 'all', 'REQUIRED_ABILITIES.md'), 'utf8'),
+    readFile(path.join(repo, 'ronin_session_boot', 'all', 'TEST_PROTOCOLS.md'), 'utf8'),
+    readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_base', 'BASE_ABILITIES.md'), 'utf8'),
+    readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_services', 'SERVICES_ABILITIES.md'), 'utf8'),
+    readFile(path.join(repo, 'ronin_session_boot', 'routine', 'ronin_control', 'CONTROL_TEST_PROTOCOLS.md'), 'utf8'),
+    readFile(path.join(repo, 'ronin_session_boot', 'routine', 'machine', 'MACHINE_ABILITIES.md'), 'utf8'),
+    readFile(path.join(repo, 'ronin_session_boot', 'routine', 'machine', 'MACHINE_TEST_PROTOCOLS.md'), 'utf8'),
+  ]);
+
+  assert.match(base, /tejun forkit/);
+  assert.match(base, /read_tegami/);
+  assert.match(base, /tejun-wipeboard/);
+  assert.doesNotMatch(base, /tejun-rireki/);
+  assert.match(services, /Ronin Services is one additional Routine/);
+  assert.match(services, /tejun-rireki <session> since/);
+  assert.match(services, /Koshi is Ronin's assisted administrative behavior/);
+  assert.match(services, /Voice turns the owner's speech into text/);
+  assert.match(services, /Hotwords are the owner's dictation glossary/);
+  assert.match(services, /Selection is not installation/);
+  assert.match(services, /none is a separate Routine or switch/i);
+  assert.match(control, /team promotion/i);
+  assert.match(control, /one full repository BYOIN/i);
+  assert.match(machine, /tejun-survey/);
+  assert.match(machine, /bin\/ronin-store --all/);
+  assert.match(machineProtocols, /installed third-party-box maintenance/);
+
+  // Compatibility stays universal until effective-Routine startup reading is delivered.
+  assert.match(required, /tejun forkit/);
+  assert.match(required, /tejun-wipeboard/);
+  assert.match(required, /tejun-survey/);
+  assert.match(protocols, /team promotion/i);
+  assert.match(protocols, /one full[\s\S]*repository BYOIN/i);
+  assert.match(protocols, /Installed-box maintenance/);
+  assert.match(protocols, /user-store customization/);
+});
+
 test('a referenced session is caught up on through the tape, pane peek as fallback', () => {
   const profile = {
     session_role: 'CheckWork',
@@ -131,6 +170,49 @@ test('a service-signed *_connected level rides the MCP toggle', async () => {
   } finally {
     if (oldShelf === undefined) delete process.env.RONIN_SESSION_BOOT_DIR;
     else process.env.RONIN_SESSION_BOOT_DIR = oldShelf;
+    if (oldCache === undefined) delete process.env.RONIN_SESSION_BOOT_CACHE_DIR;
+    else process.env.RONIN_SESSION_BOOT_CACHE_DIR = oldCache;
+    await rm(temp, { recursive: true, force: true });
+  }
+});
+
+test('only enabled Routine levels contribute startup reading', async () => {
+  const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-session-boot-test-'));
+  const oldShelf = process.env.RONIN_SESSION_BOOT_DIR;
+  const oldCache = process.env.RONIN_SESSION_BOOT_CACHE_DIR;
+  process.env.RONIN_SESSION_BOOT_DIR = path.join(temp, 'shelf');
+  process.env.RONIN_SESSION_BOOT_CACHE_DIR = path.join(temp, 'generated');
+  try {
+    await mkdir(path.join(temp, 'shelf', 'routine', 'ronin_base'), { recursive: true });
+    await writeFile(path.join(temp, 'shelf', 'routine', 'ronin_base', 'BASE.md'), '# base');
+    await mkdir(path.join(temp, 'shelf', 'routine', 'machine'), { recursive: true });
+    await writeFile(path.join(temp, 'shelf', 'routine', 'machine', 'MACHINE.md'), '# machine');
+
+    const base = (await bootFiles('', '', '', false, false, ['ronin_base'])).map((f) => path.basename(f));
+    assert.ok(base.includes('BASE.md'));
+    assert.ok(!base.includes('MACHINE.md'), 'an unselected Routine contributes no reading');
+
+    const none = (await bootFiles('', '', '', false, false, [])).map((f) => path.basename(f));
+    assert.ok(!none.includes('BASE.md') && !none.includes('MACHINE.md'));
+  } finally {
+    if (oldShelf === undefined) delete process.env.RONIN_SESSION_BOOT_DIR;
+    else process.env.RONIN_SESSION_BOOT_DIR = oldShelf;
+    if (oldCache === undefined) delete process.env.RONIN_SESSION_BOOT_CACHE_DIR;
+    else process.env.RONIN_SESSION_BOOT_CACHE_DIR = oldCache;
+    await rm(temp, { recursive: true, force: true });
+  }
+});
+
+test('generated macro reading contains only the effective Routine macros', async () => {
+  const temp = await mkdtemp(path.join(os.tmpdir(), 'ronin-session-boot-test-'));
+  const oldCache = process.env.RONIN_SESSION_BOOT_CACHE_DIR;
+  process.env.RONIN_SESSION_BOOT_CACHE_DIR = path.join(temp, 'generated');
+  try {
+    const boot = await bootFiles('', '', '', false, false, [], new Set(['forkit']));
+    const guide = await readFile(boot.find((file) => path.basename(file) === 'SESSION_MACROS.md')!, 'utf8');
+    assert.match(guide, /\+forkit:/);
+    assert.doesNotMatch(guide, /\+cutcode:/, 'a Control macro is not taught by Base alone');
+  } finally {
     if (oldCache === undefined) delete process.env.RONIN_SESSION_BOOT_CACHE_DIR;
     else process.env.RONIN_SESSION_BOOT_CACHE_DIR = oldCache;
     await rm(temp, { recursive: true, force: true });

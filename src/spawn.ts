@@ -7,12 +7,13 @@ import { bootFiles, ensureShelf } from './session-boot.js';
 import { listProjectRoots, listSessionLaunchSpecs, USER_PROJECT_ROOTS_MD, type ProjectRootInfo } from './project-roots.js';
 import { readAgentsSection } from './user-config.js';
 import { storeDir } from './stores.js';
-import { findDefinition, listRoleFamilies } from './definitions.js';
+import { findDefinition, listRoleFamilies, listRoutines } from './definitions.js';
 import { isCreatableTeamName as isTeamName, readTeamRoster, teamRosterFile, type TeamRoster } from './team-rosters.js';
 import { resolveLaunchProfile, type Dial, type LaunchProfile, type StatedBy } from './launch-profile.js';
 import { readCampaign } from './campaign-config.js';
 import { primaryDesk, renderDeskBlock, resolveLaunchDesks, type DeskChoice } from './launch-desks.js';
 import type { Assignment } from './desks/schema.js';
+import { resolveRoutines, routineChoices, type ResolvedRoutine } from './routines.js';
 
 /**
  * The mechanical executor: a filled form in, a briefed session out.
@@ -178,6 +179,8 @@ export interface Resolved {
   team_state: '' | 'active' | 'archived';
   /** Literal files the server put in the assisted brief's `Read first:` sentence. */
   birth_reading: string[];
+  /** Campaign defaults after Team exceptions; the sole input to Routine projections. */
+  routines: ResolvedRoutine[];
   /** Server-owned attribution for every resolved reading. The browser only renders it. */
   stated_by: Record<string, StatedBy[]>;
 }
@@ -306,8 +309,11 @@ async function bootReading(
   mcpOn: boolean,
   bornLead = false,
   assigned = false,
+  routines: string[] = [],
+  routineMacros?: ReadonlySet<string>,
+  session = '',
 ): Promise<string[]> {
-  const files = await bootFiles(projectRoot, sessionRole, teamRole, mcpOn, assigned);
+  const files = await bootFiles(projectRoot, sessionRole, teamRole, mcpOn, assigned, routines, routineMacros, session);
   // Route 1 (the coordinating kind of role) — and a session BORN as the 人 (`team_lead`
   // on the form), which leads whatever its role says: the reading follows the 人.
   const leadRole = !!sessionRole && (await listRoleFamilies()).some((f) => f.default_lead_role === sessionRole);
@@ -327,12 +333,13 @@ export async function resolveForm(
   referenceDir?: string,
   proposedRoster?: TeamRoster,
 ): Promise<Resolved> {
-  const [taskDef, roots, launchSpecs, agentsSet, campaign] = await Promise.all([
+  const [taskDef, roots, launchSpecs, agentsSet, campaign, routineCatalog] = await Promise.all([
     findDefinition('session_roles', form.session_role ?? ''),
     listProjectRoots(),
     listSessionLaunchSpecs(),
     readAgentsSection(),
     form.campaign_id ? readCampaign(form.campaign_id) : null,
+    listRoutines(),
   ]);
   // A NAMED axis that does not resolve is a refusal, never a silent blank. Blank and
   // wrong are different launches, and only one of them is what the caller asked for.
@@ -512,10 +519,16 @@ export async function resolveForm(
     lifecycle: profile.lifecycle,
     desk: form.desk,
   });
+  const campaignRoutines = routineChoices(campaign?.config.agent_defaults.routines);
+  const routines = agent
+    ? resolveRoutines(routineCatalog, campaignRoutines, roster?.routines ?? {})
+    : [];
+  const enabledRoutines = routines.filter((routine) => routine.enabled).map((routine) => routine.name);
+  const enabledMacros = new Set(routines.filter((routine) => routine.enabled).flatMap((routine) => routine.macros));
   // Compile this once and return the exact same list the brief receives. The browser must
   // never recreate shelf precedence or guess which explicit seeds joined it.
   const shelfReading = agent
-    ? await bootReading(root.name, profile.session_role, roster?.team_role ?? '', !mcpOffWanted, !!form.team_lead && !!form.team, !!assignment)
+    ? await bootReading(root.name, profile.session_role, roster?.team_role ?? '', !mcpOffWanted, !!form.team_lead && !!form.team, !!assignment, enabledRoutines, enabledMacros, name)
     : [];
   const birthReading = agent ? [...shelfReading, ...(form.seed ?? [])].filter(Boolean) : [];
 
@@ -577,6 +590,7 @@ export async function resolveForm(
     team_wipeboard: roster?.wipeboard ?? '',
     team_state: roster?.state ?? '',
     birth_reading: birthReading,
+    routines,
     stated_by: {
       name: form.name ? explicit : system,
       dir: profile.dir ? profile.stated_by.dir : assignment ? system : rootSource,
@@ -607,6 +621,10 @@ export async function resolveForm(
       team_wipeboard: rosterSource,
       team_state: rosterSource,
       birth_reading: unique(system, form.seed?.length ? explicit : []),
+      routines: unique(
+        campaign ? [{ layer: 'system', source: `#/campaign (${campaign.id}: agent_defaults.routines)` }] : system,
+        roster && Object.keys(roster.routines).length ? rosterSource : [],
+      ),
     },
   };
 }
