@@ -52,7 +52,7 @@ export type Dial = 'user' | 'read' | 'write';
 
 export type StatedLayer =
   | 'install' | 'campaign' | 'team' | 'template' | 'launch'
-  | 'system' | 'team_roster' | 'session_role' | 'explicit_launch';
+  | 'system' | 'team_roster' | 'session_role' | 'explicit_launch' | 'house';
 export interface StatedBy {
   layer: StatedLayer;
   /** Exact file when a file stated the value; a named runtime source otherwise. */

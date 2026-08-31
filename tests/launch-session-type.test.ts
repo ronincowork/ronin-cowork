@@ -12,6 +12,7 @@ import { createServer, type Server } from 'node:http';
 process.env.BIND = '127.0.0.1';
 const { registerLaunch } = await import('../src/routes/launch.js');
 const { acceptedLaunchBody } = await import('../src/routes/launch.js');
+const { mikaLaunchBody } = await import('../src/routes/launch.js');
 
 const app = express();
 app.use(express.json());
@@ -104,6 +105,33 @@ test('a template token is provenance input only on a cowork birth', () => {
   const terminal = acceptedLaunchBody({ session_type: 'terminal', name: 'proof', template: 'document_it' });
   assert.equal(terminal.body.template, undefined);
   assert.deepEqual(terminal.ignored, ['template']);
+});
+
+test('the Mika door accepts words only and fixes every public birth input', () => {
+  assert.deepEqual(mikaLaunchBody({
+    prompt: '+system_help:',
+    name: 'not-mika',
+    session_role: 'MikaAssist',
+    capExempt: false,
+    dir: '/tmp',
+  }), {
+    session_type: 'cowork_agent',
+    name: 'mika',
+    tags: ['mika'],
+    prompt: '+system_help:',
+  });
+});
+
+test('both Mika callers use the dedicated door and state no session_role', async () => {
+  const [browser, cli] = await Promise.all([
+    fs.readFile(new URL('../public/js/mika.js', import.meta.url), 'utf8'),
+    fs.readFile(new URL('../ronin_bin/mika', import.meta.url), 'utf8'),
+  ]);
+  for (const source of [browser, cli]) {
+    assert.match(source, /\/api\/mika/);
+    assert.doesNotMatch(source, /session_role.*MikaAssist/);
+    assert.doesNotMatch(source, /\/api\/launch/);
+  }
 });
 
 test.after(() => server.close());

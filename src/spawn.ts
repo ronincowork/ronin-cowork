@@ -37,6 +37,8 @@ import { templateProvenance } from './template-provenance.js';
 export interface SpawnForm {
   /** The birth path. This is the route key; session_role is never used to infer it. */
   session_type?: 'cowork_agent' | 'bare_metal_agent' | 'terminal';
+  /** Server-owned house birth. Never accepted from the public launch body. */
+  house_seat?: 'mika';
   /**
    * WHAT the session is doing right now. Optional and mutable — the session rewrites it
    * with `write_tegami` and the owner rewrites it from the tile, and either write
@@ -380,7 +382,30 @@ export async function resolveForm(
         : await readTeamRoster(form.team, campaignId) ?? await readTeamRoster(form.team, ''))
     : null;
   // THE CASCADE, and every refusal it makes happens here — before a session exists.
-  const profile = resolveLaunchProfile(taskDef);
+  let profile = resolveLaunchProfile(taskDef);
+  if (form.house_seat === 'mika') {
+    const house = [{ layer: 'house' as const, source: 'src/spawn.ts' }];
+    profile = {
+      ...profile,
+      label: 'Mika Assist',
+      posture: [
+        'You assist rather than build. Answer from what you can actually check, name what you used, and say you do not know rather than guessing. A helpful assistant for Ronin itself, never the owner\'s own code. Be short. Answer from the house\'s documents and name the one you used; say you don\'t know rather than guessing. Propose, never write: show a change as what it will become and wait for a yes.',
+      ],
+      ack: false,
+      opening: 'Your job list is ronin_catalogs/MIKA_MACROS.md — read it once, it is short. Then: {prompt}',
+      capExempt: true,
+      dir: '{install}',
+      stated_by: {
+        ...profile.stated_by,
+        label: house,
+        posture: house,
+        ack: house,
+        opening: house,
+        capExempt: house,
+        dir: house,
+      },
+    };
+  }
   const parentSeed = coworkAgent && campaign
     ? resolveLaunchSeed({
         campaign,
