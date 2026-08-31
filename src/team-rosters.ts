@@ -362,27 +362,6 @@ export async function writeTeamRoster(name: string, edit: RosterEdit, campaign_i
 }
 
 /**
- * RENAME — the roster file moves; the wipeboard follows only by the landed adoption
- * rules (the team wins its name), which happen on the board side, not here. Live
- * members' tags are the callers' to retag — membership is theirs, not this file's.
- */
-export async function renameTeamRoster(from: string, to: string, campaign_id?: string): Promise<TeamRoster> {
-  if (!isCreatableTeamName(to)) throw new Error(`"${to}" is not available as a team name.`);
-  const existing = await readTeamRoster(from, campaign_id);
-  if (!existing) throw new Error(`Team "${from}" has no roster.`);
-  // A rename stays INSIDE the Campaign — it changes the name half of the identity and
-  // never the Campaign half, which would be a reassignment and is a non-goal this cut.
-  const where = existing.campaign_id;
-  if (await readTeamRoster(to, where)) throw new Error(`Team "${to}" already has a roster.`);
-  const raw = await readFile(teamRosterFile(from, where), 'utf8');
-  await writeFile(teamRosterFile(to, where), raw.replace(new RegExp(`^# ${from}$`, 'm'), `# ${to}`), 'utf8');
-  await unlink(teamRosterFile(from, where));
-  const back = await readTeamRoster(to, where);
-  if (!back) throw new Error(`Refused: "${to}" does not read back after the rename.`);
-  return back;
-}
-
-/**
  * DISSOLVE — the roster file is deleted. The wipeboard is NOT (nothing on a button
  * deletes a file, owner 2026-08-07): it reverts to being a custom board, or the owner
  * removes it by hand.

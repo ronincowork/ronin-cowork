@@ -19,7 +19,6 @@ import {
   isValidName,
   killSessionTree,
   listSessions,
-  renameSession,
   sessionExists,
   sessionOfPane,
   setControl,
@@ -33,6 +32,7 @@ import {
   setLaunchStamp,
   setProviderSessionId,
   setSessionKey,
+  setSessionTitle,
   stopSessionTree,
 } from '../tmux.js';
 import { sendText } from '../send.js';
@@ -172,17 +172,16 @@ export function registerSessions(app: express.Express): void {
     res.json({ ok: true });
   });
 
-  app.post('/api/sessions/:name/rename', async (req, res) => {
+  app.put('/api/sessions/:name/title', async (req, res) => {
     const { name } = req.params;
-    const next = String(req.body?.name ?? '').trim();
-    if (!isValidName(name) || !isValidName(next)) return res.status(400).json({ error: 'Invalid session name.' });
+    const title = String(req.body?.title ?? '').trim();
+    if (!isValidName(name)) return res.status(400).json({ error: 'Invalid session name.' });
     if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
-    if (name !== next && await sessionExists(next)) return res.status(409).json({ error: `Session "${next}" already exists.` });
     try {
-      if (name !== next) await renameSession(name, next);
-      res.json({ ok: true, name: next });
+      await setSessionTitle(name, title);
+      res.json({ ok: true, name, title });
     } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
+      res.status(400).json({ error: String((e as Error)?.message ?? e) });
     }
   });
 

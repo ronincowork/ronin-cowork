@@ -20,7 +20,7 @@ import { acceptDrops as acceptSessionDrops } from './team-drag.js';
 import { S } from './state.js';
 import { createCampaignIdentity } from './campaign.js';
 import { renderTeamConfiguration } from './team-configuration.js';
-import { renameSession, sessionNameFromInput } from './api.js';
+import { setSessionTitle } from './api.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -28,6 +28,8 @@ const el = (tag, cls, text) => {
   if (text != null) out.textContent = String(text);
   return out;
 };
+const agentTitle = (session) => session.title || String(session.name || '').split(/[_-]+/).filter(Boolean)
+  .map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' ');
 
 const COMMONS = '@commons';
 const COWORK = '@cowork';
@@ -192,7 +194,7 @@ export function createCoworkView(options = {}) {
     newTeam: (id) => ({ el: newTeamBySeat[id].el, show: () => newTeamBySeat[id].enter(ctx) }),
     archives: (id) => ({ el: archivesBySeat[id].el, show: () => void archivesBySeat[id].room.enter() }),
     team: (id, detail) => createLeagueTeamSurface(detail.key, id),
-    sessions: () => campaign ? [] : membersOfTeam(team).map((member) => ({ key: member.name, label: member.name, summary: member.summary || '', metadata: readingsOf(member), mark: member.team_lead ? '人' : null, onPointerEnter: () => armPrewarm(member.name), onPointerLeave: disarmPrewarm })),
+    sessions: () => campaign ? [] : membersOfTeam(team).map((member) => ({ key: member.name, label: agentTitle(member), summary: member.summary || '', metadata: readingsOf(member), mark: member.team_lead ? '人' : null, onPointerEnter: () => armPrewarm(member.name), onPointerLeave: disarmPrewarm })),
     teams: () => campaign ? [...teamsFromState().filter((candidate) => !candidate.holding), { name: UNASSIGNED, title: t('league.ronin', 'Ronin: no team'), objective: '' }].map((item) => ({ key: item.name, label: item.title || readableTeam(item.name), summary: item.objective || '' })) : [],
   };
   bench = WorkspaceKit.workbench.create({
@@ -395,17 +397,16 @@ export function createCoworkView(options = {}) {
         const identity = el('div', 'league-team-member-identity');
         const mark = el('span', 'league-team-member-mark', member.team_lead ? '人' : ''); mark.setAttribute('aria-hidden', 'true');
         const words = el('div', 'league-team-member-words');
-        words.append(el('strong', null, member.name), el('span', null, member.session_role || t('league.role_unset', 'Role not set')));
+        words.append(el('strong', null, agentTitle(member)), el('span', null, member.session_role || t('league.role_unset', 'Role not set')));
         identity.append(mark, words);
         if (holding) { row.append(identity); list.append(row); continue; }
         const rename = createAction({ label: t('league.rename_agent', 'Rename'), size: 'compact', action: async () => {
-          const wanted = window.prompt(t('league.rename_agent_prompt', 'Rename Agent'), member.name);
-          const next = sessionNameFromInput(wanted);
-          if (wanted == null || next === member.name) return;
+          const currentTitle = agentTitle(member);
+          const wanted = window.prompt(t('league.rename_agent_prompt', 'Edit Agent title'), currentTitle);
+          if (wanted == null || wanted.trim() === currentTitle) return;
           try {
-            await renameSession(member.name, next);
+            await setSessionTitle(member.name, wanted.trim());
             await refreshTeams();
-            S.onSessionRenamed?.(member.name, next);
             surface.setState();
             render();
           } catch (error) {
@@ -429,12 +430,9 @@ export function createCoworkView(options = {}) {
       const config = el('section', 'league-team-config');
       config.append(el('h3', 'league-team-roster-title', t('workspace.channel_team_configuration', 'Team Configuration')));
       const fields = el('div', null); config.append(fields);
-      renderTeamConfiguration(fields, { ...current, durable: true }, { createAction, onSaved: async (saved, renamed) => {
+      renderTeamConfiguration(fields, { ...current, durable: true }, { createAction, onSaved: async () => {
         await refreshTeams();
-        if (!renamed) { render(); return; }
-        const locations = bench.locations(WB_TYPES.team, name);
-        for (const key of [...leagueTeamSurfaces.keys()]) if (key.endsWith(`\0${name}`)) leagueTeamSurfaces.delete(key);
-        for (const seat of locations) bench.place(WB_TYPES.team, seat, { key: saved.name, label: saved.title || readableTeam(saved.name) });
+        render();
       } });
       surface.content.replaceChildren(roster, config);
     };
@@ -489,10 +487,9 @@ export function createCoworkView(options = {}) {
 
   function renderConfig(roster, live) {
     for (const commons of Object.values(teamCommons)) {
-      renderTeamConfiguration(commons.config, roster && { ...roster, durable: true }, { createAction, onSaved: async (saved, renamed) => {
+      renderTeamConfiguration(commons.config, roster && { ...roster, durable: true }, { createAction, onSaved: async (saved) => {
         await refreshTeams();
-        if (renamed) S.workspace?.navigate('team', saved.name);
-        else { setBarLabel(); renderConfig(saved, live); paint(); }
+        setBarLabel(); renderConfig(saved, live); paint();
       } });
     }
   }
@@ -588,14 +585,6 @@ export function createCoworkView(options = {}) {
         if (prompt) void newBySeat[id].launcher.open('PersonalAssistant', prompt);
       };
       S.connectSession = (name) => connectSession(name);
-      S.onSessionRenamed = (before, next) => {
-        const showing = liveSeats().filter((id) => holds(id) === before);
-        if (extras.delete(before)) extras.add(next);
-        for (const [id, held] of Object.entries(remembered)) if (held === before) remembered[id] = next;
-        syncPools(membersOfTeam(team));
-        showing.forEach((id) => putSession(next, id));
-        renderCards(membersOfTeam(team));
-      };
       if (campaign) void refreshTeams().then(() => renderCards([]));
       else if (team !== loaded) void load(team);
       void readRows();
@@ -616,7 +605,6 @@ export function createCoworkView(options = {}) {
       for (const seat of Object.values(seats)) { seat.pool.destroyAll(); seat.empty?.destroy(); seat.empty = null; }
       for (const commons of Object.values(teamCommons)) commons.channels.leave();
       S.showNewSession = null;
-      S.onSessionRenamed = null;
       S.connectSession = null;
       bench.leave();
       S.refreshWorkspaceHeader?.();

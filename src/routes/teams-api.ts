@@ -8,7 +8,7 @@
  * sessions and served by /api/teams* in sessions-api.ts; nothing here ever stores it.
  *
  * Lifecycle, each refusing out loud: create (POST), edit (PUT — metadata as a unit,
- * `team_role` changes included, since it is mutable by ruling), rename, dissolve
+ * `team_role` changes included, since it is mutable by ruling), dissolve
  * (DELETE — the roster only; the wipeboard is never deleted by a route, owner
  * 2026-08-07, it reverts to a custom board).
  */
@@ -19,7 +19,6 @@ import {
   isCreatableTeamName,
   listTeamRosters,
   readTeamRoster,
-  renameTeamRoster,
   writeTeamRoster,
   type RosterEdit,
 } from '../team-rosters.js';
@@ -151,24 +150,6 @@ export function registerTeams(app: express.Express): void {
   app.put('/api/team-rosters/:name', async (req, res) => {
     try {
       res.json({ ok: true, roster: await writeTeamRoster(req.params.name, editOf(req.body)) });
-    } catch (e) {
-      res.status(400).json({ error: errMsg(e) });
-    }
-  });
-
-  app.post('/api/team-rosters/:name/rename', async (req, res) => {
-    const to = String(req.body?.to ?? '').trim();
-    try {
-      const roster = await renameTeamRoster(req.params.name, to);
-      for (const session of await listSessions()) {
-        if (!session.tags.includes(req.params.name)) continue;
-        const teams = await setTags(session.name, [...new Set(session.tags.map((team) => team === req.params.name ? to : team))]);
-        const leads = await getLeads(session.name);
-        if (leads.includes(req.params.name)) await setLeads(session.name, [...new Set(leads.map((team) => team === req.params.name ? to : team))]);
-        await writeTeams(session.name, teams).catch(() => {});
-        await announceTeamChanges(session.name, session.tags, teams).catch(() => {});
-      }
-      res.json({ ok: true, roster });
     } catch (e) {
       res.status(400).json({ error: errMsg(e) });
     }
