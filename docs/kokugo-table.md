@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1279 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1287 keys · 55 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## archives
 
@@ -55,16 +55,22 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `campaigns` | Campaigns | Occasions | Campaigns |  |  |
 | `desk_profile` | desk profile | the house style | your rig |  |  |
 | `go` | Go | Service | GLHF |  |  |
+| `kind` | Kind |  |  |  |  |
 | `loadout` | Tools and skills | Station | Loadout |  | Loadout |
 | `mandate` | Mandate |  | Mandate |  |  |
 | `output` | Deliverable |  | Loot |  |  |
+| `permissions` | Permissions |  |  |  |  |
 | `player_one` | Lead session | Head of house | Player One |  | Player One |
 | `publish` | Publish |  | Publish build |  |  |
 | `reach` | Scope |  | Reach |  |  |
 | `recruit` | Team |  | Squad |  |  |
+| `required_reading` | Required reading |  |  |  |  |
+| `routine_bundles` | Routine Bundles |  |  |  |  |
 | `save_template` | Save as template |  | Save build |  |  |
+| `session_type` | Session type |  |  |  |  |
 | `squad` | Team | Staff | Squad |  | Squad |
 | `team_kit` | Shared toolkit | Mise en place | Team kit |  | Team kit |
+| `template` | Template |  |  |  |  |
 
 ## campaign
 
@@ -505,7 +511,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.bare_metal_agent` | bare-metal Agent |  |  |  |  |
 | `glossary.behaviour` | behaviour |  |  |  |  |
 | `glossary.brief` | Brief |  |  |  |  |
-| `glossary.build` | build |  |  |  |  |
 | `glossary.campaign` | campaign |  |  |  |  |
 | `glossary.campaign_commons` | the commons |  |  |  |  |
 | `glossary.commons` | session commons |  |  |  |  |
@@ -519,13 +524,12 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.desk` | the desk |  |  |  |  |
 | `glossary.desk_profile` | desk profile | the house style |  |  |  |
 | `glossary.docs` | the Docs tab |  |  |  |  |
-| `glossary.doing` | what it's doing |  |  |  |  |
 | `glossary.egress_log` | where Ronin has connected |  |  |  |  |
-| `glossary.family` | Family |  |  |  |  |
 | `glossary.fork` | fork |  |  |  |  |
 | `glossary.harakiri` | harakiri |  |  |  |  |
 | `glossary.hotwords` | Hotwords |  |  |  |  |
 | `glossary.invocation` | typing a macro |  |  |  |  |
+| `glossary.kind` | kind |  |  |  |  |
 | `glossary.launch` | launch |  |  |  |  |
 | `glossary.locked` | Locked / Unlocked |  |  |  |  |
 | `glossary.macro` | macro |  |  |  |  |
@@ -534,12 +538,15 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.memory` | memory |  |  |  |  |
 | `glossary.new_session` | new session |  |  |  |  |
 | `glossary.note` | Note |  |  |  |  |
+| `glossary.output` | Output |  |  |  |  |
 | `glossary.packet` | what gets sent |  |  |  |  |
 | `glossary.packet_kinds` | Usage counts · Feedback · Macro submission |  |  |  |  |
 | `glossary.pad` | Pad |  |  |  |  |
+| `glossary.permissions` | Permissions |  |  |  |  |
 | `glossary.project_root` | project root |  |  |  |  |
 | `glossary.project_root_list` | the project root list |  |  |  |  |
-| `glossary.role` | role |  |  |  |  |
+| `glossary.reach` | Reach |  |  |  |  |
+| `glossary.recruit` | Recruit |  |  |  |  |
 | `glossary.ronin` | Ronin |  |  |  |  |
 | `glossary.ronin_base` | Ronin Base |  |  |  |  |
 | `glossary.ronin_control` | managed file coordination |  |  |  |  |
@@ -552,6 +559,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.services` | Services |  |  |  |  |
 | `glossary.session` | session |  |  |  |  |
 | `glossary.session_menu` | Status · Work record · Macros · Detach · Kill session |  |  |  |  |
+| `glossary.session_type` | session type |  |  |  |  |
 | `glossary.specialized_routine` | specialized routine |  |  |  |  |
 | `glossary.stats` | Stats |  |  |  |  |
 | `glossary.surface` | surface |  |  |  |  |
@@ -559,8 +567,8 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.team` | Cowork | Staff |  |  |  |
 | `glossary.team_commons` | team commons |  |  |  |  |
 | `glossary.team_lead` | team lead · 人 |  |  |  |  |
-| `glossary.team_role` | team role |  |  |  |  |
 | `glossary.team_roster` | Cowork record |  |  |  |  |
+| `glossary.template` | template |  |  |  |  |
 | `glossary.terminal` | terminal |  |  |  |  |
 | `glossary.terminal_tile` | terminal tile |  |  |  |  |
 | `glossary.tile` | tile |  |  |  |  |
