@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { declareArrangement, readArrangement, setDesks } from '../src/desks/arrangement.js';
+import { arrangementProfile, declareArrangement, readArrangement, setArrangementProfile, setDesks } from '../src/desks/arrangement.js';
 
 async function repo(branch: string): Promise<string> {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'ronin-arr-'));
@@ -75,4 +75,30 @@ test('never overwrites a declaration, and writes nothing outside a git repositor
     assert.equal(await declareArrangement(plain, 'managed'), null);
     await assert.rejects(readFile(path.join(plain, 'RONIN_REPO')));
   } finally { await rm(plain, { recursive: true, force: true }); }
+});
+
+test('repository profile editor keeps owner branch names and unrelated keys', async () => {
+  const dir = await repo('main');
+  try {
+    await writeFile(path.join(dir, 'RONIN_REPO'), '# owner note\nmode=reviewed\nworking=develop\nstable=release\ndesks=managed\npublish=release\n');
+    const before = arrangementProfile(await readArrangement('x', dir));
+    const a = await setArrangementProfile(dir, { mode: 'reviewed', working: 'integration/next', stable: 'production/v2', desks: 'none' }, before);
+    assert.deepEqual(arrangementProfile(a), { mode: 'reviewed', working: 'integration/next', stable: 'production/v2', desks: 'none' });
+    const text = await readFile(path.join(dir, 'RONIN_REPO'), 'utf8');
+    assert.match(text, /^# owner note$/m); assert.match(text, /^publish=release$/m);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test('repository profile editor removes working in direct mode and refuses stale confirmation', async () => {
+  const dir = await repo('trunk');
+  try {
+    await writeFile(path.join(dir, 'RONIN_REPO'), 'mode=reviewed\nworking=develop\nstable=release\ndesks=managed\n');
+    const stale = arrangementProfile(await readArrangement('x', dir));
+    await writeFile(path.join(dir, 'RONIN_REPO'), 'mode=reviewed\nworking=other\nstable=release\ndesks=managed\n');
+    await assert.rejects(setArrangementProfile(dir, { mode: 'direct', working: '', stable: 'trunk', desks: 'none' }, stale), /changed after this form was opened/);
+    const current = arrangementProfile(await readArrangement('x', dir));
+    const a = await setArrangementProfile(dir, { mode: 'direct', working: 'ignored', stable: 'trunk', desks: 'managed' }, current);
+    assert.deepEqual(arrangementProfile(a), { mode: 'direct', working: '', stable: 'trunk', desks: 'managed' });
+    assert.doesNotMatch(await readFile(path.join(dir, 'RONIN_REPO'), 'utf8'), /^working=/m);
+  } finally { await rm(dir, { recursive: true, force: true }); }
 });

@@ -199,6 +199,14 @@ remediation, or topic branches to the remote; merged PR head branches accumulati
 `dev` and `master` are repository clutter and make Admin Desk look as though unfinished work
 remains.
 
+The Project Root editor reads these four profile fields live from `RONIN_REPO`. `mode=reviewed`
+means work collects on `working` before the owner's final PR to `stable`; `mode=direct` means
+accepted work publishes on `stable` itself. `desks=managed|none` separately says whether
+Ronin supplies managed file coordination. Branch names are owner choices. A changed profile
+is shown once as exact before/after text and, on confirmation, rewritten directly and
+atomically. This is not a migration: refs, desks, Teams, and running Agent instructions are
+untouched.
+
 A session that changes code works at a **repo desk** — its own branch and worktree, cut from
 its team's line (`ronin_session_boot/assignment/DESK_CONTRACT.md`; the model is the lab's
 WORKTREES buildout). Commit preserves work privately at the desk;

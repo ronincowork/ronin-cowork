@@ -3159,7 +3159,8 @@ body {
   color: var(--muted-2);
   font-size: var(--text-3);
 }
-.pr-f input {
+.pr-f input,
+.pr-f select {
   flex: 1;
   min-width: 0;
 }

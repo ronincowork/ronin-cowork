@@ -717,8 +717,19 @@ The catalog entry goes. {dir} is not touched.
 - **roots.f_docs_hint:** Where this root keeps its documentation — directories or files, relative to the directory
 - **roots.f_plans:** plans
 - **roots.f_plans_hint:** Where this root keeps its build-out plans
-- **roots.f_desks:** desks
-- **roots.f_desks_hint:** Checked: coding sessions work at their own branch and worktree and hand in to the team (RONIN_REPO desks=managed). Unchecked: they work in the checkout (desks=none). Written into the repository; commit it there.
+- **roots.f_mode:** publishing
+- **roots.f_mode_hint:** Reviewed uses a working branch and a final PR to stable. Direct publishes on stable itself.
+- **roots.mode_reviewed:** reviewed release
+- **roots.mode_direct:** direct publishing
+- **roots.f_working:** working
+- **roots.f_working_hint:** The integration branch for reviewed work. You choose its name.
+- **roots.f_stable:** stable
+- **roots.f_stable_hint:** The published branch. You choose its name.
+- **roots.f_coordination:** coordination
+- **roots.f_coordination_hint:** Managed supplies private desks and hand-in. None uses the repository checkout.
+- **roots.desks_managed:** managed
+- **roots.desks_none:** none
+- **roots.profile_confirm:** Rewrite RONIN_REPO with this repository profile?\n\nBefore:\n{before}\n\nAfter:\n{after}\n\nRunning Agents may still have the earlier instructions.
 - **docs.open_browser:** Open in browser ↗
 - **docs.frame_title:** document
 - **docs.discard_confirm:** Discard unsaved changes?

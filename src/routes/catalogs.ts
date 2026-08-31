@@ -28,7 +28,7 @@ import {
   type RootField,
 } from '../project-roots.js';
 import { campaignFilter, campaignResolver } from '../campaign-scope.js';
-import { readArrangement, setDesks } from '../desks/arrangement.js';
+import { readArrangement, setArrangementProfile, setDesks } from '../desks/arrangement.js';
 import {
   listSavedLaunches,
   saveLaunch,
@@ -247,18 +247,17 @@ export function registerCatalogs(app: express.Express): void {
     }
   });
 
-  // THE DESKS CHECKBOX on the editor (owner, 2026-08-29): flip one project's RONIN_REPO —
-  // the one gate for desks. Writes into the repository, not the catalog; the file is the
-  // owner's to commit.
-  app.put('/api/project-roots/:name/desks', async (req, res) => {
+  // THE REPOSITORY PROFILE on the editor: after one explicit before/after confirmation,
+  // rewrite RONIN_REPO directly. This is configuration, not a migration: no refs, desks,
+  // running Agents or recovery state are changed here.
+  app.put('/api/project-roots/:name/repo-profile', async (req, res) => {
     const { name } = req.params;
     if (!isValidRootName(name)) return res.status(400).json({ error: 'Invalid handle.' });
-    const desks = req.body?.desks === 'managed' ? 'managed' : req.body?.desks === 'none' ? 'none' : null;
-    if (!desks) return res.status(400).json({ error: 'desks must be managed or none.' });
+    if (req.body?.confirmed !== true) return res.status(400).json({ error: 'Confirm the exact repository profile before applying it.' });
     try {
       const root = (await listProjectRoots()).find((r) => r.name === name);
       if (!root) return res.status(404).json({ error: `"${name}" is not in the catalog.` });
-      res.json({ ok: true, arrangement: await setDesks(root.dir, desks) });
+      res.json({ ok: true, arrangement: await setArrangementProfile(root.dir, req.body?.profile, req.body?.before) });
     } catch (e) {
       res.status(400).json({ error: errMsg(e) });
     }
