@@ -3,7 +3,7 @@
  * ADD AGENT TO TEAM — the in-Team quick launch, on the Workspace Kit.
  *
  * STAGED, NOT LIVE (owner, 2026-08-31). This is registered as its own Workbench surface
- * beside the existing New Agent card; nothing is removed. `js/launcher.js` still mounts
+ * beside the existing New Agent card. `js/launcher.js` has since been retired; it mounted
  * the `.ks-*` board on the same page, and the owner decides when one replaces the other.
  *
  * WHY IT IS NOT NEW AGENT. You are already in the Team, so the Team has answered most of

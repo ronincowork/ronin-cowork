@@ -31,8 +31,9 @@ Forty-four modules, 8,916 lines. Counts below are `wc -l`, measured against the 
 The platform row (request/ui/panes/theme) landed 2026-08-16 with the UI/UX
 professionalisation pass: transport, dialog behaviour, the pane registry and the theme
 became shared contracts instead of per-feature re-inventions, and the retired Commons gave its
-two resident rooms (`roster.js`, `launcher.js`) their own modules. `docs/ui.md` is the
-written contract those modules enforce.
+two resident rooms — the roster and the launcher — their own modules. `roster.js` is still
+one of them; the launcher module went with the ＋ New board (2026-08-31), and New Agent is
+where a session is born now. `docs/ui.md` is the written contract those modules enforce.
 
 | Module | Lines | What it owns |
 |---|---|---|
@@ -44,10 +45,9 @@ written contract those modules enforce.
 | `api.js` | 44 | the `/api/sessions` calls |
 | `widgets.js` | 225 | `makeDial`, `makeGauge`, `setInert`, the job menu |
 | `events.js` | 96 | the `/events` socket, birth/death chips, `openSessionSomewhere` |
-| `home.js` | 158 | THE DATA CACHE — `refreshHome` + the catalog loaders, `homeFault`, `showReceipt` |
+| `home.js` | 131 | THE DATA CACHE — `refreshHome` + the catalog loaders, `homeFault` |
 | `roster.js` | 258 | the ⌂ Roster room — the session list, the session max, the stale line |
 | `archives.js` | — | the Archived room — stopped, resumable sessions backed by manifests |
-| `launcher.js` | 480 | the ＋ New session room — the koshidashi board, form, saved launches |
 | `projectroots.js` | 245 | `buildProjectRoots` — the ▣ Roots pane |
 | `hotwords.js` | 132 | `buildHotwords` — the ▥ Hotwords pane, the dictation glossary |
 | `stats.js` | 413 | `buildStats` — the ▦ Stats pane (TOMODACHI usage readout) |
@@ -114,8 +114,7 @@ module writes** — put it on `S`.
 **2. No import cycles.** There are none today, and that is checked, not hoped: the split
 was computed from the code with comments and string literals stripped, and cycles were
 removed by moving the shared thing rather than by importing both ways. `setLayout` got
-its own module for exactly this reason (`events`, `pad` and `layout` all need it);
-`showReceipt` moved to `home.js` for the same reason.
+its own module for exactly this reason (`events`, `pad` and `layout` all need it).
 If you find yourself wanting a back-edge, move the shared function down instead.
 
 **3. Transport goes through `request.js`.** Every JSON call uses `request()` and decides
