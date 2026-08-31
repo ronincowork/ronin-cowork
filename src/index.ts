@@ -20,7 +20,8 @@ import {
   passwordAuthEnabled,
   verifyRecord,
 } from './auth.js';
-import { cleanupViewers, listSessions, publishRoninUrl } from './tmux.js';
+import { cleanupViewers, listSessions } from './tmux.js';
+import { publishRoninUrl } from './operator-url.js';
 import { publishMax, publishOwner } from './user-config.js';
 import { registerCatalogs } from './routes/catalogs.js';
 import { registerLaunch } from './routes/launch.js';
