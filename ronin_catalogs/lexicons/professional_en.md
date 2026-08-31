@@ -20,8 +20,10 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **add_agent.task:** task  (optional)
 - **add_agent.task_open:** open
 - **add_agent.worktree:** Request a worktree
-- **add_agent.worktree_on:** A worktree of its own — managed file coordination, hand-in and the Git safeguards.
-- **add_agent.worktree_off:** No worktree. This Agent works in the shared checkout.
+- **add_agent.worktree_on:** Its own worktree, under managed file coordination: the desk contract, hand-in and the Git safeguards.
+- **add_agent.worktree_on_plain:** Its own worktree, for isolation only — no hand-in and no one to hand to, so it reports to you.
+- **add_agent.worktree_off:** No worktree at birth. Under managed file coordination it can cut one when the work needs it.
+- **add_agent.worktree_off_plain:** No worktree. This Agent works in the shared checkout.
 - **add_agent.actions:** Launch actions
 - **add_agent.start:** Start
 - **add_agent.cancel:** Cancel
@@ -1436,6 +1438,7 @@ The catalog entry goes. {dir} is not touched.
 - **team_config.references_help:** One URL or note per line.
 - **team_config.routines:** Routines
 - **team_config.routines_help:** This complete on/off map is the Team’s own. Campaign changes affect only the next Team form.
+- **team_config.kit_floor_alone:** the floor alone — no Routine is on
 - **team_config.no_description:** No description supplied.
 - **team_config.behaviours:** Behaviours
 - **team_config.behaviours_help:** One shelf:name book per line.

@@ -43,6 +43,22 @@ funnel worktree is refused). Three layers, same sentence.
 | **`solo/<session>`** | a rōnin session's desk, cut from `dev`, handing in to `dev` | |
 | **`master`** | a branch only. Moves by PR from `dev` | a desk |
 
+**A worktree is not the contract, and the contract is not a worktree.** Two separate
+facts, and every combination of them is legitimate:
+
+- **`ronin_control` — the Routine.** A reading list and a toolset: this page's model, the
+  desk contract, hand-in, team promotion, receipts, `tejun-desk`. It says the Agent *knows
+  how worktrees are handled here*. It does **not** mean one was mounted for it — an Agent
+  carrying the Routine may hold no desk and cut one when the work needs it.
+- **A worktree — isolation.** A folder with its own HEAD and edits, which any agent can
+  arrange off a branch, needing nothing declared. An Agent given one *without* the Routine
+  has somewhere private to work and no hand-in path and nobody to hand to; it reports to
+  the owner. That is a legitimate way to work, not a broken desk.
+
+So a launch asks the two questions separately: the Routine is the resolved Campaign/Team
+answer, and the worktree is this launch's own request. Requesting one does not confer the
+contract, and carrying the contract does not allocate one.
+
 **How you know a branch has a worktree.** `git worktree list` is the only honest answer.
 `git branch` marks `+` for checked-out-elsewhere, `*` for here. A `team/**` or `solo/**`
 branch with no worktree is either a **parked desk** (recorded as such, with its owner and

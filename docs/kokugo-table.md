@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `behaviour.*` may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1395 keys · 57 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1398 keys · 57 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## add_agent
 
@@ -38,8 +38,10 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `add_agent.team` | team |  |  |  |  |
 | `add_agent.title` | Add Agent to Team |  |  |  |  |
 | `add_agent.worktree` | Request a worktree |  |  |  |  |
-| `add_agent.worktree_off` | No worktree. This Agent works in the shared checkout. |  |  |  |  |
-| `add_agent.worktree_on` | A worktree of its own — managed file coordination, hand-in and the Git safeguards. |  |  |  |  |
+| `add_agent.worktree_off` | No worktree at birth. Under managed file coordination it can cut one when the work needs it. |  |  |  |  |
+| `add_agent.worktree_off_plain` | No worktree. This Agent works in the shared checkout. |  |  |  |  |
+| `add_agent.worktree_on` | Its own worktree, under managed file coordination: the desk contract, hand-in and the Git safeguards. |  |  |  |  |
+| `add_agent.worktree_on_plain` | Its own worktree, for isolation only — no hand-in and no one to hand to, so it reports to you. |  |  |  |  |
 
 ## archives
 
@@ -1609,6 +1611,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `team_config.kind_school` | School |  |  |  |  |
 | `team_config.kind_social` | Social |  |  |  |  |
 | `team_config.kind_work` | Work |  |  |  |  |
+| `team_config.kit_floor_alone` | the floor alone — no Routine is on |  |  |  |  |
 | `team_config.loading` | Loading Team Configuration… |  |  |  |  |
 | `team_config.model` | Model |  |  |  |  |
 | `team_config.next_form` | These defaults land in the next Agent form that opens. Nothing live changes. |  |  |  |  |

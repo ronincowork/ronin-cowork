@@ -103,6 +103,18 @@ connection reading, while the `gbrain` Routine selects its macros, tools and MCP
 | connected | Was an MCP or other live connection delivered? |
 | applicable | Does the present repository/situation use this behaviour? |
 
+**And a fifth, which is not a Routine fact at all: whether the Agent holds a worktree.**
+*Carrying `ronin_control` does not mean a worktree was mounted for you.* The Routine is a
+reading list and a toolset — the desk contract, hand-in, team promotion, receipts and
+`tejun-desk` — so that every Agent carrying it knows how worktrees are handled here. An
+Agent under Ronin Control may hold none, and check one out when it needs one. An Agent
+without the Routine may still be started in a worktree: that is isolation, which any agent
+can arrange off a branch, and it needs nothing declared in `RONIN_REPO`. What it does not
+get is the contract — no hand-in, nobody to hand to — so it reports to the owner instead.
+All four combinations are legitimate, and a launch names them separately: the **Routine**
+comes from the resolved Campaign/Team map, the **worktree** from the launch's own
+`desk` choice.
+
 These facts never stand in for one another. In particular, an enabled but unavailable
 Routine **never blocks Agent birth**. The Agent opens normally; the unavailable behaviour
 does not work, and the receipt and surfaces say it was not delivered.
