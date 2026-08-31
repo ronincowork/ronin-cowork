@@ -264,10 +264,33 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.id:** Id
 - **campaign_view.id_help:** Fixed once created — printed on every record that points here, so it cannot change.
 - **campaign_view.agent_defaults:** Agent defaults
-- **campaign_view.defaults_help:** What a new Agent here starts on when the launch does not say. A row this Campaign has not answered uses the machine’s SETTEI answer, marked as such.
-- **campaign_view.defaults_scope:** Role, reach and who may read an Agent are set when it is launched, not here.
-- **campaign_view.defaults_none:** None set — a launch must name a model.
-- **campaign_view.defaults_from_settei:** {line} (from SETTEI)
+- **campaign_view.defaults_help:** These defaults land in the next Team or Agent form that opens. They remain editable there; nothing live changes.
+- **campaign_view.provider_default:** Default provider
+- **campaign_view.model_default:** Default model
+- **campaign_view.default_reach:** Reach
+- **campaign_view.default_recruit:** Recruit
+- **campaign_view.default_output:** Output
+- **campaign_view.default_dial:** Control
+- **campaign_view.default_permissions:** Permissions
+- **campaign_view.default_behaviours:** Behaviours
+- **campaign_view.permissions_help:** Provider permission posture; default uses the provider’s normal setting.
+- **campaign_view.behaviours_help:** One shelf:name book per line.
+- **campaign_view.defaults_summary:** {model} · {reach} · {dial}
+- **campaign_view.option_open:** Open
+- **campaign_view.option_discuss:** Discuss
+- **campaign_view.option_plan:** Plan
+- **campaign_view.option_execute:** Execute
+- **campaign_view.option_nobody:** Nobody
+- **campaign_view.option_propose:** Propose Agents
+- **campaign_view.option_staff:** Staff Agents
+- **campaign_view.option_a_plan:** A plan
+- **campaign_view.option_ideas:** Ideas
+- **campaign_view.option_code:** Code
+- **campaign_view.option_artifact:** An artifact
+- **campaign_view.option_team:** The Team
+- **campaign_view.option_user:** You only
+- **campaign_view.option_read:** Read
+- **campaign_view.option_write:** Read and write
 - **campaign_view.default_help:** The row a launch that names nothing starts from.
 - **campaign_view.from_settei:** from SETTEI
 - **campaign_view.col_provider:** Provider

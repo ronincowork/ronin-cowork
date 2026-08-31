@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `behaviour.*` may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1337 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1360 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## add_agent
 
@@ -151,15 +151,20 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `campaign_view.applied_tag` | applied |  |  |  |  |
 | `campaign_view.apply` | Apply |  |  |  |  |
 | `campaign_view.available` | Available |  |  |  |  |
+| `campaign_view.behaviours_help` | One shelf:name book per line. |  |  |  |  |
 | `campaign_view.campaign_summary` | What this body of work is called, and what it is for. |  |  |  |  |
 | `campaign_view.col_default` | Default |  |  |  |  |
 | `campaign_view.col_model` | Preferred model |  |  |  |  |
 | `campaign_view.col_provider` | Provider |  |  |  |  |
+| `campaign_view.default_behaviours` | Behaviours |  |  |  |  |
+| `campaign_view.default_dial` | Control |  |  |  |  |
 | `campaign_view.default_help` | The row a launch that names nothing starts from. |  |  |  |  |
-| `campaign_view.defaults_from_settei` | {line} (from SETTEI) |  |  |  |  |
-| `campaign_view.defaults_help` | What a new Agent here starts on when the launch does not say. A row this Campaign has not answered uses the machine’s SETTEI answer, marked as such. |  |  |  |  |
-| `campaign_view.defaults_none` | None set — a launch must name a model. |  |  |  |  |
-| `campaign_view.defaults_scope` | Role, reach and who may read an Agent are set when it is launched, not here. |  |  |  |  |
+| `campaign_view.default_output` | Output |  |  |  |  |
+| `campaign_view.default_permissions` | Permissions |  |  |  |  |
+| `campaign_view.default_reach` | Reach |  |  |  |  |
+| `campaign_view.default_recruit` | Recruit |  |  |  |  |
+| `campaign_view.defaults_help` | These defaults land in the next Team or Agent form that opens. They remain editable there; nothing live changes. |  |  |  |  |
+| `campaign_view.defaults_summary` | {model} · {reach} · {dial} |  |  |  |  |
 | `campaign_view.description_help` | What this body of work is for. Shown on its card. |  |  |  |  |
 | `campaign_view.desk_summary` | This Ronin install, its owner and its workspace configuration. |  |  |  |  |
 | `campaign_view.from_settei` | from SETTEI |  |  |  |  |
@@ -171,6 +176,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `campaign_view.lexicon` | Lexicon |  |  |  |  |
 | `campaign_view.lexicon_help` | The words. Held to one lexicon for now, so nothing on this page is offered. |  |  |  |  |
 | `campaign_view.machine_summary` | The rest of the desk: Desk · Account · Archived · Help desk · Keypad. |  |  |  |  |
+| `campaign_view.model_default` | Default model |  |  |  |  |
 | `campaign_view.name_help` | On the door, the browser tab and the address. |  |  |  |  |
 | `campaign_view.new_project_desks` | New projects use desks? |  |  |  |  |
 | `campaign_view.new_project_desks_help` | Desks: each coding session works at its own branch and worktree and hands in to the team. None: sessions work in the checkout. Written into a project’s RONIN_REPO when its root is added; the desks box on a root changes that one project. |  |  |  |  |
@@ -184,11 +190,28 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `campaign_view.none_selected` | No Campaign selected. |  |  |  |  |
 | `campaign_view.off` | Off |  |  |  |  |
 | `campaign_view.on` | On |  |  |  |  |
+| `campaign_view.option_a_plan` | A plan |  |  |  |  |
+| `campaign_view.option_artifact` | An artifact |  |  |  |  |
+| `campaign_view.option_code` | Code |  |  |  |  |
+| `campaign_view.option_discuss` | Discuss |  |  |  |  |
+| `campaign_view.option_execute` | Execute |  |  |  |  |
+| `campaign_view.option_ideas` | Ideas |  |  |  |  |
+| `campaign_view.option_nobody` | Nobody |  |  |  |  |
+| `campaign_view.option_open` | Open |  |  |  |  |
+| `campaign_view.option_plan` | Plan |  |  |  |  |
+| `campaign_view.option_propose` | Propose Agents |  |  |  |  |
+| `campaign_view.option_read` | Read |  |  |  |  |
+| `campaign_view.option_staff` | Staff Agents |  |  |  |  |
+| `campaign_view.option_team` | The Team |  |  |  |  |
+| `campaign_view.option_user` | You only |  |  |  |  |
+| `campaign_view.option_write` | Read and write |  |  |  |  |
 | `campaign_view.output` | Output |  |  |  |  |
 | `campaign_view.output_help` | What an Agent’s tile shows. Terminal Mirror is the one that ships; Detailed, Condensed and Cherry Pick arrive with Ronin Services. |  |  |  |  |
+| `campaign_view.permissions_help` | Provider permission posture; default uses the provider’s normal setting. |  |  |  |  |
 | `campaign_view.presets` | Presets |  |  |  |  |
 | `campaign_view.presets_help` | A preset copies all of its components into this Campaign. Change any one of them afterwards; the preset is not consulted again. |  |  |  |  |
 | `campaign_view.profile_summary` | The words, the skin and the templates this Campaign opens on. |  |  |  |  |
+| `campaign_view.provider_default` | Default provider |  |  |  |  |
 | `campaign_view.roles` | Session roles |  |  |  |  |
 | `campaign_view.roles_help` | What a launch here offers an Agent to be. Templates for a whole Team do not exist yet. |  |  |  |  |
 | `campaign_view.roles_loose` | No family |  |  |  |  |
