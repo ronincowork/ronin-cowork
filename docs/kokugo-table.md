@@ -589,8 +589,8 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `head.note_quiet` | Session note — no session in this tile yet |  |  |  |  |
 | `head.output_help` | Output — live terminal or one of RIREKI’s unlocked views |  |  |  |  |
 | `head.rename_failed` | Could not rename session: {reason} |  |  |  |  |
-| `head.rename_help` | Rename this session |  |  |  |  |
-| `head.rename_prompt` | Rename session |  |  |  |  |
+| `head.rename_help` | Edit this Agent title |  |  |  |  |
+| `head.rename_prompt` | Edit Agent title |  |  |  |  |
 | `head.rename_quiet` | Rename session — no session in this tile yet |  |  |  |  |
 | `head.view_work_record` | View Work Record |  |  |  |  |
 | `head.work_record_help` | View repositories, current action, and the work record |  |  |  |  |
@@ -776,7 +776,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `league.remove_member` | Remove |  |  |  |  |
 | `league.remove_named_member` | Remove {name} from this team |  |  |  |  |
 | `league.rename_agent` | Rename |  |  |  |  |
-| `league.rename_agent_prompt` | Rename Agent |  |  |  |  |
+| `league.rename_agent_prompt` | Edit Agent title |  |  |  |  |
 | `league.resting` | Resting Team |  |  |  |  |
 | `league.role_unset` | Role not set |  |  |  |  |
 | `league.ronin` | Ronin: no team |  |  |  |  |

@@ -31,16 +31,13 @@ export async function fetchSessions() {
   return r;
 }
 
-export async function renameSession(name, next) {
-  const r = await request('/api/sessions/' + encodeURIComponent(name) + '/rename', {
-    method: 'POST', json: { name: next },
+export async function setSessionTitle(name, title) {
+  const r = await request('/api/sessions/' + encodeURIComponent(name) + '/title', {
+    method: 'PUT', json: { title },
   });
   if (!r.ok) throw new Error(r.message);
-  return r.data.name;
+  return r.data.title;
 }
-
-/** Turn a readable name from a prompt into tmux's safe session identifier. */
-export const sessionNameFromInput = (value) => String(value || '').trim().replace(/\s+/g, '_');
 
 /** Kill a tmux session on the host (and its grid_* viewers). */
 export async function deleteSession(name) {

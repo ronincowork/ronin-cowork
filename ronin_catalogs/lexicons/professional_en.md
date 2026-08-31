@@ -1144,9 +1144,9 @@ The catalog entry goes. {dir} is not touched.
 ## head — tilehead.js (the tile head's help and quiet words)
 - **head.dial_help:** Who may touch this session: 👤 owner only · 👁 outside agents watch · 🤖 outside agents type. Yours to turn; agents never flip it.
 - **head.dot_help:** Connection: green = attached, grey = disconnected
-- **head.rename_help:** Rename this session
+- **head.rename_help:** Edit this Agent title
 - **head.rename_quiet:** Rename session — no session in this tile yet
-- **head.rename_prompt:** Rename session
+- **head.rename_prompt:** Edit Agent title
 - **head.rename_failed:** Could not rename session: {reason}
 - **head.view_work_record:** View Work Record
 - **head.work_record_help:** View repositories, current action, and the work record
@@ -1439,7 +1439,7 @@ The catalog entry goes. {dir} is not touched.
 - **league.team_lead:** Team Lead
 - **league.make_team_lead:** Make Lead
 - **league.rename_agent:** Rename
-- **league.rename_agent_prompt:** Rename Agent
+- **league.rename_agent_prompt:** Edit Agent title
 - **league.remove_member:** Remove
 - **league.remove_named_member:** Remove {name} from this team
 - **league.choose_member:** Choose an Agent to add
