@@ -20,7 +20,7 @@
  * nineteen lines early — threw in this constructor and took the whole UI down on
  * 2026-08-08. Views mount in DOM order: tape, then the commons panel, then xterm.
  */
-import { fetchSessions, renameSession } from './api.js';
+import { fetchSessions, renameSession, sessionNameFromInput } from './api.js';
 import { request } from './request.js';
 import { toast } from './ui.js';
 import { retireSession } from './session-retire.js';
@@ -151,9 +151,10 @@ export class Tile {
     if (!this.session) return;
     const before = this.session;
     const wanted = window.prompt(t('head.rename_prompt', 'Rename session'), before);
-    if (wanted == null || wanted.trim() === before) return;
+    const requested = sessionNameFromInput(wanted);
+    if (wanted == null || requested === before) return;
     try {
-      const next = await renameSession(before, wanted.trim());
+      const next = await renameSession(before, requested);
       await fetchSessions();
       if (S.onSessionRenamed) S.onSessionRenamed(before, next);
       else this.connect(next);

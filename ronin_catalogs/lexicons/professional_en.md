@@ -1434,8 +1434,10 @@ The catalog entry goes. {dir} is not touched.
 - **league.members:** Team members
 - **league.no_members:** No Agents assigned yet.
 - **league.role_unset:** Role not set
-- **league.team_lead:** Team lead
-- **league.make_team_lead:** Make team lead
+- **league.team_lead:** Team Lead
+- **league.make_team_lead:** Make Lead
+- **league.rename_agent:** Rename
+- **league.rename_agent_prompt:** Rename Agent
 - **league.remove_member:** Remove
 - **league.remove_named_member:** Remove {name} from this team
 - **league.choose_member:** Choose an Agent to add
