@@ -1,0 +1,12 @@
+# Figure It Out
+- **label:** Figure It Out
+- **art:** 🧭
+- **blurb:** Research, compare, decide. No building — yet.
+- **order:** 40
+- **kinds:** coding, work, personal, school
+- **brief:** Research it, compare the options, and bring back a decision. No building yet.
+- **objective:** Research the options, compare them honestly, and come back with a decision.
+- **mandate:** discuss · nobody · ideas
+- **behaviours:** sops:data
+- **lead_brief:** Gather the options and what is true about each.
+- **lead_mandate:** discuss · nobody · ideas

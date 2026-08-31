@@ -26,7 +26,7 @@ import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { STOCK_DIR, splitSections, readEntries } from '../src/catalog.js';
-import { listRoleFamilies, listRoutines, listSessionRoles, type DefinitionKind } from '../src/definitions.js';
+import { listRoleFamilies, listRoutines, listSessionRoles, listTemplates, type DefinitionKind } from '../src/definitions.js';
 import { listDeskProfiles } from '../src/desk-profiles.js';
 import { listLexicons } from '../src/lexicons.js';
 import { resolveLaunchProfile, type LaunchProfile } from '../src/launch-profile.js';
@@ -248,6 +248,37 @@ async function routinesResolve(): Promise<void> {
   for (const routine of routines) visit(routine.name, []);
 }
 
+/**
+ * EVERY SHIPPED TEMPLATE FILLS A FORM THAT CAN BE PRESSED. A half-stated mandate seeds
+ * nothing (the reader answers null), so a stock file that states one must state a legal
+ * one; a book address must resolve to a real shelf file, or the tray lays reading the
+ * born Agent can never be handed; and a routine switch must name a routine that exists.
+ */
+async function templatesResolve(): Promise<void> {
+  const templates = await listTemplates();
+  const routineNames = new Set((await listRoutines()).map((routine) => routine.name));
+  const shelfDirs: Record<string, string> = { sops: 'ronin_sops', ways: 'ways' };
+  for (const template of templates.filter((x) => x.origin === 'stock')) {
+    const at = `templates/${template.name}.md`;
+    if (!template.blurb.trim()) fail(`${at}: missing blurb`);
+    if (!template.art.trim()) fail(`${at}: missing art`);
+    if (!template.kinds.length) fail(`${at}: names no valid kinds — nothing brings it forward`);
+    const def = await findDefinition('templates', template.name);
+    if (def?.has('mandate') && !template.mandate) fail(`${at}: mandate is not \`reach · recruit · output\` in ruled values`);
+    if (def?.has('lead_mandate') && !template.lead?.mandate) fail(`${at}: lead_mandate is not \`reach · recruit · output\` in ruled values`);
+    for (const book of template.behaviours) {
+      const [shelf, name] = book.split(':');
+      const dir = shelfDirs[shelf];
+      if (!dir || !name) { fail(`${at}: behaviour "${book}" is not <shelf>:<name> on a known shelf`); continue; }
+      try { await stat(path.join(REPO, dir, `${name}.md`)); }
+      catch { fail(`${at}: behaviour names missing ${dir}/${name}.md`); }
+    }
+    for (const name of [...template.routines_on, ...template.routines_off]) {
+      if (!routineNames.has(name)) fail(`${at}: routines switch names missing routine "${name}"`);
+    }
+  }
+}
+
 const FILES = ['MACROS.md', 'ACTIONS.md', 'TOOLS.md', 'PROJECT_ROOTS.md'];
 
 await surfacingDefinitions('role_families', listRoleFamilies);
@@ -255,8 +286,10 @@ await surfacingDefinitions('session_roles', listSessionRoles);
 await surfacingDefinitions('desk_profiles', listDeskProfiles);
 await surfacingDefinitions('lexicons', listLexicons);
 await surfacingDefinitions('routines', listRoutines);
+await surfacingDefinitions('templates', listTemplates);
 await definitionsResolve();
 await routinesResolve();
+await templatesResolve();
 await surfacing('MACROS.md', listMacros);
 await surfacing('ACTIONS.md', () => readEntries('ACTIONS.md'));
 await surfacing('TOOLS.md', () => readEntries('TOOLS.md'));

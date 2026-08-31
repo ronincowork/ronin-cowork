@@ -446,6 +446,65 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.root_default:** — the box’s default —
 - **new_team.title:** New Team
 
+## new_team — new-team-form.js (the drawn raise form, staged beside the card above)
+- **new_team.card_summary:** Template · kit · lead — the drawn form.
+- **new_team.name_kind:** Name & kind
+- **new_team.name_placeholder:** lowercase, digits, - _
+- **new_team.objective_placeholder:** what this team is for
+- **new_team.where:** Where
+- **new_team.root_note:** A default that seeds a launch — never a constraint. A rōnin that joins later keeps its own.
+- **new_team.agent_defaults:** agent defaults — seeded into every Agent raised here; none of it is a constraint
+- **new_team.floor:** Cowork floor
+- **new_team.floor_why:** The launch, campaign and team resolution, the shelf map, the birth receipt.
+- **new_team.floor_tag:** floor
+- **new_team.required:** Required behaviours
+- **new_team.required_why:** Every Agent that joins gets the documents below, at birth or on joining.
+- **new_team.required_on:** enforced
+- **new_team.required_off:** offered
+- **new_team.kit_none:** nothing yet — a template lays it, or open the kit
+- **new_team.kit_door:** Open the Team Kit  ▸
+- **new_team.kit_door_why:** A workbench of its own: browse every routine and behaviour, read them, and make them yours. Not yet built.
+- **new_team.kit_meta:** {routines} routines · {books} books{required}
+- **new_team.kit_meta_required:** (required)
+- **new_team.lead:** Team lead
+- **new_team.lead_include:** Include a team lead
+- **new_team.lead_include_sub:** Raised with the team and briefed.
+- **new_team.lead_empty:** Open it empty
+- **new_team.lead_empty_sub:** Ordinary. Add one whenever you like.
+- **new_team.lead_brief:** brief
+- **new_team.lead_brief_placeholder:** what the lead is for
+- **new_team.lead_brief_default:** Hold the objective, dispatch, unblock, keep the gaps closed.
+- **new_team.lead_included:** included
+- **new_team.lead_none:** none
+- **new_team.lead_raised:** included, briefed at raise
+- **new_team.members:** members
+- **new_team.members_note:** derived from live tags — never stored here
+- **new_team.inherits:** an agent born here inherits
+- **new_team.wipeboard_own:** {team}  (its own)
+- **new_team.raise:** Raise the team
+- **new_team.raise_lead:** Raise the team and its lead
+- **new_team.raising:** Raising the team…
+- **new_team.raised_no_lead:** Raised {team} — the lead was not born: {reason}
+- **new_team.save_name_placeholder:** template name
+- **new_team.save_as_new:** Save as new template
+- **new_team.saved_template:** Saved template {name}
+
+## forms — form-steps.js (the drawn form idiom shared by New Team and New Agent)
+- **forms.manual:** Manual
+- **forms.own:** Make your own
+- **forms.own_blurb:** Fresh and empty. Fill it in yourself.
+- **forms.library:** From the Ronin library
+- **forms.library_blurb:** Published bundles, pulled in and run. Not yet built.
+- **forms.default:** default
+- **forms.provider:** model provider
+- **forms.model:** model
+- **forms.none:** —
+- **forms.always:** always
+- **forms.campaign_on:** campaign on
+- **forms.campaign_off:** campaign off
+- **forms.team_on:** team turns on
+- **forms.team_off:** team turns off
+
 ## team_wipeboard — team-wipeboard.js (the team wipeboard channel on the Team page)
 - **team_wipeboard.placeholder:** say something to the team — every member is interrupted
 - **team_wipeboard.post:** Post

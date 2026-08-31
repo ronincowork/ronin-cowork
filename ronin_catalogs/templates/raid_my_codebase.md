@@ -1,0 +1,13 @@
+# Raid My Codebase
+- **label:** Raid My Codebase
+- **art:** 🛠
+- **blurb:** Work on what is already there. Faster, cleaner, fixed.
+- **order:** 20
+- **kinds:** coding
+- **brief:** Work on the codebase that is already here — faster, cleaner, fixed.
+- **objective:** Improve the codebase that already exists — faster, cleaner, and the faults gone.
+- **mandate:** execute · propose agents · code
+- **behaviours:** sops:github, sops:ronin_methodology
+- **routines_on:** ronin_control
+- **lead_brief:** Decide what is worth doing and in what order.
+- **lead_mandate:** plan · propose agents · a plan
