@@ -350,7 +350,7 @@ export function buildSettei(root, isShowing) {
           go.disabled = true;
           const r = await request('/api/launch', {
             method: 'POST',
-            json: { session_role: schema.seat.session_role, name: schema.seat.name, prompt: schema.seat.prompt },
+            json: { behaviours: schema.seat.behaviours, name: schema.seat.name, prompt: schema.seat.prompt },
           });
           go.disabled = false;
           go.textContent = r.ok ? t('settei.setup_started', 'setup session started — see ⌂ Roster') : r.message || t('settei.setup_failed', 'could not start');
