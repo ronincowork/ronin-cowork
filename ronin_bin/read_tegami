@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# read_tegami — show a ladder.
-# Usage: read_tegami                      your letter, teaching lines and all
+# read_tegami — show a work record.
+# Usage: read_tegami                      your work record, teaching lines and all
 #        read_tegami --json               just the block, for a machine
 #        read_tegami --rungs              the markable positions, numbered
 #        read_tegami --session <name> …   another session (dial 👁 read or 🤖 write)
+#        read_tegami --help               this help
 #
 # --rungs prints the positions a marker can point at, AS THEY SIT IN THE LETTER: a gate
 # is rung N, a leg is N.M. Deliberately not an index into a flattened list — that number
@@ -20,6 +21,8 @@
 set -u
 
 die() { printf '%s\n' "$*" >&2; exit 3; }
+
+help() { awk 'NR == 2 { on=1 } on && $0 == "#" { exit } on { sub(/^# ?/, ""); print }' "${BASH_SOURCE[0]}"; }
 
 # WHICH SESSION AM I — and it must NEVER guess.
 #
@@ -83,6 +86,7 @@ MODE=block
 TARGET=""
 while [ $# -gt 0 ]; do
   case "$1" in
+    -h|--help) help; exit 0 ;;
     --json)    MODE=json ;;
     --rungs)   MODE=rungs ;;
     --session) shift; TARGET=${1-} ;;

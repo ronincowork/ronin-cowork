@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# write_tegami — replace your ladder, or point another session's marker.
-# Usage: write_tegami < ladder.json                      your own, whole block on stdin
+# write_tegami — update your work record, or point another session's marker.
+# Usage: write_tegami < work-record.json                 your own, whole block on stdin
 #        write_tegami --session <name> --at 2.3         rung 2, leg 3
 #        write_tegami --session <name> --at 4            rung 4 (a gate)
 #        write_tegami --session <name> --at none         nothing to point at
@@ -8,6 +8,8 @@
 #        write_tegami --on_track                         back on it
 #        write_tegami --doc <path>                       list a doc you are working on
 #        write_tegami --undoc <path>                     take it off the list
+#        write_tegami --done 2.3                         mark rung 2, leg 3 DONE
+#        write_tegami --help                             this help
 #
 # THE MARKER FORM TAKES ONE POSITION AND NEVER JSON, and it writes exactly ONE KEY:
 # "at" -> {"rung":2,"leg":3}, or {"rung":4} for a gate, or null. It touches nothing
@@ -61,6 +63,8 @@
 set -u
 
 die() { printf '%s\n' "$*" >&2; exit 3; }
+
+help() { awk 'NR == 2 { on=1 } on && $0 == "#" { exit } on { sub(/^# ?/, ""); print }' "${BASH_SOURCE[0]}"; }
 
 # WHICH SESSION AM I — and it must NEVER guess.
 #
@@ -120,16 +124,10 @@ key_of() {
   else printf '%s\n' "$1"; fi
 }
 
-# Where the session record lives on THIS machine. Asked, never spelled: this file used to
-# hardcode the path while the rest of Ronin resolved it, so moving the store sent the
-# letters one way and the tape the other. See docs/stores.md.
-STORE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../bin" && pwd)/ronin-store"
-[ -x "$STORE" ] || STORE=ronin-store
-SESSION_STORE="$("$STORE" session)"
-
-TARGET=""; ACTIVE=""; STATE=""; DOCADD=""; DOCDEL=""
+TARGET=""; ACTIVE=""; STATE=""; DOCADD=""; DOCDEL=""; DONE=""; DONE_SET=0
 while [ $# -gt 0 ]; do
   case "$1" in
+    -h|--help)    help; exit 0 ;;
     --session)    shift; TARGET=${1-} ;;
     --at)         shift; ACTIVE=${1-} ;;
     --on_track)   STATE=on_track ;;
@@ -138,10 +136,63 @@ while [ $# -gt 0 ]; do
     # and two flags a keystroke apart with unrelated meanings is a trap.
     --doc)        shift; DOCADD=${1-} ;;
     --undoc)      shift; DOCDEL=${1-} ;;
+    --done)       shift; DONE=${1-}; DONE_SET=1 ;;
     *) die "write_tegami: unknown argument: $1" ;;
   esac
   shift
 done
+
+# Where the session record lives on THIS machine. Asked only after argument parsing, so
+# --help works even when no install or session store is available.
+STORE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../bin" && pwd)/ronin-store"
+[ -x "$STORE" ] || STORE=ronin-store
+SESSION_STORE="$("$STORE" session)"
+
+# FINISH ONE POSITION. This is the common work-record update and must not cost a whole
+# JSON rewrite. The coordinate is the same visible N or N.M printed by --rungs.
+if [ "$DONE_SET" -eq 1 ]; then
+  [ -z "$TARGET$STATE$DOCADD$DOCDEL$ACTIVE" ] \
+    || die "write_tegami: --done is a separate call for your own work record."
+  case "$DONE" in
+    *[!0-9.]*|.*|*.|*.*.*|'') die "write_tegami: --done takes a position from 'read_tegami --rungs' — N or N.M." ;;
+  esac
+  NAME=$(me)
+  SFILE="$SESSION_STORE/$(key_of "$NAME")/tegami.md"
+  [ -f "$SFILE" ] || die "write_tegami: you have no work record yet."
+  python3 - "$SFILE" "$DONE" "$NAME" <<'DONEMARK' || exit 3
+import json, os, re, sys
+src, pos, name = sys.argv[1:]
+text = open(src).read()
+m = re.search(r"```(?:json)?\s*\n([\s\S]*?)\n```", text)
+if not m:
+    sys.exit("write_tegami: no json block in your work record")
+d = json.loads(m.group(1))
+parts = [int(x) for x in pos.split(".")]
+ladder = d.get("ladder") or []
+ri = parts[0]
+if ri < 1 or ri > len(ladder):
+    sys.exit("write_tegami: rung %d is out of range (1..%d)" % (ri, len(ladder)))
+rung = ladder[ri - 1]
+if len(parts) == 1:
+    if "gate" not in rung:
+        sys.exit("write_tegami: rung %d is a phase — name one of its legs, e.g. --done %d.1" % (ri, ri))
+    rung["status"] = "DONE"
+else:
+    if "gate" in rung:
+        sys.exit("write_tegami: rung %d is a gate — use --done %d" % (ri, ri))
+    legs = rung.get("legs") or []
+    li = parts[1]
+    if li < 1 or li > len(legs):
+        sys.exit("write_tegami: rung %d has %d leg(s); %d is out of range" % (ri, len(legs), li))
+    legs[li - 1]["status"] = "DONE"
+block = json.dumps(d, indent=2, ensure_ascii=False)
+tmp = src + ".done"
+open(tmp, "w").write(text[:m.start(1)] + block + text[m.end(1):])
+os.replace(tmp, src)
+print("write_tegami: @%s %s DONE" % (name, pos))
+DONEMARK
+  exit 0
+fi
 
 # THE STATE SWITCH — one word, your own session, no block.
 #
@@ -477,14 +528,17 @@ ladder = d.get("ladder", [])
 if not isinstance(ladder, list):
     sys.exit("write_tegami: \"ladder\" must be a list of rungs.")
 
-repos = d.get("repos", [])
+prev = json.loads(open(sys.argv[1]).read()) if len(sys.argv) > 1 else {}
+# Repositories are editable in a whole-block save, but omission is not deletion. Carry
+# the current coordinates through so rewriting progress cannot silently drop the desk.
+repos = d["repos"] if "repos" in d else (prev.get("repos") or [])
 if not isinstance(repos, list):
     sys.exit("write_tegami: \"repos\" must be a list of { \"repo\": …, \"branch\": … } entries.")
 for i, checkout in enumerate(repos, 1):
-    if not isinstance(checkout, dict) or set(checkout) - {"repo", "branch"}:
-        sys.exit(f"write_tegami: repo {i} must contain only \"repo\" and \"branch\".")
-    if not isinstance(checkout.get("repo", ""), str) or not isinstance(checkout.get("branch", ""), str):
-        sys.exit(f"write_tegami: repo {i} needs string \"repo\" and \"branch\" values.")
+    if not isinstance(checkout, dict) or set(checkout) - {"repo", "branch", "worktree", "line"}:
+        sys.exit(f"write_tegami: repo {i} may contain only \"repo\", \"branch\", \"worktree\" and \"line\".")
+    if any(not isinstance(checkout.get(k, ""), str) for k in ("repo", "branch", "worktree", "line")):
+        sys.exit(f"write_tegami: repo {i} needs string coordinate values.")
     if not checkout.get("repo", "").strip():
         sys.exit(f"write_tegami: repo {i} needs a repository name or URL.")
 
@@ -533,7 +587,6 @@ if ladder and "gate" not in ladder[0]:
 # changes the SHAPE of the sequence — a rung added, removed or reordered — the pointer
 # is reset to null, because a stale index silently points at the wrong work and null is
 # honest. Editing a title or flipping a status leaves the shape alone and keeps it.
-prev = json.loads(open(sys.argv[1]).read()) if len(sys.argv) > 1 else {}
 def shape(l):
     return [("gate", r.get("gate", "")) if "gate" in r
             else ("phase", r.get("phase", ""), tuple(x.get("title", "") for x in (r.get("legs") or [])))
