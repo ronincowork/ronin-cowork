@@ -100,16 +100,6 @@ only when you have one. Four words, used strictly: **commit** preserves (yours, 
 runs; **Git push** is remote publication and never yours. A brief that lists no desk gave
 you none — do not invent one; that session works as its repository's own instructions say.
 
-**A missing or contradictory desk is a blocker for your team lead, not an owner question.** Before
-changing repository files, compare `tejun-desk status --assignment`, the desk block in
-your brief, and `repos[]` in your work record. If a promised desk is absent, the paths or
-branches disagree, or you are standing on a funnel branch (`dev` or `team/<team>/dev`),
-stop without editing. Post the exact mismatch with `tejun-wipeboard post "…"`; its normal
-routing interrupts your team lead. Ask the lead to provision or repair the desk, then
-continue only from the worktree `tejun-desk status --assignment` reports. `NO-DESK` is
-ordinary only when no desk was promised and the repository's instructions deliberately
-use a direct or shared checkout.
-
 ## This machine
 
 Facts about the box are **measured, never remembered** — nothing written down about a
