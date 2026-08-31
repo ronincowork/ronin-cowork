@@ -159,7 +159,7 @@ test('a provider narrows an explicit model rather than competing with it', async
   // Both named: the pair must be a real cell, and the model wins over the preference.
   const r = await resolveForm(launch({ provider: 'anthropic', model: 'haiku' }), new Set());
   assert.ok(r.cmd.startsWith('claude --model haiku'), `expected the named pair, got "${r.cmd}"`);
-  assert.deepEqual(r.stated_by.cmd, [{ layer: 'explicit_launch', source: 'launch request' }]);
+  assert.deepEqual(r.stated_by.cmd, [{ layer: 'launch', source: 'launch request' }]);
   // A model that provider does not offer is refused, and the message names what it does
   // offer — not the whole table, which would be a list the caller cannot act on.
   await assert.rejects(

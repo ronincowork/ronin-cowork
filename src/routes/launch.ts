@@ -28,7 +28,8 @@ import {
 } from '../tmux.js';
 import { launchArgv, newProviderSession } from '../agents.js';
 import { AtSessionMax, liveCount, readAgentsSection, readDesksSection, readMax, readOwner, writeMax, writeOwner } from '../user-config.js';
-import { resolveForm, appendLedger, type SpawnForm } from '../spawn.js';
+import { resolveForm, type SpawnForm } from '../spawn.js';
+import { appendLaunchLedger } from '../launch-ledger.js';
 import { mandate } from '../agent-defaults.js';
 import { projectRoutineTools, type RoutineToolProjection } from '../routine-tools.js';
 import { classifyStatus, type SessionStatus } from '../status.js';
@@ -240,7 +241,7 @@ export function registerLaunch(app: express.Express): void {
       try {
         resolved.assignment = await prepareLaunchDesks(resolved.assignment);
       } catch (e) {
-        void appendLedger(form, resolved, false);
+        void appendLaunchLedger(form, resolved, false);
         return res.status(409).json({ error: String((e as Error)?.message ?? e) });
       }
     }
@@ -325,7 +326,7 @@ export function registerLaunch(app: express.Express): void {
       if (resolved.session_type === 'cowork_agent') await markRoleDelivered(resolved.name, resolved.session_role);
       await setControl(resolved.name, resolved.dial);
     } catch (e) {
-      void appendLedger(form, resolved, false);
+      void appendLaunchLedger(form, resolved, false);
       // A full box is not a server fault: 429 so the launcher shows the reason as a refusal
       // rather than a crash, and so a caller can tell "try later" from "this is broken".
       if (e instanceof AtSessionMax) {
@@ -405,7 +406,7 @@ export function registerLaunch(app: express.Express): void {
         }),
       },
     });
-    void appendLedger(form, resolved, true);
+    void appendLaunchLedger(form, resolved, true);
     void (async () => {
       // NOTHING IS TYPED HERE, and there is no longer anywhere to type. The session was
       // born running the CLI with its brief already on the command line; from this moment

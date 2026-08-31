@@ -37,6 +37,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { config, authEnabled, tailnetIp } from './config.js';
 import { SETTEI_SCHEMA, providerModelFields, type ProviderModelField } from './settei-registry.js';
+import { repositoryNeeds } from './repository-needs.js';
 import { secureUrl } from './passkey.js';
 import { listServices } from './sockets.js';
 import { CONTRACT_V } from './sockets-contract.js';
@@ -63,7 +64,6 @@ import {
 // the shapes this record has always served, but the fact behind them is now the initial
 // campaign_config rather than a section of ronin.json — one writable Campaign record.
 import { readCampaignSection, readDeskSection } from './campaign-config.js';
-
 const pexec = promisify(execFile);
 
 /** This node's tailnet address, measured once — see `routes()` for why it is needed. */
@@ -107,24 +107,6 @@ export interface SetteiRecord {
  * where the three values are spelled out at length. `mechanical` is the install
  * operation's subset and the only one anything dispatches. */
 export type MetBy = 'mechanical' | 'owner' | 'agent';
-
-export function repositoryNeeds(
-  set: Record<string, unknown>,
-  status: Record<string, unknown>,
-): SetteiRecord['needed'] {
-  if ((set.desks as { new_project?: string } | undefined)?.new_project !== 'managed') return [];
-  return ((status.projects as Array<{ name: string; dir: string; repo: string }> | undefined) ?? [])
-    .filter((project) => project.repo === 'no repo')
-    .map((project) => ({
-      leaf: 'desks.new_project',
-      needs: `${project.name} needs a local Git repository for managed file coordination`,
-      how: `run ronin-repo-init ${project.dir} — it initializes locally and never assumes a remote`,
-      met_by: 'agent' as const,
-    }));
-}
-
-/* The registry lives in src/settei-registry.ts — pure data, split out by the
- * line ceiling; it is still the ONE declaration and this file still serves it. */
 
 /* ------------------------------------------------------- small honest measurers */
 

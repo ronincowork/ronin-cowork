@@ -256,7 +256,7 @@ test('mandate defaults are complete, Team seeds them, and the explicit launch wi
     mandate: { reach: 'execute', recruit: 'staff agents', output: 'the team' },
   }), new Set());
   assert.deepEqual(explicit.mandate, { reach: 'execute', recruit: 'staff agents', output: 'the team' });
-  assert.deepEqual(explicit.stated_by.mandate, [{ layer: 'explicit_launch', source: 'launch request' }]);
+  assert.deepEqual(explicit.stated_by.mandate, [{ layer: 'launch', source: 'launch request' }]);
 });
 
 test('a ronin launch is legal, and so is a launch onto a tag-only team', async () => {
@@ -273,7 +273,7 @@ test('a ronin launch is legal, and so is a launch onto a tag-only team', async (
   await assert.rejects(() => resolveForm(commonsForm({ team: 'Ghosts!' }), new Set()), /team name/);
 });
 
-test('stated_by is resolved on the server across explicit, Team, role, and system layers', async () => {
+test('stated_by carries the settled launch, Team, role, and Campaign layers', async () => {
   const explicit = await resolveForm(commonsForm({
     name: 'attribution-proof',
     project_root: 'beta',
@@ -281,7 +281,7 @@ test('stated_by is resolved on the server across explicit, Team, role, and syste
     mcp: true,
   }), new Set());
   for (const key of ['name', 'project_root', 'cmd', 'mcp', 'session_role']) {
-    assert.deepEqual(explicit.stated_by[key], [{ layer: 'explicit_launch', source: 'launch request' }], key);
+    assert.deepEqual(explicit.stated_by[key], [{ layer: 'launch', source: 'launch request' }], key);
   }
   assert.equal(explicit.stated_by.lifecycle[0]?.layer, 'session_role');
   assert.match(explicit.stated_by.lifecycle[0]?.source ?? '', /session_roles\/DraftPlan\.md$/);
@@ -290,8 +290,9 @@ test('stated_by is resolved on the server across explicit, Team, role, and syste
   assert.equal(inherited.stated_by.project_root[0]?.layer, 'team_roster');
   assert.match(inherited.stated_by.project_root[0]?.source ?? '', /team_rosters\/scratchteam\.md$/);
 
-  const system = await resolveForm(commonsForm({ session_role: '' }), new Set());
-  assert.deepEqual(system.stated_by.dial, [{ layer: 'system', source: 'src/launch-profile.ts' }]);
+  const campaign = await resolveForm(commonsForm({ session_role: '' }), new Set());
+  assert.equal(campaign.stated_by.dial[0]?.layer, 'campaign');
+  assert.match(campaign.stated_by.dial[0]?.source ?? '', /agent_defaults\.dial/);
 });
 
 test('server resolution returns profile and durable Team context without browser reconstruction', async () => {
@@ -369,7 +370,7 @@ test('QuarterBack is a session_role, pinned as the developer family\'s default l
 
   const qb = await resolveForm(commonsForm({ session_role: 'QuarterBack' }), new Set());
   assert.equal(qb.session_role, 'QuarterBack');
-  assert.equal(qb.dial, 'read', 'a coordinator watches: the definition states its own dial');
+  assert.equal(qb.dial, 'write', 'the Campaign dial lands after the presentation-only role pin');
   assert.equal(qb.lifecycle, 'orchestrating');
   // A default_lead_role launch carries the team-building SOP — route 1 of its delivery.
   assert.match(qb.brief, /teams\.md/, 'the lead reading rides the brief');

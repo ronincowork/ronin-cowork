@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { repositoryNeeds } from '../src/settei.js';
+import { repositoryNeeds } from '../src/repository-needs.js';
 
 const projects = [
   { name: 'plain', dir: '/work/plain', repo: 'no repo' },

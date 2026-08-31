@@ -1,4 +1,3 @@
-import { appendFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { mergeSessionDefaults, resolveLaunchCommand, type SessionsDefaults } from './launch-command.js';
@@ -501,7 +500,7 @@ export async function resolveForm(
   // ATTRIBUTION IS RESOLVED BESIDE THE VALUES. Keeping it here means launch and preflight
   // cannot disagree and the browser never has to reconstruct the cascade. A source is an
   // exact file when one stated the value, or a named runtime input when no file exists.
-  const explicit: StatedBy[] = [{ layer: 'explicit_launch', source: 'launch request' }];
+  const explicit: StatedBy[] = [{ layer: 'launch', source: 'launch request' }];
   const system: StatedBy[] = [{ layer: 'system', source: 'src/spawn.ts' }];
   const rosterSource: StatedBy[] = roster
     ? [{
@@ -668,42 +667,4 @@ export async function resolveForm(
       routines: parentSeed?.routines.flatMap((routine) => routine.stated_by) ?? system,
     },
   };
-}
-
-/**
- * The ledger: one line per spawn, from day one, even though nothing reads it yet.
- * History cannot be retro-fitted — a ledger started later starts empty — and it is
- * what later teaches Koshi this user's habits. Local, append-only, gitignored,
- * outside the repo: it is the owner's record of their own words. Nothing phones home.
- */
-const LEDGER = path.join(storeDir('ledger'), 'spawns.jsonl');
-
-export async function appendLedger(form: SpawnForm, resolved: Resolved, ok: boolean): Promise<void> {
-  try {
-    await mkdir(path.dirname(LEDGER), { recursive: true });
-    await appendFile(
-      LEDGER,
-      JSON.stringify({
-        ts: new Date().toISOString(),
-        session_role: form.session_role ?? '',
-        team: form.team ?? '',
-        intent: form.prompt,
-        picks: {
-          project_root: form.project_root,
-          tags: form.tags,
-          seed: form.seed,
-          reference: form.reference,
-        },
-        fill: null, // reserved: what Koshi filled, once the smart fill exists
-        resolved: { name: resolved.name, dir: resolved.dir, cmd: resolved.cmd, dial: resolved.dial },
-        boot: ok ? { state: 'open', opened_at: new Date().toISOString() } : { state: 'failed' },
-        spawn: { name: resolved.name, ok },
-        outcome: null, // reserved: the evaluation loop
-      }) + '\n',
-      'utf8',
-    );
-  } catch (e) {
-    // A ledger failure must never cost the user their session.
-    console.error('[ronin] ledger:', (e as Error)?.message ?? e);
-  }
 }
