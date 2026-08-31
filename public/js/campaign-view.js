@@ -70,7 +70,7 @@ function registerCampaignSurfaces() {
   add({ type: TYPES.defaults, header: 'surface', label: () => t('campaign_view.agent_defaults', 'Agent defaults'), summary: (_tenant, e) => currently.defaults(e), create: ({ environment: e }) => { const surface = createAgentDefaultsSurface(e.selected); return { el: surface.el, show: () => surface.enter() }; } });
   // ROUTINES (owner, 2026-08-30): the switchboard for control systems — see the lab's
   // CONTROL_BUNDLES build-out for the bundle model behind it.
-  add({ type: TYPES.routines, header: 'surface', label: () => t('campaign_view.routines', 'Routines'), summary: (_tenant, e) => routinesSummary(e.settei()), create: () => { const surface = createRoutinesSurface(); return { el: surface.el, show: () => surface.enter() }; } });
+  add({ type: TYPES.routines, header: 'surface', label: () => t('campaign_view.routines', 'Routines'), summary: (_tenant, e) => routinesSummary(e.selected()), create: ({ environment: e }) => { const surface = createRoutinesSurface(e.selected); return { el: surface.el, show: () => surface.enter() }; } });
   // THE MACHINE (owner, 2026-08-30): the Admin Desk is gone as a page; this Ronin's own
   // settings — health, account (configuration, updates, hotwords, Koshi, gbrain, log out),
   // archived sessions, help desk, keypad — are a surface here, the cowork commons with the

@@ -1,16 +1,8 @@
 /* part of the ronin-cowork client — see js/README.md */
-/**
- * ROUTINES — the switchboard for control systems (owner, 2026-08-30): the things Ronin
- * can run for you — Ronin control (desks), gbrain, Koshi, Hotwords — one row each, with
- * its switch where a switch exists. A control system is a BUNDLE: a reading list, SOPs,
- * a macro library and tools; on means a session born after the switch gets all four.
- * The bundle model itself is the CONTROL_BUNDLES build-out in the lab; this surface is
- * honest on day one — the one real switch (gbrain, a SETTEI setting) flips, and the
- * systems without a switch yet say present or absent rather than pretending.
- */
+/** Campaign Routine defaults: catalog supplies the rows; campaign_config owns the answer. */
 import { t } from './lexicon.js';
 import { request } from './request.js';
-import { S } from './state.js';
+import { saveCampaign } from './campaigns.js';
 import { WorkspaceKit } from './workspace-kit.js';
 
 const el = (tag, cls, text) => {
@@ -19,84 +11,61 @@ const el = (tag, cls, text) => {
   if (text != null) out.textContent = String(text);
   return out;
 };
+const bucket = (value) => value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 
-export function createRoutinesSurface() {
+export function completeRoutineMap(catalog, stored) {
+  const current = bucket(stored);
+  return Object.fromEntries(catalog.map((routine) => [routine.name, current[routine.name] === true]));
+}
+
+export function createRoutinesSurface(campaign) {
   const { createSurface, createNotice } = WorkspaceKit.primitives;
-  const label = t('campaign_view.routines', 'Routines');
-  const surface = createSurface({ label, className: 'cv-surface' });
+  const surface = createSurface({ label: t('campaign_view.routines', 'Routines'), className: 'cv-surface' });
   const body = el('div', 'cv-body');
   surface.content.append(body);
-  let settei = null;
-  const notice = createNotice();
+  let catalog = [];
 
-  const present = (svc) => !Array.isArray(S.services) || S.services.includes(svc);
-  const gbrainOn = () => settei?.set?.gbrain?.enabled === true;
-
-  const setGbrain = async (on) => {
+  const available = (routine) => (routine.mcp || []).every((name) => !Array.isArray(S.services) || S.services.includes(name));
+  const save = async (name, on, notice) => {
+    const row = campaign();
+    if (!row) return;
+    const routines = { ...completeRoutineMap(catalog, row.config?.agent_defaults?.routines), [name]: on };
     notice.set('info', t('campaign.saving', 'saving…'));
-    const r = await request('/api/settei/gbrain', { method: 'PUT', json: { enabled: on } });
-    notice.set(r.ok ? 'success' : 'failed', r.ok ? t('settei.saved', 'saved') : r.message);
-    if (r.ok) await load();
+    const result = await saveCampaign(row.id, { config: { agent_defaults: { ...bucket(row.config?.agent_defaults), routines } } });
+    notice.set(result.ok ? 'success' : 'failed', result.ok ? t('settei.saved', 'saved') : result.message);
+    if (result.ok) paint();
   };
-
-  /** One control system: its name, what it brings, and its switch or its state. */
-  const row = (name, what, control) => {
-    const line = el('div', 'cv-choice');
-    const left = el('div', 'cv-choice-pick');
-    left.append(el('span', 'cv-choice-name', name), el('p', 'cv-choice-why', what));
-    line.append(left, control);
-    return line;
-  };
-  const toggle = (on, onChange) => {
-    const wrap = el('label', 'cv-switch');
-    const box = el('input'); box.type = 'checkbox'; box.checked = on;
-    box.addEventListener('change', () => onChange(box.checked));
-    wrap.append(box, el('span', null, on ? t('campaign_view.on', 'On') : t('campaign_view.off', 'Off')));
-    return wrap;
-  };
-  const state = (text) => el('span', 'cv-state', text);
-
-  /** The rows, read at paint so the lexicon is up. The switch column says what it is. */
-  const ROWS = () => [
-    {
-      name: t('campaign_view.rt_control', 'Ronin control'),
-      what: t('campaign_view.rt_control_what', 'Desks, hand-in and team promotion: the desk reading, the tejun-desk tools, the git shims. On wherever a repository declares desks.'),
-      control: state(t('campaign_view.rt_by_repo', 'per repository — see Project roots')),
-    },
-    {
-      name: t('campaign_view.rt_gbrain', 'gbrain'),
-      what: t('campaign_view.rt_gbrain_what', 'The shared memory service: its reading and its MCP tools for sessions born with it connected.'),
-      control: present('gbrain') ? toggle(gbrainOn(), (on) => void setGbrain(on)) : state(t('campaign_view.rt_absent', 'not installed')),
-    },
-    {
-      name: t('campaign_view.rt_koshi', 'Koshi'),
-      what: t('campaign_view.rt_detail_koshi', 'The smart fill behind launches and Mika.'),
-      control: state(present('koshi') ? t('campaign_view.rt_present', 'installed — no switch yet') : t('campaign_view.rt_absent', 'not installed')),
-    },
-    {
-      name: t('campaign_view.rt_hotwords', 'Hotwords'),
-      what: t('campaign_view.rt_hotwords_what', 'The words dictation keeps mishearing, sent with your voice.'),
-      control: state(present('koe') ? t('campaign_view.rt_present', 'installed — no switch yet') : t('campaign_view.rt_absent', 'not installed')),
-    },
-  ];
 
   function paint() {
     body.replaceChildren();
-    body.append(el('p', 'cv-note', t('campaign_view.routines_help', 'What Ronin runs for you. Each is a bundle — a reading list, SOPs, macros and tools — and a switch applies to sessions born after it; nothing running is touched.')));
-    for (const r of ROWS()) body.append(row(r.name, r.what, r.control));
+    const row = campaign();
+    if (!row) return surface.setState('empty', t('campaign_view.none_selected', 'No Campaign selected.'));
+    surface.setState(null, '');
+    const values = completeRoutineMap(catalog, row.config?.agent_defaults?.routines);
+    const notice = createNotice();
+    body.append(el('p', 'cv-note', t('campaign_view.routines_help', 'Choose what each new Cowork Agent starts with. Changes land in forms opened after this save; nothing already running or stored changes.')));
+    for (const routine of catalog) {
+      const line = el('div', 'cv-choice');
+      const words = el('div', 'cv-choice-pick');
+      words.append(el('span', 'cv-choice-name', routine.label || routine.name), el('p', 'cv-choice-why', routine.blurb || t('campaign_view.routine_no_description', 'No description supplied.')));
+      const controls = el('div', 'cv-routine-control');
+      controls.append(el('span', available(routine) ? 'cv-state cv-state-ok' : 'cv-state', available(routine) ? t('campaign_view.available', 'Available') : t('campaign_view.unavailable', 'Unavailable')));
+      const toggle = el('label', 'cv-switch');
+      const box = el('input'); box.type = 'checkbox'; box.checked = values[routine.name]; box.disabled = !available(routine);
+      const state = el('span', null, box.checked ? t('campaign_view.on', 'On') : t('campaign_view.off', 'Off'));
+      box.addEventListener('change', () => { state.textContent = box.checked ? t('campaign_view.on', 'On') : t('campaign_view.off', 'Off'); void save(routine.name, box.checked, notice); });
+      toggle.append(box, state); controls.append(toggle); line.append(words, controls); body.append(line);
+    }
     body.append(notice.el);
   }
-  async function load() {
-    const r = await request('/api/settei');
-    settei = r.ok ? r.data : null;
-    paint();
-  }
 
-  return { el: surface.el, enter: () => { paint(); void load(); } };
+  return {
+    el: surface.el,
+    enter: () => void request('/api/routines').then((result) => { catalog = result.ok && Array.isArray(result.data) ? result.data : []; paint(); }),
+  };
 }
 
-/** The card's line: how many switches are on, of those that exist. */
-export function routinesSummary(settei) {
-  const on = settei?.set?.gbrain?.enabled === true ? 1 : 0;
-  return t('campaign_view.routines_n', '{on} of {n} switches on', { on, n: 1 });
+export function routinesSummary(campaign) {
+  const values = bucket(campaign?.config?.agent_defaults?.routines);
+  return t('campaign_view.routines_n', '{n} on', { n: Object.values(values).filter((value) => value === true).length });
 }

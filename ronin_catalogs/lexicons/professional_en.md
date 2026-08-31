@@ -280,8 +280,11 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.roles_none:** No session roles on this install.
 - **campaign_view.roles_loose:** No family
 - **campaign_view.routines:** Routines
-- **campaign_view.routines_help:** What Ronin runs for you. Each is a bundle — a reading list, SOPs, macros and tools — and a switch applies to sessions born after it; nothing running is touched.
-- **campaign_view.routines_n:** {on} of {n} switches on
+- **campaign_view.routines_help:** Choose what each new Cowork Agent starts with. Changes land in forms opened after this save; nothing already running or stored changes.
+- **campaign_view.routines_n:** {n} on
+- **campaign_view.routine_no_description:** No description supplied.
+- **campaign_view.available:** Available
+- **campaign_view.unavailable:** Unavailable
 - **campaign_view.on:** On
 - **campaign_view.off:** Off
 - **campaign_view.rt_control:** Ronin control

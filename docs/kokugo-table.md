@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `behaviour.*` may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1334 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1337 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## add_agent
 
@@ -150,6 +150,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `campaign_view.applied` | applied — every component below is now this Campaign’s own |  |  |  |  |
 | `campaign_view.applied_tag` | applied |  |  |  |  |
 | `campaign_view.apply` | Apply |  |  |  |  |
+| `campaign_view.available` | Available |  |  |  |  |
 | `campaign_view.campaign_summary` | What this body of work is called, and what it is for. |  |  |  |  |
 | `campaign_view.col_default` | Default |  |  |  |  |
 | `campaign_view.col_model` | Preferred model |  |  |  |  |
@@ -196,9 +197,10 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `campaign_view.roots_n` | {n} roots |  |  |  |  |
 | `campaign_view.roots_none` | None — an Agent here has nowhere to work. |  |  |  |  |
 | `campaign_view.roots_summary` | The folders this Campaign is allowed to work in. |  |  |  |  |
+| `campaign_view.routine_no_description` | No description supplied. |  |  |  |  |
 | `campaign_view.routines` | Routines |  |  |  |  |
-| `campaign_view.routines_help` | What Ronin runs for you. Each is a bundle — a reading list, SOPs, macros and tools — and a switch applies to sessions born after it; nothing running is touched. |  |  |  |  |
-| `campaign_view.routines_n` | {on} of {n} switches on |  |  |  |  |
+| `campaign_view.routines_help` | Choose what each new Cowork Agent starts with. Changes land in forms opened after this save; nothing already running or stored changes. |  |  |  |  |
+| `campaign_view.routines_n` | {n} on |  |  |  |  |
 | `campaign_view.rt_absent` | not installed |  |  |  |  |
 | `campaign_view.rt_by_repo` | per repository — see Project roots |  |  |  |  |
 | `campaign_view.rt_control` | Ronin control |  |  |  |  |
@@ -219,6 +221,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `campaign_view.theme_dark` | Dark |  |  |  |  |
 | `campaign_view.theme_help` | Light or dark, or whatever the device prefers. |  |  |  |  |
 | `campaign_view.theme_light` | Light |  |  |  |  |
+| `campaign_view.unavailable` | Unavailable |  |  |  |  |
 | `campaign_view.with_services` | Ronin Services |  |  |  |  |
 
 ## commons
