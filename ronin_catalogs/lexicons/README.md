@@ -15,7 +15,7 @@ prose. Two kinds of key in one table:
 | Key | What it names | Example |
 |---|---|---|
 | a bare word | a surface string | `- **campaign:** Occasion` |
-| `kind.<token>` · `role.<token>` · `team_role.<token>` · `behaviour.<token>` | a catalog entry's label, by its token | `- **role.DraftPlan:** Secretary` |
+| `kind.<token>` · `role.<token>` · `behaviour.<token>` | a catalog entry's label, by its token | `- **role.DraftPlan:** Secretary` |
 
 Three fields are not words: `label` (what a person picks), `blurb`, and **`base`** — the
 lexicon a missing key falls through to.

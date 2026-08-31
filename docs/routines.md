@@ -10,7 +10,7 @@ an Agent already running.
 | Choice | Meaning | How it is chosen |
 |---|---|---|
 | Bare-metal Agent | A provider CLI in an always-on tmux terminal, with no Ronin reading, Library material, work record or Routines. | Choose the bare-metal launch. |
-| Cowork floor | The minimum Cowork launch, identity and Routine-delivery machinery. | Included with every Cowork Agent. |
+| Cowork floor | The minimum Cowork launch, identity and Routine-delivery machinery. | Choose a Cowork Agent rather than bare metal. |
 | Ronin Base | Ronin's ordinary macros, documents, work records, messaging and session coordination. | Selectable Routine. |
 | Managed file coordination | Managed worktrees, hand-in, lead integration, receipts and Git safeguards. | Selectable Routine. |
 
@@ -54,22 +54,24 @@ Hotwords have no independent use when Voice is unavailable. Installing Services 
 one of its registered services proves availability only; it never selects the Routine.
 Selecting Ronin Services additively includes Ronin Base.
 
-## Campaign defaults and Team overrides
+## Campaign defaults and Team answers
 
 The effective set for a birth is resolved in one direction:
 
 ```text
 Campaign Routine defaults
             ↓
-Team's explicit on/off overrides
+New Team form receives those values
+            ↓ Save
+Team's complete on/off map
             ↓
 effective Routines for this Agent birth
 ```
 
-An absent Team value inherits. An explicit `on` adds or preserves a Routine; an explicit
-`off` removes it unless another enabled Routine requires it as part of the additive
-progression. A Team stores only its differences, never a copied Campaign list.
-A Teamless Agent receives the Campaign answer.
+A Team stores a complete map at Save. Its births read that map and never follow later
+Campaign edits. An absent key in the selected complete map is off; an enabled Routine's
+declared dependency may still add it as part of the additive progression. A Teamless
+Agent receives the Campaign answer at birth.
 
 The resolver keeps provenance, so a surface and birth receipt can say whether the answer
 came from the Campaign or Team. It resolves once before the Agent process exists; the
@@ -88,7 +90,9 @@ places where its behaviours actually work:
 
 The session boot shelf remains the reading mechanism, not the owner of Routine selection.
 `<service>_connected/` remains the compatibility level for service-authored reading tied
-to a connection; it is only one case and is not the general Routine switch.
+to a connection; it is only one case and is not the general Routine switch. The first
+cut explicitly retains the `gbrain_connected` level: gbrain's service authors and seeds that
+connection reading, while the `gbrain` Routine selects its macros, tools and MCP request.
 
 ## Four different facts
 
@@ -98,6 +102,18 @@ to a connection; it is only one case and is not the general Routine switch.
 | installed | Are its local/service parts present on this machine? |
 | connected | Was an MCP or other live connection delivered? |
 | applicable | Does the present repository/situation use this behaviour? |
+
+**And a fifth, which is not a Routine fact at all: whether the Agent holds a worktree.**
+*Carrying `ronin_control` does not mean a worktree was mounted for you.* The Routine is a
+reading list and a toolset — the desk contract, hand-in, team promotion, receipts and
+`tejun-desk` — so that every Agent carrying it knows how worktrees are handled here. An
+Agent under Ronin Control may hold none, and check one out when it needs one. An Agent
+without the Routine may still be started in a worktree: that is isolation, which any agent
+can arrange off a branch, and it needs nothing declared in `RONIN_REPO`. What it does not
+get is the contract — no hand-in, nobody to hand to — so it reports to the owner instead.
+All four combinations are legitimate, and a launch names them separately: the **Routine**
+comes from the resolved Campaign/Team map, the **worktree** from the launch's own
+`desk` choice.
 
 These facts never stand in for one another. In particular, an enabled but unavailable
 Routine **never blocks Agent birth**. The Agent opens normally; the unavailable behaviour

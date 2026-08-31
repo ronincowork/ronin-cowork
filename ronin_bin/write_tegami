@@ -171,7 +171,7 @@ else:
 # "docs" is in this list for the same reason "at" is: this path rebuilds the whole block
 # from a fixed set of keys, so a key missing from it is a key this switch DELETES. A
 # session saying "back in ten minutes" must not lose its doc list to say it.
-block = json.dumps({k: d[k] for k in ("objective", "session_role", "teams", "repos", "ladder_state", "ladder", "docs", "at") if k in d},
+block = json.dumps({k: d[k] for k in ("objective", "session_role", "mandate", "teams", "repos", "ladder_state", "ladder", "docs", "at") if k in d},
                    indent=2, ensure_ascii=False)
 tmp = src + ".sw"
 open(tmp, "w").write(text[:m.start(1)] + block + text[m.end(1):])
@@ -255,7 +255,7 @@ if docs:
 else:
     d.pop("docs", None)   # absent means empty; an empty list is a key that says nothing
 
-block = json.dumps({k: d[k] for k in ("objective", "session_role", "teams", "repos", "ladder_state", "ladder", "docs", "at") if k in d},
+block = json.dumps({k: d[k] for k in ("objective", "session_role", "mandate", "teams", "repos", "ladder_state", "ladder", "docs", "at") if k in d},
                    indent=2, ensure_ascii=False)
 # Beside, then rename: the tab may read this file at any moment and a half-written block
 # reads as "no ladder" for exactly as long as the write takes.
@@ -361,7 +361,7 @@ if d.get("at"):
 
 # Titles, objective and role are copied through exactly as the agent left it — a monitor
 # that tidied a title would be authoring, which is not its job.
-block = json.dumps({k: d[k] for k in ("objective", "session_role", "teams", "repos", "side_road", "ladder", "docs", "at") if k in d},
+block = json.dumps({k: d[k] for k in ("objective", "session_role", "mandate", "teams", "repos", "side_road", "ladder", "docs", "at") if k in d},
                    indent=2, ensure_ascii=False)
 open(tmp, "w").write(text[:m.start(1)] + block + text[m.end(1):])
 os.replace(tmp, src)
@@ -414,7 +414,7 @@ PREV=$(awk '/^```/{f=!f; if(f) next; else exit} f' "$FILE" 2>/dev/null)
 PREVF=$(mktemp); printf '%s' "${PREV:-{\}}" > "$PREVF"
 BLOCK=$(printf '%s' "$BODY" | python3 -c '
 import json, sys
-ALLOWED   = {"objective", "session_role", "repos", "ladder_state", "ladder"}
+ALLOWED   = {"objective", "session_role", "mandate", "repos", "ladder_state", "ladder"}
 # What is happening to the ladder AS A WHOLE — not a rung. Absent means "on_track", so
 # nothing has to be migrated and the normal case costs nobody a keystroke.
 #
@@ -472,6 +472,25 @@ if st_ and st_ not in LADDER_STATES:
         sys.exit("write_tegami: ladder_state \"on hold\" — waiting on someone is a GATE rung,\n"
                  "  which already says it and says WHAT you are waiting for. Use a gate.")
     sys.exit("write_tegami: ladder_state %r — use \"on_track\" (or leave it out) or \"on_tangent\"." % st_)
+
+mandate = d.get("mandate") or {}
+if not isinstance(mandate, dict):
+    sys.exit("write_tegami: mandate must be an object with reach, recruit and output.")
+defaults = {"reach": "plan", "recruit": "propose agents", "output": "open"}
+choices = {
+    "reach": {"open", "discuss", "plan", "execute"},
+    "recruit": {"open", "nobody", "propose agents", "staff agents"},
+    "output": {"open", "a plan", "ideas", "code", "an artifact", "the team"},
+}
+unknown = sorted(set(mandate) - set(defaults))
+if unknown:
+    sys.exit("write_tegami: unknown mandate key(s): " + ", ".join(unknown))
+for key, fallback in defaults.items():
+    value = mandate.get(key) or fallback
+    if value not in choices[key]:
+        sys.exit("write_tegami: mandate.%s has no value %r." % (key, value))
+    mandate[key] = value
+d["mandate"] = mandate
 
 ladder = d.get("ladder", [])
 if not isinstance(ladder, list):
@@ -560,6 +579,7 @@ except Exception:
     _teams = []
 out = {"objective": d.get("objective", ""),
        "session_role": d.get("session_role", ""),
+       "mandate": mandate,
        "teams": _teams,
        "repos": repos}
 ls_ = (d.get("ladder_state") or "").strip().lower()

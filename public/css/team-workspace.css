@@ -42,6 +42,17 @@
   .tw-config-reading output { color: var(--fg-strong); padding: var(--space-3) 0; }
   .tw-config-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; align-items: center; gap: var(--space-4); }
   .tw-config-status, .tw-config-empty { color: var(--muted); }
+  .tw-config-wide { grid-column: 1 / -1; }
+  .tw-config-note { margin: 0; color: var(--muted); font-size: var(--text-3); line-height: 1.5; }
+  .tw-routines { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); border: var(--edge) solid var(--line); border-radius: var(--radius-sm); padding: var(--space-4); }
+  .tw-routines legend { color: var(--fg-strong); font-weight: 600; padding: 0 var(--space-2); }
+  .tw-routines > .tw-config-note { grid-column: 1 / -1; }
+  .tw-routine { display: flex; align-items: flex-start; gap: var(--space-3); }
+  .tw-routine input { accent-color: var(--accent); margin-top: var(--space-1); }
+  .tw-routine span { display: flex; flex-direction: column; gap: var(--space-1); }
+  .tw-routine small, .tw-config-field small { color: var(--muted); line-height: 1.4; }
+  .tw-config-check { display: flex; align-items: center; gap: var(--space-3); color: var(--fg-strong); }
+  .tw-config-check input { accent-color: var(--accent); }
 
   /* A Team dropped into the Cowork bench becomes a quiet roster, not an admin form. */
   .league-team-edit-content { display: flex; flex-direction: column; gap: var(--space-10); font-size: var(--text-3); }
@@ -82,6 +93,12 @@
   /* No rule reaches into the Kit's own content box — the form carries its own layout. */
   .aa-form { display: flex; flex-direction: column; gap: var(--space-6); margin-bottom: var(--space-7); }
   .aa-form textarea { min-height: calc(var(--space-12) * 2); resize: vertical; }
+  /* Name left, provider + model right (owner, 2026-08-31) — the columns drop to one when
+     the surface is narrow; the minimum is tokens, never a raw measurement. */
+  .aa-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(var(--space-12) * 6), 1fr)); gap: var(--space-6); align-items: start; }
+  .aa-col { display: flex; flex-direction: column; gap: var(--space-6); min-width: 0; }
+  /* The shell tick folds every Agent-only control away: a pane takes none of them. */
+  .aa-form[data-shell='true'] .aa-agent-only { display: none; }
   .aa-head { margin: var(--space-3) 0 0; color: var(--muted); font-size: var(--text-1); text-transform: uppercase; letter-spacing: .07em; }
   .aa-tasks { display: flex; flex-wrap: wrap; gap: var(--space-2); }
   .aa-chip { border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--muted-2); padding: var(--space-2) var(--space-6); cursor: pointer; font-size: var(--text-3); }
@@ -89,9 +106,12 @@
   .aa-chip[aria-pressed='true'] { border-color: var(--kaki); background: var(--raise); color: var(--kaki-lift); }
   /* `open` is the not-applicable box, not a peer among the tasks — dotted, as everywhere. */
   .aa-chip[data-open='true'] { border-style: dashed; }
-  /* THE WORKTREE REQUEST — `wantsDesk` made visible. It used to be answered invisibly from
-     a role's michi name; here a person asks, and a code-touching task only PRE-marks it. */
+  /* The shell tick rides this rectangle; the desk stopped being an asked question
+     (owner, 2026-08-31) and its row below is a consequence line, not a control. */
   .aa-desk { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-5); align-items: center; width: 100%; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--muted-2); padding: var(--space-4) var(--space-5); cursor: pointer; text-align: left; font: inherit; }
+  .aa-deskline { border-top: var(--edge) solid var(--line); padding-top: var(--space-4); color: var(--muted); }
+  .aa-deskline small { font-size: var(--text-2); }
+  .aa-deskline[hidden] { display: none; }
   .aa-desk:hover { border-color: var(--kaki); }
   .aa-desk[aria-pressed='true'] { border-color: var(--kaki); background: var(--raise); }
   .aa-box { width: var(--space-7); height: var(--space-7); border: var(--edge) solid var(--line-3); background: var(--panel); }

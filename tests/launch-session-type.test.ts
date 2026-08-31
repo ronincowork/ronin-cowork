@@ -1,6 +1,6 @@
 /**
- * `POST /api/launch` is keyed on session_type. These refusals run before tmux, so the
- * route contract can be proved without creating a session on the developer's machine.
+ * `POST /api/launch` is keyed on session_type. Unusable caller material is ignored before
+ * tmux and recorded for the eventual birth receipt.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -11,6 +11,7 @@ import { createServer, type Server } from 'node:http';
 
 process.env.BIND = '127.0.0.1';
 const { registerLaunch } = await import('../src/routes/launch.js');
+const { acceptedLaunchBody } = await import('../src/routes/launch.js');
 
 const app = express();
 app.use(express.json());
@@ -28,13 +29,17 @@ async function launch(body: Record<string, unknown>): Promise<{ status: number; 
   return { status: response.status, error: String((await response.json()).error ?? '') };
 }
 
-test('the route refuses to infer session_type from the retired keying inputs', async () => {
-  for (const body of [{ name: 'proof' }, { name: 'proof', session_role: 'CutCode' }, { name: 'proof', team: 'alpha' }, { name: 'proof', agent: true }]) {
-    const result = await launch(body);
-    assert.equal(result.status, 400);
-    assert.match(result.error, /session_type/);
-    assert.match(result.error, /does not infer/);
-  }
+test('missing session_type defaults to the ordinary cowork_agent path', async () => {
+  const result = await launch({});
+  assert.equal(result.status, 400);
+  assert.match(result.error, /name.*required/);
+  assert.doesNotMatch(result.error, /session_type/);
+});
+
+test('an invalid stated session_type resolves to cowork_agent and is noted for the receipt', () => {
+  const result = acceptedLaunchBody({ session_type: 'mystery', name: 'proof' });
+  assert.equal(result.body.session_type, 'cowork_agent');
+  assert.deepEqual(result.ignored, ['session_type']);
 });
 
 test('the live legacy launcher states cowork_agent until FORMS_UI retires it', async () => {
@@ -51,29 +56,40 @@ test('name is required for every session_type', async () => {
   }
 });
 
-test('terminal refuses Agent-only fields with teaching text', async () => {
+test('terminal ignores Agent-only fields and notes each one for the receipt', () => {
   for (const key of ['provider', 'model', 'instructions', 'mandate', 'behaviours', 'session_role']) {
-    const result = await launch({ session_type: 'terminal', name: 'proof', [key]: key === 'mandate' ? {} : 'x' });
-    assert.equal(result.status, 400, key);
-    assert.match(result.error, /terminal.*no Agent/);
-    assert.match(result.error, new RegExp(key));
+    const result = acceptedLaunchBody({ session_type: 'terminal', name: 'proof', [key]: key === 'mandate' ? {} : 'x' });
+    assert.equal(result.body[key], undefined, key);
+    assert.deepEqual(result.ignored, [key]);
   }
 });
 
-test('bare-metal Agent refuses Ronin-only fields and a managed desk', async () => {
+test('bare-metal Agent ignores Ronin-only fields and a managed desk', () => {
   for (const [key, value] of [['mandate', {}], ['behaviours', []], ['routines', {}], ['seed', []], ['desk', 'own']] as const) {
-    const result = await launch({ session_type: 'bare_metal_agent', name: 'proof', [key]: value });
-    assert.equal(result.status, 400, key);
-    assert.match(result.error, /bare_metal_agent/);
-    assert.match(result.error, new RegExp(key));
+    const result = acceptedLaunchBody({ session_type: 'bare_metal_agent', name: 'proof', project_root: 'home', [key]: value });
+    assert.equal(result.body[key], undefined, key);
+    assert.deepEqual(result.ignored, [key]);
   }
 });
 
-test('server-owned resolved fields are refused on every type', async () => {
-  const result = await launch({ session_type: 'cowork_agent', name: 'proof', stated_by: {} });
-  assert.equal(result.status, 400);
-  assert.match(result.error, /resolved and returned/);
-  assert.match(result.error, /stated_by/);
+test('unknown, retired, invalid, and server-owned fields are ignored and noted together', () => {
+  const result = acceptedLaunchBody({
+    name: 'proof', lifecycle: 'old', mystery: true, dial: 'loud', stated_by: {},
+  });
+  assert.deepEqual(result.body, { name: 'proof', session_type: 'cowork_agent' });
+  assert.deepEqual(result.ignored, ['dial', 'lifecycle', 'mystery', 'stated_by']);
+});
+
+test('cowork kind and behaviours survive body acceptance while unusable shapes are ignored', () => {
+  const accepted = acceptedLaunchBody({ name: 'proof', kind: 'coding', behaviours: ['sops:github'] });
+  assert.equal(accepted.body.kind, 'coding');
+  assert.deepEqual(accepted.body.behaviours, ['sops:github']);
+  assert.deepEqual(accepted.ignored, []);
+
+  const ignored = acceptedLaunchBody({ name: 'proof', kind: 'mystery', behaviours: 'sops:github' });
+  assert.equal(ignored.body.kind, undefined);
+  assert.equal(ignored.body.behaviours, undefined);
+  assert.deepEqual(ignored.ignored, ['behaviours', 'kind']);
 });
 
 test.after(() => server.close());

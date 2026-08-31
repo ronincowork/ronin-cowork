@@ -39,6 +39,7 @@ import path from 'node:path';
 import { storeDir } from './stores.js';
 import { readSection } from './user-config.js';
 import { agentDefaults, type AgentDefaults } from './agent-defaults.js';
+import { completeRoutineChoices } from './routines.js';
 
 /** The typed bucket — a Campaign's own defaults, never a dump of all SETTEI. The three
  *  sub-buckets are the plan's, and they are the whole vocabulary: a fourth is a plan
@@ -123,12 +124,79 @@ export const campaignFile = (id: string): string => path.join(dir(), `${id}.json
  */
 export const FRESH_CAMPAIGNS: ReadonlyArray<CampaignEdit & { id: string }> = Object.freeze([
   Object.freeze({
-    id: 'ronin_home',
+    id: 'home_machine',
     title: 'Ronin Home',
     description: '',
     desk_profile: '',
   }),
 ]);
+
+export type SetupKind = 'open' | 'coding' | 'work' | 'personal' | 'household' | 'social' | 'school';
+export type SetupRoutineBundle = 'nothing' | 'floor' | 'base' | 'control' | 'services';
+
+const KIND_BEHAVIOURS: Record<SetupKind, string[]> = {
+  open: [],
+  coding: ['sops:github', 'sops:ronin_methodology', 'sops:teams'],
+  work: ['sops:teams'],
+  personal: [],
+  household: [],
+  social: ['sops:teams'],
+  school: [],
+};
+
+/**
+ * ATARASHI'S ONE WRITE. The setup surface sends only answers; this writer turns them
+ * into the complete first Campaign record. `kind` is consumed as a preset and is never
+ * stored on the Campaign. Routine definitions are read here so a newly installed
+ * specialized Routine receives an explicit false instead of becoming an absent key.
+ */
+export async function populateHomeMachine(input: {
+  title?: unknown;
+  description?: unknown;
+  desk_profile?: unknown;
+  provider?: unknown;
+  model?: unknown;
+  provider_model?: unknown;
+  kind?: unknown;
+  routine_bundle?: unknown;
+}): Promise<CampaignConfig> {
+  const existing = await readCampaign('home_machine');
+  const campaign = existing ?? await createCampaign({
+    id: 'home_machine',
+    title: str(input.title, TITLE_MAX) || 'Ronin Home',
+    description: str(input.description, DESCRIPTION_MAX),
+    desk_profile: str(input.desk_profile, DESK_PROFILE_MAX),
+  });
+  const kind = (['open', 'coding', 'work', 'personal', 'household', 'social', 'school'] as const)
+    .includes(input.kind as SetupKind) ? input.kind as SetupKind : 'open';
+  const bundle = (['nothing', 'floor', 'base', 'control', 'services'] as const)
+    .includes(input.routine_bundle as SetupRoutineBundle)
+    ? input.routine_bundle as SetupRoutineBundle : 'control';
+  const { readDefinitions } = await import('./definitions.js');
+  const providerModel = bucket(input.provider_model);
+  const routineNames = (await readDefinitions('routines')).map((row) => row.name);
+  const routines = Object.fromEntries(routineNames.map((name) => [name,
+    bundle === 'services'
+      ? true
+      : name === 'ronin_base'
+        ? bundle === 'base' || bundle === 'control'
+        : name === 'ronin_control' && bundle === 'control',
+  ]));
+  return writeCampaign(campaign.id, {
+    title: str(input.title, TITLE_MAX) || campaign.title,
+    description: input.description === undefined ? campaign.description : str(input.description, DESCRIPTION_MAX),
+    desk_profile: input.desk_profile === undefined ? campaign.desk_profile : str(input.desk_profile, DESK_PROFILE_MAX),
+    config: { agent_defaults: {
+      provider: str(input.provider ?? providerModel.provider, 120),
+      model: str(input.model ?? providerModel.model, 120),
+      reach: 'plan', recruit: 'propose agents', output: 'open',
+      routines,
+      behaviours: KIND_BEHAVIOURS[kind],
+      dial: 'write',
+      permissions: 'default',
+    } },
+  });
+}
 
 export function campaignIdFrom(title: string): string {
   const slug = String(title ?? '')
@@ -244,6 +312,13 @@ async function writeRecord(c: CampaignConfig): Promise<CampaignConfig> {
   return c;
 }
 
+async function completeAgentDefaults(value: unknown): Promise<AgentDefaults> {
+  const defaults = agentDefaults(value);
+  const { listRoutines } = await import('./definitions.js');
+  defaults.routines = completeRoutineChoices(await listRoutines(), defaults.routines);
+  return defaults;
+}
+
 /** One Campaign, or null when no such record exists. An invalid id is null and never a
  *  path read: the check happens before the filename is built. */
 export async function readCampaign(id: string): Promise<CampaignConfig | null> {
@@ -253,6 +328,14 @@ export async function readCampaign(id: string): Promise<CampaignConfig | null> {
     const parsed = parse(id, raw);
     if (!parsed) return null;
     const doc = JSON.parse(raw) as Record<string, unknown>;
+    const config = bucket(doc.config);
+    const defaults = bucket(config.agent_defaults);
+    if (!Object.prototype.hasOwnProperty.call(defaults, 'routines')) {
+      // Existing Campaigns predate Atarashi's Routine map. Preserve their de-facto
+      // launch once; later catalog additions remain absent and therefore resolve off.
+      parsed.config.agent_defaults.routines = { ronin_base: true, ronin_control: true };
+      await writeRecord(parsed);
+    }
     if (!Object.prototype.hasOwnProperty.call(doc, 'desk')) {
       // One-time, lossless migration: the old reference is resolved against the catalog
       // once and copied. Later catalog edits cannot silently repaint this Campaign.
@@ -317,7 +400,10 @@ export async function createCampaign(edit: CampaignEdit & { id?: string }): Prom
       : mergeDeskSettings(await settingsFromTemplate(profile), edit.desk),
     state: edit.state === 'archived' ? 'archived' : 'active',
     created_at: new Date().toISOString(),
-    config: settings(edit.config),
+    config: {
+      ...settings(edit.config),
+      agent_defaults: await completeAgentDefaults(settings(edit.config).agent_defaults),
+    },
   });
 }
 
@@ -347,7 +433,7 @@ export async function writeCampaign(id: string, edit: CampaignEdit): Promise<Cam
       ? {
           config: {
             agent_defaults: edit.config.agent_defaults === undefined
-              ? existing.config.agent_defaults : agentDefaults(edit.config.agent_defaults),
+              ? existing.config.agent_defaults : await completeAgentDefaults(edit.config.agent_defaults),
             cowork_defaults: edit.config.cowork_defaults === undefined
               ? existing.config.cowork_defaults : bucket(edit.config.cowork_defaults),
             template_defaults: edit.config.template_defaults === undefined

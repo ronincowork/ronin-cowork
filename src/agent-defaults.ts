@@ -3,6 +3,7 @@ export type Reach = 'open' | 'discuss' | 'plan' | 'execute';
 export type Recruit = 'open' | 'nobody' | 'propose agents' | 'staff agents';
 export type Output = 'open' | 'a plan' | 'ideas' | 'code' | 'an artifact' | 'the team';
 export type AgentDial = 'user' | 'read' | 'write';
+export interface Mandate { reach: Reach; recruit: Recruit; output: Output }
 
 export interface AgentDefaults {
   provider: string;
@@ -54,6 +55,11 @@ export function agentDefaults(value: unknown): AgentDefaults {
     dial: oneOf(input.dial, ['user', 'read', 'write'], 'write'),
     permissions: text(input.permissions) || 'default',
   };
+}
+
+export function mandate(value: unknown): Mandate {
+  const defaults = agentDefaults(value);
+  return { reach: defaults.reach, recruit: defaults.recruit, output: defaults.output };
 }
 
 export function teamAgentDefaults(value: unknown): TeamAgentDefaults {

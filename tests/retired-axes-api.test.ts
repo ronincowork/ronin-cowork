@@ -54,14 +54,14 @@ test('every verb gets the same 410 — a GET of a retired axis is as gone as a P
   }
 });
 
-test('the live axis refuses a retired key in its body, before any session lookup', async () => {
+test('the live axis ignores retired and unknown body keys, then proceeds with the request', async () => {
   const r = await fetch(`${base}/api/sessions/${NAME}/session_role`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ session_role: 'CutCode', role_family: 'developer' }),
+    body: JSON.stringify({ session_role: 'CutCode', role_family: 'developer', unknown: true }),
   });
-  assert.equal(r.status, 400);
-  assert.match((await r.json()).error, /retired/);
+  assert.equal(r.status, 404, 'ignored body members do not answer before the ordinary session lookup');
+  assert.match((await r.json()).error, /No such session/);
 });
 
 test.after(() => server.close());

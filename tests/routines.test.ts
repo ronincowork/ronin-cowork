@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { RoutineRow } from '../src/definitions.js';
-import { resolveRoutines, routineChoices } from '../src/routines.js';
+import { completeRoutineChoices, resolveRoutines, routineChoices } from '../src/routines.js';
 
 const row = (name: string): RoutineRow => ({
   name, label: name, blurb: '', origin: 'stock', shadowed: false, class: 'specialized',
@@ -10,19 +10,19 @@ const row = (name: string): RoutineRow => ({
 });
 const catalog = [row('ronin_base'), row('ronin_control'), row('machine')];
 
-test('Campaign is the base and Team states exceptions without copying the list', () => {
+test('a Team complete map replaces the Campaign map at birth', () => {
   const got = resolveRoutines(catalog, { ronin_base: true, ronin_control: true }, {
     ronin_control: false,
     machine: true,
   });
   assert.deepEqual(got.map(({ name, enabled, stated_by }) => ({ name, enabled, stated_by })), [
-    { name: 'ronin_base', enabled: true, stated_by: 'campaign' },
+    { name: 'ronin_base', enabled: false, stated_by: 'implicit_off' },
     { name: 'ronin_control', enabled: false, stated_by: 'team' },
     { name: 'machine', enabled: true, stated_by: 'team' },
   ]);
 });
 
-test('absence is inherit, then implicit off — never an invented default', () => {
+test('absence in the selected complete map is implicit off — never live inherit', () => {
   const got = resolveRoutines(catalog, {}, {});
   assert.ok(got.every((routine) => !routine.enabled && routine.stated_by === 'implicit_off'));
 });
@@ -30,6 +30,19 @@ test('absence is inherit, then implicit off — never an invented default', () =
 test('configuration accepts only named literal booleans', () => {
   assert.deepEqual(routineChoices({ ronin_base: true, machine: 'off', '../bad': false }), { ronin_base: true });
   assert.deepEqual(routineChoices(['ronin_base']), {});
+});
+
+test('Save completes a map against the current catalog', () => {
+  assert.deepEqual(completeRoutineChoices(catalog, { ronin_base: true }), {
+    ronin_base: true, ronin_control: false, machine: false,
+  });
+});
+
+test('a catalog routine added after Save resolves off without changing the stored map', () => {
+  const stored = { ronin_base: true, ronin_control: false };
+  const expanded = [...catalog, row('future_routine')];
+  assert.equal(resolveRoutines(expanded, stored).find((item) => item.name === 'future_routine')?.enabled, false);
+  assert.deepEqual(stored, { ronin_base: true, ronin_control: false });
 });
 
 test('dependencies grow additively: Services and Control require Base, not each other', () => {

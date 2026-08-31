@@ -7,7 +7,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **desk_profile:** desk profile
 - **campaign:** Campaign
 - **campaigns:** Campaigns
-- **campaign_kind:** Kind
 - **add_agent.card:** Add Agent to Team
 - **add_agent.card_summary:** The Team answers the rest.
 - **add_agent.title:** Add Agent to Team
@@ -20,14 +19,16 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **add_agent.default:** default
 - **add_agent.task:** task  (optional)
 - **add_agent.task_open:** open
-- **add_agent.worktree:** Request a worktree
-- **add_agent.worktree_on:** A worktree of its own — managed file coordination, hand-in and the Git safeguards.
-- **add_agent.worktree_off:** No worktree. This Agent works in the shared checkout.
+- **add_agent.desk_line_control:** Managed file coordination is on for this Team: the desk contract applies, and a worktree is cut when the work needs it.
+- **add_agent.desk_line_plain:** Managed file coordination is off for this Team: this Agent works in the shared checkout and reports to you.
+- **add_agent.shell:** Open a shell, not an Agent
+- **add_agent.shell_why:** A raw terminal in this Team — no Agent is launched and nothing is sent to it.
 - **add_agent.actions:** Launch actions
 - **add_agent.start:** Start
 - **add_agent.cancel:** Cancel
 - **add_agent.starting:** Starting…
 - **add_agent.started:** Started {name}
+- **add_agent.started_note:** Started {name} — {note}
 - **add_agent.team:** team
 - **add_agent.place:** place
 - **add_agent.still_asked:** still asked
@@ -64,9 +65,9 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **template:** Template
 - **required_reading:** Required reading
 - **permissions:** Permissions
-- **reach:** Scope
-- **recruit:** Team
-- **output:** Deliverable
+- **reach:** Reach
+- **recruit:** Recruit
+- **output:** Output
 - **routine_bundles:** Routine Bundles
 - **go:** Go
 - **save_template:** Save as template
@@ -265,10 +266,33 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.id:** Id
 - **campaign_view.id_help:** Fixed once created — printed on every record that points here, so it cannot change.
 - **campaign_view.agent_defaults:** Agent defaults
-- **campaign_view.defaults_help:** What a new Agent here starts on when the launch does not say. A row this Campaign has not answered uses the machine’s SETTEI answer, marked as such.
-- **campaign_view.defaults_scope:** Role, reach and who may read an Agent are set when it is launched, not here.
-- **campaign_view.defaults_none:** None set — a launch must name a model.
-- **campaign_view.defaults_from_settei:** {line} (from SETTEI)
+- **campaign_view.defaults_help:** These defaults land in the next Team or Agent form that opens. They remain editable there; nothing live changes.
+- **campaign_view.provider_default:** Default provider
+- **campaign_view.model_default:** Default model
+- **campaign_view.default_reach:** Reach
+- **campaign_view.default_recruit:** Recruit
+- **campaign_view.default_output:** Output
+- **campaign_view.default_dial:** Control
+- **campaign_view.default_permissions:** Permissions
+- **campaign_view.default_behaviours:** Behaviours
+- **campaign_view.permissions_help:** Provider permission posture; default uses the provider’s normal setting.
+- **campaign_view.behaviours_help:** One shelf:name book per line.
+- **campaign_view.defaults_summary:** {model} · {reach} · {dial}
+- **campaign_view.option_open:** Open
+- **campaign_view.option_discuss:** Discuss
+- **campaign_view.option_plan:** Plan
+- **campaign_view.option_execute:** Execute
+- **campaign_view.option_nobody:** Nobody
+- **campaign_view.option_propose:** Propose Agents
+- **campaign_view.option_staff:** Staff Agents
+- **campaign_view.option_a_plan:** A plan
+- **campaign_view.option_ideas:** Ideas
+- **campaign_view.option_code:** Code
+- **campaign_view.option_artifact:** An artifact
+- **campaign_view.option_team:** The Team
+- **campaign_view.option_user:** You only
+- **campaign_view.option_read:** Read
+- **campaign_view.option_write:** Read and write
 - **campaign_view.default_help:** The row a launch that names nothing starts from.
 - **campaign_view.from_settei:** from SETTEI
 - **campaign_view.col_provider:** Provider
@@ -281,8 +305,11 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.roles_none:** No session roles on this install.
 - **campaign_view.roles_loose:** No family
 - **campaign_view.routines:** Routines
-- **campaign_view.routines_help:** What Ronin runs for you. Each is a bundle — a reading list, SOPs, macros and tools — and a switch applies to sessions born after it; nothing running is touched.
-- **campaign_view.routines_n:** {on} of {n} switches on
+- **campaign_view.routines_help:** Choose what each new Cowork Agent starts with. Changes land in forms opened after this save; nothing already running or stored changes.
+- **campaign_view.routines_n:** {n} on
+- **campaign_view.routine_no_description:** No description supplied.
+- **campaign_view.available:** Available
+- **campaign_view.unavailable:** Unavailable
 - **campaign_view.on:** On
 - **campaign_view.off:** Off
 - **campaign_view.rt_control:** Ronin control
@@ -386,7 +413,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.name:** Team name
 - **new_team.name_desc:** Lowercase letters, digits, _ and - . This is also the tag its sessions carry.
 - **new_team.role_placeholder:** development — or leave blank
-- **team.team_role:** Team role
 - **new_team.role_desc:** Optional. Blank is an unclassified Team, which is a valid state.
 - **team.objective:** Objective
 - **new_team.objective_desc:** Optional. Rides the brief of every session born onto this Team.
@@ -416,6 +442,101 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.name_invalid:** Lowercase letters, digits, _ and - only.
 - **new_team.root_default:** — the box’s default —
 - **new_team.title:** New Team
+
+## new_team — new-team-form.js (the drawn raise form, staged beside the card above)
+- **new_team.card_summary:** Template · kit · lead — the drawn form.
+- **new_team.name_kind:** Name & kind
+- **new_team.name_placeholder:** lowercase, digits, - _
+- **new_team.objective_placeholder:** what this team is for
+- **new_team.where:** Where
+- **new_team.root_note:** A default that seeds a launch — never a constraint. A rōnin that joins later keeps its own.
+- **new_team.agent_defaults:** agent defaults — seeded into every Agent raised here; none of it is a constraint
+- **new_team.floor:** Cowork floor
+- **new_team.floor_why:** The launch, campaign and team resolution, the shelf map, the birth receipt.
+- **new_team.floor_tag:** floor
+- **new_team.required:** Required behaviours
+- **new_team.required_why:** Every Agent that joins gets the documents below, at birth or on joining.
+- **new_team.required_on:** enforced
+- **new_team.required_off:** offered
+- **new_team.kit_none:** nothing yet — a template lays it, or open the kit
+- **new_team.kit_door:** Open the Team Kit  ▸
+- **new_team.kit_door_why:** A workbench of its own: browse every routine and behaviour, read them, and make them yours. Not yet built.
+- **new_team.kit_meta:** {routines} routines · {books} books{required}
+- **new_team.kit_meta_required:** (required)
+- **new_team.lead:** Team lead
+- **new_team.lead_include:** Include a team lead
+- **new_team.lead_include_sub:** Raised with the team and briefed.
+- **new_team.lead_empty:** Open it empty
+- **new_team.lead_empty_sub:** Ordinary. Add one whenever you like.
+- **new_team.lead_brief:** brief
+- **new_team.lead_brief_placeholder:** what the lead is for
+- **new_team.lead_brief_default:** Hold the objective, dispatch, unblock, keep the gaps closed.
+- **new_team.lead_included:** included
+- **new_team.lead_none:** none
+- **new_team.lead_raised:** included, briefed at raise
+- **new_team.members:** members
+- **new_team.members_note:** derived from live tags — never stored here
+- **new_team.inherits:** an agent born here inherits
+- **new_team.wipeboard_own:** {team}  (its own)
+- **new_team.raise:** Raise the team
+- **new_team.raise_lead:** Raise the team and its lead
+- **new_team.raising:** Raising the team…
+- **new_team.raised_no_lead:** Raised {team} — the lead was not born: {reason}
+- **new_team.save_name_placeholder:** template name
+- **new_team.save_as_new:** Save as new template
+- **new_team.saved_template:** Saved template {name}
+
+## forms — form-steps.js (the drawn form idiom shared by New Team and New Agent)
+- **forms.manual:** Manual
+- **forms.own:** Make your own
+- **forms.own_blurb:** Fresh and empty. Fill it in yourself.
+- **forms.library:** From the Ronin library
+- **forms.library_blurb:** Published bundles, pulled in and run. Not yet built.
+- **forms.default:** default
+- **forms.provider:** model provider
+- **forms.model:** model
+- **forms.none:** —
+- **forms.always:** always
+- **forms.campaign_on:** campaign on
+- **forms.campaign_off:** campaign off
+- **forms.team_on:** team turns on
+- **forms.team_off:** team turns off
+
+## new_agent — new-agent.js (the drawn launch form, staged beside the ＋ New board)
+- **new_agent.title:** New Agent
+- **new_agent.card_summary:** Session type first — the drawn launch form.
+- **new_agent.new_session:** New session
+- **new_agent.type_cowork:** Cowork Agent
+- **new_agent.type_cowork_sub:** Born into Ronin: the floor, its routines, its reading and its team.
+- **new_agent.type_bare:** Bare-metal Agent
+- **new_agent.type_bare_sub:** The provider’s agent and nothing else — no floor, no routines, no reading.
+- **new_agent.type_terminal:** Terminal
+- **new_agent.type_terminal_sub:** A raw tmux pane. No agent is launched and nothing is sent to it.
+- **new_agent.name_model_kind:** Name, model & kind
+- **new_agent.name_model:** Name & model
+- **new_agent.name_where_model:** Name, where & model
+- **new_agent.name_where:** Name & where
+- **new_agent.name_placeholder:** name
+- **new_agent.terminal_note:** A terminal takes no kind, no instructions, no mandate and no loadout.
+- **new_agent.bare_note:** A bare-metal Agent takes no kind, no mandate and no loadout.
+- **new_agent.instructions:** Instructions
+- **new_agent.team_existing:** An existing team
+- **new_agent.team_existing_sub:** Join it. Its answers land at birth.
+- **new_agent.team_none:** No team — a rōnin
+- **new_agent.team_none_sub:** Ordinary, not a gap.
+- **new_agent.team_new:** A new team
+- **new_agent.team_new_sub:** Created first, then this Agent is born into it.
+- **new_agent.a_ronin:** a rōnin
+- **new_agent.loadout_meta:** {routines} routines · {books} books
+- **new_agent.shelf_house:** behaviours · the house
+- **new_agent.shelf_ways:** behaviours · ways of working
+- **new_agent.session:** session
+- **new_agent.created_first:** (created first)
+- **new_agent.routines_terminal:** agent: none — a pane
+- **new_agent.routines_bare:** no floor, no routines
+- **new_agent.blank_note:** A blank field is an answer, not a gap.
+- **new_agent.create_and_start:** Create the team and start
+- **new_agent.open_terminal:** Open the terminal
 
 ## team_wipeboard — team-wipeboard.js (the team wipeboard channel on the Team page)
 - **team_wipeboard.placeholder:** say something to the team — every member is interrupted
@@ -838,6 +959,32 @@ The catalog entry goes. {dir} is not touched.
 - **stats.unavailable:** Stats are not available on this install yet.
 
 ## setup — cowork-setup.js (the one-time cowork_setup page)
+- **setup.campaign:** Campaign
+- **setup.campaign_lede:** The body of work this Ronin configuration serves.
+- **setup.campaign_name:** Campaign name
+- **setup.campaign_description:** Description
+- **setup.campaign_description_placeholder:** What this campaign is for
+- **setup.machine:** This machine
+- **setup.you:** You
+- **setup.you_lede:** The name Ronin and your Agents use when they address you.
+- **setup.kind:** Kind
+- **setup.kind_lede:** What do you want to use this app for?
+- **setup.routine_bundles:** Routine Bundles
+- **setup.routine_bundles_lede:** Choose how much Ronin hands to each new Agent.
+- **setup.recommended_short:** recommended
+- **setup.bundle_nothing:** Nothing
+- **setup.bundle_nothing_copy:** Your agents start clean — no reading, no shared macros, no records. Just the CLI.
+- **setup.bundle_floor:** The floor
+- **setup.bundle_floor_copy:** Ronin still sets each agent up and keeps its birth receipt, but hands it nothing extra.
+- **setup.bundle_base:** Ronin Base
+- **setup.bundle_base_copy:** Your agents arrive knowing the house: basic reading you can open and edit, simple macros for talking to each other, shared work records.
+- **setup.bundle_control:** Ronin Control
+- **setup.bundle_control_copy:** Adds managed repositories: every agent codes at its own private desk — a git worktree — so there are no code collisions, and work is handed in deliberately.
+- **setup.bundle_services:** Services
+- **setup.bundle_services_copy:** Adds your Services to every agent — voice, transcripts, machine care.
+- **setup.desk_profile:** Desk profile
+- **setup.desk_profile_hint:** The look, the words, and how much terminal detail your workspace shows.
+- **setup.desk_profile_stock:** Stock
 - **setup.step:** cowork setup · nothing is saved yet
 - **setup.connected:** YOU’RE CONNECTED
 - **setup.connected_tail:** — Ronin is live on your machine.
@@ -978,8 +1125,6 @@ The catalog entry goes. {dir} is not touched.
 - **customize.role_families_blurb:** The shelves of the ＋ New board. Presentation only — a family never rides a launch.
 - **customize.session_roles:** Session roles
 - **customize.session_roles_blurb:** What a session is doing now. Its fields cascade into every launch.
-- **customize.team_roles:** Team roles
-- **customize.team_roles_blurb:** What a TEAM is. The house ships none — every one is yours.
 - **customize.saved_launches:** Saved launches
 - **customize.saved_launches_blurb:** The launcher form, filled in ahead of time and named.
 - **customize.skins:** Skins
@@ -1367,6 +1512,41 @@ The catalog entry goes. {dir} is not touched.
 - **workspace.channel_wipeboard:** Wipeboard
 - **workspace.channel_docs:** Docs
 - **workspace.channel_team_configuration:** Team Configuration
+- **team_config.no_roster:** This Cowork has no saved roster.
+- **team_config.loading:** Loading Team Configuration…
+- **team_config.cowork_id:** Cowork ID
+- **team_config.title:** Readable title
+- **team_config.kind:** Kind
+- **team_config.kind_coding:** Coding
+- **team_config.kind_work:** Work
+- **team_config.kind_personal:** Personal
+- **team_config.kind_household:** Household
+- **team_config.kind_social:** Social
+- **team_config.kind_school:** School
+- **team_config.objective:** Purpose
+- **team_config.project_root:** Project root
+- **team_config.default:** Default
+- **team_config.branch:** Branch
+- **team_config.wipeboard:** Wipeboard
+- **team_config.references:** References
+- **team_config.references_help:** One URL or note per line.
+- **team_config.routines:** Routines
+- **team_config.routines_help:** This complete on/off map is the Team’s own. Campaign changes affect only the next Team form.
+- **team_config.kit_floor_alone:** the floor alone — no Routine is on
+- **team_config.no_description:** No description supplied.
+- **team_config.behaviours:** Behaviours
+- **team_config.behaviours_help:** One shelf:name book per line.
+- **team_config.required:** Require these behaviours for each new Agent
+- **team_config.provider:** Provider
+- **team_config.model:** Model
+- **team_config.reach:** Reach
+- **team_config.recruit:** Recruit
+- **team_config.output:** Output
+- **team_config.dial:** Control
+- **team_config.permissions:** Permissions
+- **team_config.next_form:** These defaults land in the next Agent form that opens. Nothing live changes.
+- **team_config.saving:** Saving…
+- **team_config.saved:** Saved
 - **workspace.explorer:** Explorer
 - **workspace.explorer_collapse:** Collapse explorer
 - **workspace.explorer_expand:** Expand explorer

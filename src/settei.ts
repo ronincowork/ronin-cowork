@@ -37,6 +37,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { config, authEnabled, tailnetIp } from './config.js';
 import { SETTEI_SCHEMA, providerModelFields, type ProviderModelField } from './settei-registry.js';
+import { repositoryNeeds } from './repository-needs.js';
 import { secureUrl } from './passkey.js';
 import { listServices } from './sockets.js';
 import { CONTRACT_V } from './sockets-contract.js';
@@ -63,7 +64,6 @@ import {
 // the shapes this record has always served, but the fact behind them is now the initial
 // campaign_config rather than a section of ronin.json — one writable Campaign record.
 import { readCampaignSection, readDeskSection } from './campaign-config.js';
-
 const pexec = promisify(execFile);
 
 /** This node's tailnet address, measured once — see `routes()` for why it is needed. */
@@ -107,9 +107,6 @@ export interface SetteiRecord {
  * where the three values are spelled out at length. `mechanical` is the install
  * operation's subset and the only one anything dispatches. */
 export type MetBy = 'mechanical' | 'owner' | 'agent';
-
-/* The registry lives in src/settei-registry.ts — pure data, split out by the
- * line ceiling; it is still the ONE declaration and this file still serves it. */
 
 /* ------------------------------------------------------- small honest measurers */
 
@@ -687,11 +684,14 @@ export async function readSettei(): Promise<SetteiRecord> {
     .map((j) => j?.key_env)
     .filter((k): k is string => typeof k === 'string' && k.length > 0);
   const observed = await readObserved(jobKeyNames);
+  const status = await computeStatus(set, observed);
+  const needed = computeNeeded(set, observed);
+  needed.push(...repositoryNeeds(set, status));
   return {
     set,
     observed,
-    status: await computeStatus(set, observed),
-    needed: computeNeeded(set, observed),
+    status,
+    needed,
     // The registry plus one row per provider the launch table knows — generated because
     // providers are data on disk, not a list this house may hard-code.
     schema: { ...SETTEI_SCHEMA, fields: [...SETTEI_SCHEMA.fields,

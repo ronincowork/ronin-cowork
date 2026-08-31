@@ -6,10 +6,10 @@
 `professional_en` is the floor: every key a surface reads, in plain English. Each other column is one
 lexicon (`ronin_catalogs/lexicons/`, shadowed whole-file by your catalogs store): its word where it
 says one, blank where it falls through to the floor. A catalog token (`kind.*`, `role.*`,
-`team_role.*`, `behaviour.*`) may be blank in the floor too — the definition's own label is its floor.
+`behaviour.*` may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1312 keys · 56 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1486 keys · 59 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## add_agent
 
@@ -20,6 +20,8 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `add_agent.card` | Add Agent to Team |  |  |  |  |
 | `add_agent.card_summary` | The Team answers the rest. |  |  |  |  |
 | `add_agent.default` | default |  |  |  |  |
+| `add_agent.desk_line_control` | Managed file coordination is on for this Team: the desk contract applies, and a worktree is cut when the work needs it. |  |  |  |  |
+| `add_agent.desk_line_plain` | Managed file coordination is off for this Team: this Agent works in the shared checkout and reports to you. |  |  |  |  |
 | `add_agent.instruction` | instruction |  |  |  |  |
 | `add_agent.instruction_placeholder` | what this Agent should do |  |  |  |  |
 | `add_agent.model` | model |  |  |  |  |
@@ -28,17 +30,17 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `add_agent.none` | — |  |  |  |  |
 | `add_agent.place` | place |  |  |  |  |
 | `add_agent.provider` | model provider |  |  |  |  |
+| `add_agent.shell` | Open a shell, not an Agent |  |  |  |  |
+| `add_agent.shell_why` | A raw terminal in this Team — no Agent is launched and nothing is sent to it. |  |  |  |  |
 | `add_agent.start` | Start |  |  |  |  |
 | `add_agent.started` | Started {name} |  |  |  |  |
+| `add_agent.started_note` | Started {name} — {note} |  |  |  |  |
 | `add_agent.starting` | Starting… |  |  |  |  |
 | `add_agent.still_asked` | still asked |  |  |  |  |
 | `add_agent.task` | task  (optional) |  |  |  |  |
 | `add_agent.task_open` | open |  |  |  |  |
 | `add_agent.team` | team |  |  |  |  |
 | `add_agent.title` | Add Agent to Team |  |  |  |  |
-| `add_agent.worktree` | Request a worktree |  |  |  |  |
-| `add_agent.worktree_off` | No worktree. This Agent works in the shared checkout. |  |  |  |  |
-| `add_agent.worktree_on` | A worktree of its own — managed file coordination, hand-in and the Git safeguards. |  |  |  |  |
 
 ## archives
 
@@ -80,19 +82,18 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 |---|---|---|---|---|---|
 | `behaviours` | Behaviours |  | Perks |  |  |
 | `campaign` | Campaign | Occasion | Campaign |  |  |
-| `campaign_kind` | Kind |  | Arena |  |  |
 | `campaigns` | Campaigns | Occasions | Campaigns |  |  |
 | `desk_profile` | desk profile | the house style | your rig |  |  |
 | `go` | Go | Service | GLHF |  |  |
 | `kind` | Kind |  |  |  |  |
 | `loadout` | Tools and skills | Station | Loadout |  | Loadout |
 | `mandate` | Mandate |  | Mandate |  |  |
-| `output` | Deliverable |  | Loot |  |  |
+| `output` | Output |  | Loot |  |  |
 | `permissions` | Permissions |  |  |  |  |
 | `player_one` | Lead session | Head of house | Player One |  | Player One |
 | `publish` | Publish |  | Publish build |  |  |
-| `reach` | Scope |  | Reach |  |  |
-| `recruit` | Team |  | Squad |  |  |
+| `reach` | Reach |  | Reach |  |  |
+| `recruit` | Recruit |  | Squad |  |  |
 | `required_reading` | Required reading |  |  |  |  |
 | `routine_bundles` | Routine Bundles |  |  |  |  |
 | `routines` | Routines |  |  |  |  |
@@ -151,15 +152,21 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `campaign_view.applied` | applied — every component below is now this Campaign’s own |  |  |  |  |
 | `campaign_view.applied_tag` | applied |  |  |  |  |
 | `campaign_view.apply` | Apply |  |  |  |  |
+| `campaign_view.available` | Available |  |  |  |  |
+| `campaign_view.behaviours_help` | One shelf:name book per line. |  |  |  |  |
 | `campaign_view.campaign_summary` | What this body of work is called, and what it is for. |  |  |  |  |
 | `campaign_view.col_default` | Default |  |  |  |  |
 | `campaign_view.col_model` | Preferred model |  |  |  |  |
 | `campaign_view.col_provider` | Provider |  |  |  |  |
+| `campaign_view.default_behaviours` | Behaviours |  |  |  |  |
+| `campaign_view.default_dial` | Control |  |  |  |  |
 | `campaign_view.default_help` | The row a launch that names nothing starts from. |  |  |  |  |
-| `campaign_view.defaults_from_settei` | {line} (from SETTEI) |  |  |  |  |
-| `campaign_view.defaults_help` | What a new Agent here starts on when the launch does not say. A row this Campaign has not answered uses the machine’s SETTEI answer, marked as such. |  |  |  |  |
-| `campaign_view.defaults_none` | None set — a launch must name a model. |  |  |  |  |
-| `campaign_view.defaults_scope` | Role, reach and who may read an Agent are set when it is launched, not here. |  |  |  |  |
+| `campaign_view.default_output` | Output |  |  |  |  |
+| `campaign_view.default_permissions` | Permissions |  |  |  |  |
+| `campaign_view.default_reach` | Reach |  |  |  |  |
+| `campaign_view.default_recruit` | Recruit |  |  |  |  |
+| `campaign_view.defaults_help` | These defaults land in the next Team or Agent form that opens. They remain editable there; nothing live changes. |  |  |  |  |
+| `campaign_view.defaults_summary` | {model} · {reach} · {dial} |  |  |  |  |
 | `campaign_view.description_help` | What this body of work is for. Shown on its card. |  |  |  |  |
 | `campaign_view.desk_summary` | This Ronin install, its owner and its workspace configuration. |  |  |  |  |
 | `campaign_view.from_settei` | from SETTEI |  |  |  |  |
@@ -171,6 +178,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `campaign_view.lexicon` | Lexicon |  |  |  |  |
 | `campaign_view.lexicon_help` | The words. Held to one lexicon for now, so nothing on this page is offered. |  |  |  |  |
 | `campaign_view.machine_summary` | The rest of the desk: Desk · Account · Archived · Help desk · Keypad. |  |  |  |  |
+| `campaign_view.model_default` | Default model |  |  |  |  |
 | `campaign_view.name_help` | On the door, the browser tab and the address. |  |  |  |  |
 | `campaign_view.new_project_desks` | New projects use desks? |  |  |  |  |
 | `campaign_view.new_project_desks_help` | Desks: each coding session works at its own branch and worktree and hands in to the team. None: sessions work in the checkout. Written into a project’s RONIN_REPO when its root is added; the desks box on a root changes that one project. |  |  |  |  |
@@ -184,11 +192,28 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `campaign_view.none_selected` | No Campaign selected. |  |  |  |  |
 | `campaign_view.off` | Off |  |  |  |  |
 | `campaign_view.on` | On |  |  |  |  |
+| `campaign_view.option_a_plan` | A plan |  |  |  |  |
+| `campaign_view.option_artifact` | An artifact |  |  |  |  |
+| `campaign_view.option_code` | Code |  |  |  |  |
+| `campaign_view.option_discuss` | Discuss |  |  |  |  |
+| `campaign_view.option_execute` | Execute |  |  |  |  |
+| `campaign_view.option_ideas` | Ideas |  |  |  |  |
+| `campaign_view.option_nobody` | Nobody |  |  |  |  |
+| `campaign_view.option_open` | Open |  |  |  |  |
+| `campaign_view.option_plan` | Plan |  |  |  |  |
+| `campaign_view.option_propose` | Propose Agents |  |  |  |  |
+| `campaign_view.option_read` | Read |  |  |  |  |
+| `campaign_view.option_staff` | Staff Agents |  |  |  |  |
+| `campaign_view.option_team` | The Team |  |  |  |  |
+| `campaign_view.option_user` | You only |  |  |  |  |
+| `campaign_view.option_write` | Read and write |  |  |  |  |
 | `campaign_view.output` | Output |  |  |  |  |
 | `campaign_view.output_help` | What an Agent’s tile shows. Terminal Mirror is the one that ships; Detailed, Condensed and Cherry Pick arrive with Ronin Services. |  |  |  |  |
+| `campaign_view.permissions_help` | Provider permission posture; default uses the provider’s normal setting. |  |  |  |  |
 | `campaign_view.presets` | Presets |  |  |  |  |
 | `campaign_view.presets_help` | A preset copies all of its components into this Campaign. Change any one of them afterwards; the preset is not consulted again. |  |  |  |  |
 | `campaign_view.profile_summary` | The words, the skin and the templates this Campaign opens on. |  |  |  |  |
+| `campaign_view.provider_default` | Default provider |  |  |  |  |
 | `campaign_view.roles` | Session roles |  |  |  |  |
 | `campaign_view.roles_help` | What a launch here offers an Agent to be. Templates for a whole Team do not exist yet. |  |  |  |  |
 | `campaign_view.roles_loose` | No family |  |  |  |  |
@@ -197,9 +222,10 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `campaign_view.roots_n` | {n} roots |  |  |  |  |
 | `campaign_view.roots_none` | None — an Agent here has nowhere to work. |  |  |  |  |
 | `campaign_view.roots_summary` | The folders this Campaign is allowed to work in. |  |  |  |  |
+| `campaign_view.routine_no_description` | No description supplied. |  |  |  |  |
 | `campaign_view.routines` | Routines |  |  |  |  |
-| `campaign_view.routines_help` | What Ronin runs for you. Each is a bundle — a reading list, SOPs, macros and tools — and a switch applies to sessions born after it; nothing running is touched. |  |  |  |  |
-| `campaign_view.routines_n` | {on} of {n} switches on |  |  |  |  |
+| `campaign_view.routines_help` | Choose what each new Cowork Agent starts with. Changes land in forms opened after this save; nothing already running or stored changes. |  |  |  |  |
+| `campaign_view.routines_n` | {n} on |  |  |  |  |
 | `campaign_view.rt_absent` | not installed |  |  |  |  |
 | `campaign_view.rt_by_repo` | per repository — see Project roots |  |  |  |  |
 | `campaign_view.rt_control` | Ronin control |  |  |  |  |
@@ -220,6 +246,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `campaign_view.theme_dark` | Dark |  |  |  |  |
 | `campaign_view.theme_help` | Light or dark, or whatever the device prefers. |  |  |  |  |
 | `campaign_view.theme_light` | Light |  |  |  |  |
+| `campaign_view.unavailable` | Unavailable |  |  |  |  |
 | `campaign_view.with_services` | Ronin Services |  |  |  |  |
 
 ## commons
@@ -319,8 +346,6 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `customize.sops` | SOPs |  |  |  |  |
 | `customize.sops_blurb` | How this house goes about a domain — fetched by a situation, never pushed. |  |  |  |  |
 | `customize.sops_read` | Read procedure |  |  |  |  |
-| `customize.team_roles` | Team roles |  |  |  |  |
-| `customize.team_roles_blurb` | What a TEAM is. The house ships none — every one is yours. |  |  |  |  |
 | `customize.title` | Customize |  |  |  |  |
 | `customize.tools` | Tools |  |  |  |  |
 | `customize.tools_blurb` | The executables that implement actions. A markdown row cannot author one. |  |  |  |  |
@@ -469,6 +494,25 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
 | `events.open` | Open |  |  |  |  |
+
+## forms
+
+| key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
+|---|---|---|---|---|---|
+| `forms.always` | always |  |  |  |  |
+| `forms.campaign_off` | campaign off |  |  |  |  |
+| `forms.campaign_on` | campaign on |  |  |  |  |
+| `forms.default` | default |  |  |  |  |
+| `forms.library` | From the Ronin library |  |  |  |  |
+| `forms.library_blurb` | Published bundles, pulled in and run. Not yet built. |  |  |  |  |
+| `forms.manual` | Manual |  |  |  |  |
+| `forms.model` | model |  |  |  |  |
+| `forms.none` | — |  |  |  |  |
+| `forms.own` | Make your own |  |  |  |  |
+| `forms.own_blurb` | Fresh and empty. Fill it in yourself. |  |  |  |  |
+| `forms.provider` | model provider |  |  |  |  |
+| `forms.team_off` | team turns off |  |  |  |  |
+| `forms.team_on` | team turns on |  |  |  |  |
 
 ## gauge
 
@@ -889,28 +933,108 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `me.status` | Status |  |  |  |  |
 | `me.title` | This session — status, work record, macros, groups, docs, note, control |  |  |  |  |
 
+## new_agent
+
+| key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
+|---|---|---|---|---|---|
+| `new_agent.a_ronin` | a rōnin |  |  |  |  |
+| `new_agent.bare_note` | A bare-metal Agent takes no kind, no mandate and no loadout. |  |  |  |  |
+| `new_agent.blank_note` | A blank field is an answer, not a gap. |  |  |  |  |
+| `new_agent.card_summary` | Session type first — the drawn launch form. |  |  |  |  |
+| `new_agent.create_and_start` | Create the team and start |  |  |  |  |
+| `new_agent.created_first` | (created first) |  |  |  |  |
+| `new_agent.instructions` | Instructions |  |  |  |  |
+| `new_agent.loadout_meta` | {routines} routines · {books} books |  |  |  |  |
+| `new_agent.name_model` | Name & model |  |  |  |  |
+| `new_agent.name_model_kind` | Name, model & kind |  |  |  |  |
+| `new_agent.name_placeholder` | name |  |  |  |  |
+| `new_agent.name_where` | Name & where |  |  |  |  |
+| `new_agent.name_where_model` | Name, where & model |  |  |  |  |
+| `new_agent.new_session` | New session |  |  |  |  |
+| `new_agent.open_terminal` | Open the terminal |  |  |  |  |
+| `new_agent.routines_bare` | no floor, no routines |  |  |  |  |
+| `new_agent.routines_terminal` | agent: none — a pane |  |  |  |  |
+| `new_agent.session` | session |  |  |  |  |
+| `new_agent.shelf_house` | behaviours · the house |  |  |  |  |
+| `new_agent.shelf_ways` | behaviours · ways of working |  |  |  |  |
+| `new_agent.team_existing` | An existing team |  |  |  |  |
+| `new_agent.team_existing_sub` | Join it. Its answers land at birth. |  |  |  |  |
+| `new_agent.team_new` | A new team |  |  |  |  |
+| `new_agent.team_new_sub` | Created first, then this Agent is born into it. |  |  |  |  |
+| `new_agent.team_none` | No team — a rōnin |  |  |  |  |
+| `new_agent.team_none_sub` | Ordinary, not a gap. |  |  |  |  |
+| `new_agent.terminal_note` | A terminal takes no kind, no instructions, no mandate and no loadout. |  |  |  |  |
+| `new_agent.title` | New Agent |  |  |  |  |
+| `new_agent.type_bare` | Bare-metal Agent |  |  |  |  |
+| `new_agent.type_bare_sub` | The provider’s agent and nothing else — no floor, no routines, no reading. |  |  |  |  |
+| `new_agent.type_cowork` | Cowork Agent |  |  |  |  |
+| `new_agent.type_cowork_sub` | Born into Ronin: the floor, its routines, its reading and its team. |  |  |  |  |
+| `new_agent.type_terminal` | Terminal |  |  |  |  |
+| `new_agent.type_terminal_sub` | A raw tmux pane. No agent is launched and nothing is sent to it. |  |  |  |  |
+
 ## new_team
 
 | key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
 |---|---|---|---|---|---|
+| `new_team.agent_defaults` | agent defaults — seeded into every Agent raised here; none of it is a constraint |  |  |  |  |
+| `new_team.card_summary` | Template · kit · lead — the drawn form. |  |  |  |  |
 | `new_team.create` | Create Team |  |  |  |  |
 | `new_team.creating` | Creating the Team… |  |  |  |  |
 | `new_team.define` | Define the Team |  |  |  |  |
 | `new_team.definition` | Team definition |  |  |  |  |
+| `new_team.floor` | Cowork floor |  |  |  |  |
+| `new_team.floor_tag` | floor |  |  |  |  |
+| `new_team.floor_why` | The launch, campaign and team resolution, the shelf map, the birth receipt. |  |  |  |  |
+| `new_team.inherits` | an agent born here inherits |  |  |  |  |
+| `new_team.kit_door` | Open the Team Kit  ▸ |  |  |  |  |
+| `new_team.kit_door_why` | A workbench of its own: browse every routine and behaviour, read them, and make them yours. Not yet built. |  |  |  |  |
+| `new_team.kit_meta` | {routines} routines · {books} books{required} |  |  |  |  |
+| `new_team.kit_meta_required` | (required) |  |  |  |  |
+| `new_team.kit_none` | nothing yet — a template lays it, or open the kit |  |  |  |  |
+| `new_team.lead` | Team lead |  |  |  |  |
+| `new_team.lead_brief` | brief |  |  |  |  |
+| `new_team.lead_brief_default` | Hold the objective, dispatch, unblock, keep the gaps closed. |  |  |  |  |
+| `new_team.lead_brief_placeholder` | what the lead is for |  |  |  |  |
+| `new_team.lead_empty` | Open it empty |  |  |  |  |
+| `new_team.lead_empty_sub` | Ordinary. Add one whenever you like. |  |  |  |  |
+| `new_team.lead_include` | Include a team lead |  |  |  |  |
+| `new_team.lead_include_sub` | Raised with the team and briefed. |  |  |  |  |
+| `new_team.lead_included` | included |  |  |  |  |
+| `new_team.lead_none` | none |  |  |  |  |
+| `new_team.lead_raised` | included, briefed at raise |  |  |  |  |
+| `new_team.members` | members |  |  |  |  |
+| `new_team.members_note` | derived from live tags — never stored here |  |  |  |  |
 | `new_team.name` | Team name |  |  |  |  |
 | `new_team.name_desc` | Lowercase letters, digits, _ and - . This is also the tag its sessions carry. |  |  |  |  |
 | `new_team.name_invalid` | Lowercase letters, digits, _ and - only. |  |  |  |  |
+| `new_team.name_kind` | Name & kind |  |  |  |  |
+| `new_team.name_placeholder` | lowercase, digits, - _ |  |  |  |  |
 | `new_team.objective_desc` | Optional. Rides the brief of every session born onto this Team. |  |  |  |  |
+| `new_team.objective_placeholder` | what this team is for |  |  |  |  |
 | `new_team.optional` | Optional. |  |  |  |  |
+| `new_team.raise` | Raise the team |  |  |  |  |
+| `new_team.raise_lead` | Raise the team and its lead |  |  |  |  |
+| `new_team.raised_no_lead` | Raised {team} — the lead was not born: {reason} |  |  |  |  |
+| `new_team.raising` | Raising the team… |  |  |  |  |
 | `new_team.repos_desc` | Optional, comma-separated. |  |  |  |  |
+| `new_team.required` | Required behaviours |  |  |  |  |
+| `new_team.required_off` | offered |  |  |  |  |
+| `new_team.required_on` | enforced |  |  |  |  |
+| `new_team.required_why` | Every Agent that joins gets the documents below, at birth or on joining. |  |  |  |  |
 | `new_team.role_desc` | Optional. Blank is an unclassified Team, which is a valid state. |  |  |  |  |
 | `new_team.role_placeholder` | development — or leave blank |  |  |  |  |
 | `new_team.root` | Default project root |  |  |  |  |
 | `new_team.root_default` | — the box’s default — |  |  |  |  |
 | `new_team.root_desc` | Optional. Seeds where sessions are born; a launch may override it. |  |  |  |  |
+| `new_team.root_note` | A default that seeds a launch — never a constraint. A rōnin that joins later keeps its own. |  |  |  |  |
+| `new_team.save_as_new` | Save as new template |  |  |  |  |
+| `new_team.save_name_placeholder` | template name |  |  |  |  |
+| `new_team.saved_template` | Saved template {name} |  |  |  |  |
 | `new_team.team_actions` | Team actions |  |  |  |  |
 | `new_team.title` | New Team |  |  |  |  |
+| `new_team.where` | Where |  |  |  |  |
 | `new_team.wipeboard_desc` | Optional. Blank uses the Team’s own name. |  |  |  |  |
+| `new_team.wipeboard_own` | {team}  (its own) |  |  |  |  |
 
 ## output
 
@@ -1302,6 +1426,21 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `setup.agent_will_run` | {from}. RoninCoWork will run {command} on this machine. |  |  |  |  |
 | `setup.agents` | Your agents |  |  |  |  |
 | `setup.agents_lede` | Agents already found here are ready. Select any others you want RoninCoWork to add. |  |  |  |  |
+| `setup.bundle_base` | Ronin Base |  |  |  |  |
+| `setup.bundle_base_copy` | Your agents arrive knowing the house: basic reading you can open and edit, simple macros for talking to each other, shared work records. |  |  |  |  |
+| `setup.bundle_control` | Ronin Control |  |  |  |  |
+| `setup.bundle_control_copy` | Adds managed repositories: every agent codes at its own private desk — a git worktree — so there are no code collisions, and work is handed in deliberately. |  |  |  |  |
+| `setup.bundle_floor` | The floor |  |  |  |  |
+| `setup.bundle_floor_copy` | Ronin still sets each agent up and keeps its birth receipt, but hands it nothing extra. |  |  |  |  |
+| `setup.bundle_nothing` | Nothing |  |  |  |  |
+| `setup.bundle_nothing_copy` | Your agents start clean — no reading, no shared macros, no records. Just the CLI. |  |  |  |  |
+| `setup.bundle_services` | Services |  |  |  |  |
+| `setup.bundle_services_copy` | Adds your Services to every agent — voice, transcripts, machine care. |  |  |  |  |
+| `setup.campaign` | Campaign |  |  |  |  |
+| `setup.campaign_description` | Description |  |  |  |  |
+| `setup.campaign_description_placeholder` | What this campaign is for |  |  |  |  |
+| `setup.campaign_lede` | The body of work this Ronin configuration serves. |  |  |  |  |
+| `setup.campaign_name` | Campaign name |  |  |  |  |
 | `setup.cap` | Maximum agent sessions |  |  |  |  |
 | `setup.cap_estimate` | {n} — Ronin estimate for this {ram} GB machine |  |  |  |  |
 | `setup.cap_hint` | ≈700 MB per agent. Ronin reserves 25% (minimum 2 GB). Shells don’t count. |  |  |  |  |
@@ -1315,6 +1454,9 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `setup.cores` | {n} cores |  |  |  |  |
 | `setup.defaults` | How new sessions should start |  |  |  |  |
 | `setup.defaults_lede` | This is only the default. You can choose something different each time. |  |  |  |  |
+| `setup.desk_profile` | Desk profile |  |  |  |  |
+| `setup.desk_profile_hint` | The look, the words, and how much terminal detail your workspace shows. |  |  |  |  |
+| `setup.desk_profile_stock` | Stock |  |  |  |  |
 | `setup.email` | Email for the confirmation |  |  |  |  |
 | `setup.email_recorded` | Email already recorded securely |  |  |  |  |
 | `setup.err_email` | Enter the email address for Services confirmation. |  |  |  |  |
@@ -1341,6 +1483,9 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `setup.identity` | Name your coworkspace |  |  |  |  |
 | `setup.identity_lede` | This is how you’ll recognize this machine in your roster. |  |  |  |  |
 | `setup.install_in_tiles` | {agents} — install in visible tiles |  |  |  |  |
+| `setup.kind` | Kind |  |  |  |  |
+| `setup.kind_lede` | What do you want to use this app for? |  |  |  |  |
+| `setup.machine` | This machine |  |  |  |  |
 | `setup.machine_details` | Machine details |  |  |  |  |
 | `setup.machine_name` | Coworkspace name |  |  |  |  |
 | `setup.machine_name_hint` | The machine’s real hostname will not change. |  |  |  |  |
@@ -1369,6 +1514,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `setup.purpose_hint` | One sentence gives agents useful context. |  |  |  |  |
 | `setup.purpose_placeholder` | A customer support dashboard |  |  |  |  |
 | `setup.recommended` | {model} (recommended) |  |  |  |  |
+| `setup.recommended_short` | recommended |  |  |  |  |
 | `setup.review_add` | RoninCoWork will install · consequence |  |  |  |  |
 | `setup.review_gbrain` | gbrain memory |  |  |  |  |
 | `setup.review_lede` | Review what RoninCoWork will do. |  |  |  |  |
@@ -1379,6 +1525,8 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `setup.review_ready` | Ready agents · detected |  |  |  |  |
 | `setup.review_repo` | Git repository · detected |  |  |  |  |
 | `setup.review_stage` | When you save |  |  |  |  |
+| `setup.routine_bundles` | Routine Bundles |  |  |  |  |
+| `setup.routine_bundles_lede` | Choose how much Ronin hands to each new Agent. |  |  |  |  |
 | `setup.running_on` | Running privately on {host} |  |  |  |  |
 | `setup.save` | Save and open RoninCoWork |  |  |  |  |
 | `setup.save_note` | You can change these choices later. |  |  |  |  |
@@ -1408,6 +1556,8 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `setup.the_machine_user` | the machine user |  |  |  |  |
 | `setup.this_machine` | this machine |  |  |  |  |
 | `setup.use_value` | Use {value} |  |  |  |  |
+| `setup.you` | You |  |  |  |  |
+| `setup.you_lede` | The name Ronin and your Agents use when they address you. |  |  |  |  |
 
 ## stats
 
@@ -1535,13 +1685,52 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `team.state` | State |  |  |  |  |
 | `team.status` | Status |  |  |  |  |
 | `team.team` | Team |  |  |  |  |
-| `team.team_role` | Team role |  |  |  |  |
 | `team.wipeboard` | Wipeboard |  |  |  |  |
 | `team.workspace_1` | Workspace 1 |  |  |  |  |
 | `team.workspace_2` | Workspace 2 |  |  |  |  |
 | `team.workspace_3` | Workspace 3 |  |  |  |  |
 | `team.workspace_4` | Workspace 4 |  |  |  |  |
 | `team.workspace_blank` | Workspace |  |  |  |  |
+
+## team_config
+
+| key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
+|---|---|---|---|---|---|
+| `team_config.behaviours` | Behaviours |  |  |  |  |
+| `team_config.behaviours_help` | One shelf:name book per line. |  |  |  |  |
+| `team_config.branch` | Branch |  |  |  |  |
+| `team_config.cowork_id` | Cowork ID |  |  |  |  |
+| `team_config.default` | Default |  |  |  |  |
+| `team_config.dial` | Control |  |  |  |  |
+| `team_config.kind` | Kind |  |  |  |  |
+| `team_config.kind_coding` | Coding |  |  |  |  |
+| `team_config.kind_household` | Household |  |  |  |  |
+| `team_config.kind_personal` | Personal |  |  |  |  |
+| `team_config.kind_school` | School |  |  |  |  |
+| `team_config.kind_social` | Social |  |  |  |  |
+| `team_config.kind_work` | Work |  |  |  |  |
+| `team_config.kit_floor_alone` | the floor alone — no Routine is on |  |  |  |  |
+| `team_config.loading` | Loading Team Configuration… |  |  |  |  |
+| `team_config.model` | Model |  |  |  |  |
+| `team_config.next_form` | These defaults land in the next Agent form that opens. Nothing live changes. |  |  |  |  |
+| `team_config.no_description` | No description supplied. |  |  |  |  |
+| `team_config.no_roster` | This Cowork has no saved roster. |  |  |  |  |
+| `team_config.objective` | Purpose |  |  |  |  |
+| `team_config.output` | Output |  |  |  |  |
+| `team_config.permissions` | Permissions |  |  |  |  |
+| `team_config.project_root` | Project root |  |  |  |  |
+| `team_config.provider` | Provider |  |  |  |  |
+| `team_config.reach` | Reach |  |  |  |  |
+| `team_config.recruit` | Recruit |  |  |  |  |
+| `team_config.references` | References |  |  |  |  |
+| `team_config.references_help` | One URL or note per line. |  |  |  |  |
+| `team_config.required` | Require these behaviours for each new Agent |  |  |  |  |
+| `team_config.routines` | Routines |  |  |  |  |
+| `team_config.routines_help` | This complete on/off map is the Team’s own. Campaign changes affect only the next Team form. |  |  |  |  |
+| `team_config.saved` | Saved |  |  |  |  |
+| `team_config.saving` | Saving… |  |  |  |  |
+| `team_config.title` | Readable title |  |  |  |  |
+| `team_config.wipeboard` | Wipeboard |  |  |  |  |
 
 ## team_wipeboard
 

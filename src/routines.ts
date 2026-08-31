@@ -1,7 +1,8 @@
 /**
  * ROUTINE RESOLUTION — one answer for every birth projection.
  *
- * Campaign choices are the base. A Team states only exceptions; absence inherits. This
+ * A Team record is a complete on/off map captured when that Team is saved. Birth reads
+ * that map whole; only a rōnin (no Team record) reads the Campaign map. This
  * module deliberately does not read stores or decide availability, so launch, preview and
  * tests cannot acquire subtly different cascades. Delivery adapters annotate availability
  * after this selection has been resolved.
@@ -29,17 +30,22 @@ export function routineChoices(value: unknown): RoutineChoices {
   );
 }
 
+/** Save-time normalization: every catalog Routine receives an explicit on/off answer. */
+export function completeRoutineChoices(catalog: RoutineRow[], value: unknown): RoutineChoices {
+  const choices = routineChoices(value);
+  return Object.fromEntries(catalog.map((routine) => [routine.name, choices[routine.name] ?? false]));
+}
+
 export function resolveRoutines(
   catalog: RoutineRow[],
   campaign: RoutineChoices,
-  team: RoutineChoices = {},
+  team?: RoutineChoices,
 ): ResolvedRoutine[] {
+  const choices = team ?? campaign;
+  const layer = team === undefined ? 'campaign' as const : 'team' as const;
   const resolved: ResolvedRoutine[] = catalog.map((routine) => {
-    if (own(team, routine.name)) {
-      return { ...routine, enabled: team[routine.name], stated_by: 'team' as const, required_by: [] as string[] };
-    }
-    if (own(campaign, routine.name)) {
-      return { ...routine, enabled: campaign[routine.name], stated_by: 'campaign' as const, required_by: [] as string[] };
+    if (own(choices, routine.name)) {
+      return { ...routine, enabled: choices[routine.name], stated_by: layer, required_by: [] as string[] };
     }
     return { ...routine, enabled: false, stated_by: 'implicit_off' as const, required_by: [] as string[] };
   });

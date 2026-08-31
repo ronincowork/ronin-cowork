@@ -78,7 +78,11 @@ process.env.RONIN_TEAM_ROSTERS_DIR = path.join(temp, 'team_rosters');
 await fs.mkdir(path.join(temp, 'team_rosters'), { recursive: true });
 await fs.writeFile(
   path.join(temp, 'team_rosters', 'scratchteam.md'),
-  ['# scratchteam', '', '- **objective:** prove the parity', '- **project_root:** beta', '- **state:** active', ''].join('\n'),
+  [
+    '# scratchteam', '', '- **objective:** prove the parity', '- **project_root:** beta',
+    '- **agent_defaults:** {"provider":"","model":"","reach":"discuss","recruit":"nobody","output":"ideas","dial":"write","permissions":"default"}',
+    '- **state:** active', '',
+  ].join('\n'),
 );
 
 const { resolveForm } = await import('../src/spawn.js');
@@ -107,7 +111,6 @@ const mechanism = (r: Awaited<ReturnType<typeof resolveForm>>) => ({
   dir: r.dir,
   cmd: r.cmd,
   dial: r.dial,
-  lifecycle: r.lifecycle,
   agent: r.agent,
   capExempt: r.capExempt,
   mcp: r.mcp,
@@ -179,7 +182,7 @@ test('and to the same reading list — all + root + role, compiled once', async 
     assert.ok(books.includes(book), `the Build Brief must carry ${book}`);
   }
   const forkBooks = reading(fromForkit.brief);
-  for (const book of books) {
+  for (const book of ['ALL_BOOK.md', 'ROOT_BOOK.md', 'ROLE_BOOK.md']) {
     assert.ok(forkBooks.includes(book), `the forked Build Brief must carry ${book}`);
   }
   assert.deepEqual(fromCommons.birth_reading.map((file) => path.basename(file)).sort(), books);
@@ -241,6 +244,20 @@ test('the model cascade is the mechanism\'s: blank inherits, explicit wins, iden
   assert.equal(f2.cmd, c2.cmd, 'and both callers get the identical resolved command');
 });
 
+test('mandate defaults are complete, Team seeds them, and the explicit launch wins', async () => {
+  const stock = await resolveForm(commonsForm(), new Set());
+  assert.deepEqual(stock.mandate, { reach: 'plan', recruit: 'propose agents', output: 'open' });
+
+  const seeded = await resolveForm(forkitForm(), new Set());
+  assert.deepEqual(seeded.mandate, { reach: 'discuss', recruit: 'nobody', output: 'ideas' });
+
+  const explicit = await resolveForm(forkitForm({
+    mandate: { reach: 'execute', recruit: 'staff agents', output: 'the team' },
+  }), new Set());
+  assert.deepEqual(explicit.mandate, { reach: 'execute', recruit: 'staff agents', output: 'the team' });
+  assert.deepEqual(explicit.stated_by.mandate, [{ layer: 'launch', source: 'launch request' }]);
+});
+
 test('a ronin launch is legal, and so is a launch onto a tag-only team', async () => {
   // No team at all — a ronin — is an ordinary launch.
   const ronin = await resolveForm(commonsForm(), new Set());
@@ -255,7 +272,7 @@ test('a ronin launch is legal, and so is a launch onto a tag-only team', async (
   await assert.rejects(() => resolveForm(commonsForm({ team: 'Ghosts!' }), new Set()), /team name/);
 });
 
-test('stated_by is resolved on the server across explicit, Team, role, and system layers', async () => {
+test('stated_by carries the settled launch, Team, role, and Campaign layers', async () => {
   const explicit = await resolveForm(commonsForm({
     name: 'attribution-proof',
     project_root: 'beta',
@@ -263,17 +280,16 @@ test('stated_by is resolved on the server across explicit, Team, role, and syste
     mcp: true,
   }), new Set());
   for (const key of ['name', 'project_root', 'cmd', 'mcp', 'session_role']) {
-    assert.deepEqual(explicit.stated_by[key], [{ layer: 'explicit_launch', source: 'launch request' }], key);
+    assert.deepEqual(explicit.stated_by[key], [{ layer: 'launch', source: 'launch request' }], key);
   }
-  assert.equal(explicit.stated_by.lifecycle[0]?.layer, 'session_role');
-  assert.match(explicit.stated_by.lifecycle[0]?.source ?? '', /session_roles\/DraftPlan\.md$/);
 
   const inherited = await resolveForm(forkitForm({ project_root: undefined }), new Set());
   assert.equal(inherited.stated_by.project_root[0]?.layer, 'team_roster');
   assert.match(inherited.stated_by.project_root[0]?.source ?? '', /team_rosters\/scratchteam\.md$/);
 
-  const system = await resolveForm(commonsForm({ session_role: '' }), new Set());
-  assert.deepEqual(system.stated_by.dial, [{ layer: 'system', source: 'src/launch-profile.ts' }]);
+  const campaign = await resolveForm(commonsForm({ session_role: '' }), new Set());
+  assert.equal(campaign.stated_by.dial[0]?.layer, 'campaign');
+  assert.match(campaign.stated_by.dial[0]?.source ?? '', /agent_defaults\.dial/);
 });
 
 test('server resolution returns profile and durable Team context without browser reconstruction', async () => {
@@ -351,8 +367,34 @@ test('QuarterBack is a session_role, pinned as the developer family\'s default l
 
   const qb = await resolveForm(commonsForm({ session_role: 'QuarterBack' }), new Set());
   assert.equal(qb.session_role, 'QuarterBack');
-  assert.equal(qb.dial, 'read', 'a coordinator watches: the definition states its own dial');
-  assert.equal(qb.lifecycle, 'orchestrating');
+  assert.equal(qb.dial, 'write', 'the Campaign dial lands after the presentation-only role pin');
   // A default_lead_role launch carries the team-building SOP — route 1 of its delivery.
   assert.match(qb.brief, /teams\.md/, 'the lead reading rides the brief');
+});
+
+test('a name alone resolves the ordinary Cowork Agent birth', async () => {
+  // Last because resolving the initial Campaign legitimately exercises its one-time
+  // compatibility write; earlier parity cases intentionally measure the pre-write fixture.
+  const born = await resolveForm({ name: 'name_only' });
+  assert.equal(born.session_type, 'cowork_agent');
+  assert.equal(born.name, 'name_only');
+  assert.equal(born.project_root, 'alpha', 'the existing top-active-root chain answers placement');
+  assert.deepEqual(born.mandate, { reach: 'plan', recruit: 'propose agents', output: 'open' });
+  assert.equal(born.dial, 'write');
+});
+
+test('kind and behaviours resolve at birth, with unusable books ignored rather than refused', async () => {
+  const born = await resolveForm(commonsForm({
+    kind: 'coding',
+    behaviours: ['sops:github', 'ways:cut_code', 'ways:not_there'],
+  }), new Set());
+  assert.equal(born.kind, 'coding');
+  assert.deepEqual(born.behaviours.map((row) => row.book), ['sops:github', 'ways:cut_code']);
+  assert.ok(born.birth_reading.some((file) => file.endsWith('/ronin_sops/github.md')));
+  assert.ok(born.birth_reading.some((file) => file.endsWith('/ways/cut_code.md')));
+  assert.match(born.brief, /ronin_sops\/github\.md/);
+  assert.match(born.brief, /ways\/cut_code\.md/);
+  assert.deepEqual(born.ignored, ['behaviours[ways:not_there]']);
+  assert.equal(born.stated_by.kind[0]?.layer, 'launch');
+  assert.equal(born.stated_by.behaviours[0]?.layer, 'launch');
 });

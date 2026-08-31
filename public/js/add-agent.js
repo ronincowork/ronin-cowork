@@ -43,11 +43,6 @@ const TASKS_BY_KIND = Object.freeze({
 });
 const DEFAULT_TASKS = TASKS_BY_KIND.coding;
 
-/** Marking one of these pre-marks the worktree request. The owner named the first two;
- *  the retired DESK_LIFECYCLES was {coding, debug}, so ChaseBug is deliberately NOT here
- *  until that is ruled (NEW_AGENT.md § 4.5). */
-const WORKTREE_TASKS = Object.freeze(['CutCode', 'DraftPlan']);
-
 const readable = (role) => role.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
 
 /**
@@ -60,7 +55,7 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
   const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;
   const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
 
-  const draft = { name: '', instruction: '', provider: '', model: '', task: '', desk: false, deskByHand: false };
+  const draft = { name: '', instruction: '', provider: '', model: '', task: '', shell: false };
   let busy = false;
   /** The seed door's answer, or null while it does not exist yet. */
   let seed = null;
@@ -99,6 +94,23 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
     draft.name = nameInput.value;
   });
   const nameField = createField({ label: t('add_agent.name', 'name'), control: nameInput });
+
+  /* ---- shell or Agent (owner, 2026-08-31): the one thing the retired New Agent card
+     offered here that this surface did not. Ticked, the form drops to the name and the
+     place — a raw pane, nothing is sent to it — and Start opens the terminal. ---- */
+  const shellRow = el('button', 'aa-desk aa-shell');
+  shellRow.type = 'button';
+  const shellBox = el('span', 'aa-box');
+  const shellText = el('span', 'aa-desk-text');
+  const shellTitle = el('b', null, t('add_agent.shell', 'Open a shell, not an Agent'));
+  const shellWhy = el('small', null, t('add_agent.shell_why', 'A raw terminal in this Team — no Agent is launched and nothing is sent to it.'));
+  shellText.append(shellTitle, shellWhy);
+  shellRow.append(shellBox, shellText);
+  shellRow.addEventListener('click', () => { draft.shell = !draft.shell; paintShape(); });
+  function paintShape() {
+    shellRow.setAttribute('aria-pressed', String(draft.shell));
+    form.dataset.shell = String(draft.shell);
+  }
 
   const instruction = el('textarea');
   instruction.rows = 3;
@@ -156,32 +168,37 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
       chip.setAttribute('aria-pressed', String(draft.task === item.name));
       chip.addEventListener('click', () => {
         draft.task = item.name;
-        if (!draft.deskByHand) draft.desk = WORKTREE_TASKS.includes(item.name);
         paintTasks();
-        paintDesk();
       });
       taskRow.append(chip);
     }
   }
 
-  /* ---- request a worktree: `desk: own | none` on the launch, which the route already
-         accepts. This is `wantsDesk` made visible — it used to be answered invisibly
-         from a role's michi name (NEW_AGENT.md § 6.3). ---- */
-  const deskRow = el('button', 'aa-desk');
-  deskRow.type = 'button';
-  const deskBox = el('span', 'aa-box');
-  const deskText = el('span', 'aa-desk-text');
-  const deskTitle = el('b');
+  /* ---- THE DESK IS NOT AN ASKED QUESTION (owner, 2026-08-31, folding the earlier
+     control): the routine selection IS the decision, so this row is a CONSEQUENCE LINE —
+     it says which of the two states the resolved routines give, and offers no switch.
+     Allocation stays lazy either way: managed file coordination is the contract, and a
+     worktree is cut when the work needs it (`docs/routines.md` § Four different facts).
+     `desk: own | none` survives on the launch body as an unadvertised escape hatch; no
+     form surfaces it, and this one no longer sends it. ---- */
+  const deskLine = el('div', 'aa-deskline');
   const deskWhy = el('small');
-  deskText.append(deskTitle, deskWhy);
-  deskRow.append(deskBox, deskText);
-  deskRow.addEventListener('click', () => { draft.desk = !draft.desk; draft.deskByHand = true; paintDesk(); });
+  deskLine.append(deskWhy);
+  /** Is `ronin_control` on for this birth? The resolved map's answer, never this
+   *  form's — and null while the seed door is not there to ask. */
+  const controlled = () => {
+    const rows = seed?.routines;
+    if (!Array.isArray(rows)) return null;
+    return rows.some((r) => r.on && /control/i.test(r.name || ''));
+  };
   function paintDesk() {
-    deskRow.setAttribute('aria-pressed', String(draft.desk));
-    deskTitle.textContent = t('add_agent.worktree', 'Request a worktree');
-    deskWhy.textContent = draft.desk
-      ? t('add_agent.worktree_on', 'A desk of its own: the desk contract, hand-in and the git guards.')
-      : t('add_agent.worktree_off', 'No desk. This Agent works in the shared checkout.');
+    const control = controlled();
+    // Nothing is claimed before the resolved map has answered.
+    deskLine.hidden = control === null;
+    if (control === null) return;
+    deskWhy.textContent = control
+      ? t('add_agent.desk_line_control', 'Managed file coordination is on for this Team: the desk contract applies, and a worktree is cut when the work needs it.')
+      : t('add_agent.desk_line_plain', 'Managed file coordination is off for this Team: this Agent works in the shared checkout and reports to you.');
   }
 
   /* ---- what the Team fixed: at the FOOT, because none of it is changeable here ---- */
@@ -213,12 +230,12 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
     draft.name = '';
     draft.instruction = '';
     draft.task = '';
-    draft.desk = false;
-    draft.deskByHand = false;
+    draft.shell = false;
     nameInput.value = '';
     instruction.value = '';
     paintTasks();
     paintDesk();
+    paintShape();
   };
   // createAction takes its handler at construction — there is no setAction — so the
   // actions are built after `reset` and `launch` exist.
@@ -227,22 +244,31 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
     busy = true;
     start.setDisabled(true);
     notice.set('info', t('add_agent.starting', 'Starting…'));
-    // ONLY WHAT THE ROUTE ACCEPTS TODAY. `session_role` still keys the catalog variant
-    // of POST /api/launch (NEW_AGENT.md D1), so a blank task rides with the team, which
-    // is the launch's second key. Nothing about routines or behaviours is sent: the Team
-    // does not carry them yet, and a caller that states one is guessing at the server's job.
+    // ONLY WHAT THE ROUTE ACCEPTS TODAY. `session_type` is stated explicitly — the birth
+    // type is never inferred from session_role, team, or agent-shaped fields. A shell is
+    // a `terminal`: a pane, its name, its team and its place, and nothing an Agent would
+    // take (the route refuses the rest by name). Nothing about routines is sent either
+    // way: they are resolved server-side, and a caller that states one is guessing at
+    // the server's job (NEW_AGENT.md § 7.4).
     const result = await request('/api/launch', {
       method: 'POST',
-      json: {
-        session_role: draft.task,
-        team: teamName(),
-        prompt: draft.instruction.trim(),
-        name: draft.name.trim(),
-        project_root: rootOf(),
-        provider: draft.provider,
-        model: draft.model,
-        desk: draft.desk ? 'own' : 'none',
-      },
+      json: draft.shell
+        ? {
+          session_type: 'terminal',
+          team: teamName(),
+          name: draft.name.trim(),
+          project_root: rootOf(),
+        }
+        : {
+          session_type: 'cowork_agent',
+          session_role: draft.task,
+          team: teamName(),
+          instructions: draft.instruction.trim(),
+          name: draft.name.trim(),
+          project_root: rootOf(),
+          provider: draft.provider,
+          model: draft.model,
+        },
     });
     busy = false;
     start.setDisabled(false);
@@ -251,17 +277,39 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
       return;
     }
     const born = result.data?.name || draft.name.trim();
-    notice.set('success', t('add_agent.started', 'Started {name}', { name: born }));
+    // WHY A DESK REQUEST PRODUCED NOTHING, in the receipt's own line — rendered so the
+    // worktree control cannot quietly do nothing ("off by absence" is never silent,
+    // owner 2026-08-29). Empty means a desk was opened, or none was asked for.
+    const deskNote = result.data?.receipt?.desk_note || '';
+    if (deskNote) notice.set('warning', t('add_agent.started_note', 'Started {name} — {note}', { name: born, note: deskNote }));
+    else notice.set('success', t('add_agent.started', 'Started {name}', { name: born }));
     reset();
-    // THE LOOP: the Agent appears in the workspace that made it.
-    if (born) connect?.(born);
+    // THE LOOP: the Agent appears in the workspace that made it — EXCEPT when the
+    // receipt carries a desk note. Connecting swaps this surface for the tile in the
+    // same breath, which would take the one line explaining the missing desk with it;
+    // so the note holds the surface, and the newborn is on the roster one click away.
+    if (born && !deskNote) connect?.(born);
   };
 
   const start = createAction({ label: t('add_agent.start', 'Start'), kind: 'primary', action: () => void launch() });
   const cancel = createAction({ label: t('add_agent.cancel', 'Cancel'), action: () => { reset(); notice.set('', ''); } });
   const actions = createActionBar({ label: t('add_agent.actions', 'Launch actions'), actions: [cancel, start] });
 
-  form.append(nameField.el, instructionField.el, providerField.el, modelField.el, taskHead, taskRow, deskRow);
+  // NAME LEFT, MODELS RIGHT (owner, 2026-08-31: full-width rows "looked pretty
+  // horrible"). The shell tick sits under the name; everything only an Agent takes is
+  // marked `aa-agent-only` and folds away when the tick is on.
+  const top = el('div', 'aa-top');
+  const left = el('div', 'aa-col');
+  left.append(nameField.el, shellRow);
+  const right = el('div', 'aa-col aa-agent-only');
+  right.append(providerField.el, modelField.el);
+  top.append(left, right);
+  instructionField.el.classList.add('aa-agent-only');
+  taskHead.classList.add('aa-agent-only');
+  taskRow.classList.add('aa-agent-only');
+  deskLine.classList.add('aa-agent-only');
+  form.append(top, instructionField.el, taskHead, taskRow, deskLine);
+  paintShape();
   surface.content.append(form, actions.el, notice.el, fixed);
 
   return {
@@ -279,7 +327,6 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
       seed = answer.data || null;
       if (!draft.provider) draft.provider = seeded('provider');
       if (!draft.model) draft.model = seeded('model');
-      if (!draft.deskByHand && seeded('desk')) draft.desk = seeded('desk') === 'own';
       paintProviders();
       paintDesk();
       paintFixed();

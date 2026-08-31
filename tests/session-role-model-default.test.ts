@@ -116,9 +116,9 @@ test('an explicit model on the launch still wins, and that is the only thing tha
   // By NAME — the ＋ New form's model field.
   const named = await resolveForm(cutCode({ model: 'opus' }), new Set());
   assert.ok(named.cmd.startsWith('claude --model opus'), `the owner named it, got "${named.cmd}"`);
-  assert.deepEqual(named.stated_by.cmd, [{ layer: 'explicit_launch', source: 'launch request' }]);
+  assert.deepEqual(named.stated_by.cmd, [{ layer: 'launch', source: 'launch request' }]);
   // By CMD — a whole cell from the launch table.
   const cmd = await resolveForm(cutCode({ cmd: 'claude --model haiku' }), new Set());
   assert.ok(cmd.cmd.startsWith('claude --model haiku'), `explicit cmd must lead, got "${cmd.cmd}"`);
-  assert.deepEqual(cmd.stated_by.cmd, [{ layer: 'explicit_launch', source: 'launch request' }]);
+  assert.deepEqual(cmd.stated_by.cmd, [{ layer: 'launch', source: 'launch request' }]);
 });

@@ -48,6 +48,7 @@ export function initialOf(f, ctx) {
   if (f.seed === 'models:first') return ctx.modelOpts?.[0]?.value ?? '';
   if (f.seed === 'models:light') return ctx.light ? pm(ctx.light) : '';
   if (f.seed === 'sessions:estimate') return String(ctx.sessionEstimate ?? 0);
+  if (f.seed === 'open' || f.seed === 'control') return f.seed;
   return '';
 }
 
@@ -108,6 +109,7 @@ export function toRequests(schema, values) {
     const v = values[f.id];
     if (v === undefined || omitted(f, v)) continue;
     land(body(f.lands.family), f.lands.key, shaped(f, v));
+    if (f.setup_lands) land(body(f.setup_lands.family), f.setup_lands.key, shaped(f, v));
   }
 
   return [...byFamily.entries()].map(([fam, json]) => {

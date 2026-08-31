@@ -32,6 +32,21 @@ function selectField(id, label, hint) {
   return { wrap, select };
 }
 
+function choiceField(id, choices, selected) {
+  const grid = el('div', 'cs-bundles'); const inputs = [];
+  for (const raw of choices) {
+    const choice = typeof raw === 'string' ? { value: raw, label: t('kind.' + raw, raw) } : raw;
+    const label = el('label', `cs-bundle${choice.services ? ' services' : ''}`);
+    const input = document.createElement('input'); input.type = 'radio'; input.name = id; input.value = choice.value; input.checked = choice.value === selected;
+    const heading = el('strong', null, choice.labelKey ? t(choice.labelKey, choice.label) : choice.label);
+    if (choice.recommended) heading.append(document.createTextNode(' '), el('small', null, t('setup.recommended_short', 'recommended')));
+    label.append(input, heading);
+    if (choice.copy) label.append(el('span', null, t(choice.copyKey, choice.copy)));
+    grid.append(label); inputs.push(input);
+  }
+  return { wrap: grid, inputs, value: () => inputs.find((input) => input.checked)?.value || selected };
+}
+
 function card(number, title, lede) {
   const details = el('details', 'cs-card'); details.open = true;
   const summary = el('summary', 'cs-section-head');
@@ -74,14 +89,15 @@ export async function buildCoworkSetup(host, onDone) {
   host.className = 'cs-root';
   host.style.cssText = 'position:fixed;inset:0;overflow-y:auto;overscroll-behavior:contain;';
   host.replaceChildren();
-  const [setteiRes, agentsRes, specsRes] = await Promise.all([
+  const [setteiRes, agentsRes, specsRes, profilesRes] = await Promise.all([
     request('/api/settei', { cache: 'no-store' }), request('/api/agents', { cache: 'no-store' }),
-    request('/api/session-launch-specs', { cache: 'no-store' }),
+    request('/api/session-launch-specs', { cache: 'no-store' }), request('/api/desk-profiles', { cache: 'no-store' }),
   ]);
   const record = setteiRes.ok ? setteiRes.data : {};
   const schema = record.schema ?? { fields: [], families: {}, seat: {} };
   const agents = agentsRes.ok && Array.isArray(agentsRes.data) ? agentsRes.data : [];
   const specs = specsRes.ok && Array.isArray(specsRes.data) ? specsRes.data : [];
+  const profiles = profilesRes.ok && Array.isArray(profilesRes.data?.profiles) ? profilesRes.data.profiles : [];
   const machine = record.observed?.machine ?? {};
   const runnable = specs.filter((spec) => agents.some((agent) => agent.installed && agent.cmd === String(spec.cmd || '').split(/\s+/)[0]));
   const ram = Number(machine.ram_gb || 0);
@@ -105,18 +121,37 @@ export async function buildCoworkSetup(host, onDone) {
   const reviewShell = el('aside', 'cs-review-shell'); reviewShell.setAttribute('aria-live', 'polite');
   layout.append(form, reviewShell); shell.append(layout); form.append(stage(t('setup.stage_first', 'First'), t('setup.stage_first_title', 'Set up your coworkspace')));
 
-  const identity = card(1, t('setup.identity', 'Name your coworkspace'), t('setup.identity_lede', 'This is how you’ll recognize this machine in your roster.'));
-  const identityFields = el('div', 'cs-fields');
+  const campaignCard = card(1, t('setup.campaign', 'Campaign'), t('setup.campaign_lede', 'The body of work this Ronin configuration serves.'));
+  const campaignFields = el('div', 'cs-fields');
+  const campaignName = inputField('cs-campaign', t('setup.campaign_name', 'Campaign name'), '', { placeholder: 'Ronin Home' });
+  const campaignDescription = inputField('cs-campaign-description', t('setup.campaign_description', 'Description'), '', { placeholder: t('setup.campaign_description_placeholder', 'What this campaign is for') });
+  campaignName.input.value = record.set?.campaign?.name || 'Ronin Home'; campaignDescription.input.value = record.set?.campaign?.description || '';
+  campaignFields.append(campaignName.wrap, campaignDescription.wrap); campaignCard.append(campaignFields); form.append(campaignCard);
+
+  const machineCard = card(2, t('setup.machine', 'This machine'), t('setup.identity_lede', 'This is how you’ll recognize this machine in your roster.'));
+  const machineFields = el('div', 'cs-fields');
   const machineField = inputField('cs-machine', t('setup.machine_name', 'Coworkspace name'), t('setup.machine_name_hint', 'The machine’s real hostname will not change.'), { placeholder: t('setup.machine_name_placeholder', 'The workshop') });
-  const ownerField = inputField('cs-owner', t('setup.owner_name', 'What should Ronin call you?'), t('setup.owner_name_hint', 'Mika and your working agents use this name.'), { placeholder: t('setup.owner_name_placeholder', 'Your name') });
   machineField.input.value = initialOf(fieldById(schema, 'machineName'), ctx) || record.status?.machine_name || '';
-  ownerField.input.value = initialOf(fieldById(schema, 'ownerName'), ctx) || record.status?.owner_name || '';
-  identityFields.append(machineField.wrap, ownerField.wrap); identity.append(identityFields);
+  machineFields.append(machineField.wrap); machineCard.append(machineFields);
   const facts = el('details', 'cs-machine-details'); facts.append(el('summary', null, t('setup.machine_details', 'Machine details')), el('div', 'cs-detail-body',
     [machine.host, record.observed?.os?.name, machine.cores && t('setup.cores', '{n} cores', { n: machine.cores }), ram && t('setup.memory', '{n} GB memory', { n: ram })].filter(Boolean).join(' · ')));
-  identity.append(facts); form.append(identity);
+  machineCard.append(facts); form.append(machineCard);
 
-  const agentsCard = card(2, t('setup.agents', 'Your agents'), t('setup.agents_lede', 'Agents already found here are ready. Select any others you want RoninCoWork to add.'));
+  const youCard = card(3, t('setup.you', 'You'), t('setup.you_lede', 'The name Ronin and your Agents use when they address you.'));
+  const youFields = el('div', 'cs-fields');
+  const ownerField = inputField('cs-owner', t('setup.owner_name', 'What should Ronin call you?'), t('setup.owner_name_hint', 'Mika and your working agents use this name.'), { placeholder: t('setup.owner_name_placeholder', 'Your name') });
+  ownerField.input.value = initialOf(fieldById(schema, 'ownerName'), ctx) || record.status?.owner_name || '';
+  youFields.append(ownerField.wrap); youCard.append(youFields); form.append(youCard);
+
+  const kindDef = fieldById(schema, 'mainIntent');
+  const kindCard = card(4, t('setup.kind', 'Kind'), t('setup.kind_lede', 'What do you want to use this app for?'));
+  const kindField = choiceField('cs-kind', kindDef?.choices || [], initialOf(kindDef, ctx) || 'open'); kindCard.append(kindField.wrap); form.append(kindCard);
+
+  const bundleDef = fieldById(schema, 'routineBundle');
+  const bundleCard = card(5, t('setup.routine_bundles', 'Routine Bundles'), t('setup.routine_bundles_lede', 'Choose how much Ronin hands to each new Agent.'));
+  const bundleField = choiceField('cs-routine-bundle', bundleDef?.choices || [], initialOf(bundleDef, ctx) || 'control'); bundleCard.append(bundleField.wrap); form.append(bundleCard);
+
+  const agentsCard = card(6, t('setup.agents', 'Your agents'), t('setup.agents_lede', 'Agents already found here are ready. Select any others you want RoninCoWork to add.'));
   const agentGrid = el('div', 'cs-agents'); const agentHead = el('div', 'cs-agent-head');
   for (const text of ['', t('setup.col_agent', 'Agent'), t('setup.col_when_saved', 'When you save'), t('setup.col_status', 'Status')]) agentHead.append(el('span', null, text));
   agentGrid.append(agentHead); const wantAgents = new Map();
@@ -137,10 +172,14 @@ export async function buildCoworkSetup(host, onDone) {
   }
   agentsCard.append(agentGrid); form.append(agentsCard);
 
-  const defaults = card(3, t('setup.defaults', 'How new sessions should start'), t('setup.defaults_lede', 'This is only the default. You can choose something different each time.'));
+  const defaults = card(7, t('setup.defaults', 'How new sessions should start'), t('setup.defaults_lede', 'This is only the default. You can choose something different each time.'));
   const defaultFields = el('div', 'cs-fields');
   const modelField = selectField('cs-model', t('setup.model', 'Start new sessions with'), t('setup.model_hint', 'These are the runnable models in Ronin’s launch catalog. A saved choice wins when one exists.'));
   const mikaField = selectField('cs-mika', t('setup.mika', 'Mika uses'), t('setup.mika_hint', 'The same runnable launch catalog supplies this list. A light model is recommended for Mika.'));
+  const deskProfileField = selectField('cs-desk-profile', t('setup.desk_profile', 'Desk profile'), t('setup.desk_profile_hint', 'The look, the words, and how much terminal detail your workspace shows.'));
+  deskProfileField.select.add(new Option(t('setup.desk_profile_stock', 'Stock'), ''));
+  for (const profile of profiles) deskProfileField.select.add(new Option(profile.label || profile.name, profile.name));
+  deskProfileField.select.value = initialOf(fieldById(schema, 'deskProfile'), ctx);
   for (const option of ctx.modelOpts) {
     modelField.select.add(new Option(option.label, option.value));
     mikaField.select.add(new Option(LIGHT.test(option.spec.model) ? t('setup.recommended', '{model} (recommended)', { model: option.label }) : option.label, option.value));
@@ -151,9 +190,9 @@ export async function buildCoworkSetup(host, onDone) {
   const savedCap = Number(initialOf(fieldById(schema, 'cap'), ctx));
   const caps = [...new Set([sessionEstimate, 2, 4, 8, 24, savedCap, 0].filter((x) => Number.isFinite(x) && x >= 0))];
   for (const cap of caps) capField.select.add(new Option(cap === 0 ? t('setup.cap_none', 'No limit — allow any number') : cap === sessionEstimate ? t('setup.cap_estimate', '{n} — Ronin estimate for this {ram} GB machine', { n: cap, ram }) : t('setup.cap_n', '{n} agent sessions', { n: cap }), String(cap)));
-  capField.select.value = String(savedCap); defaultFields.append(modelField.wrap, mikaField.wrap, capField.wrap); defaults.append(defaultFields); form.append(defaults);
+  capField.select.value = String(savedCap); defaultFields.append(modelField.wrap, deskProfileField.wrap, mikaField.wrap, capField.wrap); defaults.append(defaultFields); form.append(defaults);
 
-  const servicesCard = card(4, t('settei.ronin_services', 'Ronin Services'), t('setup.services_lede', 'Extra capabilities for your coworkspace. Base RoninCoWork works fully without them.'));
+  const servicesCard = card(8, t('settei.ronin_services', 'Ronin Services'), t('setup.services_lede', 'Extra capabilities for your coworkspace. Base RoninCoWork works fully without them.'));
   servicesCard.querySelector('h2').append(el('span', 'cs-optional', t('setup.optional', 'Optional')));
   const intro = el('div', 'cs-service-intro'); intro.append(el('strong', null, t('setup.services_intro_strong', 'Keep the work on your machine, add the view around it.') + ' '), document.createTextNode(t('setup.services_intro', 'Services add live agent plans, readable transcripts, voice, usage history, and long-term memory.')));
   servicesCard.append(intro); const features = el('div', 'cs-features');
@@ -179,32 +218,16 @@ export async function buildCoworkSetup(host, onDone) {
   gbrainCopy.append(el('span', 'cs-choice-title', t('setup.gbrain_use', 'Use gbrain memory')), gbrainDesc); gbrainLabel.append(wantGbrain, gbrainCopy); serviceFields.append(gbrainLabel);
   choice.append(wantServices, choiceLabel, serviceFields); servicesCard.append(choice); form.append(servicesCard);
 
-  form.append(stage(t('setup.stage_then', 'Then'), t('setup.stage_then_title', 'Start your first project'), 'project'));
-  const projectCard = card(5, t('setup.project', 'What would you like to work on first?'), t('setup.project_lede', 'Leave it empty and add projects later from ▣ Roots — or give a folder and RoninCoWork registers it as your first project.'));
-  projectCard.querySelector('h2').append(el('span', 'cs-optional', t('setup.optional', 'Optional')));
-  const projectFields = el('div', 'cs-fields');
-  const dirField = inputField('cs-folder', t('setup.folder', 'Working folder'), t('setup.folder_hint', 'Pick from the suggestions or type the path — ~ is your home folder. It must already exist; RoninCoWork will not create or clone it.'), { placeholder: '~/code/my-app', cls: 'path' }); dirField.wrap.classList.add('full');
-  // The selection half: the operator lists real subdirectories under what is typed so
-  // far, the datalist offers them natively, and typing stays first-class.
-  const dirList = el('datalist'); dirList.id = 'cs-folder-dirs';
-  dirField.input.setAttribute('list', dirList.id); dirField.wrap.append(dirList);
-  const repoFact = el('div', 'cs-detected'); repoFact.append(el('b', null, t('setup.git_repo', 'Git repository:') + ' '), el('span', null, t('setup.git_unchecked', 'Not checked yet — Git is optional'))); dirField.wrap.append(repoFact);
-  const projectField = inputField('cs-project', t('setup.short_name', 'Short name (Optional)'), t('setup.short_name_hint', 'Left empty, the folder’s name is used. Lowercase letters, numbers, hyphens or underscores; at most 32 characters.'), { placeholder: 'my-app' });
-  const remitField = inputField('cs-purpose', t('setup.purpose', 'What are you working on? (Optional)'), t('setup.purpose_hint', 'One sentence gives agents useful context.'), { placeholder: t('setup.purpose_placeholder', 'A customer support dashboard') });
-  projectFields.append(dirField.wrap, projectField.wrap, remitField.wrap); projectCard.append(projectFields); form.append(projectCard);
-
   reviewShell.append(stage('', t('setup.review_stage', 'When you save'))); const review = el('div', 'cs-review'); const reviewHead = el('div', 'cs-review-head');
   reviewHead.append(el('p', null, t('setup.review_lede', 'Review what RoninCoWork will do.'))); review.append(reviewHead); const list = el('ul', 'cs-review-list'); review.append(list);
-  const rr = { machine: reviewRow(t('setup.machine_name', 'Coworkspace name')), owner: reviewRow(t('setup.review_owner', 'Ronin will call you')), ready: reviewRow(t('setup.review_ready', 'Ready agents · detected')), add: reviewRow(t('setup.review_add', 'RoninCoWork will install · consequence')), model: reviewRow(t('setup.review_model', 'New sessions start with')), mika: reviewRow(t('setup.mika', 'Mika uses')), cap: reviewRow(t('setup.cap', 'Maximum agent sessions')), services: reviewRow(t('settei.ronin_services', 'Ronin Services')), gbrain: reviewRow(t('setup.review_gbrain', 'gbrain memory')), project: reviewRow(t('setup.review_project', 'First project')), folder: reviewRow(t('setup.folder', 'Working folder')), repo: reviewRow(t('setup.review_repo', 'Git repository · detected')), purpose: reviewRow(t('setup.review_purpose', 'What are you working on?')) };
+  const rr = { campaign: reviewRow(t('setup.campaign', 'Campaign')), machine: reviewRow(t('setup.machine_name', 'Coworkspace name')), owner: reviewRow(t('setup.review_owner', 'Ronin will call you')), kind: reviewRow(t('setup.kind', 'Kind')), routines: reviewRow(t('setup.routine_bundles', 'Routine Bundles')), ready: reviewRow(t('setup.review_ready', 'Ready agents · detected')), add: reviewRow(t('setup.review_add', 'RoninCoWork will install · consequence')), model: reviewRow(t('setup.review_model', 'New sessions start with')), mika: reviewRow(t('setup.mika', 'Mika uses')), cap: reviewRow(t('setup.cap', 'Maximum agent sessions')), services: reviewRow(t('settei.ronin_services', 'Ronin Services')), gbrain: reviewRow(t('setup.review_gbrain', 'gbrain memory')) };
   Object.values(rr).forEach((row) => list.append(row.li)); rr.add.li.hidden = true;
   const reviewFoot = el('div', 'cs-review-foot'); const save = el('button', 'cs-save', t('setup.save', 'Save and open RoninCoWork')); save.type = 'button';
   const line = status('cs-status'); reviewFoot.append(save, el('p', 'cs-save-note', t('setup.save_note', 'You can change these choices later.')), line.el); review.append(reviewFoot); reviewShell.append(review);
 
-  let repoText = t('setup.git_unchecked', 'Not checked yet — Git is optional'); let inspectTimer;
-  /** The short name a folder earns when none is typed: its basename, said in the name rule. */
-  const deriveName = (dir) => dir.split('/').filter(Boolean).pop()?.toLowerCase().replace(/[^a-z0-9_-]/g, '-').replace(/^[^a-z0-9]+/, '').slice(0, 32) || 'project';
   const updateReview = () => {
     const additions = [...wantAgents].filter(([, box]) => box.checked).map(([id]) => agents.find((a) => a.id === id)?.label || id);
+    rr.campaign.out.textContent = campaignName.input.value.trim() || 'Ronin Home';
     rr.machine.out.textContent = machineField.input.value.trim() || t('setup.use_value', 'Use {value}', { value: machine.host || t('setup.the_hostname', 'the hostname') });
     rr.owner.out.textContent = ownerField.input.value.trim() || t('setup.use_value', 'Use {value}', { value: machine.user || t('setup.the_machine_user', 'the machine user') });
     rr.ready.out.textContent = agents.filter((a) => a.installed).map((a) => a.label).join(', ') || t('setup.none_detected', 'None detected');
@@ -212,46 +235,17 @@ export async function buildCoworkSetup(host, onDone) {
     rr.model.out.textContent = modelField.select.selectedOptions[0]?.textContent || t('setup.no_model', 'No runnable model detected'); rr.mika.out.textContent = mikaField.select.selectedOptions[0]?.textContent || t('setup.no_model', 'No runnable model detected'); rr.cap.out.textContent = capField.select.selectedOptions[0]?.textContent || '';
     rr.services.out.textContent = activationExists ? t('setup.services_already', 'Already selected · {stage}', { stage: activationStage.replaceAll('_', ' ') }) : wantServices.checked ? (emailField.input.value.trim() ? t('setup.services_begin_for', 'Begin activation for {email}', { email: emailField.input.value.trim() }) : t('setup.services_begin_after', 'Begin activation after you enter an email')) : t('setup.services_not_selected', 'Not selected — nothing will be sent');
     rr.gbrain.out.textContent = wantServices.checked && wantGbrain.checked ? t('setup.gbrain_selected', 'Add local embeddings model · about 0.3 GB') : t('setup.not_selected', 'Not selected');
-    const dirVal = dirField.input.value.trim(); const nameVal = projectField.input.value.trim();
-    rr.project.out.textContent = nameVal || (dirVal ? t('setup.project_derived', 'Use "{name}" — the folder\'s name', { name: deriveName(dirVal) }) : t('setup.project_skipped', 'Skipped — add projects later from ▣ Roots'));
-    rr.folder.out.textContent = dirVal || t('setup.none', 'None'); rr.repo.out.textContent = repoText; rr.purpose.out.textContent = remitField.input.value.trim() || t('setup.no_description', 'No description yet');
-  };
-  const inspectDir = () => {
-    clearTimeout(inspectTimer); repoText = dirField.input.value.trim() ? t('setup.git_checking', 'Checking this folder…') : t('setup.git_unchecked', 'Not checked yet — Git is optional'); repoFact.querySelector('span').textContent = repoText; updateReview();
-    if (!dirField.input.value.trim()) return;
-    inspectTimer = setTimeout(async () => {
-      const result = await request(`/api/project-roots/inspect?dir=${encodeURIComponent(dirField.input.value.trim())}`, { cache: 'no-store' });
-      repoText = !result.ok ? result.message : !result.data.exists ? t('setup.folder_missing', 'Folder does not exist') : result.data.repo ? `${result.data.repo.remote || t('setup.git_local', 'Local Git repository')}${result.data.repo.branch ? ' · ' + t('setup.git_branch', 'branch {branch}', { branch: result.data.repo.branch }) : ''}` : t('setup.folder_no_git', 'Existing folder · Git is optional');
-      repoFact.querySelector('span').textContent = repoText; updateReview();
-    }, 350);
-  };
-  let suggestTimer;
-  const suggestFolders = () => {
-    clearTimeout(suggestTimer);
-    suggestTimer = setTimeout(async () => {
-      const result = await request(`/api/project-roots/suggest?prefix=${encodeURIComponent(dirField.input.value.trim())}`, { cache: 'no-store' });
-      if (result.ok && Array.isArray(result.data.dirs)) dirList.replaceChildren(...result.data.dirs.map((d) => new Option(d)));
-    }, 200);
+    rr.kind.out.textContent = titleCase(kindField.value());
+    rr.routines.out.textContent = titleCase(bundleField.value());
   };
   for (const control of shell.querySelectorAll('input, select')) control.addEventListener('input', updateReview);
-  dirField.input.addEventListener('input', inspectDir); wantServices.addEventListener('change', () => { if (!wantServices.checked) wantGbrain.checked = false; updateReview(); });
-  dirField.input.addEventListener('input', suggestFolders); dirField.input.addEventListener('focus', suggestFolders);
+  wantServices.addEventListener('change', () => { if (!wantServices.checked) { wantGbrain.checked = false; if (bundleField.value() === 'services') bundleField.inputs.find((input) => input.value === 'control').checked = true; } bundleField.wrap.classList.toggle('services-on', wantServices.checked); updateReview(); });
+  bundleField.wrap.classList.toggle('services-on', wantServices.checked);
 
   save.addEventListener('click', async () => {
-    // THE PROJECT IS OPTIONAL (owner, 2026-08-21): empty means skipped, never blocked.
-    // A folder is the one thing a project cannot be without; the name derives from the
-    // folder when unsaid. Only a name WITHOUT a folder still asks — dropping typed
-    // input silently would be the bigger lie.
-    const typedName = projectField.input.value.trim().toLowerCase(); const projectDir = dirField.input.value.trim();
-    const wantsProject = Boolean(projectDir);
-    const projectName = typedName || (wantsProject ? deriveName(projectDir) : '');
-    if (!wantsProject && typedName) { line.say(t('setup.err_folder_needed', 'A project needs its working folder — add it, or clear the name to skip.'), 'bad'); dirField.input.focus(); return; }
-    if (wantsProject && !/^[a-z0-9][a-z0-9_-]{0,31}$/.test(projectName)) { line.say(t('setup.err_short_name', 'The short name: lowercase letters, numbers, hyphens or underscores — or leave it empty.'), 'bad'); projectField.input.focus(); return; }
-    if (wantsProject && repoText === t('setup.folder_missing', 'Folder does not exist')) { line.say(t('setup.err_folder_missing', 'The working folder must already exist on this machine.'), 'bad'); dirField.input.focus(); return; }
     if (!activationExists && wantServices.checked && (!emailField.input.value.trim() || !emailField.input.validity.valid)) { line.say(t('setup.err_email', 'Enter the email address for Services confirmation.'), 'bad'); emailField.input.focus(); return; }
     save.disabled = true; line.say(t('setup.saving', 'Saving…'), 'busy');
-    // A skipped project sends NOTHING: undefined never reaches toRequests' families.
-    const values = { machineName: machineField.input.value, ownerName: ownerField.input.value, projName: wantsProject ? projectName : undefined, projDir: wantsProject ? projectDir : undefined, projRemit: wantsProject ? remitField.input.value : undefined, model: modelField.select.value, mika: mikaField.select.value, cap: capField.select.value };
+    const values = { campaignName: campaignName.input.value, campaignDescription: campaignDescription.input.value, machineName: machineField.input.value, ownerName: ownerField.input.value, mainIntent: kindField.value(), routineBundle: bundleField.value(), model: modelField.select.value, deskProfile: deskProfileField.select.value, mika: mikaField.select.value, cap: capField.select.value };
     const problems = []; let installNote = ''; const landOn = [];
     // 409 is an answer only from the project POST — the project already exists from a
     // previous Save. Any other family answering 409 is a problem worth showing.
@@ -270,8 +264,8 @@ export async function buildCoworkSetup(host, onDone) {
       const installed = await request('/api/install', { method: 'POST', json: { items: picks.map((name) => ({ kind: 'agent', name })) } });
       if (installed.ok && Array.isArray(installed.data)) landOn.push(...installed.data.filter((x) => x.session).map((x) => x.session)); else if (!installed.ok) installNote += ' ' + t('setup.note_installs', 'Agent installs can be retried from Configuration.');
     }
-    if (ctx.modelOpts.length) { const born = await request('/api/launch', { method: 'POST', json: { session_role: schema.seat.session_role, name: schema.seat.name, ...(wantsProject ? { project_root: projectName } : {}), prompt: schema.seat.prompt } }); if (born.ok && born.data?.name) landOn.push(born.data.name); }
+    if (ctx.modelOpts.length) { const born = await request('/api/launch', { method: 'POST', json: { session_role: schema.seat.session_role, name: schema.seat.name, prompt: schema.seat.prompt } }); if (born.ok && born.data?.name) landOn.push(born.data.name); }
     line.say(t('setup.saved', 'Saved. Opening RoninCoWork…') + installNote, installNote ? 'bad' : 'ok'); onDone?.({ tiles: landOn });
   });
-  updateReview(); inspectDir();
+  updateReview();
 }

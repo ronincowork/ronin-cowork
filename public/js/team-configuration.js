@@ -1,53 +1,93 @@
-/* Editable reading of one durable team_roster. Membership is intentionally absent. */
+/* Editable reading of one complete durable team_roster. Membership is intentionally absent. */
+import { t } from './lexicon.js';
 import { request } from './request.js';
 
-const el = (tag, cls, text) => {
-  const node = document.createElement(tag);
-  if (cls) node.className = cls;
-  if (text != null) node.textContent = text;
-  return node;
-};
+const el = (tag, cls, text) => { const node = document.createElement(tag); if (cls) node.className = cls; if (text != null) node.textContent = String(text); return node; };
+const bucket = (value) => value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+const list = (value) => Array.isArray(value) ? value : [];
+const lines = (value) => value.split('\n').map((entry) => entry.trim()).filter(Boolean);
 
-const field = (form, label, name, value, kind = 'input') => {
-  const row = el('label', 'tw-config-field');
-  row.append(el('span', null, label));
-  const input = document.createElement(kind);
-  input.name = name;
-  input.value = value || '';
-  row.append(input);
-  form.append(row);
-  return input;
+const field = (form, label, name, value, kind = 'input', help = '') => {
+  const row = el('label', 'tw-config-field'); row.append(el('span', null, label));
+  const input = document.createElement(kind); input.name = name; input.value = value || ''; row.append(input);
+  if (help) row.append(el('small', null, help)); form.append(row); return input;
 };
-
-const reading = (form, label, value) => {
-  const row = el('div', 'tw-config-reading');
-  row.append(el('span', null, label), el('output', null, value || '—'));
-  form.append(row);
+const select = (form, label, name, values, value) => {
+  const input = el('select'); input.name = name;
+  for (const item of values) input.add(new Option(item.label, item.value)); input.value = value; const row = el('label', 'tw-config-field'); row.append(el('span', null, label), input); form.append(row); return input;
 };
+const reading = (form, label, value, empty) => { const row = el('div', 'tw-config-reading'); row.append(el('span', null, label), el('output', null, value || empty)); form.append(row); };
+const valueLabel = (value, tr) => ({
+  open: tr('campaign_view.option_open', 'Open'), discuss: tr('campaign_view.option_discuss', 'Discuss'), plan: tr('campaign_view.option_plan', 'Plan'), execute: tr('campaign_view.option_execute', 'Execute'), nobody: tr('campaign_view.option_nobody', 'Nobody'),
+  'propose agents': tr('campaign_view.option_propose', 'Propose Agents'), 'staff agents': tr('campaign_view.option_staff', 'Staff Agents'), 'a plan': tr('campaign_view.option_a_plan', 'A plan'), ideas: tr('campaign_view.option_ideas', 'Ideas'), code: tr('campaign_view.option_code', 'Code'), 'an artifact': tr('campaign_view.option_artifact', 'An artifact'), 'the team': tr('campaign_view.option_team', 'The Team'),
+  user: tr('campaign_view.option_user', 'You only'), read: tr('campaign_view.option_read', 'Read'), write: tr('campaign_view.option_write', 'Read and write'),
+  coding: tr('team_config.kind_coding', 'Coding'), work: tr('team_config.kind_work', 'Work'), personal: tr('team_config.kind_personal', 'Personal'), household: tr('team_config.kind_household', 'Household'), social: tr('team_config.kind_social', 'Social'), school: tr('team_config.kind_school', 'School'),
+})[value] || value;
+const optionRows = (values, tr) => values.map((value) => ({ value, label: value ? valueLabel(value, tr) : tr('team_config.default', 'Default') }));
 
-export function renderTeamConfiguration(host, roster, options = {}) {
+export function completeTeamRoutineMap(catalog, stored) {
+  const current = bucket(stored);
+  return Object.fromEntries(catalog.map((routine) => [routine.name, current[routine.name] === true]));
+}
+
+export function renderTeamConfiguration(host, roster, optionsArg = {}) {
   host.replaceChildren();
-  if (!roster?.durable) {
-    host.append(el('p', 'tw-config-empty', 'This Cowork has no saved roster.'));
-    return;
-  }
-  const form = el('form', 'tw-config-form');
-  reading(form, 'Cowork ID', roster.name);
-  field(form, 'Readable title', 'title', roster.title);
-  field(form, 'Purpose', 'objective', roster.objective, 'textarea');
-  reading(form, 'Project root', roster.project_root);
-  const actions = el('div', 'tw-config-actions');
-  const status = el('span', 'tw-config-status');
-  const saveAction = options.createAction?.({ label: 'Save', size: 'compact' });
-  const save = saveAction?.el || el('button', null, 'Save'); save.type = 'submit';
-  actions.append(status, save); form.append(actions); host.append(form);
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    if (saveAction) saveAction.setDisabled(true); else save.disabled = true; status.textContent = 'Saving…';
-    const data = Object.fromEntries(new FormData(form));
-    const saved = await request(`/api/team-rosters/${encodeURIComponent(roster.name)}`, { method: 'PUT', json: data });
-    status.textContent = saved.ok ? 'Saved' : saved.message;
-    if (saveAction) saveAction.setDisabled(false); else save.disabled = false;
-    if (saved.ok) options.onSaved?.(saved.data.roster);
+  if (!roster?.durable) { host.append(el('p', 'tw-config-empty', t('team_config.no_roster', 'This Cowork has no saved roster.'))); return; }
+  const loading = el('p', 'tw-config-empty', t('team_config.loading', 'Loading Team Configuration…')); host.append(loading);
+
+  void Promise.all([request('/api/routines'), request('/api/session-launch-specs'), request('/api/project-roots/detail')]).then(([routineResult, specResult, rootResult]) => {
+    if (!host.isConnected) return;
+    const routines = routineResult.ok && Array.isArray(routineResult.data) ? routineResult.data : [];
+    const specs = specResult.ok && Array.isArray(specResult.data) ? specResult.data : [];
+    const roots = rootResult.ok && Array.isArray(rootResult.data?.roots) ? rootResult.data.roots.filter((root) => !root.archived) : [];
+    const defaults = bucket(roster.agent_defaults); const behaviour = bucket(roster.behaviours);
+    const form = el('form', 'tw-config-form'); reading(form, t('team_config.cowork_id', 'Cowork ID'), roster.name, t('settei.none_set', '— none set —'));
+    const title = field(form, t('team_config.title', 'Readable title'), 'title', roster.title);
+    const kind = select(form, t('team_config.kind', 'Kind'), 'kind', optionRows(['open', 'coding', 'work', 'personal', 'household', 'social', 'school'], t), roster.kind);
+    const objective = field(form, t('team_config.objective', 'Purpose'), 'objective', roster.objective, 'textarea');
+    const projectRoot = select(form, t('team_config.project_root', 'Project root'), 'project_root', [{ value: '', label: t('team_config.default', 'Default') }, ...roots.map((root) => ({ value: root.name, label: root.name }))], roster.project_root);
+    const branch = field(form, t('team_config.branch', 'Branch'), 'branch', roster.branch);
+    const wipeboard = field(form, t('team_config.wipeboard', 'Wipeboard'), 'wipeboard', roster.wipeboard);
+    const references = field(form, t('team_config.references', 'References'), 'references', list(roster.references).join('\n'), 'textarea', t('team_config.references_help', 'One URL or note per line.'));
+
+    const routineMap = completeTeamRoutineMap(routines, roster.routines);
+    // THE KIT AS SELECTED (dev 3d920e2), kept beside the editable map below: what an
+    // Agent born here is equipped with, in one line, in the catalog's own owner-facing
+    // labels (`ronin_control` reads "Managed file coordination"). The floor is not a
+    // switch and is not listed; with nothing on above it, the honest answer is the
+    // floor alone.
+    const kitOn = routines.filter((routine) => routineMap[routine.name]).map((routine) => routine.label || routine.name);
+    reading(form, t('team_kit', 'Shared toolkit'), kitOn.join(' · '), t('team_config.kit_floor_alone', 'the floor alone — no Routine is on'));
+    const routineSet = el('fieldset', 'tw-config-wide tw-routines'); routineSet.append(el('legend', null, t('team_config.routines', 'Routines')), el('p', 'tw-config-note', t('team_config.routines_help', 'This complete on/off map is the Team’s own. Campaign changes affect only the next Team form.')));
+    const routineInputs = new Map();
+    for (const routine of routines) { const row = el('label', 'tw-routine'); const input = el('input'); input.type = 'checkbox'; input.checked = routineMap[routine.name]; routineInputs.set(routine.name, input); const words = el('span'); words.append(el('b', null, routine.label || routine.name), el('small', null, routine.blurb || t('team_config.no_description', 'No description supplied.'))); row.append(input, words); routineSet.append(row); }
+    form.append(routineSet);
+
+    const behaviours = field(form, t('team_config.behaviours', 'Behaviours'), 'behaviours', list(behaviour.books).join('\n'), 'textarea', t('team_config.behaviours_help', 'One shelf:name book per line.'));
+    const requiredRow = el('label', 'tw-config-check tw-config-wide'); const required = el('input'); required.type = 'checkbox'; required.checked = behaviour.required === true; requiredRow.append(required, el('span', null, t('team_config.required', 'Require these behaviours for each new Agent'))); form.append(requiredRow);
+
+    const providers = [...new Set(specs.map((spec) => spec.provider))];
+    const provider = select(form, t('team_config.provider', 'Provider'), 'provider', optionRows(['', ...providers], t), defaults.provider || '');
+    const modelValues = () => ['', ...specs.filter((spec) => spec.provider === provider.value).map((spec) => spec.model)];
+    const model = select(form, t('team_config.model', 'Model'), 'model', optionRows(modelValues(), t), defaults.model || '');
+    provider.addEventListener('change', () => { model.replaceChildren(); for (const item of optionRows(modelValues(), t)) model.add(new Option(item.label, item.value)); model.disabled = !provider.value; }); model.disabled = !provider.value;
+    const reach = select(form, t('team_config.reach', 'Reach'), 'reach', optionRows(['open', 'discuss', 'plan', 'execute'], t), defaults.reach || 'open');
+    const recruit = select(form, t('team_config.recruit', 'Recruit'), 'recruit', optionRows(['open', 'nobody', 'propose agents', 'staff agents'], t), defaults.recruit || 'open');
+    const output = select(form, t('team_config.output', 'Output'), 'output', optionRows(['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team'], t), defaults.output || 'open');
+    const dial = select(form, t('team_config.dial', 'Control'), 'dial', optionRows(['user', 'read', 'write'], t), defaults.dial || 'write');
+    const permissions = field(form, t('team_config.permissions', 'Permissions'), 'permissions', defaults.permissions || 'default');
+    form.append(el('p', 'tw-config-note tw-config-wide', t('team_config.next_form', 'These defaults land in the next Agent form that opens. Nothing live changes.')));
+
+    const actions = el('div', 'tw-config-actions'); const status = el('span', 'tw-config-status');
+    const saveAction = optionsArg.createAction?.({ label: t('panels.save', 'Save'), size: 'compact' }); const save = saveAction?.el || el('button', null, t('panels.save', 'Save')); save.type = 'submit'; actions.append(status, save); form.append(actions); host.replaceChildren(form);
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault(); if (saveAction) saveAction.setDisabled(true); else save.disabled = true; status.textContent = t('team_config.saving', 'Saving…');
+      const saved = await request(`/api/team-rosters/${encodeURIComponent(roster.name)}`, { method: 'PUT', json: {
+        title: title.value, kind: kind.value, objective: objective.value, project_root: projectRoot.value, branch: branch.value, wipeboard: wipeboard.value, references: lines(references.value),
+        routines: Object.fromEntries([...routineInputs].map(([name, input]) => [name, input.checked])), behaviours: { books: lines(behaviours.value), required: required.checked },
+        agent_defaults: { provider: provider.value, model: model.value, reach: reach.value, recruit: recruit.value, output: output.value, dial: dial.value, permissions: permissions.value },
+      } });
+      status.textContent = saved.ok ? t('team_config.saved', 'Saved') : saved.message; if (saveAction) saveAction.setDisabled(false); else save.disabled = false; if (saved.ok) optionsArg.onSaved?.(saved.data.roster);
+    });
   });
 }

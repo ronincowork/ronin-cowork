@@ -113,6 +113,23 @@ test('write_tegami refuses the retired role_family key with the R35 teaching tex
   assert.equal(r.out.trim(), '');
 });
 
+test('write_tegami accepts and validates the complete mandate shape', async () => {
+  const previous = { objective: 'old', session_role: 'CutCode', ladder: [] };
+  const accepted = await validateBlock({
+    objective: 'x', session_role: 'CutCode', ladder: [],
+    mandate: { reach: 'execute', recruit: 'nobody', output: 'code' },
+  }, previous);
+  assert.equal(accepted.code, 0, accepted.err);
+  assert.deepEqual(JSON.parse(accepted.out).mandate, { reach: 'execute', recruit: 'nobody', output: 'code' });
+
+  const bad = await validateBlock({
+    objective: 'x', session_role: 'CutCode', ladder: [],
+    mandate: { reach: 'run', recruit: 'nobody', output: 'code' },
+  }, previous);
+  assert.notEqual(bad.code, 0);
+  assert.match(bad.err + bad.out, /mandate\.reach/);
+});
+
 test('a committed task change delivers its reading once, and a repeat scrape delivers nothing', async () => {
   // A recording sender in place of the pane. The seam is `Sender` (src/role-watch.ts):
   // everything above it is the decision to deliver, everything below it is a tmux pane,

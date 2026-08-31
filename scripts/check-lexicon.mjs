@@ -12,7 +12,7 @@
  *         the view that added the key.
  *   FAIL  a shipped lexicon other than the floor carries a bare key the floor does not
  *         — a typo, since every word has to fall through to something. Prefixed keys
- *         (`kind.*`, `role.*`, `team_role.*`, `behaviour.*`) are exempt: they name
+ *         (`kind.*`, `role.*`, `behaviour.*`) are exempt: they name
  *         catalog tokens, and the definition's own label is their floor.
  *   note  keys the floor carries that no view reads yet — allowed, because the surfaces
  *         that will read them (the campaign board) are not built; reported so the list
@@ -52,7 +52,7 @@ const JS = path.join(ROOT, 'public', 'js');
 const LEX = path.join(ROOT, 'ronin_catalogs', 'lexicons');
 const FLOOR = 'professional_en';
 const FIELDS = new Set(['label', 'blurb', 'base', 'order', 'hidden']);
-const PREFIXED = /^(kind|role|team_role|behaviour)\./;
+const PREFIXED = /^(kind|role|behaviour)\./;
 
 const keysOf = (file) => {
   const out = new Set();

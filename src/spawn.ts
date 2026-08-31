@@ -1,11 +1,10 @@
-import { appendFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { mergeSessionDefaults, resolveLaunchCommand, type SessionsDefaults } from './launch-command.js';
 import { REPO_ROOT } from './config.js';
 import { bootFiles, ensureShelf } from './session-boot.js';
 import { listProjectRoots, listSessionLaunchSpecs, USER_PROJECT_ROOTS_MD, type ProjectRootInfo } from './project-roots.js';
-import { readAgentsSection } from './user-config.js';
+import { readAgentsSection, readDesksSection } from './user-config.js';
 import { storeDir } from './stores.js';
 import { findDefinition, listRoleFamilies, listRoutines } from './definitions.js';
 import { isCreatableTeamName as isTeamName, readTeamRoster, teamRosterFile, type TeamRoster } from './team-rosters.js';
@@ -13,7 +12,11 @@ import { resolveLaunchProfile, type Dial, type LaunchProfile, type StatedBy } fr
 import { readCampaign } from './campaign-config.js';
 import { primaryDesk, renderDeskBlock, resolveLaunchDesks, type DeskChoice } from './launch-desks.js';
 import type { Assignment } from './desks/schema.js';
-import { resolveRoutines, routineChoices, type ResolvedRoutine } from './routines.js';
+import { mandate, type Mandate } from './agent-defaults.js';
+import { resolveRoutines, type ResolvedRoutine } from './routines.js';
+import { initialCampaignId } from './campaign-scope.js';
+import { resolveLaunchSeed } from './launch-seed.js';
+import { resolveBehaviourBooks, type DeliveredBehaviour } from './behaviours.js';
 
 /**
  * The mechanical executor: a filled form in, a briefed session out.
@@ -77,8 +80,14 @@ export interface SpawnForm {
    * refused, as `model` is.
    */
   provider?: string;
+  /** How far this Cowork Agent may go, recruit, and what it hands back. */
+  mandate?: Partial<Mandate>;
   /** Campaign whose Agent defaults apply. The route inherits this from the caller. */
   campaign_id?: string;
+  /** Team-seeded launch classification; this launch may state a different answer. */
+  kind?: string;
+  /** Chosen birth books. Absent inherits the parent seed; an explicit [] chooses none. */
+  behaviours?: string[];
   /** Optional first instruction. Blank still launches a fully booted Agent. */
   prompt?: string;
   /** What the session is called. Blank is derived and de-duplicated. */
@@ -115,7 +124,7 @@ export interface SpawnForm {
   reference?: string;
   /**
    * THE DESK CONTROL of the launch box — *own desk · plain root* — pre-answered: absent
-   * means by lifecycle (a coding launch on a reviewed repo gets desks, nothing else does);
+   * means by the resolved Ronin Control Routine;
    * `own` asks for one regardless, `none` refuses one. Ignored for a plain terminal.
    */
   desk?: DeskChoice;
@@ -129,9 +138,9 @@ export interface Resolved {
   cmd: string;
   tags: string[];
   dial: Dial;
-  lifecycle: string;
   /** The axis as resolved, possibly ''. This is what TEGAMI is seeded with. */
   session_role: string;
+  mandate: Mandate;
   /** The team joined at birth, '' for a rōnin. */
   team: string;
   /** Never '' — a session must be born somewhere, and the resolver refuses otherwise. */
@@ -179,6 +188,12 @@ export interface Resolved {
   team_state: '' | 'active' | 'archived';
   /** Literal files the server put in the assisted brief's `Read first:` sentence. */
   birth_reading: string[];
+  /** The valid selected books handed over beside the Routine reading. */
+  behaviours: DeliveredBehaviour[];
+  /** Team-seeded kind, or the launch's own valid answer. */
+  kind: string;
+  /** Unusable selected books omitted while the birth continued. */
+  ignored: string[];
   /** Campaign defaults after Team exceptions; the sole input to Routine projections. */
   routines: ResolvedRoutine[];
   /** Server-owned attribution for every resolved reading. The browser only renders it. */
@@ -334,13 +349,15 @@ export async function resolveForm(
   const sessionType = form.session_type ?? 'cowork_agent';
   const coworkAgent = sessionType === 'cowork_agent';
   const bareMetalAgent = sessionType === 'bare_metal_agent';
-  const [taskDef, roots, launchSpecs, agentsSet, campaign, routineCatalog] = await Promise.all([
+  const campaignId = coworkAgent ? (form.campaign_id || await initialCampaignId()) : '';
+  const [taskDef, roots, launchSpecs, agentsSet, campaign, routineCatalog, desksSet] = await Promise.all([
     findDefinition('session_roles', form.session_role ?? ''),
     listProjectRoots(),
     listSessionLaunchSpecs(),
     readAgentsSection(),
-    coworkAgent && form.campaign_id ? readCampaign(form.campaign_id) : null,
+    coworkAgent ? readCampaign(campaignId) : null,
     listRoutines(),
+    readDesksSection(),
   ]);
   // A NAMED axis that does not resolve is a refusal, never a silent blank. Blank and
   // wrong are different launches, and only one of them is what the caller asked for.
@@ -357,10 +374,22 @@ export async function resolveForm(
     throw new Error(`A team name is lowercase letters, digits, _ and - (it is also the tag): "${form.team}".`);
   }
   const roster = coworkAgent && form.team
-    ? (proposedRoster?.name === form.team ? proposedRoster : await readTeamRoster(form.team))
+    ? (proposedRoster?.name === form.team
+        ? proposedRoster
+        : await readTeamRoster(form.team, campaignId) ?? await readTeamRoster(form.team, ''))
     : null;
   // THE CASCADE, and every refusal it makes happens here — before a session exists.
   const profile = resolveLaunchProfile(taskDef);
+  const parentSeed = coworkAgent && campaign
+    ? resolveLaunchSeed({
+        campaign,
+        roster,
+        roots,
+        sessions: agentsSet.sessions as SessionsDefaults | undefined,
+        routines: routineCatalog,
+        desk: desksSet.new_project === 'none' ? 'none' : 'own',
+      })
+    : null;
 
   // PROJECT_ROOT IS REQUIRED, and omission is not a third answer: first the launch's
   // own say, then the TEAM's default (the roster is the context a team launch inherits),
@@ -437,7 +466,16 @@ export async function resolveForm(
   // The launch's own say, and failing that the kind's default from the catalog. A kind
   // marked `mcp: always` is connected whatever anyone asked; the contradicting ask is
   // caught below rather than quietly overridden.
-  const mcpWanted = profile.mcpAlways ? true : (form.mcp ?? profile.mcpDefault);
+  // MCP requests are a projection of the same resolved Routine answer. An enabled
+  // Routine which declares connections turns the provider's MCP door on; no separate
+  // gbrain/session switch is consulted. An explicit launch may still request MCP for
+  // connections outside the Routine catalog.
+  const routineMcp = parentSeed?.resolved_routines
+    .filter((routine) => routine.enabled)
+    .flatMap((routine) => routine.mcp) ?? [];
+  const mcpWanted = profile.mcpAlways || routineMcp.length > 0
+    ? true
+    : (form.mcp ?? profile.mcpDefault);
   // Somebody ASKED for off, as against off being merely what this kind defaults to. The
   // two are refused differently below, and only this one is a promise Ronin made.
   const askedOff = agent && form.mcp === false;
@@ -472,7 +510,7 @@ export async function resolveForm(
   // ATTRIBUTION IS RESOLVED BESIDE THE VALUES. Keeping it here means launch and preflight
   // cannot disagree and the browser never has to reconstruct the cascade. A source is an
   // exact file when one stated the value, or a named runtime input when no file exists.
-  const explicit: StatedBy[] = [{ layer: 'explicit_launch', source: 'launch request' }];
+  const explicit: StatedBy[] = [{ layer: 'launch', source: 'launch request' }];
   const system: StatedBy[] = [{ layer: 'system', source: 'src/spawn.ts' }];
   const rosterSource: StatedBy[] = roster
     ? [{
@@ -523,21 +561,36 @@ export async function resolveForm(
     team: form.team ?? '',
     project_root: root.name,
     agent,
-    lifecycle: profile.lifecycle,
+    control: (parentSeed?.resolved_routines ?? resolveRoutines(routineCatalog, {}, undefined))
+      .some((routine) => routine.name === 'ronin_control' && routine.enabled),
     desk: form.desk,
   });
-  const campaignRoutines = routineChoices(campaign?.config.agent_defaults.routines);
   const routines = agent
-    ? resolveRoutines(routineCatalog, campaignRoutines, roster?.routines ?? {})
+    ? (parentSeed?.resolved_routines ?? resolveRoutines(routineCatalog, {}, undefined))
     : [];
   const enabledRoutines = routines.filter((routine) => routine.enabled).map((routine) => routine.name);
   const enabledMacros = new Set(routines.filter((routine) => routine.enabled).flatMap((routine) => routine.macros));
+  const kind = form.kind ?? String(parentSeed?.seeds.kind.value ?? 'open');
+  const selectedBehaviours = form.behaviours ?? (parentSeed?.seeds.behaviours.value as string[] | undefined) ?? [];
+  const resolvedBehaviours = coworkAgent && agent
+    ? await resolveBehaviourBooks(selectedBehaviours)
+    : { delivered: [], ignored: [] };
   // Compile this once and return the exact same list the brief receives. The browser must
   // never recreate shelf precedence or guess which explicit seeds joined it.
   const shelfReading = coworkAgent && agent
     ? await bootReading(root.name, profile.session_role, !mcpOffWanted, !!form.team_lead && !!form.team, !!assignment, enabledRoutines, enabledMacros, name)
     : [];
-  const birthReading = coworkAgent && agent ? [...shelfReading, ...(form.seed ?? [])].filter(Boolean) : [];
+  const completeReading = [...shelfReading, ...resolvedBehaviours.delivered.map((book) => book.file)];
+  const birthReading = coworkAgent && agent
+    ? [...completeReading, ...(form.seed ?? [])].filter(Boolean)
+    : [];
+  const resolvedMandate = coworkAgent
+    ? mandate(form.mandate ?? {
+        reach: parentSeed?.seeds.reach.value,
+        recruit: parentSeed?.seeds.recruit.value,
+        output: parentSeed?.seeds.output.value,
+      })
+    : mandate(undefined);
 
   return {
     session_type: sessionType,
@@ -557,9 +610,9 @@ export async function resolveForm(
       .filter(Boolean)
       .filter((t, i, a) => a.indexOf(t) === i)
       .slice(0, 16),
-    dial: form.dial ?? profile.dial,
-    lifecycle: profile.lifecycle,
+    dial: form.dial ?? (parentSeed?.seeds.dial.value as Dial | undefined) ?? profile.dial,
     session_role: profile.session_role,
+    mandate: resolvedMandate,
     team: form.team ?? '',
     project_root: root.name,
     // The shelf follows the toggle (owner's ruling, 2026-08-17): a session launched with
@@ -571,7 +624,7 @@ export async function resolveForm(
           root,
           form,
           referenceDir,
-          shelfReading,
+          completeReading,
           roster,
           assignment,
         )
@@ -584,7 +637,7 @@ export async function resolveForm(
     // is free to name a path. RIREKI's decoder keys are bare binary names, and this value
     // is written into the option RIREKI reads, so it has to arrive in RIREKI's spelling.
     launchAgent: agent ? path.basename(cmd.trim().split(/\s+/)[0] ?? '') : '',
-    permissions: profile.permissions,
+    permissions: String(parentSeed?.seeds.permissions.value ?? profile.permissions),
     ack: profile.ack,
     opening: profile.opening,
     posture: profile.posture,
@@ -596,6 +649,9 @@ export async function resolveForm(
     team_wipeboard: roster?.wipeboard ?? '',
     team_state: roster?.state ?? '',
     birth_reading: birthReading,
+    behaviours: resolvedBehaviours.delivered,
+    kind,
+    ignored: resolvedBehaviours.ignored,
     routines,
     stated_by: {
       name: form.name ? explicit : system,
@@ -603,18 +659,20 @@ export async function resolveForm(
       assignment: form.desk ? explicit : system,
       cmd: cmdSource,
       tags: unique(roster ? rosterSource : [], form.tags?.length ? explicit : []),
-      lifecycle: profile.stated_by.lifecycle,
       session_type: explicit,
       session_role: form.session_role !== undefined ? explicit : profile.stated_by.session_role,
+      mandate: form.mandate ? explicit : parentSeed?.seeds.reach.stated_by ?? (campaign
+        ? [{ layer: 'campaign', source: `#/campaign (${campaign.id}: agent_defaults)` }]
+        : system),
       team: form.team ? explicit : system,
       project_root: rootSource,
-      dial: form.dial !== undefined ? explicit : profile.stated_by.dial,
+      dial: form.dial !== undefined ? explicit : parentSeed?.seeds.dial.stated_by ?? profile.stated_by.dial,
       brief: unique(explicit, profile.stated_by.opening, roster ? rosterSource : [], rootSource),
       agent: profile.stated_by.agent,
       capExempt: profile.stated_by.capExempt,
       mcp: mcpSource,
       launchAgent: cmdSource,
-      permissions: profile.stated_by.permissions,
+      permissions: parentSeed?.seeds.permissions.stated_by ?? profile.stated_by.permissions,
       ack: profile.stated_by.ack,
       opening: profile.stated_by.opening,
       posture: profile.stated_by.posture,
@@ -626,48 +684,9 @@ export async function resolveForm(
       team_wipeboard: rosterSource,
       team_state: rosterSource,
       birth_reading: unique(system, form.seed?.length ? explicit : []),
-      routines: unique(
-        campaign ? [{ layer: 'system', source: `#/campaign (${campaign.id}: agent_defaults.routines)` }] : system,
-        roster && Object.keys(roster.routines).length ? rosterSource : [],
-      ),
+      behaviours: form.behaviours !== undefined ? explicit : parentSeed?.seeds.behaviours.stated_by ?? system,
+      kind: form.kind !== undefined ? explicit : parentSeed?.seeds.kind.stated_by ?? system,
+      routines: parentSeed?.routines.flatMap((routine) => routine.stated_by) ?? system,
     },
   };
-}
-
-/**
- * The ledger: one line per spawn, from day one, even though nothing reads it yet.
- * History cannot be retro-fitted — a ledger started later starts empty — and it is
- * what later teaches Koshi this user's habits. Local, append-only, gitignored,
- * outside the repo: it is the owner's record of their own words. Nothing phones home.
- */
-const LEDGER = path.join(storeDir('ledger'), 'spawns.jsonl');
-
-export async function appendLedger(form: SpawnForm, resolved: Resolved, ok: boolean): Promise<void> {
-  try {
-    await mkdir(path.dirname(LEDGER), { recursive: true });
-    await appendFile(
-      LEDGER,
-      JSON.stringify({
-        ts: new Date().toISOString(),
-        session_role: form.session_role ?? '',
-        team: form.team ?? '',
-        intent: form.prompt,
-        picks: {
-          project_root: form.project_root,
-          tags: form.tags,
-          seed: form.seed,
-          reference: form.reference,
-        },
-        fill: null, // reserved: what Koshi filled, once the smart fill exists
-        resolved: { name: resolved.name, dir: resolved.dir, cmd: resolved.cmd, dial: resolved.dial },
-        boot: ok ? { state: 'open', opened_at: new Date().toISOString() } : { state: 'failed' },
-        spawn: { name: resolved.name, ok },
-        outcome: null, // reserved: the evaluation loop
-      }) + '\n',
-      'utf8',
-    );
-  } catch (e) {
-    // A ledger failure must never cost the user their session.
-    console.error('[ronin] ledger:', (e as Error)?.message ?? e);
-  }
 }
