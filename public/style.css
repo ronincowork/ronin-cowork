@@ -6568,6 +6568,16 @@ body[data-phone] #viewhost {
     outline: 3px solid var(--accent);
     outline-offset: -3px;
   }
+  /* An ARMED EMPTY workspace says so inside the box, not just at its edge (owner,
+     2026-09-01: tapping an empty workspace showed nothing at all — a seated tile
+     lights its own header, a blank had only the frame). The ground tints and the
+     word turns accent, so "tap here, then tap an agent" reads at arm's length. */
+  .wk-workbench-cell.wk-workbench-selected .tw-blank {
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+  }
+  .wk-workbench-cell.wk-workbench-selected .tw-blank-word {
+    color: var(--accent);
+  }
   /* One band height for every header strip on the bench — the selector's, the blank
      seat's and the commons tabs match the tile head beside them (its 32px controls
      plus their padding); a shorter shaded band next to a taller one read as a third
@@ -6726,4 +6736,66 @@ body[data-phone] .wk-terminal-host > .tile {
 }
 body[data-phone] .tile-head {
   display: none; /* the ph-bar replaces it; its controls live in the メ sheet */
+}
+/* ＋ Launch New Agent — the card at the foot of a Cowork's Agents on the phone
+   (js/phone.js): a name, the words, and the Cowork's defaults for everything else. */
+#phone .ph-launch-open {
+  width: 100%;
+  min-height: 44px;
+  border: var(--edge) dashed var(--line-3);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--muted-2);
+  font-size: var(--text-5);
+  cursor: pointer;
+}
+#phone .ph-launch-open:active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+#phone .ph-launch-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+#phone .ph-launch-form[hidden] {
+  display: none;
+}
+#phone .ph-launch-form input,
+#phone .ph-launch-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: var(--edge) solid var(--line-2);
+  border-radius: var(--radius-md);
+  background: var(--well);
+  color: var(--fg);
+  padding: var(--space-3) var(--space-4);
+  font: 16px/1.35 var(--font-ui); /* 16px stops iOS Safari zooming the field */
+  resize: none;
+}
+#phone .ph-launch-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-2);
+}
+#phone .ph-launch-go {
+  min-height: 44px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--action);
+  color: var(--on-strong);
+  font-size: var(--text-5);
+  cursor: pointer;
+}
+#phone .ph-launch-go:disabled {
+  opacity: .5;
+}
+#phone .ph-launch-state {
+  margin: 0;
+  color: var(--muted-2);
+  font-size: var(--text-3);
+}
+#phone .ph-launch-state[data-kind='failed'] {
+  color: var(--bad-soft);
 }
