@@ -540,7 +540,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team.workspace_1:** Workspace 1
 - **team.workspace_2:** Workspace 2
 - **team.commons_card:** Team commons
-- **team.commons_summary:** See Docs / Wipeboard / Agent message queue / Configuration
+- **team.commons_summary:** See Docs / Wipeboard / Agent Message Queue / Team Configuration
 - **team.roster_of:** Roster: {team}
 - **team.workspace_blank:** Workspace
 - **team.new_session:** New session
@@ -1496,8 +1496,8 @@ The catalog entry goes. {dir} is not touched.
 - **workspace.channel_wipeboard:** Wipeboard
 - **workspace.channel_docs:** Docs
 - **workspace.channel_team_configuration:** Team Configuration
-- **workspace.channel_agent_message_queue:** Agent message queue
-- **workspace.channel_agent_message_queue_count:** Agent message queue ({count})
+- **workspace.channel_agent_message_queue:** Agent Message Queue
+- **workspace.channel_agent_message_queue_count:** Agent Message Queue ({count})
 - **team_config.no_roster:** This Cowork has no saved roster.
 - **team_config.loading:** Loading Team Configuration…
 - **team_config.cowork_id:** Cowork ID

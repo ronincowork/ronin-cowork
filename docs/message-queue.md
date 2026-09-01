@@ -5,7 +5,7 @@ not a transcript and not a wipeboard: delivered messages disappear immediately, 
 wipeboard post never enters it. When a wipeboard post asks Ronin to interrupt a session,
 that separate notice is an inbound message and may wait here.
 
-Its visible home is **Team Commons → Agent message queue**, beside Docs, Wipeboard, and
+Its visible home is **Team Commons → Agent Message Queue**, beside Docs, Wipeboard, and
 Team Configuration. It is a channel inside the existing Team Commons surface, not a
 separate Cowork card or machine-level tab.
 When retained messages exist, that channel button uses the theme's warning colour, bolds

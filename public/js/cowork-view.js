@@ -163,14 +163,14 @@ export function createCoworkView(options = {}) {
     };
     const config = el('div', 'tw-config');
     const messages = el('div', 'tw-messages');
-    const messageLabel = t('workspace.channel_agent_message_queue', 'Agent message queue');
+    const messageLabel = t('workspace.channel_agent_message_queue', 'Agent Message Queue');
     let messageTab = null;
     let retainedCount = 0;
     const paintMessageAttention = () => {
       if (!messageTab) return;
       messageTab.dataset.attention = String(retainedCount > 0);
       messageTab.textContent = retainedCount
-        ? t('workspace.channel_agent_message_queue_count', 'Agent message queue ({count})', { count: retainedCount })
+        ? t('workspace.channel_agent_message_queue_count', 'Agent Message Queue ({count})', { count: retainedCount })
         : messageLabel;
     };
     const messageQueue = buildMessageQueue(messages, (count) => { retainedCount = count; paintMessageAttention(); });
