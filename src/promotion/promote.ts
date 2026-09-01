@@ -250,8 +250,16 @@ async function advanceAll(r: PromotionReceipt, fx: Effects, log: (l: string) => 
     for (let j = i + 1; j < r.advances.length; j++) if (r.advances[j].status === 'pending') r.advances[j] = { ...r.advances[j], status: 'skipped' };
     const moved = anyAdvanced(r);
     const next = advanceState(r, moved ? 'interrupted' : 'interrupted');
-    next.failure = { stage: 'advancing', message: `${a.repo}: ${a.target} moved to ${(out.found ?? '').slice(0, 7)} while expected at ${a.from.slice(0, 7)} — ${moved ? 'earlier refs moved; resume rebuilds from current tips or abandon' : 'no ref moved; rebuild from current tips'}` };
-    log(`  RACE  ${next.failure.message}`);
+    // Three refusals, three sentences (2026-09-01): a funnel gone dirty during the run
+    // used to borrow the race's words and print a sha "moved to" itself, sending the
+    // lead hunting for a phantom competitor instead of the unsaved files.
+    const tail = moved ? 'earlier refs moved; resume rebuilds from current tips or abandon' : 'no ref moved; resume when clean retries this same candidate';
+    next.failure = { stage: 'advancing', message: out.reason === 'dirty'
+      ? `${a.repo}: ${a.target} did not move — the funnel worktree went dirty during the run (${(out.dirtyFiles ?? []).join(', ') || 'unsaved tracked changes'}); ${tail}`
+      : out.reason === 'no-candidate'
+        ? `${a.repo}: nothing was built to advance to — rebuild from current tips`
+        : `${a.repo}: ${a.target} moved to ${(out.found ?? '').slice(0, 7)} while expected at ${a.from.slice(0, 7)} — ${moved ? 'earlier refs moved; resume rebuilds from current tips or abandon' : 'no ref moved; rebuild from current tips'}` };
+    log(`  ${out.reason === 'dirty' ? 'DIRTY' : 'RACE '} ${next.failure.message}`);
     return { ok: false, receipt: next, message: next.failure.message };
   }
   return { ok: true, receipt: r, message: 'advanced' };
