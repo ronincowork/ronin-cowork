@@ -12,6 +12,7 @@ import { listMacros } from '../macros.js';
 import { listSkins } from '../skins.js';
 import { listLexicons, resolveLexicon } from '../lexicons.js';
 import { activeDeskProfileName, listDeskProfiles } from '../desk-profiles.js';
+import { initialCampaign } from '../campaign-config.js';
 import { listSops } from '../sops.js';
 import { listWays } from '../ways.js';
 import { listActions } from '../actions.js';
@@ -434,10 +435,19 @@ export function registerCatalogs(app: express.Express): void {
   /* THE DESK PROFILES (R38) — the list with `origin`, and which one settei holds as
    * active. One request at boot answers both, which is why `active` rides the list
    * rather than a second route. `active: ''` is the ordinary answer of every install
-   * older than the catalog and means "as stock" everywhere. */
+   * older than the catalog and means "as stock" everywhere.
+   * `desk` is the initial Campaign's OWN desk record — the owner-edited copy that
+   * outranks the profile's stock values (R38: applying a profile copies; the Campaign
+   * then owns). The client's theme resolution reads its `theme` at boot (owner,
+   * 2026-09-01: the configured dark was never applied until the Campaign page was
+   * opened). Null when no campaign exists yet. */
   app.get('/api/desk-profiles', async (_req, res) => {
     try {
-      res.json({ active: await activeDeskProfileName(), profiles: await listDeskProfiles() });
+      res.json({
+        active: await activeDeskProfileName(),
+        profiles: await listDeskProfiles(),
+        desk: (await initialCampaign())?.desk ?? null,
+      });
     } catch (e) {
       res.status(500).json({ error: errMsg(e) });
     }

@@ -56,6 +56,10 @@ export interface CampaignDeskSettings {
   skin: string;
   lexicon: string;
   theme: string;
+  /** The touch surfaces' own theme (owner, 2026-09-01: "light on my iPad, dark on my
+   *  Mac" is a system setting, not an agent's hand). '' / 'automatic' means the house
+   *  mobile default — light — rather than inheriting `theme`. */
+  theme_mobile: string;
   rireki_view: string;
   team_arrangement: string[];
   defaults: Record<string, unknown>;
@@ -243,6 +247,7 @@ const deskSettings = (v: unknown): CampaignDeskSettings => {
     skin: str(d.skin, DESK_VALUE_MAX),
     lexicon: str(d.lexicon, DESK_VALUE_MAX),
     theme: str(d.theme, DESK_VALUE_MAX),
+    theme_mobile: str(d.theme_mobile, DESK_VALUE_MAX),
     rireki_view: str(d.rireki_view, DESK_VALUE_MAX),
     team_arrangement: stringList(d.team_arrangement),
     defaults: bucket(d.defaults),
@@ -259,6 +264,7 @@ const mergeDeskSettings = (
   ...(edit.skin !== undefined ? { skin: str(edit.skin, DESK_VALUE_MAX) } : {}),
   ...(edit.lexicon !== undefined ? { lexicon: str(edit.lexicon, DESK_VALUE_MAX) } : {}),
   ...(edit.theme !== undefined ? { theme: str(edit.theme, DESK_VALUE_MAX) } : {}),
+  ...(edit.theme_mobile !== undefined ? { theme_mobile: str(edit.theme_mobile, DESK_VALUE_MAX) } : {}),
   ...(edit.rireki_view !== undefined ? { rireki_view: str(edit.rireki_view, DESK_VALUE_MAX) } : {}),
   ...(edit.team_arrangement !== undefined ? { team_arrangement: stringList(edit.team_arrangement) } : {}),
   ...(edit.defaults !== undefined ? { defaults: bucket(edit.defaults) } : {}),

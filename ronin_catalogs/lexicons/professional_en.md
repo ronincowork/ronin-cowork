@@ -206,7 +206,9 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.skin:** Skin
 - **campaign_view.skin_help:** The look — colours, corners, faces. The page wears it now.
 - **campaign_view.theme:** Theme
-- **campaign_view.theme_help:** Light or dark, or whatever the device prefers.
+- **campaign_view.theme_help:** Light or dark for pointer surfaces; Automatic is the house default — light.
+- **campaign_view.theme_mobile:** Theme (mobile)
+- **campaign_view.theme_mobile_help:** Light or dark for touch surfaces — iPad and phone; Automatic is the house default — light.
 - **campaign_view.theme_light:** Light
 - **campaign_view.theme_dark:** Dark
 - **campaign_view.theme_auto:** Automatic

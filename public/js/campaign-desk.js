@@ -15,7 +15,7 @@ import { deskProfiles } from './desk-profile.js';
 import { saveCampaign } from './campaigns.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { listSkins, setSkin } from './skins.js';
-import { setTheme } from './theme.js';
+import { applyTheme, setCampaignTheme } from './theme.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -108,14 +108,14 @@ export function createDeskProfileSurface(campaign) {
     wear(campaign()?.desk);
     paint();
   };
-  /** The page wears the Campaign's desk as soon as it is saved — that is the point of a look.
-   *  setTheme, not applyTheme (owner, 2026-09-01: the choice here "didn't really apply to
-   *  all the other pages"): applyTheme stamped only THIS document, while every other page
-   *  boots from the stored pin — so the explicit act here stores the pin the way ⚙
-   *  appearance does, and theme.js's storage listener flips pages already open. */
+  /** The page wears the Campaign's desk as soon as it is saved — that is the point of a look. */
   const wear = (desk) => {
     if (desk?.skin) setSkin(desk.skin);
-    if (desk?.theme) setTheme(desk.theme === 'automatic' ? 'auto' : desk.theme);
+    // The saved themes become the system's word (both surfaces), and this page repaints
+    // under it — theme.js resolves the right one for the surface it is on, and its
+    // storage listener carries the save to pages already open.
+    setCampaignTheme(desk || null);
+    applyTheme();
   };
 
 
@@ -150,7 +150,11 @@ export function createDeskProfileSurface(campaign) {
       choice(t('campaign_view.skin', 'Skin'), skins.map((s) => ({ value: s.name, label: s.label || s.name })), desk.skin || '',
         t('campaign_view.skin_help', 'The look — colours, corners, faces. The page wears it now.'), (v) => void setDesk({ skin: v })),
       choice(t('campaign_view.theme', 'Theme'), THEMES(), desk.theme || 'automatic',
-        t('campaign_view.theme_help', 'Light or dark, or whatever the device prefers.'), (v) => void setDesk({ theme: v })),
+        t('campaign_view.theme_help', 'Light or dark for pointer surfaces; Automatic is the house default — light.'), (v) => void setDesk({ theme: v })),
+      // The touch surfaces' own answer (owner, 2026-09-01): an iPad can be light while
+      // the desktop is dark, and both are the Campaign's word — no per-device fiddling.
+      choice(t('campaign_view.theme_mobile', 'Theme (mobile)'), THEMES(), desk.theme_mobile || 'automatic',
+        t('campaign_view.theme_mobile_help', 'Light or dark for touch surfaces — iPad and phone; Automatic is the house default — light.'), (v) => void setDesk({ theme_mobile: v })),
       choice(t('campaign_view.output', 'Output'), OUTPUTS(), desk.rireki_view || '',
         t('campaign_view.output_help', 'What an Agent’s tile shows. Terminal Mirror is the one that ships; Detailed, Condensed and Cherry Pick arrive with Ronin Services.'), (v) => void setDesk({ rireki_view: v })),
       choice(t('campaign_view.lexicon', 'Lexicon'), [{ value: desk.lexicon || '', label: desk.lexicon || t('settei.none_set', '— none set —') }], desk.lexicon || '',
