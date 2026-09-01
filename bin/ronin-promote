@@ -24,11 +24,4 @@ if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
   sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
   exit 0
 fi
-. "$ROOT/libexec/ronin-temp-hygiene.sh"
-ronin_tmp_janitor
-ronin_tmp_preflight || exit 1
-PROMOTION_TMP="$(mktemp -d "${TMPDIR:-/tmp}/ronin-promotion-XXXXXX")" || exit 1
-trap 'rm -rf -- "$PROMOTION_TMP"' EXIT HUP INT TERM
-export TMPDIR="$PROMOTION_TMP"
-export TSX_DISABLE_CACHE=1
-npx tsx src/promotion-cli.ts "$@"
+exec npx tsx src/promotion-cli.ts "$@"

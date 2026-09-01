@@ -31,7 +31,6 @@ file-for-file. `bin/ronin-store --all` prints every store on this machine, resol
 | Book | The situation that fetches it |
 |---|---|
 | `accounts.md` | who this install is for, and what it runs on |
-| `codebase_team.md` | one agent lands on a codebase and stands up the team around it |
 | `codex.md` | the account that pays for a Ronin coding session |
 | `data.md` | connecting to a data source, and choosing which one |
 | `deploy.md` | getting a thing running where other people can reach it |

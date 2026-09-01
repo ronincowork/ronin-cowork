@@ -21,7 +21,6 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 OS="$(uname -s)"
-. "$ROOT/libexec/ronin-temp-hygiene.sh"
 
 # The operator unit is ronin.service; a box that has not re-run setup.sh since the
 # 2026-08-19 rename still runs it as tmux-ronin.service. Diagnose whichever is there.
@@ -102,13 +101,6 @@ env_get() { sed -n "s/^[[:space:]]*$1=//p" "$ROOT/.env" 2>/dev/null | tail -1; }
 echo ""
 echo "RONIN DOCTOR — $ROOT"
 echo ""
-
-sect "temporary-storage headroom"
-if ronin_tmp_preflight 2>&1; then
-  ok "temporary storage has safe inode and byte headroom"
-else
-  find_ "temporary storage is too full for a reliable gate run — follow the teaching above"
-fi
 
 # ---- 1. the copied-out unit files -------------------------------------------------
 # setup.sh renders deploy/*.service into ~/.config/systemd/user/ (launchd plist on

@@ -183,8 +183,7 @@ translates one and creates a second vocabulary.
 faucet A / faucet B *(r_tape and r_scroll are RIREKI's two durable artifacts — there is no
 r_render; the tile's paint is ephemeral)*
 **Files and layout:** DAIKUSAN · system_scope · user_scope · session_scope · the upgrade
-test · shadowing · the session directory · build-out doc · handoff · `landed/` ·
-`commit_train` *(spoken alias: the train)*
+test · shadowing · the session directory · build-out doc · handoff · `landed/`
 **Plumbing:** shim · control-check · viewer session · scrape · compile · step tracker ·
 `session_macro` · `workspace_macro` · one-way flow
 **Ours only:** KOTOBA · KOSHI · SHINGO · BUNKAI · KYOKAI · KOKUGO · `ronin_repo` · dohyo

@@ -45,20 +45,11 @@ export function buildComposer(body, hooks) {
     mic.textContent = '🎤';
     mic.title = t('composer.mic_title', 'Dictate into this box — tap again to stop, then ↵ to send');
   }
-  // ✕ — clear THIS box. The composer is Ronin's own dialog, so one key clears it for
-  // every provider (Esc does the same from a hardware keyboard); the keys the AGENT's
-  // in-pane box needs are the keys row's business. Visible only while there is
-  // something to clear — a dead button is worse than none.
-  const clear = document.createElement('button');
-  clear.className = 'cclear';
-  clear.type = 'button';
-  clear.textContent = '✕';
-  clear.title = t('composer.clear_title', 'Clear this box');
   const btn = document.createElement('button');
   btn.className = 'csend';
   btn.textContent = '↵';
   btn.title = t('composer.send', 'Send');
-  wrap.append(...[ta, clear, mic, btn].filter(Boolean));
+  wrap.append(...[ta, mic, btn].filter(Boolean));
   body.appendChild(wrap);
 
   const state = { dictation: null, queued: false };
@@ -74,16 +65,7 @@ export function buildComposer(body, hooks) {
   const grow = () => {
     ta.style.height = 'auto';
     ta.style.height = Math.min(ta.scrollHeight, 160) + 'px';
-    // ✕ shows exactly while there is something to clear.
-    wrap.classList.toggle('hastext', !!ta.value);
   };
-  const clearBox = () => {
-    if (S.dictation) S.dictation.stop();
-    ta.value = '';
-    grow();
-    ta.focus();
-  };
-  clear.addEventListener('click', clearBox);
   const submit = () => {
     // Stop listening BEFORE reading the box: iOS keeps the recognizer running a
     // beat after you stop talking, and a trailing result would refill a box we
@@ -181,15 +163,6 @@ export function buildComposer(body, hooks) {
    * `value` so the browser's own undo stack survives.
    */
   ta.addEventListener('keydown', (e) => {
-    // Esc clears OUR box, uniformly — whichever provider is in the pane, this box is
-    // Ronin's. An already-empty box passes Esc through as a command key, exactly the
-    // bare-Enter rule: reaching for Esc with nothing parked means the pane's dialog.
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      if (ta.value) clearBox();
-      else hooks.send('\x1b');
-      return;
-    }
     if (e.key !== 'Enter') return;
     if (e.shiftKey) return; // the browser inserts this one itself
     if (e.altKey || e.metaKey || e.ctrlKey) {

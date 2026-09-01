@@ -26,15 +26,7 @@ import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { STOCK_DIR, splitSections, readEntries } from '../src/catalog.js';
-import {
-  listAgentTemplates,
-  listRoleFamilies,
-  listRoutines,
-  listSessionRoles,
-  listTeamTemplates,
-  type DefinitionKind,
-  type TemplateBox,
-} from '../src/definitions.js';
+import { listRoleFamilies, listRoutines, listSessionRoles, listTemplates, type DefinitionKind } from '../src/definitions.js';
 import { listDeskProfiles } from '../src/desk-profiles.js';
 import { listLexicons } from '../src/lexicons.js';
 import { resolveLaunchProfile, type LaunchProfile } from '../src/launch-profile.js';
@@ -257,64 +249,32 @@ async function routinesResolve(): Promise<void> {
 }
 
 /**
- * EVERY SHIPPED TEMPLATE FILLS A FORM THAT CAN BE PRESSED, on its own shelf. A
- * half-stated mandate seeds nothing (the reader answers null), so a stock file that
- * states one must state a legal one; a book address must resolve to a real shelf file,
- * or the tray lays reading the born Agent can never be handed; a routine switch must
- * name a routine that exists; and a shelf may not carry the other shelf's keys —
- * neither form is shown a template written for the other.
+ * EVERY SHIPPED TEMPLATE FILLS A FORM THAT CAN BE PRESSED. A half-stated mandate seeds
+ * nothing (the reader answers null), so a stock file that states one must state a legal
+ * one; a book address must resolve to a real shelf file, or the tray lays reading the
+ * born Agent can never be handed; and a routine switch must name a routine that exists.
  */
-async function templateBoxResolves(
-  at: string,
-  box: TemplateBox,
-  routineNames: Set<string>,
-): Promise<void> {
-  const shelfDirs: Record<string, string> = { sops: 'ronin_sops', ways: 'ways' };
-  if (!box.blurb.trim()) fail(`${at}: missing blurb`);
-  if (!box.art.trim()) fail(`${at}: missing art`);
-  if (!box.kinds.length) fail(`${at}: names no valid kinds — nothing brings it forward`);
-  for (const book of box.behaviours) {
-    const [shelf, name] = book.split(':');
-    const dir = shelfDirs[shelf];
-    if (!dir || !name) { fail(`${at}: behaviour "${book}" is not <shelf>:<name> on a known shelf`); continue; }
-    try { await stat(path.join(REPO, dir, `${name}.md`)); }
-    catch { fail(`${at}: behaviour names missing ${dir}/${name}.md`); }
-  }
-  for (const name of [...box.routines_on, ...box.routines_off]) {
-    if (!routineNames.has(name)) fail(`${at}: routines switch names missing routine "${name}"`);
-  }
-}
-
 async function templatesResolve(): Promise<void> {
+  const templates = await listTemplates();
   const routineNames = new Set((await listRoutines()).map((routine) => routine.name));
-  const DEAD = ['lead_brief', 'lead_mandate'];
-  for (const template of (await listAgentTemplates()).filter((x) => x.origin === 'stock')) {
-    const at = `templates/agents/${template.name}.md`;
-    await templateBoxResolves(at, template, routineNames);
-    const def = await findDefinition('templates/agents', template.name);
+  const shelfDirs: Record<string, string> = { sops: 'ronin_sops', ways: 'ways' };
+  for (const template of templates.filter((x) => x.origin === 'stock')) {
+    const at = `templates/${template.name}.md`;
+    if (!template.blurb.trim()) fail(`${at}: missing blurb`);
+    if (!template.art.trim()) fail(`${at}: missing art`);
+    if (!template.kinds.length) fail(`${at}: names no valid kinds — nothing brings it forward`);
+    const def = await findDefinition('templates', template.name);
     if (def?.has('mandate') && !template.mandate) fail(`${at}: mandate is not \`reach · recruit · output\` in ruled values`);
-    if (!template.brief.trim()) fail(`${at}: an agent template seeds a brief`);
-    for (const key of ['objective', ...DEAD]) {
-      if (def?.has(key)) fail(`${at}: \`${key}:\` is a team answer — it does not belong on the agent shelf`);
+    if (def?.has('lead_mandate') && !template.lead?.mandate) fail(`${at}: lead_mandate is not \`reach · recruit · output\` in ruled values`);
+    for (const book of template.behaviours) {
+      const [shelf, name] = book.split(':');
+      const dir = shelfDirs[shelf];
+      if (!dir || !name) { fail(`${at}: behaviour "${book}" is not <shelf>:<name> on a known shelf`); continue; }
+      try { await stat(path.join(REPO, dir, `${name}.md`)); }
+      catch { fail(`${at}: behaviour names missing ${dir}/${name}.md`); }
     }
-  }
-  for (const template of (await listTeamTemplates()).filter((x) => x.origin === 'stock')) {
-    const at = `templates/teams/${template.name}.md`;
-    await templateBoxResolves(at, template, routineNames);
-    const def = await findDefinition('templates/teams', template.name);
-    if (!template.objective.trim()) fail(`${at}: a team template states its objective`);
-    for (const key of ['brief', 'team_mode', ...DEAD]) {
-      if (def?.has(key)) fail(`${at}: \`${key}:\` does not belong on the team shelf`);
-    }
-    if (template.agents.length < 2) fail(`${at}: a cast is several agents — ${template.agents.length} row(s) found`);
-    if (template.agents.filter((row) => row.team_lead).length !== 1) {
-      fail(`${at}: exactly one cast row is marked \`team_lead: yes\``);
-    }
-    const seen = new Set<string>();
-    for (const row of template.agents) {
-      if (seen.has(row.name)) fail(`${at}: two cast rows are both called "${row.name}"`);
-      seen.add(row.name);
-      if (!row.instructions.trim()) fail(`${at}: cast row "${row.name}" has no instructions`);
+    for (const name of [...template.routines_on, ...template.routines_off]) {
+      if (!routineNames.has(name)) fail(`${at}: routines switch names missing routine "${name}"`);
     }
   }
 }
@@ -326,8 +286,7 @@ await surfacingDefinitions('session_roles', listSessionRoles);
 await surfacingDefinitions('desk_profiles', listDeskProfiles);
 await surfacingDefinitions('lexicons', listLexicons);
 await surfacingDefinitions('routines', listRoutines);
-await surfacingDefinitions('templates/agents', listAgentTemplates);
-await surfacingDefinitions('templates/teams', listTeamTemplates);
+await surfacingDefinitions('templates', listTemplates);
 await definitionsResolve();
 await routinesResolve();
 await templatesResolve();

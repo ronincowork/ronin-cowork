@@ -510,13 +510,9 @@ arrows, Tab, any control char) go straight through immediately. Enter sends the 
 as **one atomic write with the `\r` glued on**; a delayed `\r` on a timer is a message iOS can
 lose halfway. Backspace eats parked text first, and is a command key once the strip is empty.
 
-**The composer** is the tile's own staging textarea, docked at the bottom (`composer.js`).
-Born as the unlocked tile's input — a tape-fed tile hides xterm entirely, so without it
-there was nothing on the page to type into — and since the MOBILE pass it also rides the
-LOCKED mirror on every coarse-pointer tile, because a tap never focuses xterm on touch and
-a locked tile without it cannot be typed into at all. It is a cowork surface: nothing in
-it needs a service, and text staged in it reaches the pane only on send, as one atomic
-write down the tile's socket. Enter sends; Shift+Enter **and
+**The composer** is the unlocked tile's own textarea, docked at the bottom (`composer.js`).
+A tape-fed tile hides xterm entirely, so without it there was nothing on the page to type
+into — not a missing nicety, the missing input path. Enter sends; Shift+Enter **and
 Option+Enter** insert a newline (Option+Enter is the muscle memory the agent's own box takes,
 and it used to send). A bare Enter with an empty box is a command key, and it is the recovery
 path when a TUI swallowed a previous send's Enter. A send into a closed socket keeps your
@@ -585,16 +581,9 @@ so every handler and live widget keeps its owner. The Status row is a reading, n
 door.
 
 **The keys ride the composer on every coarse tile** — phone shell and iPad workbench
-alike (`public/js/keysrow.js`): Esc, ^C, ⌫, ^U, Tab, ⇧Tab, the arrows and ⤓, docked
-directly above the box they drive, lifting over the software keyboard with it. They act
-on that tile's own session, never "the active tile". The two clearing keys are there
-because the agents disagree about their own in-pane box — Esc empties Claude's, ^U
-(readline kill-line) empties a readline-shaped composer such as Codex's — and they are
-generic terminal keys on purpose: providers ship remappable keymaps, so a hardcoded
-per-provider key would be a guess with an expiry date. **Ronin's own box clears
-uniformly**: Esc from a hardware keyboard empties the composer (an already-empty box
-passes Esc through as a command key, the bare-Enter rule), and a ✕ appears on the box
-whenever it holds text. On a box with no tape service the composer
+alike (`public/js/keysrow.js`): Esc, ^C, Tab, ⇧Tab, the arrows and ⤓, docked directly
+above the box they drive, lifting over the software keyboard with it. They act on that
+tile's own session, never "the active tile". On a box with no tape service the composer
 (and the row) rides the locked mirror too on coarse tiles — it is the only input path a
 touch screen has — and the body's padding keeps the CLI's own input line clear of it.
 

@@ -18,7 +18,6 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
@@ -60,25 +59,12 @@ if (nested.length) {
   console.log('machine, so they are run deliberately (see each file\'s header) or by CI.');
 }
 console.log(`running ${files.length} test file(s) in tests/`);
-const runRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ronin-test-run-'));
 // Several suites exercise real Git locks and compare-and-swap races. Running test files
 // concurrently makes those machine-level fixtures contend on smaller CI runners and
 // produces false promotion failures; the unit floor is deterministic, one file at a time.
-const r = spawnSync('node', ['--import', 'tsx', '--import', './tests/fixture-teardown.mjs', '--test', '--test-concurrency=1', ...files], {
+const r = spawnSync('node', ['--import', 'tsx', '--test', '--test-concurrency=1', ...files], {
   cwd: ROOT,
   stdio: 'inherit',
-  env: { ...process.env, BIND: process.env.BIND || '127.0.0.1', TMPDIR: runRoot, TSX_DISABLE_CACHE: '1' },
+  env: { ...process.env, BIND: process.env.BIND || '127.0.0.1' },
 });
-const leaked = fs.readdirSync(runRoot);
-fs.rmSync(runRoot, { recursive: true, force: true });
-if (leaked.length) {
-  const families = new Map();
-  for (const name of leaked) {
-    const family = name.replace(/[._-][A-Za-z0-9]{6,}$/, '');
-    families.set(family, (families.get(family) || 0) + 1);
-  }
-  console.error(`FAILED — unit fixtures leaked ${leaked.length} temp entr${leaked.length === 1 ? 'y' : 'ies'}: ${[...families].map(([n, c]) => `${n} (${c})`).join(', ')}`);
-  console.error('Each fixture must remove its mkdtemp directory in teardown. The runner removed this run root as a backstop.');
-  process.exit(1);
-}
 process.exit(r.status ?? 1);

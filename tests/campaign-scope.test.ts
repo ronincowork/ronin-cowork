@@ -32,6 +32,7 @@ process.env.RONIN_WIPEBOARDS_DIR = wipeboards;
 
 const { createCampaign, ensureInitialCampaign, initialCampaign } = await import('../src/campaign-config.js');
 const { createTeamRoster, listTeamRosters, readTeamRoster } = await import('../src/team-rosters.js');
+const { listTeamTemplates, saveTeamTemplate } = await import('../src/team-templates.js');
 const {
   assertSameCampaignRoot,
   assertSameCampaignTeams,
@@ -72,6 +73,7 @@ test('a legacy roster written before Campaigns is re-homed, not lost or renamed'
 test('the migration is idempotent — a second run stamps nothing', async () => {
   const again = await migrateCampaignScope();
   assert.deepEqual(again.rosters, [], 'nothing left unmarked to stamp');
+  assert.deepEqual(again.templates, []);
 });
 
 test("an unmarked record reads as the initial Campaign, and that is the only place '' is resolved", async () => {
@@ -137,6 +139,23 @@ test('the same Cowork name in two Campaigns does not collide on the wipeboard', 
   const all = await listTeamRosters();
   const boards = all.map((r) => r.wipeboard);
   assert.equal(new Set(boards).size, boards.length, 'every roster points at its own board');
+});
+
+test('a saved template belongs to one Campaign, and two Campaigns may both have "standard"', async () => {
+  await saveTeamTemplate('standard', { team: { name: 'x', wipeboard: 'y' } }, 'health');
+  await saveTeamTemplate('standard', { team: { name: 'z', wipeboard: 'w' } }, 'home');
+  const rows = await listTeamTemplates();
+  const standards = rows.filter((r) => r.name === 'standard');
+  assert.equal(standards.length, 2, 'identity is campaign_id + name');
+  assert.deepEqual(standards.map((r) => r.campaign_id).sort(), ['health', 'home']);
+});
+
+test('a template never carries the Campaign of the team it was saved from', async () => {
+  await saveTeamTemplate('shape', { team: { name: 'src', wipeboard: 'b', campaign_id: 'health' } }, 'health');
+  const saved = (await listTeamTemplates()).find((r) => r.name === 'shape');
+  const team = saved?.draft.team as Record<string, unknown>;
+  assert.equal(team.campaign_id, '', 'a template is a shape to build with, not a copy of a team');
+  assert.equal(team.name, '', 'beside the name and the board, which were already blanked');
 });
 
 test('an Agent is refused a Cowork in another Campaign', async () => {
