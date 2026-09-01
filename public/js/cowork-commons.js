@@ -12,6 +12,7 @@ import { refreshHome } from './home.js';
 import { askMika } from './mika.js';
 import { S, serviceOff } from './state.js';
 import { t } from './lexicon.js';
+import { buildMessageQueue } from './message-queue.js';
 
 /**
  * THE COWORK COMMONS — the install's shared surface, a `workspace_surface` (owner,
@@ -190,6 +191,10 @@ export function coworkCommons(options = {}) {
     return [buildArchives(seatAdapter, host)];
   });
 
+  /* ---- Messages: inbound session delivery that has not cleared ---- */
+  const messages = pane('messages');
+  const messageRooms = once(() => [buildMessageQueue(messages, showing('messages'))]);
+
   /* ---- Help desk: Mika, over a reserved chat ---- */
   const help = pane('help', 'cc-stack');
   const helpRooms = once(() => {
@@ -237,6 +242,7 @@ export function coworkCommons(options = {}) {
     profile: service(profile, enterAll(profileRooms)),
     roots: service(roots, enterAll(rootsRooms)),
     archives: service(archivesPane, enterAll(archivesRooms)),
+    messages: service(messages, enterAll(messageRooms)),
     help: service(help, enterAll(helpRooms)),
     keypad: service(keypad, () => { if (mountPad()) S.padPanel.render?.(); }),
   };
@@ -249,6 +255,7 @@ export function coworkCommons(options = {}) {
     { id: 'profile', label: t('cowork.tab_profile', 'Desk profile') },
     { id: 'roots', label: t('cowork.tab_roots', 'Project roots') },
     { id: 'archives', label: t('cowork.tab_archives', 'Archived') },
+    { id: 'messages', label: t('cowork.tab_messages', 'Messages') },
     { id: 'help', label: t('cowork.tab_help', 'Help desk') },
     { id: 'keypad', label: t('cowork.tab_keypad', 'Keypad') },
   ].filter((c) => !wanted || wanted.has(c.id));

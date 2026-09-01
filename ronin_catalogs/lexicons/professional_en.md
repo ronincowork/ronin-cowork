@@ -279,7 +279,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.rt_hotwords_what:** The words dictation keeps mishearing, sent with your voice.
 - **campaign_view.rt_present:** installed — no switch yet
 - **campaign_view.rt_absent:** not installed
-- **campaign_view.machine_summary:** The rest of the desk: Desk · Account · Archived · Help desk · Keypad.
+- **campaign_view.machine_summary:** The rest of the desk: Desk · Account · Archived · Messages · Help desk · Keypad.
 
 ## campaign_home — campaign-home.js (the root arrival: Machine Settings, Coworks, Launch)
 
@@ -1146,6 +1146,7 @@ The catalog entry goes. {dir} is not touched.
 - **cowork.tab_roots:** Project roots
 - **cowork.tab_help:** Help desk
 - **cowork.tab_keypad:** Keypad
+- **cowork.tab_messages:** Messages
 - **messages.empty:** No messages are waiting.
 - **messages.to:** To {target}
 - **messages.meta:** {source} · {attempts} attempts
