@@ -437,9 +437,10 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   // that block as a configuration that you want to use over."
   const saveRow = createActionBar({ label: t('new_team.team_actions', 'Team actions') });
   saveRow.el.append(saveName, save.el);
-  // Appended here, not at the kit step's own mount: `saveRow` is declared below it, and
-  // reaching back for it there is a TDZ error that kills the whole form on construction.
-  stepKit.body.append(saveRow.el);
+  // SAVE AS TEMPLATE GOES AT THE BOTTOM, UNDER THE PACKET (owner, 2026-09-01: "why is the
+  // save template not at the bottom with the blurb that is the packet"). The reading IS
+  // the thing being saved — what this Team amounts to — so the button that saves it sits
+  // beneath it, not inside one of the steps that feeds it. Mounted at the surface below.
   function paintActions() {
     // ONE WORD FOR STARTING ANYTHING (owner, 2026-09-01): "I want launch to be the
     // keyword everywhere for starting a new team and starting a new agent." Grey while
@@ -601,7 +602,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
 
   const form = el('div', 'ntf-form');
   form.append(stepTop.el, stepTemplate.el, stepObjective.el, stepWhere.el, stepKit.el, stepLead.el);
-  surface.content.append(form, notice.el, foot);
+  surface.content.append(form, notice.el, foot, saveRow.el);
 
   return {
     el: surface.el,

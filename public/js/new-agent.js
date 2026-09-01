@@ -579,7 +579,9 @@ export function createNewAgentView(kit, { connect = null } = {}) {
 
   const form = el('div', 'ntf-form');
   form.append(stepType.el, stepTop.el, stepTemplate.el, stepInstructions.el, stepTeam.el, stepWhere.el, stepMandate.el, stepLoadout.el);
-  surface.content.append(form, actions.el, notice.el, foot);
+  // Save as template sits UNDER the reading, for the same reason as on New Team: the
+  // reading is the packet, and the button saves the packet.
+  surface.content.append(form, notice.el, foot, actions.el);
 
   /**
    * THE ＋ NEW DOOR ARRIVES HERE NOW. `S.showNewSession(prompt)` — the bar's ＋, ⌃⇧N and
