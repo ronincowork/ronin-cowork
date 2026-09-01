@@ -55,10 +55,13 @@
      workspace and the work selector… so that it's like a light orange shading so that it
      stands out a little bit, because I get lost. I can't always see, especially in this
      dark mode. It's got to be light enough that it doesn't obstruct the view of the
-     fonts." So: the ground carried a tenth of the way toward --kaki, one token, every
-     workbench header and the channel tab strip with it. Written as the resolved value
-     rather than a mix so a skin can replace it like any other token. */
-  --cowork-head-bg: #372425;
+     fonts." Later the same day: the tenth-toward-kaki first cut was still invisible to
+     the owner ("I still don't see the kiiro shading"), and kiiro is the word they use
+     for it — so the ground now carries a fifth of the way toward --warn, the house
+     kiiro, one token, every workbench header and the channel tab strip with it.
+     Written as the resolved value rather than a mix so a skin can replace it like any
+     other token. */
+  --cowork-head-bg: #3c372e;
   --bad: #cc6666;
   --bad-soft: #e6a1a1;
   --bad-deep: #a33c33;
@@ -214,9 +217,12 @@
 
   /* One typographic voice for the permanent head over every Workbench surface. The
      frame has three approved header forms (Kit, terminal Tile, and channel strip), but
-     their title must not inherit a feature body's type or choose a private size. */
+     their title must not inherit a feature body's type or choose a private size.
+     Raised from --text-3 (owner, 2026-09-01: "the text for the headers … is so small …
+     grow that a bit … through the kit … using tokens"): one token, every header —
+     the roster title, the agent names on the tiles, the selector — moves together. */
   --workbench-head-font: var(--font-ui);
-  --workbench-head-size: var(--text-3);
+  --workbench-head-size: var(--text-5);
   --workbench-head-weight: 700;
   --workbench-head-line: 1.2;
 
@@ -289,7 +295,7 @@
 :root[data-theme='light'] {
   --bg: #f4f2ec;
   --bg-2: #eae7df;
-  --cowork-head-bg: #e5d5ca;
+  --cowork-head-bg: #ecdcbc;
   --panel: #ffffff;
   --raise: #f1efe8;
   --raise-2: #e6e2d8;
