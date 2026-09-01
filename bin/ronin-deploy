@@ -28,6 +28,7 @@ if [ "$restart" = 1 ]; then
   echo "  ok — server typechecks, client parses"
 
   echo "→ restarting Ronin"
+  node scripts/guard-dev-restart.mjs "$ROOT" || fail "dev has no promotion receipt — nothing was restarted."
   # ronin.service, or tmux-ronin.service on a box that predates the 2026-08-19 rename
   RONIN_UNIT="ronin"
   systemctl --user cat ronin.service >/dev/null 2>&1 || RONIN_UNIT="tmux-ronin"

@@ -481,6 +481,11 @@ if [ "$OS" = "Linux" ] && command -v systemctl >/dev/null; then
   # restarted here: that unit owns every live session on the box.
   if systemctl --user is-active --quiet ronin; then
     systemctl --user enable ronin
+    node "$REPO_DIR/scripts/guard-dev-restart.mjs" "$REPO_DIR" || {
+      echo "==> REFUSED: the checked-out dev tip has no promotion receipt; Ronin was not restarted"
+      echo "    owner override: RONIN_UNRECEIPTED_DEV=1 ./setup.sh"
+      exit 1
+    }
     systemctl --user restart ronin
     echo "==> Ronin was already running: restarted onto the freshly rendered unit"
   else
