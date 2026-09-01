@@ -119,7 +119,9 @@ export function createCoworkView(options = {}) {
       if (seat.pool.active) seat.empty?.el.remove();
       else if (!seat.empty) {
         const blank = createSurface({ label: t('team.workspace_blank', 'Workspace'), className: 'tw-blank' });
-        blank.content.append(el('p', 'tw-blank-word', t('team.workspace_blank', 'Workspace')));
+        // The header already says Workspace; the body saying it again read as a stutter
+        // (owner, 2026-09-01). Inside, just the state, small.
+        blank.content.append(el('p', 'tw-blank-word', t('team.workspace_empty', 'empty')));
         seat.empty = { el: blank.el, mount: () => {}, destroy: () => blank.el.remove() };
         seat.surface.content.append(seat.empty.el);
       } else if (!seat.empty.el.isConnected) seat.surface.content.append(seat.empty.el);
