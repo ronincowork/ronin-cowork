@@ -300,6 +300,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **launch.new_agent:** New Agent
 - **launch.new_agent_summary:** Start an Agent in a Team or on its own.
 - **forms.launch:** Launch
+- **forms.payload_band:** New launch payload — what this raise will send
+- **forms.payload_band_agent:** New launch payload — what this launch will send
 - **launch_mode.head:** launch mode
 - **launch_mode.configured:** Model provider configuration
 - **launch_mode.configured_sub:** Ronin adds nothing to the command. The Agent starts with whatever its provider CLI already loads.

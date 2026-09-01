@@ -29,7 +29,7 @@ import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-
 import { agentPicks, agentRow, createAgentRows } from './team-agents.js';
 import { launchTeamAgents } from './team-loader.js';
 import {
-  createStep, dialRowMulti, el, kindTiles, mandateSelect, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
+  createBand, createStep, dialRowMulti, el, kindTiles, mandateSelect, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
 } from './form-steps.js';
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
@@ -577,9 +577,10 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
 
   function paint() {
     plan().forEach((key, index) => steps[key].setNumber(index + 1));
-    bandChev.textContent = defaultsOpen ? '▾' : '▸';
-    defaultsBand.setAttribute('aria-expanded', String(defaultsOpen));
+    defaultsBand.setOpen(defaultsOpen);
     for (const key of ['where', 'kit']) steps[key].el.hidden = !defaultsOpen;
+    payloadBand.setOpen(payloadOpen);
+    foot.hidden = !payloadOpen;
     paintTray();
     paintKinds();
     paintName();
@@ -598,16 +599,22 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   // ONE BAND OVER EVERYTHING THAT IS A DEFAULT, and it folds them all away together: a
   // Team can be raised without ever opening it, which is the point of saying so here
   // rather than repeating "this is a default, not a constraint" on each field below.
-  const defaultsBand = el('button', 'ntf-band');
-  defaultsBand.type = 'button';
   let defaultsOpen = true;
-  // Its own class, not `.fs-chev`: that one carries `margin-left: auto` so a step head can
-  // push its chevron to the right, which in a band shoves the sentence there too.
-  const bandChev = el('span', 'ntf-band-chev', '▾');
-  defaultsBand.append(bandChev, el('span', null, t('new_team.defaults_band', 'Everything below this is the default for Agents launched within this team.')));
-  defaultsBand.addEventListener('click', () => { defaultsOpen = !defaultsOpen; paint(); });
-  form.append(stepTop.el, stepTemplate.el, stepObjective.el, stepLead.el, defaultsBand, stepWhere.el, stepKit.el);
-  surface.content.append(form, notice.el, foot, saveRow.el);
+  const defaultsBand = createBand(
+    t('new_team.defaults_band', 'Everything below this is the default for Agents launched within this team.'),
+    () => { defaultsOpen = !defaultsOpen; paint(); },
+  );
+  // THE PAYLOAD IS A SECTION, NOT A TAIL (owner, 2026-09-01): "it's just sort of stuck down
+  // there like a turd. It should be a proper section, new launch payload, and marked with
+  // an orange banner to hide or expand." It is what this press will actually send, so it
+  // gets a band of its own and folds like the defaults above it.
+  let payloadOpen = true;
+  const payloadBand = createBand(
+    t('forms.payload_band', 'New launch payload — what this raise will send'),
+    () => { payloadOpen = !payloadOpen; paint(); },
+  );
+  form.append(stepTop.el, stepTemplate.el, stepObjective.el, stepLead.el, defaultsBand.el, stepWhere.el, stepKit.el);
+  surface.content.append(form, notice.el, payloadBand.el, foot, saveRow.el);
 
   return {
     el: surface.el,

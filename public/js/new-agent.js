@@ -29,7 +29,7 @@ import { request } from './request.js';
 import { t } from './lexicon.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
 import {
-  createStep, dialRow, dialRowMulti, el, kindTiles, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
+  createBand, createStep, dialRow, dialRowMulti, el, kindTiles, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
 } from './form-steps.js';
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
@@ -598,11 +598,18 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     paintFoot();
   }
 
+  // THE PAYLOAD IS A SECTION HERE TOO (owner, 2026-09-01): what this press will send, with
+  // a band of its own rather than trailing off the end of a long form.
+  let payloadOpen = true;
+  const payloadBand = createBand(
+    t('forms.payload_band_agent', 'New launch payload — what this launch will send'),
+    () => { payloadOpen = !payloadOpen; payloadBand.setOpen(payloadOpen); foot.hidden = !payloadOpen; },
+  );
   const form = el('div', 'ntf-form');
   form.append(stepType.el, stepTop.el, stepTemplate.el, stepInstructions.el, stepTeam.el, stepWhere.el, stepMandate.el, stepLoadout.el);
   // Save as template sits UNDER the reading, for the same reason as on New Team: the
   // reading is the packet, and the button saves the packet.
-  surface.content.append(form, notice.el, foot, actions.el);
+  surface.content.append(form, notice.el, payloadBand.el, foot, actions.el);
 
   /**
    * THE ＋ NEW DOOR ARRIVES HERE NOW. `S.showNewSession(prompt)` — the bar's ＋, ⌃⇧N and

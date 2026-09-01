@@ -169,6 +169,29 @@ export function bookShelves(shelves, chosen, onToggle) {
   return host;
 }
 
+/**
+ * A BAND — a full-width divider that says what everything under it is, and folds it away.
+ *
+ * The owner asked for the first one over the Team's agent defaults, then for the same
+ * treatment over the launch payload: "it's just sort of stuck down there like a turd. It
+ * should be a proper section… and marked with an orange banner to hide or expand." Both
+ * mark the same kind of seam — the subject changes below this line — so both are this.
+ */
+export function createBand(label, onToggle) {
+  const band = el('button', 'ntf-band');
+  band.type = 'button';
+  const chev = el('span', 'ntf-band-chev', '▾');
+  band.append(chev, el('span', null, label));
+  band.addEventListener('click', () => onToggle());
+  return {
+    el: band,
+    setOpen: (on) => {
+      chev.textContent = on ? '▾' : '▸';
+      band.setAttribute('aria-expanded', String(on));
+    },
+  };
+}
+
 export function wayTiles(rows, current, onPick) {
   const wrap = el('div', 'fs-pair');
   for (const row of rows) {
