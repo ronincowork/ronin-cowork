@@ -84,23 +84,28 @@
   /* KIIRO-DEEP — the pressed/hover depth of a kiiro fill, as --accent-deep is to
      --accent. Invariant like its parent. */
   --kiiro-deep: color-mix(in srgb, var(--kiiro) 82%, #000000);
-  /* THE WORKBENCH'S HEADER BAND — one light kiiro, both themes. The full run of
-     owner verdicts, so no rejected value returns: the tenth-toward-kaki cut
-     (invisible), #decb8f (khaki — "weird yellow"), opaque gold (the old --kiiro),
-     theme-relative mixes ("not rouge or mauve or putrid orange"), a same-day
-     dark/light split (closed — "I think it can fit in dark mode and light mode"),
-     and the 62% mix, which washed toward cream: "light yellow but slightly darker
-     yellow, and it looks awful. I'd like it to be this lighter shade of kiiro"
-     (owner, 2026-09-01 pm). So the band is the KIIRO-TINT: lighter than the token,
-     still unmistakably orange, constant across themes, with its own dark ink family
-     below (the theme's --fg-strong/--muted-2/--warn are tuned for the theme's
-     ground, not this band's). Every workbench wears THIS band — wk-surface-header,
+  /* KIIRO-HINT — the DARK shading variant: the shell's own band ground with a
+     visible kiiro cast. 22% because the tenth-toward-kaki cut proved 10% invisible
+     ("I still don't see the kiiro shading"). Theme-relative BY DESIGN here — the
+     whole point is staying the shell's darkness — unlike --kiiro-tint, which is the
+     committed light shade. */
+  --kiiro-hint: color-mix(in srgb, var(--kiiro) 22%, var(--bg-2));
+  /* THE WORKBENCH'S HEADER BAND — dark wears the HINT, light wears the TINT (owner,
+     2026-09-01 evening, the standing verdict): a light band on the dark shell "looks
+     awful… It should be dark mode with a bit of background hint to the orange
+     color", and the tint's hue direction was ruled right for light ("the color, I
+     guess, is better"). This SUPERSEDES the same-day one-shade-both-modes ruling.
+     The full run of prior verdicts, so no rejected value returns: tenth-toward-kaki
+     (invisible), #decb8f (khaki), opaque gold, the 62% cream wash, the 78% wash
+     ("doesn't look any different"), opaque kiiro in dark ("absolute shit"), and any
+     LIGHT band on the dark shell. Dark ink is the theme's own; light's ink family
+     rides its block below. Every workbench wears THIS band — wk-surface-header,
      tile-head, wk-channel-service-tabs, ntf-band all read the family. */
-  --cowork-head-bg: var(--kiiro-tint);
-  --cowork-head-fg: #201a0e;
-  --cowork-head-muted: #5a4d28;
-  /* Attention ON the band: the band is already kiiro, so attention speaks kaki. */
-  --cowork-head-attention: #8a3413;
+  --cowork-head-bg: var(--kiiro-hint);
+  --cowork-head-fg: var(--fg-strong);
+  --cowork-head-muted: var(--muted-2);
+  /* Attention on the dark band: kiiro itself is the cue. */
+  --cowork-head-attention: var(--kiiro);
   --bad: #cc6666;
   --bad-soft: #e6a1a1;
   --bad-deep: #a33c33;
@@ -332,6 +337,14 @@
    index.html applies the saved value inline before first paint. THE --term-* TOKENS ARE
    REMAPPED HERE TOO: light means light all the way into the pane, terminal included. */
 :root[data-theme='light'] {
+  /* LIGHT wears the kiiro-tint band (the hue the owner ruled right for light);
+     DARK keeps its dark band with the orange hint — the family's root defaults.
+     The band's own dark ink here, because the light theme's text tokens are tuned
+     for paper, not for a kiiro surface. */
+  --cowork-head-bg: var(--kiiro-tint);
+  --cowork-head-fg: #201a0e;
+  --cowork-head-muted: #5a4d28;
+  --cowork-head-attention: #8a3413;
   --bg: #f4f2ec;
   --bg-2: #eae7df;
   --panel: #ffffff;
