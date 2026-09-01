@@ -9,8 +9,8 @@ This page is the instruction for anyone building a new tab, view, page or contro
 is short enough to read every time. The machinery it describes: `public/js/lexicon.js`
 (the helper), `ronin_catalogs/lexicons/` (the words, one file per lexicon), `docs/lexicons.md`
 (how the chain resolves), `docs/desk-profiles.md` (how a person picks one), and
-`docs/kokugo-table.md` (every key and every lexicon's word beside it — generated, never
-edited). The sweep that put every existing view through this door landed 2026-08-27.
+`docs/kokugo-table.md` (every key and every lexicon's word beside it — generated on demand
+by `npm run kokugo:table`, never edited and never committed). The sweep that put every existing view through this door landed 2026-08-27.
 
 ## 1 · The helper
 
@@ -121,8 +121,9 @@ reads these attributes as keys the client reads.
 ## 7 · Adding a word, adding a language
 
 - **A new string in a view**: write the `t()` call, add `- **room.key:** the literal` to
-  `ronin_catalogs/lexicons/professional_en.md` under the room's heading, regenerate the
-  table (`node scripts/kokugo-table.mjs`), commit all three together.
+  `ronin_catalogs/lexicons/professional_en.md` under the room's heading, and commit both
+  together. The table is a report, not an output to commit — read it with
+  `npm run kokugo:table` whenever you want it.
 - **A profile's word for it** (Home says *household* where the floor says *team*): one
   line in that profile's lexicon, e.g. `- **roster.no_team:** no household` in
   `ronin_catalogs/lexicons/home_en.md`. Only the words that change; everything else falls
@@ -164,7 +165,6 @@ node scripts/check-lexicon.mjs
 - `FAIL the client reads \`x\` and professional_en.md does not carry it` — add the line.
 - `FAIL <lexicon>.md spells \`x\`, which professional_en.md does not carry` — a typo in a
   lexicon: a bare key must exist in the floor to fall through to.
-- `FAIL docs/kokugo-table.md is stale` — `node scripts/kokugo-table.mjs`, commit the page.
 - `note N floor key(s) no view reads yet` — allowed (the campaign board's keys wait for
   their surface); read it so the list cannot rot.
 - `note N module(s) import t and also name a local t` — legal; each is a scope where a

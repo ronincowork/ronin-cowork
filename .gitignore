@@ -25,3 +25,8 @@ public-staging/
 .stignore
 .stversions/
 ~syncthing~*.tmp
+
+# Generated on demand by `npm run kokugo:table` — a report, not a source.
+# Committing it bought a merge conflict on every lexicon change and validated nothing
+# the other check-lexicon assertions do not already cover.
+docs/kokugo-table.md
