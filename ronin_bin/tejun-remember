@@ -1,18 +1,10 @@
 #!/usr/bin/env bash
 # tejun-remember — write one memory to the OBOERU store (TEJUN memory-write).
 # Usage: tejun-remember "<the thing to remember>" [--tags a,b] [--kind rule|fact|pointer]
-#                       [--project_root X] [--session_role X] [--any AXIS]
+#                       [--project_root X]
 #
-# One command, or nobody writes one. Axes you don't name are INHERITED from this
-# session (never widened): the memory claims the scope you actually learned it in.
-# `--any <axis>` widens deliberately. Both axes wildcard = the system prompt, which is
-# the owner's hand in the Ronin UI — refused here, by design, for the same reason an
-# agent may not flip a dial.
-#
-# TWO AXES (R35, 2026-08-23): where you work and what you are doing. The old
-# role_family axis died with the session identity it scoped. Something true of this
-# kind of work in every repo wants `--any project_root`; something true of this repo
-# whatever the work wants `--any session_role`.
+# One command, or nobody writes one. Project scope is inherited from this session when
+# not named and is never widened. System-wide memory is the owner's hand in the UI.
 set -u
 
 # Where Ronin keeps things on THIS machine — asked, never spelled. See docs/stores.md.
@@ -25,24 +17,16 @@ STORE="$("$RSTORE" memory)"
 ROOTS_MD="$("$RSTORE" catalogs)/PROJECT_ROOTS.md"
 
 TEXT=""; TAGS=""; KIND="rule"; SUMMARY=""
-P_ROOT=""; S_TASK=""
-ANY_ROOT=0; ANY_TASK=0
+P_ROOT=""
 
 die() { echo "$1"; exit "$2"; }
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --project_root|--project-root) P_ROOT="${2:-}"; shift 2 ;;
-    --session_role|--session-task) S_TASK="${2:-}"; shift 2 ;;
     --tags)    TAGS="${2:-}"; shift 2 ;;
     --kind)    KIND="${2:-}"; shift 2 ;;
     --summary) SUMMARY="${2:-}"; shift 2 ;;
-    --any)
-      case "${2:-}" in
-        project_root|project-root) ANY_ROOT=1 ;;
-        session_role|session-task) ANY_TASK=1 ;;
-        *) die "BAD-AXIS: --any takes project_root or session_role" 2 ;;
-      esac; shift 2 ;;
     -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
     --*) die "BAD-FLAG: $1 (see --help)" 2 ;;
     *) [ -n "$TEXT" ] && TEXT="$TEXT $1" || TEXT="$1"; shift ;;
@@ -52,39 +36,8 @@ done
 [ -n "$TEXT" ] || die "NO-TEXT: say what to remember — tejun-remember \"...\" [--tags x]" 2
 case "$KIND" in rule|fact|pointer) ;; *) die "BAD-KIND: --kind is rule, fact or pointer" 2 ;; esac
 
-# --- what this session is: the two axes (see src/spawn.ts) ---
+# --- which project this session is in ---
 opt() { tmux show-options -qv -t "$1" "$2" 2>/dev/null; }
-
-# The session's own axis comes out of its LETTER, not from a tmux option:
-# `session_role` lives in TEGAMI and nothing mirrors it into tmux (src/tmux.ts says why
-# — a second copy is the one that drifts). '' when there is no letter or it has not said.
-axes_of() {
-  local key row stamped created store
-  store="$("$RSTORE" session 2>/dev/null)"
-  [ -n "${store:-}" ] || return 0
-  row=$(tmux list-sessions -F '#{session_name}\t#{@ronin-key}\t#{session_created}' 2>/dev/null \
-        | awk -F'\t' -v n="$1" '$1==n {print; exit}')
-  [ -n "$row" ] || return 0
-  stamped=$(printf '%s' "$row" | cut -f2); created=$(printf '%s' "$row" | cut -f3)
-  if [ -n "${stamped// /}" ]; then key="$stamped"
-  elif [ -n "${created// /}" ]; then key="$1-$created"
-  else key="$1"; fi
-  python3 - "$store/$key/tegami.md" <<'PYAXES' 2>/dev/null
-import json, re, sys
-try:
-    t = open(sys.argv[1]).read()
-except OSError:
-    raise SystemExit
-m = re.search(r"```(?:json)?\s*\n(.*?)\n```", t, re.S)
-raw = m.group(1) if m else t[t.find("{"):t.rfind("}") + 1]
-try:
-    d = json.loads(raw)
-except Exception:
-    raise SystemExit
-say = lambda k: d[k].strip() if isinstance(d.get(k), str) else ""
-print(say("session_role"))
-PYAXES
-}
 
 # A pane viewed in a Ronin tile reports the GROUPED VIEWER session (grid_*), which
 # carries none of the axes and is not what wrote the memory. #{session_group} is the
@@ -96,7 +49,6 @@ case "$me" in
 esac
 if [ -n "$me" ]; then
   [ -n "$P_ROOT" ] || P_ROOT=$(opt "$me" @ronin-project_root)
-  [ -n "$S_TASK" ] || S_TASK=$(axes_of "$me")
 fi
 
 # Sessions born before the launcher stamped axes (and plain shells) still get the
@@ -112,18 +64,8 @@ if [ -z "$P_ROOT" ] && [ -r "$ROOTS_MD" ]; then
     END { print hit }' "$ROOTS_MD")
 fi
 
-[ "$ANY_ROOT" = 1 ] && P_ROOT='*'
-[ "$ANY_TASK" = 1 ] && S_TASK='*'
-
-# An axis we still can't name is written as "*" — but only after the checks below,
-# so an unstamped session can't accidentally author the system prompt.
-[ -n "$P_ROOT$S_TASK" ] || die \
-  "NO-SCOPE: cannot tell what this session is — name an axis (--project_root / --session_role)" 3
-
-if [ "${P_ROOT:-*}" = '*' ] && [ "${S_TASK:-*}" = '*' ]; then
-  die "DENIED: a memory matching every session IS the system prompt — owner-only (Ronin UI: UCHI → ✎ Memory)" 4
-fi
-P_ROOT="${P_ROOT:-*}"; S_TASK="${S_TASK:-*}"
+[ -n "$P_ROOT" ] || die "NO-SCOPE: cannot tell which project this session is in — say --project_root <name>" 3
+[ "$P_ROOT" != '*' ] || die "DENIED: a memory matching every project IS the system prompt — owner-only (Ronin UI: UCHI → ✎ Memory)" 4
 
 # --- summary + filename ---
 [ -n "$SUMMARY" ] || SUMMARY=$(printf '%s' "$TEXT" | awk '
@@ -150,7 +92,6 @@ q() { case "$1" in '*') printf '"*"' ;; *) printf '%s' "$1" ;; esac; }
   echo "summary: $SUMMARY"
   echo "memory_kind: $KIND"
   echo "project_root: $(q "$P_ROOT")"
-  echo "session_role: $(q "$S_TASK")"
   echo "tags: [$taglist]"
   echo "added: $(date +%F)"
   echo "by: ${me:-$(whoami)}"
@@ -160,4 +101,4 @@ q() { case "$1" in '*') printf '"*"' ;; *) printf '%s' "$1" ;; esac; }
 } > "$file" || die "STUCK: cannot write $file" 1
 
 echo "REMEMBERED $file"
-echo "  scope: project_root=$P_ROOT · session_role=$S_TASK"
+echo "  scope: project_root=$P_ROOT"
