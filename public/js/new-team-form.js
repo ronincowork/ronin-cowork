@@ -26,6 +26,7 @@
 import { request } from './request.js';
 import { t } from './lexicon.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
+import { agentPicks, agentRow, createAgentRows } from './team-agents.js';
 import {
   createStep, dialRowMulti, el, kindTiles, mandateSelect, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
 } from './form-steps.js';
@@ -37,11 +38,6 @@ const OUTPUT = ['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team', 'n
 const DIALS = ['user', 'read', 'write'];
 const KINDS = ['coding', 'work', 'personal', 'household', 'social', 'school'];
 
-const LEAD_DEFAULT = () => ({
-  brief: t('new_team.lead_brief_default', 'Hold the objective, dispatch, unblock, keep the gaps closed.'),
-  reach: 'execute', recruit: 'staff agents', output: ['open'],
-});
-
 export function createNewTeamFormView(kit, { created = null } = {}) {
   const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;
 
@@ -52,7 +48,8 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     provider: '', model: '', reach: 'open', recruit: 'open', output: ['open'],
     dial: 'write',
     routines: {}, books: [], launchMode: 'live_dangerously',
-    lead: null,
+    // The Agents this Team is raised with; the lead is a mark on one of them, not a seat.
+    agents: [],
     expanded: {},
   };
   let seed = null;          // the campaign's answers, once the door has spoken
@@ -91,7 +88,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   /** What a template authors, as one string — the dirty test compares against it. */
   const authored = () => JSON.stringify({
     objective: draft.objective, books: [...draft.books].sort(), routines: draft.routines,
-    mandate: [draft.reach, draft.recruit, ...draft.output], lead: draft.lead,
+    mandate: [draft.reach, draft.recruit, ...draft.output], agents: draft.agents,
   });
 
   function applyTemplate(name) {
@@ -108,7 +105,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
       objectiveInput.value = '';
       draft.books = [];
       draft.routines = { ...seedRoutines };
-      draft.lead = null;
+      draft.agents = [];
       for (const key of ['reach', 'recruit']) draft[key] = seed?.seeds?.[key]?.value || 'open';
       draft.output = [seed?.seeds?.output?.value || 'open'].flat().filter(Boolean);
       snapshot = '';
@@ -121,9 +118,19 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     for (const off of row.routines_off) if (off in draft.routines) draft.routines[off] = false;
     if (row.mandate) { draft.reach = row.mandate.reach; draft.recruit = row.mandate.recruit; draft.output = [row.mandate.output].flat().filter(Boolean); }
     if (row.lead) {
-      draft.lead = { ...LEAD_DEFAULT() };
-      if (row.lead.brief) draft.lead.brief = row.lead.brief;
-      if (row.lead.mandate) { draft.lead.reach = row.lead.mandate.reach; draft.lead.recruit = row.lead.mandate.recruit; draft.lead.output = [row.lead.mandate.output].flat().filter(Boolean); }
+      // A template's lead becomes ONE MARKED ROW. Team templates carrying a whole cast is
+      // @template_shelves' shelf; the row shape is agreed with them and @team_loader.
+      draft.agents = [{
+        ...agentRow(),
+        name: 'lead',
+        lead: true,
+        assignment: row.lead.brief || '',
+        ...(row.lead.mandate ? {
+          reach: row.lead.mandate.reach,
+          recruit: row.lead.mandate.recruit,
+          output: [row.lead.mandate.output].flat().filter(Boolean),
+        } : {}),
+      }];
     }
     snapshot = authored();
     paint();
@@ -331,52 +338,14 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   stepKit.body.append(modeHost, routinesHead, routinesHost, booksHost);
 
   /* ---- step 6 · Team lead ---- */
-  const stepLead = createStep({ n: 4, key: 'lead', title: t('new_team.lead', 'Team lead'), onToggle: () => toggle('lead') });
-  const leadHost = el('div');
-  function paintLead() {
-    leadHost.replaceChildren();
-    const ways = el('div', 'fs-pair');
-    const way = (on, title, sub) => {
-      const box = el('button', 'fs-way');
-      box.type = 'button';
-      box.setAttribute('aria-pressed', String(!!draft.lead === on));
-      box.append(el('b', null, title), el('small', null, sub));
-      box.addEventListener('click', () => {
-        draft.lead = on ? (draft.lead || { ...LEAD_DEFAULT() }) : null;
-        paintLead();
-        paintActions();
-        paintFoot();
-      });
-      return box;
-    };
-    ways.append(
-      way(true, t('new_team.lead_include', 'Include a team lead'), t('new_team.lead_include_sub', 'Raised with the team and briefed.')),
-      way(false, t('new_team.lead_empty', 'Open it empty'), t('new_team.lead_empty_sub', 'Ordinary. Add one whenever you like.')),
-    );
-    leadHost.append(ways);
-    if (!draft.lead) return;
-    const brief = el('input');
-    brief.type = 'text';
-    brief.value = draft.lead.brief;
-    brief.placeholder = t('new_team.lead_brief_placeholder', 'what the lead is for');
-    brief.addEventListener('input', () => { draft.lead.brief = brief.value; });
-    leadHost.append(createField({ label: t('new_team.lead_brief', 'brief'), control: brief }).el);
-    const dials = el('div', 'fs-pair');
-    const cell = (label, values, key) => createField({
-      label, control: mandateSelect(values, draft.lead[key], (value) => { draft.lead[key] = value; paintFoot(); }),
-    }).el;
-    dials.append(cell(t('reach', 'Reach'), REACH, 'reach'), cell(t('recruit', 'Recruit'), RECRUIT, 'recruit'));
-    leadHost.append(dials);
-    // The lead is an Agent, so its Output ticks like an Agent's — the owner's own lead
-    // hands back a plan and the team and explicitly does NOT code, which is one dial
-    // saying three things and cannot be a pick-one.
-    leadHost.append(dialRowMulti(t('output', 'Output'), OUTPUT, draft.lead.output, (value, on) => {
-      draft.lead.output = on ? [...draft.lead.output, value] : draft.lead.output.filter((entry) => entry !== value);
-      paintLead();
-      paintFoot();
-    }));
-  }
-  stepLead.body.append(leadHost);
+  /* ---- step 4 · the team's own agents (js/team-agents.js) ---- */
+  const agents = createAgentRows({
+    n: 4, key: 'lead',
+    rows: () => draft.agents,
+    changed: () => paintFoot(),
+    onToggle: () => toggle('lead'),
+  });
+  const stepLead = agents.step;
 
   /* ---- the collapse rules: a template's answers fold; the header opens them ---- */
   const FOLDS = ['objective', 'where', 'kit', 'lead'];
@@ -401,7 +370,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     kit: () => t('new_team.kit_meta', '{routines} routines · {books} books', {
       routines: onNames().length + 1, books: draft.books.length,
     }),
-    lead: () => (draft.lead ? t('new_team.lead_included', 'included') : t('new_team.lead_none', 'none')),
+    lead: () => t('new_team.agents_meta', '{n} agents', { n: draft.agents.length }),
   };
   function paintFolds() {
     const folded = !!templateRow();
@@ -419,7 +388,9 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
       [t('add_agent.team', 'team'), name],
       [t('team.objective', 'Objective'), draft.objective],
       [t('add_agent.place', 'place'), draft.root ? `${draft.root}${draft.branch ? ` @ ${draft.branch}` : ''}` : ''],
-      [t('new_team.lead', 'Team lead'), draft.lead ? t('new_team.lead_raised', 'included, briefed at raise') : ''],
+      [t('new_team.agents', 'Agents'), draft.agents.some((row) => row.name)
+        ? tagRow(draft.agents.filter((row) => row.name).map((row) => ({ text: row.lead ? `人 ${row.name}` : row.name, on: true })))
+        : ''],
       [t('new_team.members', 'members'), (() => { const em = el('em', null, t('new_team.members_note', 'derived from live tags — never stored here')); return em; })()],
     ]));
     foot.append(el('p', 'fs-head', t('new_team.inherits', 'an agent born here inherits')));
@@ -502,29 +473,42 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
       notice.set('failed', made.message);
       return;
     }
-    // THE SECOND DOOR (§ 7.5): the lead offer becomes one launch, born as the 人. A team
-    // with no lead is ordinary, and a lead that could not be born leaves a raised team —
-    // said out loud, never rolled back (one file deletion undoes the record; a launch is
-    // not a transaction with it).
-    let leadFailed = '';
-    if (draft.lead) {
-      const born = await request('/api/launch', {
+    // THE SECOND DOOR (§ 7.5) WIDENED FROM ONE TO N. It was always "the lead offer becomes
+    // a launch"; the owner has made the lead one row among several, so the same door runs
+    // down the list. A Team with no rows is ordinary and stops here.
+    //
+    // THIS IS THE NAIVE LOOP AND IT IS ON PURPOSE. @team_loader owns the real mechanism —
+    // naming collisions, partial failure, order, undo, idempotence — and should replace
+    // this wholesale. What is here is what the form already did for one row, not a claim
+    // on their package: deleting it would have been a regression, and inventing their
+    // answers would have been worse. Serial so a refusal names the row that caused it; a
+    // row that fails does not stop the ones after it; nothing is rolled back, because one
+    // file deletion undoes the record and a launch is not a transaction with it.
+    const born = [];
+    const refused = [];
+    for (const pick of agentPicks(draft.agents)) {
+      const made = await request('/api/launch', {
         method: 'POST',
         json: {
           session_type: 'cowork_agent',
           team: name,
-          team_lead: true,
-          name: `${name}_lead`,
+          ...(pick.lead ? { team_lead: true } : {}),
+          name: pick.name,
           project_root: draft.root,
-          instructions: draft.lead.brief.trim(),
-          mandate: { reach: draft.lead.reach, recruit: draft.lead.recruit, output: draft.lead.output },
+          instructions: pick.assignment,
+          mandate: pick.mandate,
         },
       });
-      if (!born.ok) leadFailed = born.message;
+      if (made.ok) born.push(pick.name);
+      else refused.push(`${pick.name}: ${made.message}`);
     }
     busy = false;
     raise.setDisabled(false);
-    if (leadFailed) notice.set('warning', t('new_team.raised_no_lead', 'Raised {team} — the lead was not born: {reason}', { team: name, reason: leadFailed }));
+    if (refused.length) {
+      notice.set('warning', t('new_team.raised_partly', 'Raised {team} · {born} born · not born — {refused}', {
+        team: name, born: born.length, refused: refused.join('; '),
+      }));
+    }
     else notice.set('', '');
     reset();
     await created?.(name);
@@ -548,10 +532,10 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
         behaviours: draft.books,
         routines_on: routinesOn,
         routines_off: routinesOff,
-        ...(draft.lead ? {
-          lead_brief: draft.lead.brief.trim(),
-          lead_mandate: `${draft.lead.reach} · ${draft.lead.recruit} · ${draft.lead.output.join(', ')}`,
-        } : {}),
+        ...(() => {
+          const lead = draft.agents.find((row) => row.lead && row.assignment.trim());
+          return lead ? { lead_brief: lead.assignment.trim(), lead_mandate: `${lead.reach} · ${lead.recruit} · ${lead.output.join(', ')}` } : {};
+        })(),
       },
     });
     if (!result.ok) return notice.set('failed', result.message);
@@ -569,13 +553,14 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     draft.objective = '';
     draft.branch = '';
     draft.books = [];
-    draft.lead = null;
+    draft.agents = [];
     draft.expanded = {};
     snapshot = '';
     handRoutines = new Set();
     nameInput.value = '';
+    titleInput.value = '';
+    titleTouched = false;
     objectiveInput.value = '';
-    boardInput.value = '';
     branchInput.value = '';
     applySeed();
     paint();
@@ -614,10 +599,10 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     paintName();
     paintRoots();
     pair.paint();
+    agents.paint();
     paintRoutines();
     paintLaunchMode();
     paintBooks();
-    paintLead();
     paintFolds();
     paintActions();
     paintFoot();

@@ -332,6 +332,15 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.common:** Common instructions
 - **new_team.who_where:** Who and where
 - **new_team.defaults_band:** Everything below this is the default for Agents launched within this team.
+- **new_team.agents:** Agents
+- **new_team.agents_meta:** {n} agents
+- **new_team.agent_name:** name
+- **new_team.agent_assignment:** what this Agent does
+- **new_team.agent_lead_title:** Mark this Agent as the team lead
+- **new_team.agent_more:** Its mandate
+- **new_team.agent_drop:** Remove this Agent
+- **new_team.agent_add:** ＋ Add an Agent
+- **new_team.raised_partly:** Raised {team} · {born} born · not born — {refused}
 - **new_team.where:** Where
 - **new_team.readable:** Title
 - **launch.mode_team:** Team
@@ -427,22 +436,14 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.floor_why:** The launch, campaign and team resolution, the shelf map, the birth receipt.
 - **new_team.floor_tag:** floor
 - **new_team.kit_meta:** {routines} routines · {books} books
-- **new_team.lead:** Team lead
 - **new_team.lead_include:** Include a team lead
 - **new_team.lead_include_sub:** Raised with the team and briefed.
 - **new_team.lead_empty:** Open it empty
 - **new_team.lead_empty_sub:** Ordinary. Add one whenever you like.
-- **new_team.lead_brief:** brief
-- **new_team.lead_brief_placeholder:** what the lead is for
-- **new_team.lead_brief_default:** Hold the objective, dispatch, unblock, keep the gaps closed.
-- **new_team.lead_included:** included
-- **new_team.lead_none:** none
-- **new_team.lead_raised:** included, briefed at raise
 - **new_team.members:** members
 - **new_team.members_note:** derived from live tags — never stored here
 - **new_team.inherits:** an agent born here inherits
 - **new_team.raising:** Raising the team…
-- **new_team.raised_no_lead:** Raised {team} — the lead was not born: {reason}
 - **new_team.save_name_placeholder:** template name
 - **new_team.save_as_new:** Save as new template
 - **new_team.saved_template:** Saved template {name}
