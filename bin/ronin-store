@@ -29,6 +29,7 @@ session_commands|data|session-commands
 bench|data|bench
 telemetry|data|telemetry
 ledger|data|ledger
+message_queue|data|message-queue
 sops|user|sops
 ways|user|ways
 library|user|library

@@ -8,7 +8,7 @@
  */
 import type express from 'express';
 import { type Control, getControl, isValidName, listSessions, sessionExists, teamsInPlay } from '../tmux.js';
-import { sendText } from '../send.js';
+import { attemptMessage, enqueueMessage } from '../message-queue.js';
 import {
   appendPost,
   boardExists,
@@ -129,8 +129,9 @@ async function fanOut(board: string, post: Post, from: string): Promise<Record<s
       results[m.name] = 'not notified (dial is not 🤖) — it gets this on its next check';
       continue;
     }
-    const { started } = await sendText(m.name, notice);
-    results[m.name] = started ? 'notified' : 'the pane did not react';
+    const queued = await enqueueMessage(m.name, notice, 'wipeboard_notice');
+    const retained = await attemptMessage(queued.id, 'safe');
+    results[m.name] = retained ? `queued — ${retained.reason}` : 'notified';
   }
   // Say who was deliberately not told. The poster learning what its post DID is half of
   // why addressing reduces noise rather than just moving it.
@@ -282,8 +283,9 @@ export function registerWipeboards(app: express.Express): void {
             results[m.name] = 'on the team, not notified (dial is not 🤖)';
             continue;
           }
-          const { started } = await sendText(m.name, teamJoinNotice(name, boardPath(name), roll));
-          results[m.name] = started ? 'notified' : 'the pane did not react';
+          const q = await enqueueMessage(m.name, teamJoinNotice(name, boardPath(name), roll), 'wipeboard_notice');
+          const retained = await attemptMessage(q.id, 'safe');
+          results[m.name] = retained ? `queued — ${retained.reason}` : 'notified';
         }
       }
       res.json({ ok: true, id: post.id, results });
@@ -369,8 +371,9 @@ export async function announceTeamChanges(
       const notice = join
         ? teamJoinNotice(t, file, (await boardMembers(t)).map((m) => m.name))
         : teamLeaveNotice(t, file);
-      const { started } = await sendText(session, notice);
-      results[t] = started ? 'notified' : 'the pane did not react';
+      const q = await enqueueMessage(session, notice, 'wipeboard_notice');
+      const retained = await attemptMessage(q.id, 'safe');
+      results[t] = retained ? `queued — ${retained.reason}` : 'notified';
     }
   }
   return results;

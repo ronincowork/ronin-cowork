@@ -92,6 +92,7 @@ learn in order to use Ronin should cost them a second language first.
 | team (`@ronin-tags`) | **Cowork**<!--g:glossary.team--> | The user-facing word for a set of sessions working together. Internally this remains a Team backed by a `team_roster`; Cowork adds no second object. |
 | note (`@ronin_note`) | **Note**<!--g:glossary.note--> | The owner's one line about a session. |
 | — | **Status · Work record · Macros · Detach · Kill session**<!--g:glossary.session_menu--> | The rest of the per-session menu. Already plain. |
+| `message_queue` | **message queue**<!--g:glossary.message_queue--> | Inbound messages waiting to enter sessions. Delivered messages clear immediately; anything stuck remains visible under Messages. |
 
 ## § PROGRESS AND HISTORY
 

@@ -362,23 +362,21 @@ after that; send the owner's words unless he asks you to put it your own way).
 | # | Action | With |
 |---|---|---|
 | 1 | control-check | needs `write` **on the target, not on you**. Dialed `user` or `read`: report the lock and ask the owner to flip THAT tile's dial to 🤖, then wait — NEVER flip it yourself |
-| 2 | send-to-session | `tejun-send <session> <message>` — one call. It re-checks the dial, refuses to overwrite a real draft, sends the text and the Enter separately, and confirms the other agent started. Do not hand-roll the five steps |
+| 2 | send-to-session | `tejun-send <session> <message>` — one call. It re-checks the dial and either delivers safely or retains the message in the durable queue. Do not hand-roll pane writes |
 | 3 | report-outcome | the tool's verdict as it gave it, and what you actually said |
 
 **Say who it is from.** `tejun-send` puts no watermark on the message, so what lands at the
 other prompt looks exactly like the owner typing — open with `from @<your session>:` or the
 agent on the other end answers the wrong person.
 
-Report: the verdict (`DELIVERED` / `DENIED` / `BLOCKED` / `STUCK` / `NO-SESSION`) and the
+Report: the verdict (`DELIVERED` / `QUEUED`) and the
 message you sent, in one short block. **Then stop, and do not wait for a reply** — the
 answer appears in the OTHER session's tile, where the owner reads it himself. Relaying it
 back through here makes this session a switchboard and hides which agent said what.
 
-A refusal is an ANSWER, not an obstacle. `DENIED` means the dial forbids the write and only
-the owner's hand changes that; `BLOCKED` means a human's unsent draft is at that prompt and
-typing over it would destroy their words. Neither is retried, and neither is worked around
-with a bare `tmux send-keys` — going around the shim is a deliberate, visible act and this
-is not an occasion for one.
+A queued result is accepted, not an invitation to work around the queue. Dial locks,
+busy agents, dialogs, and drafts remain visible under Messages until safe delivery can
+proceed; the owner alone may choose Force.
 
 ## read
 - **class:** session_macro.workflow

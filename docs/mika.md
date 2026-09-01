@@ -73,11 +73,10 @@ other session's. At 👤 the request is refused and says so.
 
 A house agent that cannot be silenced by the dial is a house agent that cannot be silenced.
 
-**And it will not type over your draft.** `tejun-send` does the pre-send check and answers
-`BLOCKED` when there is real unsubmitted text at her prompt; `POST /api/sessions/:name/send`
-checks the dial but not the prompt, which is why the tool does not use it. Mika is the
-session you are most likely to be mid-sentence in, which makes her the last one that should
-ever be written to blind.
+**And it will not type over your draft.** `tejun-send` puts the request into the durable
+message queue; safe delivery waits while real unsubmitted text sits at her prompt. Mika is
+the session you are most likely to be mid-sentence in, which makes her the last one that
+should ever be written to blind. The owner can see the retained request under Messages.
 
 **The check is ghost-aware, and that half is what makes it usable.** Claude renders a
 suggested reply at the prompt — the kind you press Tab to accept — in dim text, and there is

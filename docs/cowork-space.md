@@ -155,3 +155,9 @@ New Session, Docs and Wipeboard live in the cowork-space surfaces named above.
 - Implementation of the page as it stands: `docs/team-workspace.md`.
 - The Kit's contract: `docs/workspace-kit.md`.
 - The cowork commons build-out and its open decisions: `ronin-lab wip/buildouts/COWORK_COMMONS.md`.
+# Message delivery
+
+The cowork commons' **Messages** tab shows inbound session messages that have not cleared.
+It is the visible half of the durable delivery flow; see `docs/message-queue.md`. Delivered
+messages disappear, while stuck and failed messages offer **Try Again**, **Force**, and
+**Dismiss**.

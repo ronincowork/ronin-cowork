@@ -39,8 +39,9 @@ that fallback, say explicitly that pane capture was needed because the durable r
 could not answer.
 
 **Message one:** `tejun-send <session> <message...>` — one targeted message, one
-verdict: `DELIVERED` / `DENIED` (dial) / `BLOCKED` (a human's draft at that prompt) /
-`STUCK` / `NO-SESSION`. Open with `from @<your session>:` — the tool adds no watermark,
+verdict: `DELIVERED` or `QUEUED` with the measured reason. A queued message is durable;
+the coworkspace's Messages tab shows it while the mechanical checker waits for a safe
+prompt. Open with `from @<your session>:` — the tool adds no watermark,
 and an unsigned line looks like the owner typing. Report the verdict, then stop: the
 reply appears in the other session's tile. Do not relay. The owner's `+tell:` macro
 rides this tool.

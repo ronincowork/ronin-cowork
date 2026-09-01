@@ -15,8 +15,10 @@ SELF_DIR=$(cd "$(dirname "$0")" && pwd)
 if [ -x "$SELF_DIR/../../vendor/tmux" ]; then
   REAL="$SELF_DIR/../../vendor/tmux"
 else
-  REAL=$(PATH=$(printf '%s' "$PATH" | tr ':' '\n' | grep -vxF "$SELF_DIR" | paste -sd:) command -v tmux)
-  [ -n "${REAL:-}" ] || REAL=/usr/bin/tmux
+  # Session command projections may contain a symlink back to THIS shim. A PATH search
+  # that removes only SELF_DIR then finds that alias and recurses forever. The checkout
+  # fallback is the host binary; releases take the bundled branch above.
+  REAL=/usr/bin/tmux
 fi
 args="$*"
 

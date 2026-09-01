@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `behaviour.*` may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1421 keys · 58 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1429 keys · 59 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## add_agent
 
@@ -177,7 +177,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `campaign_view.kind_help` | The default kind of work for a new Cowork or project here. Nothing reads it yet. |  |  |  |  |
 | `campaign_view.lexicon` | Lexicon |  |  |  |  |
 | `campaign_view.lexicon_help` | The words. Held to one lexicon for now, so nothing on this page is offered. |  |  |  |  |
-| `campaign_view.machine_summary` | The rest of the desk: Desk · Account · Archived · Help desk · Keypad. |  |  |  |  |
+| `campaign_view.machine_summary` | The rest of the desk: Desk · Account · Archived · Messages · Help desk · Keypad. |  |  |  |  |
 | `campaign_view.model_default` | Default model |  |  |  |  |
 | `campaign_view.name_help` | On the door, the browser tab and the address. |  |  |  |  |
 | `campaign_view.new_project_desks` | New projects use desks? |  |  |  |  |
@@ -286,6 +286,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `cowork.tab_health` | Desk |  |  |  |  |
 | `cowork.tab_help` | Help desk |  |  |  |  |
 | `cowork.tab_keypad` | Keypad |  |  |  |  |
+| `cowork.tab_messages` | Messages |  |  |  |  |
 | `cowork.tab_profile` | Desk profile |  |  |  |  |
 | `cowork.tab_roots` | Project roots |  |  |  |  |
 | `cowork.tab_roster` | Roster |  |  |  |  |
@@ -610,6 +611,7 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `glossary.macros` | macros |  |  |  |  |
 | `glossary.mandate` | mandate |  |  |  |  |
 | `glossary.memory` | memory |  |  |  |  |
+| `glossary.message_queue` | message queue |  |  |  |  |
 | `glossary.new_session` | new session |  |  |  |  |
 | `glossary.note` | Note |  |  |  |  |
 | `glossary.output` | Output |  |  |  |  |
@@ -880,6 +882,17 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `me.note` | Note |  |  |  |  |
 | `me.status` | Status |  |  |  |  |
 | `me.title` | This session — status, work record, macros, groups, docs, note, control |  |  |  |  |
+
+## messages
+
+| key | professional_en | home_en | league_en | terminal_en | vibe_code_en |
+|---|---|---|---|---|---|
+| `messages.dismiss` | Dismiss |  |  |  |  |
+| `messages.empty` | No messages are waiting. |  |  |  |  |
+| `messages.force` | Force |  |  |  |  |
+| `messages.meta` | {source} · {attempts} attempts |  |  |  |  |
+| `messages.retry` | Try Again |  |  |  |  |
+| `messages.to` | To {target} |  |  |  |  |
 
 ## new_agent
 
