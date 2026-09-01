@@ -2,10 +2,12 @@
 /**
  * TERMVIEW — the 🔒 locked view: the untouched `tmux attach` mirror.
  *
- * tmux paints a fixed screen and the scrollback stays server-side (copy-mode is a
- * Faucet A painting, so scrolling round-trips). This is Locked, it works, and RIREKI
- * does not touch it — the scroll saga's settled boundary, and the reason this module
- * is deliberately thin: it wraps xterm and nothing else.
+ * tmux paints a fixed screen; scroll-back is LOCAL since viewer mouse went off
+ * (2026-09-01) — xterm keeps a 30,000-line buffer of what streamed through, the wheel
+ * scrolls it, and the ↓ latest pill (wireJumpPill) is the way home. tmux copy-mode is
+ * no longer entered from a tile. This is Locked, it works, and RIREKI does not touch
+ * it — the scroll saga's settled boundary, and the reason this module is deliberately
+ * thin: it wraps xterm and nothing else.
  *
  * The other view is `tapeview.js`, which reads the tape and never touches tmux at all.
  * The tile composes one or the other; neither knows the other exists.
@@ -144,12 +146,13 @@ export class TermView {
   /**
    * DESKTOP ONLY: catch the drag that was meant to be a copy, and say the key.
    *
-   * The failure this exists for is silent and looks like success. A locked tile is a live
-   * TUI with tmux `mouse on`, so a plain drag is forwarded as mouse escapes: tmux enters
-   * copy-mode, highlights, and copies to the paste buffer ON THE HOST. The browser never
-   * saw a selection and the laptop's clipboard is untouched, but the user watched text
-   * highlight under their cursor, so they press ⌘C, get whatever was there before, and
-   * conclude that copying is broken. Nothing on screen ever mentions the modifier.
+   * The failure this exists for is silent and looks like success. When the app in a
+   * locked tile holds mouse tracking (Claude Code's TUI does), a plain drag is forwarded
+   * as mouse escapes the APP consumes: the browser never saw a selection and the
+   * laptop's clipboard is untouched, but the user watched text respond under their
+   * cursor, so they press ⌘C, get whatever was there before, and conclude that copying
+   * is broken. Nothing on screen ever mentions the modifier. (tmux's own copy-mode grab
+   * of the drag is gone with viewer mouse off, 2026-09-01; the app-side grab remains.)
    *
    * THE TEST IS "THEY TRIED AND GOT NOTHING", not "is mouse reporting on". A real drag
    * that leaves `getSelection()` empty is the honest condition: it fires for tmux mouse
