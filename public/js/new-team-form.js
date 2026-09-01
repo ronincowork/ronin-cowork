@@ -45,7 +45,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;
 
   const draft = {
-    template: '', templateName: '',
+    template: '', templateName: '', title: '',
     name: '', kind: 'coding', objective: '',
     root: '', branch: '',
     provider: '', model: '', reach: 'open', recruit: 'open', output: 'open',
@@ -95,7 +95,22 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     draft.template = name;
     draft.expanded = {};
     const row = templateRow();
-    if (!row) { snapshot = ''; paint(); return; }
+    // MAKE YOUR OWN EMPTIES THE FORM (owner, 2026-09-01: "if you select a template and
+    // then you go back to make your own, it leaves the template entries there… it should
+    // clear the entries below"). Back to the campaign's own answers, not to nothing — the
+    // seeded defaults are what an untouched form holds. Your name, title, kind and place
+    // are yours and are left alone.
+    if (!row) {
+      draft.objective = '';
+      objectiveInput.value = '';
+      draft.books = [];
+      draft.routines = { ...seedRoutines };
+      draft.lead = null;
+      for (const key of ['reach', 'recruit', 'output']) draft[key] = seed?.seeds?.[key]?.value || 'open';
+      snapshot = '';
+      paint();
+      return;
+    }
     if (row.objective) { draft.objective = row.objective; objectiveInput.value = row.objective; }
     if (row.behaviours.length) draft.books = [...row.behaviours];
     for (const on of row.routines_on) if (on in draft.routines) draft.routines[on] = true;
@@ -134,8 +149,9 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     }
     draft.name = nameInput.value;
     paintName();
+    paintTitle();
     paintFoot();
-    paintActions(); // Raise wakes on the first character of a name
+    paintActions(); // Launch wakes on the first character of a name
   });
   // Settle the name when the owner leaves the field: a trailing separator is legal to
   // TYPE and wrong to CREATE (new-team-draft.js has the whole argument).
@@ -144,11 +160,29 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     if (settled !== nameInput.value) nameInput.value = settled;
     draft.name = settled;
     paintName();
+    paintTitle();
     paintFoot();
   });
   // No spelling rule under the field: the input enforces it as you type, so a sentence
   // describing it only tells you what you can already see happening (owner, 2026-09-01).
   const nameField = createField({ label: t('new_team.name', 'Team name'), control: nameInput });
+  // THE TITLE IS DERIVED UNTIL YOU TOUCH IT (owner, 2026-09-01: "I believe it is
+  // auto-populated. Then someone could change if they wanted."). Same rule as every other
+  // seeded value on these forms: the default lands, the hand has the last word.
+  let titleTouched = false;
+  const titleInput = el('input');
+  titleInput.type = 'text';
+  titleInput.spellcheck = false;
+  titleInput.addEventListener('input', () => { draft.title = titleInput.value; titleTouched = true; paintFoot(); });
+  const titleField = createField({ label: t('new_team.readable', 'Title'), control: titleInput });
+  const derivedTitle = () => finalizeTeamName(draft.name).split(/[_-]+/).filter(Boolean)
+    .map((part) => part[0].toUpperCase() + part.slice(1)).join(' ');
+  const paintTitle = () => {
+    if (!titleTouched) draft.title = derivedTitle();
+    if (titleInput.value !== draft.title) titleInput.value = draft.title;
+  };
+  const topPair = el('div', 'fs-pair');
+  topPair.append(nameField.el, titleField.el);
   const paintName = () => {
     const settled = finalizeTeamName(draft.name);
     if (!settled) return nameField.setValidation('', '');
@@ -164,10 +198,13 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
       paint();
     }));
   }
-  stepTop.body.append(nameField.el, kindHost);
+  stepTop.body.append(topPair, kindHost);
 
   /* ---- step 3 · Objective ---- */
-  const stepObjective = createStep({ n: 3, key: 'objective', title: t('team.objective', 'Objective'), onToggle: () => toggle('objective') });
+  /* Owner, 2026-09-01: "this is just all extra stuff you can pass on to every agent in a
+     team." The objective is the half already DELIVERED — `src/spawn.ts` writes it into
+     every newborn's brief by name. */
+  const stepObjective = createStep({ n: 3, key: 'objective', title: t('new_team.common', 'Common instructions'), onToggle: () => toggle('objective') });
   const objectiveInput = el('textarea');
   objectiveInput.rows = 3;
   objectiveInput.placeholder = t('new_team.objective_placeholder', 'what this team is for');
@@ -175,7 +212,16 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   stepObjective.body.append(createField({ label: t('team.objective', 'Objective'), control: objectiveInput }).el);
 
   /* ---- step 4 · Where ---- */
-  const stepWhere = createStep({ n: 4, key: 'where', title: t('new_team.where', 'Where'), onToggle: () => toggle('where') });
+  /* Owner, 2026-09-01: "combine the model provider and model with project root and branch
+     into one section because that's really what we're doing. We're saying open codecs in
+     the lab root… It will access whatever the fuck it wants." Where it OPENS, not where
+     it is confined. */
+  const stepWhere = createStep({ n: 4, key: 'where', title: t('new_team.who_where', 'Who and where'), onToggle: () => toggle('where') });
+  const pair = providerModelPair(
+    () => ({ provider: draft.provider, model: draft.model }),
+    (provider, model) => { draft.provider = provider; draft.model = model; paintFoot(); },
+    (label, control) => createField({ label, control }).el,
+  );
   const rootSelect = el('select');
   rootSelect.addEventListener('change', () => { draft.root = rootSelect.value; paintFoot(); });
   const branchInput = el('input');
@@ -191,7 +237,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   // NO WIPEBOARD FIELD (owner, 2026-09-01): "the wipeboard is automatically configured…
   // no one ever even sees the fucking name." The store already defaults it to the team's
   // own token, so the form asks nothing and sends nothing.
-  stepWhere.body.append(wherePair);
+  stepWhere.body.append(pair.el, wherePair);
   function paintRoots() {
     rootSelect.replaceChildren();
     rootSelect.add(new Option(t('new_team.root_default', '— the box’s default —'), ''));
@@ -201,11 +247,6 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
 
   /* ---- step 5 · Team kit ---- */
   const stepKit = createStep({ n: 5, key: 'kit', title: t('team_kit', 'Shared toolkit'), onToggle: () => toggle('kit') });
-  const pair = providerModelPair(
-    () => ({ provider: draft.provider, model: draft.model }),
-    (provider, model) => { draft.provider = provider; draft.model = model; paintFoot(); },
-    (label, control) => createField({ label, control }).el,
-  );
   // NO MANDATE ON A TEAM (owner, 2026-09-01): "this is kind of a dumb thing for every
   // agent to inherit from its team. It's going to be very agent-specific anyway, and I
   // think open is the only natural thing." Reach, recruit and output stay `open` in the
@@ -213,12 +254,12 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   //
   // NO CONTROL DIAL EITHER: "I want to kill it visually, even if the plumbing is still
   // there." The record keeps its field; the form stops offering it.
-  const dialsRow2 = el('div', 'fs-pair');
-  const permissionsInput = el('input');
-  permissionsInput.type = 'text';
-  permissionsInput.spellcheck = false;
-  permissionsInput.addEventListener('input', () => { draft.permissions = permissionsInput.value.trim() || 'default'; });
-  dialsRow2.append(createField({ label: t('permissions', 'Permissions'), control: permissionsInput }).el);
+  // NO PERMISSIONS FIELD (owner, 2026-09-01: "permissions just look like something to
+  // confuse a user because they have no idea what that is"). He is right, and it is worse
+  // than confusing: it names the provider CLI's approval mode, every launch-table cell
+  // already carries `--dangerously-bypass-approvals-and-sandbox` hardcoded, and nothing
+  // in `src/spawn.ts` reads the field to change a command. It is stored and attributed
+  // and delivered nowhere. Raised with the lead; the record keeps its default.
   const routinesHead = el('p', 'fs-head', t('routines', 'Routines'));
   const routinesHost = el('div');
   function paintRoutines() {
@@ -270,7 +311,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     door.title = t('new_team.kit_door_why', 'A workbench of its own: browse every routine and behaviour, read them, and make them yours. Not yet built.');
     booksHost.append(door);
   }
-  stepKit.body.append(pair.el, dialsRow2, routinesHead, routinesHost, booksHead, booksHost);
+  stepKit.body.append(routinesHead, routinesHost, booksHead, booksHost);
 
   /* ---- step 6 · Team lead ---- */
   const stepLead = createStep({ n: 6, key: 'lead', title: t('new_team.lead', 'Team lead'), onToggle: () => toggle('lead') });
@@ -376,8 +417,13 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     save.setDisabled(!saveName.value.trim());
   });
   const save = createAction({ label: t('save_template', 'Save as template'), disabled: true, action: () => void doSave() });
-  const actions = createActionBar({ label: t('new_team.team_actions', 'Team actions') });
-  actions.el.append(saveName, save.el);
+  // SAVE AS TEMPLATE SITS UNDER THE BLOCK IT SAVES (owner, 2026-09-01): "you're saving
+  // that block as a configuration that you want to use over."
+  const saveRow = createActionBar({ label: t('new_team.team_actions', 'Team actions') });
+  saveRow.el.append(saveName, save.el);
+  // Appended here, not at the kit step's own mount: `saveRow` is declared below it, and
+  // reaching back for it there is a TDZ error that kills the whole form on construction.
+  stepKit.body.append(saveRow.el);
   function paintActions() {
     // ONE WORD FOR STARTING ANYTHING (owner, 2026-09-01): "I want launch to be the
     // keyword everywhere for starting a new team and starting a new agent." Grey while
@@ -395,6 +441,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
 
   const rosterBody = (name) => ({
     name,
+    title: draft.title.trim(),
     kind: draft.kind,
     objective: draft.objective.trim(),
     project_root: draft.root,
@@ -404,7 +451,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     agent_defaults: {
       provider: draft.provider, model: draft.model,
       reach: draft.reach, recruit: draft.recruit, output: draft.output,
-      dial: draft.dial, permissions: draft.permissions,
+      dial: draft.dial,
     },
   });
 
@@ -518,7 +565,6 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     seedRoutines = Object.fromEntries((seed.routines || []).map((row) => [row.name, row.on]));
     draft.routines = { ...seedRoutines };
     branchInput.value = draft.branch;
-    permissionsInput.value = draft.permissions === 'default' ? '' : draft.permissions;
   }
 
   function paint() {
@@ -538,7 +584,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
 
   const form = el('div', 'ntf-form');
   form.append(stepTop.el, stepTemplate.el, stepObjective.el, stepWhere.el, stepKit.el, stepLead.el);
-  surface.content.append(form, actions.el, notice.el, foot);
+  surface.content.append(form, notice.el, foot);
 
   return {
     el: surface.el,

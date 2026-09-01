@@ -302,6 +302,10 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **launch.new_agent:** New Agent
 - **launch.new_agent_summary:** Start an Agent in a Team or on its own.
 - **forms.launch:** Launch
+- **new_team.common:** Common instructions
+- **new_team.who_where:** Who and where
+- **new_team.where:** Where
+- **new_team.readable:** Title
 - **launch.mode_team:** Team
 - **launch.mode_agent:** Agent
 
@@ -391,7 +395,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.name_kind:** Name & kind
 - **new_team.name_placeholder:** lowercase, digits, - _
 - **new_team.objective_placeholder:** what this team is for
-- **new_team.where:** Where
 - **new_team.floor:** Cowork floor
 - **new_team.floor_why:** The launch, campaign and team resolution, the shelf map, the birth receipt.
 - **new_team.floor_tag:** floor
