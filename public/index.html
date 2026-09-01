@@ -29,6 +29,13 @@
         if (t === 'light') document.documentElement.dataset.theme = 'light';
       } catch (e) {}
     </script>
+    <!-- THE BOOT VEIL, inline so it cannot lose the race it exists to win (owner,
+         2026-09-01: the first visit "paints light for a beat, then corrects"). It lived
+         in workspace-kit.css, which JS injects late — so on exactly the cold first
+         visit whose theme cache is also empty, the page painted unveiled in the wrong
+         shell before the veil's own stylesheet had arrived. main.js lifts it after the
+         desk profile (the served theme) and skin have resolved. -->
+    <style>:root.boot-pending body { visibility: hidden; }</style>
     <!-- xterm.css rides inside style.css now (@import into the lowest cascade layer,
          still the absolute /vendor path shared by live and staging) so every app rule
          outranks vendor rules by layer order rather than by accident of load order. -->
