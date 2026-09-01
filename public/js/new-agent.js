@@ -40,7 +40,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;
 
   const draft = {
-    door: 'template', type: 'cowork_agent', template: '', templateName: '',
+    type: 'cowork_agent', template: '', templateName: '',
     name: '', kind: 'coding', kindTouched: false, provider: '', model: '', instructions: '',
     teamMode: 'new', team: '', newTeam: '',
     reach: 'open', recruit: 'open', output: 'open',
@@ -63,7 +63,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
    * DISABLED until a name is typed, which is the form teaching its own rule: the name is
    * the only required field (SETTLING § 1, RULE TWO) and everything under it is optional. */
   const start = createAction({
-    label: t('add_agent.start', 'Start'),
+    label: t('forms.launch', 'Launch'),
     size: 'compact',
     disabled: true,
     action: () => void doStart(),
@@ -77,22 +77,8 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   const offered = () => (draft.kind === 'open' ? templates : templates.filter((row) => row.kinds.includes(draft.kind)));
   const chosenTeam = () => (draft.teamMode === 'existing' ? draft.team : draft.teamMode === 'new' ? finalizeTeamName(draft.newTeam) : '');
 
-  /* ---- the two doors ---- */
-  const seg = el('div', 'fs-seg');
-  const doorButton = (door, label) => {
-    const button = el('button', null, label);
-    button.type = 'button';
-    button.addEventListener('click', () => {
-      if (draft.door === door) return;
-      draft.door = door;
-      if (door === 'manual') { draft.template = ''; snapshot = ''; draft.expanded = {}; }
-      paint();
-    });
-    seg.append(button);
-    return button;
-  };
-  const templateDoor = doorButton('template', t('template', 'Template'));
-  const manualDoor = doorButton('manual', t('forms.manual', 'Manual'));
+  // NO TEMPLATE | MANUAL SWITCHER (owner, 2026-09-01). The tray is a step like any other
+  // and "Make your own" is the manual door; a mode switch above the form said it twice.
 
   /* ---- 1 · New session ---- */
   const stepType = createStep({ n: 1, key: 'type', title: t('new_agent.new_session', 'New session') });
@@ -145,7 +131,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   function paintKinds() {
     // THE KIND IS THE TRAY'S FILTER and only a Cowork Agent has one; Manual has no tray
     // to filter, so it does not ask (the drawing's own rule).
-    kindHost.hidden = !(isCowork() && draft.door === 'template');
+    kindHost.hidden = !isCowork();
     if (kindHost.hidden) return;
     kindHost.replaceChildren(kindTiles(draft.kind, (key) => {
       draft.kind = key;
@@ -349,9 +335,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   const plan = () => {
     if (draft.type === 'terminal') return ['type', 'top', 'team'];
     if (draft.type === 'bare_metal_agent') return ['type', 'top', 'instructions', 'team'];
-    return draft.door === 'manual'
-      ? ['type', 'top', 'instructions', 'team', 'where', 'mandate', 'loadout']
-      : ['type', 'top', 'template', 'instructions', 'team', 'where', 'mandate', 'loadout'];
+    return ['type', 'top', 'template', 'instructions', 'team', 'where', 'mandate', 'loadout'];
   };
   const FOLDS = ['instructions', 'team', 'where', 'mandate', 'loadout'];
   function toggle(key) {
@@ -385,7 +369,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
       [t('squad', 'Team'), draft.teamMode === 'none' || !chosenTeam() ? '' : chosenTeam() + (draft.teamMode === 'new' ? `  ${t('new_agent.created_first', '(created first)')}` : '')],
     ];
     if (isCowork()) {
-      if (draft.door === 'template') rows.push([t('kind', 'Kind'), draft.kind]);
+      rows.push([t('kind', 'Kind'), draft.kind]);
       rows.push([t('mandate', 'Mandate'), `${draft.reach} · ${draft.recruit} · ${draft.output}`]);
     }
     rows.push([t('routines', 'Routines'), draft.type === 'terminal'
@@ -419,10 +403,11 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   function paintActions() {
     // The button says what the press will DO: with the name blank there is no team to
     // create, so it must not promise one.
-    start.setDisabled(!draft.name.trim());
-    start.el.textContent = draft.teamMode === 'new' && isCowork() && chosenTeam()
-      ? t('new_agent.create_and_start', 'Create the team and start')
-      : draft.type === 'terminal' ? t('new_agent.open_terminal', 'Open the terminal') : t('add_agent.start', 'Start');
+    // ONE WORD FOR STARTING ANYTHING (owner, 2026-09-01), and the go colour when it can go.
+    const ready = !!draft.name.trim();
+    start.setDisabled(!ready);
+    if (ready) start.el.dataset.kind = 'primary';
+    else delete start.el.dataset.kind;
     const offer = isCowork() && (!templateRow() || templateDirty());
     saveName.hidden = !offer;
     save.el.hidden = !offer;
@@ -534,14 +519,12 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   }
 
   function paint() {
-    for (const button of [templateDoor, manualDoor]) button.setAttribute('aria-pressed', String(button === (draft.door === 'template' ? templateDoor : manualDoor)));
-    seg.hidden = !isCowork();
     const order = plan();
     for (const [key, step] of Object.entries(steps)) step.el.hidden = !order.includes(key);
     order.forEach((key, index) => steps[key].setNumber(index + 1));
     stepTop.el.querySelector('h3').textContent = !isCowork()
       ? (hasAgent() ? t('new_agent.name_where_model', 'Name, where & model') : t('new_agent.name_where', 'Name & where'))
-      : (draft.door === 'template' ? t('new_agent.name_model_kind', 'Name, model & kind') : t('new_agent.name_model', 'Name & model'));
+      : t('new_agent.name_model_kind', 'Name, model & kind');
     // The lean types fold the where step into the top block — the drawing's one-block
     // geometry: who it is, then where it runs. Moving the field keeps its typed state.
     topRight.hidden = !hasAgent();
@@ -563,7 +546,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   }
 
   const form = el('div', 'ntf-form');
-  form.append(seg, stepType.el, stepTop.el, stepTemplate.el, stepInstructions.el, stepTeam.el, stepWhere.el, stepMandate.el, stepLoadout.el);
+  form.append(stepType.el, stepTop.el, stepTemplate.el, stepInstructions.el, stepTeam.el, stepWhere.el, stepMandate.el, stepLoadout.el);
   surface.content.append(form, actions.el, notice.el, foot);
 
   /**

@@ -301,6 +301,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **launch.new_team_summary:** Define a Team, then launch its Agents.
 - **launch.new_agent:** New Agent
 - **launch.new_agent_summary:** Start an Agent in a Team or on its own.
+- **forms.launch:** Launch
 - **launch.mode_team:** Team
 - **launch.mode_agent:** Agent
 
@@ -412,8 +413,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.members:** members
 - **new_team.members_note:** derived from live tags — never stored here
 - **new_team.inherits:** an agent born here inherits
-- **new_team.raise:** Raise the team
-- **new_team.raise_lead:** Raise the team and its lead
 - **new_team.raising:** Raising the team…
 - **new_team.raised_no_lead:** Raised {team} — the lead was not born: {reason}
 - **new_team.save_name_placeholder:** template name
@@ -421,7 +420,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.saved_template:** Saved template {name}
 
 ## forms — form-steps.js (the drawn form idiom shared by New Team and New Agent)
-- **forms.manual:** Manual
 - **forms.own:** Make your own
 - **forms.own_blurb:** Fresh and empty. Fill it in yourself.
 - **forms.library:** From the Ronin library
@@ -470,8 +468,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_agent.routines_terminal:** agent: none — a pane
 - **new_agent.routines_bare:** no floor, no routines
 - **new_agent.blank_note:** A blank field is an answer, not a gap.
-- **new_agent.create_and_start:** Create the team and start
-- **new_agent.open_terminal:** Open the terminal
 
 ## team_wipeboard — team-wipeboard.js (the team wipeboard channel on the Team page)
 - **team_wipeboard.placeholder:** say something to the team — every member is interrupted

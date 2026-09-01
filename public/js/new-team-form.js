@@ -45,7 +45,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;
 
   const draft = {
-    door: 'template', template: '', templateName: '',
+    template: '', templateName: '',
     name: '', kind: 'coding', objective: '',
     root: '', branch: '',
     provider: '', model: '', reach: 'open', recruit: 'open', output: 'open',
@@ -68,7 +68,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
    * rather than a slab at the foot of a long scroll — asleep until a team name is typed,
    * because the name is the only required field and everything under it is optional. */
   const raise = createAction({
-    label: t('new_team.raise', 'Raise the team'),
+    label: t('forms.launch', 'Launch'),
     size: 'compact',
     disabled: true,
     action: () => void doRaise(),
@@ -76,23 +76,9 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   const surface = createSurface({ label: t('new_team.title', 'New Team'), className: 'ntf-surface', actions: [raise] });
   const notice = createNotice();
 
-  /* ---- the two doors ---- */
-  const seg = el('div', 'fs-seg');
-  const doorButton = (door, label) => {
-    const button = el('button', null, label);
-    button.type = 'button';
-    button.addEventListener('click', () => {
-      if (draft.door === door) return;
-      draft.door = door;
-      // Manual has no tray, so nothing is template-filled and nothing stays folded.
-      if (door === 'manual') { draft.template = ''; snapshot = ''; draft.expanded = {}; }
-      paint();
-    });
-    seg.append(button);
-    return button;
-  };
-  const templateDoor = doorButton('template', t('template', 'Template'));
-  const manualDoor = doorButton('manual', t('forms.manual', 'Manual'));
+  // NO TEMPLATE | MANUAL SWITCHER (owner, 2026-09-01). The tray is a step like any other
+  // and "Make your own" is the manual door; a mode switch above the form was a second way
+  // to say the same thing.
 
   const templateRow = () => templates.find((row) => row.name === draft.template) || null;
   const offered = () => (draft.kind === 'open' ? templates : templates.filter((row) => row.kinds.includes(draft.kind)));
@@ -220,26 +206,19 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     (provider, model) => { draft.provider = provider; draft.model = model; paintFoot(); },
     (label, control) => createField({ label, control }).el,
   );
-  const dialsRow = el('div', 'fs-pair');
-  const dialCell = (label, values, key) => createField({
-    label, control: mandateSelect(values, draft[key], (value) => { draft[key] = value; paintFoot(); }),
-  }).el;
-  dialsRow.append(
-    dialCell(t('reach', 'Reach'), REACH, 'reach'),
-    dialCell(t('recruit', 'Recruit'), RECRUIT, 'recruit'),
-    dialCell(t('output', 'Output'), OUTPUT, 'output'),
-  );
-  // Dial and permissions are agent_defaults now (§ 7.2, amended 2026-08-31) — a stored
-  // default lands in a form the owner presses, so the hand on the dial is still theirs.
+  // NO MANDATE ON A TEAM (owner, 2026-09-01): "this is kind of a dumb thing for every
+  // agent to inherit from its team. It's going to be very agent-specific anyway, and I
+  // think open is the only natural thing." Reach, recruit and output stay `open` in the
+  // record and are asked once, on the Agent, where they mean something.
+  //
+  // NO CONTROL DIAL EITHER: "I want to kill it visually, even if the plumbing is still
+  // there." The record keeps its field; the form stops offering it.
   const dialsRow2 = el('div', 'fs-pair');
   const permissionsInput = el('input');
   permissionsInput.type = 'text';
   permissionsInput.spellcheck = false;
   permissionsInput.addEventListener('input', () => { draft.permissions = permissionsInput.value.trim() || 'default'; });
-  dialsRow2.append(
-    dialCell(t('team_config.dial', 'Control'), DIALS, 'dial'),
-    createField({ label: t('permissions', 'Permissions'), control: permissionsInput }).el,
-  );
+  dialsRow2.append(createField({ label: t('permissions', 'Permissions'), control: permissionsInput }).el);
   const routinesHead = el('p', 'fs-head', t('routines', 'Routines'));
   const routinesHost = el('div');
   function paintRoutines() {
@@ -291,7 +270,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     door.title = t('new_team.kit_door_why', 'A workbench of its own: browse every routine and behaviour, read them, and make them yours. Not yet built.');
     booksHost.append(door);
   }
-  stepKit.body.append(pair.el, dialsRow, dialsRow2, routinesHead, routinesHost, booksHead, booksHost);
+  stepKit.body.append(pair.el, dialsRow2, routinesHead, routinesHost, booksHead, booksHost);
 
   /* ---- step 6 · Team lead ---- */
   const stepLead = createStep({ n: 6, key: 'lead', title: t('new_team.lead', 'Team lead'), onToggle: () => toggle('lead') });
@@ -345,9 +324,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   // template first offered all fifteen tiles and then quietly dropped the pick when a
   // later kind excluded it. New Agent already asked in this order; the two forms agree.
   // One list, read by the form's numbering AND by the Launch selector's outline.
-  const plan = () => (draft.door === 'manual'
-    ? ['top', 'objective', 'where', 'kit', 'lead']
-    : ['top', 'template', 'objective', 'where', 'kit', 'lead']);
+  const plan = () => ['top', 'template', 'objective', 'where', 'kit', 'lead'];
   const meta = {
     objective: () => draft.objective.slice(0, 40),
     where: () => `${draft.root || t('new_team.root_default', '— the box’s default —')} @ ${draft.branch || '—'}`,
@@ -402,8 +379,13 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   const actions = createActionBar({ label: t('new_team.team_actions', 'Team actions') });
   actions.el.append(saveName, save.el);
   function paintActions() {
-    raise.setDisabled(!finalizeTeamName(draft.name));
-    raise.el.textContent = draft.lead ? t('new_team.raise_lead', 'Raise the team and its lead') : t('new_team.raise', 'Raise the team');
+    // ONE WORD FOR STARTING ANYTHING (owner, 2026-09-01): "I want launch to be the
+    // keyword everywhere for starting a new team and starting a new agent." Grey while
+    // there is no name, kaki — the house's go colour — the moment there is one.
+    const ready = !!finalizeTeamName(draft.name);
+    raise.setDisabled(!ready);
+    if (ready) raise.el.dataset.kind = 'primary';
+    else delete raise.el.dataset.kind;
     const own = !templateRow();
     const dirty = templateDirty();
     saveName.hidden = !(own || dirty);
@@ -540,8 +522,6 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   }
 
   function paint() {
-    for (const button of [templateDoor, manualDoor]) button.setAttribute('aria-pressed', String(button === (draft.door === 'template' ? templateDoor : manualDoor)));
-    stepTemplate.el.hidden = draft.door === 'manual';
     plan().forEach((key, index) => steps[key].setNumber(index + 1));
     paintTray();
     paintKinds();
@@ -557,7 +537,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   }
 
   const form = el('div', 'ntf-form');
-  form.append(seg, stepTop.el, stepTemplate.el, stepObjective.el, stepWhere.el, stepKit.el, stepLead.el);
+  form.append(stepTop.el, stepTemplate.el, stepObjective.el, stepWhere.el, stepKit.el, stepLead.el);
   surface.content.append(form, actions.el, notice.el, foot);
 
   return {
