@@ -1,6 +1,6 @@
 # CONTROL TEST PROTOCOLS — repository development
 
-This reading belongs to the **Ronin Control** Routine. It is the repository-development
+This reading belongs to the **Ronin Worktrees** Routine. It is the repository-development
 half of `docs/test-protocols.md`. During the transition to effective-Routine startup
 reading, `all/TEST_PROTOCOLS.md` remains the compatibility copy.
 

@@ -32,7 +32,7 @@ Every referenced stock item must exist. The manifest owns membership: do not als
 on/off choices.
 
 `requires` expresses the additive Routine progression, never a list of component-level
-dependencies. Selecting a Routine also selects every Routine it requires. Ronin Control
+dependencies. Selecting a Routine also selects every Routine it requires. Ronin Worktrees
 requires Ronin Base; it does not require optional Ronin Services.
 
 An unavailable enabled Routine never refuses birth. Its available result is empty or

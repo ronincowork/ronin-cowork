@@ -127,7 +127,7 @@ export interface SpawnForm {
   reference?: string;
   /**
    * THE DESK CONTROL of the launch box — *own desk · plain root* — pre-answered: absent
-   * means by the resolved Ronin Control Routine;
+   * means by the resolved Ronin Worktrees Routine;
    * `own` asks for one regardless, `none` refuses one. Ignored for a plain terminal.
    */
   desk?: DeskChoice;

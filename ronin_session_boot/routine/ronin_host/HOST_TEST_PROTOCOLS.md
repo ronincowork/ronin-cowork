@@ -11,7 +11,7 @@ run the installed-box verdict:
 bin/ronin-byoin
 ```
 
-This is separate from Ronin Control's repository-development cadence. Repository checks
+This is separate from Ronin Worktrees' repository-development cadence. Repository checks
 prove the installed checkout; `ronin-doctor`, `byoin_user_check`, and store readouts prove
 the machine and that user customization still surfaces. An empty or absent user store is
 valid.

@@ -53,7 +53,7 @@ export function renderTeamConfiguration(host, roster, optionsArg = {}) {
     const routineMap = completeTeamRoutineMap(routines, roster.routines);
     // THE KIT AS SELECTED (dev 3d920e2), kept beside the editable map below: what an
     // Agent born here is equipped with, in one line, in the catalog's own owner-facing
-    // labels (`ronin_control` reads "Managed file coordination"). The floor is not a
+    // labels (`ronin_worktrees` reads "Ronin Worktrees"). The floor is not a
     // switch and is not listed; with nothing on above it, the honest answer is the
     // floor alone.
     const kitOn = routines.filter((routine) => routineMap[routine.name]).map((routine) => routine.label || routine.name);

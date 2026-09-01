@@ -132,7 +132,7 @@ export const FRESH_CAMPAIGNS: ReadonlyArray<CampaignEdit & { id: string }> = Obj
 ]);
 
 export type SetupKind = 'open' | 'coding' | 'work' | 'personal' | 'household' | 'social' | 'school';
-export type SetupRoutineBundle = 'nothing' | 'floor' | 'base' | 'control' | 'services';
+export type SetupRoutineBundle = 'nothing' | 'floor' | 'base' | 'worktrees' | 'services';
 
 const KIND_BEHAVIOURS: Record<SetupKind, string[]> = {
   open: [],
@@ -169,9 +169,9 @@ export async function populateHomeMachine(input: {
   });
   const kind = (['open', 'coding', 'work', 'personal', 'household', 'social', 'school'] as const)
     .includes(input.kind as SetupKind) ? input.kind as SetupKind : 'open';
-  const bundle = (['nothing', 'floor', 'base', 'control', 'services'] as const)
+  const bundle = (['nothing', 'floor', 'base', 'worktrees', 'services'] as const)
     .includes(input.routine_bundle as SetupRoutineBundle)
-    ? input.routine_bundle as SetupRoutineBundle : 'control';
+    ? input.routine_bundle as SetupRoutineBundle : 'worktrees';
   const { readDefinitions } = await import('./definitions.js');
   const providerModel = bucket(input.provider_model);
   const routineNames = (await readDefinitions('routines')).map((row) => row.name);
@@ -179,8 +179,8 @@ export async function populateHomeMachine(input: {
     bundle === 'services'
       ? true
       : name === 'ronin_base'
-        ? bundle === 'base' || bundle === 'control'
-        : name === 'ronin_worktrees' && bundle === 'control',
+        ? bundle === 'base' || bundle === 'worktrees'
+        : name === 'ronin_worktrees' && bundle === 'worktrees',
   ]));
   return writeCampaign(campaign.id, {
     title: str(input.title, TITLE_MAX) || campaign.title,

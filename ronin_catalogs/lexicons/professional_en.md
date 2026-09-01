@@ -268,8 +268,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.unavailable:** Unavailable
 - **campaign_view.on:** On
 - **campaign_view.off:** Off
-- **campaign_view.rt_control:** Ronin control
-- **campaign_view.rt_control_what:** Desks, hand-in and team promotion: the desk reading, the tejun-desk tools, the git shims. On wherever a repository declares desks.
+- **campaign_view.rt_worktrees:** Ronin worktrees
+- **campaign_view.rt_worktrees_what:** Desks, hand-in and team promotion: the desk reading, the tejun-desk tools, the git shims. On wherever a repository declares desks.
 - **campaign_view.rt_by_repo:** per repository — see Project roots
 - **campaign_view.rt_gbrain:** gbrain
 - **campaign_view.rt_gbrain_what:** The shared memory service: its reading and its MCP tools for sessions born with it connected.
@@ -912,8 +912,8 @@ The catalog entry goes. {dir} is not touched.
 - **setup.bundle_floor_copy:** Ronin still sets each agent up and keeps its birth receipt, but hands it nothing extra.
 - **setup.bundle_base:** Ronin Base
 - **setup.bundle_base_copy:** Your agents arrive knowing the house: basic reading you can open and edit, simple macros for talking to each other, shared work records.
-- **setup.bundle_control:** Ronin Control
-- **setup.bundle_control_copy:** Adds managed repositories: every agent codes at its own private desk — a git worktree — so there are no code collisions, and work is handed in deliberately.
+- **setup.bundle_worktrees:** Ronin Worktrees
+- **setup.bundle_worktrees_copy:** Adds managed repositories: every agent codes at its own private desk — a git worktree — so there are no code collisions, and work is handed in deliberately.
 - **setup.bundle_services:** Services
 - **setup.bundle_services_copy:** Adds your Services to every agent — voice, transcripts, machine care.
 - **setup.desk_profile:** Desk profile

@@ -24,7 +24,7 @@ test('the two setup asks are registry rows and the renderer carries no client fi
   assert.match(registry, /id: 'mainIntent'/);
   assert.match(registry, /id: 'routineBundle'/);
   assert.match(registry, /seed: 'open'/);
-  assert.match(registry, /seed: 'control'/);
+  assert.match(registry, /seed: 'worktrees'/);
   assert.doesNotMatch(source, /\['coding', 'work', 'personal'/);
 });
 

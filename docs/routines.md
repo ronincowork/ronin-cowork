@@ -139,7 +139,7 @@ connection reading, while the `gbrain` Routine selects its macros, tools and MCP
 *Carrying `ronin_worktrees` does not mean a worktree was mounted for you.* The Routine is a
 reading list and a toolset — the desk contract, hand-in, team promotion, receipts and
 `tejun-desk` — so that every Agent carrying it knows how worktrees are handled here. An
-Agent under Ronin Control may hold none, and check one out when it needs one. An Agent
+Agent under Ronin Worktrees may hold none, and check one out when it needs one. An Agent
 without the Routine may still be started in a worktree: that is isolation, which any agent
 can arrange off a branch, and it needs nothing declared in `RONIN_REPO`. What it does not
 get is the contract — no hand-in, nobody to hand to — so it reports to the owner instead.
