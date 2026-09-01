@@ -10,9 +10,9 @@ test('the Team loader launches ordinary rows together and the lead last', async 
   };
 
   launchTeamAgents(request, 'dinner', [
-    { name: 'cook', assignment: 'cook', mandate: { reach: 'execute', recruit: 'open', output: ['an artifact'] }, lead: false },
-    { name: 'host', assignment: 'host', mandate: { reach: 'execute', recruit: 'staff agents', output: ['the team'] }, lead: true },
-    { name: 'music', assignment: 'music', mandate: { reach: 'execute', recruit: 'open', output: ['ideas'] }, lead: false },
+    { name: 'cook', instructions: 'cook', mandate: { reach: 'execute', recruit: 'open', output: ['an artifact'] }, team_lead: false },
+    { name: 'host', instructions: 'host', mandate: { reach: 'execute', recruit: 'staff agents', output: ['the team'] }, team_lead: true },
+    { name: 'music', instructions: 'music', mandate: { reach: 'execute', recruit: 'open', output: ['ideas'] }, team_lead: false },
   ]);
 
   assert.deepEqual(calls.map((call) => call.body.name), ['cook', 'music', 'host']);
@@ -30,8 +30,8 @@ test('one refused launch does not stop the other rows', async () => {
     return { ok: options.json.name !== 'refused' };
   };
   launchTeamAgents(request, 'dinner', [
-    { name: 'refused', assignment: 'one', mandate: {}, lead: false },
-    { name: 'born', assignment: 'two', mandate: {}, lead: false },
+    { name: 'refused', instructions: 'one', mandate: {}, team_lead: false },
+    { name: 'born', instructions: 'two', mandate: {}, team_lead: false },
   ]);
   assert.deepEqual(names, ['refused', 'born']);
 });
@@ -49,7 +49,7 @@ test('only a newly-created Team fires its attached rows', async () => {
     return { ok: true };
   };
   const roster = { name: 'dinner' };
-  const rows = [{ name: 'cook', assignment: 'cook', mandate: {}, lead: false }];
+  const rows = [{ name: 'cook', instructions: 'cook', mandate: {}, team_lead: false }];
   assert.equal((await raiseTeam(request, roster, rows)).ok, true);
   await new Promise((resolve) => setTimeout(resolve, 0));
   assert.equal((await raiseTeam(request, roster, rows)).ok, false);

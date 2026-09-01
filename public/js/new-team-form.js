@@ -499,9 +499,9 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     const rows = [...draft.agents];
     if (draft.lead) rows.push({
       name: `${name}_lead`,
-      assignment: draft.lead.brief.trim(),
+      instructions: draft.lead.brief.trim(),
       mandate: { reach: draft.lead.reach, recruit: draft.lead.recruit, output: draft.lead.output },
-      lead: true,
+      team_lead: true,
     });
     const made = await raiseTeam(request, rosterBody(name), rows);
     if (!made.ok) {

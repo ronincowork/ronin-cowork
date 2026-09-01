@@ -13,15 +13,15 @@ export function launchTeamAgents(request, team, rows = []) {
     json: {
       session_type: 'cowork_agent',
       team,
-      team_lead: row.lead === true,
+      team_lead: row.team_lead === true,
       name: row.name,
-      instructions: row.assignment,
+      instructions: row.instructions,
       mandate: row.mandate,
     },
   });
 
-  const ordinary = rows.filter((row) => row.lead !== true);
-  const leads = rows.filter((row) => row.lead === true);
+  const ordinary = rows.filter((row) => row.team_lead !== true);
+  const leads = rows.filter((row) => row.team_lead === true);
   for (const row of [...ordinary, ...leads]) void launch(row);
 }
 
