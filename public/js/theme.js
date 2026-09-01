@@ -5,12 +5,13 @@
  * The palette lives in style.css as semantic tokens on `:root` (dark) and
  * `:root[data-theme='light']`. This module owns the three things CSS cannot:
  *
- *   1. which theme is active. THE DEFAULT IS THE DEVICE'S OWN: flip the Mac between
- *      light and dark and Ronin flips with it, live (the owner's ask, 2026-08-16).
- *      The one control is the flip button in ⚙ System — flipping AWAY from the
- *      device's mode pins the shell; flipping back to match re-arms following.
- *      Persisted per device (localStorage, like the layout: which surface is dark
- *      is a fact about the screen you are holding, not about the install);
+ *   1. which theme is active. THE CAMPAIGN GOVERNS IT (owner, 2026-09-01): the
+ *      Campaign's desk carries one theme for pointer surfaces and one for touch
+ *      (`theme` / `theme_mobile`), cached per device so the pre-boot inline scripts
+ *      paint the right shell, and resolved below — a legacy device pin, which no UI
+ *      writes today, still outranks it, and the house default is light. (Until
+ *      2026-09-01 the default followed the device's own scheme live; that model,
+ *      and its prefers-color-scheme listener, are retired.);
  *   2. the xterm theme object — READ from the same tokens with getComputedStyle,
  *      never restated. One palette, two spellings was TOKENS' D2 defect: `--bg` in
  *      CSS and `background:` in a THEME literal drifted apart because nothing tied
