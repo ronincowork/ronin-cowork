@@ -38,7 +38,6 @@ import { scanContext, scanModel } from '../ctx.js';
 import { count } from '../counts.js';
 import { listTeamRosters } from '../team-rosters.js';
 import { announceTeamChanges } from './wipeboards-api.js';
-import { markRoleDelivered } from '../role-watch.js';
 import { checkoutAt, deriveTeams, parkBrief, seedTegami, withAxes, writeGate } from '../tegami.js';
 import { emitSessionBorn, emitSessionWillBorn, collectBirthLines, collectRowFields, listServices } from '../sockets.js';
 import { prepareLaunchDesks } from '../launch-desks.js';
@@ -354,7 +353,6 @@ export function registerLaunch(app: express.Express): void {
       if (resolved.session_type === 'cowork_agent') {
         await seedTegami(
           resolved.name,
-          resolved.session_role,
           resolved.assignment?.desks.length
             ? resolved.assignment.desks.map((d) => ({ repo: d.repo, branch: d.branch, worktree: d.worktree, line: d.line }))
             : await checkoutAt(resolved.dir),
@@ -362,10 +360,6 @@ export function registerLaunch(app: express.Express): void {
         resolved.mandate,
       );
       }
-      // THE BIRTH BASELINE for the task observer: this task's reading is already in the
-      // brief, so it is recorded as delivered and the first tick does not send it again
-      // (src/role-watch.ts).
-      if (resolved.session_type === 'cowork_agent') await markRoleDelivered(resolved.name, resolved.session_role);
       await setControl(resolved.name, resolved.dial);
     } catch (e) {
       void appendLaunchLedger(form, resolved, false);

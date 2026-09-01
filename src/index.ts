@@ -45,7 +45,6 @@ import { registerMessages } from './routes/messages-api.js';
 import { startMessageQueue } from './message-queue.js';
 import { seedHouseBoard } from './wipeboards.js';
 import { handleEvents, startSessionsBroadcast } from './ws/events.js';
-import { startRoleWatch } from './role-watch.js';
 import { handlePty } from './ws/pty.js';
 import { originAllowed, allowedOrigins } from './ws/origin.js';
 import { checkTmuxServerCgroup } from './host-guard.js';
@@ -484,9 +483,6 @@ if (removed) console.log(`[tmux-ronin] cleaned up ${removed} stale viewer sessio
 // service's own business; a hook that throws is logged and costs only its service.
 await startBootHooks();
 startSessionsBroadcast(); // the /events membership poll, on the same boot clock as before
-// The task-change observer. Deliberately NOT gated on a browser: a session that re-marks
-// itself with every tab closed still has reading owed to it (src/role-watch.ts).
-startRoleWatch();
 // The house board — the one board every install has, seeded once and then the user's.
 void seedHouseBoard().catch((e) => console.error('[tmux-ronin] house board seed failed:', e));
 

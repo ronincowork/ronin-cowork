@@ -6,7 +6,7 @@ import { bootFiles, ensureShelf } from './session-boot.js';
 import { listProjectRoots, listSessionLaunchSpecs, USER_PROJECT_ROOTS_MD, type ProjectRootInfo } from './project-roots.js';
 import { readAgentsSection, readDesksSection } from './user-config.js';
 import { storeDir } from './stores.js';
-import { findDefinition, listRoleFamilies, listRoutines } from './definitions.js';
+import { findDefinition, listRoutines } from './definitions.js';
 import { isCreatableTeamName as isTeamName, readTeamRoster, teamRosterFile, type TeamRoster } from './team-rosters.js';
 import { resolveLaunchProfile, type Dial, type LaunchProfile, type StatedBy } from './launch-profile.js';
 import { readCampaign } from './campaign-config.js';
@@ -309,7 +309,6 @@ export function slugName(intentKind: string, prompt: string, taken: Set<string>)
  */
 async function bootReading(
   projectRoot: string,
-  sessionRole: string,
   mcpOn: boolean,
   bornLead = false,
   assigned = false,
@@ -317,11 +316,9 @@ async function bootReading(
   routineMacros?: ReadonlySet<string>,
   session = '',
 ): Promise<string[]> {
-  const files = await bootFiles(projectRoot, sessionRole, mcpOn, assigned, routines, routineMacros, session);
-  // Route 1 (the coordinating kind of role) — and a session BORN as the 人 (`team_lead`
-  // on the form), which leads whatever its role says: the reading follows the 人.
-  const leadRole = !!sessionRole && (await listRoleFamilies()).some((f) => f.default_lead_role === sessionRole);
-  if ((leadRole || bornLead) && !files.includes(teamsSopPath())) files.push(teamsSopPath());
+  const files = await bootFiles(projectRoot, mcpOn, assigned, routines, routineMacros, session);
+  // Team leadership is explicit; no selected reading infers it.
+  if (bornLead && !files.includes(teamsSopPath())) files.push(teamsSopPath());
   return files;
 }
 
@@ -577,7 +574,7 @@ export async function resolveForm(
   // Compile this once and return the exact same list the brief receives. The browser must
   // never recreate shelf precedence or guess which explicit seeds joined it.
   const shelfReading = coworkAgent && agent
-    ? await bootReading(root.name, profile.session_role, !mcpOffWanted, !!form.team_lead && !!form.team, !!assignment, enabledRoutines, enabledMacros, name)
+    ? await bootReading(root.name, !mcpOffWanted, !!form.team_lead && !!form.team, !!assignment, enabledRoutines, enabledMacros, name)
     : [];
   const completeReading = [...shelfReading, ...resolvedBehaviours.delivered.map((book) => book.file)];
   const birthReading = coworkAgent && agent
