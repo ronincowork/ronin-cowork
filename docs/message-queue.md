@@ -11,6 +11,9 @@ separate Cowork card or machine-level tab.
 When retained messages exist, that channel button uses the theme's warning colour and
 bolds the full label; the attention state clears with the empty queue. The tab never adds
 a count—the waiting cards are already visible when opened.
+An ordinary open of Team Commons lands directly on Agent Message Queue while that
+attention state is active. Explicit links to another channel still win, and a newly
+arriving message never pulls the owner away from a tab they already chose.
 Each retained card shows how long it has waited, as a live relative age in seconds,
 minutes, hours, or days. A busy eligibility check that never typed is shown as **waiting**
 with zero attempts rather than implying that delivery itself repeatedly failed.

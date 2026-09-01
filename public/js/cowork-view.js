@@ -166,10 +166,15 @@ export function createCoworkView(options = {}) {
     const messageLabel = t('workspace.channel_agent_message_queue', 'Agent Message Queue');
     let messageTab = null;
     let retainedCount = 0;
+    let chooseQueueOnOpen = false;
     const paintMessageAttention = () => {
       if (!messageTab) return;
       messageTab.dataset.attention = String(retainedCount > 0);
       messageTab.textContent = messageLabel;
+      if (chooseQueueOnOpen) {
+        if (retainedCount > 0) channels.select('agent-message-queue');
+        chooseQueueOnOpen = false;
+      }
     };
     const messageQueue = buildMessageQueue(messages, (count) => { retainedCount = count; paintMessageAttention(); });
     const channels = createChannelSurface({
@@ -184,9 +189,16 @@ export function createCoworkView(options = {}) {
       services: { wipeboard, docs: docsService, 'agent-message-queue': { el: messages, mount: () => {}, enter: messageQueue.enter, leave: messageQueue.leave, destroy: messageQueue.destroy }, 'team-configuration': service(config) },
     });
     messageTab = channels.tabs.querySelector('[data-service="agent-message-queue"]');
+    channels.tabs.addEventListener('click', () => { chooseQueueOnOpen = false; });
     paintMessageAttention();
     channels.el.dataset.workbenchSurface = COMMONS;
-    return { el: channels.el, channels, wipeboard, docs, config, messageQueue };
+    return {
+      el: channels.el, channels, wipeboard, docs, config, messageQueue,
+      attendQueueOnOpen: () => {
+        chooseQueueOnOpen = true;
+        if (retainedCount > 0) paintMessageAttention();
+      },
+    };
   };
   const teamCommons = Object.fromEntries(Object.keys(seats).map((id) => [id, createTeamCommons()]));
   const extras = new Set();
@@ -233,7 +245,7 @@ export function createCoworkView(options = {}) {
     return [id, { el: surface.el, room }];
   })) : {};
   const environment = {
-    teamCommons: (id) => ({ el: teamCommons[id].el, show: (detail = {}) => { const item = teamCommons[id]; item.channels.enter(ctx); if (detail.doc) { item.channels.select('docs'); void item.docs.open(detail.doc); } else if (detail.tab) item.channels.select(detail.tab); } }),
+    teamCommons: (id) => ({ el: teamCommons[id].el, show: (detail = {}) => { const item = teamCommons[id]; if (!detail.doc && !detail.tab) item.attendQueueOnOpen(); item.channels.enter(ctx); if (detail.doc) { item.channels.select('docs'); void item.docs.open(detail.doc); } else if (detail.tab) item.channels.select(detail.tab); } }),
     terminal: (id, detail) => ({ el: seats[id].surface.el, show: () => putSession(detail.key, id) }),
     roster: (id) => ({ el: teamRosterBySeat[id].el, show: () => teamRosterBySeat[id].render() }),
     newTeamForm: (id) => ({ el: newTeamFormBySeat[id].el, show: () => void newTeamFormBySeat[id].enter() }),
