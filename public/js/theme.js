@@ -32,17 +32,18 @@ import { tiles } from './state.js';
 
 export const LS_THEME = 'tmuxgrid.theme';
 
-/** The owner's CHOICE: 'auto' (the default — follow this device), or a pin. */
+/** The owner's CHOICE: 'auto' (the default — the house's light), or the dark pin. */
 export const currentTheme = () => {
   const t = localStorage.getItem(LS_THEME);
   return t === 'light' || t === 'dark' ? t : 'auto';
 };
 
-const prefersLight = () => window.matchMedia('(prefers-color-scheme: light)').matches;
-
-/** What the choice RESOLVES to right now — the only two shells CSS knows. */
+/** What the choice RESOLVES to right now — the only two shells CSS knows.
+ *  THE HOUSE DEFAULT IS LIGHT (owner, 2026-09-01: "that should definitely be the
+ *  default"): an unpinned install paints light on every device, rather than following
+ *  the device's own scheme. Dark remains one tap away in ⚙ appearance, as a pin. */
 export const resolvedTheme = (choice = currentTheme()) =>
-  choice === 'auto' ? (prefersLight() ? 'light' : 'dark') : choice;
+  choice === 'auto' ? 'light' : choice;
 
 /**
  * The xterm theme, read off the resolved tokens. Called per Terminal construction and
@@ -199,20 +200,12 @@ export function applyTheme(name) {
 
 /**
  * The flip button's whole contract (⚙ System → appearance). One button, two moves:
- * flipping AWAY from what the device prefers stores a pin; flipping BACK to match
- * the device stores 'auto' — "make it match my Mac" and "follow my Mac" are the
- * same act, so following resumes without a third control existing.
+ * light is the house default, so choosing it stores 'auto' — the unpinned state —
+ * and choosing dark stores the one pin there is. (The default used to follow the
+ * device's scheme, with a live prefers-color-scheme listener; retired 2026-09-01
+ * with the owner's light-by-default ruling.)
  */
 export function setTheme(name) {
-  const want = name === 'light' || name === 'dark' ? name : 'auto';
-  const device = prefersLight() ? 'light' : 'dark';
-  localStorage.setItem(LS_THEME, want === 'auto' || want === device ? 'auto' : want);
+  localStorage.setItem(LS_THEME, name === 'dark' ? 'dark' : 'auto');
   applyTheme();
 }
-
-// AUTO IS LIVE: while the choice is auto, the device flipping its appearance flips
-// Ronin in place — attribute, browser chrome and every live terminal, no reload.
-// One page-lifetime listener; it does nothing unless auto is the standing choice.
-window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
-  if (currentTheme() === 'auto') applyTheme('auto');
-});

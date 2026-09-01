@@ -117,7 +117,14 @@ export function createWorkbench(options = {}) {
     shape.setAttribute('aria-label', shape.title);
   };
   const setCount = (value, quiet = false) => {
-    count = value === 4 ? 4 : 2;
+    // A COARSE bench is pinned at two (owner, 2026-09-01): four 34px-controlled tiles
+    // on a tablet is a layout nobody drives by finger, and the 2⇄4 button left the
+    // touch bar with this pin (layout.js trimBarForTouch). Spelled locally — the Kit
+    // keeps its own dependencies — and here rather than at the callers so a restored
+    // state.count of 4 from a desktop session cannot strand a tablet at a shape it
+    // has no control to leave.
+    const coarse = window.matchMedia('(pointer: coarse)').matches;
+    count = value === 4 && !coarse ? 4 : 2;
     for (const column of Object.values(columns)) column.dataset.count = String(count);
     for (const id of LOWER) cells[id].hidden = count !== 4;
     if (count === 2 && LOWER.has(selected)) select('workspace1');
