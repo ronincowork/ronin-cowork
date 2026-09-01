@@ -6777,9 +6777,14 @@ body[data-phone] .tile-head {
   min-height: 44px;
   border: 0;
   border-radius: var(--radius-md);
-  background: var(--action);
-  color: var(--on-strong);
+  /* KIIRO, the house's action-waiting yellow (--warn + --on-accent, the attention
+     flash's own pair) — not --action, which paints blue here and belongs to nothing
+     on this shell (owner, 2026-09-01: "we don't have blue anywhere… it should be
+     kiiro"). */
+  background: var(--warn);
+  color: var(--on-accent);
   font-size: var(--text-5);
+  font-weight: 600;
   cursor: pointer;
 }
 #phone .ph-launch-go:disabled {

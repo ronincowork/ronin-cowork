@@ -74,6 +74,7 @@ export async function buildPhone() {
 
   let route = routeFromHash();
   let rows = new Map(); // session name -> /api/home row (status, ctx, model, tegami)
+  let agentsPainted = ''; // what the Agents screen last drew — identical readings skip the repaint
   let host = null; // the one terminal host, alive only on the terminal screen
   let stageTile = null; // the mounted tile inside it — for the slow reading clock
   let sheet = null; // its メ sheet — dies with the host
@@ -196,6 +197,15 @@ export async function buildPhone() {
     // Never repaint over an open launch form — the readings clock would wipe a name
     // mid-typing. The readings resume the moment the form closes or the route moves.
     if (main.querySelector('.ph-launch-form:not([hidden])')) return;
+    // And never repaint what has not moved: the 5s clock rebuilding identical cards
+    // detaches the node under a finger mid-tap — a tap that does nothing (caught by
+    // the render gate racing the same window).
+    const signature = team + '\0' + membersOfTeam(team).map((member) => {
+      const row = rows.get(member.name) || {};
+      return [member.name, member.title, member.team_lead, member.session_role, row.status, row.ctx, row.model, row.tegami?.chip?.text].join('|');
+    }).join('\n');
+    if (signature === agentsPainted) return;
+    agentsPainted = signature;
     bar.replaceChildren(
       backLink('#/m'),
       el('span', 'ph-title', teamLabel({ ...teamByName(team), name: team })),
@@ -278,6 +288,8 @@ export async function buildPhone() {
   const render = () => {
     const next = routeFromHash();
     if (route.screen === 'terminal' && !(next.screen === 'terminal' && next.session === route.session)) closeTerminal();
+    // A screen change always paints fresh; the skip-signature only spans one stay.
+    if (next.screen !== route.screen || next.team !== route.team) agentsPainted = '';
     route = next;
     if (route.screen === 'teams') paintTeams();
     else if (route.screen === 'agents') { paintAgents(); void readRows(); }
