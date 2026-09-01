@@ -1,4 +1,4 @@
-# Word police — the five places a word lives, and what keeps them honest
+# Vocabulary map — the five places a word lives, and what keeps them honest
 
 There are five artefacts here with overlapping names, and it is genuinely easy to think
 two of them are the same thing. They are not, and the difference is not stylistic: each
@@ -6,10 +6,9 @@ answers a question the others cannot.
 
 This page exists because that had to be worked out by reading source, twice.
 
-The name is the second half of the job. Two gates enforce all of this — `check-lexicon` and
-`check-kotoba` — and between them they are why a word cannot quietly mean two things here
-for long. The map comes first because you usually arrive wanting one artefact, not a
-verdict; the gates are at the bottom.
+The map comes first, because you usually arrive wanting one artefact rather than a verdict.
+What keeps the map true is at the bottom: two gates, `check-lexicon` and `check-kotoba`,
+which between them are why a word cannot quietly mean two things here for long.
 
 ## The one-line answer
 
