@@ -310,8 +310,13 @@ test('race: two hand-ins at once serialize on the line and both land; the ledger
   assert.notEqual(after, before);
   const lineWt = deskWorktree('cowork', 'team/comp/dev');
   assert.ok(existsSync(path.join(lineWt, 'p.txt')) && existsSync(path.join(lineWt, 'q.txt')), 'both changes are on the line');
-  const second = [rp.receipt, rq.receipt].sort((x, y) => x.at.localeCompare(y.at))[1];
-  assert.equal(second.expected_old, [rp.receipt, rq.receipt].find((r) => r !== second)!.line_sha, 'the second was built on the first’s result');
+  // The receipt ledger is the serialization boundary. Wall-clock timestamps are not:
+  // two fast hand-ins may share one millisecond, making a timestamp sort preserve the
+  // Promise input order rather than the lock acquisition order (CI run 33530432746).
+  const ids = new Set([rp.receipt.id, rq.receipt.id]);
+  const raced = (await receiptsForLine('cowork', 'team/comp/dev')).filter((r) => ids.has(r.id));
+  assert.deepEqual(raced.map((r) => r.id).sort(), [...ids].sort(), 'both accepted receipts reached the ledger');
+  assert.equal(raced[1].expected_old, raced[0].line_sha, 'the second ledger receipt was built on the first result');
   assert.equal(await queueHolder('cowork', 'team/comp/dev'), null, 'the queue is released');
 });
 
