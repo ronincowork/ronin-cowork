@@ -8,4 +8,5 @@
 - **tools:** tejun, tejun-step, tejun-send, tejun-harakiri, tejun-team, tejun-fork, tejun-session-set, tejun-team-set, tejun-wipeboard, tejun-teampage, tejun-peek, read_tegami, write_tegami
 - **mcp:** —
 - **requires:** —
+- **bundles:** base, worktrees, services
 - **order:** 10

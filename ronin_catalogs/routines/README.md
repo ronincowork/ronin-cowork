@@ -18,6 +18,7 @@ Routine definition.
 - **tools:** bare-command, ...
 - **mcp:** connection-name, ...
 - **requires:** routine-name, ...
+- **bundles:** base, worktrees, services
 - **order:** 10
 ```
 
@@ -33,6 +34,11 @@ on/off choices.
 `requires` expresses the additive Routine progression, never a list of component-level
 dependencies. Selecting a Routine also selects every Routine it requires. Ronin Worktrees
 requires Ronin Base; it does not require optional Ronin Services.
+
+`bundles` names the setup rungs that switch this Routine ON — catalog metadata, never
+names hardcoded in code (the owner's ruling). The rungs are `nothing · floor · base ·
+worktrees · services`; the first two turn nothing on and appear in no list. The stock
+campaign map is the `base` rung: Ronin Base and the always-on floor.
 
 An unavailable enabled Routine never refuses birth. Its available result is empty or
 partial as the adapter reports, and the birth receipt names what was not delivered.

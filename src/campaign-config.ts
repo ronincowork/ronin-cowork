@@ -175,17 +175,14 @@ export async function populateHomeMachine(input: {
     .includes(input.kind as SetupKind) ? input.kind as SetupKind : 'open';
   const bundle = (['nothing', 'floor', 'base', 'worktrees', 'services'] as const)
     .includes(input.routine_bundle as SetupRoutineBundle)
-    ? input.routine_bundle as SetupRoutineBundle : 'worktrees';
-  const { readDefinitions } = await import('./definitions.js');
+    ? input.routine_bundle as SetupRoutineBundle : 'base';
+  const { listRoutines } = await import('./definitions.js');
   const providerModel = bucket(input.provider_model);
-  const routineNames = (await readDefinitions('routines')).map((row) => row.name);
-  const routines = Object.fromEntries(routineNames.map((name) => [name,
-    bundle === 'services'
-      ? true
-      : name === 'ronin_base'
-        ? bundle === 'base' || bundle === 'worktrees'
-        : name === 'ronin_worktrees' && bundle === 'worktrees',
-  ]));
+  // Which routines a bundle switches on is CATALOG METADATA (each row's `bundles:`),
+  // never names hardcoded here — the owner's ruling. `nothing` and `floor` appear in
+  // no row's list, so those rungs produce the all-off map by construction.
+  const routines = Object.fromEntries((await listRoutines()).map((row) =>
+    [row.name, row.bundles.includes(bundle)]));
   return writeCampaign(campaign.id, {
     title: str(input.title, TITLE_MAX) || campaign.title,
     description: input.description === undefined ? campaign.description : str(input.description, DESCRIPTION_MAX),
@@ -321,7 +318,14 @@ async function writeRecord(c: CampaignConfig): Promise<CampaignConfig> {
 async function completeAgentDefaults(value: unknown): Promise<AgentDefaults> {
   const defaults = agentDefaults(value);
   const { listRoutines } = await import('./definitions.js');
-  defaults.routines = completeRoutineChoices(await listRoutines(), defaults.routines);
+  const catalog = await listRoutines();
+  // A STATED map is completed as given; an ABSENT one seeds the catalog's stock rung
+  // (`base` — ronin_base and the always-on floor, the owner's ruling), never all-off.
+  // Which routines the rung switches on is each row's `bundles:` metadata.
+  const stated = defaults.routines && Object.keys(defaults.routines).length > 0;
+  defaults.routines = stated
+    ? completeRoutineChoices(catalog, defaults.routines)
+    : Object.fromEntries(catalog.map((row) => [row.name, row.bundles.includes('base')]));
   return defaults;
 }
 
@@ -337,9 +341,13 @@ export async function readCampaign(id: string): Promise<CampaignConfig | null> {
     const config = bucket(doc.config);
     const defaults = bucket(config.agent_defaults);
     if (!Object.prototype.hasOwnProperty.call(defaults, 'routines')) {
-      // Existing Campaigns predate Atarashi's Routine map. Preserve their de-facto
-      // launch once; later catalog additions remain absent and therefore resolve off.
-      parsed.config.agent_defaults.routines = { ronin_base: true, ronin_worktrees: true };
+      // Existing Campaigns predate Atarashi's Routine map. Seed the STOCK map once —
+      // the catalog's `base` rung (ronin_base and the floor, per the owner's base+floor
+      // ruling), read from each row's `bundles:` metadata, never names hardcoded here.
+      // A record that already carries a map is never touched (two-state).
+      const { listRoutines } = await import('./definitions.js');
+      parsed.config.agent_defaults.routines = Object.fromEntries(
+        (await listRoutines()).map((row) => [row.name, row.bundles.includes('base')]));
       await writeRecord(parsed);
     }
     if (!Object.prototype.hasOwnProperty.call(doc, 'desk')) {

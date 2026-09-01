@@ -216,6 +216,13 @@ async function routinesResolve(): Promise<void> {
   const owners = new Map<string, string>();
   for (const routine of routines.filter((x) => x.origin === 'stock')) {
     if (!routine.blurb.trim()) fail(`routines/${routine.name}.md: missing blurb`);
+    // The setup ladder is catalog metadata: a typo'd rung would silently vanish from the
+    // reader's filtered list, so the raw line is held to the known rungs here.
+    const def = await findDefinition('routines', routine.name);
+    const rawBundles = (def?.get('bundles') ?? '').split(',').map((s) => s.trim()).filter((s) => s && s !== '—');
+    for (const rung of rawBundles) {
+      if (!routine.bundles.includes(rung)) fail(`routines/${routine.name}.md: bundles names unknown rung "${rung}"`);
+    }
     for (const dependency of routine.requires) {
       if (!routineNames.has(dependency)) fail(`routines/${routine.name}.md: requires missing "${dependency}"`);
       if (dependency === routine.name) fail(`routines/${routine.name}.md: requires itself`);
