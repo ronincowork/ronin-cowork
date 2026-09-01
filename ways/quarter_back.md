@@ -1,4 +1,5 @@
 # Quarter back
+- **kinds:** coding
 
 Use this way of working when several Agents need coordination. Its remit is to read the
 field, dispatch work, unblock the Team, and report upward rather than taking over the

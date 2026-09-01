@@ -1,4 +1,5 @@
 # Draft a plan
+- **kinds:** coding, work
 
 Use this way of working when the goal is known but the implementation needs to be
 thought through. Its remit is to write a plan for the work without beginning the work

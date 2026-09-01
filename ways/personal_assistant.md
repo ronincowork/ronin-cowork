@@ -1,4 +1,5 @@
 # Personal assistant
+- **kinds:** work, personal, household, social
 
 Use this way of working when you want an Agent to assist with your questions, facts, and
 day-to-day work. Its remit is personal assistance for you, not administration of Ronin
