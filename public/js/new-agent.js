@@ -29,7 +29,7 @@ import { request } from './request.js';
 import { t } from './lexicon.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
 import {
-  createStep, dialRow, dialRowMulti, el, kindTiles, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
+  createBand, createStep, dialRow, dialRowMulti, el, kindTiles, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
 } from './form-steps.js';
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
@@ -167,7 +167,11 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     if (row.brief) { draft.instructions = row.brief; instructionsInput.value = row.brief; }
     // A template's output may still be a single word — the record wraps a legacy scalar,
     // and so does the form, rather than handing a string to code that expects a list.
+    // The shelf hands back a parsed mandate — `{ reach, recruit, output[] }` or null when
+    // the template is silent — so a silent one seeds nothing rather than seeding a guess.
     if (row.mandate) { draft.reach = row.mandate.reach; draft.recruit = row.mandate.recruit; draft.output = [row.mandate.output].flat().filter(Boolean); touched.mandate = true; }
+    // `team_mode: 'new'` births the box into its own team (the Personal Assistant ruling).
+    if (row.team_mode === 'new') { draft.teamMode = 'new'; }
     if (row.behaviours.length) { draft.books = [...row.behaviours]; touched.books = true; }
     snapshot = authored();
     paint();
@@ -188,7 +192,14 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   instructionsInput.autocapitalize = 'off';
   instructionsInput.spellcheck = false;
   instructionsInput.placeholder = t('add_agent.instruction_placeholder', 'what this Agent should do');
-  instructionsInput.addEventListener('input', () => { draft.instructions = instructionsInput.value; paintFoot(); });
+  instructionsInput.addEventListener('input', () => {
+    draft.instructions = instructionsInput.value;
+    paintFoot();
+    // The save offer appears when a template goes dirty, and an instructions-only edit IS
+    // dirt — it just never repainted the actions, so Save as template stayed hidden until
+    // you happened to type a name too. (@template_shelves measured it.)
+    paintActions();
+  });
   stepInstructions.body.append(createField({ label: t('new_agent.instructions', 'Instructions'), control: instructionsInput }).el);
 
   /* ---- 5 · Team ---- */
@@ -510,7 +521,10 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   async function doSave() {
     const token = draft.templateName.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
     if (!token) return;
-    const result = await request('/api/templates', {
+    // THE AGENT SHELF (@template_shelves' split, 2026-09-01): agent-shaped and team-shaped
+    // templates are two shelves with two doors. This form only ever reads or writes the
+    // agent one — a cast belongs to a Team and means nothing to a single launch.
+    const result = await request('/api/templates/agents', {
       method: 'POST',
       json: {
         name: token,
@@ -520,7 +534,19 @@ export function createNewAgentView(kit, { connect = null } = {}) {
         kinds: draft.kind === 'open' ? ['coding', 'work', 'personal', 'household', 'social', 'school'] : [draft.kind],
         brief: draft.instructions.trim(),
         mandate: `${draft.reach} · ${draft.recruit} · ${draft.output.join(', ')}`,
+        team_mode: draft.teamMode === 'new' ? 'new' : '',
         behaviours: draft.books,
+        // THE SWITCHES A LOADOUT IS MEANT TO CARRY. `TemplateBoxSave` stores these
+        // (@template_shelves measured `boxTail` writing all three) and this form was
+        // sending only `behaviours`, so a saved Personal Assistant lost its gbrain.
+        //
+        // ONLY THE ONS, DELIBERATELY. A template "carries exactly the fields it carries;
+        // everything unnamed stays as the level above landed it" (CASCADE § 1). This form
+        // previews routines and never flips them (§ 5.1), so there is no OFF a person
+        // chose here — sending every unresolved routine as `routines_off` would make a
+        // saved loadout dictate the whole map instead of adding to it.
+        routines_on: (seed?.routines || []).filter((row) => row.on).map((row) => row.name),
+        routines_off: [],
       },
     });
     if (!result.ok) return notice.set('failed', result.message);
@@ -590,11 +616,18 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     paintFoot();
   }
 
+  // THE PAYLOAD IS A SECTION HERE TOO (owner, 2026-09-01): what this press will send, with
+  // a band of its own rather than trailing off the end of a long form.
+  let payloadOpen = true;
+  const payloadBand = createBand(
+    t('forms.payload_band_agent', 'New launch payload — what this launch will send'),
+    () => { payloadOpen = !payloadOpen; payloadBand.setOpen(payloadOpen); foot.hidden = !payloadOpen; },
+  );
   const form = el('div', 'ntf-form');
   form.append(stepType.el, stepTop.el, stepTemplate.el, stepInstructions.el, stepTeam.el, stepWhere.el, stepMandate.el, stepLoadout.el);
   // Save as template sits UNDER the reading, for the same reason as on New Team: the
   // reading is the packet, and the button saves the packet.
-  surface.content.append(form, notice.el, foot, actions.el);
+  surface.content.append(form, notice.el, payloadBand.el, foot, actions.el);
 
   /**
    * THE ＋ NEW DOOR ARRIVES HERE NOW. `S.showNewSession(prompt)` — the bar's ＋, ⌃⇧N and
@@ -620,7 +653,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     enter: async (detail = {}) => {
       paint();
       const [tray, sopRows, wayRows, teamRows, rootRows] = await Promise.all([
-        request('/api/templates'),
+        request('/api/templates/agents'),
         request('/api/sops'),
         request('/api/ways'),
         request('/api/team-rosters'),

@@ -29,7 +29,7 @@ import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-
 import { agentPicks, agentRow, createAgentRows } from './team-agents.js';
 import { launchTeamAgents } from './team-loader.js';
 import {
-  createStep, dialRowMulti, el, kindTiles, mandateSelect, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
+  createBand, createStep, dialRowMulti, el, kindTiles, mandateSelect, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
 } from './form-steps.js';
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
@@ -118,21 +118,22 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     for (const on of row.routines_on) if (on in draft.routines) draft.routines[on] = true;
     for (const off of row.routines_off) if (off in draft.routines) draft.routines[off] = false;
     if (row.mandate) { draft.reach = row.mandate.reach; draft.recruit = row.mandate.recruit; draft.output = [row.mandate.output].flat().filter(Boolean); }
-    if (row.lead) {
-      // A template's lead becomes ONE MARKED ROW. Team templates carrying a whole cast is
-      // @template_shelves' shelf; the row shape is agreed with them and @team_loader.
-      draft.agents = [{
-        ...agentRow(),
-        name: 'lead',
-        lead: true,
-        assignment: row.lead.brief || '',
-        ...(row.lead.mandate ? {
-          reach: row.lead.mandate.reach,
-          recruit: row.lead.mandate.recruit,
-          output: [row.lead.mandate.output].flat().filter(Boolean),
-        } : {}),
-      }];
-    }
+    // THE CAST LANDS AS ROWS (@template_shelves' team shelf, 2026-09-01). A team template
+    // carries `agents[]` in exactly the ruled wire shape `agentPicks()` produces, so it
+    // reads straight into the editor — instructions becomes the row's assignment and
+    // team_lead its mark, which is the same translation `agentPicks` does on the way out.
+    // The old lead_brief/lead_mandate pair is gone: a lead is one marked row.
+    draft.agents = (Array.isArray(row.agents) ? row.agents : []).map((pick) => ({
+      ...agentRow(),
+      name: pick.name || '',
+      assignment: pick.instructions || '',
+      lead: pick.team_lead === true,
+      ...(pick.mandate ? {
+        reach: pick.mandate.reach,
+        recruit: pick.mandate.recruit,
+        output: [pick.mandate.output].flat().filter(Boolean),
+      } : {}),
+    }));
     snapshot = authored();
     paint();
   }
@@ -505,7 +506,8 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     if (!token) return;
     const routinesOn = routineRows.filter((row) => routineOn(row.name) && seedRoutines[row.name] !== true).map((row) => row.name);
     const routinesOff = routineRows.filter((row) => !routineOn(row.name) && seedRoutines[row.name] === true).map((row) => row.name);
-    const result = await request('/api/templates', {
+    // THE TEAM SHELF: a cast, not a loadout. Save-as-new only, per shelf.
+    const result = await request('/api/templates/teams', {
       method: 'POST',
       json: {
         name: token,
@@ -518,10 +520,8 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
         behaviours: draft.books,
         routines_on: routinesOn,
         routines_off: routinesOff,
-        ...(() => {
-          const lead = draft.agents.find((row) => row.lead && row.assignment.trim());
-          return lead ? { lead_brief: lead.assignment.trim(), lead_mandate: `${lead.reach} · ${lead.recruit} · ${lead.output.join(', ')}` } : {};
-        })(),
+        // The same rows the loader launches — one shape, produced in one place.
+        agents: agentPicks(draft.agents),
       },
     });
     if (!result.ok) return notice.set('failed', result.message);
@@ -577,9 +577,10 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
 
   function paint() {
     plan().forEach((key, index) => steps[key].setNumber(index + 1));
-    bandChev.textContent = defaultsOpen ? '▾' : '▸';
-    defaultsBand.setAttribute('aria-expanded', String(defaultsOpen));
+    defaultsBand.setOpen(defaultsOpen);
     for (const key of ['where', 'kit']) steps[key].el.hidden = !defaultsOpen;
+    payloadBand.setOpen(payloadOpen);
+    foot.hidden = !payloadOpen;
     paintTray();
     paintKinds();
     paintName();
@@ -598,14 +599,22 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   // ONE BAND OVER EVERYTHING THAT IS A DEFAULT, and it folds them all away together: a
   // Team can be raised without ever opening it, which is the point of saying so here
   // rather than repeating "this is a default, not a constraint" on each field below.
-  const defaultsBand = el('button', 'ntf-band');
-  defaultsBand.type = 'button';
   let defaultsOpen = true;
-  const bandChev = el('span', 'fs-chev', '▾');
-  defaultsBand.append(bandChev, el('span', null, t('new_team.defaults_band', 'Everything below this is the default for Agents launched within this team.')));
-  defaultsBand.addEventListener('click', () => { defaultsOpen = !defaultsOpen; paint(); });
-  form.append(stepTop.el, stepTemplate.el, stepObjective.el, stepLead.el, defaultsBand, stepWhere.el, stepKit.el);
-  surface.content.append(form, notice.el, foot, saveRow.el);
+  const defaultsBand = createBand(
+    t('new_team.defaults_band', 'Everything below this is the default for Agents launched within this team.'),
+    () => { defaultsOpen = !defaultsOpen; paint(); },
+  );
+  // THE PAYLOAD IS A SECTION, NOT A TAIL (owner, 2026-09-01): "it's just sort of stuck down
+  // there like a turd. It should be a proper section, new launch payload, and marked with
+  // an orange banner to hide or expand." It is what this press will actually send, so it
+  // gets a band of its own and folds like the defaults above it.
+  let payloadOpen = true;
+  const payloadBand = createBand(
+    t('forms.payload_band', 'New launch payload — what this raise will send'),
+    () => { payloadOpen = !payloadOpen; paint(); },
+  );
+  form.append(stepTop.el, stepTemplate.el, stepObjective.el, stepLead.el, defaultsBand.el, stepWhere.el, stepKit.el);
+  surface.content.append(form, notice.el, payloadBand.el, foot, saveRow.el);
 
   return {
     el: surface.el,
@@ -613,7 +622,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
       paint();
       const [seeded, tray, catalog, rootRows, sopRows, wayRows] = await Promise.all([
         request('/api/launch-seed'),
-        request('/api/templates'),
+        request('/api/templates/teams'),
         request('/api/routines'),
         request('/api/project-roots'),
         request('/api/sops'),

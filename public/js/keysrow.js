@@ -36,6 +36,12 @@ export function buildKeysRow(hooks) {
   const keys = () => [
     [t('keys.esc', 'Esc'), t('keys.esc', 'Esc'), '\x1b'],
     ['^C', t('keys.interrupt_title', 'Ctrl-C (interrupt)'), '\x03'],
+    // The two line-clearing keys, because the agents disagree: Esc empties Claude's
+    // box, while readline-shaped composers (Codex among them) take ^U kill-line.
+    // Generic terminal keys, deliberately — a per-provider special key would be
+    // vendor knowledge the provider's own remappable keymap could invalidate.
+    ['⌫', t('keys.backspace', 'Backspace'), '\x7f'],
+    ['^U', t('keys.clear_line_title', 'Ctrl-U — clear the input line'), '\x15'],
     [t('keys.tab', 'Tab'), t('keys.tab', 'Tab'), '\t'],
     [t('keys.shift_tab_face', '⇧Tab'), t('keys.shift_tab', 'Shift-Tab'), '\x1b[Z'],
     ['↑', t('keys.up', 'Up'), '\x1b[A'],
