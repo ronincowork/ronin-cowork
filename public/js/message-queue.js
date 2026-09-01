@@ -9,6 +9,19 @@ const el = (tag, cls, text) => {
   return n;
 };
 
+const ageOf = (createdAt) => {
+  const seconds = Math.max(0, Math.floor((Date.now() - Date.parse(createdAt)) / 1_000));
+  if (!Number.isFinite(seconds) || seconds < 5) return t('messages.age_now', 'just now');
+  if (seconds < 60) return t('messages.age_seconds', '{count} seconds', { count: seconds });
+  const minutes = Math.floor(seconds / 60);
+  if (minutes === 1) return t('messages.age_minute', '1 minute');
+  if (minutes < 60) return t('messages.age_minutes', '{count} minutes', { count: minutes });
+  const hours = Math.floor(minutes / 60);
+  if (hours === 1) return t('messages.age_hour', '1 hour');
+  if (hours < 48) return t('messages.age_hours', '{count} hours', { count: hours });
+  return t('messages.age_days', '{count} days', { count: Math.floor(hours / 24) });
+};
+
 export function buildMessageQueue(host, onCount = () => {}) {
   const board = el('div', 'mq-board');
   const empty = el('p', 'mq-empty', t('messages.empty', 'No messages are waiting.'));
@@ -47,8 +60,9 @@ export function buildMessageQueue(host, onCount = () => {}) {
     for (const message of messages) {
       const card = el('article', `mq-card mq-${message.state}`);
       const head = el('div', 'mq-head');
-      head.append(el('strong', '', t('messages.to', 'To {target}', { target: message.target })), el('span', 'mq-state', message.state));
-      const meta = el('div', 'mq-meta', t('messages.meta', '{source} · {attempts} attempts', { source: message.source, attempts: message.attempts }));
+      const state = message.state === 'stuck' && message.attempts === 0 ? t('messages.waiting', 'waiting') : message.state;
+      head.append(el('strong', '', t('messages.to', 'To {target}', { target: message.target })), el('span', 'mq-state', state));
+      const meta = el('div', 'mq-meta', t('messages.meta', '{source} · {attempts} attempts · waiting {age}', { source: message.source, attempts: message.attempts, age: ageOf(message.created_at) }));
       const text = el('pre', 'mq-text', message.text);
       const reason = el('p', 'mq-reason', message.reason);
       const actions = el('div', 'mq-actions');

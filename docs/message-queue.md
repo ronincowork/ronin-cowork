@@ -10,6 +10,9 @@ Team Configuration. It is a channel inside the existing Team Commons surface, no
 separate Cowork card or machine-level tab.
 When retained messages exist, that channel button uses the theme's warning colour, bolds
 the full label, and shows their count; the attention state clears with the empty queue.
+Each retained card shows how long it has waited, as a live relative age in seconds,
+minutes, hours, or days. A busy eligibility check that never typed is shown as **waiting**
+with zero attempts rather than implying that delivery itself repeatedly failed.
 
 Every sender uses the same delivery engine. Automatic checks and **Try Again** use safe
 delivery: the target must exist, its dial must permit writing, and its Agent must show a
