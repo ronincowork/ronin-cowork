@@ -56,12 +56,18 @@
      stands out a little bit, because I get lost. I can't always see, especially in this
      dark mode. It's got to be light enough that it doesn't obstruct the view of the
      fonts." Later the same day: the tenth-toward-kaki first cut was still invisible to
-     the owner ("I still don't see the kiiro shading"), and kiiro is the word they use
-     for it — so the ground now carries a fifth of the way toward --warn, the house
-     kiiro, one token, every workbench header and the channel tab strip with it.
-     Written as the resolved value rather than a mix so a skin can replace it like any
-     other token. */
-  --cowork-head-bg: #3c372e;
+     the owner ("I still don't see the kiiro shading"), and theme-relative mixes read
+     as different colours per theme ("not rouge or mauve or putrid orange") — the
+     ruling is ONE opaque kiiro, the same in light and dark: "I want this similar
+     orange to go across whether it's light or dark modes." So the band is one value
+     declared once, not re-declared by the light theme, and it carries its own ink
+     family below, because the theme's --fg-strong/--muted-2/--warn are tuned for the
+     theme's ground, not for this band's. */
+  --cowork-head-bg: #decb8f;
+  --cowork-head-fg: #201a0e;
+  --cowork-head-muted: #5a4d28;
+  /* Attention ON the band: the band is already kiiro, so attention speaks kaki. */
+  --cowork-head-attention: #8a3413;
   --bad: #cc6666;
   --bad-soft: #e6a1a1;
   --bad-deep: #a33c33;
@@ -295,7 +301,6 @@
 :root[data-theme='light'] {
   --bg: #f4f2ec;
   --bg-2: #eae7df;
-  --cowork-head-bg: #ecdcbc;
   --panel: #ffffff;
   --raise: #f1efe8;
   --raise-2: #e6e2d8;
@@ -1518,7 +1523,7 @@ body {
   flex: 0 1 auto;
   min-width: 6rem;
   padding: var(--space-2) var(--space-3);
-  color: var(--fg-strong);
+  color: var(--cowork-head-fg);
   font-family: var(--workbench-head-font);
   font-size: var(--workbench-head-size);
   font-weight: var(--workbench-head-weight);
@@ -6422,10 +6427,10 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 /* THE COMMONS STRIP WEARS THE TILE HEAD'S SHADING (owner, 2026-08-27: "it should be the same,
    at least shading") — one surface_head look for every surface (docs/cowork-space.md). */
 .wk-channel-service-tabs { display: flex; flex: 0 0 auto; align-items: stretch; gap: 0; min-height: var(--row-head); background: var(--cowork-head-bg); border-bottom: var(--edge) solid var(--line-2); overflow-x: auto; font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); line-height: var(--workbench-head-line); }
-.wk-channel-service-title { display: flex; align-items: center; flex: 0 0 auto; color: var(--fg-strong); border-right: var(--edge) solid var(--line-2); padding: var(--space-3) var(--space-6); font: var(--workbench-head-weight) var(--workbench-head-size)/var(--workbench-head-line) var(--workbench-head-font); white-space: nowrap; }
-.wk-channel-service-tab { flex: 1 0 auto; border: 0; border-right: var(--edge) solid var(--line); border-radius: 0; background: transparent; color: var(--muted-2); padding: var(--space-3) var(--space-6); font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); white-space: nowrap; }
+.wk-channel-service-title { display: flex; align-items: center; flex: 0 0 auto; color: var(--cowork-head-fg); border-right: var(--edge) solid var(--line-2); padding: var(--space-3) var(--space-6); font: var(--workbench-head-weight) var(--workbench-head-size)/var(--workbench-head-line) var(--workbench-head-font); white-space: nowrap; }
+.wk-channel-service-tab { flex: 1 0 auto; border: 0; border-right: var(--edge) solid var(--line); border-radius: 0; background: transparent; color: var(--cowork-head-muted); padding: var(--space-3) var(--space-6); font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); white-space: nowrap; }
 .wk-channel-service-tab[aria-selected='true'] { background: var(--raise); color: var(--fg-strong); box-shadow: inset 0 calc(-1 * var(--space-1)) 0 var(--accent); }
-.wk-channel-service-tab[data-attention='true'] { color: var(--warn); font-weight: 700; }
+.wk-channel-service-tab[data-attention='true'] { color: var(--cowork-head-attention); font-weight: 700; }
 .wk-channel-surface > .wk-surface-content { display: flex; flex-direction: column; }
 .wk-channel-service { width: 100%; flex: 1 1 auto; min-height: 0; }
 .wk-form { display: flex; flex-direction: column; gap: var(--space-6); }
