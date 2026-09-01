@@ -74,7 +74,11 @@ your agent, as above), not from a launch form.
 ## The shipped library
 
 Six casts — Ship an App 🏗, Raid My Codebase 🛠, Ship the Tour 🎸, Dinner Party 🕯,
-Health & Fitness 🏃, Put the Garden Right 🌿 — and thirteen loadouts, from the Personal
+Health & Fitness 🏃, Put the Garden Right 🌿 — and fourteen loadouts, from the Personal
 Assistant 📇 (gbrain on, born into its own team) and the System Administrator 🔧 to
-Bake for the Fair 🥧. The listing is the directory (`ls ronin_catalogs/templates/teams
+Bake for the Fair 🥧. The first box to try is **Staff My Codebase** 🎬: one agent
+lands on your codebase, surveys the services, staffs a team member for each, raises a
+monitor for you to mark as team lead, and hands you a team you can talk to — its
+procedure is `ronin_sops/codebase_team.md`, and your own copy of that book changes how
+it staffs. The listing is the directory (`ls ronin_catalogs/templates/teams
 "$(bin/ronin-store catalogs)/templates/teams"`), never a page like this one.

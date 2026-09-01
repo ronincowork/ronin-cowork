@@ -28,8 +28,12 @@ test('the shipped agent shelf surfaces loadouts, and no team answers', async () 
   assert.deepEqual(assistant?.routines_on, ['gbrain']);
   const check = rows.find((row) => row.name === 'health_check');
   assert.deepEqual(check?.mandate?.output, ['an artifact', 'no code']);
-  // Tray order is the stated order:, so the assistant leads the shelf.
-  assert.equal(rows[0]?.name, 'personal_assistant');
+  // Tray order is the stated order:, so the flagship staffing box leads the shelf.
+  assert.equal(rows[0]?.name, 'staff_my_codebase');
+  const staff = rows.find((row) => row.name === 'staff_my_codebase');
+  assert.deepEqual(staff?.mandate?.output, ['the team']);
+  assert.equal(staff?.team_mode, 'new');
+  assert.ok(staff?.behaviours.includes('sops:codebase_team'), 'the staffing SOP rides the loadout');
 });
 
 test('the shipped team shelf surfaces casts with one marked lead each', async () => {
