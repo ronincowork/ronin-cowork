@@ -6562,6 +6562,16 @@ body[data-phone] #viewhost {
     outline: 3px solid var(--accent);
     outline-offset: -3px;
   }
+  /* An ARMED EMPTY workspace says so inside the box, not just at its edge (owner,
+     2026-09-01: tapping an empty workspace showed nothing at all — a seated tile
+     lights its own header, a blank had only the frame). The ground tints and the
+     word turns accent, so "tap here, then tap an agent" reads at arm's length. */
+  .wk-workbench-cell.wk-workbench-selected .tw-blank {
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+  }
+  .wk-workbench-cell.wk-workbench-selected .tw-blank-word {
+    color: var(--accent);
+  }
   /* One band height for every header strip on the bench — the selector's, the blank
      seat's and the commons tabs match the tile head beside them (its 32px controls
      plus their padding); a shorter shaded band next to a taller one read as a third
