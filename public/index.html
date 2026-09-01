@@ -18,8 +18,9 @@
     <script>
       try {
         var t = localStorage.getItem('tmuxgrid.theme');
-        if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-        if (t === 'light') document.documentElement.dataset.theme = 'light';
+        /* Light is the house default (owner, 2026-09-01) — an unpinned install paints
+           light on every device; dark is the stored pin. */
+        if (t !== 'dark') document.documentElement.dataset.theme = 'light';
       } catch (e) {}
     </script>
     <!-- xterm.css rides inside style.css now (@import into the lowest cascade layer,

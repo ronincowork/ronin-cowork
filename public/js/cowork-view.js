@@ -22,6 +22,7 @@ import { S } from './state.js';
 import { createCampaignIdentity } from './campaign.js';
 import { renderTeamConfiguration } from './team-configuration.js';
 import { agentTitle, buildTeamMembers, configSignature } from './team-members.js';
+import { isCoarse } from './tiledrop.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -332,7 +333,10 @@ export function createCoworkView(options = {}) {
   const putSession = (name, id, focus = true) => {
     if (!seats[id].pool.has(name)) return false;
     if (surfaceIn(id)) cellPlace(id, seats[id].surface.el);
-    if (!seats[id].pool.show(name, focus)) return false;
+    // Never steal keyboard focus on a coarse pointer: focusing the terminal summons
+    // the iOS keyboard over a workspace the owner opened to READ (owner, 2026-09-01).
+    // Typing there is a deliberate tap into the composer, exactly as on the phone.
+    if (!seats[id].pool.show(name, focus && !isCoarse())) return false;
     touch(id);
     paintSeats();
     remember();

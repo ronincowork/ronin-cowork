@@ -31,8 +31,8 @@
     <script>
       try {
         var t = localStorage.getItem('tmuxgrid.theme');
-        if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-        if (t === 'light') document.documentElement.dataset.theme = 'light';
+        /* Light is the house default (owner, 2026-09-01); dark is the stored pin. */
+        if (t !== 'dark') document.documentElement.dataset.theme = 'light';
       } catch (e) {}
     </script>
     <style>
