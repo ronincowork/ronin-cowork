@@ -169,9 +169,7 @@ export function createCoworkView(options = {}) {
     const paintMessageAttention = () => {
       if (!messageTab) return;
       messageTab.dataset.attention = String(retainedCount > 0);
-      messageTab.textContent = retainedCount
-        ? t('workspace.channel_agent_message_queue_count', 'Agent Message Queue ({count})', { count: retainedCount })
-        : messageLabel;
+      messageTab.textContent = messageLabel;
     };
     const messageQueue = buildMessageQueue(messages, (count) => { retainedCount = count; paintMessageAttention(); });
     const channels = createChannelSurface({

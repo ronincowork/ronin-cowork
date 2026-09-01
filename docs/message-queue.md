@@ -8,8 +8,9 @@ that separate notice is an inbound message and may wait here.
 Its visible home is **Team Commons → Agent Message Queue**, beside Docs, Wipeboard, and
 Team Configuration. It is a channel inside the existing Team Commons surface, not a
 separate Cowork card or machine-level tab.
-When retained messages exist, that channel button uses the theme's warning colour, bolds
-the full label, and shows their count; the attention state clears with the empty queue.
+When retained messages exist, that channel button uses the theme's warning colour and
+bolds the full label; the attention state clears with the empty queue. The tab never adds
+a count—the waiting cards are already visible when opened.
 Each retained card shows how long it has waited, as a live relative age in seconds,
 minutes, hours, or days. A busy eligibility check that never typed is shown as **waiting**
 with zero attempts rather than implying that delivery itself repeatedly failed.
