@@ -6563,6 +6563,7 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 .sys-machine { margin-top: var(--space-5); }
 .sys-machine .mach-v { margin-left: auto; font: var(--text-2) var(--font-mono); color: var(--muted-2); }
 /* Messages — the live inbound queue; delivered cards disappear rather than archive. */
+.mq-note { margin: var(--space-4) var(--space-4) 0; color: var(--muted); }
 .mq-board { display: grid; gap: var(--space-3); padding: var(--space-4); overflow: auto; }
 .mq-empty { color: var(--muted); margin: 0; }
 .mq-card { border: var(--edge) solid var(--line); border-left: var(--space-1) solid var(--warn); border-radius: var(--radius-sm); padding: var(--space-3); background: var(--panel); }
