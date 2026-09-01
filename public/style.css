@@ -205,6 +205,14 @@
      Its parts: a 28px tab, the 6px the row pads above and below it, and the rule under. */
   --row-head: calc(var(--space-11) + var(--space-6) + var(--edge));
 
+  /* One typographic voice for the permanent head over every Workbench surface. The
+     frame has three approved header forms (Kit, terminal Tile, and channel strip), but
+     their title must not inherit a feature body's type or choose a private size. */
+  --workbench-head-font: var(--font-ui);
+  --workbench-head-size: var(--text-3);
+  --workbench-head-weight: 700;
+  --workbench-head-line: 1.2;
+
   /* ---- TYPE. Ronin is a dense operational tool and its type scale is small and tight
      on purpose; `--text-3` (12px) is the body of this app, not a caption. The scale is
      what the file already used, minus the half-pixels. */
@@ -1479,6 +1487,9 @@ body {
   background: var(--bg-2);
   border-bottom: var(--edge) solid var(--line);
   flex: 0 0 auto;
+  font-family: var(--workbench-head-font);
+  font-size: var(--workbench-head-size);
+  line-height: var(--workbench-head-line);
 }
 .tile-head .grow {
   flex: 1;
@@ -1491,7 +1502,10 @@ body {
   min-width: 6rem;
   padding: var(--space-2) var(--space-3);
   color: var(--fg-strong);
-  font-size: var(--text-5);
+  font-family: var(--workbench-head-font);
+  font-size: var(--workbench-head-size);
+  font-weight: var(--workbench-head-weight);
+  line-height: var(--workbench-head-line);
   max-width: 60%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -6376,9 +6390,9 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 .wk-explorer-rail[data-state='unavailable'], .wk-explorer-rail[data-state='inert'] { opacity: .58; pointer-events: none; }
 /* THE COMMONS STRIP WEARS THE TILE HEAD'S SHADING (owner, 2026-08-27: "it should be the same,
    at least shading") — one surface_head look for every surface (docs/cowork-space.md). */
-.wk-channel-service-tabs { display: flex; flex: 0 0 auto; align-items: stretch; gap: 0; min-height: var(--row-head); background: var(--cowork-head-bg); border-bottom: var(--edge) solid var(--line-2); overflow-x: auto; }
-.wk-channel-service-title { display: flex; align-items: center; flex: 0 0 auto; color: var(--fg-strong); border-right: var(--edge) solid var(--line-2); padding: var(--space-3) var(--space-6); font-size: var(--text-3); font-weight: 700; white-space: nowrap; }
-.wk-channel-service-tab { flex: 1 0 auto; border: 0; border-right: var(--edge) solid var(--line); border-radius: 0; background: transparent; color: var(--muted-2); padding: var(--space-3) var(--space-6); font-size: var(--text-3); font-weight: 650; white-space: nowrap; }
+.wk-channel-service-tabs { display: flex; flex: 0 0 auto; align-items: stretch; gap: 0; min-height: var(--row-head); background: var(--cowork-head-bg); border-bottom: var(--edge) solid var(--line-2); overflow-x: auto; font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); line-height: var(--workbench-head-line); }
+.wk-channel-service-title { display: flex; align-items: center; flex: 0 0 auto; color: var(--fg-strong); border-right: var(--edge) solid var(--line-2); padding: var(--space-3) var(--space-6); font: var(--workbench-head-weight) var(--workbench-head-size)/var(--workbench-head-line) var(--workbench-head-font); white-space: nowrap; }
+.wk-channel-service-tab { flex: 1 0 auto; border: 0; border-right: var(--edge) solid var(--line); border-radius: 0; background: transparent; color: var(--muted-2); padding: var(--space-3) var(--space-6); font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); white-space: nowrap; }
 .wk-channel-service-tab[aria-selected='true'] { background: var(--raise); color: var(--fg-strong); box-shadow: inset 0 calc(-1 * var(--space-1)) 0 var(--accent); }
 .wk-channel-service-tab[data-attention='true'] { color: var(--warn); font-weight: 700; }
 .wk-channel-surface > .wk-surface-content { display: flex; flex-direction: column; }
