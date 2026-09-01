@@ -14,6 +14,9 @@ a count—the waiting cards are already visible when opened.
 An ordinary open of Team Commons lands directly on Agent Message Queue while that
 attention state is active. Explicit links to another channel still win, and a newly
 arriving message never pulls the owner away from a tab they already chose.
+Outside the queue tab, each newly stuck or failed message produces one bounded central
+kiiro flash: **Check Team Commons → Agent Message Queue**. Polling does not repeat the
+flash for the same retained message.
 Each retained card shows **From**, **To**, message type, status and attempts. Waiting age
 runs from creation; failed age runs from the failure event. Under an hour the compact
 clock includes seconds and visibly advances while the channel is open. A busy eligibility

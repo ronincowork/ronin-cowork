@@ -1,6 +1,6 @@
 /* Inbound session messages that have not yet delivered. */
 import { t } from './lexicon.js';
-import { toast } from './ui.js';
+import { attention, toast } from './ui.js';
 
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
@@ -33,6 +33,29 @@ function reasonOf(reason) {
   return reason === 'prompt contents changed while submitting'
     ? t('messages.reason_prompt_changed', 'The prompt changed before delivery could be confirmed. Automatic retries stopped to avoid sending a duplicate.')
     : reason;
+}
+
+const attentionSeen = new Set();
+
+/** Watch independently of the queue tab; flash once when each retained problem appears. */
+export function watchMessageQueueAttention() {
+  const poll = async () => {
+    try {
+      const response = await fetch('/api/messages');
+      const body = await response.json();
+      const ids = new Set((Array.isArray(body.messages) ? body.messages : [])
+        .filter((message) => message.state === 'stuck' || message.state === 'failed')
+        .map((message) => message.id));
+      if ([...ids].some((id) => !attentionSeen.has(id))) {
+        attention(t('messages.attention', 'Check Team Commons → Agent Message Queue'));
+      }
+      for (const id of [...attentionSeen]) if (!ids.has(id)) attentionSeen.delete(id);
+      for (const id of ids) attentionSeen.add(id);
+    } catch { /* the queue card itself will show a reachable API failure when opened */ }
+  };
+  void poll();
+  const timer = setInterval(() => void poll(), 2_000);
+  return () => clearInterval(timer);
 }
 
 export function buildMessageQueue(host, onCount = () => {}) {

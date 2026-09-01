@@ -17,7 +17,8 @@ declared first:
 - **vendor** — xterm.css, imported into the lowest layer.
 - **foundations** — the design tokens (both themes), reset, page chrome, and the one
   universal `:focus-visible` ring.
-- **ui** — the shared primitives: `.ui-sheet`/`.ui-card`, `#toast`, the help box.
+- **ui** — the shared primitives: `.ui-sheet`/`.ui-card`, `#toast`, the central
+  `#attention-flash`, and the help box.
 - **ui** also owns the app-bar navigation pair: `.ui-bar-nav` is a clickable label and
   `.ui-bar-value` is the plain loaded value beside it. Native button chrome and
   feature-local bar styling are forbidden.
@@ -286,6 +287,8 @@ a `destroy()` owner at that moment, not speculatively.
   on it when the drop closes under the keyboard. The paragraph above still stands, and it
   is about the BAR; a tile header is not the bar.
 - **Toast** — `ui.toast`: one chip, `role=status`, errors hold longer than successes.
+- **Attention flash** — `ui.attention`: one bounded, central kiiro cue with `role=status`;
+  it never steals focus and names the surface where the owner action is waiting.
 - **Field** — `ui.field`: a real accessible name and a message line for a control,
   `display: contents` so the layout it sits in does not move. Labels are
   screen-reader-only by default (the cockpit's density keeps placeholders as the

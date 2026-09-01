@@ -546,6 +546,28 @@ body {
   border-color: var(--bad);
 }
 
+/* Central owner-attention cue: kiiro means an action is waiting, not that it failed. */
+#attention-flash {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 41;
+  max-width: 88vw;
+  border: var(--edge) solid var(--warn);
+  border-radius: var(--radius-xs);
+  background: var(--warn);
+  color: var(--on-accent);
+  padding: var(--space-6) var(--space-8);
+  font-size: var(--text-5);
+  font-weight: 700;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-quick);
+}
+#attention-flash.show { opacity: 1; }
+
 /* ---- field / status — the labelled-control and async-outcome primitives (js/ui.js) ----
    .ui-field is display:contents ON PURPOSE: it exists to add a real accessible name
    and a message line to a control already sitting in someone's flex/grid, without

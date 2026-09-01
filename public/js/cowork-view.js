@@ -8,7 +8,7 @@ import { createAddAgentView } from './add-agent.js';
 import { createTeamRosterSurface } from './team-roster-surface.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { createTeamWipeboard } from './team-wipeboard.js';
-import { buildMessageQueue } from './message-queue.js';
+import { buildMessageQueue, watchMessageQueueAttention } from './message-queue.js';
 import { buildDocs } from './docs.js';
 import { buildArchives } from './archives.js';
 import { homeData, refreshHome, statusLabel } from './home.js';
@@ -98,6 +98,7 @@ export function createCoworkView(options = {}) {
   const root = el('main', 'tw-view');
   root.dataset.coworkKind = campaign ? 'campaign' : 'team';
   let ctx = null;
+  let stopMessageAttention = null;
   let team = '';
   let loaded = ''; // the team whose roster reading is currently drawn
   let unsubscribe = null;
@@ -631,6 +632,8 @@ export function createCoworkView(options = {}) {
     enter: (context) => {
       ctx = context;
       entered = true;
+      stopMessageAttention?.();
+      stopMessageAttention = watchMessageQueueAttention();
       if (campaign) void campaignIdentity.load();
       for (const seat of Object.values(seats)) seat.pool.destroyAll();
       team = campaign ? '' : context.param || context.state?.team || '';
@@ -666,6 +669,8 @@ export function createCoworkView(options = {}) {
       // Leaving the destination closes every Team transport; the seats remember what
       // they held and get it back on re-entry.
       entered = false;
+      stopMessageAttention?.();
+      stopMessageAttention = null;
       disarmPrewarm();
       window.clearInterval(homeTimer);
       window.clearInterval(reportTimer);
@@ -679,6 +684,8 @@ export function createCoworkView(options = {}) {
     },
     destroy: () => {
       entered = false;
+      stopMessageAttention?.();
+      stopMessageAttention = null;
       campaignIdentity.destroy();
       unsubscribe?.();
       unsubscribe = null;

@@ -1177,6 +1177,7 @@ The catalog entry goes. {dir} is not touched.
 - **messages.dismissed:** Message dismissed.
 - **messages.retained:** Still waiting — {reason}
 - **messages.action_failed:** Message action failed — {reason}
+- **messages.attention:** Check Team Commons → Agent Message Queue
 - **cowork.h_configuration:** Configuration
 - **cowork.h_appearance:** Appearance
 - **cowork.h_release:** Release & update

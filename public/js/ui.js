@@ -10,6 +10,7 @@
  *   sheet()   a modal card over a dimmed backdrop — dialog semantics, focus entry,
  *             Tab containment, Escape/backdrop dismissal, focus restoration
  *   toast()   the one transient outcome chip (grew out of the pad's; now house-wide)
+ *   attention() a central kiiro cue for owner action that is waiting elsewhere
  *   field()   a control with a REAL accessible name — display:contents, so it adds
  *             semantics to an existing layout without changing a pixel of it
  *   status()  the async outcome line — loading…/saved/not saved-and-why, announced
@@ -173,6 +174,8 @@ export function sheet(spec) {
 
 let toastEl = null;
 let toastTimer = null;
+let attentionEl = null;
+let attentionTimer = null;
 
 /**
  * One transient chip, bottom-center: the result of an action that has no panel of its
@@ -194,6 +197,20 @@ export function toast(msg, ok = true) {
   clearTimeout(toastTimer);
   // Errors hold longer: a failure you did not see is the defect this chip exists for.
   toastTimer = setTimeout(() => toastEl.classList.remove('show'), ok ? 2200 : 5000);
+}
+
+/** One bounded, central kiiro cue. It announces a required owner action without focus. */
+export function attention(msg) {
+  if (!attentionEl) {
+    attentionEl = document.createElement('div');
+    attentionEl.id = 'attention-flash';
+    attentionEl.setAttribute('role', 'status');
+    document.body.appendChild(attentionEl);
+  }
+  attentionEl.textContent = msg;
+  attentionEl.classList.add('show');
+  clearTimeout(attentionTimer);
+  attentionTimer = setTimeout(() => attentionEl.classList.remove('show'), 5000);
 }
 
 /* ---------- the button-anchored menu: GONE, and what it was for ----------
