@@ -977,7 +977,13 @@ async function runPass({ label, browser, contextOpts }) {
   // Agent cards show their readable title; the fixed session ID remains the resource key.
   // Never make seating depend on those two strings happening to be identical.
   const probeCard = page.locator(`.wk-card[data-workbench-offer-resource="${PROBE}"]`).first();
-  if (probeAvailable && await probeCard.count()) { await probeCard.click(); await page.waitForTimeout(1200); }
+  if (probeAvailable) {
+    // The Team roster is fed by its own live refresh. Waiting at the card is the real
+    // readiness boundary; a one-time count raced that refresh and intermittently skipped
+    // the click, then blamed the downstream Tile label for being absent.
+    await probeCard.waitFor({ state: 'attached', timeout: 10_000 }).catch(() => {});
+    if (await probeCard.count()) { await probeCard.click(); await page.waitForTimeout(1200); }
+  }
   // API health can answer before the phone workbench finishes constructing its Tiles.
   // Readiness is the probe seated through the selector, not an arbitrary sleep;
   // checkDom still reports the same failure below when it never arrives.

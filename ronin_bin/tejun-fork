@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # tejun-fork — launch one visible Ronin Agent. Every input is optional.
-# Usage: tejun-fork [instructions] [--name n] [--team t] [--role r]
+# Usage: tejun-fork [instructions] --name n [--team t] [--behaviour ways:book]…
 #                   [--provider p] [--model m] [--dial user|read|write]
 set -u
 die() { printf 'REFUSED: %s\n' "$1" >&2; exit "${2:-4}"; }
@@ -19,12 +19,16 @@ me() {
   fi
 }
 
-PROMPT="" NAME="" TEAM="" ROLE="" PROVIDER="" MODEL="" DIAL=""
+PROMPT="" NAME="" TEAM="" BEHAVIOURS="" PROVIDER="" MODEL="" DIAL=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --name) NAME="${2:-}"; shift 2 ;;
     --team) TEAM="${2:-}"; shift 2 ;;
-    --role|--session-role) ROLE="${2:-}"; shift 2 ;;
+    --behaviour|--behavior)
+      [ -n "${2:-}" ] || die '--behaviour needs a ways:<book>' 2
+      BEHAVIOURS="${BEHAVIOURS}${BEHAVIOURS:+
+}${2}"
+      shift 2 ;;
     --provider) PROVIDER="${2:-}"; shift 2 ;;
     --model) MODEL="${2:-}"; shift 2 ;;
     --dial|--control) DIAL="${2:-}"; shift 2 ;;
@@ -34,16 +38,17 @@ while [ $# -gt 0 ]; do
   esac
 done
 case "$DIAL" in ''|user|read|write) ;; *) die '--dial is user, read, or write' 2 ;; esac
+[ -n "$NAME" ] || die '--name is required' 2
 
 CALLER=$(me 2>/dev/null || true)
-BODY=$(PROMPT="$PROMPT" NAME="$NAME" TEAM="$TEAM" ROLE="$ROLE" PROVIDER="$PROVIDER" MODEL="$MODEL" DIAL="$DIAL" CALLER="$CALLER" python3 - <<'PY'
+BODY=$(PROMPT="$PROMPT" NAME="$NAME" TEAM="$TEAM" BEHAVIOURS="$BEHAVIOURS" PROVIDER="$PROVIDER" MODEL="$MODEL" DIAL="$DIAL" CALLER="$CALLER" python3 - <<'PY'
 import json, os
 e = os.environ
 b = {"caller": e["CALLER"]} if e["CALLER"] else {}
 for field, env in (("prompt", "PROMPT"), ("name", "NAME"), ("team", "TEAM"),
-                   ("session_role", "ROLE"), ("provider", "PROVIDER"),
-                   ("model", "MODEL"), ("dial", "DIAL")):
+                   ("provider", "PROVIDER"), ("model", "MODEL"), ("dial", "DIAL")):
     if e[env]: b[field] = e[env]
+if e["BEHAVIOURS"]: b["behaviours"] = e["BEHAVIOURS"].splitlines()
 print(json.dumps(b))
 PY
 ) || die 'could not compose launch request' 2

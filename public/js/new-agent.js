@@ -29,7 +29,7 @@ import { request } from './request.js';
 import { t } from './lexicon.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
 import {
-  createStep, dialRow, el, kindTiles, providerModelPair, readingRows, tagRow, templateTray,
+  createStep, dialRow, el, kindTiles, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
 } from './form-steps.js';
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
@@ -40,10 +40,10 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;
 
   const draft = {
-    door: 'template', type: 'cowork_agent', template: '', templateName: '',
-    name: '', kind: 'open', kindTouched: false, provider: '', model: '', instructions: '',
-    teamMode: 'none', team: '', newTeam: '',
-    reach: 'open', recruit: 'open', output: 'open',
+    type: 'cowork_agent', template: '', templateName: '',
+    name: '', kind: 'coding', kindTouched: false, provider: '', model: '', instructions: '',
+    teamMode: 'new', team: '', newTeam: '',
+    reach: 'open', recruit: 'open', output: 'open', launchMode: 'live_dangerously',
     books: [], root: '',
     expanded: {},
   };
@@ -56,9 +56,19 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   let snapshot = '';
   let busy = false;
   let loaded = false;
-  const touched = { mandate: false, model: false, root: false, books: false };
+  const touched = { mandate: false, model: false, root: false, books: false, launchMode: false };
 
-  const surface = createSurface({ label: t('new_agent.title', 'New Agent'), className: 'na-surface' });
+  /* THE LAUNCH BUTTON LIVES IN THE TILE HEADER (owner, 2026-09-01), quiet and compact
+   * like Save as template rather than a slab at the bottom of a long scroll — and it is
+   * DISABLED until a name is typed, which is the form teaching its own rule: the name is
+   * the only required field (SETTLING § 1, RULE TWO) and everything under it is optional. */
+  const start = createAction({
+    label: t('forms.launch', 'Launch'),
+    size: 'compact',
+    disabled: true,
+    action: () => void doStart(),
+  });
+  const surface = createSurface({ label: t('new_agent.title', 'New Agent'), className: 'na-surface', actions: [start] });
   const notice = createNotice();
 
   const isCowork = () => draft.type === 'cowork_agent';
@@ -67,22 +77,8 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   const offered = () => (draft.kind === 'open' ? templates : templates.filter((row) => row.kinds.includes(draft.kind)));
   const chosenTeam = () => (draft.teamMode === 'existing' ? draft.team : draft.teamMode === 'new' ? finalizeTeamName(draft.newTeam) : '');
 
-  /* ---- the two doors ---- */
-  const seg = el('div', 'fs-seg');
-  const doorButton = (door, label) => {
-    const button = el('button', null, label);
-    button.type = 'button';
-    button.addEventListener('click', () => {
-      if (draft.door === door) return;
-      draft.door = door;
-      if (door === 'manual') { draft.template = ''; snapshot = ''; draft.expanded = {}; }
-      paint();
-    });
-    seg.append(button);
-    return button;
-  };
-  const templateDoor = doorButton('template', t('template', 'Template'));
-  const manualDoor = doorButton('manual', t('forms.manual', 'Manual'));
+  // NO TEMPLATE | MANUAL SWITCHER (owner, 2026-09-01). The tray is a step like any other
+  // and "Make your own" is the manual door; a mode switch above the form said it twice.
 
   /* ---- 1 · New session ---- */
   const stepType = createStep({ n: 1, key: 'type', title: t('new_agent.new_session', 'New session') });
@@ -123,6 +119,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     }
     draft.name = nameInput.value;
     paintFoot();
+    paintActions(); // Start wakes on the first character of a name
   });
   const leanNote = el('p', 'na-omitted');
   const pair = providerModelPair(
@@ -134,7 +131,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   function paintKinds() {
     // THE KIND IS THE TRAY'S FILTER and only a Cowork Agent has one; Manual has no tray
     // to filter, so it does not ask (the drawing's own rule).
-    kindHost.hidden = !(isCowork() && draft.door === 'template');
+    kindHost.hidden = !isCowork();
     if (kindHost.hidden) return;
     kindHost.replaceChildren(kindTiles(draft.kind, (key) => {
       draft.kind = key;
@@ -212,10 +209,13 @@ export function createNewAgentView(kit, { connect = null } = {}) {
       });
       return box;
     };
+    // NEW TEAM LEADS, AND IT IS THE DEFAULT (owner, 2026-08-31). The order is the order
+    // of intent: most launches are the start of something, joining one is next, and a
+    // rōnin is the ordinary remainder rather than the opening offer.
     ways3.append(
+      way('new', t('new_agent.team_new', 'A new team'), t('new_agent.team_new_sub', 'Created first, then this Agent is born into it.')),
       way('existing', t('new_agent.team_existing', 'An existing team'), t('new_agent.team_existing_sub', 'Join it. Its answers land at birth.')),
       way('none', t('new_agent.team_none', 'No team — a rōnin'), t('new_agent.team_none_sub', 'Ordinary, not a gap.')),
-      way('new', t('new_agent.team_new', 'A new team'), t('new_agent.team_new_sub', 'Created first, then this Agent is born into it.')),
     );
     teamHost.append(ways3);
     if (draft.teamMode === 'existing') {
@@ -238,8 +238,15 @@ export function createNewAgentView(kit, { connect = null } = {}) {
         if (clean !== input.value) { input.value = clean; input.setSelectionRange(caret, caret); }
         draft.newTeam = input.value;
         paintFoot();
+        paintActions(); // the button's promise follows the name as it is typed
       });
-      teamHost.append(createField({ label: t('new_team.name', 'Team name'), control: input }).el);
+      // GO NEVER FAILS, and this tile is now the one you land on: leaving the name blank
+      // is an answer — no team is made and the Agent is a rōnin — not an error to clear.
+      teamHost.append(createField({
+        label: t('new_team.name', 'Team name'),
+        control: input,
+        description: t('new_agent.team_new_blank', 'Blank makes no team — the Agent is a rōnin.'),
+      }).el);
     }
   }
   stepTeam.body.append(teamHost);
@@ -291,34 +298,48 @@ export function createNewAgentView(kit, { connect = null } = {}) {
       row(routine.name, routine.stated_by?.[0]?.layer || '', routine.on);
     }
   }
+  /* ---- launch mode: the enum that replaces `permissions` ----
+   * Owner, 2026-09-01, and an enum rather than the boolean he first named: Ronin offers
+   * two launch selections and NEITHER is "safe". CONFIGURED appends nothing and leaves
+   * whatever the provider CLI already loads — Ronin claims nothing about it, including
+   * that it will ask. LIVE DANGEROUSLY appends that provider's own declared bypass flag
+   * (`--dangerously-skip-permissions` for Anthropic, `--dangerously-bypass-approvals-and-
+   * sandbox` for OpenAI). Default is live_dangerously: it preserves what Codex already
+   * does on this box and CHANGES Claude, which asks today.
+   *
+   * @dangerous_mode is cutting the delivery — project-roots parses the per-provider flag,
+   * spawn appends it, and asking for it where a provider declares none is REFUSED rather
+   * than quietly downgraded. Until that lands the route notes the key as ignored. The
+   * difference from `permissions`, which this replaces, is that `permissions` was designed
+   * to be delivered nowhere; this has an owner and a landing. Spellings are that session's
+   * P0 proposal, pending @sea_2_sea.
+   */
+  const LAUNCH_MODES = () => [
+    { key: 'configured', label: t('launch_mode.configured', 'Model provider configuration'),
+      sub: t('launch_mode.configured_sub', 'Ronin adds nothing to the command. The Agent starts with whatever its provider CLI already loads.') },
+    { key: 'live_dangerously', label: t('launch_mode.live', 'Dangerously'),
+      sub: t('launch_mode.live_sub', 'Ronin appends that provider’s own bypass flag, so the Agent does not stop to ask.') },
+  ];
+  const modeHost = el('div');
+  const paintLaunchMode = () => {
+    modeHost.replaceChildren(
+      el('p', 'fs-head', t('launch_mode.head', 'launch mode')),
+      wayTiles(LAUNCH_MODES(), draft.launchMode, (key) => { draft.launchMode = key; touched.launchMode = true; paintLaunchMode(); paintFoot(); }),
+    );
+  };
   const shelvesHost = el('div');
   function paintShelves() {
-    shelvesHost.replaceChildren();
-    const shelf = (head, rows, prefix) => {
-      shelvesHost.append(el('p', 'fs-head', head));
-      const grid = el('div', 'na-sopgrid');
-      for (const rowDef of rows) {
-        const address = `${prefix}:${rowDef.name}`;
-        const on = draft.books.includes(address);
-        const box = el('button', 'na-sop');
-        box.type = 'button';
-        box.title = rowDef.blurb || rowDef.label;
-        box.setAttribute('aria-pressed', String(on));
-        box.append(el('span', 'aa-box'), el('b', null, rowDef.name));
-        box.addEventListener('click', () => {
-          draft.books = on ? draft.books.filter((book) => book !== address) : [...draft.books, address];
-          touched.books = true;
-          paintShelves();
-          paintFoot();
-        });
-        grid.append(box);
-      }
-      shelvesHost.append(grid);
-    };
-    shelf(t('new_agent.shelf_house', 'behaviours · the house'), sops, 'sops');
-    shelf(t('new_agent.shelf_ways', 'behaviours · ways of working'), ways, 'ways');
+    shelvesHost.replaceChildren(bookShelves([
+      { head: t('new_agent.shelf_house', 'behaviours · the house'), prefix: 'sops', rows: sops },
+      { head: t('new_agent.shelf_ways', 'behaviours · ways of working'), prefix: 'ways', rows: ways },
+    ], draft.books, (address, on) => {
+      draft.books = on ? [...draft.books, address] : draft.books.filter((book) => book !== address);
+      touched.books = true;
+      paintShelves();
+      paintFoot();
+    }));
   }
-  stepLoadout.body.append(routinesHead, routinesHost, shelvesHost);
+  stepLoadout.body.append(modeHost, routinesHead, routinesHost, shelvesHost);
 
   /* ---- the plan: which steps exist for this type and door ---- */
   const steps = {
@@ -328,9 +349,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   const plan = () => {
     if (draft.type === 'terminal') return ['type', 'top', 'team'];
     if (draft.type === 'bare_metal_agent') return ['type', 'top', 'instructions', 'team'];
-    return draft.door === 'manual'
-      ? ['type', 'top', 'instructions', 'team', 'where', 'mandate', 'loadout']
-      : ['type', 'top', 'template', 'instructions', 'team', 'where', 'mandate', 'loadout'];
+    return ['type', 'top', 'template', 'instructions', 'team', 'where', 'mandate', 'loadout'];
   };
   const FOLDS = ['instructions', 'team', 'where', 'mandate', 'loadout'];
   function toggle(key) {
@@ -356,32 +375,34 @@ export function createNewAgentView(kit, { connect = null } = {}) {
 
   /* ---- Will be born ---- */
   const foot = el('div', 'ntf-foot');
-  function paintFoot() {
-    foot.replaceChildren();
+  function bornRows() {
     const typeRow = TYPES().find((type) => type.key === draft.type);
     const rows = [
       [t('new_agent.session', 'session'), typeRow?.label || draft.type],
       [t('add_agent.name', 'name'), draft.name],
-      [t('squad', 'Team'), draft.teamMode === 'none' ? '' : chosenTeam() + (draft.teamMode === 'new' ? `  ${t('new_agent.created_first', '(created first)')}` : '')],
+      [t('squad', 'Team'), draft.teamMode === 'none' || !chosenTeam() ? '' : chosenTeam() + (draft.teamMode === 'new' ? `  ${t('new_agent.created_first', '(created first)')}` : '')],
     ];
     if (isCowork()) {
-      if (draft.door === 'template') rows.push([t('kind', 'Kind'), draft.kind]);
+      rows.push([t('kind', 'Kind'), draft.kind]);
       rows.push([t('mandate', 'Mandate'), `${draft.reach} · ${draft.recruit} · ${draft.output}`]);
     }
     rows.push([t('routines', 'Routines'), draft.type === 'terminal'
-      ? (() => el('em', null, t('new_agent.routines_terminal', 'agent: none — a pane')))()
+      ? el('em', null, t('new_agent.routines_terminal', 'agent: none — a pane'))
       : draft.type === 'bare_metal_agent'
-        ? (() => el('em', null, t('new_agent.routines_bare', 'no floor, no routines')))()
+        ? el('em', null, t('new_agent.routines_bare', 'no floor, no routines'))
         : tagRow([{ text: t('new_team.floor_tag', 'floor'), on: true }, ...(seed?.routines || []).filter((row) => row.on).map((row) => ({ text: row.name, on: true }))])]);
     if (isCowork() && draft.books.length) rows.push([t('behaviours', 'Behaviours'), tagRow(draft.books.map((text) => ({ text, on: true })))]);
+    rows.push([t('launch_mode.head', 'launch mode'), LAUNCH_MODES().find((row) => row.key === draft.launchMode)?.label || draft.launchMode]);
     rows.push([t('add_agent.place', 'place'), draft.root]);
     if (hasAgent()) rows.push([t('forms.model', 'model'), draft.provider ? `${draft.provider}${draft.model ? ` / ${draft.model}` : ''}` : t('forms.default', 'default')]);
-    foot.append(readingRows(rows));
+    return rows;
+  }
+  function paintFoot() {
+    foot.replaceChildren(readingRows(bornRows()));
     foot.append(el('p', 'na-note', t('new_agent.blank_note', 'A blank field is an answer, not a gap.')));
   }
 
-  /* ---- start, and the conditional save ---- */
-  const start = createAction({ label: t('add_agent.start', 'Start'), kind: 'primary', action: () => void doStart() });
+  /* ---- the conditional save ---- */
   const saveName = el('input', 'ntf-tmplname');
   saveName.type = 'text';
   saveName.spellcheck = false;
@@ -392,12 +413,16 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     save.setDisabled(!saveName.value.trim());
   });
   const save = createAction({ label: t('save_template', 'Save as template'), disabled: true, action: () => void doSave() });
-  const actions = createActionBar({ label: t('add_agent.actions', 'Launch actions'), actions: [start] });
+  const actions = createActionBar({ label: t('add_agent.actions', 'Launch actions') });
   actions.el.append(saveName, save.el);
   function paintActions() {
-    start.el.textContent = draft.teamMode === 'new' && isCowork()
-      ? t('new_agent.create_and_start', 'Create the team and start')
-      : draft.type === 'terminal' ? t('new_agent.open_terminal', 'Open the terminal') : t('add_agent.start', 'Start');
+    // The button says what the press will DO: with the name blank there is no team to
+    // create, so it must not promise one.
+    // ONE WORD FOR STARTING ANYTHING (owner, 2026-09-01), and the go colour when it can go.
+    const ready = !!draft.name.trim();
+    start.setDisabled(!ready);
+    if (ready) start.el.dataset.kind = 'primary';
+    else delete start.el.dataset.kind;
     const offer = isCowork() && (!templateRow() || templateDirty());
     saveName.hidden = !offer;
     save.el.hidden = !offer;
@@ -412,7 +437,9 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     notice.set('info', t('add_agent.starting', 'Starting…'));
     // A NEW TEAM IS TWO IDEMPOTENT DOORS (§ 7.5): write the record, then launch into it.
     let team = chosenTeam();
-    if (draft.teamMode === 'new' && isCowork()) {
+    // An unnamed new team is no team, not a refusal — see the field's own sentence.
+    if (draft.teamMode === 'new' && !team) team = '';
+    if (draft.teamMode === 'new' && isCowork() && team) {
       if (!isValidTeamName(team)) {
         busy = false;
         start.setDisabled(false);
@@ -439,6 +466,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
           kind: draft.kind,
           mandate: { reach: draft.reach, recruit: draft.recruit, output: draft.output },
           behaviours: [...draft.books],
+          launch_mode: draft.launchMode,
           ...(draft.template ? { template: draft.template } : {}),
         };
     const result = await request('/api/launch', { method: 'POST', json: body });
@@ -494,6 +522,9 @@ export function createNewAgentView(kit, { connect = null } = {}) {
       for (const key of ['reach', 'recruit', 'output']) if (value(key)) draft[key] = value(key);
     }
     if (!touched.books && Array.isArray(value('behaviours'))) draft.books = [...value('behaviours')];
+    // The campaign's, or the team's if one is joined — an editable value like every other
+    // default (lead, 2026-09-01: launch_mode cascades campaign to team to launch).
+    if (!touched.launchMode && value('launch_mode')) draft.launchMode = value('launch_mode');
     if (!draft.kindTouched && team && value('kind')) draft.kind = value('kind');
     pair.paint();
     paintRoots();
@@ -507,14 +538,12 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   }
 
   function paint() {
-    for (const button of [templateDoor, manualDoor]) button.setAttribute('aria-pressed', String(button === (draft.door === 'template' ? templateDoor : manualDoor)));
-    seg.hidden = !isCowork();
     const order = plan();
     for (const [key, step] of Object.entries(steps)) step.el.hidden = !order.includes(key);
     order.forEach((key, index) => steps[key].setNumber(index + 1));
     stepTop.el.querySelector('h3').textContent = !isCowork()
       ? (hasAgent() ? t('new_agent.name_where_model', 'Name, where & model') : t('new_agent.name_where', 'Name & where'))
-      : (draft.door === 'template' ? t('new_agent.name_model_kind', 'Name, model & kind') : t('new_agent.name_model', 'Name & model'));
+      : t('new_agent.name_model_kind', 'Name, model & kind');
     // The lean types fold the where step into the top block — the drawing's one-block
     // geometry: who it is, then where it runs. Moving the field keeps its typed state.
     topRight.hidden = !hasAgent();
@@ -530,14 +559,17 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     paintMandate();
     paintRoutinePreview();
     paintShelves();
+    paintLaunchMode();
     paintFolds();
     paintActions();
     paintFoot();
   }
 
   const form = el('div', 'ntf-form');
-  form.append(seg, stepType.el, stepTop.el, stepTemplate.el, stepInstructions.el, stepTeam.el, stepWhere.el, stepMandate.el, stepLoadout.el);
-  surface.content.append(form, actions.el, notice.el, foot);
+  form.append(stepType.el, stepTop.el, stepTemplate.el, stepInstructions.el, stepTeam.el, stepWhere.el, stepMandate.el, stepLoadout.el);
+  // Save as template sits UNDER the reading, for the same reason as on New Team: the
+  // reading is the packet, and the button saves the packet.
+  surface.content.append(form, notice.el, foot, actions.el);
 
   /**
    * THE ＋ NEW DOOR ARRIVES HERE NOW. `S.showNewSession(prompt)` — the bar's ＋, ⌃⇧N and

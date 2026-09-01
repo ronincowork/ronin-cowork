@@ -17,6 +17,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { readCatalogSections } from '../src/catalog.js';
 import { listMacros } from '../src/macros.js';
 
@@ -53,13 +54,22 @@ test('forkit launches through the one door, not by hand-rolling tmux', async () 
   assert.doesNotMatch(text, /\|\s*wait-ready\s*\|/, 'there is no prompt to wait for');
 });
 
-test('forkit makes every input optional and invents no role', async () => {
+test('tejun-fork serializes repeatable behaviours and no role field', async () => {
+  const source = await readFile(new URL('../ronin_bin/tejun-fork', import.meta.url), 'utf8');
+  assert.match(source, /--behaviour\|--behavior/);
+  assert.match(source, /b\["behaviours"\] = e\["BEHAVIOURS"\]\.splitlines\(\)/);
+  assert.doesNotMatch(source, /session_role|session-role|\("session_role",/);
+});
+
+test('forkit requires only a name and invents no behaviour', async () => {
   const text = await forkit();
-  assert.match(text, /`session_role`/, 'the task is a parameter');
-  assert.match(text, /Every launch input is optional/);
-  assert.match(text, /blank role is valid/i);
-  assert.match(text, /no mandatory role decision/i);
+  assert.match(text, /repeatable `behaviour`/, 'birth books are optional parameters');
+  assert.match(text, /`name` is required/);
+  assert.match(text, /Every other launch input is\s+optional/);
+  assert.match(text, /No behaviour selection is valid/i);
+  assert.match(text, /no mandatory behaviour decision/i);
   assert.match(text, /do not stop to ask for one/i);
+  assert.doesNotMatch(text, /session_role/);
   assert.doesNotMatch(text, /propose-and-confirm/);
 });
 
@@ -73,14 +83,12 @@ test('forkit says team, and no longer says group', async () => {
 });
 
 test('a fork still proves it understood before it works', async () => {
-  // The oldest rule in this macro, and the schema cut must not have cost it: a fork
-  // reports its understanding and waits. It is now delivered by the resolved task's own
-  // `ack:` rather than typed into the pane, so the instruction has to say BOTH.
+  // The oldest rule in this macro, and the schema cut must not have cost it: the launch
+  // prompt itself tells a fork to report its understanding and wait.
   const text = await forkit();
   assert.match(text, /READ AND REPORT UNDERSTANDING FIRST/);
   assert.match(text, /NO code, NO builds, NO commits until the owner says go/);
   assert.match(text, /Do NOT type that prompt into the pane/i);
-  assert.match(text, /ack:/, "the resolved task's own rule is what adds it");
 });
 
 test('forkit reuses the canonical launch contract and gets the whole Build Brief', async () => {
@@ -88,7 +96,7 @@ test('forkit reuses the canonical launch contract and gets the whole Build Brief
   assert.match(text, /same launch contract as the ＋ New form/i, 'no second bespoke launch implementation');
   assert.match(text, /zero Build Brief/i, 'and the measured reason a bare tmux session is wrong');
   // The four reading levels the compiled brief carries. A fork made the old way got none.
-  assert.match(text, /all-session reading \+ the project_root's \+ the\s+Team's \+ the session_role's/);
+  assert.match(text, /all-session reading \+ the project_root's \+ the\s+Team's \+ the selected behaviour books/);
 });
 
 test('forkit teaches all three ways to ask, and silence is the first of them', async () => {
@@ -100,16 +108,15 @@ test('forkit teaches all three ways to ask, and silence is the first of them', a
   assert.match(text, /neither\s+uses the Campaign's Agent defaults, then the install defaults/i, 'and silence is the default');
   assert.match(text, /provider: anthropic/, 'naming a vendor alone is a documented way to ask');
   assert.match(text, /that provider's preferred model in ⚙ Configuration, else its first column/i);
-  // The role-model bias was removed with the field (owner, 2026-08-29), so the macro must
-  // not teach a fork that the task it is handed says anything about the model.
-  assert.match(text, /`session_role` states no model and biases\s+none/i);
+  assert.match(text, /A behaviour states no model and biases none/i);
   assert.match(text, /Never invent the\s+next field down/i, 'a vendor is not permission to pick a model');
   assert.match(text, /real cell from the launch table/i, 'never a composed command');
 });
 
-test('a fork owns its task afterwards', async () => {
+test('a fork keeps behaviour as birth reading, not a live mark', async () => {
   const text = await forkit();
-  assert.match(text, /re-marks itself with `write_tegami` and Ronin hands it that task's reading/);
+  assert.match(text, /selected behaviour books are birth reading/);
+  assert.doesNotMatch(text, /re-marks itself/);
 });
 
 test('forkit is still owner-invoked only', async () => {

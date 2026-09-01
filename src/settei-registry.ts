@@ -99,12 +99,12 @@ export const SETTEI_SCHEMA = {
     },
     {
       id: 'routineBundle', sec: 'routines', kind: 'choice', label: 'Routine Bundles',
-      from: '', seed: 'control', lands: { family: 'bootstrap', key: 'routine_bundle' },
+      from: '', seed: 'worktrees', lands: { family: 'bootstrap', key: 'routine_bundle' },
       choices: [
         { value: 'nothing', labelKey: 'setup.bundle_nothing', copyKey: 'setup.bundle_nothing_copy', label: 'Nothing', copy: 'Your agents start clean — no reading, no shared macros, no records. Just the CLI.' },
         { value: 'floor', labelKey: 'setup.bundle_floor', copyKey: 'setup.bundle_floor_copy', label: 'The floor', copy: 'Ronin still sets each agent up and keeps its birth receipt, but hands it nothing extra.' },
         { value: 'base', labelKey: 'setup.bundle_base', copyKey: 'setup.bundle_base_copy', label: 'Ronin Base', copy: 'Your agents arrive knowing the house: basic reading you can open and edit, simple macros for talking to each other, shared work records.' },
-        { value: 'control', labelKey: 'setup.bundle_control', copyKey: 'setup.bundle_control_copy', label: 'Ronin Control', recommended: true, copy: 'Adds managed repositories: every agent codes at its own private desk — a git worktree — so there are no code collisions, and work is handed in deliberately.' },
+        { value: 'worktrees', labelKey: 'setup.bundle_worktrees', copyKey: 'setup.bundle_worktrees_copy', label: 'Ronin Worktrees', recommended: true, copy: 'Adds managed repositories: every agent codes at its own private desk — a git worktree — so there are no code collisions, and work is handed in deliberately.' },
         { value: 'services', labelKey: 'setup.bundle_services', copyKey: 'setup.bundle_services_copy', label: 'Services', services: true, copy: 'Adds your Services to every agent — voice, transcripts, machine care.' },
       ],
     },

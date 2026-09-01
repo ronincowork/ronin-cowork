@@ -17,7 +17,7 @@ const PROFILE = 'campaign';
 // the machine's own half — account, health — is the Admin Desk's.
 const TYPES = Object.freeze({ identity: 'campaign.identity', profile: 'campaign.desk-profile', roots: 'campaign.project-roots', defaults: 'campaign.agent-defaults', routines: 'campaign.routines', roles: 'campaign.session-roles', machine: 'campaign.machine', create: 'campaign.new' });
 /** The machine's tabs of the cowork commons — everything about this install that is not already a surface here. */
-const MACHINE_TABS = Object.freeze(['health', 'account', 'archives', 'help', 'keypad']);
+const MACHINE_TABS = Object.freeze(['health', 'account', 'archives', 'messages', 'help', 'keypad']);
 const LEGACY = Object.freeze({ '@campaign': TYPES.identity, '@profile': TYPES.profile, '@roots': TYPES.roots, '@templates': TYPES.roles, 'campaign.team-templates': TYPES.roles, '@new-campaign': TYPES.create });
 const elem = (tag, cls, text) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
 
@@ -75,7 +75,7 @@ function registerCampaignSurfaces() {
   // settings — health, account (configuration, updates, hotwords, Koshi, gbrain, log out),
   // archived sessions, help desk, keypad — are a surface here, the cowork commons with the
   // two tabs this page already has as surfaces left out.
-  add({ type: TYPES.machine, header: 'channels', label: () => t('cowork.commons', 'Ronin Desk'), summary: () => t('campaign_view.machine_summary', 'The rest of the desk: Desk · Account · Archived · Help desk · Keypad.'), create: () => { const surface = coworkCommons({ tabs: MACHINE_TABS, label: t('cowork.commons', 'Ronin Desk') }); return { el: surface.el, show: () => surface.select(surface.current() || 'health') }; } });
+  add({ type: TYPES.machine, header: 'channels', label: () => t('cowork.commons', 'Ronin Desk'), summary: () => t('campaign_view.machine_summary', 'The rest of the desk: Desk · Account · Archived · Messages · Help desk · Keypad.'), create: () => { const surface = coworkCommons({ tabs: MACHINE_TABS, label: t('cowork.commons', 'Ronin Desk') }); return { el: surface.el, show: () => surface.select(surface.current() || 'health') }; } });
   // The card says Templates (owner, 2026-08-30); what opens is the session roles, which are
   // the templates that exist.
   add({ type: TYPES.roles, header: 'surface', label: () => t('league.templates', 'Templates'), summary: () => t('campaign_view.roles_summary', 'What a launch here offers an Agent to be.'), create: () => { const surface = createSessionRolesSurface(); return { el: surface.el, show: () => surface.enter() }; } });

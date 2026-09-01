@@ -54,7 +54,7 @@ learn in order to use Ronin should cost them a second language first.
 | `workspace` | **workspace**<!--g:glossary.workspace--> | One slot of the cowork space — *workspace 1*, *workspace 2*. It holds one surface at a time; it is a place, not a surface. |
 | `workspace_surface` | **surface**<!--g:glossary.surface--> | What a workspace holds: a terminal tile, the team commons, or the cowork commons (more coming). One per workspace, one head each. Each workspace keeps its own copy, tabs and scroll; opening the same type elsewhere never moves or changes the first. |
 | `terminal_tile` | **terminal tile**<!--g:glossary.terminal_tile--> | A tile when it is the surface in a workspace — one session. Say *the tile* on the grid page; *the terminal tile* when you are contrasting it with a commons. Never "seat". |
-| `team_commons` | **team commons**<!--g:glossary.team_commons--> | The team's shared surface — Chat, Wipeboard, Docs, Team Configuration behind one tab strip. Say *the team commons*. |
+| `team_commons` | **team commons**<!--g:glossary.team_commons--> | The team's shared surface — Docs, Wipeboard, Agent message queue, and Team Configuration behind one tab strip. Say *the team commons*. |
 | `campaign_commons` | **the commons**<!--g:glossary.campaign_commons--> | The campaign's shared surface — Campaign, Project roots, Team roster and Templates. Bare *commons* means this; always say *team commons* for a team's surface. |
 | `cowork_commons` | **cowork commons**<!--g:glossary.cowork_commons--> | The install's shared surface — Machine health, Account, Desk profile, Project roots, Help desk, Keypad behind one tab strip. Say *the cowork commons*. It replaces *the desk* when it lands. |
 | `new_session` | **new session**<!--g:glossary.new_session--> | The launcher as a surface — put in a workspace by ＋ Add team member or か New; the session it starts lands in that workspace. |
@@ -92,6 +92,7 @@ learn in order to use Ronin should cost them a second language first.
 | team (`@ronin-tags`) | **Cowork**<!--g:glossary.team--> | The user-facing word for a set of sessions working together. Internally this remains a Team backed by a `team_roster`; Cowork adds no second object. |
 | note (`@ronin_note`) | **Note**<!--g:glossary.note--> | The owner's one line about a session. |
 | — | **Status · Work record · Macros · Detach · Kill session**<!--g:glossary.session_menu--> | The rest of the per-session menu. Already plain. |
+| `message_queue` | **message queue**<!--g:glossary.message_queue--> | Inbound messages waiting to enter sessions. Delivered messages clear immediately; anything stuck remains visible under Messages. |
 
 ## § PROGRESS AND HISTORY
 
@@ -122,7 +123,7 @@ learn in order to use Ronin should cost them a second language first.
 | `routine` | **routine**<!--g:glossary.routine--> | Behaviours that work together, with one switch. Campaign values fill a new Team; saving makes that Team's complete on/off answer its own. Nothing already running changes. |
 | `routine_floor` | **Cowork floor**<!--g:glossary.routine_floor--> | The minimal launch, identity and Routine-delivery machinery included beneath every Cowork Agent. It reaches neither a terminal nor a bare-metal Agent. |
 | `ronin_base` | **Ronin Base**<!--g:glossary.ronin_base--> | Ronin's ordinary macros, documents, work records and session coordination. Normally on; Services and managed file coordination add it when selected. |
-| `ronin_control` | **managed file coordination**<!--g:glossary.ronin_control--> | Managed worktrees, hand-in, lead integration, receipts and Git safeguards that help parallel Agents avoid file collisions. Selecting it includes Ronin Base but not optional Ronin Services; it coordinates files, not Agent authority. |
+| `ronin_worktrees` | **worktrees**<!--g:glossary.ronin_worktrees--> | Managed worktrees, hand-in, lead integration, receipts and Git safeguards that help parallel Agents avoid file collisions. Selecting it includes Ronin Base but not optional Ronin Services; it coordinates files, not Agent authority. |
 | `ronin_services` | **Ronin Services**<!--g:glossary.ronin_services--> | One optional Routine containing the durable session record, Koshi, Voice and Hotwords. Selecting it includes Ronin Base. Installing Services does not switch the Routine on. |
 | `specialized_routine` | **specialized routine**<!--g:glossary.specialized_routine--> | An optional package such as Machine, gbrain or Ronin Services. |
 | `terminal` | **terminal**<!--g:glossary.terminal--> | A shell in a Ronin tile, with no Agent running in it. |

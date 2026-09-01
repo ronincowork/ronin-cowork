@@ -127,7 +127,7 @@ export interface SpawnForm {
   reference?: string;
   /**
    * THE DESK CONTROL of the launch box — *own desk · plain root* — pre-answered: absent
-   * means by the resolved Ronin Control Routine;
+   * means by the resolved Ronin Worktrees Routine;
    * `own` asks for one regardless, `none` refuses one. Ignored for a plain terminal.
    */
   desk?: DeskChoice;
@@ -554,7 +554,7 @@ export async function resolveForm(
     project_root: root.name,
     agent,
     control: (parentSeed?.resolved_routines ?? resolveRoutines(routineCatalog, {}, undefined))
-      .some((routine) => routine.name === 'ronin_control' && routine.enabled),
+      .some((routine) => routine.name === 'ronin_worktrees' && routine.enabled),
     desk: form.desk,
   });
   const routines = agent

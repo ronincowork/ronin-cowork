@@ -14,7 +14,7 @@ const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-routine-tools-'));
 process.env.RONIN_SESSION_COMMANDS_DIR = temp;
 
 const routine = (name: string, enabled: boolean, tools: string[]): ResolvedRoutine => ({
-  name, label: name, blurb: '', origin: 'stock', shadowed: false, class: 'base',
+  name, label: name, blurb: '', origin: 'stock', shadowed: false,
   reading: [], sops: [], macros: [], actions: [], tools, mcp: [], requires: [],
   enabled, stated_by: 'campaign', required_by: [],
 } satisfies RoutineRow & ResolvedRoutine);
@@ -22,7 +22,7 @@ const routine = (name: string, enabled: boolean, tools: string[]): ResolvedRouti
 test('birth PATH exposes enabled tools by name without inheriting a Ronin PATH', async () => {
   const projected = await projectRoutineTools('pathless', [
     routine('ronin_base', true, ['tejun']),
-    routine('ronin_control', false, ['tejun-desk']),
+    routine('ronin_worktrees', false, ['tejun-desk']),
   ], '/usr/bin:/bin');
   const tejun = await exec('/bin/sh', ['-c', 'command -v tejun'], { env: { PATH: projected.path } });
   assert.equal(tejun.stdout.trim(), path.join(projected.dir, 'tejun'));

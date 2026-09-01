@@ -8,6 +8,7 @@ import { createAddAgentView } from './add-agent.js';
 import { createTeamRosterSurface } from './team-roster-surface.js';
 import { createWarmTerminalPool } from './team-terminal-pool.js';
 import { createTeamWipeboard } from './team-wipeboard.js';
+import { buildMessageQueue } from './message-queue.js';
 import { buildDocs } from './docs.js';
 import { buildArchives } from './archives.js';
 import { homeData, refreshHome, statusLabel } from './home.js';
@@ -161,18 +162,21 @@ export function createCoworkView(options = {}) {
       leave: () => {}, destroy: () => {},
     };
     const config = el('div', 'tw-config');
+    const messages = el('div', 'tw-messages');
+    const messageQueue = buildMessageQueue(messages);
     const channels = createChannelSurface({
       label: t('team.commons', 'Team commons'),
       channels: [
         { id: 'docs', label: t('workspace.channel_docs', 'Docs') },
         { id: 'wipeboard', label: t('workspace.channel_wipeboard', 'Wipeboard') },
+        { id: 'agent-message-queue', label: t('workspace.channel_agent_message_queue', 'Agent message queue') },
         { id: 'team-configuration', label: t('workspace.channel_team_configuration', 'Team Configuration') },
       ],
       selected: 'docs',
-      services: { wipeboard, docs: docsService, 'team-configuration': service(config) },
+      services: { wipeboard, docs: docsService, 'agent-message-queue': { el: messages, mount: () => {}, enter: messageQueue.enter, leave: () => {}, destroy: messageQueue.destroy }, 'team-configuration': service(config) },
     });
     channels.el.dataset.workbenchSurface = COMMONS;
-    return { el: channels.el, channels, wipeboard, docs, config };
+    return { el: channels.el, channels, wipeboard, docs, config, messageQueue };
   };
   const teamCommons = Object.fromEntries(Object.keys(seats).map((id) => [id, createTeamCommons()]));
   const extras = new Set();

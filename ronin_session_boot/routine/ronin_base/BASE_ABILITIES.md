@@ -36,8 +36,8 @@ changes that dial. A refusal is an answer: report it and do not retry around it.
   not a durable record. When the Ronin Services Routine is enabled, its reading supplies
   the record-backed catch-up route and makes that route authoritative.
 - Send one targeted message with `tejun-send <session> <message...>`. Open with
-  `from @<your session>:` because the tool adds no watermark. Report its single verdict —
-  `DELIVERED`, `DENIED`, `BLOCKED`, `STUCK`, or `NO-SESSION` — and do not become a relay.
+  `from @<your session>:` because the tool adds no watermark. Report `DELIVERED` or
+  `QUEUED`; the durable Messages flow owns retries. Do not become a relay.
 
 ## Your team's board
 

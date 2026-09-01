@@ -41,6 +41,8 @@ import { stampFreshInstall } from './user-config.js';
 import { registerUpdate } from './routes/update-api.js';
 import { registerVersion } from './routes/version.js';
 import { registerWipeboards } from './routes/wipeboards-api.js';
+import { registerMessages } from './routes/messages-api.js';
+import { startMessageQueue } from './message-queue.js';
 import { seedHouseBoard } from './wipeboards.js';
 import { handleEvents, startSessionsBroadcast } from './ws/events.js';
 import { startRoleWatch } from './role-watch.js';
@@ -331,6 +333,8 @@ void resumeInstallWatch();
 
 registerSessions(app); // per-session: kill/harakiri, meta, dials, ctx, tegami, send — src/routes/sessions-api.ts
 registerWipeboards(app); // /api/wipeboards* — src/routes/wipeboards-api.ts
+registerMessages(app); // /api/messages* — durable inbound session delivery
+startMessageQueue();
 
 
 /**

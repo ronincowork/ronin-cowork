@@ -45,7 +45,7 @@ moment of asking (`deskStatus`). Nothing here is prose an agent maintains.
 **`RONIN_REPO` in the repository is the one switch** (owner, 2026-08-29). `desks=managed`
 gives a coding launch its desk, the contract in its brief, the desk actions and the tools;
 `desks=none`, or no file, gives none of them and the session starts in the checkout. There
-is no install-wide switch. The Campaign's Ronin Control choice defaults the file written for
+is no install-wide switch. The Campaign's Ronin Worktrees choice defaults the file written for
 a new project root (`declareArrangement`, `src/desks/arrangement.ts`). For an existing root,
 the editor reads the current publishing mode, owner-named branches, and coordination choice.
 After one exact before/after confirmation it rewrites `RONIN_REPO` directly and atomically
@@ -93,14 +93,13 @@ No BYOIN runs at any step. `dev` never moves here.
 
 **The lead is told, dial or no dial** (owner law, 2026-08-28). An accepted hand-in, or a
 conflict, reaches every lead of the line's team — the 人, `@ronin-lead` on the session —
-through `libexec/ronin-house-send`, which carries no dial check and appends to any existing
-prompt input so the draft and notice are submitted together: reviewing the team line
+through `libexec/ronin-house-send`, which enters the same durable inbound message queue:
+reviewing the team line
 and promoting it to `dev` is the lead's primary job, and the house telling the lead that
 its job is waiting is house machinery (the same footing as Koshi's marker and
-`write_tegami --at`), not an agent driving a session. `tejun-send` keeps its dial check, so
-no agent gains a bypass. The sender still refuses to overwrite a human's unsubmitted draft
-or to spam Enter into a dialog; when it cannot deliver, the notice goes to the team
-wipeboard addressed to the lead, and the hand-in output says which happened.
+`write_tegami --at`), not an agent driving a session. Safe delivery never overwrites a
+human draft or presses Enter into a dialog; when it cannot deliver, the queue retains the
+notice visibly for mechanical retry and the hand-in output says which happened.
 
 **No lead set: the handing-in session holds the job** (owner law, 2026-08-28: *"the
 fallback is the agent handing in — it has to work end to end with no lead"*). The hand-in

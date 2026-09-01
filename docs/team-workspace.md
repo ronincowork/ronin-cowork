@@ -181,6 +181,9 @@ from what the tab remembered.
   the Team name; polled only while entered.
 - **Docs** — the Commons' own mdedit pane (`buildDocs`), narrowed to the roster's members;
   a draft `commons:docs:<path>` opens a file here.
+- **Agent message queue** — inbound session messages that have not delivered yet; safe
+  retries, owner-only Force, and Dismiss share the durable queue described in
+  `docs/message-queue.md`.
 - **Team Configuration** — a compact editor for the durable `team_roster`: its stable
   Cowork ID as a reading, plus editable readable title, purpose and launch defaults. Membership remains on
   Agents and is deliberately absent from this form.

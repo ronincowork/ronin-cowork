@@ -24,6 +24,25 @@ test('Codex pending text is readable for submit verification', () => {
   });
 });
 
+test('Claude prompt remains visible beneath a six-row status footer', () => {
+  const screen = [
+    'assistant finished',
+    '\x1b[39m❯\u00a0\x1b[2mTry another task\x1b[0m',
+    '────────────────────────',
+    '  ctx 26% · Fable',
+    '  auto mode on',
+    '  Update installed',
+    '  new task? /clear',
+    '  /rc',
+  ].join('\n');
+  assert.deepEqual(parsePrompt(screen), { found: true, text: null, menu: false });
+});
+
+test('busy cue outranks a historical prompt in the visible tail', () => {
+  const screen = '❯ old submitted prompt\n\n✻ Cerebrating…';
+  assert.deepEqual(parsePrompt(screen), { found: false, text: null, menu: false });
+});
+
 /* ---- LAUNCH_READY: the vendor screen table, which now serves the ROSTER alone ----
  * The readiness machinery these rows were first written for is deleted — the CLI is the
  * tile's process and nothing waits to type at it. The rows stay, and matter MORE than

@@ -49,8 +49,8 @@ managed file coordination (optional)
 
 The last choice coordinates files and integration when several Agents work in parallel:
 managed worktrees, hand-in, lead integration/promotion, receipts and Git safeguards. It
-does not control Agents and must not be presented publicly as “Ronin Control.” The
-internal `ronin_control` Routine token may remain as a compatibility seam until KOTOBA is
+does not control Agents and must not be presented publicly as “Ronin Worktrees.” The
+internal `ronin_worktrees` Routine token may remain as a compatibility seam until KOTOBA is
 deliberately renamed; this build-out does not perform that vocabulary migration.
 
 The repository arrangements are:
@@ -69,7 +69,7 @@ That distinction is sound. The problem is where it is taught and delivered:
   the complete managed file-coordination lifecycle (desks, `tejun-desk`, hand-in,
   promotion and receipts). A Base-only Agent can therefore be taught optional behavior
   its birth did not deliver.
-- `github.md` is assigned to the internal `ronin_control` manifest, but it teaches both
+- `github.md` is assigned to the internal `ronin_worktrees` manifest, but it teaches both
   the reviewed and direct arrangements. The optional managed-coordination package is
   carrying instructions for the direct model in which its machinery is inapplicable,
   while a Base-only direct Agent does not get that SOP through its manifest.
@@ -123,7 +123,7 @@ Do not keep two overlapping all-purpose Git SOPs. Cut responsibility this way:
    desk → hand-in → team promotion → release PR, receipts, conflict ownership and funnel
    recovery. The desk contract remains the short birth reading; the SOP is fetched when
    the situation calls for source-control work. The manifest may still be spelled
-   `ronin_control` internally, but no public text teaches that name.
+   `ronin_worktrees` internally, but no public text teaches that name.
 4. **Repository-local instructions remain the final concrete pointer.** `AGENTS.md`/
    README state only the declared arrangement, test boundary and relevant standing doc;
    they do not duplicate the whole SOP. Direct Lab/Koe instructions say direct `main`;

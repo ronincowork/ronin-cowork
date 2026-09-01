@@ -18,7 +18,7 @@
  */
 import type express from 'express';
 import { listProjectRoots, repoFacts } from '../project-roots.js';
-import { deriveDesk, fromStatus, locatorFrom, rollup, type DeskRollup, type DeskState, type LocateRepo } from '../desk-state.js';
+import { deriveDesk, fromStatus, locatorFrom, rollup, sameDesk, type DeskRollup, type DeskState, type LocateRepo } from '../desk-state.js';
 import { listDesks } from '../desks/registry.js';
 import { blockingReceipt, lastGoodPromotion, summarize } from '../promotion/receipts.js';
 import { clearFunnel, diagnoseFunnel, listFunnelReceipts, preserveFunnel, readFunnelReceipt } from '../promotion/funnel-recovery.js';
@@ -48,11 +48,10 @@ export interface SessionDesks {
 /** The registry's desks for a session, then the letter's entries it does not know. */
 export async function desksOf(session: string, locate: LocateRepo, live = true): Promise<SessionDesks> {
   const recorded = (await listDesks({ session }).catch(() => [])).map(fromStatus);
-  const known = new Set(recorded.map((d) => `${d.root}:${d.branch}`));
   const desks = [...recorded];
   for (const entry of await readRepos(session)) {
     const at = await locate(entry.repo).catch(() => null);
-    if (at && known.has(`${at.root}:${entry.branch}`)) continue;
+    if (recorded.some((desk) => sameDesk(desk, entry, at))) continue;
     desks.push(await deriveDesk(entry, at, session));
   }
   return { session, live, desks, rollup: rollup(desks) };

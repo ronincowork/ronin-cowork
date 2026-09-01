@@ -268,8 +268,8 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.unavailable:** Unavailable
 - **campaign_view.on:** On
 - **campaign_view.off:** Off
-- **campaign_view.rt_control:** Ronin control
-- **campaign_view.rt_control_what:** Desks, hand-in and team promotion: the desk reading, the tejun-desk tools, the git shims. On wherever a repository declares desks.
+- **campaign_view.rt_worktrees:** Ronin worktrees
+- **campaign_view.rt_worktrees_what:** Desks, hand-in and team promotion: the desk reading, the tejun-desk tools, the git shims. On wherever a repository declares desks.
 - **campaign_view.rt_by_repo:** per repository — see Project roots
 - **campaign_view.rt_gbrain:** gbrain
 - **campaign_view.rt_gbrain_what:** The shared memory service: its reading and its MCP tools for sessions born with it connected.
@@ -279,7 +279,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.rt_hotwords_what:** The words dictation keeps mishearing, sent with your voice.
 - **campaign_view.rt_present:** installed — no switch yet
 - **campaign_view.rt_absent:** not installed
-- **campaign_view.machine_summary:** The rest of the desk: Desk · Account · Archived · Help desk · Keypad.
+- **campaign_view.machine_summary:** The rest of the desk: Desk · Account · Archived · Messages · Help desk · Keypad.
 
 ## campaign_home — campaign-home.js (the root arrival: Machine Settings, Coworks, Launch)
 
@@ -301,6 +301,41 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **launch.new_team_summary:** Define a Team, then launch its Agents.
 - **launch.new_agent:** New Agent
 - **launch.new_agent_summary:** Start an Agent in a Team or on its own.
+- **forms.launch:** Launch
+- **launch_mode.head:** launch mode
+- **launch_mode.configured:** Model provider configuration
+- **launch_mode.configured_sub:** Ronin adds nothing to the command. The Agent starts with whatever its provider CLI already loads.
+- **launch_mode.live:** Dangerously
+- **launch_mode.live_sub:** Ronin appends that provider’s own bypass flag, so the Agent does not stop to ask.
+- **help.title:** Help
+- **help.card_summary:** What each step means, beside the step you are on.
+- **help.type:** New session
+- **help.type_body:** Three kinds of thing can start here. A Cowork Agent is born into Ronin and gets the floor, its routines, its reading and its team. A bare-metal Agent is the provider’s own CLI and nothing else. A terminal is a pane with no agent in it at all. The choice decides which of the steps below exist — a terminal is asked three things because there are only three to ask.
+- **help.top:** Name & kind
+- **help.top_body:** The name is the only thing you must give. It is also the tag every session carries, so it is lowercase and typeable — the field enforces that as you type. A Team’s title is written for you from the name and is yours to change. The kind says what this is for, and it narrows the templates below to the ones that suit it.
+- **help.template:** Template
+- **help.template_body:** A template fills part of the form in and stops. Its answers become yours the moment they land — nothing stays linked, and you can change any of it. Make your own fills nothing in, and going back to it empties what a template wrote.
+- **help.objective:** Common instructions
+- **help.objective_body:** What everyone born onto this Team is told. The objective reaches them: it is written into the brief every new Agent reads at birth, in the Team’s own words.
+- **help.instructions:** Instructions
+- **help.instructions_body:** What this one Agent should do, in your words. It arrives as the first thing it reads.
+- **help.team:** Team
+- **help.team_body:** A new team is made first and the Agent is born into it. Joining an existing one lands that team’s answers in this form, which you can then change. No team is ordinary — a rōnin works alone and nothing is missing.
+- **help.where:** Who and where
+- **help.where_body:** The provider and model that open, and the folder they open in. The folder is where work starts, not a fence: an Agent reaches whatever it is asked to reach. A Team’s branch is the line its Agents hand work in to, and the lead promotes from it; blank means the Team’s own line.
+- **help.mandate:** Mandate
+- **help.mandate_body:** How far this Agent goes before it checks in, whether it may build out a team, and what it hands back. Open leads every one and means no requirement — it is not a gap.
+- **help.loadout:** Tools and skills
+- **help.loadout_body:** Launch mode decides what Ronin appends to the command that starts this Agent. Routines are resolved above and shown here with where each answer came from. Behaviours are documents you hand it at birth: the house’s own procedures, and the ways of working it can take.
+- **help.kit:** Shared toolkit
+- **help.kit_body:** What every Agent raised on this Team starts with. All of it lands in the next Agent form as an ordinary editable value — none of it is a constraint, and changing it here never touches a session already running.
+- **help.lead:** Team lead
+- **help.lead_body:** A lead is an offer, not a seat: a brief and a mandate that become a launch. Membership is never stored — a Team’s members are the live sessions carrying its tag.
+- **new_team.common:** Common instructions
+- **new_team.who_where:** Who and where
+- **new_team.defaults_band:** Everything below this is the default for Agents launched within this team.
+- **new_team.where:** Where
+- **new_team.readable:** Title
 - **launch.mode_team:** Team
 - **launch.mode_agent:** Agent
 
@@ -362,19 +397,15 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 
 ## new_team / team — new-team.js (the New Team surface; team.* rows are shared by the Team page family)
 - **new_team.name:** Team name
-- **new_team.name_desc:** Lowercase letters, digits, _ and - . This is also the tag its sessions carry.
 - **new_team.role_placeholder:** development — or leave blank
 - **new_team.role_desc:** Optional. Blank is an unclassified Team, which is a valid state.
 - **team.objective:** Objective
-- **new_team.objective_desc:** Optional. Rides the brief of every session born onto this Team.
 - **team.repos:** Repositories
 - **team.branch:** Branch
 - **team.lines:** Team lines
 - **team.promotion:** Promotion
 - **team.parked_desks:** Parked desks
-- **new_team.optional:** Optional.
 - **team.wipeboard:** Wipeboard
-- **new_team.wipeboard_desc:** Optional. Blank uses the Team’s own name.
 - **team.project_root:** Project root
 - **team.command:** Command
 - **team.control:** Control
@@ -394,21 +425,13 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.name_kind:** Name & kind
 - **new_team.name_placeholder:** lowercase, digits, - _
 - **new_team.objective_placeholder:** what this team is for
-- **new_team.where:** Where
-- **new_team.root_note:** A default that seeds a launch — never a constraint. A rōnin that joins later keeps its own.
-- **new_team.agent_defaults:** agent defaults — seeded into every Agent raised here; none of it is a constraint
 - **new_team.floor:** Cowork floor
 - **new_team.floor_why:** The launch, campaign and team resolution, the shelf map, the birth receipt.
 - **new_team.floor_tag:** floor
-- **new_team.required:** Required behaviours
-- **new_team.required_why:** Every Agent that joins gets the documents below, at birth or on joining.
-- **new_team.required_on:** enforced
-- **new_team.required_off:** offered
 - **new_team.kit_none:** nothing yet — a template lays it, or open the kit
 - **new_team.kit_door:** Open the Team Kit  ▸
 - **new_team.kit_door_why:** A workbench of its own: browse every routine and behaviour, read them, and make them yours. Not yet built.
-- **new_team.kit_meta:** {routines} routines · {books} books{required}
-- **new_team.kit_meta_required:** (required)
+- **new_team.kit_meta:** {routines} routines · {books} books
 - **new_team.lead:** Team lead
 - **new_team.lead_include:** Include a team lead
 - **new_team.lead_include_sub:** Raised with the team and briefed.
@@ -423,9 +446,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.members:** members
 - **new_team.members_note:** derived from live tags — never stored here
 - **new_team.inherits:** an agent born here inherits
-- **new_team.wipeboard_own:** {team}  (its own)
-- **new_team.raise:** Raise the team
-- **new_team.raise_lead:** Raise the team and its lead
 - **new_team.raising:** Raising the team…
 - **new_team.raised_no_lead:** Raised {team} — the lead was not born: {reason}
 - **new_team.save_name_placeholder:** template name
@@ -433,7 +453,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.saved_template:** Saved template {name}
 
 ## forms — form-steps.js (the drawn form idiom shared by New Team and New Agent)
-- **forms.manual:** Manual
 - **forms.own:** Make your own
 - **forms.own_blurb:** Fresh and empty. Fill it in yourself.
 - **forms.library:** From the Ronin library
@@ -472,6 +491,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_agent.team_none_sub:** Ordinary, not a gap.
 - **new_agent.team_new:** A new team
 - **new_agent.team_new_sub:** Created first, then this Agent is born into it.
+- **new_agent.team_new_blank:** Blank makes no team — the Agent is a rōnin.
 - **new_agent.a_ronin:** a rōnin
 - **new_agent.loadout_meta:** {routines} routines · {books} books
 - **new_agent.shelf_house:** behaviours · the house
@@ -481,8 +501,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_agent.routines_terminal:** agent: none — a pane
 - **new_agent.routines_bare:** no floor, no routines
 - **new_agent.blank_note:** A blank field is an answer, not a gap.
-- **new_agent.create_and_start:** Create the team and start
-- **new_agent.open_terminal:** Open the terminal
 
 ## team_wipeboard — team-wipeboard.js (the team wipeboard channel on the Team page)
 - **team_wipeboard.placeholder:** say something to the team — every member is interrupted
@@ -525,7 +543,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team.workspace_1:** Workspace 1
 - **team.workspace_2:** Workspace 2
 - **team.commons_card:** Team commons
-- **team.commons_summary:** See Docs / Wipeboard / Configuration
+- **team.commons_summary:** See Docs / Wipeboard / Agent message queue / Configuration
 - **team.roster_of:** Roster: {team}
 - **team.workspace_blank:** Workspace
 - **team.new_session:** New session
@@ -924,8 +942,8 @@ The catalog entry goes. {dir} is not touched.
 - **setup.bundle_floor_copy:** Ronin still sets each agent up and keeps its birth receipt, but hands it nothing extra.
 - **setup.bundle_base:** Ronin Base
 - **setup.bundle_base_copy:** Your agents arrive knowing the house: basic reading you can open and edit, simple macros for talking to each other, shared work records.
-- **setup.bundle_control:** Ronin Control
-- **setup.bundle_control_copy:** Adds managed repositories: every agent codes at its own private desk — a git worktree — so there are no code collisions, and work is handed in deliberately.
+- **setup.bundle_worktrees:** Ronin Worktrees
+- **setup.bundle_worktrees_copy:** Adds managed repositories: every agent codes at its own private desk — a git worktree — so there are no code collisions, and work is handed in deliberately.
 - **setup.bundle_services:** Services
 - **setup.bundle_services_copy:** Adds your Services to every agent — voice, transcripts, machine care.
 - **setup.desk_profile:** Desk profile
@@ -1129,6 +1147,13 @@ The catalog entry goes. {dir} is not touched.
 - **cowork.tab_roots:** Project roots
 - **cowork.tab_help:** Help desk
 - **cowork.tab_keypad:** Keypad
+- **cowork.tab_messages:** Messages
+- **messages.empty:** No messages are waiting.
+- **messages.to:** To {target}
+- **messages.meta:** {source} · {attempts} attempts
+- **messages.retry:** Try Again
+- **messages.force:** Force
+- **messages.dismiss:** Dismiss
 - **cowork.h_configuration:** Configuration
 - **cowork.h_appearance:** Appearance
 - **cowork.h_release:** Release & update
@@ -1458,6 +1483,7 @@ The catalog entry goes. {dir} is not touched.
 - **workspace.channel_wipeboard:** Wipeboard
 - **workspace.channel_docs:** Docs
 - **workspace.channel_team_configuration:** Team Configuration
+- **workspace.channel_agent_message_queue:** Agent message queue
 - **team_config.no_roster:** This Cowork has no saved roster.
 - **team_config.loading:** Loading Team Configuration…
 - **team_config.cowork_id:** Cowork ID
@@ -1573,7 +1599,7 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.routine:** routine
 - **glossary.ronin_base:** Ronin Base
 - **glossary.routine_floor:** Cowork floor
-- **glossary.ronin_control:** managed file coordination
+- **glossary.ronin_worktrees:** worktrees
 - **glossary.ronin_services:** Ronin Services
 - **glossary.specialized_routine:** specialized routine
 - **glossary.terminal:** terminal
@@ -1590,6 +1616,7 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.egress_log:** where Ronin has connected
 - **glossary.services:** Services
 - **glossary.session_menu:** Status · Work record · Macros · Detach · Kill session
+- **glossary.message_queue:** message queue
 - **league.commons:** League commons
 - **league.view:** League view
 - **league.team_roster:** Team roster

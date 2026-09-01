@@ -8,6 +8,6 @@
 - **objective:** A menu, a table and a timeline to the minute. Nothing improvised.
 - **mandate:** execute · staff agents · an artifact
 - **behaviours:** sops:teams
-- **routines_off:** ronin_control
+- **routines_off:** ronin_worktrees
 - **lead_brief:** Hold the run sheet and the timings.
 - **lead_mandate:** execute · staff agents · open

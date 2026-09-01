@@ -143,33 +143,24 @@ pane text unchanged for 2 consecutive polls.
 
 ## send-prompt
 `action_kind: mechanical` — run it, don't deliberate.
-Send prompt text to an agent CLI. Text and Enter MUST be separate calls (TUIs treat
-pasted trailing newlines as part of the text):
+Send an inbound message through the durable queue:
 ```bash
-tmux send-keys -t <name> -l '<text>'     # -l = literal, no key-name interpretation
-tmux send-keys -t <name> Enter
+tejun-send <name> '<text>'
 ```
-Single quotes in `<text>` must be escaped for the shell. Always follow with
-**confirm-started** — the Enter is sometimes lost.
+`DELIVERED` and `QUEUED` are both accepted outcomes. Never hand-roll pane writes; the
+shared delivery engine owns prompt recognition, literal typing, Enter, and retention.
 
 ## confirm-started
 `action_kind: mechanical` — run it, don't deliberate.
-Verify the last send actually submitted and the agent began working.
-```bash
-tmux capture-pane -p -t <name> | tail -6
-```
-Working = spinner/​"thinking" line visible and the input line is empty again.
-If your sent text still sits at the prompt: send `Enter` once more, re-check; if it
-STILL sits there, stop and report — do not spam Enter (the CLI may be showing a
-dialog). Use `-e` and ignore dim ghost-suggestion text entirely (see pre-send-check) —
-Enter on a ghost is a no-op, not a lost keystroke.
+Confirmation belongs to the shared delivery engine. Immediate success removes the
+message; uncertainty leaves it visible under Team Commons → Agent message queue. Try Again makes one safe
+attempt. Owner-only Force types once and presses Enter while checking for at most ten
+seconds; failure remains visible.
 
 ## pre-send-check
 `action_kind: mechanical` — run it, don't deliberate.
-Before sending to an EXISTING session, inspect the input line — **always with `-e`**:
-```bash
-tmux capture-pane -p -e -t <name> | tail -6
-```
+Before safe delivery to an existing session, the shared engine inspects an ANSI-aware
+window around the prompt rather than assuming a fixed number of footer rows.
 **GHOST-TEXT RULE (learned the hard way):** agent CLIs show
 grey context-generated input SUGGESTIONS at an idle prompt. In a plain capture they
 look exactly like typed text; with `-e` they carry the dim SGR code (`\x1b[2m`).
@@ -178,8 +169,7 @@ and NEVER treat it as a message from the_owner (a ghost once fabricated a merge 
 - Input line empty (or ghost-only) → proceed.
 - Real (non-dim) pending text → a human's draft: do not submit or overwrite it —
   report and wait.
-- Agent mid-task (spinner) → sending is safe (queued), but prefer waiting unless the
-  message is a redirect/interrupt.
+- Agent mid-task (spinner) → retain the message and retry safely later.
 
 ## write-handoff-doc
 `action_kind: judgement` — this one needs your reasoning; no tool can do it for you.
@@ -429,11 +419,11 @@ Rules, all of them about not trampling other people's writing:
 > performing these steps by hand.** (TOOLS.md)
 The safe procedure for delivering a message into an EXISTING session (from R2/R4).
 Not user-invocable — it is HOW any action-following agent sends, whatever the reason.
-1. control-check (dial must be `write`)
-2. status-probe — abort with report if gone
-3. pre-send-check — ghost-text rule; never overwrite a real human draft
-4. send-prompt — literal text, separate Enter
-5. confirm-started — retry Enter once if own text stuck; then stop and report
+The tool first writes one `queued_message`, then the shared delivery engine checks the
+dial and prompt. A recognized empty prompt receives literal text and bounded Enter
+confirmation. Every other condition retains the message with its measured reason; the
+operator checks it mechanically, and the coworkspace exposes Try Again and owner-only
+Force. Never perform the queue or tmux steps separately.
 
 ## write-buildout-doc
 `action_kind: judgement` — this one needs your reasoning; no tool can do it for you.

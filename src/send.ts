@@ -24,17 +24,10 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { exactPane } from './tmux.js';
+import { classifyStatus } from './status.js';
 
 const pexec = promisify(execFile);
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-/** Visible pane text only (no history) — the fallback probe when there is no prompt. */
-async function paneScreen(name: string): Promise<string> {
-  const { stdout } = await pexec('tmux', ['capture-pane', '-p', '-t', exactPane(name)], {
-    maxBuffer: 4 * 1024 * 1024,
-  });
-  return stdout;
-}
 
 export interface PromptRead {
   /** Did we find a prompt line at all? False = a CLI whose prompt we cannot read. */
@@ -77,10 +70,14 @@ export interface PromptRead {
  */
 export function parsePrompt(raw: string): PromptRead {
   const cannotTell: PromptRead = { found: false, text: null, menu: false };
+  if (classifyStatus(raw) === 'thinking') return cannotTell;
   const lines = raw.split('\n');
   while (lines.length && lines[lines.length - 1].trim() === '') lines.pop();
   const line = lines
-    .slice(-6)
+    // Claude currently paints six footer rows BELOW its input. Six physical rows therefore
+    // excluded the prompt itself and made an idle Agent read as unavailable. Use the same
+    // measured visible-tail boundary as status.ts; busy cues above already win.
+    .slice(-15)
     .filter((l) => /[❯›]/.test(l))
     .pop();
   if (line === undefined) return cannotTell;
@@ -102,6 +99,55 @@ export function parsePrompt(raw: string): PromptRead {
   return { found: true, text: text || null, menu: false };
 }
 
+export interface DeliveryResult {
+  delivered: boolean;
+  reason: string;
+  submitted: boolean;
+}
+
+const typeText = (name: string, text: string) =>
+  pexec('tmux', ['send-keys', '-t', exactPane(name), '-l', '--', text]);
+const pressEnter = (name: string) => pexec('tmux', ['send-keys', '-t', exactPane(name), 'Enter']);
+
+/** Automatic delivery and Try Again: an uncertain prompt is a retained message. */
+export async function deliverSafe(name: string, text: string): Promise<DeliveryResult> {
+  const before = await readPrompt(name);
+  if (!before.found) return { delivered: false, submitted: false, reason: 'busy or prompt not recognized' };
+  if (before.menu) return { delivered: false, submitted: false, reason: 'dialog is open' };
+  if (before.text) return { delivered: false, submitted: false, reason: 'unsubmitted text is already at the prompt' };
+
+  await typeText(name, text);
+  await sleep(350);
+  const typed = await readPrompt(name);
+  if (!typed.found || typed.menu || !typed.text) {
+    return { delivered: false, submitted: false, reason: typed.menu ? 'dialog opened before submit' : 'text did not become visible at the prompt' };
+  }
+  await pressEnter(name);
+  for (let i = 0; i < 3; i++) {
+    await sleep(700);
+    const now = await readPrompt(name);
+    if (!now.found || (!now.menu && now.text === null)) return { delivered: true, submitted: true, reason: 'delivered' };
+    if (now.menu) return { delivered: false, submitted: true, reason: 'dialog opened while submitting' };
+    if (now.text !== typed.text) return { delivered: false, submitted: true, reason: 'prompt contents changed while submitting' };
+    await pressEnter(name);
+  }
+  return { delivered: false, submitted: true, reason: 'text remains at the prompt after Enter retries' };
+}
+
+/** Owner-only Force: type once, then submit/check for one bounded ten-second attempt. */
+export async function deliverForce(name: string, text: string, timeoutMs = 10_000): Promise<DeliveryResult> {
+  await typeText(name, text);
+  await sleep(300);
+  const deadline = Date.now() + timeoutMs;
+  do {
+    await pressEnter(name);
+    await sleep(800);
+    const now = await readPrompt(name);
+    if (!now.found || (!now.menu && now.text === null)) return { delivered: true, submitted: true, reason: 'delivered by Force' };
+  } while (Date.now() < deadline);
+  return { delivered: false, submitted: true, reason: 'Force could not observe delivery within 10 seconds' };
+}
+
 export async function readPrompt(name: string): Promise<PromptRead> {
   try {
     const { stdout } = await pexec('tmux', ['capture-pane', '-p', '-e', '-t', exactPane(name)], {
@@ -114,72 +160,13 @@ export async function readPrompt(name: string): Promise<PromptRead> {
 }
 
 
-/**
- * Type `text` into a pane and submit it — literal text and Enter as SEPARATE send-keys
- * calls, which is what makes a TUI treat the Enter as a real submit rather than pasted
- * input. Then verify, in two phases, because both halves have been seen to fail.
- *
- * Pre-send policy for a prompt that already holds text is append-and-submit (deliberate:
- * two messages deliver as one). The refusal-on-draft policy lives in `tejun-send`, which
- * is what agents use; this is the house's own path.
- */
+/** Legacy callers share automatic delivery's safe policy. Force exists only explicitly. */
 export async function sendText(
   name: string,
   text: string,
 ): Promise<{ resent: boolean; started: boolean }> {
-  const type = () => pexec('tmux', ['send-keys', '-t', exactPane(name), '-l', '--', text]);
-  const enter = () => pexec('tmux', ['send-keys', '-t', exactPane(name), 'Enter']);
-
-  // CHECK BEFORE TYPING, not after. A dialog is open: do not type, do not press Enter,
-  // do not "try once" — the owner is being asked something, keystrokes are menu choices,
-  // and an Enter here answers it for them.
-  if ((await readPrompt(name)).menu) return { resent: false, started: false };
-
-  await type();
-  await sleep(200);
-  const beforeEnter = await paneScreen(name);
-  let seen = await readPrompt(name);
-
-  // No prompt we can read: nothing below is checkable, so do the one honest thing — press
-  // Enter once and report whether the pane reacted at all. Weaker, and it must never be
-  // the confident answer.
-  if (!seen.found) {
-    await enter();
-    await sleep(600);
-    return { resent: false, started: (await paneScreen(name)) !== beforeEnter };
-  }
-
-  // PHASE ONE — DID THE TEXT ARRIVE? Re-type until it is visibly there. This needs no
-  // guess about when the CLI started accepting input, which is the whole reason it beats
-  // tuning a timeout.
-  for (let i = 0; i < 3 && seen.text === null && !seen.menu; i++) {
-    await type();
-    await sleep(500);
-    seen = await readPrompt(name);
-  }
-  if (seen.menu) return { resent: false, started: false };
-  // Still nothing after re-typing: something is eating input (a dialog, a CLI mid-start).
-  // Do NOT press Enter into that — report the failure and let the caller say so.
-  if (seen.found && seen.text === null) return { resent: true, started: false };
-
-  // PHASE TWO — DID IT SUBMIT? By the prompt, never by a screen diff.
-  await enter();
-  await sleep(600);
-  let resent = false;
-  for (let i = 0; i < 2; i++) {
-    const now = await readPrompt(name);
-    if (now.menu) break; // a dialog opened under us — stop, never Enter into one
-    if (!now.found || now.text === null) return { resent, started: true };
-    // Text CHANGED means someone else owns the prompt now — a dialog opened, or the owner
-    // started typing — and pressing Enter into that answers somebody else's question for
-    // them. Only the same text still sitting there means our Enter was lost.
-    if (now.text !== seen.text) break;
-    await enter();
-    resent = true;
-    await sleep(900);
-  }
-  const final = await readPrompt(name);
-  return { resent, started: !final.menu && (!final.found || final.text === null) };
+  const result = await deliverSafe(name, text);
+  return { resent: result.submitted && !result.delivered, started: result.delivered };
 }
 
 /** Run a shell command in a session's active pane (the launcher's boot step). */

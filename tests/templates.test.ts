@@ -24,7 +24,7 @@ test('the shipped tray surfaces with parsed mandates, kinds and books', async ()
   assert.deepEqual(ship?.mandate, { reach: 'execute', recruit: 'staff agents', output: 'code' });
   assert.deepEqual(ship?.kinds, ['coding']);
   assert.ok(ship?.behaviours.includes('sops:github'));
-  assert.deepEqual(ship?.routines_on, ['ronin_control']);
+  assert.deepEqual(ship?.routines_on, ['ronin_worktrees']);
   assert.equal(ship?.lead?.mandate?.recruit, 'staff agents');
   // Tray order is the stated order:, so the coding pair leads.
   assert.deepEqual(rows.slice(0, 2).map((row) => row.name), ['ship_an_app', 'raid_my_codebase']);
@@ -41,7 +41,7 @@ test('save-as-new lands in the user store and reads back through the one reader'
   const saved = await saveTemplate({
     name: 'night_shift', label: 'Night Shift', art: '🌙', blurb: 'The quiet hours, covered.',
     kinds: ['work', 'bogus'], brief: 'Cover the quiet hours.', mandate: 'execute · nobody · open',
-    behaviours: ['sops:accounts'], routines_off: ['ronin_control'],
+    behaviours: ['sops:accounts'], routines_off: ['ronin_worktrees'],
   });
   assert.equal(saved.origin, 'user');
   assert.equal(saved.shadowed, false);

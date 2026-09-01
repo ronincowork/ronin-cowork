@@ -141,24 +141,24 @@ PROPOSE it ("I'd like to fork X into its own session") and wait for the go-ahead
 Unannounced sessions are untrackable for the human until the UI reveals them. Spin the current conversation's active topic out into its own agent
 session, so the origin session stays on its track. (The breakout pattern, first performed manually 2026-08-05.)
 
-Every launch input is optional. `tejun-fork` accepts instructions plus optional `name`,
-`team`, `session_role`, `provider`, `model`, and `dial`. With no Team it inherits the
+`name` is required, matching the settled launch contract. Every other launch input is
+optional. `tejun-fork` accepts instructions plus optional `team`, repeatable `behaviour`,
+`provider`, `model`, and `dial`. With no Team it inherits the
 origin session's first Team; with no Campaign override it inherits the origin's Campaign.
-With neither it is still born. A blank role is valid. A blank name is generated. Control
-falls back to read-and-write. Provider-only selects that provider's configured preferred
+No behaviour selection is valid. Control falls back to read-and-write. Provider-only selects that provider's configured preferred
 model, then its first launch-table entry; model-only resolves the named model; neither
 uses the Campaign's Agent defaults, then the install defaults.
 
 **Use `tejun-fork`; it uses the same launch contract as the ＋ New form.** Forks were
 starting from a bare `tmux new-session` and then typing a CLI at it, which is a second,
 bespoke launch path — and it arrives with **zero Build Brief**: no reading list, no
-posture, no letter, and no role. `session-launch` is the canonical pipeline, and the fork
+posture, no letter, and no birth reading. `session-launch` is the canonical pipeline, and the fork
 gets the whole compiled brief from it: all-session reading + the project_root's + the
-Team's + the session_role's, and then any handoff instructions on top.
+Team's + the selected behaviour books, and then any handoff instructions on top.
 
-There is no immutable `role_family` launch axis and no mandatory role decision. Do not
-invent one and do not stop to ask for one. Pass a role only when the owner supplied it or
-the work itself needs that role's additional reading.
+There is no launch-role axis and no mandatory behaviour decision. Do not invent one and
+do not stop to ask for one. Pass `--behaviour ways:<book>` only when the owner supplied it
+or the work itself needs that book's reading.
 
 **THREE WAYS TO ASK, AND SAYING NOTHING IS THE FIRST ONE** (owner, 2026-08-29). Say
 only as much as the owner actually said, and let the rest load lazily:
@@ -169,21 +169,20 @@ only as much as the owner actually said, and let the rest load lazily:
 | *"give me an Anthropic agent"* | `provider: anthropic` | that provider's preferred model in ⚙ Configuration, else its first column |
 | *"open a fable five session"* | `model: fable` | that model |
 
-A `session_role` states no model and biases none, so there is no layer in between and
-nothing a fork inherits about the model from the task it is given. **Never invent the
+A behaviour states no model and biases none, so there is no layer in between and nothing
+a fork inherits about the model from the books it reads. **Never invent the
 next field down** — passing a model because the owner named a vendor is you deciding
 something they left open. A model must be a real cell from the launch table and a
 provider a real row; never a command you composed, and never both a `cmd` and either.
 
-State both resolved axes in the report. The owner is one glance from seeing a wrong
-role and one kill from fixing it, which is only true if the report says what was chosen.
+State the resolved Team, Control and any selected behaviours in the report.
 
 | # | Action | With |
 |---|---|---|
 | 1 | read-letter | your OWN letter — its Campaign and first Team are the launch defaults |
 | 2 | write-handoff-doc | a wip handoff doc (location per the documents SOP) — distill THIS conversation's context on the topic: goal in the owner's words, constraints, verification, definition of done |
-| 3 | launch | `tejun-fork` with only the values the owner actually supplied; give it the handoff instruction when a handoff was written |
-| 4 | report-outcome | session name, resolved Team, Control and optional role/model, handoff doc path, how to open it |
+| 3 | session-launch | `tejun-fork --name <name>` with only the other values the owner actually supplied; give it the handoff instruction when a handoff was written |
+| 4 | report-outcome | session name, resolved Team, Control and optional behaviours/model, handoff doc path, how to open it |
 
 **The prompt for step 4** — READ AND REPORT UNDERSTANDING FIRST, never "read this and
 execute it". A fork starts by proving it understood, not by working: *"Read <handoff
@@ -195,12 +194,10 @@ eventual deliverable is: *"when the owner gives the go-ahead, the output is a wi
 plan per the documents SOP — a plan, not code."*
 
 Do NOT type that prompt into the pane. It rides in through `tejun-fork` as part of the
-compiled Build Brief, and the resolved task's own `ack:` rule adds the report-first
-instruction on top of it.
+compiled Build Brief.
 
-**Afterwards the fork owns its own task.** When its work moves on — plan approved, cutting
-begins — it re-marks itself with `write_tegami` and Ronin hands it that task's reading,
-once.
+**Afterwards the fork owns its own task.** Its selected behaviour books are birth reading,
+not a mutable live label.
 
 Report: session name, one-line topic, where the handoff doc lives. **A macro's result
 must be shown, not just performed** — until the UI auto-splits the panel on fork
@@ -362,23 +359,21 @@ after that; send the owner's words unless he asks you to put it your own way).
 | # | Action | With |
 |---|---|---|
 | 1 | control-check | needs `write` **on the target, not on you**. Dialed `user` or `read`: report the lock and ask the owner to flip THAT tile's dial to 🤖, then wait — NEVER flip it yourself |
-| 2 | send-to-session | `tejun-send <session> <message>` — one call. It re-checks the dial, refuses to overwrite a real draft, sends the text and the Enter separately, and confirms the other agent started. Do not hand-roll the five steps |
+| 2 | send-to-session | `tejun-send <session> <message>` — one call. It re-checks the dial and either delivers safely or retains the message in the durable queue. Do not hand-roll pane writes |
 | 3 | report-outcome | the tool's verdict as it gave it, and what you actually said |
 
 **Say who it is from.** `tejun-send` puts no watermark on the message, so what lands at the
 other prompt looks exactly like the owner typing — open with `from @<your session>:` or the
 agent on the other end answers the wrong person.
 
-Report: the verdict (`DELIVERED` / `DENIED` / `BLOCKED` / `STUCK` / `NO-SESSION`) and the
+Report: the verdict (`DELIVERED` / `QUEUED`) and the
 message you sent, in one short block. **Then stop, and do not wait for a reply** — the
 answer appears in the OTHER session's tile, where the owner reads it himself. Relaying it
 back through here makes this session a switchboard and hides which agent said what.
 
-A refusal is an ANSWER, not an obstacle. `DENIED` means the dial forbids the write and only
-the owner's hand changes that; `BLOCKED` means a human's unsent draft is at that prompt and
-typing over it would destroy their words. Neither is retried, and neither is worked around
-with a bare `tmux send-keys` — going around the shim is a deliberate, visible act and this
-is not an occasion for one.
+A queued result is accepted, not an invitation to work around the queue. Dial locks,
+busy agents, dialogs, and drafts remain visible under Messages until safe delivery can
+proceed; the owner alone may choose Force.
 
 ## read
 - **class:** session_macro.workflow

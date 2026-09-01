@@ -1,57 +1,7 @@
 #!/usr/bin/env bash
-# tejun-send — deliver a message into a tmux session, safely, in one call.
+# tejun-send — put one inbound session message through the durable delivery queue.
 # Usage: tejun-send <session> <message...>
-# Implements the TEJUN send-to-session action (ronin_catalogs/ACTIONS.md): dial check,
-# ghost-aware pre-send check, literal text + separate Enter, confirm-started with
-# one retry. Prints a one-line verdict; exit 0 = delivered, non-zero = not.
-set -u
+set -euo pipefail
 [ $# -ge 2 ] || { echo "usage: tejun-send <session> <message...>" >&2; exit 2; }
-S="$1"; shift; MSG="$*"
-
-tmux has-session -t "$S" 2>/dev/null || { echo "NO-SESSION: '$S' does not exist"; exit 3; }
-
-# Dial check — the tool enforces what the guard hook enforces, so using the tool
-# is never a bypass. user -> nothing; read -> no writes.
-dial=$(tmux show-option -t "$S" -qv @ronin-control 2>/dev/null || true)
-case "$dial" in
-  user) echo "DENIED: '$S' is user-controlled (dial 👤). Report back and ask the owner to flip the dial in the Ronin UI."; exit 4 ;;
-  read) echo "DENIED: '$S' is watch-only (dial 👁). Writing needs the owner to flip the dial to 🤖."; exit 4 ;;
-esac
-
-# The live input line is at the BOTTOM of the pane — only look in the last few rows.
-# (Submitted messages also render with a prompt prefix up in the scrollback; searching
-# the whole pane mistakes that history for pending input.)
-# THE PROMPT GLYPH IS THE CLI'S: Claude Code draws ❯, Codex draws ›. Knowing only ❯ meant
-# a send into a Codex tile reported DELIVERED with the text still in the box (owner,
-# 2026-08-29). Both glyphs; no prompt found = UNVERIFIED, never DELIVERED.
-prompt_line() { tmux capture-pane -p -e -t "$S" | tail -6 | grep -a '[❯›]' | tail -1; }
-strip() { sed 's/\x1b\[[0-9;]*m//g'; }
-pending() { printf '%s' "$1" | strip | sed 's/\xc2\xa0/ /g; s/^.*[❯›] *//; s/[[:space:]]*$//; s/^[[:space:]]*$//'; }
-ghost() { printf '%s' "$1" | grep -q $'\x1b\[2m'; }
-
-# Pre-send check: real (non-dim) pending text at the prompt = a human draft. Abort.
-line=$(prompt_line); content=$(pending "$line")
-if [ -n "$content" ] && ! ghost "$line"; then
-  echo "BLOCKED: real unsubmitted text at '$S' prompt (not ghost): \"$content\" — not overwriting a draft."
-  exit 5
-fi
-[ -n "$line" ] || { echo "UNVERIFIED: no prompt (❯ or ›) visible at '$S' — an unknown CLI, or a dialog; nothing typed."; exit 7; }
-
-tmux send-keys -t "$S" -l "$MSG"
-sleep 0.4   # a fast Enter right behind the text can be swallowed as part of a paste
-tmux send-keys -t "$S" Enter
-sleep 2
-
-# Confirm-started: our text should no longer sit at the prompt (ghost text is fine).
-line=$(prompt_line); content=$(pending "$line")
-if [ -n "$content" ] && ! ghost "$line"; then
-  tmux send-keys -t "$S" Enter   # retry once
-  sleep 2
-  line=$(prompt_line); content=$(pending "$line")
-  if [ -n "$content" ] && ! ghost "$line"; then
-    echo "STUCK: text still at '$S' prompt after retry — a dialog may be open, or the CLI is mid-turn and holding it. Not spamming Enter."
-    exit 6
-  fi
-fi
-echo "DELIVERED to '$S'."
-exit 0
+HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+exec npx tsx "$HERE/src/message-cli.ts" tell "$@"

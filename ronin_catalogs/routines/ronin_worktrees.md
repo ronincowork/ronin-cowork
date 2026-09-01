@@ -1,8 +1,7 @@
-# Managed file coordination
-- **label:** Managed file coordination
+# Ronin Worktrees
+- **label:** Ronin Worktrees
 - **blurb:** Separate worktrees, hand-in, lead integration, receipts and Git safeguards help parallel Agents avoid file collisions.
-- **class:** control
-- **reading:** assignment/DESK_CONTRACT.md, routine/ronin_control/REPOSITORY_BOOTSTRAP.md
+- **reading:** assignment/DESK_CONTRACT.md, routine/ronin_worktrees/REPOSITORY_BOOTSTRAP.md
 - **sops:** github
 - **macros:** cutcode, land
 - **actions:** cut-code, open-pr, land-work, land-manifest, desk-open, desk-status, desk-sync, hand-in, desk-park, check-clean, repository-initialize

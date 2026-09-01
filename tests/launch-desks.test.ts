@@ -31,7 +31,7 @@ const assignment: Assignment = {
 
 const profile = { session_role: 'CutCode', label: 'cut code', posture: [], opening: '{prompt}', ack: false, agent: true } as LaunchProfile;
 
-test('a Cowork Agent wants a desk when resolved Ronin Control is on', () => {
+test('a Cowork Agent wants a desk when resolved Ronin Worktrees is on', () => {
   assert.equal(wantsDesk({ agent: true, control: true }), true);
   assert.equal(wantsDesk({ agent: true, control: false }), false);
   // A plain terminal has no agent to brief.
@@ -89,8 +89,8 @@ test('the desk contract rides the assignment level, and only that', async () => 
   }
 });
 
-test('Ronin Control declares the desk contract as its reading', async () => {
+test('Ronin Worktrees declares the desk contract as its reading', async () => {
   const repo = path.join(path.dirname(new URL(import.meta.url).pathname), '..');
-  const control = await readFile(path.join(repo, 'ronin_catalogs', 'routines', 'ronin_control.md'), 'utf8');
+  const control = await readFile(path.join(repo, 'ronin_catalogs', 'routines', 'ronin_worktrees.md'), 'utf8');
   assert.match(control, /\*\*reading:\*\* assignment\/DESK_CONTRACT\.md/);
 });

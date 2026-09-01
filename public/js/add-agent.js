@@ -183,7 +183,7 @@ export function createAddAgentView(kit, { team, roster, connect } = {}) {
   const deskLine = el('div', 'aa-deskline');
   const deskWhy = el('small');
   deskLine.append(deskWhy);
-  /** Is `ronin_control` on for this birth? The resolved map's answer, never this
+  /** Is `ronin_worktrees` on for this birth? The resolved map's answer, never this
    *  form's — and null while the seed door is not there to ask. */
   const controlled = () => {
     const rows = seed?.routines;

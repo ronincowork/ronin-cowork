@@ -15,7 +15,7 @@ import path from 'node:path';
 const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-rosters-test-'));
 process.env.RONIN_TEAM_ROSTERS_DIR = temp;
 const ROUTINES_OFF = {
-  ronin_base: false, ronin_control: false, ronin_services: false, ronin_host: false, gbrain: false,
+  ronin_base: false, ronin_worktrees: false, ronin_services: false, ronin_host: false, gbrain: false,
 };
 
 const {
@@ -32,7 +32,7 @@ test('create → read → list: a zero-member team is a real, openable record', 
     project_root: 'ronin-cowork',
     branch: 'dev',
     references: ['https://example.test/spec', 'Owner note'],
-    routines: { ronin_base: true, ronin_control: false },
+    routines: { ronin_base: true, ronin_worktrees: false },
     behaviours: { books: ['ways:CutCode'], required: true },
     agent_defaults: {
       provider: 'anthropic', model: 'opus', reach: 'execute', recruit: 'nobody',

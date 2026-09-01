@@ -1,12 +1,11 @@
 # Ronin Host
 - **label:** Ronin Host
 - **blurb:** The box underneath: install, accounts, network reach, health and the session engine, backed by measured tools.
-- **class:** specialized
 - **reading:** —
 - **sops:** accounts, install, remote_machine_admin, remote_machine_health, tmux_server, vpn
 - **macros:** —
 - **actions:** survey-machine, survey-secrets, survey-account, restart-ronin
 - **tools:** tejun-survey, tejun-account, tejun-secrets, tejun-machine-restart
 - **mcp:** —
-- **requires:** —
+- **requires:** ronin_base
 - **order:** 40
