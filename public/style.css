@@ -58,7 +58,11 @@
      kiiro FILL reads this pair (the band, the attention flash, the phone's Start);
      --warn stays separate as the theme-tuned warning ink, because thin text genuinely
      needs a darker value on paper — a shade of kiiro, not a replacement for it. */
-  --kiiro: #f0c674;
+  /* Value history: #f0c674 (gold) read as YELLOW on the band — "it's not anything to
+     do with orange" (owner) — so kiiro is the house's amber-ORANGE, the armed-frame
+     accent's own hue. This one line is the whole brand color: change it and the band,
+     the attention flash and the phone's Start all follow. */
+  --kiiro: #e0af68;
   --on-kiiro: #201a0e;
   /* THE WORKBENCH'S HEADER BAND, tinted (owner, 2026-09-01): "change the headers for the
      workspace and the work selector… so that it's like a light orange shading so that it
