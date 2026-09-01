@@ -62,7 +62,10 @@ for u in $units; do
 done
 
 if [ "$destructive" = 1 ] && [ "$hits_ronin" = 1 ]; then
-  ROOT=$(cd "$SELF_DIR/../.." && pwd)
+  # REAL_DIR, not SELF_DIR: through a session's projection symlink the unresolved
+  # anchor put the guard script in a store that has none, and the restart failed on
+  # ENOENT instead of being guarded (2026-09-01, the tmux shim's fault class).
+  ROOT=$(cd "$REAL_DIR/../.." && pwd)
   node "$ROOT/scripts/guard-dev-restart.mjs" "$ROOT" || exit $?
 fi
 
