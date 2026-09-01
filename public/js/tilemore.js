@@ -18,12 +18,12 @@
  * no second copy of a control to keep in sync — the same rule `tiledrop.js` works by.
  *
  * メ IS A RECLAIMED GLYPH, and this shape is not new. It was the tile-head Commons button
- * until 2026-08-17, when ⛩ took the Commons on every surface and freed it. On touch it
- * already means exactly this — `tiledrop.js` collapses the whole header into one bar row
- * where メ is THIS SESSION and drops Status · Ladder · Macros · Groups · Note · Control ·
- * Kill. Desktop is being brought into line with a design the phone has worn for months.
- * The only difference is the shape of the drop: a pointer does not need the word beside
- * the icon, and a desktop header has the width for a strip rather than a list.
+ * until 2026-08-17, when ⛩ took the Commons on every surface and freed it. メ has meant
+ * THIS SESSION's own controls on every surface since — the phone shell's bar wears the
+ * same glyph for the same sheet (js/phone.js). Since 2026-09-01 this drop builds on
+ * COARSE pointers too (the owner: an iPad head with gauge, dial, note and kill loose on
+ * the row was clutter), where it also takes the Output select (`dropCoarse` in
+ * tilehead.js); the desktop row keeps Output per the 2026-08-26 ruling.
  *
  * WHY NOT `ui.popover`. It was deleted on 2026-08-17 with its last consumer (the き
  * Commons menu) and could have been restored from git; it does not fit. It hides with the
@@ -86,8 +86,8 @@ export const closeTileMore = () => drops.forEach((close) => close());
  * `floor` because a tile can be shorter than one row, and a 12px-tall scroller with
  * nothing legible in it is worse than a menu that overhangs a very small tile.
  *
- * Silent when the anchor is not in a tile: on touch `tiledrop.js` HOISTS these menus into
- * the app bar, where there is no `.tile-head` above them and nothing to measure against.
+ * Silent when the anchor is not in a tile — the phone shell relocates these controls
+ * into its own bar sheet (js/phone.js), where there is no `.tile-head` to measure against.
  */
 export function fitDropToTile(anchor, menu, floor = 140) {
   const head = anchor.closest('.tile-head');
