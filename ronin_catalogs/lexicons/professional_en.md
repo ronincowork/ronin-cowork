@@ -1489,6 +1489,7 @@ The catalog entry goes. {dir} is not touched.
 - **workspace.channel_docs:** Docs
 - **workspace.channel_team_configuration:** Team Configuration
 - **workspace.channel_agent_message_queue:** Agent message queue
+- **workspace.channel_agent_message_queue_count:** Agent message queue ({count})
 - **team_config.no_roster:** This Cowork has no saved roster.
 - **team_config.loading:** Loading Team Configuration…
 - **team_config.cowork_id:** Cowork ID

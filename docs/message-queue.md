@@ -8,6 +8,8 @@ that separate notice is an inbound message and may wait here.
 Its visible home is **Team Commons → Agent message queue**, beside Docs, Wipeboard, and
 Team Configuration. It is a channel inside the existing Team Commons surface, not a
 separate Cowork card or machine-level tab.
+When retained messages exist, that channel button uses the theme's warning colour, bolds
+the full label, and shows their count; the attention state clears with the empty queue.
 
 Every sender uses the same delivery engine. Automatic checks and **Try Again** use safe
 delivery: the target must exist, its dial must permit writing, and its Agent must show a

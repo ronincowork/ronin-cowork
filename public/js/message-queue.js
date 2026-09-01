@@ -9,7 +9,7 @@ const el = (tag, cls, text) => {
   return n;
 };
 
-export function buildMessageQueue(host) {
+export function buildMessageQueue(host, onCount = () => {}) {
   const board = el('div', 'mq-board');
   const empty = el('p', 'mq-empty', t('messages.empty', 'No messages are waiting.'));
   host.append(board);
@@ -42,6 +42,7 @@ export function buildMessageQueue(host) {
     const body = await response.json();
     board.replaceChildren();
     const messages = Array.isArray(body.messages) ? body.messages : [];
+    onCount(messages.length);
     if (!messages.length) { board.append(empty); return; }
     for (const message of messages) {
       const card = el('article', `mq-card mq-${message.state}`);
@@ -63,7 +64,11 @@ export function buildMessageQueue(host) {
       board.append(card);
     }
   };
-  const timer = setInterval(() => void render(), 2_000);
-  void render();
-  return { enter: render, destroy: () => clearInterval(timer) };
+  let timer = null;
+  const enter = () => {
+    void render();
+    if (!timer) timer = setInterval(() => void render(), 2_000);
+  };
+  const leave = () => { clearInterval(timer); timer = null; };
+  return { enter, leave, destroy: leave };
 }
