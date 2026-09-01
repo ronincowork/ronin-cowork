@@ -27,11 +27,12 @@
 import { WorkspaceKit } from './workspace-kit.js';
 import { createNewTeamFormView } from './new-team-form.js';
 import { createNewAgentView } from './new-agent.js';
+import { createLaunchHelpView } from './launch-help.js';
 import { refreshTeams } from './team-controller.js';
 import { t } from './lexicon.js';
 
 const PROFILE = 'launch';
-const TYPES = Object.freeze({ team: 'launch.team', agent: 'launch.agent' });
+const TYPES = Object.freeze({ team: 'launch.team', agent: 'launch.agent', help: 'launch.help' });
 const node = (tag, cls, text) => { const out = document.createElement(tag); if (cls) out.className = cls; if (text != null) out.textContent = text; return out; };
 
 function registerLaunchSurfaces() {
@@ -51,7 +52,18 @@ function registerLaunchSurfaces() {
     summary: () => t('launch.new_agent_summary', 'Start an Agent in a Team or on its own.'),
     create: ({ environment, workspace }) => environment.agent(workspace),
   });
-  profiles.define(PROFILE, [TYPES.team, TYPES.agent]);
+  // THE THIRD CARD (owner, 2026-09-01): "a third kanban card in the middle, which is help
+  // or instructions… I should be able to scroll up and down the form, and the help should
+  // scroll up and down." It follows whichever form is on the bench.
+  add({
+    type: TYPES.help,
+    header: 'surface',
+    label: () => t('help.title', 'Help'),
+    summary: () => t('help.card_summary', 'What each step means, beside the step you are on.'),
+    variant: 'dotted',
+    create: ({ environment, workspace }) => environment.help(workspace),
+  });
+  profiles.define(PROFILE, [TYPES.team, TYPES.agent, TYPES.help]);
 }
 
 export function createLaunchView() {
@@ -61,6 +73,7 @@ export function createLaunchView() {
   let bench = null;
   const teamBySeat = {};
   const agentBySeat = {};
+  const helpBySeat = {};
   const started = new WeakSet();
 
   const seated = (view) => ({
@@ -79,6 +92,10 @@ export function createLaunchView() {
     agent: (workspace) => {
       if (!agentBySeat[workspace]) agentBySeat[workspace] = createNewAgentView(WorkspaceKit, {});
       return seated(agentBySeat[workspace]);
+    },
+    help: (workspace) => {
+      if (!helpBySeat[workspace]) helpBySeat[workspace] = createLaunchHelpView(WorkspaceKit, { bench });
+      return helpBySeat[workspace];
     },
   };
 
@@ -127,6 +144,6 @@ export function createLaunchView() {
       save();
     },
     leave: () => bench.leave(),
-    destroy: () => { bench.leave(); ctx = null; },
+    destroy: () => { for (const help of Object.values(helpBySeat)) help.destroy?.(); bench.leave(); ctx = null; },
   };
 }

@@ -12,6 +12,18 @@
      `.league-team-edit-content`). */
   .na-surface, .ntf-surface { font-size: var(--text-3); }
   .ntf-form { display: flex; flex-direction: column; margin-bottom: var(--space-7); }
+
+  /* ── the help workspace: prose beside the step you are on ── */
+  .lh-surface { font-size: var(--text-3); }
+  .lh-body { display: flex; flex-direction: column; gap: var(--space-7); }
+  .lh-section { border-left: var(--edge) solid var(--line); padding-left: var(--space-6); }
+  .lh-section[hidden] { display: none; }
+  /* The step the form is showing: the same kaki edge the pressed controls use, so "where
+     you are" reads the same way on both sides of the bench. */
+  .lh-section[data-current='true'] { border-left-color: var(--kaki); }
+  .lh-section h3 { margin: 0 0 var(--space-3); color: var(--fg-strong); font-size: var(--text-3); }
+  .lh-section[data-current='true'] h3 { color: var(--kaki); }
+  .lh-section p { margin: 0; color: var(--muted-2); line-height: 1.6; }
   .ntf-form textarea { resize: vertical; }
   .ntf-foot { margin-top: var(--space-6); }
   .ntf-tmplname { width: calc(var(--space-12) * 5); border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--fg); padding: var(--space-3) var(--space-4); font: inherit; }

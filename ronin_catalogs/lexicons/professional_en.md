@@ -307,6 +307,30 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **launch_mode.configured_sub:** Ronin adds nothing to the command. The Agent starts with whatever its provider CLI already loads.
 - **launch_mode.live:** Dangerously
 - **launch_mode.live_sub:** Ronin appends that provider’s own bypass flag, so the Agent does not stop to ask.
+- **help.title:** Help
+- **help.card_summary:** What each step means, beside the step you are on.
+- **help.type:** New session
+- **help.type_body:** Three kinds of thing can start here. A Cowork Agent is born into Ronin and gets the floor, its routines, its reading and its team. A bare-metal Agent is the provider’s own CLI and nothing else. A terminal is a pane with no agent in it at all. The choice decides which of the steps below exist — a terminal is asked three things because there are only three to ask.
+- **help.top:** Name & kind
+- **help.top_body:** The name is the only thing you must give. It is also the tag every session carries, so it is lowercase and typeable — the field enforces that as you type. A Team’s title is written for you from the name and is yours to change. The kind says what this is for, and it narrows the templates below to the ones that suit it.
+- **help.template:** Template
+- **help.template_body:** A template fills part of the form in and stops. Its answers become yours the moment they land — nothing stays linked, and you can change any of it. Make your own fills nothing in, and going back to it empties what a template wrote.
+- **help.objective:** Common instructions
+- **help.objective_body:** What everyone born onto this Team is told. The objective reaches them: it is written into the brief every new Agent reads at birth, in the Team’s own words.
+- **help.instructions:** Instructions
+- **help.instructions_body:** What this one Agent should do, in your words. It arrives as the first thing it reads.
+- **help.team:** Team
+- **help.team_body:** A new team is made first and the Agent is born into it. Joining an existing one lands that team’s answers in this form, which you can then change. No team is ordinary — a rōnin works alone and nothing is missing.
+- **help.where:** Who and where
+- **help.where_body:** The provider and model that open, and the folder they open in. The folder is where work starts, not a fence: an Agent reaches whatever it is asked to reach. A Team’s branch is the line its Agents hand work in to, and the lead promotes from it; blank means the Team’s own line.
+- **help.mandate:** Mandate
+- **help.mandate_body:** How far this Agent goes before it checks in, whether it may build out a team, and what it hands back. Open leads every one and means no requirement — it is not a gap.
+- **help.loadout:** Tools and skills
+- **help.loadout_body:** Launch mode decides what Ronin appends to the command that starts this Agent. Routines are resolved above and shown here with where each answer came from. Behaviours are documents you hand it at birth: the house’s own procedures, and the ways of working it can take.
+- **help.kit:** Shared toolkit
+- **help.kit_body:** What every Agent raised on this Team starts with. All of it lands in the next Agent form as an ordinary editable value — none of it is a constraint, and changing it here never touches a session already running.
+- **help.lead:** Team lead
+- **help.lead_body:** A lead is an offer, not a seat: a brief and a mandate that become a launch. Membership is never stored — a Team’s members are the live sessions carrying its tag.
 - **new_team.common:** Common instructions
 - **new_team.who_where:** Who and where
 - **new_team.where:** Where

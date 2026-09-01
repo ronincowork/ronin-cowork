@@ -29,7 +29,7 @@ import { request } from './request.js';
 import { t } from './lexicon.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
 import {
-  createStep, dialRow, el, kindTiles, providerModelPair, readingRows, tagRow, templateTray, wayTiles,
+  createStep, dialRow, el, kindTiles, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
 } from './form-steps.js';
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
@@ -56,7 +56,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   let snapshot = '';
   let busy = false;
   let loaded = false;
-  const touched = { mandate: false, model: false, root: false, books: false };
+  const touched = { mandate: false, model: false, root: false, books: false, launchMode: false };
 
   /* THE LAUNCH BUTTON LIVES IN THE TILE HEADER (owner, 2026-09-01), quiet and compact
    * like Save as template rather than a slab at the bottom of a long scroll — and it is
@@ -324,35 +324,20 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   const paintLaunchMode = () => {
     modeHost.replaceChildren(
       el('p', 'fs-head', t('launch_mode.head', 'launch mode')),
-      wayTiles(LAUNCH_MODES(), draft.launchMode, (key) => { draft.launchMode = key; paintLaunchMode(); paintFoot(); }),
+      wayTiles(LAUNCH_MODES(), draft.launchMode, (key) => { draft.launchMode = key; touched.launchMode = true; paintLaunchMode(); paintFoot(); }),
     );
   };
   const shelvesHost = el('div');
   function paintShelves() {
-    shelvesHost.replaceChildren();
-    const shelf = (head, rows, prefix) => {
-      shelvesHost.append(el('p', 'fs-head', head));
-      const grid = el('div', 'na-sopgrid');
-      for (const rowDef of rows) {
-        const address = `${prefix}:${rowDef.name}`;
-        const on = draft.books.includes(address);
-        const box = el('button', 'na-sop');
-        box.type = 'button';
-        box.title = rowDef.blurb || rowDef.label;
-        box.setAttribute('aria-pressed', String(on));
-        box.append(el('span', 'aa-box'), el('b', null, rowDef.name));
-        box.addEventListener('click', () => {
-          draft.books = on ? draft.books.filter((book) => book !== address) : [...draft.books, address];
-          touched.books = true;
-          paintShelves();
-          paintFoot();
-        });
-        grid.append(box);
-      }
-      shelvesHost.append(grid);
-    };
-    shelf(t('new_agent.shelf_house', 'behaviours · the house'), sops, 'sops');
-    shelf(t('new_agent.shelf_ways', 'behaviours · ways of working'), ways, 'ways');
+    shelvesHost.replaceChildren(bookShelves([
+      { head: t('new_agent.shelf_house', 'behaviours · the house'), prefix: 'sops', rows: sops },
+      { head: t('new_agent.shelf_ways', 'behaviours · ways of working'), prefix: 'ways', rows: ways },
+    ], draft.books, (address, on) => {
+      draft.books = on ? [...draft.books, address] : draft.books.filter((book) => book !== address);
+      touched.books = true;
+      paintShelves();
+      paintFoot();
+    }));
   }
   stepLoadout.body.append(modeHost, routinesHead, routinesHost, shelvesHost);
 
@@ -537,6 +522,9 @@ export function createNewAgentView(kit, { connect = null } = {}) {
       for (const key of ['reach', 'recruit', 'output']) if (value(key)) draft[key] = value(key);
     }
     if (!touched.books && Array.isArray(value('behaviours'))) draft.books = [...value('behaviours')];
+    // The campaign's, or the team's if one is joined — an editable value like every other
+    // default (lead, 2026-09-01: launch_mode cascades campaign to team to launch).
+    if (!touched.launchMode && value('launch_mode')) draft.launchMode = value('launch_mode');
     if (!draft.kindTouched && team && value('kind')) draft.kind = value('kind');
     pair.paint();
     paintRoots();

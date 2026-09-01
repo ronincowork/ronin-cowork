@@ -27,7 +27,7 @@ import { request } from './request.js';
 import { t } from './lexicon.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
 import {
-  createStep, el, kindTiles, mandateSelect, providerModelPair, readingRows, tagRow, templateTray, wayTiles,
+  createStep, el, kindTiles, mandateSelect, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
 } from './form-steps.js';
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
@@ -49,7 +49,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     name: '', kind: 'coding', objective: '',
     root: '', branch: '',
     provider: '', model: '', reach: 'open', recruit: 'open', output: 'open',
-    dial: 'write', permissions: 'default',
+    dial: 'write',
     routines: {}, books: [], launchMode: 'live_dangerously',
     lead: null,
     expanded: {},
@@ -59,6 +59,8 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   let handRoutines = new Set();
   let templates = [];
   let routineRows = [];
+  let sops = [];
+  let ways = [];
   let roots = [];
   let snapshot = '';        // what the applied template wrote, for the dirty test
   let busy = false;
@@ -307,26 +309,24 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
       });
     }
   }
-  const booksHead = el('p', 'fs-head', t('behaviours', 'Behaviours'));
   const booksHost = el('div');
   function paintBooks() {
-    booksHost.replaceChildren();
-    // NO REQUIRED/OFFERED SWITCH (owner, 2026-09-01): "it totally violates the principle
-    // in cascade, which is that everything from above cascades down, but it's optional."
-    // A team's books land in the next Agent form like every other default, and the hand
-    // has the last word. The record's `required` stays false; SETTLING § 1's "required
-    // only when a team kit says so" is overturned and raised with the lead.
-    booksHost.append(tagRow(draft.books.map((book) => ({ text: book, on: true })),
-      t('new_team.kit_none', 'nothing yet — a template lays it, or open the kit')));
-    // The browsing lives in a second workbench (OPEN_THREADS 0.10, drawn, not scheduled):
-    // the door stands so the tag summary is not mistaken for the whole kit.
-    const door = el('button', 'fs-door', t('new_team.kit_door', 'Open the Team Kit  ▸'));
-    door.type = 'button';
-    door.disabled = true;
-    door.title = t('new_team.kit_door_why', 'A workbench of its own: browse every routine and behaviour, read them, and make them yours. Not yet built.');
-    booksHost.append(door);
+    // PICKED HERE, NOT BEHIND A DOOR (owner, 2026-09-01: "we should have the behaviours
+    // here, and you can just choose it the same as you could in the agent form"). The same
+    // two shelves New Agent offers, the same `<shelf>:<name>` addresses, one implementation
+    // in form-steps.js. A team's books land in the next Agent form like every other default
+    // and the hand has the last word — there is no required/offered switch any more.
+    booksHost.replaceChildren(bookShelves([
+      { head: t('new_agent.shelf_house', 'behaviours · the house'), prefix: 'sops', rows: sops },
+      { head: t('new_agent.shelf_ways', 'behaviours · ways of working'), prefix: 'ways', rows: ways },
+    ], draft.books, (address, on) => {
+      draft.books = on ? [...draft.books, address] : draft.books.filter((book) => book !== address);
+      paintBooks();
+      paintFoot();
+    }));
   }
-  stepKit.body.append(modeHost, routinesHead, routinesHost, booksHead, booksHost);
+  // No bare Behaviours heading: the two shelves head themselves.
+  stepKit.body.append(modeHost, routinesHead, routinesHost, booksHost);
 
   /* ---- step 6 · Team lead ---- */
   const stepLead = createStep({ n: 6, key: 'lead', title: t('new_team.lead', 'Team lead'), onToggle: () => toggle('lead') });
@@ -575,9 +575,14 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     draft.branch = value('branch') || '';
     draft.provider = value('provider') || '';
     draft.model = value('model') || '';
-    for (const key of ['reach', 'recruit', 'output', 'dial', 'permissions']) {
+    for (const key of ['reach', 'recruit', 'output', 'dial']) {
       if (value(key)) draft[key] = value(key);
     }
+    // `permissions` LEAVES agent_defaults entirely (lead, 2026-09-01, carrying the owner):
+    // § 7.2 is { provider, model, reach, recruit, output, dial, launch_mode }. Named on its
+    // own because the seed's key is snake and the draft's is camel — folding it into the
+    // loop above would have written `draft.launch_mode` and seeded nothing, forever.
+    if (value('launch_mode')) draft.launchMode = value('launch_mode');
     draft.books = Array.isArray(value('behaviours')) ? [...value('behaviours')] : [];
     seedRoutines = Object.fromEntries((seed.routines || []).map((row) => [row.name, row.on]));
     draft.routines = { ...seedRoutines };
@@ -608,12 +613,16 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     el: surface.el,
     enter: async () => {
       paint();
-      const [seeded, tray, catalog, rootRows] = await Promise.all([
+      const [seeded, tray, catalog, rootRows, sopRows, wayRows] = await Promise.all([
         request('/api/launch-seed'),
         request('/api/templates'),
         request('/api/routines'),
         request('/api/project-roots'),
+        request('/api/sops'),
+        request('/api/ways'),
       ]);
+      sops = sopRows.ok && Array.isArray(sopRows.data) ? sopRows.data : [];
+      ways = wayRows.ok && Array.isArray(wayRows.data) ? wayRows.data : [];
       templates = tray.ok && Array.isArray(tray.data) ? tray.data : [];
       routineRows = catalog.ok && Array.isArray(catalog.data) ? catalog.data : [];
       roots = rootRows.ok && Array.isArray(rootRows.data) ? rootRows.data : [];

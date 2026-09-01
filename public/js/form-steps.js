@@ -113,6 +113,35 @@ export function dialRow(title, values, current, onPick) {
  * Agent drew these first; Launch mode uses the same shape because it is the same kind of
  * question — a small closed set where the consequence of each answer needs saying.
  */
+/**
+ * THE BEHAVIOUR SHELVES — the house's SOPs and the ways of working, each book a tick.
+ *
+ * A book is addressed `<shelf>:<name>` so the two shelves cannot collide, and that address
+ * is what rides the launch and the roster. New Agent drew this; the Team form asks the
+ * same question and now asks it the same way (owner, 2026-09-01: "we should have the
+ * behaviours here, and you can just choose it the same as you could in the agent form").
+ */
+export function bookShelves(shelves, chosen, onToggle) {
+  const host = el('div');
+  for (const shelf of shelves) {
+    host.append(el('p', 'fs-head', shelf.head));
+    const grid = el('div', 'na-sopgrid');
+    for (const row of shelf.rows) {
+      const address = `${shelf.prefix}:${row.name}`;
+      const on = chosen.includes(address);
+      const box = el('button', 'na-sop');
+      box.type = 'button';
+      box.title = row.blurb || row.label || row.name;
+      box.setAttribute('aria-pressed', String(on));
+      box.append(el('span', 'aa-box'), el('b', null, row.name));
+      box.addEventListener('click', () => onToggle(address, !on));
+      grid.append(box);
+    }
+    host.append(grid);
+  }
+  return host;
+}
+
 export function wayTiles(rows, current, onPick) {
   const wrap = el('div', 'fs-pair');
   for (const row of rows) {
