@@ -124,9 +124,38 @@ export function registerTeams(app: express.Express): void {
       const edit = editOf(req.body);
       // A Cowork may only default to a Project root in its own Campaign.
       await assertSameCampaignRoot(campaign_id, edit.project_root ?? '');
+      // AN AGENT TEMPLATE'S ROUTINES LAND IN THE TEAM IT RAISES (ruled 2026-09-01):
+      // when `team_mode: new` births a box into its own team, the template's
+      // routines_on/off overlay the map this roster STORES at creation — legal per
+      // two-state (the map is written complete here; nothing reaches down later). The
+      // base is the map the body carried, else the Campaign's stored map; an unknown
+      // token is ignored and receipt-named, never a refusal.
+      let template;
+      const token = String(req.body?.template ?? '').trim();
+      if (token) {
+        const { listAgentTemplates } = await import('../definitions.js');
+        const box = (await listAgentTemplates()).find((row) => row.name === token);
+        if (!box) template = { source: token, ignored: 'not an agent template on this box' };
+        else {
+          if (edit.routines === undefined) {
+            const { readCampaign } = await import('../campaign-config.js');
+            const stored = (await readCampaign(campaign_id))?.config?.agent_defaults as
+              { routines?: Record<string, boolean> } | undefined;
+            // No campaign record yet (pre-Atarashi box): the base is the catalog's
+            // stock rung, exactly what the backfill would seed — never an all-off map.
+            const { listRoutines } = await import('../definitions.js');
+            edit.routines = stored?.routines
+              ? { ...stored.routines }
+              : Object.fromEntries((await listRoutines()).map((row) => [row.name, row.bundles.includes('base')]));
+          }
+          for (const on of box.routines_on) edit.routines[on] = true;
+          for (const off of box.routines_off) edit.routines[off] = false;
+          template = { source: token, routines_on: box.routines_on, routines_off: box.routines_off };
+        }
+      }
       const roster = await createTeamRoster(name, edit, campaign_id);
       count('team.create');
-      res.json({ ok: true, roster });
+      res.json({ ok: true, roster, ...(template ? { template } : {}) });
     } catch (e) {
       res.status(400).json({ error: errMsg(e) });
     }
