@@ -15,7 +15,18 @@
  * THE LEAD IS A MARK, NOT A SEAT (owner, 2026-09-01): "the new team still shows quick to
  * add a lead, but that's sort of not needed anymore because it's part of the team
  * construction… if someone wants a team lead, then they've got to add an agent and mark
- * them as a lead." Several rows may carry it; a Team may have none.
+ * them as a lead."
+ *
+ * THE FORM OFFERS ONE LEAD; THE SYSTEM STILL ALLOWS SEVERAL. Both halves are the owner's,
+ * and they are not in tension: "technically, a team can have more than one. We don't tell
+ * people how to drive… However, here on this template, because the form can be restrictive,
+ * the form can just allow you to only create one. If they later go on and want to add an
+ * additional team lead when they are running their team, they can do that."
+ *
+ * So marking a row UNMARKS the others — a restriction of this surface, not of the record.
+ * Nothing downstream is narrowed: `team_lead` stays a per-row boolean, the roster stores no
+ * members, and a running Team gains a second 人 the same way it always could. A Team may
+ * still have none, which is ordinary.
  *
  * A ROW IS SHORT ON PURPOSE — "a really short version of what the agent is… basically name
  * and assignment" — and opens for its mandate when you want it. If the opened row ever
@@ -72,7 +83,13 @@ export function createAgentRows({ n, key, rows, changed, onToggle }) {
       lead.type = 'button';
       lead.setAttribute('aria-pressed', String(row.lead));
       lead.title = t('new_team.mark_team_lead', 'Mark as team lead');
-      lead.addEventListener('click', () => { row.lead = !row.lead; paint(); changed(); });
+      lead.addEventListener('click', () => {
+        const next = !row.lead;
+        for (const other of rows()) other.lead = false;
+        row.lead = next;
+        paint();
+        changed();
+      });
 
       const name = el('input', 'ntf-agent-name');
       name.type = 'text';
