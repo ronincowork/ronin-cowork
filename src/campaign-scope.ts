@@ -29,7 +29,6 @@ import path from 'node:path';
 import { initialCampaign } from './campaign-config.js';
 import { listProjectRoots, upsertProjectRoot } from './project-roots.js';
 import { listTeamRosters, teamRosterFile } from './team-rosters.js';
-import { listTeamTemplates, saveTeamTemplate } from './team-templates.js';
 import { getCampaign, listSessions, setCampaign } from './tmux.js';
 
 /**
@@ -133,7 +132,6 @@ export interface CampaignScopeMigration {
   campaign_id: string;
   rosters: string[];
   roots: string[];
-  templates: string[];
   sessions: string[];
 }
 
@@ -160,7 +158,7 @@ export interface CampaignScopeMigration {
  * resumes rather than clobbering.
  */
 export async function migrateCampaignScope(): Promise<CampaignScopeMigration> {
-  const done: CampaignScopeMigration = { campaign_id: '', rosters: [], roots: [], templates: [], sessions: [] };
+  const done: CampaignScopeMigration = { campaign_id: '', rosters: [], roots: [], sessions: [] };
   const campaign_id = await initialCampaignId();
   if (!campaign_id) return done; // nothing seeded yet; the next boot will have one
   done.campaign_id = campaign_id;
@@ -191,16 +189,6 @@ export async function migrateCampaignScope(): Promise<CampaignScopeMigration> {
     try {
       await upsertProjectRoot(root.name, { campaign_id });
       done.roots.push(root.name);
-    } catch {
-      /* left unmarked and read through the fallback */
-    }
-  }
-
-  for (const template of await listTeamTemplates()) {
-    if (template.campaign_id) continue;
-    try {
-      await saveTeamTemplate(template.name, template.draft, campaign_id);
-      done.templates.push(template.name);
     } catch {
       /* left unmarked and read through the fallback */
     }
