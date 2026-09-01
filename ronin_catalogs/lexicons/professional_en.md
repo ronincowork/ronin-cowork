@@ -1378,6 +1378,13 @@ The catalog entry goes. {dir} is not touched.
 - **me.output:** Output
 - **me.title:** This session — status, work record, macros, groups, docs, note, control
 
+## keys — keysrow.js (the composer's keys row)
+- **keys.backspace:** Backspace
+- **keys.clear_line_title:** Ctrl-U — clear the input line
+
+## composer — the ✕ clear
+- **composer.clear_title:** Clear this box
+
 ## phone — phone.js (the phone shell: Coworks, a Cowork's Agents, one Agent's tile)
 - **phone.coworks:** Coworks
 - **phone.no_coworks:** No Coworks yet.

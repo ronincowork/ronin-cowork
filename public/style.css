@@ -6493,6 +6493,26 @@ body[data-phone] #viewhost {
     grid-template-columns: 1fr;
   }
 }
+/* ✕ on the composer — clear OUR dialog. The composer is Ronin's own box, so one key
+   empties it whichever provider is in the pane (hardware Esc does the same); the keys
+   the AGENT's in-pane box needs are the keys row's. Visible only while the box holds
+   something — grow() keeps .hastext true exactly then. */
+.tile:is(.tape-on, .keys-on) .composer .cclear {
+  display: none;
+  height: 30px;
+  min-width: 34px;
+  border: var(--edge) solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+  color: var(--muted-2);
+  font-size: var(--text-5);
+  cursor: pointer;
+}
+.tile:is(.tape-on, .keys-on) .composer.hastext .cclear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 #phone {
   position: fixed;
   inset: 0;

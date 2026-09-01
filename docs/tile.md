@@ -581,9 +581,16 @@ so every handler and live widget keeps its owner. The Status row is a reading, n
 door.
 
 **The keys ride the composer on every coarse tile** — phone shell and iPad workbench
-alike (`public/js/keysrow.js`): Esc, ^C, Tab, ⇧Tab, the arrows and ⤓, docked directly
-above the box they drive, lifting over the software keyboard with it. They act on that
-tile's own session, never "the active tile". On a box with no tape service the composer
+alike (`public/js/keysrow.js`): Esc, ^C, ⌫, ^U, Tab, ⇧Tab, the arrows and ⤓, docked
+directly above the box they drive, lifting over the software keyboard with it. They act
+on that tile's own session, never "the active tile". The two clearing keys are there
+because the agents disagree about their own in-pane box — Esc empties Claude's, ^U
+(readline kill-line) empties a readline-shaped composer such as Codex's — and they are
+generic terminal keys on purpose: providers ship remappable keymaps, so a hardcoded
+per-provider key would be a guess with an expiry date. **Ronin's own box clears
+uniformly**: Esc from a hardware keyboard empties the composer (an already-empty box
+passes Esc through as a command key, the bare-Enter rule), and a ✕ appears on the box
+whenever it holds text. On a box with no tape service the composer
 (and the row) rides the locked mirror too on coarse tiles — it is the only input path a
 touch screen has — and the body's padding keeps the CLI's own input line clear of it.
 
