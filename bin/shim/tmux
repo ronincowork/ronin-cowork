@@ -9,11 +9,22 @@
 # Speed bump, not physics: /usr/bin/tmux still exists — but going around this is a
 # deliberate, visible act rather than an accident.
 set -u
-SELF_DIR=$(cd "$(dirname "$0")" && pwd)
+# REAL_DIR is where this shim's FILE lives (bin/shim in the checkout or release), the
+# anchor for ../../vendor and ../../libexec — resolved through $0's symlink, because a
+# session runs this shim via its projected session-commands alias (src/routine-tools.ts).
+# Anchoring on the unresolved $0 made the projection look for those beside itself in
+# ~/.ronin, find nothing, and refuse every guarded new-session (caught 2026-09-01:
+# promotion health failed on a probe that could not spawn, on clean code).
+SELF=$0
+while [ -L "$SELF" ]; do
+  link=$(readlink "$SELF")
+  case $link in /*) SELF=$link ;; *) SELF=$(dirname "$SELF")/$link ;; esac
+done
+REAL_DIR=$(cd "$(dirname "$SELF")" && pwd)
 # A bundled release carries its own tmux — every box then runs the tmux we shipped,
 # not whatever a package manager left behind. The PATH hunt is the checkout fallback.
-if [ -x "$SELF_DIR/../../vendor/tmux" ]; then
-  REAL="$SELF_DIR/../../vendor/tmux"
+if [ -x "$REAL_DIR/../../vendor/tmux" ]; then
+  REAL="$REAL_DIR/../../vendor/tmux"
 else
   # Session command projections may contain a symlink back to THIS shim. A PATH search
   # that removes only SELF_DIR then finds that alias and recurses forever. The checkout
@@ -64,7 +75,7 @@ fi
 if printf '%s' "$args" | grep -q 'new-session' && [ "${RONIN_MAX_OK:-0}" != 1 ]; then
   case " $args " in
     *" -t "*|*" -t"[!\ ]*) : ;;                      # grouped viewer — never capped
-    *) "$SELF_DIR/../../libexec/ronin-may-spawn" || exit 4 ;;
+    *) "$REAL_DIR/../../libexec/ronin-may-spawn" || exit 4 ;;
   esac
 fi
 
