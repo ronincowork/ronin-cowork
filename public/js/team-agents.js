@@ -77,6 +77,7 @@ export function createAgentRows({ n, key, rows, changed, onToggle }) {
     host.replaceChildren();
     rows().forEach((row, index) => {
       const box = el('div', 'ntf-agent');
+      box.dataset.open = String(row.open);
       const head = el('div', 'ntf-agent-head');
 
       const lead = el('button', 'ntf-agent-lead', '人');
@@ -91,8 +92,9 @@ export function createAgentRows({ n, key, rows, changed, onToggle }) {
         changed();
       });
 
-      const name = el('input', 'ntf-agent-name');
-      name.type = 'text';
+      const name = el(row.open ? 'textarea' : 'input', 'ntf-agent-name');
+      if (row.open) name.rows = 2;
+      else name.type = 'text';
       name.spellcheck = false;
       name.autocapitalize = 'off';
       name.value = row.name;
@@ -106,8 +108,9 @@ export function createAgentRows({ n, key, rows, changed, onToggle }) {
         changed();
       });
 
-      const assignment = el('input', 'ntf-agent-what');
-      assignment.type = 'text';
+      const assignment = el(row.open ? 'textarea' : 'input', 'ntf-agent-what');
+      if (row.open) assignment.rows = 4;
+      else assignment.type = 'text';
       assignment.value = row.assignment;
       assignment.placeholder = t('new_team.agent_assignment', 'what this Agent does');
       assignment.addEventListener('input', () => { row.assignment = assignment.value; changed(); });

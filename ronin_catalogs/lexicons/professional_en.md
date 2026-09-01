@@ -284,7 +284,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_home.machine_settings:** Machine Settings
 - **campaign_home.campaign_is:** Admin Desk configuration
 - **campaign_home.coworks_is:** Coworking space for Agents
-- **campaign_home.launch:** Launch
+- **campaign_home.launch:** New Project
 - **campaign_home.launch_is:** Start a new Team or Agent
 - **campaign_home.version:** v1.3
 - **campaign_home.check_updates:** Check for updates
