@@ -109,8 +109,8 @@ publishes: `tejun-desk hand-in` admits your committed range to the team line by 
 admission (merge, conflict check, near-instant invariants) — a conflict is contained in a
 candidate, the line is untouched, and the lead adjudicates. **Team promotion** is the
 lead's or compiler's act: the team line admitted to `dev` on a candidate that passed the
-one full repository BYOIN, with a receipt for the exact SHA; `dev` restarts. Full BYOIN
-runs there and nowhere else in the loop — never at a commit, never at a hand-in
+first full repository BYOIN, with a receipt for the exact SHA; `dev` restarts. The second
+full BYOIN runs at `dev → master`; neither runs at a commit or hand-in
 (`docs/test-protocols.md`).
 
 **`+cutcode`** builds from an agreed build-out, deleting each item from the doc as it

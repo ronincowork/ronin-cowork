@@ -9,12 +9,13 @@ it.** Two deliberate acts stand between an edit and the grid — the tag, and th
 ## Cutting a release (the producing half)
 
 1. Work reaches `dev` by **team promotion** — the lead's admission of a team line, which
-   runs the one full repository BYOIN on the exact candidate and leaves `dev` carrying a
+   runs the first full repository BYOIN on the exact candidate and leaves `dev` carrying a
    promotion receipt for its exact SHA (`docs/test-protocols.md`, docs/worktrees.md). A PR
    `dev → master` carries that receipt in its body (a ```ronin-promotion-receipt block);
    CI (`.github/workflows/verify.yml`) verifies the receipt names and proves the PR's
    head commit — `scripts/verify-promotion-receipt.mjs` — and only then reruns the
-   isolated `--gates` tier for release assurance. CI is not the first full check, and a
+   second full repository BYOIN (`--repo`) on the exact PR head. CI is not the first full
+   check, and a
    PR without a receipt fails.
 2. A person merges. Master moving is a record of what is releasable, not a release.
 3. A person fetches and checks out `master`, confirms it is current, then pushes a tag

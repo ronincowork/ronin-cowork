@@ -125,12 +125,12 @@ auto-lands; that ruling is retained below under "Superseded".
 6. **Never merge the canonical line first and reset it on failure.** A funnel point never
    holds a half-merged state.
 
-### Team promotion — the one full BYOIN, close to the code and its lead
+### Team promotion — the first full BYOIN, close to the code and its lead
 
 Promotion of `team/<xyz>/dev` into repository-wide `dev` is the closest shared-code
 boundary: the lead still owns the context, knows which desks contributed, and can route a
 failure back to the agent that introduced it. So this is where the **full repository
-BYOIN runs, exactly once**, on the combined candidate — current `dev` + the team-line tip
+BYOIN runs, exactly once at this boundary**, on the combined candidate — current `dev` + the team-line tip
 — before `dev` moves. It catches formatting, structure, naming, unit, type, UI and the
 other bounds while responsibility is still local to the team.
 
@@ -149,8 +149,8 @@ other bounds while responsibility is still local to the team.
 | save | none | private |
 | commit | none | private; agents may run focused tests as part of their work, but that is not the boundary protocol |
 | hand-in → team line | mechanical admission only (merge, conflict, near-instant invariants) | shares work with the team; nothing has entered `dev` |
-| **team promotion → `dev`** | **full repository BYOIN, once, on the combined candidate** | the closest shared-code boundary; the lead can attribute a failure |
-| `dev → master` | **not the first full check.** CI may verify the exact SHA, but it consumes and preserves the existing receipt; any failure still points through the team/desk ledger | `dev` already carries a receipt for that SHA |
+| **team promotion → `dev`** | **the first full repository BYOIN, once, on the combined candidate** | the closest shared-code boundary; the lead can attribute a failure |
+| **`dev → master`** | **the second full repository BYOIN.** CI first consumes the receipt, then checks that exact release candidate again | owner ruling 2026-09-01; supersedes isolated assurance only |
 | restart after team promotion | deployment health checks (the app comes up, answers, readouts sane); on failure, automatic revert-and-restart and a DM to the lead | the one failure that can surface *after* `dev` moved |
 | maintenance / update / store changes | full *installed-box* BYOIN | it tests a different thing — the machine, not the repo |
 
@@ -339,10 +339,11 @@ candidate.
 - *Team line as a pass-through by default* (assessment, 2026-08-28). Replaced: the team
   line is a deliberate stage advanced by hand-in.
 - *A branch without a worktree is always a leftover.* Replaced: it may be a parked desk.
-- *`--gates` on every hand-in, full BYOIN on team promotion, full again at `dev → master`
+- *Full BYOIN on every hand-in, full BYOIN on team promotion, full again at `dev → master`
   and at promote* (decision memo, first draft, 2026-08-28). Replaced the same day by the
   BYOIN boundary correction: full repository BYOIN once, at team → `dev`; mechanical
-  admission at hand-in; `dev → master` consumes the receipt; promote runs health checks.
+  admission at hand-in; `dev → master` consumes the receipt and runs the second full
+  BYOIN; promote runs health checks.
 
 ## Open — owner to rule
 
@@ -411,7 +412,7 @@ Names are placeholders; KOTOBA settles the words. `L=team/comp/dev`,
 - **`assignment hand-in`** — the session's coordinated form: a `hand_in` per repo in its
   `repos[]`, each mechanical admission only, landing on that repo's team line. Nothing
   cross-repo is checked here; that belongs to team promotion.
-- **`team promotion`** (`ronin-promote`) — the one full boundary. Per repo: candidate = current `dev` + team-line
+- **`team promotion`** (`ronin-promote`) — the first full boundary. Per repo: candidate = current `dev` + team-line
   tip, in `dev`'s candidate worktree; **full `bin/ronin-byoin`** there; for a cross-repo
   assignment, then the combined install/compatibility protocol across the candidates;
   write the team-promotion receipt (`{repo, expected_old, candidate, hand_in_receipts[]}`);

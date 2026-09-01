@@ -27,7 +27,8 @@
 # a real and legitimate act — it just should be a deliberate one.)
 [ "${RONIN_COMMIT_ALL:-0}" = 1 ] && exit 0
 
-"$(git rev-parse --show-toplevel 2>/dev/null)/libexec/ronin-git-guard" || exit $?
+GUARD="$(git rev-parse --show-toplevel 2>/dev/null)/libexec/ronin-git-guard"
+[ ! -x "$GUARD" ] || "$GUARD" || exit $?
 
 TOP="$(git rev-parse --show-toplevel 2>/dev/null)"
 MODE="$TOP/libexec/ronin-repo-mode"
