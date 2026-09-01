@@ -68,8 +68,13 @@
   /* KIIRO-TINT — the light opaque SHADING variant of the brand token: kiiro for
      surfaces, not text. Derived FROM the token so a hue correction stays that one
      --kiiro line; check-css resolves the mix and holds the band's ink floors on it.
-     First of the kiiro variant family (the token audit names a line variant next). */
-  --kiiro-tint: color-mix(in srgb, var(--kiiro) 78%, #ffffff);
+     First of the kiiro variant family (the token audit names a line variant next).
+     Value history: a plain 78% white-tint read as "no different" from the rejected
+     62% wash (owner, 2026-09-01 pm) — srgb white-tinting an amber desaturates it
+     toward the cream-yellow every verdict has rejected. So the tint warms the base
+     toward kaki FIRST (70/30, holding the orange), then lightens hard (45% over
+     white): distinctly lighter than the token, distinctly orange, never cream. */
+  --kiiro-tint: color-mix(in srgb, color-mix(in srgb, var(--kiiro) 70%, var(--kaki)) 45%, #ffffff);
   /* THE WORKBENCH'S HEADER BAND — one light kiiro, both themes. The full run of
      owner verdicts, so no rejected value returns: the tenth-toward-kaki cut
      (invisible), #decb8f (khaki — "weird yellow"), opaque gold (the old --kiiro),
@@ -6432,6 +6437,15 @@ button.wb-door:hover b {
 .wk-layout-surface { display: flex; flex-direction: column; }
 .wk-layout-surface > .wk-surface { flex: 1 1 auto; min-height: 0; }
 .wk-surface { position: relative; display: flex; flex-direction: column; border: var(--edge) solid var(--line); border-radius: var(--radius-lg); background: var(--panel); overflow: hidden; }
+/* THE BANDS LINE UP (owner, 2026-09-01: "the central work selector is shifted up"):
+   three band containers had three top edges — a headed layout slot (the work selector)
+   wore no chrome so its band began at the wrapper's very top; a .wk-surface pushed its
+   band down by its 1px border; a hosted tile stacked its own card border on its
+   surface's for 2px. Measured live: tops 53/54/55. One chrome, one edge: a headed slot
+   wears the surface's card, and a tile inside a surface sheds its duplicate (the
+   surface already draws the card; the active inset shadow still shows). */
+.wk-layout-surface:has(> .wk-surface-header) { border: var(--edge) solid var(--line); border-radius: var(--radius-lg); background: var(--panel); overflow: hidden; }
+.wk-surface .wk-terminal-host > .tile { border: 0; border-radius: 0; }
 .wk-surface-content { flex: 1 1 auto; min-width: 0; min-height: 0; overflow: auto; }
 .wk-surface-controls { flex: 0 0 auto; }
 .wk-state { margin: auto; padding: var(--space-7); color: var(--muted); text-align: center; }
