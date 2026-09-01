@@ -51,6 +51,19 @@
   --ok: #b5bd68;
   --ok-2: #7fd4a8;
   --warn: #f0c674;
+  /* KIIRO — the house's core yellow-orange, THEME-INVARIANT by ruling (owner,
+     2026-09-01: "make sure that the tokens between light and dark don't mean we lose
+     our core color, which is the kiiro"). Declared once, never re-declared by the
+     light block: a brand color that mutates per theme stops being the brand. Every
+     kiiro FILL reads this pair (the band, the attention flash, the phone's Start);
+     --warn stays separate as the theme-tuned warning ink, because thin text genuinely
+     needs a darker value on paper — a shade of kiiro, not a replacement for it. */
+  /* Value history: #f0c674 (gold) read as YELLOW on the band — "it's not anything to
+     do with orange" (owner) — so kiiro is the house's amber-ORANGE, the armed-frame
+     accent's own hue. This one line is the whole brand color: change it and the band,
+     the attention flash and the phone's Start all follow. */
+  --kiiro: #e0af68;
+  --on-kiiro: #201a0e;
   /* THE WORKBENCH'S HEADER BAND, tinted (owner, 2026-09-01): "change the headers for the
      workspace and the work selector… so that it's like a light orange shading so that it
      stands out a little bit, because I get lost. I can't always see, especially in this
@@ -59,11 +72,13 @@
      the owner ("I still don't see the kiiro shading"), and theme-relative mixes read
      as different colours per theme ("not rouge or mauve or putrid orange") — the
      ruling is ONE opaque kiiro, the same in light and dark: "I want this similar
-     orange to go across whether it's light or dark modes." So the band is one value
-     declared once, not re-declared by the light theme, and it carries its own ink
-     family below, because the theme's --fg-strong/--muted-2/--warn are tuned for the
-     theme's ground, not for this band's. */
-  --cowork-head-bg: #decb8f;
+     orange to go across whether it's light or dark modes." The first constant value
+     (#decb8f) drifted khaki — "some kind of weird yellow and not a shade of our
+     kiiro" — so the band is now a TINT OF THE KIIRO TOKEN itself: constant across
+     themes because both mix inputs are constants, light enough for its own dark ink
+     family below (the theme's --fg-strong/--muted-2/--warn are tuned for the theme's
+     ground, not for this band's). */
+  --cowork-head-bg: color-mix(in srgb, var(--kiiro) 62%, #ffffff);
   --cowork-head-fg: #201a0e;
   --cowork-head-muted: #5a4d28;
   /* Attention ON the band: the band is already kiiro, so attention speaks kaki. */
@@ -581,10 +596,12 @@ body {
   transform: translate(-50%, -50%);
   z-index: 41;
   max-width: 88vw;
-  border: var(--edge) solid var(--warn);
+  /* A kiiro FILL, so it reads the invariant brand pair — light mode's --warn is a
+     text ink and would mustard this band (owner, 2026-09-01). */
+  border: var(--edge) solid var(--kiiro);
   border-radius: var(--radius-xs);
-  background: var(--warn);
-  color: var(--on-accent);
+  background: var(--kiiro);
+  color: var(--on-kiiro);
   padding: var(--space-6) var(--space-8);
   font-size: var(--text-5);
   font-weight: 700;
@@ -6788,12 +6805,11 @@ body[data-phone] .tile-head {
   min-height: 44px;
   border: 0;
   border-radius: var(--radius-md);
-  /* KIIRO, the house's action-waiting yellow (--warn + --on-accent, the attention
-     flash's own pair) — not --action, which paints blue here and belongs to nothing
-     on this shell (owner, 2026-09-01: "we don't have blue anywhere… it should be
-     kiiro"). */
-  background: var(--warn);
-  color: var(--on-accent);
+  /* KIIRO, the house's core yellow — the invariant brand pair, not --action (blue,
+     which belongs to nothing on this shell) and not --warn (a theme-tuned text ink
+     that mustards in light mode). Owner, 2026-09-01. */
+  background: var(--kiiro);
+  color: var(--on-kiiro);
   font-size: var(--text-5);
   font-weight: 600;
   cursor: pointer;
