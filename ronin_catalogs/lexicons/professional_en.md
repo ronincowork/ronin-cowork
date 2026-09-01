@@ -341,7 +341,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.agents_meta:** {n} agents
 - **new_team.agent_name:** name
 - **new_team.agent_assignment:** what this Agent does
-- **new_team.agent_lead_title:** Mark this Agent as the team lead
+- **new_team.mark_team_lead:** Mark as team lead
 - **new_team.agent_more:** Its mandate
 - **new_team.agent_drop:** Remove this Agent
 - **new_team.agent_add:** ＋ Add an Agent

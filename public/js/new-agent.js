@@ -45,7 +45,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     type: 'cowork_agent', template: '', templateName: '',
     name: '', kind: 'coding', kindTouched: false, provider: '', model: '', instructions: '',
     teamMode: 'new', team: '', newTeam: '',
-    reach: 'open', recruit: 'open', output: ['open'], launchMode: 'live_dangerously',
+    reach: 'open', recruit: 'open', output: ['open'], launchMode: 'live_dangerously', gbrainMode: 'disconnected',
     books: [], root: '',
     expanded: {},
   };
@@ -58,7 +58,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   let snapshot = '';
   let busy = false;
   let loaded = false;
-  const touched = { mandate: false, model: false, root: false, books: false, launchMode: false };
+  const touched = { mandate: false, model: false, root: false, books: false, launchMode: false, gbrainMode: false };
 
   /* THE LAUNCH BUTTON LIVES IN THE TILE HEADER (owner, 2026-09-01), quiet and compact
    * like Save as template rather than a slab at the bottom of a long scroll — and it is
@@ -336,6 +336,26 @@ export function createNewAgentView(kit, { connect = null } = {}) {
       wayTiles(LAUNCH_MODES(), draft.launchMode, (key) => { draft.launchMode = key; touched.launchMode = true; paintLaunchMode(); paintFoot(); }),
     );
   };
+  /* ---- gbrain connection: the second launch-token choice ----
+   * @dangerous_mode's package, landed with its own words. The Anthropic sentence is not
+   * optional decoration — the lead made it binding, because the field is named for the
+   * INTENT (gbrain reach) while the CLIs disagree about blast radius: OpenAI's declaration
+   * disables gbrain alone, Anthropic's disables all MCP for that launch. The name would
+   * over-promise without it, so the copy says so where the control renders.
+   */
+  const GBRAIN_MODES = () => [
+    { key: 'connected', label: t('gbrain_mode.connected', 'Connected'),
+      sub: t('gbrain_mode.connected_sub', 'Ronin adds nothing. The provider\u2019s loaded MCP configuration stands.') },
+    { key: 'disconnected', label: t('gbrain_mode.disconnected', 'Disconnected'),
+      sub: t('gbrain_mode.disconnected_sub', 'Ronin appends the provider\u2019s gbrain-disconnect command. On Anthropic, this disables ALL MCP for that launch, not only gbrain.') },
+  ];
+  const gbrainHost = el('div');
+  const paintGbrain = () => {
+    gbrainHost.replaceChildren(
+      el('p', 'fs-head', t('gbrain_mode.head', 'gbrain connection')),
+      wayTiles(GBRAIN_MODES(), draft.gbrainMode, (key) => { draft.gbrainMode = key; touched.gbrainMode = true; paintGbrain(); paintFoot(); }),
+    );
+  };
   const shelvesHost = el('div');
   function paintShelves() {
     shelvesHost.replaceChildren(bookShelves([
@@ -348,7 +368,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
       paintFoot();
     }));
   }
-  stepLoadout.body.append(modeHost, routinesHead, routinesHost, shelvesHost);
+  stepLoadout.body.append(modeHost, gbrainHost, routinesHead, routinesHost, shelvesHost);
 
   /* ---- the plan: which steps exist for this type and door ---- */
   const steps = {
@@ -402,6 +422,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
         : tagRow([{ text: t('new_team.floor_tag', 'floor'), on: true }, ...(seed?.routines || []).filter((row) => row.on).map((row) => ({ text: row.name, on: true }))])]);
     if (isCowork() && draft.books.length) rows.push([t('behaviours', 'Behaviours'), tagRow(draft.books.map((text) => ({ text, on: true })))]);
     rows.push([t('launch_mode.head', 'launch mode'), LAUNCH_MODES().find((row) => row.key === draft.launchMode)?.label || draft.launchMode]);
+    rows.push([t('gbrain_mode.head', 'gbrain connection'), GBRAIN_MODES().find((row) => row.key === draft.gbrainMode)?.label || draft.gbrainMode]);
     rows.push([t('add_agent.place', 'place'), draft.root]);
     if (hasAgent()) rows.push([t('forms.model', 'model'), draft.provider ? `${draft.provider}${draft.model ? ` / ${draft.model}` : ''}` : t('forms.default', 'default')]);
     return rows;
@@ -476,6 +497,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
           mandate: { reach: draft.reach, recruit: draft.recruit, output: draft.output },
           behaviours: [...draft.books],
           launch_mode: draft.launchMode,
+          gbrain_mode: draft.gbrainMode,
           ...(draft.template ? { template: draft.template } : {}),
         };
     const result = await request('/api/launch', { method: 'POST', json: body });
@@ -535,6 +557,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     // The campaign's, or the team's if one is joined — an editable value like every other
     // default (lead, 2026-09-01: launch_mode cascades campaign to team to launch).
     if (!touched.launchMode && value('launch_mode')) draft.launchMode = value('launch_mode');
+    if (!touched.gbrainMode && value('gbrain_mode')) draft.gbrainMode = value('gbrain_mode');
     if (!draft.kindTouched && team && value('kind')) draft.kind = value('kind');
     pair.paint();
     paintRoots();
@@ -570,6 +593,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     paintRoutinePreview();
     paintShelves();
     paintLaunchMode();
+    paintGbrain();
     paintFolds();
     paintActions();
     paintFoot();
