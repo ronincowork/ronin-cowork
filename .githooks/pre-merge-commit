@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# A merge commit obeys the same identity and funnel rules as an ordinary commit.
+exec "$(git rev-parse --show-toplevel)/libexec/ronin-git-guard"

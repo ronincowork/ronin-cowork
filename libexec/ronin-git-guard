@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Refuse anonymous commits and writes made directly on a reviewed working line.
+set -u
+
+top=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+branch=$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)
+
+working=""
+if [ -f "$top/RONIN_REPO" ]; then
+  working=$(sed -n 's/^working=//p' "$top/RONIN_REPO" | tail -1)
+fi
+if [ -n "$working" ] && [ "$branch" = "$working" ]; then
+  cat >&2 <<EOF
+ronin-guard: '$working' is the reviewed integration line, not a work desk.
+Open a private worktree with: tejun-desk open <project_root> --team <team>
+Commit there, then use tejun-desk hand-in. Only ronin-promote advances '$working'.
+EOF
+  exit 1
+fi
+
+ident=$(git var GIT_AUTHOR_IDENT 2>/dev/null || true)
+case "$ident" in
+  "Ronin <ronin@localhost>"*)
+    cat >&2 <<'EOF'
+ronin-guard: the stock Git identity Ronin <ronin@localhost> cannot author work.
+Open or recover a managed desk so Ronin can stamp this session's worktree-local identity:
+  tejun-desk open <project_root> --team <team>
+EOF
+    exit 1
+    ;;
+esac
+
+exit 0

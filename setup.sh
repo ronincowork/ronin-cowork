@@ -125,6 +125,7 @@ SHIM_DIR="$REPO_DIR/bin/shim"
 if [ -d "$REPO_DIR/.githooks" ]; then
   git -C "$REPO_DIR" config core.hooksPath .githooks 2>/dev/null \
     && echo "    commit guard: hooks wired (core.hooksPath=.githooks)"
+  chmod +x "$REPO_DIR/libexec/ronin-git-guard" "$REPO_DIR/.githooks/pre-merge-commit" 2>/dev/null || true
 fi
 
 BIN_DIR="$REPO_DIR/bin"
