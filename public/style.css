@@ -6783,9 +6783,14 @@ body[data-phone] .tile-head {
   min-height: 44px;
   border: 0;
   border-radius: var(--radius-md);
-  background: var(--action);
-  color: var(--on-strong);
+  /* KIIRO, the house's action-waiting yellow (--warn + --on-accent, the attention
+     flash's own pair) — not --action, which paints blue here and belongs to nothing
+     on this shell (owner, 2026-09-01: "we don't have blue anywhere… it should be
+     kiiro"). */
+  background: var(--warn);
+  color: var(--on-accent);
   font-size: var(--text-5);
+  font-weight: 600;
   cursor: pointer;
 }
 #phone .ph-launch-go:disabled {
@@ -6798,4 +6803,27 @@ body[data-phone] .tile-head {
 }
 #phone .ph-launch-state[data-kind='failed'] {
   color: var(--bad-soft);
+}
+/* The house mark on the shell's front door — the same #brandbtn node, relocated, so
+   its href and handlers ride along; the #bar-scoped brand rules cannot reach it here. */
+#phone .ph-bar .brand {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  color: var(--kaki);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-decoration: none;
+}
+#phone .ph-bar .brand-mark {
+  display: block;
+  width: auto;
+  height: var(--bar-brand-mark-h);
+}
+#phone .ph-bar .brand-word {
+  color: var(--fg-strong);
+  font-size: var(--text-6);
+  font-weight: 600;
 }

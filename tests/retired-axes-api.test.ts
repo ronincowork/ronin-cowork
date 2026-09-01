@@ -33,7 +33,7 @@ const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 const NAME = 'zz_no_such_session';
 
 test('every retired axis key answers 410 and points at what replaced it', async () => {
-  for (const retired of ['session_job', 'family_role', 'session_task', 'role_family', 'team_role', 'campaign_kind', 'lifecycle']) {
+  for (const retired of ['session_job', 'family_role', 'session_task', 'session_role', 'role_family', 'team_role', 'campaign_kind', 'lifecycle']) {
     const r = await fetch(`${base}/api/sessions/${NAME}/${retired}`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -42,8 +42,8 @@ test('every retired axis key answers 410 and points at what replaced it', async 
     assert.equal(r.status, 410, `${retired}: this door existed and is gone — not a typo`);
     const body = await r.json();
     assert.match(body.error, /retired/);
-    assert.match(body.error, /session_role/, 'it names the axis that lives');
-    assert.match(body.error, /team_role|team/, 'and where identity went');
+    assert.match(body.error, /session_type/, 'it names the birth-path replacement');
+    assert.match(body.error, /behaviours/, 'and the birth-reading replacement');
   }
 });
 
@@ -52,16 +52,6 @@ test('every verb gets the same 410 — a GET of a retired axis is as gone as a P
     const r = await fetch(`${base}/api/sessions/${NAME}/family_role`, { method });
     assert.equal(r.status, 410, `${method} must be told the same thing`);
   }
-});
-
-test('the live axis ignores retired and unknown body keys, then proceeds with the request', async () => {
-  const r = await fetch(`${base}/api/sessions/${NAME}/session_role`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ session_role: 'CutCode', role_family: 'developer', unknown: true }),
-  });
-  assert.equal(r.status, 404, 'ignored body members do not answer before the ordinary session lookup');
-  assert.match((await r.json()).error, /No such session/);
 });
 
 test.after(() => server.close());

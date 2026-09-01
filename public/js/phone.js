@@ -66,8 +66,15 @@ export async function buildPhone() {
   root.append(bar, main);
   document.body.append(root);
 
+  // The house mark rides the shell's own bar on the front door (owner, 2026-09-01:
+  // "we should see the top header, the RoninCowork and the Torii"). RELOCATED from the
+  // hidden desktop bar, not cloned — captured once, because a later paint detaches it
+  // and getElementById would then find nothing. Tapping it is the way home (href="./").
+  const brand = document.getElementById('brandbtn');
+
   let route = routeFromHash();
   let rows = new Map(); // session name -> /api/home row (status, ctx, model, tegami)
+  let agentsPainted = ''; // what the Agents screen last drew — identical readings skip the repaint
   let host = null; // the one terminal host, alive only on the terminal screen
   let stageTile = null; // the mounted tile inside it — for the slow reading clock
   let sheet = null; // its メ sheet — dies with the host
@@ -83,7 +90,7 @@ export async function buildPhone() {
 
   /* ---------- screen 1 · the Coworks ---------- */
   const paintTeams = () => {
-    bar.replaceChildren(el('span', 'ph-title', t('phone.coworks', 'Cowork: Teams')));
+    bar.replaceChildren(...(brand ? [brand] : []), el('span', 'ph-title', t('phone.coworks', 'Cowork: Teams')));
     const list = el('div', 'ph-list');
     const teams = teamsFromState().filter((team) => !team.holding || unassignedSessions().length);
     for (const team of teams) {
@@ -190,6 +197,15 @@ export async function buildPhone() {
     // Never repaint over an open launch form — the readings clock would wipe a name
     // mid-typing. The readings resume the moment the form closes or the route moves.
     if (main.querySelector('.ph-launch-form:not([hidden])')) return;
+    // And never repaint what has not moved: the 5s clock rebuilding identical cards
+    // detaches the node under a finger mid-tap — a tap that does nothing (caught by
+    // the render gate racing the same window).
+    const signature = team + '\0' + membersOfTeam(team).map((member) => {
+      const row = rows.get(member.name) || {};
+      return [member.name, member.title, member.team_lead, member.session_role, row.status, row.ctx, row.model, row.tegami?.chip?.text].join('|');
+    }).join('\n');
+    if (signature === agentsPainted) return;
+    agentsPainted = signature;
     bar.replaceChildren(
       backLink('#/m'),
       el('span', 'ph-title', teamLabel({ ...teamByName(team), name: team })),
@@ -272,6 +288,8 @@ export async function buildPhone() {
   const render = () => {
     const next = routeFromHash();
     if (route.screen === 'terminal' && !(next.screen === 'terminal' && next.session === route.session)) closeTerminal();
+    // A screen change always paints fresh; the skip-signature only spans one stay.
+    if (next.screen !== route.screen || next.team !== route.team) agentsPainted = '';
     route = next;
     if (route.screen === 'teams') paintTeams();
     else if (route.screen === 'agents') { paintAgents(); void readRows(); }

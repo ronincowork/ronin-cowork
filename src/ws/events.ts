@@ -51,7 +51,7 @@ export function startSessionsBroadcast(): void {
         // off this list live, and a tag-only join or leave was invisible until something
         // else moved (2026-08-26). Still a push only when something actually changed —
         // attach and note flapping stay deliberately unwatched.
-        const names = list.map((s) => `${s.name}\t${s.session_role}\t${s.tags.join(',')}\t${s.leads.join(',')}`).join('\n');
+        const names = list.map((s) => `${s.name}\t${s.tags.join(',')}\t${s.leads.join(',')}`).join('\n');
         if (names === lastSessionNames) return;
         lastSessionNames = names;
         const msg = JSON.stringify({ t: 'sessions', list });

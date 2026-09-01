@@ -10,21 +10,14 @@ Put a file on the shelf and new sessions read it. That is the whole feature.
 | `all/` | every session, always |
 | `<service>_connected/` (e.g. `gbrain_connected/`) | only sessions launched with MCP on — how a connected session learns what it is connected to, signed by the service that seeded it |
 | `root/<project_root>/` | only sessions working in that directory |
-| `role/<session_role>/` | only sessions doing that kind of work — **re-delivered when the session_role changes** |
+| `routine/<routine>/` | only sessions born with that effective Routine |
 | `assignment/` | only sessions whose launch resolved repo desks — the desk contract (`DESK_CONTRACT.md`: commit → hand-in → team promotion → Git push). A launch given no desk reads nothing here; the level is a fact about the launch, not an axis a static shelf could guess |
 
-The levels are **additive, not a hierarchy**. A session cutting `CutCode` on a
-`development` team in `ronin_cowork` reads all of its levels and nothing overrides
-anything — *where* the work happens, *what* it is doing now and *whose team* it is on
-are independent questions, so the same bug-chasing habits apply in every repo, the same
-repo notes apply to every session_role, and standing team context applies across
-every role its team raises.
-
-**Session_role reading is not birth-only.** Its
-reading arrives once ("if you join later, let's not go back and redo it" — R35). A
-`session_role` moves, and when it does, Ronin hands that role's level to the running
-session — once, whether the agent re-marked itself or the owner did
-(`src/role-watch.ts`).
+The levels are **additive, not a hierarchy**. Root, connection, effective Routines and
+desk assignment are independent launch facts; their files compile into one birth reading
+and nothing overrides another level. Work-specific reading uses the separate
+`behaviours` choice: each selected `ways:<book>` joins that same birth reading once.
+There is no mutable role level and no live re-delivery observer.
 
 The connected level makes the launch toggle govern both halves of a connection (owner's
 ruling, 2026-08-17): a session launched with MCP off gets neither the tools nor the

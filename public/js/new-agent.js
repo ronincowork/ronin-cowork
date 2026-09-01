@@ -447,7 +447,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     save.setDisabled(!saveName.value.trim());
   });
   const save = createAction({ label: t('save_template', 'Save as template'), disabled: true, action: () => void doSave() });
-  const actions = createActionBar({ label: t('add_agent.actions', 'Launch actions') });
+  const actions = createActionBar({ label: t('add_agent.actions', 'Launch actions'), className: 'ntf-actions' });
   actions.el.append(saveName, save.el);
   function paintActions() {
     // The button says what the press will DO: with the name blank there is no team to

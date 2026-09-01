@@ -50,7 +50,6 @@ import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { RIREKI_DIR, sessionKey } from './session-dir.js';
-import { listSessionRoles } from './definitions.js';
 import { readTeamRoster } from './team-rosters.js';
 import type { SessionInfo } from './tmux.js';
 import { mandate, type Mandate } from './agent-defaults.js';
@@ -113,25 +112,6 @@ export function tegamiPath(key: string): string {
   return path.join(RIREKI_DIR, key, 'tegami.md');
 }
 
-/**
- * The session_role lines, READ FROM THE DEFINITIONS — never restated here.
- *
- * `ronin_catalogs/session_roles/` is the authority on what a session_role is. A second
- * copy in this file would be correct exactly until someone edited one of them, and the
- * whole point of a letter that teaches at the moment of use is that what it teaches is
- * current. If the directory cannot be read we print no list at all rather than a stale one.
- */
-async function taskLines(): Promise<string> {
-  try {
-    const rows = (await listSessionRoles())
-      .filter((k) => k.name && k.remit)
-      .map((k) => `> \`${k.name}\` — ${k.remit}`);
-    return rows.length ? rows.join('\n') + '\n>' : '';
-  } catch {
-    return '';
-  }
-}
-
 /** One derived teams entry — the letter's window onto a roster. */
 export interface TeamEntry {
   team: string;
@@ -170,10 +150,8 @@ export async function deriveTeams(tags: string[]): Promise<TeamEntry[]> {
  */
 function seedShell(
   name: string,
-  role: string,
   repos: TegamiCheckout[],
   teams: TeamEntry[],
-  tasks: string,
   sessionMandate: Mandate,
 ): string {
   return `# TEGAMI — ${name}
@@ -184,13 +162,6 @@ function seedShell(
 >
 > At the end of a turn, consider updating it with \`write_tegami\`. Not keeping it current is
 > poor quality.
->
-> YOUR **session_role** is already set below — it is the button the owner pressed to start
-> you, so it is a statement of what you were asked for, not a guess. **Change it when the
-> work changes**: a session that finishes planning and starts building has changed its
-> session_role, not become a new session. It is the SESSION's role, not the agent's: same
-> binary, different work. When you change it, Ronin hands you that role's own reading — so
-> re-marking yourself is how you get told what the new work needs.
 >
 > YOUR **teams** block is DERIVED and not yours to write: one entry per team you are on —
 > the team's name and its objective, read live from the team rosters.
@@ -204,7 +175,6 @@ function seedShell(
 > live coordinate: it tells the owner which private desk this session is actually using;
 > the branch remains supporting Git detail.
 >
-${tasks}
 > YOUR **ladder** — the rungs, and which one you are on. Phases hold legs. Name a phase
 > before you know its legs; a phase with nothing under it yet is normal. Leave out what you
 > cannot see: a short ladder is a true ladder, and a guessed one is a lie. Statuses are
@@ -225,7 +195,6 @@ ${tasks}
 
 \`\`\`json
 { "objective": "",
-  "session_role": ${JSON.stringify(role)},
   "mandate": ${JSON.stringify(sessionMandate)},
   "teams": ${JSON.stringify(teams)},
   "repos": ${JSON.stringify(repos.filter((checkout) => checkout.repo || checkout.branch))},
@@ -246,7 +215,6 @@ ${tasks}
  */
 export async function seedTegami(
   name: string,
-  role: string,
   checkout: TegamiCheckout | TegamiCheckout[] = { repo: '', branch: '' },
   teams: TeamEntry[] = [],
   sessionMandate: Mandate = mandate(undefined),
@@ -254,7 +222,7 @@ export async function seedTegami(
   try {
     const file = tegamiPath(await sessionKey(name));
     await fs.mkdir(path.dirname(file), { recursive: true });
-    await fs.writeFile(file, seedShell(name, role, Array.isArray(checkout) ? checkout : [checkout], teams, await taskLines(), mandate(sessionMandate)), { flag: 'wx' });
+    await fs.writeFile(file, seedShell(name, Array.isArray(checkout) ? checkout : [checkout], teams, mandate(sessionMandate)), { flag: 'wx' });
     return file;
   } catch (e) {
     if ((e as NodeJS.ErrnoException)?.code === 'EEXIST') return tegamiPath(await sessionKey(name));
@@ -264,34 +232,6 @@ export async function seedTegami(
     return null;
   }
 }
-
-/**
- * One axis out of a session's letter, or '' when it has not said.
- *
- * Deliberately a KEYHOLE read: it pulls the json block and takes one string out of it.
- * A malformed block, a missing file, a letter written by a future michi with keys we
- * have never heard of — all read as '' and none read as an error. The block belongs to
- * the agent and to michi; being unable to parse the rest of it is the normal case here,
- * not a fault, and the roster's job is to draw a blank rather than to complain.
- *
- * There is NO legacy key to fall back to. `session_job` is retired, and a letter carrying
- * it reads as blank on both axes — which is correct: it is a letter from a schema that no
- * longer exists, and inventing a task from it would be reading a fact nobody wrote.
- */
-async function readAxis(name: string, key: 'session_role'): Promise<string> {
-  try {
-    const text = await fs.readFile(tegamiPath(await sessionKey(name)), 'utf8');
-    const fenced = text.match(/```(?:json)?\s*\n([\s\S]*?)\n```/);
-    const raw = fenced ? fenced[1] : text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1);
-    const v = (JSON.parse(raw) as Record<string, unknown>)[key];
-    return typeof v === 'string' ? v.trim() : '';
-  } catch {
-    return '';
-  }
-}
-
-/** WHAT the session is doing now — the mark, and the one session-authored axis. */
-export const readSessionRole = (name: string): Promise<string> => readAxis(name, 'session_role');
 
 /**
  * THE DESKS a session says it is working at — `repos[]` out of its letter, the same
@@ -353,36 +293,6 @@ export async function readRepos(name: string): Promise<TegamiCheckout[]> {
  * that is true of `write_tegami` against itself today, and a lock is not worth the
  * machinery for a field a human changes by hand a few times a day.
  */
-export async function writeSessionRole(name: string, task: string): Promise<string | null> {
-  const clean = task.trim();
-  const file = tegamiPath(await sessionKey(name));
-  let text: string;
-  try {
-    text = await fs.readFile(file, 'utf8');
-  } catch {
-    // No letter — a session Ronin never launched. Marking it is a reasonable thing to
-    // want, so seeding one is the honest way to grant it, not a silent failure.
-    return (await seedTegami(name, clean)) ? clean : null;
-  }
-  const block = text.match(/```(?:json)?\s*\n([\s\S]*?)\n```/);
-  if (!block) return null;
-  const body = block[1];
-  const key = /"session_role"\s*:\s*"(?:[^"\\]|\\.)*"/;
-  const next = key.test(body)
-    ? body.replace(key, `"session_role": ${JSON.stringify(clean)}`)
-    : body.replace(/\{/, `{ "session_role": ${JSON.stringify(clean)},`);
-  try {
-    JSON.parse(next); // the guard: never leave a letter the tile cannot read
-  } catch {
-    return null;
-  }
-  const out = text.slice(0, block.index! ) + block[0].replace(body, next) + text.slice(block.index! + block[0].length);
-  const tmp = `${file}.task`;
-  await fs.writeFile(tmp, out, 'utf8');
-  await fs.rename(tmp, file);
-  return clean;
-}
-
 /**
  * THE SHELF — park a brief a session could not be handed at birth.
  *
@@ -472,7 +382,7 @@ export async function writeGate(name: string, gate: string): Promise<boolean> {
 }
 
 /** A session, plus its axis out of its letter. */
-export type SessionWithAxes = SessionInfo & { session_role: string };
+export type SessionWithAxes = SessionInfo;
 
 /**
  * Every producer of a client-facing session list runs through here — `/api/sessions`,
@@ -496,7 +406,6 @@ export async function withAxes(list: SessionInfo[]): Promise<SessionWithAxes[]> 
   return Promise.all(
     list.filter((s) => !machine || resolve(s.campaign_id) === machine).map(async (s) => ({
       ...s,
-      session_role: await readSessionRole(s.name),
       campaign_id: resolve(s.campaign_id),
     })),
   );

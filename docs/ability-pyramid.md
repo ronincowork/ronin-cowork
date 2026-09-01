@@ -62,22 +62,22 @@ file in their store's `all/`; a stock-named file is replaced whole.
 
 Identical delivery — files in the birth reading list — but only for sessions in scope.
 **There is no pull and no trigger the session acts on: the trigger is the launch.**
-Four facts fixed at spawn select the levels:
+Launch facts select the levels:
 
 | Level | Selected by | Who stocks it |
 |---|---|---|
 | `<service>_connected/` — any level matching the pattern | the launch's MCP toggle | cowork ships none — a connected **service makes and seeds its own** (gbrain's setup makes `gbrain_connected/` and seeds six readings), so the level is signed by its service |
 | `root/<project_root>/` | the root picked at launch | the owner only — stock cannot know a machine's directories |
-| `role/<session_role>/` | the session_role the session is doing **now** | stock may ship (the roles are shipped); the owner adds |
+| `routine/<routine>/` | each effective Routine at birth | stock and owner Routine readings, resolved through the catalog |
+| `assignment/` | a launch that resolved repository desks | the desk contract shipped by cowork; the owner may shadow it |
 
 The toggle governs both halves of a connection (owner's ruling, 2026-08-17): launched
-off, a session gets neither a service's tools nor a word about them. The role and task
-levels are where "abilities we know THIS hat, or THIS kind of work, always uses" live —
-the shelf names the ability and its guard tool; the procedure stays in the catalog,
-uncopied. **The two add up rather than override**: a blank axis omits only its own level.
-A committed `session_role` change injects the new `role/<session_role>/` list into the
-running session (`src/role-watch.ts`). A T2 file that would help every session
-is mis-shelved and belongs up a tier.
+off, a session gets neither a service's tools nor a word about them. These levels add up
+rather than override: root, connection, effective Routines and desk assignment are fixed
+at birth and compiled into one reading list. Work-specific reading is selected separately
+as `behaviours`; those `ways:<book>` files join that same birth reading once and are not a
+mutable shelf axis. A T2 file that would help every session is mis-shelved and belongs up
+a tier.
 
 ## T3 — indexed. T4 — delivered. T5 — sought.
 
