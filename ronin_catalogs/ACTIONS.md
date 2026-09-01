@@ -153,7 +153,7 @@ shared delivery engine owns prompt recognition, literal typing, Enter, and reten
 ## confirm-started
 `action_kind: mechanical` — run it, don't deliberate.
 Confirmation belongs to the shared delivery engine. Immediate success removes the
-message; uncertainty leaves it visible under Cowork → Messages. Try Again makes one safe
+message; uncertainty leaves it visible under Team Commons → Agent message queue. Try Again makes one safe
 attempt. Owner-only Force types once and presses Enter while checking for at most ten
 seconds; failure remains visible.
 

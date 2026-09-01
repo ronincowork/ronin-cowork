@@ -8,7 +8,7 @@ const el = (tag, cls, text) => {
   return n;
 };
 
-export function buildMessageQueue(host, showing = () => true) {
+export function buildMessageQueue(host) {
   const board = el('div', 'mq-board');
   const empty = el('p', 'mq-empty', t('messages.empty', 'No messages are waiting.'));
   host.append(board);

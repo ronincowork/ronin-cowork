@@ -279,7 +279,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.rt_hotwords_what:** The words dictation keeps mishearing, sent with your voice.
 - **campaign_view.rt_present:** installed — no switch yet
 - **campaign_view.rt_absent:** not installed
-- **campaign_view.machine_summary:** The rest of the desk: Desk · Account · Archived · Messages · Help desk · Keypad.
+- **campaign_view.machine_summary:** The rest of the desk: Desk · Account · Archived · Help desk · Keypad.
 
 ## campaign_home — campaign-home.js (the root arrival: Machine Settings, Coworks, Launch)
 
@@ -542,7 +542,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team.workspace_1:** Workspace 1
 - **team.workspace_2:** Workspace 2
 - **team.commons_card:** Team commons
-- **team.commons_summary:** See Docs / Wipeboard / Configuration
+- **team.commons_summary:** See Docs / Wipeboard / Agent message queue / Configuration
 - **team.roster_of:** Roster: {team}
 - **team.workspace_blank:** Workspace
 - **team.new_session:** New session
@@ -1146,7 +1146,6 @@ The catalog entry goes. {dir} is not touched.
 - **cowork.tab_roots:** Project roots
 - **cowork.tab_help:** Help desk
 - **cowork.tab_keypad:** Keypad
-- **cowork.tab_messages:** Messages
 - **messages.empty:** No messages are waiting.
 - **messages.to:** To {target}
 - **messages.meta:** {source} · {attempts} attempts
@@ -1482,6 +1481,7 @@ The catalog entry goes. {dir} is not touched.
 - **workspace.channel_wipeboard:** Wipeboard
 - **workspace.channel_docs:** Docs
 - **workspace.channel_team_configuration:** Team Configuration
+- **workspace.channel_agent_message_queue:** Agent message queue
 - **team_config.no_roster:** This Cowork has no saved roster.
 - **team_config.loading:** Loading Team Configuration…
 - **team_config.cowork_id:** Cowork ID
