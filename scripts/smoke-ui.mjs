@@ -9,10 +9,13 @@
  *
  * Two passes, because the two surfaces fail differently:
  *
- *   DESKTOP (Chromium)  — locked tiles, the tmux attach mirror.
- *   PHONE   (WebKit)    — touch is FIXED UNLOCKED (`locked = !IS_TOUCH`), so it is the
- *                         only pass that exercises the tape path. That is why the phone
- *                         went dark FIRST on 2026-08-08 while the Mac still worked.
+ *   DESKTOP (Chromium)  — locked tiles, the tmux attach mirror, the workbench.
+ *   PHONE   (WebKit)    — the phone SHELL (js/phone.js): the workbench never boots at
+ *                         an iPhone-class viewport, so this pass walks the drill-down
+ *                         (Coworks → Agents → the stage) instead of the workbench
+ *                         probes. Touch is FIXED UNLOCKED, so it is also the only pass
+ *                         that exercises the tape path — the phone went dark FIRST on
+ *                         2026-08-08 while the Mac still worked.
  *
  * The phone pass wants WebKit, because Glen's phone is Safari and iOS Safari is where the
  * caching, momentum-scroll and dictation quirks live. WebKit needs system libraries that
@@ -894,36 +897,95 @@ async function checkJourneys(page, label, jsErrors) {
 }
 
 /**
- * PHONE JOURNEYS — the touch grammar's own probes, run in the phone pass: the ニ sheet
- * opens and dismisses, the Commons is reachable through it, and the tab strip lands a
- * room by tap. Few and unbrittle, same policy as the desktop set.
+ * THE PHONE PASS — the shell, not the workbench. On an iPhone-class viewport main.js
+ * never boots the workbench (js/phone.js, the MOBILE plan): the page is the three-step
+ * drill-down, so the workbench probes above would fail it for not being a page it is
+ * deliberately no longer. This walks the owner's own journey instead: the Coworks,
+ * the probe's Cowork, the Agent's stage with the keys row docked on the composer.
  */
-async function checkPhoneJourneys(page, label) {
-  await page.tap('#bar .tdrop-btn.ni');
-  await page.waitForTimeout(200);
-  const niOpen = await page.evaluate(() => !!document.querySelector('.tdrop.open'));
-  if (niOpen) ok(`${label}: ニ opens the app sheet`);
-  else return bad(`${label}: ニ did not open its sheet`);
-  // The Torii is the root Ronin door on phone too.
-  await page.tap('#brandbtn');
-  await page.waitForTimeout(300);
-  const atHome = await page.evaluate(() => location.hash === '' && !document.querySelector('.ch-view')?.hidden);
-  if (atHome) ok(`${label}: ニ → ⛩ ronin lands at the root in one tap`);
-  else bad(`${label}: ニ → ⛩ ronin did not land at the root`);
-  const sheetGone = await page.evaluate(() => !document.querySelector('.tdrop.open'));
-  if (sheetGone) ok(`${label}: the sheet closed behind the door it opened`);
-  else bad(`${label}: the ニ sheet stayed open over the pane`);
-  // The strip: the only way to a specific room, so tap one — ▧ Docs — and come back.
-  await page.tap('.tile .home-tabrow [data-pane="docs"]');
-  await page.waitForTimeout(300);
-  const docs = await page.evaluate(() => document.querySelector('.home.show')?.dataset.pane);
-  if (docs === 'docs') ok(`${label}: the tab strip lands ▧ Docs by tap`);
-  else bad(`${label}: strip tap landed "${docs}", wanted "docs"`);
-  await page.tap('.tile .home-tabrow [data-pane="sessions"]');
-  await page.waitForTimeout(200);
-  const back = await page.evaluate(() => document.querySelector('.home.show')?.dataset.pane);
-  if (back === 'sessions') ok(`${label}: the tab strip lands ⌂ Roster by tap`);
-  else bad(`${label}: strip tap landed "${back}", wanted "sessions"`);
+async function runPhonePass({ label, browser, contextOpts }) {
+  const { page, jsErrors, netFails } = await openPage(browser, contextOpts);
+  try {
+    await page.goto(URL_.replace(/#.*$/, ''), { waitUntil: 'networkidle', timeout: 30_000 });
+  } catch (e) {
+    bad(`${label}: page did not load: ${e.message}`);
+  }
+  await page.waitForTimeout(3000);
+  const shell = await page.evaluate(() => ({
+    phone: !!document.getElementById('phone'),
+    barHidden: !document.getElementById('bar') || getComputedStyle(document.getElementById('bar')).display === 'none',
+    failBar: document.getElementById('failbar')?.innerText.trim().slice(0, 400) || null,
+  }));
+  if (shell.phone) ok(`${label}: the phone shell mounted`);
+  else bad(`${label}: no phone shell — the workbench booted on a phone viewport`);
+  if (shell.barHidden) ok(`${label}: the workbench chrome is hidden whole`);
+  else bad(`${label}: the desktop bar is still showing over the shell`);
+  if (shell.failBar) bad(`${label}: the failure banner is showing:\n         ` + shell.failBar.replace(/\n/g, '\n         '));
+  else ok(`${label}: no failure banner`);
+
+  if (!probeAvailable) {
+    console.log(`  SKIP — ${label}: the drill-down journey needs the probe session (session capacity is full)`);
+  } else {
+    // Screen 1 → 2: the probe is teamless, so it lives behind the unassigned Cowork.
+    const teamCard = page.locator('#phone .ph-card[href="#/m/t/%20unassigned"]').first();
+    await teamCard.waitFor({ state: 'attached', timeout: 10_000 }).catch(() => {});
+    if (await teamCard.count()) {
+      await teamCard.tap();
+      ok(`${label}: the Coworks screen offers the probe's Cowork`);
+    } else bad(`${label}: the unassigned Cowork card never appeared on the Coworks screen`);
+    // Screen 2 → 3: the Agent card, by its route.
+    const agentCard = page.locator(`#phone .ph-card[href="#/m/s/%20unassigned/${PROBE}"]`).first();
+    await agentCard.waitFor({ state: 'attached', timeout: 10_000 }).catch(() => {});
+    if (await agentCard.count()) {
+      await agentCard.tap();
+      await page.waitForTimeout(1500);
+      ok(`${label}: the Cowork screen offers the probe Agent`);
+    } else bad(`${label}: the probe's Agent card never appeared on its Cowork screen`);
+    // Screen 3: the stage — keys row and composer docked, tile head replaced by the bar.
+    const stage = await page.evaluate(() => {
+      const head = document.querySelector('#phone .tile-head');
+      return {
+        keys: document.querySelectorAll('#phone .keysrow button').length,
+        composer: !!document.querySelector('#phone .composer.show'),
+        headHidden: !head || getComputedStyle(head).display === 'none',
+      };
+    });
+    if (stage.keys >= 9) ok(`${label}: the keys row is on the stage (${stage.keys} keys, zero taps away)`);
+    else bad(`${label}: the keys row is missing or short (${stage.keys} keys)`);
+    if (stage.composer) ok(`${label}: the composer is docked on the stage`);
+    else bad(`${label}: no composer on the stage`);
+    if (stage.headHidden) ok(`${label}: the tile head yields to the shell bar`);
+    else bad(`${label}: the tile head is still painting under the shell bar`);
+    let paintedOk = false;
+    for (let i = 0; i < 14 && !paintedOk; i++) {
+      await page.waitForTimeout(1000);
+      const p = await painted(page);
+      if (p.xterm > 20 || p.tape > 20) {
+        ok(`${label}: the probe painted on the stage (${p.tape > 20 ? `tape ${p.tape}` : `terminal ${p.xterm}`} chars)`);
+        paintedOk = true;
+      }
+    }
+    if (!paintedOk) bad(`${label}: attached ${PROBE} on the stage and the pane stayed EMPTY`);
+    // メ: the Agent's own controls, one sheet.
+    await page.tap('#phone .ph-bar .tdrop-btn');
+    await page.waitForTimeout(300);
+    const meOpen = await page.evaluate(() => !!document.querySelector('#phone .tdrop.open'));
+    if (meOpen) ok(`${label}: メ opens the Agent sheet`);
+    else bad(`${label}: メ did not open the Agent sheet`);
+    await page.tap('#phone .ph-title');
+    await page.waitForTimeout(200);
+    // ‹ back: the journey reverses.
+    await page.tap('#phone .ph-back');
+    await page.waitForTimeout(600);
+    const backAt = await page.evaluate(() => location.hash);
+    if (backAt === '#/m/t/%20unassigned') ok(`${label}: ‹ returns to the Cowork's Agents`);
+    else bad(`${label}: ‹ landed on "${backAt}", wanted the Cowork's Agents`);
+  }
+
+  if (jsErrors.length) bad(`${label}: uncaught JS errors:\n         ` + jsErrors.join('\n         '));
+  else ok(`${label}: no uncaught JS errors`);
+  if (netFails.length) bad(`${label}: failed requests:\n         ` + netFails.join('\n         '));
+  else ok(`${label}: no failed requests`);
 }
 
 /**
@@ -1095,7 +1157,7 @@ try {
   }
 }
 if (phoneBrowser) {
-  await runPass({ label: `phone [${engine}]`, browser: phoneBrowser, contextOpts: PHONE });
+  await runPhonePass({ label: `phone [${engine}]`, browser: phoneBrowser, contextOpts: PHONE });
   await phoneBrowser.close();
 }
 

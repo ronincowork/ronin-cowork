@@ -6,6 +6,10 @@ import { tabTitle } from './workspace.js';
 // Touch device (iPhone/iPad): a tap must NOT auto-focus the terminal (which pops
 // the keyboard); scrolling is driven by drag + buttons that inject wheel events.
 export const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+// Phone (iPhone-class): small AND coarse. The workbench never boots here — main.js
+// mounts the phone shell (js/phone.js) instead. An iPad is coarse but wide, keeps the
+// workbench, and gets its keys from the composer's keys row like every coarse tile.
+export const IS_PHONE = window.matchMedia('(max-width: 680px) and (pointer: coarse)').matches;
 
 /**
  * WHICH KEY FORCES A SELECTION IN A LOCKED TILE — and it is not the same key everywhere.

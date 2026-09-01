@@ -79,8 +79,9 @@ const DESKTOP = [
 ];
 // NOT the session picker: its flex width follows the live session names — content,
 // not chrome, and a baseline on content is a baseline that cries wolf.
-// メ went with the Sessions grid (73ebd6e); ニ remains, hidden on the home like the rest.
-const PHONE = ['#bar', '#bar .tdrop-btn.ni'];
+// The phone is the SHELL now (js/phone.js, the MOBILE plan): #bar never shows there and
+// ニ is never built. The chrome worth baselining is the shell's own bar and list frame.
+const PHONE = ['#phone .ph-bar', '#phone .ph-title', '#phone .ph-main'];
 const LOGIN = ['form', '#pw', '#go', 'h1'];
 
 const browser = await pw.chromium.launch().catch((e) => {

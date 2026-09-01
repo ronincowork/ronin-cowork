@@ -1375,7 +1375,17 @@ The catalog entry goes. {dir} is not touched.
 - **me.note:** Note
 - **me.control:** Control
 - **me.kill:** Kill session
+- **me.output:** Output
 - **me.title:** This session — status, work record, macros, groups, docs, note, control
+
+## phone — phone.js (the phone shell: Coworks, a Cowork's Agents, one Agent's tile)
+- **phone.coworks:** Coworks
+- **phone.no_coworks:** No Coworks yet.
+- **phone.agents_one:** 1 Agent
+- **phone.agents_many:** {n} Agents
+- **phone.no_agents:** No Agents on this Cowork yet.
+- **phone.back:** Back
+- **phone.me_title:** This Agent — status, work record, note, control, kill
 
 ## new_team — new-team-launch.js (the transaction's own sentences)
 
