@@ -41,13 +41,9 @@
   .wk-workbench-cell[hidden] { display: none; }
   .wk-workbench-cell > * { flex: 1 1 auto; min-height: 0; min-width: 0; }
   .wk-workbench-cell.wk-workbench-selected { outline: var(--edge) solid var(--accent); outline-offset: calc(-1 * var(--edge)); }
-  /* Touch (owner, 2026-09-01): the tap-a-workspace-then-tap-a-card flow already exists,
-     but a 1px inset outline is no evidence on a tablet — nobody could see WHICH
-     workspace was armed or that the selector card landed. The selected cell wears a
-     visible frame there. */
-  @media (pointer: coarse) {
-    .wk-workbench-cell.wk-workbench-selected { outline: 3px solid var(--accent); outline-offset: -3px; }
-  }
+  /* The louder coarse-pointer selected frame lives in style.css (the coworkspace
+     touch block): this sheet is injected by JS with no cache-busting, and a stale
+     copy on a tablet is how an armed workspace went back to looking dead. */
   .wk-workbench-selector { display: flex; min-width: 0; min-height: 0; }
   .wk-workbench-selector > * { flex: 1 1 auto; min-width: 0; min-height: 0; }
   .wk-workbench-selector-cards { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); overflow-y: auto; }
