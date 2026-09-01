@@ -102,12 +102,12 @@ export interface SessionLaunchSpec {
   liveDangerously?: string;
   /**
    * The provider's own "launch with no MCP servers" flags — appended to `cmd` when a
-   * launch asks for MCP off (`- **mcp_off:** \`…\`` in the provider's section). DATA,
+   * launch asks for gbrain disconnected (`- **gbrain_disconnected:** \`…\`` in the provider's section). DATA,
    * like the cmd itself: cowork knows no CLI's flags and no MCP server's name; a
    * provider that declares none simply cannot launch with MCP off, and the spawn
    * refuses rather than silently launching connected.
    */
-  mcpOff?: string;
+  gbrainDisconnected?: string;
 }
 
 const expand = (p: string) => (p.startsWith('~') ? path.join(os.homedir(), p.slice(1)) : p);
@@ -148,7 +148,7 @@ export async function listProjectRoots(): Promise<ProjectRootInfo[]> {
  *                                                          tmux server happens to sit
  *   spawn.ts   cmd: form.cmd || defaultCmd || 'claude' -> a bare string matching no
  *                                                          launch-table row, so MCP-off
- *                                                          refuses it (mcp_off is matched
+ *                                                          refuses it (gbrain_disconnected is matched
  *                                                          by the cmd string)
  *
  * So the floor is `home`: the owner's own directory. It always exists, it is
@@ -257,13 +257,13 @@ function parseLaunchTable(raw: string): SessionLaunchSpec[] {
     return c[0] === '' && c[c.length - 1] === '' ? c.slice(1, -1) : c;
   };
   const out: SessionLaunchSpec[] = [];
-  // Per `### Provider` section, so a section's `- **mcp_off:**` line reaches exactly the
+  // Per `### Provider` section, so a section's `- **gbrain_disconnected:**` line reaches exactly the
   // providers its own table names, wherever in the section it sits.
   for (const section of raw.split(/^### /m)) {
     let models: string[] = [];
     const specs: SessionLaunchSpec[] = [];
     // The provider's no-MCP flags, backticked like every cmd in this file.
-    const mcpOff = /^-\s*\*\*mcp_off:\*\*\s*`(.+)`\s*$/m.exec(section)?.[1]?.trim();
+    const gbrainDisconnected = /^-\s*\*\*gbrain_disconnected:\*\*\s*`(.+)`\s*$/m.exec(section)?.[1]?.trim();
     const liveDangerously = /^-\s*\*\*live_dangerously:\*\*\s*`(.+)`\s*$/m.exec(section)?.[1]?.trim();
     for (const line of section.split('\n')) {
       if (!line.includes('|')) continue;
@@ -280,7 +280,7 @@ function parseLaunchTable(raw: string): SessionLaunchSpec[] {
         const model = models[i];
         if (cmd && model) specs.push({
           provider, model, cmd,
-          ...(mcpOff ? { mcpOff } : {}),
+          ...(gbrainDisconnected ? { gbrainDisconnected } : {}),
           ...(liveDangerously ? { liveDangerously } : {}),
         });
       });

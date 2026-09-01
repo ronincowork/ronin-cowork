@@ -80,7 +80,7 @@ await fs.writeFile(
   path.join(temp, 'team_rosters', 'scratchteam.md'),
   [
     '# scratchteam', '', '- **objective:** prove the parity', '- **project_root:** beta',
-    '- **agent_defaults:** {"provider":"","model":"","reach":"discuss","recruit":"nobody","output":"ideas","dial":"write","launch_mode":"live_dangerously"}',
+    '- **agent_defaults:** {"provider":"","model":"","reach":"discuss","recruit":"nobody","output":"ideas","dial":"write","launch_mode":"live_dangerously","gbrain_mode":"disconnected"}',
     '- **state:** active', '',
   ].join('\n'),
 );
@@ -113,7 +113,7 @@ const mechanism = (r: Awaited<ReturnType<typeof resolveForm>>) => ({
   dial: r.dial,
   agent: r.agent,
   capExempt: r.capExempt,
-  mcp: r.mcp,
+  gbrain_mode: r.gbrain_mode,
   launchAgent: r.launchAgent,
 });
 
@@ -246,21 +246,45 @@ test('the model cascade is the mechanism\'s: blank inherits, explicit wins, iden
 
 test('launch_mode preserves provider configuration or appends the declared bypass flag', async () => {
   const configured = await resolveForm(commonsForm({
-    provider: 'anthropic', model: 'opus', launch_mode: 'configured', mcp: true,
+    provider: 'anthropic', model: 'opus', launch_mode: 'configured', gbrain_mode: 'connected',
   }), new Set());
   assert.equal(configured.cmd, 'claude --model opus');
   assert.equal(configured.launch_mode, 'configured');
   assert.deepEqual(configured.stated_by.launch_mode, [{ layer: 'launch', source: 'launch request' }]);
 
   const dangerous = await resolveForm(commonsForm({
-    provider: 'anthropic', model: 'opus', launch_mode: 'live_dangerously', mcp: true,
+    provider: 'anthropic', model: 'opus', launch_mode: 'live_dangerously', gbrain_mode: 'connected',
   }), new Set());
   assert.equal(dangerous.cmd, 'claude --model opus --dangerously-skip-permissions');
   assert.equal(dangerous.launch_mode, 'live_dangerously');
 
   await assert.rejects(
-    () => resolveForm(commonsForm({ cmd: 'custom-agent', launch_mode: 'live_dangerously', mcp: true }), new Set()),
+    () => resolveForm(commonsForm({ cmd: 'custom-agent', launch_mode: 'live_dangerously', gbrain_mode: 'connected' }), new Set()),
     /declares no `live_dangerously:` flag/,
+  );
+});
+
+test('gbrain_mode preserves provider configuration or appends its declared disconnect tokens', async () => {
+  const connected = await resolveForm(commonsForm({
+    provider: 'openai', model: 'gpt-5.6-terra', launch_mode: 'configured', gbrain_mode: 'connected',
+  }), new Set());
+  assert.equal(connected.cmd, 'codex --model gpt-5.6-terra');
+  assert.equal(connected.gbrain_mode, 'connected');
+
+  const codexDisconnected = await resolveForm(commonsForm({
+    provider: 'openai', model: 'gpt-5.6-terra', launch_mode: 'configured', gbrain_mode: 'disconnected',
+  }), new Set());
+  assert.equal(codexDisconnected.cmd, 'codex --model gpt-5.6-terra -c mcp_servers.gbrain.enabled=false');
+  assert.equal(codexDisconnected.gbrain_mode, 'disconnected');
+
+  const claudeDisconnected = await resolveForm(commonsForm({
+    provider: 'anthropic', model: 'opus', launch_mode: 'configured', gbrain_mode: 'disconnected',
+  }), new Set());
+  assert.equal(claudeDisconnected.cmd, 'claude --model opus --strict-mcp-config');
+
+  await assert.rejects(
+    () => resolveForm(commonsForm({ cmd: 'custom-agent', launch_mode: 'configured', gbrain_mode: 'disconnected' }), new Set()),
+    /declares no `gbrain_disconnected:` tokens/,
   );
 });
 
@@ -297,9 +321,9 @@ test('stated_by carries the settled launch, Team, role, and Campaign layers', as
     name: 'attribution-proof',
     project_root: 'beta',
     cmd: 'claude --model haiku',
-    mcp: true,
+    gbrain_mode: 'connected',
   }), new Set());
-  for (const key of ['name', 'project_root', 'cmd', 'mcp', 'session_role']) {
+  for (const key of ['name', 'project_root', 'cmd', 'gbrain_mode', 'session_role']) {
     assert.deepEqual(explicit.stated_by[key], [{ layer: 'launch', source: 'launch request' }], key);
   }
 

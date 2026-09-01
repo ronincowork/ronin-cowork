@@ -27,7 +27,7 @@ import { request } from './request.js';
 import { t } from './lexicon.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
 import { agentPicks, agentRow, createAgentRows } from './team-agents.js';
-import { raiseTeam } from './team-loader.js';
+import { launchTeamAgents } from './team-loader.js';
 import {
   createStep, dialRowMulti, el, kindTiles, mandateSelect, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
 } from './form-steps.js';
@@ -474,15 +474,19 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     //
     // `agentPicks` is where the screen's words become the route's: a row says assignment
     // and lead, the wire says instructions and team_lead (lead's P0 ruling).
-    // The Team record is also the duplicate-submit gate: only a newly created Team reaches
-    // the handoff, so pressing twice cannot birth the cast twice (@team_loader's point,
-    // kept from their side of the merge).
-    const made = await raiseTeam(request, rosterBody(name), agentPicks(draft.agents));
+    // THE CANONICAL ROSTER DOOR STAYS HERE and is the duplicate-submit gate: only the
+    // request that creates the Team reaches the staffing handoff, so pressing Raise twice
+    // cannot birth the cast twice (@team_loader's refinement, taken).
+    const made = await request('/api/team-rosters', { method: 'POST', json: rosterBody(name) });
     if (!made.ok) {
       busy = false;
       raise.setDisabled(false);
       return notice.set('failed', made.message);
     }
+    // Then the cast, through the loader: rows fire independently, a marked lead last, none
+    // waited on. `agentPicks` is where the screen's words become the route's — a row says
+    // assignment and lead, the wire says instructions and team_lead.
+    launchTeamAgents(request, name, agentPicks(draft.agents));
     busy = false;
     raise.setDisabled(false);
     notice.set('', '');

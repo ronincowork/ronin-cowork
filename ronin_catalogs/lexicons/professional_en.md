@@ -305,6 +305,11 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **launch_mode.configured_sub:** Ronin adds nothing to the command. The Agent starts with whatever its provider CLI already loads.
 - **launch_mode.live:** Dangerously
 - **launch_mode.live_sub:** Ronin appends that provider’s own bypass flag, so the Agent does not stop to ask.
+- **gbrain_mode.head:** gbrain connection
+- **gbrain_mode.connected:** Connected
+- **gbrain_mode.connected_sub:** Ronin adds nothing. The provider’s loaded MCP configuration stands.
+- **gbrain_mode.disconnected:** Disconnected
+- **gbrain_mode.disconnected_sub:** Ronin appends the provider’s gbrain-disconnect command. On Anthropic, this disables ALL MCP for that launch, not only gbrain.
 - **help.title:** Help
 - **help.card_summary:** What each step means, beside the step you are on.
 - **help.type:** New session
@@ -1599,6 +1604,7 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.pad:** Pad
 - **glossary.control:** Control
 - **glossary.launch_mode:** Model provider configuration · Dangerously
+- **glossary.gbrain_mode:** Connected · Disconnected
 - **glossary.team:** Cowork
 - **glossary.note:** Note
 - **glossary.work_record:** work record
