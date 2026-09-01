@@ -1906,10 +1906,6 @@ body {
    are GONE, rules and all. They were a second text entry: you typed in the tile's
    composer and spoke into the overlay's textarea, and the words never met. The mic
    is now .cmic, a button on the one box. */
-.ctrls,
-#keypad {
-  display: none;
-}
 @media (pointer: coarse) {
   .tile-head button {
     width: 34px;
@@ -1918,52 +1914,6 @@ body {
   }
   .tile-head .sess {
     max-width: 50%;
-  }
-  /* top-bar control keys */
-  .ctrls {
-    display: inline-flex;
-    gap: var(--space-3);
-  }
-  .ctrls button {
-    background: var(--panel);
-    color: var(--fg);
-    border: var(--edge) solid var(--line);
-    border-radius: var(--radius-md);
-    height: 30px;
-    min-width: 34px;
-    padding: 0 var(--space-4);
-    font-size: var(--text-4);
-  }
-  #k-more.armed {
-    background: var(--accent);
-    color: var(--on-accent);
-    border-color: var(--accent);
-  }
-  /* expandable keypad: extra keys the iOS keyboard can't send (Tab/⇧Tab + arrows) */
-  #keypad {
-    flex: 0 0 auto;
-    flex-wrap: wrap;
-    gap: var(--space-3);
-    padding: var(--space-4) var(--space-6);
-    background: var(--bg-2);
-    border-bottom: var(--edge) solid var(--line);
-  }
-  #keypad.open {
-    display: flex;
-  }
-  #keypad button {
-    background: var(--panel);
-    color: var(--fg);
-    border: var(--edge) solid var(--line);
-    border-radius: var(--radius-md);
-    height: 38px;
-    min-width: 46px;
-    padding: 0 var(--space-6);
-    font-size: var(--text-6);
-  }
-  #keypad button:active {
-    background: var(--accent);
-    color: var(--on-accent);
   }
 }
 
@@ -4728,140 +4678,25 @@ button.wb-door:hover b {
   }
 }
 
-/* ---- touch: category keypads ---------------------------------------------
-   The phone top bar is brand + four category toggles; each opens ONE drawer of
-   related controls (open it, use it, close it, open another). The controls are
-   the same nodes as the desktop bar, moved here by buildDrawers() — which only
-   runs on touch, so every rule below is inside the coarse-pointer block and
-   desktop is untouched. */
-#drawers {
-  display: none;
-}
 @media (pointer: coarse) {
   #bar {
     gap: var(--space-3);
     padding-left: var(--space-4);
     padding-right: var(--space-4);
   }
-  /* 44px, not 32: Apple's HIG minimum tap target is 44x44pt and the bar is the most
-     mis-tapped thing on the phone. The floor we design to is the iPhone 16/17 Pro
-     (402 CSS px wide — the Pro Max is 440, so 402 binds); three toggles at this size
-     leave well over 100px of slack, so the height costs nothing. */
-  #bar button.cat {
-    background: transparent;
-    color: var(--muted);
-    border: var(--edge) solid var(--line);
-    border-radius: var(--radius-md);
-    height: 44px;
-    padding: 0 var(--space-7);
-    font-size: var(--text-5);
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  #bar button.cat.armed {
-    background: var(--panel);
-    color: var(--accent);
-    border-color: var(--accent);
-  }
-  #drawers {
-    display: block;
-    flex: 0 0 auto;
-  }
-  #drawers .drawer {
-    display: none;
-    flex-wrap: wrap;
-    gap: var(--space-3);
-    padding: var(--space-4) var(--space-6);
-    background: var(--bg-2);
-    border-bottom: var(--edge) solid var(--line);
-  }
-  #drawers .drawer.open {
-    display: flex;
-  }
-  /* one touch target for everything in a drawer, whatever it looked like in the bar,
-     and 44x44 minimum like the toggles above — a keypad is for fast repeat taps */
-  #drawers .drawer button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    height: 44px;
-    min-width: 44px;
-    padding: 0 var(--space-6);
-    background: var(--panel);
-    color: var(--fg);
-    border: var(--edge) solid var(--line);
-    border-radius: var(--radius-md);
-    font-size: var(--text-6);
-    cursor: pointer;
-  }
-  #drawers .drawer button:active {
-    background: var(--accent);
-    color: var(--on-accent);
-  }
-  /* there is room in a drawer — beats the ≤680px icon-only rule on the bar verbs */
-  #drawers .drawer button .txt {
-    display: inline;
-  }
 
-  /* ---- touch: ONE header row ---------------------------------------------------
-     ⛩ ronin │ [ session ▾ ] │ ⋯ │ ☰ — and nothing else above the terminal. The
-     tile's own header is hoisted in here (js/tiledrop.js) and the emptied element
-     stays put, hidden: the ladder still inserts itself after it. */
+  /* ---- touch (iPad-class): the bar keeps the page's own controls -----------------
+     The hoisted one-row phone header is GONE — a phone never builds this bar at all
+     (the shell, js/phone.js) — so what is left here is the iPad's seat for the shape
+     button, and the anchor the tile-level sheets (.tmac, .tdocs) drop from. */
   #bar {
-    position: relative; /* the anchor both sheets drop from */
+    position: relative;
   }
-  .tile-head.hoisted {
-    display: none;
-  }
-  /* メ and ニ — the two openers, side by side at the end of the row.
-     They were ⋯ and ☰: grey marks in furniture-coloured boxes, in a bar with
-     nothing else coloured, and they could not be found. Kana carry stroke weight
-     that punctuation does not, and each takes a Kojin house colour so the pair
-     reads as two DIFFERENT things rather than two buttons — kaki for the session,
-     aiiro for Ronin. Filled, not outlined: an outline at this size is a hint. */
-  #bar .tdrop-btn {
-    flex: 0 0 auto;
-    height: 40px;
-    min-width: 44px;
-    border: var(--edge) solid transparent;
-    border-radius: var(--radius-md);
-    /* The kana want a face that actually draws them; the mono stack falls back to
-       something spindly on iOS. Sized up because a 2-stroke glyph at 18px is a smudge. */
-    font-size: var(--text-9);
-    font-weight: 600;
-    line-height: 1;
-    cursor: pointer;
-  }
-  #bar .tdrop-btn.me {
-    background: color-mix(in srgb, var(--kaki) 22%, transparent);
-    border-color: color-mix(in srgb, var(--kaki) 55%, transparent);
-    color: var(--kaki-lift);
-  }
-  #bar .tdrop-btn.ni {
-    background: color-mix(in srgb, var(--aiiro) 34%, transparent);
-    border-color: color-mix(in srgb, var(--aiiro-lift) 50%, transparent);
-    color: var(--aiiro-lift);
-  }
-  #bar .tdrop-btn.me:active {
-    background: var(--kaki);
-    border-color: var(--kaki);
-    color: var(--on-strong);
-  }
-  #bar .tdrop-btn.ni:active {
-    background: var(--aiiro-lift);
-    border-color: var(--aiiro-lift);
-    color: var(--bg);
-  }
-  /* THE SHAPE (2 ⇄ 4), sitting between メ and ニ — the grid count's old seat and look. Deliberately NOT a house colour: the
-     two kana are doors that open a sheet, this one changes the screen under them, and
-     three coloured boxes in a row would read as three of a kind. Furniture instead —
-     panel and line at the same 40px so the row stays even.
-     The face is a digit, so it takes the bar's own font rather than the kana size. */
+  /* THE SHAPE (2 ⇄ 4) at the end of the row — the grid count's old seat and look.
+     Deliberately NOT a house colour: it changes the screen under it, and furniture —
+     panel and line — keeps it from reading as a door. */
   #bar .shape-cycle {
     flex: 0 0 auto;
-    /* Holds the count and ニ against the right edge when there is no session name up here to
-       fill the row — i.e. at 2 or 4, where each tile wears its own header again. A
-       no-op at 1: the name is flex:1 and leaves no free space for a margin to take. */
     margin-left: auto;
     height: 40px;
     min-width: 44px;
@@ -4879,18 +4714,6 @@ button.wb-door:hover b {
     background: var(--accent);
     border-color: var(--accent);
     color: var(--on-accent);
-  }
-  /* The row is the session: its name takes every pixel the two openers do not. */
-  #bar .sess {
-    flex: 1 1 auto;
-    min-width: 0;
-    max-width: none;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    color: var(--fg-strong);
-    padding: 0 var(--space-3);
-    font-size: var(--text-5);
   }
   /* The brand yields first — the session name matters more than the word "ronin". */
   #bar .brand {
@@ -6659,9 +6482,16 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
    tile. The workbench chrome (bar, keypad, viewhost) is hidden whole — none of it
    is built on this path, but the static shell is still in index.html. */
 body[data-phone] #bar,
-body[data-phone] #keypad,
 body[data-phone] #viewhost {
   display: none;
+}
+/* The three-door home stacks in a NARROW DESKTOP window — a phone lands on its own
+   shell and never meets this page. Here rather than campaign-home.css because the
+   feature files carry no raw measurements, and a media query cannot read a token. */
+@media (max-width: 680px) {
+  .ch-doors {
+    grid-template-columns: 1fr;
+  }
 }
 #phone {
   position: fixed;

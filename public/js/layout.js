@@ -6,10 +6,8 @@ import { buildSessionPicker } from './macros.js';
 import { PAD_CODE, firePadBinding, padBinds, padChord } from './pad.js';
 import { buildPadAsk, buildPadPanel } from './padpanel.js';
 import { buildNotePanel } from './panels.js';
-import { IS_TOUCH, S, WHEEL_DOWN, tiles } from './state.js';
-import { isCoarse, makeDrop } from './tiledrop.js';
-import { t } from './lexicon.js';
-import { request } from './request.js';
+import { IS_TOUCH, S, tiles } from './state.js';
+import { isCoarse } from './tiledrop.js';
 
 export function build() {
   // Each wiring block is guarded separately: losing one control must not cost the
@@ -89,29 +87,9 @@ export function build() {
       true, // capture: beat xterm's own keydown so the chord never reaches the pty
     );
   }
-  // Top-bar control keys (sent to the active terminal).
-  const key = (id, fn) => {
-    const b = document.getElementById(id);
-    if (b) b.addEventListener('click', fn);
-  };
-  key('k-esc', () => S.active && S.active.sendRaw('\x1b'));
-  key('k-int', () => S.active && S.active.sendRaw('\x03'));
-  key('k-bottom', () => {
-    if (!S.active) return;
-    if (S.active && !S.active.locked) {
-      // Tape-fed: jump to the live end. Purely local, no round trip.
-      if (S.active.tapeMode) S.active.tape.scrollToBottom();
-      else S.active.term.scrollToBottom();
-      return;
-    }
-    // Mirror (original behavior, untouched): two ways scrollback happens — tmux copy
-    // mode (plain shells) or *inside* a full-screen TUI like Claude Code, which grabs
-    // the mouse so tmux never enters copy mode. Do both: {t:'bottom'} cancels tmux
-    // copy mode -> live bottom; the wheel-down burst drives an app's own scroll to
-    // the bottom. A wheel-down at the live bottom is a no-op, so both is always safe.
-    S.active.send({ t: 'bottom' });
-    for (let i = 0; i < 150; i++) S.active.sendRaw(WHEEL_DOWN);
-  });
+  // The top-bar control keys (Esc, ^C, ⤓) are GONE with their .ctrls group: hidden on
+  // desktop since the drawer era, and on touch every coarse tile's composer carries the
+  // keys row (js/keysrow.js) with Tile.jumpLatest owning the three-way ⤓ rule.
 
   // 🔒/🔓 — THE switch, changed only here. Flipping it swaps every connected tile's
   // transport: locked reconnects the attach mirror; unlocked reconnects the recorded
@@ -186,17 +164,11 @@ export function build() {
     // itself. On desktop the mirror still answers to modifier+drag + ⌘C (Option on a Mac,
     // Shift elsewhere — SELECT_MOD in js/state.js).
 
-    // Touch-only keypad: the keys the iOS keyboard can't send (Tab/⇧Tab + arrows)
-    // so you can drive TUIs like Claude Code. Stays open so you can fire several
-    // (e.g. arrow-navigate a menu); doesn't steal terminal focus.
-    const KEYPAD = { cr: '\r', tab: '\t', stab: '\x1b[Z', up: '\x1b[A', down: '\x1b[B', left: '\x1b[D', right: '\x1b[C' };
-    const pad = document.getElementById('keypad');
-    if (pad) {
-      pad.querySelectorAll('button[data-key]').forEach((b) => {
-        b.addEventListener('click', () => S.active && S.active.sendRaw(KEYPAD[b.dataset.key]));
-      });
-    }
-    guard('drawers', buildDrawers);
+    // The keys the iOS keyboard can't send (Esc, ^C, Tab/⇧Tab, arrows) ride every
+    // coarse tile's composer now — js/keysrow.js, zero taps away — so the bar keeps
+    // no keypad, no keys drawer and no ニ sheet. What is left to do here is trim the
+    // desktop chrome off the bar.
+    guard('touch bar', trimBarForTouch);
   } else {
     // Copy = hold the force-selection modifier and drag, then ⌘C / Ctrl-C. The modifier
     // is Option on a Mac and SHIFT everywhere else — xterm's own rule, mirrored in
@@ -227,72 +199,21 @@ export function build() {
 }
 
 /**
- * TOUCH: ニ — Ronin's own drop, the right-hand half of the one header row.
- *
- * Where メ is THIS SESSION, ニ is THE APP: Keys, then Home, New, Board, Pad. It was
- * a pair of category toggles (Keys / Sessions) that opened a drawer BELOW the bar,
- * which cost a third band of chrome above the terminal and put two openers where
- * one does. Now they are rows in a sheet like everything else.
- *
- * Keys keeps its drawer rather than becoming a row: it is ten keys you tap in
- * sequence to drive a TUI (Esc, ^C, ⤓, ↵, Tab, ⇧Tab, four arrows), so it wants to
- * be a keypad that stays put, not a menu that dismisses on the first tap. The ニ
- * row is what opens it.
- *
- * Everything inside is the SAME node the desktop bar uses, relocated rather than
- * cloned, so every handler already bound to it keeps working and there is no
- * second copy to keep in sync. Desktop never calls this.
+ * TOUCH: trim the desktop chrome off the bar. The keys that used to live in a
+ * drawer here (and the ニ sheet that opened it) are gone — they dock on every
+ * coarse tile's composer now (js/keysrow.js), next to the box they drive, instead
+ * of two taps away at the wrong end of the screen. What remains is relocation:
+ * the shape button to the end of the row, and the desktop-only scaffolding out.
+ * Desktop never calls this; a phone never reaches it (the shell hides the bar whole).
  */
-export function buildDrawers() {
+export function trimBarForTouch() {
   if (!isCoarse()) return;
   const bar = document.getElementById('bar');
   if (!bar) return;
-
-  const wrap = document.createElement('div');
-  wrap.id = 'drawers';
-  bar.insertAdjacentElement('afterend', wrap);
-
-  const keypad = document.getElementById('keypad');
-  const pick = (...ids) => ids.map((id) => document.getElementById(id)).filter(Boolean);
-
-  // The one drawer left: the keypad, opened from the ☰ sheet's first row.
-  // No terminal refit on open/close — a drawer shortens the grid, but resizing the
-  // pane would flap the tmux window size for every other client on that session
-  // (TMUX_WINDOW_SIZE=latest).
-  const keys = document.createElement('div');
-  keys.className = 'drawer';
-  keys.id = 'dr-keys';
-  keys.setAttribute('role', 'group');
-  keys.setAttribute('aria-label', t('bar.keys', 'Keys'));
-  // append MOVES the node — listeners come along
-  [...pick('k-esc', 'k-int', 'k-bottom'), ...(keypad ? [...keypad.children] : [])].forEach((n) => keys.append(n));
-  wrap.append(keys);
-
-  const drop = makeDrop('ニ', t('bar.ni_title', 'Ronin — keys, home, new session, board, pad'), 'ni');
-
-  // Keys is a toggle, not a destination — but it still closes the sheet, so the
-  // keypad it just opened is not left standing behind a sheet.
-  const keysBtn = document.createElement('button');
-  keysBtn.id = 'k-keys';
-  keysBtn.type = 'button';
-  keysBtn.textContent = '⌨';
-  keysBtn.title = t('bar.keys_title', 'Esc, ^C, jump to latest, Tab and the arrows');
-  keysBtn.addEventListener('click', () => keys.classList.toggle('open'));
-  drop.addRow(keysBtn, t('bar.keys', 'Keys'));
-
-  // ⟳ Refresh is NOT here: `fetchSessions` already runs on tab-resume, on a bfcache
-  // restore and off the /events socket, so the button was a manual copy of something
-  // that never stops happening — and its round arrow read as the tile's ⟳ Reconnect,
-  // a different action. Two dead round arrows, both gone.
-  // The shape button comes up between メ and ニ — RELOCATED, not rebuilt, so the face
-  // team-view.js writes and the click it owns come along.
+  // The shape button moves to the end of the row — RELOCATED, not rebuilt, so the
+  // face team-view.js writes and the click it owns come along.
   const shape = document.getElementById('shapecycle');
   if (shape) bar.append(shape);
-
-  bar.append(drop.btn, drop.menu);
-
-  // Desktop bar scaffolding, now emptied out on touch.
-  document.querySelector('#bar .ctrls')?.remove(); // took #k-more (⋯) with it
+  // The desktop spacer costs row width the 44px targets need.
   document.querySelector('#bar .grow')?.remove();
-  keypad?.remove();
 }
