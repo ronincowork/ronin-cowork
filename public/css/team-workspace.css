@@ -91,9 +91,10 @@
      ＋ New Agent board. One rectangle for every clickable thing, as the drawing has it:
      ronin-lab `concepts/add-agent-to-team.html`. ── */
   /* No rule reaches into the Kit's own content box — the form carries its own layout. */
-  /* Same as the launch forms: with no size above them the controls inherit 16px. */
-  .aa-surface { font-size: var(--text-3); }
-  .aa-form { display: flex; flex-direction: column; gap: var(--space-6); margin-bottom: var(--space-7); }
+  /* The FORM sizes itself, not the surface: a size on the surface root is inherited by the
+     Workspace Kit header too, which shrank this card's own title. Same lesson as
+     `.ntf-form` in css/launch-forms.css. */
+  .aa-form { display: flex; flex-direction: column; gap: var(--space-6); margin-bottom: var(--space-7); font-size: var(--text-3); }
   .aa-form textarea { min-height: calc(var(--space-12) * 2); resize: vertical; }
   /* Name left, provider + model right (owner, 2026-08-31) — the columns drop to one when
      the surface is narrow; the minimum is tokens, never a raw measurement. */

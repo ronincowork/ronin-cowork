@@ -1,5 +1,5 @@
 import { mandate, type Mandate } from './agent-defaults.js';
-import { listTemplates } from './definitions.js';
+import { listAgentTemplates } from './definitions.js';
 import type { StatedBy } from './launch-profile.js';
 
 export interface TemplateProvenanceInput {
@@ -11,7 +11,8 @@ export interface TemplateProvenanceInput {
 
 /** Compare, never apply: a preset is provenance only after its values reach the form. */
 export async function templateProvenance(form: TemplateProvenanceInput) {
-  const templates = await listTemplates();
+  // The launch's template token is an AGENT template — a cast never rides one launch.
+  const templates = await listAgentTemplates();
   const template = templates.find((row) => row.name === form.template);
   return {
     template,

@@ -130,7 +130,6 @@ which is the strongest form of "without losing files or history".
 | `GET /api/sessions`, `GET /api/home` | per Agent, through `withAxes` | machine Campaign |
 | `GET /api/team-rosters` | per Cowork | machine Campaign by default; explicit `?campaign_id=` for management |
 | `GET /api/project-roots` | per root | `?campaign_id=` (repeatable) |
-| `GET /api/team-templates` | per template | — |
 
 **Naming no campaign means the machine Campaign**, not every Campaign. `withAxes` is the
 one funnel every browser-facing session list and event goes through, so an Agent from a
@@ -140,7 +139,7 @@ different Campaign cannot leak back onto a screen after the initial fetch.
 
 - The pointer, the resolver, the refusals, the migration: `src/campaign-scope.ts`
 - The record and its one writer: `src/campaign-config.ts`
-- Storage per record: `src/team-rosters.ts` · `src/project-roots.ts` · `src/team-templates.ts`
+- Storage per record: `src/team-rosters.ts` · `src/project-roots.ts`
 - The live Agent's option: `src/tmux.ts` (`@ronin-campaign`)
 - Vocabulary: `KOTOBA.md` (`campaign`, `campaign_config`, `campaign_id`)
 - Tests: `tests/campaign-scope.test.ts` · `tests/team-roster-campaign.test.ts`
