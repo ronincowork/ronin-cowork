@@ -15,7 +15,7 @@ import { deskProfiles } from './desk-profile.js';
 import { saveCampaign } from './campaigns.js';
 import { WorkspaceKit } from './workspace-kit.js';
 import { listSkins, setSkin } from './skins.js';
-import { applyTheme } from './theme.js';
+import { setTheme } from './theme.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -108,10 +108,14 @@ export function createDeskProfileSurface(campaign) {
     wear(campaign()?.desk);
     paint();
   };
-  /** The page wears the Campaign's desk as soon as it is saved — that is the point of a look. */
+  /** The page wears the Campaign's desk as soon as it is saved — that is the point of a look.
+   *  setTheme, not applyTheme (owner, 2026-09-01: the choice here "didn't really apply to
+   *  all the other pages"): applyTheme stamped only THIS document, while every other page
+   *  boots from the stored pin — so the explicit act here stores the pin the way ⚙
+   *  appearance does, and theme.js's storage listener flips pages already open. */
   const wear = (desk) => {
     if (desk?.skin) setSkin(desk.skin);
-    if (desk?.theme) applyTheme(desk.theme === 'automatic' ? 'auto' : desk.theme);
+    if (desk?.theme) setTheme(desk.theme === 'automatic' ? 'auto' : desk.theme);
   };
 
 

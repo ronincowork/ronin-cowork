@@ -209,3 +209,12 @@ export function setTheme(name) {
   localStorage.setItem(LS_THEME, name === 'dark' ? 'dark' : 'auto');
   applyTheme();
 }
+
+// EVERY OPEN PAGE FOLLOWS THE PIN (owner, 2026-09-01: a theme picked on the campaign
+// page "didn't really apply to all the other pages"). localStorage 'storage' fires in
+// every OTHER document on this origin when the pin moves, so tabs already open flip in
+// place; pages opened later read the stored pin at boot as they always did.
+function onThemeStorage(e) {
+  if (e.key === LS_THEME) applyTheme();
+}
+window.addEventListener('storage', onThemeStorage);
