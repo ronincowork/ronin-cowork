@@ -22,6 +22,17 @@
 # Overrides: RONIN_CLAIM_MODE=shared|off (RONIN_CLAIM_OFF=1 still means off).
 set -u
 SELF_DIR=$(cd "$(dirname "$0")" && pwd)
+# REAL_DIR anchors ../../libexec below and must survive being run through a projected
+# session-commands symlink (src/routine-tools.ts), where the unresolved $0 would point
+# ../.. at a store that holds no libexec — the tmux shim's measured fault, 2026-09-01.
+# SELF_DIR stays unresolved on purpose: PATH-stripping must remove the dir the CALLER
+# found this shim in.
+SELF=$0
+while [ -L "$SELF" ]; do
+  link=$(readlink "$SELF")
+  case $link in /*) SELF=$link ;; *) SELF=$(dirname "$SELF")/$link ;; esac
+done
+REAL_DIR=$(cd "$(dirname "$SELF")" && pwd)
 # THE REAL GIT, RESOLVED ONCE, PAST EVERY RONIN SHIM — not just this one. A promotion
 # candidate is a second checkout with its own bin/shim; with both on PATH, a shim that
 # strips only itself hands ronin-claim a `git` that is the OTHER shim, which strips itself
@@ -46,8 +57,8 @@ for a in "$@"; do
 done
 
 if [ "$sub" = "add" ]; then
-  CLAIM="$SELF_DIR/../../libexec/ronin-claim"
-  MODE="$SELF_DIR/../../libexec/ronin-repo-mode"
+  CLAIM="$REAL_DIR/../../libexec/ronin-claim"
+  MODE="$REAL_DIR/../../libexec/ronin-repo-mode"
   # The mode is asked of the tree the add targets: `git -C dir add …` resolves in dir.
   cdir=""; prev=""
   for a in "$@"; do [ "$prev" = "-C" ] && cdir="$a"; prev="$a"; done

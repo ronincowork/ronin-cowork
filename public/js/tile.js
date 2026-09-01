@@ -128,10 +128,14 @@ export class Tile {
         overHome: () => false,
       });
     }
+    // The mirror's own ↓ latest (both pointers): with viewer mouse off the wheel scrolls
+    // xterm's local buffer, which no server-side jump can end — the pill is the way back.
+    this.term.wireJumpPill({ jump: () => this.jumpLatest() });
     // The wheel is xterm's business in BOTH modes now.
     //
-    // Locked: the event flows through to xterm, which turns it into mouse escapes for
-    // tmux — exactly as the mirror always had it, untouched.
+    // Locked: xterm keeps the wheel — it scrolls its own local buffer, unless the app
+    // in the pane holds mouse tracking, in which case xterm forwards the wheel and the
+    // app scrolls itself. tmux sees none of it (viewer mouse off, 2026-09-01).
     // Tape-fed: the transcript is a plain scrollable div and the browser scrolls it.
     // Marking a tile active on header focus, without stealing keyboard focus —
     // without stealing keyboard focus from controls in the head.
@@ -370,10 +374,16 @@ export class Tile {
       else this.term.scrollToBottom();
       return;
     }
-    // Mirror: {t:'bottom'} cancels tmux copy mode; the wheel burst drives an app's own
-    // scroll. A wheel-down at the live bottom is a no-op, so both is always safe.
+    // Mirror: every scrolled-back end gets its own jump, and only its own. xterm's
+    // local viewport answers scrollToBottom; a pane in tmux copy mode (a raw-attach
+    // owner, a leftover) answers {t:'bottom'}'s cancel; an app scrolled inside ITSELF
+    // answers the wheel burst — but ONLY when it is listening for mouse. Sent blind,
+    // the burst reaches the app as typed input under viewer mouse off (2026-09-01: the
+    // owner watched untouched agents sit "scroll locked" on injected wheels — every
+    // composer send fired 150 of these).
+    this.term.scrollToBottom();
     this.send({ t: 'bottom' });
-    for (let i = 0; i < 150; i++) this.sendRaw(WHEEL_DOWN);
+    if (this.term.mouseTracking()) for (let i = 0; i < 150; i++) this.sendRaw(WHEEL_DOWN);
   }
 
   /** The composer's box, for the ⚡ macro prefill — null until the composer exists. */

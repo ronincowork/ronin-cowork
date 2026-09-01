@@ -136,7 +136,7 @@ d = json.loads(m.group(1))
 if d.get("teams") == teams:
     sys.exit(0)
 d["teams"] = teams
-order = ("objective", "session_role", "teams", "repos", "ladder_state", "ladder", "docs", "at")
+order = ("objective", "mandate", "teams", "repos", "ladder_state", "ladder", "docs", "at")
 block = json.dumps({k: d[k] for k in order if k in d}, indent=2, ensure_ascii=False)
 extra = {k: v for k, v in d.items() if k not in order}
 if extra:

@@ -228,6 +228,29 @@ if (!appBody || !foundationsBody) {
   }
 }
 
+// --- every var() names a token something defines ---
+// A custom property consumed with no fallback and no definition anywhere in the
+// shipped sheets is silently invalid at computed-value time: the browser drops the
+// declaration and nobody hears it. The 2026-09-01 token audit found SEVEN such names
+// live in the sheet (--fg-dim, --fg-faint, --line-faint, --bg-input, --surface,
+// --accent-soft, --ok-soft) — weeks of quietly missing paint. A var() WITH a
+// fallback is a declared optional (the gauge's --g1..3, written from JS) and stays
+// legal.
+const definedTokens = new Set();
+const strippedSheets = new Map();
+for (const file of shippedPaths) {
+  const text = fs.readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '));
+  strippedSheets.set(file, text);
+  for (const m of text.matchAll(/(--[\w-]+)\s*:/g)) definedTokens.add(m[1]);
+}
+for (const [file, text] of strippedSheets) {
+  text.split('\n').forEach((line, i) => {
+    for (const m of line.matchAll(/var\(\s*(--[\w-]+)\s*\)/g)) {
+      if (!definedTokens.has(m[1])) problems.push(`${path.relative(ROOT, file)}:${i + 1} reads ${m[1]}, which nothing defines`);
+    }
+  });
+}
+
 // --- 6. the contrast floor, computed from the tokens, both themes ---
 function tokensOf(body) {
   return Object.fromEntries([...body.matchAll(/(--[\w-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].trim()]));
@@ -236,18 +259,43 @@ const rootBody = block(foundationsBody, ':root');
 const lightBody = block(foundationsBody, ":root[data-theme='light']");
 const darkTokens = tokensOf(rootBody);
 const lightTokens = { ...darkTokens, ...tokensOf(lightBody) };
-function luminance(value) {
-  const m = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.exec(value.trim());
-  if (!m) return null; // rgb()/shadows are not text-pair colours
-  let h = m[1];
-  if (h.length === 3) h = [...h].map((c) => c + c).join('');
-  const lin = (c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
-  const [r, g, b] = [0, 2, 4].map((i) => lin(parseInt(h.slice(i, i + 2), 16) / 255));
+// A pair colour may be spelled as hex, as var(--other), or as color-mix(in srgb, …)
+// over resolvable colours — the derived-token case (--kiiro-tint) that put the band
+// beyond the gate's reach until 2026-09-01. Anything else (rgb()/shadows) stays null:
+// not a text-pair colour.
+function rgbOf(value, toks, depth = 0) {
+  if (!value || depth > 4) return null;
+  value = value.trim();
+  const hex = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.exec(value);
+  if (hex) {
+    let h = hex[1];
+    if (h.length === 3) h = [...h].map((c) => c + c).join('');
+    return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+  }
+  const ref = /^var\((--[\w-]+)\)$/.exec(value);
+  if (ref) return rgbOf(toks[ref[1]] ?? '', toks, depth + 1);
+  // `in srgb` interpolates the gamma-encoded channels, so a plain weighted blend is
+  // exact. Only the two-colour, percentage-on-first form the stylesheet uses.
+  const mix = /^color-mix\(in srgb,\s*(.+?)\s+([\d.]+)%,\s*([^,]+?)\)$/.exec(value);
+  if (mix) {
+    const a = rgbOf(mix[1], toks, depth + 1);
+    const b = rgbOf(mix[3], toks, depth + 1);
+    if (!a || !b) return null;
+    const p = Number(mix[2]) / 100;
+    return a.map((c, i) => c * p + b[i] * (1 - p));
+  }
+  return null;
+}
+function luminance(value, toks) {
+  const rgb = rgbOf(value, toks);
+  if (!rgb) return null;
+  const lin = (c) => ((c /= 255), c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  const [r, g, b] = rgb.map(lin);
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 function ratio(fg, bg, toks) {
-  const a = luminance(toks[fg] ?? '');
-  const b = luminance(toks[bg] ?? '');
+  const a = luminance(toks[fg] ?? '', toks);
+  const b = luminance(toks[bg] ?? '', toks);
   if (a === null || b === null) return null;
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
@@ -261,6 +309,11 @@ const FLOOR = [
   ['--on-accent', '--accent', 4.5], ['--on-strong', '--action', 4.5],
   ['--on-strong', '--kaki', 3], // the メ fill — 21px bold, large-text tier
   ['--bad-fg', '--bad-ground', 7], ['--affirm-fg', '--affirm-bg', 7],
+  // The workbench band — the family that kept losing kiiro or its ink to a retune.
+  ['--cowork-head-fg', '--cowork-head-bg', 7], ['--cowork-head-muted', '--cowork-head-bg', 4.5],
+  ['--cowork-head-attention', '--cowork-head-bg', 4.5],
+  // Kiiro fills: the brand pair at rest and pressed/hover depth.
+  ['--on-kiiro', '--kiiro', 4.5], ['--on-kiiro', '--kiiro-deep', 4.5],
   ['--term-fg', '--term-bg', 7], ['--term-tape-fg', '--term-tape-bg', 7], ['--term-input-fg', '--term-well', 7],
 ];
 for (const [name, toks] of [['dark', darkTokens], ['light', lightTokens]]) {

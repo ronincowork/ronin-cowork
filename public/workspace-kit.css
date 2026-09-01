@@ -1,6 +1,7 @@
 /* Workspace Kit interaction primitives added after the frozen base sheet. */
 @layer app {
-  :root.boot-pending body { visibility: hidden; }
+  /* The boot veil moved to index.html's own head (2026-09-01): this sheet is injected
+     late by JS, so a veil here misses exactly the cold first paint it exists for. */
   .wk-action-bar { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
   .wk-surface-header { display: flex; flex: 0 0 auto; align-items: center; gap: var(--space-4); min-height: var(--row-head); padding: var(--space-3) var(--space-4); border-bottom: var(--edge) solid var(--line); background: var(--cowork-head-bg); color: var(--cowork-head-fg); font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); line-height: var(--workbench-head-line); }
   .wk-surface-header-title { min-width: 0; overflow: hidden; font-weight: var(--workbench-head-weight); text-overflow: ellipsis; white-space: nowrap; }
@@ -8,9 +9,10 @@
   .wk-action { min-height: 2.25rem; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); color: var(--fg); padding: var(--space-3) var(--space-5); font: inherit; cursor: pointer; }
   .wk-action[data-kind='primary'] { border-color: var(--kaki); background: var(--kaki); color: var(--on-strong); }
   /* ACTION WAITING (owner, 2026-09-01): a header action over a dirty surface goes bright
-     kiiro so it is unmissable — the band's own ink carries the words on it. Clean
-     surfaces keep the resting look above. */
-  .wk-action[data-attention='true'] { border-color: var(--warn); background: var(--warn); color: var(--cowork-head-fg); font-weight: 700; }
+     kiiro so it is unmissable. The fill is the kiiro PAIR (@tokens' ruling, same day):
+     --warn is the theme-tuned warning INK and never a fill. Clean surfaces keep the
+     resting look above. */
+  .wk-action[data-attention='true'] { border-color: var(--kiiro); background: var(--kiiro); color: var(--on-kiiro); font-weight: 700; }
   .wk-action[data-kind='danger'] { border-color: var(--bad); color: var(--bad-soft); }
   .wk-action[data-size='compact'] { min-height: var(--space-11); padding: var(--space-2) var(--space-4); font-size: var(--text-3); }
   .wk-action[aria-pressed='true'] { border-color: var(--kaki); background: var(--raise); color: var(--kaki); }

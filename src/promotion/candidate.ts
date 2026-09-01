@@ -171,6 +171,16 @@ export interface AdvanceOutcome {
   ok: boolean;
   /** What the ref held when the swap failed. */
   found?: string;
+  /** WHY it failed — three refusals that must not share one sentence (measured
+   *  2026-09-01, receipts …-jodz/…-95or/…-wp3x: a funnel gone dirty mid-run was
+   *  reported as "moved to X while expected at X", the sha compared to itself).
+   *  `dirty` — the funnel worktree grew unsaved tracked changes between prepare and
+   *  advance; the ref never moved and the candidate is still built on the live tip.
+   *  `raced` — the compare-and-swap lost: the ref genuinely moved.
+   *  `no-candidate` — nothing was built to advance to. */
+  reason?: 'dirty' | 'raced' | 'no-candidate';
+  /** The files funnelDirty saw, when reason is 'dirty'. */
+  dirtyFiles?: string[];
 }
 
 /**
@@ -181,11 +191,11 @@ export interface AdvanceOutcome {
  * are left alone. A moved line is reported, never overwritten.
  */
 export async function advanceTarget(c: RepoCandidate): Promise<AdvanceOutcome> {
-  if (!c.candidate) return { ok: false, found: '' };
+  if (!c.candidate) return { ok: false, found: '', reason: 'no-candidate' };
   const dirty = await funnelDirty(c.dir);
-  if (dirty.length) return { ok: false, found: await revParse(c.dir, `refs/heads/${c.target}`) };
+  if (dirty.length) return { ok: false, found: await revParse(c.dir, `refs/heads/${c.target}`), reason: 'dirty', dirtyFiles: dirty };
   const swapped = await casRef(c.dir, c.target, c.candidate, c.expected_old);
-  if (!swapped) return { ok: false, found: await revParse(c.dir, `refs/heads/${c.target}`) };
+  if (!swapped) return { ok: false, found: await revParse(c.dir, `refs/heads/${c.target}`), reason: 'raced' };
   const mounted = (await worktreeList(c.dir)).find((w) => w.branch === c.target);
   if (mounted) await git(mounted.path, ['reset', '--hard', '--quiet', c.candidate]);
   return { ok: true };

@@ -227,6 +227,11 @@ export interface SessionRoleRow extends Row {
   match: string[];
 }
 
+/** The setup ladder's rungs, in order. A routine's `bundles:` names the rungs that turn
+ *  it on; `nothing` and `floor` turn nothing on and never appear in a list. */
+export const ROUTINE_BUNDLES = ['nothing', 'floor', 'base', 'worktrees', 'services'] as const;
+export type RoutineBundle = (typeof ROUTINE_BUNDLES)[number];
+
 export interface RoutineRow extends Pick<Row, 'name' | 'origin' | 'shadowed' | 'label' | 'blurb'> {
   reading: string[];
   sops: string[];
@@ -236,6 +241,9 @@ export interface RoutineRow extends Pick<Row, 'name' | 'origin' | 'shadowed' | '
   mcp: string[];
   /** Other Routines this selection adds. Dependencies are additive, never component splits. */
   requires: string[];
+  /** Which setup bundles switch this routine ON — catalog metadata, never hardcoded
+   *  names in code (the owner's ruling). The stock campaign map is the `base` rung. */
+  bundles: string[];
 }
 
 /** `[text](https://url)` → {text, url}. http(s) only — a definition is DATA, and data
@@ -292,6 +300,8 @@ export async function listRoutines(): Promise<RoutineRow[]> {
     tools: splitDefinitionList(d.get('tools')),
     mcp: splitDefinitionList(d.get('mcp')),
     requires: splitDefinitionList(d.get('requires')),
+    bundles: splitDefinitionList(d.get('bundles')).filter((bundle) =>
+      (ROUTINE_BUNDLES as readonly string[]).includes(bundle)),
   }));
 }
 

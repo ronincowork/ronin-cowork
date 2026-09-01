@@ -1,18 +1,15 @@
 #!/usr/bin/env bash
 # tejun-recall — the memories a session should be handed (TEJUN memory-recall).
-# Usage: tejun-recall [--project_root X] [--session_role X]
+# Usage: tejun-recall [--project_root X]
 #                     [--inline] [--budget N] [--list]
 #
 #   (default)  matching file paths, one per line, ordered and deduped
 #   --inline   the composed text Ronin pastes into a boot brief, budget-guarded
 #   --list     summary + scope per match, for a human or the UI
 #
-# A memory matches when both axes match (equal, or "*"), where the project axis also
-# accepts a project root's `memory:` keys as aliases. TWO AXES (R35, 2026-08-23): where
-# you work and what you are doing; the old role_family axis died with the session
-# identity it scoped. A memory scoped `session_role: CutCode` with `project_root: "*"`
-# reaches that kind of work in every repo. Missing axis key = the memory is malformed:
-# reported on stderr, never silently matched.
+# A memory matches its project_root (or "*"), including the root's `memory:` aliases.
+# A legacy record with a specific session_role is reported as retired and never matched;
+# dropping that scope would silently broaden the owner's record.
 set -u
 
 # Where Ronin keeps things on THIS machine — asked, never spelled. See docs/stores.md.
@@ -29,14 +26,13 @@ ROOTS_MD="$("$RSTORE" catalogs)/PROJECT_ROOTS.md"
 # grown into a doc, not a reason to grow the number.
 BUDGET=2600
 MODE=paths
-P_ROOT=""; S_TASK=""
+P_ROOT=""
 
 die() { echo "$1"; exit "$2"; }
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --project_root|--project-root) P_ROOT="${2:-}"; shift 2 ;;
-    --session_role|--session-task) S_TASK="${2:-}"; shift 2 ;;
     --budget) BUDGET="${2:-2000}"; shift 2 ;;
     --inline) MODE=inline; shift ;;
     --list)   MODE=list; shift ;;
@@ -49,38 +45,9 @@ done
 set -- "$STORE"/*.md
 [ -e "$1" ] || exit 0
 
-# Axes of the asking session, when not stated (same inference as tejun-remember):
+# Project of the asking session, when not stated (same inference as tejun-remember):
 # resolve the grouped viewer (grid_*) back to the real session it mirrors.
 opt() { tmux show-options -qv -t "$1" "$2" 2>/dev/null; }
-# The session's own axis comes out of its LETTER, not from a tmux option (src/tmux.ts
-# says why — a second copy is the one that drifts). '' when it has not said.
-axes_of() {
-  local key row stamped created store
-  store="$("$RSTORE" session 2>/dev/null)"
-  [ -n "${store:-}" ] || return 0
-  row=$(tmux list-sessions -F '#{session_name}\t#{@ronin-key}\t#{session_created}' 2>/dev/null \
-        | awk -F'\t' -v n="$1" '$1==n {print; exit}')
-  [ -n "$row" ] || return 0
-  stamped=$(printf '%s' "$row" | cut -f2); created=$(printf '%s' "$row" | cut -f3)
-  if [ -n "${stamped// /}" ]; then key="$stamped"
-  elif [ -n "${created// /}" ]; then key="$1-$created"
-  else key="$1"; fi
-  python3 - "$store/$key/tegami.md" <<'PYAXES' 2>/dev/null
-import json, re, sys
-try:
-    t = open(sys.argv[1]).read()
-except OSError:
-    raise SystemExit
-m = re.search(r"```(?:json)?\s*\n(.*?)\n```", t, re.S)
-raw = m.group(1) if m else t[t.find("{"):t.rfind("}") + 1]
-try:
-    d = json.loads(raw)
-except Exception:
-    raise SystemExit
-say = lambda k: d[k].strip() if isinstance(d.get(k), str) else ""
-print(say("session_role"))
-PYAXES
-}
 me=$(tmux display-message -p '#{session_name}' 2>/dev/null || true)
 case "$me" in
   grid_*) grp=$(tmux display-message -p '#{session_group}' 2>/dev/null || true)
@@ -88,7 +55,6 @@ case "$me" in
 esac
 if [ -n "$me" ]; then
   [ -n "$P_ROOT" ] || P_ROOT=$(opt "$me" @ronin-project_root)
-  [ -n "$S_TASK" ] || S_TASK=$(axes_of "$me")
 fi
 if [ -z "$P_ROOT" ] && [ -r "$ROOTS_MD" ]; then
   P_ROOT=$(awk -v pwd="$PWD" -v home="$HOME" '
@@ -111,13 +77,9 @@ if [ -n "$P_ROOT" ] && [ -r "$ROOTS_MD" ]; then
   KEYS="$KEYS $extra"
 fi
 
-awk -v mode="$MODE" -v budget="$BUDGET" -v want_root="${P_ROOT:-}" \
-    -v want_task="${S_TASK:-}" -v keys=" $KEYS " '
+awk -v mode="$MODE" -v budget="$BUDGET" -v want_root="${P_ROOT:-}" -v keys=" $KEYS " '
   function val(line,   v) { v = line; sub(/^[a-z_]+:[ \t]*/, "", v); gsub(/^"|"$/, "", v)
                             gsub(/^[ \t]+|[ \t]+$/, "", v); return v }
-  # An axis matches on equality or a wildcard on either side (an unknown asking value
-  # is not a licence to hide a memory — better shown than silently dropped).
-  function axis_ok(mem, want) { return (mem == "*" || want == "" || mem == want) }
   # The project axis accepts the root name or one of that root'"'"'s `memory:` keys, so a
   # memory keyed `kojinsa` reaches both kojinsa-be and kojinsa-fe. TAGS ARE NOT
   # MATCHED: a stated project_root is authoritative. (Measured why: tagging Ronin'"'"'s
@@ -132,16 +94,20 @@ awk -v mode="$MODE" -v budget="$BUDGET" -v want_root="${P_ROOT:-}" \
     # README) — skip it. Frontmatter that is MISSING an axis is a different thing:
     # a broken memory, and silence there would hide a rule from every session.
     if (!fmdone) return
-    if (!have_root || !have_task) {
-      printf "MALFORMED %s: missing an axis key (project_root/session_role)\n", cur > "/dev/stderr"
+    if (!have_root) {
+      printf "MALFORMED %s: missing project_root\n", cur > "/dev/stderr"
       return
     }
-    if (!project_ok(m_root) || !axis_ok(m_task, want_task)) return
-    rank = (m_root == "*" && m_task == "*") ? 0 : (m_root != "*" ? 1 : 2)
+    if (have_task && m_task != "" && m_task != "*") {
+      printf "RETIRED-SCOPE %s: session_role=%s is unreachable; migrate it deliberately\n", cur, m_task > "/dev/stderr"
+      return
+    }
+    if (!project_ok(m_root)) return
+    rank = (m_root == "*") ? 0 : 1
     n_hit++
     hit_rank[n_hit] = rank; hit_file[n_hit] = cur; hit_sum[n_hit] = m_sum
     hit_kind[n_hit] = m_kind_of; hit_body[n_hit] = m_body
-    hit_scope[n_hit] = m_root " · " m_task
+    hit_scope[n_hit] = m_root
   }
   FNR == 1 {
     if (NR > 1) flush()

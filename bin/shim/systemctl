@@ -23,6 +23,18 @@
 # deliberate, visible act rather than a reflex.
 set -u
 SELF_DIR=$(cd "$(dirname "$0")" && pwd)
+# REAL_DIR anchors the repo's own guard script below and must survive being run through
+# a projected session-commands symlink (src/routine-tools.ts) — the floor projects this
+# shim to every Cowork Agent, and the unresolved $0 pointed ../.. at a store with no
+# scripts/, so the guard ENOENTed and the restart was refused on a phantom (2026-09-01,
+# same fault the tmux shim carried). SELF_DIR stays unresolved: PATH-stripping must
+# remove the dir the CALLER found this shim in.
+SELF=$0
+while [ -L "$SELF" ]; do
+  link=$(readlink "$SELF")
+  case $link in /*) SELF=$link ;; *) SELF=$(dirname "$SELF")/$link ;; esac
+done
+REAL_DIR=$(cd "$(dirname "$SELF")" && pwd)
 REAL=$(PATH=$(printf '%s' "$PATH" | tr ':' '\n' | grep -vxF "$SELF_DIR" | paste -sd:) command -v systemctl)
 [ -n "${REAL:-}" ] || REAL=/usr/bin/systemctl
 
@@ -50,7 +62,10 @@ for u in $units; do
 done
 
 if [ "$destructive" = 1 ] && [ "$hits_ronin" = 1 ]; then
-  ROOT=$(cd "$SELF_DIR/../.." && pwd)
+  # REAL_DIR, not SELF_DIR: through a session's projection symlink the unresolved
+  # anchor put the guard script in a store that has none, and the restart failed on
+  # ENOENT instead of being guarded (2026-09-01, the tmux shim's fault class).
+  ROOT=$(cd "$REAL_DIR/../.." && pwd)
   node "$ROOT/scripts/guard-dev-restart.mjs" "$ROOT" || exit $?
 fi
 

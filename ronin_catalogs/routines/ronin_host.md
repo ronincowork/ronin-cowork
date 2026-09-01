@@ -8,4 +8,5 @@
 - **tools:** tejun-survey, tejun-account, tejun-secrets, tejun-machine-restart
 - **mcp:** —
 - **requires:** ronin_base
+- **bundles:** services
 - **order:** 40

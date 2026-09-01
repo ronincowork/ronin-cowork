@@ -2,10 +2,12 @@
 /**
  * TERMVIEW — the 🔒 locked view: the untouched `tmux attach` mirror.
  *
- * tmux paints a fixed screen and the scrollback stays server-side (copy-mode is a
- * Faucet A painting, so scrolling round-trips). This is Locked, it works, and RIREKI
- * does not touch it — the scroll saga's settled boundary, and the reason this module
- * is deliberately thin: it wraps xterm and nothing else.
+ * tmux paints a fixed screen; scroll-back is LOCAL since viewer mouse went off
+ * (2026-09-01) — xterm keeps a 30,000-line buffer of what streamed through, the wheel
+ * scrolls it, and the ↓ latest pill (wireJumpPill) is the way home. tmux copy-mode is
+ * no longer entered from a tile. This is Locked, it works, and RIREKI does not touch
+ * it — the scroll saga's settled boundary, and the reason this module is deliberately
+ * thin: it wraps xterm and nothing else.
  *
  * The other view is `tapeview.js`, which reads the tape and never touches tmux at all.
  * The tile composes one or the other; neither knows the other exists.
@@ -94,6 +96,41 @@ export class TermView {
     this.term.scrollToBottom();
   }
 
+  /**
+   * IS ANYONE LISTENING FOR MOUSE? With viewer mouse off (2026-09-01), a raw wheel
+   * escape sent at the pane is no longer consumed by tmux: it reaches the running app.
+   * An app holding mouse tracking (Claude Code's TUI) scrolls its own view with it; an
+   * app that is not gets the bytes AS TYPED INPUT — the owner watched agents nobody had
+   * touched sit "scroll locked" on injected wheels, and a bare CLI would show escape
+   * garbage on its prompt. Every wheel sender asks this first.
+   */
+  mouseTracking() {
+    return (this.term.modes?.mouseTrackingMode ?? 'none') !== 'none';
+  }
+
+  /**
+   * The way back from a local scroll-back (owner, 2026-09-01: a tile "still stuck in
+   * scroll mode"). With viewer mouse off, the wheel scrolls xterm's OWN buffer — the
+   * server never knows, so no server-side jump can end it, and a desktop owner types
+   * into the composer, so xterm's scroll-on-input never fires either. The tape view's
+   * ↓ latest pill, on the mirror: shown whenever the viewport has left the live end.
+   */
+  wireJumpPill(hooks) {
+    const pill = document.createElement('button');
+    pill.type = 'button';
+    pill.className = 'termjump';
+    pill.title = t('tape.jump_title', 'Jump to the latest output — the deterministic way back to the bottom, whatever the scroll is doing.');
+    pill.textContent = t('tape.jump', '↓ latest');
+    pill.addEventListener('click', () => hooks.jump());
+    this.body.appendChild(pill);
+    const mark = () => {
+      const b = this.term.buffer?.active;
+      pill.classList.toggle('show', !!b && b.viewportY < b.baseY);
+    };
+    this.term.onScroll(mark);
+    this.term.onWriteParsed?.(mark); // output arriving while scrolled up keeps the pill honest
+  }
+
   /** The live selection, if xterm has one — `layout.js` feeds it to the clipboard on ⌘C. */
   getSelection() {
     return this.term.getSelection ? this.term.getSelection() : '';
@@ -109,12 +146,13 @@ export class TermView {
   /**
    * DESKTOP ONLY: catch the drag that was meant to be a copy, and say the key.
    *
-   * The failure this exists for is silent and looks like success. A locked tile is a live
-   * TUI with tmux `mouse on`, so a plain drag is forwarded as mouse escapes: tmux enters
-   * copy-mode, highlights, and copies to the paste buffer ON THE HOST. The browser never
-   * saw a selection and the laptop's clipboard is untouched, but the user watched text
-   * highlight under their cursor, so they press ⌘C, get whatever was there before, and
-   * conclude that copying is broken. Nothing on screen ever mentions the modifier.
+   * The failure this exists for is silent and looks like success. When the app in a
+   * locked tile holds mouse tracking (Claude Code's TUI does), a plain drag is forwarded
+   * as mouse escapes the APP consumes: the browser never saw a selection and the
+   * laptop's clipboard is untouched, but the user watched text respond under their
+   * cursor, so they press ⌘C, get whatever was there before, and conclude that copying
+   * is broken. Nothing on screen ever mentions the modifier. (tmux's own copy-mode grab
+   * of the drag is gone with viewer mouse off, 2026-09-01; the app-side grab remains.)
    *
    * THE TEST IS "THEY TRIED AND GOT NOTHING", not "is mouse reporting on". A real drag
    * that leaves `getSelection()` empty is the honest condition: it fires for tmux mouse
@@ -216,8 +254,8 @@ export class TermView {
         const y = e.touches[0].clientY;
         accum += y - lastY; // finger DOWN reveals older lines => wheel up
         lastY = y;
-        if (hooks.isLocked()) {
-          // the mirror: inject wheel events, server scrolls, browser shows it
+        if (hooks.isLocked() && this.mouseTracking()) {
+          // the mirror, app listening: inject wheel events — the APP scrolls its view
           while (accum >= STEP) {
             hooks.sendRaw(WHEEL_UP);
             accum -= STEP;
@@ -225,6 +263,14 @@ export class TermView {
           while (accum <= -STEP) {
             hooks.sendRaw(WHEEL_DOWN);
             accum += STEP;
+          }
+        } else if (hooks.isLocked()) {
+          // the mirror, nobody listening: scroll xterm's local buffer — a wheel escape
+          // here would land as typed input in the pane (see mouseTracking above)
+          const n = Math.trunc(accum / STEP);
+          if (n) {
+            accum -= n * STEP;
+            this.scrollLines(-n);
           }
         } else {
           // Unreachable while touchstart parks lastY on unlocked tiles, and kept

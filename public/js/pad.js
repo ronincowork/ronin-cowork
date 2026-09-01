@@ -160,10 +160,13 @@ export function firePadBinding(bind) {
     const k = PAD_KEYS()[bind.key];
     if (!k) return;
     if (k.scroll) {
-      // Encoder detents: locked = inject wheel events (the mirror), unlocked =
+      // Encoder detents: locked = inject wheel events ONLY when the app listens for
+      // mouse (otherwise they land as typed input under viewer mouse off — see
+      // termview.mouseTracking), else scroll xterm's local buffer; unlocked =
       // scrub the local DVR — same split as touch drag-scroll.
       if (!S.active) return;
-      if (S.active.locked) for (let i = 0; i < 3; i++) S.active.sendRaw(k.scroll < 0 ? WHEEL_UP : WHEEL_DOWN);
+      if (S.active.locked && S.active.term.mouseTracking()) for (let i = 0; i < 3; i++) S.active.sendRaw(k.scroll < 0 ? WHEEL_UP : WHEEL_DOWN);
+      else if (S.active.locked) S.active.term.scrollLines(k.scroll < 0 ? -3 : 3);
       else if (S.active.tapeMode) {
         // A tape-fed tile hides xterm — its transcript lives in the tape div, so the
         // scroll keys page that instead of a canvas nobody can see.

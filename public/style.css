@@ -48,6 +48,12 @@
   --accent: #e0af68;
   --accent-2: #81a2be;
   --accent-deep: #d8a13a;
+  /* Soft selected-state washes — two of the seven names the 2026-09-01 token audit
+     found CONSUMED while defined nowhere, every read quietly dropped by the browser
+     (the other five were remapped to real roles; the gate now fails an undefined
+     var()). Derived from tuned parents, so they tune with the theme. */
+  --accent-soft: color-mix(in srgb, var(--accent) 22%, transparent);
+  --ok-soft: color-mix(in srgb, var(--ok) 22%, transparent);
   --ok: #b5bd68;
   --ok-2: #7fd4a8;
   --warn: #f0c674;
@@ -55,7 +61,8 @@
      2026-09-01: "make sure that the tokens between light and dark don't mean we lose
      our core color, which is the kiiro"). Declared once, never re-declared by the
      light block: a brand color that mutates per theme stops being the brand. Every
-     kiiro FILL reads this pair (the band, the attention flash, the phone's Start);
+     kiiro FILL reads this pair (the attention flash, the phone's Start; the band
+     reads the tint variant below with its own ink family);
      --warn stays separate as the theme-tuned warning ink, because thin text genuinely
      needs a darker value on paper — a shade of kiiro, not a replacement for it. */
   /* Value history: #f0c674 (gold) read as YELLOW on the band — "it's not anything to
@@ -64,25 +71,41 @@
      the attention flash and the phone's Start all follow. */
   --kiiro: #e0af68;
   --on-kiiro: #201a0e;
-  /* THE WORKBENCH'S HEADER BAND, tinted (owner, 2026-09-01): "change the headers for the
-     workspace and the work selector… so that it's like a light orange shading so that it
-     stands out a little bit, because I get lost. I can't always see, especially in this
-     dark mode. It's got to be light enough that it doesn't obstruct the view of the
-     fonts." Later the same day: the tenth-toward-kaki first cut was still invisible to
-     the owner ("I still don't see the kiiro shading"), and theme-relative mixes read
-     as different colours per theme ("not rouge or mauve or putrid orange") — the
-     ruling is ONE opaque kiiro, the same in light and dark: "I want this similar
-     orange to go across whether it's light or dark modes." The first constant value
-     (#decb8f) drifted khaki — "some kind of weird yellow and not a shade of our
-     kiiro" — so the band is now a TINT OF THE KIIRO TOKEN itself: constant across
-     themes because both mix inputs are constants, light enough for its own dark ink
-     family below (the theme's --fg-strong/--muted-2/--warn are tuned for the theme's
-     ground, not for this band's). */
-  --cowork-head-bg: color-mix(in srgb, var(--kiiro) 62%, #ffffff);
-  --cowork-head-fg: #201a0e;
-  --cowork-head-muted: #5a4d28;
-  /* Attention ON the band: the band is already kiiro, so attention speaks kaki. */
-  --cowork-head-attention: #8a3413;
+  /* KIIRO-TINT — the light opaque SHADING variant of the brand token: kiiro for
+     surfaces, not text. Derived FROM the token so a hue correction stays that one
+     --kiiro line; check-css resolves the mix and holds the band's ink floors on it.
+     First of the kiiro variant family (the token audit names a line variant next).
+     Value history: a plain 78% white-tint read as "no different" from the rejected
+     62% wash (owner, 2026-09-01 pm) — srgb white-tinting an amber desaturates it
+     toward the cream-yellow every verdict has rejected. So the tint warms the base
+     toward kaki FIRST (70/30, holding the orange), then lightens hard (45% over
+     white): distinctly lighter than the token, distinctly orange, never cream. */
+  --kiiro-tint: color-mix(in srgb, color-mix(in srgb, var(--kiiro) 70%, var(--kaki)) 45%, #ffffff);
+  /* KIIRO-DEEP — the pressed/hover depth of a kiiro fill, as --accent-deep is to
+     --accent. Invariant like its parent. */
+  --kiiro-deep: color-mix(in srgb, var(--kiiro) 82%, #000000);
+  /* KIIRO-HINT — the DARK shading variant: the shell's own band ground with a
+     visible kiiro cast. 22% because the tenth-toward-kaki cut proved 10% invisible
+     ("I still don't see the kiiro shading"). Theme-relative BY DESIGN here — the
+     whole point is staying the shell's darkness — unlike --kiiro-tint, which is the
+     committed light shade. */
+  --kiiro-hint: color-mix(in srgb, var(--kiiro) 22%, var(--bg-2));
+  /* THE WORKBENCH'S HEADER BAND — dark wears the HINT, light wears the TINT (owner,
+     2026-09-01 evening, the standing verdict): a light band on the dark shell "looks
+     awful… It should be dark mode with a bit of background hint to the orange
+     color", and the tint's hue direction was ruled right for light ("the color, I
+     guess, is better"). This SUPERSEDES the same-day one-shade-both-modes ruling.
+     The full run of prior verdicts, so no rejected value returns: tenth-toward-kaki
+     (invisible), #decb8f (khaki), opaque gold, the 62% cream wash, the 78% wash
+     ("doesn't look any different"), opaque kiiro in dark ("absolute shit"), and any
+     LIGHT band on the dark shell. Dark ink is the theme's own; light's ink family
+     rides its block below. Every workbench wears THIS band — wk-surface-header,
+     tile-head, wk-channel-service-tabs, ntf-band all read the family. */
+  --cowork-head-bg: var(--kiiro-hint);
+  --cowork-head-fg: var(--fg-strong);
+  --cowork-head-muted: var(--muted-2);
+  /* Attention on the dark band: kiiro itself is the cue. */
+  --cowork-head-attention: var(--kiiro);
   --bad: #cc6666;
   --bad-soft: #e6a1a1;
   --bad-deep: #a33c33;
@@ -314,6 +337,14 @@
    index.html applies the saved value inline before first paint. THE --term-* TOKENS ARE
    REMAPPED HERE TOO: light means light all the way into the pane, terminal included. */
 :root[data-theme='light'] {
+  /* LIGHT wears the kiiro-tint band (the hue the owner ruled right for light);
+     DARK keeps its dark band with the orange hint — the family's root defaults.
+     The band's own dark ink here, because the light theme's text tokens are tuned
+     for paper, not for a kiiro surface. */
+  --cowork-head-bg: var(--kiiro-tint);
+  --cowork-head-fg: #201a0e;
+  --cowork-head-muted: #5a4d28;
+  --cowork-head-attention: #8a3413;
   --bg: #f4f2ec;
   --bg-2: #eae7df;
   --panel: #ffffff;
@@ -2557,14 +2588,14 @@ body {
   padding-bottom: var(--space-4);
 }
 .st-blurb {
-  color: var(--fg-dim);
+  color: var(--muted);
   font-size: var(--text-4);
 }
 .st-blurb.bad {
   color: var(--bad);
 }
 .st-stamp {
-  color: var(--fg-faint);
+  color: var(--muted-3);
   font-size: var(--text-2);
   font-variant-numeric: tabular-nums;
 }
@@ -2573,7 +2604,7 @@ body {
   flex-direction: column;
 }
 .st-grp {
-  color: var(--fg-faint);
+  color: var(--muted-3);
   font-size: var(--text-2);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2583,7 +2614,7 @@ body {
 }
 .st-row {
   padding: var(--space-4) 0;
-  border-bottom: var(--edge) solid var(--line-faint);
+  border-bottom: var(--edge) solid var(--line);
 }
 .st-row.st-obs {
   display: grid;
@@ -2592,7 +2623,7 @@ body {
   align-items: baseline;
 }
 .st-lab {
-  color: var(--fg-dim);
+  color: var(--muted);
   font-size: var(--text-4);
 }
 .st-val {
@@ -2600,11 +2631,11 @@ body {
   overflow-wrap: anywhere;
 }
 .st-note {
-  color: var(--fg-faint);
+  color: var(--muted-3);
   margin-left: var(--space-4);
 }
 .st-link {
-  color: var(--fg-faint);
+  color: var(--muted-3);
   font-size: var(--text-3);
 }
 /* The label sits in a fixed first column and the control beside it; the field's own
@@ -2619,12 +2650,12 @@ body {
 }
 .st-field > label {
   flex: 0 0 156px;
-  color: var(--fg-dim);
+  color: var(--muted);
   font-size: var(--text-4);
 }
 .st-inp {
   width: min(320px, 100%);
-  background: var(--bg-input);
+  background: var(--well);
   color: var(--fg);
   border: var(--edge) solid var(--line);
   border-radius: var(--radius-xs);
@@ -3318,6 +3349,10 @@ body {
 }
 /* KIIRO — yellow when there is something to save; the ← wears it too so the way out is
    as easy to find as the way to keep it (owner, 2026-08-28). */
+/* TOKEN? (audit mark, 2026-09-01): class says kiiro, token is --warn — deliberately,
+   because this is thin INK and invariant #e0af68 text fails on light paper. If the
+   dirty state should read brand-kiiro, it takes a FILL treatment like the Kit's
+   data-attention, not an ink swap. Owner rules; TOKENS_AUDIT.md § 3.5. */
 .dc-back.kiiro,
 .dc-save.kiiro {
   border-color: var(--warn);
@@ -4868,7 +4903,7 @@ button.wb-door:hover b {
   border: var(--edge) solid var(--line);
   border-radius: var(--radius-xs);
   color: var(--fg);
-  background: var(--surface);
+  background: var(--well);
   font: var(--text-2)/1.2 var(--font-mono);
   padding: var(--space-1) var(--space-2);
 }
@@ -4949,6 +4984,36 @@ button.wb-door:hover b {
    only on tape tiles, shows only while scrolled up. */
 .tile .tapejump {
   display: none;
+}
+/* The mirror's own ↓ latest — same pill, on the xterm surface. With viewer mouse off a
+   wheel scrolls xterm's local buffer, which the server cannot see or end; the pill shows
+   whenever the viewport has left the live end (js/termview.js wireJumpPill). */
+.tile .termjump {
+  display: none;
+}
+.tile .termjump.show {
+  display: block;
+  position: absolute;
+  right: 14px;
+  bottom: 58px; /* clear the docked composer, which owns the bottom edge */
+  z-index: 3;
+  font: var(--text-3) var(--font-term);
+  color: var(--term-tape-fg);
+  background: var(--term-jump-bg);
+  border: var(--edge) solid var(--term-tape-line-2);
+  border-radius: var(--radius-pill);
+  padding: var(--space-3) var(--space-6);
+  cursor: pointer;
+}
+.tile .termjump.show:hover {
+  background: var(--term-jump-bg-2);
+}
+@media (pointer: coarse) {
+  .tile .termjump.show {
+    padding: var(--space-4) var(--space-8);
+    font-size: var(--text-5);
+    bottom: 76px;
+  }
 }
 .tile.tape-on .tapejump.show {
   display: block;
@@ -5081,15 +5146,17 @@ button.wb-door:hover b {
   opacity: 0.4;
 }
 .tile:is(.tape-on, .keys-on) .composer textarea:focus {
-  border-color: var(--action-2);
+  border-color: var(--accent);
 }
 .tile:is(.tape-on, .keys-on) .composer .csend {
   height: 30px;
   min-width: 38px;
   border: 0;
   border-radius: var(--radius-md);
-  background: var(--action);
-  color: var(--on-strong);
+  /* Was the shell's one blue fill (--action, a role the palette comment itself
+     disowns). A send is a primary action, so it wears the brand pair. */
+  background: var(--kiiro);
+  color: var(--on-kiiro);
   font-size: var(--text-6);
   cursor: pointer;
 }
@@ -6082,13 +6149,13 @@ button.wb-door:hover b {
   gap: var(--space-2);
 }
 .fr-row > label {
-  color: var(--fg-dim);
+  color: var(--muted);
   font-size: var(--text-4);
 }
 .fr-row input,
 .fr-row select,
 .fr-row textarea {
-  background: var(--bg-input);
+  background: var(--well);
   color: var(--fg);
   border: var(--edge) solid var(--line);
   border-radius: var(--radius-xs);
@@ -6192,9 +6259,9 @@ button.wb-door:hover b {
   flex-wrap: wrap;
 }
 .fr-go {
-  background: var(--accent);
-  color: var(--on-accent);
-  border: var(--edge) solid var(--accent-deep);
+  background: var(--kiiro);
+  color: var(--on-kiiro);
+  border: var(--edge) solid var(--kiiro-deep);
   border-radius: var(--radius-xs);
   padding: var(--space-4) var(--space-8);
   font: inherit;
@@ -6202,7 +6269,7 @@ button.wb-door:hover b {
   cursor: pointer;
 }
 .fr-go:hover {
-  background: var(--accent-deep);
+  background: var(--kiiro-deep);
 }
 .fr-go:disabled {
   opacity: 0.6;
@@ -6241,9 +6308,9 @@ button.wb-door:hover b {
 /* the ⚙ offer — a real button in the room's own tokens: filled, hover-dark, cursor.
    It was wearing .st-inp (an input's clothes) and read as a dead field. */
 .st-go {
-  background: var(--accent);
-  color: var(--on-accent);
-  border: var(--edge) solid var(--accent-deep);
+  background: var(--kiiro);
+  color: var(--on-kiiro);
+  border: var(--edge) solid var(--kiiro-deep);
   border-radius: var(--radius-xs);
   padding: var(--space-4) var(--space-8);
   font: inherit;
@@ -6252,7 +6319,7 @@ button.wb-door:hover b {
   cursor: pointer;
 }
 .st-go:hover {
-  background: var(--accent-deep);
+  background: var(--kiiro-deep);
 }
 .st-go:disabled {
   opacity: 0.6;
@@ -6295,7 +6362,7 @@ button.wb-door:hover b {
 .cs-hero h1 { margin: 0; color: var(--fg-strong); font-size: clamp(42px, 6vw, 62px); font-weight: 600; line-height: .98; letter-spacing: -.055em; }
 .cs-hero > p:not(.cs-live-proof) { max-width: 680px; margin: var(--space-7) 0 0; color: var(--muted-2); font-size: var(--text-6); line-height: 1.5; }
 .cs-connected { display: inline-flex; align-items: center; gap: var(--space-3); margin-top: var(--space-7); padding: var(--space-3) var(--space-5); border: var(--edge) solid var(--line); border-radius: var(--radius-pill); color: var(--muted-2); font: var(--text-2)/1 var(--font-mono); }
-.cs-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok-2); }
+.cs-dot { width: 8px; height: 8px; border-radius: var(--radius-round); background: var(--ok-2); }
 .cs-layout { display: grid; grid-template-columns: minmax(0, 680px) minmax(250px, 1fr); gap: 26px; align-items: start; }
 .cs-form { display: flex; flex-direction: column; gap: var(--space-7); }
 .cs-stage { display: flex; align-items: center; gap: var(--space-5); margin: var(--space-7) var(--space-2) 0; color: var(--fg-strong); font-weight: 800; }
@@ -6317,7 +6384,7 @@ button.wb-door:hover b {
 .cs-field { display: flex; flex-direction: column; gap: var(--space-3); }
 .cs-field.full { grid-column: 1 / -1; }
 .cs-field label { color: var(--fg-strong); font-size: var(--text-3); font-weight: 650; }
-.cs-field input, .cs-field select { width: 100%; min-height: 44px; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--bg-input); color: var(--fg); padding: var(--space-4) var(--space-5); outline: none; }
+.cs-field input, .cs-field select { width: 100%; min-height: 44px; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--fg); padding: var(--space-4) var(--space-5); outline: none; }
 .cs-field input:focus, .cs-field select:focus { border-color: var(--kaki); box-shadow: 0 0 0 3px var(--accent-soft); }
 .cs-field input.path { font: var(--text-3) var(--font-mono); }
 .cs-hint { color: var(--muted); font-size: var(--text-2); }
@@ -6398,6 +6465,15 @@ button.wb-door:hover b {
 .wk-layout-surface { display: flex; flex-direction: column; }
 .wk-layout-surface > .wk-surface { flex: 1 1 auto; min-height: 0; }
 .wk-surface { position: relative; display: flex; flex-direction: column; border: var(--edge) solid var(--line); border-radius: var(--radius-lg); background: var(--panel); overflow: hidden; }
+/* THE BANDS LINE UP (owner, 2026-09-01: "the central work selector is shifted up"):
+   three band containers had three top edges — a headed layout slot (the work selector)
+   wore no chrome so its band began at the wrapper's very top; a .wk-surface pushed its
+   band down by its 1px border; a hosted tile stacked its own card border on its
+   surface's for 2px. Measured live: tops 53/54/55. One chrome, one edge: a headed slot
+   wears the surface's card, and a tile inside a surface sheds its duplicate (the
+   surface already draws the card; the active inset shadow still shows). */
+.wk-layout-surface:has(> .wk-surface-header) { border: var(--edge) solid var(--line); border-radius: var(--radius-lg); background: var(--panel); overflow: hidden; }
+.wk-surface .wk-terminal-host > .tile { border: 0; border-radius: 0; }
 .wk-surface-content { flex: 1 1 auto; min-width: 0; min-height: 0; overflow: auto; }
 .wk-surface-controls { flex: 0 0 auto; }
 .wk-state { margin: auto; padding: var(--space-7); color: var(--muted); text-align: center; }

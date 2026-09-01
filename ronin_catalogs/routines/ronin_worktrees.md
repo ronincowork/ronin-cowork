@@ -8,4 +8,5 @@
 - **tools:** tejun-desk, ronin-repo-init
 - **mcp:** —
 - **requires:** ronin_base
+- **bundles:** worktrees, services
 - **order:** 20
