@@ -95,6 +95,18 @@ export class TermView {
   }
 
   /**
+   * IS ANYONE LISTENING FOR MOUSE? With viewer mouse off (2026-09-01), a raw wheel
+   * escape sent at the pane is no longer consumed by tmux: it reaches the running app.
+   * An app holding mouse tracking (Claude Code's TUI) scrolls its own view with it; an
+   * app that is not gets the bytes AS TYPED INPUT — the owner watched agents nobody had
+   * touched sit "scroll locked" on injected wheels, and a bare CLI would show escape
+   * garbage on its prompt. Every wheel sender asks this first.
+   */
+  mouseTracking() {
+    return (this.term.modes?.mouseTrackingMode ?? 'none') !== 'none';
+  }
+
+  /**
    * The way back from a local scroll-back (owner, 2026-09-01: a tile "still stuck in
    * scroll mode"). With viewer mouse off, the wheel scrolls xterm's OWN buffer — the
    * server never knows, so no server-side jump can end it, and a desktop owner types
@@ -239,8 +251,8 @@ export class TermView {
         const y = e.touches[0].clientY;
         accum += y - lastY; // finger DOWN reveals older lines => wheel up
         lastY = y;
-        if (hooks.isLocked()) {
-          // the mirror: inject wheel events, server scrolls, browser shows it
+        if (hooks.isLocked() && this.mouseTracking()) {
+          // the mirror, app listening: inject wheel events — the APP scrolls its view
           while (accum >= STEP) {
             hooks.sendRaw(WHEEL_UP);
             accum -= STEP;
@@ -248,6 +260,14 @@ export class TermView {
           while (accum <= -STEP) {
             hooks.sendRaw(WHEEL_DOWN);
             accum += STEP;
+          }
+        } else if (hooks.isLocked()) {
+          // the mirror, nobody listening: scroll xterm's local buffer — a wheel escape
+          // here would land as typed input in the pane (see mouseTracking above)
+          const n = Math.trunc(accum / STEP);
+          if (n) {
+            accum -= n * STEP;
+            this.scrollLines(-n);
           }
         } else {
           // Unreachable while touchstart parks lastY on unlocked tiles, and kept

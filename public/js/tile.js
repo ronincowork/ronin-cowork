@@ -373,13 +373,16 @@ export class Tile {
       else this.term.scrollToBottom();
       return;
     }
-    // Mirror: BOTH ends can be scrolled back and each needs its own jump. xterm's local
-    // viewport (where a mouse-off wheel lands) answers only scrollToBottom; a pane in
-    // tmux copy mode (a raw-attach owner, a leftover) answers only {t:'bottom'}'s
-    // cancel. Sending both is always safe — each is a no-op at its live end.
+    // Mirror: every scrolled-back end gets its own jump, and only its own. xterm's
+    // local viewport answers scrollToBottom; a pane in tmux copy mode (a raw-attach
+    // owner, a leftover) answers {t:'bottom'}'s cancel; an app scrolled inside ITSELF
+    // answers the wheel burst — but ONLY when it is listening for mouse. Sent blind,
+    // the burst reaches the app as typed input under viewer mouse off (2026-09-01: the
+    // owner watched untouched agents sit "scroll locked" on injected wheels — every
+    // composer send fired 150 of these).
     this.term.scrollToBottom();
     this.send({ t: 'bottom' });
-    for (let i = 0; i < 150; i++) this.sendRaw(WHEEL_DOWN);
+    if (this.term.mouseTracking()) for (let i = 0; i < 150; i++) this.sendRaw(WHEEL_DOWN);
   }
 
   /** The composer's box, for the ⚡ macro prefill — null until the composer exists. */
