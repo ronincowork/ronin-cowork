@@ -9,7 +9,7 @@ says one, blank where it falls through to the floor. A catalog token (`kind.*`, 
 `behaviour.*` may be blank in the floor too — the definition's own label is its floor.
 Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a view adds a word.
 
-1423 keys · 58 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
+1421 keys · 58 rooms · lexicons: `professional_en` (Professional) · `home_en` (Home) · `league_en` (League) · `terminal_en` (Terminal) · `vibe_code_en` (Vibe code)
 
 ## add_agent
 
@@ -948,12 +948,10 @@ Rooms are the part of a key before its first dot. `docs/kokugo.md` says how a vi
 | `new_team.members` | members |  |  |  |  |
 | `new_team.members_note` | derived from live tags — never stored here |  |  |  |  |
 | `new_team.name` | Team name |  |  |  |  |
-| `new_team.name_desc` | Lowercase letters, digits, _ and - . This is also the tag its sessions carry. |  |  |  |  |
 | `new_team.name_invalid` | Lowercase letters, digits, _ and - only. |  |  |  |  |
 | `new_team.name_kind` | Name & kind |  |  |  |  |
 | `new_team.name_placeholder` | lowercase, digits, - _ |  |  |  |  |
 | `new_team.objective_placeholder` | what this team is for |  |  |  |  |
-| `new_team.optional` | Optional. |  |  |  |  |
 | `new_team.raise` | Raise the team |  |  |  |  |
 | `new_team.raise_lead` | Raise the team and its lead |  |  |  |  |
 | `new_team.raised_no_lead` | Raised {team} — the lead was not born: {reason} |  |  |  |  |

@@ -362,7 +362,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 
 ## new_team / team — new-team.js (the New Team surface; team.* rows are shared by the Team page family)
 - **new_team.name:** Team name
-- **new_team.name_desc:** Lowercase letters, digits, _ and - . This is also the tag its sessions carry.
 - **new_team.role_placeholder:** development — or leave blank
 - **new_team.role_desc:** Optional. Blank is an unclassified Team, which is a valid state.
 - **team.objective:** Objective
@@ -371,7 +370,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team.lines:** Team lines
 - **team.promotion:** Promotion
 - **team.parked_desks:** Parked desks
-- **new_team.optional:** Optional.
 - **team.wipeboard:** Wipeboard
 - **team.project_root:** Project root
 - **team.command:** Command

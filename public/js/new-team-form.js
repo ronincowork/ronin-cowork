@@ -160,10 +160,9 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     paintName();
     paintFoot();
   });
-  const nameField = createField({
-    label: t('new_team.name', 'Team name'), control: nameInput,
-    description: t('new_team.name_desc', 'Lowercase letters, digits, _ and - . This is also the tag its sessions carry.'),
-  });
+  // No spelling rule under the field: the input enforces it as you type, so a sentence
+  // describing it only tells you what you can already see happening (owner, 2026-09-01).
+  const nameField = createField({ label: t('new_team.name', 'Team name'), control: nameInput });
   const paintName = () => {
     const settled = finalizeTeamName(draft.name);
     if (!settled) return nameField.setValidation('', '');
@@ -201,7 +200,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   const wherePair = el('div', 'fs-pair');
   wherePair.append(
     createField({ label: t('team.project_root', 'Project root'), control: rootSelect }).el,
-    createField({ label: t('team.branch', 'Branch'), control: branchInput, description: t('new_team.optional', 'Optional.') }).el,
+    createField({ label: t('team.branch', 'Branch'), control: branchInput }).el,
   );
   // NO WIPEBOARD FIELD (owner, 2026-09-01): "the wipeboard is automatically configured…
   // no one ever even sees the fucking name." The store already defaults it to the team's
