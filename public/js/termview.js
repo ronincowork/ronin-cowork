@@ -94,6 +94,29 @@ export class TermView {
     this.term.scrollToBottom();
   }
 
+  /**
+   * The way back from a local scroll-back (owner, 2026-09-01: a tile "still stuck in
+   * scroll mode"). With viewer mouse off, the wheel scrolls xterm's OWN buffer — the
+   * server never knows, so no server-side jump can end it, and a desktop owner types
+   * into the composer, so xterm's scroll-on-input never fires either. The tape view's
+   * ↓ latest pill, on the mirror: shown whenever the viewport has left the live end.
+   */
+  wireJumpPill(hooks) {
+    const pill = document.createElement('button');
+    pill.type = 'button';
+    pill.className = 'termjump';
+    pill.title = t('tape.jump_title', 'Jump to the latest output — the deterministic way back to the bottom, whatever the scroll is doing.');
+    pill.textContent = t('tape.jump', '↓ latest');
+    pill.addEventListener('click', () => hooks.jump());
+    this.body.appendChild(pill);
+    const mark = () => {
+      const b = this.term.buffer?.active;
+      pill.classList.toggle('show', !!b && b.viewportY < b.baseY);
+    };
+    this.term.onScroll(mark);
+    this.term.onWriteParsed?.(mark); // output arriving while scrolled up keeps the pill honest
+  }
+
   /** The live selection, if xterm has one — `layout.js` feeds it to the clipboard on ⌘C. */
   getSelection() {
     return this.term.getSelection ? this.term.getSelection() : '';

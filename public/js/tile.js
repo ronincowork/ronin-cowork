@@ -128,6 +128,9 @@ export class Tile {
         overHome: () => false,
       });
     }
+    // The mirror's own ↓ latest (both pointers): with viewer mouse off the wheel scrolls
+    // xterm's local buffer, which no server-side jump can end — the pill is the way back.
+    this.term.wireJumpPill({ jump: () => this.jumpLatest() });
     // The wheel is xterm's business in BOTH modes now.
     //
     // Locked: the event flows through to xterm, which turns it into mouse escapes for
@@ -370,8 +373,11 @@ export class Tile {
       else this.term.scrollToBottom();
       return;
     }
-    // Mirror: {t:'bottom'} cancels tmux copy mode; the wheel burst drives an app's own
-    // scroll. A wheel-down at the live bottom is a no-op, so both is always safe.
+    // Mirror: BOTH ends can be scrolled back and each needs its own jump. xterm's local
+    // viewport (where a mouse-off wheel lands) answers only scrollToBottom; a pane in
+    // tmux copy mode (a raw-attach owner, a leftover) answers only {t:'bottom'}'s
+    // cancel. Sending both is always safe — each is a no-op at its live end.
+    this.term.scrollToBottom();
     this.send({ t: 'bottom' });
     for (let i = 0; i < 150; i++) this.sendRaw(WHEEL_DOWN);
   }

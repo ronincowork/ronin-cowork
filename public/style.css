@@ -4954,6 +4954,36 @@ button.wb-door:hover b {
 .tile .tapejump {
   display: none;
 }
+/* The mirror's own ↓ latest — same pill, on the xterm surface. With viewer mouse off a
+   wheel scrolls xterm's local buffer, which the server cannot see or end; the pill shows
+   whenever the viewport has left the live end (js/termview.js wireJumpPill). */
+.tile .termjump {
+  display: none;
+}
+.tile .termjump.show {
+  display: block;
+  position: absolute;
+  right: 14px;
+  bottom: 58px; /* clear the docked composer, which owns the bottom edge */
+  z-index: 3;
+  font: var(--text-3) var(--font-term);
+  color: var(--term-tape-fg);
+  background: var(--term-jump-bg);
+  border: var(--edge) solid var(--term-tape-line-2);
+  border-radius: var(--radius-pill);
+  padding: var(--space-3) var(--space-6);
+  cursor: pointer;
+}
+.tile .termjump.show:hover {
+  background: var(--term-jump-bg-2);
+}
+@media (pointer: coarse) {
+  .tile .termjump.show {
+    padding: var(--space-4) var(--space-8);
+    font-size: var(--text-5);
+    bottom: 76px;
+  }
+}
 .tile.tape-on .tapejump.show {
   display: block;
   position: absolute;
