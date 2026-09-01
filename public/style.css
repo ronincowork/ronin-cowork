@@ -6565,14 +6565,18 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 .sys-machine { margin-top: var(--space-5); }
 .sys-machine .mach-v { margin-left: auto; font: var(--text-2) var(--font-mono); color: var(--muted-2); }
 /* Messages — the live inbound queue; delivered cards disappear rather than archive. */
-.mq-note { margin: var(--space-4) var(--space-4) 0; color: var(--muted); }
-.mq-board { display: grid; gap: var(--space-3); padding: var(--space-4); overflow: auto; }
+.mq-note { margin: var(--space-5) var(--space-5) 0; color: var(--muted-2); font-size: var(--text-3); }
+.mq-board { display: grid; gap: var(--space-4); padding: var(--space-5); overflow: auto; }
 .mq-empty { color: var(--muted); margin: 0; }
-.mq-card { border: var(--edge) solid var(--line); border-left: var(--space-1) solid var(--warn); border-radius: var(--radius-sm); padding: var(--space-3); background: var(--panel); }
+.mq-card { border: var(--edge) solid var(--line-2); border-left: var(--space-1) solid var(--warn); border-radius: var(--radius-sm); padding: var(--space-5); background: var(--panel); }
 .mq-card.mq-failed { border-left-color: var(--bad); }
 .mq-head, .mq-actions { display: flex; align-items: center; gap: var(--space-2); }
 .mq-head { justify-content: space-between; }
-.mq-state, .mq-meta, .mq-reason { color: var(--muted); font-size: var(--text-2); }
+.mq-state, .mq-reason { color: var(--muted-2); font-size: var(--text-2); }
+.mq-route { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-2) var(--space-4); margin: var(--space-4) 0; }
+.mq-route dt { color: var(--muted); font-size: var(--text-2); }
+.mq-route dd { min-width: 0; margin: 0; color: var(--fg-strong); overflow-wrap: anywhere; }
+.mq-reason { margin: var(--space-3) 0; border-left: var(--edge) solid var(--line-3); background: var(--well); padding: var(--space-3); }
 .mq-text { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; margin: var(--space-3) 0; }
 .mq-actions { justify-content: flex-end; }
 .mq-force { border-color: var(--bad); }

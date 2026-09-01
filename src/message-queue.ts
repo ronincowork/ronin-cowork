@@ -11,6 +11,7 @@ export type MessageSource = 'tell' | 'wipeboard_notice' | 'owner' | 'house';
 
 export interface QueuedMessage {
   id: string;
+  from: string;
   target: string;
   text: string;
   source: MessageSource;
@@ -44,10 +45,14 @@ export async function listQueuedMessages(): Promise<QueuedMessage[]> {
   return rows.sort((a, b) => a.created_at.localeCompare(b.created_at));
 }
 
-export async function enqueueMessage(target: string, text: string, source: MessageSource): Promise<QueuedMessage> {
+const sourceFrom = (source: MessageSource): string => ({
+  tell: 'Agent', wipeboard_notice: 'Wipeboard', owner: 'Owner', house: 'Ronin House',
+})[source];
+
+export async function enqueueMessage(target: string, text: string, source: MessageSource, from = sourceFrom(source)): Promise<QueuedMessage> {
   const at = new Date().toISOString();
   const item: QueuedMessage = {
-    id: randomUUID(), target, text, source, state: 'pending', reason: 'waiting for delivery',
+    id: randomUUID(), from, target, text, source, state: 'pending', reason: 'waiting for delivery',
     attempts: 0, created_at: at, updated_at: at,
   };
   await write(item);

@@ -1,4 +1,5 @@
 # Odd job
+- **kinds:** work, personal, household, social, school
 
 Use this way of working for one stated task that does not fit a more specific approach.
 Its remit is deliberately broad: take the task as given and complete that task.

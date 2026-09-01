@@ -129,7 +129,7 @@ export async function deliverSafe(name: string, text: string, onAttempt?: () => 
     const now = await readPrompt(name);
     if (!now.found || (!now.menu && now.text === null)) return { delivered: true, submitted: true, reason: 'delivered' };
     if (now.menu) return { delivered: false, submitted: true, reason: 'dialog opened while submitting' };
-    if (now.text !== typed.text) return { delivered: false, submitted: true, reason: 'prompt contents changed while submitting' };
+    if (now.text !== typed.text) return { delivered: false, submitted: true, reason: 'The prompt changed before delivery could be confirmed. Automatic retries stopped to avoid sending a duplicate.' };
     await pressEnter(name);
   }
   return { delivered: false, submitted: true, reason: 'text remains at the prompt after Enter retries' };

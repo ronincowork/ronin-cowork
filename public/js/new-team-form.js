@@ -474,6 +474,9 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     //
     // `agentPicks` is where the screen's words become the route's: a row says assignment
     // and lead, the wire says instructions and team_lead (lead's P0 ruling).
+    // The Team record is also the duplicate-submit gate: only a newly created Team reaches
+    // the handoff, so pressing twice cannot birth the cast twice (@team_loader's point,
+    // kept from their side of the merge).
     const made = await raiseTeam(request, rosterBody(name), agentPicks(draft.agents));
     if (!made.ok) {
       busy = false;

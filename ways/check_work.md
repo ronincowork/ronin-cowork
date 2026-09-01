@@ -1,4 +1,5 @@
 # Check work
+- **kinds:** coding, work
 
 Use this way of working for a read-only review of completed work or a body of code. Its
 remit is to judge and report, not to change what it examines.
