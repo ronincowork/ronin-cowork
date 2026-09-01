@@ -358,7 +358,18 @@
       <tr><td class="p"><span class="v">GET</span> /api/teams</td><td>Every live team with its members AND its leads (the 人 is back — R35) — derived per call, so there is no registry to drift. <code>/api/groups</code> is the retired spelling.</td></tr>
       <tr><td class="p"><span class="v">GET</span> · <span class="v w">POST</span> /api/sessions/:name/control</td><td>The dial: 👤 user · 👁 read · 🤖 agent.</td></tr>
       <tr><td class="p"><span class="v">GET</span> /api/sessions/:name/ctx</td><td>The context gauge.</td></tr>
-      <tr><td class="p"><span class="v w">POST</span> /api/sessions/:name/send</td><td>Type into the pane.</td></tr>
+      <tr><td class="p"><span class="v w">POST</span> /api/sessions/:name/send</td><td>Queue an inbound message and make its first safe delivery attempt.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Messages <span class="who">— inbound session delivery</span></h3>
+  <div class="table-scroll"><table>
+    <thead><tr><th style="width:38%">Endpoint</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td class="p"><span class="v">GET</span> · <span class="v w">POST</span> /api/messages</td><td>Read the live queue, or enqueue one inbound session message and make its first safe attempt.</td></tr>
+      <tr><td class="p"><span class="v w">POST</span> /api/messages/:id/retry</td><td>Try Again through safe delivery once.</td></tr>
+      <tr><td class="p"><span class="v w">POST</span> /api/messages/:id/force</td><td>Owner-only Force: type once, then submit and check for at most ten seconds.</td></tr>
+      <tr><td class="p"><span class="v w">DELETE</span> /api/messages/:id</td><td>Dismiss one retained message.</td></tr>
     </tbody>
   </table></div>
 

@@ -340,7 +340,7 @@ async function post(named: string | null, argv: string[]): Promise<number> {
 }
 
 /**
- * One notice to one session, through tejun-send so the dial is enforced and the message
+ * One notice to one session, through the shared message queue so the dial is enforced and the message
  * arrives watermarked as the wipeboard, not the owner. RONIN_NO_NOTIFY is the unit
  * floor's seam: tests never aim keystrokes at the live tmux server.
  */
@@ -350,10 +350,11 @@ async function notify(session: string, message: string): Promise<string> {
   const { promisify } = await import('node:util');
   const { fileURLToPath } = await import('node:url');
   const path = await import('node:path');
-  const send = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'ronin_bin', 'tejun-send');
+  const send = path.join(path.dirname(fileURLToPath(import.meta.url)), 'message-cli.ts');
+  const tsx = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'node_modules', '.bin', 'tsx');
   try {
-    await promisify(execFile)(send, [session, message]);
-    return 'notified';
+    const { stdout } = await promisify(execFile)(tsx, [send, 'wipeboard_notice', session, message]);
+    return stdout.trim().startsWith('DELIVERED') ? 'notified' : stdout.trim();
   } catch (e) {
     const line = String((e as { stdout?: string })?.stdout ?? '').trim().split('\n').pop() ?? '';
     return `not notified — ${line || 'tejun-send failed'}`;

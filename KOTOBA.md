@@ -770,6 +770,11 @@ see the `commons_tab` row.
 | **note** (`@ronin_note`) | system_scope | the owner's one line about a session | `src/status.ts` |
 | **▥ Hotwords** | system_scope | the commons tab. The dictation glossary itself belongs to KOE — see § KOE | `ronin_catalogs/HOTWORDS.md` |
 | **ghost text** | system_scope | text typed into a tile's prompt but not submitted; never type over it | `ronin_catalogs/ACTIONS.md` |
+| **message_queue** | system_scope | the live flow of inbound messages waiting to enter sessions. Successful deliveries disappear immediately; blocked or failed deliveries stay visible in the cowork commons. It never contains wipeboard posts, only the separate inbound notice a post may generate | `docs/message-queue.md` |
+| **queued_message** | session_scope | one inbound message waiting to enter one named session: direct tell, wipeboard notice, owner send or house notice. Durable until delivered or dismissed | `docs/message-queue.md` |
+| **delivery_attempt** | session_scope | one bounded try to move a queued_message into its target. Records the result and reason; never duplicates the message text | `docs/message-queue.md` |
+| **safe_delivery** | system_scope | automatic delivery and **Try Again**: act only at a recognized empty prompt; a dial, dialog, draft, busy or unknown state leaves the message queued | `docs/message-queue.md` |
+| **force_delivery** | system_scope | owner-only **Force**: type the queued text once, then submit and check for at most ten seconds without regard for prompt occupancy. Success clears it; failure leaves it | `docs/message-queue.md` |
 
 ---
 

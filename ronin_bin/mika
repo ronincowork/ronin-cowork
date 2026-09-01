@@ -65,12 +65,8 @@ msg="+${job}: ${request}"
 # Is she up? Ask tmux, not Ronin — she is reachable whether or not Ronin is running, and
 # the send below goes to the pane either way.
 if tmux has-session -t mika 2>/dev/null; then
-  # tejun-send, NOT /api/sessions/mika/send: the endpoint checks the dial but NOT the
-  # prompt, so it will type over a draft the owner is still looking at. tejun-send does
-  # the pre-send check and answers BLOCKED instead. Mika is the assistant you are
-  # mid-conversation with, which makes her the session most likely to have a real draft
-  # in her and the last one that should be written to blind. Reusing the tool also leaves
-  # one implementation of the send discipline rather than two.
+  # Reuse the ordinary durable inbound-message path. Mika is the session most likely to
+  # hold an owner's draft, so safe delivery must retain rather than write blind.
   #
   # THE CHECK IS GHOST-AWARE, and that half is what makes it usable: Claude renders a
   # suggested reply at the prompt — the kind you press Tab to accept — in dim text, and

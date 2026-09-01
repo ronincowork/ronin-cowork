@@ -139,6 +139,14 @@ export const STORES: readonly Store[] = [
     when: 'first session launched',
   },
   {
+    id: 'message_queue',
+    root: 'data',
+    rel: 'message-queue',
+    what: 'inbound session messages retained until delivered or dismissed',
+    createdBy: "cowork's message delivery engine",
+    when: 'the first inbound message is queued',
+  },
+  {
     id: 'sops',
     root: 'user',
     rel: 'sops',

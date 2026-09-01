@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
-# ronin-house-send — the house delivers a message into a session, dial or no dial.
+# ronin-house-send — put a house notice through the durable inbound message queue.
 # Usage: ronin-house-send <session> <message...>
 #
 # NOBODY TYPES THIS. It lives in libexec, off the agents' PATH, and is called by house
 # machinery only — desk hand-in notices and receipt-bound lead replies
-# (src/desks/lead.ts). `tejun-send`, the tool agents type, keeps its dial check; this one
-# deliberately has none.
+# (src/desks/lead.ts). Delivery now shares the same queue and evidence as every sender.
 #
 # WHY NO DIAL CHECK (owner law, 2026-08-28): reviewing the team line and promoting it to
 # dev is the lead's primary job, so every team agent's hand-in must reach the lead
@@ -20,37 +19,7 @@
 # therefore append the notice to what is already there and submit BOTH — both is better
 # than losing either one. An open dialog is still refused: it has no recognizable prompt,
 # so nothing is typed and Enter is never spammed into it.
-set -u
+set -euo pipefail
 [ $# -ge 2 ] || { echo "usage: ronin-house-send <session> <message...>" >&2; exit 2; }
-S="$1"; shift; MSG="$*"
-
-tmux has-session -t "$S" 2>/dev/null || { echo "NO-SESSION: '$S' does not exist"; exit 3; }
-
-# THE PROMPT GLYPH IS THE CLI'S, not ours: Claude Code draws ❯, Codex draws ›. A sender
-# that only knew ❯ typed into a Codex tile, saw no prompt it understood, and reported
-# DELIVERED with the text still sitting in the box (owner, 2026-08-29). So: both glyphs,
-# and when neither is found the verdict is UNVERIFIED, never DELIVERED.
-prompt_line() { tmux capture-pane -p -e -t "$S" | tail -6 | grep -a '[❯›]' | tail -1; }
-
-line=$(prompt_line)
-[ -n "$line" ] || { echo "UNVERIFIED: no prompt (❯ or ›) visible at '$S' — an unknown CLI, or a dialog; nothing typed."; exit 7; }
-
-# Preserve whatever the TUI currently presents as prompt input and add the house notice
-# after it. The TUI owns wrapping/newline presentation; the sender submits the combined
-# input once, deliberately.
-tmux send-keys -t "$S" -l "$MSG"
-sleep 0.4   # let the TUI finish treating the text as input before Enter arrives — a fast Enter can be swallowed as part of a paste
-tmux send-keys -t "$S" Enter
-sleep 2
-line=$(prompt_line); content=$(pending "$line")
-if [ -n "$content" ] && ! ghost "$line"; then
-  tmux send-keys -t "$S" Enter
-  sleep 2
-  line=$(prompt_line); content=$(pending "$line")
-  if [ -n "$content" ] && ! ghost "$line"; then
-    echo "STUCK: text still at '$S' prompt after retry — a dialog may be open, or the CLI is mid-turn and holding it. Not spamming Enter."
-    exit 6
-  fi
-fi
-echo "DELIVERED to '$S' (house — no dial check, by owner law 2026-08-28)."
-exit 0
+HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+exec "$HERE/node_modules/.bin/tsx" "$HERE/src/message-cli.ts" house "$@"

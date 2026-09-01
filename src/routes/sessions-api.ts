@@ -36,6 +36,7 @@ import {
   stopSessionTree,
 } from '../tmux.js';
 import { sendText } from '../send.js';
+import { attemptMessage, enqueueMessage } from '../message-queue.js';
 import { sessionKey } from '../session-dir.js';
 import { isValidRootName, listProjectRoots } from '../project-roots.js';
 import { expandLookup } from '../lookup.js';
@@ -582,8 +583,9 @@ export function registerSessions(app: express.Express): void {
       // else goes through verbatim, exactly as before.
       const expanded = await expandLookup(raw);
       const text = expanded ?? raw;
-      const sent = await sendText(name, text);
-      res.json({ ok: true, control, expanded: expanded != null, ...sent });
+      const item = await enqueueMessage(name, text, 'owner');
+      const retained = await attemptMessage(item.id, 'safe');
+      res.json({ ok: true, control, expanded: expanded != null, queued: retained !== null, started: retained === null, message: retained });
     } catch (e) {
       res.status(500).json({ error: String((e as Error)?.message ?? e) });
     }
