@@ -9,7 +9,7 @@ test('the Cowork birth receipt persists in the newborn session directory', async
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-birth-receipt-'));
   const session = path.join(root, 'agent-123');
   try {
-    const receipt = { routines: [{ name: 'ronin_control', on: true, delivered: true, missing: [] }] };
+    const receipt = { routines: [{ name: 'ronin_worktrees', on: true, delivered: true, missing: [] }] };
     const at = await persistBirthReceiptAt(session, receipt);
     assert.equal(at, path.join(session, 'birth-receipt.json'));
     assert.deepEqual(JSON.parse(await fs.readFile(at, 'utf8')), receipt);

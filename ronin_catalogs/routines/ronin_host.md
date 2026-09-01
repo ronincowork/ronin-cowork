@@ -8,5 +8,5 @@
 - **actions:** survey-machine, survey-secrets, survey-account, restart-ronin
 - **tools:** tejun-survey, tejun-account, tejun-secrets, tejun-machine-restart
 - **mcp:** —
-- **requires:** —
+- **requires:** ronin_base
 - **order:** 40

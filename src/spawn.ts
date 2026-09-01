@@ -554,7 +554,7 @@ export async function resolveForm(
     project_root: root.name,
     agent,
     control: (parentSeed?.resolved_routines ?? resolveRoutines(routineCatalog, {}, undefined))
-      .some((routine) => routine.name === 'ronin_control' && routine.enabled),
+      .some((routine) => routine.name === 'ronin_worktrees' && routine.enabled),
     desk: form.desk,
   });
   const routines = agent

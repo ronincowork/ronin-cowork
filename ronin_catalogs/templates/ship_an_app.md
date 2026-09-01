@@ -8,6 +8,6 @@
 - **objective:** Build the thing end to end, from nothing to something people can use.
 - **mandate:** execute · staff agents · code
 - **behaviours:** sops:github, sops:ronin_methodology, sops:teams, sops:deploy
-- **routines_on:** ronin_control
+- **routines_on:** ronin_worktrees
 - **lead_brief:** Hold the objective, dispatch, unblock, keep the gaps closed.
 - **lead_mandate:** execute · staff agents · open

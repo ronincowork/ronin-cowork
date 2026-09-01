@@ -22,7 +22,7 @@ const routine = (name: string, enabled: boolean, tools: string[]): ResolvedRouti
 test('birth PATH exposes enabled tools by name without inheriting a Ronin PATH', async () => {
   const projected = await projectRoutineTools('pathless', [
     routine('ronin_base', true, ['tejun']),
-    routine('ronin_control', false, ['tejun-desk']),
+    routine('ronin_worktrees', false, ['tejun-desk']),
   ], '/usr/bin:/bin');
   const tejun = await exec('/bin/sh', ['-c', 'command -v tejun'], { env: { PATH: projected.path } });
   assert.equal(tejun.stdout.trim(), path.join(projected.dir, 'tejun'));

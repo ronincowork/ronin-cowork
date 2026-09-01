@@ -180,7 +180,7 @@ export async function populateHomeMachine(input: {
       ? true
       : name === 'ronin_base'
         ? bundle === 'base' || bundle === 'control'
-        : name === 'ronin_control' && bundle === 'control',
+        : name === 'ronin_worktrees' && bundle === 'control',
   ]));
   return writeCampaign(campaign.id, {
     title: str(input.title, TITLE_MAX) || campaign.title,
@@ -333,22 +333,7 @@ export async function readCampaign(id: string): Promise<CampaignConfig | null> {
     if (!Object.prototype.hasOwnProperty.call(defaults, 'routines')) {
       // Existing Campaigns predate Atarashi's Routine map. Preserve their de-facto
       // launch once; later catalog additions remain absent and therefore resolve off.
-      parsed.config.agent_defaults.routines = { ronin_base: true, ronin_control: true };
-      await writeRecord(parsed);
-    }
-    const routines = bucket(defaults.routines);
-    if (Object.prototype.hasOwnProperty.call(routines, 'machine')
-      && !Object.prototype.hasOwnProperty.call(routines, 'ronin_host')) {
-      // One-time, lossless rename: the host Routine was called `machine` until
-      // 2026-08-31, a word KOTOBA had already spent on `ronin_machine`. Carry the
-      // owner's own answer across rather than letting the old key fall to unknown —
-      // ignored input never blocks anything, but silently forgetting a stated choice
-      // is not the same as ignoring an unusable one.
-      parsed.config.agent_defaults.routines = {
-        ...routines as Record<string, boolean>,
-        ronin_host: routines.machine === true,
-      };
-      delete (parsed.config.agent_defaults.routines as Record<string, unknown>).machine;
+      parsed.config.agent_defaults.routines = { ronin_base: true, ronin_worktrees: true };
       await writeRecord(parsed);
     }
     if (!Object.prototype.hasOwnProperty.call(doc, 'desk')) {

@@ -91,6 +91,6 @@ test('the desk contract rides the assignment level, and only that', async () => 
 
 test('Ronin Control declares the desk contract as its reading', async () => {
   const repo = path.join(path.dirname(new URL(import.meta.url).pathname), '..');
-  const control = await readFile(path.join(repo, 'ronin_catalogs', 'routines', 'ronin_control.md'), 'utf8');
+  const control = await readFile(path.join(repo, 'ronin_catalogs', 'routines', 'ronin_worktrees.md'), 'utf8');
   assert.match(control, /\*\*reading:\*\* assignment\/DESK_CONTRACT\.md/);
 });

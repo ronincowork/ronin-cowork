@@ -8,6 +8,6 @@
 - **objective:** Reconcile and file every receipt and account.
 - **mandate:** execute · nobody · an artifact
 - **behaviours:** sops:data, sops:secrets
-- **routines_off:** ronin_control
+- **routines_off:** ronin_worktrees
 - **lead_brief:** Reconcile, file, and flag what does not add up.
 - **lead_mandate:** execute · nobody · an artifact

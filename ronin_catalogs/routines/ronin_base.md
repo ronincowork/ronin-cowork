@@ -8,5 +8,5 @@
 - **actions:** control-check, control-set, session-launch, read-letter, write-letter, list-doc, session-catchup, team-roster, session-upsert, team-upsert, team-page-read, team-page-draft, wipeboard-check, wipeboard-post, send-to-session, write-buildout-doc, step-through, compile-macro, read-work-record, propose-and-confirm, report-outcome, harakiri, status-probe
 - **tools:** tejun, tejun-step, tejun-send, tejun-harakiri, tejun-team, tejun-fork, tejun-session-set, tejun-team-set, tejun-wipeboard, tejun-teampage, tejun-peek, read_tegami, write_tegami
 - **mcp:** —
-- **requires:** ronin_host
+- **requires:** —
 - **order:** 10

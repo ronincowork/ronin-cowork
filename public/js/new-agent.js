@@ -41,8 +41,8 @@ export function createNewAgentView(kit, { connect = null } = {}) {
 
   const draft = {
     door: 'template', type: 'cowork_agent', template: '', templateName: '',
-    name: '', kind: 'open', kindTouched: false, provider: '', model: '', instructions: '',
-    teamMode: 'none', team: '', newTeam: '',
+    name: '', kind: 'coding', kindTouched: false, provider: '', model: '', instructions: '',
+    teamMode: 'new', team: '', newTeam: '',
     reach: 'open', recruit: 'open', output: 'open',
     books: [], root: '',
     expanded: {},
@@ -58,7 +58,17 @@ export function createNewAgentView(kit, { connect = null } = {}) {
   let loaded = false;
   const touched = { mandate: false, model: false, root: false, books: false };
 
-  const surface = createSurface({ label: t('new_agent.title', 'New Agent'), className: 'na-surface' });
+  /* THE LAUNCH BUTTON LIVES IN THE TILE HEADER (owner, 2026-09-01), quiet and compact
+   * like Save as template rather than a slab at the bottom of a long scroll — and it is
+   * DISABLED until a name is typed, which is the form teaching its own rule: the name is
+   * the only required field (SETTLING § 1, RULE TWO) and everything under it is optional. */
+  const start = createAction({
+    label: t('add_agent.start', 'Start'),
+    size: 'compact',
+    disabled: true,
+    action: () => void doStart(),
+  });
+  const surface = createSurface({ label: t('new_agent.title', 'New Agent'), className: 'na-surface', actions: [start] });
   const notice = createNotice();
 
   const isCowork = () => draft.type === 'cowork_agent';
@@ -123,6 +133,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     }
     draft.name = nameInput.value;
     paintFoot();
+    paintActions(); // Start wakes on the first character of a name
   });
   const leanNote = el('p', 'na-omitted');
   const pair = providerModelPair(
@@ -212,10 +223,13 @@ export function createNewAgentView(kit, { connect = null } = {}) {
       });
       return box;
     };
+    // NEW TEAM LEADS, AND IT IS THE DEFAULT (owner, 2026-08-31). The order is the order
+    // of intent: most launches are the start of something, joining one is next, and a
+    // rōnin is the ordinary remainder rather than the opening offer.
     ways3.append(
+      way('new', t('new_agent.team_new', 'A new team'), t('new_agent.team_new_sub', 'Created first, then this Agent is born into it.')),
       way('existing', t('new_agent.team_existing', 'An existing team'), t('new_agent.team_existing_sub', 'Join it. Its answers land at birth.')),
       way('none', t('new_agent.team_none', 'No team — a rōnin'), t('new_agent.team_none_sub', 'Ordinary, not a gap.')),
-      way('new', t('new_agent.team_new', 'A new team'), t('new_agent.team_new_sub', 'Created first, then this Agent is born into it.')),
     );
     teamHost.append(ways3);
     if (draft.teamMode === 'existing') {
@@ -238,8 +252,15 @@ export function createNewAgentView(kit, { connect = null } = {}) {
         if (clean !== input.value) { input.value = clean; input.setSelectionRange(caret, caret); }
         draft.newTeam = input.value;
         paintFoot();
+        paintActions(); // the button's promise follows the name as it is typed
       });
-      teamHost.append(createField({ label: t('new_team.name', 'Team name'), control: input }).el);
+      // GO NEVER FAILS, and this tile is now the one you land on: leaving the name blank
+      // is an answer — no team is made and the Agent is a rōnin — not an error to clear.
+      teamHost.append(createField({
+        label: t('new_team.name', 'Team name'),
+        control: input,
+        description: t('new_agent.team_new_blank', 'Blank makes no team — the Agent is a rōnin.'),
+      }).el);
     }
   }
   stepTeam.body.append(teamHost);
@@ -356,32 +377,33 @@ export function createNewAgentView(kit, { connect = null } = {}) {
 
   /* ---- Will be born ---- */
   const foot = el('div', 'ntf-foot');
-  function paintFoot() {
-    foot.replaceChildren();
+  function bornRows() {
     const typeRow = TYPES().find((type) => type.key === draft.type);
     const rows = [
       [t('new_agent.session', 'session'), typeRow?.label || draft.type],
       [t('add_agent.name', 'name'), draft.name],
-      [t('squad', 'Team'), draft.teamMode === 'none' ? '' : chosenTeam() + (draft.teamMode === 'new' ? `  ${t('new_agent.created_first', '(created first)')}` : '')],
+      [t('squad', 'Team'), draft.teamMode === 'none' || !chosenTeam() ? '' : chosenTeam() + (draft.teamMode === 'new' ? `  ${t('new_agent.created_first', '(created first)')}` : '')],
     ];
     if (isCowork()) {
       if (draft.door === 'template') rows.push([t('kind', 'Kind'), draft.kind]);
       rows.push([t('mandate', 'Mandate'), `${draft.reach} · ${draft.recruit} · ${draft.output}`]);
     }
     rows.push([t('routines', 'Routines'), draft.type === 'terminal'
-      ? (() => el('em', null, t('new_agent.routines_terminal', 'agent: none — a pane')))()
+      ? el('em', null, t('new_agent.routines_terminal', 'agent: none — a pane'))
       : draft.type === 'bare_metal_agent'
-        ? (() => el('em', null, t('new_agent.routines_bare', 'no floor, no routines')))()
+        ? el('em', null, t('new_agent.routines_bare', 'no floor, no routines'))
         : tagRow([{ text: t('new_team.floor_tag', 'floor'), on: true }, ...(seed?.routines || []).filter((row) => row.on).map((row) => ({ text: row.name, on: true }))])]);
     if (isCowork() && draft.books.length) rows.push([t('behaviours', 'Behaviours'), tagRow(draft.books.map((text) => ({ text, on: true })))]);
     rows.push([t('add_agent.place', 'place'), draft.root]);
     if (hasAgent()) rows.push([t('forms.model', 'model'), draft.provider ? `${draft.provider}${draft.model ? ` / ${draft.model}` : ''}` : t('forms.default', 'default')]);
-    foot.append(readingRows(rows));
+    return rows;
+  }
+  function paintFoot() {
+    foot.replaceChildren(readingRows(bornRows()));
     foot.append(el('p', 'na-note', t('new_agent.blank_note', 'A blank field is an answer, not a gap.')));
   }
 
-  /* ---- start, and the conditional save ---- */
-  const start = createAction({ label: t('add_agent.start', 'Start'), kind: 'primary', action: () => void doStart() });
+  /* ---- the conditional save ---- */
   const saveName = el('input', 'ntf-tmplname');
   saveName.type = 'text';
   saveName.spellcheck = false;
@@ -392,10 +414,13 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     save.setDisabled(!saveName.value.trim());
   });
   const save = createAction({ label: t('save_template', 'Save as template'), disabled: true, action: () => void doSave() });
-  const actions = createActionBar({ label: t('add_agent.actions', 'Launch actions'), actions: [start] });
+  const actions = createActionBar({ label: t('add_agent.actions', 'Launch actions') });
   actions.el.append(saveName, save.el);
   function paintActions() {
-    start.el.textContent = draft.teamMode === 'new' && isCowork()
+    // The button says what the press will DO: with the name blank there is no team to
+    // create, so it must not promise one.
+    start.setDisabled(!draft.name.trim());
+    start.el.textContent = draft.teamMode === 'new' && isCowork() && chosenTeam()
       ? t('new_agent.create_and_start', 'Create the team and start')
       : draft.type === 'terminal' ? t('new_agent.open_terminal', 'Open the terminal') : t('add_agent.start', 'Start');
     const offer = isCowork() && (!templateRow() || templateDirty());
@@ -412,7 +437,9 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     notice.set('info', t('add_agent.starting', 'Starting…'));
     // A NEW TEAM IS TWO IDEMPOTENT DOORS (§ 7.5): write the record, then launch into it.
     let team = chosenTeam();
-    if (draft.teamMode === 'new' && isCowork()) {
+    // An unnamed new team is no team, not a refusal — see the field's own sentence.
+    if (draft.teamMode === 'new' && !team) team = '';
+    if (draft.teamMode === 'new' && isCowork() && team) {
       if (!isValidTeamName(team)) {
         busy = false;
         start.setDisabled(false);

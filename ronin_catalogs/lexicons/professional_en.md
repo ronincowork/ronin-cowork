@@ -362,19 +362,15 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 
 ## new_team / team — new-team.js (the New Team surface; team.* rows are shared by the Team page family)
 - **new_team.name:** Team name
-- **new_team.name_desc:** Lowercase letters, digits, _ and - . This is also the tag its sessions carry.
 - **new_team.role_placeholder:** development — or leave blank
 - **new_team.role_desc:** Optional. Blank is an unclassified Team, which is a valid state.
 - **team.objective:** Objective
-- **new_team.objective_desc:** Optional. Rides the brief of every session born onto this Team.
 - **team.repos:** Repositories
 - **team.branch:** Branch
 - **team.lines:** Team lines
 - **team.promotion:** Promotion
 - **team.parked_desks:** Parked desks
-- **new_team.optional:** Optional.
 - **team.wipeboard:** Wipeboard
-- **new_team.wipeboard_desc:** Optional. Blank uses the Team’s own name.
 - **team.project_root:** Project root
 - **team.command:** Command
 - **team.control:** Control
@@ -395,20 +391,13 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.name_placeholder:** lowercase, digits, - _
 - **new_team.objective_placeholder:** what this team is for
 - **new_team.where:** Where
-- **new_team.root_note:** A default that seeds a launch — never a constraint. A rōnin that joins later keeps its own.
-- **new_team.agent_defaults:** agent defaults — seeded into every Agent raised here; none of it is a constraint
 - **new_team.floor:** Cowork floor
 - **new_team.floor_why:** The launch, campaign and team resolution, the shelf map, the birth receipt.
 - **new_team.floor_tag:** floor
-- **new_team.required:** Required behaviours
-- **new_team.required_why:** Every Agent that joins gets the documents below, at birth or on joining.
-- **new_team.required_on:** enforced
-- **new_team.required_off:** offered
 - **new_team.kit_none:** nothing yet — a template lays it, or open the kit
 - **new_team.kit_door:** Open the Team Kit  ▸
 - **new_team.kit_door_why:** A workbench of its own: browse every routine and behaviour, read them, and make them yours. Not yet built.
-- **new_team.kit_meta:** {routines} routines · {books} books{required}
-- **new_team.kit_meta_required:** (required)
+- **new_team.kit_meta:** {routines} routines · {books} books
 - **new_team.lead:** Team lead
 - **new_team.lead_include:** Include a team lead
 - **new_team.lead_include_sub:** Raised with the team and briefed.
@@ -423,7 +412,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.members:** members
 - **new_team.members_note:** derived from live tags — never stored here
 - **new_team.inherits:** an agent born here inherits
-- **new_team.wipeboard_own:** {team}  (its own)
 - **new_team.raise:** Raise the team
 - **new_team.raise_lead:** Raise the team and its lead
 - **new_team.raising:** Raising the team…
@@ -472,6 +460,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_agent.team_none_sub:** Ordinary, not a gap.
 - **new_agent.team_new:** A new team
 - **new_agent.team_new_sub:** Created first, then this Agent is born into it.
+- **new_agent.team_new_blank:** Blank makes no team — the Agent is a rōnin.
 - **new_agent.a_ronin:** a rōnin
 - **new_agent.loadout_meta:** {routines} routines · {books} books
 - **new_agent.shelf_house:** behaviours · the house
@@ -1573,7 +1562,7 @@ The catalog entry goes. {dir} is not touched.
 - **glossary.routine:** routine
 - **glossary.ronin_base:** Ronin Base
 - **glossary.routine_floor:** Cowork floor
-- **glossary.ronin_control:** managed file coordination
+- **glossary.ronin_worktrees:** worktrees
 - **glossary.ronin_services:** Ronin Services
 - **glossary.specialized_routine:** specialized routine
 - **glossary.terminal:** terminal
