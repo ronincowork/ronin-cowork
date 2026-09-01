@@ -48,7 +48,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     root: '', branch: '',
     provider: '', model: '', reach: 'open', recruit: 'open', output: ['open'],
     dial: 'write',
-    routines: {}, books: [], launchMode: 'live_dangerously',
+    routines: {}, books: [], launchMode: 'live_dangerously', gbrainMode: 'disconnected',
     // The Agents this Team is raised with; the lead is a mark on one of them, not a seat.
     agents: [],
     expanded: {},
@@ -287,6 +287,22 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
       wayTiles(LAUNCH_MODES(), draft.launchMode, (key) => { draft.launchMode = key; paintLaunchMode(); paintFoot(); }),
     );
   };
+  /* The Anthropic sentence is binding, not decoration (lead, 2026-09-01): the field is
+     named for the INTENT — gbrain reach — while the CLIs disagree about blast radius, so
+     the copy says where that differs at the point the choice is made. */
+  const GBRAIN_MODES = () => [
+    { key: 'connected', label: t('gbrain_mode.connected', 'Connected'),
+      sub: t('gbrain_mode.connected_sub', 'Ronin adds nothing. The provider\u2019s loaded MCP configuration stands.') },
+    { key: 'disconnected', label: t('gbrain_mode.disconnected', 'Disconnected'),
+      sub: t('gbrain_mode.disconnected_sub', 'Ronin appends the provider\u2019s gbrain-disconnect command. On Anthropic, this disables ALL MCP for that launch, not only gbrain.') },
+  ];
+  const gbrainHost = el('div');
+  const paintGbrain = () => {
+    gbrainHost.replaceChildren(
+      el('p', 'fs-head', t('gbrain_mode.head', 'gbrain connection')),
+      wayTiles(GBRAIN_MODES(), draft.gbrainMode, (key) => { draft.gbrainMode = key; paintGbrain(); paintFoot(); }),
+    );
+  };
   const routinesHead = el('p', 'fs-head', t('routines', 'Routines'));
   const routinesHost = el('div');
   function paintRoutines() {
@@ -336,7 +352,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     }));
   }
   // No bare Behaviours heading: the two shelves head themselves.
-  stepKit.body.append(modeHost, routinesHead, routinesHost, booksHost);
+  stepKit.body.append(modeHost, gbrainHost, routinesHead, routinesHost, booksHost);
 
   /* ---- step 6 · Team lead ---- */
   /* ---- step 4 · the team's own agents (js/team-agents.js) ---- */
@@ -401,6 +417,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
       [t('behaviours', 'Behaviours'), draft.books.length ? tagRow(draft.books.map((text) => ({ text, on: true }))) : ''],
       [t('forms.model', 'model'), draft.provider ? `${draft.provider}${draft.model ? ` / ${draft.model}` : ''}` : t('forms.default', 'default')],
       [t('launch_mode.head', 'launch mode'), LAUNCH_MODES().find((row) => row.key === draft.launchMode)?.label || draft.launchMode],
+      [t('gbrain_mode.head', 'gbrain connection'), GBRAIN_MODES().find((row) => row.key === draft.gbrainMode)?.label || draft.gbrainMode],
       [t('mandate', 'Mandate'), `${draft.reach} · ${draft.recruit} · ${draft.output.join(', ')}`],
       [t('add_agent.still_asked', 'still asked'), tagRow([
         t('session_type', 'Session type'), t('add_agent.name', 'name'), t('add_agent.instruction', 'instruction'),
@@ -454,7 +471,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     agent_defaults: {
       provider: draft.provider, model: draft.model,
       reach: draft.reach, recruit: draft.recruit, output: draft.output,
-      dial: draft.dial, launch_mode: draft.launchMode,
+      dial: draft.dial, launch_mode: draft.launchMode, gbrain_mode: draft.gbrainMode,
     },
   });
 
@@ -563,6 +580,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     // own because the seed's key is snake and the draft's is camel — folding it into the
     // loop above would have written `draft.launch_mode` and seeded nothing, forever.
     if (value('launch_mode')) draft.launchMode = value('launch_mode');
+    if (value('gbrain_mode')) draft.gbrainMode = value('gbrain_mode');
     draft.books = Array.isArray(value('behaviours')) ? [...value('behaviours')] : [];
     seedRoutines = Object.fromEntries((seed.routines || []).map((row) => [row.name, row.on]));
     draft.routines = { ...seedRoutines };
@@ -582,6 +600,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     agents.paint();
     paintRoutines();
     paintLaunchMode();
+    paintGbrain();
     paintBooks();
     paintFolds();
     paintActions();

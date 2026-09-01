@@ -71,7 +71,7 @@ export function createAgentRows({ n, key, rows, changed, onToggle }) {
       const lead = el('button', 'ntf-agent-lead', '人');
       lead.type = 'button';
       lead.setAttribute('aria-pressed', String(row.lead));
-      lead.title = t('new_team.agent_lead_title', 'Mark this Agent as the team lead');
+      lead.title = t('new_team.mark_team_lead', 'Mark as team lead');
       lead.addEventListener('click', () => { row.lead = !row.lead; paint(); changed(); });
 
       const name = el('input', 'ntf-agent-name');
