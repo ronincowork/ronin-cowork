@@ -27,6 +27,11 @@ contracts remain available, but they are not prerequisites for installing or usi
 ## If you are changing Ronin itself
 
 Start with the root [`AGENTS.md`](../AGENTS.md), then use the relevant architecture or
-implementation contract. [Test protocols](test-protocols.md) define when scoped checks and
+implementation contract.
+
+| Question | Route |
+|---|---|
+| KOTOBA, the glossary, KOKUGO, the lexicons, the table — which one do I want? | [Words](words.md) |
+ [Test protocols](test-protocols.md) define when scoped checks and
 full repository verification belong. [The API surface](api-surface.html) maps routes,
 websockets, sockets, and commands.
