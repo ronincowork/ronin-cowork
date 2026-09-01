@@ -39,7 +39,7 @@ import path from 'node:path';
 import { storeDir } from './stores.js';
 import { readSection } from './user-config.js';
 import { agentDefaults, type AgentDefaults } from './agent-defaults.js';
-import { carryRoutineNames, completeRoutineChoices } from './routines.js';
+import { completeRoutineChoices } from './routines.js';
 
 /** The typed bucket — a Campaign's own defaults, never a dump of all SETTEI. The three
  *  sub-buckets are the plan's, and they are the whole vocabulary: a fourth is a plan
@@ -334,14 +334,6 @@ export async function readCampaign(id: string): Promise<CampaignConfig | null> {
       // Existing Campaigns predate Atarashi's Routine map. Preserve their de-facto
       // launch once; later catalog additions remain absent and therefore resolve off.
       parsed.config.agent_defaults.routines = { ronin_base: true, ronin_worktrees: true };
-      await writeRecord(parsed);
-    }
-    const carried = carryRoutineNames(bucket(defaults.routines) as Record<string, boolean>);
-    if (carried.changed) {
-      // One-time, lossless: a Routine that was renamed keeps the owner's stated answer
-      // under its new key. See ROUTINE_RENAMES for why this is not the same as ignoring
-      // an unusable input.
-      parsed.config.agent_defaults.routines = carried.map;
       await writeRecord(parsed);
     }
     if (!Object.prototype.hasOwnProperty.call(doc, 'desk')) {
