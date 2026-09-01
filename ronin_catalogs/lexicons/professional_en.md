@@ -229,9 +229,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.default_recruit:** Recruit
 - **campaign_view.default_output:** Output
 - **campaign_view.default_dial:** Control
-- **campaign_view.default_permissions:** Permissions
 - **campaign_view.default_behaviours:** Behaviours
-- **campaign_view.permissions_help:** Provider permission posture; default uses the provider’s normal setting.
 - **campaign_view.behaviours_help:** One shelf:name book per line.
 - **campaign_view.defaults_summary:** {model} · {reach} · {dial}
 - **campaign_view.option_open:** Open
@@ -1522,7 +1520,6 @@ The catalog entry goes. {dir} is not touched.
 - **team_config.recruit:** Recruit
 - **team_config.output:** Output
 - **team_config.dial:** Control
-- **team_config.permissions:** Permissions
 - **team_config.next_form:** These defaults land in the next Agent form that opens. Nothing live changes.
 - **team_config.saving:** Saving…
 - **team_config.saved:** Saved
