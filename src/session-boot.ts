@@ -37,24 +37,14 @@
  *                           the level is signed by its service (owner's ruling,
  *                           2026-08-20) and the free build never names a vendor
  *   root/<project_root>/    only sessions working in that directory
- *   role/<session_role>/    only sessions doing that kind of work
  *   assignment/             only sessions whose launch resolved repo desks — the desk
  *                           contract (commit → hand-in → team promotion → Git push). A
  *                           launch given no desk reads nothing here: the level is a fact
  *                           about the launch, never a guess a static shelf could make
  *                           (docs/control-surface.md §2, 2026-08-28)
  *
- * They are ADDITIVE, not a hierarchy — nothing overrides anything. `where`, `what now`
- * and `what now` are independent: the same bug-chasing habits apply in every repo.
- *
- * A BLANK AXIS OMITS ONLY ITS OWN LEVEL. A launch with no session_role reads no `role/`,
- * Root never omits its level, because root is required. Session_role reading is not
- * birth-only: a committed `session_role`
- * change injects the new `role/` list into the running session (`src/role-watch.ts`).
- *
- * ONE ASYMMETRY: stock may ship `role/` folders but never `root/` ones.
- * The session_roles are shipped, so we know their names; a project_root is the owner's
- * alone and no install can know it in advance.
+ * They are ADDITIVE, not a hierarchy — nothing overrides anything. Root, connection,
+ * Routine and assignment each answer a separate launch fact.
  *
  * SHADOWING is by filename within a level: your `all/SHELVES.md` replaces ours whole.
  * Across levels there is no shadowing, because they are answering different questions.
@@ -195,7 +185,6 @@ export async function ensureShelf(roots: string[] = []): Promise<void> {
   const dirs = [
     path.join(base, 'all'),
     path.join(base, 'root'),
-    path.join(base, 'role'),
     path.join(base, 'routine'),
     path.join(base, 'assignment'),
     ...roots.map((r) => path.join(base, 'root', r)),
@@ -261,8 +250,8 @@ async function connectedLevels(base: string): Promise<string[]> {
 }
 
 /**
- * What this session should read, in reading order: `all`, then its root's, then its
- * session_role's — stock before the owner's at each level.
+ * What this session should read, in reading order: `all`, connected services, its root,
+ * effective Routines and its assignment contract — stock before the owner's at each level.
  *
  * Deduplicated BY FILENAME, last writer winning, which is what makes the shadow work: your
  * `all/SHELVES.md` displaces ours because yours is read second. Across levels the same
@@ -271,7 +260,6 @@ async function connectedLevels(base: string): Promise<string[]> {
  */
 export async function bootFiles(
   projectRoot: string,
-  sessionRole: string,
   mcpOn = true,
   assigned = false,
   routines: string[] = [],
@@ -285,8 +273,6 @@ export async function bootFiles(
   if (mcpOn) dirs.push(...(await connectedLevels(STOCK)), ...(await connectedLevels(user)));
   // Stock cannot have a root/ — it does not know the owner's directories.
   if (projectRoot) dirs.push(path.join(user, 'root', projectRoot));
-  // A blank axis contributes NOTHING rather than contributing an empty level.
-  if (sessionRole) dirs.push(path.join(STOCK, 'role', sessionRole), path.join(user, 'role', sessionRole));
   // Routine reading is additive and comes only from the effective birth answer.
   for (const routine of routines) {
     dirs.push(path.join(STOCK, 'routine', routine), path.join(user, 'routine', routine));
@@ -303,28 +289,5 @@ export async function bootFiles(
   // with the active desk profile's words — KOKUGO, 2026-08-27.
   const glossary = byName.get('KOTOBA_GLOSSARY.md');
   if (glossary) byName.set('KOTOBA_GLOSSARY.md', await glossaryReading(glossary));
-  return [...byName.values()];
-}
-
-/**
- * JUST THE SESSION_ROLE LEVEL — what a session must read because its `session_role` just
- * changed.
- *
- * Deliberately NOT `bootFiles`. A role change is not a rebirth: the `all/`, root and
- * root and assignment levels were read once at birth and have not changed, and
- * re-sending them would teach a running session nothing while burying the one thing that IS new.
- *
- * Resolved at the moment of the change rather than remembered from the launch, for the
- * same reason the shelf holds files rather than names of them: the owner may have put a
- * book on `role/CutCode/` since this session was born, and the session that switches to
- * CutCode tonight should get it.
- */
-export async function roleFiles(sessionRole: string): Promise<string[]> {
-  if (!sessionRole) return []; // a blank session_role has no reading, not a failure
-  const user = userShelf();
-  const byName = new Map<string, string>();
-  for (const dir of [path.join(STOCK, 'role', sessionRole), path.join(user, 'role', sessionRole)]) {
-    for (const f of await filesIn(dir)) byName.set(path.basename(f), f);
-  }
   return [...byName.values()];
 }

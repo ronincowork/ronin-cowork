@@ -73,23 +73,19 @@ test('a birth letter records the actual launch checkout as an editable repos lis
     worktree: repo,
   });
 
-  const file = await seedTegami('checkout_seed', 'CutCode', checkout);
+  const file = await seedTegami('checkout_seed', checkout);
   assert.ok(file);
   const body = await bodyOf(file!);
   assert.deepEqual(body.repos, [checkout]);
-  // The axis is seeded, and the derived teams block starts present (empty = a ronin).
-  assert.equal(body.session_role, 'CutCode');
+  assert.ok(!('session_role' in body), 'the retired role axis is not seeded');
   assert.deepEqual(body.teams, []);
 });
 
-test('a seeded letter carries a blank axis as an empty string, never as a missing key', async () => {
-  // A launch with no session_role is ordinary — the tile's own picker. The key is
-  // present and empty because "asked and answered none" is a fact, and a reader must
-  // not have to tell it apart from a letter written by a schema that had no such key.
-  const file = await seedTegami('blank_role_seed', '');
+test('a seeded letter carries mandate and derived teams without the retired role axis', async () => {
+  const file = await seedTegami('role_free_seed');
   assert.ok(file);
   const body = await bodyOf(file!);
-  assert.equal(body.session_role, '');
+  assert.ok(!('session_role' in body));
   assert.deepEqual(body.mandate, { reach: 'plan', recruit: 'propose agents', output: ['open'] });
   assert.deepEqual(body.teams, [], 'a ronin: on no team, and the block says so');
 });
@@ -99,7 +95,7 @@ test('a managed launch seeds every assigned worktree and line', async () => {
     { repo: 'cowork', branch: 'team/campaign/docs', worktree: '/worktrees/cowork/docs', line: 'team/campaign/dev' },
     { repo: 'services', branch: 'team/campaign/docs', worktree: '/worktrees/services/docs', line: 'team/campaign/dev' },
   ];
-  const file = await seedTegami('multi_desk_seed', 'WriteDocs', repos);
+  const file = await seedTegami('multi_desk_seed', repos);
   assert.ok(file);
   assert.deepEqual((await bodyOf(file!)).repos, repos);
 });

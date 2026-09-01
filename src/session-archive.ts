@@ -25,7 +25,6 @@ export interface ArchivedSession {
   note: string;
   control: Control;
   project_root: string;
-  session_role: string;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
