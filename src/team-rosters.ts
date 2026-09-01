@@ -60,6 +60,9 @@ export interface TeamRoster {
   /** Launch DEFAULTS, never constraints: they seed the form when a session is raised
    *  into this team. */
   project_root: string;
+  /** The repositories a coordinated promotion carries, comma-separated in the file.
+   *  Empty means the project_root's repository alone (docs/team-promotion.md). */
+  repos: string[];
   branch: string;
   /** The board underneath this team. Defaults to the team's own token. */
   wipeboard: string;
@@ -146,6 +149,7 @@ function parse(name: string, raw: string, campaign_id = ''): TeamRoster {
       ? kind as TeamKind : 'open',
     objective: get('objective'),
     project_root: get('project_root'),
+    repos: strings(get('repos').split(','), 160),
     branch: get('branch'),
     wipeboard: get('wipeboard') || name,
     state: /^archived$/i.test(get('state')) ? 'archived' : 'active',
@@ -248,6 +252,7 @@ export interface RosterEdit {
   kind?: TeamKind;
   objective?: string;
   project_root?: string;
+  repos?: string[];
   branch?: string;
   wipeboard?: string;
   state?: 'active' | 'archived';
@@ -264,7 +269,7 @@ export interface RosterEdit {
  * once at create and never reachable through an edit.
  */
 const KEYS: (keyof RosterEdit)[] = [
-  'title', 'kind', 'objective', 'project_root', 'branch', 'wipeboard', 'state',
+  'title', 'kind', 'objective', 'project_root', 'repos', 'branch', 'wipeboard', 'state',
   'references', 'routines', 'behaviours', 'agent_defaults',
 ];
 
@@ -281,6 +286,7 @@ function render(name: string, r: TeamRoster): string {
     line('kind', r.kind),
     line('objective', r.objective),
     line('project_root', r.project_root),
+    line('repos', r.repos.join(', ')),
     line('branch', r.branch),
     line('wipeboard', r.wipeboard || name),
     line('state', r.state),
@@ -344,6 +350,7 @@ export async function createTeamRoster(name: string, edit: RosterEdit, campaign_
     kind: edit.kind ?? 'open',
     objective: edit.objective ?? '',
     project_root: edit.project_root ?? '',
+    repos: edit.repos ?? [],
     branch: edit.branch ?? '',
     // An explicit token is the owner's and is taken as given; only the DEFAULT is allocated,
     // because the default is the only thing that could collide with another Campaign's
@@ -387,7 +394,9 @@ export async function writeTeamRoster(name: string, edit: RosterEdit, campaign_i
   for (const k of KEYS) {
     if (normalizedEdit[k] === undefined) continue;
     const nested = ['references', 'routines', 'behaviours', 'agent_defaults'].includes(k);
-    const v = nested ? JSON.stringify(normalizedEdit[k]) : String(normalizedEdit[k] ?? '');
+    const v = nested ? JSON.stringify(normalizedEdit[k])
+      : k === 'repos' ? (normalizedEdit.repos ?? []).join(', ')
+      : String(normalizedEdit[k] ?? '');
     const lineText = `- **${k}:** ${v || BLANK}`;
     const at = lines.findIndex((l) => new RegExp(`^-\\s*\\*\\*${k}:\\*\\*`).test(l.trim()));
     if (at === -1) {

@@ -130,6 +130,12 @@ place_services() {
   done
 }
 
+# sha256 without assuming the tool: Linux has sha256sum, a stock Mac only shasum.
+sha256_of() {
+  if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | awk '{print $1}'
+  else shasum -a 256 "$1" | awk '{print $1}'; fi
+}
+
 # --- the release feeds (gh when it is there, curl for a public repo) ---
 have_gh() { command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; }
 
@@ -321,7 +327,9 @@ fi
 
 # --- verify ---
 if [ -f "$WORK/SHA256SUMS" ]; then
-  (cd "$WORK" && grep "$TARBALL" SHA256SUMS | sha256sum -c -) >/dev/null ||
+  WANT="$(awk -v n="$TARBALL" '$2==n{print $1}' "$WORK/SHA256SUMS")"
+  [ -n "$WANT" ] || fail "SHA256SUMS carries no line for $TARBALL — refusing to install"
+  [ "$(sha256_of "$WORK/$TARBALL")" = "$WANT" ] ||
     fail "CHECKSUM MISMATCH on $TARBALL — refusing to install; the download is not the release"
   say "checksum verified"
 fi
@@ -381,6 +389,10 @@ if [ -x "$TARGET/vendor/node/bin/node" ]; then
   # Nothing to install; a bundle that somehow lacked its modules should fail loud
   # at the candidate gate, never trigger a quiet network trip here.
   say "bundled release — node_modules travel in the tarball, nothing to install"
+  # The bundle's own node runs everything from here on — the candidate's npm start
+  # and the render check. A box with no node of its own installs exactly like one
+  # with; a box with nvm/system node no longer silently substitutes it.
+  export PATH="$TARGET/vendor/node/bin:$PATH"
 else
   # npm install, not --production: tsx sits in devDependencies and IS the runtime — a
   # repo fact this script records rather than routes around.
