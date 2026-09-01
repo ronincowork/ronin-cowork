@@ -1145,16 +1145,23 @@ The catalog entry goes. {dir} is not touched.
 - **cowork.tab_messages:** Messages
 - **messages.empty:** No messages are waiting.
 - **messages.note:** Sometimes Agent-to-Agent messages get stuck and need your help. Try Again is gentle; Force gives it one determined shove. 😉
-- **messages.to:** To {target}
-- **messages.meta:** {source} · {attempts} attempts · waiting {age}
-- **messages.waiting:** waiting
+- **messages.from:** From
+- **messages.to_label:** To
+- **messages.attempts:** Attempts
+- **messages.waiting:** Waiting
+- **messages.failed:** Failed
+- **messages.pending:** Pending
+- **messages.state_age:** {state} · {age}
 - **messages.age_now:** just now
-- **messages.age_seconds:** {count} seconds
-- **messages.age_minute:** 1 minute
-- **messages.age_minutes:** {count} minutes
-- **messages.age_hour:** 1 hour
-- **messages.age_hours:** {count} hours
-- **messages.age_days:** {count} days
+- **messages.age_short_seconds:** {seconds}s
+- **messages.age_short_minutes:** {minutes}m {seconds}s
+- **messages.age_short_hours:** {hours}h {minutes}m
+- **messages.age_short_days:** {days}d {hours}h
+- **messages.type_tell:** Agent tell
+- **messages.type_wipeboard:** Wipeboard notification
+- **messages.type_owner:** Owner message
+- **messages.type_house:** House message
+- **messages.reason_prompt_changed:** The prompt changed before delivery could be confirmed. Automatic retries stopped to avoid sending a duplicate.
 - **messages.retry:** Try Again
 - **messages.force:** Force
 - **messages.dismiss:** Dismiss
