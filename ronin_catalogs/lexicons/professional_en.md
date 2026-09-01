@@ -333,6 +333,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **help.lead_body:** A lead is an offer, not a seat: a brief and a mandate that become a launch. Membership is never stored — a Team’s members are the live sessions carrying its tag.
 - **new_team.common:** Common instructions
 - **new_team.who_where:** Who and where
+- **new_team.defaults_band:** Everything below this is the default for Agents launched within this team.
 - **new_team.where:** Where
 - **new_team.readable:** Title
 - **launch.mode_team:** Team

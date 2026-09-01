@@ -218,7 +218,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
      into one section because that's really what we're doing. We're saying open codecs in
      the lab root… It will access whatever the fuck it wants." Where it OPENS, not where
      it is confined. */
-  const stepWhere = createStep({ n: 4, key: 'where', title: t('new_team.who_where', 'Who and where'), onToggle: () => toggle('where') });
+  const stepWhere = createStep({ n: 5, key: 'where', title: t('new_team.who_where', 'Who and where'), onToggle: () => toggle('where') });
   const pair = providerModelPair(
     () => ({ provider: draft.provider, model: draft.model }),
     (provider, model) => { draft.provider = provider; draft.model = model; paintFoot(); },
@@ -248,7 +248,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   }
 
   /* ---- step 5 · Team kit ---- */
-  const stepKit = createStep({ n: 5, key: 'kit', title: t('team_kit', 'Shared toolkit'), onToggle: () => toggle('kit') });
+  const stepKit = createStep({ n: 6, key: 'kit', title: t('team_kit', 'Shared toolkit'), onToggle: () => toggle('kit') });
   // NO MANDATE ON A TEAM (owner, 2026-09-01): "this is kind of a dumb thing for every
   // agent to inherit from its team. It's going to be very agent-specific anyway, and I
   // think open is the only natural thing." Reach, recruit and output stay `open` in the
@@ -329,7 +329,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   stepKit.body.append(modeHost, routinesHead, routinesHost, booksHost);
 
   /* ---- step 6 · Team lead ---- */
-  const stepLead = createStep({ n: 6, key: 'lead', title: t('new_team.lead', 'Team lead'), onToggle: () => toggle('lead') });
+  const stepLead = createStep({ n: 4, key: 'lead', title: t('new_team.lead', 'Team lead'), onToggle: () => toggle('lead') });
   const leadHost = el('div');
   function paintLead() {
     leadHost.replaceChildren();
@@ -380,7 +380,11 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   // template first offered all fifteen tiles and then quietly dropped the pick when a
   // later kind excluded it. New Agent already asked in this order; the two forms agree.
   // One list, read by the form's numbering AND by the Launch selector's outline.
-  const plan = () => ['top', 'template', 'objective', 'where', 'kit', 'lead'];
+  /* THE TEAM'S OWN FACTS, THEN THE AGENT DEFAULTS (owner, 2026-09-01: "move the team lead
+     up to number 4… everything underneath is for defaults for agent launches in that
+     team"). Steps 1-4 are what this Team IS; 5-6 are what every Agent raised here starts
+     with, and the band between them says so. */
+  const plan = () => ['top', 'template', 'objective', 'lead', 'where', 'kit'];
   const meta = {
     objective: () => draft.objective.slice(0, 40),
     where: () => `${draft.root || t('new_team.root_default', '— the box’s default —')} @ ${draft.branch || '—'}`,
@@ -591,6 +595,9 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
 
   function paint() {
     plan().forEach((key, index) => steps[key].setNumber(index + 1));
+    bandChev.textContent = defaultsOpen ? '▾' : '▸';
+    defaultsBand.setAttribute('aria-expanded', String(defaultsOpen));
+    for (const key of ['where', 'kit']) steps[key].el.hidden = !defaultsOpen;
     paintTray();
     paintKinds();
     paintName();
@@ -606,7 +613,16 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   }
 
   const form = el('div', 'ntf-form');
-  form.append(stepTop.el, stepTemplate.el, stepObjective.el, stepWhere.el, stepKit.el, stepLead.el);
+  // ONE BAND OVER EVERYTHING THAT IS A DEFAULT, and it folds them all away together: a
+  // Team can be raised without ever opening it, which is the point of saying so here
+  // rather than repeating "this is a default, not a constraint" on each field below.
+  const defaultsBand = el('button', 'ntf-band');
+  defaultsBand.type = 'button';
+  let defaultsOpen = true;
+  const bandChev = el('span', 'fs-chev', '▾');
+  defaultsBand.append(bandChev, el('span', null, t('new_team.defaults_band', 'Everything below this is the default for Agents launched within this team.')));
+  defaultsBand.addEventListener('click', () => { defaultsOpen = !defaultsOpen; paint(); });
+  form.append(stepTop.el, stepTemplate.el, stepObjective.el, stepLead.el, defaultsBand, stepWhere.el, stepKit.el);
   surface.content.append(form, notice.el, foot, saveRow.el);
 
   return {
