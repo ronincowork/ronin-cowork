@@ -23,9 +23,10 @@ const ageOf = (createdAt) => {
 };
 
 export function buildMessageQueue(host, onCount = () => {}) {
+  const note = el('p', 'mq-note', t('messages.note', 'Sometimes Agent-to-Agent messages get stuck and need your help. Try Again is gentle; Force gives it one determined shove. 😉'));
   const board = el('div', 'mq-board');
   const empty = el('p', 'mq-empty', t('messages.empty', 'No messages are waiting.'));
-  host.append(board);
+  host.append(note, board);
 
   const act = async (message, action, pressed, pending, method = 'POST') => {
     const card = pressed.closest('.mq-card');

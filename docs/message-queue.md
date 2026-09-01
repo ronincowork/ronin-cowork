@@ -13,6 +13,8 @@ the full label, and shows their count; the attention state clears with the empty
 Each retained card shows how long it has waited, as a live relative age in seconds,
 minutes, hours, or days. A busy eligibility check that never typed is shown as **waiting**
 with zero attempts rather than implying that delivery itself repeatedly failed.
+The channel opens with a short owner-facing note explaining that Agent-to-Agent messages
+occasionally need a nudge and that Try Again is gentler than Force.
 
 Every sender uses the same delivery engine. Automatic checks and **Try Again** use safe
 delivery: the target must exist, its dial must permit writing, and its Agent must show a
