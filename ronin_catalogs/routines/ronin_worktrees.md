@@ -1,7 +1,6 @@
 # Ronin Worktrees
 - **label:** Ronin Worktrees
 - **blurb:** Separate worktrees, hand-in, lead integration, receipts and Git safeguards help parallel Agents avoid file collisions.
-- **class:** control
 - **reading:** assignment/DESK_CONTRACT.md, routine/ronin_worktrees/REPOSITORY_BOOTSTRAP.md
 - **sops:** github
 - **macros:** cutcode, land

@@ -56,9 +56,9 @@ through `t('room.key', 'literal')`, one module per commit, no behaviour change: 
 lexicon up a surface paints byte-identical, and a lexicon can reword any of it. How a new
 view does the same — keys, placeholders, what is never translated, the `index.html` pass,
 the gate — is `docs/kokugo.md`, the instruction every view-builder reads. Every key with
-every lexicon's word beside it is `docs/kokugo-table.md` — a report, generated on demand by
-`npm run kokugo:table` and never committed. The lexicons are the source; the page is a way
-of reading them.
+every lexicon's word beside it is what `npm run kokugo:table` prints — a report, generated
+on demand and never committed, which is why no path here names it. The lexicons are the
+source; the report is a way of reading them.
 
 ## What is never translated
 

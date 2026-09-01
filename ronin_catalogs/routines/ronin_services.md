@@ -1,7 +1,6 @@
 # Ronin Services
 - **label:** Ronin Services
 - **blurb:** RIREKI, Koshi, Voice and Hotwords delivered as one optional Routine.
-- **class:** specialized
 - **reading:** routine/ronin_services/SERVICES_ABILITIES.md
 - **sops:** —
 - **macros:** —

@@ -14,7 +14,7 @@ const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'ronin-routine-tools-'));
 process.env.RONIN_SESSION_COMMANDS_DIR = temp;
 
 const routine = (name: string, enabled: boolean, tools: string[]): ResolvedRoutine => ({
-  name, label: name, blurb: '', origin: 'stock', shadowed: false, class: 'base',
+  name, label: name, blurb: '', origin: 'stock', shadowed: false,
   reading: [], sops: [], macros: [], actions: [], tools, mcp: [], requires: [],
   enabled, stated_by: 'campaign', required_by: [],
 } satisfies RoutineRow & ResolvedRoutine);

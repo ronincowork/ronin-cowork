@@ -5,7 +5,7 @@ import { completeRoutineChoices, resolveRoutines, routineChoices } from '../src/
 import { listRoutines } from '../src/definitions.js';
 
 const row = (name: string): RoutineRow => ({
-  name, label: name, blurb: '', origin: 'stock', shadowed: false, class: 'specialized',
+  name, label: name, blurb: '', origin: 'stock', shadowed: false,
   reading: [], sops: [], macros: [], actions: [], tools: [], mcp: [],
   requires: [],
 });
