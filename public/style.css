@@ -1484,7 +1484,10 @@ body {
   gap: var(--space-2) var(--space-4);
   padding: var(--space-3) var(--space-4);
   min-height: var(--row-head);
-  background: var(--bg-2);
+  /* The one head shade, shared with every workbench band (--cowork-head-bg is bg-2
+     on stock): a skin that moves the band's shade moves this head with it, so the
+     selector's band and the tile heads beside it can never split. */
+  background: var(--cowork-head-bg);
   border-bottom: var(--edge) solid var(--line);
   flex: 0 0 auto;
   font-family: var(--workbench-head-font);
@@ -6519,6 +6522,28 @@ body[data-phone] #viewhost {
 @media (max-width: 680px) {
   .ch-doors {
     grid-template-columns: 1fr;
+  }
+}
+/* ── The workbench on touch (owner, 2026-09-01) ────────────────────────────────────
+   Here rather than workspace-kit.css: that sheet is injected by JS with no
+   cache-busting, and a stale copy on a tablet is how an armed workspace looked dead. */
+@media (pointer: coarse) {
+  /* The armed workspace wears a visible frame. The tap-a-workspace-then-tap-a-card
+     flow already existed; a 1px inset outline was no evidence on a tablet. */
+  .wk-workbench-cell.wk-workbench-selected {
+    outline: 3px solid var(--accent);
+    outline-offset: -3px;
+  }
+  /* One band height for every header strip on the bench — the selector's, the blank
+     seat's and the commons tabs match the tile head beside them (its 32px controls
+     plus their padding); a shorter shaded band next to a taller one read as a third
+     kind of thing. */
+  .wk-surface-header,
+  .wk-channel-service-tabs {
+    /* A measurement, not a rung: the coarse tile-head control height plus its padding. */
+    --band: calc(32px + 2 * var(--space-3) + var(--edge));
+
+    min-height: var(--band);
   }
 }
 #phone {
