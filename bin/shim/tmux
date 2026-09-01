@@ -12,9 +12,10 @@ set -u
 # REAL_DIR is where this shim's FILE lives (bin/shim in the checkout or release), the
 # anchor for ../../vendor and ../../libexec — resolved through $0's symlink, because a
 # session runs this shim via its projected session-commands alias (src/routine-tools.ts).
-# Anchoring on the unresolved $0 made the projection look for those beside itself in
-# ~/.ronin, find nothing, and refuse every guarded new-session (caught 2026-09-01:
-# promotion health failed on a probe that could not spawn, on clean code).
+# Anchoring on the unresolved $0 made the projection look for those beside its own
+# alias in the session-commands store, find nothing, and refuse every guarded
+# new-session (caught 2026-09-01: promotion health failed on a probe that could not
+# spawn, on clean code).
 SELF=$0
 while [ -L "$SELF" ]; do
   link=$(readlink "$SELF")
