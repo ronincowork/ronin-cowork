@@ -20,13 +20,14 @@
  *
  * RAISE NEVER FAILS for the ordinary states — no objective, no root, `open` on every
  * dial. The lead is an OFFER (a brief and a mandate, never a roster row): raising with
- * one is § 7.5's two idempotent doors — the record first, then one § 7.4 launch born as
- * the 人 — and a lead that fails to be born still leaves a raised team, said out loud.
+ * one is § 7.5's two idempotent doors — the record first, then a launch for every Agent
+ * the Team is raised with, the marked one born as the 人 (`js/team-loader.js`).
  */
 import { request } from './request.js';
 import { t } from './lexicon.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
 import { agentPicks, agentRow, createAgentRows } from './team-agents.js';
+import { raiseTeam } from './team-loader.js';
 import {
   createStep, dialRowMulti, el, kindTiles, mandateSelect, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
 } from './form-steps.js';
@@ -466,50 +467,22 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     busy = true;
     raise.setDisabled(true);
     notice.set('info', t('new_team.raising', 'Raising the team…'));
-    const made = await request('/api/team-rosters', { method: 'POST', json: rosterBody(name) });
+    // THE LOADER OWNS THE CAST (@team_loader, agreed on the board): one call creates the
+    // record and, only if that succeeded, fires every picked row through the launch door —
+    // ordinary rows first, a marked lead last, none waited on. My serial loop was a
+    // placeholder for exactly this and is deleted rather than merged.
+    //
+    // `agentPicks` is where the screen's words become the route's: a row says assignment
+    // and lead, the wire says instructions and team_lead (lead's P0 ruling).
+    const made = await raiseTeam(request, rosterBody(name), agentPicks(draft.agents));
     if (!made.ok) {
       busy = false;
       raise.setDisabled(false);
-      notice.set('failed', made.message);
-      return;
-    }
-    // THE SECOND DOOR (§ 7.5) WIDENED FROM ONE TO N. It was always "the lead offer becomes
-    // a launch"; the owner has made the lead one row among several, so the same door runs
-    // down the list. A Team with no rows is ordinary and stops here.
-    //
-    // THIS IS THE NAIVE LOOP AND IT IS ON PURPOSE. @team_loader owns the real mechanism —
-    // naming collisions, partial failure, order, undo, idempotence — and should replace
-    // this wholesale. What is here is what the form already did for one row, not a claim
-    // on their package: deleting it would have been a regression, and inventing their
-    // answers would have been worse. Serial so a refusal names the row that caused it; a
-    // row that fails does not stop the ones after it; nothing is rolled back, because one
-    // file deletion undoes the record and a launch is not a transaction with it.
-    const born = [];
-    const refused = [];
-    for (const pick of agentPicks(draft.agents)) {
-      const made = await request('/api/launch', {
-        method: 'POST',
-        json: {
-          session_type: 'cowork_agent',
-          team: name,
-          ...(pick.lead ? { team_lead: true } : {}),
-          name: pick.name,
-          project_root: draft.root,
-          instructions: pick.assignment,
-          mandate: pick.mandate,
-        },
-      });
-      if (made.ok) born.push(pick.name);
-      else refused.push(`${pick.name}: ${made.message}`);
+      return notice.set('failed', made.message);
     }
     busy = false;
     raise.setDisabled(false);
-    if (refused.length) {
-      notice.set('warning', t('new_team.raised_partly', 'Raised {team} · {born} born · not born — {refused}', {
-        team: name, born: born.length, refused: refused.join('; '),
-      }));
-    }
-    else notice.set('', '');
+    notice.set('', '');
     reset();
     await created?.(name);
   }

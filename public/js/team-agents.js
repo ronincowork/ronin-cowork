@@ -34,17 +34,27 @@ const OUTPUT = ['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team', 'n
 /** A fresh row. `open` is the screen's business; everything else is the Agent's. */
 export const agentRow = () => ({ name: '', assignment: '', lead: false, reach: 'open', recruit: 'open', output: ['open'], open: false });
 
-/** The rows as the loader and a template want them — nested mandate, no screen state.
- *  A function declaration, not a const arrow: check-modules refuses an imported binding
- *  named at module top level, and this one reaches for `finalizeTeamName`. */
+/**
+ * The rows as the loader and a template want them — nested mandate, no screen state.
+ *
+ * THE WIRE WORDS ARE THE ROUTE'S, NOT THE SCREEN'S (lead, 2026-09-01): `instructions`,
+ * because that is the launch's settled word for the first thing an Agent is told (the § 5
+ * walk is session type · name · instructions), and `team_lead`, matching the landed launch
+ * flag. The row keeps `assignment` and `lead` because those are what a person reads on a
+ * line; this function is the one place the two vocabularies meet, which is why the three
+ * packages agreed on it rather than on the row.
+ *
+ * A function declaration, not a const arrow: check-modules refuses an imported binding
+ * named at module top level, and this one reaches for `finalizeTeamName`.
+ */
 export function agentPicks(rows) {
   return rows
     .filter((row) => finalizeTeamName(row.name))
     .map((row) => ({
       name: finalizeTeamName(row.name),
-      assignment: row.assignment.trim(),
+      instructions: row.assignment.trim(),
       mandate: { reach: row.reach, recruit: row.recruit, output: [...row.output] },
-      lead: !!row.lead,
+      team_lead: !!row.lead,
     }));
 }
 

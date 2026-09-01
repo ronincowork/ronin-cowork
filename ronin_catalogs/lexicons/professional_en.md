@@ -340,7 +340,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.agent_more:** Its mandate
 - **new_team.agent_drop:** Remove this Agent
 - **new_team.agent_add:** ＋ Add an Agent
-- **new_team.raised_partly:** Raised {team} · {born} born · not born — {refused}
 - **new_team.where:** Where
 - **new_team.readable:** Title
 - **launch.mode_team:** Team
