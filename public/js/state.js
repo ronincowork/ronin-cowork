@@ -14,9 +14,12 @@ export const IS_PHONE = window.matchMedia('(max-width: 680px) and (pointer: coar
 /**
  * WHICH KEY FORCES A SELECTION IN A LOCKED TILE — and it is not the same key everywhere.
  *
- * A locked tile is a live TUI with tmux `mouse on` (src/tmux.ts), so a plain drag becomes
- * mouse escapes: tmux enters copy-mode and copies to the PASTE BUFFER ON THE HOST. Nothing
- * reaches the laptop's clipboard, and it looks like it worked, which is the trap.
+ * A locked tile is a live TUI, and when the app in it holds mouse tracking (Claude
+ * Code's does), a plain drag becomes mouse escapes the APP eats: it highlights or
+ * scrolls, nothing reaches the laptop's clipboard, and it looks like it worked, which
+ * is the trap. (Until 2026-09-01 tmux itself also ate the drag — viewers ran `mouse
+ * on` and copy-mode copied to the host's paste buffer; that path is retired with the
+ * mouse-off default in src/config.ts.)
  *
  * xterm decides whether to select locally instead, and its rule (5.5.0,
  * `SelectionService.shouldForceSelection`) is:
@@ -36,8 +39,10 @@ export const IS_MAC = ['Macintosh', 'MacIntel', 'MacPPC', 'Mac68K'].includes(nav
 export const SELECT_MOD = IS_MAC ? '⌥ Option' : '⇧ Shift';
 /** Did this mouse event carry it? Mirrors xterm's rule above. */
 export const forcesSelection = (e) => (IS_MAC ? e.altKey : e.shiftKey);
-// SGR mouse-wheel sequences. With tmux `mouse on`, injecting these scrolls the
-// scrollback (verified: enters copy-mode, scroll_position advances).
+// SGR mouse-wheel sequences. With viewer mouse off (2026-09-01) tmux passes these to
+// the running app AS INPUT, so every sender must first ask termview.mouseTracking() —
+// injected at an app that is not listening, they land as typed escape bytes (the
+// owner's "scroll locked" agents nobody had touched).
 export const WHEEL_UP = '\x1b[<64;1;1M';
 export const WHEEL_DOWN = '\x1b[<65;1;1M';
 
@@ -110,8 +115,8 @@ export const tiles = [];
 //           command keys (^C, Esc, arrows, Tab…) still go straight through.
 // Desktop stays on the attach mirror by default — it works, and it is not being
 // moved until daily use says so. Touch is FIXED unlocked: locked is unusable on a
-// phone (every scroll gesture round-trips through tmux copy-mode), so the phone always
-// reads the tape and the lock button is hidden there entirely.
+// phone (a 402px mirror of a 120-column pane, and scroll gestures fight the TUI), so
+// the phone always reads the tape and the lock button is hidden there entirely.
 //
 // LOCK IS A PROPERTY OF A TILE, and `S.locked` is only the default a new one is born
 // with. It used to be one global that every tile read, so flipping it reconnected all

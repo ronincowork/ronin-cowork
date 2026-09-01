@@ -133,8 +133,9 @@ export class Tile {
     this.term.wireJumpPill({ jump: () => this.jumpLatest() });
     // The wheel is xterm's business in BOTH modes now.
     //
-    // Locked: the event flows through to xterm, which turns it into mouse escapes for
-    // tmux — exactly as the mirror always had it, untouched.
+    // Locked: xterm keeps the wheel — it scrolls its own local buffer, unless the app
+    // in the pane holds mouse tracking, in which case xterm forwards the wheel and the
+    // app scrolls itself. tmux sees none of it (viewer mouse off, 2026-09-01).
     // Tape-fed: the transcript is a plain scrollable div and the browser scrolls it.
     // Marking a tile active on header focus, without stealing keyboard focus —
     // without stealing keyboard focus from controls in the head.
