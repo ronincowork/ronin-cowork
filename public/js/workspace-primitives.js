@@ -384,6 +384,11 @@ function createLayoutMap(arrangement) {
   const el = node('div', 'wk-layout-map');
   el.setAttribute('role', 'group');
   el.setAttribute('aria-label', t('workspace.columns', 'Workspace columns'));
+  // No tooltips and no focus-grab on touch (owner, 2026-09-01): a tap on a map slot
+  // popped the help box over the page ("Roster — click to show, drag to move"), which
+  // on a screen with no hover is noise standing where the result should be. Spelled
+  // locally rather than imported — the Kit keeps its own dependencies.
+  const coarse = window.matchMedia('(pointer: coarse)').matches;
   const labelOf = (name) => arrangement.declaration.slots.find((slot) => slot.name === name)?.label || name;
   const render = () => {
     const state = arrangement.state();
@@ -396,7 +401,7 @@ function createLayoutMap(arrangement) {
       button.setAttribute('role', 'switch');
       button.setAttribute('aria-checked', hidden ? 'false' : 'true');
       button.setAttribute('aria-label', labelOf(name));
-      button.title = hidden ? t('workspace.slot_show', '{column} — click to show, drag to move', { column: labelOf(name) }) : t('workspace.slot_hide', '{column} — click to hide, drag to move', { column: labelOf(name) });
+      if (!coarse) button.title = hidden ? t('workspace.slot_show', '{column} — click to show, drag to move', { column: labelOf(name) }) : t('workspace.slot_hide', '{column} — click to hide, drag to move', { column: labelOf(name) });
       button.style.flexGrow = String(Math.max(6, state.widths[name] || 0));
       el.append(button);
     }
@@ -433,7 +438,7 @@ function createLayoutMap(arrangement) {
       const mine = current();
       if (mine) delete mine.dataset.dragging;
       if (!dragged) arrangement.toggle(name);
-      current()?.focus();
+      if (!coarse) current()?.focus();
     };
     document.addEventListener('pointermove', move);
     document.addEventListener('pointerup', done);

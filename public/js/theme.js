@@ -32,17 +32,36 @@ import { tiles } from './state.js';
 
 export const LS_THEME = 'tmuxgrid.theme';
 
-/** The owner's CHOICE: 'auto' (the default — follow this device), or a pin. */
+/** The owner's CHOICE on THIS DEVICE: a light or dark pin, or 'auto' — follow the
+ *  Campaign's configured theme (the Machine Settings control), else the house light. */
 export const currentTheme = () => {
   const t = localStorage.getItem(LS_THEME);
   return t === 'light' || t === 'dark' ? t : 'auto';
 };
 
-const prefersLight = () => window.matchMedia('(prefers-color-scheme: light)').matches;
+/** The CAMPAIGN'S configured themes — the system's own settings (Machine Settings →
+ *  appearance), served with the desk profiles at boot and told to us again when the
+ *  owner saves them. TWO values, because the owner ruled the surfaces apart
+ *  (2026-09-01: "light on my iPad, dark on my Mac" belongs in the Campaign): `theme`
+ *  is the pointer surfaces' word, `theme_mobile` the touch surfaces'. '' / 'automatic'
+ *  on either means the house default — light — not inheritance between them. Cached
+ *  per device so the pre-boot inline scripts paint the right shell before this module
+ *  loads. */
+const clean = (value) => (value === 'light' || value === 'dark' ? value : '');
+let campaignThemes = { desktop: '', mobile: '' };
+const COARSE = window.matchMedia('(pointer: coarse)').matches;
+export function setCampaignTheme(desk) {
+  campaignThemes = { desktop: clean(desk?.theme), mobile: clean(desk?.theme_mobile) };
+  try {
+    localStorage.setItem('tmuxgrid.theme.system', campaignThemes.desktop);
+    localStorage.setItem('tmuxgrid.theme.system.mobile', campaignThemes.mobile);
+  } catch (_) { /* private mode */ }
+}
 
-/** What the choice RESOLVES to right now — the only two shells CSS knows. */
+/** What resolves onto the page: a device pin (legacy, no UI writes one today)
+ *  outranks the Campaign's setting for this surface, which outranks the house light. */
 export const resolvedTheme = (choice = currentTheme()) =>
-  choice === 'auto' ? (prefersLight() ? 'light' : 'dark') : choice;
+  choice === 'auto' ? ((COARSE ? campaignThemes.mobile : campaignThemes.desktop) || 'light') : choice;
 
 /**
  * The xterm theme, read off the resolved tokens. Called per Terminal construction and
@@ -198,21 +217,28 @@ export function applyTheme(name) {
 }
 
 /**
- * The flip button's whole contract (⚙ System → appearance). One button, two moves:
- * flipping AWAY from what the device prefers stores a pin; flipping BACK to match
- * the device stores 'auto' — "make it match my Mac" and "follow my Mac" are the
- * same act, so following resumes without a third control existing.
+ * The device's own word (⚙ desk → theme). 'light' and 'dark' are pins that outrank
+ * the Campaign's setting on this device alone; anything else stores 'auto' — follow
+ * the system. (The default used to follow the device's color scheme, with a live
+ * prefers-color-scheme listener; retired 2026-09-01 — the Campaign's setting is the
+ * system's word now, and the house floor is light.)
  */
 export function setTheme(name) {
-  const want = name === 'light' || name === 'dark' ? name : 'auto';
-  const device = prefersLight() ? 'light' : 'dark';
-  localStorage.setItem(LS_THEME, want === 'auto' || want === device ? 'auto' : want);
+  localStorage.setItem(LS_THEME, name === 'light' || name === 'dark' ? name : 'auto');
   applyTheme();
 }
 
-// AUTO IS LIVE: while the choice is auto, the device flipping its appearance flips
-// Ronin in place — attribute, browser chrome and every live terminal, no reload.
-// One page-lifetime listener; it does nothing unless auto is the standing choice.
-window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
-  if (currentTheme() === 'auto') applyTheme('auto');
-});
+// EVERY OPEN PAGE FOLLOWS A THEME SAVE (owner, 2026-09-01: a theme picked on the
+// campaign page "didn't really apply to all the other pages"). localStorage 'storage'
+// fires in every OTHER document on this origin when the campaign theme cache — or the
+// legacy pin — moves, so tabs already open flip in place; pages opened later read the
+// cached values at boot as they already did. The module-local campaignThemes is
+// refreshed from the event so resolvedTheme answers with the new value, not this
+// tab's stale boot copy.
+function onThemeStorage(e) {
+  if (e.key === 'tmuxgrid.theme.system') campaignThemes.desktop = clean(e.newValue);
+  else if (e.key === 'tmuxgrid.theme.system.mobile') campaignThemes.mobile = clean(e.newValue);
+  else if (e.key !== LS_THEME) return;
+  applyTheme();
+}
+window.addEventListener('storage', onThemeStorage);

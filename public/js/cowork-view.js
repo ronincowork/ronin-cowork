@@ -1,7 +1,7 @@
 /* part of the ronin-cowork client — see js/README.md */
 /** Workbench; its Campaign, Cowork or Team scope limits what cards are offered. */
 import { WorkspaceKit } from './workspace-kit.js';
-import { deleteTeamRoster, membersOfTeam, refreshTeams, sessionsAvailableToTeam, setTeamLead, setTeamMembership, subscribe, teamByName, teamsFromState, UNASSIGNED } from './team-controller.js';
+import { deleteTeamRoster, membersOfTeam, refreshTeams, subscribe, teamByName, teamsFromState, UNASSIGNED } from './team-controller.js';
 import { createNewTeamFormView } from './new-team-form.js';
 import { createNewAgentView } from './new-agent.js';
 import { createAddAgentView } from './add-agent.js';
@@ -21,7 +21,8 @@ import { acceptDrops as acceptSessionDrops } from './team-drag.js';
 import { S } from './state.js';
 import { createCampaignIdentity } from './campaign.js';
 import { renderTeamConfiguration } from './team-configuration.js';
-import { setSessionTitle } from './api.js';
+import { agentTitle, buildTeamMembers, configSignature } from './team-members.js';
+import { isCoarse } from './tiledrop.js';
 
 const el = (tag, cls, text) => {
   const out = document.createElement(tag);
@@ -29,9 +30,6 @@ const el = (tag, cls, text) => {
   if (text != null) out.textContent = String(text);
   return out;
 };
-const agentTitle = (session) => session.title || String(session.name || '').split(/[_-]+/).filter(Boolean)
-  .map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' ');
-
 // The roster reads the same frontier as the expanded work record: an explicit pointer
 // wins, otherwise the first unfinished rung is current. Keep the agent's actual words
 // beside that coordinate instead of substituting its launcher role (CutCode, OddJob…).
@@ -92,7 +90,7 @@ export function createCoworkView(options = {}) {
   registerWorkbenchCatalog();
   const campaign = options.kind === 'cowork';
   const viewKey = campaign ? 'cowork' : 'team';
-  const { createSurface, createChannelSurface, createAction, createActionBar } = WorkspaceKit.primitives;
+  const { createSurface, createChannelSurface, createAction } = WorkspaceKit.primitives;
   const { createTerminalTileHost } = WorkspaceKit.adapters;
   const { teamWorkspaceState } = WorkspaceKit.contract;
   const root = el('main', 'tw-view');
@@ -122,7 +120,9 @@ export function createCoworkView(options = {}) {
       if (seat.pool.active) seat.empty?.el.remove();
       else if (!seat.empty) {
         const blank = createSurface({ label: t('team.workspace_blank', 'Workspace'), className: 'tw-blank' });
-        blank.content.append(el('p', 'tw-blank-word', t('team.workspace_blank', 'Workspace')));
+        // The header already says Workspace; the body saying it again read as a stutter
+        // (owner, 2026-09-01). Inside, just the state, small.
+        blank.content.append(el('p', 'tw-blank-word', t('team.workspace_empty', 'empty')));
         seat.empty = { el: blank.el, mount: () => {}, destroy: () => blank.el.remove() };
         seat.surface.content.append(seat.empty.el);
       } else if (!seat.empty.el.isConnected) seat.surface.content.append(seat.empty.el);
@@ -333,7 +333,10 @@ export function createCoworkView(options = {}) {
   const putSession = (name, id, focus = true) => {
     if (!seats[id].pool.has(name)) return false;
     if (surfaceIn(id)) cellPlace(id, seats[id].surface.el);
-    if (!seats[id].pool.show(name, focus)) return false;
+    // Never steal keyboard focus on a coarse pointer: focusing the terminal summons
+    // the iOS keyboard over a workspace the owner opened to READ (owner, 2026-09-01).
+    // Typing there is a deliberate tap into the composer, exactly as on the phone.
+    if (!seats[id].pool.show(name, focus && !isCoarse())) return false;
     touch(id);
     paintSeats();
     remember();
@@ -442,42 +445,6 @@ export function createCoworkView(options = {}) {
   // reading is absent. RIREKI's cherry-pick or summary joins the row when the service
   // contributes it; there is no field for it today.
   let rows = new Map(); // name -> the /api/home row
-  const buildTeamMembers = (name, options = {}) => {
-    const holding = !!options.holding;
-    const roster = el('section', 'league-team-roster');
-    roster.append(el('h3', 'league-team-roster-title', holding ? t('league.agents', 'Agents') : t('league.members', 'Team members')));
-    const list = el('div', 'league-team-member-list'), members = membersOfTeam(name);
-    if (!members.length) list.append(el('p', 'league-team-empty', holding ? t('league.no_ronin', 'No Rōnin Agents') : t('league.no_members', 'No Agents assigned yet.')));
-    for (const member of members) {
-      const row = el('article', 'league-team-member');
-      const identity = el('div', 'league-team-member-identity');
-      const mark = el('span', 'league-team-member-mark', member.team_lead ? '人' : ''); mark.setAttribute('aria-hidden', 'true');
-      const words = el('div', 'league-team-member-words');
-      words.append(el('strong', null, agentTitle(member)), el('span', null, member.session_role || t('league.role_unset', 'Role not set')));
-      identity.append(mark, words);
-      if (holding) { row.append(identity); list.append(row); continue; }
-      const rename = createAction({ label: t('league.rename_agent', 'Rename'), size: 'compact', action: async () => {
-        const currentTitle = agentTitle(member);
-        const wanted = window.prompt(t('league.rename_agent_prompt', 'Edit Agent title'), currentTitle);
-        if (wanted == null || wanted.trim() === currentTitle) return;
-        try { await setSessionTitle(member.name, wanted.trim()); await refreshTeams(); options.onChanged?.(); }
-        catch (error) { options.onFailed?.(t('head.rename_failed', 'Could not rename session: {reason}', { reason: error.message })); }
-      } });
-      const lead = createAction({ label: member.team_lead ? t('league.team_lead', 'Team Lead') : t('league.make_team_lead', 'Make Lead'), size: 'compact', selected: member.team_lead, action: async () => { const result = await setTeamLead(member.name, name, !member.team_lead); if (!result.ok) return options.onFailed?.(result.message); options.onChanged?.(); } });
-      const eject = createAction({ label: t('league.remove_member', 'Remove'), title: t('league.remove_named_member', 'Remove {name} from this team', { name: member.name }), size: 'compact', action: async () => { const result = await setTeamMembership(member.name, name, false); if (!result.ok) return options.onFailed?.(result.message); options.onChanged?.(); } });
-      row.append(identity, createActionBar({ className: 'league-team-member-actions', actions: [rename, lead, eject] }).el); list.append(row);
-    }
-    roster.append(list);
-    if (holding) return roster;
-    const available = sessionsAvailableToTeam(name), add = el('div', 'league-team-add');
-    const select = el('select', null); select.setAttribute('aria-label', t('league.choose_member', 'Choose an Agent to add'));
-    select.append(new Option(available.length ? t('league.choose_member', 'Choose an Agent to add') : t('league.no_available_members', 'No other Agents available'), ''));
-    for (const session of available) select.append(new Option(agentTitle(session) + (session.session_role ? ` — ${session.session_role}` : ''), session.name));
-    const assign = createAction({ label: t('league.assign_member', 'Assign'), size: 'compact', disabled: true, action: async () => { if (!select.value) return; const result = await setTeamMembership(select.value, name, true); if (!result.ok) return options.onFailed?.(result.message); options.onChanged?.(); } });
-    select.addEventListener('change', () => assign.setDisabled(!select.value));
-    add.append(select, assign.el); roster.append(add);
-    return roster;
-  };
   const leagueTeamSurfaces = new Map(), openTeam = (name) => { const url = new URL(location.href); url.hash = `#/team/${encodeURIComponent(name)}`; window.open(url.href, '_blank', 'noopener'); };
   const createLeagueTeamSurface = (name, id) => {
     const cacheKey = `${id}\0${name}`;
@@ -489,7 +456,13 @@ export function createCoworkView(options = {}) {
     const remove = createAction({ label: t('league.delete_team', 'Delete team'), kind: 'danger', size: 'compact', action: async () => { const count = membersOfTeam(name).length; if (!window.confirm(t('league.delete_team_confirm', 'Delete {team}? {count} Agents will lose this Team membership.', { team: name, count }))) return; const result = await deleteTeamRoster(name); if (!result.ok) { surface.setState('failed', result.message); return; } for (const seat of bench.locations(WB_TYPES.team, name)) emptySeat(seat); for (const key of [...leagueTeamSurfaces.keys()]) if (key.endsWith(`\0${name}`)) leagueTeamSurfaces.delete(key); } });
     const surface = createSurface({ label, className: 'league-team-edit', actions: name === UNASSIGNED ? [launch] : [launch, remove] });
     surface.content.classList.add('league-team-edit-content');
+    // Same contract as renderConfig below: every publish lands here, so the surface only
+    // rebuilds — and refetches the configuration's catalogs — when what it shows moved.
+    let seen = '';
     const render = () => {
+      const signature = configSignature(name);
+      if (signature === seen) return;
+      seen = signature;
       const holding = name === UNASSIGNED;
       const current = teamByName(name);
       const roster = buildTeamMembers(name, { holding, onChanged: () => { surface.setState(); render(); }, onFailed: (message) => surface.setState('failed', message) });
@@ -516,7 +489,8 @@ export function createCoworkView(options = {}) {
     rows = new Map(r.data.map((row) => [row.name, row]));
     onSessions();
     renderCards(membersOfTeam(team));
-    // The configuration's live roster carries the same readings; it keeps the same clock.
+    // The configuration reads the same refreshed roster, but renderConfig only redraws
+    // when something it shows moved — this tick is a freshness check, not a repaint.
     const roster = teamByName(team);
     renderConfig(roster.durable ? roster : null, membersOfTeam(team));
   };
@@ -548,7 +522,14 @@ export function createCoworkView(options = {}) {
     bench.refreshSelector();
   }
 
+  // THE CONFIGURATION IS NOT ON THE FIVE-SECOND CLOCK (owner, 2026-09-01: "flashing the
+  // team configuration on and off"). Every tick and publish lands here; the panel is
+  // torn down only when configSignature says something it draws actually moved.
+  let seenConfig = '';
   function renderConfig(roster, live) {
+    const signature = configSignature(team);
+    if (signature === seenConfig) return;
+    seenConfig = signature;
     for (const commons of Object.values(teamCommons)) {
       if (!roster) { renderTeamConfiguration(commons.config, null, { createAction }); continue; }
       const fields = el('div');
@@ -632,6 +613,7 @@ export function createCoworkView(options = {}) {
     enter: (context) => {
       ctx = context;
       entered = true;
+      seenConfig = ''; // a fresh entry always paints the configuration once
       stopMessageAttention?.();
       stopMessageAttention = watchMessageQueueAttention();
       if (campaign) void campaignIdentity.load();

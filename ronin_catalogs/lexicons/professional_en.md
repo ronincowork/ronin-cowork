@@ -206,7 +206,9 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.skin:** Skin
 - **campaign_view.skin_help:** The look — colours, corners, faces. The page wears it now.
 - **campaign_view.theme:** Theme
-- **campaign_view.theme_help:** Light or dark, or whatever the device prefers.
+- **campaign_view.theme_help:** Light or dark for pointer surfaces; Automatic is the house default — light.
+- **campaign_view.theme_mobile:** Theme (mobile)
+- **campaign_view.theme_mobile_help:** Light or dark for touch surfaces — iPad and phone; Automatic is the house default — light.
 - **campaign_view.theme_light:** Light
 - **campaign_view.theme_dark:** Dark
 - **campaign_view.theme_auto:** Automatic
@@ -552,6 +554,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team.commons_summary:** See Docs / Wipeboard / Agent Message Queue / Team Configuration
 - **team.roster_of:** Roster: {team}
 - **team.workspace_blank:** Workspace
+- **team.workspace_empty:** empty
 - **team.new_session:** New session
 - **cowork.tab_roster:** Roster
 - **cowork.tab_archives:** Archived
@@ -1381,7 +1384,26 @@ The catalog entry goes. {dir} is not touched.
 - **me.note:** Note
 - **me.control:** Control
 - **me.kill:** Kill session
+- **me.output:** Output
 - **me.title:** This session — status, work record, macros, groups, docs, note, control
+
+## keys — keysrow.js (the composer's keys row)
+- **keys.backspace:** Backspace
+- **keys.clear_line_title:** Ctrl-U — clear the input line
+
+## composer — the ✕ clear
+- **composer.clear_title:** Clear this box
+
+## phone — phone.js (the phone shell: Coworks, a Cowork's Agents, one Agent's tile)
+- **phone.coworks:** Cowork: Teams
+- **phone.launch_card:** Launch New Agent
+- **phone.launch_defaults:** Everything else launches on this Cowork's defaults.
+- **phone.no_coworks:** No Coworks yet.
+- **phone.agents_one:** 1 Agent
+- **phone.agents_many:** {n} Agents
+- **phone.no_agents:** No Agents on this Cowork yet.
+- **phone.back:** Back
+- **phone.me_title:** This Agent — status, work record, note, control, kill
 
 ## new_team — new-team-launch.js (the transaction's own sentences)
 

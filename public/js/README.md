@@ -65,11 +65,14 @@ where a session is born now. `docs/ui.md` is the written contract those modules 
 | `composer.js` | 183 | `buildComposer` — the unlocked tile's text entry, its mic and its keyboard lift |
 | `dvr.js` | 37 | `dvrStep` — the unlocked input rule, pure (tested: `tests/dvr.test.js`) |
 | `ansi.js` | 12 | `ANSI_RE` — its own module so the tape's pure logic loads outside a browser |
-| `tiledrop.js` | 244 | TOUCH ONLY — `collapseTileHead`, `makeDrop`: the one-row phone header |
+| `tiledrop.js` | 95 | `isCoarse`, `makeDrop` — the coarse-pointer sheet primitives (the hoisted phone header is gone; the phone has its own shell) |
+| `phone.js` | 215 | THE PHONE SHELL — an iPhone-class screen never boots the workbench: Coworks → Agents → the stage, hash-routed (`#/m/…`) |
+| `keysrow.js` | 61 | `buildKeysRow` — Esc/^C/Tab/arrows/⤓ docked on every coarse tile's composer |
 | `tilemacros.js` | 231 | `buildTileMacros` — the ⚡ button on a tile head; the `preview:` macros as teaching cards, prefills `+name: `, never runs |
 | `tilementions.js` | — | `buildTileMentions` — the @ button on a tile head; click or drag a live session name into the composer |
 | `tilemore.js` | 158 | DESKTOP ONLY — `buildTileMore`: メ on a tile head and the controls it drops in one strip; `fitDropToTile`, shared by every drop off that header |
 | `team-arrange.js` | 95 | `parseDraft`, `createArranger` — the team page's one controller: a draft (what changes; the rest stays) from a button or from an agent's `tejun-teampage`, run through the page's own verbs |
+| `team-members.js` | 65 | `buildTeamMembers`, `agentTitle`, `configSignature` — the member list shared by the commons configuration tab and the league surfaces, and the changed-only fingerprint that keeps the configuration off the five-second clock |
 | `voice.js` | 181 | dictation: `makeClipRecorder` + `wireDictation` (the 🎤 on the tile's compose box) |
 | `panels.js` | 248 | `buildNotePanel` 📝 (on `ui.sheet`), `toClipboard` |
 | `macros.js` | 103 | `buildSessionPicker` — the pad key's session switcher (on `ui.sheet`) |

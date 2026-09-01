@@ -17,8 +17,15 @@
          must not flash dark. Inline and tiny on purpose; js/theme.js owns the rest. -->
     <script>
       try {
+        /* A device pin, else the cached Campaign theme for THIS surface — touch reads
+           the mobile value, a pointer the desktop one (both written by js/theme.js when
+           the served desk is learned) — else the house light (owner, 2026-09-01). The
+           dark shell is the stylesheet's bare state, so only light sets the attribute. */
         var t = localStorage.getItem('tmuxgrid.theme');
-        if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        if (t !== 'light' && t !== 'dark') {
+          var coarse = matchMedia('(pointer: coarse)').matches;
+          t = localStorage.getItem(coarse ? 'tmuxgrid.theme.system.mobile' : 'tmuxgrid.theme.system') || 'light';
+        }
         if (t === 'light') document.documentElement.dataset.theme = 'light';
       } catch (e) {}
     </script>
@@ -63,26 +70,11 @@
            is on, clicked to alternate, in the seat the 1·2·4 count had. js/team-view.js
            writes its face and owns the click; hidden when no cowork_space is showing. -->
       <button id="shapecycle" class="shape-cycle" hidden data-t-title="bar.shape_title" title="Two workspaces — click for four">2</button>
-      <div class="ctrls" role="group" data-t-aria="bar.keys" aria-label="Keys">
-        <button id="k-esc" data-t-title="keys.esc" title="Esc" data-t="keys.esc">Esc</button>
-        <button id="k-int" data-t-title="keys.interrupt_title" title="Ctrl-C (interrupt)">^C</button>
-        <button id="k-bottom" data-t-title="keys.latest_title" title="Jump to latest output">⤓</button>
-        <button id="k-more" data-t-title="keys.more" title="More keys" aria-expanded="false">⋯</button>
-      </div>
-      <!-- The grid count: ONE button wearing the number it is on, tapped to cycle
-           1 → 2 → 4 → 1. It was a segmented trio, which spent three boxes saying what
-           one says and left two of them permanently dark. js/viewport.js writes the
-           face; the same node is relocated into the touch bar by js/layout.js. -->
+      <!-- The header keys (.ctrls Esc ^C ⤓, the ⋯ More-keys button and the #keypad it
+           promised) are GONE — hidden on desktop since the drawer era, and on touch
+           every coarse tile carries its own keys row on the composer now (js/keysrow.js),
+           next to the box it drives instead of two taps away at the top of the page. -->
     </header>
-    <div id="keypad" role="group" data-t-aria="keys.more" aria-label="More keys">
-      <button data-key="cr" data-t-title="keys.enter" title="Enter">↵</button>
-      <button data-key="tab" data-t-title="keys.tab" title="Tab" data-t="keys.tab">Tab</button>
-      <button data-key="stab" data-t-title="keys.shift_tab" title="Shift-Tab" data-t="keys.shift_tab_face">⇧Tab</button>
-      <button data-key="up" data-t-title="keys.up" title="Up">↑</button>
-      <button data-key="down" data-t-title="keys.down" title="Down">↓</button>
-      <button data-key="left" data-t-title="keys.left" title="Left">←</button>
-      <button data-key="right" data-t-title="keys.right" title="Right">→</button>
-    </div>
     <div id="viewhost">
       <section id="cowork-view" class="cc-view" hidden></section>
     </div>

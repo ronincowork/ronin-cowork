@@ -2,8 +2,8 @@
 @layer app {
   :root.boot-pending body { visibility: hidden; }
   .wk-action-bar { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
-  .wk-surface-header { display: flex; flex: 0 0 auto; align-items: center; gap: var(--space-4); min-height: var(--row-head); padding: var(--space-3) var(--space-4); border-bottom: var(--edge) solid var(--line); background: var(--cowork-head-bg); color: var(--fg-strong); }
-  .wk-surface-header-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .wk-surface-header { display: flex; flex: 0 0 auto; align-items: center; gap: var(--space-4); min-height: var(--row-head); padding: var(--space-3) var(--space-4); border-bottom: var(--edge) solid var(--line); background: var(--cowork-head-bg); color: var(--cowork-head-fg); font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); line-height: var(--workbench-head-line); }
+  .wk-surface-header-title { min-width: 0; overflow: hidden; font-weight: var(--workbench-head-weight); text-overflow: ellipsis; white-space: nowrap; }
   .wk-surface-header-actions { display: flex; align-items: center; gap: var(--space-3); margin-left: auto; }
   .wk-action { min-height: 2.25rem; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--raise); color: var(--fg); padding: var(--space-3) var(--space-5); font: inherit; cursor: pointer; }
   .wk-action[data-kind='primary'] { border-color: var(--kaki); background: var(--kaki); color: var(--on-strong); }
@@ -41,6 +41,9 @@
   .wk-workbench-cell[hidden] { display: none; }
   .wk-workbench-cell > * { flex: 1 1 auto; min-height: 0; min-width: 0; }
   .wk-workbench-cell.wk-workbench-selected { outline: var(--edge) solid var(--accent); outline-offset: calc(-1 * var(--edge)); }
+  /* The louder coarse-pointer selected frame lives in style.css (the coworkspace
+     touch block): this sheet is injected by JS with no cache-busting, and a stale
+     copy on a tablet is how an armed workspace went back to looking dead. */
   .wk-workbench-selector { display: flex; min-width: 0; min-height: 0; }
   .wk-workbench-selector > * { flex: 1 1 auto; min-width: 0; min-height: 0; }
   .wk-workbench-selector-cards { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); overflow-y: auto; }

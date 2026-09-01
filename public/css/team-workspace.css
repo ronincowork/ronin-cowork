@@ -21,8 +21,12 @@
   .tw-commons-card { padding-top: var(--space-2); padding-bottom: var(--space-2); }
   /* a seat with a card over it — the drop will land here */
   .tw-terminal[data-drop-ready='true'] { outline: var(--edge-2) solid var(--kaki); outline-offset: calc(-1 * var(--edge-2)); }
-  /* a blank workspace: the word, centred, and nothing else (owner, 2026-08-27) */
-  .tw-blank-word { margin: auto; font-size: var(--text-5); color: var(--muted); }
+  /* a blank workspace: the band, then bare ground the size of the seat. It is a nested
+     wk-surface, whose border, corners and panel background made "empty" read as a small
+     floating card inside the workspace (owner, 2026-09-01); the seat's own surface is
+     the one rectangle, so the blank paints nothing of its own. */
+  .tw-blank { height: 100%; border: 0; border-radius: 0; background: transparent; }
+  .tw-blank-word { margin: auto; font-size: var(--text-3); color: var(--muted); }
   /* the new-session surface: T on the left of its head, then the name; the launcher below */
   .tw-new-body { flex: 1; min-height: 0; overflow-y: auto; }
   /* the launcher's pane shows only inside `.home[data-pane='new']` by the commons' rule; in a

@@ -221,26 +221,19 @@ export function buildTileHead(tile) {
   el.append(head, body);
 
   const out = { el, body, headHelp: {} };
-  // THE メ DROP IS DESKTOP-ONLY, and that is not a taste call — it is what keeps touch
-  // from ending up with a drop inside a drop. `collapseTileHead` hoists this header into
-  // the phone's app bar behind its OWN メ, snapshotting `[...head.children]` to put back
-  // later; a control nested one level down in a desktop drop is not in that snapshot, so
-  // the restore would leave it inside a sheet that is then removed, taking the control
-  // with it. Gated on `isCoarse()`, the same test `collapseTileHead` gates on, so the two
-  // are exactly complementary: coarse pointer gets the phone's row and this never builds;
-  // fine pointer gets this and the phone's collapse never runs.
-  const dropped = !isCoarse();
+  // メ BUILDS ON BOTH SURFACES now. It was desktop-only while the phone hoisted this
+  // header into the app bar behind its own メ — a control nested in a desktop drop
+  // would have been lost by that hoist's snapshot. The hoist is gone: a phone never
+  // builds this header at all (js/phone.js), and an iPad head with every drop row
+  // exposed inline was exactly the clutter the owner asked bundled (2026-09-01) —
+  // gauge, dial, note and kill sat loose on the row.
+  const coarse = isCoarse();
   let host = null; // the `hosts` row's widget, once it has been built
   for (const row of HEADER()) {
     if (row.grow) {
       head.append(Object.assign(document.createElement('span'), { className: 'grow' }));
       continue;
     }
-    // Touch builds no メ AND no drop: `host` stays null, so every `drop` row falls back
-    // into the row it always sat in and `collapseTileHead` finds the header it expects.
-    // A メ built here and left empty would also be a second メ in a bar that already has
-    // one, meaning two different things two inches apart.
-    if (row.hosts && !dropped) continue;
     // Four controls are built by their own module and come back as {el, set}; the rest
     // are a tag and a glyph. Either way what lands in `out` is what tile.js already
     // expects — the widget object where there is one, the element where there is not.
@@ -280,7 +273,13 @@ export function buildTileHead(tile) {
     out[row.key] = made ?? node;
     // ⚡ and メ carry a menu that hangs off the header rather than sitting in the row.
     if (made?.menu) head.append(made.menu);
-    if (row.hosts) host = made; // only reached when `dropped` — see the skip above
+    if (row.hosts) host = made;
   }
+  // COARSE ONLY: the Output select joins メ's strip too (owner's header cleanup,
+  // 2026-09-01). Its row sits BEFORE メ's in the table — the desktop keeps it on the
+  // row per the 2026-08-26 ruling — so the move happens here, after メ exists. The
+  // same element, relocated: every handler and the syncOutput wiring come along, and
+  // no close-on-click is added because a select is an instrument you adjust in place.
+  if (coarse && host && out.outputEl) host.menu.prepend(out.outputEl.el ?? out.outputEl);
   return out;
 }
