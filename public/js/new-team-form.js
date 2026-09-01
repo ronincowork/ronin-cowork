@@ -428,7 +428,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   const save = createAction({ label: t('save_template', 'Save as template'), disabled: true, action: () => void doSave() });
   // SAVE AS TEMPLATE SITS UNDER THE BLOCK IT SAVES (owner, 2026-09-01): "you're saving
   // that block as a configuration that you want to use over."
-  const saveRow = createActionBar({ label: t('new_team.team_actions', 'Team actions') });
+  const saveRow = createActionBar({ label: t('new_team.team_actions', 'Team actions'), className: 'ntf-actions' });
   saveRow.el.append(saveName, save.el);
   // SAVE AS TEMPLATE GOES AT THE BOTTOM, UNDER THE PACKET (owner, 2026-09-01: "why is the
   // save template not at the bottom with the blurb that is the packet"). The reading IS
