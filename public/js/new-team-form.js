@@ -25,7 +25,7 @@
 import { request } from './request.js';
 import { t } from './lexicon.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
-import { raiseTeam } from './team-loader.js';
+import { launchTeamAgents } from './team-loader.js';
 import {
   createStep, dialRowMulti, el, kindTiles, mandateSelect, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
 } from './form-steps.js';
@@ -503,13 +503,16 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
       mandate: { reach: draft.lead.reach, recruit: draft.lead.recruit, output: draft.lead.output },
       team_lead: true,
     });
-    const made = await raiseTeam(request, rosterBody(name), rows);
+    // The canonical roster door is the duplicate-submit gate. Only the request that
+    // creates the Team reaches the mechanical staffing handoff below.
+    const made = await request('/api/team-rosters', { method: 'POST', json: rosterBody(name) });
     if (!made.ok) {
       busy = false;
       raise.setDisabled(false);
       notice.set('failed', made.message);
       return;
     }
+    launchTeamAgents(request, name, rows);
     // The Team record is the gate. Only a newly-created Team reaches this handoff, so a
     // repeated submission cannot birth the cast twice. Every attached row then goes
     // independently through the one launch door; the loader adds no monitoring layer.

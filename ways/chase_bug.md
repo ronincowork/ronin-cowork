@@ -1,4 +1,5 @@
 # Chase a bug
+- **kinds:** coding
 
 Use this way of working when something is broken and you want the fault traced to its
 cause. Its remit is to understand the failure before changing the code, then fix the

@@ -16,9 +16,14 @@ export interface WayRow {
   name: string;
   label: string;
   blurb: string;
+  /** Which kinds bring this book forward on a tray (NEW_AGENT.md § 4.5); empty means
+   *  only `open` — which screens nothing — surfaces it. */
+  kinds: string[];
   origin: Origin;
   shadowed: boolean;
 }
+
+const WAY_KINDS = ['coding', 'work', 'personal', 'household', 'social', 'school'];
 
 const isWay = (name: string): boolean =>
   name.endsWith('.md') && !name.startsWith('.') && name !== 'README.md';
@@ -41,11 +46,15 @@ async function readShelf(dir: string, origin: Origin): Promise<Map<string, WayRo
     }
     const name = file.slice(0, -3);
     const label = content.match(/^#\s+(.+)$/m)?.[1]?.trim() || name;
+    const kinds = (content.match(/^-\s+\*\*kinds:\*\*\s*(.+)$/m)?.[1] ?? '')
+      .split(',')
+      .map((kind) => kind.trim())
+      .filter((kind) => WAY_KINDS.includes(kind));
     const blurb = content
       .split(/\n\s*\n/)
       .map((part) => part.replace(/^>\s?/gm, '').replace(/\s+/g, ' ').trim())
-      .find((part) => part && !part.startsWith('#')) || '';
-    rows.set(name, { name, label, blurb: blurb.slice(0, 200), origin, shadowed: false });
+      .find((part) => part && !part.startsWith('#') && !part.startsWith('- **')) || '';
+    rows.set(name, { name, label, blurb: blurb.slice(0, 200), kinds, origin, shadowed: false });
   }
   return rows;
 }

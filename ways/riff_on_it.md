@@ -1,4 +1,5 @@
 # Riff on it
+- **kinds:** coding, work, personal, household, social, school
 
 Use this way of working when the thing itself is still unclear and naming it is part of
 the work. Its remit is to work out what a thing is and produce a definition, not a plan.
