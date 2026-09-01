@@ -24,7 +24,7 @@ import { request } from './request.js';
 import { guard } from './errors.js';
 import { connectEvents, sessionsHandlers } from './events.js';
 import { membersOfTeam, refreshTeams, subscribe, teamByName, teamsFromState, UNASSIGNED, unassignedSessions } from './team-controller.js';
-import { statusLabel } from './home.js';
+import { loadProjects, projectData, statusLabel } from './home.js';
 import { createTerminalTileHost } from './terminal-tile-host.js';
 import { makeDrop } from './tiledrop.js';
 import { S } from './state.js';
@@ -66,8 +66,15 @@ export async function buildPhone() {
   root.append(bar, main);
   document.body.append(root);
 
+  // The house mark rides the shell's own bar on the front door (owner, 2026-09-01:
+  // "we should see the top header, the RoninCowork and the Torii"). RELOCATED from the
+  // hidden desktop bar, not cloned — captured once, because a later paint detaches it
+  // and getElementById would then find nothing. Tapping it is the way home (href="./").
+  const brand = document.getElementById('brandbtn');
+
   let route = routeFromHash();
   let rows = new Map(); // session name -> /api/home row (status, ctx, model, tegami)
+  let agentsPainted = ''; // what the Agents screen last drew — identical readings skip the repaint
   let host = null; // the one terminal host, alive only on the terminal screen
   let stageTile = null; // the mounted tile inside it — for the slow reading clock
   let sheet = null; // its メ sheet — dies with the host
@@ -83,7 +90,7 @@ export async function buildPhone() {
 
   /* ---------- screen 1 · the Coworks ---------- */
   const paintTeams = () => {
-    bar.replaceChildren(el('span', 'ph-title', t('phone.coworks', 'Coworks')));
+    bar.replaceChildren(...(brand ? [brand] : []), el('span', 'ph-title', t('phone.coworks', 'Cowork: Teams')));
     const list = el('div', 'ph-list');
     const teams = teamsFromState().filter((team) => !team.holding || unassignedSessions().length);
     for (const team of teams) {
@@ -103,9 +110,102 @@ export async function buildPhone() {
     main.replaceChildren(list);
   };
 
+  /* ---------- the launch card: a name, the words, and the Cowork's defaults ----------
+     The owner's rule (2026-09-01): birthing from a phone needs a name and instructions,
+     nothing else — no toolkit, no mandates, no routines. Everything unstated launches on
+     the Team's own defaults, resolved server-side exactly as Add Agent's quick launch
+     does (add-agent.js: "a caller that states one is guessing at the server's job"). */
+  const launchCard = (team) => {
+    const card = el('div', 'ph-launch');
+    const open = el('button', 'ph-launch-open', '＋ ' + t('phone.launch_card', 'Launch New Agent'));
+    open.type = 'button';
+    const form = el('div', 'ph-launch-form');
+    form.hidden = true;
+    const name = el('input');
+    name.type = 'text';
+    name.autocapitalize = 'off';
+    name.autocomplete = 'off';
+    name.spellcheck = false;
+    name.maxLength = 40;
+    name.placeholder = t('add_agent.name_placeholder', 'name');
+    // Character-for-character, the server's own transform (sanitizeName, src/spawn.ts),
+    // so the caret never jumps — the same rule Add Agent applies.
+    name.addEventListener('input', () => {
+      const clean = name.value.toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+      if (clean !== name.value) {
+        const at = name.selectionStart;
+        name.value = clean;
+        name.setSelectionRange(at, at);
+      }
+    });
+    const words = el('textarea');
+    words.rows = 3;
+    words.autocapitalize = 'off';
+    words.spellcheck = false;
+    words.placeholder = t('add_agent.instruction_placeholder', 'what this Agent should do');
+    const note = el('p', 'ph-launch-note', t('phone.launch_defaults', "Everything else launches on this Cowork's defaults."));
+    const state = el('p', 'ph-launch-state');
+    state.hidden = true;
+    const go = el('button', 'ph-launch-go', t('add_agent.start', 'Start'));
+    go.type = 'button';
+    let busy = false;
+    go.addEventListener('click', async () => {
+      if (busy || !name.value.trim()) return;
+      busy = true;
+      go.disabled = true;
+      state.hidden = false;
+      state.dataset.kind = 'info';
+      state.textContent = t('add_agent.starting', 'Starting…');
+      const roster = teamByName(team);
+      const result = await request('/api/launch', {
+        method: 'POST',
+        json: {
+          session_type: 'cowork_agent',
+          behaviours: [],
+          team: team === UNASSIGNED ? '' : team,
+          instructions: words.value.trim(),
+          name: name.value.trim(),
+          project_root: (roster?.durable && roster.project_root) || projectData?.[0]?.name || '',
+          provider: '', // blank = the install default, exactly as Add Agent sends it
+          model: '',
+        },
+      });
+      busy = false;
+      go.disabled = false;
+      if (!result.ok) {
+        state.dataset.kind = 'failed';
+        state.textContent = result.message;
+        return;
+      }
+      const born = result.data?.name || name.value.trim();
+      await fetchSessions();
+      // The Agent opens where it was born: this Cowork's stage.
+      location.hash = sessionHash(team, born);
+    });
+    open.addEventListener('click', () => {
+      form.hidden = !form.hidden;
+      if (!form.hidden) name.focus();
+    });
+    form.append(name, words, note, go, state);
+    card.append(open, form);
+    return card;
+  };
+
   /* ---------- screen 2 · the Agents ---------- */
   const paintAgents = () => {
     const team = route.team;
+    // Never repaint over an open launch form — the readings clock would wipe a name
+    // mid-typing. The readings resume the moment the form closes or the route moves.
+    if (main.querySelector('.ph-launch-form:not([hidden])')) return;
+    // And never repaint what has not moved: the 5s clock rebuilding identical cards
+    // detaches the node under a finger mid-tap — a tap that does nothing (caught by
+    // the render gate racing the same window).
+    const signature = team + '\0' + membersOfTeam(team).map((member) => {
+      const row = rows.get(member.name) || {};
+      return [member.name, member.title, member.team_lead, member.session_role, row.status, row.ctx, row.model, row.tegami?.chip?.text].join('|');
+    }).join('\n');
+    if (signature === agentsPainted) return;
+    agentsPainted = signature;
     bar.replaceChildren(
       backLink('#/m'),
       el('span', 'ph-title', teamLabel({ ...teamByName(team), name: team })),
@@ -126,6 +226,7 @@ export async function buildPhone() {
       list.append(card);
     }
     if (!list.children.length) list.append(el('div', 'ph-empty', t('phone.no_agents', 'No Agents on this Cowork yet.')));
+    list.append(launchCard(team));
     main.replaceChildren(list);
   };
 
@@ -187,6 +288,8 @@ export async function buildPhone() {
   const render = () => {
     const next = routeFromHash();
     if (route.screen === 'terminal' && !(next.screen === 'terminal' && next.session === route.session)) closeTerminal();
+    // A screen change always paints fresh; the skip-signature only spans one stay.
+    if (next.screen !== route.screen || next.team !== route.team) agentsPainted = '';
     route = next;
     if (route.screen === 'teams') paintTeams();
     else if (route.screen === 'agents') { paintAgents(); void readRows(); }
@@ -222,6 +325,7 @@ export async function buildPhone() {
   await fetchSessions();
   guard('session event stream', connectEvents);
   await refreshTeams();
+  guard('load projects', loadProjects); // the launch card's project_root fallback
   guard('phone paint', render);
   void readRows();
 }

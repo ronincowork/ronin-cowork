@@ -5,9 +5,8 @@
 # promotion receipt for its exact SHA (WORKTREES.md "What runs where";
 # src/promotion/receipts.ts). This workflow CONSUMES that receipt: it names it, checks it
 # is complete, that its full-BYOIN proof passed on exactly this PR's head commit, and that
-# the ref advance was done. Only then does it rerun the isolated --gates tier for release
-# assurance — a deliberate second look on a clean runner, never the verdict the receipt
-# already gave. A PR with no receipt fails here: that is a candidate nobody proved where
+# the ref advance was done. Only then does it run the second full repository BYOIN on the
+# exact release candidate. A PR with no receipt fails here: that is a candidate nobody proved where
 # the contract says it must be.
 #
 # HOW THE RECEIPT ARRIVES: in the PR body, as a ```ronin-promotion-receipt fenced block
@@ -73,5 +72,5 @@ jobs:
       # for nothing. If a runner ever does drive a real render check (tier 2, above), it
       # brings its own tmux back with it, next to the browser it will also need.
       - run: npm ci
-      - name: release assurance — rerun the isolated gates on the receipted commit
-        run: bin/ronin-byoin --gates
+      - name: dev to master — full BYOIN on the receipted commit
+        run: bin/ronin-byoin --repo

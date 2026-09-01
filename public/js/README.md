@@ -72,6 +72,7 @@ where a session is born now. `docs/ui.md` is the written contract those modules 
 | `tilementions.js` | — | `buildTileMentions` — the @ button on a tile head; click or drag a live session name into the composer |
 | `tilemore.js` | 158 | DESKTOP ONLY — `buildTileMore`: メ on a tile head and the controls it drops in one strip; `fitDropToTile`, shared by every drop off that header |
 | `team-arrange.js` | 95 | `parseDraft`, `createArranger` — the team page's one controller: a draft (what changes; the rest stays) from a button or from an agent's `tejun-teampage`, run through the page's own verbs |
+| `team-members.js` | 65 | `buildTeamMembers`, `agentTitle`, `configSignature` — the member list shared by the commons configuration tab and the league surfaces, and the changed-only fingerprint that keeps the configuration off the five-second clock |
 | `voice.js` | 181 | dictation: `makeClipRecorder` + `wireDictation` (the 🎤 on the tile's compose box) |
 | `panels.js` | 248 | `buildNotePanel` 📝 (on `ui.sheet`), `toClipboard` |
 | `macros.js` | 103 | `buildSessionPicker` — the pad key's session switcher (on `ui.sheet`) |

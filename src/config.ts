@@ -42,12 +42,16 @@ export const config = {
   /** latest | largest | smallest | manual */
   windowSize: process.env.TMUX_WINDOW_SIZE?.trim() || 'latest',
   /**
-   * Mouse mode on browser viewer sessions. 'on' (default) makes trackpad/wheel
-   * scroll the tmux scrollback (the conversation) instead of xterm.js translating
-   * the wheel into Up/Down arrow keys (which recalls prior prompt entries). Keyboard
-   * arrows still do history. Set TMUX_MOUSE=off to revert to arrow-key scrolling.
+   * Mouse mode on browser viewer sessions. 'off' (default — owner, 2026-09-01:
+   * "we never see this again") because 'on' set a trap on every locked tile: a
+   * wheel tick dropped the SHARED pane into tmux copy-mode — freezing the live
+   * output for the agent and every other viewer — and the next typed t or f then
+   * opened tmux's "(jump to forward)" prompt, eating keystrokes until two
+   * cancels. The cost of 'off': trackpad/wheel over a locked tile no longer
+   * scrolls tmux scrollback (xterm.js hands the wheel to the app instead); the
+   * tape view still scrolls natively. Set TMUX_MOUSE=on to take the old trade.
    */
-  mouse: process.env.TMUX_MOUSE?.trim() || 'on',
+  mouse: process.env.TMUX_MOUSE?.trim() || 'off',
   /** Internal grouped "viewer" sessions get this prefix; hidden from the picker. */
   viewerPrefix: 'grid_',
   /**

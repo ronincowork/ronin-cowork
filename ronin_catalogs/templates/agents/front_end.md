@@ -1,5 +1,5 @@
-# Front End
-- **label:** Front End
+# Front-End Developer
+- **label:** Front-End Developer
 - **art:** 🖥
 - **blurb:** Build the surface against an agreed design.
 - **order:** 50

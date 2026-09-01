@@ -201,12 +201,15 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.presets:** Presets
 - **campaign_view.presets_help:** A preset copies all of its components into this Campaign. Change any one of them afterwards; the preset is not consulted again.
 - **campaign_view.apply:** Apply
+- **campaign_view.revert:** Revert
 - **campaign_view.applied:** applied — every component below is now this Campaign’s own
 - **campaign_view.applied_tag:** applied
 - **campaign_view.skin:** Skin
-- **campaign_view.skin_help:** The look — colours, corners, faces. The page wears it now.
+- **campaign_view.skin_help:** The look — colours, corners, faces.
 - **campaign_view.theme:** Theme
-- **campaign_view.theme_help:** Light or dark, or whatever the device prefers.
+- **campaign_view.theme_help:** Light or dark for pointer surfaces; Automatic is the house default — light.
+- **campaign_view.theme_mobile:** Theme (mobile)
+- **campaign_view.theme_mobile_help:** Light or dark for touch surfaces — iPad and phone; Automatic is the house default — light.
 - **campaign_view.theme_light:** Light
 - **campaign_view.theme_dark:** Dark
 - **campaign_view.theme_auto:** Automatic
@@ -284,7 +287,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_home.machine_settings:** Machine Settings
 - **campaign_home.campaign_is:** Admin Desk configuration
 - **campaign_home.coworks_is:** Coworking space for Agents
-- **campaign_home.launch:** Launch
+- **campaign_home.launch:** New Project
 - **campaign_home.launch_is:** Start a new Team or Agent
 - **campaign_home.version:** v1.3
 - **campaign_home.check_updates:** Check for updates
@@ -552,6 +555,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **team.commons_summary:** See Docs / Wipeboard / Agent Message Queue / Team Configuration
 - **team.roster_of:** Roster: {team}
 - **team.workspace_blank:** Workspace
+- **team.workspace_empty:** empty
 - **team.new_session:** New session
 - **cowork.tab_roster:** Roster
 - **cowork.tab_archives:** Archived
@@ -1392,7 +1396,9 @@ The catalog entry goes. {dir} is not touched.
 - **composer.clear_title:** Clear this box
 
 ## phone — phone.js (the phone shell: Coworks, a Cowork's Agents, one Agent's tile)
-- **phone.coworks:** Coworks
+- **phone.coworks:** Cowork: Teams
+- **phone.launch_card:** Launch New Agent
+- **phone.launch_defaults:** Everything else launches on this Cowork's defaults.
 - **phone.no_coworks:** No Coworks yet.
 - **phone.agents_one:** 1 Agent
 - **phone.agents_many:** {n} Agents

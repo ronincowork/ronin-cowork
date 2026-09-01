@@ -3,9 +3,13 @@
 One preset per file, named by its token, on the shelf that says what it is:
 
 ```text
-templates/agents/<token>.md   ← a LOADOUT: what one session is handed
-templates/teams/<token>.md    ← a CAST: the agents a team launches, one marked lead
+templates/agents/<token>.md   ← a PERSON you assign: one session's loadout
+templates/teams/<token>.md    ← a PROJECT: the cast that delivers it, one marked lead
 ```
+
+Agents are people, teams are projects (owner, 2026-09-01): a box named like a job
+title — designer, bookkeeper, health checker — is an agent; a box named like a task —
+staff my codebase, health checks, dinner party — is a team.
 
 A template fills part of the New Agent or New Team form and stops: its answers become
 yours, and only provenance remains — it is never a live link (KOTOBA § LAUNCHER).

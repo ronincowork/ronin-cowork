@@ -73,12 +73,12 @@ test('the desk contract rides the assignment level, and only that', async () => 
   process.env.RONIN_SESSION_BOOT_CACHE_DIR = path.join(temp, 'generated');
   process.env.RONIN_CATALOGS_DIR = path.join(temp, 'catalogs');
   try {
-    const without = (await bootFiles('', 'CutCode', false, false)).map((f) => path.basename(f));
-    const withDesks = (await bootFiles('', 'CutCode', false, true)).map((f) => path.basename(f));
+    const without = (await bootFiles('', false, false)).map((f) => path.basename(f));
+    const withDesks = (await bootFiles('', false, true)).map((f) => path.basename(f));
     assert.ok(!without.includes('DESK_CONTRACT.md'), 'no assignment, no desk reading');
     assert.ok(withDesks.includes('DESK_CONTRACT.md'), 'an assignment reads the desk contract');
     assert.deepEqual(withDesks.filter((f) => f !== 'DESK_CONTRACT.md').sort(), without.sort(), 'the level adds exactly one book');
-    const contract = await readFile((await bootFiles('', 'CutCode', false, true)).find((f) => path.basename(f) === 'DESK_CONTRACT.md')!, 'utf8');
+    const contract = await readFile((await bootFiles('', false, true)).find((f) => path.basename(f) === 'DESK_CONTRACT.md')!, 'utf8');
     assert.match(contract, /Stop and ask the team lead when the desk is missing or contradictory/);
     assert.match(contract, /tejun-desk status --assignment/);
     assert.match(contract, /never by making a branch or worktree yourself/);

@@ -22,7 +22,7 @@ import path from 'node:path';
 import { arrangementOf, desksManaged } from './arrangement.js';
 import {
   branchExists, commitAll, deleteBranch, resetHardTo, git, isAncestor, mergeInto, revParse, setUpstream,
-  worktreeAddExisting, worktreeAddNew, worktreeOf, worktreePrune, worktreeRemove, changedFiles, dirtyFiles,
+  worktreeAddExisting, worktreeAddNew, worktreeOf, worktreePrune, worktreeRemove, changedFiles, dirtyFiles, stampDeskIdentity,
 } from './git.js';
 import {
   deriveAssignment, deskStatus, deskWorktree, lineFor, listDeskRecords, readDesk, removeDesk, updateDesk,
@@ -113,6 +113,7 @@ export async function openDesk(input: OpenInput): Promise<DeskStatus> {
     else await worktreeAddNew(a.dir, wtPath, branch, line.branch);
   }
   await setUpstream(a.dir, branch, line.branch).catch(() => undefined);
+  await stampDeskIdentity(a.dir, mounted?.path ?? wtPath, input.session);
   await linkNodeModules(a, mounted?.path ?? wtPath);
 
   const rec: DeskRecord = existing

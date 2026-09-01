@@ -172,17 +172,17 @@ test('bare_metal_agent resolves a real CLI without Ronin birth machinery', async
   assert.equal(bare.team_objective, '', 'the Team roster does not resolve into the launch');
 });
 
-test('and to the same reading list — all + root + role, compiled once', async () => {
+test('and to the same role-free reading list — all + root, compiled once', async () => {
   const fromCommons = await resolveForm(commonsForm(), new Set());
   const fromForkit = await resolveForm(forkitForm({ prompt: commonsForm().prompt }), new Set());
 
   const books = reading(fromCommons.brief);
   // The levels a fork used to get NONE of.
-  for (const book of ['ALL_BOOK.md', 'ROOT_BOOK.md', 'ROLE_BOOK.md']) {
+  for (const book of ['ALL_BOOK.md', 'ROOT_BOOK.md']) {
     assert.ok(books.includes(book), `the Build Brief must carry ${book}`);
   }
   const forkBooks = reading(fromForkit.brief);
-  for (const book of ['ALL_BOOK.md', 'ROOT_BOOK.md', 'ROLE_BOOK.md']) {
+  for (const book of ['ALL_BOOK.md', 'ROOT_BOOK.md']) {
     assert.ok(forkBooks.includes(book), `the forked Build Brief must carry ${book}`);
   }
   assert.deepEqual(fromCommons.birth_reading.map((file) => path.basename(file)).sort(), books);
@@ -409,11 +409,10 @@ test('QuarterBack is a session_role, pinned as the developer family\'s default l
   assert.equal(developer!.default_lead_role, 'QuarterBack');
   assert.equal(developer!.session_roles[0], 'QuarterBack', 'the pin presents it first');
 
-  const qb = await resolveForm(commonsForm({ session_role: 'QuarterBack' }), new Set());
+  const qb = await resolveForm(commonsForm({ session_role: 'QuarterBack', team: 'builders', team_lead: true }), new Set());
   assert.equal(qb.session_role, 'QuarterBack');
   assert.equal(qb.dial, 'write', 'the Campaign dial lands after the presentation-only role pin');
-  // A default_lead_role launch carries the team-building SOP — route 1 of its delivery.
-  assert.match(qb.brief, /teams\.md/, 'the lead reading rides the brief');
+  assert.match(qb.brief, /teams\.md/, 'the explicit team_lead designation carries the lead reading');
 });
 
 test('Mika house mechanics resolve without a session_role', async () => {
@@ -462,18 +461,18 @@ test('kind and behaviours resolve at birth, with unusable books ignored rather t
 
 test('a selected template names unchanged preset values without reapplying edited ones', async () => {
   const preset = await resolveForm(commonsForm({
-    template: 'document_it',
-    prompt: 'Write what this is and how it works, for a reader who was not in the room.',
+    template: 'technical_writer',
+    prompt: 'Be my technical writer — write what things are and how they work, for a reader who was not in the room.',
     mandate: { reach: 'execute', recruit: 'nobody', output: 'an artifact' },
     behaviours: ['sops:github'],
   }), new Set());
-  assert.deepEqual(preset.stated_by.template, [{ layer: 'template', source: 'document_it' }]);
+  assert.deepEqual(preset.stated_by.template, [{ layer: 'template', source: 'technical_writer' }]);
   assert.equal(preset.stated_by.brief[0]?.layer, 'template');
-  assert.deepEqual(preset.stated_by.mandate, [{ layer: 'template', source: 'document_it' }]);
-  assert.deepEqual(preset.stated_by.behaviours, [{ layer: 'template', source: 'document_it' }]);
+  assert.deepEqual(preset.stated_by.mandate, [{ layer: 'template', source: 'technical_writer' }]);
+  assert.deepEqual(preset.stated_by.behaviours, [{ layer: 'template', source: 'technical_writer' }]);
 
   const edited = await resolveForm(commonsForm({
-    template: 'document_it',
+    template: 'technical_writer',
     prompt: 'Write only the API page.',
     mandate: { reach: 'plan', recruit: 'nobody', output: 'an artifact' },
     behaviours: [],

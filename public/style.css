@@ -51,14 +51,38 @@
   --ok: #b5bd68;
   --ok-2: #7fd4a8;
   --warn: #f0c674;
+  /* KIIRO — the house's core yellow-orange, THEME-INVARIANT by ruling (owner,
+     2026-09-01: "make sure that the tokens between light and dark don't mean we lose
+     our core color, which is the kiiro"). Declared once, never re-declared by the
+     light block: a brand color that mutates per theme stops being the brand. Every
+     kiiro FILL reads this pair (the band, the attention flash, the phone's Start);
+     --warn stays separate as the theme-tuned warning ink, because thin text genuinely
+     needs a darker value on paper — a shade of kiiro, not a replacement for it. */
+  /* Value history: #f0c674 (gold) read as YELLOW on the band — "it's not anything to
+     do with orange" (owner) — so kiiro is the house's amber-ORANGE, the armed-frame
+     accent's own hue. This one line is the whole brand color: change it and the band,
+     the attention flash and the phone's Start all follow. */
+  --kiiro: #e0af68;
+  --on-kiiro: #201a0e;
   /* THE WORKBENCH'S HEADER BAND, tinted (owner, 2026-09-01): "change the headers for the
      workspace and the work selector… so that it's like a light orange shading so that it
      stands out a little bit, because I get lost. I can't always see, especially in this
      dark mode. It's got to be light enough that it doesn't obstruct the view of the
-     fonts." So: the ground carried a tenth of the way toward --kaki, one token, every
-     workbench header and the channel tab strip with it. Written as the resolved value
-     rather than a mix so a skin can replace it like any other token. */
-  --cowork-head-bg: #372425;
+     fonts." Later the same day: the tenth-toward-kaki first cut was still invisible to
+     the owner ("I still don't see the kiiro shading"), and theme-relative mixes read
+     as different colours per theme ("not rouge or mauve or putrid orange") — the
+     ruling is ONE opaque kiiro, the same in light and dark: "I want this similar
+     orange to go across whether it's light or dark modes." The first constant value
+     (#decb8f) drifted khaki — "some kind of weird yellow and not a shade of our
+     kiiro" — so the band is now a TINT OF THE KIIRO TOKEN itself: constant across
+     themes because both mix inputs are constants, light enough for its own dark ink
+     family below (the theme's --fg-strong/--muted-2/--warn are tuned for the theme's
+     ground, not for this band's). */
+  --cowork-head-bg: color-mix(in srgb, var(--kiiro) 62%, #ffffff);
+  --cowork-head-fg: #201a0e;
+  --cowork-head-muted: #5a4d28;
+  /* Attention ON the band: the band is already kiiro, so attention speaks kaki. */
+  --cowork-head-attention: #8a3413;
   --bad: #cc6666;
   --bad-soft: #e6a1a1;
   --bad-deep: #a33c33;
@@ -212,6 +236,17 @@
      Its parts: a 28px tab, the 6px the row pads above and below it, and the rule under. */
   --row-head: calc(var(--space-11) + var(--space-6) + var(--edge));
 
+  /* One typographic voice for the permanent head over every Workbench surface. The
+     frame has three approved header forms (Kit, terminal Tile, and channel strip), but
+     their title must not inherit a feature body's type or choose a private size.
+     Raised from --text-3 (owner, 2026-09-01: "the text for the headers … is so small …
+     grow that a bit … through the kit … using tokens"): one token, every header —
+     the roster title, the agent names on the tiles, the selector — moves together. */
+  --workbench-head-font: var(--font-ui);
+  --workbench-head-size: var(--text-5);
+  --workbench-head-weight: 700;
+  --workbench-head-line: 1.2;
+
   /* ---- TYPE. Ronin is a dense operational tool and its type scale is small and tight
      on purpose; `--text-3` (12px) is the body of this app, not a caption. The scale is
      what the file already used, minus the half-pixels. */
@@ -281,7 +316,6 @@
 :root[data-theme='light'] {
   --bg: #f4f2ec;
   --bg-2: #eae7df;
-  --cowork-head-bg: #e5d5ca;
   --panel: #ffffff;
   --raise: #f1efe8;
   --raise-2: #e6e2d8;
@@ -562,10 +596,12 @@ body {
   transform: translate(-50%, -50%);
   z-index: 41;
   max-width: 88vw;
-  border: var(--edge) solid var(--warn);
+  /* A kiiro FILL, so it reads the invariant brand pair — light mode's --warn is a
+     text ink and would mustard this band (owner, 2026-09-01). */
+  border: var(--edge) solid var(--kiiro);
   border-radius: var(--radius-xs);
-  background: var(--warn);
-  color: var(--on-accent);
+  background: var(--kiiro);
+  color: var(--on-kiiro);
   padding: var(--space-6) var(--space-8);
   font-size: var(--text-5);
   font-weight: 700;
@@ -1484,9 +1520,15 @@ body {
   gap: var(--space-2) var(--space-4);
   padding: var(--space-3) var(--space-4);
   min-height: var(--row-head);
-  background: var(--bg-2);
+  /* The one head shade, shared with every workbench band (--cowork-head-bg is bg-2
+     on stock): a skin that moves the band's shade moves this head with it, so the
+     selector's band and the tile heads beside it can never split. */
+  background: var(--cowork-head-bg);
   border-bottom: var(--edge) solid var(--line);
   flex: 0 0 auto;
+  font-family: var(--workbench-head-font);
+  font-size: var(--workbench-head-size);
+  line-height: var(--workbench-head-line);
 }
 .tile-head .grow {
   flex: 1;
@@ -1498,8 +1540,11 @@ body {
   flex: 0 1 auto;
   min-width: 6rem;
   padding: var(--space-2) var(--space-3);
-  color: var(--fg-strong);
-  font-size: var(--text-5);
+  color: var(--cowork-head-fg);
+  font-family: var(--workbench-head-font);
+  font-size: var(--workbench-head-size);
+  font-weight: var(--workbench-head-weight);
+  line-height: var(--workbench-head-line);
   max-width: 60%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1915,10 +1960,24 @@ body {
    composer and spoke into the overlay's textarea, and the words never met. The mic
    is now .cmic, a button on the one box. */
 @media (pointer: coarse) {
-  .tile-head button {
+  /* ONE BOX for every glyph control, and it is ⚡'s (owner, 2026-09-01: "make them all
+     exactly like the Macro button"). Without the longer selectors the base sheet's
+     torii/メ width (28px, higher specificity) beat this rule, and the @ picker is a
+     SELECT the button rule never reached — three sizes on one row. The worded
+     work-record keeps its own width (its rule outranks these). */
+  .tile-head button,
+  .tile-head button.torii,
+  .tile-head button.tmore-btn,
+  .tile-head select.tmention-btn {
     width: 34px;
     height: 32px;
+    padding: 0;
     font-size: var(--text-5);
+    border-radius: var(--radius-sm);
+  }
+  /* The select centers its glyph by line, not by flex. */
+  .tile-head select.tmention-btn {
+    line-height: 30px;
   }
   .tile-head .sess {
     max-width: 50%;
@@ -6384,11 +6443,11 @@ button.wk-card { cursor: pointer; font-family: var(--font-ui); }
 .wk-explorer-rail[data-state='unavailable'], .wk-explorer-rail[data-state='inert'] { opacity: .58; pointer-events: none; }
 /* THE COMMONS STRIP WEARS THE TILE HEAD'S SHADING (owner, 2026-08-27: "it should be the same,
    at least shading") — one surface_head look for every surface (docs/cowork-space.md). */
-.wk-channel-service-tabs { display: flex; flex: 0 0 auto; align-items: stretch; gap: 0; min-height: var(--row-head); background: var(--cowork-head-bg); border-bottom: var(--edge) solid var(--line-2); overflow-x: auto; }
-.wk-channel-service-title { display: flex; align-items: center; flex: 0 0 auto; color: var(--fg-strong); border-right: var(--edge) solid var(--line-2); padding: var(--space-3) var(--space-6); font-size: var(--text-3); font-weight: 700; white-space: nowrap; }
-.wk-channel-service-tab { flex: 1 0 auto; border: 0; border-right: var(--edge) solid var(--line); border-radius: 0; background: transparent; color: var(--muted-2); padding: var(--space-3) var(--space-6); font-size: var(--text-3); font-weight: 650; white-space: nowrap; }
+.wk-channel-service-tabs { display: flex; flex: 0 0 auto; align-items: stretch; gap: 0; min-height: var(--row-head); background: var(--cowork-head-bg); border-bottom: var(--edge) solid var(--line-2); overflow-x: auto; font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); line-height: var(--workbench-head-line); }
+.wk-channel-service-title { display: flex; align-items: center; flex: 0 0 auto; color: var(--cowork-head-fg); border-right: var(--edge) solid var(--line-2); padding: var(--space-3) var(--space-6); font: var(--workbench-head-weight) var(--workbench-head-size)/var(--workbench-head-line) var(--workbench-head-font); white-space: nowrap; }
+.wk-channel-service-tab { flex: 1 0 auto; border: 0; border-right: var(--edge) solid var(--line); border-radius: 0; background: transparent; color: var(--cowork-head-muted); padding: var(--space-3) var(--space-6); font-family: var(--workbench-head-font); font-size: var(--workbench-head-size); white-space: nowrap; }
 .wk-channel-service-tab[aria-selected='true'] { background: var(--raise); color: var(--fg-strong); box-shadow: inset 0 calc(-1 * var(--space-1)) 0 var(--accent); }
-.wk-channel-service-tab[data-attention='true'] { color: var(--warn); font-weight: 700; }
+.wk-channel-service-tab[data-attention='true'] { color: var(--cowork-head-attention); font-weight: 700; }
 .wk-channel-surface > .wk-surface-content { display: flex; flex-direction: column; }
 .wk-channel-service { width: 100%; flex: 1 1 auto; min-height: 0; }
 .wk-form { display: flex; flex-direction: column; gap: var(--space-6); }
@@ -6520,6 +6579,38 @@ body[data-phone] #viewhost {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+/* ── The workbench on touch (owner, 2026-09-01) ────────────────────────────────────
+   Here rather than workspace-kit.css: that sheet is injected by JS with no
+   cache-busting, and a stale copy on a tablet is how an armed workspace looked dead. */
+@media (pointer: coarse) {
+  /* The armed workspace wears a visible frame. The tap-a-workspace-then-tap-a-card
+     flow already existed; a 1px inset outline was no evidence on a tablet. */
+  .wk-workbench-cell.wk-workbench-selected {
+    outline: 3px solid var(--accent);
+    outline-offset: -3px;
+  }
+  /* An ARMED EMPTY workspace says so inside the box, not just at its edge (owner,
+     2026-09-01: tapping an empty workspace showed nothing at all — a seated tile
+     lights its own header, a blank had only the frame). The ground tints and the
+     word turns accent, so "tap here, then tap an agent" reads at arm's length. */
+  .wk-workbench-cell.wk-workbench-selected .tw-blank {
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+  }
+  .wk-workbench-cell.wk-workbench-selected .tw-blank-word {
+    color: var(--accent);
+  }
+  /* One band height for every header strip on the bench — the selector's, the blank
+     seat's and the commons tabs match the tile head beside them (its 32px controls
+     plus their padding); a shorter shaded band next to a taller one read as a third
+     kind of thing. */
+  .wk-surface-header,
+  .wk-channel-service-tabs {
+    /* A measurement, not a rung: the coarse tile-head control height plus its padding. */
+    --band: calc(32px + 2 * var(--space-3) + var(--edge));
+
+    min-height: var(--band);
+  }
 }
 #phone {
   position: fixed;
@@ -6667,4 +6758,93 @@ body[data-phone] .wk-terminal-host > .tile {
 }
 body[data-phone] .tile-head {
   display: none; /* the ph-bar replaces it; its controls live in the メ sheet */
+}
+/* ＋ Launch New Agent — the card at the foot of a Cowork's Agents on the phone
+   (js/phone.js): a name, the words, and the Cowork's defaults for everything else. */
+#phone .ph-launch-open {
+  width: 100%;
+  min-height: 44px;
+  border: var(--edge) dashed var(--line-3);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--muted-2);
+  font-size: var(--text-5);
+  cursor: pointer;
+}
+#phone .ph-launch-open:active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+#phone .ph-launch-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+#phone .ph-launch-form[hidden] {
+  display: none;
+}
+#phone .ph-launch-form input,
+#phone .ph-launch-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: var(--edge) solid var(--line-2);
+  border-radius: var(--radius-md);
+  background: var(--well);
+  color: var(--fg);
+  padding: var(--space-3) var(--space-4);
+  font: 16px/1.35 var(--font-ui); /* 16px stops iOS Safari zooming the field */
+  resize: none;
+}
+#phone .ph-launch-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-2);
+}
+#phone .ph-launch-go {
+  min-height: 44px;
+  border: 0;
+  border-radius: var(--radius-md);
+  /* KIIRO, the house's core yellow — the invariant brand pair, not --action (blue,
+     which belongs to nothing on this shell) and not --warn (a theme-tuned text ink
+     that mustards in light mode). Owner, 2026-09-01. */
+  background: var(--kiiro);
+  color: var(--on-kiiro);
+  font-size: var(--text-5);
+  font-weight: 600;
+  cursor: pointer;
+}
+#phone .ph-launch-go:disabled {
+  opacity: .5;
+}
+#phone .ph-launch-state {
+  margin: 0;
+  color: var(--muted-2);
+  font-size: var(--text-3);
+}
+#phone .ph-launch-state[data-kind='failed'] {
+  color: var(--bad-soft);
+}
+/* The house mark on the shell's front door — the same #brandbtn node, relocated, so
+   its href and handlers ride along; the #bar-scoped brand rules cannot reach it here. */
+#phone .ph-bar .brand {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  color: var(--kaki);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-decoration: none;
+}
+#phone .ph-bar .brand-mark {
+  display: block;
+  width: auto;
+  height: var(--bar-brand-mark-h);
+}
+#phone .ph-bar .brand-word {
+  color: var(--fg-strong);
+  font-size: var(--text-6);
+  font-weight: 600;
 }

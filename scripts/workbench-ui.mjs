@@ -34,6 +34,12 @@ try {
     const heads = page.locator('.wk-workbench-host:visible .wk-surface-header:visible,.wk-workbench-host:visible .wk-channel-service-tabs:visible,.wk-workbench-host:visible .tile-head:visible');
     const metrics = await heads.evaluateAll((items) => [...new Set(items.map((item) => `${Math.round(item.getBoundingClientRect().height)}|${getComputedStyle(item).backgroundColor}`))]);
     if (await heads.count() !== 5 || metrics.length !== 1) fail(`${expected.hash}: headers are not one fixed band per selector/workspace`);
+    const headTitles = page.locator('.wk-workbench-host:visible .wk-surface-header-title:visible,.wk-workbench-host:visible .wk-channel-service-title:visible,.wk-workbench-host:visible .tile-head .sess:visible');
+    const titleType = await headTitles.evaluateAll((items) => [...new Set(items.map((item) => {
+      const style = getComputedStyle(item);
+      return `${style.fontFamily}|${style.fontSize}|${style.fontWeight}|${style.lineHeight}`;
+    }))]);
+    if (await headTitles.count() !== 5 || titleType.length !== 1) fail(`${expected.hash}: Workbench header titles do not share one typography contract`);
 
     const cards = page.locator('.wk-workbench-selector-cards .wk-card:visible');
     const cardCount = await cards.count();

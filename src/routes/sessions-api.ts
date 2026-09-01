@@ -43,10 +43,8 @@ import { expandLookup } from '../lookup.js';
 import { readCtxLine } from '../ctx.js';
 import { count } from '../counts.js';
 import { announceTeamChanges } from './wipeboards-api.js';
-import { readSessionRole, writeSessionRole, writeTeams } from '../tegami.js';
+import { writeTeams } from '../tegami.js';
 import { teamsSopPath } from '../spawn.js';
-import { observeRoleChange, roleDeliveryFault } from '../role-watch.js';
-import { listSessionRoles } from '../definitions.js';
 import { emitSessionEnd } from '../sockets.js';
 import { resumeAgentArgv } from '../agents.js';
 import { listTeamRosters } from '../team-rosters.js';
@@ -97,7 +95,6 @@ export function registerSessions(app: express.Express): void {
         note: await getNote(name),
         control: await getControl(name),
         project_root: await getProjectRoot(name),
-        session_role: await readSessionRole(name),
       };
       await writeArchive(archived); // durable first; tmux remains live on any failure above
       try {
@@ -132,7 +129,6 @@ export function registerSessions(app: express.Express): void {
         await setLaunchStamp(archived.name, archived.agent);
         await setProviderSessionId(archived.name, archived.provider_session_id);
         await setControl(archived.name, archived.control);
-        if (archived.session_role) await writeSessionRole(archived.name, archived.session_role);
         await writeTeams(archived.name, archived.tags);
       } catch (e) {
         await stopSessionTree(archived.name);
@@ -313,33 +309,6 @@ export function registerSessions(app: express.Express): void {
   });
 
   /**
-   * THE TWO AXES OUT OF A SESSION'S LETTER — and only one of them has a door in.
-   *
-   * `session_role` is what this session is DOING. The session keeps it current itself
-   * (`write_tegami`) and usually should. The POST is the OWNER's hand on the same field,
-   * from the tile: you can see the agent is not doing what its mark says, so you say so.
-   *
-   * IT IS NOT MERELY A RE-LABEL ANY MORE. A committed task change means the session
-   * should be reading that task's shelf, so this route writes the letter and then hands
-   * off to the SAME observer the agent's own `write_tegami` goes through
-   * (`src/role-watch.ts`). One injection implementation, reached two ways — a second one
-   * in this route is exactly how the owner's change and the agent's change would drift
-   * into behaving differently.
-   *
-   * What it still does NOT do is re-launch anything: the dial and launch mode the launch
-   * fixed are untouched, and a session that is re-marked must not thereby acquire a
-   * different dial.
-   *
-   * Not validated against the definitions on purpose: `session_roles/` is the owner's to
-   * extend or shadow, and a name with no icon still draws as its own text. '' clears the
-   * mark back to "has not said", which is a real state and must stay reachable — and it
-   * injects no reading, because a blank session_role has none.
-   *
-   * 409, not 500, when the letter cannot be written: it means the file is malformed or
-   * the edit would not re-parse, and the caller wants to know its change did not land
-   * rather than that the server broke.
-   */
-  /**
    * THE RETIRED AXES, refused by name — three generations of one door, each pointing at
    * what replaced it, because a caller on old vocabulary deserves better than the blank
    * 404 a typo gets. 410 is the honest code: these doors existed, and they are gone.
@@ -350,52 +319,15 @@ export function registerSessions(app: express.Express): void {
    *                  roster, contextual per team, never a session attribute;
    *   session_task   renamed `session_role` in the same ruling.
    */
-  for (const retired of ['session_job', 'family_role', 'session_task', 'role_family', 'team_role', 'campaign_kind', 'lifecycle']) {
+  for (const retired of ['session_job', 'family_role', 'session_task', 'session_role', 'role_family', 'team_role', 'campaign_kind', 'lifecycle']) {
     app.all(`/api/sessions/:name/${retired}`, (req, res) => {
       res.status(410).json({
         error:
-          `${retired} is retired. A session has ONE axis of its own — ` +
-          '`session_role`, what it is doing now, at ' +
-          `/api/sessions/${encodeURIComponent(req.params.name)}/session_role — and its teams. ` +
-          "Identity is contextual to a session's team, never a separate axis.",
+          `${retired} is retired. Birth path is session_type; work readings are selected ` +
+          'with behaviours at birth; leadership is the explicit team_lead designation.',
       });
     });
   }
-
-  app.get('/api/sessions/:name/session_role', async (req, res) => {
-    const { name } = req.params;
-    if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
-    if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
-    // `delivery` is the split-state readout: present only when this session's task
-    // changed and its reading did NOT land (a closed dial, a prompt that would not take
-    // input). A changed mark with undelivered reading must never pass silently, so the
-    // surface that shows the mark can show why it is only half true.
-    res.json({
-      session_role: await readSessionRole(name),
-      delivery: await roleDeliveryFault(name),
-    });
-  });
-
-  app.post('/api/sessions/:name/session_role', async (req, res) => {
-    const { name } = req.params;
-    if (!isValidName(name)) return res.status(400).json({ error: 'Invalid name.' });
-    if (!(await sessionExists(name))) return res.status(404).json({ error: 'No such session.' });
-    const task = String(req.body?.session_role ?? '').trim().slice(0, 64);
-    try {
-      const saved = await writeSessionRole(name, task);
-      if (saved === null) {
-        return res.status(409).json({ error: "This session's letter could not be written — it has no readable json block." });
-      }
-      count('session_role.set', { task: saved || null });
-      // The owner authored it; the observer delivers it. Fire-and-forget so the tile's
-      // mark updates at once — a failed delivery is recorded and retried by the watcher
-      // rather than held against this request.
-      void observeRoleChange(name);
-      res.json({ ok: true, session_role: saved });
-    } catch (e) {
-      res.status(500).json({ error: String((e as Error)?.message ?? e) });
-    }
-  });
 
   /**
    * EVERY LIVE TEAM, with members and leads. Derived from the sessions each call — there
@@ -420,8 +352,8 @@ export function registerSessions(app: express.Express): void {
   });
 
   /**
-   * ONE TEAM'S LIVE HALF — the members with what a view needs per card: dial,
-   * session_role, lead flag. The durable half is /api/team-rosters/:name; a team can be
+   * ONE TEAM'S LIVE HALF — the members with what a view needs per card: dial and lead
+   * flag. The durable half is /api/team-rosters/:name; a team can be
    * real in either half alone (a roster with no live members, a tag with no roster).
    */
   app.get('/api/teams/:name/live', async (req, res) => {
@@ -434,7 +366,6 @@ export function registerSessions(app: express.Express): void {
           members.map(async (s) => ({
             name: s.name,
             dial: await getControl(s.name),
-            session_role: await readSessionRole(s.name),
             team_lead: s.leads.includes(name),
           })),
         ),

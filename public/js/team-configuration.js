@@ -35,8 +35,11 @@ export function renderTeamConfiguration(host, roster, optionsArg = {}) {
   if (!roster?.durable) { host.append(el('p', 'tw-config-empty', t('team_config.no_roster', 'This Cowork has no saved roster.'))); return; }
   const loading = el('p', 'tw-config-empty', t('team_config.loading', 'Loading Team Configuration…')); host.append(loading);
 
+  // The form is painted even into a host that is not in the document: the caller renders
+  // only on real change now, so a commons waiting off-screen must receive its form here —
+  // nothing will render it again when it is placed. A superseded render's host is a
+  // discarded node; painting it is invisible and cheap.
   void Promise.all([request('/api/routines'), request('/api/session-launch-specs'), request('/api/project-roots/detail')]).then(([routineResult, specResult, rootResult]) => {
-    if (!host.isConnected) return;
     const routines = routineResult.ok && Array.isArray(routineResult.data) ? routineResult.data : [];
     const specs = specResult.ok && Array.isArray(specResult.data) ? specResult.data : [];
     const roots = rootResult.ok && Array.isArray(rootResult.data?.roots) ? rootResult.data.roots.filter((root) => !root.archived) : [];

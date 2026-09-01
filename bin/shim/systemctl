@@ -41,11 +41,18 @@ case "$verb" in
 esac
 
 hits_server=0
+hits_ronin=0
 for u in $units; do
   case "$u" in
     tmux-server|tmux-server.service) hits_server=1 ;;
+    ronin|ronin.service|tmux-ronin|tmux-ronin.service) hits_ronin=1 ;;
   esac
 done
+
+if [ "$destructive" = 1 ] && [ "$hits_ronin" = 1 ]; then
+  ROOT=$(cd "$SELF_DIR/../.." && pwd)
+  node "$ROOT/scripts/guard-dev-restart.mjs" "$ROOT" || exit $?
+fi
 
 if [ "$destructive" = 1 ] && [ "$hits_server" = 1 ] && [ "${RONIN_KILL_TMUX:-}" != "1" ]; then
   # Ask the REAL tmux — the shim beside us would only add dial checks we don't want here.

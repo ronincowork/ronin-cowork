@@ -202,18 +202,14 @@ export function build() {
  * TOUCH: trim the desktop chrome off the bar. The keys that used to live in a
  * drawer here (and the ニ sheet that opened it) are gone — they dock on every
  * coarse tile's composer now (js/keysrow.js), next to the box they drive, instead
- * of two taps away at the wrong end of the screen. What remains is relocation:
- * the shape button to the end of the row, and the desktop-only scaffolding out.
- * Desktop never calls this; a phone never reaches it (the shell hides the bar whole).
+ * of two taps away at the wrong end of the screen. The 2⇄4 shape button goes too
+ * (owner, 2026-09-01): a coarse bench is pinned at two workspaces — see the Kit's
+ * own pin in workbench.js — so a count control would be a dead switch. The spacer
+ * STAYS: it is what slides the tab name, the layout map and RAM_RPM to the right
+ * (owner, same day). Desktop never calls this; a phone never reaches it (the
+ * shell hides the bar whole).
  */
 export function trimBarForTouch() {
   if (!isCoarse()) return;
-  const bar = document.getElementById('bar');
-  if (!bar) return;
-  // The shape button moves to the end of the row — RELOCATED, not rebuilt, so the
-  // face team-view.js writes and the click it owns come along.
-  const shape = document.getElementById('shapecycle');
-  if (shape) bar.append(shape);
-  // The desktop spacer costs row width the 44px targets need.
-  document.querySelector('#bar .grow')?.remove();
+  document.getElementById('shapecycle')?.remove();
 }
