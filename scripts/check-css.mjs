@@ -228,6 +228,29 @@ if (!appBody || !foundationsBody) {
   }
 }
 
+// --- every var() names a token something defines ---
+// A custom property consumed with no fallback and no definition anywhere in the
+// shipped sheets is silently invalid at computed-value time: the browser drops the
+// declaration and nobody hears it. The 2026-09-01 token audit found SEVEN such names
+// live in the sheet (--fg-dim, --fg-faint, --line-faint, --bg-input, --surface,
+// --accent-soft, --ok-soft) — weeks of quietly missing paint. A var() WITH a
+// fallback is a declared optional (the gauge's --g1..3, written from JS) and stays
+// legal.
+const definedTokens = new Set();
+const strippedSheets = new Map();
+for (const file of shippedPaths) {
+  const text = fs.readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '));
+  strippedSheets.set(file, text);
+  for (const m of text.matchAll(/(--[\w-]+)\s*:/g)) definedTokens.add(m[1]);
+}
+for (const [file, text] of strippedSheets) {
+  text.split('\n').forEach((line, i) => {
+    for (const m of line.matchAll(/var\(\s*(--[\w-]+)\s*\)/g)) {
+      if (!definedTokens.has(m[1])) problems.push(`${path.relative(ROOT, file)}:${i + 1} reads ${m[1]}, which nothing defines`);
+    }
+  });
+}
+
 // --- 6. the contrast floor, computed from the tokens, both themes ---
 function tokensOf(body) {
   return Object.fromEntries([...body.matchAll(/(--[\w-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].trim()]));
@@ -289,6 +312,8 @@ const FLOOR = [
   // The workbench band — the family that kept losing kiiro or its ink to a retune.
   ['--cowork-head-fg', '--cowork-head-bg', 7], ['--cowork-head-muted', '--cowork-head-bg', 4.5],
   ['--cowork-head-attention', '--cowork-head-bg', 4.5],
+  // Kiiro fills: the brand pair at rest and pressed/hover depth.
+  ['--on-kiiro', '--kiiro', 4.5], ['--on-kiiro', '--kiiro-deep', 4.5],
   ['--term-fg', '--term-bg', 7], ['--term-tape-fg', '--term-tape-bg', 7], ['--term-input-fg', '--term-well', 7],
 ];
 for (const [name, toks] of [['dark', darkTokens], ['light', lightTokens]]) {

@@ -48,6 +48,12 @@
   --accent: #e0af68;
   --accent-2: #81a2be;
   --accent-deep: #d8a13a;
+  /* Soft selected-state washes — two of the seven names the 2026-09-01 token audit
+     found CONSUMED while defined nowhere, every read quietly dropped by the browser
+     (the other five were remapped to real roles; the gate now fails an undefined
+     var()). Derived from tuned parents, so they tune with the theme. */
+  --accent-soft: color-mix(in srgb, var(--accent) 22%, transparent);
+  --ok-soft: color-mix(in srgb, var(--ok) 22%, transparent);
   --ok: #b5bd68;
   --ok-2: #7fd4a8;
   --warn: #f0c674;
@@ -75,6 +81,9 @@
      toward kaki FIRST (70/30, holding the orange), then lightens hard (45% over
      white): distinctly lighter than the token, distinctly orange, never cream. */
   --kiiro-tint: color-mix(in srgb, color-mix(in srgb, var(--kiiro) 70%, var(--kaki)) 45%, #ffffff);
+  /* KIIRO-DEEP — the pressed/hover depth of a kiiro fill, as --accent-deep is to
+     --accent. Invariant like its parent. */
+  --kiiro-deep: color-mix(in srgb, var(--kiiro) 82%, #000000);
   /* THE WORKBENCH'S HEADER BAND — one light kiiro, both themes. The full run of
      owner verdicts, so no rejected value returns: the tenth-toward-kaki cut
      (invisible), #decb8f (khaki — "weird yellow"), opaque gold (the old --kiiro),
@@ -2566,14 +2575,14 @@ body {
   padding-bottom: var(--space-4);
 }
 .st-blurb {
-  color: var(--fg-dim);
+  color: var(--muted);
   font-size: var(--text-4);
 }
 .st-blurb.bad {
   color: var(--bad);
 }
 .st-stamp {
-  color: var(--fg-faint);
+  color: var(--muted-3);
   font-size: var(--text-2);
   font-variant-numeric: tabular-nums;
 }
@@ -2582,7 +2591,7 @@ body {
   flex-direction: column;
 }
 .st-grp {
-  color: var(--fg-faint);
+  color: var(--muted-3);
   font-size: var(--text-2);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2592,7 +2601,7 @@ body {
 }
 .st-row {
   padding: var(--space-4) 0;
-  border-bottom: var(--edge) solid var(--line-faint);
+  border-bottom: var(--edge) solid var(--line);
 }
 .st-row.st-obs {
   display: grid;
@@ -2601,7 +2610,7 @@ body {
   align-items: baseline;
 }
 .st-lab {
-  color: var(--fg-dim);
+  color: var(--muted);
   font-size: var(--text-4);
 }
 .st-val {
@@ -2609,11 +2618,11 @@ body {
   overflow-wrap: anywhere;
 }
 .st-note {
-  color: var(--fg-faint);
+  color: var(--muted-3);
   margin-left: var(--space-4);
 }
 .st-link {
-  color: var(--fg-faint);
+  color: var(--muted-3);
   font-size: var(--text-3);
 }
 /* The label sits in a fixed first column and the control beside it; the field's own
@@ -2628,12 +2637,12 @@ body {
 }
 .st-field > label {
   flex: 0 0 156px;
-  color: var(--fg-dim);
+  color: var(--muted);
   font-size: var(--text-4);
 }
 .st-inp {
   width: min(320px, 100%);
-  background: var(--bg-input);
+  background: var(--well);
   color: var(--fg);
   border: var(--edge) solid var(--line);
   border-radius: var(--radius-xs);
@@ -3327,6 +3336,10 @@ body {
 }
 /* KIIRO — yellow when there is something to save; the ← wears it too so the way out is
    as easy to find as the way to keep it (owner, 2026-08-28). */
+/* TOKEN? (audit mark, 2026-09-01): class says kiiro, token is --warn — deliberately,
+   because this is thin INK and invariant #e0af68 text fails on light paper. If the
+   dirty state should read brand-kiiro, it takes a FILL treatment like the Kit's
+   data-attention, not an ink swap. Owner rules; TOKENS_AUDIT.md § 3.5. */
 .dc-back.kiiro,
 .dc-save.kiiro {
   border-color: var(--warn);
@@ -4877,7 +4890,7 @@ button.wb-door:hover b {
   border: var(--edge) solid var(--line);
   border-radius: var(--radius-xs);
   color: var(--fg);
-  background: var(--surface);
+  background: var(--well);
   font: var(--text-2)/1.2 var(--font-mono);
   padding: var(--space-1) var(--space-2);
 }
@@ -5120,15 +5133,17 @@ button.wb-door:hover b {
   opacity: 0.4;
 }
 .tile:is(.tape-on, .keys-on) .composer textarea:focus {
-  border-color: var(--action-2);
+  border-color: var(--accent);
 }
 .tile:is(.tape-on, .keys-on) .composer .csend {
   height: 30px;
   min-width: 38px;
   border: 0;
   border-radius: var(--radius-md);
-  background: var(--action);
-  color: var(--on-strong);
+  /* Was the shell's one blue fill (--action, a role the palette comment itself
+     disowns). A send is a primary action, so it wears the brand pair. */
+  background: var(--kiiro);
+  color: var(--on-kiiro);
   font-size: var(--text-6);
   cursor: pointer;
 }
@@ -6121,13 +6136,13 @@ button.wb-door:hover b {
   gap: var(--space-2);
 }
 .fr-row > label {
-  color: var(--fg-dim);
+  color: var(--muted);
   font-size: var(--text-4);
 }
 .fr-row input,
 .fr-row select,
 .fr-row textarea {
-  background: var(--bg-input);
+  background: var(--well);
   color: var(--fg);
   border: var(--edge) solid var(--line);
   border-radius: var(--radius-xs);
@@ -6231,9 +6246,9 @@ button.wb-door:hover b {
   flex-wrap: wrap;
 }
 .fr-go {
-  background: var(--accent);
-  color: var(--on-accent);
-  border: var(--edge) solid var(--accent-deep);
+  background: var(--kiiro);
+  color: var(--on-kiiro);
+  border: var(--edge) solid var(--kiiro-deep);
   border-radius: var(--radius-xs);
   padding: var(--space-4) var(--space-8);
   font: inherit;
@@ -6241,7 +6256,7 @@ button.wb-door:hover b {
   cursor: pointer;
 }
 .fr-go:hover {
-  background: var(--accent-deep);
+  background: var(--kiiro-deep);
 }
 .fr-go:disabled {
   opacity: 0.6;
@@ -6280,9 +6295,9 @@ button.wb-door:hover b {
 /* the ⚙ offer — a real button in the room's own tokens: filled, hover-dark, cursor.
    It was wearing .st-inp (an input's clothes) and read as a dead field. */
 .st-go {
-  background: var(--accent);
-  color: var(--on-accent);
-  border: var(--edge) solid var(--accent-deep);
+  background: var(--kiiro);
+  color: var(--on-kiiro);
+  border: var(--edge) solid var(--kiiro-deep);
   border-radius: var(--radius-xs);
   padding: var(--space-4) var(--space-8);
   font: inherit;
@@ -6291,7 +6306,7 @@ button.wb-door:hover b {
   cursor: pointer;
 }
 .st-go:hover {
-  background: var(--accent-deep);
+  background: var(--kiiro-deep);
 }
 .st-go:disabled {
   opacity: 0.6;
@@ -6334,7 +6349,7 @@ button.wb-door:hover b {
 .cs-hero h1 { margin: 0; color: var(--fg-strong); font-size: clamp(42px, 6vw, 62px); font-weight: 600; line-height: .98; letter-spacing: -.055em; }
 .cs-hero > p:not(.cs-live-proof) { max-width: 680px; margin: var(--space-7) 0 0; color: var(--muted-2); font-size: var(--text-6); line-height: 1.5; }
 .cs-connected { display: inline-flex; align-items: center; gap: var(--space-3); margin-top: var(--space-7); padding: var(--space-3) var(--space-5); border: var(--edge) solid var(--line); border-radius: var(--radius-pill); color: var(--muted-2); font: var(--text-2)/1 var(--font-mono); }
-.cs-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok-2); }
+.cs-dot { width: 8px; height: 8px; border-radius: var(--radius-round); background: var(--ok-2); }
 .cs-layout { display: grid; grid-template-columns: minmax(0, 680px) minmax(250px, 1fr); gap: 26px; align-items: start; }
 .cs-form { display: flex; flex-direction: column; gap: var(--space-7); }
 .cs-stage { display: flex; align-items: center; gap: var(--space-5); margin: var(--space-7) var(--space-2) 0; color: var(--fg-strong); font-weight: 800; }
@@ -6356,7 +6371,7 @@ button.wb-door:hover b {
 .cs-field { display: flex; flex-direction: column; gap: var(--space-3); }
 .cs-field.full { grid-column: 1 / -1; }
 .cs-field label { color: var(--fg-strong); font-size: var(--text-3); font-weight: 650; }
-.cs-field input, .cs-field select { width: 100%; min-height: 44px; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--bg-input); color: var(--fg); padding: var(--space-4) var(--space-5); outline: none; }
+.cs-field input, .cs-field select { width: 100%; min-height: 44px; border: var(--edge) solid var(--line-2); border-radius: var(--radius-xs); background: var(--well); color: var(--fg); padding: var(--space-4) var(--space-5); outline: none; }
 .cs-field input:focus, .cs-field select:focus { border-color: var(--kaki); box-shadow: 0 0 0 3px var(--accent-soft); }
 .cs-field input.path { font: var(--text-3) var(--font-mono); }
 .cs-hint { color: var(--muted); font-size: var(--text-2); }
