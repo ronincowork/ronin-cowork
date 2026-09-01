@@ -51,7 +51,14 @@
   --ok: #b5bd68;
   --ok-2: #7fd4a8;
   --warn: #f0c674;
-  --cowork-head-bg: var(--bg-2);
+  /* THE WORKBENCH'S HEADER BAND, tinted (owner, 2026-09-01): "change the headers for the
+     workspace and the work selector… so that it's like a light orange shading so that it
+     stands out a little bit, because I get lost. I can't always see, especially in this
+     dark mode. It's got to be light enough that it doesn't obstruct the view of the
+     fonts." So: the ground carried a tenth of the way toward --kaki, one token, every
+     workbench header and the channel tab strip with it. Written as the resolved value
+     rather than a mix so a skin can replace it like any other token. */
+  --cowork-head-bg: #372425;
   --bad: #cc6666;
   --bad-soft: #e6a1a1;
   --bad-deep: #a33c33;
@@ -274,6 +281,7 @@
 :root[data-theme='light'] {
   --bg: #f4f2ec;
   --bg-2: #eae7df;
+  --cowork-head-bg: #e5d5ca;
   --panel: #ffffff;
   --raise: #f1efe8;
   --raise-2: #e6e2d8;

@@ -601,7 +601,9 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   const defaultsBand = el('button', 'ntf-band');
   defaultsBand.type = 'button';
   let defaultsOpen = true;
-  const bandChev = el('span', 'fs-chev', '▾');
+  // Its own class, not `.fs-chev`: that one carries `margin-left: auto` so a step head can
+  // push its chevron to the right, which in a band shoves the sentence there too.
+  const bandChev = el('span', 'ntf-band-chev', '▾');
   defaultsBand.append(bandChev, el('span', null, t('new_team.defaults_band', 'Everything below this is the default for Agents launched within this team.')));
   defaultsBand.addEventListener('click', () => { defaultsOpen = !defaultsOpen; paint(); });
   form.append(stepTop.el, stepTemplate.el, stepObjective.el, stepLead.el, defaultsBand, stepWhere.el, stepKit.el);
