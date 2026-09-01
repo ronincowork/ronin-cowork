@@ -89,6 +89,7 @@ learn in order to use Ronin should cost them a second language first.
 |---|---|---|
 | dial (`@ronin-control`) | **Control**<!--g:glossary.control--> | Per session: you-only 👤, read 👁, read-and-write 🤖. Only the owner flips it. |
 | `launch_mode` | **Model provider configuration · Dangerously**<!--g:glossary.launch_mode--> | Per launch: preserve whatever configuration the provider CLI already loads, or append that provider's declared bypass flag. |
+| `gbrain_mode` | **Connected · Disconnected**<!--g:glossary.gbrain_mode--> | Per launch: preserve provider MCP configuration or append its declared gbrain-disconnect tokens. On Anthropic, **Disconnected disables ALL MCP for that launch**, not only gbrain. |
 | team (`@ronin-tags`) | **Cowork**<!--g:glossary.team--> | The user-facing word for a set of sessions working together. Internally this remains a Team backed by a `team_roster`; Cowork adds no second object. |
 | note (`@ronin_note`) | **Note**<!--g:glossary.note--> | The owner's one line about a session. |
 | — | **Status · Work record · Macros · Detach · Kill session**<!--g:glossary.session_menu--> | The rest of the per-session menu. Already plain. |

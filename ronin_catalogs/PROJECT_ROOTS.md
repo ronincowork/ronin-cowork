@@ -55,15 +55,18 @@ Anthropic model IDs are passed unchanged to Claude's `--model` option.
 |---|---|---|---|---|
 | `anthropic` | `claude --model opus` | `claude --model fable` | `claude --model sonnet` | `claude --model haiku` |
 
-- **mcp_off:** `--strict-mcp-config`
+- **gbrain_disconnected:** `--strict-mcp-config`
 - **live_dangerously:** `--dangerously-skip-permissions`
 
-`mcp_off` is the provider's own "launch with no MCP servers" flags — appended to the
-cell's command when a launch turns MCP off (the ＋ New form's toggle). With no
+`gbrain_disconnected` is the provider's declared way to prevent gbrain reach for one
+launch. With no
 `--mcp-config` given, `--strict-mcp-config` means Claude loads zero MCP servers:
 no shared memory layer, no connectors, for that session only. A provider section
-without an `mcp_off` line cannot launch with MCP off; the spawn refuses rather than
+without a `gbrain_disconnected` line cannot launch disconnected; the spawn refuses rather than
 launching connected.
+
+**Anthropic warning:** its control is coarse. `disconnected` disables **ALL MCP** for
+that Claude launch, not only gbrain.
 
 ### OpenAI
 
@@ -74,7 +77,7 @@ family and IDs are recorded in the [official OpenAI model catalog](https://devel
 |---|---|---|---|
 | `openai` | `codex --model gpt-5.6-sol` | `codex --model gpt-5.6-terra` | `codex --model gpt-5.6-luna` |
 
-- **mcp_off:** `-c mcp_servers.gbrain.enabled=false`
+- **gbrain_disconnected:** `-c mcp_servers.gbrain.enabled=false`
 - **live_dangerously:** `--dangerously-bypass-approvals-and-sandbox`
 
 The first column, `gpt-5.6-sol`, is Ronin's OpenAI default. Every cell names the complete

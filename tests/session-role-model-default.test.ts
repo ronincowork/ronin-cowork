@@ -56,7 +56,7 @@ type SpawnForm = import('../src/spawn.js').SpawnForm;
  * A plain CutCode launch: the role that used to state `model: sonnet`.
  *
  * Every assertion below matches the cmd by PREFIX, because a launch resolving the brain
- * off has the provider's own `mcp_off` flags appended to the cell — the mechanism's
+ * disconnected has the provider's own `gbrain_disconnected` tokens appended to the cell — the mechanism's
  * business, and not what this file is about. The prefix is the whole claim: which
  * provider, and which model.
  */

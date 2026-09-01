@@ -100,20 +100,9 @@ export interface SpawnForm {
   project_root?: string;
   cmd?: string;
   launch_mode?: LaunchMode;
-  /**
-   * MCP on or off for THIS session — a mechanical pick like the cmd, present in both
-   * modes. True: the CLI's own config applies, untouched. False appends the provider's
-   * declared `mcp_off` flags to the cmd, so the session launches with no MCP servers at
-   * all; a provider that declares none REFUSES the launch rather than silently launching
-   * connected. Ronin never learns what was disconnected — the flags are catalog data,
-   * the servers are the CLI's own business.
-   *
-   * **Absent means "whatever the resolved profile says"** — the cascade's `mcp:` default,
-   * which is off for every ordinary launch (owner, 2026-08-22). Only an explicit true or
-   * false here overrides the definitions, so a caller that has no opinion cannot
-   * accidentally connect a session by staying silent.
-   */
-  mcp?: boolean;
+  /** Per-launch gbrain reach. `connected` preserves provider configuration;
+   * `disconnected` appends the provider-declared launch tokens. */
+  gbrain_mode?: 'connected' | 'disconnected';
   tags?: string[];
   /** Files/dirs to read before anything else. */
   seed?: string[];
@@ -165,9 +154,8 @@ export interface Resolved {
   agent: boolean;
   /** `cap: exempt` — born even at the session max. It still counts once it is. */
   capExempt: boolean;
-  /** What the receipt reports: false only when the launch asked for MCP off AND the
-   * provider declared how (`mcp_off` appended to cmd). */
-  mcp: boolean;
+  /** What the provider command actually received for gbrain reach. */
+  gbrain_mode: 'connected' | 'disconnected';
   /**
    * THE CLI ACTUALLY LAUNCHED — `claude`, `codex` — the first word of `cmd`, basenamed.
    * Empty for an `agent: none` kind, which launches nothing at all.
@@ -452,8 +440,7 @@ export async function resolveForm(
   // The row this cmd came out of, matched BEFORE the MCP-off flags are appended below —
   // appending changes the very string the match is on, and looking it up afterwards would
   // find nothing for exactly the launches that asked for something unusual. It carried the
-  // provider too until 2026-08-17, for a roster column the owner then cut to the model
-  // alone; the mcp_off flags are what is left, and they were always the load-bearing use.
+  // provider too until 2026-08-17, for a roster column the owner then cut to the model.
   const spec = launchSpecs.find((b) => b.cmd === cmd);
   const launchMode = agent ? (form.launch_mode ?? parentSeed?.seeds.launch_mode.value ?? 'live_dangerously') as LaunchMode : 'configured';
   if (launchMode === 'live_dangerously') {
@@ -474,10 +461,14 @@ export async function resolveForm(
     .flatMap((routine) => routine.mcp) ?? [];
   const mcpWanted = profile.mcpAlways || routineMcp.length > 0
     ? true
-    : (form.mcp ?? profile.mcpDefault);
+    : (form.gbrain_mode ?? parentSeed?.seeds.gbrain_mode.value) === 'connected'
+      ? true
+      : (form.gbrain_mode ?? parentSeed?.seeds.gbrain_mode.value) === 'disconnected'
+        ? false
+        : profile.mcpDefault;
   // Somebody ASKED for off, as against off being merely what this kind defaults to. The
   // two are refused differently below, and only this one is a promise Ronin made.
-  const askedOff = agent && form.mcp === false;
+  const askedOff = agent && form.gbrain_mode === 'disconnected';
   let mcpOffWanted = agent && !mcpWanted;
   // A kind marked `mcp: always` is BORN connected (owner's ruling, 2026-08-17): the
   // launcher never offers the toggle for it, and a launch that asks anyway (a macro, a
@@ -488,23 +479,23 @@ export async function resolveForm(
         'it cannot be launched with MCP off.',
     );
   }
-  if (mcpOffWanted && !spec?.mcpOff) {
+  if (mcpOffWanted && !spec?.gbrainDisconnected) {
     // Asked for and undeliverable is a broken promise: refuse, rather than launch a
     // session the receipt would call disconnected.
     if (askedOff) {
       throw new Error(
-        'This launch command declares no `mcp_off:` flags in the launch table, ' +
-          'so it cannot be launched with MCP off (see ronin_catalogs/PROJECT_ROOTS.md).',
+        'This launch command declares no `gbrain_disconnected:` tokens in the launch table, ' +
+          'so it cannot launch with gbrain disconnected (see ronin_catalogs/PROJECT_ROOTS.md).',
       );
     }
     // Merely the profile's default, and this provider cannot do it. Since 2026-08-22 that
     // default is off for every ordinary launch, so refusing here would leave a box whose
-    // launch table has no `mcp_off:` row — or that fell through to the bare fallback cmd —
+    // launch table has no `gbrain_disconnected:` row — or that fell through to the bare fallback cmd —
     // unable to launch ANYTHING. The launch goes ahead connected and the receipt says
-    // `mcp: true`, which is the truth; a default may degrade, a promise may not.
+    // `gbrain_mode: connected`, which is the truth; a default may degrade, a promise may not.
     mcpOffWanted = false;
   }
-  if (mcpOffWanted) cmd = `${cmd} ${spec!.mcpOff}`;
+  if (mcpOffWanted) cmd = `${cmd} ${spec!.gbrainDisconnected}`;
 
   // ATTRIBUTION IS RESOLVED BESIDE THE VALUES. Keeping it here means launch and preflight
   // cannot disagree and the browser never has to reconstruct the cascade. A source is an
@@ -539,9 +530,9 @@ export async function resolveForm(
     ? profile.stated_by.agent
     : defaultMcpWasUndeliverable
       ? system
-      : typeof form.mcp === 'boolean'
+      : form.gbrain_mode !== undefined
         ? explicit
-        : profile.stated_by.mcpDefault;
+        : parentSeed?.seeds.gbrain_mode.stated_by ?? profile.stated_by.mcpDefault;
   const unique = (...groups: StatedBy[][]): StatedBy[] => {
     const seen = new Set<string>();
     return groups.flat().filter((item) => {
@@ -630,7 +621,7 @@ export async function resolveForm(
       : '',
     agent,
     capExempt: profile.capExempt,
-    mcp: !mcpOffWanted,
+    gbrain_mode: mcpOffWanted ? 'disconnected' : 'connected',
     // `claude --model opus` -> `claude`; `/opt/homebrew/bin/codex --model …` -> `codex`.
     // The first word, basenamed, because the launch table's cells are commands and a cell
     // is free to name a path. RIREKI's decoder keys are bare binary names, and this value
@@ -674,7 +665,7 @@ export async function resolveForm(
         profile.stated_by.opening, roster ? rosterSource : [], rootSource),
       agent: profile.stated_by.agent,
       capExempt: profile.stated_by.capExempt,
-      mcp: mcpSource,
+      gbrain_mode: mcpSource,
       launchAgent: cmdSource,
       launch_mode: form.launch_mode !== undefined
         ? explicit
