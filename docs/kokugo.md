@@ -9,8 +9,8 @@ This page is the instruction for anyone building a new tab, view, page or contro
 is short enough to read every time. The machinery it describes: `public/js/lexicon.js`
 (the helper), `ronin_catalogs/lexicons/` (the words, one file per lexicon), `docs/lexicons.md`
 (how the chain resolves), `docs/desk-profiles.md` (how a person picks one), and
-`docs/kokugo-table.md` (every key and every lexicon's word beside it — generated on demand
-by `npm run kokugo:table`, never edited and never committed). The sweep that put every existing view through this door landed 2026-08-27.
+`npm run kokugo:table` (every key and every lexicon's word beside it — generated on demand,
+never edited and never committed, so no path here names it). The sweep that put every existing view through this door landed 2026-08-27.
 
 ## 1 · The helper
 

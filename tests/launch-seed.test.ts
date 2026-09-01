@@ -7,7 +7,7 @@ import type { RoutineRow } from '../src/definitions.js';
 import type { TeamRoster } from '../src/team-rosters.js';
 
 const routine = (name: string): RoutineRow => ({
-  name, label: name, blurb: '', origin: 'stock', shadowed: false, class: 'base',
+  name, label: name, blurb: '', origin: 'stock', shadowed: false,
   reading: [], sops: [], macros: [], actions: [], tools: [], mcp: [], requires: [],
 });
 const campaign = {

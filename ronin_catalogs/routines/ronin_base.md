@@ -1,7 +1,6 @@
 # Ronin Base
 - **label:** Ronin Base
 - **blurb:** Ronin's ordinary macros, documents, work records and session coordination.
-- **class:** base
 - **reading:** —
 - **sops:** ronin_methodology, teams
 - **macros:** updateplan, show_file, forkit, buildout, team, wipeboard, tell, read, readwrite, evaluate, delete

@@ -223,7 +223,6 @@ export interface SessionRoleRow extends Row {
 }
 
 export interface RoutineRow extends Pick<Row, 'name' | 'origin' | 'shadowed' | 'label' | 'blurb'> {
-  class: 'base' | 'control' | 'specialized';
   reading: string[];
   sops: string[];
   macros: string[];
@@ -281,9 +280,6 @@ export async function listRoutines(): Promise<RoutineRow[]> {
     shadowed: d.shadowed,
     label: d.get('label') || d.name,
     blurb: d.get('blurb'),
-    class: /^(base|control|specialized)$/.test(d.get('class'))
-      ? d.get('class') as RoutineRow['class']
-      : 'specialized',
     reading: splitDefinitionList(d.get('reading')),
     sops: splitDefinitionList(d.get('sops')),
     macros: splitDefinitionList(d.get('macros')),

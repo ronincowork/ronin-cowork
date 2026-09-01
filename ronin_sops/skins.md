@@ -77,8 +77,8 @@ in the catalogs store: a file of ours of the same name is replaced whole; a new 
 1. **The words.** `ronin-store catalogs` → `lexicons/<name>_<lang>.md` (the language is in the
    name). Format: `ronin_catalogs/lexicons/README.md`. Say only what changes — everything
    else falls through to `professional_en`, the floor. Every key that can be changed, with
-   every shipped lexicon's word beside it, is `npm run kokugo:table` (it writes
-   `docs/kokugo-table.md`, a report that is not committed); a `glossary.*` key
+   every shipped lexicon's word beside it, is `npm run kokugo:table` (a report generated on
+   demand and never committed); a `glossary.*` key
    changes the word an agent says to the person for a house term, nothing on screen.
 
    ```markdown
