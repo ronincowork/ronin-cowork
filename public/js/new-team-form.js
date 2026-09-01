@@ -27,18 +27,19 @@ import { request } from './request.js';
 import { t } from './lexicon.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
 import {
-  createStep, el, kindTiles, mandateSelect, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
+  createStep, dialRowMulti, el, kindTiles, mandateSelect, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
 } from './form-steps.js';
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
 const RECRUIT = ['open', 'nobody', 'propose agents', 'staff agents'];
-const OUTPUT = ['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team'];
+// A LIST since 2026-09-01, and `no code` is said rather than implied by absence.
+const OUTPUT = ['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team', 'no code'];
 const DIALS = ['user', 'read', 'write'];
 const KINDS = ['coding', 'work', 'personal', 'household', 'social', 'school'];
 
 const LEAD_DEFAULT = () => ({
   brief: t('new_team.lead_brief_default', 'Hold the objective, dispatch, unblock, keep the gaps closed.'),
-  reach: 'execute', recruit: 'staff agents', output: 'open',
+  reach: 'execute', recruit: 'staff agents', output: ['open'],
 });
 
 export function createNewTeamFormView(kit, { created = null } = {}) {
@@ -48,7 +49,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     template: '', templateName: '', title: '',
     name: '', kind: 'coding', objective: '',
     root: '', branch: '',
-    provider: '', model: '', reach: 'open', recruit: 'open', output: 'open',
+    provider: '', model: '', reach: 'open', recruit: 'open', output: ['open'],
     dial: 'write',
     routines: {}, books: [], launchMode: 'live_dangerously',
     lead: null,
@@ -90,7 +91,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
   /** What a template authors, as one string — the dirty test compares against it. */
   const authored = () => JSON.stringify({
     objective: draft.objective, books: [...draft.books].sort(), routines: draft.routines,
-    mandate: [draft.reach, draft.recruit, draft.output], lead: draft.lead,
+    mandate: [draft.reach, draft.recruit, ...draft.output], lead: draft.lead,
   });
 
   function applyTemplate(name) {
@@ -108,7 +109,8 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
       draft.books = [];
       draft.routines = { ...seedRoutines };
       draft.lead = null;
-      for (const key of ['reach', 'recruit', 'output']) draft[key] = seed?.seeds?.[key]?.value || 'open';
+      for (const key of ['reach', 'recruit']) draft[key] = seed?.seeds?.[key]?.value || 'open';
+      draft.output = [seed?.seeds?.output?.value || 'open'].flat().filter(Boolean);
       snapshot = '';
       paint();
       return;
@@ -117,11 +119,11 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     if (row.behaviours.length) draft.books = [...row.behaviours];
     for (const on of row.routines_on) if (on in draft.routines) draft.routines[on] = true;
     for (const off of row.routines_off) if (off in draft.routines) draft.routines[off] = false;
-    if (row.mandate) { draft.reach = row.mandate.reach; draft.recruit = row.mandate.recruit; draft.output = row.mandate.output; }
+    if (row.mandate) { draft.reach = row.mandate.reach; draft.recruit = row.mandate.recruit; draft.output = [row.mandate.output].flat().filter(Boolean); }
     if (row.lead) {
       draft.lead = { ...LEAD_DEFAULT() };
       if (row.lead.brief) draft.lead.brief = row.lead.brief;
-      if (row.lead.mandate) { draft.lead.reach = row.lead.mandate.reach; draft.lead.recruit = row.lead.mandate.recruit; draft.lead.output = row.lead.mandate.output; }
+      if (row.lead.mandate) { draft.lead.reach = row.lead.mandate.reach; draft.lead.recruit = row.lead.mandate.recruit; draft.lead.output = [row.lead.mandate.output].flat().filter(Boolean); }
     }
     snapshot = authored();
     paint();
@@ -363,8 +365,16 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     const cell = (label, values, key) => createField({
       label, control: mandateSelect(values, draft.lead[key], (value) => { draft.lead[key] = value; paintFoot(); }),
     }).el;
-    dials.append(cell(t('reach', 'Reach'), REACH, 'reach'), cell(t('recruit', 'Recruit'), RECRUIT, 'recruit'), cell(t('output', 'Output'), OUTPUT, 'output'));
+    dials.append(cell(t('reach', 'Reach'), REACH, 'reach'), cell(t('recruit', 'Recruit'), RECRUIT, 'recruit'));
     leadHost.append(dials);
+    // The lead is an Agent, so its Output ticks like an Agent's — the owner's own lead
+    // hands back a plan and the team and explicitly does NOT code, which is one dial
+    // saying three things and cannot be a pick-one.
+    leadHost.append(dialRowMulti(t('output', 'Output'), OUTPUT, draft.lead.output, (value, on) => {
+      draft.lead.output = on ? [...draft.lead.output, value] : draft.lead.output.filter((entry) => entry !== value);
+      paintLead();
+      paintFoot();
+    }));
   }
   stepLead.body.append(leadHost);
 
@@ -419,7 +429,7 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
       [t('behaviours', 'Behaviours'), draft.books.length ? tagRow(draft.books.map((text) => ({ text, on: true }))) : ''],
       [t('forms.model', 'model'), draft.provider ? `${draft.provider}${draft.model ? ` / ${draft.model}` : ''}` : t('forms.default', 'default')],
       [t('launch_mode.head', 'launch mode'), LAUNCH_MODES().find((row) => row.key === draft.launchMode)?.label || draft.launchMode],
-      [t('mandate', 'Mandate'), `${draft.reach} · ${draft.recruit} · ${draft.output}`],
+      [t('mandate', 'Mandate'), `${draft.reach} · ${draft.recruit} · ${draft.output.join(', ')}`],
       [t('add_agent.still_asked', 'still asked'), tagRow([
         t('session_type', 'Session type'), t('add_agent.name', 'name'), t('add_agent.instruction', 'instruction'),
         ...(draft.provider ? [] : [t('forms.model', 'model')]),
@@ -534,13 +544,13 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
         blurb: draft.objective.trim().slice(0, 120),
         kinds: draft.kind === 'open' ? KINDS : [draft.kind],
         objective: draft.objective.trim(),
-        mandate: `${draft.reach} · ${draft.recruit} · ${draft.output}`,
+        mandate: `${draft.reach} · ${draft.recruit} · ${draft.output.join(', ')}`,
         behaviours: draft.books,
         routines_on: routinesOn,
         routines_off: routinesOff,
         ...(draft.lead ? {
           lead_brief: draft.lead.brief.trim(),
-          lead_mandate: `${draft.lead.reach} · ${draft.lead.recruit} · ${draft.lead.output}`,
+          lead_mandate: `${draft.lead.reach} · ${draft.lead.recruit} · ${draft.lead.output.join(', ')}`,
         } : {}),
       },
     });
@@ -579,9 +589,10 @@ export function createNewTeamFormView(kit, { created = null } = {}) {
     draft.branch = value('branch') || '';
     draft.provider = value('provider') || '';
     draft.model = value('model') || '';
-    for (const key of ['reach', 'recruit', 'output', 'dial']) {
+    for (const key of ['reach', 'recruit', 'dial']) {
       if (value(key)) draft[key] = value(key);
     }
+    if (value('output')) draft.output = [value('output')].flat().filter(Boolean);
     // `permissions` LEAVES agent_defaults entirely (lead, 2026-09-01, carrying the owner):
     // § 7.2 is { provider, model, reach, recruit, output, dial, launch_mode }. Named on its
     // own because the seed's key is snake and the draft's is camel — folding it into the

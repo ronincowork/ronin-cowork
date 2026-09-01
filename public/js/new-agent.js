@@ -29,12 +29,14 @@ import { request } from './request.js';
 import { t } from './lexicon.js';
 import { finalizeTeamName, isValidTeamName, sanitizeTeamName } from './new-team-draft.js';
 import {
-  createStep, dialRow, el, kindTiles, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
+  createStep, dialRow, dialRowMulti, el, kindTiles, providerModelPair, readingRows, tagRow, templateTray, wayTiles, bookShelves,
 } from './form-steps.js';
 
 const REACH = ['open', 'discuss', 'plan', 'execute'];
 const RECRUIT = ['open', 'nobody', 'propose agents', 'staff agents'];
-const OUTPUT = ['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team'];
+// `output` is a LIST since 2026-09-01, and `no code` is a thing you SAY rather than the
+// absence of `code`: silence is not an instruction. Nothing validates the combination.
+const OUTPUT = ['open', 'a plan', 'ideas', 'code', 'an artifact', 'the team', 'no code'];
 
 export function createNewAgentView(kit, { connect = null } = {}) {
   const { createSurface, createAction, createActionBar, createField, createNotice } = kit.primitives;
@@ -43,7 +45,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     type: 'cowork_agent', template: '', templateName: '',
     name: '', kind: 'coding', kindTouched: false, provider: '', model: '', instructions: '',
     teamMode: 'new', team: '', newTeam: '',
-    reach: 'open', recruit: 'open', output: 'open', launchMode: 'live_dangerously',
+    reach: 'open', recruit: 'open', output: ['open'], launchMode: 'live_dangerously',
     books: [], root: '',
     expanded: {},
   };
@@ -163,14 +165,16 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     const row = templateRow();
     if (!row) { snapshot = ''; paint(); return; }
     if (row.brief) { draft.instructions = row.brief; instructionsInput.value = row.brief; }
-    if (row.mandate) { draft.reach = row.mandate.reach; draft.recruit = row.mandate.recruit; draft.output = row.mandate.output; touched.mandate = true; }
+    // A template's output may still be a single word — the record wraps a legacy scalar,
+    // and so does the form, rather than handing a string to code that expects a list.
+    if (row.mandate) { draft.reach = row.mandate.reach; draft.recruit = row.mandate.recruit; draft.output = [row.mandate.output].flat().filter(Boolean); touched.mandate = true; }
     if (row.behaviours.length) { draft.books = [...row.behaviours]; touched.books = true; }
     snapshot = authored();
     paint();
   }
   const authored = () => JSON.stringify({
     instructions: draft.instructions, books: [...draft.books].sort(),
-    mandate: [draft.reach, draft.recruit, draft.output],
+    mandate: [draft.reach, draft.recruit, ...draft.output],
   });
   const templateDirty = () => !!templateRow() && authored() !== snapshot;
   function paintTray() {
@@ -272,7 +276,12 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     mandateHost.replaceChildren(
       dialRow(t('reach', 'Reach'), REACH, draft.reach, (value) => { draft.reach = value; touched.mandate = true; paintMandate(); paintFoot(); }),
       dialRow(t('recruit', 'Recruit'), RECRUIT, draft.recruit, (value) => { draft.recruit = value; touched.mandate = true; paintMandate(); paintFoot(); }),
-      dialRow(t('output', 'Output'), OUTPUT, draft.output, (value) => { draft.output = value; touched.mandate = true; paintMandate(); paintFoot(); }),
+      dialRowMulti(t('output', 'Output'), OUTPUT, draft.output, (value, on) => {
+        draft.output = on ? [...draft.output, value] : draft.output.filter((entry) => entry !== value);
+        touched.mandate = true;
+        paintMandate();
+        paintFoot();
+      }),
     );
   }
   stepMandate.body.append(mandateHost);
@@ -361,7 +370,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     instructions: () => draft.instructions.slice(0, 40),
     team: () => (draft.teamMode === 'none' ? t('new_agent.a_ronin', 'a rōnin') : chosenTeam()),
     where: () => draft.root,
-    mandate: () => `${draft.reach} · ${draft.recruit} · ${draft.output}`,
+    mandate: () => `${draft.reach} · ${draft.recruit} · ${draft.output.join(', ')}`,
     loadout: () => t('new_agent.loadout_meta', '{routines} routines · {books} books', {
       routines: (seed?.routines || []).filter((row) => row.on).length + 1, books: draft.books.length,
     }),
@@ -384,7 +393,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     ];
     if (isCowork()) {
       rows.push([t('kind', 'Kind'), draft.kind]);
-      rows.push([t('mandate', 'Mandate'), `${draft.reach} · ${draft.recruit} · ${draft.output}`]);
+      rows.push([t('mandate', 'Mandate'), `${draft.reach} · ${draft.recruit} · ${draft.output.join(', ')}`]);
     }
     rows.push([t('routines', 'Routines'), draft.type === 'terminal'
       ? el('em', null, t('new_agent.routines_terminal', 'agent: none — a pane'))
@@ -495,7 +504,7 @@ export function createNewAgentView(kit, { connect = null } = {}) {
         blurb: draft.instructions.trim().slice(0, 120),
         kinds: draft.kind === 'open' ? ['coding', 'work', 'personal', 'household', 'social', 'school'] : [draft.kind],
         brief: draft.instructions.trim(),
-        mandate: `${draft.reach} · ${draft.recruit} · ${draft.output}`,
+        mandate: `${draft.reach} · ${draft.recruit} · ${draft.output.join(', ')}`,
         behaviours: draft.books,
       },
     });
@@ -519,7 +528,8 @@ export function createNewAgentView(kit, { connect = null } = {}) {
     if (!touched.model && !draft.provider) { draft.provider = value('provider') || ''; draft.model = value('model') || ''; }
     if (!touched.root && value('project_root')) draft.root = value('project_root');
     if (!touched.mandate) {
-      for (const key of ['reach', 'recruit', 'output']) if (value(key)) draft[key] = value(key);
+      for (const key of ['reach', 'recruit']) if (value(key)) draft[key] = value(key);
+      if (value('output')) draft.output = [value('output')].flat().filter(Boolean);
     }
     if (!touched.books && Array.isArray(value('behaviours'))) draft.books = [...value('behaviours')];
     // The campaign's, or the team's if one is joined — an editable value like every other

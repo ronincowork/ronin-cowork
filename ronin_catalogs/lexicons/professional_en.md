@@ -242,6 +242,7 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **campaign_view.option_ideas:** Ideas
 - **campaign_view.option_code:** Code
 - **campaign_view.option_artifact:** An artifact
+- **campaign_view.option_no_code:** No code
 - **campaign_view.option_team:** The Team
 - **campaign_view.option_user:** You only
 - **campaign_view.option_read:** Read
@@ -425,9 +426,6 @@ nothing paints exactly this. `check-lexicon` holds this file complete.
 - **new_team.floor:** Cowork floor
 - **new_team.floor_why:** The launch, campaign and team resolution, the shelf map, the birth receipt.
 - **new_team.floor_tag:** floor
-- **new_team.kit_none:** nothing yet — a template lays it, or open the kit
-- **new_team.kit_door:** Open the Team Kit  ▸
-- **new_team.kit_door_why:** A workbench of its own: browse every routine and behaviour, read them, and make them yours. Not yet built.
 - **new_team.kit_meta:** {routines} routines · {books} books
 - **new_team.lead:** Team lead
 - **new_team.lead_include:** Include a team lead
